@@ -9,26 +9,20 @@
   "type": "commonjs",
   "private": true,
   "scripts": {
-    "build": "npm run build:engine",
-    "build:engine": "tsc -p tsconfig.engine.json",
-    "audit:structure": "node system/tools/structureAudit.js",
-    "stable:check": "npm run audit:structure && npm run build:engine",
-    "generate:system": "tsx generateSystem.ts generate",
-    "generate:example": "tsx generateSystem.ts generate WhatsApp Campaign System",
-    "generate": "node core/runtime/cli.js generate",
-    "map": "node core/runtime/cli.js map",
-    "update": "node core/runtime/cli.js update",
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "backend": "nodemon backend/src/server.ts",
-    "frontend": "vite"
+    "dev": "ts-node src/api/routes.ts",
+    "build": "tsc",
+    "start": "node dist/api/routes.js"
   },
   "dependencies": {
-    "axios": "^1.13.0"
+    "axios": "^1.13.0",
+    "express": "^4.21.2"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "^22.15.3",
     "concurrently": "^9.2.1",
     "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
