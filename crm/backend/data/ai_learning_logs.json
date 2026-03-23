@@ -1,0 +1,55 @@
+[
+  {
+    "conversationId": "default:553193807167@s.whatsapp.net",
+    "createdAt": "2026-03-09T20:56:43.955Z",
+    "id": "ail-1773089803955-lzsrvx",
+    "issueType": "unanswered_question",
+    "problemDetected": "Pergunta sem resposta detectada: enciou mais não atualizou falta coisas ainda no sistema, depois para migrar meu sistema para uma vps será mais tranquilo ?",
+    "status": "applied",
+    "suggestedImprovement": {
+      "suggestedNewFlow": "Criar resposta rápida para perguntas sem retorno em até uma interação.",
+      "suggestedPromptImprovement": "Orientar a IA a priorizar mensagens com interrogação e responder objetivamente antes de avançar no fluxo.",
+      "suggestedResponse": "Posso te responder com precisão e já seguir com o orçamento. Quais itens e quantidades deseja cotar?"
+    },
+    "appliedAt": "2026-03-09T20:56:51.313Z"
+  },
+  {
+    "conversationId": "default:553193807167@s.whatsapp.net",
+    "createdAt": "2026-03-09T20:56:43.955Z",
+    "id": "ail-1773089803955-ux0xu1",
+    "issueType": "failed_conversation",
+    "problemDetected": "Conversa com sinal de falha: enciou mais não atualizou falta coisas ainda no sistema, depois para migrar meu sistema para uma vps será mais tranquilo ?",
+    "status": "pending",
+    "suggestedImprovement": {
+      "suggestedNewFlow": "Adicionar validação de objeção e confirmação de entendimento antes de apresentar o fechamento.",
+      "suggestedPromptImprovement": "Orientar a IA a reconhecer sinais de frustração e oferecer solução prática em até 3 frases.",
+      "suggestedResponse": "Entendi sua dúvida e posso reorganizar o atendimento com mais clareza. Deseja que eu refaça o orçamento de forma objetiva?"
+    }
+  },
+  {
+    "conversationId": "main:553193672075",
+    "createdAt": "2026-03-20T05:00:00.069Z",
+    "id": "ail-1773982800069-qgxod6",
+    "issueType": "customer_drop_off",
+    "problemDetected": "Cliente interrompeu a conversa após uma resposta do agente.",
+    "status": "pending",
+    "suggestedImprovement": {
+      "suggestedNewFlow": "Criar uma retomada automática após inatividade com reforço de confiança e próximo passo claro.",
+      "suggestedPromptImprovement": "Orientar a IA a confirmar interesse, prazo da obra e modalidade de entrega antes de encerrar a conversa.",
+      "suggestedResponse": "Posso retomar seu orçamento e organizar retirada ou entrega para você. Quais itens e quantidades deseja confirmar?"
+    }
+  },
+  {
+    "conversationId": "main:553193807167",
+    "createdAt": "2026-03-20T05:00:00.070Z",
+    "id": "ail-1773982800070-g94v9b",
+    "issueType": "customer_drop_off",
+    "problemDetected": "Cliente interrompeu a conversa após uma resposta do agente.",
+    "status": "pending",
+    "suggestedImprovement": {
+      "suggestedNewFlow": "Criar uma retomada automática após inatividade com reforço de confiança e próximo passo claro.",
+      "suggestedPromptImprovement": "Orientar a IA a confirmar interesse, prazo da obra e modalidade de entrega antes de encerrar a conversa.",
+      "suggestedResponse": "Posso retomar seu orçamento e organizar retirada ou entrega para você. Quais itens e quantidades deseja confirmar?"
+    }
+  }
+]
