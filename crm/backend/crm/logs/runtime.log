@@ -1,0 +1,12 @@
+{"timestamp":"2026-03-23T12:29:31.216Z","level":"info","message":"Runtime manager initializing"}
+{"timestamp":"2026-03-23T12:29:31.219Z","level":"info","message":"Starting ngrok tunnel","port":4000,"args":["http","4000","--log","stdout"]}
+{"timestamp":"2026-03-23T12:29:31.224Z","level":"error","message":"ngrok spawn error","error":"spawn ngrok ENOENT"}
+{"timestamp":"2026-03-23T12:29:31.225Z","level":"error","message":"Runtime manager initialization failed","error":"spawn ngrok ENOENT"}
+{"timestamp":"2026-03-23T12:31:56.152Z","level":"info","message":"Runtime manager initializing"}
+{"timestamp":"2026-03-23T12:31:56.153Z","level":"info","message":"Starting ngrok tunnel","port":4000,"args":["http","4000","--log","stdout"]}
+{"timestamp":"2026-03-23T12:31:56.160Z","level":"error","message":"ngrok spawn error","error":"spawn ngrok ENOENT"}
+{"timestamp":"2026-03-23T12:31:56.161Z","level":"error","message":"Runtime manager initialization failed","error":"spawn ngrok ENOENT"}
+{"timestamp":"2026-03-23T12:50:38.754Z","level":"info","message":"Runtime manager initializing"}
+{"timestamp":"2026-03-23T12:50:38.756Z","level":"info","message":"Starting ngrok tunnel","port":4100,"args":["http","4100","--log","stdout"]}
+{"timestamp":"2026-03-23T12:50:38.762Z","level":"error","message":"ngrok spawn error","error":"spawn ngrok ENOENT"}
+{"timestamp":"2026-03-23T12:50:38.763Z","level":"error","message":"Runtime manager initialization failed","error":"spawn ngrok ENOENT"}
