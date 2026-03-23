@@ -1,0 +1,8 @@
+{
+  "mode": "production",
+  "uiStyle": "premium",
+  "autoImprove": true,
+  "smartDecisionMode": true,
+  "SAFE_MODE": true,
+  "allowAutoStructureChanges": false
+}

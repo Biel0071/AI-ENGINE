@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "Node",
+    "outDir": "system/dist-engine"
+  },
+  "include": [
+    "generateSystem.ts",
+    "updateSystem.ts",
+    "core/**/*.ts",
+    "intelligence/generators/**/*.ts",
+    "templates/**/*.ts"
+  ]
+}

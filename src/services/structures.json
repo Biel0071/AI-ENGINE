@@ -1,0 +1,202 @@
+[
+  {
+    "feature": "safe-mode-smoke",
+    "createdAt": "2026-03-23T14:24:25.653Z",
+    "projectRoot": "C:\\projetos\\ai-engine-core\\ai-engine",
+    "skipped": false,
+    "reason": null,
+    "moved": 0,
+    "duplicatesRemoved": 0,
+    "directories": [
+      "src/core",
+      "src/modules",
+      "src/components",
+      "src/pages",
+      "src/services",
+      "src/api",
+      "src/hooks",
+      "src/store",
+      "src/utils",
+      "src/types",
+      "engine/memory",
+      "engine/patterns",
+      "engine/agents",
+      "engine/generators",
+      "engine/analyzer"
+    ],
+    "analysis": {
+      "frontend": [
+        "intelligence\\ai\\index.js",
+        "templates\\stack\\t3-base.template.js"
+      ],
+      "backend": [],
+      "utils": [],
+      "services": [
+        "core\\orchestrator.js"
+      ],
+      "ignoredCount": 112
+    },
+    "ruleFilePath": "C:\\projetos\\ai-engine-core\\ai-engine\\intelligence\\patterns\\structure-rules.json",
+    "ruleCount": 6
+  },
+  {
+    "feature": "safe-mode-smoke",
+    "createdAt": "2026-03-23T14:24:25.702Z",
+    "reusableModules": [
+      "ui-generator",
+      "code-generator",
+      "template-engine"
+    ],
+    "files": [
+      "starter/package.json",
+      "starter/src/app/layout.tsx",
+      "starter/src/app/page.tsx",
+      "frontend/src/components/layout/AppSidebar.tsx",
+      "frontend/src/components/layout/AppHeader.tsx",
+      "frontend/src/components/ui/UiCard.tsx",
+      "frontend/src/components/ui/UiDataTable.tsx",
+      "frontend/src/components/forms/safe-mode-smokeForm.tsx",
+      "frontend/src/pages/safe-mode-smoke/index.tsx",
+      "backend/src/modules/safe-mode-smoke/safe-mode-smoke.routes.ts",
+      "backend/src/modules/safe-mode-smoke/safe-mode-smoke.controller.ts",
+      "backend/src/modules/safe-mode-smoke/safe-mode-smoke.service.ts",
+      "backend/src/modules/safe-mode-smoke/safe-mode-smoke.repository.ts",
+      "frontend/src/services/safe-mode-smokeApi.ts",
+      "frontend/src/modules/safe-mode-smoke/SafeModeSmokeModule.tsx"
+    ]
+  },
+  {
+    "feature": "cli-smoke",
+    "createdAt": "2026-03-23T14:30:07.037Z",
+    "projectRoot": "C:\\projetos\\ai-engine-core\\ai-engine",
+    "skipped": false,
+    "reason": null,
+    "moved": 0,
+    "duplicatesRemoved": 0,
+    "directories": [
+      "src/core",
+      "src/modules",
+      "src/components",
+      "src/pages",
+      "src/services",
+      "src/api",
+      "src/hooks",
+      "src/store",
+      "src/utils",
+      "src/types",
+      "engine/memory",
+      "engine/patterns",
+      "engine/agents",
+      "engine/generators",
+      "engine/analyzer"
+    ],
+    "analysis": {
+      "frontend": [
+        "cli\\index.js",
+        "intelligence\\ai\\index.js",
+        "templates\\stack\\t3-base.template.js"
+      ],
+      "backend": [],
+      "utils": [],
+      "services": [
+        "core\\orchestrator.js"
+      ],
+      "ignoredCount": 112
+    },
+    "ruleFilePath": "C:\\projetos\\ai-engine-core\\ai-engine\\intelligence\\patterns\\structure-rules.json",
+    "ruleCount": 6
+  },
+  {
+    "feature": "cli-smoke",
+    "createdAt": "2026-03-23T14:30:07.096Z",
+    "reusableModules": [
+      "ui-generator",
+      "code-generator",
+      "template-engine"
+    ],
+    "files": [
+      "starter/package.json",
+      "starter/src/app/layout.tsx",
+      "starter/src/app/page.tsx",
+      "frontend/src/components/layout/AppSidebar.tsx",
+      "frontend/src/components/layout/AppHeader.tsx",
+      "frontend/src/components/ui/UiCard.tsx",
+      "frontend/src/components/ui/UiDataTable.tsx",
+      "frontend/src/components/forms/cli-smokeForm.tsx",
+      "frontend/src/pages/cli-smoke/index.tsx",
+      "backend/src/modules/cli-smoke/cli-smoke.routes.ts",
+      "backend/src/modules/cli-smoke/cli-smoke.controller.ts",
+      "backend/src/modules/cli-smoke/cli-smoke.service.ts",
+      "backend/src/modules/cli-smoke/cli-smoke.repository.ts",
+      "frontend/src/services/cli-smokeApi.ts",
+      "frontend/src/modules/cli-smoke/CliSmokeModule.tsx"
+    ]
+  },
+  {
+    "feature": "dashboard-starter",
+    "createdAt": "2026-03-23T14:30:07.338Z",
+    "projectRoot": "C:\\projetos\\ai-engine-core\\ai-engine",
+    "skipped": false,
+    "reason": null,
+    "moved": 0,
+    "duplicatesRemoved": 0,
+    "directories": [
+      "src/core",
+      "src/modules",
+      "src/components",
+      "src/pages",
+      "src/services",
+      "src/api",
+      "src/hooks",
+      "src/store",
+      "src/utils",
+      "src/types",
+      "engine/memory",
+      "engine/patterns",
+      "engine/agents",
+      "engine/generators",
+      "engine/analyzer"
+    ],
+    "analysis": {
+      "frontend": [
+        "cli\\index.js",
+        "intelligence\\ai\\index.js",
+        "templates\\stack\\t3-base.template.js"
+      ],
+      "backend": [],
+      "utils": [],
+      "services": [
+        "core\\orchestrator.js"
+      ],
+      "ignoredCount": 112
+    },
+    "ruleFilePath": "C:\\projetos\\ai-engine-core\\ai-engine\\intelligence\\patterns\\structure-rules.json",
+    "ruleCount": 6
+  },
+  {
+    "feature": "dashboard-starter",
+    "createdAt": "2026-03-23T14:30:07.387Z",
+    "reusableModules": [
+      "ui-generator",
+      "code-generator",
+      "template-engine"
+    ],
+    "files": [
+      "starter/package.json",
+      "starter/src/app/layout.tsx",
+      "starter/src/app/page.tsx",
+      "frontend/src/components/layout/AppSidebar.tsx",
+      "frontend/src/components/layout/AppHeader.tsx",
+      "frontend/src/components/ui/UiCard.tsx",
+      "frontend/src/components/ui/UiDataTable.tsx",
+      "frontend/src/components/forms/dashboard-starterForm.tsx",
+      "frontend/src/pages/dashboard-starter/index.tsx",
+      "backend/src/modules/dashboard-starter/dashboard-starter.routes.ts",
+      "backend/src/modules/dashboard-starter/dashboard-starter.controller.ts",
+      "backend/src/modules/dashboard-starter/dashboard-starter.service.ts",
+      "backend/src/modules/dashboard-starter/dashboard-starter.repository.ts",
+      "frontend/src/services/dashboard-starterApi.ts",
+      "frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx"
+    ]
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "name": "ai-engine",
+  "version": "1.0.0",
+  "description": "Reusable AI orchestration engine for SaaS systems.",
+  "main": "index.js",
+  "bin": {
+    "ai-engine": "./cli/index.js"
+  },
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:engine",
+    "build:engine": "tsc -p tsconfig.engine.json",
+    "audit:structure": "node system/tools/structureAudit.js",
+    "stable:check": "npm run audit:structure && npm run build:engine",
+    "generate:system": "tsx generateSystem.ts generate",
+    "generate:example": "tsx generateSystem.ts generate WhatsApp Campaign System",
+    "generate": "node core/runtime/cli.js generate",
+    "map": "node core/runtime/cli.js map",
+    "update": "node core/runtime/cli.js update",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "nodemon backend/src/server.ts",
+    "frontend": "vite"
+  },
+  "dependencies": {
+    "axios": "^1.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.10",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

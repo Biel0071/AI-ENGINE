@@ -1,0 +1,86 @@
+[
+  {
+    "feature": "campaign_system",
+    "featureName": "WhatsApp Campaign System",
+    "theme": "dark",
+    "lookAndFeel": "modern_saas_linear_stripe",
+    "layout": "sidebar_topbar",
+    "screens": [
+      {
+        "name": "campaign_list",
+        "description": "List campaigns with status and quick actions.",
+        "components": [
+          "DataTable",
+          "StatusBadge",
+          "ActionButton"
+        ]
+      },
+      {
+        "name": "campaign_builder",
+        "description": "Compose campaign content and targeting setup.",
+        "components": [
+          "FormCard",
+          "TextInput",
+          "TextareaInput"
+        ]
+      },
+      {
+        "name": "preview_panel",
+        "description": "Preview outbound message payload before send.",
+        "components": [
+          "PreviewCard",
+          "DeviceMock"
+        ]
+      },
+      {
+        "name": "history_panel",
+        "description": "Display delivery timeline and previous runs.",
+        "components": [
+          "TimelineList",
+          "StatusBadge"
+        ]
+      }
+    ],
+    "createdAt": "2026-03-23T11:42:15.989Z"
+  },
+  {
+    "feature": "billing-suite",
+    "createdAt": "2026-03-23T13:13:03.117Z",
+    "layout": "sidebar-header",
+    "style": "react-tailwind-shadcn-inspired",
+    "components": [
+      "AppSidebar",
+      "AppHeader",
+      "UiCard",
+      "UiDataTable",
+      "BillingSuiteForm"
+    ]
+  },
+  {
+    "feature": "structure-check",
+    "createdAt": "2026-03-23T13:17:24.170Z",
+    "layout": "sidebar-header",
+    "style": "react-tailwind-shadcn-inspired",
+    "components": [
+      "AppSidebar",
+      "AppHeader",
+      "UiCard",
+      "UiDataTable",
+      "StructureCheckForm"
+    ]
+  },
+  {
+    "feature": "ai-fallback-check",
+    "createdAt": "2026-03-23T14:10:12.725Z",
+    "layout": "sidebar-header",
+    "style": "react-tailwind-shadcn-inspired",
+    "components": [
+      "AppSidebar",
+      "AppHeader",
+      "UiCard",
+      "UiDataTable",
+      "AiFallbackCheckForm"
+    ],
+    "aiNotes": []
+  }
+]

@@ -1,0 +1,13 @@
+[
+  {
+    "createdAt": "2026-03-23T14:10:12.465Z",
+    "type": "analyze",
+    "inputSummary": "{\"root\":\"C:\\\\projetos\\\\ai-engine-core\\\\ai-engine\",\"summary\":{\"totalFiles\":240,\"frontendFiles\":70,\"backendFiles\":59},\"routes\":[{\"method\":\"GET\",\"path\":\"/billing-suite\",\"source\":\"future\\\\drafts\\\\legacy-root\\\\generated\\\\billing-suite\\\\backend\\\\src\\\\modules\\\\billing-suite\\\\billing-suite.routes.ts\"},{\"method\":\"POST\",\"path\":\"/billing-suite\",\"source\":\"future\\\\drafts\\\\legacy-root\\\\generated\\\\billing-suite\\\\backend\\\\src\\\\modules\\\\billing-suite\\\\billing-suite.routes.ts\"},{\"method\":\"POST\",\"path\":\"/campaigns\",\"source\":\"future\\\\drafts\\\\legacy-root\\\\generated\\\\campaign_system\\\\backend\\\\src\\\\modules\\\\campaigns\\\\campaign.routes.ts\"},{\"method\":\"GET\",\"path\":\"/campaigns\",\"source\":\"future\\\\drafts\\\\legacy-root\\\\generated\\\\campaign_system\\\\backend\\\\src\\\\modules\\\\campaigns\\\\campaign.routes.ts\"},{\"method\":\"POST\",\"path\":\"/campaigns/:id/send\",\"source\":\"future\\\\drafts\\\\legacy-root\\\\generated\\\\campaign_system\\\\backend\\\\src\\\\modules\\\\campaigns\\\\campaign.routes.ts\"},{\"method\":\"GET\",\"path\":\"/campaigns/:id/status\",\"source\":\"future\\\\drafts\\\\legacy-root\\\\generated\\\\campaign_system\\\\backend\\\\src\\\\modules\\\\campaigns\\\\campaign.routes.ts\"},{\"method\":\"POST\",\"path\":\"/campaigns\",\"source\":\"future\\\\drafts\\\\legacy-root\\\\gener",
+    "outputSummary": "{\"summary\":\"AI disabled: no API key configured.\",\"risks\":[],\"opportunities\":[],\"architectureHints\":[]}",
+    "metadata": {
+      "provider": "openai-compatible",
+      "model": "gpt-4o-mini",
+      "skipped": true
+    }
+  }
+]

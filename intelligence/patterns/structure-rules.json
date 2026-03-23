@@ -1,0 +1,28 @@
+{
+  "rules": [
+    {
+      "match": "controller",
+      "target": "src/api"
+    },
+    {
+      "match": "service",
+      "target": "src/services"
+    },
+    {
+      "match": "hook",
+      "target": "src/hooks"
+    },
+    {
+      "match": "use",
+      "target": "src/hooks"
+    },
+    {
+      "match": "page",
+      "target": "src/pages"
+    },
+    {
+      "match": "component",
+      "target": "src/components"
+    }
+  ]
+}

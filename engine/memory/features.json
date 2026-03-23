@@ -1,0 +1,388 @@
+[
+  {
+    "feature": "campaign_system",
+    "featureName": "WhatsApp Campaign System",
+    "modules": [
+      "campaigns",
+      "contacts",
+      "messages"
+    ],
+    "entities": [
+      {
+        "name": "Campaign",
+        "fields": [
+          "id",
+          "name",
+          "message",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "Marketing campaign with message payload and lifecycle status."
+      },
+      {
+        "name": "Contact",
+        "fields": [
+          "id",
+          "name",
+          "phone",
+          "segment",
+          "createdAt"
+        ],
+        "description": "Audience contact eligible to receive campaign messages."
+      },
+      {
+        "name": "MessageDispatch",
+        "fields": [
+          "id",
+          "campaignId",
+          "contactId",
+          "status",
+          "sentAt"
+        ],
+        "description": "A message dispatch execution for campaign recipients."
+      }
+    ],
+    "actions": [
+      {
+        "name": "create_campaign",
+        "description": "Create a new campaign draft.",
+        "method": "POST",
+        "route": "/campaigns"
+      },
+      {
+        "name": "list_campaigns",
+        "description": "List campaigns ordered by creation date.",
+        "method": "GET",
+        "route": "/campaigns"
+      },
+      {
+        "name": "send_messages",
+        "description": "Dispatch campaign messages to selected contacts.",
+        "method": "POST",
+        "route": "/campaigns/:id/send"
+      },
+      {
+        "name": "track_status",
+        "description": "Track campaign delivery status and timestamps.",
+        "method": "GET",
+        "route": "/campaigns/:id/status"
+      }
+    ],
+    "backend": [
+      "create_campaign",
+      "list_campaigns",
+      "send_messages",
+      "track_status"
+    ],
+    "frontend": [
+      "campaign_list",
+      "campaign_builder",
+      "preview_panel",
+      "history_panel"
+    ],
+    "uiScreens": [
+      {
+        "name": "campaign_list",
+        "description": "List campaigns with status and quick actions.",
+        "components": [
+          "DataTable",
+          "StatusBadge",
+          "ActionButton"
+        ]
+      },
+      {
+        "name": "campaign_builder",
+        "description": "Compose campaign content and targeting setup.",
+        "components": [
+          "FormCard",
+          "TextInput",
+          "TextareaInput"
+        ]
+      },
+      {
+        "name": "preview_panel",
+        "description": "Preview outbound message payload before send.",
+        "components": [
+          "PreviewCard",
+          "DeviceMock"
+        ]
+      },
+      {
+        "name": "history_panel",
+        "description": "Display delivery timeline and previous runs.",
+        "components": [
+          "TimelineList",
+          "StatusBadge"
+        ]
+      }
+    ],
+    "businessRules": [
+      {
+        "id": "campaign_requires_message",
+        "description": "A campaign cannot be created without a non-empty message body."
+      },
+      {
+        "id": "campaign_name_min_length",
+        "description": "Campaign name must have at least 3 characters."
+      },
+      {
+        "id": "phone_must_be_e164",
+        "description": "Contacts must use E.164 compatible phone format."
+      },
+      {
+        "id": "send_only_draft_or_paused",
+        "description": "Only campaigns in draft or paused status can be sent."
+      }
+    ],
+    "createdAt": "2026-03-23T11:42:15.988Z"
+  },
+  {
+    "feature": "billing-suite",
+    "plan": [
+      {
+        "id": "analyze",
+        "task": "Analyze current project context and modules"
+      },
+      {
+        "id": "reuse",
+        "task": "Apply reusable patterns from memory"
+      },
+      {
+        "id": "scaffold",
+        "task": "Scaffold feature billing-suite"
+      },
+      {
+        "id": "ui",
+        "task": "Generate dashboard, table, form and layout components"
+      },
+      {
+        "id": "api",
+        "task": "Generate API routes, services and module files"
+      },
+      {
+        "id": "persist",
+        "task": "Persist generated pattern for future reuse"
+      }
+    ],
+    "summary": {
+      "totalFiles": 15,
+      "reusableModules": [
+        "ui-generator",
+        "code-generator",
+        "template-engine"
+      ],
+      "pages": 0,
+      "components": 5,
+      "apis": 1,
+      "backendModules": 0,
+      "frontendFiles": 6,
+      "backendFiles": 6
+    },
+    "generatedFiles": [
+      {
+        "path": "starter/package.json",
+        "content": "{\n  \"name\": \"billing-suite-starter\",\n  \"private\": true,\n  \"version\": \"0.1.0\",\n  \"scripts\": {\n    \"dev\": \"next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start\",\n    \"lint\": \"next lint\"\n  },\n  \"dependencies\": {\n    \"next\": \"^15.0.0\",\n    \"react\": \"^18.3.1\",\n    \"react-dom\": \"^18.3.1\",\n    \"@tanstack/react-query\": \"^5.59.0\",\n    \"zod\": \"^3.25.0\",\n    \"tailwindcss\": \"^3.4.17\",\n    \"clsx\": \"^2.1.1\"\n  }\n}"
+      },
+      {
+        "path": "starter/src/app/layout.tsx",
+        "content": "import './globals.css';\n\nexport default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}"
+      },
+      {
+        "path": "starter/src/app/page.tsx",
+        "content": "export default function HomePage() {\n  return <main className=\"p-8\">AI Engine Starter</main>;\n}"
+      },
+      {
+        "path": "frontend/src/components/layout/AppSidebar.tsx",
+        "content": "import { Home, LayoutGrid, Settings, Users } from 'lucide-react';\n\nconst items = [\n  { label: 'Dashboard', icon: Home },\n  { label: 'Modules', icon: LayoutGrid },\n  { label: 'Customers', icon: Users },\n  { label: 'Settings', icon: Settings },\n];\n\nexport function AppSidebar() {\n  return (\n    <aside className=\"w-72 border-r border-slate-200 bg-white/80 p-5 backdrop-blur\">\n      <h1 className=\"mb-8 text-lg font-semibold tracking-tight\">Billing Suite Console</h1>\n      <nav className=\"space-y-2\">\n        {items.map(({ label, icon: Icon }) => (\n          <button\n            key={label}\n            className=\"flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100\"\n          >\n            <Icon size={16} />\n            <span>{label}</span>\n          </button>\n        ))}\n      </nav>\n    </aside>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/components/layout/AppHeader.tsx",
+        "content": "export function AppHeader() {\n  return (\n    <header className=\"flex items-center justify-between border-b border-slate-200 bg-white/70 px-6 py-4 backdrop-blur\">\n      <div>\n        <h2 className=\"text-xl font-semibold\">Billing Suite Dashboard</h2>\n        <p className=\"text-sm text-slate-500\">Generated with reusable AI Engine patterns</p>\n      </div>\n      <button className=\"rounded-lg bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700\">\n        New Billing Suite\n      </button>\n    </header>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/components/ui/UiCard.tsx",
+        "content": "export function UiCard({ title, value, hint }: { title: string; value: string; hint: string }) {\n  return (\n    <article className=\"rounded-xl border border-slate-200 bg-white p-4 shadow-sm\">\n      <p className=\"text-sm text-slate-500\">{title}</p>\n      <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{value}</p>\n      <p className=\"mt-1 text-xs text-slate-500\">{hint}</p>\n    </article>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/components/ui/UiDataTable.tsx",
+        "content": "export function UiDataTable({ rows }: { rows: Array<{ id: string; name: string; status: string }> }) {\n  return (\n    <div className=\"overflow-hidden rounded-xl border border-slate-200 bg-white\">\n      <table className=\"min-w-full text-sm\">\n        <thead className=\"bg-slate-50\">\n          <tr>\n            <th className=\"px-4 py-3 text-left\">Name</th>\n            <th className=\"px-4 py-3 text-left\">Status</th>\n          </tr>\n        </thead>\n        <tbody>\n          {rows.map((row) => (\n            <tr key={row.id} className=\"border-t border-slate-100\">\n              <td className=\"px-4 py-3\">{row.name}</td>\n              <td className=\"px-4 py-3\">{row.status}</td>\n            </tr>\n          ))}\n        </tbody>\n      </table>\n    </div>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/components/forms/billing-suiteForm.tsx",
+        "content": "import { useState } from 'react';\n\nexport function BillingSuiteForm({ onSubmit }: { onSubmit: (payload: { name: string; description: string }) => Promise<void> | void }) {\n  const [name, setName] = useState('');\n  const [description, setDescription] = useState('');\n\n  return (\n    <form\n      className=\"space-y-4 rounded-xl border border-slate-200 bg-white p-5\"\n      onSubmit={async (event) => {\n        event.preventDefault();\n        await onSubmit({ name, description });\n      }}\n    >\n      <div className=\"space-y-1\">\n        <label className=\"text-sm text-slate-600\">Name</label>\n        <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2\" value={name} onChange={(e) => setName(e.target.value)} />\n      </div>\n      <div className=\"space-y-1\">\n        <label className=\"text-sm text-slate-600\">Description</label>\n        <textarea className=\"w-full rounded-lg border border-slate-300 px-3 py-2\" value={description} onChange={(e) => setDescription(e.target.value)} />\n      </div>\n      <button className=\"rounded-lg bg-slate-900 px-4 py-2 text-sm text-white\" type=\"submit\">\n        Save Billing Suite\n      </button>\n    </form>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/pages/billing-suite/index.tsx",
+        "content": "import { AppSidebar } from '../../components/layout/AppSidebar';\nimport { AppHeader } from '../../components/layout/AppHeader';\nimport { UiCard } from '../../components/ui/UiCard';\nimport { UiDataTable } from '../../components/ui/UiDataTable';\nimport { BillingSuiteForm } from '../../components/forms/billing-suiteForm';\n\nconst demoRows = [\n  { id: '1', name: 'Billing Suite A', status: 'active' },\n  { id: '2', name: 'Billing Suite B', status: 'draft' },\n];\n\nexport default function BillingSuitePage() {\n  return (\n    <main className=\"min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900\">\n      <div className=\"flex min-h-screen\">\n        <AppSidebar />\n        <div className=\"flex-1\">\n          <AppHeader />\n          <section className=\"space-y-6 p-6\">\n            <div className=\"grid gap-4 md:grid-cols-3\">\n              <UiCard title=\"Active Billing Suite\" value=\"12\" hint=\"+14% this week\" />\n              <UiCard title=\"Automation Health\" value=\"98%\" hint=\"Stable\" />\n              <UiCard title=\"Open Tasks\" value=\"7\" hint=\"Needs review\" />\n            </div>\n            <div className=\"grid gap-6 lg:grid-cols-2\">\n              <UiDataTable rows={demoRows} />\n              <BillingSuiteForm onSubmit={async () => undefined} />\n            </div>\n          </section>\n        </div>\n      </div>\n    </main>\n  );\n}"
+      },
+      {
+        "path": "backend/src/modules/billing-suite/billing-suite.routes.ts",
+        "content": "import { Router } from 'express';\nimport { BillingSuiteController } from './billing-suite.controller';\n\nconst router = Router();\n\nrouter.get('/billing-suite', BillingSuiteController.list);\nrouter.post('/billing-suite', BillingSuiteController.create);\n\nexport { router as billing-suiteRouter };"
+      },
+      {
+        "path": "backend/src/modules/billing-suite/billing-suite.controller.ts",
+        "content": "import { Request, Response } from 'express';\nimport { BillingSuiteService } from './billing-suite.service';\n\nexport const BillingSuiteController = {\n  async list(_req: Request, res: Response) {\n    const data = await BillingSuiteService.list();\n    return res.json(data);\n  },\n\n  async create(req: Request, res: Response) {\n    const created = await BillingSuiteService.create(req.body);\n    return res.status(201).json(created);\n  },\n};"
+      },
+      {
+        "path": "backend/src/modules/billing-suite/billing-suite.service.ts",
+        "content": "import { BillingSuiteRepository } from './billing-suite.repository';\n\nexport const BillingSuiteService = {\n  list() {\n    return BillingSuiteRepository.list();\n  },\n\n  create(payload: { name: string; description?: string }) {\n    return BillingSuiteRepository.create(payload);\n  },\n};"
+      },
+      {
+        "path": "backend/src/modules/billing-suite/billing-suite.repository.ts",
+        "content": "const memoryStore: Array<{ id: string; name: string; description?: string }> = [];\n\nexport const BillingSuiteRepository = {\n  list() {\n    return memoryStore;\n  },\n\n  create(payload: { name: string; description?: string }) {\n    const item = { id: String(Date.now()), ...payload };\n    memoryStore.unshift(item);\n    return item;\n  },\n};"
+      },
+      {
+        "path": "frontend/src/services/billing-suiteApi.ts",
+        "content": "import { request } from '../services/http/request';\n\nexport function listBillingSuite() {\n  return request<Array<{ id: string; name: string }>>({ method: 'GET', url: '/billing-suite' });\n}\n\nexport function createBillingSuite(payload: { name: string; description?: string }) {\n  return request<{ id: string; name: string }>({ method: 'POST', url: '/billing-suite', data: payload });\n}"
+      },
+      {
+        "path": "frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+        "content": "import { useEffect, useState } from 'react';\nimport { listBillingSuite } from '../../services/billing-suiteApi';\n\nexport function BillingSuiteModule() {\n  const [items, setItems] = useState<Array<{ id: string; name: string }>>([]);\n\n  useEffect(() => {\n    void listBillingSuite().then(setItems);\n  }, []);\n\n  return (\n    <section className=\"rounded-xl border border-slate-200 bg-white p-4\">\n      <h3 className=\"text-base font-semibold\">Billing Suite Module</h3>\n      <ul className=\"mt-3 space-y-2 text-sm text-slate-600\">\n        {items.map((item) => (\n          <li key={item.id}>{item.name}</li>\n        ))}\n      </ul>\n    </section>\n  );\n}"
+      }
+    ],
+    "projectSummary": {
+      "totalFiles": 194,
+      "frontendFiles": 53,
+      "backendFiles": 49,
+      "detectedFrontend": true,
+      "detectedBackend": true
+    },
+    "uiPattern": {
+      "layout": "sidebar-header",
+      "style": "react-tailwind-shadcn-inspired",
+      "components": [
+        "AppSidebar",
+        "AppHeader",
+        "UiCard",
+        "UiDataTable",
+        "BillingSuiteForm"
+      ]
+    },
+    "createdAt": "2026-03-23T13:13:03.117Z"
+  },
+  {
+    "feature": "structure-check",
+    "plan": [
+      {
+        "id": "analyze",
+        "task": "Analyze current project context and modules"
+      },
+      {
+        "id": "reuse",
+        "task": "Apply reusable patterns from memory"
+      },
+      {
+        "id": "scaffold",
+        "task": "Scaffold feature structure-check"
+      },
+      {
+        "id": "ui",
+        "task": "Generate dashboard, table, form and layout components"
+      },
+      {
+        "id": "api",
+        "task": "Generate API routes, services and module files"
+      },
+      {
+        "id": "persist",
+        "task": "Persist generated pattern for future reuse"
+      }
+    ],
+    "summary": {
+      "totalFiles": 15,
+      "reusableModules": [
+        "ui-generator",
+        "code-generator",
+        "template-engine"
+      ],
+      "pages": 0,
+      "components": 5,
+      "apis": 1,
+      "backendModules": 0,
+      "frontendFiles": 6,
+      "backendFiles": 6
+    },
+    "generatedFiles": [
+      {
+        "path": "starter/package.json",
+        "content": "{\n  \"name\": \"structure-check-starter\",\n  \"private\": true,\n  \"version\": \"0.1.0\",\n  \"scripts\": {\n    \"dev\": \"next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start\",\n    \"lint\": \"next lint\"\n  },\n  \"dependencies\": {\n    \"next\": \"^15.0.0\",\n    \"react\": \"^18.3.1\",\n    \"react-dom\": \"^18.3.1\",\n    \"@tanstack/react-query\": \"^5.59.0\",\n    \"zod\": \"^3.25.0\",\n    \"tailwindcss\": \"^3.4.17\",\n    \"clsx\": \"^2.1.1\"\n  }\n}"
+      },
+      {
+        "path": "starter/src/app/layout.tsx",
+        "content": "import './globals.css';\n\nexport default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}"
+      },
+      {
+        "path": "starter/src/app/page.tsx",
+        "content": "export default function HomePage() {\n  return <main className=\"p-8\">AI Engine Starter</main>;\n}"
+      },
+      {
+        "path": "frontend/src/components/layout/AppSidebar.tsx",
+        "content": "import { Home, LayoutGrid, Settings, Users } from 'lucide-react';\n\nconst items = [\n  { label: 'Dashboard', icon: Home },\n  { label: 'Modules', icon: LayoutGrid },\n  { label: 'Customers', icon: Users },\n  { label: 'Settings', icon: Settings },\n];\n\nexport function AppSidebar() {\n  return (\n    <aside className=\"w-72 border-r border-slate-200 bg-white/80 p-5 backdrop-blur\">\n      <h1 className=\"mb-8 text-lg font-semibold tracking-tight\">Structure Check Console</h1>\n      <nav className=\"space-y-2\">\n        {items.map(({ label, icon: Icon }) => (\n          <button\n            key={label}\n            className=\"flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100\"\n          >\n            <Icon size={16} />\n            <span>{label}</span>\n          </button>\n        ))}\n      </nav>\n    </aside>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/components/layout/AppHeader.tsx",
+        "content": "export function AppHeader() {\n  return (\n    <header className=\"flex items-center justify-between border-b border-slate-200 bg-white/70 px-6 py-4 backdrop-blur\">\n      <div>\n        <h2 className=\"text-xl font-semibold\">Structure Check Dashboard</h2>\n        <p className=\"text-sm text-slate-500\">Generated with reusable AI Engine patterns</p>\n      </div>\n      <button className=\"rounded-lg bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700\">\n        New Structure Check\n      </button>\n    </header>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/components/ui/UiCard.tsx",
+        "content": "export function UiCard({ title, value, hint }: { title: string; value: string; hint: string }) {\n  return (\n    <article className=\"rounded-xl border border-slate-200 bg-white p-4 shadow-sm\">\n      <p className=\"text-sm text-slate-500\">{title}</p>\n      <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{value}</p>\n      <p className=\"mt-1 text-xs text-slate-500\">{hint}</p>\n    </article>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/components/ui/UiDataTable.tsx",
+        "content": "export function UiDataTable({ rows }: { rows: Array<{ id: string; name: string; status: string }> }) {\n  return (\n    <div className=\"overflow-hidden rounded-xl border border-slate-200 bg-white\">\n      <table className=\"min-w-full text-sm\">\n        <thead className=\"bg-slate-50\">\n          <tr>\n            <th className=\"px-4 py-3 text-left\">Name</th>\n            <th className=\"px-4 py-3 text-left\">Status</th>\n          </tr>\n        </thead>\n        <tbody>\n          {rows.map((row) => (\n            <tr key={row.id} className=\"border-t border-slate-100\">\n              <td className=\"px-4 py-3\">{row.name}</td>\n              <td className=\"px-4 py-3\">{row.status}</td>\n            </tr>\n          ))}\n        </tbody>\n      </table>\n    </div>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/components/forms/structure-checkForm.tsx",
+        "content": "import { useState } from 'react';\n\nexport function StructureCheckForm({ onSubmit }: { onSubmit: (payload: { name: string; description: string }) => Promise<void> | void }) {\n  const [name, setName] = useState('');\n  const [description, setDescription] = useState('');\n\n  return (\n    <form\n      className=\"space-y-4 rounded-xl border border-slate-200 bg-white p-5\"\n      onSubmit={async (event) => {\n        event.preventDefault();\n        await onSubmit({ name, description });\n      }}\n    >\n      <div className=\"space-y-1\">\n        <label className=\"text-sm text-slate-600\">Name</label>\n        <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2\" value={name} onChange={(e) => setName(e.target.value)} />\n      </div>\n      <div className=\"space-y-1\">\n        <label className=\"text-sm text-slate-600\">Description</label>\n        <textarea className=\"w-full rounded-lg border border-slate-300 px-3 py-2\" value={description} onChange={(e) => setDescription(e.target.value)} />\n      </div>\n      <button className=\"rounded-lg bg-slate-900 px-4 py-2 text-sm text-white\" type=\"submit\">\n        Save Structure Check\n      </button>\n    </form>\n  );\n}"
+      },
+      {
+        "path": "frontend/src/pages/structure-check/index.tsx",
+        "content": "import { AppSidebar } from '../../components/layout/AppSidebar';\nimport { AppHeader } from '../../components/layout/AppHeader';\nimport { UiCard } from '../../components/ui/UiCard';\nimport { UiDataTable } from '../../components/ui/UiDataTable';\nimport { StructureCheckForm } from '../../components/forms/structure-checkForm';\n\nconst demoRows = [\n  { id: '1', name: 'Structure Check A', status: 'active' },\n  { id: '2', name: 'Structure Check B', status: 'draft' },\n];\n\nexport default function StructureCheckPage() {\n  return (\n    <main className=\"min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900\">\n      <div className=\"flex min-h-screen\">\n        <AppSidebar />\n        <div className=\"flex-1\">\n          <AppHeader />\n          <section className=\"space-y-6 p-6\">\n            <div className=\"grid gap-4 md:grid-cols-3\">\n              <UiCard title=\"Active Structure Check\" value=\"12\" hint=\"+14% this week\" />\n              <UiCard title=\"Automation Health\" value=\"98%\" hint=\"Stable\" />\n              <UiCard title=\"Open Tasks\" value=\"7\" hint=\"Needs review\" />\n            </div>\n            <div className=\"grid gap-6 lg:grid-cols-2\">\n              <UiDataTable rows={demoRows} />\n              <StructureCheckForm onSubmit={async () => undefined} />\n            </div>\n          </section>\n        </div>\n      </div>\n    </main>\n  );\n}"
+      },
+      {
+        "path": "backend/src/modules/structure-check/structure-check.routes.ts",
+        "content": "import { Router } from 'express';\nimport { StructureCheckController } from './structure-check.controller';\n\nconst router = Router();\n\nrouter.get('/structure-check', StructureCheckController.list);\nrouter.post('/structure-check', StructureCheckController.create);\n\nexport { router as structure-checkRouter };"
+      },
+      {
+        "path": "backend/src/modules/structure-check/structure-check.controller.ts",
+        "content": "import { Request, Response } from 'express';\nimport { StructureCheckService } from './structure-check.service';\n\nexport const StructureCheckController = {\n  async list(_req: Request, res: Response) {\n    const data = await StructureCheckService.list();\n    return res.json(data);\n  },\n\n  async create(req: Request, res: Response) {\n    const created = await StructureCheckService.create(req.body);\n    return res.status(201).json(created);\n  },\n};"
+      },
+      {
+        "path": "backend/src/modules/structure-check/structure-check.service.ts",
+        "content": "import { StructureCheckRepository } from './structure-check.repository';\n\nexport const StructureCheckService = {\n  list() {\n    return StructureCheckRepository.list();\n  },\n\n  create(payload: { name: string; description?: string }) {\n    return StructureCheckRepository.create(payload);\n  },\n};"
+      },
+      {
+        "path": "backend/src/modules/structure-check/structure-check.repository.ts",
+        "content": "const memoryStore: Array<{ id: string; name: string; description?: string }> = [];\n\nexport const StructureCheckRepository = {\n  list() {\n    return memoryStore;\n  },\n\n  create(payload: { name: string; description?: string }) {\n    const item = { id: String(Date.now()), ...payload };\n    memoryStore.unshift(item);\n    return item;\n  },\n};"
+      },
+      {
+        "path": "frontend/src/services/structure-checkApi.ts",
+        "content": "import { request } from '../services/http/request';\n\nexport function listStructureCheck() {\n  return request<Array<{ id: string; name: string }>>({ method: 'GET', url: '/structure-check' });\n}\n\nexport function createStructureCheck(payload: { name: string; description?: string }) {\n  return request<{ id: string; name: string }>({ method: 'POST', url: '/structure-check', data: payload });\n}"
+      },
+      {
+        "path": "frontend/src/modules/structure-check/StructureCheckModule.tsx",
+        "content": "import { useEffect, useState } from 'react';\nimport { listStructureCheck } from '../../services/structure-checkApi';\n\nexport function StructureCheckModule() {\n  const [items, setItems] = useState<Array<{ id: string; name: string }>>([]);\n\n  useEffect(() => {\n    void listStructureCheck().then(setItems);\n  }, []);\n\n  return (\n    <section className=\"rounded-xl border border-slate-200 bg-white p-4\">\n      <h3 className=\"text-base font-semibold\">Structure Check Module</h3>\n      <ul className=\"mt-3 space-y-2 text-sm text-slate-600\">\n        {items.map((item) => (\n          <li key={item.id}>{item.name}</li>\n        ))}\n      </ul>\n    </section>\n  );\n}"
+      }
+    ],
+    "projectSummary": {
+      "totalFiles": 210,
+      "frontendFiles": 61,
+      "backendFiles": 53,
+      "detectedFrontend": true,
+      "detectedBackend": true
+    },
+    "uiPattern": {
+      "layout": "sidebar-header",
+      "style": "react-tailwind-shadcn-inspired",
+      "components": [
+        "AppSidebar",
+        "AppHeader",
+        "UiCard",
+        "UiDataTable",
+        "StructureCheckForm"
+      ]
+    },
+    "createdAt": "2026-03-23T13:17:24.170Z"
+  }
+]

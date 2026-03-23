@@ -1,0 +1,76 @@
+import { FeatureDefinition, GeneratedFile } from '../../core/types';
+
+export function backendTemplate(feature: FeatureDefinition): GeneratedFile[] {
+  return [
+    {
+      path: 'backend/.env',
+      content: [
+        'PORT=4000',
+        'DATABASE_URL="file:./dev.db"',
+      ].join('\n'),
+    },
+    {
+      path: 'backend/.env.example',
+      content: [
+        'PORT=4000',
+        'DATABASE_URL="file:./dev.db"',
+      ].join('\n'),
+    },
+    {
+      path: 'backend/prisma/schema.prisma',
+      content: [
+        'generator client {',
+        '  provider = "prisma-client-js"',
+        '}',
+        '',
+        'datasource db {',
+        '  provider = "sqlite"',
+        '  url      = env("DATABASE_URL")',
+        '}',
+        '',
+        'model Campaign {',
+        '  id          String            @id @default(cuid())',
+        '  name        String',
+        '  message     String',
+        '  status      String            @default("draft")',
+        '  createdAt   DateTime          @default(now())',
+        '  updatedAt   DateTime          @updatedAt',
+        '  dispatches  MessageDispatch[]',
+        '}',
+        '',
+        'model Contact {',
+        '  id          String            @id @default(cuid())',
+        '  name        String',
+        '  phone       String            @unique',
+        '  segment     String            @default("default")',
+        '  createdAt   DateTime          @default(now())',
+        '  dispatches  MessageDispatch[]',
+        '}',
+        '',
+        'model MessageDispatch {',
+        '  id          String   @id @default(cuid())',
+        '  campaignId  String',
+        '  contactId   String',
+        '  status      String   @default("queued")',
+        '  sentAt      DateTime?',
+        '  campaign    Campaign @relation(fields: [campaignId], references: [id])',
+        '  contact     Contact  @relation(fields: [contactId], references: [id])',
+        '  @@index([campaignId])',
+        '  @@index([contactId])',
+        '}',
+      ].join('\n'),
+    },
+    {
+      path: 'backend/README.md',
+      content: [
+        `# ${feature.feature} backend`,
+        '',
+        '## Run',
+        '1. npm install',
+        '2. npx prisma generate',
+        '3. npx prisma migrate dev --name init',
+        '4. npm run dev',
+      ].join('\n'),
+    },
+  ];
+}
