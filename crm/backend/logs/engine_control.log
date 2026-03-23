@@ -2214,3 +2214,19 @@ resultado: degradacao detectada no localhost
 aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
 detalhes: ui=200; health=; inbox=
 
+[ENGINE LOG]
+timestamp: 2026-03-23T17:52:50.663Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:55:50.697Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
