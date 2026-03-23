@@ -1,0 +1,26 @@
+[
+  {
+    "createdAt": "2026-03-23T23:52:52.506Z",
+    "uiImprovement": {
+      "title": "Adopt extracted design system tokens",
+      "confidenceScore": 0.76,
+      "impact": "medium"
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:02.088Z",
+    "uiImprovement": {
+      "title": "Adopt extracted design system tokens",
+      "confidenceScore": 0.76,
+      "impact": "medium"
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:44.069Z",
+    "uiImprovement": {
+      "title": "Adopt extracted design system tokens",
+      "confidenceScore": 0.76,
+      "impact": "medium"
+    }
+  }
+]
