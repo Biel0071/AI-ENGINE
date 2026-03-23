@@ -7,13 +7,35 @@ app.use(express.json());
 const engine = new AIEngine();
 
 app.post('/process', async (req: Request, res: Response) => {
+  const input = req.body;
+
   try {
-    const result = await engine.run(req.body);
-    return res.json(result);
-  } catch (error) {
-    return res.status(400).json({
-      message: error instanceof Error ? error.message : 'Unable to process request',
+    const output = await engine.run(input);
+
+    console.log({
+      input,
+      output,
+      timestamp: new Date(),
     });
+
+    return res.json(output);
+  } catch (_error) {
+    const output = {
+      intent: 'error',
+      response: 'Erro interno',
+      score: 0,
+      meta: {
+        engineVersion: '1.0.0',
+      },
+    };
+
+    console.log({
+      input,
+      output,
+      timestamp: new Date(),
+    });
+
+    return res.json(output);
   }
 });
 

@@ -7,6 +7,9 @@ interface EngineOutput {
   intent: string;
   response: string;
   score: number;
+  meta: {
+    engineVersion: string;
+  };
 }
 
 export class AIEngine {
@@ -31,6 +34,9 @@ export class AIEngine {
       intent: classification.intent,
       response,
       score: classification.confidence,
+      meta: {
+        engineVersion: '1.0.0',
+      },
     };
   }
 }
