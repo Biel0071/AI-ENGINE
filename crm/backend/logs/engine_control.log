@@ -1,0 +1,2232 @@
+[ENGINE LOG]
+timestamp: 2026-03-23T15:41:30.795Z
+acao: safe-status
+risco: baixo
+resultado: status de protecao confirmado
+aprendizado: protecao ativa reduz risco de regressao
+detalhes: n/a
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:41:31.301Z
+acao: commit-message
+risco: baixo
+resultado: template de commit gerado
+aprendizado: organizar commit por contexto melhora rastreabilidade
+detalhes: module=INBOX
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:41:50.661Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:42:20.737Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:42:37.095Z
+acao: validate
+risco: medio
+resultado: falha parcial na validacao (health=, inbox=)
+aprendizado: validar localhost e build apos cada bloco de alteracao
+detalhes: build_exit=0
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:42:48.708Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:42:50.745Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:43:18.734Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:43:20.752Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:43:48.743Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:43:50.762Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:44:18.743Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:44:20.773Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:44:48.763Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:44:50.790Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:45:18.766Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:45:20.794Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:45:48.766Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:45:50.803Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:46:18.779Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:46:20.806Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:46:48.798Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:46:50.811Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:47:10.560Z
+acao: analyze
+risco: alto
+resultado: falha na execucao do comando: "y" | npx github:Biel0071/AI-ENGINE analyze .
+aprendizado: registrar AI_ENGINE_CMD no ambiente com o binario correto
+detalhes: exit_code=255
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:47:18.791Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:47:28.176Z
+acao: analyze
+risco: baixo
+resultado: analise executada com sucesso
+aprendizado: manter baseline atualizado antes de alterar codigo
+detalhes: command=echo y | npx github:Biel0071/AI-ENGINE analyze .
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:47:48.795Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:48:18.806Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:48:48.825Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:49:18.824Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:49:48.838Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:50:18.848Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:50:48.855Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:51:18.865Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:51:48.875Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:52:18.871Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:52:48.878Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:53:18.893Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:53:48.908Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:54:18.910Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:54:48.922Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:55:18.921Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:55:48.926Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:56:18.932Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:56:48.943Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:57:18.955Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:57:48.957Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:58:18.970Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:58:48.984Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:59:18.994Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T15:59:48.990Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:00:19.004Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:00:49.014Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:01:19.020Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:01:49.023Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:02:19.028Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:02:49.039Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:03:19.053Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:03:49.059Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:04:19.063Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:04:49.085Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:05:19.079Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:05:49.090Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:06:19.091Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:06:49.094Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:07:19.097Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:07:49.107Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:08:19.109Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:08:49.117Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:09:19.115Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:09:49.128Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:10:19.139Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:10:49.154Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:11:19.166Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:11:49.175Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:12:19.174Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:12:49.183Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:13:19.190Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:13:49.196Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:14:19.199Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:14:49.203Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:15:19.218Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:15:49.217Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:16:19.233Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:16:49.226Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:17:19.237Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:17:49.236Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:18:19.268Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:18:49.258Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:19:19.263Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:19:49.268Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:19:57.869Z
+acao: analyze
+risco: baixo
+resultado: analise executada com sucesso
+aprendizado: manter baseline atualizado antes de alterar codigo
+detalhes: command=node "C:\projetos\ai-whatsapp-saas\ai-engine\cli\index.js" analyze .
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:20:19.267Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:20:49.294Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:21:19.290Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:21:49.303Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:22:19.318Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:22:49.328Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:23:19.337Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:23:49.352Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:24:19.358Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:24:49.370Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:25:19.380Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:25:49.385Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:26:19.392Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:26:49.405Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:27:19.396Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:27:49.410Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:28:19.408Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:28:49.414Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:29:19.422Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:29:49.443Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:30:19.456Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:30:49.457Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:31:19.472Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:31:49.477Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:32:19.495Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:32:49.510Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:33:19.516Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:33:49.513Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:34:19.516Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:34:49.534Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:35:19.546Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:35:49.559Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:36:19.569Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:36:49.569Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:37:19.602Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:37:49.584Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:38:19.594Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:38:49.607Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:39:19.618Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:39:49.606Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:40:19.617Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:40:49.626Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:41:19.639Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:41:49.646Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:42:19.660Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:42:49.660Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:43:19.676Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:43:49.686Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:44:19.689Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:44:49.707Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:45:19.703Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:45:49.707Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:46:19.710Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:46:49.725Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:47:19.725Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:47:49.725Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:48:19.736Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:48:49.742Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:49:19.753Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:49:49.760Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:50:19.761Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:50:49.760Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:51:19.780Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:51:49.790Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:52:19.786Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:52:49.794Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:53:19.800Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:53:49.803Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:54:19.810Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:54:49.824Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:55:19.824Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:55:49.828Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:56:19.837Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:56:49.836Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:57:19.841Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:57:49.850Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:58:19.861Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:58:49.858Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:59:19.871Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T16:59:49.878Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:00:19.879Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:00:49.888Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:01:19.895Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:01:49.901Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:02:19.902Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:02:49.913Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:03:19.918Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:03:49.922Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:04:19.933Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:04:49.938Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:05:19.959Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:05:49.964Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:06:19.985Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:06:50.014Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:07:19.997Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:07:49.999Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:08:20.007Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:08:50.021Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:09:20.032Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:09:50.044Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:10:20.042Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:10:50.064Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:11:20.062Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:11:50.065Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:12:20.066Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:12:50.074Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:13:20.073Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:13:50.091Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:14:20.118Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:14:50.114Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:15:20.121Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:15:50.126Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:16:20.133Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:16:50.146Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:17:20.154Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:17:50.161Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:18:20.158Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:18:50.169Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:19:20.165Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:19:50.183Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:20:20.189Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:20:50.190Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:21:20.197Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:21:50.203Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:22:20.216Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:22:50.220Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:23:20.222Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:23:50.225Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:24:20.242Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:24:50.247Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:25:20.249Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:25:50.251Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:26:20.258Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:26:50.272Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:27:20.280Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:27:50.288Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:28:20.297Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:28:50.301Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:29:20.303Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:29:50.319Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:30:20.325Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:30:50.309Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:31:20.324Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:31:50.337Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:32:20.343Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:32:50.360Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:33:20.359Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:33:50.387Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:34:20.377Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:34:50.383Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:35:20.412Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:35:50.409Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:36:20.418Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:36:50.417Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:37:20.418Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:37:50.428Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:38:20.440Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:38:50.443Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:39:20.454Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:39:50.460Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:40:20.462Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:40:50.475Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:41:20.486Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:41:50.497Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:42:20.507Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:42:50.514Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:43:20.519Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:43:50.523Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:44:20.517Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:44:50.525Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:45:20.533Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:45:50.544Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:46:20.559Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:46:50.568Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:47:20.569Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:47:50.589Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:48:20.606Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:48:50.602Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:49:20.611Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:49:50.624Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:50:20.626Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:50:50.643Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:51:20.647Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:51:50.660Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:52:20.667Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:52:50.663Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+
+[ENGINE LOG]
+timestamp: 2026-03-23T17:55:50.697Z
+acao: monitor
+risco: medio
+resultado: degradacao detectada no localhost
+aprendizado: acompanhar inbox e runtime em tempo real evita regressao silenciosa
+detalhes: ui=200; health=; inbox=
+

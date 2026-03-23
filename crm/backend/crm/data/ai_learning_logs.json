@@ -1,0 +1,29 @@
+[
+  {
+    "conversationId": "default:553193807167@s.whatsapp.net",
+    "createdAt": "2026-03-09T20:56:43.955Z",
+    "id": "ail-1773089803955-lzsrvx",
+    "issueType": "unanswered_question",
+    "problemDetected": "Pergunta sem resposta detectada: enciou mais não atualizou falta coisas ainda no sistema, depois para migrar meu sistema para uma vps será mais tranquilo ?",
+    "status": "applied",
+    "suggestedImprovement": {
+      "suggestedNewFlow": "Criar resposta rápida para perguntas sem retorno em até uma interação.",
+      "suggestedPromptImprovement": "Orientar a IA a priorizar mensagens com interrogação e responder objetivamente antes de avançar no fluxo.",
+      "suggestedResponse": "Posso te responder com precisão e já seguir com o orçamento. Quais itens e quantidades deseja cotar?"
+    },
+    "appliedAt": "2026-03-09T20:56:51.313Z"
+  },
+  {
+    "conversationId": "default:553193807167@s.whatsapp.net",
+    "createdAt": "2026-03-09T20:56:43.955Z",
+    "id": "ail-1773089803955-ux0xu1",
+    "issueType": "failed_conversation",
+    "problemDetected": "Conversa com sinal de falha: enciou mais não atualizou falta coisas ainda no sistema, depois para migrar meu sistema para uma vps será mais tranquilo ?",
+    "status": "pending",
+    "suggestedImprovement": {
+      "suggestedNewFlow": "Adicionar validação de objeção e confirmação de entendimento antes de apresentar o fechamento.",
+      "suggestedPromptImprovement": "Orientar a IA a reconhecer sinais de frustração e oferecer solução prática em até 3 frases.",
+      "suggestedResponse": "Entendi sua dúvida e posso reorganizar o atendimento com mais clareza. Deseja que eu refaça o orçamento de forma objetiva?"
+    }
+  }
+]
