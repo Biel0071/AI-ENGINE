@@ -1,4 +1,9 @@
 const { organizeProject, suggestStructureImprovements } = require('./core/structureOrganizer');
+const { runImprovementLoop, ImprovementLoopEngine } = require('./engine/improvementLoop');
+const { generateDesignSystem, DesignSystemEngine } = require('./engine/designSystem');
+const { ingestProject } = require('./engine/ingestion');
+const { generateMicrotasks } = require('./engine/microtasks');
+const { generateTests } = require('./engine/testing');
 
 async function analyzeProject(projectPath, options = {}) {
   const { ProjectAnalyzer } = require('./engine/analyzer/projectAnalyzer');
@@ -17,4 +22,11 @@ module.exports = {
   analyzeProject,
   generateFeature,
   suggestStructureImprovements,
+  runImprovementLoop,
+  ImprovementLoopEngine,
+  generateDesignSystem,
+  DesignSystemEngine,
+  ingestProject,
+  generateMicrotasks,
+  generateTests,
 };

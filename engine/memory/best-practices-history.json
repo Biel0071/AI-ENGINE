@@ -1,0 +1,167 @@
+[
+  {
+    "createdAt": "2026-03-23T23:42:45.514Z",
+    "practice": {
+      "title": "Protect refactor path with targeted tests",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:42:45.515Z",
+    "practice": {
+      "title": "Apply incremental modular refactor",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:42:45.516Z",
+    "practice": {
+      "title": "Adopt extracted design system tokens",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:52:52.501Z",
+    "practice": {
+      "title": "Protect refactor path with targeted tests",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:52:52.503Z",
+    "practice": {
+      "title": "Apply incremental modular refactor",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:52:52.504Z",
+    "practice": {
+      "title": "Adopt extracted design system tokens",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:52:52.505Z",
+    "practice": {
+      "title": "Reuse previously successful guardrails",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:02.083Z",
+    "practice": {
+      "title": "Protect refactor path with targeted tests",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:02.085Z",
+    "practice": {
+      "title": "Apply incremental modular refactor",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:02.086Z",
+    "practice": {
+      "title": "Adopt extracted design system tokens",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:02.087Z",
+    "practice": {
+      "title": "Reuse previously successful guardrails",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:44.064Z",
+    "practice": {
+      "title": "Protect refactor path with targeted tests",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:44.065Z",
+    "practice": {
+      "title": "Apply incremental modular refactor",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:44.066Z",
+    "practice": {
+      "title": "Adopt extracted design system tokens",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-23T23:53:44.067Z",
+    "practice": {
+      "title": "Reuse previously successful guardrails",
+      "guardrails": [
+        "Do not remove existing public functions/endpoints.",
+        "Keep backward compatibility with current payloads.",
+        "Implement changes behind small, isolated modules."
+      ]
+    }
+  }
+]
