@@ -443,6 +443,16 @@ class Orchestrator {
     };
 
     await this.memory.savePattern(requestedFeature, result);
+    await this.memory.saveDecision(requestedFeature, {
+      problems: Array.isArray(decision.problems) ? decision.problems : [],
+      strategy: decision.strategy || {},
+      contextReadiness: decision.contextReadiness || {},
+    });
+    await this.memory.saveChange(
+      `Generated and refined feature flow for ${requestedFeature}`,
+      'Continuous autonomous cycle execution with context-first decisions.',
+      `Frontend files: ${frontendOutput.files.length}, backend files: ${backendOutput.files.length}, auto features: ${Array.isArray(decision.autoFeatures) ? decision.autoFeatures.length : 0}`,
+    );
 
     console.log('[ai-engine] orchestration complete');
 
