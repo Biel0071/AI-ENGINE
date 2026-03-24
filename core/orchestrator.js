@@ -64,6 +64,25 @@ function resolveEngineMode(options = {}, config = {}) {
   return 'standard';
 }
 
+function inferProblemTypes(contextBundle = {}) {
+  const project = contextBundle.project || {};
+  const problemTypes = new Set(['ui', 'api', 'connection']);
+
+  if (Number(project.codeIntelligence && project.codeIntelligence.totalProblems || 0) > 0) {
+    problemTypes.add('code-quality');
+  }
+
+  if (Array.isArray(project.routes) && project.routes.length < 2) {
+    problemTypes.add('api');
+  }
+
+  if (Array.isArray(project.components) && project.components.length < 2) {
+    problemTypes.add('ui');
+  }
+
+  return Array.from(problemTypes);
+}
+
 class Orchestrator {
   constructor(options = {}) {
     const config = loadEngineConfig();
@@ -259,10 +278,23 @@ class Orchestrator {
       };
     }
 
+    const knownSolutions = [];
+    for (const problemType of inferProblemTypes(contextBundle)) {
+      const known = await this.memory.findBestSolution({
+        problemType,
+        limit: 1,
+      });
+
+      if (known) {
+        knownSolutions.push(known);
+      }
+    }
+
     const decision = this.decisionEngine.decide({
       feature: requestedFeature,
       contextBundle,
       freezeMode: this.freezeMode,
+      knownSolutions,
     });
 
     const enhancedPrompt = [
@@ -447,12 +479,30 @@ class Orchestrator {
       problems: Array.isArray(decision.problems) ? decision.problems : [],
       strategy: decision.strategy || {},
       contextReadiness: decision.contextReadiness || {},
+      reusedSolutions: Array.isArray(decision.reusedSolutions) ? decision.reusedSolutions : [],
     });
     await this.memory.saveChange(
       `Generated and refined feature flow for ${requestedFeature}`,
       'Continuous autonomous cycle execution with context-first decisions.',
       `Frontend files: ${frontendOutput.files.length}, backend files: ${backendOutput.files.length}, auto features: ${Array.isArray(decision.autoFeatures) ? decision.autoFeatures.length : 0}`,
     );
+
+    await this.memory.saveResolvedSolution({
+      problemType: Array.isArray(decision.problems) && decision.problems[0] ? decision.problems[0].type || 'general' : 'general',
+      solutionPattern: Array.isArray(decision.reusedSolutions) && decision.reusedSolutions[0]
+        ? decision.reusedSolutions[0].solutionPattern || 'reused-solution-pattern'
+        : 'context-first-safe-generation',
+      patternIdentified: 'Contextual generation cycle with quality and UX guardrails.',
+      solutionApplied: `Applied context-first orchestration with ${Array.isArray(decision.reusedSolutions) ? decision.reusedSolutions.length : 0} reused proven solutions before generating new outputs.`,
+      context: {
+        feature: requestedFeature,
+        engineMode: this.engineMode,
+        freezeMode: this.freezeMode,
+      },
+      impact: `Generated ${generated.files.length} files with stable flow and decision-guided prioritization.`,
+      outcomeScore: result.summary && result.summary.stableBuild ? 1 : 0.8,
+      tags: ['continuous-learning', 'solution-reuse', 'context-first'],
+    });
 
     console.log('[ai-engine] orchestration complete');
 
