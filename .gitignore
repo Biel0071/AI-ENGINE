@@ -3,3 +3,7 @@ node_modules
 dist
 build
 *.log
+generated/
+engine/memory/*-runtime.json
+engine/memory/knowledge-fallback.json
+.tmp-*.cjs

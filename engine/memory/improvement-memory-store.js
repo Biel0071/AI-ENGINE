@@ -14,12 +14,12 @@ class ImprovementMemoryStore {
   constructor(options = {}) {
     this.baseDir = options.baseDir || __dirname;
     this.files = {
-      analyses: path.join(this.baseDir, 'analyses-history.json'),
-      improvements: path.join(this.baseDir, 'applied-improvements-history.json'),
-      patterns: path.join(this.baseDir, 'learned-patterns-history.json'),
-      bestPractices: path.join(this.baseDir, 'best-practices-history.json'),
-      refactors: path.join(this.baseDir, 'successful-refactors-history.json'),
-      uiImprovements: path.join(this.baseDir, 'ui-improvements-history.json'),
+      analyses: path.join(this.baseDir, 'analyses-runtime.json'),
+      improvements: path.join(this.baseDir, 'applied-improvements-runtime.json'),
+      patterns: path.join(this.baseDir, 'learned-patterns-runtime.json'),
+      bestPractices: path.join(this.baseDir, 'best-practices-runtime.json'),
+      refactors: path.join(this.baseDir, 'successful-refactors-runtime.json'),
+      uiImprovements: path.join(this.baseDir, 'ui-improvements-runtime.json'),
     };
     this.maxRecords = Number(options.maxRecords || 500);
     this.cacheTtlMs = Number(options.cacheTtlMs || 3000);
