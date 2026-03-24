@@ -23,8 +23,8 @@ function readJsonSync(filePath, fallback) {
 class DesignSystemMemoryStore {
   constructor(options = {}) {
     this.baseDir = options.baseDir || __dirname;
-    this.designSystemFile = path.join(this.baseDir, 'design-system-memory.json');
-    this.designPatternsFile = path.join(this.baseDir, 'design-patterns-memory.json');
+    this.designSystemFile = path.join(this.baseDir, 'design-system-runtime.json');
+    this.designPatternsFile = path.join(this.baseDir, 'design-patterns-runtime.json');
     this.maxRecords = Number(options.maxRecords || 120);
     this.cacheTtlMs = Number(options.cacheTtlMs || 5000);
     this.cache = null;
