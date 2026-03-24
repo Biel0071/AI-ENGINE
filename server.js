@@ -2,11 +2,15 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
 const { runImprovementLoop } = require('./engine/improvementLoop');
+const { KnowledgeIngestionService } = require('./engine/knowledge');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+const upload = multer({ storage: multer.memoryStorage() });
+const knowledgeIngestion = new KnowledgeIngestionService();
 
 function normalizeAnalyzeBody(body = {}) {
   return {
@@ -57,6 +61,59 @@ function buildAnalysisPayload(input = {}) {
 
 app.get('/health', (_req, res) => {
   return res.status(200).json({ status: 'ok' });
+});
+
+app.post('/parse-document', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+
+    if (!file || !Buffer.isBuffer(file.buffer)) {
+      return res.status(200).json({
+        ok: false,
+        error: 'No file was provided. Send multipart/form-data with field "file".',
+        structuredDocument: {
+          title: 'empty',
+          sections: [],
+          text: '',
+        },
+        chunks: [],
+        vectorStorage: {
+          ok: false,
+          collection: process.env.QDRANT_COLLECTION || 'ai_engine_knowledge',
+          storedPoints: 0,
+        },
+      });
+    }
+
+    const source = String(req.body && req.body.source ? req.body.source : 'uploaded_document');
+    const metadata = req.body && typeof req.body.metadata === 'object' ? req.body.metadata : {};
+
+    const result = await knowledgeIngestion.ingestDocument({
+      buffer: file.buffer,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      source,
+      metadata,
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(200).json({
+      ok: false,
+      error: String(error && error.message ? error.message : error),
+      structuredDocument: {
+        title: 'failed-parse',
+        sections: [],
+        text: '',
+      },
+      chunks: [],
+      vectorStorage: {
+        ok: false,
+        collection: process.env.QDRANT_COLLECTION || 'ai_engine_knowledge',
+        storedPoints: 0,
+      },
+    });
+  }
 });
 
 app.post('/analyze', async (req, res) => {

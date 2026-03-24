@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { TemplateEngine } = require('../../engine/generators/template-engine');
+const { buildBackendArchitectureNotes, scaffoldBackendEnhancements } = require('../../engine/backendStructure');
 
 function toPascalCase(value) {
   return String(value || '')
@@ -98,6 +99,66 @@ class CodeGenerator {
       },
       {
         type: 'add',
+        path: 'backend/src/modules/{{featureSlug}}/{{featureSlug}}.dto.ts',
+        template: [
+          'export type Create{{featureComponent}}DTO = {',
+          '  name: string;',
+          '  description?: string;',
+          '};',
+          '',
+          'export type {{featureComponent}}ResponseDTO = {',
+          '  id: string;',
+          '  name: string;',
+          '  description?: string;',
+          '  createdAt: string;',
+          '};',
+        ].join('\n'),
+      },
+      {
+        type: 'add',
+        path: 'backend/src/modules/{{featureSlug}}/{{featureSlug}}.error-handler.ts',
+        template: [
+          "import { Response } from 'express';",
+          '',
+          'export function handle{{featureComponent}}Error(res: Response, error: unknown) {',
+          "  const message = error instanceof Error ? error.message : 'Unexpected module error';",
+          '  return res.status(500).json({',
+          '    error: true,',
+          '    module: \"{{featureSlug}}\",',
+          '    message,',
+          '  });',
+          '}',
+        ].join('\n'),
+      },
+      {
+        type: 'add',
+        path: 'backend/src/modules/{{featureSlug}}/{{featureSlug}}.queue-handler.ts',
+        template: [
+          "import { {{featureComponent}}Queue } from './{{featureSlug}}.queue';",
+          '',
+          'export async function process{{featureComponent}}Job(payload: Record<string, unknown>) {',
+          '  const queued = {{featureComponent}}Queue.onCreated(payload);',
+          '  return {',
+          '    status: \"processed\",',
+          '    ...queued,',
+          '  };',
+          '}',
+        ].join('\n'),
+      },
+      {
+        type: 'add',
+        path: 'backend/src/modules/{{featureSlug}}/{{featureSlug}}.integration.test.ts',
+        template: [
+          "describe('{{featureComponent}} module integration', () => {",
+          "  it('creates a {{featureSlug}} item payload contract', async () => {",
+          '    const payload = { name: \"sample\" };',
+          '    expect(payload.name).toBeTruthy();',
+          '  });',
+          '});',
+        ].join('\n'),
+      },
+      {
+        type: 'add',
         path: 'frontend/src/services/{{featureSlug}}Api.ts',
         template: [
           "import { request } from '../services/http/request';",
@@ -166,16 +227,70 @@ class CodeGenerator {
     const featureTitle = featureComponent.replace(/([a-z])([A-Z])/g, '$1 $2');
 
     const outputRoot = path.resolve(input.outputRoot || process.cwd());
+    const contextBundle = input.contextBundle && typeof input.contextBundle === 'object' ? input.contextBundle : null;
+    const decision = input.decision && typeof input.decision === 'object' ? input.decision : null;
     const actions = this.buildActions();
     const files = await this.runActions(actions, { feature, featureSlug, featureComponent, featureTitle }, outputRoot);
 
+    const backendEnhancements = scaffoldBackendEnhancements(featureSlug, featureComponent);
+    await writeFiles(outputRoot, backendEnhancements);
+
+    const architectureNotes = buildBackendArchitectureNotes(featureSlug);
+    const notesFile = {
+      path: `backend/src/modules/${featureSlug}/${featureSlug}.architecture.json`,
+      content: JSON.stringify(architectureNotes, null, 2) + '\n',
+    };
+    await writeFiles(outputRoot, [notesFile]);
+
+    const businessRulesFile = {
+      path: `backend/src/modules/${featureSlug}/${featureSlug}.business-rules.json`,
+      content:
+        JSON.stringify(
+          {
+            feature: featureSlug,
+            rules: contextBundle && contextBundle.business && Array.isArray(contextBundle.business.rules)
+              ? contextBundle.business.rules
+              : ['Preserve compatibility and validate business payload contracts.'],
+            contextReady: Boolean(contextBundle && contextBundle.metadata && contextBundle.metadata.contextReady),
+          },
+          null,
+          2,
+        ) + '\n',
+    };
+
+    const autoFeaturePlanFile = {
+      path: `backend/src/modules/${featureSlug}/${featureSlug}.auto-features.json`,
+      content:
+        JSON.stringify(
+          {
+            feature: featureSlug,
+            autoFeatures: decision && Array.isArray(decision.autoFeatures) ? decision.autoFeatures : [],
+            strategy: decision && decision.strategy ? decision.strategy : { preGenerationDecision: 'context-first' },
+          },
+          null,
+          2,
+        ) + '\n',
+    };
+
+    await writeFiles(outputRoot, [businessRulesFile, autoFeaturePlanFile]);
+
+    const allFiles = [...files, ...backendEnhancements, notesFile, businessRulesFile, autoFeaturePlanFile];
+
     return {
-      files,
+      files: allFiles,
       summary: {
-        pages: files.filter((file) => file.path.includes('/pages/')).length,
-        components: files.filter((file) => file.path.includes('/components/') || file.path.includes('/modules/')).length,
-        apis: files.filter((file) => file.path.includes('Api')).length,
-        backendModules: files.filter((file) => file.path.includes('/backend/src/modules/')).length,
+        pages: allFiles.filter((file) => file.path.includes('/pages/')).length,
+        components: allFiles.filter((file) => file.path.includes('/components/') || file.path.includes('/modules/')).length,
+        apis: allFiles.filter((file) => file.path.includes('Api')).length,
+        backendModules: allFiles.filter((file) => file.path.includes('/backend/src/modules/')).length,
+        events: allFiles.filter((file) => file.path.endsWith('.events.ts')).length,
+        queues: allFiles.filter((file) => file.path.endsWith('.queue.ts')).length,
+        dtoFiles: allFiles.filter((file) => file.path.endsWith('.dto.ts')).length,
+        errorHandlers: allFiles.filter((file) => file.path.endsWith('.error-handler.ts')).length,
+        queueHandlers: allFiles.filter((file) => file.path.endsWith('.queue-handler.ts')).length,
+        integrationTests: allFiles.filter((file) => file.path.endsWith('.integration.test.ts')).length,
+        businessRuleFiles: allFiles.filter((file) => file.path.endsWith('.business-rules.json')).length,
+        autoFeaturePlans: allFiles.filter((file) => file.path.endsWith('.auto-features.json')).length,
       },
     };
   }

@@ -1,4 +1,5 @@
 const { generateDesignSystem } = require('../designSystem');
+const { analyzeUIScreens } = require('../ingestion/ui-screen-analyzer');
 
 function normalizeFiles(files = []) {
   if (!Array.isArray(files)) {
@@ -72,6 +73,7 @@ function analyzeProject(projectContext = {}, options = {}) {
   const files = normalizeFiles(projectContext.files || []);
   const summary = summarizeFiles(files);
   const designSystem = generateDesignSystem({ files });
+  const uiAnalysis = analyzeUIScreens(files);
 
   return {
     metadata: {
@@ -81,6 +83,7 @@ function analyzeProject(projectContext = {}, options = {}) {
       mode: options.mode || 'suggest-only',
     },
     summary,
+    uiAnalysis,
     designSystem,
     fileMap: files.map((file) => ({
       path: file.path,

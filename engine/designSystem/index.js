@@ -7,6 +7,7 @@ const {
 const { normalizeDesignTokens } = require('./token-normalizer');
 const { generateReusableComponents, createComponentStandardizationPlan } = require('./component-system');
 const { extractLayoutPatterns, extractDesignPatterns } = require('./layout-patterns');
+const { suggestProductEnhancements } = require('./product-suggestion-engine');
 const { getDesignSystem: recallDesignSystem, applyDesignSystem: reuseDesignSystem, upgradeUI: autoUpgradeUI } = require('./reuse-engine');
 const { DesignSystemMemoryStore } = require('../memory/design-system-memory-store');
 
@@ -361,4 +362,5 @@ module.exports = {
   getDesignSystem,
   applyDesignSystem,
   upgradeUI,
+  suggestProductEnhancements,
 };
