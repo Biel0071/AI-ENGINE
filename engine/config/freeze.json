@@ -1,0 +1,7 @@
+{
+  "mode": "production",
+  "freeze": true,
+  "autoRefactor": true,
+  "safeMode": true,
+  "knowledge": "active"
+}

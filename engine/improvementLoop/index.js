@@ -7,6 +7,8 @@ const { ImprovementMemoryStore, derivePatternCandidates } = require('../memory')
 const { ingestProject } = require('../ingestion');
 const { generateMicrotasks } = require('../microtasks');
 const { generateTests } = require('../testing');
+const { analyzePostGeneration } = require('./post-generation-analyzer');
+const { suggestProductEnhancements } = require('../designSystem/product-suggestion-engine');
 
 class ImprovementLoopEngine {
   constructor(options = {}) {
@@ -145,13 +147,30 @@ class ImprovementLoopEngine {
         memorySnapshot,
         freezeMode: this.freezeMode,
       });
-      const microtasks = generateMicrotasks(improvements, analysis, ingestion);
-      const refactorPlan = buildRefactorPlan(improvements);
-      const suggestedCode = this.generateCodeChanges(improvements, analysis, microtasks);
+      const postGeneration = analyzePostGeneration({
+        generatedFiles: ingestion.files,
+        analysis,
+        designSystem: analysis.designSystem && analysis.designSystem.designSystem ? analysis.designSystem.designSystem : {},
+      });
+      const mergedImprovements = [...improvements, ...(postGeneration.suggestions || [])];
+      const productSuggestions = suggestProductEnhancements({
+        feature: String(projectContext.currentGoal || projectContext.feature || 'feature'),
+        generated: {
+          summary: {
+            frontendFiles: analysis.summary && analysis.summary.frontendFiles ? analysis.summary.frontendFiles : 0,
+            backendFiles: analysis.summary && analysis.summary.backendFiles ? analysis.summary.backendFiles : 0,
+          },
+        },
+        memorySnapshot,
+        knowledgeContext: projectContext.knowledgeContext || null,
+      });
+      const microtasks = generateMicrotasks(mergedImprovements, analysis, ingestion);
+      const refactorPlan = buildRefactorPlan(mergedImprovements);
+      const suggestedCode = this.generateCodeChanges(mergedImprovements, analysis, microtasks);
       const tests = generateTests({
         analysis,
         ingestion,
-        improvements,
+        improvements: mergedImprovements,
         microtasks,
       });
       const designSystemEnvelope = analysis.designSystem || {};
@@ -196,7 +215,7 @@ class ImprovementLoopEngine {
       const validation = this.validateChanges({
         analysis,
         problems,
-        improvements,
+        improvements: mergedImprovements,
         microtasks,
         designSystem,
         tests,
@@ -208,7 +227,7 @@ class ImprovementLoopEngine {
 
       await this.remember({
         analysis,
-        improvements,
+        improvements: mergedImprovements,
         refactorPlan,
         microtasks,
         validation,
@@ -218,8 +237,10 @@ class ImprovementLoopEngine {
       return {
         analysis,
         problems,
-        improvements,
+        improvements: mergedImprovements,
         microtasks,
+        postGeneration,
+        productSuggestions,
         designSystem,
         tests,
         refactorPlan,
@@ -285,6 +306,15 @@ class ImprovementLoopEngine {
           },
         ],
         microtasks: [],
+        postGeneration: {
+          suggestions: [],
+          summary: {
+            uiFiles: 0,
+            backendFiles: 0,
+            suggestionCount: 0,
+          },
+        },
+        productSuggestions: [],
         designSystem: {
           colors: {},
           spacing: {},

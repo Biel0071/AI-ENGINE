@@ -3,8 +3,29 @@ const { runImprovementLoop, ImprovementLoopEngine } = require('./engine/improvem
 const { generateDesignSystem, DesignSystemEngine, getDesignSystem, applyDesignSystem, upgradeUI } = require('./engine/designSystem');
 const { buildDefaultDesignSystemUsage } = require('./engine/designSystem/default-usage');
 const { ingestProject } = require('./engine/ingestion');
+const { analyzeUIScreens } = require('./engine/ingestion/ui-screen-analyzer');
 const { generateMicrotasks } = require('./engine/microtasks');
 const { generateTests } = require('./engine/testing');
+const { analyzePostGeneration } = require('./engine/improvementLoop/post-generation-analyzer');
+const {
+  DoclingService,
+  parseDocument,
+  EmbeddingService,
+  embed,
+  QdrantService,
+  storeVector,
+  search,
+  KnowledgeIngestionService,
+  ingest,
+  retrieveContext,
+} = require('./engine/knowledge');
+const { TreeSitterService, CodeIntelligenceEngine } = require('./engine/codeIntelligence');
+const { ContextBuilder } = require('./engine/context');
+const { DecisionEngine } = require('./engine/decision');
+const { refactorGeneratedUI } = require('./engine/uiRefactor');
+const { buildBackendArchitectureNotes, scaffoldBackendEnhancements } = require('./engine/backendStructure');
+const { enhanceUIWithStates } = require('./engine/generators/ui-state-generator');
+const { suggestProductEnhancements } = require('./engine/designSystem/product-suggestion-engine');
 
 async function analyzeProject(projectPath, options = {}) {
   const { ProjectAnalyzer } = require('./engine/analyzer/projectAnalyzer');
@@ -32,6 +53,27 @@ module.exports = {
   upgradeUI,
   buildDefaultDesignSystemUsage,
   ingestProject,
+  analyzeUIScreens,
   generateMicrotasks,
   generateTests,
+  analyzePostGeneration,
+  DoclingService,
+  parseDocument,
+  EmbeddingService,
+  embed,
+  QdrantService,
+  storeVector,
+  search,
+  KnowledgeIngestionService,
+  ingest,
+  retrieveContext,
+  TreeSitterService,
+  CodeIntelligenceEngine,
+  ContextBuilder,
+  DecisionEngine,
+  refactorGeneratedUI,
+  enhanceUIWithStates,
+  suggestProductEnhancements,
+  buildBackendArchitectureNotes,
+  scaffoldBackendEnhancements,
 };
