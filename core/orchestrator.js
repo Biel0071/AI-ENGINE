@@ -7,6 +7,7 @@ const { AnalyzerAgent } = require('../engine/agents/analyzer-agent');
 const { PlannerAgent } = require('../src/services/planner-agent');
 const { FrontendAgent } = require('../engine/agents/frontend-agent');
 const { BackendAgent } = require('../engine/agents/backend-agent');
+const { buildDefaultDesignSystemUsage } = require('../engine/designSystem/default-usage');
 const { improveCodeWithAI } = require('../intelligence/ai');
 
 function loadEngineConfig() {
@@ -96,11 +97,20 @@ class Orchestrator {
       requestedFeature.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
     );
 
+    const defaultDesignSystemUsage = await buildDefaultDesignSystemUsage({
+      projectPath: resolvedProjectPath,
+      projectData,
+      needsImprovement: true,
+    });
+
     const [frontendOutput, backendOutput] = await Promise.all([
       this.agents.frontendAgent.run({
         feature: requestedFeature,
         patterns,
         outputRoot,
+        projectPath: resolvedProjectPath,
+        projectData,
+        needsImprovement: true,
       }),
       this.agents.backendAgent.run({
         feature: requestedFeature,
@@ -120,6 +130,7 @@ class Orchestrator {
         frontend: frontendOutput,
         backend: backendOutput,
       },
+      designSystemUsage: defaultDesignSystemUsage,
     });
 
     const result = {
@@ -131,10 +142,12 @@ class Orchestrator {
       plan: plan.steps,
       files: generated.files,
       uiPattern: frontendOutput.uiPattern,
+      designSystemUsage: defaultDesignSystemUsage,
       summary: {
         ...generated.summary,
         frontendFiles: frontendOutput.files.length,
         backendFiles: backendOutput.files.length,
+        tokenEnforcedUI: Boolean(defaultDesignSystemUsage && defaultDesignSystemUsage.designTokens),
       },
     };
 
