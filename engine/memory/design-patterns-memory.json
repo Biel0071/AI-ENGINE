@@ -1,0 +1,90 @@
+[
+  {
+    "createdAt": "2026-03-24T00:36:56.696Z",
+    "memory": {
+      "designPatterns": {
+        "chatLayout": {
+          "columns": "320px 1fr",
+          "messageStackGap": "12px",
+          "inputDock": false
+        },
+        "sidebarLayout": {
+          "width": "280px",
+          "itemSpacing": "8px",
+          "itemRadius": "8px"
+        },
+        "messageFlowUI": {
+          "outgoingAlignment": "right",
+          "incomingAlignment": "left",
+          "timestampStyle": "muted-caption"
+        }
+      }
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.705Z",
+    "memory": {
+      "designPatterns": {
+        "chatLayout": {
+          "columns": "320px 1fr",
+          "messageStackGap": "12px",
+          "inputDock": false
+        },
+        "sidebarLayout": {
+          "width": "280px",
+          "itemSpacing": "8px",
+          "itemRadius": "8px"
+        },
+        "messageFlowUI": {
+          "outgoingAlignment": "right",
+          "incomingAlignment": "left",
+          "timestampStyle": "muted-caption"
+        }
+      }
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.400Z",
+    "memory": {
+      "designPatterns": {
+        "chatLayout": {
+          "columns": "320px 1fr",
+          "messageStackGap": "12px",
+          "inputDock": false
+        },
+        "sidebarLayout": {
+          "width": "280px",
+          "itemSpacing": "8px",
+          "itemRadius": "8px"
+        },
+        "messageFlowUI": {
+          "outgoingAlignment": "right",
+          "incomingAlignment": "left",
+          "timestampStyle": "muted-caption"
+        }
+      }
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.415Z",
+    "memory": {
+      "designPatterns": {
+        "chatLayout": {
+          "columns": "320px 1fr",
+          "messageStackGap": "12px",
+          "inputDock": false
+        },
+        "sidebarLayout": {
+          "width": "280px",
+          "itemSpacing": "8px",
+          "itemRadius": "8px"
+        },
+        "messageFlowUI": {
+          "outgoingAlignment": "right",
+          "incomingAlignment": "left",
+          "timestampStyle": "muted-caption"
+        }
+      }
+    }
+  }
+]

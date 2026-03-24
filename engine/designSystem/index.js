@@ -4,6 +4,11 @@ const {
   extractTypographyFromContent,
   extractComponentsFromContent,
 } = require('./extractors');
+const { normalizeDesignTokens } = require('./token-normalizer');
+const { generateReusableComponents, createComponentStandardizationPlan } = require('./component-system');
+const { extractLayoutPatterns, extractDesignPatterns } = require('./layout-patterns');
+const { getDesignSystem: recallDesignSystem, applyDesignSystem: reuseDesignSystem, upgradeUI: autoUpgradeUI } = require('./reuse-engine');
+const { DesignSystemMemoryStore } = require('../memory/design-system-memory-store');
 
 const FRONTEND_FILE_REGEX = /\.(html|css|scss|sass|less|js|jsx|ts|tsx|vue|svelte)$/i;
 
@@ -135,6 +140,63 @@ function buildStabilizationInsights({ colors = {}, spacing = {}, typography = {}
 }
 
 class DesignSystemEngine {
+  constructor(options = {}) {
+    this.options = options;
+    this.memoryStore = options.memoryStore || new DesignSystemMemoryStore(options.memoryOptions || {});
+  }
+
+  persistDesignMemory(payload = {}) {
+    try {
+      this.memoryStore.saveDesignSystemSync({
+        name: payload.name,
+        tokens: payload.tokens,
+        components: payload.components,
+        patterns: payload.patterns,
+        source: payload.source,
+      });
+      this.memoryStore.saveDesignPatternsSync(payload.designPatterns || {});
+    } catch {
+      // Memory persistence should not block design-system generation.
+    }
+  }
+
+  buildAutoImprovements(designSystem = {}, designTokens = {}) {
+    const list = [
+      {
+        type: 'contrast-improvement',
+        description: 'Improve contrast for text and interactive states toward WCAG AA levels.',
+      },
+      {
+        type: 'spacing-consistency',
+        description: 'Enforce spacing scale 4/8/12/16/24/32 across components and layout sections.',
+      },
+      {
+        type: 'modernization',
+        description: 'Refine surfaces, shadows and hierarchy for a Stripe/Linear-inspired visual system.',
+      },
+      {
+        type: 'inconsistency-removal',
+        description: 'Replace ad-hoc style variants with token-driven component variants.',
+      },
+    ];
+
+    if (Number(designSystem.uiScore || 0) < 75) {
+      list.push({
+        type: 'ui-score-recovery',
+        description: 'Prioritize normalization of palette and typography to recover uiScore above 80.',
+      });
+    }
+
+    if (!designTokens.colors || !designTokens.colors.primary) {
+      list.push({
+        type: 'missing-primary-token',
+        description: 'Define a strong primary color token and propagate it to all action components.',
+      });
+    }
+
+    return list;
+  }
+
   analyze(input = {}) {
     try {
       const normalizedFiles = normalizeFiles(input.files || []);
@@ -170,26 +232,65 @@ class DesignSystemEngine {
       }
 
       const dedupedComponents = deduplicateComponents(components);
+      const layoutPatterns = extractLayoutPatterns(normalizedFiles);
+      const designPatterns = extractDesignPatterns(layoutPatterns);
       const stabilization = buildStabilizationInsights({
         colors,
         spacing,
         typography,
         components: dedupedComponents,
       });
+      const designTokens = normalizeDesignTokens({
+        colors,
+        spacing,
+        typography,
+        layoutPatterns,
+      });
+      const reusableComponents = generateReusableComponents(designTokens);
+      const componentStandardizationPlan = createComponentStandardizationPlan(reusableComponents);
+
+      const normalizedDesignSystem = {
+        colors,
+        spacing,
+        typography,
+        components: dedupedComponents,
+        inconsistencies: stabilization.inconsistencies,
+        normalizationSuggestions: stabilization.normalizationSuggestions,
+        componentStandardization: stabilization.componentStandardization,
+        uiScore: stabilization.uiScore,
+        topColorTokens: stabilization.topColorTokens,
+        topSpacingTokens: stabilization.topSpacingTokens,
+        topTypographyTokens: stabilization.topTypographyTokens,
+        layoutPatterns,
+      };
+
+      const memoryPayload = {
+        name: String(input.name || 'whatsapp-inspired-premium'),
+        tokens: designTokens,
+        components: reusableComponents,
+        patterns: componentStandardizationPlan,
+        source: String(input.source || 'extracted_from_ui'),
+        designPatterns,
+      };
+
+      if (input.persist !== false) {
+        this.persistDesignMemory(memoryPayload);
+      }
 
       return {
-        designSystem: {
-          colors,
-          spacing,
-          typography,
-          components: dedupedComponents,
-          inconsistencies: stabilization.inconsistencies,
-          normalizationSuggestions: stabilization.normalizationSuggestions,
-          componentStandardization: stabilization.componentStandardization,
-          uiScore: stabilization.uiScore,
-          topColorTokens: stabilization.topColorTokens,
-          topSpacingTokens: stabilization.topSpacingTokens,
-          topTypographyTokens: stabilization.topTypographyTokens,
+        designSystem: normalizedDesignSystem,
+        designTokens,
+        reusableComponents,
+        autoImprovements: this.buildAutoImprovements(normalizedDesignSystem, designTokens),
+        memory: {
+          designSystem: {
+            name: memoryPayload.name,
+            tokens: designTokens,
+            components: reusableComponents,
+            patterns: componentStandardizationPlan,
+            source: memoryPayload.source,
+          },
+          designPatterns,
         },
       };
     } catch (error) {
@@ -204,6 +305,30 @@ class DesignSystemEngine {
           componentStandardization: [],
           uiScore: 0,
         },
+        designTokens: {
+          colors: {},
+          spacing: {},
+          typography: {},
+          radius: {},
+          shadows: {},
+          layout: {},
+        },
+        reusableComponents: [],
+        autoImprovements: [],
+        memory: {
+          designSystem: {
+            name: String(input && input.name ? input.name : 'whatsapp-inspired-premium'),
+            tokens: {},
+            components: [],
+            patterns: [],
+            source: String(input && input.source ? input.source : 'extracted_from_ui'),
+          },
+          designPatterns: {
+            chatLayout: {},
+            sidebarLayout: {},
+            messageFlowUI: {},
+          },
+        },
         error: String(error && error.message ? error.message : error),
       };
     }
@@ -211,11 +336,29 @@ class DesignSystemEngine {
 }
 
 function generateDesignSystem(input = {}) {
-  const engine = new DesignSystemEngine();
+  const engine = new DesignSystemEngine(input.options || {});
   return engine.analyze(input);
+}
+
+async function getDesignSystem(options = {}) {
+  const memoryStore = options.memoryStore || new DesignSystemMemoryStore(options.memoryOptions || {});
+  return recallDesignSystem(memoryStore);
+}
+
+async function applyDesignSystem(project = {}, options = {}) {
+  const memoryStore = options.memoryStore || new DesignSystemMemoryStore(options.memoryOptions || {});
+  return reuseDesignSystem(project, memoryStore);
+}
+
+async function upgradeUI(project = {}, options = {}) {
+  const memoryStore = options.memoryStore || new DesignSystemMemoryStore(options.memoryOptions || {});
+  return autoUpgradeUI(project, memoryStore);
 }
 
 module.exports = {
   DesignSystemEngine,
   generateDesignSystem,
+  getDesignSystem,
+  applyDesignSystem,
+  upgradeUI,
 };

@@ -149,5 +149,93 @@
         "fallbackUsed": false
       }
     }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.704Z",
+    "analysis": {
+      "summary": {
+        "totalFiles": 3,
+        "frontendFiles": 3,
+        "backendFiles": 0,
+        "testFiles": 0,
+        "tailwindHits": 3,
+        "reactHits": 2
+      },
+      "metadata": {
+        "currentGoal": "stabilize visual system",
+        "projectContextSize": 7,
+        "generatedAt": "2026-03-24T00:36:56.700Z",
+        "mode": "suggest-only",
+        "pipeline": [
+          "ingestion",
+          "analysis",
+          "problem-detection",
+          "microtask-generation",
+          "code-suggestion",
+          "validation",
+          "memory-storage"
+        ],
+        "engineMode": "standard",
+        "freezeMode": false
+      },
+      "ingestionSummary": {
+        "screenCount": 1,
+        "flowIssueCount": 0,
+        "missingComponentCount": 0,
+        "uiInconsistencyCount": 0
+      },
+      "validation": {
+        "ok": true,
+        "errors": [],
+        "safeMode": true,
+        "engineMode": "standard",
+        "freezeMode": false,
+        "fallbackUsed": false
+      }
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.419Z",
+    "analysis": {
+      "summary": {
+        "totalFiles": 3,
+        "frontendFiles": 3,
+        "backendFiles": 0,
+        "testFiles": 0,
+        "tailwindHits": 3,
+        "reactHits": 2
+      },
+      "metadata": {
+        "currentGoal": "stabilize visual system",
+        "projectContextSize": 7,
+        "generatedAt": "2026-03-24T00:37:21.415Z",
+        "mode": "suggest-only",
+        "pipeline": [
+          "ingestion",
+          "analysis",
+          "problem-detection",
+          "microtask-generation",
+          "code-suggestion",
+          "validation",
+          "memory-storage"
+        ],
+        "engineMode": "standard",
+        "freezeMode": false
+      },
+      "ingestionSummary": {
+        "screenCount": 1,
+        "flowIssueCount": 0,
+        "missingComponentCount": 0,
+        "uiInconsistencyCount": 0
+      },
+      "validation": {
+        "ok": true,
+        "errors": [],
+        "safeMode": true,
+        "engineMode": "standard",
+        "freezeMode": false,
+        "fallbackUsed": false
+      }
+    }
   }
 ]
