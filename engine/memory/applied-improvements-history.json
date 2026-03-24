@@ -205,5 +205,119 @@
       "description": "Reuse previously successful guardrails",
       "reusedFromMemory": true
     }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.706Z",
+    "improvement": {
+      "code": "LOW_TEST_COVERAGE_SIGNAL",
+      "priority": "medium",
+      "impact": "medium",
+      "confidenceScore": 0.82,
+      "safe": true,
+      "mode": "suggestion-only",
+      "type": "architecture-improvement",
+      "title": "Protect refactor path with targeted tests",
+      "description": "Introduce focused tests for the most risky modules before code transformations."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.708Z",
+    "improvement": {
+      "code": "LOW_CONTEXT_SIGNAL",
+      "priority": "low",
+      "impact": "low",
+      "confidenceScore": 0.72,
+      "safe": true,
+      "mode": "suggestion-only",
+      "type": "safe-refactor",
+      "title": "Apply incremental modular refactor",
+      "description": "Split large modules into isolated services while preserving public API contract."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.709Z",
+    "improvement": {
+      "code": "UI_NORMALIZATION_OPPORTUNITY",
+      "priority": "low",
+      "impact": "medium",
+      "confidenceScore": 0.76,
+      "safe": true,
+      "mode": "suggestion-only",
+      "type": "ui-consistency-fix",
+      "title": "Adopt extracted design system tokens",
+      "description": "Use generated color, spacing and typography tokens in reusable UI components."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.710Z",
+    "improvement": {
+      "code": "MEMORY_REUSED_PATTERN",
+      "priority": "low",
+      "impact": "low",
+      "confidenceScore": 0.68,
+      "safe": true,
+      "mode": "suggestion-only",
+      "type": "safe-refactor",
+      "title": "Reuse previously successful guardrails",
+      "description": "Reuse previously successful guardrails",
+      "reusedFromMemory": true
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.421Z",
+    "improvement": {
+      "code": "LOW_TEST_COVERAGE_SIGNAL",
+      "priority": "medium",
+      "impact": "medium",
+      "confidenceScore": 0.82,
+      "safe": true,
+      "mode": "suggestion-only",
+      "type": "architecture-improvement",
+      "title": "Protect refactor path with targeted tests",
+      "description": "Introduce focused tests for the most risky modules before code transformations."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.424Z",
+    "improvement": {
+      "code": "LOW_CONTEXT_SIGNAL",
+      "priority": "low",
+      "impact": "low",
+      "confidenceScore": 0.72,
+      "safe": true,
+      "mode": "suggestion-only",
+      "type": "safe-refactor",
+      "title": "Apply incremental modular refactor",
+      "description": "Split large modules into isolated services while preserving public API contract."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.426Z",
+    "improvement": {
+      "code": "UI_NORMALIZATION_OPPORTUNITY",
+      "priority": "low",
+      "impact": "medium",
+      "confidenceScore": 0.76,
+      "safe": true,
+      "mode": "suggestion-only",
+      "type": "ui-consistency-fix",
+      "title": "Adopt extracted design system tokens",
+      "description": "Use generated color, spacing and typography tokens in reusable UI components."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.427Z",
+    "improvement": {
+      "code": "MEMORY_REUSED_PATTERN",
+      "priority": "low",
+      "impact": "low",
+      "confidenceScore": 0.68,
+      "safe": true,
+      "mode": "suggestion-only",
+      "type": "safe-refactor",
+      "title": "Reuse previously successful guardrails",
+      "description": "Reuse previously successful guardrails",
+      "reusedFromMemory": true
+    }
   }
 ]

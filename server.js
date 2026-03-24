@@ -134,6 +134,30 @@ app.post('/dev/analyze', async (req, res) => {
         normalizationSuggestions: [],
         componentStandardization: [],
         uiScore: 0,
+        designTokens: {
+          colors: {},
+          spacing: {},
+          typography: {},
+          radius: {},
+          shadows: {},
+          layout: {},
+        },
+        reusableComponents: [],
+        memory: {
+          designSystem: {
+            name: 'whatsapp-inspired-premium',
+            tokens: {},
+            components: [],
+            patterns: [],
+            source: 'extracted_from_ui',
+          },
+          designPatterns: {
+            chatLayout: {},
+            sidebarLayout: {},
+            messageFlowUI: {},
+          },
+        },
+        autoImprovements: [],
       },
       tests: {
         smokeTests: [],

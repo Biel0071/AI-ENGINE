@@ -1,6 +1,6 @@
 const { organizeProject, suggestStructureImprovements } = require('./core/structureOrganizer');
 const { runImprovementLoop, ImprovementLoopEngine } = require('./engine/improvementLoop');
-const { generateDesignSystem, DesignSystemEngine } = require('./engine/designSystem');
+const { generateDesignSystem, DesignSystemEngine, getDesignSystem, applyDesignSystem, upgradeUI } = require('./engine/designSystem');
 const { ingestProject } = require('./engine/ingestion');
 const { generateMicrotasks } = require('./engine/microtasks');
 const { generateTests } = require('./engine/testing');
@@ -26,6 +26,9 @@ module.exports = {
   ImprovementLoopEngine,
   generateDesignSystem,
   DesignSystemEngine,
+  getDesignSystem,
+  applyDesignSystem,
+  upgradeUI,
   ingestProject,
   generateMicrotasks,
   generateTests,

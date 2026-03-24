@@ -260,5 +260,161 @@
       "type": "testing-strategy",
       "hint": "smoke:4|e2e:3"
     }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.712Z",
+    "pattern": {
+      "type": "design-system-preservation",
+      "hint": "Maintain color, spacing and typography consistency based on extracted design system."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.713Z",
+    "pattern": {
+      "type": "architecture-improvement",
+      "hint": "Introduce focused tests for the most risky modules before code transformations."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.714Z",
+    "pattern": {
+      "type": "safe-refactor",
+      "hint": "Split large modules into isolated services while preserving public API contract."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.715Z",
+    "pattern": {
+      "type": "ui-consistency-fix",
+      "hint": "Use generated color, spacing and typography tokens in reusable UI components."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.717Z",
+    "pattern": {
+      "type": "safe-refactor",
+      "hint": "Reuse previously successful guardrails"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.725Z",
+    "pattern": {
+      "type": "microtask-pattern",
+      "hint": "Protect refactor path with targeted tests",
+      "priority": "medium",
+      "impact": "medium"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.726Z",
+    "pattern": {
+      "type": "microtask-pattern",
+      "hint": "Apply incremental modular refactor",
+      "priority": "low",
+      "impact": "low"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.727Z",
+    "pattern": {
+      "type": "microtask-pattern",
+      "hint": "Adopt extracted design system tokens",
+      "priority": "low",
+      "impact": "medium"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.729Z",
+    "pattern": {
+      "type": "microtask-pattern",
+      "hint": "Reuse previously successful guardrails",
+      "priority": "low",
+      "impact": "low"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:36:56.730Z",
+    "pattern": {
+      "type": "testing-strategy",
+      "hint": "smoke:4|e2e:3"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.429Z",
+    "pattern": {
+      "type": "design-system-preservation",
+      "hint": "Maintain color, spacing and typography consistency based on extracted design system."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.432Z",
+    "pattern": {
+      "type": "architecture-improvement",
+      "hint": "Introduce focused tests for the most risky modules before code transformations."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.434Z",
+    "pattern": {
+      "type": "safe-refactor",
+      "hint": "Split large modules into isolated services while preserving public API contract."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.435Z",
+    "pattern": {
+      "type": "ui-consistency-fix",
+      "hint": "Use generated color, spacing and typography tokens in reusable UI components."
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.436Z",
+    "pattern": {
+      "type": "safe-refactor",
+      "hint": "Reuse previously successful guardrails"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.449Z",
+    "pattern": {
+      "type": "microtask-pattern",
+      "hint": "Protect refactor path with targeted tests",
+      "priority": "medium",
+      "impact": "medium"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.451Z",
+    "pattern": {
+      "type": "microtask-pattern",
+      "hint": "Apply incremental modular refactor",
+      "priority": "low",
+      "impact": "low"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.452Z",
+    "pattern": {
+      "type": "microtask-pattern",
+      "hint": "Adopt extracted design system tokens",
+      "priority": "low",
+      "impact": "medium"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.454Z",
+    "pattern": {
+      "type": "microtask-pattern",
+      "hint": "Reuse previously successful guardrails",
+      "priority": "low",
+      "impact": "low"
+    }
+  },
+  {
+    "createdAt": "2026-03-24T00:37:21.455Z",
+    "pattern": {
+      "type": "testing-strategy",
+      "hint": "smoke:4|e2e:3"
+    }
   }
 ]

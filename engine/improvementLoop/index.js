@@ -154,7 +154,8 @@ class ImprovementLoopEngine {
         improvements,
         microtasks,
       });
-      const designSystem = (analysis.designSystem && analysis.designSystem.designSystem) || {
+      const designSystemEnvelope = analysis.designSystem || {};
+      const coreDesignSystem = designSystemEnvelope.designSystem || {
         colors: {},
         spacing: {},
         typography: {},
@@ -163,6 +164,33 @@ class ImprovementLoopEngine {
         normalizationSuggestions: [],
         componentStandardization: [],
         uiScore: 0,
+      };
+      const designSystem = {
+        ...coreDesignSystem,
+        designTokens: designSystemEnvelope.designTokens || {
+          colors: {},
+          spacing: {},
+          typography: {},
+          radius: {},
+          shadows: {},
+          layout: {},
+        },
+        reusableComponents: designSystemEnvelope.reusableComponents || [],
+        memory: designSystemEnvelope.memory || {
+          designSystem: {
+            name: 'whatsapp-inspired-premium',
+            tokens: {},
+            components: [],
+            patterns: [],
+            source: 'extracted_from_ui',
+          },
+          designPatterns: {
+            chatLayout: {},
+            sidebarLayout: {},
+            messageFlowUI: {},
+          },
+        },
+        autoImprovements: designSystemEnvelope.autoImprovements || [],
       };
 
       const validation = this.validateChanges({
@@ -266,6 +294,30 @@ class ImprovementLoopEngine {
           normalizationSuggestions: [],
           componentStandardization: [],
           uiScore: 0,
+          designTokens: {
+            colors: {},
+            spacing: {},
+            typography: {},
+            radius: {},
+            shadows: {},
+            layout: {},
+          },
+          reusableComponents: [],
+          memory: {
+            designSystem: {
+              name: 'whatsapp-inspired-premium',
+              tokens: {},
+              components: [],
+              patterns: [],
+              source: 'extracted_from_ui',
+            },
+            designPatterns: {
+              chatLayout: {},
+              sidebarLayout: {},
+              messageFlowUI: {},
+            },
+          },
+          autoImprovements: [],
         },
         tests: {
           smokeTests: [],
