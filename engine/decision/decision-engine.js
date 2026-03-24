@@ -77,11 +77,23 @@ class DecisionEngine {
   decide(input = {}) {
     const contextBundle = input.contextBundle || {};
     const feature = String(input.feature || 'feature');
+    const knownSolutions = Array.isArray(input.knownSolutions) ? input.knownSolutions : [];
     const project = contextBundle.project || {};
     const problems = buildProblemSignals(project);
     const autoFeatures = buildAutoFeatures(feature, contextBundle);
 
+    const reusedSolutions = knownSolutions.filter((item) => item && item.solutionApplied);
+
+    const reusedImprovements = reusedSolutions.map((item) => ({
+      type: 'reused-proven-solution',
+      priority: 'high',
+      title: `Reuse proven solution: ${item.solutionPattern || item.problemType}`,
+      description: item.solutionApplied,
+      context: item.context || {},
+    }));
+
     const improvements = [
+      ...reusedImprovements,
       {
         type: 'ux-standardization',
         priority: 'high',
@@ -103,11 +115,13 @@ class DecisionEngine {
       },
       problems,
       improvements,
+      reusedSolutions,
       autoFeatures,
       strategy: {
         preGenerationDecision: 'context-first',
         generationMode: input.freezeMode ? 'stable-freeze' : 'adaptive-product',
         shouldExpandFeatures: autoFeatures.length > 0,
+        prioritizeProvenSolutions: reusedSolutions.length > 0,
       },
     };
   }

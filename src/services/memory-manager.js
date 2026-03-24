@@ -10,6 +10,46 @@ async function readJson(filePath, fallback) {
   }
 }
 
+function normalizeText(value = '') {
+  return String(value || '').trim().toLowerCase();
+}
+
+function scoreSolution(entry = {}, criteria = {}) {
+  let score = 0;
+
+  const problemType = normalizeText(criteria.problemType);
+  const solutionPattern = normalizeText(criteria.solutionPattern);
+  const query = normalizeText(criteria.query);
+
+  if (problemType && normalizeText(entry.problemType) === problemType) {
+    score += 4;
+  }
+
+  if (solutionPattern && normalizeText(entry.solutionPattern).includes(solutionPattern)) {
+    score += 3;
+  }
+
+  if (query) {
+    const haystack = [
+      entry.patternIdentified,
+      entry.solutionApplied,
+      entry.impact,
+      entry.context && entry.context.notes ? entry.context.notes : '',
+    ]
+      .map((part) => normalizeText(part))
+      .join(' ');
+
+    if (haystack.includes(query)) {
+      score += 2;
+    }
+  }
+
+  const outcomeScore = Number(entry.outcomeScore || 0);
+  score += Math.max(0, Math.min(1, outcomeScore));
+
+  return score;
+}
+
 class MemoryManager {
   constructor(options = {}) {
     this.baseDir = options.baseDir || path.join(__dirname, '..', '..', 'engine', 'memory');
@@ -17,12 +57,19 @@ class MemoryManager {
     this.organizationsFile = options.organizationsFile || path.join(this.baseDir, 'organizations-runtime.json');
     this.decisionsFile = options.decisionsFile || path.join(this.baseDir, 'decisions-runtime.json');
     this.changesFile = options.changesFile || path.join(this.baseDir, 'changes-runtime.json');
+    this.solutionLibraryFile = options.solutionLibraryFile || path.join(this.baseDir, 'solution-library-runtime.json');
   }
 
   async ensure() {
     await fs.mkdir(this.baseDir, { recursive: true });
 
-    const files = [this.patternsFile, this.organizationsFile, this.decisionsFile, this.changesFile];
+    const files = [
+      this.patternsFile,
+      this.organizationsFile,
+      this.decisionsFile,
+      this.changesFile,
+      this.solutionLibraryFile,
+    ];
     for (const filePath of files) {
       const current = await readJson(filePath, null);
       if (current === null) {
@@ -78,6 +125,48 @@ class MemoryManager {
       reason,
       impact,
     });
+  }
+
+  async saveResolvedSolution(payload = {}) {
+    await this.ensure();
+
+    return this.append(this.solutionLibraryFile, {
+      createdAt: new Date().toISOString(),
+      problemType: String(payload.problemType || 'general'),
+      solutionPattern: String(payload.solutionPattern || 'default-pattern'),
+      patternIdentified: String(payload.patternIdentified || ''),
+      solutionApplied: String(payload.solutionApplied || ''),
+      context: payload.context && typeof payload.context === 'object' ? payload.context : {},
+      impact: String(payload.impact || ''),
+      outcomeScore: Number(payload.outcomeScore || 0.8),
+      tags: Array.isArray(payload.tags) ? payload.tags : [],
+    });
+  }
+
+  async searchSolutions(criteria = {}) {
+    await this.ensure();
+
+    const current = await readJson(this.solutionLibraryFile, []);
+    const limit = Number(criteria.limit || 5);
+
+    return current
+      .map((entry) => ({
+        ...entry,
+        _score: scoreSolution(entry, criteria),
+      }))
+      .filter((entry) => entry._score > 0)
+      .sort((left, right) => right._score - left._score)
+      .slice(0, limit)
+      .map(({ _score, ...entry }) => entry);
+  }
+
+  async findBestSolution(criteria = {}) {
+    const solutions = await this.searchSolutions({
+      ...criteria,
+      limit: 1,
+    });
+
+    return solutions[0] || null;
   }
 
   getStructurePatterns({ limit = 8 } = {}) {

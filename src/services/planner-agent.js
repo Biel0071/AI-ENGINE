@@ -62,6 +62,15 @@ class PlannerAgent {
       });
     }
 
+    if (decision && Array.isArray(decision.reusedSolutions) && decision.reusedSolutions.length > 0) {
+      steps.unshift({
+        order: 0,
+        type: 'reuse',
+        title: 'Reuse proven solution patterns',
+        details: `Applied ${decision.reusedSolutions.length} previously successful solutions before generating new changes.`,
+      });
+    }
+
     return {
       feature,
       patterns,
@@ -69,6 +78,7 @@ class PlannerAgent {
       contextUsed: knowledgeContext.length,
       contextReady: Boolean(contextBundle && contextBundle.metadata && contextBundle.metadata.contextReady),
       autoFeatures: decision && Array.isArray(decision.autoFeatures) ? decision.autoFeatures : [],
+      reusedSolutions: decision && Array.isArray(decision.reusedSolutions) ? decision.reusedSolutions : [],
     };
   }
 }
