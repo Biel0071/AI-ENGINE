@@ -42,6 +42,13 @@ class FeatureGenerator {
           feature,
           patterns: input.patterns || [],
           outputRoot,
+          designSystemUsage: input.designSystemUsage || null,
+          designTokens: (input.designSystemUsage && input.designSystemUsage.designTokens) || {},
+          uiConstraints: (input.designSystemUsage && input.designSystemUsage.uiConstraints) || {
+            enforceVisualConsistency: true,
+            preventRandomUIGeneration: true,
+            requireTokenBasedStyles: true,
+          },
         });
 
     const codeOutput = input.agentOutputs && input.agentOutputs.backend
@@ -63,6 +70,11 @@ class FeatureGenerator {
       summary: {
         totalFiles: allFiles.length,
         reusableModules: ['ui-generator', 'code-generator', 'template-engine'],
+        designSystemGuardrails: {
+          loadedFromMemory: Boolean(input.designSystemUsage && input.designSystemUsage.designSystem),
+          tokenEnforced: Boolean(input.designSystemUsage && input.designSystemUsage.designTokens),
+          preventRandomUIGeneration: true,
+        },
         ...codeOutput.summary,
       },
     };

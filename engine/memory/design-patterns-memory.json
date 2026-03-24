@@ -86,5 +86,27 @@
         }
       }
     }
+  },
+  {
+    "createdAt": "2026-03-24T00:41:27.810Z",
+    "memory": {
+      "designPatterns": {
+        "chatLayout": {
+          "columns": "320px 1fr",
+          "messageStackGap": "12px",
+          "inputDock": false
+        },
+        "sidebarLayout": {
+          "width": "280px",
+          "itemSpacing": "8px",
+          "itemRadius": "8px"
+        },
+        "messageFlowUI": {
+          "outgoingAlignment": "right",
+          "incomingAlignment": "left",
+          "timestampStyle": "muted-caption"
+        }
+      }
+    }
   }
 ]
