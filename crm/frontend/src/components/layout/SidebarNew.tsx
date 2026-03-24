@@ -30,59 +30,34 @@ const sections = [
 
 export function SidebarNew() {
   return (
-    <aside
-      style={{
-        height: '100%',
-        background: 'linear-gradient(180deg, #030712 0%, #07101d 100%)',
-        border: '1px solid #1e293b',
-        borderRadius: 14,
-        padding: 14,
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '4px 6px' }}>
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            display: 'grid',
-            placeItems: 'center',
-            background: '#16a34a',
-            color: '#fff',
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
+    <aside className="box-border flex h-full flex-col rounded-[14px] border border-slate-800 bg-gradient-to-b from-slate-950 to-[#07101d] p-[14px]">
+      <div className="mb-[14px] flex items-center gap-2.5 px-1.5 py-1">
+        <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-600 text-xs font-bold text-white">
           Z
         </div>
         <div>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 15, fontWeight: 700 }}>ZapAI CRM</h1>
-          <p style={{ margin: 0, color: '#94a3b8', fontSize: 11 }}>Automacao inteligente</p>
+          <h1 className="m-0 text-[15px] font-bold text-white">ZapAI CRM</h1>
+          <p className="m-0 text-[11px] text-slate-400">Automacao inteligente</p>
         </div>
       </div>
 
-      <nav style={{ display: 'grid', gap: 14, flex: 1 }}>
+      <nav className="grid flex-1 gap-[14px]">
         {sections.map((section) => (
           <div key={section.title}>
-            <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: 10, letterSpacing: 0.7, textTransform: 'uppercase' }}>{section.title}</p>
-            <div style={{ display: 'grid', gap: 6 }}>
+            <p className="mb-2 mt-0 text-[10px] uppercase tracking-[0.7px] text-slate-500">{section.title}</p>
+            <div className="grid gap-1.5">
               {section.items.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  style={({ isActive }) => ({
-                    borderRadius: 10,
-                    padding: '10px 12px',
-                    fontSize: 13,
-                    textDecoration: 'none',
-                    color: isActive ? '#ffffff' : '#cbd5e1',
-                    background: isActive ? 'linear-gradient(90deg, #14532d 0%, #166534 100%)' : 'transparent',
-                    border: isActive ? '1px solid #22c55e' : '1px solid transparent',
-                    transition: 'all .2s ease',
-                  })}
+                  className={({ isActive }) =>
+                    [
+                      'rounded-[10px] border px-3 py-2.5 text-[13px] no-underline transition-all duration-200',
+                      isActive
+                        ? 'border-emerald-500 bg-gradient-to-r from-green-900 to-green-800 text-white'
+                        : 'border-transparent text-slate-300 hover:border-slate-700 hover:bg-slate-900/50',
+                    ].join(' ')
+                  }
                 >
                   {item.label}
                 </NavLink>
@@ -92,8 +67,8 @@ export function SidebarNew() {
         ))}
       </nav>
 
-      <div style={{ borderTop: '1px solid #1e293b', paddingTop: 10 }}>
-        <p style={{ margin: 0, color: '#94a3b8', fontSize: 11 }}>Tema: Black + Green</p>
+      <div className="border-t border-slate-800 pt-2.5">
+        <p className="m-0 text-[11px] text-slate-400">Tema: Black + Green</p>
       </div>
     </aside>
   );

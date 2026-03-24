@@ -15,12 +15,14 @@ class MemoryManager {
     this.baseDir = options.baseDir || path.join(__dirname, '..', '..', 'engine', 'memory');
     this.patternsFile = options.patternsFile || path.join(this.baseDir, 'patterns-runtime.json');
     this.organizationsFile = options.organizationsFile || path.join(this.baseDir, 'organizations-runtime.json');
+    this.decisionsFile = options.decisionsFile || path.join(this.baseDir, 'decisions-runtime.json');
+    this.changesFile = options.changesFile || path.join(this.baseDir, 'changes-runtime.json');
   }
 
   async ensure() {
     await fs.mkdir(this.baseDir, { recursive: true });
 
-    const files = [this.patternsFile, this.organizationsFile];
+    const files = [this.patternsFile, this.organizationsFile, this.decisionsFile, this.changesFile];
     for (const filePath of files) {
       const current = await readJson(filePath, null);
       if (current === null) {
@@ -56,6 +58,25 @@ class MemoryManager {
       createdAt: new Date().toISOString(),
       feature,
       payload,
+    });
+  }
+
+  async saveDecision(feature = '', decision = {}) {
+    await this.ensure();
+    return this.append(this.decisionsFile, {
+      createdAt: new Date().toISOString(),
+      feature,
+      decision,
+    });
+  }
+
+  async saveChange(change = '', reason = '', impact = '') {
+    await this.ensure();
+    return this.append(this.changesFile, {
+      createdAt: new Date().toISOString(),
+      change,
+      reason,
+      impact,
     });
   }
 
