@@ -1,9 +1,0 @@
-{
-  "status": "stable",
-  "core": "intact",
-  "intelligenceLayer": "active",
-  "memory": "persistent",
-  "analysis": "working",
-  "source": "engine/intelligenceLayer.js + engine/memoryManager.js + dist/core/engine.js",
-  "updatedAt": "2026-03-26"
-}
