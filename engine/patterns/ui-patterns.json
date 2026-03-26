@@ -1,8 +1,0 @@
-[
-  {
-    "name": "sidebar-header-dashboard",
-    "layout": "sidebar-header",
-    "components": ["card", "data-table", "form"],
-    "style": "react-tailwind-shadcn-inspired"
-  }
-]
