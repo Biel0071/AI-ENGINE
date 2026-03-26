@@ -1,0 +1,16 @@
+{
+  "root": "memory/projects",
+  "projectFolderPattern": "memory/projects/{projectName}",
+  "files": [
+    "tokens.json",
+    "insights.json",
+    "history.json"
+  ],
+  "rules": {
+    "versioning": "tokens.json and insights.json increment version on each analysis",
+    "appendOnly": "history.json appends a new entry per analysis execution",
+    "baselineLoad": "latest tokens/insights are loaded to compare changes"
+  },
+  "status": "validated",
+  "updatedAt": "2026-03-26"
+}

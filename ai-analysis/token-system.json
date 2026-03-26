@@ -1,0 +1,25 @@
+{
+  "types": [
+    "flow",
+    "module",
+    "feature",
+    "architecture"
+  ],
+  "priorityLevels": ["low", "medium", "high"],
+  "usage": "acelerar entendimento do projeto",
+  "currentImplementation": {
+    "flow": "implemented in tokenizer via context.mainFlows",
+    "architecture": "implemented in tokenizer via context.criticalPoints",
+    "module": "planned for next iteration using file-tag and layer mapping",
+    "feature": "planned for next iteration using domain/action extraction"
+  },
+  "tokenShape": {
+    "id": "string",
+    "description": "string",
+    "files": ["string"],
+    "importance": "number",
+    "confidence": "number",
+    "sources": ["string"]
+  },
+  "updatedAt": "2026-03-26"
+}
