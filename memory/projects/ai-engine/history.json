@@ -1,0 +1,2409 @@
+[
+  {
+    "createdAt": "2026-03-26T14:07:05.493Z",
+    "tokenVersion": 1,
+    "insightVersion": 1,
+    "changes": [
+      {
+        "type": "added-token",
+        "tokenId": "api-to-services",
+        "message": "Novo token identificado: api-to-services",
+        "confidence": 0.82,
+        "sources": [
+          "layer-detection:api",
+          "layer-detection:services"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-1",
+        "message": "Novo token identificado: missing-dependency-1",
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-2",
+        "message": "Novo token identificado: missing-dependency-2",
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-3",
+        "message": "Novo token identificado: missing-dependency-3",
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/config/env.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.dto.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/services/campaign.service.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/error-handler.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-4",
+        "message": "Novo token identificado: missing-dependency-4",
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/infra/database/prisma.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/lib/prisma.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-5",
+        "message": "Novo token identificado: missing-dependency-5",
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-6",
+        "message": "Novo token identificado: missing-dependency-6",
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+          "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+          "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-7",
+        "message": "Novo token identificado: missing-dependency-7",
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-8",
+        "message": "Novo token identificado: missing-dependency-8",
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-9",
+        "message": "Novo token identificado: missing-dependency-9",
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/knowledge-product-engine/starter/src/main.jsx",
+          "generated/ops-dashboard/starter/src/main.jsx",
+          "generated/premium-support-desk/starter/src/main.jsx",
+          "generated/saas-operations-hub/starter/src/main.jsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-10",
+        "message": "Novo token identificado: missing-dependency-10",
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/tailwind.config.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-11",
+        "message": "Novo token identificado: missing-dependency-11",
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+          "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+          "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+          "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+          "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+          "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+          "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "services-to-data",
+        "message": "Novo token identificado: services-to-data",
+        "confidence": 0.78,
+        "sources": [
+          "layer-detection:services",
+          "layer-detection:data"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "ui-to-api",
+        "message": "Novo token identificado: ui-to-api",
+        "confidence": 0.76,
+        "sources": [
+          "layer-detection:ui",
+          "layer-detection:api"
+        ]
+      }
+    ],
+    "nextActions": [
+      {
+        "id": "next-1",
+        "action": "Dependencia importada sem registro no package.json: vite",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "next-2",
+        "action": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "next-3",
+        "action": "Dependencia importada sem registro no package.json: zod",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/config/env.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.dto.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/services/campaign.service.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/error-handler.ts"
+        ]
+      },
+      {
+        "id": "next-4",
+        "action": "Dependencia importada sem registro no package.json: @prisma/client",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/infra/database/prisma.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/lib/prisma.ts"
+        ]
+      },
+      {
+        "id": "next-5",
+        "action": "Dependencia importada sem registro no package.json: helmet",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts"
+        ]
+      },
+      {
+        "id": "next-6",
+        "action": "Dependencia importada sem registro no package.json: react",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+          "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+          "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx"
+        ]
+      },
+      {
+        "id": "next-7",
+        "action": "Dependencia importada sem registro no package.json: lucide-react",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx"
+        ]
+      },
+      {
+        "id": "next-8",
+        "action": "Dependencia importada sem registro no package.json: clsx",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx"
+        ]
+      },
+      {
+        "id": "next-9",
+        "action": "Dependencia importada sem registro no package.json: react-dom",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/knowledge-product-engine/starter/src/main.jsx",
+          "generated/ops-dashboard/starter/src/main.jsx",
+          "generated/premium-support-desk/starter/src/main.jsx",
+          "generated/saas-operations-hub/starter/src/main.jsx"
+        ]
+      },
+      {
+        "id": "next-10",
+        "action": "Dependencia importada sem registro no package.json: tailwindcss",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/tailwind.config.ts"
+        ]
+      },
+      {
+        "id": "next-11",
+        "action": "Dependencia importada sem registro no package.json: @/components",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+          "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+          "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+          "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+          "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+          "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+          "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx"
+        ]
+      },
+      {
+        "id": "fix-1",
+        "action": "Dependencia importada sem registro no package.json: vite",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "fix-2",
+        "action": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "fix-3",
+        "action": "Dependencia importada sem registro no package.json: zod",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/config/env.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.dto.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/services/campaign.service.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/error-handler.ts"
+        ]
+      },
+      {
+        "id": "fix-4",
+        "action": "Dependencia importada sem registro no package.json: @prisma/client",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/infra/database/prisma.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/lib/prisma.ts"
+        ]
+      },
+      {
+        "id": "fix-5",
+        "action": "Dependencia importada sem registro no package.json: helmet",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts"
+        ]
+      },
+      {
+        "id": "fix-6",
+        "action": "Dependencia importada sem registro no package.json: react",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+          "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+          "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx"
+        ]
+      },
+      {
+        "id": "fix-7",
+        "action": "Dependencia importada sem registro no package.json: lucide-react",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx"
+        ]
+      },
+      {
+        "id": "fix-8",
+        "action": "Dependencia importada sem registro no package.json: clsx",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx"
+        ]
+      },
+      {
+        "id": "fix-9",
+        "action": "Dependencia importada sem registro no package.json: react-dom",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/knowledge-product-engine/starter/src/main.jsx",
+          "generated/ops-dashboard/starter/src/main.jsx",
+          "generated/premium-support-desk/starter/src/main.jsx",
+          "generated/saas-operations-hub/starter/src/main.jsx"
+        ]
+      }
+    ],
+    "architectureSnapshot": {
+      "layers": [
+        {
+          "name": "api",
+          "files": 7,
+          "confidence": 0.54
+        },
+        {
+          "name": "services",
+          "files": 19,
+          "confidence": 0.69
+        },
+        {
+          "name": "controllers",
+          "files": 1,
+          "confidence": 0.46
+        },
+        {
+          "name": "ui",
+          "files": 146,
+          "confidence": 1
+        },
+        {
+          "name": "data",
+          "files": 2,
+          "confidence": 0.48
+        }
+      ],
+      "bottlenecks": []
+    },
+    "projectSummary": {
+      "totalFiles": 369,
+      "stack": [
+        {
+          "name": "nodejs",
+          "confidence": 1,
+          "sources": [
+            "crm/frontend/package.json",
+            "future/drafts/legacy-root/generated/billing-suite/starter/package.json",
+            "future/drafts/legacy-root/generated/campaign_system/backend/package.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/package.json",
+            "future/drafts/legacy-root/generated/structure-check/starter/package.json",
+            "generated/ai-fallback-check/starter/package.json",
+            "generated/cli-smoke/starter/package.json",
+            "generated/continuous-learning-cycle/starter/package.json",
+            "generated/crm-stability-cycle/starter/package.json",
+            "generated/customer-success-suite/starter/package.json",
+            "generated/dashboard-starter/starter/package.json",
+            "generated/knowledge-product-engine/starter/package.json",
+            "generated/ops-dashboard/starter/package.json",
+            "generated/premium-support-desk/starter/package.json",
+            "generated/saas-operations-hub/starter/package.json",
+            "generated/safe-mode-smoke/starter/package.json",
+            "package.json"
+          ]
+        },
+        {
+          "name": "typescript",
+          "confidence": 1,
+          "sources": [
+            "crm/frontend/tsconfig.json",
+            "crm/frontend/vite.config.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.controller.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.repository.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.routes.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.service.ts",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/pages/billing-suite/index.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/services/billing-suiteApi.ts",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/page.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/config/env.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/controllers/campaign.controller.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/infra/database/prisma.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/lib/prisma.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.controller.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.dto.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.repository.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.routes.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.service.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/repositories/campaign.repository.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/routes/campaign.routes.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/server.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/services/campaign.service.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/errors/AppError.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/asyncHandler.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/error-handler.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/not-found.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/tsconfig.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignList.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/HistoryPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/PreviewPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/EmptyState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/LoadingState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/apiClient.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/campaignApi.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/http/client.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/http/request.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/tailwind.config.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/tsconfig.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.controller.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.repository.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.routes.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.service.ts",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/pages/structure-check/index.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/services/structure-checkApi.ts",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/page.tsx",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.controller.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.repository.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.routes.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.service.ts",
+            "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppHeader.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiCard.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+            "generated/ai-fallback-check/frontend/src/pages/ai-fallback-check/index.tsx",
+            "generated/ai-fallback-check/frontend/src/services/ai-fallback-checkApi.ts",
+            "generated/ai-fallback-check/starter/src/app/layout.tsx",
+            "generated/ai-fallback-check/starter/src/app/page.tsx",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.controller.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.repository.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.routes.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.service.ts",
+            "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+            "generated/cli-smoke/frontend/src/pages/cli-smoke/index.tsx",
+            "generated/cli-smoke/frontend/src/services/cli-smokeApi.ts",
+            "generated/cli-smoke/starter/src/app/layout.tsx",
+            "generated/cli-smoke/starter/src/app/page.tsx",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.controller.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.dto.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.error-handler.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.events.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.integration.test.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.queue-handler.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.queue.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.repository.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.routes.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.service.ts",
+            "generated/continuous-learning-cycle/frontend/src/components/ContinuousLearningCycleWidget.tsx",
+            "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/analytics-dashboard.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/automation-rules.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/settings-governance.tsx",
+            "generated/continuous-learning-cycle/frontend/src/services/continuous-learning-cycleApi.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.controller.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.dto.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.error-handler.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.events.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.integration.test.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.queue-handler.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.queue.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.repository.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.routes.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.service.ts",
+            "generated/crm-stability-cycle/frontend/src/components/CrmStabilityCycleWidget.tsx",
+            "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/analytics-dashboard.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/automation-rules.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/settings-governance.tsx",
+            "generated/crm-stability-cycle/frontend/src/services/crm-stability-cycleApi.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.controller.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.dto.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.error-handler.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.events.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.integration.test.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.queue-handler.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.queue.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.repository.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.routes.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.service.ts",
+            "generated/customer-success-suite/frontend/src/components/CustomerSuccessSuiteWidget.tsx",
+            "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/analytics-dashboard.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/automation-rules.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/settings-governance.tsx",
+            "generated/customer-success-suite/frontend/src/services/customer-success-suiteApi.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.controller.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.repository.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.routes.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.service.ts",
+            "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppHeader.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiCard.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx",
+            "generated/dashboard-starter/frontend/src/pages/dashboard-starter/index.tsx",
+            "generated/dashboard-starter/frontend/src/services/dashboard-starterApi.ts",
+            "generated/dashboard-starter/starter/src/app/layout.tsx",
+            "generated/dashboard-starter/starter/src/app/page.tsx",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.controller.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.dto.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.error-handler.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.events.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.integration.test.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.queue-handler.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.queue.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.repository.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.routes.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.service.ts",
+            "generated/knowledge-product-engine/frontend/src/components/KnowledgeProductEngineWidget.tsx",
+            "generated/knowledge-product-engine/frontend/src/modules/knowledge-product-engine/KnowledgeProductEngineModule.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/analytics-dashboard.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/automation-rules.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/settings-governance.tsx",
+            "generated/knowledge-product-engine/frontend/src/services/knowledge-product-engineApi.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.controller.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.events.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.queue.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.repository.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.routes.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.service.ts",
+            "generated/ops-dashboard/frontend/src/components/OpsDashboardWidget.tsx",
+            "generated/ops-dashboard/frontend/src/modules/ops-dashboard/OpsDashboardModule.tsx",
+            "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+            "generated/ops-dashboard/frontend/src/services/ops-dashboardApi.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.controller.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.events.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.queue.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.repository.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.routes.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.service.ts",
+            "generated/premium-support-desk/frontend/src/components/PremiumSupportDeskWidget.tsx",
+            "generated/premium-support-desk/frontend/src/modules/premium-support-desk/PremiumSupportDeskModule.tsx",
+            "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+            "generated/premium-support-desk/frontend/src/services/premium-support-deskApi.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.controller.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.dto.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.error-handler.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.events.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.integration.test.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.queue-handler.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.queue.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.repository.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.routes.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.service.ts",
+            "generated/saas-operations-hub/frontend/src/components/SaasOperationsHubWidget.tsx",
+            "generated/saas-operations-hub/frontend/src/modules/saas-operations-hub/SaasOperationsHubModule.tsx",
+            "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx",
+            "generated/saas-operations-hub/frontend/src/services/saas-operations-hubApi.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.controller.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.repository.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.routes.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.service.ts",
+            "generated/safe-mode-smoke/frontend/src/components/forms/safe-mode-smokeForm.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/safe-mode-smoke/frontend/src/modules/safe-mode-smoke/SafeModeSmokeModule.tsx",
+            "generated/safe-mode-smoke/frontend/src/pages/safe-mode-smoke/index.tsx",
+            "generated/safe-mode-smoke/frontend/src/services/safe-mode-smokeApi.ts",
+            "generated/safe-mode-smoke/starter/src/app/layout.tsx",
+            "generated/safe-mode-smoke/starter/src/app/page.tsx",
+            "tsconfig.engine.json",
+            "tsconfig.json"
+          ]
+        },
+        {
+          "name": "react",
+          "confidence": 1,
+          "sources": [
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/pages/billing-suite/index.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/page.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignList.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/HistoryPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/PreviewPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/EmptyState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/LoadingState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/pages/structure-check/index.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/page.tsx",
+            "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppHeader.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiCard.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+            "generated/ai-fallback-check/frontend/src/pages/ai-fallback-check/index.tsx",
+            "generated/ai-fallback-check/starter/src/app/layout.tsx",
+            "generated/ai-fallback-check/starter/src/app/page.tsx",
+            "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+            "generated/cli-smoke/frontend/src/pages/cli-smoke/index.tsx",
+            "generated/cli-smoke/starter/src/app/layout.tsx",
+            "generated/cli-smoke/starter/src/app/page.tsx",
+            "generated/continuous-learning-cycle/frontend/src/components/ContinuousLearningCycleWidget.tsx",
+            "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/analytics-dashboard.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/automation-rules.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/settings-governance.tsx",
+            "generated/continuous-learning-cycle/starter/src/main.jsx",
+            "generated/crm-stability-cycle/frontend/src/components/CrmStabilityCycleWidget.tsx",
+            "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/analytics-dashboard.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/automation-rules.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/settings-governance.tsx",
+            "generated/crm-stability-cycle/starter/src/main.jsx",
+            "generated/customer-success-suite/frontend/src/components/CustomerSuccessSuiteWidget.tsx",
+            "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/analytics-dashboard.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/automation-rules.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/settings-governance.tsx",
+            "generated/customer-success-suite/starter/src/main.jsx",
+            "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppHeader.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiCard.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx",
+            "generated/dashboard-starter/frontend/src/pages/dashboard-starter/index.tsx",
+            "generated/dashboard-starter/starter/src/app/layout.tsx",
+            "generated/dashboard-starter/starter/src/app/page.tsx",
+            "generated/knowledge-product-engine/frontend/src/components/KnowledgeProductEngineWidget.tsx",
+            "generated/knowledge-product-engine/frontend/src/modules/knowledge-product-engine/KnowledgeProductEngineModule.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/analytics-dashboard.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/automation-rules.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/settings-governance.tsx",
+            "generated/knowledge-product-engine/starter/src/main.jsx",
+            "generated/ops-dashboard/frontend/src/components/OpsDashboardWidget.tsx",
+            "generated/ops-dashboard/frontend/src/modules/ops-dashboard/OpsDashboardModule.tsx",
+            "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+            "generated/ops-dashboard/starter/src/main.jsx",
+            "generated/premium-support-desk/frontend/src/components/PremiumSupportDeskWidget.tsx",
+            "generated/premium-support-desk/frontend/src/modules/premium-support-desk/PremiumSupportDeskModule.tsx",
+            "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+            "generated/premium-support-desk/starter/src/main.jsx",
+            "generated/saas-operations-hub/frontend/src/components/SaasOperationsHubWidget.tsx",
+            "generated/saas-operations-hub/frontend/src/modules/saas-operations-hub/SaasOperationsHubModule.tsx",
+            "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx",
+            "generated/saas-operations-hub/starter/src/main.jsx",
+            "generated/safe-mode-smoke/frontend/src/components/forms/safe-mode-smokeForm.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/safe-mode-smoke/frontend/src/modules/safe-mode-smoke/SafeModeSmokeModule.tsx",
+            "generated/safe-mode-smoke/frontend/src/pages/safe-mode-smoke/index.tsx",
+            "generated/safe-mode-smoke/starter/src/app/layout.tsx",
+            "generated/safe-mode-smoke/starter/src/app/page.tsx"
+          ]
+        },
+        {
+          "name": "docker",
+          "confidence": 0.45,
+          "sources": [
+            "docker-compose.yml"
+          ]
+        }
+      ],
+      "entryPoints": [
+        {
+          "path": "dist/api/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "dist/api/index.js"
+          ]
+        },
+        {
+          "path": "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts",
+          "confidence": 0.95,
+          "sources": [
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts"
+          ]
+        },
+        {
+          "path": "future/drafts/legacy-root/generated/campaign_system/backend/src/server.ts",
+          "confidence": 0.95,
+          "sources": [
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/server.ts"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-26T14:08:15.195Z",
+    "tokenVersion": 2,
+    "insightVersion": 2,
+    "changes": [
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-1",
+        "message": "Token atualizado: missing-dependency-1",
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-2",
+        "message": "Token atualizado: missing-dependency-2",
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-3",
+        "message": "Token atualizado: missing-dependency-3",
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/config/env.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.dto.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/services/campaign.service.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/error-handler.ts"
+        ]
+      },
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-4",
+        "message": "Token atualizado: missing-dependency-4",
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/infra/database/prisma.ts",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/lib/prisma.ts"
+        ]
+      },
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-5",
+        "message": "Token atualizado: missing-dependency-5",
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js",
+          "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts"
+        ]
+      },
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-6",
+        "message": "Token atualizado: missing-dependency-6",
+        "confidence": 0.72,
+        "sources": [
+          "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+          "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+          "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+          "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+          "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+          "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx",
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx"
+        ]
+      },
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-7",
+        "message": "Token atualizado: missing-dependency-7",
+        "confidence": 0.72,
+        "sources": [
+          "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx",
+          "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+          "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx"
+        ]
+      },
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-8",
+        "message": "Token atualizado: missing-dependency-8",
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+          "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+          "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+          "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+          "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+          "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+          "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx"
+        ]
+      },
+      {
+        "type": "updated-token",
+        "tokenId": "missing-dependency-9",
+        "message": "Token atualizado: missing-dependency-9",
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/knowledge-product-engine/starter/src/main.jsx",
+          "generated/ops-dashboard/starter/src/main.jsx",
+          "generated/premium-support-desk/starter/src/main.jsx",
+          "generated/saas-operations-hub/starter/src/main.jsx",
+          "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx"
+        ]
+      },
+      {
+        "type": "removed-token",
+        "tokenId": "missing-dependency-10",
+        "message": "Token removido da analise atual: missing-dependency-10",
+        "confidence": 0.72,
+        "sources": [
+          "future/drafts/legacy-root/generated/campaign_system/frontend/tailwind.config.ts"
+        ]
+      },
+      {
+        "type": "removed-token",
+        "tokenId": "missing-dependency-11",
+        "message": "Token removido da analise atual: missing-dependency-11",
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+          "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+          "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+          "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+          "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+          "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+          "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx"
+        ]
+      }
+    ],
+    "nextActions": [
+      {
+        "id": "next-1",
+        "action": "Dependencia importada sem registro no package.json: vite",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "next-2",
+        "action": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "next-3",
+        "action": "Dependencia importada sem registro no package.json: zod",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "next-4",
+        "action": "Dependencia importada sem registro no package.json: @prisma/client",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "next-5",
+        "action": "Dependencia importada sem registro no package.json: helmet",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "next-6",
+        "action": "Dependencia importada sem registro no package.json: react",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+          "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+          "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+          "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+          "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+          "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx"
+        ]
+      },
+      {
+        "id": "next-7",
+        "action": "Dependencia importada sem registro no package.json: lucide-react",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx"
+        ]
+      },
+      {
+        "id": "next-8",
+        "action": "Dependencia importada sem registro no package.json: @/components",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+          "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+          "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+          "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+          "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+          "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+          "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx"
+        ]
+      },
+      {
+        "id": "next-9",
+        "action": "Dependencia importada sem registro no package.json: react-dom",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/knowledge-product-engine/starter/src/main.jsx",
+          "generated/ops-dashboard/starter/src/main.jsx",
+          "generated/premium-support-desk/starter/src/main.jsx",
+          "generated/saas-operations-hub/starter/src/main.jsx"
+        ]
+      },
+      {
+        "id": "fix-1",
+        "action": "Dependencia importada sem registro no package.json: vite",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "fix-2",
+        "action": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "fix-3",
+        "action": "Dependencia importada sem registro no package.json: zod",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "fix-4",
+        "action": "Dependencia importada sem registro no package.json: @prisma/client",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "fix-5",
+        "action": "Dependencia importada sem registro no package.json: helmet",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "fix-6",
+        "action": "Dependencia importada sem registro no package.json: react",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+          "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+          "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+          "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+          "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+          "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx"
+        ]
+      },
+      {
+        "id": "fix-7",
+        "action": "Dependencia importada sem registro no package.json: lucide-react",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx"
+        ]
+      },
+      {
+        "id": "fix-8",
+        "action": "Dependencia importada sem registro no package.json: @/components",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+          "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+          "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+          "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+          "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+          "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+          "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx"
+        ]
+      },
+      {
+        "id": "fix-9",
+        "action": "Dependencia importada sem registro no package.json: react-dom",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/knowledge-product-engine/starter/src/main.jsx",
+          "generated/ops-dashboard/starter/src/main.jsx",
+          "generated/premium-support-desk/starter/src/main.jsx",
+          "generated/saas-operations-hub/starter/src/main.jsx"
+        ]
+      },
+      {
+        "id": "opt-1",
+        "action": "Otimizar area relacionada ao token api-to-services.",
+        "reason": "Fluxo api -> services",
+        "priorityScore": 93,
+        "confidence": 0.82,
+        "sources": [
+          "layer-detection:api",
+          "layer-detection:services"
+        ]
+      },
+      {
+        "id": "opt-2",
+        "action": "Otimizar area relacionada ao token missing-dependency-1.",
+        "reason": "Dependencia importada sem registro no package.json: vite",
+        "priorityScore": 93,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      }
+    ],
+    "architectureSnapshot": {
+      "layers": [
+        {
+          "name": "api",
+          "files": 7,
+          "confidence": 0.54
+        },
+        {
+          "name": "services",
+          "files": 19,
+          "confidence": 0.69
+        },
+        {
+          "name": "controllers",
+          "files": 1,
+          "confidence": 0.46
+        },
+        {
+          "name": "ui",
+          "files": 146,
+          "confidence": 1
+        },
+        {
+          "name": "data",
+          "files": 2,
+          "confidence": 0.48
+        }
+      ],
+      "bottlenecks": []
+    },
+    "projectSummary": {
+      "totalFiles": 372,
+      "stack": [
+        {
+          "name": "nodejs",
+          "confidence": 1,
+          "sources": [
+            "crm/frontend/package.json",
+            "future/drafts/legacy-root/generated/billing-suite/starter/package.json",
+            "future/drafts/legacy-root/generated/campaign_system/backend/package.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/package.json",
+            "future/drafts/legacy-root/generated/structure-check/starter/package.json",
+            "generated/ai-fallback-check/starter/package.json",
+            "generated/cli-smoke/starter/package.json",
+            "generated/continuous-learning-cycle/starter/package.json",
+            "generated/crm-stability-cycle/starter/package.json",
+            "generated/customer-success-suite/starter/package.json",
+            "generated/dashboard-starter/starter/package.json",
+            "generated/knowledge-product-engine/starter/package.json",
+            "generated/ops-dashboard/starter/package.json",
+            "generated/premium-support-desk/starter/package.json",
+            "generated/saas-operations-hub/starter/package.json",
+            "generated/safe-mode-smoke/starter/package.json",
+            "package.json"
+          ]
+        },
+        {
+          "name": "typescript",
+          "confidence": 1,
+          "sources": [
+            "crm/frontend/tsconfig.json",
+            "crm/frontend/vite.config.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.controller.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.repository.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.routes.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.service.ts",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/pages/billing-suite/index.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/services/billing-suiteApi.ts",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/page.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/config/env.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/controllers/campaign.controller.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/infra/database/prisma.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/lib/prisma.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.controller.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.dto.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.repository.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.routes.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.service.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/repositories/campaign.repository.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/routes/campaign.routes.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/server.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/services/campaign.service.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/errors/AppError.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/asyncHandler.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/error-handler.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/not-found.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/tsconfig.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignList.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/HistoryPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/PreviewPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/EmptyState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/LoadingState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/apiClient.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/campaignApi.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/http/client.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/http/request.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/tailwind.config.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/tsconfig.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.controller.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.repository.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.routes.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.service.ts",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/pages/structure-check/index.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/services/structure-checkApi.ts",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/page.tsx",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.controller.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.repository.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.routes.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.service.ts",
+            "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppHeader.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiCard.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+            "generated/ai-fallback-check/frontend/src/pages/ai-fallback-check/index.tsx",
+            "generated/ai-fallback-check/frontend/src/services/ai-fallback-checkApi.ts",
+            "generated/ai-fallback-check/starter/src/app/layout.tsx",
+            "generated/ai-fallback-check/starter/src/app/page.tsx",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.controller.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.repository.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.routes.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.service.ts",
+            "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+            "generated/cli-smoke/frontend/src/pages/cli-smoke/index.tsx",
+            "generated/cli-smoke/frontend/src/services/cli-smokeApi.ts",
+            "generated/cli-smoke/starter/src/app/layout.tsx",
+            "generated/cli-smoke/starter/src/app/page.tsx",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.controller.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.dto.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.error-handler.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.events.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.integration.test.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.queue-handler.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.queue.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.repository.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.routes.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.service.ts",
+            "generated/continuous-learning-cycle/frontend/src/components/ContinuousLearningCycleWidget.tsx",
+            "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/analytics-dashboard.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/automation-rules.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/settings-governance.tsx",
+            "generated/continuous-learning-cycle/frontend/src/services/continuous-learning-cycleApi.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.controller.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.dto.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.error-handler.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.events.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.integration.test.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.queue-handler.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.queue.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.repository.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.routes.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.service.ts",
+            "generated/crm-stability-cycle/frontend/src/components/CrmStabilityCycleWidget.tsx",
+            "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/analytics-dashboard.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/automation-rules.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/settings-governance.tsx",
+            "generated/crm-stability-cycle/frontend/src/services/crm-stability-cycleApi.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.controller.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.dto.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.error-handler.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.events.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.integration.test.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.queue-handler.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.queue.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.repository.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.routes.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.service.ts",
+            "generated/customer-success-suite/frontend/src/components/CustomerSuccessSuiteWidget.tsx",
+            "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/analytics-dashboard.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/automation-rules.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/settings-governance.tsx",
+            "generated/customer-success-suite/frontend/src/services/customer-success-suiteApi.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.controller.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.repository.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.routes.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.service.ts",
+            "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppHeader.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiCard.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx",
+            "generated/dashboard-starter/frontend/src/pages/dashboard-starter/index.tsx",
+            "generated/dashboard-starter/frontend/src/services/dashboard-starterApi.ts",
+            "generated/dashboard-starter/starter/src/app/layout.tsx",
+            "generated/dashboard-starter/starter/src/app/page.tsx",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.controller.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.dto.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.error-handler.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.events.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.integration.test.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.queue-handler.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.queue.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.repository.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.routes.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.service.ts",
+            "generated/knowledge-product-engine/frontend/src/components/KnowledgeProductEngineWidget.tsx",
+            "generated/knowledge-product-engine/frontend/src/modules/knowledge-product-engine/KnowledgeProductEngineModule.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/analytics-dashboard.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/automation-rules.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/settings-governance.tsx",
+            "generated/knowledge-product-engine/frontend/src/services/knowledge-product-engineApi.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.controller.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.events.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.queue.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.repository.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.routes.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.service.ts",
+            "generated/ops-dashboard/frontend/src/components/OpsDashboardWidget.tsx",
+            "generated/ops-dashboard/frontend/src/modules/ops-dashboard/OpsDashboardModule.tsx",
+            "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+            "generated/ops-dashboard/frontend/src/services/ops-dashboardApi.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.controller.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.events.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.queue.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.repository.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.routes.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.service.ts",
+            "generated/premium-support-desk/frontend/src/components/PremiumSupportDeskWidget.tsx",
+            "generated/premium-support-desk/frontend/src/modules/premium-support-desk/PremiumSupportDeskModule.tsx",
+            "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+            "generated/premium-support-desk/frontend/src/services/premium-support-deskApi.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.controller.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.dto.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.error-handler.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.events.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.integration.test.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.queue-handler.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.queue.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.repository.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.routes.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.service.ts",
+            "generated/saas-operations-hub/frontend/src/components/SaasOperationsHubWidget.tsx",
+            "generated/saas-operations-hub/frontend/src/modules/saas-operations-hub/SaasOperationsHubModule.tsx",
+            "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx",
+            "generated/saas-operations-hub/frontend/src/services/saas-operations-hubApi.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.controller.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.repository.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.routes.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.service.ts",
+            "generated/safe-mode-smoke/frontend/src/components/forms/safe-mode-smokeForm.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/safe-mode-smoke/frontend/src/modules/safe-mode-smoke/SafeModeSmokeModule.tsx",
+            "generated/safe-mode-smoke/frontend/src/pages/safe-mode-smoke/index.tsx",
+            "generated/safe-mode-smoke/frontend/src/services/safe-mode-smokeApi.ts",
+            "generated/safe-mode-smoke/starter/src/app/layout.tsx",
+            "generated/safe-mode-smoke/starter/src/app/page.tsx",
+            "tsconfig.engine.json",
+            "tsconfig.json"
+          ]
+        },
+        {
+          "name": "react",
+          "confidence": 1,
+          "sources": [
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/pages/billing-suite/index.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/page.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignList.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/HistoryPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/PreviewPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/EmptyState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/LoadingState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/pages/structure-check/index.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/page.tsx",
+            "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppHeader.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiCard.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+            "generated/ai-fallback-check/frontend/src/pages/ai-fallback-check/index.tsx",
+            "generated/ai-fallback-check/starter/src/app/layout.tsx",
+            "generated/ai-fallback-check/starter/src/app/page.tsx",
+            "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+            "generated/cli-smoke/frontend/src/pages/cli-smoke/index.tsx",
+            "generated/cli-smoke/starter/src/app/layout.tsx",
+            "generated/cli-smoke/starter/src/app/page.tsx",
+            "generated/continuous-learning-cycle/frontend/src/components/ContinuousLearningCycleWidget.tsx",
+            "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/analytics-dashboard.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/automation-rules.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/settings-governance.tsx",
+            "generated/continuous-learning-cycle/starter/src/main.jsx",
+            "generated/crm-stability-cycle/frontend/src/components/CrmStabilityCycleWidget.tsx",
+            "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/analytics-dashboard.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/automation-rules.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/settings-governance.tsx",
+            "generated/crm-stability-cycle/starter/src/main.jsx",
+            "generated/customer-success-suite/frontend/src/components/CustomerSuccessSuiteWidget.tsx",
+            "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/analytics-dashboard.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/automation-rules.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/settings-governance.tsx",
+            "generated/customer-success-suite/starter/src/main.jsx",
+            "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppHeader.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiCard.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx",
+            "generated/dashboard-starter/frontend/src/pages/dashboard-starter/index.tsx",
+            "generated/dashboard-starter/starter/src/app/layout.tsx",
+            "generated/dashboard-starter/starter/src/app/page.tsx",
+            "generated/knowledge-product-engine/frontend/src/components/KnowledgeProductEngineWidget.tsx",
+            "generated/knowledge-product-engine/frontend/src/modules/knowledge-product-engine/KnowledgeProductEngineModule.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/analytics-dashboard.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/automation-rules.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/settings-governance.tsx",
+            "generated/knowledge-product-engine/starter/src/main.jsx",
+            "generated/ops-dashboard/frontend/src/components/OpsDashboardWidget.tsx",
+            "generated/ops-dashboard/frontend/src/modules/ops-dashboard/OpsDashboardModule.tsx",
+            "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+            "generated/ops-dashboard/starter/src/main.jsx",
+            "generated/premium-support-desk/frontend/src/components/PremiumSupportDeskWidget.tsx",
+            "generated/premium-support-desk/frontend/src/modules/premium-support-desk/PremiumSupportDeskModule.tsx",
+            "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+            "generated/premium-support-desk/starter/src/main.jsx",
+            "generated/saas-operations-hub/frontend/src/components/SaasOperationsHubWidget.tsx",
+            "generated/saas-operations-hub/frontend/src/modules/saas-operations-hub/SaasOperationsHubModule.tsx",
+            "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx",
+            "generated/saas-operations-hub/starter/src/main.jsx",
+            "generated/safe-mode-smoke/frontend/src/components/forms/safe-mode-smokeForm.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/safe-mode-smoke/frontend/src/modules/safe-mode-smoke/SafeModeSmokeModule.tsx",
+            "generated/safe-mode-smoke/frontend/src/pages/safe-mode-smoke/index.tsx",
+            "generated/safe-mode-smoke/starter/src/app/layout.tsx",
+            "generated/safe-mode-smoke/starter/src/app/page.tsx"
+          ]
+        },
+        {
+          "name": "docker",
+          "confidence": 0.45,
+          "sources": [
+            "docker-compose.yml"
+          ]
+        }
+      ],
+      "entryPoints": [
+        {
+          "path": "dist/api/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "dist/api/index.js"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "createdAt": "2026-03-26T14:08:55.513Z",
+    "tokenVersion": 3,
+    "insightVersion": 3,
+    "changes": [
+      {
+        "type": "removed-token",
+        "tokenId": "missing-dependency-6",
+        "message": "Token removido da analise atual: missing-dependency-6",
+        "confidence": 0.72,
+        "sources": [
+          "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+          "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+          "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+          "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+          "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+          "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx"
+        ]
+      },
+      {
+        "type": "removed-token",
+        "tokenId": "missing-dependency-7",
+        "message": "Token removido da analise atual: missing-dependency-7",
+        "confidence": 0.72,
+        "sources": [
+          "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+          "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx"
+        ]
+      },
+      {
+        "type": "removed-token",
+        "tokenId": "missing-dependency-8",
+        "message": "Token removido da analise atual: missing-dependency-8",
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+          "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+          "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+          "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+          "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+          "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+          "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx"
+        ]
+      },
+      {
+        "type": "removed-token",
+        "tokenId": "missing-dependency-9",
+        "message": "Token removido da analise atual: missing-dependency-9",
+        "confidence": 0.72,
+        "sources": [
+          "generated/continuous-learning-cycle/starter/src/main.jsx",
+          "generated/crm-stability-cycle/starter/src/main.jsx",
+          "generated/customer-success-suite/starter/src/main.jsx",
+          "generated/knowledge-product-engine/starter/src/main.jsx",
+          "generated/ops-dashboard/starter/src/main.jsx",
+          "generated/premium-support-desk/starter/src/main.jsx",
+          "generated/saas-operations-hub/starter/src/main.jsx"
+        ]
+      }
+    ],
+    "nextActions": [
+      {
+        "id": "next-1",
+        "action": "Dependencia importada sem registro no package.json: vite",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "next-2",
+        "action": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "next-3",
+        "action": "Dependencia importada sem registro no package.json: zod",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "next-4",
+        "action": "Dependencia importada sem registro no package.json: @prisma/client",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "next-5",
+        "action": "Dependencia importada sem registro no package.json: helmet",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "fix-1",
+        "action": "Dependencia importada sem registro no package.json: vite",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "fix-2",
+        "action": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "fix-3",
+        "action": "Dependencia importada sem registro no package.json: zod",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "fix-4",
+        "action": "Dependencia importada sem registro no package.json: @prisma/client",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "fix-5",
+        "action": "Dependencia importada sem registro no package.json: helmet",
+        "type": "missing-dependency",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "opt-1",
+        "action": "Otimizar area relacionada ao token api-to-services.",
+        "reason": "Fluxo api -> services",
+        "priorityScore": 93,
+        "confidence": 0.82,
+        "sources": [
+          "layer-detection:api",
+          "layer-detection:services"
+        ]
+      },
+      {
+        "id": "opt-2",
+        "action": "Otimizar area relacionada ao token missing-dependency-1.",
+        "reason": "Dependencia importada sem registro no package.json: vite",
+        "priorityScore": 93,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "opt-3",
+        "action": "Otimizar area relacionada ao token missing-dependency-2.",
+        "reason": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+        "priorityScore": 93,
+        "confidence": 0.72,
+        "sources": [
+          "crm/frontend/vite.config.js",
+          "crm/frontend/vite.config.ts"
+        ]
+      },
+      {
+        "id": "opt-4",
+        "action": "Otimizar area relacionada ao token missing-dependency-3.",
+        "reason": "Dependencia importada sem registro no package.json: zod",
+        "priorityScore": 93,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "opt-5",
+        "action": "Otimizar area relacionada ao token missing-dependency-4.",
+        "reason": "Dependencia importada sem registro no package.json: @prisma/client",
+        "priorityScore": 93,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "opt-6",
+        "action": "Otimizar area relacionada ao token missing-dependency-5.",
+        "reason": "Dependencia importada sem registro no package.json: helmet",
+        "priorityScore": 93,
+        "confidence": 0.72,
+        "sources": [
+          "dist/api/index.js"
+        ]
+      },
+      {
+        "id": "opt-7",
+        "action": "Otimizar area relacionada ao token services-to-data.",
+        "reason": "Fluxo services -> data",
+        "priorityScore": 91,
+        "confidence": 0.78,
+        "sources": [
+          "layer-detection:services",
+          "layer-detection:data"
+        ]
+      },
+      {
+        "id": "opt-8",
+        "action": "Otimizar area relacionada ao token ui-to-api.",
+        "reason": "Fluxo ui -> api",
+        "priorityScore": 90,
+        "confidence": 0.76,
+        "sources": [
+          "layer-detection:ui",
+          "layer-detection:api"
+        ]
+      }
+    ],
+    "architectureSnapshot": {
+      "layers": [
+        {
+          "name": "api",
+          "files": 7,
+          "confidence": 0.54
+        },
+        {
+          "name": "services",
+          "files": 19,
+          "confidence": 0.69
+        },
+        {
+          "name": "controllers",
+          "files": 1,
+          "confidence": 0.46
+        },
+        {
+          "name": "ui",
+          "files": 146,
+          "confidence": 1
+        },
+        {
+          "name": "data",
+          "files": 2,
+          "confidence": 0.48
+        }
+      ],
+      "bottlenecks": []
+    },
+    "projectSummary": {
+      "totalFiles": 372,
+      "stack": [
+        {
+          "name": "nodejs",
+          "confidence": 1,
+          "sources": [
+            "crm/frontend/package.json",
+            "future/drafts/legacy-root/generated/billing-suite/starter/package.json",
+            "future/drafts/legacy-root/generated/campaign_system/backend/package.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/package.json",
+            "future/drafts/legacy-root/generated/structure-check/starter/package.json",
+            "generated/ai-fallback-check/starter/package.json",
+            "generated/cli-smoke/starter/package.json",
+            "generated/continuous-learning-cycle/starter/package.json",
+            "generated/crm-stability-cycle/starter/package.json",
+            "generated/customer-success-suite/starter/package.json",
+            "generated/dashboard-starter/starter/package.json",
+            "generated/knowledge-product-engine/starter/package.json",
+            "generated/ops-dashboard/starter/package.json",
+            "generated/premium-support-desk/starter/package.json",
+            "generated/saas-operations-hub/starter/package.json",
+            "generated/safe-mode-smoke/starter/package.json",
+            "package.json"
+          ]
+        },
+        {
+          "name": "typescript",
+          "confidence": 1,
+          "sources": [
+            "crm/frontend/tsconfig.json",
+            "crm/frontend/vite.config.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.controller.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.repository.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.routes.ts",
+            "future/drafts/legacy-root/generated/billing-suite/backend/src/modules/billing-suite/billing-suite.service.ts",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/pages/billing-suite/index.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/services/billing-suiteApi.ts",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/page.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/app.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/config/env.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/controllers/campaign.controller.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/infra/database/prisma.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/lib/prisma.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.controller.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.dto.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.repository.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.routes.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/modules/campaigns/campaign.service.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/repositories/campaign.repository.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/routes/campaign.routes.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/server.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/services/campaign.service.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/errors/AppError.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/asyncHandler.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/error-handler.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/src/shared/http/not-found.ts",
+            "future/drafts/legacy-root/generated/campaign_system/backend/tsconfig.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignList.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/HistoryPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/PreviewPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/EmptyState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/LoadingState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/apiClient.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/campaignApi.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/http/client.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/services/http/request.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/tailwind.config.ts",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/tsconfig.json",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/vite.config.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.controller.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.repository.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.routes.ts",
+            "future/drafts/legacy-root/generated/structure-check/backend/src/modules/structure-check/structure-check.service.ts",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/pages/structure-check/index.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/services/structure-checkApi.ts",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/page.tsx",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.controller.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.repository.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.routes.ts",
+            "generated/ai-fallback-check/backend/src/modules/ai-fallback-check/ai-fallback-check.service.ts",
+            "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppHeader.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiCard.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+            "generated/ai-fallback-check/frontend/src/pages/ai-fallback-check/index.tsx",
+            "generated/ai-fallback-check/frontend/src/services/ai-fallback-checkApi.ts",
+            "generated/ai-fallback-check/starter/src/app/layout.tsx",
+            "generated/ai-fallback-check/starter/src/app/page.tsx",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.controller.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.repository.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.routes.ts",
+            "generated/cli-smoke/backend/src/modules/cli-smoke/cli-smoke.service.ts",
+            "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+            "generated/cli-smoke/frontend/src/pages/cli-smoke/index.tsx",
+            "generated/cli-smoke/frontend/src/services/cli-smokeApi.ts",
+            "generated/cli-smoke/starter/src/app/layout.tsx",
+            "generated/cli-smoke/starter/src/app/page.tsx",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.controller.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.dto.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.error-handler.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.events.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.integration.test.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.queue-handler.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.queue.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.repository.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.routes.ts",
+            "generated/continuous-learning-cycle/backend/src/modules/continuous-learning-cycle/continuous-learning-cycle.service.ts",
+            "generated/continuous-learning-cycle/frontend/src/components/ContinuousLearningCycleWidget.tsx",
+            "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/analytics-dashboard.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/automation-rules.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/settings-governance.tsx",
+            "generated/continuous-learning-cycle/frontend/src/services/continuous-learning-cycleApi.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.controller.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.dto.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.error-handler.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.events.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.integration.test.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.queue-handler.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.queue.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.repository.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.routes.ts",
+            "generated/crm-stability-cycle/backend/src/modules/crm-stability-cycle/crm-stability-cycle.service.ts",
+            "generated/crm-stability-cycle/frontend/src/components/CrmStabilityCycleWidget.tsx",
+            "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/analytics-dashboard.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/automation-rules.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/settings-governance.tsx",
+            "generated/crm-stability-cycle/frontend/src/services/crm-stability-cycleApi.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.controller.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.dto.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.error-handler.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.events.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.integration.test.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.queue-handler.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.queue.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.repository.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.routes.ts",
+            "generated/customer-success-suite/backend/src/modules/customer-success-suite/customer-success-suite.service.ts",
+            "generated/customer-success-suite/frontend/src/components/CustomerSuccessSuiteWidget.tsx",
+            "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/analytics-dashboard.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/automation-rules.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/settings-governance.tsx",
+            "generated/customer-success-suite/frontend/src/services/customer-success-suiteApi.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.controller.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.repository.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.routes.ts",
+            "generated/dashboard-starter/backend/src/modules/dashboard-starter/dashboard-starter.service.ts",
+            "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppHeader.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiCard.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx",
+            "generated/dashboard-starter/frontend/src/pages/dashboard-starter/index.tsx",
+            "generated/dashboard-starter/frontend/src/services/dashboard-starterApi.ts",
+            "generated/dashboard-starter/starter/src/app/layout.tsx",
+            "generated/dashboard-starter/starter/src/app/page.tsx",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.controller.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.dto.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.error-handler.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.events.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.integration.test.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.queue-handler.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.queue.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.repository.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.routes.ts",
+            "generated/knowledge-product-engine/backend/src/modules/knowledge-product-engine/knowledge-product-engine.service.ts",
+            "generated/knowledge-product-engine/frontend/src/components/KnowledgeProductEngineWidget.tsx",
+            "generated/knowledge-product-engine/frontend/src/modules/knowledge-product-engine/KnowledgeProductEngineModule.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/analytics-dashboard.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/automation-rules.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/settings-governance.tsx",
+            "generated/knowledge-product-engine/frontend/src/services/knowledge-product-engineApi.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.controller.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.events.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.queue.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.repository.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.routes.ts",
+            "generated/ops-dashboard/backend/src/modules/ops-dashboard/ops-dashboard.service.ts",
+            "generated/ops-dashboard/frontend/src/components/OpsDashboardWidget.tsx",
+            "generated/ops-dashboard/frontend/src/modules/ops-dashboard/OpsDashboardModule.tsx",
+            "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+            "generated/ops-dashboard/frontend/src/services/ops-dashboardApi.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.controller.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.events.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.queue.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.repository.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.routes.ts",
+            "generated/premium-support-desk/backend/src/modules/premium-support-desk/premium-support-desk.service.ts",
+            "generated/premium-support-desk/frontend/src/components/PremiumSupportDeskWidget.tsx",
+            "generated/premium-support-desk/frontend/src/modules/premium-support-desk/PremiumSupportDeskModule.tsx",
+            "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+            "generated/premium-support-desk/frontend/src/services/premium-support-deskApi.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.controller.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.dto.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.error-handler.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.events.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.integration.test.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.queue-handler.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.queue.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.repository.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.routes.ts",
+            "generated/saas-operations-hub/backend/src/modules/saas-operations-hub/saas-operations-hub.service.ts",
+            "generated/saas-operations-hub/frontend/src/components/SaasOperationsHubWidget.tsx",
+            "generated/saas-operations-hub/frontend/src/modules/saas-operations-hub/SaasOperationsHubModule.tsx",
+            "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx",
+            "generated/saas-operations-hub/frontend/src/services/saas-operations-hubApi.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.controller.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.repository.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.routes.ts",
+            "generated/safe-mode-smoke/backend/src/modules/safe-mode-smoke/safe-mode-smoke.service.ts",
+            "generated/safe-mode-smoke/frontend/src/components/forms/safe-mode-smokeForm.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/safe-mode-smoke/frontend/src/modules/safe-mode-smoke/SafeModeSmokeModule.tsx",
+            "generated/safe-mode-smoke/frontend/src/pages/safe-mode-smoke/index.tsx",
+            "generated/safe-mode-smoke/frontend/src/services/safe-mode-smokeApi.ts",
+            "generated/safe-mode-smoke/starter/src/app/layout.tsx",
+            "generated/safe-mode-smoke/starter/src/app/page.tsx",
+            "tsconfig.engine.json",
+            "tsconfig.json"
+          ]
+        },
+        {
+          "name": "react",
+          "confidence": 1,
+          "sources": [
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/forms/billing-suiteForm.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/modules/billing-suite/BillingSuiteModule.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/frontend/src/pages/billing-suite/index.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/billing-suite/starter/src/app/page.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/App.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignBuilder.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/CampaignList.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/HistoryPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/PreviewPanel.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Button.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/Card.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/EmptyState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/components/ui/LoadingState.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/layout/DashboardLayout.tsx",
+            "future/drafts/legacy-root/generated/campaign_system/frontend/src/main.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/forms/structure-checkForm.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppHeader.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/layout/AppSidebar.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiCard.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/components/ui/UiDataTable.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/modules/structure-check/StructureCheckModule.tsx",
+            "future/drafts/legacy-root/generated/structure-check/frontend/src/pages/structure-check/index.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/layout.tsx",
+            "future/drafts/legacy-root/generated/structure-check/starter/src/app/page.tsx",
+            "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppHeader.tsx",
+            "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiCard.tsx",
+            "generated/ai-fallback-check/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+            "generated/ai-fallback-check/frontend/src/pages/ai-fallback-check/index.tsx",
+            "generated/ai-fallback-check/starter/src/app/layout.tsx",
+            "generated/ai-fallback-check/starter/src/app/page.tsx",
+            "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/cli-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+            "generated/cli-smoke/frontend/src/pages/cli-smoke/index.tsx",
+            "generated/cli-smoke/starter/src/app/layout.tsx",
+            "generated/cli-smoke/starter/src/app/page.tsx",
+            "generated/continuous-learning-cycle/frontend/src/components/ContinuousLearningCycleWidget.tsx",
+            "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/analytics-dashboard.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/automation-rules.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+            "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/settings-governance.tsx",
+            "generated/continuous-learning-cycle/starter/src/main.jsx",
+            "generated/crm-stability-cycle/frontend/src/components/CrmStabilityCycleWidget.tsx",
+            "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/analytics-dashboard.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/automation-rules.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+            "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/settings-governance.tsx",
+            "generated/crm-stability-cycle/starter/src/main.jsx",
+            "generated/customer-success-suite/frontend/src/components/CustomerSuccessSuiteWidget.tsx",
+            "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/analytics-dashboard.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/automation-rules.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+            "generated/customer-success-suite/frontend/src/pages/customer-success-suite/settings-governance.tsx",
+            "generated/customer-success-suite/starter/src/main.jsx",
+            "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppHeader.tsx",
+            "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiCard.tsx",
+            "generated/dashboard-starter/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx",
+            "generated/dashboard-starter/frontend/src/pages/dashboard-starter/index.tsx",
+            "generated/dashboard-starter/starter/src/app/layout.tsx",
+            "generated/dashboard-starter/starter/src/app/page.tsx",
+            "generated/knowledge-product-engine/frontend/src/components/KnowledgeProductEngineWidget.tsx",
+            "generated/knowledge-product-engine/frontend/src/modules/knowledge-product-engine/KnowledgeProductEngineModule.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/analytics-dashboard.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/automation-rules.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+            "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/settings-governance.tsx",
+            "generated/knowledge-product-engine/starter/src/main.jsx",
+            "generated/ops-dashboard/frontend/src/components/OpsDashboardWidget.tsx",
+            "generated/ops-dashboard/frontend/src/modules/ops-dashboard/OpsDashboardModule.tsx",
+            "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+            "generated/ops-dashboard/starter/src/main.jsx",
+            "generated/premium-support-desk/frontend/src/components/PremiumSupportDeskWidget.tsx",
+            "generated/premium-support-desk/frontend/src/modules/premium-support-desk/PremiumSupportDeskModule.tsx",
+            "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+            "generated/premium-support-desk/starter/src/main.jsx",
+            "generated/saas-operations-hub/frontend/src/components/SaasOperationsHubWidget.tsx",
+            "generated/saas-operations-hub/frontend/src/modules/saas-operations-hub/SaasOperationsHubModule.tsx",
+            "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx",
+            "generated/saas-operations-hub/starter/src/main.jsx",
+            "generated/safe-mode-smoke/frontend/src/components/forms/safe-mode-smokeForm.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppHeader.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiCard.tsx",
+            "generated/safe-mode-smoke/frontend/src/components/ui/UiDataTable.tsx",
+            "generated/safe-mode-smoke/frontend/src/modules/safe-mode-smoke/SafeModeSmokeModule.tsx",
+            "generated/safe-mode-smoke/frontend/src/pages/safe-mode-smoke/index.tsx",
+            "generated/safe-mode-smoke/starter/src/app/layout.tsx",
+            "generated/safe-mode-smoke/starter/src/app/page.tsx"
+          ]
+        },
+        {
+          "name": "docker",
+          "confidence": 0.45,
+          "sources": [
+            "docker-compose.yml"
+          ]
+        }
+      ],
+      "entryPoints": [
+        {
+          "path": "dist/api/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "dist/api/index.js"
+          ]
+        }
+      ]
+    }
+  }
+]

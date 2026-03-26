@@ -1,0 +1,110 @@
+{
+  "projectName": "ai-engine",
+  "rootPath": "C:\\projetos\\ai-engine-core\\ai-engine",
+  "version": 3,
+  "updatedAt": "2026-03-26T14:08:55.513Z",
+  "insights": [
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: vite",
+      "confidence": 0.72,
+      "sources": [
+        "crm/frontend/vite.config.js",
+        "crm/frontend/vite.config.ts"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+      "confidence": 0.72,
+      "sources": [
+        "crm/frontend/vite.config.js",
+        "crm/frontend/vite.config.ts"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: zod",
+      "confidence": 0.72,
+      "sources": [
+        "dist/api/index.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @prisma/client",
+      "confidence": 0.72,
+      "sources": [
+        "dist/api/index.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: helmet",
+      "confidence": 0.72,
+      "sources": [
+        "dist/api/index.js"
+      ]
+    },
+    {
+      "type": "learning-improvement",
+      "severity": "high",
+      "message": "Foram detectadas 4 mudancas; revisar tokens alterados e atualizar prioridades.",
+      "confidence": 0.86,
+      "sources": [
+        "generated/ai-fallback-check/frontend/src/components/forms/ai-fallback-checkForm.tsx",
+        "generated/ai-fallback-check/frontend/src/modules/ai-fallback-check/AiFallbackCheckModule.tsx",
+        "generated/cli-smoke/frontend/src/components/forms/cli-smokeForm.tsx",
+        "generated/cli-smoke/frontend/src/modules/cli-smoke/CliSmokeModule.tsx",
+        "generated/continuous-learning-cycle/frontend/src/modules/continuous-learning-cycle/ContinuousLearningCycleModule.tsx",
+        "generated/continuous-learning-cycle/starter/src/main.jsx",
+        "generated/crm-stability-cycle/frontend/src/modules/crm-stability-cycle/CrmStabilityCycleModule.tsx",
+        "generated/crm-stability-cycle/starter/src/main.jsx",
+        "generated/customer-success-suite/frontend/src/modules/customer-success-suite/CustomerSuccessSuiteModule.tsx",
+        "generated/customer-success-suite/starter/src/main.jsx",
+        "generated/dashboard-starter/frontend/src/components/forms/dashboard-starterForm.tsx",
+        "generated/dashboard-starter/frontend/src/modules/dashboard-starter/DashboardStarterModule.tsx",
+        "generated/ai-fallback-check/frontend/src/components/layout/AppSidebar.tsx",
+        "generated/cli-smoke/frontend/src/components/layout/AppSidebar.tsx",
+        "generated/dashboard-starter/frontend/src/components/layout/AppSidebar.tsx",
+        "generated/safe-mode-smoke/frontend/src/components/layout/AppSidebar.tsx",
+        "generated/continuous-learning-cycle/frontend/src/pages/continuous-learning-cycle/index.tsx",
+        "generated/crm-stability-cycle/frontend/src/pages/crm-stability-cycle/index.tsx",
+        "generated/customer-success-suite/frontend/src/pages/customer-success-suite/index.tsx",
+        "generated/knowledge-product-engine/frontend/src/pages/knowledge-product-engine/index.tsx",
+        "generated/ops-dashboard/frontend/src/pages/ops-dashboard/index.tsx",
+        "generated/premium-support-desk/frontend/src/pages/premium-support-desk/index.tsx",
+        "generated/saas-operations-hub/frontend/src/pages/saas-operations-hub/index.tsx",
+        "generated/continuous-learning-cycle/starter/src/main.jsx",
+        "generated/crm-stability-cycle/starter/src/main.jsx",
+        "generated/customer-success-suite/starter/src/main.jsx",
+        "generated/knowledge-product-engine/starter/src/main.jsx",
+        "generated/ops-dashboard/starter/src/main.jsx",
+        "generated/premium-support-desk/starter/src/main.jsx",
+        "generated/saas-operations-hub/starter/src/main.jsx"
+      ]
+    }
+  ],
+  "history": [
+    {
+      "version": 1,
+      "updatedAt": "2026-03-26T14:07:05.493Z",
+      "insightCount": 12
+    },
+    {
+      "version": 2,
+      "updatedAt": "2026-03-26T14:08:15.195Z",
+      "insightCount": 10
+    },
+    {
+      "version": 3,
+      "updatedAt": "2026-03-26T14:08:55.513Z",
+      "insightCount": 6
+    }
+  ]
+}

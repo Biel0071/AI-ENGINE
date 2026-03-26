@@ -9,3 +9,5 @@ engine/memory/knowledge-fallback.json
 engine/memory/*-history.json
 engine/memory/design-*-memory.json
 .tmp-*.cjs
+crm/backend/crm/sessions/
+**/sessions/
