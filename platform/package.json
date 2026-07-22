@@ -1,0 +1,15 @@
+{
+  "name": "ai-engine-control-plane",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multitenant software house control plane for AI-ENGINE projects.",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node src/index.js",
+    "start": "node src/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
