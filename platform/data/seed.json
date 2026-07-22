@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "tenants": [
+    {
+      "id": "biel0071-software-house",
+      "name": "Biel0071 Software House",
+      "status": "active",
+      "createdAt": "2026-07-21T00:00:00.000Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "swift-wa-assist",
+      "tenantId": "biel0071-software-house",
+      "name": "Assistência rápida",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "swift-wa-assist", "url": "https://github.com/Biel0071/swift-wa-assist", "visibility": "private" },
+      "primaryLanguage": "HTML",
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": ["customer-service", "web"]
+    },
+    {
+      "id": "formalize-magic",
+      "tenantId": "biel0071-software-house",
+      "name": "Formalizar magia",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "formalize-magic", "url": "https://github.com/Biel0071/formalize-magic", "visibility": "private" },
+      "primaryLanguage": "TypeScript",
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": ["web-app"]
+    },
+    {
+      "id": "fortlev-quote-master",
+      "tenantId": "biel0071-software-house",
+      "name": "Fortlev Quote Master",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "fortlev-quote-master", "url": "https://github.com/Biel0071/fortlev-quote-master", "visibility": "public" },
+      "primaryLanguage": "TypeScript",
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": ["quotation", "web-app"]
+    },
+    {
+      "id": "zapai-final",
+      "tenantId": "biel0071-software-house",
+      "name": "ZAPAI FINAL",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "ZAPAI-FINAL", "url": "https://github.com/Biel0071/ZAPAI-FINAL", "visibility": "public" },
+      "primaryLanguage": "HTML",
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": ["crm", "whatsapp", "ai"]
+    },
+    {
+      "id": "ai-llm",
+      "tenantId": "biel0071-software-house",
+      "name": "AI LLM",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "AI-LLM", "url": "https://github.com/Biel0071/AI-LLM", "visibility": "public" },
+      "primaryLanguage": "TypeScript",
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": ["ai", "llm"]
+    },
+    {
+      "id": "ai-engine",
+      "tenantId": "biel0071-software-house",
+      "name": "Motor de IA",
+      "description": "Motor de desenvolvimento inteligente para criação e evolução de sistemas",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "AI-ENGINE", "url": "https://github.com/Biel0071/AI-ENGINE", "visibility": "private" },
+      "primaryLanguage": "JavaScript",
+      "lifecycle": "active",
+      "analysisStatus": "available-locally",
+      "deploymentStatus": "not-configured",
+      "tags": ["control-plane", "ai", "orchestration"]
+    },
+    {
+      "id": "insta-auto-post",
+      "tenantId": "biel0071-software-house",
+      "name": "Postagem automática no Instagram",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "Insta-auto-post", "url": "https://github.com/Biel0071/Insta-auto-post", "visibility": "private" },
+      "primaryLanguage": "JavaScript",
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": ["automation", "instagram"]
+    },
+    {
+      "id": "zapai-crm",
+      "tenantId": "biel0071-software-house",
+      "name": "ZAPAI CRM",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "ZAPAI-CRM", "url": "https://github.com/Biel0071/ZAPAI-CRM", "visibility": "private" },
+      "primaryLanguage": "JavaScript",
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": ["crm", "whatsapp", "ai"]
+    },
+    {
+      "id": "gerador-ficha",
+      "tenantId": "biel0071-software-house",
+      "name": "Gerador de Ficha",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "GERADOR-FICHA", "url": "https://github.com/Biel0071/GERADOR-FICHA", "visibility": "public" },
+      "primaryLanguage": null,
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": ["generator"]
+    },
+    {
+      "id": "sc-v1",
+      "tenantId": "biel0071-software-house",
+      "name": "SC V1",
+      "repository": { "provider": "github", "owner": "Biel0071", "name": "SC-V1", "url": "https://github.com/Biel0071/SC-V1", "visibility": "public" },
+      "primaryLanguage": null,
+      "lifecycle": "connected",
+      "analysisStatus": "pending",
+      "deploymentStatus": "not-configured",
+      "tags": []
+    }
+  ],
+  "runs": [],
+  "deployments": [],
+  "capabilities": []
+}

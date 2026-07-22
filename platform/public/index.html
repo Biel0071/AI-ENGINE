@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI-ENGINE Software House</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">AI-ENGINE CONTROL PLANE</span>
+        <h1>Software House</h1>
+      </div>
+      <div class="status"><span></span> Catálogo conectado</div>
+    </header>
+
+    <main>
+      <section id="metrics" class="metrics" aria-label="Métricas"></section>
+
+      <section class="toolbar">
+        <div>
+          <h2>Portfólio de projetos</h2>
+          <p>Controle central de código, inteligência e publicação.</p>
+        </div>
+        <div class="filters">
+          <input id="search" type="search" placeholder="Buscar projeto..." aria-label="Buscar projeto">
+          <select id="visibility" aria-label="Filtrar visibilidade">
+            <option value="all">Todos</option>
+            <option value="public">Públicos</option>
+            <option value="private">Privados</option>
+          </select>
+        </div>
+      </section>
+
+      <section id="projects" class="project-grid" aria-live="polite"></section>
+
+      <section class="graph-panel">
+        <div>
+          <span class="eyebrow">MIRROR GRAPH</span>
+          <h2>Mapa da Software House</h2>
+          <p id="graph-summary">Carregando relações...</p>
+        </div>
+        <div id="capabilities" class="capabilities"></div>
+      </section>
+    </main>
+
+    <template id="project-template">
+      <article class="project-card">
+        <div class="card-head">
+          <div class="project-icon"></div>
+          <span class="visibility"></span>
+        </div>
+        <h3></h3>
+        <p class="repo"></p>
+        <div class="tags"></div>
+        <dl>
+          <div><dt>Análise</dt><dd class="analysis"></dd></div>
+          <div><dt>Publicação</dt><dd class="deployment"></dd></div>
+        </dl>
+        <div class="actions">
+          <button data-action="analyze">Analisar</button>
+          <button data-action="deploy" class="secondary">Preparar publicação</button>
+          <a target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+      </article>
+    </template>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
