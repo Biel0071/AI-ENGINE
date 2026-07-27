@@ -17,12 +17,16 @@ class ForbiddenError extends DomainError {
 class ValidationError extends DomainError {
   constructor(message) { super(message, 'VALIDATION'); }
 }
+class RateLimitError extends DomainError {
+  constructor(message) { super(message, 'RATE_LIMITED'); }
+}
 
 const STATUS_BY_CODE = {
   NOT_FOUND: 404,
   CONFLICT: 409,
   FORBIDDEN: 403,
   VALIDATION: 400,
+  RATE_LIMITED: 429,
   DOMAIN_ERROR: 400,
 };
 
@@ -32,5 +36,5 @@ function httpStatusFor(error) {
 }
 
 module.exports = {
-  DomainError, NotFoundError, ConflictError, ForbiddenError, ValidationError, httpStatusFor,
+  DomainError, NotFoundError, ConflictError, ForbiddenError, ValidationError, RateLimitError, httpStatusFor,
 };

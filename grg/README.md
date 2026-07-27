@@ -91,6 +91,11 @@ Adapters externos sÃ£o ativados por `DATABASE_URL`, `REDIS_URL`, `FENIX_QUEUE_
 para JSON local. A stack local de PostgreSQL/Redis estÃ¡ em `docker-compose.enterprise.yml`, com
 senhas fornecidas por arquivos de secrets. Veja `docs/RUNBOOK_ENTERPRISE_INFRA.md`.
 
+O AI Gateway aceita OpenAI, Anthropic, Gemini, Groq e endpoints locais OpenAI-compatible por
+configuraÃ§Ã£o. Rotas possuem fallback ordenado, retry limitado, circuit breaker, cache com TTL,
+reserva atÃ´mica de tokens/custo e rate limit Redis por tenant. Consulte
+`docs/ADR-0004-AI-GATEWAY-ENTERPRISE.md` e `.env.example`.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie

@@ -29,6 +29,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     gitHost: options.gitHost || new CloningGitHostAdapter(),
     llm: options.llm !== undefined ? options.llm : env.GRG_LLM !== '0',
     securityConfig,
+    env,
     databaseUrl: infrastructure.databaseUrl,
     databaseSchema: infrastructure.databaseSchema,
     redisUrl: infrastructure.redisUrl,
