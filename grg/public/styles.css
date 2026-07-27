@@ -33,3 +33,4 @@ button:hover { filter: brightness(1.1); }
 .hints { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .chip { background: #16233d; border: 1px solid var(--line); color: var(--muted); font-size: 12px; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
 .chip:hover { color: var(--fg); border-color: var(--primary); }
+.runtime-fallback { position:sticky; top:0; z-index:1000; padding:10px 16px; color:#fee2e2; background:#7f1d1d; border-bottom:1px solid #ef4444; text-align:center; font-weight:600; }
