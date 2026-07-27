@@ -58,6 +58,10 @@ const { CognitiveLearningProjection } = require('./cognitive/learning-projection
 const { PrometheusExporter } = require('./infrastructure/monitoring/prometheus-exporter');
 const { AdminAvatar } = require('./cognitive/admin-avatar');
 const { CognitiveHierarchy } = require('./cognitive/cognitive-hierarchy');
+const { ToolRegistry } = require('./execution/tool-registry');
+const { ScriptLibrary } = require('./execution/script-library');
+const { DockerRootlessSandbox } = require('./execution/docker-rootless-sandbox');
+const { SandboxExecutionEngine } = require('./execution/sandbox-execution-engine');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -160,6 +164,13 @@ async function createApp(options = {}) {
   jobs.register('factory.generate', (payload, context) => factory.generate(context.tenantId, context.actorId, payload));
   jobs.register('project.orchestrate', (payload, context) => orchestrator.buildFromPrompt(context.tenantId, context.actorId, payload));
   jobs.register('discovery.scan', (payload, context) => discoveryNetwork.scan(context.tenantId, context.actorId, payload));
+  const tools = new ToolRegistry({ store, controlPlane, bus });
+  const scripts = new ScriptLibrary({ store, controlPlane, tools, bus });
+  let sandboxAdapter = options.sandboxAdapter || null;
+  if (!sandboxAdapter && runtimeEnv.FENIX_SANDBOX_DRIVER === 'docker-rootless') sandboxAdapter = new DockerRootlessSandbox({ workspaceRoot: runtimeEnv.FENIX_WORKSPACE_ROOT || path.join(outputDir, 'workspaces'), dockerHost: runtimeEnv.DOCKER_HOST, enforceRootless: true });
+  if (securityConfig.production && sandboxAdapter && sandboxAdapter.productionSafe !== true) throw new Error('production requires an explicitly rootless production-safe sandbox adapter');
+  const sandbox = new SandboxExecutionEngine({ store, controlPlane, tools, scripts, adapter: sandboxAdapter || { run: async () => { throw new Error('sandbox adapter is not configured'); } }, approvals, audit, events: fabricEvents, hierarchy });
+  jobs.register('sandbox.execute', (payload, context) => sandbox.execute(context.tenantId, context.actorId, payload));
   const capabilityRegistry = new CapabilityRegistry({ store, controlPlane, registry, events: fabricEvents, bus }).attach();
   const cognitiveLearning = new CognitiveLearningProjection({ events: fabricEvents, memory, knowledgeGraph, actorResolver: async (tenantId, hypothesisId) => { const state = await store.read(); return state.cognitiveHypotheses.find((item) => item.tenantId === tenantId && item.id === hypothesisId)?.createdBy || 'grg-admin'; } }).attach();
   const cognitiveCore = new CognitiveCore({ store, controlPlane, eventStore, events: fabricEvents, policy, approvals, jobs, contextProviders: [{ name: 'platform', snapshot: async (tenantId) => { const state = await store.read(); const scoped = (items) => items.filter((item) => item.tenantId === tenantId); return { capabilities: scoped(state.capabilityDefinitions).map((item) => ({ id: item.capabilityId, version: item.version, health: item.health })), services: scoped(state.serviceRegistry).map((item) => ({ id: item.id, status: item.status, runtimeStatus: item.runtimeStatus || null })), runtime: { queued: scoped(state.runtimeJobs).filter((item) => item.status === 'QUEUED').length, running: scoped(state.runtimeJobs).filter((item) => item.status === 'RUNNING').length, deadLetters: scoped(state.deadLetters).length }, knowledge: { entities: scoped(state.knowledgeEntities).length }, memory: { active: scoped(state.memories).filter((item) => item.status === 'ACTIVE').length }, versions: scoped(state.resourceVersions).length }; } }] }).attach();
@@ -188,7 +199,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, metrics,
+    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, metrics,
   };
 
   app.close = async () => {

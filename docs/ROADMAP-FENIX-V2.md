@@ -149,6 +149,17 @@ Programa federado detalhado:
 
 O V2.5.1 estabelece a autoridade de escopo usada por todas as fatias seguintes. Nenhuma fatia posterior pode manter uma lista paralela de empresas, projetos, lojas ou agentes.
 
+### Programa V2.5.2 — Engenharia autônoma governada
+
+1. **V2.5.2.1 — Trusted Execution Foundation:** Docker Rootless, ferramentas registradas, scripts Ed25519 assinados, limites, limpeza e timeline reproduzível.
+2. **V2.5.2.2 — Inspection & Reverse Engineering:** detecção estática, evidências, Knowledge Graph e Digital Twin sem executar código do projeto.
+3. **V2.5.2.3 — Smoke & Playwright Runtime:** receitas assinadas para health, APIs e navegador, com artefatos e logs.
+4. **V2.5.2.4 — Evolution Proposals:** riscos, gargalos, esforço, impacto e planos; nenhuma mutação.
+5. **V2.5.2.5 — Governed Change Engine:** branch, implementação em sandbox, testes, SAST, PR, aprovação, merge e deploy.
+6. **V2.5.2.6 — Operational Experience:** fila, progresso, recursos, logs, screenshots e histórico em tempo real.
+
+O gate V2.5.2 completo só fecha após todas essas fatias. A existência do Sandbox isoladamente não autoriza declarar a plataforma autônoma concluída.
+
 ### V2.6 — Assistente multimodal
 
 Objetivo: permitir conversa por texto e voz sem acoplar providers à experiência.
