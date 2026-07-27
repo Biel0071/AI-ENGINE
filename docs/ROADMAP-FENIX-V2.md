@@ -144,7 +144,7 @@ Programa federado detalhado:
 1. **V2.5.1 — Hierarquia e isolamento:** identidades `fenix://`, workspaces, grants herdáveis, memória por escopo e políticas deny-by-default do Knowledge Hub.
 2. **V2.5.2 — Agentes especializados:** contratos de ferramentas, orçamento, permissões e delegação obrigatória do Avatar Mestre.
 3. **V2.5.3 — Autonomous Agent Ecosystem:** Avatar Mestre coordenador, equipes hierárquicas, ciclos contínuos, políticas por risco e promoção governada de conhecimento. O onboarding cognitivo passa a ser pré-requisito produzido pelo programa V2.5.2.2.
-4. **V2.5.4 — Inteligência entre projetos:** consultas federadas com evidência, classificação e política de compartilhamento.
+4. **V2.5.4 — Operational Autonomy & Ecosystem Activation:** boot operacional, saúde, discovery governado, observação contínua, readiness e inteligência diária. A comparação entre projetos passa a compor as fatias V2.5.2.2-D e V2.5.4-C.
 5. **V2.5.5 — Evolução governada:** hipótese, simulação, aprovação, Runtime, PR, deploy e atualização das projeções.
 
 O V2.5.1 estabelece a autoridade de escopo usada por todas as fatias seguintes. Nenhuma fatia posterior pode manter uma lista paralela de empresas, projetos, lojas ou agentes.
@@ -179,6 +179,20 @@ Fatias internas:
 - **2.5.3-E — Live Evolution Center:** streaming de agentes, tarefas, aprovações, conhecimento promovido, taxa de sucesso e backlog.
 
 O gate V2.5.3 somente fecha quando ciclos agendados forem recuperáveis, as ações permitidas tiverem executores reais e assinados, e o fluxo completo de autoevolução passar por branch, testes, PR, aprovação e deploy governado.
+
+### V2.5.4 — Operational Autonomy & Ecosystem Activation
+
+Fatias internas:
+
+- **2.5.4-A — Activation & Readiness Kernel:** boot automático, probes reais, histórico, investigações, recuperação, provas operacionais, schedules e Daily Intelligence determinístico.
+- **2.5.4-B — VPS & Ecosystem Discovery:** containers, imagens, volumes, redes, processos, portas, certificados, systemd, cron, recursos e sistemas autorizados através de scripts assinados em Sandbox.
+- **2.5.4-C — Continuous Observation:** detecção de regressões, custos, segurança, performance, mudanças arquiteturais e comparação entre projetos com evidência.
+- **2.5.4-D — Model Observatory:** inventário de modelos, versões, capacidades, benchmarks, custo e recomendações; troca de rota somente por política.
+- **2.5.4-E — Live Control Center:** streaming de saúde, filas, jobs, deploys, alertas, logs, métricas, aprovações, IA, recursos e AI City.
+- **2.5.4-F — Governed Self Evolution:** Discovery → Branch → Sandbox → Testes → QA → PR → Aprovação → Deploy → projeções e rollback.
+- **2.5.4-G — GRG Engineering Standard:** blueprint oficial com Design System, segurança, observabilidade, Runtime, Knowledge, Memory, Twin e CI/CD.
+
+O gate V2.5.4 completo exige inventário real da VPS, todos os sistemas autorizados com Workspace/Graph/Twin, painel em tempo real e self-evolution reversível comprovada. O Activation Boot isolado não fecha o marco.
 
 ### V2.6 — Assistente multimodal
 

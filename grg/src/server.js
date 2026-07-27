@@ -60,6 +60,19 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       await app.controlPlane.getMembership(oidcBootstrap.tenantId, oidcBootstrap.userId);
     }
   }
+  if (options.operationalActivation !== false) {
+    const state = await app.store.read();
+    for (const tenant of state.tenants) {
+      const owner = state.memberships.find((item) => item.tenantId === tenant.id && item.status === 'active' && item.role === 'master_admin');
+      if (!owner) continue;
+      try {
+        await app.operationalActivation.ensureSchedules(tenant.id, owner.userId);
+        await app.operationalActivation.boot(tenant.id, owner.userId, { trigger: 'startup' });
+      } catch (error) {
+        logger.error({ event: 'operational.activation.failed', error, tenant: tenant.id, actor: owner.userId, capability: 'operations' });
+      }
+    }
+  }
 
   const server = http.createServer(async (req, res) => {
     let requestId = null;
@@ -116,6 +129,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/me') return sendJson(res, 200, { tenantId, actorId, authed: cx.authed });
 
       if (req.method === 'GET' && url.pathname === '/api/overview') return sendJson(res, 200, await overview(app, tenantId, actorId));
+      if (req.method === 'POST' && url.pathname === '/api/operations/activate') return sendJson(res, 202, await app.operationalActivation.boot(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/operations/state') return sendJson(res, 200, await app.operationalActivation.state(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/operations/history') return sendJson(res, 200, { history: await app.operationalActivation.history(tenantId, actorId, url.searchParams.get('componentId') || null) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/operations/assurances') return sendJson(res, 201, await app.operationalActivation.recordAssurance(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/operations/daily-intelligence') return sendJson(res, 201, await app.operationalActivation.dailyIntelligence(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/operations/schedules') return sendJson(res, 201, { schedules: await app.operationalActivation.ensureSchedules(tenantId, actorId, await readJson(req)) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/projects') return sendJson(res, 200, { projects: await app.factory.listProjects(tenantId, actorId) });
       if (req.method === 'GET' && url.pathname === '/api/repositories') return sendJson(res, 200, { repositories: await app.repoIntel.listRepositories(tenantId, actorId) });
       if (req.method === 'GET' && url.pathname === '/api/graph') return sendJson(res, 200, await app.repoIntel.getGraph(tenantId, actorId));
