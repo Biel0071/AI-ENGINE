@@ -18,7 +18,8 @@ test "$(uname -s)" = Linux || { echo 'Only Linux VPS installations are supported
 SECRETS_DIR=${FENIX_SECRETS_DIR:-/var/lib/grg-fenix/secrets}; RUNTIME_USER=${FENIX_RUNTIME_USER:-fenix}
 sudo install -d -m 0700 "$SECRETS_DIR"
 generate() { file="$1"; if ! sudo test -s "$file"; then openssl rand -base64 48 | sudo tee "$file" >/dev/null; fi; sudo chown "$RUNTIME_USER":"$RUNTIME_USER" "$file"; sudo chmod 0600 "$file"; }
-generate "$SECRETS_DIR/postgres_password"; generate "$SECRETS_DIR/redis_password"; generate "$SECRETS_DIR/minio_access_key"; generate "$SECRETS_DIR/minio_secret_key"
+generate_url_secret() { file="$1"; if ! sudo test -s "$file"; then openssl rand -hex 32 | sudo tee "$file" >/dev/null; fi; sudo chown "$RUNTIME_USER":"$RUNTIME_USER" "$file"; sudo chmod 0600 "$file"; }
+generate_url_secret "$SECRETS_DIR/postgres_password"; generate_url_secret "$SECRETS_DIR/redis_password"; generate "$SECRETS_DIR/minio_access_key"; generate "$SECRETS_DIR/minio_secret_key"
 generate "$SECRETS_DIR/metrics_token"
 generate "$SECRETS_DIR/keycloak_admin_password"; generate "$SECRETS_DIR/keycloak_user_password"
 printf '%s' "$AI_PROVIDER_KEY" | sudo tee "$SECRETS_DIR/ai_provider_key" >/dev/null; sudo chown "$RUNTIME_USER":"$RUNTIME_USER" "$SECRETS_DIR/ai_provider_key"; sudo chmod 0600 "$SECRETS_DIR/ai_provider_key"
