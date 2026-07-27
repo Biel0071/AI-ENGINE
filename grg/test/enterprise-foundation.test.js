@@ -24,7 +24,7 @@ test('FileStore migrates legacy state without losing domain data and persists hi
   const persisted = JSON.parse(fs.readFileSync(file, 'utf8'));
   assert.equal(state.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.equal(state.projects[0].id, 'keep-me');
-  assert.deepEqual(state.migrationHistory.map((item) => item.to), [2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(state.migrationHistory.map((item) => item.to), Array.from({ length: CURRENT_SCHEMA_VERSION - 1 }, (_, index) => index + 2));
   assert.equal(persisted.schemaVersion, CURRENT_SCHEMA_VERSION);
 });
 

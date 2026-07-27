@@ -62,6 +62,9 @@ const EMPTY_STATE = () => ({
   discoveryScans: [],
   discoveredResources: [],
   knowledgePublications: [],
+  resourceVersions: [],
+  changeSets: [],
+  rollbackProposals: [],
 });
 
 class MemoryStore {

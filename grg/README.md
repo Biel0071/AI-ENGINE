@@ -116,6 +116,12 @@ A Discovery Network v9 executa somente probes autorizados; Docker Ã© opt-in co
 A Knowledge Federation publica fatos estruturados em `/api/knowledge-federation/publish`, que sÃ£o
 projetados em memÃ³ria e grafo sem copiar bancos entre CRM, ERP, Factory ou AI City.
 
+O Global Version Engine v10 transforma cada evento durável do Fabric em uma versão
+imutável por recurso, com snapshot, autoria, motivo, correlação e diff por campo.
+Rollback publica um comando durável; em produção exige aprovação independente e de uso único.
+APIs: `GET /api/versions`, `GET /api/versions/diff`, `POST /api/rollbacks` e
+`POST /api/rollbacks/:id/dispatch`.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie
