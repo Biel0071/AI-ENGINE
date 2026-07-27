@@ -17,10 +17,11 @@ const ROLE_PERMISSIONS = Object.freeze({
     'graph:read', 'graph:write',
     'fabric:read', 'fabric:enroll', 'registry:read', 'registry:write', 'event:read',
     'discovery:read', 'discovery:scan', 'knowledge:publish',
+    'runtime:read', 'runtime:execute', 'runtime:admin',
   ],
   subadmin: [
     'project:read', 'project:analyze', 'repo:read', 'capability:read',
-    'memory:read', 'memory:write', 'member:read', 'ai:invoke', 'governance:read', 'graph:read', 'fabric:read', 'registry:read', 'event:read', 'discovery:read',
+    'memory:read', 'memory:write', 'member:read', 'ai:invoke', 'governance:read', 'graph:read', 'fabric:read', 'registry:read', 'event:read', 'discovery:read', 'runtime:read',
   ],
   employee: ['project:read', 'repo:read', 'capability:read', 'memory:read', 'graph:read'],
 });
