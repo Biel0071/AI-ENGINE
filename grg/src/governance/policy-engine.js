@@ -10,6 +10,7 @@ const RULES = Object.freeze({
   'cognitive.execute.high': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
   'sandbox.execute.production': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
   'agent.execute.red': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
+  'mission.step.red': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
 });
 
 class PolicyEngine {

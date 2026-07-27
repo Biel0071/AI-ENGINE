@@ -110,6 +110,11 @@ const EMPTY_STATE = () => ({
   operationalReadinessReports: [],
   dailyIntelligenceReports: [],
   operationalAssurances: [],
+  missions: [],
+  missionSteps: [],
+  missionEvents: [],
+  missionContextRefs: [],
+  missionSummaries: [],
 });
 
 class MemoryStore {

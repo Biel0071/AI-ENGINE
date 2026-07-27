@@ -191,6 +191,7 @@ Fatias internas:
 - **2.5.4-E — Live Control Center:** streaming de saúde, filas, jobs, deploys, alertas, logs, métricas, aprovações, IA, recursos e AI City.
 - **2.5.4-F — Governed Self Evolution:** Discovery → Branch → Sandbox → Testes → QA → PR → Aprovação → Deploy → projeções e rollback.
 - **2.5.4-G — GRG Engineering Standard:** blueprint oficial com Design System, segurança, observabilidade, Runtime, Knowledge, Memory, Twin e CI/CD.
+- **2.5.4-H — Mission Kernel:** DAG governado, eventos estruturados, referências de contexto, filas, métricas, budgets, pausa/cancelamento e estado vivo do Avatar com comunicação interna de baixo consumo.
 
 O gate V2.5.4 completo exige inventário real da VPS, todos os sistemas autorizados com Workspace/Graph/Twin, painel em tempo real e self-evolution reversível comprovada. O Activation Boot isolado não fecha o marco.
 

@@ -135,6 +135,21 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/operations/assurances') return sendJson(res, 201, await app.operationalActivation.recordAssurance(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/operations/daily-intelligence') return sendJson(res, 201, await app.operationalActivation.dailyIntelligence(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/operations/schedules') return sendJson(res, 201, { schedules: await app.operationalActivation.ensureSchedules(tenantId, actorId, await readJson(req)) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/missions') return sendJson(res, 201, await app.missions.create(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/missions') return sendJson(res, 200, { missions: await app.missions.list(tenantId, actorId) }, requestId);
+      if (req.method === 'GET' && url.pathname === '/api/missions/avatar-state') return sendJson(res, 200, await app.missions.avatarState(tenantId, actorId), requestId);
+      const missionStart = url.pathname.match(/^\/api\/missions\/([^/]+)\/start$/);
+      if (req.method === 'POST' && missionStart) return sendJson(res, 202, await app.missions.start(tenantId, actorId, missionStart[1]), requestId);
+      const missionPause = url.pathname.match(/^\/api\/missions\/([^/]+)\/pause$/);
+      if (req.method === 'POST' && missionPause) return sendJson(res, 202, await app.missions.pause(tenantId, actorId, missionPause[1]), requestId);
+      const missionResume = url.pathname.match(/^\/api\/missions\/([^/]+)\/resume$/);
+      if (req.method === 'POST' && missionResume) return sendJson(res, 202, await app.missions.resume(tenantId, actorId, missionResume[1]), requestId);
+      const missionCancel = url.pathname.match(/^\/api\/missions\/([^/]+)\/cancel$/);
+      if (req.method === 'POST' && missionCancel) return sendJson(res, 202, await app.missions.cancel(tenantId, actorId, missionCancel[1]), requestId);
+      const missionApproveStep = url.pathname.match(/^\/api\/missions\/([^/]+)\/steps\/([^/]+)\/approve$/);
+      if (req.method === 'POST' && missionApproveStep) { const body = await readJson(req); return sendJson(res, 202, await app.missions.approveStep(tenantId, actorId, missionApproveStep[1], missionApproveStep[2], body.approvalId), requestId); }
+      const missionGet = url.pathname.match(/^\/api\/missions\/([^/]+)$/);
+      if (req.method === 'GET' && missionGet) return sendJson(res, 200, await app.missions.get(tenantId, actorId, missionGet[1]), requestId);
       if (req.method === 'GET' && url.pathname === '/api/projects') return sendJson(res, 200, { projects: await app.factory.listProjects(tenantId, actorId) });
       if (req.method === 'GET' && url.pathname === '/api/repositories') return sendJson(res, 200, { repositories: await app.repoIntel.listRepositories(tenantId, actorId) });
       if (req.method === 'GET' && url.pathname === '/api/graph') return sendJson(res, 200, await app.repoIntel.getGraph(tenantId, actorId));
