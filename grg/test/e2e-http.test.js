@@ -134,6 +134,24 @@ test('memory API records, retrieves, versions and forgets knowledge', withServer
   assert.equal(forgotten.status, 200);
 }));
 
+test('federated cognitive API creates scoped workspaces and memory', withServer(async (base) => {
+  const headers = await authHeaders(base);
+  const companyResponse = await fetch(`${base}/api/cognitive/entities`, { method: 'POST', headers, body: JSON.stringify({ type: 'company', name: 'GRG Commerce' }) });
+  assert.equal(companyResponse.status, 201);
+  const company = await companyResponse.json();
+  const projectResponse = await fetch(`${base}/api/cognitive/entities`, { method: 'POST', headers, body: JSON.stringify({ type: 'project', name: 'Commerce API', parentId: company.id }) });
+  assert.equal(projectResponse.status, 201);
+  const project = await projectResponse.json();
+  const workspace = await fetch(`${base}/api/cognitive/entities/${project.id}/workspace`, { headers }).then((response) => response.json());
+  assert.equal(workspace.agents.length, 8);
+  const memoryResponse = await fetch(`${base}/api/memories`, { method: 'POST', headers, body: JSON.stringify({ kind: 'project', scopeType: 'project', scopeId: project.id, content: 'Uses Redis and OAuth', provenance: { type: 'onboarding', reference: 'repo:commerce' } }) });
+  assert.equal(memoryResponse.status, 201);
+  const search = await fetch(`${base}/api/memories/search?q=Redis&scopeId=${project.id}&scopeType=project`, { headers }).then((response) => response.json());
+  assert.equal(search.results.length, 1);
+  const hierarchy = await fetch(`${base}/api/cognitive/entities`, { headers }).then((response) => response.json());
+  assert.ok(hierarchy.entities.some((item) => item.id === project.id));
+}));
+
 test('Fabric API enrolls a service and exposes registry plus durable event', withServer(async (base) => {
   const headers = await authHeaders(base);
   const enrolled = await fetch(`${base}/api/fabric/enroll`, {

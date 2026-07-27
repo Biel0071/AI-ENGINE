@@ -156,6 +156,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/cognitive/cycle') return sendJson(res, 202, await app.cognitiveCore.cycle(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/context') return sendJson(res, 200, await app.cognitiveCore.context(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/dashboard') return sendJson(res, 200, await app.cognitiveCore.dashboard(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/cognitive/entities') return sendJson(res, 201, await app.hierarchy.create(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/cognitive/entities') return sendJson(res, 200, await app.hierarchy.list(tenantId, actorId, { type: url.searchParams.get('type') || undefined }), requestId);
+      const cognitiveWorkspace = url.pathname.match(/^\/api\/cognitive\/entities\/([^/]+)\/workspace$/);
+      if (req.method === 'GET' && cognitiveWorkspace) return sendJson(res, 200, await app.hierarchy.workspace(tenantId, actorId, cognitiveWorkspace[1]), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/cognitive/access-grants') return sendJson(res, 201, await app.hierarchy.grant(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/cognitive/knowledge-sharing-policies') return sendJson(res, 201, await app.hierarchy.createSharingPolicy(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/digital-twin/operational') return sendJson(res, 200, { twin: await app.digitalTwin.operational(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/avatar/state') return sendJson(res, 200, await app.adminAvatar.state(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/avatar/improvements') return sendJson(res, 200, await app.adminAvatar.improvements(tenantId, actorId), requestId);
@@ -181,6 +187,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           kind: url.searchParams.get('kind') || undefined,
           projectId: url.searchParams.get('projectId') || undefined,
           orgId: url.searchParams.get('orgId') || undefined,
+          scopeId: url.searchParams.get('scopeId') || undefined,
+          scopeType: url.searchParams.get('scopeType') || undefined,
           limit: url.searchParams.get('limit') || undefined,
         }), requestId);
       }

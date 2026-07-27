@@ -139,6 +139,16 @@ Entregas:
 
 Gate: consultas cruzadas só retornam conteúdo quando uma política explícita autoriza.
 
+Programa federado detalhado:
+
+1. **V2.5.1 — Hierarquia e isolamento:** identidades `fenix://`, workspaces, grants herdáveis, memória por escopo e políticas deny-by-default do Knowledge Hub.
+2. **V2.5.2 — Agentes especializados:** contratos de ferramentas, orçamento, permissões e delegação obrigatória do Avatar Mestre.
+3. **V2.5.3 — Onboarding cognitivo:** criação idempotente de workspace, memória, grafo, twin, agentes e nó da cidade após análise somente leitura.
+4. **V2.5.4 — Inteligência entre projetos:** consultas federadas com evidência, classificação e política de compartilhamento.
+5. **V2.5.5 — Evolução governada:** hipótese, simulação, aprovação, Runtime, PR, deploy e atualização das projeções.
+
+O V2.5.1 estabelece a autoridade de escopo usada por todas as fatias seguintes. Nenhuma fatia posterior pode manter uma lista paralela de empresas, projetos, lojas ou agentes.
+
 ### V2.6 — Assistente multimodal
 
 Objetivo: permitir conversa por texto e voz sem acoplar providers à experiência.

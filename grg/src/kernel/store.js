@@ -84,6 +84,11 @@ const EMPTY_STATE = () => ({
   cognitiveCycles: [],
   cognitiveCursors: [],
   operationalTwins: [],
+  cognitiveEntities: [],
+  cognitiveWorkspaces: [],
+  cognitiveAgents: [],
+  cognitiveAccessGrants: [],
+  knowledgeSharingPolicies: [],
 });
 
 class MemoryStore {
