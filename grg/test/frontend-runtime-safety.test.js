@@ -15,3 +15,10 @@ test('chat renderer guards missing replies and installs global fallback boundari
   assert.match(source, /window\.addEventListener\('error'/);
   assert.match(source, /window\.addEventListener\('unhandledrejection'/);
 });
+
+test('expired sessions refresh once and clear stale tokens before redirecting', () => {
+  assert.match(source, /grant_type:'refresh_token'/);
+  assert.match(source, /if \(response\.status === 401 && !retried && await refreshAccessToken\(\)\)/);
+  assert.match(source, /localStorage\.removeItem\('grg_token'\)/);
+  assert.match(source, /location\.replace\('\/GRG-login\?reason=session-expired'\)/);
+});
