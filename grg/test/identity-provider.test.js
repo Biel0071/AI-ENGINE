@@ -1,0 +1,2 @@
+const test = require('node:test'); const assert = require('node:assert/strict'); const { WorkloadIdentityProvider } = require('../src/fabric/identity-provider');
+test('workload identity stores only SPIFFE reference and never creates a private key', () => { const issued = new WorkloadIdentityProvider({ trustDomain: 'grg.internal' }).issue('grg', 'service:crm'); assert.match(issued.identity, /^spiffe:\/\/grg\.internal\//); assert.equal(issued.privateKey, null); assert.equal(issued.developmentOnly, false); assert.ok(issued.fingerprint); });
