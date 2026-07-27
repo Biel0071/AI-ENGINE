@@ -38,3 +38,17 @@ test('priority is transparent and hypotheses without evidence are rejected', asy
   assert.deepEqual(Object.keys(item.priorityFactors).sort(), ['availability', 'cost', 'effort', 'impact', 'risk', 'security', 'value']);
   await assert.rejects(() => app.cognitiveCore.propose('grg', 'alice', { ...hypothesis(), evidence: [] }), /requires description, evidence/);
 });
+
+test('Admin Avatar explains state and never claims planning as execution', async () => {
+  const app = await bootstrap(); const proposed = await app.cognitiveCore.propose('grg', 'alice', { ...hypothesis(), job: null });
+  const explanation = await app.adminAvatar.explainDecision('grg', 'alice', proposed.id);
+  assert.match(explanation.executionClaim, /No execution was performed/); assert.ok(explanation.limitations.length > 0);
+  const state = await app.adminAvatar.state('grg', 'alice'); assert.match(state.statement, /no action was executed/i);
+  assert.equal((await app.adminAvatar.improvements('grg', 'alice')).executed, false);
+});
+
+test('governed Runtime scheduler can trigger recurring cognitive cycles', async () => {
+  const app = await bootstrap(); const schedule = await app.jobs.schedule('grg', 'alice', { type: 'cognitive.cycle', runAt: new Date(0).toISOString(), intervalMs: 60_000 });
+  const queued = await app.jobs.tick('grg', 'alice'); assert.equal(queued.length, 1); assert.equal(queued[0].type, 'cognitive.cycle');
+  assert.equal((await app.store.read()).runtimeSchedules.find((item) => item.id === schedule.id).enabled, true);
+});

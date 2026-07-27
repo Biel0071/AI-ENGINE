@@ -54,6 +54,7 @@ const { DockerDeployAdapter } = require('./runtime/docker-deploy-adapter');
 const { CapabilityRegistry } = require('./capabilities/capability-registry');
 const { CognitiveCore } = require('./cognitive/cognitive-core');
 const { CognitiveLearningProjection } = require('./cognitive/learning-projection');
+const { AdminAvatar } = require('./cognitive/admin-avatar');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -155,6 +156,7 @@ async function createApp(options = {}) {
   const capabilityRegistry = new CapabilityRegistry({ store, controlPlane, registry, events: fabricEvents, bus }).attach();
   const cognitiveLearning = new CognitiveLearningProjection({ events: fabricEvents, memory, knowledgeGraph, actorResolver: async (tenantId, hypothesisId) => { const state = await store.read(); return state.cognitiveHypotheses.find((item) => item.tenantId === tenantId && item.id === hypothesisId)?.createdBy || 'grg-admin'; } }).attach();
   const cognitiveCore = new CognitiveCore({ store, controlPlane, eventStore, events: fabricEvents, policy, approvals, jobs, contextProviders: [{ name: 'platform', snapshot: async (tenantId) => { const state = await store.read(); const scoped = (items) => items.filter((item) => item.tenantId === tenantId); return { capabilities: scoped(state.capabilityDefinitions).map((item) => ({ id: item.capabilityId, version: item.version, health: item.health })), services: scoped(state.serviceRegistry).map((item) => ({ id: item.id, status: item.status, runtimeStatus: item.runtimeStatus || null })), runtime: { queued: scoped(state.runtimeJobs).filter((item) => item.status === 'QUEUED').length, running: scoped(state.runtimeJobs).filter((item) => item.status === 'RUNNING').length, deadLetters: scoped(state.deadLetters).length }, knowledge: { entities: scoped(state.knowledgeEntities).length }, memory: { active: scoped(state.memories).filter((item) => item.status === 'ACTIVE').length }, versions: scoped(state.resourceVersions).length }; } }] }).attach();
+  const adminAvatar = new AdminAvatar({ store, controlPlane, cognitiveCore });
   jobs.register('cognitive.cycle', (payload, context) => cognitiveCore.cycle(context.tenantId, context.actorId, payload));
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   health.register('state-store', async () => {
@@ -178,7 +180,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, capabilityRegistry, cognitiveLearning, cognitiveCore,
+    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar,
   };
 
   app.close = async () => {
