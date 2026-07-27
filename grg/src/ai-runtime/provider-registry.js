@@ -4,7 +4,7 @@ const { AIPlatformProvider } = require('./aiplatform-provider');
 const { OllamaProvider } = require('./ollama-provider');
 
 function buildProvidersFromEnv(env = process.env, options = {}) {
-  const providers = { echo: new EchoProvider() };
+  const providers = options.production ? {} : { echo: new EchoProvider() };
   const fetchImpl = options.fetchImpl;
   if (env.OPENAI_API_KEY) providers.openai = new OpenAIResponsesProvider({ apiKey: env.OPENAI_API_KEY, baseUrl: env.OPENAI_BASE_URL, fetchImpl });
   if (env.ANTHROPIC_API_KEY) providers.anthropic = new AnthropicProvider({ apiKey: env.ANTHROPIC_API_KEY, baseUrl: env.ANTHROPIC_BASE_URL, fetchImpl });
@@ -28,12 +28,14 @@ function buildProvidersFromEnv(env = process.env, options = {}) {
   return providers;
 }
 
-function loadRoutes(env = process.env) {
+function loadRoutes(env = process.env, options = {}) {
   if (env.FENIX_AI_ROUTES_JSON) {
     const routes = JSON.parse(env.FENIX_AI_ROUTES_JSON);
     if (!routes.default) throw new Error('FENIX_AI_ROUTES_JSON requires a default route');
+    if (options.production && Object.values(routes).some((route) => route.provider === 'echo' || (Array.isArray(route.fallback) ? route.fallback : []).some((item) => item.provider === 'echo'))) throw new Error('echo AI provider is forbidden in production');
     return routes;
   }
+  if (options.production && (!env.FENIX_AI_DEFAULT_PROVIDER || env.FENIX_AI_DEFAULT_PROVIDER === 'echo')) throw new Error('production requires an explicit non-echo FENIX_AI_DEFAULT_PROVIDER');
   return {
     default: { provider: env.FENIX_AI_DEFAULT_PROVIDER || 'echo', model: env.FENIX_AI_DEFAULT_MODEL || 'echo-small' },
     plan: { provider: env.FENIX_AI_PLAN_PROVIDER || env.FENIX_AI_DEFAULT_PROVIDER || 'echo', model: env.FENIX_AI_PLAN_MODEL || 'echo-large' },
