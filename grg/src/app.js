@@ -137,7 +137,7 @@ async function createApp(options = {}) {
     });
   }
   const queues = options.queues || (options.queueRedisUrl ? BullMQRuntime.fromUrl(options.queueRedisUrl) : null);
-  const objects = options.objects || (options.s3 ? S3ObjectStore.create(options.s3) : null);
+  const objects = options.objects || (options.s3 ? await S3ObjectStore.create(options.s3).initialize() : null);
   const vectorStore = options.vectorStore || (options.qdrant ? await new QdrantVectorStore(options.qdrant).initialize() : null);
   const memory = new MemoryEngine({ store, bus, controlPlane, vectorStore, cache: redis });
   const knowledgeGraph = new KnowledgeGraph({ store, bus, controlPlane });

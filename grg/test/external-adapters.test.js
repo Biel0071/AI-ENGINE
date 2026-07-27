@@ -104,6 +104,31 @@ test('S3 object adapter stores tenant-prefixed objects and verifies checksums', 
   assert.equal((await storage.health()).ok, true);
 });
 
+test('S3 object adapter creates a missing bucket during initialization', async () => {
+  let exists = false;
+  const commands = {
+    HeadBucketCommand: class { constructor(input) { this.input = input; } },
+    CreateBucketCommand: class { constructor(input) { this.input = input; } },
+  };
+  const client = {
+    async send(command) {
+      if (command instanceof commands.HeadBucketCommand && !exists) {
+        const error = new Error('missing');
+        error.name = 'NotFound';
+        error.$metadata = { httpStatusCode: 404 };
+        throw error;
+      }
+      if (command instanceof commands.CreateBucketCommand) exists = true;
+      return {};
+    },
+  };
+  const storage = new S3ObjectStore({ client, bucket: 'fenix', commands });
+
+  assert.equal(await storage.initialize(), storage);
+  assert.equal(exists, true);
+  assert.deepEqual(await storage.health(), { ok: true, adapter: 's3', bucket: 'fenix' });
+});
+
 test('production configuration fails closed without external infrastructure', () => {
   assert.throws(() => loadInfrastructureConfig({ FENIX_ENV: 'production' }), /infrastructure is incomplete/);
   const config = loadInfrastructureConfig({ FENIX_ENV: 'development' });
