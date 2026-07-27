@@ -1,0 +1,13 @@
+{
+  "name": "grg-services-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GRG Services OS — AI-native software engineering operating system (local-first core).",
+  "type": "commonjs",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/"
+  },
+  "engines": { "node": ">=18" }
+}

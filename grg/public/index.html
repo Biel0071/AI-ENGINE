@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GRG Services OS — Painel Master</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h1>GRG Services OS</h1>
+      <span class="sub">Painel Master — Software Engineering Operating System</span>
+    </div>
+    <a href="/office.html" style="background:#3b82f6;color:#fff;padding:10px 18px;border-radius:9px;text-decoration:none;font-weight:600;">🏢 Escritório</a>
+  </header>
+  <main>
+    <section id="metrics" class="grid"></section>
+
+    <section class="panel">
+      <h2>Conversar com o GRG</h2>
+      <div id="chatlog" class="chatlog"></div>
+      <form id="chat">
+        <input id="msg" placeholder="Cole uma URL do GitHub, ou: gerar um CRM de WhatsApp com IA..." autocomplete="off" required />
+        <button type="submit">Enviar</button>
+      </form>
+      <div class="hints">
+        <button class="chip" data-msg="acoplar todos os projetos do meu user github Biel0071 e mapear">acoplar TODO meu portfólio</button>
+        <button class="chip" data-msg="https://github.com/Biel0071/ZAPAI-FINAL">acoplar ZAPAI-FINAL</button>
+        <button class="chip" data-msg="o que você aprendeu?">insights</button>
+        <button class="chip" data-msg="status">status</button>
+        <button class="chip" data-msg="analise o twin">twin + conselhos</button>
+        <button class="chip" data-msg="gerar um CRM de WhatsApp com IA e PIX">gerar sistema</button>
+      </div>
+    </section>
+
+    <div class="cols">
+      <section class="panel">
+        <h2>Projetos</h2>
+        <ul id="projects" class="list"></ul>
+      </section>
+      <section class="panel">
+        <h2>Repositórios</h2>
+        <ul id="repos" class="list"></ul>
+      </section>
+      <section class="panel">
+        <h2>Memória evolutiva</h2>
+        <ul id="memory" class="list"></ul>
+      </section>
+    </div>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
