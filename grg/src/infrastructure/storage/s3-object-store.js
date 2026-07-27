@@ -25,8 +25,21 @@ class S3ObjectStore {
         PutObjectCommand: sdk.PutObjectCommand,
         GetObjectCommand: sdk.GetObjectCommand,
         HeadBucketCommand: sdk.HeadBucketCommand,
+        CreateBucketCommand: sdk.CreateBucketCommand,
       },
     });
+  }
+
+  async initialize() {
+    try {
+      await this.client.send(new this.commands.HeadBucketCommand({ Bucket: this.bucket }));
+    } catch (error) {
+      const status = error?.$metadata?.httpStatusCode;
+      const missing = status === 404 || ['NotFound', 'NoSuchBucket'].includes(error?.name);
+      if (!missing || !this.commands.CreateBucketCommand) throw error;
+      await this.client.send(new this.commands.CreateBucketCommand({ Bucket: this.bucket }));
+    }
+    return this;
   }
 
   key(tenantId, category, name) {
