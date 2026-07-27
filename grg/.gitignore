@@ -1,0 +1,7 @@
+.data/
+generated/
+artifacts/
+coverage/
+node_modules/
+.env
+*.log

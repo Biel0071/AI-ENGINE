@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GRG Serviços — Login</title>
+  <style>
+    :root { --bg:#0a0f1c; --card:#111a2e; --line:#23304d; --fg:#e6edf7; --muted:#8ea3c0; --gold:#d4a72c; --primary:#3b82f6; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background: radial-gradient(1200px 600px at 50% -10%, #16233d, var(--bg)); color:var(--fg); font:15px/1.5 Inter,system-ui,sans-serif; display:grid; place-items:center; }
+    .card { width:min(400px,92vw); background:var(--card); border:1px solid var(--line); border-radius:18px; padding:34px; box-shadow:0 30px 60px rgba(0,0,0,.5); }
+    .brand { text-align:center; margin-bottom:24px; }
+    .logo { display:inline-block; background:linear-gradient(135deg,#d4a72c,#b8860b); color:#1a1a1a; font-weight:900; font-size:26px; padding:10px 16px; border-radius:12px; letter-spacing:1px; }
+    .brand h1 { margin:14px 0 2px; font-size:20px; letter-spacing:1px; }
+    .brand p { margin:0; color:var(--muted); font-size:13px; }
+    label { display:block; font-size:12px; color:var(--muted); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.04em; }
+    input { width:100%; background:#0b1428; border:1px solid var(--line); color:var(--fg); padding:12px 14px; border-radius:10px; font-size:15px; }
+    input:focus { outline:none; border-color:var(--gold); }
+    button { width:100%; margin-top:22px; background:linear-gradient(135deg,var(--primary),#2563eb); color:#fff; border:0; padding:13px; border-radius:10px; font-weight:700; font-size:15px; cursor:pointer; }
+    button:hover { filter:brightness(1.08); }
+    .err { color:#fca5a5; font-size:13px; margin-top:14px; min-height:18px; text-align:center; }
+    .hint { margin-top:18px; text-align:center; color:var(--muted); font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <span class="logo">GRG</span>
+      <h1>GRG SERVIÇOS</h1>
+      <p>Virtual Office AI — acesso ao escritório</p>
+    </div>
+    <form id="f">
+      <label>Usuário</label>
+      <input id="user" placeholder="admin1010" autocomplete="username" required />
+      <label>Senha</label>
+      <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" required />
+      <button type="submit">Entrar no escritório</button>
+      <div class="err" id="err"></div>
+    </form>
+    <div class="hint">Sistema Operacional Empresarial Inteligente</div>
+  </div>
+  <script>
+    // se já logado, vai direto
+    if (localStorage.getItem('grg_token')) location.href = '/app';
+    document.getElementById('f').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('err'); err.textContent = '';
+      const userId = document.getElementById('user').value.trim();
+      const password = document.getElementById('pw').value;
+      try {
+        const r = await fetch('/api/login', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ tenantId:'grg', userId, password }) });
+        const data = await r.json();
+        if (!r.ok) { err.textContent = data.error || 'Falha no login'; return; }
+        localStorage.setItem('grg_token', data.token);
+        localStorage.setItem('grg_user', data.name || userId);
+        location.href = '/app';
+      } catch (ex) { err.textContent = 'Erro de conexão'; }
+    });
+  </script>
+</body>
+</html>

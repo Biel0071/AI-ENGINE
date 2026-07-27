@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GRG Serviços — Virtual Office</title>
+  <link rel="stylesheet" href="/office.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">GRG</span>
+      <div>
+        <h1>GRG SERVIÇOS</h1>
+        <span class="sub">Virtual Office — soluções inteligentes para empresas</span>
+      </div>
+    </div>
+    <nav>
+      <a href="/">Painel</a>
+      <span id="llmstatus" class="pill">sistema…</span>
+    </nav>
+  </header>
+
+  <main>
+    <div class="empty" id="empty">
+      Nenhuma empresa no escritório ainda.<br>
+      Acople um repositório no <a href="/">Painel</a> e contrate a equipe (botão "contratar").
+    </div>
+    <div id="buildings" class="buildings"></div>
+  </main>
+
+  <!-- Modal de interação -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <button class="close" id="close">✕</button>
+      <div class="modal-head">
+        <h2 id="m-store"></h2>
+        <span id="m-niche" class="tag"></span>
+        <span id="m-health" class="health"></span>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-standup">🗣️ Reunião de equipe</button>
+        <button id="btn-report">📋 Relatório do Diretor</button>
+      </div>
+      <div class="modal-grid">
+        <div class="staff-col">
+          <h3>Organograma</h3>
+          <ul id="m-staff" class="staff-list"></ul>
+        </div>
+        <div class="talk-col">
+          <div id="m-log" class="talk-log"></div>
+          <form id="m-ask" class="ask">
+            <select id="m-role"></select>
+            <input id="m-q" placeholder="Pergunte ao funcionário..." autocomplete="off" />
+            <button type="submit">Perguntar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/office.js"></script>
+</body>
+</html>
