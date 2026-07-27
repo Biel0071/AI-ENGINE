@@ -1,7 +1,7 @@
 const { uuid, slugify } = require('../kernel/ids');
 const { ValidationError, ConflictError, NotFoundError } = require('../kernel/errors');
 const { assertNoSecrets } = require('../eventing/event-store');
-const KINDS = new Set(['service', 'api', 'database', 'container', 'worker', 'agent', 'tool', 'template', 'plugin', 'skill', 'mcp-server', 'ai-model', 'prompt', 'policy', 'secret-ref']);
+const KINDS = new Set(['service', 'api', 'database', 'container', 'worker', 'agent', 'tool', 'template', 'plugin', 'skill', 'mcp-server', 'ai-model', 'prompt', 'policy', 'secret-ref', 'capability']);
 class ServiceRegistry {
   constructor({ store, controlPlane }) { this.store = store; this.cp = controlPlane; }
   async register(tenantId, actorId, input) {

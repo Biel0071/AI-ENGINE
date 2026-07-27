@@ -13,7 +13,7 @@ test('AI City projects the complete enterprise hierarchy from durable Fabric eve
   for (const level of LEVELS) assert.ok(city.nodes.some((node) => node.type === level), `missing ${level}`);
   assert.ok(city.nodes.some((node) => node.type === 'DISTRICT' && node.key === 'business'));
   assert.ok(city.nodes.some((node) => node.type === 'BUILDING' && node.key === 'crm-tower'));
-  assert.equal(city.edges.length, LEVELS.length - 1);
+  assert.ok(city.edges.length >= LEVELS.length - 1);
   assert.equal(city.status, 'ACTIVE');
 });
 

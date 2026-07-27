@@ -51,6 +51,7 @@ const { GlobalVersionEngine } = require('./versioning/global-version-engine');
 const { AICityProjection } = require('./ai-city/ai-city-projection');
 const { JobEngine } = require('./runtime/job-engine');
 const { DockerDeployAdapter } = require('./runtime/docker-deploy-adapter');
+const { CapabilityRegistry } = require('./capabilities/capability-registry');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -149,6 +150,7 @@ async function createApp(options = {}) {
   jobs.register('factory.generate', (payload, context) => factory.generate(context.tenantId, context.actorId, payload));
   jobs.register('project.orchestrate', (payload, context) => orchestrator.buildFromPrompt(context.tenantId, context.actorId, payload));
   jobs.register('discovery.scan', (payload, context) => discoveryNetwork.scan(context.tenantId, context.actorId, payload));
+  const capabilityRegistry = new CapabilityRegistry({ store, controlPlane, registry, events: fabricEvents, bus }).attach();
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   health.register('state-store', async () => {
     if (typeof store.health === 'function') return store.health();
@@ -171,7 +173,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs,
+    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, capabilityRegistry,
   };
 
   app.close = async () => {

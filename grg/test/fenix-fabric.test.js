@@ -41,6 +41,6 @@ test('registry keeps resource versions and protects immutable identity', async (
   await app.registry.register('grg', 'alice', base);
   await app.registry.register('grg', 'alice', { ...base, version: '1.1.0', capabilities: ['v2'] });
   await assert.rejects(() => app.registry.register('grg', 'alice', { ...base, identity: { id: 'spiffe://attacker' } }), /cannot be replaced/);
-  assert.equal((await app.store.read()).serviceVersions.length, 2);
+  assert.equal((await app.store.read()).serviceVersions.filter((item) => item.resourceId === 'service:api').length, 2);
   await assert.rejects(() => app.registry.register('grg', 'alice', { ...base, id: 'service:leak', name: 'Leak', metadata: { apiToken: 'value' } }), /secret field/);
 });
