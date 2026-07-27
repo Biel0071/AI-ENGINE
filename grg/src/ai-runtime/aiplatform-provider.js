@@ -31,16 +31,17 @@ function request(baseUrl, path, apiKey, payload, timeoutMs = 120000) {
 }
 
 class AIPlatformProvider {
+  #apiKey;
   constructor({ baseUrl, apiKey, model = null } = {}) {
     this.name = 'aiplatform';
     this.baseUrl = baseUrl || process.env.GRG_AIPLATFORM_URL || '';
-    this.apiKey = apiKey || process.env.GRG_AIPLATFORM_KEY || '';
+    this.#apiKey = apiKey || process.env.GRG_AIPLATFORM_KEY || '';
     this.model = model;
     this.models = model ? [model] : [];
   }
 
   async available() {
-    if (!this.baseUrl || !this.apiKey) return false;
+    if (!this.baseUrl || !this.#apiKey) return false;
     try {
       const u = new URL(this.baseUrl.replace(/\/$/, '') + '/v1/health');
       const lib = u.protocol === 'https:' ? https : http;
@@ -56,7 +57,7 @@ class AIPlatformProvider {
 
   // AI Gateway interface
   async complete({ model, prompt }) {
-    const res = await request(this.baseUrl, '/v1/text', this.apiKey, { prompt, ...(model ? { model } : {}) });
+    const res = await request(this.baseUrl, '/v1/text', this.#apiKey, { prompt, ...(model ? { model } : {}) });
     const text = res.result ? (res.result.text || '') : (res.text || '');
     const tk = res.tokens || {};
     return { text, model: res.model || model, promptTokens: tk.prompt || Math.ceil(prompt.length / 4), completionTokens: tk.completion || Math.ceil(text.length / 4) };
@@ -66,7 +67,7 @@ class AIPlatformProvider {
   async chat({ model, messages, format = null, temperature = 0.3 }) {
     const payload = { messages, ...(model ? { model } : {}), temperature };
     if (format === 'json') payload.format = 'json';
-    const res = await request(this.baseUrl, '/v1/chat', this.apiKey, payload);
+    const res = await request(this.baseUrl, '/v1/chat', this.#apiKey, payload);
     const text = res.result ? (res.result.text || res.result.message || '') : (res.text || '');
     return { text, raw: res };
   }

@@ -6,7 +6,7 @@ const { ControlPlane } = require('./control-plane/control-plane');
 const { RepositoryIntelligence } = require('./repo-intel/repository-intelligence');
 const { LocalGitHostAdapter } = require('./repo-intel/ports');
 const { AIGateway } = require('./ai-runtime/ai-gateway');
-const { EchoProvider } = require('./ai-runtime/providers');
+const { buildProvidersFromEnv, loadRoutes } = require('./ai-runtime/provider-registry');
 const { SoftwareFactory } = require('./software-factory/software-factory');
 const { Deployer } = require('./runtime/deployer');
 const { ProductSuite } = require('./product/white-label');
@@ -30,6 +30,7 @@ const { HealthRegistry } = require('./infrastructure/monitoring/health-registry'
 const { FileBackupService } = require('./infrastructure/backup/file-backup-service');
 const { PostgresStore } = require('./infrastructure/database/postgres-store');
 const { RedisCache } = require('./infrastructure/redis/redis-cache');
+const { RedisRateLimiter } = require('./infrastructure/redis/redis-rate-limiter');
 const { BullMQRuntime } = require('./infrastructure/queue/bullmq-runtime');
 const { S3ObjectStore } = require('./infrastructure/storage/s3-object-store');
 
@@ -48,10 +49,15 @@ async function createApp(options = {}) {
   const policy = new PolicyEngine();
   const approvals = new ApprovalEngine({ store, bus, controlPlane, audit, policy });
   const gitHost = options.gitHost || new LocalGitHostAdapter();
-  const providers = options.providers || { echo: new EchoProvider() };
+  const runtimeEnv = options.env || process.env;
+  const providers = options.providers || buildProvidersFromEnv(runtimeEnv, { fetchImpl: options.fetchImpl });
+  const routes = options.routes || loadRoutes(runtimeEnv);
 
   const repoIntel = new RepositoryIntelligence({ store, bus, controlPlane, gitHost });
-  const aiGateway = new AIGateway({ store, bus, controlPlane, providers });
+  const aiGateway = new AIGateway({
+    store, bus, controlPlane, providers, routes,
+    prices: options.aiPrices, rateLimiter: options.aiRateLimiter,
+  });
   const path = require('node:path');
   const outputDir = options.outputDir || path.join(__dirname, '..', 'generated');
   const factory = new SoftwareFactory({ store, bus, controlPlane, aiGateway, outputDir });
@@ -85,6 +91,13 @@ async function createApp(options = {}) {
   const inbox = new InboxService({ store });
   const backup = new FileBackupService();
   const redis = options.redis || (options.redisUrl ? await RedisCache.connect({ url: options.redisUrl }) : null);
+  if (!aiGateway.rateLimiter && redis) {
+    aiGateway.rateLimiter = new RedisRateLimiter({
+      client: redis.client,
+      limit: Number(runtimeEnv.FENIX_AI_RATE_LIMIT || 60),
+      windowMs: Number(runtimeEnv.FENIX_AI_RATE_WINDOW_MS || 60_000),
+    });
+  }
   const queues = options.queues || (options.queueRedisUrl ? BullMQRuntime.fromUrl(options.queueRedisUrl) : null);
   const objects = options.objects || (options.s3 ? S3ObjectStore.create(options.s3) : null);
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
@@ -97,6 +110,11 @@ async function createApp(options = {}) {
   if (redis) health.register('redis', () => redis.health());
   if (queues) health.register('queue', () => queues.health());
   if (objects) health.register('object-storage', () => objects.health());
+  health.register('ai-providers', async () => {
+    const providersHealth = await aiGateway.providerHealth();
+    const routeReady = aiGateway.candidates('default').some((item) => providersHealth[item.provider]?.ok);
+    return { ok: routeReady, providers: providersHealth };
+  }, { critical: false });
 
   const app = {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
