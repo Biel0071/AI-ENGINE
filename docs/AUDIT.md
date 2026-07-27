@@ -65,8 +65,8 @@ Não foram detectados ciclos de importação pelo Graphify. O principal risco es
 ## Mocks e adapters locais
 
 - `EchoProvider`: provider determinístico de teste/dev.
-- `MockProviderAdapter`: deploy local simulado.
-- `MockPackager`: artefatos simulados para PWA, desktop, Android, iOS e extensões.
+- Adapters determinísticos existem somente como ferramentas de desenvolvimento e carregam `productionSafe=false`.
+- Produção falha fechado sem adapter de deploy real; o driver Docker executa build/run reais com isolamento endurecido.
 - `MemoryStore` e `FileStore`: persistência de desenvolvimento.
 - custos de IA: estimativa fixa, não catálogo versionado de preços.
 - SSL/DNS e status de deploy: estados locais, sem provider real.

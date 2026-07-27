@@ -50,6 +50,7 @@ const { FederationProjection } = require('./federation/federation-projection');
 const { GlobalVersionEngine } = require('./versioning/global-version-engine');
 const { AICityProjection } = require('./ai-city/ai-city-projection');
 const { JobEngine } = require('./runtime/job-engine');
+const { DockerDeployAdapter } = require('./runtime/docker-deploy-adapter');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -80,10 +81,16 @@ async function createApp(options = {}) {
   const path = require('node:path');
   const outputDir = options.outputDir || path.join(__dirname, '..', 'generated');
   const factory = new SoftwareFactory({ store, bus, controlPlane, aiGateway, outputDir });
-  const deployer = new Deployer({ store, bus, controlPlane, providers: options.deployProviders, approvalEngine: approvals });
+  let deployProviders = options.deployProviders;
+  if (!deployProviders && securityConfig.production && runtimeEnv.FENIX_DEPLOY_DRIVER === 'docker') deployProviders = { container: new DockerDeployAdapter({ generatedRoot: outputDir, publicBaseUrl: runtimeEnv.FENIX_DEPLOY_PUBLIC_BASE_URL || 'http://127.0.0.1', network: runtimeEnv.FENIX_DEPLOY_DOCKER_NETWORK || 'fenix-apps' }) };
+  if (securityConfig.production && (!deployProviders || Object.values(deployProviders).some((adapter) => adapter.productionSafe !== true))) throw new Error('production requires explicitly production-safe deploy adapters');
+  const defaultDeployTarget = securityConfig.production ? 'container' : 'node';
+  const deployer = new Deployer({ store, bus, controlPlane, providers: deployProviders, approvalEngine: approvals, defaultTarget: defaultDeployTarget });
   const product = new ProductSuite({ store, bus, controlPlane });
-  const appFactory = new AppFactory({ store, bus, controlPlane });
-  const orchestrator = new Orchestrator({ store, bus, controlPlane, factory, deployer, appFactory, product });
+  const packagers = options.packagers || (securityConfig.production ? {} : undefined);
+  if (securityConfig.production && Object.values(packagers).some((adapter) => adapter.productionSafe !== true)) throw new Error('production requires explicitly production-safe packagers');
+  const appFactory = new AppFactory({ store, bus, controlPlane, packagers });
+  const orchestrator = new Orchestrator({ store, bus, controlPlane, factory, deployer, appFactory, product, defaultDeployTarget });
 
   // Loop de memória evolutiva: LIGADO por padrão. Aprende a cada evento de negócio.
   const evolution = new EvolutionEngine({ store, bus });

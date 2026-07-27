@@ -162,6 +162,8 @@ function scaffold(projectId, name, plan) {
   files['test/smoke.test.js'] = smokeTest(allModules);
 
   files['.gitignore'] = 'node_modules\n.data\n*.log\n';
+  files['.dockerignore'] = 'node_modules\n.git\n.data\n*.log\n';
+  files['Dockerfile'] = 'FROM node:22-alpine\nWORKDIR /app\nCOPY --chown=node:node . .\nUSER node\nENV NODE_ENV=production PORT=3000\nEXPOSE 3000\nHEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch(\'http://127.0.0.1:3000/\').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"\nCMD ["node", "src/index.js"]\n';
   return files;
 }
 

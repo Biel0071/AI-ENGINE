@@ -5,8 +5,8 @@ const { ValidationError, NotFoundError } = require('../kernel/errors');
 // Adapters locais/mock (static/node/container) provam o fluxo preview->prod->rollback.
 // Adapters reais (Cloudflare/AWS/K8s/VPS) implementam a mesma interface deploy()/rollback().
 
-class MockProviderAdapter {
-  constructor(name) { this.name = name; this.deployed = new Map(); }
+class DevelopmentDeployAdapter {
+  constructor(name) { this.name = name; this.deployed = new Map(); this.productionSafe = false; }
   async deploy({ projectId, environment, revision }) {
     const url = `https://${projectId}.${environment}.${this.name}.local`;
     this.deployed.set(`${projectId}:${environment}`, { revision, url });
@@ -20,12 +20,13 @@ class MockProviderAdapter {
 const ENVIRONMENTS = ['preview', 'staging', 'production'];
 
 class Deployer {
-  constructor({ store, bus, controlPlane, providers, approvalEngine = null }) {
+  constructor({ store, bus, controlPlane, providers, approvalEngine = null, defaultTarget = 'node' }) {
     this.store = store;
     this.bus = bus;
     this.cp = controlPlane;
     this.approvals = approvalEngine;
-    this.providers = providers || { static: new MockProviderAdapter('static'), node: new MockProviderAdapter('node'), container: new MockProviderAdapter('container') };
+    this.defaultTarget = defaultTarget;
+    this.providers = providers || { static: new DevelopmentDeployAdapter('static'), node: new DevelopmentDeployAdapter('node'), container: new DevelopmentDeployAdapter('container') };
   }
 
   async deploy(tenantId, actorId, projectId, input = {}) {
@@ -36,7 +37,7 @@ class Deployer {
 
     const environment = input.environment || 'preview';
     if (!ENVIRONMENTS.includes(environment)) throw new ValidationError(`Unknown environment: ${environment}`);
-    const target = input.target || 'node';
+    const target = input.target || this.defaultTarget;
     const provider = this.providers[target];
     if (!provider) throw new ValidationError(`No deploy adapter for target: ${target}`);
 
@@ -54,12 +55,13 @@ class Deployer {
       }
     }
 
-    const result = await provider.deploy({ projectId, environment, revision });
+    const result = await provider.deploy({ projectId, project, environment, revision });
     const deployment = {
       id: uuid(), tenantId, projectId, target, environment, revision,
       status: 'deployed', url: result.url, logs: result.logs,
       approvedBy: environment === 'production' ? (approval && approval.approvedBy || actorId) : null,
       approvalId: approval && approval.id || null,
+      runtimeMetadata: result.metadata || null,
       createdAt: now(),
     };
     await this.store.update((state) => {
@@ -103,4 +105,4 @@ class Deployer {
 
 function now() { return new Date().toISOString(); }
 
-module.exports = { Deployer, MockProviderAdapter, ENVIRONMENTS };
+module.exports = { Deployer, DevelopmentDeployAdapter, ENVIRONMENTS };

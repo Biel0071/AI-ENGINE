@@ -4,9 +4,10 @@ const { uuid } = require('../kernel/ids');
 // distribui aos serviços (agentes) e consolida. Aqui os "agentes" são os serviços já testados;
 // adapters de agentes autônomos (subagentes/serviços) plugam a mesma orquestração.
 class Orchestrator {
-  constructor({ store, bus, controlPlane, factory, deployer, appFactory, product }) {
+  constructor({ store, bus, controlPlane, factory, deployer, appFactory, product, defaultDeployTarget = 'node' }) {
     this.store = store; this.bus = bus; this.cp = controlPlane;
     this.factory = factory; this.deployer = deployer; this.appFactory = appFactory; this.product = product;
+    this.defaultDeployTarget = defaultDeployTarget;
   }
 
   // Pipeline ponta-a-ponta: prompt -> projeto reutilizando capabilities -> deploy preview -> (opcional) build.
@@ -25,7 +26,7 @@ class Orchestrator {
     // 3. deploy preview
     let deployment = null;
     if (input.deploy !== false) {
-      deployment = await this.deployer.deploy(tenantId, actorId, gen.project.id, { environment: 'preview', target: input.target || 'node' });
+      deployment = await this.deployer.deploy(tenantId, actorId, gen.project.id, { environment: 'preview', target: input.target || this.defaultDeployTarget });
       step('deploy', { url: deployment.url, environment: 'preview' });
     }
 

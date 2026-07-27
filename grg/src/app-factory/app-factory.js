@@ -5,8 +5,8 @@ const { ValidationError, NotFoundError } = require('../kernel/errors');
 // Packagers locais/mock produzem artefatos determinísticos. Adapters reais (gradle/xcode/
 // electron-builder/tauri/web-ext) implementam a mesma interface build().
 
-class MockPackager {
-  constructor(target, ext) { this.target = target; this.ext = ext; }
+class DevelopmentPackager {
+  constructor(target, ext) { this.target = target; this.ext = ext; this.productionSafe = false; }
   async build({ projectId, version }) {
     const filename = `${projectId}-${version}.${this.ext}`;
     const checksum = require('node:crypto').createHash('sha256').update(filename).digest('hex').slice(0, 16);
@@ -15,14 +15,14 @@ class MockPackager {
 }
 
 const DEFAULT_PACKAGERS = () => ({
-  pwa: new MockPackager('pwa', 'zip'),
-  electron: new MockPackager('electron', 'exe'),
-  tauri: new MockPackager('tauri', 'msi'),
-  android: new MockPackager('android', 'apk'),
-  'android-aab': new MockPackager('android-aab', 'aab'),
-  ios: new MockPackager('ios', 'ipa'),
-  'extension-chrome': new MockPackager('extension-chrome', 'crx'),
-  'extension-firefox': new MockPackager('extension-firefox', 'xpi'),
+  pwa: new DevelopmentPackager('pwa', 'zip'),
+  electron: new DevelopmentPackager('electron', 'exe'),
+  tauri: new DevelopmentPackager('tauri', 'msi'),
+  android: new DevelopmentPackager('android', 'apk'),
+  'android-aab': new DevelopmentPackager('android-aab', 'aab'),
+  ios: new DevelopmentPackager('ios', 'ipa'),
+  'extension-chrome': new DevelopmentPackager('extension-chrome', 'crx'),
+  'extension-firefox': new DevelopmentPackager('extension-firefox', 'xpi'),
 });
 
 class AppFactory {
@@ -73,4 +73,4 @@ class AppFactory {
 
 function now() { return new Date().toISOString(); }
 
-module.exports = { AppFactory, MockPackager, DEFAULT_PACKAGERS };
+module.exports = { AppFactory, DevelopmentPackager, DEFAULT_PACKAGERS };
