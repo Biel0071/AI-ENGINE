@@ -35,6 +35,7 @@ const { BullMQRuntime } = require('./infrastructure/queue/bullmq-runtime');
 const { S3ObjectStore } = require('./infrastructure/storage/s3-object-store');
 const { MemoryEngine } = require('./memory/memory-engine');
 const { QdrantVectorStore } = require('./memory/qdrant-vector-store');
+const { KnowledgeGraph } = require('./knowledge-graph/knowledge-graph');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -104,6 +105,7 @@ async function createApp(options = {}) {
   const objects = options.objects || (options.s3 ? S3ObjectStore.create(options.s3) : null);
   const vectorStore = options.vectorStore || (options.qdrant ? await new QdrantVectorStore(options.qdrant).initialize() : null);
   const memory = new MemoryEngine({ store, bus, controlPlane, vectorStore, cache: redis });
+  const knowledgeGraph = new KnowledgeGraph({ store, bus, controlPlane });
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   health.register('state-store', async () => {
     if (typeof store.health === 'function') return store.health();
@@ -125,7 +127,7 @@ async function createApp(options = {}) {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
-    vectorStore, memory,
+    vectorStore, memory, knowledgeGraph,
   };
 
   app.close = async () => {

@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 6;
+const CURRENT_SCHEMA_VERSION = 7;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -11,6 +11,7 @@ const COLLECTIONS_BY_VERSION = {
   4: ['sessions', 'auditEvents', 'approvalRequests', 'idempotencyKeys', 'outbox', 'inbox'],
   5: ['migrationHistory'],
   6: ['memories', 'memoryVersions'],
+  7: ['knowledgeEntities', 'knowledgeRelationships'],
 };
 
 function normalizeVersion(value) {

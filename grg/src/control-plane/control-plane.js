@@ -11,7 +11,7 @@ class ControlPlane {
 
   async initialize(master = { userId: 'grg-admin', name: 'GRG Admin' }) {
     await this.store.update((state) => {
-      state.schemaVersion = Math.max(state.schemaVersion || 1, 6);
+      state.schemaVersion = Math.max(state.schemaVersion || 1, 7);
       if (!state.users.some((u) => u.id === master.userId)) {
         state.users.push({ id: master.userId, name: master.name, status: 'active', createdAt: now() });
       }
