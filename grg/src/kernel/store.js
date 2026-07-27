@@ -94,6 +94,10 @@ const EMPTY_STATE = () => ({
   scriptDefinitions: [],
   sandboxExecutions: [],
   executionTimeline: [],
+  inspectionRuns: [],
+  inspectionReports: [],
+  inspectionTwins: [],
+  evolutionProposals: [],
 });
 
 class MemoryStore {
