@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 13;
+const CURRENT_SCHEMA_VERSION = 14;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -18,6 +18,7 @@ const COLLECTIONS_BY_VERSION = {
   11: ['cityNodes', 'cityEdges', 'cityProjectionStates'],
   12: ['runtimeJobs', 'runtimeSchedules', 'deadLetters', 'workerHeartbeats'],
   13: ['capabilityDefinitions', 'capabilityVersions', 'capabilityLogs'],
+  14: ['cognitiveGoals', 'cognitiveObservations', 'cognitiveHypotheses', 'cognitiveDecisions', 'cognitiveValidations', 'cognitiveReflections', 'cognitiveCycles', 'cognitiveCursors'],
 };
 
 function normalizeVersion(value) {

@@ -119,6 +119,15 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && capabilityHistory) return sendJson(res, 200, { versions: await app.capabilityRegistry.history(tenantId, actorId, capabilityHistory[1]) }, requestId);
       const capabilityGet = url.pathname.match(/^\/api\/capabilities\/([^/]+)$/);
       if (req.method === 'GET' && capabilityGet) return sendJson(res, 200, await app.capabilityRegistry.get(tenantId, actorId, capabilityGet[1]), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/cognitive/goals') return sendJson(res, 201, await app.cognitiveCore.createGoal(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/cognitive/cycle') return sendJson(res, 202, await app.cognitiveCore.cycle(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/cognitive/context') return sendJson(res, 200, await app.cognitiveCore.context(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/cognitive/dashboard') return sendJson(res, 200, await app.cognitiveCore.dashboard(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/cognitive/hypotheses') return sendJson(res, 201, await app.cognitiveCore.propose(tenantId, actorId, await readJson(req)), requestId);
+      const evaluateHypothesis = url.pathname.match(/^\/api\/cognitive\/hypotheses\/([^/]+)\/evaluate$/);
+      if (req.method === 'POST' && evaluateHypothesis) return sendJson(res, 200, await app.cognitiveCore.evaluate(tenantId, actorId, evaluateHypothesis[1]), requestId);
+      const dispatchHypothesis = url.pathname.match(/^\/api\/cognitive\/hypotheses\/([^/]+)\/dispatch$/);
+      if (req.method === 'POST' && dispatchHypothesis) return sendJson(res, 202, await app.cognitiveCore.dispatch(tenantId, actorId, dispatchHypothesis[1]), requestId);
       if (req.method === 'POST' && url.pathname === '/api/discovery-network/scan') return sendJson(res, 202, await app.discoveryNetwork.scan(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/discovery-network/inventory') return sendJson(res, 200, { resources: await app.discoveryNetwork.inventory(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/knowledge-federation/publish') return sendJson(res, 202, await app.federation.publish(tenantId, actorId, await readJson(req)), requestId);

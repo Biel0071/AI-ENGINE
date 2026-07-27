@@ -13,6 +13,7 @@ const BUILT_INS = Object.freeze([
   ['software-factory', 'Software Factory Capability', 'Planejamento e geração de sistemas executáveis', ['factory:generate'], ['runtime', 'object-storage'], ['factory.generate']],
   ['ai-city', 'AI City Capability', 'Projeção viva e reconstruível do Event Store', ['fabric:read'], ['event-store'], []],
   ['versioning', 'Version Engine Capability', 'Histórico global, diff e rollback governado', ['event:read'], ['event-store'], []],
+  ['cognitive-core', 'Cognitive Core Capability', 'Loop cognitivo governado e explicável', ['governance:read', 'governance:approve'], ['event-store', 'runtime'], ['cognitive.cycle']],
 ]);
 
 class CapabilityRegistry {
