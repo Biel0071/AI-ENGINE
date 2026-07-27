@@ -4,4 +4,6 @@ artifacts/
 coverage/
 node_modules/
 .env
+.env.enterprise
+secrets/
 *.log
