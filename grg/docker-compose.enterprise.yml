@@ -79,6 +79,8 @@ services:
     volumes:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
     extra_hosts: ["host.containers.internal:host-gateway"]
+    healthcheck:
+      disable: true
 
   postgres:
     image: postgres:17.9-alpine
