@@ -183,6 +183,17 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/cognitive/avatar/improvements') return sendJson(res, 200, await app.adminAvatar.improvements(tenantId, actorId), requestId);
       const avatarDecision = url.pathname.match(/^\/api\/cognitive\/avatar\/decisions\/([^/]+)$/);
       if (req.method === 'GET' && avatarDecision) return sendJson(res, 200, await app.adminAvatar.explainDecision(tenantId, actorId, avatarDecision[1]), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/agents/cycles') return sendJson(res, 202, await app.agentEcosystem.cycle(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/agents/tasks') return sendJson(res, 201, await app.agentEcosystem.createTask(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/agents/delegations') return sendJson(res, 201, await app.agentEcosystem.delegate(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/agents/panel') return sendJson(res, 200, await app.agentEcosystem.panel(tenantId, actorId), requestId);
+      const agentTask = url.pathname.match(/^\/api\/agents\/tasks\/([^/]+)$/);
+      if (req.method === 'GET' && agentTask) return sendJson(res, 200, await app.agentEcosystem.getTask(tenantId, actorId, agentTask[1]), requestId);
+      const dispatchAgentTask = url.pathname.match(/^\/api\/agents\/tasks\/([^/]+)\/dispatch-approved$/);
+      if (req.method === 'POST' && dispatchAgentTask) { const body = await readJson(req); return sendJson(res, 202, await app.agentEcosystem.dispatchApproved(tenantId, actorId, dispatchAgentTask[1], body.approvalId), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/agents/knowledge-proposals') return sendJson(res, 201, await app.agentEcosystem.proposeKnowledge(tenantId, actorId, await readJson(req)), requestId);
+      const promoteAgentKnowledge = url.pathname.match(/^\/api\/agents\/knowledge-proposals\/([^/]+)\/promote$/);
+      if (req.method === 'POST' && promoteAgentKnowledge) { const body = await readJson(req); return sendJson(res, 200, await app.agentEcosystem.promoteKnowledge(tenantId, actorId, promoteAgentKnowledge[1], body.masterAgentId), requestId); }
       if (req.method === 'POST' && url.pathname === '/api/cognitive/hypotheses') return sendJson(res, 201, await app.cognitiveCore.propose(tenantId, actorId, await readJson(req)), requestId);
       const evaluateHypothesis = url.pathname.match(/^\/api\/cognitive\/hypotheses\/([^/]+)\/evaluate$/);
       if (req.method === 'POST' && evaluateHypothesis) return sendJson(res, 200, await app.cognitiveCore.evaluate(tenantId, actorId, evaluateHypothesis[1]), requestId);
