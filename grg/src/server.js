@@ -155,6 +155,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/execution/sandbox') return sendJson(res, 200, { executions: await app.sandbox.list(tenantId, actorId) }, requestId);
       const sandboxExecution = url.pathname.match(/^\/api\/execution\/sandbox\/([^/]+)$/);
       if (req.method === 'GET' && sandboxExecution) return sendJson(res, 200, await app.sandbox.get(tenantId, actorId, sandboxExecution[1]), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/inspections') return sendJson(res, 202, await app.inspection.inspect(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/inspections') return sendJson(res, 200, { inspections: await app.inspection.list(tenantId, actorId) }, requestId);
+      const inspectionRun = url.pathname.match(/^\/api\/inspections\/([^/]+)$/);
+      if (req.method === 'GET' && inspectionRun) return sendJson(res, 200, await app.inspection.get(tenantId, actorId, inspectionRun[1]), requestId);
+      const inspectionTwin = url.pathname.match(/^\/api\/inspection-twins\/([^/]+)$/);
+      if (req.method === 'GET' && inspectionTwin) return sendJson(res, 200, await app.inspection.twin(tenantId, actorId, inspectionTwin[1]), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/evolution-proposals') return sendJson(res, 200, { proposals: await app.inspection.proposals(tenantId, actorId, url.searchParams.get('subjectId') || null) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/capabilities') return sendJson(res, 200, { capabilities: await app.capabilityRegistry.list(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/capabilities') return sendJson(res, 201, await app.capabilityRegistry.register(tenantId, actorId, await readJson(req)), requestId);
       const capabilityHistory = url.pathname.match(/^\/api\/capabilities\/([^/]+)\/history$/);

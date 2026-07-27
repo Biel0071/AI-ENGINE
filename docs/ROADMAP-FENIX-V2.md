@@ -160,6 +160,14 @@ O V2.5.1 estabelece a autoridade de escopo usada por todas as fatias seguintes. 
 
 O gate V2.5.2 completo só fecha após todas essas fatias. A existência do Sandbox isoladamente não autoriza declarar a plataforma autônoma concluída.
 
+Fatias internas do V2.5.2.2:
+
+- **2.2-A — Contrato e projeções:** relatório versionado produzido no Sandbox, validação de evidências, Event Store, Knowledge Graph, Inspection Twin, Memory, AI City e propostas sem execução.
+- **2.2-B — Scanner poliglota assinado:** imagem imutável com detectores de linguagens, frameworks, infraestrutura, APIs, dados, filas, eventos, autenticação e IA.
+- **2.2-C — Reverse Engineering profundo:** módulos, fluxos, dependências, diagramas e índice documental.
+- **2.2-D — Qualidade e comparação:** complexidade, duplicação, acoplamento, coesão, segurança e matriz entre projetos.
+- **2.2-E — Conversação Graph-only:** respostas com caminhos do grafo, citações e nível de confiança.
+
 ### V2.6 — Assistente multimodal
 
 Objetivo: permitir conversa por texto e voz sem acoplar providers à experiência.
