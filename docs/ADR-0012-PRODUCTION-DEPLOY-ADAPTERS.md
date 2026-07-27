@@ -28,6 +28,9 @@ não existir, remove apenas o container determinístico do projeto/ambiente e in
 com as mesmas restrições. Banco e migrations exigem plano separado e aprovação; este rollback cobre
 somente o workload.
 
+O mesmo fail-closed se aplica ao AI Gateway: `EchoProvider` não é registrado em produção,
+rotas `echo` são recusadas e toda rota deve apontar para um provider real configurado.
+
 ## Limitações
 
 O ambiente desta auditoria não possui Docker Engine acessível, portanto os testes validam contrato,

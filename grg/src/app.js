@@ -70,8 +70,12 @@ async function createApp(options = {}) {
   const approvals = new ApprovalEngine({ store, bus, controlPlane, audit, policy });
   const gitHost = options.gitHost || new LocalGitHostAdapter();
   const runtimeEnv = options.env || process.env;
-  const providers = options.providers || buildProvidersFromEnv(runtimeEnv, { fetchImpl: options.fetchImpl });
-  const routes = options.routes || loadRoutes(runtimeEnv);
+  const providers = options.providers || buildProvidersFromEnv(runtimeEnv, { fetchImpl: options.fetchImpl, production: securityConfig.production });
+  const routes = options.routes || loadRoutes(runtimeEnv, { production: securityConfig.production });
+  if (securityConfig.production) {
+    const configured = Object.values(routes).flatMap((route) => [route, ...(Array.isArray(route.fallback) ? route.fallback : route.fallback ? [route.fallback] : [])]);
+    if (configured.some((route) => route.provider === 'echo' || !providers[route.provider])) throw new Error('production AI routes require configured real providers');
+  }
 
   const repoIntel = new RepositoryIntelligence({ store, bus, controlPlane, gitHost });
   const aiGateway = new AIGateway({

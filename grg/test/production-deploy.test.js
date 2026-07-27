@@ -32,6 +32,12 @@ test('Docker adapter rejects traversal and unsafe deployment identities', async 
 
 test('production fails closed for missing or development deploy adapters', async () => {
   const securityConfig = loadSecurityConfig({ FENIX_ENV: 'production' });
-  await assert.rejects(() => createApp({ securityConfig, env: {}, identityProvider: {} }), /production-safe deploy adapters/);
-  await assert.rejects(() => createApp({ securityConfig, env: {}, identityProvider: {}, deployProviders: { node: new DevelopmentDeployAdapter('node') } }), /production-safe deploy adapters/);
+  const ai = { providers: { real: { complete: async () => ({ text: 'ok' }) } }, routes: { default: { provider: 'real', model: 'real' } } };
+  await assert.rejects(() => createApp({ securityConfig, env: {}, identityProvider: {}, ...ai }), /production-safe deploy adapters/);
+  await assert.rejects(() => createApp({ securityConfig, env: {}, identityProvider: {}, ...ai, deployProviders: { node: new DevelopmentDeployAdapter('node') } }), /production-safe deploy adapters/);
+});
+
+test('production forbids the deterministic echo AI fallback', async () => {
+  const securityConfig = loadSecurityConfig({ FENIX_ENV: 'production' });
+  await assert.rejects(() => createApp({ securityConfig, env: {}, identityProvider: {}, providers: { echo: {} }, routes: { default: { provider: 'echo', model: 'echo-small' } } }), /configured real providers/);
 });
