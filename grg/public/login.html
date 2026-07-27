@@ -54,7 +54,7 @@
       localStorage.setItem('grg_token', tokens.access_token); sessionStorage.removeItem('oidc_state'); sessionStorage.removeItem('oidc_verifier'); location.href='/app'; return true;
     }
     finishOidc().catch(error => { document.getElementById('err').textContent = error.message; });
-    oidcConfig.then(config => { if (config.enabled) { document.querySelectorAll('label,input').forEach(element => { element.style.display='none'; }); document.getElementById('loginButton').textContent='Entrar com identidade GRG'; } });
+    oidcConfig.then(config => { if (config.enabled) { document.querySelectorAll('label,input').forEach(element => { element.style.display='none'; if (element.matches('input')) element.disabled=true; }); document.getElementById('loginButton').textContent='Entrar com identidade GRG'; } });
     document.getElementById('f').addEventListener('submit', async (e) => {
       e.preventDefault();
       const err = document.getElementById('err'); err.textContent = '';
