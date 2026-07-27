@@ -55,6 +55,10 @@ const EMPTY_STATE = () => ({
   memoryVersions: [],
   knowledgeEntities: [],
   knowledgeRelationships: [],
+  serviceRegistry: [],
+  serviceVersions: [],
+  domainEvents: [],
+  fabricEnrollments: [],
 });
 
 class MemoryStore {

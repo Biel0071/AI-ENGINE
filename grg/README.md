@@ -106,6 +106,11 @@ O Knowledge Graph v7 possui entidades versionadas, relaÃ§Ãµes temporais, pro
 neighborhood, caminho dirigido, impacto ponderado e detecÃ§Ã£o de anomalias. Os endpoints novos
 ficam em `/api/knowledge-graph`; `/api/graph` continua como compatibilidade legada.
 
+O FÃŠNIX Fabric v8 registra sistemas, entrega identidade uma vez, mantÃ©m versÃµes no Registry,
+publica eventos durÃ¡veis com hash chain e projeta o sistema no Knowledge Graph por evento.
+Endpoints: `POST /api/fabric/enroll`, `GET /api/fabric/enrollments`, `GET /api/registry` e
+`GET /api/events`. Em production, o emissor local de identidade Ã© recusado.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie

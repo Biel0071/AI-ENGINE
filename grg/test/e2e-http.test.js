@@ -101,3 +101,19 @@ test('memory API records, retrieves, versions and forgets knowledge', withServer
   });
   assert.equal(forgotten.status, 200);
 }));
+
+test('Fabric API enrolls a service and exposes registry plus durable event', withServer(async (base) => {
+  const headers = await authHeaders(base);
+  const enrolled = await fetch(`${base}/api/fabric/enroll`, {
+    method: 'POST', headers,
+    body: JSON.stringify({ name: 'AI City', version: '1.0.0', systemType: 'ai-city', capabilities: ['city-map'], dependencies: ['postgres'] }),
+  });
+  assert.equal(enrolled.status, 201);
+  const result = await enrolled.json();
+  assert.match(result.credentials.privateKey, /PRIVATE KEY/);
+  const registry = await fetch(`${base}/api/registry`, { headers }).then((response) => response.json());
+  assert.ok(registry.resources.some((item) => item.name === 'AI City'));
+  const events = await fetch(`${base}/api/events?type=fabric.service.registered`, { headers }).then((response) => response.json());
+  assert.equal(events.events.length, 1);
+  assert.equal(JSON.stringify(events).includes('PRIVATE KEY'), false);
+}));
