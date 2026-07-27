@@ -14,12 +14,13 @@ const ROLE_PERMISSIONS = Object.freeze({
     'whitelabel:manage', 'design:manage', 'build:create',
     'marketplace:install', 'billing:read',
     'governance:approve', 'governance:read', 'audit:read', 'security:manage',
+    'graph:read', 'graph:write',
   ],
   subadmin: [
     'project:read', 'project:analyze', 'repo:read', 'capability:read',
-    'memory:read', 'memory:write', 'member:read', 'ai:invoke', 'governance:read',
+    'memory:read', 'memory:write', 'member:read', 'ai:invoke', 'governance:read', 'graph:read',
   ],
-  employee: ['project:read', 'repo:read', 'capability:read', 'memory:read'],
+  employee: ['project:read', 'repo:read', 'capability:read', 'memory:read', 'graph:read'],
 });
 
 function permissionsFor(role) {

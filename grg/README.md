@@ -102,6 +102,10 @@ texto, confianÃ§a e Qdrant sem atravessar tenants. API: `POST /api/memories`,
 `GET /api/memories/search`, `GET /api/memories/:id/history`,
 `POST /api/memories/consolidate` e `DELETE /api/memories/:id`.
 
+O Knowledge Graph v7 possui entidades versionadas, relaÃ§Ãµes temporais, proveniÃªncia,
+neighborhood, caminho dirigido, impacto ponderado e detecÃ§Ã£o de anomalias. Os endpoints novos
+ficam em `/api/knowledge-graph`; `/api/graph` continua como compatibilidade legada.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie

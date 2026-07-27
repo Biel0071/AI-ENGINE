@@ -53,6 +53,8 @@ const EMPTY_STATE = () => ({
   migrationHistory: [],
   memories: [],
   memoryVersions: [],
+  knowledgeEntities: [],
+  knowledgeRelationships: [],
 });
 
 class MemoryStore {
