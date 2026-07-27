@@ -36,6 +36,12 @@ test('health endpoint responds', withServer(async (base) => {
   assert.equal(r.ok, true);
 }));
 
+test('publishes disabled OIDC browser configuration outside production', withServer(async (base) => {
+  const config = await fetch(`${base}/api/oidc/config`).then((response) => response.json());
+  assert.equal(config.enabled, false);
+  assert.equal(config.scope, 'openid profile email');
+}));
+
 test('serves dashboard html', withServer(async (base) => {
   const login = await fetch(`${base}/`).then((x) => x.text());
   assert.match(login, /GRG SERVI|login/i); // raiz agora e a tela de login

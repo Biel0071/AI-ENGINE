@@ -28,6 +28,12 @@ test('production rejects development identity headers', () => {
   );
 });
 
+test('production accepts passwordless OIDC tenant bootstrap identity', () => {
+  const config = loadSecurityConfig({ FENIX_ENV: 'production', FENIX_BOOTSTRAP_OIDC_SUBJECT: 'grg-admin' });
+  assert.deepEqual(config.bootstrapOidc, { tenantId: 'grg', tenantName: 'GRG FENIX', userId: 'grg-admin' });
+  assert.equal(config.bootstrapAdmin, null);
+});
+
 test('sessions persist as hashes and survive app restart', async () => {
   const file = path.join(os.tmpdir(), `fenix-session-${Date.now()}-${Math.random()}.json`);
   try {

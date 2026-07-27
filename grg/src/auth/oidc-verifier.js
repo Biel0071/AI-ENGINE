@@ -9,7 +9,7 @@ class OidcVerifier {
     if (!verify) { const jose = await import('jose'); verify = jose.jwtVerify; if (!jwks) { jwks = jose.createRemoteJWKSet(new URL(this.jwksUri)); this.jwks = jwks; } }
     const { payload, protectedHeader } = await verify(token, jwks, { issuer: this.issuer, audience: this.audience, algorithms: this.algorithms });
     if (!payload.sub || !protectedHeader?.alg || protectedHeader.alg === 'none') throw new Error('OIDC token requires subject and signed algorithm');
-    return { userId: payload.sub, tenantId: String(payload.tenant_id || payload.tenant || ''), roles: Array.isArray(payload.roles) ? payload.roles : [], claims: payload };
+    return { userId: String(payload.preferred_username || payload.sub), tenantId: String(payload.tenant_id || payload.tenant || ''), roles: Array.isArray(payload.roles) ? payload.roles : [], claims: payload };
   }
 }
 module.exports = { OidcVerifier };

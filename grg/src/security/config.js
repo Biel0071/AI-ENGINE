@@ -22,6 +22,7 @@ function loadSecurityConfig(env = process.env) {
 
   const bootstrapUser = String(env.FENIX_BOOTSTRAP_ADMIN_USER || '').trim();
   const bootstrapPassword = String(env.FENIX_BOOTSTRAP_ADMIN_PASSWORD || '');
+  const bootstrapOidcSubject = String(env.FENIX_BOOTSTRAP_OIDC_SUBJECT || '').trim();
   if ((bootstrapUser && !bootstrapPassword) || (!bootstrapUser && bootstrapPassword)) {
     throw new ValidationError('bootstrap admin requires both user and password');
   }
@@ -48,6 +49,11 @@ function loadSecurityConfig(env = process.env) {
       password: bootstrapPassword,
       name: String(env.FENIX_BOOTSTRAP_ADMIN_NAME || bootstrapUser),
       role: 'master_admin',
+    } : null,
+    bootstrapOidc: bootstrapOidcSubject ? {
+      tenantId: String(env.FENIX_BOOTSTRAP_TENANT_ID || 'grg'),
+      tenantName: String(env.FENIX_BOOTSTRAP_TENANT_NAME || 'GRG FENIX'),
+      userId: bootstrapOidcSubject,
     } : null,
   });
 }
