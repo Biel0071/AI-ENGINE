@@ -202,21 +202,6 @@ services:
     mem_limit: 768m
     security_opt: ["no-new-privileges:true"]
 
-  keycloak-edge:
-    image: nginx:1.29.0-alpine
-    restart: unless-stopped
-    volumes:
-      - ./ops/keycloak/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    ports: ["${FENIX_BIND_ADDRESS:-127.0.0.1}:4401:8080"]
-    depends_on: [keycloak]
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/auth/realms/grg/.well-known/openid-configuration"]
-      interval: 15s
-      timeout: 5s
-      retries: 20
-    networks: [fenix-backend]
-    security_opt: ["no-new-privileges:true"]
-
   keycloak-bootstrap:
     image: quay.io/keycloak/keycloak:26.7.0
     restart: "no"
