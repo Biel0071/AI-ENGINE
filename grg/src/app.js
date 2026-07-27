@@ -23,6 +23,7 @@ const { AuditTrail } = require('./governance/audit-trail');
 const { PolicyEngine } = require('./governance/policy-engine');
 const { ApprovalEngine } = require('./governance/approval-engine');
 const { AuthService } = require('./auth/auth');
+const { OidcVerifier } = require('./auth/oidc-verifier');
 const { IdempotencyService } = require('./infrastructure/messaging/idempotency');
 const { OutboxService } = require('./infrastructure/messaging/outbox');
 const { InboxService } = require('./infrastructure/messaging/inbox');
@@ -54,6 +55,7 @@ const { DockerDeployAdapter } = require('./runtime/docker-deploy-adapter');
 const { CapabilityRegistry } = require('./capabilities/capability-registry');
 const { CognitiveCore } = require('./cognitive/cognitive-core');
 const { CognitiveLearningProjection } = require('./cognitive/learning-projection');
+const { PrometheusExporter } = require('./infrastructure/monitoring/prometheus-exporter');
 const { AdminAvatar } = require('./cognitive/admin-avatar');
 
 async function createApp(options = {}) {
@@ -112,12 +114,14 @@ async function createApp(options = {}) {
       if (tenantId && repoId) { try { await digitalTwin.refresh(tenantId, 'grg-admin', repoId); } catch { /* actor sem perm: ignora */ } }
     });
   }
+  fabricEvents.subscribe('fabric.event', (event) => digitalTwin.projectOperationalEvent(event));
 
   const github = options.github || new GitHubConnector();
   const portfolio = new PortfolioService({ controlPlane, repoIntel, github, digitalTwin, evolution });
 
+  const oidcVerifier = options.oidcVerifier || (securityConfig.production ? new OidcVerifier({ issuer: runtimeEnv.FENIX_OIDC_ISSUER, audience: runtimeEnv.FENIX_OIDC_AUDIENCE, jwksUri: runtimeEnv.FENIX_OIDC_JWKS_URI }) : null);
   const auth = await new AuthService({
-    store, bus, controlPlane, audit, ttlMs: securityConfig.sessionTtlMs,
+    store, bus, controlPlane, audit, ttlMs: securityConfig.sessionTtlMs, externalVerifier: oidcVerifier, localLoginEnabled: !securityConfig.production,
   }).initialize();
   const security = new SecurityPlane({ auth, config: securityConfig });
   const idempotency = new IdempotencyService({ store });
@@ -160,6 +164,7 @@ async function createApp(options = {}) {
   const adminAvatar = new AdminAvatar({ store, controlPlane, cognitiveCore });
   jobs.register('cognitive.cycle', (payload, context) => cognitiveCore.cycle(context.tenantId, context.actorId, payload));
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
+  const metrics = new PrometheusExporter({ store });
   health.register('state-store', async () => {
     if (typeof store.health === 'function') return store.health();
     const state = await store.read();
@@ -181,7 +186,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar,
+    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, metrics,
   };
 
   app.close = async () => {
