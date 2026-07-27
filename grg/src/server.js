@@ -104,6 +104,15 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && dispatchRollback) return sendJson(res, 202, await app.versionEngine.dispatchRollback(tenantId, actorId, dispatchRollback[1]), requestId);
       if (req.method === 'GET' && url.pathname === '/api/city') return sendJson(res, 200, await app.aiCity.map(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/city/rebuild') return sendJson(res, 202, await app.aiCity.rebuild(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/runtime/jobs') return sendJson(res, 202, await app.jobs.submit(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/runtime/jobs') return sendJson(res, 200, { jobs: await app.jobs.list(tenantId, actorId, url.searchParams.get('status') || undefined) }, requestId);
+      const runtimeJob = url.pathname.match(/^\/api\/runtime\/jobs\/([^/]+)$/);
+      if (req.method === 'GET' && runtimeJob) return sendJson(res, 200, await app.jobs.get(tenantId, actorId, runtimeJob[1]), requestId);
+      const cancelJob = url.pathname.match(/^\/api\/runtime\/jobs\/([^/]+)\/cancel$/);
+      if (req.method === 'POST' && cancelJob) return sendJson(res, 202, await app.jobs.cancel(tenantId, actorId, cancelJob[1]), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/runtime/schedules') return sendJson(res, 201, await app.jobs.schedule(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/runtime/tick') return sendJson(res, 202, { jobs: await app.jobs.tick(tenantId, actorId) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/runtime/work') { const body = await readJson(req); await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin'); return sendJson(res, 200, { jobs: await app.jobs.runBatch(body.workerId || actorId, body.limit || 5) }, requestId); }
       if (req.method === 'POST' && url.pathname === '/api/discovery-network/scan') return sendJson(res, 202, await app.discoveryNetwork.scan(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/discovery-network/inventory') return sendJson(res, 200, { resources: await app.discoveryNetwork.inventory(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/knowledge-federation/publish') return sendJson(res, 202, await app.federation.publish(tenantId, actorId, await readJson(req)), requestId);

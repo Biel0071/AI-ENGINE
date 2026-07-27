@@ -68,6 +68,10 @@ const EMPTY_STATE = () => ({
   cityNodes: [],
   cityEdges: [],
   cityProjectionStates: [],
+  runtimeJobs: [],
+  runtimeSchedules: [],
+  deadLetters: [],
+  workerHeartbeats: [],
 });
 
 class MemoryStore {

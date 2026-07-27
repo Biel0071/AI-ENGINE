@@ -127,6 +127,11 @@ Building → Floor → Room → System → Service → Process → Event. Nós d
 estado e atividade e podem ser reconstruídos com `POST /api/city/rebuild`; o mapa tenant-scoped
 fica em `GET /api/city`.
 
+O Runtime v12 centraliza trabalho assíncrono registrado. Possui fila persistente, prioridade,
+limites declarados, timeout, heartbeat, retry exponencial, cancelamento cooperativo, scheduler
+e Dead Letter Queue. Os handlers iniciais são `factory.generate`, `project.orchestrate` e
+`discovery.scan`. APIs operacionais ficam sob `/api/runtime`; produção usa Redis/BullMQ.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie
