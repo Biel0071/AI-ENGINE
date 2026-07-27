@@ -43,10 +43,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       requestId = gate.requestId;
       if (!gate.allowed) return sendJson(res, gate.status, { error: gate.error }, requestId);
       if (req.method === 'GET' && url.pathname === '/health') {
-        return sendJson(res, 200, {
-          ok: true, service: 'grg-services-os', environment: securityConfig.runtimeEnv,
-          security: securityConfig.killSwitch ? 'halted' : 'ready',
-        });
+        const health = await app.health.check();
+        return sendJson(res, health.ok ? 200 : 503, {
+          ...health, service: 'grg-services-os', environment: securityConfig.runtimeEnv,
+        }, requestId);
       }
 
       // ---- Auth (público) ----

@@ -23,6 +23,11 @@ const { AuditTrail } = require('./governance/audit-trail');
 const { PolicyEngine } = require('./governance/policy-engine');
 const { ApprovalEngine } = require('./governance/approval-engine');
 const { AuthService } = require('./auth/auth');
+const { IdempotencyService } = require('./infrastructure/messaging/idempotency');
+const { OutboxService } = require('./infrastructure/messaging/outbox');
+const { InboxService } = require('./infrastructure/messaging/inbox');
+const { HealthRegistry } = require('./infrastructure/monitoring/health-registry');
+const { FileBackupService } = require('./infrastructure/backup/file-backup-service');
 
 async function createApp(options = {}) {
   const store = options.store || (options.dataFile ? new FileStore(options.dataFile) : new MemoryStore());
@@ -65,11 +70,21 @@ async function createApp(options = {}) {
     store, bus, controlPlane, audit, ttlMs: securityConfig.sessionTtlMs,
   }).initialize();
   const security = new SecurityPlane({ auth, config: securityConfig });
+  const idempotency = new IdempotencyService({ store });
+  const outbox = new OutboxService({ store });
+  const inbox = new InboxService({ store });
+  const backup = new FileBackupService();
+  const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
+  health.register('state-store', async () => {
+    const state = await store.read();
+    return { ok: Number.isInteger(state.schemaVersion), schemaVersion: state.schemaVersion };
+  });
+  health.register('security-plane', async () => ({ ok: !securityConfig.killSwitch, killSwitch: securityConfig.killSwitch }));
 
   const app = {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
-    audit, policy, approvals,
+    audit, policy, approvals, idempotency, outbox, inbox, backup, health,
   };
 
   // LLM para o chat entender/falar. Cadeia de fallback: AI Platform (VPS/gateway do usuário)

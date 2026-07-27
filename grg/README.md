@@ -76,6 +76,16 @@ curl -X POST http://127.0.0.1:4400/api/orchestrate \
 Toda rota `/api/*` protegida exige Bearer token. Headers `x-tenant-id` e `x-user-id` existem apenas
 como ponte de migração local quando `FENIX_ALLOW_DEV_HEADERS=1`.
 
+## Enterprise Operations Foundation
+
+O schema de estado v5 possui histÃ³rico explÃ­cito de migraÃ§Ã£o. O composition root tambÃ©m expÃµe
+`app.idempotency`, `app.outbox`, `app.inbox`, `app.backup` e `app.health`. Retry e circuit breaker
+ficam em `src/infrastructure/resilience`.
+
+Esses sÃ£o contratos estÃ¡veis para os prÃ³ximos adapters de PostgreSQL, Redis/BullMQ e object
+storage. As implementaÃ§Ãµes atuais em arquivo/memÃ³ria continuam sendo adapters de desenvolvimento.
+Garantias e limitaÃ§Ãµes estÃ£o em `docs/ADR-0002-ENTERPRISE-FOUNDATION-PRIMITIVES.md`.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie

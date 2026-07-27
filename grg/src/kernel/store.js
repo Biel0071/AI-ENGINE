@@ -3,13 +3,14 @@
 // Adapter Postgres+RLS implementa a MESMA interface (read/update) sem tocar no domínio.
 const fs = require('node:fs');
 const path = require('node:path');
+const { CURRENT_SCHEMA_VERSION, migrateState } = require('./state-migrations');
 
 function clone(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
 
 const EMPTY_STATE = () => ({
-  schemaVersion: 4,
+  schemaVersion: CURRENT_SCHEMA_VERSION,
   tenants: [],
   orgs: [],
   customers: [],
@@ -49,11 +50,12 @@ const EMPTY_STATE = () => ({
   idempotencyKeys: [],
   outbox: [],
   inbox: [],
+  migrationHistory: [],
 });
 
 class MemoryStore {
   constructor(initial = null) {
-    this.state = initial ? clone(initial) : EMPTY_STATE();
+    this.state = initial ? migrateState(clone(initial)).state : EMPTY_STATE();
     this.queue = Promise.resolve();
   }
 
@@ -67,11 +69,12 @@ class MemoryStore {
   }
 
   async update(mutator) {
-    this.queue = this.queue.then(async () => {
+    const task = this.queue.then(async () => {
       const next = await mutator(clone(this.state));
       this.state = clone(next);
     });
-    await this.queue;
+    this.queue = task.catch(() => {});
+    await task;
     return clone(this.state);
   }
 }
@@ -81,7 +84,10 @@ class FileStore extends MemoryStore {
     super(null);
     this.filePath = path.resolve(filePath);
     if (fs.existsSync(this.filePath)) {
-      this.state = { ...EMPTY_STATE(), ...JSON.parse(fs.readFileSync(this.filePath, 'utf8')) };
+      const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+      const migrated = migrateState(raw);
+      this.state = { ...EMPTY_STATE(), ...migrated.state };
+      if (migrated.applied.length) this.persist();
     } else {
       fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
       fs.writeFileSync(this.filePath, `${JSON.stringify(this.state, null, 2)}\n`);
@@ -95,12 +101,13 @@ class FileStore extends MemoryStore {
   }
 
   async update(mutator) {
-    this.queue = this.queue.then(async () => {
+    const task = this.queue.then(async () => {
       const next = await mutator(clone(this.state));
       this.state = clone(next);
       this.persist();
     });
-    await this.queue;
+    this.queue = task.catch(() => {});
+    await task;
     return clone(this.state);
   }
 
