@@ -132,6 +132,11 @@ limites declarados, timeout, heartbeat, retry exponencial, cancelamento cooperat
 e Dead Letter Queue. Os handlers iniciais são `factory.generate`, `project.orchestrate` e
 `discovery.scan`. APIs operacionais ficam sob `/api/runtime`; produção usa Redis/BullMQ.
 
+Deploy de produção falha fechado sem adapter real. Com `FENIX_DEPLOY_DRIVER=docker`, projetos
+gerados recebem Dockerfile não-root e o adapter executa build/run reais, preserva a imagem anterior
+e aplica isolamento de filesystem, capabilities, privilégios, PIDs, CPU, memória e rede. Adapters e
+packagers determinísticos continuam disponíveis apenas em desenvolvimento (`productionSafe=false`).
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie
