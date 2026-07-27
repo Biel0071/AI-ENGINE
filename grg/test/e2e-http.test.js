@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 const { start } = require('../src/server');
+const { PROJECT_AGENT_ROLES } = require('../src/cognitive/cognitive-hierarchy');
 
 const ADMIN = { tenantId: 'grg', userId: 'test-admin', password: crypto.randomBytes(24).toString('base64url') };
 
@@ -143,7 +144,7 @@ test('federated cognitive API creates scoped workspaces and memory', withServer(
   assert.equal(projectResponse.status, 201);
   const project = await projectResponse.json();
   const workspace = await fetch(`${base}/api/cognitive/entities/${project.id}/workspace`, { headers }).then((response) => response.json());
-  assert.equal(workspace.agents.length, 8);
+  assert.equal(workspace.agents.length, PROJECT_AGENT_ROLES.length);
   const memoryResponse = await fetch(`${base}/api/memories`, { method: 'POST', headers, body: JSON.stringify({ kind: 'project', scopeType: 'project', scopeId: project.id, content: 'Uses Redis and OAuth', provenance: { type: 'onboarding', reference: 'repo:commerce' } }) });
   assert.equal(memoryResponse.status, 201);
   const search = await fetch(`${base}/api/memories/search?q=Redis&scopeId=${project.id}&scopeType=project`, { headers }).then((response) => response.json());

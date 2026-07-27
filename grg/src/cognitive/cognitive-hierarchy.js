@@ -11,7 +11,8 @@ const PARENTS = Object.freeze({
   PROJECT: ['ORGANIZATION', 'COMPANY', 'STORE', 'DEPARTMENT'],
   GLOBAL_SERVICE: ['MASTER'],
 });
-const PROJECT_AGENT_ROLES = Object.freeze(['architect', 'developer', 'devops', 'analyst', 'commercial', 'support', 'security', 'runtime']);
+const PROJECT_AGENT_ROLES = Object.freeze(['architect', 'developer', 'devops', 'qa', 'analyst', 'commercial', 'support', 'security', 'runtime']);
+const TEAM_ENTITY_TYPES = new Set(['COMPANY', 'PROJECT']);
 
 class CognitiveHierarchy {
   constructor({ store, controlPlane, bus }) {
@@ -56,7 +57,7 @@ class CognitiveHierarchy {
       state.cognitiveEntities.push(created);
       state.cognitiveWorkspaces.push(workspaceRecord(created, actorId));
       state.cognitiveAccessGrants.push(grantRecord(tenantId, actorId, created.id, actorId, true));
-      if (type === 'PROJECT') {
+      if (TEAM_ENTITY_TYPES.has(type)) {
         for (const role of PROJECT_AGENT_ROLES) state.cognitiveAgents.push(agentRecord(created, role, actorId));
       }
       return state;
@@ -157,4 +158,4 @@ function grantRecord(tenantId, subjectId, entityId, actorId, inherit = true, per
 function ancestorIds(entities, entity) { const result = new Set(); let parentId = entity.parentId; while (parentId) { if (result.has(parentId)) break; result.add(parentId); parentId = entities.find((item) => item.id === parentId)?.parentId || null; } return result; }
 function now() { return new Date().toISOString(); }
 
-module.exports = { CognitiveHierarchy, ENTITY_TYPES, PARENTS, PROJECT_AGENT_ROLES };
+module.exports = { CognitiveHierarchy, ENTITY_TYPES, PARENTS, PROJECT_AGENT_ROLES, TEAM_ENTITY_TYPES };

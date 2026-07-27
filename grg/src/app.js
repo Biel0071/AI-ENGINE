@@ -63,6 +63,7 @@ const { ScriptLibrary } = require('./execution/script-library');
 const { DockerRootlessSandbox } = require('./execution/docker-rootless-sandbox');
 const { SandboxExecutionEngine } = require('./execution/sandbox-execution-engine');
 const { CognitiveInspectionEngine } = require('./inspection/cognitive-inspection-engine');
+const { AutonomousAgentEcosystem } = require('./agents/autonomous-agent-ecosystem');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -178,6 +179,8 @@ async function createApp(options = {}) {
   const cognitiveLearning = new CognitiveLearningProjection({ events: fabricEvents, memory, knowledgeGraph, actorResolver: async (tenantId, hypothesisId) => { const state = await store.read(); return state.cognitiveHypotheses.find((item) => item.tenantId === tenantId && item.id === hypothesisId)?.createdBy || 'grg-admin'; } }).attach();
   const cognitiveCore = new CognitiveCore({ store, controlPlane, eventStore, events: fabricEvents, policy, approvals, jobs, contextProviders: [{ name: 'platform', snapshot: async (tenantId) => { const state = await store.read(); const scoped = (items) => items.filter((item) => item.tenantId === tenantId); return { capabilities: scoped(state.capabilityDefinitions).map((item) => ({ id: item.capabilityId, version: item.version, health: item.health })), services: scoped(state.serviceRegistry).map((item) => ({ id: item.id, status: item.status, runtimeStatus: item.runtimeStatus || null })), runtime: { queued: scoped(state.runtimeJobs).filter((item) => item.status === 'QUEUED').length, running: scoped(state.runtimeJobs).filter((item) => item.status === 'RUNNING').length, deadLetters: scoped(state.deadLetters).length }, knowledge: { entities: scoped(state.knowledgeEntities).length }, memory: { active: scoped(state.memories).filter((item) => item.status === 'ACTIVE').length }, versions: scoped(state.resourceVersions).length }; } }] }).attach();
   const adminAvatar = new AdminAvatar({ store, controlPlane, cognitiveCore });
+  const agentEcosystem = new AutonomousAgentEcosystem({ store, controlPlane, hierarchy, jobs, approvals, federation, events: fabricEvents }).attach();
+  jobs.register('agents.cycle', (payload, context) => agentEcosystem.cycle(context.tenantId, context.actorId, payload));
   jobs.register('cognitive.cycle', (payload, context) => cognitiveCore.cycle(context.tenantId, context.actorId, payload));
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   const metrics = new PrometheusExporter({ store });
@@ -202,7 +205,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, metrics,
+    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, metrics,
   };
 
   app.close = async () => {

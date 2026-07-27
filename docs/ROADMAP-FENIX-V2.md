@@ -143,7 +143,7 @@ Programa federado detalhado:
 
 1. **V2.5.1 — Hierarquia e isolamento:** identidades `fenix://`, workspaces, grants herdáveis, memória por escopo e políticas deny-by-default do Knowledge Hub.
 2. **V2.5.2 — Agentes especializados:** contratos de ferramentas, orçamento, permissões e delegação obrigatória do Avatar Mestre.
-3. **V2.5.3 — Onboarding cognitivo:** criação idempotente de workspace, memória, grafo, twin, agentes e nó da cidade após análise somente leitura.
+3. **V2.5.3 — Autonomous Agent Ecosystem:** Avatar Mestre coordenador, equipes hierárquicas, ciclos contínuos, políticas por risco e promoção governada de conhecimento. O onboarding cognitivo passa a ser pré-requisito produzido pelo programa V2.5.2.2.
 4. **V2.5.4 — Inteligência entre projetos:** consultas federadas com evidência, classificação e política de compartilhamento.
 5. **V2.5.5 — Evolução governada:** hipótese, simulação, aprovação, Runtime, PR, deploy e atualização das projeções.
 
@@ -167,6 +167,18 @@ Fatias internas do V2.5.2.2:
 - **2.2-C — Reverse Engineering profundo:** módulos, fluxos, dependências, diagramas e índice documental.
 - **2.2-D — Qualidade e comparação:** complexidade, duplicação, acoplamento, coesão, segurança e matriz entre projetos.
 - **2.2-E — Conversação Graph-only:** respostas com caminhos do grafo, citações e nível de confiança.
+
+### V2.5.3 — Autonomous Agent Ecosystem
+
+Fatias internas:
+
+- **2.5.3-A — Coordination & Policy Kernel:** Avatar Mestre não executor, equipes por empresa/projeto, catálogo fechado, tarefas, ciclos, políticas verde/amarelo/vermelho, aprovação separada, projeção do Runtime e painel operacional.
+- **2.5.3-B — Specialist Planning:** observação contínua, hipóteses e simulações produzidas por especialistas através do AI Gateway, sempre com evidências e orçamento.
+- **2.5.3-C — Evolution Library:** templates, capabilities, fluxos e automações assinados, revisão, rollback lógico e distribuição governada.
+- **2.5.3-D — Self-evolution Workflow:** branch, implementação em Sandbox, testes, PR e aprovação para mudanças no próprio FÊNIX.
+- **2.5.3-E — Live Evolution Center:** streaming de agentes, tarefas, aprovações, conhecimento promovido, taxa de sucesso e backlog.
+
+O gate V2.5.3 somente fecha quando ciclos agendados forem recuperáveis, as ações permitidas tiverem executores reais e assinados, e o fluxo completo de autoevolução passar por branch, testes, PR, aprovação e deploy governado.
 
 ### V2.6 — Assistente multimodal
 

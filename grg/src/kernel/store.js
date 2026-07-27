@@ -98,6 +98,11 @@ const EMPTY_STATE = () => ({
   inspectionReports: [],
   inspectionTwins: [],
   evolutionProposals: [],
+  agentCycles: [],
+  agentTasks: [],
+  agentSummaries: [],
+  knowledgePromotionProposals: [],
+  evolutionPatterns: [],
 });
 
 class MemoryStore {
