@@ -47,6 +47,16 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     } catch { /* tenant já provisionado */ }
     await app.auth.ensureUser(bootstrap.tenantId, bootstrap.userId, bootstrap.password, bootstrap.role || 'master_admin', bootstrap.name);
   }
+  const oidcBootstrap = securityConfig.bootstrapOidc;
+  if (oidcBootstrap) {
+    try {
+      await app.controlPlane.createTenant({ id: oidcBootstrap.tenantId, name: oidcBootstrap.tenantName }, oidcBootstrap.userId);
+    } catch {
+      // On restarts the tenant must already be owned by the configured OIDC subject.
+      // Refuse to silently grant privileges if an unrelated tenant already exists.
+      await app.controlPlane.getMembership(oidcBootstrap.tenantId, oidcBootstrap.userId);
+    }
+  }
 
   const server = http.createServer(async (req, res) => {
     let requestId = null;
@@ -61,6 +71,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           ...health, service: 'grg-services-os', environment: securityConfig.runtimeEnv,
         }, requestId);
       }
+      if (req.method === 'GET' && url.pathname === '/api/oidc/config') return sendJson(res, 200, {
+        enabled: securityConfig.production,
+        authorizationEndpoint: env.FENIX_OIDC_AUTHORIZATION_ENDPOINT || null,
+        tokenEndpoint: env.FENIX_OIDC_TOKEN_ENDPOINT || null,
+        clientId: env.FENIX_OIDC_CLIENT_ID || null,
+        redirectUri: env.FENIX_OIDC_REDIRECT_URI || null,
+        scope: 'openid profile email',
+      }, requestId);
       if (req.method === 'GET' && url.pathname === '/metrics') {
         if (!safeToken(req.headers.authorization, env.FENIX_METRICS_TOKEN)) return sendJson(res, 401, { error: 'metrics authentication required' }, requestId);
         res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' }); return res.end(await app.metrics.render());
@@ -228,7 +246,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     }
   });
   await new Promise((resolve) => {
-    server.listen(port, '127.0.0.1', () => {
+    server.listen(port, options.bindHost || env.FENIX_BIND_HOST || '127.0.0.1', () => {
       const actual = server.address().port;
       if (require.main === module) process.stdout.write(`GRG Services OS: http://127.0.0.1:${actual}\n`);
       resolve();
