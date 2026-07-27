@@ -1,7 +1,20 @@
 const TOKEN = localStorage.getItem('grg_token');
 if (!TOKEN) location.href = '/GRG-login';
 const H = { authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' };
-const api = (p, opts = {}) => fetch(`/api${p}`, { headers: H, ...opts }).then((r) => { if (r.status === 401) location.href = '/GRG-login'; return r.json(); });
+class FenixApiError extends Error {
+  constructor(message, details = {}) { super(message); this.name = 'FenixApiError'; Object.assign(this, details); }
+}
+const api = async (p, opts = {}) => {
+  const response = await fetch(`/api${p}`, { headers: H, ...opts });
+  if (response.status === 401) { location.href = '/GRG-login'; throw new FenixApiError('Sessão expirada', { status: 401 }); }
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new FenixApiError(payload.error || 'Falha na operação', {
+    status: response.status,
+    requestId: payload.requestId || response.headers.get('x-request-id'),
+    correlationId: payload.correlationId || response.headers.get('x-correlation-id'),
+  });
+  return payload;
+};
 
 const METRIC_LABELS = {
   orgs: 'Orgs', customers: 'Clientes', projects: 'Projetos', repositories: 'Repositórios',
@@ -36,10 +49,30 @@ const log = document.getElementById('chatlog');
 function bubble(text, who) {
   const div = document.createElement('div');
   div.className = `bubble ${who}`;
-  div.innerHTML = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+  const safeText = typeof text === 'string' && text.trim() ? text : 'Resposta indisponível no momento.';
+  const escaped = safeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  div.innerHTML = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
 }
+
+function operatorError(error) {
+  const reference = error && (error.correlationId || error.requestId);
+  return `Não foi possível concluir a operação.${reference ? ` Referência: ${reference}` : ' Tente novamente em instantes.'}`;
+}
+
+function showFallback(error) {
+  console.error('fenix.ui.boundary', { name: error?.name, message: error?.message, correlationId: error?.correlationId || null });
+  let fallback = document.getElementById('runtimeFallback');
+  if (!fallback) {
+    fallback = document.createElement('div'); fallback.id = 'runtimeFallback'; fallback.className = 'runtime-fallback';
+    fallback.textContent = 'Uma área do FÊNIX encontrou uma falha e foi isolada. Recarregue se ela persistir.';
+    document.body.prepend(fallback);
+  }
+}
+
+window.addEventListener('error', (event) => showFallback(event.error || new Error(event.message)));
+window.addEventListener('unhandledrejection', (event) => { event.preventDefault(); showFallback(event.reason); });
 
 async function send(message) {
   bubble(message, 'user');
@@ -49,11 +82,12 @@ async function send(message) {
   try {
     const res = await api('/chat', { method: 'POST', body: JSON.stringify({ message }) });
     typing.remove();
+    if (typeof res.reply !== 'string' || !res.reply.trim()) throw new FenixApiError('Contrato de resposta do chat inválido', { requestId: res.requestId });
     bubble(res.reply, 'bot');
     await refresh();
   } catch (err) {
     typing.remove();
-    bubble(`Erro: ${err.message}`, 'bot');
+    bubble(operatorError(err), 'bot');
   }
 }
 
@@ -71,4 +105,4 @@ document.querySelectorAll('.chip').forEach((c) => {
 });
 
 bubble('Olá! Sou o agente do GRG Services OS. Cole uma URL do GitHub para eu acoplar e analisar, peça para gerar um sistema, ou pergunte o que aprendi. Digite "ajuda" para ver tudo.', 'bot');
-refresh();
+refresh().catch(showFallback);

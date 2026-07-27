@@ -13,7 +13,7 @@ function mockGateway() {
       let body = ''; req.on('data', (c) => { body += c; }); req.on('end', () => {
         const payload = JSON.parse(body || '{}');
         res.writeHead(200, { 'content-type': 'application/json' });
-        if (req.url === '/v1/chat') return res.end(JSON.stringify({ success: true, provider: 'groq', model: 'llama-3.1-8b', result: { text: 'resposta do gateway para: ' + payload.messages.at(-1).content }, tokens: { prompt: 5, completion: 8, total: 13 } }));
+        if (req.url === '/v1/chat') return res.end(JSON.stringify({ success: true, provider: 'groq', model: 'llama-3.1-8b', result: { message: { role: 'assistant', content: 'resposta do gateway para: ' + payload.messages.at(-1).content } }, tokens: { prompt: 5, completion: 8, total: 13 } }));
         if (req.url === '/v1/text') return res.end(JSON.stringify({ success: true, result: { text: 'texto: ' + payload.prompt }, tokens: { prompt: 3, completion: 4 } }));
         res.end('{}');
       });
@@ -32,6 +32,14 @@ test('provider reports available when gateway health is up', async () => {
 test('provider reports unavailable without url/key', async () => {
   const p = new AIPlatformProvider({ baseUrl: '', apiKey: '' });
   assert.equal(await p.available(), false);
+});
+
+test('provider health rejects unauthorized responses instead of reporting a false healthy state', async () => {
+  const server = http.createServer((_req, res) => { res.writeHead(401); res.end('{"error":"invalid key"}'); });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${server.address().port}`, apiKey: 'revoked' });
+  assert.equal(await p.available(), false);
+  server.close();
 });
 
 test('chat() hits the gateway and returns text', async () => {

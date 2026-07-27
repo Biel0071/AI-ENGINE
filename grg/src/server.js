@@ -6,6 +6,7 @@ const { httpStatusFor } = require('./kernel/errors');
 const { CloningGitHostAdapter } = require('./repo-intel/cloning-git-host');
 const { loadSecurityConfig } = require('./security/config');
 const { loadInfrastructureConfig } = require('./infrastructure/config');
+const { createStructuredLogger } = require('./infrastructure/observability/structured-logger');
 const crypto = require('node:crypto');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -25,6 +26,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   const infrastructure = options.infrastructure || loadInfrastructureConfig(env, {
     requireExternal: options.requireExternalInfrastructure,
   });
+  const logger = options.logger || createStructuredLogger();
   const app = await createApp({
     dataFile: options.dataFile || env.GRG_DATA_FILE || path.join(__dirname, '..', '.data', 'state.json'),
     gitHost: options.gitHost || new CloningGitHostAdapter(),
@@ -60,10 +62,18 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
   const server = http.createServer(async (req, res) => {
     let requestId = null;
+    let correlationId = null;
+    let routePath = null;
+    let tenantId = null;
+    let actorId = null;
     try {
       const url = new URL(req.url, 'http://localhost');
+      routePath = url.pathname;
       const gate = app.security.begin(req, res, url.pathname);
       requestId = gate.requestId;
+      const requestedCorrelation = String(req.headers['x-correlation-id'] || '');
+      correlationId = /^[A-Za-z0-9._:-]{1,128}$/.test(requestedCorrelation) ? requestedCorrelation : requestId;
+      res.setHeader('x-correlation-id', correlationId);
       if (!gate.allowed) return sendJson(res, gate.status, { error: gate.error }, requestId);
       if (req.method === 'GET' && url.pathname === '/health') {
         const health = await app.health.check();
@@ -100,7 +110,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       const cx = await app.security.authenticate(req.headers);
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
-      const { tenantId, actorId } = cx;
+      ({ tenantId, actorId } = cx);
 
       if (req.method === 'GET' && url.pathname === '/api/me') return sendJson(res, 200, { tenantId, actorId, authed: cx.authed });
 
@@ -242,7 +252,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       }
       return sendJson(res, 404, { error: 'route not found' }, requestId);
     } catch (error) {
-      return sendJson(res, httpStatusFor(error), { error: error.message || 'error' }, requestId);
+      const status = httpStatusFor(error);
+      const capability = capabilityFromPath(routePath);
+      logger.error({ event: 'http.request.failed', error, correlationId, requestId, capability,
+        tenant: tenantId, actor: actorId, method: req.method, path: routePath });
+      const safeError = status >= 500 ? 'Falha interna no FÊNIX. Use o ID de correlação para suporte.' : (error.message || 'Requisição inválida');
+      return sendJson(res, status, { error: safeError, code: status >= 500 ? 'INTERNAL_ERROR' : (error.code || 'REQUEST_ERROR'), correlationId }, requestId);
     }
   });
   await new Promise((resolve) => {
@@ -255,6 +270,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   server.on('close', () => { app.close().catch(() => {}); });
   server.app = app;
   return server;
+}
+
+function capabilityFromPath(pathname) {
+  if (!pathname) return 'unknown';
+  if (pathname === '/health') return 'health';
+  const parts = pathname.split('/').filter(Boolean);
+  return parts[0] === 'api' ? (parts[1] || 'api') : 'web';
 }
 
 function serveStatic(pathname, res) {
@@ -270,4 +292,4 @@ function serveStatic(pathname, res) {
 function safeToken(header, expected) { const supplied = String(header || '').replace(/^Bearer\s+/i, ''); if (!supplied || !expected) return false; const a = crypto.createHash('sha256').update(supplied).digest(); const b = crypto.createHash('sha256').update(String(expected)).digest(); return crypto.timingSafeEqual(a, b); }
 
 if (require.main === module) start();
-module.exports = { start, safeToken };
+module.exports = { start, safeToken, capabilityFromPath };

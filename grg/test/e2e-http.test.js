@@ -86,6 +86,32 @@ test('adds security headers and request id', withServer(async (base) => {
   assert.ok(response.headers.get('x-request-id'));
 }));
 
+test('runtime exceptions are sanitized for the browser and logged with full trace context', async () => {
+  const dataFile = path.join(os.tmpdir(), `grg-error-${Date.now()}.json`);
+  const events = [];
+  const server = await start(0, {
+    dataFile, llm: false, logger: { error: (event) => events.push(event) },
+    bootstrapAdmin: { ...ADMIN, tenantName: 'GRG Test', name: 'Test Admin', role: 'master_admin' },
+  });
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const headers = await authHeaders(base);
+    headers['x-correlation-id'] = 'corr-chat-test';
+    server.app.chat.handle = async () => { throw new Error('internal provider secret'); };
+    const response = await fetch(`${base}/api/chat`, { method: 'POST', headers, body: JSON.stringify({ message: 'olá' }) });
+    const body = await response.json();
+    assert.equal(response.status, 500);
+    assert.equal(body.code, 'INTERNAL_ERROR');
+    assert.equal(body.correlationId, 'corr-chat-test');
+    assert.doesNotMatch(JSON.stringify(body), /provider secret/);
+    assert.equal(events[0].capability, 'chat');
+    assert.equal(events[0].tenant, 'grg');
+    assert.match(events[0].error.stack, /internal provider secret/);
+  } finally {
+    server.close(); try { fs.unlinkSync(dataFile); } catch {}
+  }
+});
+
 test('memory API records, retrieves, versions and forgets knowledge', withServer(async (base) => {
   const headers = await authHeaders(base);
   const create = await fetch(`${base}/api/memories`, {

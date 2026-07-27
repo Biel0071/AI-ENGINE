@@ -46,8 +46,8 @@ class AIPlatformProvider {
       const u = new URL(this.baseUrl.replace(/\/$/, '') + '/v1/health');
       const lib = u.protocol === 'https:' ? https : http;
       return await new Promise((resolve) => {
-        const req = lib.request({ hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname, method: 'GET' },
-          (r) => { r.resume(); resolve(r.statusCode >= 200 && r.statusCode < 500); });
+        const req = lib.request({ hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname, method: 'GET', headers: { 'x-api-key': this.#apiKey } },
+          (r) => { r.resume(); resolve(r.statusCode >= 200 && r.statusCode < 300); });
         req.on('error', () => resolve(false));
         req.setTimeout(6000, () => { req.destroy(); resolve(false); });
         req.end();
@@ -68,7 +68,9 @@ class AIPlatformProvider {
     const payload = { messages, ...(model ? { model } : {}), temperature };
     if (format === 'json') payload.format = 'json';
     const res = await request(this.baseUrl, '/v1/chat', this.#apiKey, payload);
-    const text = res.result ? (res.result.text || res.result.message || '') : (res.text || '');
+    const result = res.result || {};
+    const message = result.message;
+    const text = result.text || (typeof message === 'string' ? message : message?.content) || res.text || '';
     return { text, raw: res };
   }
 }
