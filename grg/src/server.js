@@ -97,6 +97,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/fabric/enrollments') return sendJson(res, 200, { enrollments: await app.fabric.list(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/registry') return sendJson(res, 200, { resources: await app.registry.list(tenantId, actorId, { kind: url.searchParams.get('kind') || undefined }) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/events') { await app.controlPlane.authorize(tenantId, actorId, 'event:read'); return sendJson(res, 200, { events: await app.eventStore.list(tenantId, { type: url.searchParams.get('type') || undefined, limit: url.searchParams.get('limit') || 100 }) }, requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/versions') return sendJson(res, 200, { versions: await app.versionEngine.history(tenantId, actorId, url.searchParams.get('resourceKey') || undefined) }, requestId);
+      if (req.method === 'GET' && url.pathname === '/api/versions/diff') return sendJson(res, 200, await app.versionEngine.diff(tenantId, actorId, url.searchParams.get('resourceKey'), url.searchParams.get('from'), url.searchParams.get('to')), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/rollbacks') return sendJson(res, 202, await app.versionEngine.proposeRollback(tenantId, actorId, await readJson(req)), requestId);
+      const dispatchRollback = url.pathname.match(/^\/api\/rollbacks\/([^/]+)\/dispatch$/);
+      if (req.method === 'POST' && dispatchRollback) return sendJson(res, 202, await app.versionEngine.dispatchRollback(tenantId, actorId, dispatchRollback[1]), requestId);
       if (req.method === 'POST' && url.pathname === '/api/discovery-network/scan') return sendJson(res, 202, await app.discoveryNetwork.scan(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/discovery-network/inventory') return sendJson(res, 200, { resources: await app.discoveryNetwork.inventory(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/knowledge-federation/publish') return sendJson(res, 202, await app.federation.publish(tenantId, actorId, await readJson(req)), requestId);

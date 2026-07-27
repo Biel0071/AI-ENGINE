@@ -47,6 +47,7 @@ const { DockerCliProbe } = require('./discovery-network/docker-cli-probe');
 const { DiscoveryProjection } = require('./discovery-network/discovery-projection');
 const { KnowledgeFederation } = require('./federation/knowledge-federation');
 const { FederationProjection } = require('./federation/federation-projection');
+const { GlobalVersionEngine } = require('./versioning/global-version-engine');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -129,6 +130,7 @@ async function createApp(options = {}) {
   const discoveryNetwork = new DiscoveryNetwork({ store, controlPlane, events: fabricEvents, probes: discoveryProbes });
   const federationProjection = new FederationProjection({ events: fabricEvents, memory, knowledgeGraph }).attach();
   const federation = new KnowledgeFederation({ store, controlPlane, events: fabricEvents });
+  const versionEngine = new GlobalVersionEngine({ store, controlPlane, events: fabricEvents, approvals, bus }).attach();
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   health.register('state-store', async () => {
     if (typeof store.health === 'function') return store.health();
@@ -151,7 +153,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    discoveryNetwork, discoveryProjection, federation, federationProjection,
+    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine,
   };
 
   app.close = async () => {
@@ -216,6 +218,7 @@ async function overview(app, tenantId, actorId) {
       memories: t(s.memories).filter((item) => item.status === 'ACTIVE').length,
       registeredResources: t(s.serviceRegistry).length,
       discoveredResources: t(s.discoveredResources).filter((item) => item.status === 'PRESENT').length,
+      resourceVersions: t(s.resourceVersions).length,
       graphEdges: t(s.graphEdges).length,
       aiCalls: t(s.aiCalls).length,
       subscriptions: t(s.subscriptions).length,

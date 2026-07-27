@@ -1,6 +1,7 @@
 const { uuid, slugify } = require('../kernel/ids');
 const { NotFoundError, ConflictError, ValidationError } = require('../kernel/errors');
 const { requirePermission, permissionsFor } = require('../kernel/access-control');
+const { CURRENT_SCHEMA_VERSION } = require('../kernel/state-migrations');
 
 // Control Plane: identidade, isolamento e autorização. É a base que todos os serviços usam.
 class ControlPlane {
@@ -11,7 +12,7 @@ class ControlPlane {
 
   async initialize(master = { userId: 'grg-admin', name: 'GRG Admin' }) {
     await this.store.update((state) => {
-      state.schemaVersion = Math.max(state.schemaVersion || 1, 9);
+      state.schemaVersion = Math.max(state.schemaVersion || 1, CURRENT_SCHEMA_VERSION);
       if (!state.users.some((u) => u.id === master.userId)) {
         state.users.push({ id: master.userId, name: master.name, status: 'active', createdAt: now() });
       }
