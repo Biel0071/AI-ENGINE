@@ -1,0 +1,48 @@
+const CURRENT_SCHEMA_VERSION = 5;
+
+const COLLECTIONS_BY_VERSION = {
+  1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
+  2: ['snapshots', 'capabilities', 'memoryEvents', 'graphEdges', 'runs', 'deployments', 'aiCalls', 'aiCache'],
+  3: [
+    'brands', 'domains', 'plans', 'licenses', 'moduleSets', 'designSystems', 'buildTargets',
+    'artifacts', 'marketplaceInstalls', 'subscriptions', 'invoices', 'insights', 'learningCycles',
+    'digitalTwins', 'workforces', 'employees', 'dailyReports', 'employeeTemplates',
+  ],
+  4: ['sessions', 'auditEvents', 'approvalRequests', 'idempotencyKeys', 'outbox', 'inbox'],
+  5: ['migrationHistory'],
+};
+
+function normalizeVersion(value) {
+  const version = Number(value || 0);
+  if (!Number.isInteger(version) || version < 0) throw new Error('invalid state schema version');
+  if (version > CURRENT_SCHEMA_VERSION) {
+    throw new Error(`state schema ${version} is newer than supported ${CURRENT_SCHEMA_VERSION}`);
+  }
+  return version;
+}
+
+function migrateState(input, now = () => new Date().toISOString()) {
+  const state = input && typeof input === 'object' ? structuredClone(input) : {};
+  let version = normalizeVersion(state.schemaVersion);
+  const applied = [];
+
+  for (let target = version + 1; target <= CURRENT_SCHEMA_VERSION; target += 1) {
+    for (const collection of COLLECTIONS_BY_VERSION[target]) {
+      if (!Array.isArray(state[collection])) state[collection] = [];
+    }
+    state.schemaVersion = target;
+    applied.push({ from: target - 1, to: target, appliedAt: now() });
+    version = target;
+  }
+
+  // Repair missing collections even when an old build wrote an incorrect version.
+  for (const collections of Object.values(COLLECTIONS_BY_VERSION)) {
+    for (const collection of collections) {
+      if (!Array.isArray(state[collection])) state[collection] = [];
+    }
+  }
+  if (applied.length) state.migrationHistory.push(...applied);
+  return { state, applied };
+}
+
+module.exports = { CURRENT_SCHEMA_VERSION, COLLECTIONS_BY_VERSION, migrateState };
