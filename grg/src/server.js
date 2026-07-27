@@ -36,6 +36,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     queueRedisUrl: infrastructure.queueRedisUrl,
     s3: infrastructure.s3,
     qdrant: infrastructure.qdrant,
+    identityProvider: options.identityProvider,
   });
   if (require.main === module) process.stdout.write(`LLM (chat natural): ${app.llm ? 'LIGADO via ' + app.llmSource : 'desligado (modo regras)'}\n`);
   const bootstrap = options.bootstrapAdmin || securityConfig.bootstrapAdmin;
@@ -92,6 +93,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/knowledge-graph/anomalies') return sendJson(res, 200, { anomalies: await app.knowledgeGraph.anomalies(tenantId, actorId) }, requestId);
       const graphImpact = url.pathname.match(/^\/api\/knowledge-graph\/entities\/([^/]+)\/impact$/);
       if (req.method === 'GET' && graphImpact) return sendJson(res, 200, { impacts: await app.knowledgeGraph.impact(tenantId, actorId, graphImpact[1], url.searchParams.get('depth') || 3) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/fabric/enroll') return sendJson(res, 201, await app.fabric.enroll(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/fabric/enrollments') return sendJson(res, 200, { enrollments: await app.fabric.list(tenantId, actorId) }, requestId);
+      if (req.method === 'GET' && url.pathname === '/api/registry') return sendJson(res, 200, { resources: await app.registry.list(tenantId, actorId, { kind: url.searchParams.get('kind') || undefined }) }, requestId);
+      if (req.method === 'GET' && url.pathname === '/api/events') { await app.controlPlane.authorize(tenantId, actorId, 'event:read'); return sendJson(res, 200, { events: await app.eventStore.list(tenantId, { type: url.searchParams.get('type') || undefined, limit: url.searchParams.get('limit') || 100 }) }, requestId); }
       if (req.method === 'GET' && url.pathname === '/api/ai/telemetry') return sendJson(res, 200, await app.aiGateway.telemetry(tenantId, actorId));
       if (req.method === 'GET' && url.pathname === '/api/insights') { await app.controlPlane.authorize(tenantId, actorId, 'memory:read'); return sendJson(res, 200, { insights: await app.evolution.getInsights(tenantId) }); }
       if (req.method === 'GET' && url.pathname === '/api/evolution') { await app.controlPlane.authorize(tenantId, actorId, 'memory:read'); return sendJson(res, 200, await app.evolution.getEvolution(tenantId)); }

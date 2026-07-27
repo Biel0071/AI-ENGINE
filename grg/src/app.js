@@ -36,6 +36,12 @@ const { S3ObjectStore } = require('./infrastructure/storage/s3-object-store');
 const { MemoryEngine } = require('./memory/memory-engine');
 const { QdrantVectorStore } = require('./memory/qdrant-vector-store');
 const { KnowledgeGraph } = require('./knowledge-graph/knowledge-graph');
+const { EventStore } = require('./eventing/event-store');
+const { FabricEventBus } = require('./eventing/fabric-event-bus');
+const { ServiceRegistry } = require('./fabric/service-registry');
+const { LocalIdentityProvider } = require('./fabric/identity-provider');
+const { FenixFabric } = require('./fabric/fenix-fabric');
+const { FabricProjection } = require('./fabric/fabric-projection');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -46,6 +52,8 @@ async function createApp(options = {}) {
     })
     : (options.dataFile ? new FileStore(options.dataFile) : new MemoryStore()));
   const bus = new EventBus();
+  const eventStore = new EventStore({ store });
+  const fabricEvents = new FabricEventBus({ eventStore, liveBus: bus });
   const controlPlane = await new ControlPlane({ store, bus }).initialize(options.master);
   const securityConfig = options.securityConfig || loadSecurityConfig(options.env || process.env);
   const audit = new AuditTrail({ store }).attach(bus);
@@ -106,6 +114,11 @@ async function createApp(options = {}) {
   const vectorStore = options.vectorStore || (options.qdrant ? await new QdrantVectorStore(options.qdrant).initialize() : null);
   const memory = new MemoryEngine({ store, bus, controlPlane, vectorStore, cache: redis });
   const knowledgeGraph = new KnowledgeGraph({ store, bus, controlPlane });
+  const registry = new ServiceRegistry({ store, controlPlane });
+  if (securityConfig.runtimeEnv === 'production' && !options.identityProvider) throw new Error('production requires an external Fabric identity provider (Vault/step-ca/SPIFFE)');
+  const identityProvider = options.identityProvider || new LocalIdentityProvider();
+  const fabric = new FenixFabric({ store, controlPlane, registry, events: fabricEvents, identityProvider });
+  const fabricProjection = new FabricProjection({ events: fabricEvents, knowledgeGraph }).attach();
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   health.register('state-store', async () => {
     if (typeof store.health === 'function') return store.health();
@@ -127,7 +140,7 @@ async function createApp(options = {}) {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
-    vectorStore, memory, knowledgeGraph,
+    vectorStore, memory, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
   };
 
   app.close = async () => {
