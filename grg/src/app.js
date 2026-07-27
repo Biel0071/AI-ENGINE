@@ -33,6 +33,8 @@ const { RedisCache } = require('./infrastructure/redis/redis-cache');
 const { RedisRateLimiter } = require('./infrastructure/redis/redis-rate-limiter');
 const { BullMQRuntime } = require('./infrastructure/queue/bullmq-runtime');
 const { S3ObjectStore } = require('./infrastructure/storage/s3-object-store');
+const { MemoryEngine } = require('./memory/memory-engine');
+const { QdrantVectorStore } = require('./memory/qdrant-vector-store');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -100,6 +102,8 @@ async function createApp(options = {}) {
   }
   const queues = options.queues || (options.queueRedisUrl ? BullMQRuntime.fromUrl(options.queueRedisUrl) : null);
   const objects = options.objects || (options.s3 ? S3ObjectStore.create(options.s3) : null);
+  const vectorStore = options.vectorStore || (options.qdrant ? await new QdrantVectorStore(options.qdrant).initialize() : null);
+  const memory = new MemoryEngine({ store, bus, controlPlane, vectorStore, cache: redis });
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   health.register('state-store', async () => {
     if (typeof store.health === 'function') return store.health();
@@ -110,6 +114,7 @@ async function createApp(options = {}) {
   if (redis) health.register('redis', () => redis.health());
   if (queues) health.register('queue', () => queues.health());
   if (objects) health.register('object-storage', () => objects.health());
+  if (vectorStore) health.register('vector-store', () => vectorStore.health());
   health.register('ai-providers', async () => {
     const providersHealth = await aiGateway.providerHealth();
     const routeReady = aiGateway.candidates('default').some((item) => providersHealth[item.provider]?.ok);
@@ -120,6 +125,7 @@ async function createApp(options = {}) {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
+    vectorStore, memory,
   };
 
   app.close = async () => {
@@ -181,6 +187,7 @@ async function overview(app, tenantId, actorId) {
       deployments: t(s.deployments).length,
       artifacts: t(s.artifacts).length,
       memoryEvents: t(s.memoryEvents).length,
+      memories: t(s.memories).filter((item) => item.status === 'ACTIVE').length,
       graphEdges: t(s.graphEdges).length,
       aiCalls: t(s.aiCalls).length,
       subscriptions: t(s.subscriptions).length,

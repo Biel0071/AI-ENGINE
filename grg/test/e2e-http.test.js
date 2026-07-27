@@ -79,3 +79,25 @@ test('adds security headers and request id', withServer(async (base) => {
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   assert.ok(response.headers.get('x-request-id'));
 }));
+
+test('memory API records, retrieves, versions and forgets knowledge', withServer(async (base) => {
+  const headers = await authHeaders(base);
+  const create = await fetch(`${base}/api/memories`, {
+    method: 'POST', headers,
+    body: JSON.stringify({
+      kind: 'semantic', title: 'API standard', content: 'All APIs use request IDs.',
+      stableKey: 'standard:request-id', confidence: 0.95,
+      provenance: { type: 'adr', reference: 'ADR-1', evidence: ['test:e2e'] },
+    }),
+  });
+  assert.equal(create.status, 201);
+  const memory = await create.json();
+  const search = await fetch(`${base}/api/memories/search?q=request%20IDs`, { headers }).then((response) => response.json());
+  assert.equal(search.results[0].memory.id, memory.id);
+  const history = await fetch(`${base}/api/memories/${memory.id}/history`, { headers }).then((response) => response.json());
+  assert.equal(history.versions.length, 1);
+  const forgotten = await fetch(`${base}/api/memories/${memory.id}`, {
+    method: 'DELETE', headers, body: JSON.stringify({ reason: 'obsolete' }),
+  });
+  assert.equal(forgotten.status, 200);
+}));

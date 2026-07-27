@@ -6,7 +6,7 @@
 2. Create `grg/secrets/postgres_password.txt` and `grg/secrets/redis_password.txt` with strong unique values. The directory is ignored by Git.
 3. Replace both `CHANGE_ME` values in the local application URLs. Do not commit the resulting env file.
 4. Run `docker compose --env-file .env.enterprise -f docker-compose.enterprise.yml up -d`.
-5. Confirm `docker compose ... ps` reports PostgreSQL and Redis healthy.
+5. Confirm `docker compose ... ps` reports PostgreSQL, Redis and Qdrant healthy.
 6. Configure a maintained AWS S3 or S3-compatible bucket and export the `FENIX_S3_*` variables.
 7. Start the server and require `/health` to return HTTP 200 with all critical probes ready.
 

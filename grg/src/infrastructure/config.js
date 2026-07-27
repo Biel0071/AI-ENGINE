@@ -5,6 +5,12 @@ function loadInfrastructureConfig(env = process.env, options = {}) {
     databaseSchema: env.FENIX_DATABASE_SCHEMA || 'fenix',
     redisUrl: env.REDIS_URL || null,
     queueRedisUrl: env.FENIX_QUEUE_REDIS_URL || env.REDIS_URL || null,
+    qdrant: env.FENIX_QDRANT_URL ? {
+      baseUrl: env.FENIX_QDRANT_URL,
+      apiKey: env.FENIX_QDRANT_API_KEY || null,
+      collection: env.FENIX_QDRANT_COLLECTION || 'fenix_memory',
+      dimensions: Number(env.FENIX_QDRANT_DIMENSIONS || 64),
+    } : null,
     s3: env.FENIX_S3_BUCKET ? {
       endpoint: env.FENIX_S3_ENDPOINT || undefined,
       region: env.FENIX_S3_REGION || 'us-east-1',
@@ -18,6 +24,7 @@ function loadInfrastructureConfig(env = process.env, options = {}) {
     const missing = [];
     if (!config.databaseUrl) missing.push('DATABASE_URL');
     if (!config.redisUrl) missing.push('REDIS_URL');
+    if (!config.qdrant) missing.push('FENIX_QDRANT_URL');
     if (!config.s3?.bucket) missing.push('FENIX_S3_BUCKET');
     if (missing.length) throw new Error(`production infrastructure is incomplete: ${missing.join(', ')}`);
   }
