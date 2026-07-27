@@ -51,6 +51,8 @@ const EMPTY_STATE = () => ({
   outbox: [],
   inbox: [],
   migrationHistory: [],
+  memories: [],
+  memoryVersions: [],
 });
 
 class MemoryStore {

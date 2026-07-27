@@ -96,6 +96,12 @@ configuraÃ§Ã£o. Rotas possuem fallback ordenado, retry limitado, circuit bre
 reserva atÃ´mica de tokens/custo e rate limit Redis por tenant. Consulte
 `docs/ADR-0004-AI-GATEWAY-ENTERPRISE.md` e `.env.example`.
 
+O `MemoryEngine` v6 registra memÃ³ria episÃ³dica, semÃ¢ntica, de trabalho, projeto e organizaÃ§Ã£o
+com proveniÃªncia, classificaÃ§Ã£o, versÃµes, retenÃ§Ã£o, tombstone e consolidaÃ§Ã£o. A busca combina
+texto, confianÃ§a e Qdrant sem atravessar tenants. API: `POST /api/memories`,
+`GET /api/memories/search`, `GET /api/memories/:id/history`,
+`POST /api/memories/consolidate` e `DELETE /api/memories/:id`.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie

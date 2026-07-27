@@ -35,6 +35,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     redisUrl: infrastructure.redisUrl,
     queueRedisUrl: infrastructure.queueRedisUrl,
     s3: infrastructure.s3,
+    qdrant: infrastructure.qdrant,
   });
   if (require.main === module) process.stdout.write(`LLM (chat natural): ${app.llm ? 'LIGADO via ' + app.llmSource : 'desligado (modo regras)'}\n`);
   const bootstrap = options.bootstrapAdmin || securityConfig.bootstrapAdmin;
@@ -86,6 +87,27 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/ai/telemetry') return sendJson(res, 200, await app.aiGateway.telemetry(tenantId, actorId));
       if (req.method === 'GET' && url.pathname === '/api/insights') { await app.controlPlane.authorize(tenantId, actorId, 'memory:read'); return sendJson(res, 200, { insights: await app.evolution.getInsights(tenantId) }); }
       if (req.method === 'GET' && url.pathname === '/api/evolution') { await app.controlPlane.authorize(tenantId, actorId, 'memory:read'); return sendJson(res, 200, await app.evolution.getEvolution(tenantId)); }
+      if (req.method === 'POST' && url.pathname === '/api/memories') {
+        return sendJson(res, 201, await app.memory.remember(tenantId, actorId, await readJson(req)), requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/memories/search') {
+        return sendJson(res, 200, await app.memory.query(tenantId, actorId, url.searchParams.get('q'), {
+          kind: url.searchParams.get('kind') || undefined,
+          projectId: url.searchParams.get('projectId') || undefined,
+          orgId: url.searchParams.get('orgId') || undefined,
+          limit: url.searchParams.get('limit') || undefined,
+        }), requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/memories/consolidate') {
+        return sendJson(res, 200, await app.memory.consolidate(tenantId, actorId, await readJson(req)), requestId);
+      }
+      const memoryHistory = url.pathname.match(/^\/api\/memories\/([^/]+)\/history$/);
+      if (req.method === 'GET' && memoryHistory) return sendJson(res, 200, { versions: await app.memory.history(tenantId, actorId, memoryHistory[1]) }, requestId);
+      const memoryDelete = url.pathname.match(/^\/api\/memories\/([^/]+)$/);
+      if (req.method === 'DELETE' && memoryDelete) {
+        const body = await readJson(req);
+        return sendJson(res, 200, await app.memory.forget(tenantId, actorId, memoryDelete[1], body.reason), requestId);
+      }
       if (req.method === 'GET' && url.pathname === '/api/audit') {
         await app.controlPlane.authorize(tenantId, actorId, 'audit:read');
         return sendJson(res, 200, { events: await app.audit.list(tenantId), integrity: await app.audit.verify(tenantId) });
