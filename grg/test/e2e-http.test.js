@@ -152,6 +152,24 @@ test('federated cognitive API creates scoped workspaces and memory', withServer(
   assert.ok(hierarchy.entities.some((item) => item.id === project.id));
 }));
 
+test('trusted execution API accepts a signed manifest and returns its timeline', async () => {
+  const dataFile = path.join(os.tmpdir(), `grg-sandbox-e2e-${Date.now()}.json`);
+  const sandboxAdapter = { productionSafe: true, run: async ({ argv, tool }) => ({ exitCode: 0, stdout: argv.join(' '), stderr: '', sandbox: { driver: 'test', image: tool.image } }) };
+  const server = await start(0, { dataFile, llm: false, sandboxAdapter, bootstrapAdmin: { ...ADMIN, tenantName: 'GRG Test', name: 'Test Admin', role: 'master_admin' } });
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`; const headers = await authHeaders(base);
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+    const signer = await fetch(`${base}/api/execution/signers`, { method: 'POST', headers, body: JSON.stringify({ signerId: 'e2e-release', publicKey: publicKey.export({ type: 'spki', format: 'pem' }) }) }); assert.equal(signer.status, 201);
+    const image = `repo/node@sha256:${'c'.repeat(64)}`;
+    const tool = await fetch(`${base}/api/execution/tools`, { method: 'POST', headers, body: JSON.stringify({ id: 'e2e-node', command: 'node', image, version: '24' }) }); assert.equal(tool.status, 201);
+    const manifest = { id: 'e2e-health', version: '1.0.0', toolId: 'e2e-node', entrypoint: 'node', args: ['--version'], parameters: [], description: 'Health' };
+    const { canonical } = require('../src/execution/script-library'); const signature = crypto.sign(null, Buffer.from(canonical(manifest)), privateKey).toString('base64');
+    const script = await fetch(`${base}/api/execution/scripts`, { method: 'POST', headers, body: JSON.stringify({ signerId: 'e2e-release', manifest, signature }) }); assert.equal(script.status, 201);
+    const executed = await fetch(`${base}/api/execution/sandbox`, { method: 'POST', headers, body: JSON.stringify({ scriptId: 'e2e-health' }) }); assert.equal(executed.status, 202);
+    const result = await executed.json(); assert.equal(result.status, 'SUCCEEDED'); assert.equal(result.timeline.length, 2);
+  } finally { server.close(); try { fs.unlinkSync(dataFile); } catch {} }
+});
+
 test('Fabric API enrolls a service and exposes registry plus durable event', withServer(async (base) => {
   const headers = await authHeaders(base);
   const enrolled = await fetch(`${base}/api/fabric/enroll`, {

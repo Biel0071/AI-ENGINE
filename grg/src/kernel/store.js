@@ -89,6 +89,11 @@ const EMPTY_STATE = () => ({
   cognitiveAgents: [],
   cognitiveAccessGrants: [],
   knowledgeSharingPolicies: [],
+  toolDefinitions: [],
+  scriptSigners: [],
+  scriptDefinitions: [],
+  sandboxExecutions: [],
+  executionTimeline: [],
 });
 
 class MemoryStore {

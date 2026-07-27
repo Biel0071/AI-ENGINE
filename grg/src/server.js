@@ -40,6 +40,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     s3: infrastructure.s3,
     qdrant: infrastructure.qdrant,
     identityProvider: options.identityProvider,
+    sandboxAdapter: options.sandboxAdapter,
   });
   if (require.main === module) process.stdout.write(`LLM (chat natural): ${app.llm ? 'LIGADO via ' + app.llmSource : 'desligado (modo regras)'}\n`);
   const bootstrap = options.bootstrapAdmin || securityConfig.bootstrapAdmin;
@@ -146,6 +147,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/runtime/schedules') return sendJson(res, 201, await app.jobs.schedule(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/runtime/tick') return sendJson(res, 202, { jobs: await app.jobs.tick(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/runtime/work') { const body = await readJson(req); await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin'); return sendJson(res, 200, { jobs: await app.jobs.runBatch(body.workerId || actorId, body.limit || 5) }, requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/execution/tools') return sendJson(res, 201, await app.tools.register(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/execution/tools') return sendJson(res, 200, { tools: await app.tools.list(tenantId, actorId) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/execution/signers') return sendJson(res, 201, await app.scripts.registerSigner(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/execution/scripts') return sendJson(res, 201, await app.scripts.register(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/execution/sandbox') return sendJson(res, 202, await app.sandbox.execute(tenantId, actorId, { ...(await readJson(req)), correlationId: requestId }), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/execution/sandbox') return sendJson(res, 200, { executions: await app.sandbox.list(tenantId, actorId) }, requestId);
+      const sandboxExecution = url.pathname.match(/^\/api\/execution\/sandbox\/([^/]+)$/);
+      if (req.method === 'GET' && sandboxExecution) return sendJson(res, 200, await app.sandbox.get(tenantId, actorId, sandboxExecution[1]), requestId);
       if (req.method === 'GET' && url.pathname === '/api/capabilities') return sendJson(res, 200, { capabilities: await app.capabilityRegistry.list(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/capabilities') return sendJson(res, 201, await app.capabilityRegistry.register(tenantId, actorId, await readJson(req)), requestId);
       const capabilityHistory = url.pathname.match(/^\/api\/capabilities\/([^/]+)\/history$/);
