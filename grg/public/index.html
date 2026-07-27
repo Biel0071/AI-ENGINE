@@ -1,54 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GRG Services OS — Painel Master</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07090d">
+  <title>GRG Services OS | GRG FÊNIX — Centro Operacional Cognitivo</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/city-overrides.css">
 </head>
 <body>
-  <header style="display:flex;justify-content:space-between;align-items:center;">
-    <div>
-      <h1>GRG Services OS</h1>
-      <span class="sub">Painel Master — Software Engineering Operating System</span>
-    </div>
-    <a href="/office.html" style="background:#3b82f6;color:#fff;padding:10px 18px;border-radius:9px;text-decoration:none;font-weight:600;">🏢 Escritório</a>
-  </header>
-  <main>
-    <section id="metrics" class="grid"></section>
+  <div class="os-shell">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <a class="brand" href="#command"><span class="brand-mark">F</span><span><b>GRG FÊNIX</b><small>Cognitive OS</small></span></a>
+      <nav>
+        <a class="active" href="#command"><span>⌂</span>Comando</a><a href="#missions"><span>◆</span>Missões</a>
+        <a href="#city"><span>▦</span>AI City</a><a href="#knowledge"><span>◎</span>Knowledge</a>
+        <a href="#runtime"><span>⚡</span>Runtime</a><a href="#gateway"><span>◇</span>AI Gateway</a>
+        <a href="#observability"><span>⌁</span>Observabilidade</a><a href="/office"><span>▣</span>Empresas</a>
+      </nav>
+      <div class="sidebar-health"><i id="sidebarDot"></i><span><b id="sidebarStatus">Conectando</b><small id="sidebarDetail">aguardando health</small></span></div>
+      <button id="logout" class="ghost wide" type="button">Encerrar sessão</button>
+    </aside>
 
-    <section class="panel">
-      <h2>Conversar com o GRG</h2>
-      <div id="chatlog" class="chatlog"></div>
-      <form id="chat">
-        <input id="msg" placeholder="Cole uma URL do GitHub, ou: gerar um CRM de WhatsApp com IA..." autocomplete="off" required />
-        <button type="submit">Enviar</button>
-      </form>
-      <div class="hints">
-        <button class="chip" data-msg="acoplar todos os projetos do meu user github Biel0071 e mapear">acoplar TODO meu portfólio</button>
-        <button class="chip" data-msg="https://github.com/Biel0071/ZAPAI-FINAL">acoplar ZAPAI-FINAL</button>
-        <button class="chip" data-msg="o que você aprendeu?">insights</button>
-        <button class="chip" data-msg="status">status</button>
-        <button class="chip" data-msg="analise o twin">twin + conselhos</button>
-        <button class="chip" data-msg="gerar um CRM de WhatsApp com IA e PIX">gerar sistema</button>
-      </div>
-    </section>
+    <main>
+      <header class="topbar">
+        <div><span class="eyebrow">CENTRO DE COMANDO</span><h1>Ecossistema operacional</h1></div>
+        <div class="top-actions"><span id="clock" class="clock"></span><button id="refreshBtn" class="icon-button" title="Atualizar">↻</button><span id="actor" class="actor">GRG</span></div>
+      </header>
 
-    <div class="cols">
-      <section class="panel">
-        <h2>Projetos</h2>
-        <ul id="projects" class="list"></ul>
+      <section id="command" class="command-grid">
+        <article id="fenix" class="fenix-card" data-state="SLEEPING">
+          <div class="avatar-stage">
+            <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
+            <svg class="phoenix" viewBox="0 0 220 220" role="img" aria-label="Avatar FÊNIX">
+              <defs><linearGradient id="fire" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff3b0a"/><stop offset=".5" stop-color="#ff8a00"/><stop offset="1" stop-color="#ffe36e"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+              <path class="wing left" d="M105 115C75 118 35 99 20 55c28 18 49 9 63-22 2 31 16 43 29 51z"/><path class="wing right" d="M115 115c30 3 70-16 85-60-28 18-49 9-63-22-2 31-16 43-29 51z"/>
+              <path class="flame" d="M110 34c-22 19-26 39-14 54-3-22 12-30 19-48 18 22 13 41 4 51 22-8 31-37 10-63-6-7-11-13-11-22-6 8-7 18-8 28z"/>
+              <circle class="head" cx="110" cy="103" r="39"/><path class="mask" d="M77 99c21-17 45-17 66 0l-11 35H88z"/><path class="eye" d="M85 101l20 5-17 9zM135 101l-20 5 17 9z"/><path class="beak" d="M101 119h18l-9 14z"/>
+              <path class="body" d="M88 137c11-12 33-12 44 0l14 48-36 21-36-21z"/><circle class="core" cx="110" cy="157" r="10"/><path class="tail" d="M91 176l-17 38 35-25 2 27 16-31 18 28-8-43z"/>
+            </svg>
+            <div class="state-ring"></div>
+          </div>
+          <div class="avatar-copy"><span class="live-label"><i></i> AVATAR MESTRE</span><h2>FÊNIX</h2><p id="avatarPhrase">O conhecimento permanece. Os modelos evoluem.</p><div class="avatar-state"><strong id="avatarState">DORMINDO</strong><span id="avatarLocation">Praça Central</span><span id="avatarProgress">0%</span></div></div>
+        </article>
+
+        <article class="copilot-card">
+          <div class="section-title"><div><span class="eyebrow">INTERFACE ÚNICA</span><h2>Converse com o FÊNIX</h2></div><div class="voice-controls"><button id="ttsToggle" class="toggle" type="button" aria-pressed="false">◖ Voz</button><span id="voiceSupport" class="support"></span></div></div>
+          <div id="chatlog" class="chatlog" aria-live="polite"></div>
+          <form id="chat" class="composer"><button id="micBtn" class="mic" type="button" title="Falar com o FÊNIX">●</button><label class="sr-only" for="msg">Mensagem</label><textarea id="msg" rows="1" placeholder="Crie uma missão ou converse com o Avatar Mestre…" required></textarea><button class="send" type="submit">Enviar <span>↗</span></button></form>
+          <div class="quick-actions"><button data-msg="Verifique a saúde do sistema">Saúde do sistema</button><button data-msg="Mostre as missões em andamento">Missões ativas</button><button data-msg="Analise este ERP">Analisar projeto</button><button data-msg="O que você aprendeu?" data-mode="conversation">Conhecimento</button></div>
+        </article>
       </section>
-      <section class="panel">
-        <h2>Repositórios</h2>
-        <ul id="repos" class="list"></ul>
+
+      <section id="missions" class="mission-strip panel">
+        <div class="section-title"><div><span class="eyebrow">MISSION KERNEL</span><h2>Missão ativa</h2></div><span id="missionStatus" class="status-pill neutral">SEM MISSÃO</span></div>
+        <div class="mission-main"><div><h3 id="missionTitle">Aguardando objetivo</h3><p id="missionMeta">O Avatar transformará solicitações operacionais em missões governadas.</p></div><strong id="missionPercent">0%</strong></div>
+        <div class="progress"><i id="missionBar"></i></div><div id="missionSteps" class="steps"></div>
       </section>
-      <section class="panel">
-        <h2>Memória evolutiva</h2>
-        <ul id="memory" class="list"></ul>
+
+      <section id="city" class="city-panel panel">
+        <div class="section-title"><div><span class="eyebrow">DIGITAL TWIN VISUAL</span><h2>GRG AI City</h2></div><div class="legend"><span><i class="active"></i>Ativo</span><span><i class="warning"></i>Atenção</span><span><i class="degraded"></i>Degradado</span></div></div>
+        <div class="city-toolbar"><span id="citySummary">Carregando projeção…</span><div><button id="zoomOut" class="icon-button">−</button><button id="zoomIn" class="icon-button">+</button></div></div>
+        <div id="cityViewport" class="city-viewport"><div class="city-sky"><i></i><i></i><i></i></div><div id="cityMap" class="city-map"></div></div>
       </section>
-    </div>
-  </main>
+
+      <section class="telemetry-grid">
+        <article id="observability" class="panel"><div class="section-title"><div><span class="eyebrow">HEALTH ORCHESTRATOR</span><h2>Saúde real</h2></div><span id="healthScore" class="score">—</span></div><div id="healthList" class="health-list"></div></article>
+        <article id="runtime" class="panel"><div class="section-title"><div><span class="eyebrow">EXECUTION PLANE</span><h2>Fila e timeline</h2></div><span id="jobCount" class="count">0 jobs</span></div><div id="timeline" class="timeline"></div></article>
+        <article id="gateway" class="panel"><div class="section-title"><div><span class="eyebrow">AI GATEWAY</span><h2>Consumo de IA</h2></div><span id="gatewayState" class="status-pill neutral">SEM DADOS</span></div><div id="aiStats" class="ai-stats"></div><div id="systemMetrics" class="metric-grid"></div></article>
+      </section>
+      <footer><span>GRG FÊNIX Cognitive Operating System</span><span id="lastUpdate">Nunca atualizado</span></footer>
+    </main>
+  </div>
+
+  <dialog id="nodeDialog"><button id="closeDialog" class="dialog-close">×</button><span class="eyebrow">AI CITY ENTITY</span><h2 id="nodeTitle">Componente</h2><div id="nodeDetails"></div></dialog>
   <script src="/app.js"></script>
 </body>
 </html>

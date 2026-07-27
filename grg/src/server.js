@@ -127,6 +127,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       ({ tenantId, actorId } = cx);
 
       if (req.method === 'GET' && url.pathname === '/api/me') return sendJson(res, 200, { tenantId, actorId, authed: cx.authed });
+      if (req.method === 'POST' && url.pathname === '/api/avatar/message') return sendJson(res, 200, await app.masterAvatar.handle(tenantId, actorId, await readJson(req)), requestId);
 
       if (req.method === 'GET' && url.pathname === '/api/overview') return sendJson(res, 200, await overview(app, tenantId, actorId));
       if (req.method === 'POST' && url.pathname === '/api/operations/activate') return sendJson(res, 202, await app.operationalActivation.boot(tenantId, actorId, await readJson(req)), requestId);

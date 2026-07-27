@@ -68,6 +68,7 @@ const { OperationalActivationService } = require('./operations/operational-activ
 const { createOperationalComponents } = require('./operations/operational-components');
 const { MissionKernel } = require('./missions/mission-kernel');
 const { MissionPlanner } = require('./missions/mission-planner');
+const { MasterAvatar } = require('./cognitive/master-avatar');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -257,6 +258,7 @@ async function createApp(options = {}) {
   app.discovery = new DiscoveryEngine({ store, bus, controlPlane, repoIntel });
 
   app.chat = new ChatAgent({ app, llm });
+  app.masterAvatar = new MasterAvatar({ chat: app.chat, missionPlanner });
   return app;
 }
 
