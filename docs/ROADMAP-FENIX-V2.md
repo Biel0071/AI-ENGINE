@@ -1,5 +1,7 @@
 # GRG FÊNIX V2 — Roadmap de Produto
 
+Marco em execução: **V3.0-A — GA Control Loop**, com Health Orchestrator dotado de tendências e risco, Mission Planner determinístico, provas externas fail-closed e relatório de estabilidade sem declarar GO LIVE prematuramente.
+
 ## Visão
 
 O GRG FÊNIX V2 será um Sistema Operacional Cognitivo para observar, compreender e operar o ecossistema GRG. A experiência principal será um centro de comando vivo, e não um painel administrativo.

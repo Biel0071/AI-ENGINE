@@ -3,7 +3,8 @@ const { ValidationError, NotFoundError } = require('../kernel/errors');
 const { assertNoSecrets } = require('../eventing/event-store');
 
 const COMPONENT_TIMEOUT_MS = 5_000;
-const ASSURANCE_KINDS = new Set(['backup', 'restore', 'rollback', 'centralized-logs']);
+const ASSURANCE_KINDS = new Set(['backup', 'restore', 'rollback', 'centralized-logs', 'build', 'smoke-test', 'external-validation']);
+const GA_PROOFS = ['backup', 'restore', 'rollback', 'centralized-logs', 'build', 'smoke-test', 'external-validation'];
 
 class OperationalActivationService {
   constructor({ store, controlPlane, events, jobs, components, production = false, clock = Date }) {
@@ -41,6 +42,7 @@ class OperationalActivationService {
     const status = !configured ? 'UNCONFIGURED' : detail?.ok === false ? 'DEGRADED' : 'ACTIVE';
     const record = { id: uuid(), tenantId, runId, componentId: definition.id, label: definition.label || definition.id, state: status, status, version: String(detail?.version || definition.version || 'unknown'), dependencies: definition.dependencies || [], latencyMs: Math.max(0, this.clock.now() - started), availability: status === 'ACTIVE' ? 1 : 0, critical: definition.critical === true || (this.production && definition.productionCritical === true), lastHeartbeat: detail?.lastHeartbeat || null, evidence: detail?.evidence || {}, error: detail?.error || null, checkedAt: now() };
     await this.store.update((state) => {
+      record.trend = componentTrend(state.operationalComponentHistory.filter((item) => item.tenantId === tenantId && item.componentId === record.componentId), record);
       state.operationalComponentHistory.push(record);
       state.operationalComponentStates = state.operationalComponentStates.filter((item) => !(item.tenantId === tenantId && item.componentId === record.componentId));
       state.operationalComponentStates.push({ ...record, historyId: record.id });
@@ -78,16 +80,32 @@ class OperationalActivationService {
     const state = await this.store.read(); const date = input.date || now().slice(0, 10);
     const existing = state.dailyIntelligenceReports.find((item) => item.tenantId === tenantId && item.date === date);
     if (existing && input.force !== true) return existing;
-    const scoped = (items) => items.filter((item) => item.tenantId === tenantId); const components = scoped(state.operationalComponentStates); const investigations = scoped(state.operationalInvestigations).filter((item) => item.status === 'OPEN'); const tasks = scoped(state.agentTasks); const aiCalls = scoped(state.aiCalls); const twins = scoped(state.digitalTwins).filter((item) => item.current); const projects = scoped(state.projects).length + scoped(state.repositories).length;
+    const scoped = (items) => items.filter((item) => item.tenantId === tenantId); const components = scoped(state.operationalComponentStates); const investigations = scoped(state.operationalInvestigations).filter((item) => item.status === 'OPEN'); const tasks = scoped(state.agentTasks); const aiCalls = scoped(state.aiCalls); const twins = scoped(state.digitalTwins).filter((item) => item.current); const projects = scoped(state.projects).length + scoped(state.repositories).length; const missions = scoped(state.missions); const promotedKnowledge = scoped(state.knowledgePromotionProposals).filter((item) => item.status === 'PROMOTED').length; const workers = scoped(state.workerHeartbeats);
     const completed = tasks.filter((item) => item.status === 'SUCCEEDED').length; const failed = tasks.filter((item) => ['FAILED', 'BLOCKED'].includes(item.status)).length;
     const attention = components.filter((item) => item.status !== 'ACTIVE').map((item) => ({ componentId: item.componentId, status: item.status, evidence: [`component-history:${item.historyId}`] }));
     const suggestions = [];
     if (investigations.length) suggestions.push({ priority: 'high', action: 'Review open operational investigations', evidence: investigations.map((item) => `investigation:${item.id}`) });
     if (projects > twins.length) suggestions.push({ priority: 'medium', action: 'Complete Digital Twins for authorized systems', evidence: [`projects:${projects}`, `current-twins:${twins.length}`] });
     if (!suggestions.length) suggestions.push({ priority: 'low', action: 'Continue evidence collection and scheduled observation', evidence: [`activation:${state.operationalActivationRuns.filter((item) => item.tenantId === tenantId).at(-1)?.id || 'none'}`] });
-    const report = { id: existing?.id || uuid(), tenantId, date, ecosystemStatus: attention.some((item) => components.find((component) => component.componentId === item.componentId)?.critical) ? 'DEGRADED' : 'HEALTHY', risks: investigations.map((item) => ({ title: item.title, componentId: item.componentId, evidence: item.evidence })), opportunities: suggestions, aiConsumption: { calls: aiCalls.length, tokens: aiCalls.reduce((sum, item) => sum + Number(item.totalTokens || 0), 0), costUsd: Number(aiCalls.reduce((sum, item) => sum + Number(item.costUsd || 0), 0).toFixed(6)) }, agentPerformance: { active: scoped(state.cognitiveAgents).filter((item) => item.status === 'ACTIVE').length, completed, failed, successRate: completed + failed ? completed / (completed + failed) : null }, projects: { discovered: projects, currentTwins: twins.length }, attention, evidence: [`component-states:${components.length}`, `open-investigations:${investigations.length}`, `agent-tasks:${tasks.length}`, `ai-calls:${aiCalls.length}`], generatedBy: actorId, generatedAt: now() };
+    const report = { id: existing?.id || uuid(), tenantId, date, ecosystemStatus: attention.some((item) => components.find((component) => component.componentId === item.componentId)?.critical) ? 'DEGRADED' : 'HEALTHY', risks: investigations.map((item) => ({ title: item.title, componentId: item.componentId, evidence: item.evidence })), opportunities: suggestions, aiConsumption: { calls: aiCalls.length, tokens: aiCalls.reduce((sum, item) => sum + Number(item.totalTokens || 0), 0), costUsd: Number(aiCalls.reduce((sum, item) => sum + Number(item.costUsd || 0), 0).toFixed(6)) }, agentPerformance: { active: scoped(state.cognitiveAgents).filter((item) => item.status === 'ACTIVE').length, completed, failed, successRate: completed + failed ? completed / (completed + failed) : null }, missions: { total: missions.length, running: missions.filter((item) => item.status === 'RUNNING').length, awaitingApproval: missions.filter((item) => item.status === 'AWAITING_APPROVAL').length, failed: missions.filter((item) => item.status === 'FAILED').length }, knowledge: { promoted: promotedKnowledge }, capacity: { workers: workers.length, activeJobs: workers.reduce((sum, item) => sum + Number(item.activeJobs || 0), 0) }, projects: { discovered: projects, currentTwins: twins.length }, attention, evidence: [`component-states:${components.length}`, `open-investigations:${investigations.length}`, `agent-tasks:${tasks.length}`, `missions:${missions.length}`, `promoted-knowledge:${promotedKnowledge}`, `ai-calls:${aiCalls.length}`], generatedBy: actorId, generatedAt: now() };
     await this.store.update((next) => { next.dailyIntelligenceReports = next.dailyIntelligenceReports.filter((item) => !(item.tenantId === tenantId && item.date === date)); next.dailyIntelligenceReports.push(report); return next; });
     await this.#event(tenantId, 'operational.daily-intelligence.generated', report.id, { actorId, date, status: report.ecosystemStatus, risks: report.risks.length });
+    return report;
+  }
+
+  async stabilityReport(tenantId, actorId) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:read');
+    const state = await this.store.read(); const scoped = (items) => items.filter((item) => item.tenantId === tenantId);
+    const readiness = scoped(state.operationalReadinessReports).at(-1) || null;
+    const investigations = scoped(state.operationalInvestigations).filter((item) => item.status === 'OPEN');
+    const assurances = Object.fromEntries(GA_PROOFS.map((kind) => [kind, currentAssurance(state, tenantId, kind)]));
+    const missingProofs = GA_PROOFS.filter((kind) => !assurances[kind]);
+    const aiCalls = scoped(state.aiCalls); const components = scoped(state.operationalComponentStates);
+    const criticalRisks = components.filter((item) => item.critical && item.trend?.risk === 'HIGH');
+    const blockers = [...(!readiness || readiness.status !== 'READY' ? ['readiness'] : []), ...missingProofs.map((kind) => `proof:${kind}`), ...investigations.map((item) => `investigation:${item.id}`), ...criticalRisks.map((item) => `risk:${item.componentId}`)];
+    const report = { id: uuid(), tenantId, release: '3.0.0', status: blockers.length ? 'BLOCKED' : 'GO_LIVE_CANDIDATE', architectureFrozen: true, readinessReportId: readiness?.id || null, blockers, openInvestigations: investigations.map((item) => item.id), componentSummary: { total: components.length, active: components.filter((item) => item.status === 'ACTIVE').length, degraded: components.filter((item) => item.status === 'DEGRADED').length, unconfigured: components.filter((item) => item.status === 'UNCONFIGURED').length, criticalRisks: criticalRisks.map((item) => item.componentId) }, aiConsumption: { calls: aiCalls.length, tokens: aiCalls.reduce((sum, item) => sum + Number(item.totalTokens || 0), 0), costUsd: Number(aiCalls.reduce((sum, item) => sum + Number(item.costUsd || 0), 0).toFixed(6)) }, proofs: Object.fromEntries(GA_PROOFS.map((kind) => [kind, assurances[kind] ? { assuranceId: assurances[kind].id, reference: assurances[kind].evidence.reference } : null])), generatedBy: actorId, generatedAt: now() };
+    await this.store.update((next) => { next.operationalStabilityReports.push(report); return next; });
+    await this.#event(tenantId, 'operational.stability.generated', report.id, { actorId, status: report.status, blockerCount: blockers.length });
     return report;
   }
 
@@ -98,7 +116,7 @@ class OperationalActivationService {
     return created;
   }
 
-  async state(tenantId, actorId) { await this.cp.authorize(tenantId, actorId, 'runtime:read'); const state = await this.store.read(); return { components: state.operationalComponentStates.filter((item) => item.tenantId === tenantId), investigations: state.operationalInvestigations.filter((item) => item.tenantId === tenantId && item.status === 'OPEN'), readiness: state.operationalReadinessReports.filter((item) => item.tenantId === tenantId).at(-1) || null, latestDaily: state.dailyIntelligenceReports.filter((item) => item.tenantId === tenantId).at(-1) || null }; }
+  async state(tenantId, actorId) { await this.cp.authorize(tenantId, actorId, 'runtime:read'); const state = await this.store.read(); return { components: state.operationalComponentStates.filter((item) => item.tenantId === tenantId), investigations: state.operationalInvestigations.filter((item) => item.tenantId === tenantId && item.status === 'OPEN'), readiness: state.operationalReadinessReports.filter((item) => item.tenantId === tenantId).at(-1) || null, latestDaily: state.dailyIntelligenceReports.filter((item) => item.tenantId === tenantId).at(-1) || null, latestStability: state.operationalStabilityReports.filter((item) => item.tenantId === tenantId).at(-1) || null }; }
   async history(tenantId, actorId, componentId = null) { await this.cp.authorize(tenantId, actorId, 'runtime:read'); const state = await this.store.read(); return state.operationalComponentHistory.filter((item) => item.tenantId === tenantId && (!componentId || item.componentId === componentId)); }
   async getRun(tenantId, actorId, runId) { await this.cp.authorize(tenantId, actorId, 'runtime:read'); const state = await this.store.read(); const run = state.operationalActivationRuns.find((item) => item.tenantId === tenantId && item.id === runId); if (!run) throw new NotFoundError(`operational activation run not found: ${runId}`); return run; }
   async #event(tenantId, type, subject, data) { if (!this.events) return; await this.events.publish({ tenantId, stream: `operations:${subject}`, type, source: 'fenix-operational-activation', subject, data, idempotencyKey: `${type}:${subject}` }); }
@@ -113,6 +131,15 @@ function resolveInvestigation(state, component) { for (const item of state.opera
 function currentAssurance(state, tenantId, kind) { return state.operationalAssurances.filter((item) => item.tenantId === tenantId && item.kind === kind && item.status === 'VERIFIED' && (!item.validUntil || Date.parse(item.validUntil) > Date.now())).at(-1) || null; }
 function assuranceProbe(store, tenantId, kind) { return async () => { const state = await store.read(); const assurance = currentAssurance(state, tenantId, kind); return { ok: !!assurance, configured: true, evidence: assurance ? { assuranceId: assurance.id, reference: assurance.evidence.reference } : { reason: `no valid ${kind} evidence` } }; }; }
 function withTimeout(promise, timeoutMs) { let timer; return Promise.race([promise.finally(() => clearTimeout(timer)), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('component health probe timed out')), timeoutMs); })]); }
+function componentTrend(history, current) {
+  const samples = [...history.slice(-19), current]; const latencies = samples.map((item) => Number(item.latencyMs || 0)).sort((a, b) => a - b); const p95 = latencies[Math.max(0, Math.ceil(latencies.length * 0.95) - 1)];
+  const half = Math.max(1, Math.floor(samples.length / 2)); const older = average(samples.slice(0, half).map((item) => Number(item.latencyMs || 0))); const newer = average(samples.slice(half).map((item) => Number(item.latencyMs || 0))); let consecutiveFailures = 0;
+  for (const item of [...samples].reverse()) { if (item.status === 'ACTIVE') break; consecutiveFailures += 1; }
+  const availability = Number((samples.reduce((sum, item) => sum + Number(item.availability || 0), 0) / samples.length).toFixed(4)); const latencyDirection = samples.length < 3 ? 'STABLE' : newer > older * 1.25 ? 'RISING' : newer < older * 0.75 ? 'FALLING' : 'STABLE';
+  const risk = consecutiveFailures >= 3 || availability < 0.8 ? 'HIGH' : consecutiveFailures || latencyDirection === 'RISING' ? 'MEDIUM' : 'LOW';
+  return { sampleCount: samples.length, availability, p95LatencyMs: p95, latencyDirection, consecutiveFailures, risk };
+}
+function average(values) { return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0; }
 function now() { return new Date().toISOString(); }
 
-module.exports = { OperationalActivationService, ASSURANCE_KINDS, assuranceProbe, currentAssurance };
+module.exports = { OperationalActivationService, ASSURANCE_KINDS, GA_PROOFS, assuranceProbe, currentAssurance, componentTrend };

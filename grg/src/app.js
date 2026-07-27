@@ -67,6 +67,7 @@ const { AutonomousAgentEcosystem } = require('./agents/autonomous-agent-ecosyste
 const { OperationalActivationService } = require('./operations/operational-activation');
 const { createOperationalComponents } = require('./operations/operational-components');
 const { MissionKernel } = require('./missions/mission-kernel');
+const { MissionPlanner } = require('./missions/mission-planner');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -207,13 +208,14 @@ async function createApp(options = {}) {
   jobs.register('operational.activation', (payload, context) => operationalActivation.boot(context.tenantId, context.actorId, payload));
   jobs.register('operational.daily-intelligence', (payload, context) => operationalActivation.dailyIntelligence(context.tenantId, context.actorId, payload));
   const missions = new MissionKernel({ store, controlPlane, hierarchy, jobs, approvals, events: fabricEvents }).attach();
+  const missionPlanner = new MissionPlanner({ store, controlPlane, hierarchy, missions, events: fabricEvents });
 
   const app = {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, metrics,
+    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
   };
 
   app.close = async () => {

@@ -48,6 +48,7 @@ test('daily intelligence is deterministic, evidence-backed and idempotent per da
   const app = await bootstrap(); await app.operationalActivation.boot('grg', 'alice');
   const first = await app.operationalActivation.dailyIntelligence('grg', 'alice', { date: '2026-07-27' }); const second = await app.operationalActivation.dailyIntelligence('grg', 'alice', { date: '2026-07-27' });
   assert.equal(first.id, second.id); assert.ok(first.evidence.length); assert.ok(first.opportunities.every((item) => item.evidence.length));
+  assert.equal(first.missions.total, 0); assert.equal(first.knowledge.promoted, 0); assert.equal(first.capacity.workers, 0);
   const state = await app.store.read(); assert.equal(state.dailyIntelligenceReports.length, 1);
 });
 
