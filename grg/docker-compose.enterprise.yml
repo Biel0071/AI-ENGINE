@@ -1,6 +1,67 @@
 name: grg-fenix-enterprise
 
 services:
+  api:
+    build: .
+    image: grg/fenix:${FENIX_VERSION:-1.0.0-rc.1}
+    restart: unless-stopped
+    command: ["node", "src/server.js"]
+    environment: &fenix-environment
+      FENIX_ENV: production
+      PORT: 4400
+      POSTGRES_DB: ${POSTGRES_DB:-fenix}
+      POSTGRES_USER: ${POSTGRES_USER:-fenix}
+      FENIX_QDRANT_URL: http://qdrant:6333
+      FENIX_S3_ENDPOINT: http://minio:9000
+      FENIX_S3_BUCKET: ${FENIX_S3_BUCKET:-fenix}
+      FENIX_S3_REGION: ${FENIX_S3_REGION:-us-east-1}
+      FENIX_S3_FORCE_PATH_STYLE: "1"
+      FENIX_DEPLOY_DRIVER: docker
+      FENIX_DEPLOY_DOCKER_NETWORK: grg-fenix-enterprise_fenix-runtime
+      DOCKER_HOST: unix:///run/user/1000/docker.sock
+      FENIX_IDENTITY_PROVIDER: spiffe
+      FENIX_SPIFFE_TRUST_DOMAIN: ${FENIX_SPIFFE_TRUST_DOMAIN:-grg.internal}
+      FENIX_SPIFFE_CREDENTIAL_REF: ${FENIX_SPIFFE_CREDENTIAL_REF:-spiffe-workload-api}
+      FENIX_AI_DEFAULT_PROVIDER: ${FENIX_AI_DEFAULT_PROVIDER:?FENIX_AI_DEFAULT_PROVIDER is required}
+      FENIX_AI_DEFAULT_MODEL: ${FENIX_AI_DEFAULT_MODEL:?FENIX_AI_DEFAULT_MODEL is required}
+      FENIX_OPENAI_COMPATIBLE_URL: ${FENIX_OPENAI_COMPATIBLE_URL:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      GROQ_BASE_URL: ${GROQ_BASE_URL:-}
+    secrets: &fenix-secrets
+      - postgres_password
+      - redis_password
+      - minio_access_key
+      - minio_secret_key
+      - ai_provider_key
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      qdrant: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    ports: ["127.0.0.1:${FENIX_PORT:-4400}:4400"]
+    networks: [fenix-backend, fenix-runtime]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    user: "${FENIX_HOST_UID:-1000}:${FENIX_HOST_GID:-1000}"
+    volumes:
+      - ${FENIX_ROOTLESS_DOCKER_SOCKET:-/run/user/1000/docker.sock}:/run/user/1000/docker.sock
+
+  worker:
+    image: grg/fenix:${FENIX_VERSION:-1.0.0-rc.1}
+    restart: unless-stopped
+    command: ["node", "src/runtime/worker.js"]
+    environment: *fenix-environment
+    secrets: *fenix-secrets
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [fenix-backend, fenix-runtime]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
   postgres:
     image: postgres:17.9-alpine
     restart: unless-stopped
@@ -62,13 +123,44 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        export MINIO_ROOT_USER="$$(cat /run/secrets/minio_access_key)"
+        export MINIO_ROOT_PASSWORD="$$(cat /run/secrets/minio_secret_key)"
+        exec minio server /data --console-address :9001
+    volumes: ["fenix-minio:/data"]
+    secrets: [minio_access_key, minio_secret_key]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [fenix-backend]
+    security_opt: ["no-new-privileges:true"]
+
 volumes:
   fenix-postgres:
   fenix-redis:
   fenix-qdrant:
+  fenix-minio:
+
+networks:
+  fenix-backend:
+    internal: true
+  fenix-runtime:
 
 secrets:
   postgres_password:
     file: ${POSTGRES_PASSWORD_FILE:?POSTGRES_PASSWORD_FILE is required}
   redis_password:
     file: ${REDIS_PASSWORD_FILE:?REDIS_PASSWORD_FILE is required}
+  minio_access_key:
+    file: ${MINIO_ACCESS_KEY_FILE:?MINIO_ACCESS_KEY_FILE is required}
+  minio_secret_key:
+    file: ${MINIO_SECRET_KEY_FILE:?MINIO_SECRET_KEY_FILE is required}
+  ai_provider_key:
+    file: ${AI_PROVIDER_KEY_FILE:?AI_PROVIDER_KEY_FILE is required}
