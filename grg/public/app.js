@@ -1,12 +1,32 @@
-const TOKEN = localStorage.getItem('grg_token');
-if (!TOKEN) location.href = '/GRG-login';
-const H = { authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' };
+let accessToken = localStorage.getItem('grg_token');
+let redirectingToLogin = false;
+if (!accessToken) location.replace('/GRG-login');
 class FenixApiError extends Error {
   constructor(message, details = {}) { super(message); this.name = 'FenixApiError'; Object.assign(this, details); }
 }
-const api = async (p, opts = {}) => {
-  const response = await fetch(`/api${p}`, { headers: H, ...opts });
-  if (response.status === 401) { location.href = '/GRG-login'; throw new FenixApiError('Sessão expirada', { status: 401 }); }
+function clearSessionAndRedirect() {
+  localStorage.removeItem('grg_token'); localStorage.removeItem('grg_user'); sessionStorage.removeItem('grg_refresh_token');
+  if (!redirectingToLogin) { redirectingToLogin = true; location.replace('/GRG-login?reason=session-expired'); }
+}
+async function refreshAccessToken() {
+  const refreshToken = sessionStorage.getItem('grg_refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const configResponse = await fetch('/api/oidc/config');
+    const config = await configResponse.json();
+    const body = new URLSearchParams({ grant_type:'refresh_token', client_id:config.clientId, refresh_token:refreshToken });
+    const response = await fetch(config.tokenEndpoint, { method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body });
+    const tokens = await response.json();
+    if (!response.ok || !tokens.access_token) return false;
+    accessToken = tokens.access_token; localStorage.setItem('grg_token', accessToken);
+    if (tokens.refresh_token) sessionStorage.setItem('grg_refresh_token', tokens.refresh_token);
+    return true;
+  } catch { return false; }
+}
+const api = async (p, opts = {}, retried = false) => {
+  const response = await fetch(`/api${p}`, { ...opts, headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json', ...(opts.headers || {}) } });
+  if (response.status === 401 && !retried && await refreshAccessToken()) return api(p, opts, true);
+  if (response.status === 401) { clearSessionAndRedirect(); throw new FenixApiError('Sessão expirada', { status: 401 }); }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new FenixApiError(payload.error || 'Falha na operação', {
     status: response.status,
@@ -104,5 +124,7 @@ document.querySelectorAll('.chip').forEach((c) => {
   c.addEventListener('click', () => send(c.dataset.msg));
 });
 
-bubble('Olá! Sou o agente do GRG Services OS. Cole uma URL do GitHub para eu acoplar e analisar, peça para gerar um sistema, ou pergunte o que aprendi. Digite "ajuda" para ver tudo.', 'bot');
-refresh().catch(showFallback);
+if (accessToken) {
+  bubble('Olá! Sou o agente do GRG Services OS. Cole uma URL do GitHub para eu acoplar e analisar, peça para gerar um sistema, ou pergunte o que aprendi. Digite "ajuda" para ver tudo.', 'bot');
+  refresh().catch((error) => { if (error.status !== 401) showFallback(error); });
+}
