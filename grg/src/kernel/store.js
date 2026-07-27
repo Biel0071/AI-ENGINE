@@ -65,6 +65,9 @@ const EMPTY_STATE = () => ({
   resourceVersions: [],
   changeSets: [],
   rollbackProposals: [],
+  cityNodes: [],
+  cityEdges: [],
+  cityProjectionStates: [],
 });
 
 class MemoryStore {

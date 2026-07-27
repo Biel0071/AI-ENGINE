@@ -122,6 +122,11 @@ Rollback publica um comando durável; em produção exige aprovação independen
 APIs: `GET /api/versions`, `GET /api/versions/diff`, `POST /api/rollbacks` e
 `POST /api/rollbacks/:id/dispatch`.
 
+A AI City v11 é uma projeção viva do Event Store na hierarquia Tenant → City → District →
+Building → Floor → Room → System → Service → Process → Event. Nós determinísticos exibem
+estado e atividade e podem ser reconstruídos com `POST /api/city/rebuild`; o mapa tenant-scoped
+fica em `GET /api/city`.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie
