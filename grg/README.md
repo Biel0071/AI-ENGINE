@@ -142,6 +142,11 @@ versões, owner, permissões, recursos, quotas, saúde, métricas, documentaçã
 Execuções atualizam o catálogo apenas por eventos do Runtime. APIs: `GET/POST /api/capabilities`,
 `GET /api/capabilities/:id` e `GET /api/capabilities/:id/history`.
 
+O Cognitive Core v14 implementa o ciclo governado Observe → Context → Hypothesis → Policy →
+Approval → Runtime → Validation → Reflection → Learning. Ele não executa trabalho nem chama Memory
+ou Knowledge diretamente. APIs de goals, contexto, ciclo, hipóteses e dashboard ficam em
+`/api/cognitive`.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie

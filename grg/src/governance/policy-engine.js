@@ -6,6 +6,8 @@ const RULES = Object.freeze({
   'version.rollback.production': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
   'version.rollback.nonproduction': { risk: 'high', approvalRequired: false, separateApprover: false, permission: 'security:manage' },
   'factory.generate': { risk: 'medium', approvalRequired: false, separateApprover: false, permission: 'factory:generate' },
+  'cognitive.execute.low': { risk: 'low', approvalRequired: false, separateApprover: false, permission: 'runtime:execute' },
+  'cognitive.execute.high': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
 });
 
 class PolicyEngine {

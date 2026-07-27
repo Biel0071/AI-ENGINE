@@ -75,6 +75,14 @@ const EMPTY_STATE = () => ({
   capabilityDefinitions: [],
   capabilityVersions: [],
   capabilityLogs: [],
+  cognitiveGoals: [],
+  cognitiveObservations: [],
+  cognitiveHypotheses: [],
+  cognitiveDecisions: [],
+  cognitiveValidations: [],
+  cognitiveReflections: [],
+  cognitiveCycles: [],
+  cognitiveCursors: [],
 });
 
 class MemoryStore {
