@@ -18,7 +18,7 @@ services:
       FENIX_S3_FORCE_PATH_STYLE: "1"
       FENIX_DEPLOY_DRIVER: docker
       FENIX_DEPLOY_DOCKER_NETWORK: grg-fenix-enterprise_fenix-runtime
-      DOCKER_HOST: unix:///run/user/1000/docker.sock
+      DOCKER_HOST: unix:///run/docker.sock
       FENIX_IDENTITY_PROVIDER: spiffe
       FENIX_SPIFFE_TRUST_DOMAIN: ${FENIX_SPIFFE_TRUST_DOMAIN:-grg.internal}
       FENIX_SPIFFE_CREDENTIAL_REF: ${FENIX_SPIFFE_CREDENTIAL_REF:-spiffe-workload-api}
@@ -50,7 +50,7 @@ services:
     cap_drop: [ALL]
     user: "${FENIX_HOST_UID:-1000}:${FENIX_HOST_GID:-1000}"
     volumes:
-      - ${FENIX_ROOTLESS_DOCKER_SOCKET:-/run/user/1000/docker.sock}:/run/user/1000/docker.sock
+      - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
 
   worker:
     image: grg/fenix:${FENIX_VERSION:-1.0.0-rc.1}
