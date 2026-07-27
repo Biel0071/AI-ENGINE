@@ -16,10 +16,11 @@ const ROLE_PERMISSIONS = Object.freeze({
     'governance:approve', 'governance:read', 'audit:read', 'security:manage',
     'graph:read', 'graph:write',
     'fabric:read', 'fabric:enroll', 'registry:read', 'registry:write', 'event:read',
+    'discovery:read', 'discovery:scan', 'knowledge:publish',
   ],
   subadmin: [
     'project:read', 'project:analyze', 'repo:read', 'capability:read',
-    'memory:read', 'memory:write', 'member:read', 'ai:invoke', 'governance:read', 'graph:read', 'fabric:read', 'registry:read', 'event:read',
+    'memory:read', 'memory:write', 'member:read', 'ai:invoke', 'governance:read', 'graph:read', 'fabric:read', 'registry:read', 'event:read', 'discovery:read',
   ],
   employee: ['project:read', 'repo:read', 'capability:read', 'memory:read', 'graph:read'],
 });
