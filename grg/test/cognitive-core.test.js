@@ -14,6 +14,7 @@ test('governed cognitive loop evaluates, dispatches only through Runtime, valida
   assert.equal(completed.status, 'VALIDATED'); assert.ok(state.cognitiveValidations.some((item) => item.hypothesisId === proposed.id)); assert.ok(state.cognitiveReflections.some((item) => item.hypothesisId === proposed.id));
   assert.ok(state.memories.some((item) => item.kind === 'semantic' && item.stableKey === `hypothesis:${proposed.id}`)); assert.ok(state.knowledgeEntities.some((item) => item.type === 'hypothesis' && item.key === proposed.id));
   assert.ok(state.domainEvents.some((item) => item.type === 'cognitive.learning.recorded'));
+  const metrics = (await app.cognitiveCore.dashboard('grg', 'alice')).metrics; assert.equal(metrics.successRate, 1); assert.ok(metrics.averageDecisionMs >= 0); assert.ok(metrics.averageExecutionMs >= 0); assert.equal(metrics.learnings, 1);
 });
 
 test('critical hypothesis waits for independent approval and never assumes consent', async () => {

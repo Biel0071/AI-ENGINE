@@ -9,6 +9,7 @@ export FENIX_QUEUE_REDIS_URL="$REDIS_URL"
 export FENIX_S3_ACCESS_KEY_ID="$(read_secret /run/secrets/minio_access_key)"
 export FENIX_S3_SECRET_ACCESS_KEY="$(read_secret /run/secrets/minio_secret_key)"
 AI_PROVIDER_KEY="$(read_secret /run/secrets/ai_provider_key)"
+export FENIX_METRICS_TOKEN="$(read_secret /run/secrets/metrics_token)"
 case "${FENIX_AI_DEFAULT_PROVIDER:-}" in
   openai) export OPENAI_API_KEY="$AI_PROVIDER_KEY" ;;
   groq) export GROQ_API_KEY="$AI_PROVIDER_KEY" ;;

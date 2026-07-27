@@ -18,10 +18,10 @@ function verifyPassword(password, stored) {
 }
 
 class AuthService {
-  constructor({ store, bus, controlPlane, audit = null, ttlMs = 12 * 60 * 60 * 1000 }) {
+  constructor({ store, bus, controlPlane, audit = null, ttlMs = 12 * 60 * 60 * 1000, externalVerifier = null, localLoginEnabled = true }) {
     this.store = store; this.bus = bus; this.cp = controlPlane; this.audit = audit;
     this.sessions = new Map(); // token -> { userId, tenantId, role, exp }
-    this.ttlMs = ttlMs;
+    this.ttlMs = ttlMs; this.externalVerifier = externalVerifier; this.localLoginEnabled = localLoginEnabled;
   }
 
   async initialize() {
@@ -49,6 +49,7 @@ class AuthService {
   }
 
   async login(tenantId, userId, password) {
+    if (!this.localLoginEnabled) throw new ForbiddenError('local password login is disabled');
     const state = await this.store.read();
     const user = state.users.find((u) => u.id === userId);
     const membership = state.memberships.find((m) => m.tenantId === tenantId && m.userId === userId);
@@ -143,6 +144,7 @@ class AuthService {
     if (match) {
       const session = await this.verifyPersistent(match[1]);
       if (session) return { tenantId: session.tenantId, actorId: session.userId, authed: true, sessionId: session.id };
+      if (this.externalVerifier) { try { const identity = await this.externalVerifier.verify(match[1]); if (identity?.tenantId && identity?.userId) return { tenantId: identity.tenantId, actorId: identity.userId, authed: true, sessionId: null, external: true }; } catch { return null; } }
     }
     if (allowDevHeaders) {
       const tenantId = String(headers['x-tenant-id'] || '').trim();

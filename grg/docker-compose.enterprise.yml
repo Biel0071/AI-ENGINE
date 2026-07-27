@@ -22,6 +22,9 @@ services:
       FENIX_IDENTITY_PROVIDER: spiffe
       FENIX_SPIFFE_TRUST_DOMAIN: ${FENIX_SPIFFE_TRUST_DOMAIN:-grg.internal}
       FENIX_SPIFFE_CREDENTIAL_REF: ${FENIX_SPIFFE_CREDENTIAL_REF:-spiffe-workload-api}
+      FENIX_OIDC_ISSUER: ${FENIX_OIDC_ISSUER:?FENIX_OIDC_ISSUER is required}
+      FENIX_OIDC_AUDIENCE: ${FENIX_OIDC_AUDIENCE:?FENIX_OIDC_AUDIENCE is required}
+      FENIX_OIDC_JWKS_URI: ${FENIX_OIDC_JWKS_URI:?FENIX_OIDC_JWKS_URI is required}
       FENIX_AI_DEFAULT_PROVIDER: ${FENIX_AI_DEFAULT_PROVIDER:?FENIX_AI_DEFAULT_PROVIDER is required}
       FENIX_AI_DEFAULT_MODEL: ${FENIX_AI_DEFAULT_MODEL:?FENIX_AI_DEFAULT_MODEL is required}
       FENIX_OPENAI_COMPATIBLE_URL: ${FENIX_OPENAI_COMPATIBLE_URL:-}
@@ -33,6 +36,7 @@ services:
       - minio_access_key
       - minio_secret_key
       - ai_provider_key
+      - metrics_token
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -142,11 +146,25 @@ services:
     networks: [fenix-backend]
     security_opt: ["no-new-privileges:true"]
 
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    volumes:
+      - ./ops/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - fenix-prometheus:/prometheus
+    secrets: [metrics_token]
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [fenix-backend]
+    security_opt: ["no-new-privileges:true"]
+
 volumes:
   fenix-postgres:
   fenix-redis:
   fenix-qdrant:
   fenix-minio:
+  fenix-prometheus:
 
 networks:
   fenix-backend:
@@ -164,3 +182,5 @@ secrets:
     file: ${MINIO_SECRET_KEY_FILE:?MINIO_SECRET_KEY_FILE is required}
   ai_provider_key:
     file: ${AI_PROVIDER_KEY_FILE:?AI_PROVIDER_KEY_FILE is required}
+  metrics_token:
+    file: ${METRICS_TOKEN_FILE:?METRICS_TOKEN_FILE is required}

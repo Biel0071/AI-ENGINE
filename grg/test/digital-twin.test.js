@@ -81,3 +81,9 @@ test('lazy build: get creates twin if none exists', async () => {
   const twin = await app.digitalTwin.get('grg', 'alice', 'x-repo'); // deve construir on-demand
   assert.ok(twin.model);
 });
+
+test('operational twin is append-only and reflects runtime events', async () => {
+  const app = await bootstrap(); await app.fabricEvents.publish({ tenantId: 'grg', stream: 'job:test', type: 'runtime.job.queued', source: 'test', subject: 'test', data: { actorId: 'alice', status: 'QUEUED' } });
+  const twin = await app.digitalTwin.operational('grg', 'alice'); assert.equal(twin.subjectType, 'tenant-runtime'); assert.ok(twin.model.runtime); assert.ok(twin.sourceEventId);
+  const state = await app.store.read(); assert.ok(state.operationalTwins.length > 0); assert.equal(state.operationalTwins.filter((item) => item.current).length, 1);
+});

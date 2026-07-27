@@ -6,6 +6,7 @@ const { httpStatusFor } = require('./kernel/errors');
 const { CloningGitHostAdapter } = require('./repo-intel/cloning-git-host');
 const { loadSecurityConfig } = require('./security/config');
 const { loadInfrastructureConfig } = require('./infrastructure/config');
+const crypto = require('node:crypto');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
 
@@ -59,6 +60,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         return sendJson(res, health.ok ? 200 : 503, {
           ...health, service: 'grg-services-os', environment: securityConfig.runtimeEnv,
         }, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/metrics') {
+        if (!safeToken(req.headers.authorization, env.FENIX_METRICS_TOKEN)) return sendJson(res, 401, { error: 'metrics authentication required' }, requestId);
+        res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' }); return res.end(await app.metrics.render());
       }
 
       // ---- Auth (público) ----
@@ -123,6 +128,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/cognitive/cycle') return sendJson(res, 202, await app.cognitiveCore.cycle(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/context') return sendJson(res, 200, await app.cognitiveCore.context(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/dashboard') return sendJson(res, 200, await app.cognitiveCore.dashboard(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/digital-twin/operational') return sendJson(res, 200, { twin: await app.digitalTwin.operational(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/avatar/state') return sendJson(res, 200, await app.adminAvatar.state(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/avatar/improvements') return sendJson(res, 200, await app.adminAvatar.improvements(tenantId, actorId), requestId);
       const avatarDecision = url.pathname.match(/^\/api\/cognitive\/avatar\/decisions\/([^/]+)$/);
@@ -243,5 +249,7 @@ function serveStatic(pathname, res) {
   res.end(fs.readFileSync(file));
 }
 
+function safeToken(header, expected) { const supplied = String(header || '').replace(/^Bearer\s+/i, ''); if (!supplied || !expected) return false; const a = crypto.createHash('sha256').update(supplied).digest(); const b = crypto.createHash('sha256').update(String(expected)).digest(); return crypto.timingSafeEqual(a, b); }
+
 if (require.main === module) start();
-module.exports = { start };
+module.exports = { start, safeToken };

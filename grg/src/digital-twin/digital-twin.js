@@ -66,6 +66,32 @@ class DigitalTwinService {
     if (m.risks.length) advice.push(...m.risks.map((r) => `Risco: ${r}`));
     return { subjectId: repoId, revision: twin.revision, health: m.health, advice };
   }
+
+  async projectOperationalEvent(event) {
+    let projected;
+    await this.store.update((state) => {
+      if (state.operationalTwins.some((item) => item.tenantId === event.tenantId && item.sourceEventId === event.id)) return state;
+      const scoped = (items) => items.filter((item) => item.tenantId === event.tenantId);
+      const resources = scoped(state.discoveredResources); const jobs = scoped(state.runtimeJobs); const deployments = scoped(state.deployments);
+      const byKind = (pattern) => resources.filter((item) => pattern.test(String(item.kind || item.type || ''))).length;
+      const model = {
+        compute: { cpu: byKind(/cpu/i), ram: byKind(/memory|ram/i), gpu: byKind(/gpu/i), disks: byKind(/disk|volume/i), containers: byKind(/container|docker/i) },
+        runtime: { workers: state.workerHeartbeats.length, queued: jobs.filter((item) => item.status === 'QUEUED').length, running: jobs.filter((item) => item.status === 'RUNNING').length, failed: jobs.filter((item) => ['FAILED', 'DEAD_LETTER'].includes(item.status)).length, schedules: scoped(state.runtimeSchedules).filter((item) => item.enabled).length },
+        data: { databases: byKind(/postgres|database/i), queues: byKind(/queue|redis/i) },
+        delivery: { deployments: deployments.length, production: deployments.filter((item) => item.environment === 'production').length },
+        operations: { services: scoped(state.serviceRegistry).length, incidents: scoped(state.cognitiveObservations).filter((item) => item.kind === 'DEGRADATION').length, health: resources.some((item) => ['DEGRADED', 'MISSING'].includes(item.status)) ? 'DEGRADED' : 'ACTIVE', costs: null, latency: null, performance: null },
+      };
+      state.operationalTwins.forEach((item) => { if (item.tenantId === event.tenantId) item.current = false; });
+      projected = { id: uuid(), tenantId: event.tenantId, subjectType: 'tenant-runtime', subjectId: event.tenantId, sourceEventId: event.id, current: true, model, builtAt: now() };
+      state.operationalTwins.push(projected); return state;
+    });
+    return projected;
+  }
+
+  async operational(tenantId, actorId) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:read'); const state = await this.store.read();
+    return state.operationalTwins.filter((item) => item.tenantId === tenantId && item.current).sort((a, b) => b.builtAt.localeCompare(a.builtAt))[0] || null;
+  }
 }
 
 // Compõe o modelo vivo a partir das projeções já existentes no estado.
