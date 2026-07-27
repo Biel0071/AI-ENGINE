@@ -55,7 +55,9 @@ services:
     tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
-    user: "${FENIX_HOST_UID:-1000}:${FENIX_HOST_GID:-1000}"
+    # Root inside a rootless daemon maps to the unprivileged host user. This is
+    # required so bind-mounted 0600 secrets remain readable without weakening them.
+    user: "0:0"
     volumes:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
     extra_hosts: ["host.containers.internal:host-gateway"]
@@ -73,7 +75,7 @@ services:
     tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
-    user: "${FENIX_HOST_UID:-1000}:${FENIX_HOST_GID:-1000}"
+    user: "0:0"
     volumes:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
     extra_hosts: ["host.containers.internal:host-gateway"]
@@ -89,6 +91,7 @@ services:
       - postgres_password
     volumes:
       - fenix-postgres:/var/lib/postgresql/data
+      - ./src/infrastructure/database/migrations/0000_keycloak_schema.sql:/docker-entrypoint-initdb.d/0000_keycloak_schema.sql:ro
       - ./src/infrastructure/database/migrations/0001_kernel_state.sql:/docker-entrypoint-initdb.d/0001_kernel_state.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -176,7 +179,7 @@ services:
       - |
         export KC_BOOTSTRAP_ADMIN_PASSWORD="$$(cat /run/secrets/keycloak_admin_password)"
         export KC_DB_PASSWORD="$$(cat /run/secrets/postgres_password)"
-        exec /opt/keycloak/bin/kc.sh start --optimized --import-realm
+        exec /opt/keycloak/bin/kc.sh start --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: fenix-admin
       KC_DB: postgres
@@ -192,6 +195,7 @@ services:
     volumes:
       - ./ops/keycloak/grg-realm.json:/opt/keycloak/data/import/grg-realm.json:ro
     secrets: [postgres_password, keycloak_admin_password]
+    user: "0:0"
     depends_on:
       postgres: { condition: service_healthy }
     ports: ["${FENIX_BIND_ADDRESS:-127.0.0.1}:4401:8080"]
@@ -211,6 +215,7 @@ services:
         /opt/keycloak/bin/kcadm.sh set-password -r grg --userid "$$USER_ID" --new-password "$$(cat /run/secrets/keycloak_user_password)"
         /opt/keycloak/bin/kcadm.sh add-roles -r grg --uid "$$USER_ID" --rolename master_admin
     secrets: [keycloak_admin_password, keycloak_user_password]
+    user: "0:0"
     depends_on: [keycloak]
     networks: [fenix-backend]
     security_opt: ["no-new-privileges:true"]
