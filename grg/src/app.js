@@ -48,6 +48,7 @@ const { DiscoveryProjection } = require('./discovery-network/discovery-projectio
 const { KnowledgeFederation } = require('./federation/knowledge-federation');
 const { FederationProjection } = require('./federation/federation-projection');
 const { GlobalVersionEngine } = require('./versioning/global-version-engine');
+const { AICityProjection } = require('./ai-city/ai-city-projection');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -131,6 +132,7 @@ async function createApp(options = {}) {
   const federationProjection = new FederationProjection({ events: fabricEvents, memory, knowledgeGraph }).attach();
   const federation = new KnowledgeFederation({ store, controlPlane, events: fabricEvents });
   const versionEngine = new GlobalVersionEngine({ store, controlPlane, events: fabricEvents, approvals, bus }).attach();
+  const aiCity = new AICityProjection({ store, controlPlane, events: fabricEvents, eventStore, bus }).attach();
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   health.register('state-store', async () => {
     if (typeof store.health === 'function') return store.health();
@@ -153,7 +155,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine,
+    discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity,
   };
 
   app.close = async () => {
@@ -219,6 +221,7 @@ async function overview(app, tenantId, actorId) {
       registeredResources: t(s.serviceRegistry).length,
       discoveredResources: t(s.discoveredResources).filter((item) => item.status === 'PRESENT').length,
       resourceVersions: t(s.resourceVersions).length,
+      cityNodes: t(s.cityNodes).length,
       graphEdges: t(s.graphEdges).length,
       aiCalls: t(s.aiCalls).length,
       subscriptions: t(s.subscriptions).length,

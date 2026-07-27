@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 10;
+const CURRENT_SCHEMA_VERSION = 11;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -15,6 +15,7 @@ const COLLECTIONS_BY_VERSION = {
   8: ['serviceRegistry', 'serviceVersions', 'domainEvents', 'fabricEnrollments'],
   9: ['discoveryScans', 'discoveredResources', 'knowledgePublications'],
   10: ['resourceVersions', 'changeSets', 'rollbackProposals'],
+  11: ['cityNodes', 'cityEdges', 'cityProjectionStates'],
 };
 
 function normalizeVersion(value) {
