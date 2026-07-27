@@ -28,9 +28,19 @@ const { OutboxService } = require('./infrastructure/messaging/outbox');
 const { InboxService } = require('./infrastructure/messaging/inbox');
 const { HealthRegistry } = require('./infrastructure/monitoring/health-registry');
 const { FileBackupService } = require('./infrastructure/backup/file-backup-service');
+const { PostgresStore } = require('./infrastructure/database/postgres-store');
+const { RedisCache } = require('./infrastructure/redis/redis-cache');
+const { BullMQRuntime } = require('./infrastructure/queue/bullmq-runtime');
+const { S3ObjectStore } = require('./infrastructure/storage/s3-object-store');
 
 async function createApp(options = {}) {
-  const store = options.store || (options.dataFile ? new FileStore(options.dataFile) : new MemoryStore());
+  const store = options.store || (options.databaseUrl
+    ? await PostgresStore.connect({
+      connectionString: options.databaseUrl,
+      schema: options.databaseSchema,
+      ssl: options.databaseSsl,
+    })
+    : (options.dataFile ? new FileStore(options.dataFile) : new MemoryStore()));
   const bus = new EventBus();
   const controlPlane = await new ControlPlane({ store, bus }).initialize(options.master);
   const securityConfig = options.securityConfig || loadSecurityConfig(options.env || process.env);
@@ -74,17 +84,30 @@ async function createApp(options = {}) {
   const outbox = new OutboxService({ store });
   const inbox = new InboxService({ store });
   const backup = new FileBackupService();
+  const redis = options.redis || (options.redisUrl ? await RedisCache.connect({ url: options.redisUrl }) : null);
+  const queues = options.queues || (options.queueRedisUrl ? BullMQRuntime.fromUrl(options.queueRedisUrl) : null);
+  const objects = options.objects || (options.s3 ? S3ObjectStore.create(options.s3) : null);
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   health.register('state-store', async () => {
+    if (typeof store.health === 'function') return store.health();
     const state = await store.read();
-    return { ok: Number.isInteger(state.schemaVersion), schemaVersion: state.schemaVersion };
+    return { ok: Number.isInteger(state.schemaVersion), schemaVersion: state.schemaVersion, adapter: options.dataFile ? 'file' : 'memory' };
   });
   health.register('security-plane', async () => ({ ok: !securityConfig.killSwitch, killSwitch: securityConfig.killSwitch }));
+  if (redis) health.register('redis', () => redis.health());
+  if (queues) health.register('queue', () => queues.health());
+  if (objects) health.register('object-storage', () => objects.health());
 
   const app = {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
-    audit, policy, approvals, idempotency, outbox, inbox, backup, health,
+    audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
+  };
+
+  app.close = async () => {
+    await Promise.allSettled([
+      queues?.close(), redis?.close(), objects?.close(), typeof store.close === 'function' ? store.close() : null,
+    ].filter(Boolean));
   };
 
   // LLM para o chat entender/falar. Cadeia de fallback: AI Platform (VPS/gateway do usuário)

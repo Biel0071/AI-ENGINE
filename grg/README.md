@@ -86,6 +86,11 @@ Esses sÃ£o contratos estÃ¡veis para os prÃ³ximos adapters de PostgreSQL, R
 storage. As implementaÃ§Ãµes atuais em arquivo/memÃ³ria continuam sendo adapters de desenvolvimento.
 Garantias e limitaÃ§Ãµes estÃ£o em `docs/ADR-0002-ENTERPRISE-FOUNDATION-PRIMITIVES.md`.
 
+Adapters externos sÃ£o ativados por `DATABASE_URL`, `REDIS_URL`, `FENIX_QUEUE_REDIS_URL` e
+`FENIX_S3_BUCKET`. Em production eles sÃ£o obrigatÃ³rios; o servidor nÃ£o regride silenciosamente
+para JSON local. A stack local de PostgreSQL/Redis estÃ¡ em `docker-compose.enterprise.yml`, com
+senhas fornecidas por arquivos de secrets. Veja `docs/RUNBOOK_ENTERPRISE_INFRA.md`.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie

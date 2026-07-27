@@ -5,6 +5,7 @@ const { createApp, overview } = require('./app');
 const { httpStatusFor } = require('./kernel/errors');
 const { CloningGitHostAdapter } = require('./repo-intel/cloning-git-host');
 const { loadSecurityConfig } = require('./security/config');
+const { loadInfrastructureConfig } = require('./infrastructure/config');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
 
@@ -20,11 +21,19 @@ async function readJson(req) {
 async function start(port = Number(process.env.PORT || 4400), options = {}) {
   const env = options.env || process.env;
   const securityConfig = options.securityConfig || loadSecurityConfig(env);
+  const infrastructure = options.infrastructure || loadInfrastructureConfig(env, {
+    requireExternal: options.requireExternalInfrastructure,
+  });
   const app = await createApp({
     dataFile: options.dataFile || env.GRG_DATA_FILE || path.join(__dirname, '..', '.data', 'state.json'),
     gitHost: options.gitHost || new CloningGitHostAdapter(),
     llm: options.llm !== undefined ? options.llm : env.GRG_LLM !== '0',
     securityConfig,
+    databaseUrl: infrastructure.databaseUrl,
+    databaseSchema: infrastructure.databaseSchema,
+    redisUrl: infrastructure.redisUrl,
+    queueRedisUrl: infrastructure.queueRedisUrl,
+    s3: infrastructure.s3,
   });
   if (require.main === module) process.stdout.write(`LLM (chat natural): ${app.llm ? 'LIGADO via ' + app.llmSource : 'desligado (modo regras)'}\n`);
   const bootstrap = options.bootstrapAdmin || securityConfig.bootstrapAdmin;
@@ -144,6 +153,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       resolve();
     });
   });
+  server.on('close', () => { app.close().catch(() => {}); });
+  server.app = app;
   return server;
 }
 
