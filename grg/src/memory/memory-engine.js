@@ -3,23 +3,26 @@ const { uuid } = require('../kernel/ids');
 const { ValidationError, NotFoundError, ForbiddenError } = require('../kernel/errors');
 const { hashEmbedding, lexicalScore } = require('./embedding');
 
-const KINDS = new Set(['episodic', 'semantic', 'working', 'project', 'organization']);
+const KINDS = new Set(['episodic', 'semantic', 'working', 'project', 'organization', 'global', 'store', 'agent']);
 const CLASSIFICATIONS = new Set(['public', 'internal', 'confidential', 'restricted']);
+const SCOPE_TYPES = new Set(['global', 'organization', 'company', 'store', 'department', 'project', 'agent']);
 
 class MemoryEngine {
-  constructor({ store, bus, controlPlane, vectorStore = null, cache = null, embedding = hashEmbedding }) {
+  constructor({ store, bus, controlPlane, hierarchy = null, vectorStore = null, cache = null, embedding = hashEmbedding }) {
     this.store = store;
     this.bus = bus;
     this.cp = controlPlane;
     this.vectorStore = vectorStore;
     this.cache = cache;
     this.embedding = embedding;
+    this.hierarchy = hierarchy;
   }
 
   async remember(tenantId, actorId, input) {
     const membership = await this.cp.authorize(tenantId, actorId, 'memory:write');
     const normalized = this.validateInput(input, actorId);
     await this.validateScope(tenantId, normalized);
+    if (normalized.scopeId && this.hierarchy) await this.hierarchy.authorizeScope(tenantId, actorId, normalized.scopeId, 'write');
     if (normalized.classification === 'restricted' && !['admin', 'master_admin'].includes(membership.role)) {
       throw new ForbiddenError('restricted memory requires an administrator');
     }
@@ -30,7 +33,7 @@ class MemoryEngine {
       const tenant = state.tenants.find((item) => item.id === tenantId);
       if (tenant) tenant.memoryRevision = (tenant.memoryRevision || 0) + 1;
       const existing = normalized.stableKey
-        ? state.memories.find((item) => item.tenantId === tenantId && item.stableKey === normalized.stableKey && item.status === 'ACTIVE')
+        ? state.memories.find((item) => item.tenantId === tenantId && item.stableKey === normalized.stableKey && item.scopeId === normalized.scopeId && item.projectId === normalized.projectId && item.orgId === normalized.orgId && item.status === 'ACTIVE')
         : null;
       const timestamp = now();
       if (existing) {
@@ -96,6 +99,8 @@ class MemoryEngine {
       title: String(input.title || kind).slice(0, 300),
       stableKey: input.stableKey ? String(input.stableKey).slice(0, 300) : null,
       projectId: input.projectId || null, orgId: input.orgId || null,
+      scopeType: input.scopeType ? String(input.scopeType).toLowerCase() : null,
+      scopeId: input.scopeId || null,
       ownerActorId: kind === 'working' ? actorId : (input.ownerActorId || null),
       tags: [...new Set((input.tags || []).map((tag) => String(tag).toLowerCase().slice(0, 64)))].slice(0, 32),
       provenance: {
@@ -109,15 +114,22 @@ class MemoryEngine {
 
   async validateScope(tenantId, memory) {
     const state = await this.store.read();
-    if (memory.kind === 'project' || memory.projectId) {
+    if ((memory.kind === 'project' || memory.projectId) && !(memory.scopeType === 'project' && memory.scopeId)) {
       if (!memory.projectId || !state.projects.some((item) => item.tenantId === tenantId && item.id === memory.projectId)) {
         throw new ValidationError('project memory requires an existing tenant project');
       }
     }
-    if (memory.kind === 'organization' || memory.orgId) {
+    if ((memory.kind === 'organization' || memory.orgId) && !(memory.scopeType === 'organization' && memory.scopeId)) {
       if (!memory.orgId || !state.orgs.some((item) => item.tenantId === tenantId && item.id === memory.orgId)) {
         throw new ValidationError('organization memory requires an existing tenant organization');
       }
+    }
+    if (memory.scopeType || memory.scopeId) {
+      if (!memory.scopeType || !memory.scopeId || !SCOPE_TYPES.has(memory.scopeType)) throw new ValidationError('hierarchical memory requires a valid scopeType and scopeId');
+      if (!this.hierarchy) throw new ValidationError('hierarchical memory requires the cognitive hierarchy service');
+      const entity = await this.hierarchy.getInternal(tenantId, memory.scopeId);
+      const expected = memory.scopeType === 'global' ? 'MASTER' : memory.scopeType.toUpperCase();
+      if (entity.type !== expected) throw new ValidationError(`memory scope type ${memory.scopeType} does not match ${entity.type}`);
     }
   }
 
@@ -136,6 +148,7 @@ class MemoryEngine {
     const text = String(query || '').trim();
     if (!text) throw new ValidationError('memory query is required');
     const state = await this.store.read();
+    const accessibleScopes = this.hierarchy ? await this.hierarchy.accessibleIds(tenantId, actorId, 'read') : null;
     const revision = state.tenants.find((item) => item.id === tenantId)?.memoryRevision || 0;
     const cacheId = crypto.createHash('sha256').update(JSON.stringify({ actorId, text, options, revision })).digest('hex');
     if (this.cache) {
@@ -148,6 +161,9 @@ class MemoryEngine {
       && (!options.kind || memory.kind === options.kind)
       && (!options.projectId || memory.projectId === options.projectId)
       && (!options.orgId || memory.orgId === options.orgId)
+      && (!memory.scopeId || accessibleScopes === null || accessibleScopes.has(memory.scopeId))
+      && (!options.scopeId || memory.scopeId === options.scopeId)
+      && (!options.scopeType || memory.scopeType === String(options.scopeType).toLowerCase())
       && (!options.tags?.length || options.tags.every((tag) => memory.tags.includes(String(tag).toLowerCase()))));
     const vectorScores = new Map();
     if (this.vectorStore) {
@@ -172,6 +188,9 @@ class MemoryEngine {
   async forget(tenantId, actorId, memoryId, reason) {
     const membership = await this.cp.authorize(tenantId, actorId, 'memory:write');
     let memory;
+    const snapshot = await this.store.read();
+    const target = snapshot.memories.find((item) => item.id === memoryId && item.tenantId === tenantId);
+    if (target?.scopeId && this.hierarchy) await this.hierarchy.authorizeScope(tenantId, actorId, target.scopeId, 'write');
     await this.store.update(async (state) => {
       const tenant = state.tenants.find((item) => item.id === tenantId);
       if (tenant) tenant.memoryRevision = (tenant.memoryRevision || 0) + 1;
@@ -198,10 +217,13 @@ class MemoryEngine {
   async consolidate(tenantId, actorId, options = {}) {
     await this.cp.authorize(tenantId, actorId, 'memory:write');
     const state = await this.store.read();
+    const accessibleScopes = this.hierarchy ? await this.hierarchy.accessibleIds(tenantId, actorId, 'write') : null;
     const episodes = state.memories.filter((item) =>
       item.tenantId === tenantId && item.status === 'ACTIVE' && item.kind === 'episodic'
       && (!options.projectId || item.projectId === options.projectId)
       && (!options.orgId || item.orgId === options.orgId)
+      && (!options.scopeId || item.scopeId === options.scopeId)
+      && (!item.scopeId || accessibleScopes === null || accessibleScopes.has(item.scopeId))
       && !item.consolidatedInto);
     const minimum = Math.max(2, Number(options.minimum || 3));
     if (episodes.length < minimum) return { consolidated: 0, memory: null };
@@ -209,12 +231,15 @@ class MemoryEngine {
     const fingerprint = crypto.createHash('sha256').update(ordered.map((item) => `${item.id}:v${item.version}`).join('|')).digest('hex').slice(0, 24);
     const projectId = options.projectId || (ordered.every((item) => item.projectId === ordered[0].projectId) ? ordered[0].projectId : null);
     const orgId = options.orgId || (ordered.every((item) => item.orgId === ordered[0].orgId) ? ordered[0].orgId : null);
+    const scopeId = options.scopeId || (ordered.every((item) => item.scopeId === ordered[0].scopeId) ? ordered[0].scopeId : null);
+    const scopeType = scopeId && ordered.every((item) => item.scopeType === ordered[0].scopeType) ? ordered[0].scopeType : null;
     const classificationOrder = ['public', 'internal', 'confidential', 'restricted'];
     const classification = ordered.reduce((highest, item) =>
       classificationOrder.indexOf(item.classification) > classificationOrder.indexOf(highest) ? item.classification : highest, 'public');
     const consolidated = await this.remember(tenantId, actorId, {
       kind: projectId ? 'project' : (orgId ? 'organization' : 'semantic'),
       projectId, orgId, classification,
+      scopeId, scopeType,
       title: `Consolidated knowledge from ${ordered.length} episodes`,
       content: ordered.map((item) => `- ${item.title}: ${item.content}`).join('\n').slice(0, 100_000),
       stableKey: `consolidation:${fingerprint}`,
@@ -240,10 +265,11 @@ class MemoryEngine {
     const state = await this.store.read();
     const memory = state.memories.find((item) => item.tenantId === tenantId && item.id === memoryId);
     if (!memory || !this.canAccessScope(memory, actorId, membership.role)) throw new NotFoundError(`Memory not found: ${memoryId}`);
+    if (memory.scopeId && this.hierarchy) await this.hierarchy.authorizeScope(tenantId, actorId, memory.scopeId, 'read');
     return state.memoryVersions.filter((item) => item.tenantId === tenantId && item.memoryId === memoryId).sort((a, b) => a.version - b.version);
   }
 }
 
 function now() { return new Date().toISOString(); }
 
-module.exports = { MemoryEngine, KINDS, CLASSIFICATIONS };
+module.exports = { MemoryEngine, KINDS, CLASSIFICATIONS, SCOPE_TYPES };

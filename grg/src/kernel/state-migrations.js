@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 15;
+const CURRENT_SCHEMA_VERSION = 16;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -20,6 +20,7 @@ const COLLECTIONS_BY_VERSION = {
   13: ['capabilityDefinitions', 'capabilityVersions', 'capabilityLogs'],
   14: ['cognitiveGoals', 'cognitiveObservations', 'cognitiveHypotheses', 'cognitiveDecisions', 'cognitiveValidations', 'cognitiveReflections', 'cognitiveCycles', 'cognitiveCursors'],
   15: ['operationalTwins'],
+  16: ['cognitiveEntities', 'cognitiveWorkspaces', 'cognitiveAgents', 'cognitiveAccessGrants', 'knowledgeSharingPolicies'],
 };
 
 function normalizeVersion(value) {

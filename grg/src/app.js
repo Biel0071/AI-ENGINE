@@ -57,6 +57,7 @@ const { CognitiveCore } = require('./cognitive/cognitive-core');
 const { CognitiveLearningProjection } = require('./cognitive/learning-projection');
 const { PrometheusExporter } = require('./infrastructure/monitoring/prometheus-exporter');
 const { AdminAvatar } = require('./cognitive/admin-avatar');
+const { CognitiveHierarchy } = require('./cognitive/cognitive-hierarchy');
 
 async function createApp(options = {}) {
   const store = options.store || (options.databaseUrl
@@ -139,7 +140,8 @@ async function createApp(options = {}) {
   const queues = options.queues || (options.queueRedisUrl ? BullMQRuntime.fromUrl(options.queueRedisUrl) : null);
   const objects = options.objects || (options.s3 ? await S3ObjectStore.create(options.s3).initialize() : null);
   const vectorStore = options.vectorStore || (options.qdrant ? await new QdrantVectorStore(options.qdrant).initialize() : null);
-  const memory = new MemoryEngine({ store, bus, controlPlane, vectorStore, cache: redis });
+  const hierarchy = new CognitiveHierarchy({ store, controlPlane, bus });
+  const memory = new MemoryEngine({ store, bus, controlPlane, hierarchy, vectorStore, cache: redis });
   const knowledgeGraph = new KnowledgeGraph({ store, bus, controlPlane });
   const registry = new ServiceRegistry({ store, controlPlane });
   const configuredIdentity = runtimeEnv.FENIX_IDENTITY_PROVIDER === 'spiffe' ? new WorkloadIdentityProvider({ trustDomain: runtimeEnv.FENIX_SPIFFE_TRUST_DOMAIN, credentialRef: runtimeEnv.FENIX_SPIFFE_CREDENTIAL_REF }) : null;
@@ -185,7 +187,7 @@ async function createApp(options = {}) {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
-    vectorStore, memory, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
+    vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, metrics,
   };
 
