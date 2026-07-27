@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     defaults: { run: { working-directory: grg } }
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with: { node-version: "22.17.1", cache: npm, cache-dependency-path: grg/package-lock.json, package-manager-cache: false }
       - run: npm ci
@@ -24,14 +24,14 @@ jobs:
   codeql:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: github/codeql-action/init@adfda868f108ac4222129de456ea554034a27db7 # v4
         with: { languages: javascript-typescript, queries: security-extended }
       - uses: github/codeql-action/analyze@adfda868f108ac4222129de456ea554034a27db7 # v4
   container:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: docker build --pull --tag grg/fenix:ci grg
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0, immutable commit
         with: { image-ref: "grg/fenix:ci", format: table, exit-code: "1", ignore-unfixed: true, severity: "CRITICAL,HIGH" }
