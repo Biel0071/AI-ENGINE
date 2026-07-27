@@ -135,6 +135,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/operations/assurances') return sendJson(res, 201, await app.operationalActivation.recordAssurance(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/operations/daily-intelligence') return sendJson(res, 201, await app.operationalActivation.dailyIntelligence(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/operations/schedules') return sendJson(res, 201, { schedules: await app.operationalActivation.ensureSchedules(tenantId, actorId, await readJson(req)) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/operations/stability-report') return sendJson(res, 201, await app.operationalActivation.stabilityReport(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/missions/plan') return sendJson(res, 201, await app.missionPlanner.plan(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/missions/plans') return sendJson(res, 200, { plans: await app.missionPlanner.list(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/missions') return sendJson(res, 201, await app.missions.create(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/missions') return sendJson(res, 200, { missions: await app.missions.list(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/missions/avatar-state') return sendJson(res, 200, await app.missions.avatarState(tenantId, actorId), requestId);

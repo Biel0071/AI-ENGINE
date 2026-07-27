@@ -115,6 +115,8 @@ const EMPTY_STATE = () => ({
   missionEvents: [],
   missionContextRefs: [],
   missionSummaries: [],
+  missionPlans: [],
+  operationalStabilityReports: [],
 });
 
 class MemoryStore {

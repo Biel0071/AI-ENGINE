@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 21;
+const CURRENT_SCHEMA_VERSION = 22;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -26,6 +26,7 @@ const COLLECTIONS_BY_VERSION = {
   19: ['agentCycles', 'agentTasks', 'agentSummaries', 'knowledgePromotionProposals', 'evolutionPatterns'],
   20: ['operationalActivationRuns', 'operationalComponentStates', 'operationalComponentHistory', 'operationalInvestigations', 'operationalReadinessReports', 'dailyIntelligenceReports', 'operationalAssurances'],
   21: ['missions', 'missionSteps', 'missionEvents', 'missionContextRefs', 'missionSummaries'],
+  22: ['missionPlans', 'operationalStabilityReports'],
 };
 
 function normalizeVersion(value) {
