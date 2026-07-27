@@ -18,6 +18,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     'fabric:read', 'fabric:enroll', 'registry:read', 'registry:write', 'event:read',
     'discovery:read', 'discovery:scan', 'knowledge:publish',
     'runtime:read', 'runtime:execute', 'runtime:admin',
+    'capability:manage',
   ],
   subadmin: [
     'project:read', 'project:analyze', 'repo:read', 'capability:read',

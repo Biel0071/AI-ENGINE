@@ -72,6 +72,9 @@ const EMPTY_STATE = () => ({
   runtimeSchedules: [],
   deadLetters: [],
   workerHeartbeats: [],
+  capabilityDefinitions: [],
+  capabilityVersions: [],
+  capabilityLogs: [],
 });
 
 class MemoryStore {

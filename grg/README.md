@@ -137,6 +137,11 @@ gerados recebem Dockerfile não-root e o adapter executa build/run reais, preser
 e aplica isolamento de filesystem, capabilities, privilégios, PIDs, CPU, memória e rede. Adapters e
 packagers determinísticos continuam disponíveis apenas em desenvolvimento (`productionSafe=false`).
 
+O Capability Registry v13 registra módulos operacionais independentes no Service Fabric, mantendo
+versões, owner, permissões, recursos, quotas, saúde, métricas, documentação, testes e changelog.
+Execuções atualizam o catálogo apenas por eventos do Runtime. APIs: `GET/POST /api/capabilities`,
+`GET /api/capabilities/:id` e `GET /api/capabilities/:id/history`.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie
