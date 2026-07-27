@@ -111,6 +111,11 @@ publica eventos durÃ¡veis com hash chain e projeta o sistema no Knowledge Grap
 Endpoints: `POST /api/fabric/enroll`, `GET /api/fabric/enrollments`, `GET /api/registry` e
 `GET /api/events`. Em production, o emissor local de identidade Ã© recusado.
 
+A Discovery Network v9 executa somente probes autorizados; Docker Ã© opt-in com
+`FENIX_DISCOVERY_DOCKER=1`. Recursos detectados/alterados/ausentes entram no Registry por eventos.
+A Knowledge Federation publica fatos estruturados em `/api/knowledge-federation/publish`, que sÃ£o
+projetados em memÃ³ria e grafo sem copiar bancos entre CRM, ERP, Factory ou AI City.
+
 ## Security e Governance Foundation
 
 O servidor não cria mais usuários ou senhas automaticamente. Para provisionamento local, copie
