@@ -1,0 +1,42 @@
+id: whatsapp-crm
+name: WhatsApp CRM
+description: Inbox multi-agente, contatos/leads, sessões WhatsApp, campanhas, automações e IA
+category: communication
+version: 1.0.0
+status: stable
+when_to_use: >
+  Produto que atende clientes via WhatsApp com inbox multi-agente, contatos/leads,
+  campanhas, automações e memória evolutiva de conversas.
+stack: [node, express, socket.io, baileys, postgres, react, typescript, vite, zustand, openai]
+dependencies:
+  - ai-gateway
+  - rbac
+provides:
+  routes: [/inbox, /contacts, /leads, /campaigns, /automations]
+  apis: [POST /messages, GET /conversations, POST /sessions, POST /campaigns]
+  screens: [Inbox, Contacts, Leads, Campaigns, Automations, Analytics]
+  workers: [session-manager, message-orchestrator]
+  database: [contacts, conversations, messages, sessions, campaigns, automations]
+permissions: [inbox:read, inbox:write, campaign:manage, automation:manage]
+sources:
+  - repo: ZAPAI-FINAL
+    commit: 77788193
+    note: núcleo canônico mais maduro (1183 arquivos; grafo 4964 nós/9564 relações)
+  - repo: swift-wa-assist
+    commit: 64152c6b
+    note: visão operacional/multi-nó (admin master, nós, deployments, logs)
+  - repo: ZAPAI-CRM
+    commit: 72f80789
+    note: fonte legada de requisitos/fluxos
+compatibility: [multi-tenant, feature-flag]
+metrics:
+  avg_tokens: null
+  performance: null
+  test_coverage: null
+adapters:
+  - "mensageria: Baileys atrás de adapter substituível (permitir Evolution API/oficial Meta)"
+consolidation:
+  family: whatsapp-crm-core
+  note: >
+    1539 arquivos idênticos entre ZAPAI-FINAL e swift-wa-assist. Consolidar diferenças
+    em módulos + feature flags do núcleo; parar de duplicar a árvore completa.

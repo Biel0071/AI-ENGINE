@@ -318,6 +318,173 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/orchestrate') {
         const b = await readJson(req); return sendJson(res, 201, await app.orchestrator.buildFromPrompt(tenantId, actorId, b));
       }
+
+      // ---- GRG FÊNIX V6.1 ENDPOINTS ----
+      if (req.method === 'POST' && url.pathname === '/api/knowledge-genome/capsules') return sendJson(res, 201, await app.knowledgeGenome.createCapsule(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/knowledge-genome/capsules') return sendJson(res, 200, await app.knowledgeGenome.queryCapsules(tenantId, actorId, { level: url.searchParams.get('level'), query: url.searchParams.get('q'), limit: url.searchParams.get('limit') }), requestId);
+      const promoteCapsule = url.pathname.match(/^\/api\/knowledge-genome\/capsules\/([^/]+)\/promote$/);
+      if (req.method === 'POST' && promoteCapsule) { const b = await readJson(req); return sendJson(res, 200, await app.knowledgeGenome.promoteCapsule(tenantId, actorId, promoteCapsule[1], b.level, b.reason), requestId); }
+
+      if (req.method === 'POST' && url.pathname === '/api/hypotheses') return sendJson(res, 201, await app.hypothesisEngine.proposeHypothesis(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/hypotheses') return sendJson(res, 200, await app.hypothesisEngine.listHypotheses(tenantId, actorId, { category: url.searchParams.get('category'), status: url.searchParams.get('status') }), requestId);
+      const evalHyp = url.pathname.match(/^\/api\/hypotheses\/([^/]+)\/evaluate$/);
+      if (req.method === 'POST' && evalHyp) return sendJson(res, 200, await app.hypothesisEngine.evaluateHypothesis(tenantId, actorId, evalHyp[1]), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/cross-project/analysis') return sendJson(res, 200, await app.crossProjectLearning.analyzeProjects(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/multimodal/ingest') return sendJson(res, 200, await app.multimodalPipeline.processFile(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/models/catalog') return sendJson(res, 200, { catalog: app.modelOrchestrator.getCatalog() }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/models/execute') { const b = await readJson(req); return sendJson(res, 200, await app.modelOrchestrator.executeTask(tenantId, actorId, b.taskType, b), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/agents/swarm') return sendJson(res, 200, await app.agentSwarm.listAgents(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/agents/swarm/events') return sendJson(res, 201, await app.agentSwarm.dispatchEvent(tenantId, actorId, await readJson(req)), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/ops/vps/servers') return sendJson(res, 200, await app.vpsOps.listServers(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/ops/vps/plans') return sendJson(res, 201, await app.vpsOps.createOperationPlan(tenantId, actorId, await readJson(req)), requestId);
+      const execVpsPlan = url.pathname.match(/^\/api\/ops\/vps\/plans\/([^/]+)\/execute$/);
+      if (req.method === 'POST' && execVpsPlan) return sendJson(res, 200, await app.vpsOps.executeOperationPlan(tenantId, actorId, execVpsPlan[1]), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/ops/github/orgs') return sendJson(res, 200, await app.githubOps.listOrgs(tenantId, actorId), requestId);
+      const ghBranches = url.pathname.match(/^\/api\/ops\/github\/repos\/([^/]+)\/branches$/);
+      if (req.method === 'GET' && ghBranches) return sendJson(res, 200, await app.githubOps.listBranches(tenantId, actorId, ghBranches[1]), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/ops/github/prs') return sendJson(res, 201, await app.githubOps.createPullRequest(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/ops/github/issues') return sendJson(res, 201, await app.githubOps.createIssue(tenantId, actorId, await readJson(req)), requestId);
+
+      if (req.method === 'POST' && url.pathname === '/api/factory/demands') return sendJson(res, 201, await app.projectFactory.processDemand(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/cognitive/background/run') return sendJson(res, 200, await app.backgroundCognition.runIdleMaintenance(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/cognitive/search') return sendJson(res, 200, await app.externalSearch.search(tenantId, actorId, await readJson(req)), requestId);
+
+      // V7.0 / V7.1 ACP & Master Node Endpoints
+      if (req.method === 'GET' && url.pathname === '/api/ops/master-node/status') return sendJson(res, 200, await app.masterNode.getMasterStatus(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/ops/master-node/self-deploy') return sendJson(res, 200, await app.masterNode.executeSelfDeployPipeline(tenantId, actorId, await readJson(req)), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/operations/deploys') return sendJson(res, 200, await app.deployCenter.getDeployOverview(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/operations/deploys/rollback') { const b = await readJson(req); return sendJson(res, 200, await app.deployCenter.rollbackDeployment(tenantId, actorId, b.deployId), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/operations/observability/metrics') return sendJson(res, 200, await app.observabilityCenter.getMetrics(tenantId, actorId), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/performance/hot-memory') return sendJson(res, 200, await app.cognitivePerformance.getHotMemoryState(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/performance/speed-score') return sendJson(res, 200, await app.cognitivePerformance.getSpeedScore(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/performance/predictive-prefetch') return sendJson(res, 200, await app.cognitivePerformance.prefetchContext(tenantId, actorId, await readJson(req)), requestId);
+
+      if (req.method === 'POST' && url.pathname === '/api/optimization/distill') return sendJson(res, 200, await app.cognitiveOptimization.distillKnowledge(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/optimization/never-repeat-check') { const b = await readJson(req); return sendJson(res, 200, await app.cognitiveOptimization.checkNeverDoSameWork(tenantId, actorId, b.requirement), requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/optimization/health-index') return sendJson(res, 200, await app.cognitiveOptimization.getKnowledgeHealth(tenantId, actorId), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/plugins/marketplace') return sendJson(res, 200, await app.pluginSkills.getMarketplace(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/plugins/install') { const b = await readJson(req); return sendJson(res, 200, await app.pluginSkills.installPlugin(tenantId, actorId, b.pluginId), requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/skills/evolution') return sendJson(res, 200, await app.pluginSkills.getSkillEvolution(tenantId, actorId), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/security/encryption/status') return sendJson(res, 200, await app.cognitiveEncryption.getEncryptionStatus(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/security/encryption/tokenize') { const b = await readJson(req); return sendJson(res, 200, await app.cognitiveEncryption.tokenizeAndEncrypt(tenantId, actorId, b.plaintext), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/city/npc/list') return sendJson(res, 200, await app.npcCity.listNpcAgents(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/city/npc/chat') { const b = await readJson(req); return sendJson(res, 200, await app.npcCity.chatWithNpc(tenantId, actorId, b.npcId, b.message), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/company/daily-analysis') return sendJson(res, 200, await app.companyDailyAnalysis.getDailyReport(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/company/calendar') return sendJson(res, 200, await app.companyDailyAnalysis.getOperationalCalendar(tenantId, actorId), requestId);
+
+      // GRG FÊNIX Ω (OMEGA) Endpoints
+      if (req.method === 'GET' && url.pathname === '/api/omega/fabric/density') return sendJson(res, 200, await app.cognitiveAtomsFabric.getCognitiveDensity(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/omega/fabric/atoms') return sendJson(res, 201, await app.cognitiveAtomsFabric.createCognitiveAtom(tenantId, actorId, await readJson(req)), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/omega/brains/list') return sendJson(res, 200, await app.brainFederation.listDomainBrains(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/omega/brains/fuse') return sendJson(res, 200, await app.brainFederation.fuseKnowledge(tenantId, actorId, await readJson(req)), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/omega/council/members') return sendJson(res, 200, await app.cognitiveCouncil.getCouncilMembers(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/omega/council/evaluate') return sendJson(res, 200, await app.cognitiveCouncil.evaluateProposal(tenantId, actorId, await readJson(req)), requestId);
+
+      if (req.method === 'POST' && url.pathname === '/api/omega/economy/route-check') { const b = await readJson(req); return sendJson(res, 200, await app.modelEconomy.evaluateTaskRoute(tenantId, actorId, b.prompt), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/omega/research/scan') { const b = await readJson(req); return sendJson(res, 200, await app.autonomousResearch.runResearchCycle(tenantId, actorId, b.topic), requestId); }
+
+      // GRG FÊNIX Ω (OMEGA) V2.0 Endpoints
+      if (req.method === 'POST' && url.pathname === '/api/omega/v2/consensus/debate') { const b = await readJson(req); return sendJson(res, 200, await app.collectiveIntelligence.runMultiModelConsensus(tenantId, actorId, b.prompt, b.models), requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/omega/v2/consensus/models') return sendJson(res, 200, await app.collectiveIntelligence.getModelRankings(tenantId, actorId), requestId);
+
+      if (req.method === 'POST' && url.pathname === '/api/omega/v2/recursive/refine') { const b = await readJson(req); return sendJson(res, 200, await app.recursiveIntelligence.executeRecursiveLoop(tenantId, actorId, b.problem), requestId); }
+
+      if (req.method === 'POST' && url.pathname === '/api/omega/v2/context/expand') { const b = await readJson(req); return sendJson(res, 200, await app.contextExpansion.expandIntention(tenantId, actorId, b.prompt), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/omega/v2/human-twin/cop') return sendJson(res, 200, await app.humanDigitalTwin.getCognitiveOperatingProfile(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/omega/v2/human-twin/autopilot') { const b = await readJson(req); return sendJson(res, 200, await app.humanDigitalTwin.runAutopilot(tenantId, actorId, b.command), requestId); }
+
+      // GRG FÊNIX Ω∞ (OMEGA INFINITY) Endpoints
+      if (req.method === 'POST' && url.pathname === '/api/omega-infinity/laws/verify') { const b = await readJson(req); return sendJson(res, 200, await app.cognitiveLaws.verifyLaw001(tenantId, actorId, b.proposal), requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/omega-infinity/crystal/state') return sendJson(res, 200, await app.selfEvolutionKernel.getIntelligenceCrystalState(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/omega-infinity/dna/compile') { const b = await readJson(req); return sendJson(res, 200, await app.cognitiveDnaCompiler.compileToIntentionDna(tenantId, actorId, b.source), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/omega-infinity/physics/universe') { const b = await readJson(req); return sendJson(res, 200, await app.livingPhysics.inspectUniverse(tenantId, actorId, b.universeName), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/omega-infinity/reality/feedback') { const b = await readJson(req); return sendJson(res, 200, await app.realityFeedback.processDeploymentFeedback(tenantId, actorId, b.feedback), requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/omega-infinity/meta/index') return sendJson(res, 200, await app.metaConsciousness.getUniversalIntelligenceIndex(tenantId, actorId), requestId);
+
+      // GRG FÊNIX UIOS Endpoints
+      if (req.method === 'GET' && url.pathname === '/api/uios/kos/manifest') return sendJson(res, 200, await app.kos.getManifest(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/uios/kos/semantic-load') { const b = await readJson(req); return sendJson(res, 200, await app.kos.loadSemanticContext(tenantId, actorId, b.volumes), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/uios/capos/list') return sendJson(res, 200, await app.capOs.listCapabilities(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/uios/capos/register') { const b = await readJson(req); return sendJson(res, 201, await app.capOs.registerCapability(tenantId, actorId, b.capability), requestId); }
+
+      if (req.method === 'POST' && url.pathname === '/api/uios/compiler/compile') { const b = await readJson(req); return sendJson(res, 200, await app.missionCompiler.compileObjectiveToDag(tenantId, actorId, b.objective), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/uios/world-model/state') return sendJson(res, 200, await app.worldModelFactory.getWorldState(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/uios/factory/create') { const b = await readJson(req); return sendJson(res, 201, await app.worldModelFactory.createArtifact(tenantId, actorId, b.spec), requestId); }
+
+      // GRG FÊNIX KEOS Endpoints
+      if (req.method === 'POST' && url.pathname === '/api/keos/ucp/process') { const b = await readJson(req); return sendJson(res, 200, await app.ucp.processInput(tenantId, actorId, b.input), requestId); }
+
+      if (req.method === 'POST' && url.pathname === '/api/keos/adapters/ai') { const b = await readJson(req); return sendJson(res, 200, await app.universalAdapters.invokeAiAdapter(tenantId, actorId, b.provider, b.prompt), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/keos/adapters/tech') { const b = await readJson(req); return sendJson(res, 200, await app.universalAdapters.invokeTechAdapter(tenantId, actorId, b.techType, b.name), requestId); }
+
+      if (req.method === 'POST' && url.pathname === '/api/keos/pipeline/promote') { const b = await readJson(req); return sendJson(res, 200, await app.configurablePipeline.promoteChange(tenantId, actorId, b.change), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/keos/constitution/index') return sendJson(res, 200, await app.expandedConstitutionIndex.getExpandedIndex(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/keos/constitution/load-sparse') { const b = await readJson(req); return sendJson(res, 200, await app.expandedConstitutionIndex.loadSparseVolumes(tenantId, actorId, b.volumes), requestId); }
+
+      // GRG FÊNIX Cognitive Workspace OS & ECA Endpoints
+      if (req.method === 'GET' && url.pathname === '/api/workspace/mode') return sendJson(res, 200, await app.workspaceModes.getActiveMode(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/workspace/mode') { const b = await readJson(req); return sendJson(res, 200, await app.workspaceModes.setMode(tenantId, actorId, b.mode), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/workspace/eca/inbox') return sendJson(res, 200, await app.eca.getInbox(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/workspace/eca/decision') { const b = await readJson(req); return sendJson(res, 200, await app.eca.resolveDecision(tenantId, actorId, b.decisionId, b.action), requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/workspace/eca/daily-brief') return sendJson(res, 200, await app.eca.getDailyBriefing(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/workspace/eca/evening-report') return sendJson(res, 200, await app.eca.getEveningReport(tenantId, actorId), requestId);
+
+      if (req.method === 'GET' && url.pathname === '/api/workspace/presence/config') return sendJson(res, 200, await app.cognitivePresence.getPresenceConfig(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/workspace/presence/config') { const b = await readJson(req); return sendJson(res, 200, await app.cognitivePresence.updatePresenceConfig(tenantId, actorId, b), requestId); }
+
+      // GRG FÊNIX NEXUS Ω∞ Endpoints
+      if (req.method === 'GET' && url.pathname === '/api/nexus/ucc/status') return sendJson(res, 200, await app.ucc.getUccStatus(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/nexus/bus/emit') { const b = await readJson(req); return sendJson(res, 200, await app.ucc.emitCognitiveEvent(tenantId, actorId, b.event), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/nexus/timeline/feed') return sendJson(res, 200, await app.nexusTimeline.getTimelineFeed(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/nexus/command-center') return sendJson(res, 200, await app.commandCenter.getCommandCenterMetrics(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/nexus/simulate-impact') { const b = await readJson(req); return sendJson(res, 200, await app.commandCenter.simulateImpact(tenantId, actorId, b.simulation), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/nexus/marketplace/list') return sendJson(res, 200, await app.cognitiveMarketplace.listPublishedArtifacts(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/nexus/marketplace/publish') { const b = await readJson(req); return sendJson(res, 201, await app.cognitiveMarketplace.publishArtifact(tenantId, actorId, b.artifact), requestId); }
+
+      // GRG FÊNIX SCOS (Software Creation OS) Endpoints
+      if (req.method === 'GET' && url.pathname === '/api/scos/design-families/list') return sendJson(res, 200, await app.designIntel.listDesignFamilies(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/scos/design-tokens') { const b = await readJson(req); return sendJson(res, 200, await app.designIntel.getFamilyTokens(tenantId, actorId, b.familyId), requestId); }
+
+      if (req.method === 'POST' && url.pathname === '/api/scos/genome/structure') { const b = await readJson(req); return sendJson(res, 200, await app.appGenome.getGenomeStructure(tenantId, actorId, b.appType), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/scos/visual-reasoning') { const b = await readJson(req); return sendJson(res, 200, await app.appGenome.evaluateVisualReasoning(tenantId, actorId, b.context), requestId); }
+
+      if (req.method === 'POST' && url.pathname === '/api/scos/factory/generate-multi-design') { const b = await readJson(req); return sendJson(res, 200, await app.fullstackFactory.generateMultiDesignProposals(tenantId, actorId, b.spec), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/scos/factory/sync-contract') { const b = await readJson(req); return sendJson(res, 200, await app.fullstackFactory.syncFrontendBackendContract(tenantId, actorId, b.update), requestId); }
+
+      if (req.method === 'POST' && url.pathname === '/api/scos/evolution/metrics') { const b = await readJson(req); return sendJson(res, 200, await app.creationEvolution.evaluateDeliveryMetrics(tenantId, actorId, b.delivery), requestId); }
+
+      // GRG FÊNIX Ω∞ OneDeploy Orchestrator & Software Factory Endpoints
+      if (req.method === 'POST' && url.pathname === '/api/onedeploy/run-pipeline') { const b = await readJson(req); return sendJson(res, 200, await app.oneDeploy.runOneDeployPipeline(tenantId, actorId, b.project), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/onedeploy/scan-project') { const b = await readJson(req); return sendJson(res, 200, await app.oneDeploy.scanProject(tenantId, actorId, b.projectPath), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/onedeploy/analyzers/frontend') return sendJson(res, 200, await app.analyzers.analyzeFrontend(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/onedeploy/analyzers/backend') return sendJson(res, 200, await app.analyzers.analyzeBackend(tenantId, actorId), requestId);
+
+      if (req.method === 'POST' && url.pathname === '/api/onedeploy/smoke-tests/run') { const b = await readJson(req); return sendJson(res, 200, await app.testingSmokeE2e.runSmokeTests(tenantId, actorId, b.environment), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/onedeploy/e2e/run') { const b = await readJson(req); return sendJson(res, 200, await app.testingSmokeE2e.runE2ePlaywrightScenarios(tenantId, actorId, b.suiteName), requestId); }
+
+      if (req.method === 'GET' && url.pathname === '/api/onedeploy/continuous-improvement/idle-scan') return sendJson(res, 200, await app.continuousImprovement.runIdleImprovementScan(tenantId, actorId), requestId);
+
       if (req.method === 'POST' && url.pathname === '/api/chat') {
         const b = await readJson(req);
         if (!b.message) return sendJson(res, 400, { error: 'message required' });

@@ -1,0 +1,31 @@
+{
+  "factory": "GRG FÊNIX Ω∞ Capability Factory",
+  "status": "ACTIVE_EVIDENCE_GATED",
+  "totalRegisteredCapabilities": 514,
+  "recentCapabilities": [
+    {
+      "capabilityId": "CAP-2026-07-27-513",
+      "name": "AccessControlledControlPlane (RBAC Multi-Tenant Service)",
+      "originMission": "MISSION-2026-07-27-01",
+      "evidence": [
+        "test:platform-membership-pass",
+        "test:platform-rbac-subadmin-pass"
+      ],
+      "confidenceScore": 1.0,
+      "validatedProjects": ["ai-engine-core", "zapai-crm"],
+      "lastValidationDate": "2026-07-27T22:23:00-03:00"
+    },
+    {
+      "capabilityId": "CAP-2026-07-27-514",
+      "name": "Cognitive Bootstrap System (CBS) Bootloader",
+      "originMission": "MISSION-2026-07-27-02",
+      "evidence": [
+        "ai-os/SYSTEM_STATE.md",
+        "ai-os/PROJECT_DNA.json"
+      ],
+      "confidenceScore": 1.0,
+      "validatedProjects": ["ai-engine-core"],
+      "lastValidationDate": "2026-07-27T22:23:00-03:00"
+    }
+  ]
+}

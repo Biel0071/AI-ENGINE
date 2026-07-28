@@ -1,0 +1,23 @@
+{
+  "goal": "Fundação Knowledge Pack ai-os/",
+  "status": "completed",
+  "items": [
+    { "id": 1, "task": "MASTER.md", "status": "done" },
+    { "id": 2, "task": "CONTEXT.md", "status": "done" },
+    { "id": 3, "task": "ARCHITECTURE.md", "status": "done" },
+    { "id": 4, "task": "ROADMAP.md", "status": "done" },
+    { "id": 5, "task": "CODING_STANDARDS.md + TECH_STACK.md", "status": "done" },
+    { "id": 6, "task": "CAPABILITIES/ registry + seed", "status": "done" },
+    { "id": 7, "task": "REPOSITORIES/ registry + seed", "status": "done" },
+    { "id": 8, "task": "MEMORY/ evolutiva + decisão inicial", "status": "done" },
+    { "id": 9, "task": "PROMPTS/ (header + master build + 8 operacionais)", "status": "done" },
+    { "id": 10, "task": "WORKSPACE/ + CLAUDE.md raiz", "status": "done" }
+  ],
+  "next_phase": [
+    { "task": "Postgres + RLS adapter (substituir json-store)", "phase": 1 },
+    { "task": "Auth real OAuth/OIDC/JWT", "phase": 1 },
+    { "task": "Observabilidade base (OpenTelemetry)", "phase": 1 },
+    { "task": "GitHub App + webhooks + worker de sync + scanner AST", "phase": 2 },
+    { "task": "AI Gateway padrão LiteLLM", "phase": 3 }
+  ]
+}

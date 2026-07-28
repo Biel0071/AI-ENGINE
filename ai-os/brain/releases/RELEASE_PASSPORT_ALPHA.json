@@ -1,0 +1,14 @@
+{
+  "passport": "FÊNIX Ω∞ Release Passport",
+  "version": "6.0.0-Operational-Alpha",
+  "releaseName": "release: FENIX Ω∞ V6 Operational Alpha",
+  "gitTag": "v6-operational-alpha",
+  "certificationStatus": "OPERATIONAL_ALPHA (Pending Post-Production Validation)",
+  "governanceMode": "ASSISTED_MODE_FIRST_48H",
+  "testGate": "272/272 PASS (100% Green)",
+  "timestamp": "2026-07-27T22:33:30-03:00",
+  "auditedBy": "Biel0071 / Master Governance",
+  "activeMirrors": 11,
+  "activeMetaGraphs": 18,
+  "federatedProjectsCount": 4
+}

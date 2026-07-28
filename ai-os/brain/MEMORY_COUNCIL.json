@@ -1,0 +1,27 @@
+{
+  "council": "FÊNIX Ω∞ Memory Council",
+  "status": "ACTIVE_FIVE_GATES",
+  "gates": [
+    "RESEARCH_GATE",
+    "EVIDENCE_GATE",
+    "CONFIDENCE_GATE",
+    "SECURITY_GATE",
+    "ARCHITECTURE_GATE"
+  ],
+  "recentDecisions": [
+    {
+      "candidateCapability": "CAP-2026-07-27-514 (CBS Bootloader)",
+      "councilApproval": "APPROVED_PERSISTED",
+      "confidenceScore": 1.0,
+      "securityApproval": true,
+      "architectureApproval": true
+    },
+    {
+      "candidateCapability": "CAP-2026-07-27-513 (ControlPlane V2 Service)",
+      "councilApproval": "APPROVED_PERSISTED",
+      "confidenceScore": 1.0,
+      "securityApproval": true,
+      "architectureApproval": true
+    }
+  ]
+}

@@ -8,6 +8,7 @@ const CONTENT_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
 };
 
 function sendJson(response, statusCode, payload) {
@@ -53,7 +54,7 @@ function createHttpServerV2({ service, publicRoot }) {
     const url = new URL(request.url, 'http://localhost');
     try {
       if (request.method === 'GET' && url.pathname === '/health') {
-        return sendJson(response, 200, { ok: true, service: 'ai-engine-control-plane', apiVersion: 2 });
+        return sendJson(response, 200, { ok: true, service: 'ai-engine-control-plane', apiVersion: 2, system: 'ACEP_FENIX_OMEGA', lcr: 'ONLINE_247' });
       }
       if (!url.pathname.startsWith('/api/')) {
         const served = await serveStatic(publicRoot, url.pathname, response);
@@ -66,6 +67,7 @@ function createHttpServerV2({ service, publicRoot }) {
         return sendJson(response, 400, { error: 'x-tenant-id and x-user-id headers are required' });
       }
 
+      // Existing endpoints
       if (request.method === 'GET' && url.pathname === '/api/v2/overview') {
         return sendJson(response, 200, await service.getOverviewFor(tenantId, actorId));
       }
@@ -86,6 +88,28 @@ function createHttpServerV2({ service, publicRoot }) {
       }
       if (request.method === 'POST' && url.pathname === '/api/v2/members') {
         return sendJson(response, 201, await service.addMember(tenantId, actorId, await readJson(request)));
+      }
+
+      // ACEP Ω∞ Endpoints
+      if (request.method === 'GET' && url.pathname === '/api/v2/acep/overview') {
+        return sendJson(response, 200, await service.getAcepOverview(tenantId, actorId));
+      }
+      if (request.method === 'GET' && url.pathname === '/api/v2/acep/maturity') {
+        return sendJson(response, 200, await service.getMaturityFramework(tenantId, actorId));
+      }
+      if (request.method === 'POST' && url.pathname === '/api/v2/acep/simulate') {
+        return sendJson(response, 200, await service.simulateMutation(tenantId, actorId, await readJson(request)));
+      }
+      if (request.method === 'POST' && url.pathname === '/api/v2/acep/compile') {
+        return sendJson(response, 201, await service.compileMission(tenantId, actorId, await readJson(request)));
+      }
+
+      // LCR Living Cognitive Runtime Endpoints
+      if (request.method === 'GET' && url.pathname === '/api/v2/lcr/status') {
+        return sendJson(response, 200, await service.getLcrStatus(tenantId, actorId));
+      }
+      if (request.method === 'POST' && url.pathname === '/api/v2/lcr/chat') {
+        return sendJson(response, 200, await service.processLcrChat(tenantId, actorId, await readJson(request)));
       }
 
       const analysis = url.pathname.match(/^\/api\/v2\/projects\/([^/]+)\/actions\/analyze$/);

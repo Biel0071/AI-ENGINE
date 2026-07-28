@@ -1,0 +1,451 @@
+{
+  "projectName": "zapai-crm",
+  "rootPath": "c:\\projetos\\ZAPAI-CRM",
+  "version": 1,
+  "updatedAt": "2026-03-26T16:56:57.689Z",
+  "insights": [
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: ai-engine",
+      "confidence": 0.72,
+      "sources": [
+        "backend/baileys/services/aiEngineAdapter.js",
+        "backend/crm/ai/acebot.js",
+        "backend/crm/ai/devAssistant.js",
+        "backend/crm/core/architectureMap.js",
+        "backend/crm/core/moduleRegistry.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: mammoth",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/ai/docAnalyzer.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: openai",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/ai/docAnalyzer.js",
+        "backend/crm/config/ai.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: react",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/ai/featureEngine.js",
+        "backend/crm/ai/featureGenerator.js",
+        "backend/crm/ai/moduleGenerator.js",
+        "frontend/src/components/inbox/ChatWindow.tsx",
+        "frontend/src/components/inbox/InboxLayout.tsx",
+        "frontend/src/components/modules/inbox/InboxInfoCard.tsx",
+        "frontend/src/components/ui/Badge.tsx",
+        "frontend/src/components/ui/Button.tsx",
+        "frontend/src/components/ui/Card.tsx",
+        "frontend/src/components/ui/FormField.tsx",
+        "frontend/src/components/ui/Input.tsx",
+        "frontend/src/components/ui/Modal.tsx"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @/components",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/ai/featureEngine.js",
+        "backend/crm/ai/featureGenerator.js",
+        "backend/crm/ai/moduleGenerator.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @/services",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/ai/featureEngine.js",
+        "backend/crm/ai/featureGenerator.js",
+        "backend/crm/ai/moduleGenerator.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: express",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/ai/featureEngine.js",
+        "backend/crm/ai/featureGenerator.js",
+        "backend/crm/ai/moduleGenerator.js",
+        "backend/crm/api.js",
+        "backend/crm/localRuntimeAgent.js",
+        "backend/crm/routes/acebot.js",
+        "backend/crm/routes/ai.js",
+        "backend/crm/routes/aiConfig.js",
+        "backend/crm/routes/aiGeneratedFixes.js",
+        "backend/crm/routes/analytics.js",
+        "backend/crm/routes/automation.js",
+        "backend/crm/routes/contacts.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @/design-system",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/ai/moduleGenerator.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: cors",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/api.js",
+        "backend/crm/server.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: pg",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/config/database.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: axios",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/config/ngrok.js",
+        "backend/crm/services/runtimeManager.js",
+        "backend/crm/services/webhookService.js",
+        "backend/tests/testRunner.js",
+        "backend/tools/engineControl.js",
+        "frontend/src/lib/api.ts"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: docx",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/docs/generateArchitectureDoc.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: socket.io",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/realtime/socketServer.js",
+        "backend/crm/server.js",
+        "backend/tests/websocketMessages.test.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: dotenv",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/server.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: node-cron",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/services/aiLearningEngine.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: winston",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/services/logger.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: pino",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/services/whatsappService.legacy.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: qrcode",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/services/whatsappService.legacy.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @whiskeysockets/baileys",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/services/whatsappService.legacy.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: socket.io-client",
+      "confidence": 0.72,
+      "sources": [
+        "backend/crm/tests/stabilizationSmokeTest.js",
+        "backend/tests/testRunner.js",
+        "backend/tests/websocketMessages.test.js",
+        "frontend/src/lib/socket.ts"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: supertest",
+      "confidence": 0.72,
+      "sources": [
+        "backend/tests/messagePersistence.test.js",
+        "backend/tests/websocketMessages.test.js"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: react-router-dom",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/main.tsx",
+        "frontend/src/templates/MainTemplate.tsx"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: clsx",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/src/components/inbox/ConversationItem.tsx",
+        "frontend/src/components/inbox/MessageBubble.tsx",
+        "frontend/src/components/ui/Badge.tsx",
+        "frontend/src/components/ui/Button.tsx",
+        "frontend/src/components/ui/Card.tsx",
+        "frontend/src/components/ui/Input.tsx",
+        "frontend/src/components/ui/SidePanel.tsx"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: react-dom",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/src/main.tsx"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: reactflow",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/src/pages/FlowBuilderPage.tsx"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: zustand",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/src/store/appStore.ts"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @emoji-mart/data",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/src/views/chat/MessageArea.tsx"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @emoji-mart/react",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/src/views/chat/MessageArea.tsx"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: tailwindcss",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/tailwind.config.ts"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: vite",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/vite.config.js",
+        "frontend/vite.config.ts"
+      ]
+    },
+    {
+      "type": "missing-dependency",
+      "severity": "high",
+      "message": "Dependencia importada sem registro no package.json: @vitejs/plugin-react",
+      "confidence": 0.72,
+      "sources": [
+        "frontend/vite.config.js",
+        "frontend/vite.config.ts"
+      ]
+    },
+    {
+      "type": "bottleneck",
+      "severity": "high",
+      "message": "Possivel gargalo estrutural em backend/crm/sessions/main.",
+      "confidence": 1,
+      "sources": [
+        "backend/crm/sessions/main"
+      ]
+    },
+    {
+      "type": "bottleneck",
+      "severity": "medium",
+      "message": "Possivel gargalo estrutural em backend/crm/services.",
+      "confidence": 0.83,
+      "sources": [
+        "backend/crm/services"
+      ]
+    },
+    {
+      "type": "bottleneck",
+      "severity": "medium",
+      "message": "Possivel gargalo estrutural em backend/crm/media/temp.",
+      "confidence": 0.8,
+      "sources": [
+        "backend/crm/media/temp"
+      ]
+    },
+    {
+      "type": "bottleneck",
+      "severity": "medium",
+      "message": "Possivel gargalo estrutural em backend/crm/docs.",
+      "confidence": 0.76,
+      "sources": [
+        "backend/crm/docs"
+      ]
+    },
+    {
+      "type": "bottleneck",
+      "severity": "medium",
+      "message": "Possivel gargalo estrutural em backend/crm/ai.",
+      "confidence": 0.7,
+      "sources": [
+        "backend/crm/ai"
+      ]
+    },
+    {
+      "type": "learning-improvement",
+      "severity": "high",
+      "message": "Foram detectadas 40 mudancas; revisar tokens alterados e atualizar prioridades.",
+      "confidence": 0.86,
+      "sources": [
+        "backend/crm/sessions/main",
+        "backend/crm/sessions/main",
+        "backend/crm/services",
+        "backend/crm/media/temp",
+        "backend/crm/docs",
+        "layer-detection:api",
+        "layer-detection:services",
+        "backend/crm/ai",
+        "backend/baileys/services/aiEngineAdapter.js",
+        "backend/crm/ai/acebot.js",
+        "backend/crm/ai/devAssistant.js",
+        "backend/crm/core/architectureMap.js",
+        "backend/crm/core/moduleRegistry.js",
+        "backend/crm/ai/docAnalyzer.js",
+        "backend/crm/ai/docAnalyzer.js",
+        "backend/crm/config/ai.js",
+        "backend/crm/ai/featureEngine.js",
+        "backend/crm/ai/featureGenerator.js",
+        "backend/crm/ai/moduleGenerator.js",
+        "frontend/src/components/inbox/ChatWindow.tsx",
+        "frontend/src/components/inbox/InboxLayout.tsx",
+        "frontend/src/components/modules/inbox/InboxInfoCard.tsx",
+        "frontend/src/components/ui/Badge.tsx",
+        "frontend/src/components/ui/Button.tsx",
+        "frontend/src/components/ui/Card.tsx",
+        "frontend/src/components/ui/FormField.tsx",
+        "frontend/src/components/ui/Input.tsx",
+        "frontend/src/components/ui/Modal.tsx",
+        "backend/crm/ai/featureEngine.js",
+        "backend/crm/ai/featureGenerator.js",
+        "backend/crm/ai/moduleGenerator.js",
+        "backend/crm/ai/featureEngine.js",
+        "backend/crm/ai/featureGenerator.js",
+        "backend/crm/ai/moduleGenerator.js",
+        "backend/crm/ai/featureEngine.js",
+        "backend/crm/ai/featureGenerator.js",
+        "backend/crm/ai/moduleGenerator.js",
+        "backend/crm/api.js",
+        "backend/crm/localRuntimeAgent.js",
+        "backend/crm/routes/acebot.js",
+        "backend/crm/routes/ai.js",
+        "backend/crm/routes/aiConfig.js",
+        "backend/crm/routes/aiGeneratedFixes.js",
+        "backend/crm/routes/analytics.js",
+        "backend/crm/routes/automation.js",
+        "backend/crm/routes/contacts.js",
+        "backend/crm/ai/moduleGenerator.js",
+        "backend/crm/api.js",
+        "backend/crm/server.js",
+        "backend/crm/config/database.js"
+      ]
+    }
+  ],
+  "history": [
+    {
+      "version": 1,
+      "updatedAt": "2026-03-26T16:56:57.689Z",
+      "insightCount": 37
+    }
+  ]
+}

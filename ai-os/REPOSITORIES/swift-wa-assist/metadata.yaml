@@ -1,0 +1,31 @@
+id: swift-wa-assist
+name: swift-wa-assist
+owner: Biel0071
+provider: github
+url: https://github.com/Biel0071/swift-wa-assist
+visibility: public
+branch: main
+revision: "64152c6bde1dcbdfa601b650a6443e1c939ee3cc"
+primary_language: javascript
+family: whatsapp-crm-core
+role: variant
+status: active
+
+analysis:
+  engine: grg-repo-intel
+  method: shallow-clone + fs-scan (checkout efêmero)
+  analyzed_at: 2026-07-24
+  file_count: 1671
+  capabilities_detected: [whatsapp-crm, ai-gateway, payments-pix, payments-stripe, auth-rbac, analytics, realtime, ecommerce, dashboard]
+
+# Aprendizado derivado automaticamente pelo EvolutionEngine ao acoplar junto do ZAPAI-FINAL:
+evolution_insights:
+  - type: family-consolidation
+    detail: "whatsapp-crm-core tem 2 repos (swift-wa-assist, zapai-final) — consolidar em módulos + feature flags"
+  - type: capability-reuse
+    detail: "9 capabilities compartilhadas com zapai-final — todas candidatas a núcleo reutilizável"
+
+notes: >
+  Variante operacional/multi-nó do núcleo ZAPAI. Detém as mesmas 9 capabilities do canônico,
+  confirmando a forte sobreposição (1539 arquivos idênticos na análise de portfólio anterior).
+  Consolidar como configuração/feature-flag do whatsapp-crm-core, não como fork.

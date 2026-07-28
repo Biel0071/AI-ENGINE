@@ -1,0 +1,1075 @@
+[
+  {
+    "createdAt": "2026-03-26T16:56:57.689Z",
+    "tokenVersion": 1,
+    "insightVersion": 1,
+    "changes": [
+      {
+        "type": "added-token",
+        "tokenId": "bottleneck-1",
+        "message": "Novo token identificado: bottleneck-1",
+        "confidence": 1,
+        "sources": [
+          "backend/crm/sessions/main"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "bottleneck-37",
+        "message": "Novo token identificado: bottleneck-37",
+        "confidence": 1,
+        "sources": [
+          "backend/crm/sessions/main"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "bottleneck-2",
+        "message": "Novo token identificado: bottleneck-2",
+        "confidence": 0.83,
+        "sources": [
+          "backend/crm/services"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "bottleneck-3",
+        "message": "Novo token identificado: bottleneck-3",
+        "confidence": 0.8,
+        "sources": [
+          "backend/crm/media/temp"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "bottleneck-4",
+        "message": "Novo token identificado: bottleneck-4",
+        "confidence": 0.76,
+        "sources": [
+          "backend/crm/docs"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "api-to-services",
+        "message": "Novo token identificado: api-to-services",
+        "confidence": 0.82,
+        "sources": [
+          "layer-detection:api",
+          "layer-detection:services"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "bottleneck-5",
+        "message": "Novo token identificado: bottleneck-5",
+        "confidence": 0.7,
+        "sources": [
+          "backend/crm/ai"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-6",
+        "message": "Novo token identificado: missing-dependency-6",
+        "confidence": 0.72,
+        "sources": [
+          "backend/baileys/services/aiEngineAdapter.js",
+          "backend/crm/ai/acebot.js",
+          "backend/crm/ai/devAssistant.js",
+          "backend/crm/core/architectureMap.js",
+          "backend/crm/core/moduleRegistry.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-7",
+        "message": "Novo token identificado: missing-dependency-7",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/docAnalyzer.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-8",
+        "message": "Novo token identificado: missing-dependency-8",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/docAnalyzer.js",
+          "backend/crm/config/ai.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-9",
+        "message": "Novo token identificado: missing-dependency-9",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/featureEngine.js",
+          "backend/crm/ai/featureGenerator.js",
+          "backend/crm/ai/moduleGenerator.js",
+          "frontend/src/components/inbox/ChatWindow.tsx",
+          "frontend/src/components/inbox/InboxLayout.tsx",
+          "frontend/src/components/modules/inbox/InboxInfoCard.tsx",
+          "frontend/src/components/ui/Badge.tsx",
+          "frontend/src/components/ui/Button.tsx",
+          "frontend/src/components/ui/Card.tsx",
+          "frontend/src/components/ui/FormField.tsx",
+          "frontend/src/components/ui/Input.tsx",
+          "frontend/src/components/ui/Modal.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-10",
+        "message": "Novo token identificado: missing-dependency-10",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/featureEngine.js",
+          "backend/crm/ai/featureGenerator.js",
+          "backend/crm/ai/moduleGenerator.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-11",
+        "message": "Novo token identificado: missing-dependency-11",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/featureEngine.js",
+          "backend/crm/ai/featureGenerator.js",
+          "backend/crm/ai/moduleGenerator.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-12",
+        "message": "Novo token identificado: missing-dependency-12",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/featureEngine.js",
+          "backend/crm/ai/featureGenerator.js",
+          "backend/crm/ai/moduleGenerator.js",
+          "backend/crm/api.js",
+          "backend/crm/localRuntimeAgent.js",
+          "backend/crm/routes/acebot.js",
+          "backend/crm/routes/ai.js",
+          "backend/crm/routes/aiConfig.js",
+          "backend/crm/routes/aiGeneratedFixes.js",
+          "backend/crm/routes/analytics.js",
+          "backend/crm/routes/automation.js",
+          "backend/crm/routes/contacts.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-13",
+        "message": "Novo token identificado: missing-dependency-13",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/moduleGenerator.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-14",
+        "message": "Novo token identificado: missing-dependency-14",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/api.js",
+          "backend/crm/server.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-15",
+        "message": "Novo token identificado: missing-dependency-15",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/config/database.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-16",
+        "message": "Novo token identificado: missing-dependency-16",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/config/ngrok.js",
+          "backend/crm/services/runtimeManager.js",
+          "backend/crm/services/webhookService.js",
+          "backend/tests/testRunner.js",
+          "backend/tools/engineControl.js",
+          "frontend/src/lib/api.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-17",
+        "message": "Novo token identificado: missing-dependency-17",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/docs/generateArchitectureDoc.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-18",
+        "message": "Novo token identificado: missing-dependency-18",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/realtime/socketServer.js",
+          "backend/crm/server.js",
+          "backend/tests/websocketMessages.test.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-19",
+        "message": "Novo token identificado: missing-dependency-19",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/server.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-20",
+        "message": "Novo token identificado: missing-dependency-20",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/services/aiLearningEngine.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-21",
+        "message": "Novo token identificado: missing-dependency-21",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/services/logger.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-22",
+        "message": "Novo token identificado: missing-dependency-22",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/services/whatsappService.legacy.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-23",
+        "message": "Novo token identificado: missing-dependency-23",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/services/whatsappService.legacy.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-24",
+        "message": "Novo token identificado: missing-dependency-24",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/services/whatsappService.legacy.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-25",
+        "message": "Novo token identificado: missing-dependency-25",
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/tests/stabilizationSmokeTest.js",
+          "backend/tests/testRunner.js",
+          "backend/tests/websocketMessages.test.js",
+          "frontend/src/lib/socket.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-26",
+        "message": "Novo token identificado: missing-dependency-26",
+        "confidence": 0.72,
+        "sources": [
+          "backend/tests/messagePersistence.test.js",
+          "backend/tests/websocketMessages.test.js"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-27",
+        "message": "Novo token identificado: missing-dependency-27",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/src/App.tsx",
+          "frontend/src/components/layout/Sidebar.tsx",
+          "frontend/src/main.tsx",
+          "frontend/src/templates/MainTemplate.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-28",
+        "message": "Novo token identificado: missing-dependency-28",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/src/components/inbox/ConversationItem.tsx",
+          "frontend/src/components/inbox/MessageBubble.tsx",
+          "frontend/src/components/ui/Badge.tsx",
+          "frontend/src/components/ui/Button.tsx",
+          "frontend/src/components/ui/Card.tsx",
+          "frontend/src/components/ui/Input.tsx",
+          "frontend/src/components/ui/SidePanel.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-29",
+        "message": "Novo token identificado: missing-dependency-29",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/src/main.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-30",
+        "message": "Novo token identificado: missing-dependency-30",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/src/pages/FlowBuilderPage.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-31",
+        "message": "Novo token identificado: missing-dependency-31",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/src/store/appStore.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-32",
+        "message": "Novo token identificado: missing-dependency-32",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/src/views/chat/MessageArea.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-33",
+        "message": "Novo token identificado: missing-dependency-33",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/src/views/chat/MessageArea.tsx"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-34",
+        "message": "Novo token identificado: missing-dependency-34",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/tailwind.config.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-35",
+        "message": "Novo token identificado: missing-dependency-35",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/vite.config.js",
+          "frontend/vite.config.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "missing-dependency-36",
+        "message": "Novo token identificado: missing-dependency-36",
+        "confidence": 0.72,
+        "sources": [
+          "frontend/vite.config.js",
+          "frontend/vite.config.ts"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "services-to-data",
+        "message": "Novo token identificado: services-to-data",
+        "confidence": 0.78,
+        "sources": [
+          "layer-detection:services",
+          "layer-detection:data"
+        ]
+      },
+      {
+        "type": "added-token",
+        "tokenId": "ui-to-api",
+        "message": "Novo token identificado: ui-to-api",
+        "confidence": 0.76,
+        "sources": [
+          "layer-detection:ui",
+          "layer-detection:api"
+        ]
+      }
+    ],
+    "nextActions": [
+      {
+        "id": "next-1",
+        "action": "Alta densidade de arquivos em backend/crm/sessions/main (1243 arquivos).",
+        "reason": "Ponto critico detectado (bottleneck).",
+        "priorityScore": 100,
+        "confidence": 1,
+        "sources": [
+          "backend/crm/sessions/main"
+        ]
+      },
+      {
+        "id": "next-37",
+        "action": "Possivel gargalo estrutural em backend/crm/sessions/main.",
+        "reason": "Ponto critico detectado (bottleneck).",
+        "priorityScore": 100,
+        "confidence": 1,
+        "sources": [
+          "backend/crm/sessions/main"
+        ]
+      },
+      {
+        "id": "next-2",
+        "action": "Alta densidade de arquivos em backend/crm/services (40 arquivos).",
+        "reason": "Ponto critico detectado (bottleneck).",
+        "priorityScore": 83,
+        "confidence": 0.83,
+        "sources": [
+          "backend/crm/services"
+        ]
+      },
+      {
+        "id": "next-3",
+        "action": "Alta densidade de arquivos em backend/crm/media/temp (36 arquivos).",
+        "reason": "Ponto critico detectado (bottleneck).",
+        "priorityScore": 80,
+        "confidence": 0.8,
+        "sources": [
+          "backend/crm/media/temp"
+        ]
+      },
+      {
+        "id": "next-4",
+        "action": "Alta densidade de arquivos em backend/crm/docs (31 arquivos).",
+        "reason": "Ponto critico detectado (bottleneck).",
+        "priorityScore": 76,
+        "confidence": 0.76,
+        "sources": [
+          "backend/crm/docs"
+        ]
+      },
+      {
+        "id": "next-6",
+        "action": "Dependencia importada sem registro no package.json: ai-engine",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/baileys/services/aiEngineAdapter.js",
+          "backend/crm/ai/acebot.js",
+          "backend/crm/ai/devAssistant.js",
+          "backend/crm/core/architectureMap.js",
+          "backend/crm/core/moduleRegistry.js"
+        ]
+      },
+      {
+        "id": "next-7",
+        "action": "Dependencia importada sem registro no package.json: mammoth",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/docAnalyzer.js"
+        ]
+      },
+      {
+        "id": "next-8",
+        "action": "Dependencia importada sem registro no package.json: openai",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/docAnalyzer.js",
+          "backend/crm/config/ai.js"
+        ]
+      },
+      {
+        "id": "next-9",
+        "action": "Dependencia importada sem registro no package.json: react",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/featureEngine.js",
+          "backend/crm/ai/featureGenerator.js",
+          "backend/crm/ai/moduleGenerator.js",
+          "frontend/src/components/inbox/ChatWindow.tsx",
+          "frontend/src/components/inbox/InboxLayout.tsx",
+          "frontend/src/components/modules/inbox/InboxInfoCard.tsx",
+          "frontend/src/components/ui/Badge.tsx",
+          "frontend/src/components/ui/Button.tsx",
+          "frontend/src/components/ui/Card.tsx",
+          "frontend/src/components/ui/FormField.tsx",
+          "frontend/src/components/ui/Input.tsx",
+          "frontend/src/components/ui/Modal.tsx"
+        ]
+      },
+      {
+        "id": "next-10",
+        "action": "Dependencia importada sem registro no package.json: @/components",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/featureEngine.js",
+          "backend/crm/ai/featureGenerator.js",
+          "backend/crm/ai/moduleGenerator.js"
+        ]
+      },
+      {
+        "id": "next-11",
+        "action": "Dependencia importada sem registro no package.json: @/services",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/featureEngine.js",
+          "backend/crm/ai/featureGenerator.js",
+          "backend/crm/ai/moduleGenerator.js"
+        ]
+      },
+      {
+        "id": "next-12",
+        "action": "Dependencia importada sem registro no package.json: express",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/featureEngine.js",
+          "backend/crm/ai/featureGenerator.js",
+          "backend/crm/ai/moduleGenerator.js",
+          "backend/crm/api.js",
+          "backend/crm/localRuntimeAgent.js",
+          "backend/crm/routes/acebot.js",
+          "backend/crm/routes/ai.js",
+          "backend/crm/routes/aiConfig.js",
+          "backend/crm/routes/aiGeneratedFixes.js",
+          "backend/crm/routes/analytics.js",
+          "backend/crm/routes/automation.js",
+          "backend/crm/routes/contacts.js"
+        ]
+      },
+      {
+        "id": "next-13",
+        "action": "Dependencia importada sem registro no package.json: @/design-system",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/ai/moduleGenerator.js"
+        ]
+      },
+      {
+        "id": "next-14",
+        "action": "Dependencia importada sem registro no package.json: cors",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/api.js",
+          "backend/crm/server.js"
+        ]
+      },
+      {
+        "id": "next-15",
+        "action": "Dependencia importada sem registro no package.json: pg",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/config/database.js"
+        ]
+      },
+      {
+        "id": "next-16",
+        "action": "Dependencia importada sem registro no package.json: axios",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/config/ngrok.js",
+          "backend/crm/services/runtimeManager.js",
+          "backend/crm/services/webhookService.js",
+          "backend/tests/testRunner.js",
+          "backend/tools/engineControl.js",
+          "frontend/src/lib/api.ts"
+        ]
+      },
+      {
+        "id": "next-17",
+        "action": "Dependencia importada sem registro no package.json: docx",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/docs/generateArchitectureDoc.js"
+        ]
+      },
+      {
+        "id": "next-18",
+        "action": "Dependencia importada sem registro no package.json: socket.io",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/realtime/socketServer.js",
+          "backend/crm/server.js",
+          "backend/tests/websocketMessages.test.js"
+        ]
+      },
+      {
+        "id": "next-19",
+        "action": "Dependencia importada sem registro no package.json: dotenv",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/server.js"
+        ]
+      },
+      {
+        "id": "next-20",
+        "action": "Dependencia importada sem registro no package.json: node-cron",
+        "reason": "Ponto critico detectado (missing-dependency).",
+        "priorityScore": 72,
+        "confidence": 0.72,
+        "sources": [
+          "backend/crm/services/aiLearningEngine.js"
+        ]
+      }
+    ],
+    "architectureSnapshot": {
+      "layers": [
+        {
+          "name": "api",
+          "files": 21,
+          "confidence": 0.71
+        },
+        {
+          "name": "services",
+          "files": 49,
+          "confidence": 1
+        },
+        {
+          "name": "controllers",
+          "files": 16,
+          "confidence": 0.65
+        },
+        {
+          "name": "ui",
+          "files": 70,
+          "confidence": 1
+        },
+        {
+          "name": "data",
+          "files": 21,
+          "confidence": 0.71
+        }
+      ],
+      "bottlenecks": [
+        {
+          "area": "backend/crm/sessions/main",
+          "reason": "high-file-density",
+          "count": 1243,
+          "confidence": 1,
+          "sources": [
+            "backend/crm/sessions/main"
+          ]
+        },
+        {
+          "area": "backend/crm/services",
+          "reason": "high-file-density",
+          "count": 40,
+          "confidence": 0.83,
+          "sources": [
+            "backend/crm/services"
+          ]
+        },
+        {
+          "area": "backend/crm/media/temp",
+          "reason": "high-file-density",
+          "count": 36,
+          "confidence": 0.8,
+          "sources": [
+            "backend/crm/media/temp"
+          ]
+        },
+        {
+          "area": "backend/crm/docs",
+          "reason": "high-file-density",
+          "count": 31,
+          "confidence": 0.76,
+          "sources": [
+            "backend/crm/docs"
+          ]
+        },
+        {
+          "area": "backend/crm/ai",
+          "reason": "high-file-density",
+          "count": 24,
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/ai"
+          ]
+        }
+      ]
+    },
+    "projectSummary": {
+      "totalFiles": 1641,
+      "stack": [
+        {
+          "name": "typescript",
+          "confidence": 1,
+          "sources": [
+            "frontend/src/App.tsx",
+            "frontend/src/components/inbox/ChatWindow.tsx",
+            "frontend/src/components/inbox/ConversationItem.tsx",
+            "frontend/src/components/inbox/ConversationList.tsx",
+            "frontend/src/components/inbox/InboxLayout.tsx",
+            "frontend/src/components/inbox/index.ts",
+            "frontend/src/components/inbox/MessageBubble.tsx",
+            "frontend/src/components/layout/Header.tsx",
+            "frontend/src/components/layout/Sidebar.tsx",
+            "frontend/src/components/modules/campaigns/CampaignStepHeader.tsx",
+            "frontend/src/components/modules/dashboard/KpiTile.tsx",
+            "frontend/src/components/modules/flows/FlowPalette.tsx",
+            "frontend/src/components/modules/inbox/InboxInfoCard.tsx",
+            "frontend/src/components/ui/Badge.tsx",
+            "frontend/src/components/ui/Button.tsx",
+            "frontend/src/components/ui/Card.tsx",
+            "frontend/src/components/ui/FormField.tsx",
+            "frontend/src/components/ui/Input.tsx",
+            "frontend/src/components/ui/Modal.tsx",
+            "frontend/src/components/ui/SidePanel.tsx",
+            "frontend/src/components/ui/Tabs.tsx",
+            "frontend/src/components/ui/Toggle.tsx",
+            "frontend/src/lib/aiConnectionState.ts",
+            "frontend/src/lib/aiEngine.ts",
+            "frontend/src/lib/api.ts",
+            "frontend/src/lib/mocks.ts",
+            "frontend/src/lib/socket.ts",
+            "frontend/src/main.tsx",
+            "frontend/src/modules/lovable/views/DashboardView.tsx",
+            "frontend/src/pages/CampaignsPage.tsx",
+            "frontend/src/pages/ChatPage.tsx",
+            "frontend/src/pages/ConnectionsPage.tsx",
+            "frontend/src/pages/ContactsPage.tsx",
+            "frontend/src/pages/DashboardPage.tsx",
+            "frontend/src/pages/FlowBuilderPage.tsx",
+            "frontend/src/pages/index.ts",
+            "frontend/src/pages/IntelligencePage.tsx",
+            "frontend/src/pages/PerformancePage.tsx",
+            "frontend/src/pages/QuickRepliesPage.tsx",
+            "frontend/src/pages/SettingsPage.tsx",
+            "frontend/src/store/appStore.ts",
+            "frontend/src/styles/tokens.ts",
+            "frontend/src/templates/MainTemplate.tsx",
+            "frontend/src/types.ts",
+            "frontend/src/utils/safeRender.tsx",
+            "frontend/src/views/chat/ChatLayout.tsx",
+            "frontend/src/views/chat/ConversationList.tsx",
+            "frontend/src/views/chat/MessageArea.tsx",
+            "frontend/src/views/chat/RightPanel.tsx",
+            "frontend/src/views/connections/ConnectionsList.tsx",
+            "frontend/src/views/dashboard/DashboardStats.tsx",
+            "frontend/tailwind.config.ts",
+            "frontend/tsconfig.json",
+            "frontend/tsconfig.tsbuildinfo",
+            "frontend/vite.config.ts"
+          ]
+        },
+        {
+          "name": "react",
+          "confidence": 1,
+          "sources": [
+            "frontend/src/App.tsx",
+            "frontend/src/components/inbox/ChatWindow.tsx",
+            "frontend/src/components/inbox/ConversationItem.tsx",
+            "frontend/src/components/inbox/ConversationList.tsx",
+            "frontend/src/components/inbox/InboxLayout.tsx",
+            "frontend/src/components/inbox/MessageBubble.tsx",
+            "frontend/src/components/layout/Header.tsx",
+            "frontend/src/components/layout/Sidebar.tsx",
+            "frontend/src/components/modules/campaigns/CampaignStepHeader.tsx",
+            "frontend/src/components/modules/dashboard/KpiTile.tsx",
+            "frontend/src/components/modules/flows/FlowPalette.tsx",
+            "frontend/src/components/modules/inbox/InboxInfoCard.tsx",
+            "frontend/src/components/ui/Badge.tsx",
+            "frontend/src/components/ui/Button.tsx",
+            "frontend/src/components/ui/Card.tsx",
+            "frontend/src/components/ui/FormField.tsx",
+            "frontend/src/components/ui/Input.tsx",
+            "frontend/src/components/ui/Modal.tsx",
+            "frontend/src/components/ui/SidePanel.tsx",
+            "frontend/src/components/ui/Tabs.tsx",
+            "frontend/src/components/ui/Toggle.tsx",
+            "frontend/src/main.tsx",
+            "frontend/src/modules/lovable/views/DashboardView.tsx",
+            "frontend/src/pages/CampaignsPage.tsx",
+            "frontend/src/pages/ChatPage.tsx",
+            "frontend/src/pages/ConnectionsPage.tsx",
+            "frontend/src/pages/ContactsPage.tsx",
+            "frontend/src/pages/DashboardPage.tsx",
+            "frontend/src/pages/FlowBuilderPage.tsx",
+            "frontend/src/pages/IntelligencePage.tsx",
+            "frontend/src/pages/PerformancePage.tsx",
+            "frontend/src/pages/QuickRepliesPage.tsx",
+            "frontend/src/pages/SettingsPage.tsx",
+            "frontend/src/templates/MainTemplate.tsx",
+            "frontend/src/utils/safeRender.tsx",
+            "frontend/src/views/chat/ChatLayout.tsx",
+            "frontend/src/views/chat/ConversationList.tsx",
+            "frontend/src/views/chat/MessageArea.tsx",
+            "frontend/src/views/chat/RightPanel.tsx",
+            "frontend/src/views/connections/ConnectionsList.tsx",
+            "frontend/src/views/dashboard/DashboardStats.tsx"
+          ]
+        },
+        {
+          "name": "nodejs",
+          "confidence": 0.4,
+          "sources": [
+            "frontend/package.json"
+          ]
+        }
+      ],
+      "entryPoints": [
+        {
+          "path": "backend/api/server.js",
+          "confidence": 0.95,
+          "sources": [
+            "backend/api/server.js"
+          ]
+        },
+        {
+          "path": "backend/baileys/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/baileys/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/api/server.js",
+          "confidence": 0.95,
+          "sources": [
+            "backend/crm/api/server.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/controllers/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/controllers/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/infrastructure/database/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/infrastructure/database/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/infrastructure/queue/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/infrastructure/queue/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/infrastructure/realtime/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/infrastructure/realtime/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/modules/ai/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/modules/ai/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/modules/analytics/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/modules/analytics/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/modules/automation/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/modules/automation/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/modules/campaigns/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/modules/campaigns/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/modules/contacts/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/modules/contacts/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/modules/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/modules/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/modules/messaging/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/modules/messaging/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/repositories/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/repositories/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/routes/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/routes/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/services/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/services/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/backend/shared/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/backend/shared/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/modules/analytics/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/modules/analytics/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/modules/automation/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/modules/automation/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/modules/campaigns/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/modules/campaigns/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/modules/contacts/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/modules/contacts/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/modules/conversations/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/modules/conversations/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/modules/messaging/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/modules/messaging/index.js"
+          ]
+        },
+        {
+          "path": "backend/crm/server.js",
+          "confidence": 0.95,
+          "sources": [
+            "backend/crm/server.js"
+          ]
+        },
+        {
+          "path": "backend/crm/services/aiInspector/index.js",
+          "confidence": 0.7,
+          "sources": [
+            "backend/crm/services/aiInspector/index.js"
+          ]
+        },
+        {
+          "path": "frontend/src/components/inbox/index.ts",
+          "confidence": 0.7,
+          "sources": [
+            "frontend/src/components/inbox/index.ts"
+          ]
+        },
+        {
+          "path": "frontend/src/pages/index.ts",
+          "confidence": 0.7,
+          "sources": [
+            "frontend/src/pages/index.ts"
+          ]
+        }
+      ]
+    }
+  }
+]
