@@ -41,6 +41,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     qdrant: infrastructure.qdrant,
     identityProvider: options.identityProvider,
     sandboxAdapter: options.sandboxAdapter,
+    // Alvo dos smoke tests reais. Sem isto eles reportam NOT_RUN, nunca sucesso.
+    smokeBaseUrl: options.smokeBaseUrl || env.FENIX_SMOKE_BASE_URL || `http://127.0.0.1:${port}`,
   });
   if (require.main === module) process.stdout.write(`LLM (chat natural): ${app.llm ? 'LIGADO via ' + app.llmSource : 'desligado (modo regras)'}\n`);
   const bootstrap = options.bootstrapAdmin || securityConfig.bootstrapAdmin;
@@ -60,19 +62,43 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       await app.controlPlane.getMembership(oidcBootstrap.tenantId, oidcBootstrap.userId);
     }
   }
-  if (options.operationalActivation !== false) {
+  // A ativacao operacional roda 26 probes, cada um com escrita no store. Num store
+  // grande isso leva dezenas de segundos e ANTES bloqueava o listen() — o container
+  // ficava unhealthy porque a porta nunca abria. Agora ela roda DEPOIS do servidor
+  // estar escutando, em background, e o /health reporta o progresso.
+  // Ativacao operacional: o servidor HTTP apenas GARANTE os schedules; quem executa
+  // o boot dos 26 probes e o worker, pelo schedule recorrente `operational.activation`.
+  //
+  // Antes o boot rodava aqui no startup de cada container. Com api e worker subindo
+  // juntos, os dois escreviam no mesmo documento sob SERIALIZABLE: cada escrita
+  // colidia, entrava em retry e re-serializava o documento inteiro. Resultado medido
+  // em producao: ~25 s por componente (11 min para os 26) e 17 runs presos em RUNNING
+  // de boots anteriores que morreram no meio. Rodar em um lugar so elimina a disputa.
+  // MISSION-0003A — registra a geração observada (release + versão de esquema) ao subir.
+  // A identidade já foi estabelecida em createApp; aqui a linhagem ganha a entrada desta
+  // subida. Não regenera nada: entradas idênticas não se acumulam.
+  try {
+    const state = await app.store.read();
+    await app.organismIdentity.recordGeneration({ schemaVersion: state.schemaVersion, reason: 'boot' });
+  } catch (error) {
+    logger.error({ event: 'organism.generation.failed', error, capability: 'kernel' });
+  }
+
+  const runActivation = async () => {
     const state = await app.store.read();
     for (const tenant of state.tenants) {
       const owner = state.memberships.find((item) => item.tenantId === tenant.id && item.status === 'active' && item.role === 'master_admin');
       if (!owner) continue;
       try {
         await app.operationalActivation.ensureSchedules(tenant.id, owner.userId);
-        await app.operationalActivation.boot(tenant.id, owner.userId, { trigger: 'startup' });
+        if (options.activationBootOnStart === true) {
+          await app.operationalActivation.boot(tenant.id, owner.userId, { trigger: 'startup' });
+        }
       } catch (error) {
         logger.error({ event: 'operational.activation.failed', error, tenant: tenant.id, actor: owner.userId, capability: 'operations' });
       }
     }
-  }
+  };
 
   const server = http.createServer(async (req, res) => {
     let requestId = null;
@@ -93,6 +119,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const health = await app.health.check();
         return sendJson(res, health.ok ? 200 : 503, {
           ...health, service: 'grg-services-os', environment: securityConfig.runtimeEnv,
+          // Progresso da ativacao operacional (roda em background apos o listen).
+          activation: app.activation || { status: 'disabled' },
         }, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/oidc/config') return sendJson(res, 200, {
@@ -485,6 +513,25 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       if (req.method === 'GET' && url.pathname === '/api/onedeploy/continuous-improvement/idle-scan') return sendJson(res, 200, await app.continuousImprovement.runIdleImprovementScan(tenantId, actorId), requestId);
 
+      // FASE 1: auditoria de simulacao — o sistema classifica seus proprios modulos.
+      if (req.method === 'GET' && url.pathname === '/api/governance/simulation-audit') return sendJson(res, 200, await app.simulationAudit.audit(tenantId, actorId), requestId);
+      // V10: estado de cada objetivo, derivado de artefatos verificaveis.
+      if (req.method === 'GET' && url.pathname === '/api/governance/readiness-matrix') return sendJson(res, 200, await app.readinessMatrix.build(tenantId, actorId), requestId);
+      // V10: PRODUCTION_LOCK. Consulta se uma acao critica esta liberada e por que nao.
+      if (req.method === 'GET' && url.pathname === '/api/governance/gatekeeper') return sendJson(res, 200, await app.gatekeeper.evaluate(tenantId, actorId, url.searchParams.get('action') || 'deploy'), requestId);
+      // V10: relatorio de prontidao. `?boot=false` usa o ultimo estado gravado em vez de
+      // rodar os 26 probes; `?write=true` grava PRODUCTION_READINESS_REPORT.md.
+      if (req.method === 'GET' && url.pathname === '/api/governance/production-readiness') {
+        return sendJson(res, 200, await app.productionReadiness.generate(tenantId, actorId, {
+          boot: url.searchParams.get('boot') !== 'false',
+          write: url.searchParams.get('write') === 'true',
+        }), requestId);
+      }
+      // Telemetria real do host + infra (substitui as metricas simuladas).
+      if (req.method === 'GET' && url.pathname === '/api/observability/metrics') return sendJson(res, 200, await app.observabilityCenter.getMetrics(tenantId, actorId), requestId);
+      // MISSION-0003A — identidade permanente do organismo (organismId, nascimento, linhagem).
+      if (req.method === 'GET' && url.pathname === '/api/organism/identity') return sendJson(res, 200, await app.organismIdentity.report(tenantId, actorId), requestId);
+
       if (req.method === 'POST' && url.pathname === '/api/chat') {
         const b = await readJson(req);
         if (!b.message) return sendJson(res, 400, { error: 'message required' });
@@ -509,6 +556,18 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   });
   server.on('close', () => { app.close().catch(() => {}); });
   server.app = app;
+
+  // Ativacao operacional em background: o servidor ja esta escutando e o
+  // healthcheck do container passa enquanto os 26 probes rodam.
+  if (options.operationalActivation !== false) {
+    app.activation = { status: 'running', startedAt: new Date().toISOString(), completedAt: null, error: null };
+    server.activationPromise = runActivation()
+      .then(() => { app.activation = { ...app.activation, status: 'completed', completedAt: new Date().toISOString() }; })
+      .catch((error) => {
+        app.activation = { ...app.activation, status: 'failed', completedAt: new Date().toISOString(), error: error.message };
+        logger.error({ event: 'operational.activation.failed', error, capability: 'operations' });
+      });
+  }
   return server;
 }
 
