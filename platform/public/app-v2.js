@@ -1,6 +1,6 @@
 const TENANT_ID = 'biel0071-software-house';
 const USER_ID = 'biel0071';
-const state = { projects: [], graph: null, acep: null, maturity: null, lcr: null };
+const state = { projects: [], graph: null, acep: null, maturity: null, lcr: null, company: 'biel0071-corp' };
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -84,7 +84,7 @@ function renderGraph(graph) {
   const projects = graph.nodes.filter((node) => node.type === 'project').length;
   const memories = graph.nodes.filter((node) => node.type === 'memory').length;
   const capabilities = graph.nodes.filter((node) => node.type === 'capability');
-  document.querySelector('#graph-summary').textContent = `${graph.nodes.length} nós, ${graph.edges.length} relações em 13 grafos universais, ${projects} projetos e ${memories} memórias comprovadas.`;
+  document.querySelector('#graph-summary').textContent = `${graph.nodes.length} nós, ${graph.edges.length} relações em 18 grafos universais, ${projects} projetos e ${memories} memórias comprovadas.`;
   document.querySelector('#capabilities').innerHTML = capabilities.map((node) => `<span class="capability">${node.label}</span>`).join('');
 }
 
@@ -126,10 +126,58 @@ async function refresh() {
   renderMaturity(maturity);
 }
 
-// Event Listeners
+// Building Floor Modal Handlers
+const buildingNames = {
+  'ai-engine-core': 'AI Engine Core HQ (Prédio Central)',
+  'zapai-crm': 'ZapAI CRM Tower (Prédio de Vendas & WhatsApp)',
+  'ai-city': 'AI City Research Complex (Prédio de Agentes 3D)',
+  'fortlev': 'Fortlev Digital Mall (Prédio Commerce Core)',
+};
+
+document.querySelectorAll('.building-interactive').forEach((card) => {
+  card.addEventListener('click', () => {
+    const buildingKey = card.dataset.building;
+    const modal = document.querySelector('#building-modal');
+    const title = document.querySelector('#modal-building-title');
+    if (title) title.textContent = buildingNames[buildingKey] || buildingKey;
+    modal.classList.add('active');
+  });
+});
+
+document.querySelector('#btn-close-modal')?.addEventListener('click', () => {
+  document.querySelector('#building-modal').classList.remove('active');
+});
+
+document.querySelector('#building-modal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'building-modal') e.target.classList.remove('active');
+});
+
+// Company Picker Handler
+document.querySelector('#company-select')?.addEventListener('change', (e) => {
+  state.company = e.target.value;
+  const companyTitle = e.target.options[e.target.selectedIndex].text;
+  document.querySelector('#active-company-title').textContent = companyTitle;
+  notify(`Ilha alternada para: ${companyTitle}`);
+});
+
+document.querySelector('#btn-create-company')?.addEventListener('click', () => {
+  const name = prompt('Digite o nome da nova empresa/ilha:');
+  if (name) {
+    const select = document.querySelector('#company-select');
+    const opt = document.createElement('option');
+    opt.value = name.toLowerCase().replace(/\s+/g, '-');
+    opt.text = `🏢 ${name}`;
+    select.appendChild(opt);
+    select.value = opt.value;
+    select.dispatchEvent(new Event('change'));
+  }
+});
+
+// Search & Filter Listeners
 document.querySelector('#search')?.addEventListener('input', renderProjects);
 document.querySelector('#visibility')?.addEventListener('change', renderProjects);
 
+// Project Actions Handler
 document.querySelector('#projects')?.addEventListener('click', async (event) => {
   const button = event.target.closest('button');
   if (!button) return;
@@ -158,7 +206,7 @@ document.querySelector('#projects')?.addEventListener('click', async (event) => 
   }
 });
 
-// Mission Form
+// Mission Form Handler
 document.querySelector('#mission-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.querySelector('#mission-prompt');
@@ -188,7 +236,7 @@ document.querySelector('#mission-form')?.addEventListener('submit', async (e) =>
   }
 });
 
-// Simulation Buttons
+// Simulation Handlers
 document.querySelector('#btn-sim-refactor')?.addEventListener('click', async () => {
   const box = document.querySelector('#sim-result');
   box.innerHTML = 'Executando simulação de refatoração no Digital Twin...';
