@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 30;
+const CURRENT_SCHEMA_VERSION = 31;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -62,6 +62,10 @@ const COLLECTIONS_BY_VERSION = {
   // selfTest e cada transição de estado), com teto de retenção — o estado CONNECTED é
   // derivado a cada leitura, então o histórico serve para telemetria, não para o veredito.
   30: ['connectorRegistry', 'connectorMetrics', 'connectorEvents'],
+  // MISSION-1003 — decisões do AI Router: qual provider foi escolhido para cada execução,
+  // por que (tier/evidência), duração e resultado. Histórico append-only para o Learning
+  // Router rankear providers por medição real. Teto de retenção como as demais telemetrias.
+  31: ['aiRouterDecisions'],
 };
 
 function normalizeVersion(value) {

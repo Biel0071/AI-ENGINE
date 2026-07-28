@@ -535,6 +535,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/connectors') return sendJson(res, 200, await app.connectors.statusAll(tenantId, actorId), requestId);
       if (req.method === 'GET' && /^\/api\/connectors\/[^/]+\/health$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.health(tenantId, actorId, url.pathname.split('/')[3]), requestId);
       if (req.method === 'POST' && /^\/api\/connectors\/[^/]+\/selftest$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.selfTest(tenantId, actorId, url.pathname.split('/')[3]), requestId);
+      // MISSION-1003 — AI Router: qual provider seria escolhido agora, por evidência.
+      if (req.method === 'GET' && url.pathname === '/api/ai/router/select') return sendJson(res, 200, await app.aiRouter.select(tenantId, actorId, { preferTier: url.searchParams.get('tier') || null }), requestId);
 
       if (req.method === 'POST' && url.pathname === '/api/chat') {
         const b = await readJson(req);
