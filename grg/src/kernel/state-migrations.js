@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 22;
+const CURRENT_SCHEMA_VERSION = 29;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -27,6 +27,36 @@ const COLLECTIONS_BY_VERSION = {
   20: ['operationalActivationRuns', 'operationalComponentStates', 'operationalComponentHistory', 'operationalInvestigations', 'operationalReadinessReports', 'dailyIntelligenceReports', 'operationalAssurances'],
   21: ['missions', 'missionSteps', 'missionEvents', 'missionContextRefs', 'missionSummaries'],
   22: ['missionPlans', 'operationalStabilityReports'],
+  // Execucoes reais do OneDeploy e dos smoke tests (substituem retornos simulados).
+  23: ['onedeployRuns', 'smokeRuns'],
+  24: ['realityFeedbacks'],
+  // O CapOS criava a colecao sob demanda no primeiro registro, o que fazia a leitura
+  // antes da primeira escrita encontrar undefined. Agora ela existe desde o boot.
+  25: ['capOsRegistry', 'cognitiveEvents', 'cognitiveMarketplaceItems', 'cognitiveAtoms', 'presenceConfigs'],
+  // GitHubOperationsService criava estas colecoes sob demanda e caia num item de demo
+  // quando estavam vazias. Agora existem desde o boot e vazio significa "nada sincronizado".
+  26: ['githubOrgs', 'githubPullRequests', 'githubIssues', 'vpsServers', 'vpsOperationPlans', 'selfDeployPipelines', 'factoryDemands'],
+  // Governanca V10. `councilDecisions` ja era escrita pelo conselho sem nunca ter sido
+  // declarada — criada sob demanda a cada gravacao. `councilSeats` guarda quem ocupa cada
+  // assento (sem assento nao ha voto) e `researchCycles` registra o pedido de pesquisa.
+  // `objectiveStates` e `gatekeeperDecisions` sustentam a Readiness Matrix e o
+  // PRODUCTION_LOCK: toda promocao de objetivo e todo bloqueio ficam auditaveis.
+  27: ['councilSeats', 'councilDecisions', 'researchCycles', 'objectiveStates', 'gatekeeperDecisions'],
+  // V11 — Living Core. `livingRuntimeTicks` e o registro do que cada loop de fato fez a
+  // cada tick, e e a unica base para a afirmacao "o sistema esta vivo" (sem ela seria
+  // declaracao). `livingRuntimeLeases` sustenta a lideranca quando nao ha Redis.
+  // `missionPlaybooks` e `missionBenchmarks` sao o que sobra de uma missao concluida:
+  // antes `mission.completed` era publicado e tinha zero assinantes, e o conhecimento
+  // morria no summary. `researchSourceCache` guarda a resposta por host com TTL para o
+  // loop de pesquisa nao martelar as fontes. `improvementScans` registra cada varredura
+  // de auto-organizacao.
+  28: ['livingRuntimeTicks', 'livingRuntimeLeases', 'missionPlaybooks', 'missionBenchmarks', 'researchSourceCache', 'improvementScans', 'assistedModeWindows'],
+  // MISSION-0003A — identidade permanente do organismo. Coleção de UM registro: quem o
+  // organismo é, desde quando, e por quantas gerações de release/esquema passou. Era o
+  // único organo da fundação que existia como módulo (`kernel/organism-identity.js`) mas
+  // não estava ligado ao boot — órfão, sem coleção. Sem ela a identidade não sobrevive a
+  // um restart, e "o FÊNIX" seria só o nome do processo atual.
+  29: ['organismIdentity'],
 };
 
 function normalizeVersion(value) {

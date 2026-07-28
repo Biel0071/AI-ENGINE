@@ -98,6 +98,34 @@ Ver `FENIX_EVOLUTION_PLAN.md`. Ordem fixa: **cobrir → medir → consolidar →
 - **Fora do horizonte** (decisão do dono): Vision Engine, Universal Builder, OAuth+conectores,
   deploy em produção.
 
+## 10.1 Capability Status Matrix
+
+Estados permanentes (regra do organismo): `ACTIVE` roda em produção agora; `IMPLEMENTED`
+existe e passa teste mas não é exercitado continuamente; `PARTIAL` existe com lacuna
+declarada; `PLANNED` tem contrato mas nenhuma lógica; `EXPERIMENTAL` existe atrás de flag;
+`REMOVED` foi retirado. Nunca uma descrição ambígua. Preferir "ainda não existe" a simular.
+
+| Capability | Estado | Evidência |
+|---|---|---|
+| Kernel / store / measurement | ACTIVE | 216 fan-in, contrato measured/unknown |
+| Identidade permanente | ACTIVE | ligada ao boot (createApp `ensure`), schema v29, `GET /api/organism/identity` |
+| Living Runtime (11 loops) | ACTIVE | 6 serviços por role, tick registrado |
+| Mission Runtime | ACTIVE | mission-planner compila e materializa |
+| Observabilidade | ACTIVE | observability-center, exporter Prometheus |
+| Governança (gate, matriz, auditoria) | ACTIVE | default-DENY, 0 sinais falsos |
+| Memória / conhecimento / grafo | IMPLEMENTED | módulos existem e testados; pipeline pré-LLM só cache |
+| Capabilities / Skills | IMPLEMENTED | registry + destilação de missão |
+| Developer Mode (PR real) | PARTIAL | github-operations cria PR com conector; degrada sem ele |
+| DNA / Benchmark comparativo | PARTIAL | sem runner de benchmark → sem antes/depois automático |
+| Cognitive Council (voto) | ACTIVE | ciclo de voto coberto por teste |
+| Connector Runtime (Google/Meta/WhatsApp) | PLANNED | zero OAuth de saída em src/; contrato a definir |
+| Visual Brain | PLANNED | não existe nenhum módulo |
+| Operator Mode (relatório matinal) | PLANNED | depende de conectores; hoje os números seriam inventados |
+| Universal Builder (apps/jogos/mobile) | PLANNED | software-factory cobre web parcial |
+| Capability Contract por níveis | PLANNED | especificado; não implementado |
+| CI/CD | PLANNED | .github/ vazio |
+| Transporte realtime (SSE/WS) | PLANNED | painel é polling 5 s |
+
 ## 11. Métricas de qualidade (gates permanentes)
 
 - `node --test test/` verde antes de PR.

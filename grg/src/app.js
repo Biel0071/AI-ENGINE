@@ -2,6 +2,7 @@
 // Trocar um adapter (Postgres, LiteLLM, GitHub real, packagers reais) não muda este wiring.
 const { MemoryStore, FileStore } = require('./kernel/store');
 const { EventBus } = require('./kernel/event-bus');
+const { OrganismIdentityService } = require('./kernel/organism-identity');
 const { ControlPlane } = require('./control-plane/control-plane');
 const { RepositoryIntelligence } = require('./repo-intel/repository-intelligence');
 const { LocalGitHostAdapter } = require('./repo-intel/ports');
@@ -22,6 +23,10 @@ const { SecurityPlane } = require('./security/security-plane');
 const { AuditTrail } = require('./governance/audit-trail');
 const { PolicyEngine } = require('./governance/policy-engine');
 const { ApprovalEngine } = require('./governance/approval-engine');
+const { SimulationAuditService } = require('./governance/simulation-audit');
+const { ReadinessMatrixService } = require('./governance/readiness-matrix');
+const { Gatekeeper } = require('./governance/gatekeeper');
+const { ProductionReadinessService } = require('./governance/production-readiness');
 const { AuthService } = require('./auth/auth');
 const { OidcVerifier } = require('./auth/oidc-verifier');
 const { IdempotencyService } = require('./infrastructure/messaging/idempotency');
@@ -83,6 +88,11 @@ async function createApp(options = {}) {
   const fabricEvents = new FabricEventBus({ eventStore, liveBus: bus });
   const controlPlane = await new ControlPlane({ store, bus }).initialize(options.master);
   const securityConfig = options.securityConfig || loadSecurityConfig(options.env || process.env);
+  // MISSION-0003A — identidade permanente do organismo, ligada ao boot. `ensure()` cria na
+  // primeira vez e devolve a mesma identidade sempre; a chamada acontece aqui (não em
+  // startup do server) para que qualquer forma de subir o app estabeleça a identidade.
+  const organismIdentity = new OrganismIdentityService({ store, bus, controlPlane, env: options.env || process.env });
+  await organismIdentity.ensure();
   const audit = new AuditTrail({ store }).attach(bus);
   const policy = new PolicyEngine();
   const approvals = new ApprovalEngine({ store, bus, controlPlane, audit, policy });
@@ -337,6 +347,10 @@ async function createApp(options = {}) {
   const { TestingSmokeE2eService } = require('./onedeploy/testing-smoke-e2e');
   const { ContinuousImprovementLoopService } = require('./onedeploy/continuous-improvement-loop');
 
+  // GRG FÊNIX Ω∞ V11 — Living Core
+  const { MissionArtifactsService } = require('./missions/mission-artifacts');
+  const { ResearchSourceClient, createResearchSearchClient } = require('./research/source-client');
+
   app.knowledgeGenome = new KnowledgeGenomeEngine({ store, bus, controlPlane, hierarchy, vectorStore });
   app.hypothesisEngine = new HypothesisEngine({ store, bus, controlPlane, approvals, policy });
   app.crossProjectLearning = new CrossProjectLearning({ store, bus, controlPlane, digitalTwin });
@@ -344,33 +358,43 @@ async function createApp(options = {}) {
   app.modelOrchestrator = new ModelOrchestrator({ aiGateway });
   app.agentSwarm = new AgentSwarm({ store, bus, controlPlane, fabricEvents });
   app.vpsOps = new VpsOperationsService({ store, bus, controlPlane, approvals });
-  app.githubOps = new GitHubOperationsService({ store, bus, controlPlane, repoIntel, digitalTwin });
+  app.githubOps = new GitHubOperationsService({ store, bus, controlPlane, repoIntel, digitalTwin, github });
   app.projectFactory = new ProjectFactoryService({ store, bus, controlPlane, factory, missionPlanner, digitalTwin });
   app.backgroundCognition = new BackgroundCognition({ store, bus, controlPlane, memory, digitalTwin, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
-  app.externalSearch = new ExternalSearchService({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
+  // V11 — a unica saida para a internet aberta da plataforma: allowlist de dominios,
+  // HTTPS+GET, sem redirect cross-host, cache com TTL e rate limit por host. DESLIGADO por
+  // padrao (FENIX_RESEARCH_ENABLED): desligado, nenhuma requisicao sai da maquina.
+  app.researchSource = new ResearchSourceClient({ store, env: runtimeEnv, fetchImpl: options.researchFetch });
+  // searchClient recebia `null` e a busca externa devolvia NOT_IMPLEMENTED. Agora recebe o
+  // adaptador sobre o MESMO cliente — mesma allowlist, mesmo cache, mesmo limite.
+  app.externalSearch = new ExternalSearchService({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, searchClient: createResearchSearchClient(app.researchSource) });
 
-  app.masterNode = new MasterNodeService({ store, bus, controlPlane, approvals, sandbox, vpsOps: app.vpsOps });
-  app.deployCenter = new DeployCenterService({ store, bus, controlPlane });
-  app.observabilityCenter = new ObservabilityCenterService({ store, bus, controlPlane, metrics });
+  app.masterNode = new MasterNodeService({ store, bus, controlPlane, approvals, sandbox, vpsOps: app.vpsOps, health });
+  app.deployCenter = new DeployCenterService({ store, bus, controlPlane, deployer });
+  app.observabilityCenter = new ObservabilityCenterService({ store, bus, controlPlane, metrics, health, aiGateway });
   app.cognitivePerformance = new CognitivePerformanceEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
   app.cognitiveOptimization = new CognitiveOptimizationEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
   app.pluginSkills = new PluginSkillsEcosystem({ store, bus, controlPlane, approvals });
   app.cognitiveEncryption = new CognitiveEncryptionService({ store, bus, controlPlane });
   app.npcCity = new NpcCityEngine({ store, bus, controlPlane, agentSwarm: app.agentSwarm, digitalTwin });
-  app.companyDailyAnalysis = new CompanyDailyAnalysisService({ store, bus, controlPlane, digitalTwin, knowledgeGenome: app.knowledgeGenome, masterNode: app.masterNode });
+  app.companyDailyAnalysis = new CompanyDailyAnalysisService({ store, bus, controlPlane, digitalTwin, knowledgeGenome: app.knowledgeGenome, masterNode: app.masterNode, agentSwarm: app.agentSwarm });
 
   // OMEGA Attachments
   app.cognitiveAtomsFabric = new CognitiveAtomsFabric({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
   app.brainFederation = new BrainFederation({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
   app.cognitiveCouncil = new CognitiveCouncil({ store, bus, controlPlane, approvals, policy });
   app.modelEconomy = new ModelEconomyEngine({ store, bus, controlPlane, aiGateway, cognitivePerformance: app.cognitivePerformance, cognitiveOptimization: app.cognitiveOptimization });
-  app.autonomousResearch = new AutonomousResearchEngine({ store, bus, controlPlane, sandbox, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
+  // sourceClient + missionPlanner: habilitado, a pesquisa consulta as fontes aprovadas e
+  // abre um plano de AVALIACAO. Nada e instalado — adotar exige missao, sandbox e aprovacao.
+  app.autonomousResearch = new AutonomousResearchEngine({ store, bus, controlPlane, sandbox, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome, sourceClient: app.researchSource, missionPlanner });
 
   // OMEGA V2.0 Attachments
-  app.collectiveIntelligence = new CollectiveIntelligenceEngine({ store, bus, controlPlane, modelOrchestrator: app.modelOrchestrator, knowledgeGenome: app.knowledgeGenome });
+  app.collectiveIntelligence = new CollectiveIntelligenceEngine({ store, bus, controlPlane, modelOrchestrator: app.modelOrchestrator, knowledgeGenome: app.knowledgeGenome, aiGateway });
   app.recursiveIntelligence = new RecursiveIntelligenceLoop({ store, bus, controlPlane, collectiveIntelligence: app.collectiveIntelligence, knowledgeGenome: app.knowledgeGenome });
   app.contextExpansion = new ContextExpansionEngine({ store, bus, controlPlane, projectFactory: app.projectFactory, knowledgeGenome: app.knowledgeGenome });
-  app.humanDigitalTwin = new HumanDigitalTwin({ store, bus, controlPlane, digitalTwin, missionKernel: missions });
+  // missionPlanner: o autopilot compila o comando numa missao real, em vez de
+  // devolver AUTOPILOT_DISPATCHED sem despachar nada.
+  app.humanDigitalTwin = new HumanDigitalTwin({ store, bus, controlPlane, digitalTwin, missionKernel: missions, missionPlanner });
 
   // OMEGA INFINITY Attachments
   app.cognitiveLaws = new CognitiveLawsEngine({ store, bus, controlPlane });
@@ -379,28 +403,39 @@ async function createApp(options = {}) {
   app.livingPhysics = new LivingPhysicsEngine({ store, bus, controlPlane });
   app.realityFeedback = new RealityFeedbackEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
   app.metaConsciousness = new MetaConsciousnessEngine({ store, bus, controlPlane, cognitivePerformance: app.cognitivePerformance, cognitiveOptimization: app.cognitiveOptimization });
+  // Regra 1: duplicidade e fragmentacao do conhecimento ja sao medidas pelo
+  // SelfEvolutionKernel. O optimization engine reusa aquela medicao em vez de
+  // recalcular — a injecao e feita aqui porque o kernel nasce depois dele.
+  app.cognitiveOptimization.selfEvolution = app.selfEvolutionKernel;
 
   // UIOS Attachments
   app.kos = new KnowledgeOperatingSystem({ store, bus, controlPlane });
   app.capOs = new CapabilityOperatingSystem({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
-  app.missionCompiler = new MissionCompiler({ store, bus, controlPlane, projectFactory: app.projectFactory, knowledgeGenome: app.knowledgeGenome });
-  app.worldModelFactory = new WorldModelFactory({ store, bus, controlPlane, digitalTwin });
+  // O compilador delega ao MissionPlanner (compilacao real de objetivo em passos) e
+  // consulta o indice real da constituicao via kos, em vez de fabricar um DAG fixo.
+  app.missionCompiler = new MissionCompiler({ store, bus, controlPlane, projectFactory: app.projectFactory, knowledgeGenome: app.knowledgeGenome, missionPlanner, kos: app.kos });
+  // health: o status do master node vem do HealthRegistry, nao de um literal.
+  app.worldModelFactory = new WorldModelFactory({ store, bus, controlPlane, digitalTwin, health });
 
   // KEOS Attachments
-  app.ucp = new UniversalCognitiveProtocol({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, cognitiveLaws: app.cognitiveLaws });
+  app.ucp = new UniversalCognitiveProtocol({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, cognitiveLaws: app.cognitiveLaws, knowledgeGraph });
   app.universalAdapters = new UniversalAdaptersEngine({ store, bus, controlPlane, aiGateway });
   app.configurablePipeline = new ConfigurablePipelineService({ store, bus, controlPlane, approvals });
   app.expandedConstitutionIndex = new ExpandedConstitutionIndex({ store, bus, controlPlane, kos: app.kos });
 
   // Workspace OS & ECA Attachments
   app.workspaceModes = new CognitiveWorkspaceModes({ store, bus, controlPlane });
-  app.eca = new ExecutiveCognitiveAssistant({ store, bus, controlPlane, workspaceModes: app.workspaceModes });
+  // approvals: a caixa de decisoes do executivo e a visao dos pedidos de aprovacao
+  // REAIS, e resolver uma decisao aprova de verdade pelo engine (Regra 1).
+  app.eca = new ExecutiveCognitiveAssistant({ store, bus, controlPlane, workspaceModes: app.workspaceModes, approvals });
   app.cognitivePresence = new CognitivePresenceEngine({ store, bus, controlPlane });
 
   // NEXUS Ω∞ Attachments
   app.ucc = new UnifiedCognitiveCore({ store, bus, controlPlane, kos: app.kos, capOs: app.capOs, missionCompiler: app.missionCompiler, workspaceModes: app.workspaceModes, realityFeedback: app.realityFeedback });
   app.nexusTimeline = new ExecutiveTimelineService({ store, bus, controlPlane });
-  app.commandCenter = new ExecutiveCommandCenterService({ store, bus, controlPlane, digitalTwin });
+  // health + aiGateway: o painel executivo conta do store e mede a saude real, em vez
+  // de devolver doze metricas literais.
+  app.commandCenter = new ExecutiveCommandCenterService({ store, bus, controlPlane, digitalTwin, health, aiGateway });
   app.cognitiveMarketplace = new CognitiveMarketplaceService({ store, bus, controlPlane, capOs: app.capOs });
 
   // SCOS Attachments
@@ -410,11 +445,41 @@ async function createApp(options = {}) {
   app.creationEvolution = new CreationEvolutionEngine({ store, bus, controlPlane, capOs: app.capOs });
 
   // OneDeploy Orchestrator Attachments
-  app.oneDeploy = new OneDeployOrchestrator({ store, bus, controlPlane, masterNode: app.masterNode, deployCenter: app.deployCenter });
+  // FASE 1: auditoria automatica de simulacao (classifica os proprios modulos).
+  app.simulationAudit = new SimulationAuditService({ store, bus, controlPlane });
+  // V10: contrato de estado por objetivo e o cadeado de producao. O gatekeeper compoe
+  // operationalActivation + readinessMatrix + auditTree — nao mede nada por conta propria.
+  app.readinessMatrix = new ReadinessMatrixService({ store, bus, controlPlane });
+  app.gatekeeper = new Gatekeeper({ store, bus, controlPlane, operationalActivation, readinessMatrix: app.readinessMatrix });
+  // O deployer e construido antes (o gatekeeper depende de operationalActivation), por
+  // isso a ligacao acontece aqui. Sem ela o PRODUCTION_LOCK nao alcanca o caminho real.
+  deployer.gatekeeper = app.gatekeeper;
+  app.productionReadiness = new ProductionReadinessService({
+    store, bus, controlPlane, operationalActivation,
+    readinessMatrix: app.readinessMatrix, gatekeeper: app.gatekeeper,
+    simulationAudit: app.simulationAudit, observabilityCenter: app.observabilityCenter, aiGateway,
+  });
   app.analyzers = new ProjectAnalyzersService({ store, bus, controlPlane });
-  app.testingSmokeE2e = new TestingSmokeE2eService({ store, bus, controlPlane, observabilityCenter: app.observabilityCenter });
-  app.continuousImprovement = new ContinuousImprovementLoopService({ store, bus, controlPlane, analyzers: app.analyzers, capOs: app.capOs });
+  app.testingSmokeE2e = new TestingSmokeE2eService({ store, bus, controlPlane, observabilityCenter: app.observabilityCenter, baseUrl: options.smokeBaseUrl });
+  // O pipeline executa os servicos reais: analyzers leem snapshots, testing bate HTTP.
+  app.oneDeploy = new OneDeployOrchestrator({
+    store, bus, controlPlane, masterNode: app.masterNode, deployCenter: app.deployCenter,
+    analyzers: app.analyzers, testing: app.testingSmokeE2e,
+  });
+  // selfEvolution: duplicidade e fragmentacao de conhecimento ja sao medidas por hash
+  // real de conteudo la. A varredura reusa aquela medicao em vez de recalcular (Regra 1).
+  app.continuousImprovement = new ContinuousImprovementLoopService({ store, bus, controlPlane, analyzers: app.analyzers, capOs: app.capOs, selfEvolution: app.selfEvolutionKernel });
 
+  // V11 — `mission.completed` era publicado e nao tinha assinante: o summary morria no
+  // store. Este servico converte missao concluida em capsule + capability + playbook +
+  // benchmark, e e o que faz o MissionPlanner reusar a sequencia que funcionou. Ligado
+  // aqui porque depende do knowledgeGenome, que nasce depois do MissionKernel.
+  app.missionArtifacts = new MissionArtifactsService({
+    store, bus, events: fabricEvents, controlPlane,
+    knowledgeGenome: app.knowledgeGenome, capabilityRegistry,
+  }).attach();
+
+  app.organismIdentity = organismIdentity;
   app.chat = new ChatAgent({ app, llm });
   app.masterAvatar = new MasterAvatar({ chat: app.chat, missionPlanner });
   app.npcCity.masterAvatar = app.masterAvatar;
