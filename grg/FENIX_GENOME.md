@@ -126,6 +126,27 @@ declarada; `PLANNED` tem contrato mas nenhuma lógica; `EXPERIMENTAL` existe atr
 | CI/CD | PLANNED | .github/ vazio |
 | Transporte realtime (SSE/WS) | PLANNED | painel é polling 5 s |
 
+## 10.2 Reality Capability Matrix
+
+Regra REALITY FIRST: nenhum estado é manual. Todos derivam de medição. O Connector Runtime
+(MISSION-0004) é a primeira capacidade a expor isto por endpoint vivo — `GET /api/connectors`
+roda `authenticate() + selfTest()` e deriva o estado a cada leitura. `CONNECTED` é
+impossível por configuração.
+
+| Capability | Estado | Última medição | Último selfTest | Cobertura | Dependências | Maturidade |
+|---|---|---|---|---|---|---|
+| GitHub Connector | derivado (`/api/connectors`) | a cada leitura | `listUserRepos()` real | `connector-runtime.test.js` (6) | GITHUB_TOKEN | ACTIVE quando selfTest passa; senão CONFIGURED |
+| Google/Meta/WhatsApp/Supabase/Cloudflare/OpenAI | PLANNED | — | nunca | — | OAuth de saída (não existe) | PLANNED — painel mostra PLANNED, nunca CONNECTED |
+
+Estados possíveis de um conector, todos derivados: `PLANNED` (sem implementação),
+`CONFIGURED` (registrado, sem credencial provada), `AUTHENTICATED` (credencial presente,
+selfTest pendente), `CONNECTED` (authenticate+selfTest ok, medido), `DEGRADED` (selfTest
+falhou), `DISCONNECTED`, `ERROR`. O token nunca é persistido — só sua presença é medida.
+
+Marco de auto-evolução (pendente, exige `GITHUB_TOKEN` real do dono): com o GitHub
+CONNECTED, o FÊNIX abre branch → commit → push → PR no próprio repo pelo runtime. Nenhum
+outro conector antes deste marco.
+
 ## 11. Métricas de qualidade (gates permanentes)
 
 - `node --test test/` verde antes de PR.

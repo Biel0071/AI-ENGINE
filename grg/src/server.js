@@ -531,6 +531,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/observability/metrics') return sendJson(res, 200, await app.observabilityCenter.getMetrics(tenantId, actorId), requestId);
       // MISSION-0003A — identidade permanente do organismo (organismId, nascimento, linhagem).
       if (req.method === 'GET' && url.pathname === '/api/organism/identity') return sendJson(res, 200, await app.organismIdentity.report(tenantId, actorId), requestId);
+      // MISSION-0004 — Connector Runtime. Estado derivado por selfTest, nunca por config.
+      if (req.method === 'GET' && url.pathname === '/api/connectors') return sendJson(res, 200, await app.connectors.statusAll(tenantId, actorId), requestId);
+      if (req.method === 'GET' && /^\/api\/connectors\/[^/]+\/health$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.health(tenantId, actorId, url.pathname.split('/')[3]), requestId);
+      if (req.method === 'POST' && /^\/api\/connectors\/[^/]+\/selftest$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.selfTest(tenantId, actorId, url.pathname.split('/')[3]), requestId);
 
       if (req.method === 'POST' && url.pathname === '/api/chat') {
         const b = await readJson(req);

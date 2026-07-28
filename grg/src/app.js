@@ -3,6 +3,8 @@
 const { MemoryStore, FileStore } = require('./kernel/store');
 const { EventBus } = require('./kernel/event-bus');
 const { OrganismIdentityService } = require('./kernel/organism-identity');
+const { ConnectorRuntime } = require('./connectors/connector-runtime');
+const { GitHubConnectorAdapter } = require('./connectors/github-connector-adapter');
 const { ControlPlane } = require('./control-plane/control-plane');
 const { RepositoryIntelligence } = require('./repo-intel/repository-intelligence');
 const { LocalGitHostAdapter } = require('./repo-intel/ports');
@@ -359,6 +361,12 @@ async function createApp(options = {}) {
   app.agentSwarm = new AgentSwarm({ store, bus, controlPlane, fabricEvents });
   app.vpsOps = new VpsOperationsService({ store, bus, controlPlane, approvals });
   app.githubOps = new GitHubOperationsService({ store, bus, controlPlane, repoIntel, digitalTwin, github });
+  // MISSION-0004 — Connector Runtime. Registra o adapter do GitHub COMPONDO o mesmo
+  // `github` já ligado acima (Regra 1: não duplica o cliente HTTP). É o único conector
+  // real; todo o resto permanece PLANNED. O estado CONNECTED é derivado por selfTest, nunca
+  // por configuração.
+  app.connectors = new ConnectorRuntime({ store, bus, controlPlane });
+  app.connectors.register(new GitHubConnectorAdapter({ github, store }));
   app.projectFactory = new ProjectFactoryService({ store, bus, controlPlane, factory, missionPlanner, digitalTwin });
   app.backgroundCognition = new BackgroundCognition({ store, bus, controlPlane, memory, digitalTwin, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
   // V11 — a unica saida para a internet aberta da plataforma: allowlist de dominios,
