@@ -29,13 +29,24 @@ class AIGateway {
 
   route(taskType) { return this.routes[taskType] || this.routes.default; }
 
-  candidates(taskType) {
+  // MISSION-1005 — `override` opcional ({provider, model}) permite que o AI Router injete a
+  // escolha que ELE fez por evidência, sem que o Gateway deixe de ser o único executor
+  // (cache, breaker, rate-limit, aiCalls continuam aqui). Sem override, o comportamento é
+  // exatamente o de antes: a rota configurada manda. Com override, o provider decidido pelo
+  // Router lidera a lista de candidatos e a rota configurada vira fallback operacional —
+  // então se o escolhido cair no breaker, o Gateway ainda tem para onde ir.
+  candidates(taskType, override = null) {
     const route = this.route(taskType);
     if (!route?.provider || !route?.model) throw new ValidationError(`AI route ${taskType} requires provider and model`);
     const fallback = route.fallback ? (Array.isArray(route.fallback) ? route.fallback : [route.fallback]) : [];
-    const candidates = [{ ...route, fallback: undefined }, ...fallback];
-    if (candidates.some((item) => !item?.provider || !item?.model)) throw new ValidationError(`AI route ${taskType} has an invalid fallback`);
-    return candidates;
+    const base = [{ ...route, fallback: undefined }, ...fallback];
+    if (base.some((item) => !item?.provider || !item?.model)) throw new ValidationError(`AI route ${taskType} has an invalid fallback`);
+    if (override?.provider) {
+      const chosen = { provider: override.provider, model: override.model || route.model };
+      // O escolhido pelo Router primeiro; a rota configurada segue como fallback (sem duplicar o escolhido).
+      return [chosen, ...base.filter((item) => item.provider !== chosen.provider)];
+    }
+    return base;
   }
 
   breaker(providerName) {
@@ -83,11 +94,15 @@ class AIGateway {
     };
   }
 
-  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature }) {
+  // `provider`/`model` opcionais: quando o AI Router já decidiu por evidência, ele os passa
+  // e o Gateway executa essa escolha (mantendo cache/breaker/rate-limit/aiCalls). Ausentes,
+  // o Gateway roteia pela config como sempre — retrocompatível.
+  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, provider = null, model = null }) {
     await this.cp.authorize(tenantId, actorId, 'ai:invoke');
     if (!prompt) throw new ValidationError('prompt is required');
     if (this.rateLimiter) await this.rateLimiter.consume(tenantId, 'ai.invoke');
 
+    const override = provider ? { provider, model } : null;
     const key = this.cacheKey(tenantId, taskType, prompt);
     const cached = (await this.store.read()).aiCache.find((item) => item.key === key && (!item.expiresAt || item.expiresAt > now()));
     if (cached) {
@@ -97,7 +112,7 @@ class AIGateway {
     }
 
     const promptEstimate = estimateTokens(prompt);
-    const candidates = this.candidates(taskType);
+    const candidates = this.candidates(taskType, override);
     const maxOutputTokens = Math.max(...candidates.map((item) => Number(item.maxOutputTokens || 2_048)));
     const tokenReservation = promptEstimate + maxOutputTokens;
     const costReservation = Math.max(...candidates.map((item) => estimateCost(
