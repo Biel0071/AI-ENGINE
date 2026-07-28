@@ -5,6 +5,18 @@ regra final do próprio dono do projeto: **toda melhoria em branch própria, val
 documentada, por pull request, e só então produção conforme a política de deploy.** Nada
 aqui é commitado, tagueado ou implantado sem autorização explícita.
 
+## Revisão de estratégia (MISSION-0002)
+
+A auditoria da MISSION-0002 provou que dois dos três alvos de consolidação **não eram
+duplicação**: Event Bus (3 camadas corretas) e Registries (5 domínios distintos). Ver
+`FENIX_COMPONENT_RELATIONSHIP.md`. A estratégia foi corrigida e elevada a princípio
+permanente em `FENIX_ARCHITECTURE_PRINCIPLES.md`:
+
+- **NÃO fundir** camadas ou domínios distintos — só duplicação real comprovada.
+- **Ordem fixa**: cobertura de testes → validação → consolidação por evidência.
+- **Única duplicação real**: as 8 superfícies cognitivas (35 arquivos sem teste), a serem
+  consolidadas **somente após** o Sprint A.
+
 ## Princípio que ordena tudo
 
 O repositório está **maduro e honesto** (0 simulações, 0 sinais falsos, 69/69 testes). O
