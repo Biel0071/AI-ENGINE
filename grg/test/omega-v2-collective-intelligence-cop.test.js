@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createApp } = require('../src/app');
 
-test('GRG FÊNIX Ω (OMEGA) V2.0 Collective Intelligence & Human COP Test Suite', async () => {
+test('GRG FENIX (OMEGA) V2.0 Collective Intelligence & Human COP Test Suite', async () => {
   const app = await createApp({ dataFile: null });
 
   const tenantId = 'grg';

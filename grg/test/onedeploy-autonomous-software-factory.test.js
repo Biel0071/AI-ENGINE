@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createApp } = require('../src/app');
 
-test('GRG FÊNIX Ω∞ OneDeploy Orchestrator & Autonomous Software Factory Test Suite', async () => {
+test('GRG FENIX OneDeploy Orchestrator & Autonomous Software Factory Test Suite', async () => {
   const app = await createApp({ dataFile: null });
 
   const tenantId = 'grg';

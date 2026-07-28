@@ -3,34 +3,46 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GRG UNIVERSE — Living Multi-Tenant City OS</title>
+    <title>FÊNIX AI MASTER — SimCity da Engenharia de Software</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
-  <body>
-    <!-- LEVEL 1: GRG UNIVERSE TOPBAR & COMPANY SELECTOR -->
+  <body class="simcity-theme">
+    <!-- TOPBAR WITH 6-LEVEL ZOOM & MULTI-TENANT SELECTOR -->
     <header class="topbar">
       <div class="universe-selector">
-        <span class="eyebrow">🌎 GRG UNIVERSE · MULTI-TENANT CITY OS</span>
+        <span class="eyebrow">🔥 FÊNIX AI MASTER · SIMCITY DA ENGENHARIA DE SOFTWARE</span>
         <div class="company-picker">
-          <label for="company-select">Empresa / Ilha:</label>
+          <label for="company-select">Ilha / Empresa:</label>
           <select id="company-select" aria-label="Selecionar Empresa">
             <option value="biel0071-corp">🏢 Biel0071 Enterprise City</option>
             <option value="zapai-inc">🏢 ZapAI Technology Island</option>
             <option value="ai-city-labs">🏢 AI City Research Hub</option>
             <option value="fortlev-group">🏢 Fortlev Digital Campus</option>
           </select>
-          <button id="btn-create-company" class="secondary">+ Nova Empresa</button>
+          
+          <div class="zoom-controls">
+            <span class="zoom-label">Nível de Zoom:</span>
+            <button class="btn-zoom" data-zoom="1">1: Universo</button>
+            <button class="btn-zoom" data-zoom="2">2: Empresa</button>
+            <button class="btn-zoom active" data-zoom="3">3: Cidade</button>
+            <button class="btn-zoom" data-zoom="4">4: Prédio</button>
+            <button class="btn-zoom" data-zoom="5">5: Andar</button>
+            <button class="btn-zoom" data-zoom="6">6: Sala/Agentes</button>
+          </div>
         </div>
       </div>
       <div class="header-right">
+        <button id="btn-daily-meeting" class="btn-meeting">🤝 Reunião Diária (08:00)</button>
+        <button id="btn-knowledge-lib" class="btn-library">📚 Biblioteca de Conhecimento</button>
         <div id="env-weather" class="weather-badge healthy">☀️ CIDADE SAUDÁVEL (Score: 95)</div>
-        <div class="status"><span></span> LCR Online (24/7)</div>
+        <div class="status"><span></span> LCR Online 24/7</div>
       </div>
     </header>
 
     <nav class="nav-tabs" aria-label="Navegação Principal">
-      <button class="nav-tab active" data-tab="universe-map">🏙️ Cidade da Empresa (Digital Twin 3D)</button>
-      <button class="nav-tab" data-tab="portfolio">🏢 Portfólio de Projetos & Prédios</button>
+      <button class="nav-tab active" data-tab="simcity-map">🎮 SimCity Cybernetic Map (Visão 3D Vivo)</button>
+      <button class="nav-tab" data-tab="agents-mesh">🤖 Enxame de Subagentes & Salas</button>
+      <button class="nav-tab" data-tab="portfolio">🏢 Portfólio & Prédios</button>
       <button class="nav-tab" data-tab="terminal">💬 Terminal Conversacional Operacional</button>
       <button class="nav-tab" data-tab="kernel">🧠 ACEP Kernel & Digital Twin</button>
       <button class="nav-tab" data-tab="doi">🌐 Digital Operator (DOI)</button>
@@ -39,85 +51,184 @@
     </nav>
 
     <main>
-      <!-- TAB 0: UNIVERSE CITY MAP (CIDADE VIVA & TELEMETRIA) -->
-      <div id="tab-universe-map" class="tab-content active">
-        <section class="city-canvas-hero">
-          <div class="city-header">
-            <div>
-              <span class="eyebrow">LIVING CYBERNETIC CITY</span>
-              <h2 id="active-company-title">Biel0071 Enterprise City</h2>
-              <p>Visualização em tempo real da ilha da empresa, distritos, prédios e telemetria viva.</p>
+      <!-- TAB 0: SIMCITY CYBERNETIC MAP (MAPA PIXEL ART VIVO) -->
+      <div id="tab-simcity-map" class="tab-content active">
+        <div class="simcity-cockpit-layout">
+          <!-- LEFT SIDEBAR: FENIX GUARDIAN PANEL -->
+          <aside class="fenix-guardian-panel">
+            <div class="guardian-avatar-box">
+              <div class="pixel-fenix-avatar">🔥🤖</div>
+              <h3>FÊNIX AI MASTER</h3>
+              <span class="eyebrow">GUARDIÃO DA EVOLUÇÃO CONTÍNUA</span>
             </div>
-            <div class="city-telemetry-pills">
-              <span class="pill port"><i class="icon">⚓</i> Porto: <strong id="telemetry-port">Navio em Carga (Deploy Staging)</strong></span>
-              <span class="pill cpu"><i class="icon">💡</i> Data Center CPU: <strong id="telemetry-cpu">35% Load (Pulsando)</strong></span>
-              <span class="pill lab"><i class="icon">🧪</i> Laboratório: <strong id="telemetry-lab">Benchmark Ativo</strong></span>
-              <span class="pill academy"><i class="icon">🎓</i> Academia: <strong id="telemetry-academy">Treinando Modelos</strong></span>
+            <div class="guardian-dialog-box">
+              <p id="guardian-speech">"Olá, Guardião! Estou monitorando a cidade em tempo real. O enxame de agentes está executando o protocolo de auto-cura no distrito do Data Center."</p>
             </div>
+            <div class="guardian-quick-actions">
+              <button id="btn-rebuild-system" class="btn-pixel">🔄 Recriar Sistema</button>
+              <button id="btn-analyze-data" class="btn-pixel">📊 Analisar Dados</button>
+              <button id="btn-automations" class="btn-pixel">🤖 Automações</button>
+              <button id="btn-reports" class="btn-pixel">📝 Relatórios</button>
+            </div>
+          </aside>
+
+          <!-- RIGHT CANVAS: INTERACTIVE MAP GRID inspired by AI CITY -->
+          <section class="city-map-canvas-container">
+            <div class="map-title-bar">
+              <h2>GRG — AI CITY MAPA DO SISTEMA</h2>
+              <span class="map-sub">Visualização da Infraestrutura, Prédios e Telemetria em Tempo Real</span>
+            </div>
+
+            <div class="cyber-city-grid">
+              <div class="node-building ia-tower" data-district="Torre da IA">
+                <div class="building-icon">🗼</div>
+                <div class="building-name">TORRE DA IA</div>
+                <span class="node-status active">AI Router Active</span>
+              </div>
+
+              <div class="node-building datacenter" data-district="Centro de Dados">
+                <div class="building-icon">🏢</div>
+                <div class="building-name">CENTRO DE DADOS</div>
+                <span class="node-status load">CPU: 35% (Pulsando)</span>
+              </div>
+
+              <div class="node-building academy" data-district="Academia">
+                <div class="building-icon">🏛️</div>
+                <div class="building-name">ACADEMIA</div>
+                <span class="node-status">Treinando Modelos</span>
+              </div>
+
+              <div class="node-building marketplace" data-district="Marketplace">
+                <div class="building-icon">🏪</div>
+                <div class="building-name">MARKETPLACE</div>
+                <span class="node-status">Capability Store</span>
+              </div>
+
+              <div class="node-building lab" data-district="Laboratório">
+                <div class="building-icon">🧪</div>
+                <div class="building-name">LABORATÓRIO</div>
+                <span class="node-status pulse">Benchmark Ativo</span>
+              </div>
+
+              <div class="node-building plaza" data-district="Praça Central">
+                <div class="building-icon">⛲</div>
+                <div class="building-name">PRAÇA CENTRAL</div>
+                <span class="node-status">Conselho de Memória</span>
+              </div>
+
+              <div class="node-building database" data-district="Banco de Dados">
+                <div class="building-icon">🗄️</div>
+                <div class="building-name">BANCO DE DADOS</div>
+                <span class="node-status">Postgres / Redis RLS</span>
+              </div>
+
+              <div class="node-building hangar" data-district="Hangar">
+                <div class="building-icon">🛸</div>
+                <div class="building-name">HANGAR</div>
+                <span class="node-status">Workers & Queue</span>
+              </div>
+
+              <div class="node-building builder" data-district="Construtora">
+                <div class="building-icon">🏗️</div>
+                <div class="building-name">CONSTRUTORA</div>
+                <span class="node-status">Mission Compiler</span>
+              </div>
+
+              <div class="node-building port" data-district="Porto / Doca">
+                <div class="building-icon">⚓</div>
+                <div class="building-name">PORTO DE CARGAS</div>
+                <span class="node-status ship">Deploy Staging Active</span>
+              </div>
+
+              <div class="node-building mine" data-district="Mina de Recursos">
+                <div class="building-icon">⛏️</div>
+                <div class="building-name">MINA DE RECURSOS</div>
+                <span class="node-status">AST / Repo Intel</span>
+              </div>
+
+              <div class="node-building vps" data-district="Distrito VPS">
+                <div class="building-icon">🌩️</div>
+                <div class="building-name">DISTRITO VPS</div>
+                <span class="node-status active">4 Servidores Online</span>
+              </div>
+            </div>
+
+            <!-- LOWER LIVE PROGRESS & TELEMETRY PANEL -->
+            <div class="rebuilding-telemetry-panel">
+              <div class="rebuild-header">
+                <h3>RECRIANDO SISTEMA / OTIMIZANDO...</h3>
+                <span class="time-elapsed">Tempo de Processo: <strong>00:02:48</strong></span>
+              </div>
+              <div class="progress-bar-container">
+                <div class="progress-fill" style="width: 94%;">94% Concluído</div>
+              </div>
+              <div class="telemetry-resource-grid">
+                <div class="resource-col">
+                  <span class="res-label">CPU:</span>
+                  <div class="res-bar"><div class="res-fill" style="width: 35%;"></div></div>
+                  <span class="res-val">35%</span>
+                </div>
+                <div class="resource-col">
+                  <span class="res-label">MEMÓRIA:</span>
+                  <div class="res-bar"><div class="res-fill" style="width: 58%;"></div></div>
+                  <span class="res-val">58%</span>
+                </div>
+                <div class="resource-col">
+                  <span class="res-label">REDE:</span>
+                  <div class="res-bar"><div class="res-fill" style="width: 42%;"></div></div>
+                  <span class="res-val">42%</span>
+                </div>
+                <div class="resource-col">
+                  <span class="res-label">STORAGE:</span>
+                  <div class="res-bar"><div class="res-fill" style="width: 71%;"></div></div>
+                  <span class="res-val">71%</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- TAB 1: SUBAGENTS MESH & DIALOGUES -->
+      <div id="tab-agents-mesh" class="tab-content">
+        <section class="agents-panel">
+          <div>
+            <span class="eyebrow">EPHEMERAL AGENT SWARM & DIALOGUES</span>
+            <h2>Enxame de Subagentes & Diálogo em Tempo Real</h2>
+            <p>Visualização dos subagentes especialistas trabalhando em salas virtuais.</p>
           </div>
-
-          <!-- CITY BUILDINGS GRID -->
-          <div class="city-districts-grid">
-            <div class="district-card building-interactive" data-building="ai-engine-core">
-              <div class="building-badge">🏢 PRÉDIO HEADQUARTERS</div>
-              <h3>AI Engine Core HQ</h3>
-              <p>Kernel Universal, AI Router & Capsule Ω</p>
-              <div class="building-floors-preview">
-                <span class="fl-tag">5F Deploy</span>
-                <span class="fl-tag">4F IA</span>
-                <span class="fl-tag">3F DB</span>
-                <span class="fl-tag">2F Back</span>
-                <span class="fl-tag">1F Front</span>
+          <div class="agents-live-grid">
+            <div class="agent-card-live" data-agent="1024">
+              <div class="agent-avatar">🤖 Supervisor Backend</div>
+              <div class="agent-info">
+                <strong>Agent #1024 (Backend)</strong>
+                <p>Status: <span class="status-tag active">Consultando Database Agent</span></p>
+                <div class="agent-dialogue">"Database Agent, preciso da validação das regras de RLS para o tenant Biel0071."</div>
               </div>
-              <button class="btn-explore-building">Entrar no Prédio (5 Andares) →</button>
             </div>
 
-            <div class="district-card building-interactive" data-building="zapai-crm">
-              <div class="building-badge">🏢 PRÉDIO CRM</div>
-              <h3>ZapAI CRM Tower</h3>
-              <p>Engine WhatsApp, Funis & Automações</p>
-              <div class="building-floors-preview">
-                <span class="fl-tag">5F Deploy</span>
-                <span class="fl-tag">4F IA</span>
-                <span class="fl-tag">3F DB</span>
-                <span class="fl-tag">2F Back</span>
-                <span class="fl-tag">1F Front</span>
+            <div class="agent-card-live" data-agent="1025">
+              <div class="agent-avatar">🛡️ Agent de Segurança</div>
+              <div class="agent-info">
+                <strong>Agent #1025 (Security)</strong>
+                <p>Status: <span class="status-tag active">OWASP Scan Passed</span></p>
+                <div class="agent-dialogue">"Auditoria concluída. Nenhuma vulnerabilidade detectada nos endpoints REST/v2."</div>
               </div>
-              <button class="btn-explore-building">Entrar no Prédio (5 Andares) →</button>
             </div>
 
-            <div class="district-card building-interactive" data-building="ai-city">
-              <div class="building-badge">🏢 PRÉDIO SIMULAÇÃO</div>
-              <h3>AI City Research Complex</h3>
-              <p>Simulador de Agentes & World Models</p>
-              <div class="building-floors-preview">
-                <span class="fl-tag">5F Deploy</span>
-                <span class="fl-tag">4F IA</span>
-                <span class="fl-tag">3F DB</span>
-                <span class="fl-tag">2F Back</span>
-                <span class="fl-tag">1F Front</span>
+            <div class="agent-card-live" data-agent="1026">
+              <div class="agent-avatar">🔧 Agent de Manutenção</div>
+              <div class="agent-info">
+                <strong>Agent #1026 (Auto-Healing)</strong>
+                <p>Status: <span class="status-tag active">Auto-Cura Executada</span></p>
+                <div class="agent-dialogue">"Worker no Hangar reiniciado com sucesso no Shadow Runtime. Telemetria restaurada."</div>
               </div>
-              <button class="btn-explore-building">Entrar no Prédio (5 Andares) →</button>
-            </div>
-
-            <div class="district-card building-interactive" data-building="fortlev">
-              <div class="building-badge">🏢 PRÉDIO COMMERCE</div>
-              <h3>Fortlev Digital Mall</h3>
-              <p>Engine de Cotações & Checkout Multi-Tenant</p>
-              <div class="building-floors-preview">
-                <span class="fl-tag">5F Deploy</span>
-                <span class="fl-tag">4F IA</span>
-                <span class="fl-tag">3F DB</span>
-                <span class="fl-tag">2F Back</span>
-                <span class="fl-tag">1F Front</span>
-              </div>
-              <button class="btn-explore-building">Entrar no Prédio (5 Andares) →</button>
             </div>
           </div>
         </section>
       </div>
 
-      <!-- TAB 1: PORTFOLIO -->
+      <!-- TAB 2: PORTFOLIO -->
       <div id="tab-portfolio" class="tab-content">
         <section id="metrics" class="metrics" aria-label="Métricas"></section>
 
@@ -148,7 +259,7 @@
         </section>
       </div>
 
-      <!-- TAB 2: TERMINAL CONVERSACIONAL OPERACIONAL -->
+      <!-- TAB 3: TERMINAL CONVERSACIONAL OPERACIONAL -->
       <div id="tab-terminal" class="tab-content">
         <section class="chat-panel">
           <div>
@@ -177,7 +288,7 @@
         </section>
       </div>
 
-      <!-- TAB 3: ACEP KERNEL & DIGITAL TWIN -->
+      <!-- TAB 4: ACEP KERNEL & DIGITAL TWIN -->
       <div id="tab-kernel" class="tab-content">
         <section class="kernel-hero">
           <div class="kernel-card">
@@ -216,7 +327,7 @@
         </section>
       </div>
 
-      <!-- TAB 4: DIGITAL OPERATOR INTELLIGENCE (DOI) -->
+      <!-- TAB 5: DIGITAL OPERATOR INTELLIGENCE (DOI) -->
       <div id="tab-doi" class="tab-content">
         <section class="doi-panel">
           <div>
@@ -256,7 +367,7 @@
         </section>
       </div>
 
-      <!-- TAB 5: MATURITY FRAMEWORK -->
+      <!-- TAB 6: MATURITY FRAMEWORK -->
       <div id="tab-maturity" class="tab-content">
         <section class="maturity-panel">
           <div>
@@ -275,7 +386,7 @@
         <section id="maturity-grid" class="maturity-grid"></section>
       </div>
 
-      <!-- TAB 6: GOVERNANCE & SECURITY -->
+      <!-- TAB 7: GOVERNANCE & SECURITY -->
       <div id="tab-governance" class="tab-content">
         <section class="governance-panel">
           <span class="eyebrow">POLÍTICA DE AUTONOMIA EM 5 NÍVEIS</span>
@@ -298,63 +409,58 @@
       </div>
     </main>
 
-    <!-- BUILDING FLOORS MODAL -->
-    <div id="building-modal" class="modal-overlay">
+    <!-- DAILY ENGINEERING MEETING MODAL -->
+    <div id="meeting-modal" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
           <div>
-            <span class="eyebrow">PRÉDIO DO PROJETO · ANDARES TÉCNICOS</span>
-            <h2 id="modal-building-title">AI Engine Core HQ</h2>
+            <span class="eyebrow">DAILY ENGINEERING MEETING (08:00 AM)</span>
+            <h2>Reunião Diária da Equipe de IAs Supervisoras</h2>
           </div>
-          <button id="btn-close-modal" class="btn-close">&times;</button>
+          <button class="btn-close modal-close-btn">&times;</button>
         </div>
-
-        <div class="floors-container">
-          <div class="floor-row">
-            <div class="floor-num">5º ANDAR</div>
-            <div class="floor-content">
-              <h4>🚀 Deploy & Observabilidade</h4>
-              <p>Docker, Logs, Pipelines CI/CD, Cobertura de Testes (100%), Alertas e Telemetria.</p>
-            </div>
+        <div class="meeting-content">
+          <p><strong>Participantes:</strong> Frontend Supervisor, Backend Supervisor, AI Supervisor, Security Supervisor, Database Supervisor, DevOps Supervisor, Mission Planner, FÊNIX AI Master.</p>
+          <div class="meeting-box">
+            <h4>📋 Resumo Executivo das Madrugadas</h4>
+            <ul>
+              <li><strong>Infraestrutura:</strong> 4 servidores VPS operando em 100% de disponibilidade. Carga média de CPU: 35%.</li>
+              <li><strong>Segurança:</strong> Auditoria OWASP concluída com zero vulnerabilidade crítica.</li>
+              <li><strong>Propostas de Refatoração:</strong> 3 queries lentas otimizadas no Shadow Runtime.</li>
+              <li><strong>Capabilities Universais:</strong> 4 novas capabilities prontas para o catálogo federado (`CAP-CBS-02`, `CAP-RLS-01`, `CAP-RE-03`, `CAP-DOI-04`).</li>
+            </ul>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <div class="floor-row">
-            <div class="floor-num">4º ANDAR</div>
-            <div class="floor-content">
-              <h4>🧠 Inteligência Artificial (AI Router)</h4>
-              <p>Roteamento Transparente (Claude, Codex, GPT, Gemini, Ollama), Prompts & Confidence Engine.</p>
-            </div>
+    <!-- KNOWLEDGE LIBRARY MODAL -->
+    <div id="library-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">BIBLIOTECA DE CONHECIMENTO & CAPABILITIES</span>
+            <h2>Knowledge Library (Livros de Patrimônio Cognitivo)</h2>
           </div>
-
-          <div class="floor-row">
-            <div class="floor-num">3º ANDAR</div>
-            <div class="floor-content">
-              <h4>🗄️ Banco de Dados & Cache</h4>
-              <p>Schemas SQL, Relacionamentos, Redis Cache, Postgres & Regras RLS Multi-Tenant.</p>
+          <button class="btn-close modal-close-btn">&times;</button>
+        </div>
+        <div class="library-content">
+          <p>Os subagentes consultam estes livros de conhecimento comprovado antes de executar qualquer missão de engenharia:</p>
+          <div class="library-books-grid">
+            <div class="book-card">
+              <span class="book-badge">UNIVERSAL</span>
+              <h4>📖 Livro 01: Multi-Tenant RLS Policy Pattern</h4>
+              <p>Evidência: `test:platform-membership-pass` | Score: 1.0</p>
             </div>
-          </div>
-
-          <div class="floor-row">
-            <div class="floor-num">2º ANDAR</div>
-            <div class="floor-content">
-              <h4>⚙️ Backend & APIs REST</h4>
-              <p>Express/ControlPlane v2, Controllers, Services, Workers & Filas BullMQ.</p>
+            <div class="book-card">
+              <span class="book-badge">CERTIFIED</span>
+              <h4>📖 Livro 02: Cognitive Bootstrap System (CBS)</h4>
+              <p>Evidência: `ai-os/SYSTEM_STATE.md` | Score: 1.0</p>
             </div>
-          </div>
-
-          <div class="floor-row">
-            <div class="floor-num">1º ANDAR</div>
-            <div class="floor-content">
-              <h4>🎨 Frontend & UI Genome</h4>
-              <p>Cockpit UI, Componentes Responsivos, Acessibilidade WCAG e Design Genome Tokens.</p>
-            </div>
-          </div>
-
-          <div class="floor-row ground">
-            <div class="floor-num">TÉRREO</div>
-            <div class="floor-content">
-              <h4>🏛️ Centro de Comando & Recepção</h4>
-              <p>Resumo Executivo, Missões Ativas, Terminal Conversacional Operacional & Telemetria em Tempo Real.</p>
+            <div class="book-card">
+              <span class="book-badge">VALIDATED</span>
+              <h4>📖 Livro 03: Recursive Self-Refactoring Protocol</h4>
+              <p>Evidência: `ai-os/brain/RECURSIVE_ENGINEERING_SPEC.md` | Score: 0.95</p>
             </div>
           </div>
         </div>
