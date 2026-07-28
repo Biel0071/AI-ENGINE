@@ -28,7 +28,7 @@ const api = async (p, opts = {}, retried = false) => {
   return payload;
 };
 
-const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails','consoleMission','consoleJobs','consoleAgents','consoleAi','consoleVps','multimodalBtn','multimodalDialog','closeMultimodal','multimodalForm','fileSelect','ingestResult'].map((id) => [id, document.getElementById(id)]));
+const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails','consoleMasterNode','consoleSpeedScore','consoleHotMemory','consoleMission','consoleJobs','multimodalBtn','multimodalDialog','closeMultimodal','multimodalForm','fileSelect','ingestResult'].map((id) => [id, document.getElementById(id)]));
 const state = { city: null, missions: [], activeMission: null, operations: null, jobs: [], zoom: 1, speaking: false, refreshing: false };
 const statusClass = (value) => ['ACTIVE','READY','RUNNING','SUCCEEDED'].includes(String(value).toUpperCase()) ? 'active' : ['WARNING','PAUSED','AWAITING_APPROVAL','UNCONFIGURED'].includes(String(value).toUpperCase()) ? 'warning' : ['DEGRADED','FAILED','NOT_READY','DEAD_LETTER'].includes(String(value).toUpperCase()) ? 'degraded' : 'neutral';
 const escapeHtml = (value) => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
@@ -53,6 +53,32 @@ function setAvatar(data = {}) {
   const labels = { SLEEPING:'DORMINDO', SCANNING:'ESCANEANDO', WALKING:'CAMINHANDO', BUILDING:'CONSTRUINDO', PROGRAMMING:'PROGRAMANDO', LEARNING:'APRENDENDO', WAITING:'AGUARDANDO', RECOVERING:'RECUPERANDO', DEPLOYING:'IMPLANTANDO', CELEBRATING:'COMEMORANDO', PENSANDO:'PENSANDO', PLANEJANDO:'PLANEJANDO', CONVERSANDO:'CONVERSANDO', ANALISANDO:'ANALISANDO', LENDO:'LENDO', EXECUTANDO:'EXECUTANDO', CORRIGINDO:'CORRIGINDO', TESTANDO:'TESTANDO', OBSERVANDO:'OBSERVANDO' };
   const phrases = { SLEEPING:'Pronto para transformar seu próximo objetivo em missão.', SCANNING:'Descobrindo serviços e evidências do ecossistema.', WALKING:'Coordenando agentes pela cidade cognitiva.', BUILDING:'A Engineering Factory está construindo com governança.', PROGRAMMING:'Código em execução dentro do Runtime autorizado.', LEARNING:'Consolidando conhecimento baseado em evidências.', WAITING:'Aguardando contexto ou aprovação humana.', RECOVERING:'Verificando saúde e recuperando serviços permitidos.', DEPLOYING:'Acompanhando a implantação governada.', CELEBRATING:'Missão concluída e conhecimento registrado.' };
   const current = data.state || 'SLEEPING'; ui.fenix.dataset.state = current; ui.avatarState.textContent = labels[current] || current; ui.avatarLocation.textContent = data.building || 'Praça Central'; ui.avatarProgress.textContent = `${Number(data.progress || 0)}%`; ui.avatarPhrase.textContent = phrases[current] || phrases.SLEEPING;
+}
+
+// Le um envelope measured()/unknown() do contrato de medicao. Sem valor medido devolve
+// null — nunca um numero inventado. O chamador decide o texto de ausencia (um traco), o
+// que respeita a Regra 2: ausencia de medicao aparece como ausencia, nao como zero.
+const measuredValue = (entry) => (entry && entry.state === 'measured' ? entry.value : null);
+
+// A barra de console operacional. Antes era quatro literais congelados no HTML
+// (98.4/100, L0-L5 PREWARMED, 15 NPCs, VPS ONLINE) ligados a IDs que nao existiam, entao
+// nunca mudava. Agora cada campo reflete estado real; o que ainda nao se mede mostra "—".
+function renderConsoleBar({ operations, speed, hotMemory, mission, jobs }) {
+  const readiness = operations?.readiness;
+  if (ui.consoleMasterNode) {
+    ui.consoleMasterNode.textContent = readiness?.status || 'SEM READINESS';
+    ui.consoleMasterNode.style.color = readiness?.status === 'READY' ? 'var(--green)' : readiness ? 'var(--red)' : 'var(--yellow)';
+  }
+  if (ui.consoleSpeedScore) {
+    const score = measuredValue(speed?.overallScore);
+    ui.consoleSpeedScore.textContent = score === null ? '— sem chamadas' : `${Number(score).toFixed(1)} / 100`;
+  }
+  if (ui.consoleHotMemory) {
+    const active = measuredValue(hotMemory?.cachedItemsCount);
+    ui.consoleHotMemory.textContent = active === null ? '— aguardando' : `${active} pré-aquecidas`;
+  }
+  if (ui.consoleMission) ui.consoleMission.textContent = mission ? `${mission.title} (${Number(mission.progress || 0)}%)` : 'SEM MISSÃO';
+  if (ui.consoleJobs) ui.consoleJobs.textContent = String(jobs.length);
 }
 
 function renderMission(mission) {
@@ -85,10 +111,10 @@ function renderTelemetry(telemetry, overview) { const calls=telemetry?.calls || 
 async function refresh() {
   if(state.refreshing)return; state.refreshing=true; document.getElementById('refreshBtn').textContent='…';
   try {
-    const requests=[api('/overview'),api('/operations/state'),api('/missions'),api('/missions/avatar-state'),api('/city'),api('/runtime/jobs'),api('/ai/telemetry')]; const [overviewR,operationsR,missionsR,avatarR,cityR,jobsR,telemetryR]=await Promise.allSettled(requests);
-    const value=(result,fallback)=>result.status==='fulfilled'?result.value:fallback; const overview=value(overviewR,{metrics:{}}); const operations=value(operationsR,null); const missions=value(missionsR,{missions:[]}).missions || []; const avatar=value(avatarR,{}); const city=value(cityR,{nodes:[],edges:[]}); const jobs=value(jobsR,{jobs:[]}).jobs || []; const telemetry=value(telemetryR,{});
+    const requests=[api('/overview'),api('/operations/state'),api('/missions'),api('/missions/avatar-state'),api('/city'),api('/runtime/jobs'),api('/ai/telemetry'),api('/performance/speed-score'),api('/performance/hot-memory')]; const [overviewR,operationsR,missionsR,avatarR,cityR,jobsR,telemetryR,speedR,hotMemoryR]=await Promise.allSettled(requests);
+    const value=(result,fallback)=>result.status==='fulfilled'?result.value:fallback; const overview=value(overviewR,{metrics:{}}); const operations=value(operationsR,null); const missions=value(missionsR,{missions:[]}).missions || []; const avatar=value(avatarR,{}); const city=value(cityR,{nodes:[],edges:[]}); const jobs=value(jobsR,{jobs:[]}).jobs || []; const telemetry=value(telemetryR,{}); const speed=value(speedR,null); const hotMemory=value(hotMemoryR,null);
     state.missions=missions; const active=missions.filter((item)=>!['SUCCEEDED','FAILED','CANCELLED'].includes(item.status)).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || missions.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))[0]; state.activeMission=active?await api(`/missions/${active.id}`).catch(()=>active):null;
-    setAvatar(avatar); renderMission(state.activeMission); renderCity(city); renderOperations(operations); renderJobs(jobs); renderTelemetry(telemetry,overview); ui.actor.textContent=String(overview?.tenant?.name || 'GRG').slice(0,3).toUpperCase(); ui.lastUpdate.textContent=`Atualizado ${new Date().toLocaleTimeString('pt-BR')}`;
+    setAvatar(avatar); renderMission(state.activeMission); renderCity(city); renderOperations(operations); renderJobs(jobs); renderTelemetry(telemetry,overview); renderConsoleBar({operations,speed,hotMemory,mission:state.activeMission,jobs}); ui.actor.textContent=String(overview?.tenant?.name || 'GRG').slice(0,3).toUpperCase(); ui.lastUpdate.textContent=`Atualizado ${new Date().toLocaleTimeString('pt-BR')}`;
   } finally { state.refreshing=false; document.getElementById('refreshBtn').textContent='↻'; }
 }
 
