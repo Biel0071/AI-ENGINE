@@ -77,6 +77,8 @@ const DEFAULT_LIMITS = {
   // connectorRegistry NAO entra aqui: e estado, perder uma linha seria perder um conector.
   connectorMetrics: 500,
   connectorEvents: 200,
+  // MISSION-1003 — decisões do AI Router. Histórico para o ranking do Learning Router.
+  aiRouterDecisions: 500,
   // Benchmark por missao concluida. Playbooks NAO entram aqui: sao conhecimento
   // reutilizavel (estado), e podar um playbook e perder o que a plataforma aprendeu.
   missionBenchmarks: 500,

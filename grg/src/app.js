@@ -5,6 +5,8 @@ const { EventBus } = require('./kernel/event-bus');
 const { OrganismIdentityService } = require('./kernel/organism-identity');
 const { ConnectorRuntime } = require('./connectors/connector-runtime');
 const { GitHubConnectorAdapter } = require('./connectors/github-connector-adapter');
+const { AIProviderAdapter } = require('./connectors/ai-provider-adapter');
+const { AIRouter } = require('./ai-runtime/ai-router');
 const { ControlPlane } = require('./control-plane/control-plane');
 const { RepositoryIntelligence } = require('./repo-intel/repository-intelligence');
 const { LocalGitHostAdapter } = require('./repo-intel/ports');
@@ -367,6 +369,18 @@ async function createApp(options = {}) {
   // por configuração.
   app.connectors = new ConnectorRuntime({ store, bus, controlPlane });
   app.connectors.register(new GitHubConnectorAdapter({ github, store }));
+  // MISSION-1003 — cada provider de IA já construído (buildProvidersFromEnv) vira um
+  // connector 'ai:<name>' via adapter genérico. Não reimplementa provider (Composição).
+  // Só entram os que o ambiente de fato habilitou — sem credencial, o provider nem existe
+  // no objeto `providers`, então nada é registrado como CONNECTED por configuração.
+  for (const [name, provider] of Object.entries(providers)) {
+    if (provider && (typeof provider.complete === 'function' || typeof provider.chat === 'function')) {
+      app.connectors.register(new AIProviderAdapter({ provider: { name, ...provider, complete: provider.complete?.bind(provider), chat: provider.chat?.bind(provider), available: provider.available?.bind(provider) }, store }));
+    }
+  }
+  // O AI Router: escolhe provider por evidência (saúde real + política local→grátis→pago),
+  // compondo o ConnectorRuntime e o gateway existentes. Nunca fixa provider.
+  app.aiRouter = new AIRouter({ connectors: app.connectors, gateway: aiGateway, store });
   app.projectFactory = new ProjectFactoryService({ store, bus, controlPlane, factory, missionPlanner, digitalTwin });
   app.backgroundCognition = new BackgroundCognition({ store, bus, controlPlane, memory, digitalTwin, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
   // V11 — a unica saida para a internet aberta da plataforma: allowlist de dominios,
