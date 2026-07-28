@@ -1,0 +1,43 @@
+{
+  "policy": "FÊNIX Ω∞ Governance Autonomy Levels Policy",
+  "version": "6.0.0",
+  "status": "ACTIVE_GATED",
+  "autonomyLevels": [
+    {
+      "level": 0,
+      "name": "Nível 0 – Observação",
+      "description": "Apenas monitora repositórios, escaneia logs e gera síntese diária (DAILY_SYNTHESIS.md).",
+      "autoExecute": true,
+      "environment": "All"
+    },
+    {
+      "level": 1,
+      "name": "Nível 1 – Sugestão",
+      "description": "Compila blueprints de missão e cria propostas no Cockpit UI aguardando revisão.",
+      "autoExecute": true,
+      "environment": "All"
+    },
+    {
+      "level": 2,
+      "name": "Nível 2 – Sandbox",
+      "description": "Executa simulações e refatorações autônomas SOMENTE no Shadow Runtime isolado.",
+      "autoExecute": true,
+      "environment": "Sandbox / Shadow Runtime"
+    },
+    {
+      "level": 3,
+      "name": "Nível 3 – Desenvolvimento",
+      "description": "Aplica mudanças em branches de desenvolvimento e abre Pull Requests automáticos.",
+      "autoExecute": true,
+      "environment": "Development"
+    },
+    {
+      "level": 4,
+      "name": "Nível 4 – Produção Assistida",
+      "description": "Promove alterações para staging/produção ESTRITAMENTE após aprovação humana explícita no Cockpit UI.",
+      "autoExecute": false,
+      "humanApprovalRequired": true,
+      "environment": "Staging / Production"
+    }
+  ]
+}

@@ -1,20 +1,31 @@
-# CLAUDE.md — FÊNIX Ω∞ V6 (Operational Alpha Directive)
+# CLAUDE.md — FÊNIX Ω∞ V6 OPERATIONAL MODE MASTER DIRECTIVE
 
-> **CONTRATO OBRIGATÓRIO DE RELEASE — V6 OPERATIONAL ALPHA**
-> A versão atual é **v6-operational-alpha**.
-> O status "Certified" está estritamente reservado para pós-validação em ambiente de produção VPS.
-> Nas primeiras 24–48 horas em produção, o sistema opera obrigatoriamente em **Modo Assistido (Assisted Mode)**: promoções para Staging/Produção exigem aprovação humana no Cockpit.
+> **CONTRATO OBRIGATÓRIO DO FÊNIX Ω∞ V6 — OPERATIONAL MODE**
+> A ARQUITETURA ESTÁ 100% CONGELADA.
+> Não criar novos motores ou novas camadas. A missão é operar a plataforma viva 24/7.
 
 ---
 
-## 📋 6-GATE RELEASE PROTOCOL
+## ⚡ REGRA Nº 1
 
-- **Gate 0**: Architecture Freeze ✅
-- **Gate 1**: Tag `v6-operational-alpha`
-- **Gate 2**: `git commit -m "release: FENIX Ω∞ V6 Operational Alpha"`
-- **Gate 3**: `git push origin main && git push --tags`
-- **Gate 4**: VPS Docker Deploy & Health Check
-- **Gate 5**: VPS Kernel Activation & 24–48h Modo Assistido
+Nenhuma funcionalidade será criada manualmente. Toda solicitação passa pelo pipeline:
+`Intent ──► Mission Compiler ──► Digital Twin ──► Swarm ──► Shadow Runtime ──► Tests ──► Quality Gate ──► Memory Council ──► Capability Factory ──► Knowledge Graph ──► Capsule Ω`
+
+---
+
+## 🛡️ POLÍTICA DE AUTONOMIA EM 5 NÍVEIS (`AUTONOMY_LEVELS_POLICY.json`)
+
+- **Nível 0 – Observação**: Monitoramento 24/7 e síntese diária (`DAILY_SYNTHESIS.md`).
+- **Nível 1 – Sugestão**: Compilação de blueprints e propostas no Cockpit UI.
+- **Nível 2 – Sandbox**: Refatoração autônoma SOMENTE no `Shadow Runtime` isolado.
+- **Nível 3 – Desenvolvimento**: Aplicação em branches de dev e Pull Requests automáticos.
+- **Nível 4 – Produção Assistida**: Promoção para produção ESTRITAMENTE após aprovação humana explícita no Cockpit UI.
+
+---
+
+## 📁 PROTOCOLO DE INGESTÃO EM 20 ETAPAS
+
+1. Inventário ──► 2. AST ──► 3. Dependências ──► 4. Arquitetura ──► 5. Banco ──► 6. APIs ──► 7. Docker ──► 8. CI/CD ──► 9. Frontend ──► 10. Backend ──► 11. Segurança ──► 12. Performance ──► 13. Observabilidade ──► 14. Testes ──► 15. Documentação ──► 16. Knowledge Graph ──► 17. Digital Twin ──► 18. Engineering DNA Score ──► 19. Backlog Inteligente ──► 20. Capability Matching.
 
 ---
 
