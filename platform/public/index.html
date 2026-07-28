@@ -3,33 +3,122 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GRG FÊNIX Ω∞ — ACEP Cockpit & LCR Runtime</title>
+    <title>GRG UNIVERSE — Living Multi-Tenant City OS</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <!-- LEVEL 1: GRG UNIVERSE TOPBAR & COMPANY SELECTOR -->
     <header class="topbar">
-      <div>
-        <span class="eyebrow">GRG FÊNIX Ω∞ · LIVING COGNITIVE RUNTIME (24/7 ONLINE)</span>
-        <h1>ACEP Cockpit</h1>
+      <div class="universe-selector">
+        <span class="eyebrow">🌎 GRG UNIVERSE · MULTI-TENANT CITY OS</span>
+        <div class="company-picker">
+          <label for="company-select">Empresa / Ilha:</label>
+          <select id="company-select" aria-label="Selecionar Empresa">
+            <option value="biel0071-corp">🏢 Biel0071 Enterprise City</option>
+            <option value="zapai-inc">🏢 ZapAI Technology Island</option>
+            <option value="ai-city-labs">🏢 AI City Research Hub</option>
+            <option value="fortlev-group">🏢 Fortlev Digital Campus</option>
+          </select>
+          <button id="btn-create-company" class="secondary">+ Nova Empresa</button>
+        </div>
       </div>
       <div class="header-right">
-        <div class="env-badge dev">DEV: AUTÔNOMO</div>
-        <div class="status"><span></span> LCR Online (Capsule Ω)</div>
+        <div id="env-weather" class="weather-badge healthy">☀️ CIDADE SAUDÁVEL (Score: 95)</div>
+        <div class="status"><span></span> LCR Online (24/7)</div>
       </div>
     </header>
 
     <nav class="nav-tabs" aria-label="Navegação Principal">
-      <button class="nav-tab active" data-tab="portfolio">🏢 Portfólio & Projetos</button>
+      <button class="nav-tab active" data-tab="universe-map">🏙️ Cidade da Empresa (Digital Twin 3D)</button>
+      <button class="nav-tab" data-tab="portfolio">🏢 Portfólio de Projetos & Prédios</button>
       <button class="nav-tab" data-tab="terminal">💬 Terminal Conversacional Operacional</button>
       <button class="nav-tab" data-tab="kernel">🧠 ACEP Kernel & Digital Twin</button>
       <button class="nav-tab" data-tab="doi">🌐 Digital Operator (DOI)</button>
-      <button class="nav-tab" data-tab="maturity">📊 Framework N0–N5</button>
-      <button class="nav-tab" data-tab="governance">🛡️ Segurança & Auditoria</button>
+      <button class="nav-tab" data-tab="maturity">📊 Framework N0–N5 & DNA</button>
+      <button class="nav-tab" data-tab="governance">🛡️ Governança & Níveis 0-4</button>
     </nav>
 
     <main>
+      <!-- TAB 0: UNIVERSE CITY MAP (CIDADE VIVA & TELEMETRIA) -->
+      <div id="tab-universe-map" class="tab-content active">
+        <section class="city-canvas-hero">
+          <div class="city-header">
+            <div>
+              <span class="eyebrow">LIVING CYBERNETIC CITY</span>
+              <h2 id="active-company-title">Biel0071 Enterprise City</h2>
+              <p>Visualização em tempo real da ilha da empresa, distritos, prédios e telemetria viva.</p>
+            </div>
+            <div class="city-telemetry-pills">
+              <span class="pill port"><i class="icon">⚓</i> Porto: <strong id="telemetry-port">Navio em Carga (Deploy Staging)</strong></span>
+              <span class="pill cpu"><i class="icon">💡</i> Data Center CPU: <strong id="telemetry-cpu">35% Load (Pulsando)</strong></span>
+              <span class="pill lab"><i class="icon">🧪</i> Laboratório: <strong id="telemetry-lab">Benchmark Ativo</strong></span>
+              <span class="pill academy"><i class="icon">🎓</i> Academia: <strong id="telemetry-academy">Treinando Modelos</strong></span>
+            </div>
+          </div>
+
+          <!-- CITY BUILDINGS GRID -->
+          <div class="city-districts-grid">
+            <div class="district-card building-interactive" data-building="ai-engine-core">
+              <div class="building-badge">🏢 PRÉDIO HEADQUARTERS</div>
+              <h3>AI Engine Core HQ</h3>
+              <p>Kernel Universal, AI Router & Capsule Ω</p>
+              <div class="building-floors-preview">
+                <span class="fl-tag">5F Deploy</span>
+                <span class="fl-tag">4F IA</span>
+                <span class="fl-tag">3F DB</span>
+                <span class="fl-tag">2F Back</span>
+                <span class="fl-tag">1F Front</span>
+              </div>
+              <button class="btn-explore-building">Entrar no Prédio (5 Andares) →</button>
+            </div>
+
+            <div class="district-card building-interactive" data-building="zapai-crm">
+              <div class="building-badge">🏢 PRÉDIO CRM</div>
+              <h3>ZapAI CRM Tower</h3>
+              <p>Engine WhatsApp, Funis & Automações</p>
+              <div class="building-floors-preview">
+                <span class="fl-tag">5F Deploy</span>
+                <span class="fl-tag">4F IA</span>
+                <span class="fl-tag">3F DB</span>
+                <span class="fl-tag">2F Back</span>
+                <span class="fl-tag">1F Front</span>
+              </div>
+              <button class="btn-explore-building">Entrar no Prédio (5 Andares) →</button>
+            </div>
+
+            <div class="district-card building-interactive" data-building="ai-city">
+              <div class="building-badge">🏢 PRÉDIO SIMULAÇÃO</div>
+              <h3>AI City Research Complex</h3>
+              <p>Simulador de Agentes & World Models</p>
+              <div class="building-floors-preview">
+                <span class="fl-tag">5F Deploy</span>
+                <span class="fl-tag">4F IA</span>
+                <span class="fl-tag">3F DB</span>
+                <span class="fl-tag">2F Back</span>
+                <span class="fl-tag">1F Front</span>
+              </div>
+              <button class="btn-explore-building">Entrar no Prédio (5 Andares) →</button>
+            </div>
+
+            <div class="district-card building-interactive" data-building="fortlev">
+              <div class="building-badge">🏢 PRÉDIO COMMERCE</div>
+              <h3>Fortlev Digital Mall</h3>
+              <p>Engine de Cotações & Checkout Multi-Tenant</p>
+              <div class="building-floors-preview">
+                <span class="fl-tag">5F Deploy</span>
+                <span class="fl-tag">4F IA</span>
+                <span class="fl-tag">3F DB</span>
+                <span class="fl-tag">2F Back</span>
+                <span class="fl-tag">1F Front</span>
+              </div>
+              <button class="btn-explore-building">Entrar no Prédio (5 Andares) →</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
       <!-- TAB 1: PORTFOLIO -->
-      <div id="tab-portfolio" class="tab-content active">
+      <div id="tab-portfolio" class="tab-content">
         <section id="metrics" class="metrics" aria-label="Métricas"></section>
 
         <section class="toolbar">
@@ -52,7 +141,7 @@
         <section class="graph-panel">
           <div>
             <span class="eyebrow">MIRROR GRAPH & CAPABILITIES</span>
-            <h2>Mapa da Software House (13 Grafos)</h2>
+            <h2>Mapa da Software House (18 Grafos)</h2>
             <p id="graph-summary">Carregando relações...</p>
           </div>
           <div id="capabilities" class="capabilities"></div>
@@ -72,7 +161,7 @@
             <button class="btn-quick" data-prompt="Analise todo o backend do projeto">Analise todo o backend</button>
             <button class="btn-quick" data-prompt="Simule a refatoração do frontend no Digital Twin">Simule refatoração</button>
             <button class="btn-quick" data-prompt="Prepare a release candidate para produção">Prepare release</button>
-            <button class="btn-quick" data-prompt="Mostre o estado atual dos 13 Grafos Universais">Estado dos 13 Grafos</button>
+            <button class="btn-quick" data-prompt="Mostre o estado atual dos 18 Grafos Universais">Estado dos 18 Grafos</button>
           </div>
 
           <div id="chat-window" class="chat-window">
@@ -171,14 +260,14 @@
       <div id="tab-maturity" class="tab-content">
         <section class="maturity-panel">
           <div>
-            <span class="eyebrow">DOMAIN MATURITY FRAMEWORK</span>
-            <h2>Avaliação de Maturidade Cognitiva (N0 – N5)</h2>
+            <span class="eyebrow">ENGINEERING DNA & MATURITY FRAMEWORK</span>
+            <h2>Engineering DNA Score & Avaliação de Maturidade (N0 – N5)</h2>
             <p>Métrica contínua e auditável em 10 dimensões verificáveis.</p>
           </div>
           <div id="maturity-score-card" class="maturity-score-card">
             <div class="global-score">
-              <strong>N4</strong>
-              <span>Preditivo (Score: 87/100)</span>
+              <strong>95/100</strong>
+              <span>Engineering DNA Score (N4 Preditivo)</span>
             </div>
           </div>
         </section>
@@ -189,25 +278,88 @@
       <!-- TAB 6: GOVERNANCE & SECURITY -->
       <div id="tab-governance" class="tab-content">
         <section class="governance-panel">
-          <span class="eyebrow">SAFE AUTOMATION & AUDITABILITY</span>
-          <h2>Governança por Ambiente & Audit Logs</h2>
+          <span class="eyebrow">POLÍTICA DE AUTONOMIA EM 5 NÍVEIS</span>
+          <h2>Governança por Ambiente & Níveis 0 a 4</h2>
           <div class="env-cards">
             <div class="env-card dev">
-              <h3>Desenvolvimento</h3>
-              <p>Autonomia total: implementação, testes, commit e push automáticos.</p>
+              <h3>Níveis 0–2 (Sandbox / Dev)</h3>
+              <p>Autonomia total: monitoramento 24/7, sugestões, simulações em Shadow Runtime e branches isoladas.</p>
             </div>
             <div class="env-card staging">
-              <h3>Staging / Homologação</h3>
-              <p>Deploy autônomo com aprovação obrigatória nos testes E2E e QA.</p>
+              <h3>Nível 3 (Desenvolvimento PR)</h3>
+              <p>Geração automática de Pull Requests e execução da suíte de 272 testes integrados.</p>
             </div>
             <div class="env-card prod">
-              <h3>Produção</h3>
-              <p>Aprovação humana explícita obrigatória no painel para qualquer deploy.</p>
+              <h3>Nível 4 (Produção Assistida)</h3>
+              <p>Promoção para staging e produção ESTRITAMENTE sob aprovação humana explícita no Cockpit UI.</p>
             </div>
           </div>
         </section>
       </div>
     </main>
+
+    <!-- BUILDING FLOORS MODAL -->
+    <div id="building-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">PRÉDIO DO PROJETO · ANDARES TÉCNICOS</span>
+            <h2 id="modal-building-title">AI Engine Core HQ</h2>
+          </div>
+          <button id="btn-close-modal" class="btn-close">&times;</button>
+        </div>
+
+        <div class="floors-container">
+          <div class="floor-row">
+            <div class="floor-num">5º ANDAR</div>
+            <div class="floor-content">
+              <h4>🚀 Deploy & Observabilidade</h4>
+              <p>Docker, Logs, Pipelines CI/CD, Cobertura de Testes (100%), Alertas e Telemetria.</p>
+            </div>
+          </div>
+
+          <div class="floor-row">
+            <div class="floor-num">4º ANDAR</div>
+            <div class="floor-content">
+              <h4>🧠 Inteligência Artificial (AI Router)</h4>
+              <p>Roteamento Transparente (Claude, Codex, GPT, Gemini, Ollama), Prompts & Confidence Engine.</p>
+            </div>
+          </div>
+
+          <div class="floor-row">
+            <div class="floor-num">3º ANDAR</div>
+            <div class="floor-content">
+              <h4>🗄️ Banco de Dados & Cache</h4>
+              <p>Schemas SQL, Relacionamentos, Redis Cache, Postgres & Regras RLS Multi-Tenant.</p>
+            </div>
+          </div>
+
+          <div class="floor-row">
+            <div class="floor-num">2º ANDAR</div>
+            <div class="floor-content">
+              <h4>⚙️ Backend & APIs REST</h4>
+              <p>Express/ControlPlane v2, Controllers, Services, Workers & Filas BullMQ.</p>
+            </div>
+          </div>
+
+          <div class="floor-row">
+            <div class="floor-num">1º ANDAR</div>
+            <div class="floor-content">
+              <h4>🎨 Frontend & UI Genome</h4>
+              <p>Cockpit UI, Componentes Responsivos, Acessibilidade WCAG e Design Genome Tokens.</p>
+            </div>
+          </div>
+
+          <div class="floor-row ground">
+            <div class="floor-num">TÉRREO</div>
+            <div class="floor-content">
+              <h4>🏛️ Centro de Comando & Recepção</h4>
+              <p>Resumo Executivo, Missões Ativas, Terminal Conversacional Operacional & Telemetria em Tempo Real.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <template id="project-template">
       <article class="project-card">
