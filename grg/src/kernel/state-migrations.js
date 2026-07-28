@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 29;
+const CURRENT_SCHEMA_VERSION = 30;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -57,6 +57,11 @@ const COLLECTIONS_BY_VERSION = {
   // não estava ligado ao boot — órfão, sem coleção. Sem ela a identidade não sobrevive a
   // um restart, e "o FÊNIX" seria só o nome do processo atual.
   29: ['organismIdentity'],
+  // MISSION-0004 — Connector Runtime. `connectorRegistry` é estado (conectores registrados,
+  // nunca podado). `connectorMetrics` e `connectorEvents` são histórico append-only (cada
+  // selfTest e cada transição de estado), com teto de retenção — o estado CONNECTED é
+  // derivado a cada leitura, então o histórico serve para telemetria, não para o veredito.
+  30: ['connectorRegistry', 'connectorMetrics', 'connectorEvents'],
 };
 
 function normalizeVersion(value) {

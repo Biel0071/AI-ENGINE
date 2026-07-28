@@ -146,6 +146,9 @@ const EMPTY_STATE = () => ({
   improvementScans: [],
   assistedModeWindows: [],
   organismIdentity: [],
+  connectorRegistry: [],
+  connectorMetrics: [],
+  connectorEvents: [],
 });
 
 class MemoryStore {

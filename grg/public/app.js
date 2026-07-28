@@ -28,7 +28,12 @@ const api = async (p, opts = {}, retried = false) => {
   return payload;
 };
 
-const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails','consoleMasterNode','consoleSpeedScore','consoleHotMemory','consoleMission','consoleJobs','multimodalBtn','multimodalDialog','closeMultimodal','multimodalForm','fileSelect','ingestResult'].map((id) => [id, document.getElementById(id)]));
+const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails','consoleMasterNode','consoleSpeedScore','consoleHotMemory','consoleMission','consoleJobs','connectorSummary','connectorList','multimodalBtn','multimodalDialog','closeMultimodal','multimodalForm','fileSelect','ingestResult'].map((id) => [id, document.getElementById(id)]));
+
+// MISSION-0004 — conectores previstos mas ainda não implementados. Aparecem como PLANNED
+// explícito no painel: o organismo diz "ainda não existe" em vez de simular CONNECTED. Só
+// o GitHub é um conector real (vem do runtime); os demais são declaração de roadmap.
+const PLANNED_CONNECTORS = ['google','meta','whatsapp','supabase','cloudflare','openai'];
 const state = { city: null, missions: [], activeMission: null, operations: null, jobs: [], zoom: 1, speaking: false, refreshing: false };
 const statusClass = (value) => ['ACTIVE','READY','RUNNING','SUCCEEDED'].includes(String(value).toUpperCase()) ? 'active' : ['WARNING','PAUSED','AWAITING_APPROVAL','UNCONFIGURED'].includes(String(value).toUpperCase()) ? 'warning' : ['DEGRADED','FAILED','NOT_READY','DEAD_LETTER'].includes(String(value).toUpperCase()) ? 'degraded' : 'neutral';
 const escapeHtml = (value) => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
@@ -81,6 +86,28 @@ function renderConsoleBar({ operations, speed, hotMemory, mission, jobs }) {
   if (ui.consoleJobs) ui.consoleJobs.textContent = String(jobs.length);
 }
 
+// MISSION-0004 — painel de conectores honesto. Estado vem DERIVADO do runtime
+// (/api/connectors), nunca de configuração. CONNECTED só aparece se o runtime derivou
+// CONNECTED (authenticate + selfTest reais). Conectores não implementados: PLANNED.
+function renderConnectors(connectors) {
+  if (!ui.connectorList) return;
+  const real = Array.isArray(connectors?.connectors) ? connectors.connectors : [];
+  const realIds = new Set(real.map((c) => c.connectorId));
+  const rows = real.map((c) => {
+    const st = c.state?.value || 'UNKNOWN';
+    return { id: c.connectorId, state: st };
+  });
+  // Os previstos que não têm conector real ainda: PLANNED explícito.
+  for (const id of PLANNED_CONNECTORS) if (!realIds.has(id)) rows.push({ id, state: 'PLANNED' });
+
+  const connected = rows.filter((r) => r.state === 'CONNECTED').length;
+  ui.connectorSummary.textContent = `${connected}/${rows.length} conectados`;
+  const cls = (s) => s === 'CONNECTED' ? 'ACTIVE' : ['DEGRADED','ERROR','DISCONNECTED'].includes(s) ? 'DEGRADED' : 'WARNING';
+  ui.connectorList.innerHTML = rows.map((r) =>
+    `<div class="health-item ${cls(r.state)}"><i></i><b>${escapeHtml(r.id)}</b><span>${escapeHtml(r.state)}</span></div>`
+  ).join('');
+}
+
 function renderMission(mission) {
   if (!mission) {
     ui.missionStatus.className='status-pill neutral'; ui.missionStatus.textContent='SEM MISSÃO'; ui.missionTitle.textContent='Aguardando objetivo'; ui.missionMeta.textContent='O Avatar transformará solicitações operacionais em missões governadas.'; ui.missionPercent.textContent='0%'; ui.missionBar.style.width='0%'; ui.missionSteps.innerHTML='';
@@ -111,10 +138,10 @@ function renderTelemetry(telemetry, overview) { const calls=telemetry?.calls || 
 async function refresh() {
   if(state.refreshing)return; state.refreshing=true; document.getElementById('refreshBtn').textContent='…';
   try {
-    const requests=[api('/overview'),api('/operations/state'),api('/missions'),api('/missions/avatar-state'),api('/city'),api('/runtime/jobs'),api('/ai/telemetry'),api('/performance/speed-score'),api('/performance/hot-memory')]; const [overviewR,operationsR,missionsR,avatarR,cityR,jobsR,telemetryR,speedR,hotMemoryR]=await Promise.allSettled(requests);
-    const value=(result,fallback)=>result.status==='fulfilled'?result.value:fallback; const overview=value(overviewR,{metrics:{}}); const operations=value(operationsR,null); const missions=value(missionsR,{missions:[]}).missions || []; const avatar=value(avatarR,{}); const city=value(cityR,{nodes:[],edges:[]}); const jobs=value(jobsR,{jobs:[]}).jobs || []; const telemetry=value(telemetryR,{}); const speed=value(speedR,null); const hotMemory=value(hotMemoryR,null);
+    const requests=[api('/overview'),api('/operations/state'),api('/missions'),api('/missions/avatar-state'),api('/city'),api('/runtime/jobs'),api('/ai/telemetry'),api('/performance/speed-score'),api('/performance/hot-memory'),api('/connectors')]; const [overviewR,operationsR,missionsR,avatarR,cityR,jobsR,telemetryR,speedR,hotMemoryR,connectorsR]=await Promise.allSettled(requests);
+    const value=(result,fallback)=>result.status==='fulfilled'?result.value:fallback; const overview=value(overviewR,{metrics:{}}); const operations=value(operationsR,null); const missions=value(missionsR,{missions:[]}).missions || []; const avatar=value(avatarR,{}); const city=value(cityR,{nodes:[],edges:[]}); const jobs=value(jobsR,{jobs:[]}).jobs || []; const telemetry=value(telemetryR,{}); const speed=value(speedR,null); const hotMemory=value(hotMemoryR,null); const connectors=value(connectorsR,{connectors:[]});
     state.missions=missions; const active=missions.filter((item)=>!['SUCCEEDED','FAILED','CANCELLED'].includes(item.status)).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || missions.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))[0]; state.activeMission=active?await api(`/missions/${active.id}`).catch(()=>active):null;
-    setAvatar(avatar); renderMission(state.activeMission); renderCity(city); renderOperations(operations); renderJobs(jobs); renderTelemetry(telemetry,overview); renderConsoleBar({operations,speed,hotMemory,mission:state.activeMission,jobs}); ui.actor.textContent=String(overview?.tenant?.name || 'GRG').slice(0,3).toUpperCase(); ui.lastUpdate.textContent=`Atualizado ${new Date().toLocaleTimeString('pt-BR')}`;
+    setAvatar(avatar); renderMission(state.activeMission); renderCity(city); renderOperations(operations); renderJobs(jobs); renderTelemetry(telemetry,overview); renderConsoleBar({operations,speed,hotMemory,mission:state.activeMission,jobs}); renderConnectors(connectors); ui.actor.textContent=String(overview?.tenant?.name || 'GRG').slice(0,3).toUpperCase(); ui.lastUpdate.textContent=`Atualizado ${new Date().toLocaleTimeString('pt-BR')}`;
   } finally { state.refreshing=false; document.getElementById('refreshBtn').textContent='↻'; }
 }
 
