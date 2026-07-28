@@ -32,19 +32,41 @@ sem teste pode quebrar em silêncio. **Sprint A (cobertura) é pré-requisito, n
 
 ## Correção da própria auditoria (Regra 6: nada fictício)
 
-Ao começar o Sprint A pela superfície `omega`, a leitura do código revelou que **a
-heurística do scan subestimou a cobertura**. `omega` não estava sem teste: o caso do
-conselho vazio (`evaluateProposal` → PENDING_REVIEW) já era coberto. O número "35 arquivos
-sem teste" vem de uma heurística por palavra-chave e deve ser lido como *teto*, não como
-fato exato — a cobertura real é maior em alguns módulos e o gap verdadeiro é por
-**caminho**, não por arquivo.
+Ao executar o Sprint A, a leitura do código **derrubou o número central da própria
+auditoria**. A "35 arquivos sem teste" veio de uma heurística de palavra-chave
+(`tmp-audit.js`) que casava nome de módulo contra caminho de teste — e errou por larga
+margem. A verdade medida:
 
-O gap real e crítico em `omega` era o **ciclo completo de voto** do Cognitive Council
-(assignSeat → aprovação real → castVote → veredito), agora coberto por
-`test/cognitive-council-voting.test.js`: prova que o voto é lido do ApprovalEngine (nunca
-declarado), que aprovação pendente conta como NOT_REVIEWED, e que só seis aprovações reais
-chegam a APPROVED_BY_COUNCIL. Achado colateral: o ApprovalEngine não tem método de
-rejeição explícita — REJECTED_BY_COUNCIL exigiria uma aprovação expirada, não negada.
+- `nexus`, `scos`, `agents`, `omega-infinity`, `keos`, `uios` **já têm testes** — arquivos
+  dedicados (`nexus-unified-cognitive-core.test.js`, `scos-software-creation-os.test.js`,
+  `autonomous-agent-ecosystem.test.js`) e cobertura via app composto.
+- Nenhuma métrica de cobertura por string é confiável aqui: a maioria dos testes exercita
+  o módulo **através do app composto** (`require('../src/app')`), então um scan textual não
+  vê a ligação. Cobertura real por módulo exigiria instrumentação (c8/istanbul), não
+  heurística. O número honesto é: **não medível por texto** — declarado assim, não chutado.
+
+O que o Sprint A **de fato** entregou (gaps reais por *caminho*, não por arquivo):
+
+1. **Ciclo de voto do Cognitive Council** (`test/cognitive-council-voting.test.js`) — era o
+   único caminho crítico de governança sem cobertura. Prova: voto lido do ApprovalEngine
+   (nunca declarado), pendente = NOT_REVIEWED, só 6 aprovações reais aprovam, proponente não
+   vota em si (separateApprover).
+2. **Cognitive Laws 001 + Self-Evolution Kernel** (`test/omega-infinity-coverage.test.js`) —
+   os três vereditos da lei (UNVERIFIED/NON_COMPLIANT/COMPLIANT) e as taxas de duplicação/
+   fragmentação derivadas de estado semeado.
+3. **UCP + Knowledge OS + Capability OS** (`test/keos-uios-coverage.test.js`) — pipeline por
+   estágios com allowlist, estágio semântico honestamente não-implementado, e OS que
+   declaram indisponibilidade em vez de fabricar.
+
+Achado colateral registrado: o ApprovalEngine não tem método de rejeição explícita —
+REJECTED_BY_COUNCIL exigiria aprovação expirada, não negada. Lacuna real para um ciclo
+futuro decidir.
+
+## Recomendação de medição (próximo ciclo)
+
+Instalar `c8` como devDependency e rodar `c8 node --test` — cobertura por linha real,
+substituindo qualquer heurística. É a única forma honesta de dizer "X% coberto". Sem isso,
+a afirmação correta é "os caminhos críticos de governança agora têm teste", não um número.
 
 ## Sprint A — plano de cobertura (prioridade máxima)
 
