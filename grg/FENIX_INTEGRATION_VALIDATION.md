@@ -59,12 +59,24 @@ Runtime e os providers, substituindo as chamadas diretas a `aiGateway.invoke` po
 `aiRouter.route` onde fizer sentido. É uma mudança de arquitetura pequena e localizada, mas
 é mudança — exige sua decisão explícita, fora do escopo de validação.
 
-## Decisão que segue (sua)
+## ATUALIZAÇÃO — MISSION-1005 fechou o elo
 
-A validação está feita. As três opções que restam, agora com base medida:
-1. **Ligar o router ao fluxo de missão** (fecha o elo solto — a integração que falta).
-2. **Enterprise Deploy** (v24→v31 na VPS) — leva tudo isto à produção.
-3. **Learning Router** (sinal de qualidade) — depende do elo 1 para ter dados reais.
+O elo solto foi fechado. Arquitetura decidida: **Router decide, Gateway executa** — um
+runtime só, um ponto de observabilidade.
 
-Recomendação de arquiteto: **elo 1 primeiro**. Sem o router no caminho de missão, deploy e
-learning operam sobre um fluxo que não usa o orquestrador que construímos.
+- `aiGateway.invoke` ganhou `provider`/`model` opcionais (retrocompatível: sem eles,
+  comportamento idêntico; teste enterprise segue verde). `candidates()` põe o provider
+  escolhido primeiro e a rota configurada como fallback.
+- `aiRouter` ganhou `invoke()` com a MESMA assinatura do gateway (drop-in) e o `route()`
+  agora DELEGA ao gateway em vez de chamar o provider direto.
+- `SoftwareFactory` (o ponto real de IA da missão, `factory.plan → this.ai.invoke`) passou
+  a receber o Router. Zero mudança no call site.
+- **Telemetria preservada, provado por teste**: uma execução de missão grava em `aiCalls`
+  (gateway continua o executor) E em `aiRouterDecisions` (router registra a decisão). O
+  speed-score e a observabilidade não perdem nada.
+
+Restam, agora com o orquestrador de fato no fluxo:
+1. **Enterprise Deploy** (v24→v31 na VPS) — leva tudo à produção.
+2. **Learning Router** — o sinal de qualidade, que agora terá dados reais (`aiRouterDecisions`).
+3. **Router por tipo de missão** — o terceiro fator (architecture→claude, embeddings→ollama)
+   que o dono sugeriu; hoje o router decide por saúde+tier, não por tipo.

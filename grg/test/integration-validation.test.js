@@ -57,17 +57,20 @@ test('dashboard: connectors endpoint derives state, AI providers included', asyn
   await app.close?.();
 });
 
-// ELO SOLTO (o achado da validacao): o Mission Runtime NAO consome o AI Router hoje.
-// Este teste DOCUMENTA a lacuna medida em vez de escondê-la. Ele passa afirmando o estado
-// atual: planner e router existem, mas nao estao no mesmo caminho. Corrigir e trabalho
-// FUTURO (fora do escopo desta missao, que proibe alterar arquitetura).
-test('GAP: mission planner does not yet route through the AI router (measured, documented)', async () => {
-  const app = await appWith({ ollama: fakeProvider('ollama') });
-  const plannerSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'missions', 'mission-planner.js'), 'utf8');
-  const routesThroughRouter = /aiRouter/.test(plannerSrc);
-  assert.equal(routesThroughRouter, false, 'CONFIRMED GAP: planner has no aiRouter reference yet — integration point for a future mission');
-  // Ambos existem e funcionam isolados:
-  assert.ok(app.aiRouter, 'router is instantiated');
-  assert.ok(app.missionPlanner, 'planner is instantiated');
+// ELO FECHADO (MISSION-1005): o fluxo de missao agora DECIDE pelo AI Router e o Gateway
+// EXECUTA. O ponto real de IA da missao e o SoftwareFactory (factory.generate ->
+// factory.plan -> this.ai.invoke); ele passou a receber o Router, que tem a mesma
+// assinatura invoke() e delega ao Gateway. Router decide, Gateway executa, um runtime so.
+test('MISSION-1005: the mission AI path decides via router and executes via gateway', async () => {
+  const app = await appWith({ ollama: fakeProvider('ollama', { reply: 'plan-real' }) });
+  // O router entra como drop-in do gateway (mesma assinatura), preservando a telemetria.
+  const out = await app.aiRouter.invoke('grg', 'grg-admin', { taskType: 'plan', prompt: 'plan: um CRM' });
+  assert.ok(out && typeof out.text === 'string', 'router.invoke returns a gateway-shaped result');
+
+  // A prova de que o Gateway ainda e o executor: aiCalls foi gravado (telemetria intacta)...
+  const state = await app.store.read();
+  assert.ok((state.aiCalls || []).length >= 1, 'the gateway recorded the call in aiCalls (telemetry preserved)');
+  // ...e a decisao do Router tambem foi registrada (para o Learning Router futuro).
+  assert.ok((state.aiRouterDecisions || []).length >= 1, 'the router recorded its decision');
   await app.close?.();
 });

@@ -138,7 +138,7 @@ impossível por configuração.
 | GitHub Connector | derivado (`/api/connectors`) | a cada leitura | `listUserRepos()` real | `connector-runtime.test.js` (6) | GITHUB_TOKEN | ACTIVE quando selfTest passa; senão CONFIGURED |
 | Google/Meta/WhatsApp/Supabase/Cloudflare | PLANNED | — | nunca | — | OAuth de saída (não existe) | PLANNED — painel mostra PLANNED, nunca CONNECTED |
 | AI providers (ollama/groq/anthropic/openai/gemini/aiplatform) | derivado (`/api/connectors`) | por selfTest | `available()`/`complete()` real | `ai-router.test.js` (6) | API key/endpoint por env | CONNECTED quando selfTest passa; senão CONFIGURED |
-| AI Router | ACTIVE (código) | a cada `select()` | via connectors | `ai-router.test.js` | ConnectorRuntime | seleção por evidência: local→grátis→pago; nunca fixa provider |
+| AI Router | ACTIVE (no fluxo de missão) | a cada `select()`/`invoke()` | via connectors | `ai-router.test.js` + `integration-validation.test.js` | ConnectorRuntime + AIGateway | Router decide (evidência: local→grátis→pago), Gateway executa (cache/breaker/aiCalls). Fluxo de missão delega ao Router; telemetria preservada |
 
 Estados possíveis de um conector, todos derivados: `PLANNED` (sem implementação),
 `CONFIGURED` (registrado, sem credencial provada), `AUTHENTICATED` (credencial presente,

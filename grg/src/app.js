@@ -381,6 +381,13 @@ async function createApp(options = {}) {
   // O AI Router: escolhe provider por evidência (saúde real + política local→grátis→pago),
   // compondo o ConnectorRuntime e o gateway existentes. Nunca fixa provider.
   app.aiRouter = new AIRouter({ connectors: app.connectors, gateway: aiGateway, store });
+  // MISSION-1005 — o fluxo governado de missão passa a decidir o provider pelo Router.
+  // O SoftwareFactory chamava `aiGateway.invoke` direto; agora recebe o Router, que tem a
+  // MESMA assinatura invoke() e delega ao Gateway (Router decide, Gateway executa). O
+  // Gateway segue sendo o único executor — cache, breaker, aiCalls, observabilidade intactos.
+  // Injetado aqui (não na construção do factory, linha ~119) porque o Router depende do
+  // ConnectorRuntime, criado depois. Sem esta linha, o factory seguiria no gateway direto.
+  factory.ai = app.aiRouter;
   app.projectFactory = new ProjectFactoryService({ store, bus, controlPlane, factory, missionPlanner, digitalTwin });
   app.backgroundCognition = new BackgroundCognition({ store, bus, controlPlane, memory, digitalTwin, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
   // V11 — a unica saida para a internet aberta da plataforma: allowlist de dominios,

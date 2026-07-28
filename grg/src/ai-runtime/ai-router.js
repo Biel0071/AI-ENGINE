@@ -73,31 +73,56 @@ class AIRouter {
     };
   }
 
-  // Roteia uma execução: seleciona → invoca via connector → registra. Nunca inventa
-  // resultado: se ninguém está CONNECTED, devolve o unknown da seleção, não um texto falso.
+  // Roteia uma execução: DECIDE o provider por evidência → DELEGA ao AI Gateway, que
+  // EXECUTA (cache, circuit breaker, rate-limit, aiCalls, observabilidade). O Router é o
+  // cérebro de decisão; o Gateway é o motor de execução. NÃO chama o provider direto —
+  // fazer isso criaria um segundo runtime e perderia toda a telemetria que só o Gateway
+  // registra. Se ninguém está CONNECTED, devolve o unknown da seleção, nunca texto falso.
   async route(tenantId, actorId, request = {}) {
     const selection = await this.select(tenantId, actorId, { preferTier: request.preferTier });
     if (selection.chosen.state !== 'measured') return { ok: false, selection };
 
     const name = selection.chosen.value;
-    const connectorId = `ai:${name}`;
-    const connector = this.connectors.connectors.get(connectorId);
+    if (!this.gateway || typeof this.gateway.invoke !== 'function') {
+      return { ok: false, selection, error: 'AI gateway not wired: the router decides but the gateway executes' };
+    }
+
     const started = Date.now();
     try {
-      const result = await connector.invoke({
-        mode: request.mode || 'text', model: request.model || null,
-        prompt: request.prompt || null, messages: request.messages || null, temperature: request.temperature,
+      // A decisão do Router entra como override; o Gateway executa preservando toda a
+      // maquinaria operacional (e ainda cai no fallback configurado se o escolhido falhar).
+      const result = await this.gateway.invoke(tenantId, actorId, {
+        taskType: request.taskType || 'default',
+        prompt: request.prompt || '',
+        temperature: request.temperature,
+        provider: name,
+        model: request.model || null,
       });
-      const record = { provider: name, tier: selection.chosen.tier, durationMs: Date.now() - started, ok: true };
+      const record = { provider: result.provider || name, chosen: name, tier: selection.chosen.tier, durationMs: Date.now() - started, cached: result.cached === true, ok: true };
       await this.#record(tenantId, record);
-      return { ok: true, provider: name, result, telemetry: measured(record, 'derived:AIRouter execution') };
+      return { ok: true, provider: record.provider, result, telemetry: measured(record, 'derived:AIRouter decision + Gateway execution') };
     } catch (error) {
-      const record = { provider: name, tier: selection.chosen.tier, durationMs: Date.now() - started, ok: false, error: String(error.message || error) };
+      const record = { provider: name, chosen: name, tier: selection.chosen.tier, durationMs: Date.now() - started, ok: false, error: String(error.message || error) };
       await this.#record(tenantId, record);
-      // Falhou o escolhido: reporta medido. O fallback entre tiers é da select() na próxima
-      // chamada; aqui não mascaramos a falha como sucesso de outro provider.
-      return { ok: false, provider: name, telemetry: measured(record, 'derived:AIRouter execution') };
+      return { ok: false, provider: name, telemetry: measured(record, 'derived:AIRouter decision + Gateway execution') };
     }
+  }
+
+  // Compatibilidade com quem já chama `aiGateway.invoke(tenantId, actorId, {taskType,prompt})`
+  // — o SoftwareFactory e outros consumidores do fluxo de missão. O Router entra como
+  // drop-in: DECIDE o provider por evidência e DELEGA ao Gateway com a mesma assinatura,
+  // sem que o chamador mude uma linha. Se a seleção falhar (ninguém CONNECTED), cai para o
+  // Gateway sem override — a rota configurada ainda responde, em vez de a missão travar.
+  async invoke(tenantId, actorId, request = {}) {
+    const selection = await this.select(tenantId, actorId, { preferTier: request.preferTier });
+    const chosen = selection.chosen.state === 'measured' ? selection.chosen.value : null;
+    if (chosen) await this.#record(tenantId, { provider: chosen, chosen, tier: selection.chosen.tier, ok: true, delegated: true });
+    return this.gateway.invoke(tenantId, actorId, {
+      taskType: request.taskType || 'default',
+      prompt: request.prompt,
+      temperature: request.temperature,
+      ...(chosen ? { provider: chosen, model: request.model || null } : {}),
+    });
   }
 
   async #record(tenantId, record) {
