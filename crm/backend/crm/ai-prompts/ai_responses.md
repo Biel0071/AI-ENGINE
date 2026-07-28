@@ -1,1 +1,0 @@
-Generate AI response flows that check persisted ai_enabled settings, gather conversation history, and fail safely without interrupting CRM message persistence.

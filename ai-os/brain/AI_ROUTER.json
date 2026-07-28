@@ -1,0 +1,32 @@
+{
+  "router": "GRG FÊNIX Ω∞ AI Router",
+  "version": "4.0.0",
+  "status": "ACTIVE_ROUTING",
+  "defaultStrategy": "COST_AND_ACCURACY_BALANCED",
+  "routes": [
+    {
+      "taskType": "ARCHITECTURE_AND_DOCS",
+      "preferredModel": "Claude 3.5 Sonnet / Gemini Pro",
+      "fallbackModel": "GPT-4o",
+      "tokenBudget": "HIGH"
+    },
+    {
+      "taskType": "CODE_GENERATION_AND_REFRACTORING",
+      "preferredModel": "Codex / Claude 3.5 Sonnet",
+      "fallbackModel": "GPT-4o-mini",
+      "tokenBudget": "MEDIUM"
+    },
+    {
+      "taskType": "VISUAL_DOM_COGNITION",
+      "preferredModel": "Gemini 1.5 Flash / Vision",
+      "fallbackModel": "GPT-4-Vision",
+      "tokenBudget": "MEDIUM"
+    },
+    {
+      "taskType": "HIGH_FREQUENCY_REPETITIVE",
+      "preferredModel": "Ollama / Llama-3-8B-Local",
+      "fallbackModel": "GPT-4o-mini",
+      "tokenBudget": "LOW_ZERO_COST"
+    }
+  ]
+}

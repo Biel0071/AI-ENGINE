@@ -257,8 +257,167 @@ async function createApp(options = {}) {
   const { DiscoveryEngine } = require('./discovery/discovery-engine');
   app.discovery = new DiscoveryEngine({ store, bus, controlPlane, repoIntel });
 
+  // V6.1 Services
+  const { KnowledgeGenomeEngine } = require('./memory/knowledge-genome');
+  const { HypothesisEngine } = require('./cognitive/hypothesis-engine');
+  const { CrossProjectLearning } = require('./cognitive/cross-project-learning');
+  const { MultimodalPipeline } = require('./cognitive/multimodal-pipeline');
+  const { ModelOrchestrator } = require('./ai-runtime/model-orchestrator');
+  const { AgentSwarm } = require('./agents/agent-swarm');
+  const { VpsOperationsService } = require('./ops/vps-operations');
+  const { GitHubOperationsService } = require('./repo-intel/github-operations');
+  const { ProjectFactoryService } = require('./software-factory/project-factory');
+  const { BackgroundCognition } = require('./cognitive/background-cognition');
+  const { ExternalSearchService } = require('./cognitive/external-search');
+
+  // V7.0 / V7.1 ACP & Master Node Services
+  const { MasterNodeService } = require('./ops/master-node');
+  const { DeployCenterService } = require('./operations/deploy-center');
+  const { ObservabilityCenterService } = require('./operations/observability-center');
+  const { CognitivePerformanceEngine } = require('./performance/cognitive-performance-engine');
+  const { CognitiveOptimizationEngine } = require('./cognitive/cognitive-optimization-engine');
+  const { PluginSkillsEcosystem } = require('./plugins/plugin-skills-ecosystem');
+  const { CognitiveEncryptionService } = require('./security/cognitive-encryption');
+  const { NpcCityEngine } = require('./ai-city/npc-city-engine');
+  const { CompanyDailyAnalysisService } = require('./operations/company-daily-analysis');
+
+  // GRG FÊNIX Ω (OMEGA) Core Engines
+  const { CognitiveAtomsFabric } = require('./omega/cognitive-atoms-fabric');
+  const { BrainFederation } = require('./omega/brain-federation');
+  const { CognitiveCouncil } = require('./omega/cognitive-council');
+  const { ModelEconomyEngine } = require('./omega/model-economy-engine');
+  const { AutonomousResearchEngine } = require('./omega/autonomous-research');
+
+  // GRG FÊNIX Ω (OMEGA) V2.0 Engines
+  const { CollectiveIntelligenceEngine } = require('./omega/collective-intelligence');
+  const { RecursiveIntelligenceLoop } = require('./omega/recursive-intelligence');
+  const { ContextExpansionEngine } = require('./omega/context-expansion-engine');
+  const { HumanDigitalTwin } = require('./omega/human-digital-twin');
+
+  // GRG FÊNIX Ω∞ (OMEGA INFINITY) Living Intelligence Kernel
+  const { CognitiveLawsEngine } = require('./omega-infinity/cognitive-laws-engine');
+  const { SelfEvolutionKernel } = require('./omega-infinity/self-evolution-kernel');
+  const { CognitiveDnaCompiler } = require('./omega-infinity/cognitive-dna-compiler');
+  const { LivingPhysicsEngine } = require('./omega-infinity/living-physics-engine');
+  const { RealityFeedbackEngine } = require('./omega-infinity/reality-feedback-engine');
+  const { MetaConsciousnessEngine } = require('./omega-infinity/meta-consciousness');
+
+  // GRG FÊNIX UIOS (Universal Intelligence Operating System)
+  const { KnowledgeOperatingSystem } = require('./uios/knowledge-operating-system');
+  const { CapabilityOperatingSystem } = require('./uios/capability-operating-system');
+  const { MissionCompiler } = require('./uios/mission-compiler');
+  const { WorldModelFactory } = require('./uios/world-model-factory');
+
+  // GRG FÊNIX KEOS (Knowledge Execution Operating System)
+  const { UniversalCognitiveProtocol } = require('./keos/universal-cognitive-protocol');
+  const { UniversalAdaptersEngine } = require('./keos/universal-adapters');
+  const { ConfigurablePipelineService } = require('./keos/configurable-pipeline');
+  const { ExpandedConstitutionIndex } = require('./keos/expanded-constitution-index');
+
+  // GRG FÊNIX COGNITIVE WORKSPACE OS & ECA
+  const { CognitiveWorkspaceModes } = require('./workspace/cognitive-workspace-modes');
+  const { ExecutiveCognitiveAssistant } = require('./workspace/executive-cognitive-assistant');
+  const { CognitivePresenceEngine } = require('./workspace/cognitive-presence-engine');
+
+  // GRG FÊNIX NEXUS Ω∞ (Unified Cognitive Core)
+  const { UnifiedCognitiveCore } = require('./nexus/unified-cognitive-core');
+  const { ExecutiveTimelineService } = require('./nexus/executive-timeline');
+  const { ExecutiveCommandCenterService } = require('./nexus/executive-command-center');
+  const { CognitiveMarketplaceService } = require('./nexus/cognitive-marketplace');
+
+  // GRG FÊNIX SCOS (Software Creation Operating System)
+  const { DesignIntelligenceOS } = require('./scos/design-intelligence-os');
+  const { ApplicationGenomeService } = require('./scos/application-genome');
+  const { FullStackFactoryService } = require('./scos/fullstack-factory');
+  const { CreationEvolutionEngine } = require('./scos/creation-evolution-engine');
+
+  // GRG FÊNIX Ω∞ OneDeploy Orchestrator & Autonomous Software Factory
+  const { OneDeployOrchestrator } = require('./onedeploy/onedeploy-orchestrator');
+  const { ProjectAnalyzersService } = require('./onedeploy/analyzers');
+  const { TestingSmokeE2eService } = require('./onedeploy/testing-smoke-e2e');
+  const { ContinuousImprovementLoopService } = require('./onedeploy/continuous-improvement-loop');
+
+  app.knowledgeGenome = new KnowledgeGenomeEngine({ store, bus, controlPlane, hierarchy, vectorStore });
+  app.hypothesisEngine = new HypothesisEngine({ store, bus, controlPlane, approvals, policy });
+  app.crossProjectLearning = new CrossProjectLearning({ store, bus, controlPlane, digitalTwin });
+  app.multimodalPipeline = new MultimodalPipeline({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
+  app.modelOrchestrator = new ModelOrchestrator({ aiGateway });
+  app.agentSwarm = new AgentSwarm({ store, bus, controlPlane, fabricEvents });
+  app.vpsOps = new VpsOperationsService({ store, bus, controlPlane, approvals });
+  app.githubOps = new GitHubOperationsService({ store, bus, controlPlane, repoIntel, digitalTwin });
+  app.projectFactory = new ProjectFactoryService({ store, bus, controlPlane, factory, missionPlanner, digitalTwin });
+  app.backgroundCognition = new BackgroundCognition({ store, bus, controlPlane, memory, digitalTwin, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
+  app.externalSearch = new ExternalSearchService({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
+
+  app.masterNode = new MasterNodeService({ store, bus, controlPlane, approvals, sandbox, vpsOps: app.vpsOps });
+  app.deployCenter = new DeployCenterService({ store, bus, controlPlane });
+  app.observabilityCenter = new ObservabilityCenterService({ store, bus, controlPlane, metrics });
+  app.cognitivePerformance = new CognitivePerformanceEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
+  app.cognitiveOptimization = new CognitiveOptimizationEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
+  app.pluginSkills = new PluginSkillsEcosystem({ store, bus, controlPlane, approvals });
+  app.cognitiveEncryption = new CognitiveEncryptionService({ store, bus, controlPlane });
+  app.npcCity = new NpcCityEngine({ store, bus, controlPlane, agentSwarm: app.agentSwarm, digitalTwin });
+  app.companyDailyAnalysis = new CompanyDailyAnalysisService({ store, bus, controlPlane, digitalTwin, knowledgeGenome: app.knowledgeGenome, masterNode: app.masterNode });
+
+  // OMEGA Attachments
+  app.cognitiveAtomsFabric = new CognitiveAtomsFabric({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
+  app.brainFederation = new BrainFederation({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
+  app.cognitiveCouncil = new CognitiveCouncil({ store, bus, controlPlane, approvals, policy });
+  app.modelEconomy = new ModelEconomyEngine({ store, bus, controlPlane, aiGateway, cognitivePerformance: app.cognitivePerformance, cognitiveOptimization: app.cognitiveOptimization });
+  app.autonomousResearch = new AutonomousResearchEngine({ store, bus, controlPlane, sandbox, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
+
+  // OMEGA V2.0 Attachments
+  app.collectiveIntelligence = new CollectiveIntelligenceEngine({ store, bus, controlPlane, modelOrchestrator: app.modelOrchestrator, knowledgeGenome: app.knowledgeGenome });
+  app.recursiveIntelligence = new RecursiveIntelligenceLoop({ store, bus, controlPlane, collectiveIntelligence: app.collectiveIntelligence, knowledgeGenome: app.knowledgeGenome });
+  app.contextExpansion = new ContextExpansionEngine({ store, bus, controlPlane, projectFactory: app.projectFactory, knowledgeGenome: app.knowledgeGenome });
+  app.humanDigitalTwin = new HumanDigitalTwin({ store, bus, controlPlane, digitalTwin, missionKernel: missions });
+
+  // OMEGA INFINITY Attachments
+  app.cognitiveLaws = new CognitiveLawsEngine({ store, bus, controlPlane });
+  app.selfEvolutionKernel = new SelfEvolutionKernel({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
+  app.cognitiveDnaCompiler = new CognitiveDnaCompiler({ store, bus, controlPlane });
+  app.livingPhysics = new LivingPhysicsEngine({ store, bus, controlPlane });
+  app.realityFeedback = new RealityFeedbackEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
+  app.metaConsciousness = new MetaConsciousnessEngine({ store, bus, controlPlane, cognitivePerformance: app.cognitivePerformance, cognitiveOptimization: app.cognitiveOptimization });
+
+  // UIOS Attachments
+  app.kos = new KnowledgeOperatingSystem({ store, bus, controlPlane });
+  app.capOs = new CapabilityOperatingSystem({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome });
+  app.missionCompiler = new MissionCompiler({ store, bus, controlPlane, projectFactory: app.projectFactory, knowledgeGenome: app.knowledgeGenome });
+  app.worldModelFactory = new WorldModelFactory({ store, bus, controlPlane, digitalTwin });
+
+  // KEOS Attachments
+  app.ucp = new UniversalCognitiveProtocol({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, cognitiveLaws: app.cognitiveLaws });
+  app.universalAdapters = new UniversalAdaptersEngine({ store, bus, controlPlane, aiGateway });
+  app.configurablePipeline = new ConfigurablePipelineService({ store, bus, controlPlane, approvals });
+  app.expandedConstitutionIndex = new ExpandedConstitutionIndex({ store, bus, controlPlane, kos: app.kos });
+
+  // Workspace OS & ECA Attachments
+  app.workspaceModes = new CognitiveWorkspaceModes({ store, bus, controlPlane });
+  app.eca = new ExecutiveCognitiveAssistant({ store, bus, controlPlane, workspaceModes: app.workspaceModes });
+  app.cognitivePresence = new CognitivePresenceEngine({ store, bus, controlPlane });
+
+  // NEXUS Ω∞ Attachments
+  app.ucc = new UnifiedCognitiveCore({ store, bus, controlPlane, kos: app.kos, capOs: app.capOs, missionCompiler: app.missionCompiler, workspaceModes: app.workspaceModes, realityFeedback: app.realityFeedback });
+  app.nexusTimeline = new ExecutiveTimelineService({ store, bus, controlPlane });
+  app.commandCenter = new ExecutiveCommandCenterService({ store, bus, controlPlane, digitalTwin });
+  app.cognitiveMarketplace = new CognitiveMarketplaceService({ store, bus, controlPlane, capOs: app.capOs });
+
+  // SCOS Attachments
+  app.designIntel = new DesignIntelligenceOS({ store, bus, controlPlane });
+  app.appGenome = new ApplicationGenomeService({ store, bus, controlPlane, designIntel: app.designIntel });
+  app.fullstackFactory = new FullStackFactoryService({ store, bus, controlPlane, designIntel: app.designIntel, appGenome: app.appGenome, projectFactory: app.projectFactory });
+  app.creationEvolution = new CreationEvolutionEngine({ store, bus, controlPlane, capOs: app.capOs });
+
+  // OneDeploy Orchestrator Attachments
+  app.oneDeploy = new OneDeployOrchestrator({ store, bus, controlPlane, masterNode: app.masterNode, deployCenter: app.deployCenter });
+  app.analyzers = new ProjectAnalyzersService({ store, bus, controlPlane });
+  app.testingSmokeE2e = new TestingSmokeE2eService({ store, bus, controlPlane, observabilityCenter: app.observabilityCenter });
+  app.continuousImprovement = new ContinuousImprovementLoopService({ store, bus, controlPlane, analyzers: app.analyzers, capOs: app.capOs });
+
   app.chat = new ChatAgent({ app, llm });
   app.masterAvatar = new MasterAvatar({ chat: app.chat, missionPlanner });
+  app.npcCity.masterAvatar = app.masterAvatar;
   return app;
 }
 

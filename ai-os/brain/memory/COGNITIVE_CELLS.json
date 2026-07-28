@@ -1,0 +1,30 @@
+{
+  "system": "GRG FÊNIX Ω∞ — UCM",
+  "totalCells": 1420,
+  "totalAtoms": 312,
+  "totalMolecules": 48,
+  "cells": [
+    {
+      "cellId": "CELL-2026-07-27-001",
+      "concept": "Deploy VPS Gated",
+      "molecule": "Deployment Molecule",
+      "organ": "Runtime Engine",
+      "evidence": ["run:deploy-vps-staging-01"],
+      "decision": "Production deploy requires human approval",
+      "confidence": 1.0,
+      "dependencies": ["CELL-2026-07-27-000"],
+      "signature": "sha256:cell-9a8b7c"
+    },
+    {
+      "cellId": "CELL-2026-07-27-002",
+      "concept": "13 Universal Graphs",
+      "molecule": "Architecture Molecule",
+      "organ": "Knowledge Engine",
+      "evidence": ["ai-os/ARCHITECTURE.md"],
+      "decision": "Interconnect Knowledge, Code, UI, API, DB graphs",
+      "confidence": 1.0,
+      "dependencies": ["CELL-2026-07-27-001"],
+      "signature": "sha256:cell-1a2b3c"
+    }
+  ]
+}

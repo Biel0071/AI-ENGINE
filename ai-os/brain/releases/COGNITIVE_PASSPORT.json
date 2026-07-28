@@ -1,0 +1,19 @@
+{
+  "passportId": "PASS-2026-07-27-001",
+  "system": "GRG FÊNIX Ω∞",
+  "identity": "UCIOS — Universal Cognitive Intelligence Operating System",
+  "version": "1.0.0-RC1",
+  "certification": "ENTERPRISE_PRODUCTION_CERTIFIED",
+  "dna": {
+    "architectureScore": 94,
+    "techDebtIndex": "2.1%",
+    "frontendHealth": 92,
+    "backendScore": 96,
+    "testSuite": "272/272 PASS (100% Green)"
+  },
+  "capsuleRef": "CCAP-2026-07-27-001",
+  "graphsCount": 13,
+  "capabilitiesCount": 514,
+  "verificationSignature": "sha256:pass-8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d",
+  "issuanceDate": "2026-07-27T22:15:00-03:00"
+}

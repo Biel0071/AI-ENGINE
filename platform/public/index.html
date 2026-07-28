@@ -3,46 +3,210 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI-ENGINE Software House</title>
+    <title>GRG FÊNIX Ω∞ — ACEP Cockpit & LCR Runtime</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <header class="topbar">
       <div>
-        <span class="eyebrow">AI-ENGINE CONTROL PLANE</span>
-        <h1>Software House</h1>
+        <span class="eyebrow">GRG FÊNIX Ω∞ · LIVING COGNITIVE RUNTIME (24/7 ONLINE)</span>
+        <h1>ACEP Cockpit</h1>
       </div>
-      <div class="status"><span></span> Catálogo conectado</div>
+      <div class="header-right">
+        <div class="env-badge dev">DEV: AUTÔNOMO</div>
+        <div class="status"><span></span> LCR Online (Capsule Ω)</div>
+      </div>
     </header>
 
+    <nav class="nav-tabs" aria-label="Navegação Principal">
+      <button class="nav-tab active" data-tab="portfolio">🏢 Portfólio & Projetos</button>
+      <button class="nav-tab" data-tab="terminal">💬 Terminal Conversacional Operacional</button>
+      <button class="nav-tab" data-tab="kernel">🧠 ACEP Kernel & Digital Twin</button>
+      <button class="nav-tab" data-tab="doi">🌐 Digital Operator (DOI)</button>
+      <button class="nav-tab" data-tab="maturity">📊 Framework N0–N5</button>
+      <button class="nav-tab" data-tab="governance">🛡️ Segurança & Auditoria</button>
+    </nav>
+
     <main>
-      <section id="metrics" class="metrics" aria-label="Métricas"></section>
+      <!-- TAB 1: PORTFOLIO -->
+      <div id="tab-portfolio" class="tab-content active">
+        <section id="metrics" class="metrics" aria-label="Métricas"></section>
 
-      <section class="toolbar">
-        <div>
-          <h2>Portfólio de projetos</h2>
-          <p>Controle central de código, inteligência e publicação.</p>
-        </div>
-        <div class="filters">
-          <input id="search" type="search" placeholder="Buscar projeto..." aria-label="Buscar projeto">
-          <select id="visibility" aria-label="Filtrar visibilidade">
-            <option value="all">Todos</option>
-            <option value="public">Públicos</option>
-            <option value="private">Privados</option>
-          </select>
-        </div>
-      </section>
+        <section class="toolbar">
+          <div>
+            <h2>Portfólio de Projetos Conectados</h2>
+            <p>Controle central de código, inteligência, simulação e publicação.</p>
+          </div>
+          <div class="filters">
+            <input id="search" type="search" placeholder="Buscar projeto..." aria-label="Buscar projeto">
+            <select id="visibility" aria-label="Filtrar visibilidade">
+              <option value="all">Todos os tipos</option>
+              <option value="public">Públicos</option>
+              <option value="private">Privados</option>
+            </select>
+          </div>
+        </section>
 
-      <section id="projects" class="project-grid" aria-live="polite"></section>
+        <section id="projects" class="project-grid" aria-live="polite"></section>
 
-      <section class="graph-panel">
-        <div>
-          <span class="eyebrow">MIRROR GRAPH</span>
-          <h2>Mapa da Software House</h2>
-          <p id="graph-summary">Carregando relações...</p>
-        </div>
-        <div id="capabilities" class="capabilities"></div>
-      </section>
+        <section class="graph-panel">
+          <div>
+            <span class="eyebrow">MIRROR GRAPH & CAPABILITIES</span>
+            <h2>Mapa da Software House (13 Grafos)</h2>
+            <p id="graph-summary">Carregando relações...</p>
+          </div>
+          <div id="capabilities" class="capabilities"></div>
+        </section>
+      </div>
+
+      <!-- TAB 2: TERMINAL CONVERSACIONAL OPERACIONAL -->
+      <div id="tab-terminal" class="tab-content">
+        <section class="chat-panel">
+          <div>
+            <span class="eyebrow">OPERATIONAL CONVERSATIONAL TERMINAL</span>
+            <h2>Copiloto de Engenharia FÊNIX Ω∞</h2>
+            <p>Converse diretamente com o sistema em tempo real ("Analise o backend", "Simule refatoração", "Prepare release").</p>
+          </div>
+          
+          <div class="quick-prompts">
+            <button class="btn-quick" data-prompt="Analise todo o backend do projeto">Analise todo o backend</button>
+            <button class="btn-quick" data-prompt="Simule a refatoração do frontend no Digital Twin">Simule refatoração</button>
+            <button class="btn-quick" data-prompt="Prepare a release candidate para produção">Prepare release</button>
+            <button class="btn-quick" data-prompt="Mostre o estado atual dos 13 Grafos Universais">Estado dos 13 Grafos</button>
+          </div>
+
+          <div id="chat-window" class="chat-window">
+            <div class="chat-msg system">
+              <strong>FÊNIX Ω∞ LCR (Online):</strong> Olá! O organismo cognitivo está operando 24/7. Capsule Ω carregada. Como posso ajudar com os repositórios, missões ou simulações hoje?
+            </div>
+          </div>
+
+          <form id="chat-form" class="chat-form">
+            <input id="chat-input" type="text" placeholder="Digite um comando operacional..." required>
+            <button type="submit">Enviar Comando</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- TAB 3: ACEP KERNEL & DIGITAL TWIN -->
+      <div id="tab-kernel" class="tab-content">
+        <section class="kernel-hero">
+          <div class="kernel-card">
+            <span class="eyebrow">KERNEL STATUS</span>
+            <h3>Universal Cognitive Kernel</h3>
+            <p class="status-text">Status: <strong>ACTIVE_HEALTHY (N4 Predictive)</strong></p>
+            <p>Idle Engine: <span class="badge">Scanning Tech Debt (Background)</span></p>
+          </div>
+          <div class="kernel-card">
+            <span class="eyebrow">PROJECT DIGITAL TWIN</span>
+            <h3>Modelo Computacional Vivo</h3>
+            <p>Componentes Modelados: <strong>48 Nós Em Tempo Real</strong></p>
+            <p>Simulação Pré-Mutação: <span class="badge success">Ativa & Habilitada</span></p>
+          </div>
+        </section>
+
+        <section class="mission-compiler-box">
+          <span class="eyebrow">MISSION COMPILER</span>
+          <h2>Compilar Nova Missão de Engenharia</h2>
+          <p>Digite seu objetivo em linguagem natural para gerar o Blueprint de Missão autônomo.</p>
+          <form id="mission-form" class="mission-form">
+            <input id="mission-prompt" type="text" placeholder="Ex: Criar um CRM multi-tenant com funil de vendas e integração WhatsApp..." required>
+            <button type="submit">Compilar Blueprint</button>
+          </form>
+          <div id="mission-result" class="mission-result"></div>
+        </section>
+
+        <section class="simulation-box">
+          <span class="eyebrow">ARCHITECTURE SIMULATION ENGINE</span>
+          <h2>Simulação de Impacto Pré-Mutação</h2>
+          <div class="sim-actions">
+            <button id="btn-sim-refactor">Simular Refatoração Frontend</button>
+            <button id="btn-sim-db" class="secondary">Simular Migration de Banco</button>
+          </div>
+          <div id="sim-result" class="sim-result"></div>
+        </section>
+      </div>
+
+      <!-- TAB 4: DIGITAL OPERATOR INTELLIGENCE (DOI) -->
+      <div id="tab-doi" class="tab-content">
+        <section class="doi-panel">
+          <div>
+            <span class="eyebrow">DIGITAL OPERATOR INTELLIGENCE (DOI)</span>
+            <h2>Browser Cognition & Visual Learning Cockpit</h2>
+            <p>Navegação autônoma multibrowser, descoberta de rotas e síntese de Capabilities.</p>
+          </div>
+          <div class="doi-metrics-grid">
+            <div class="doi-card">
+              <strong>2 Instâncias</strong>
+              <span>Browser Sessions (Chrome/Firefox)</span>
+            </div>
+            <div class="doi-card">
+              <strong>28 Rotas</strong>
+              <span>Navigation Graph Mapeado</span>
+            </div>
+            <div class="doi-card">
+              <strong>14 Registros</strong>
+              <span>Operator Audit Logs</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="doi-features">
+          <div class="feature-card">
+            <h3>🌐 Browser Cognition Engine</h3>
+            <p>Interpretação visual e semântica de interfaces, tabelas e formulários com evidência auditável (DOM, screenshots e vídeo).</p>
+          </div>
+          <div class="feature-card">
+            <h3>👁️ Visual Cognition OS</h3>
+            <p>Extração automática de Design Genome (tokens visuais, acessibilidade WCAG, responsividade).</p>
+          </div>
+          <div class="feature-card">
+            <h3>⚙️ Capability Synthesizer</h3>
+            <p>Transformação de fluxos observados em novos componentes e automações reutilizáveis.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- TAB 5: MATURITY FRAMEWORK -->
+      <div id="tab-maturity" class="tab-content">
+        <section class="maturity-panel">
+          <div>
+            <span class="eyebrow">DOMAIN MATURITY FRAMEWORK</span>
+            <h2>Avaliação de Maturidade Cognitiva (N0 – N5)</h2>
+            <p>Métrica contínua e auditável em 10 dimensões verificáveis.</p>
+          </div>
+          <div id="maturity-score-card" class="maturity-score-card">
+            <div class="global-score">
+              <strong>N4</strong>
+              <span>Preditivo (Score: 87/100)</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="maturity-grid" class="maturity-grid"></section>
+      </div>
+
+      <!-- TAB 6: GOVERNANCE & SECURITY -->
+      <div id="tab-governance" class="tab-content">
+        <section class="governance-panel">
+          <span class="eyebrow">SAFE AUTOMATION & AUDITABILITY</span>
+          <h2>Governança por Ambiente & Audit Logs</h2>
+          <div class="env-cards">
+            <div class="env-card dev">
+              <h3>Desenvolvimento</h3>
+              <p>Autonomia total: implementação, testes, commit e push automáticos.</p>
+            </div>
+            <div class="env-card staging">
+              <h3>Staging / Homologação</h3>
+              <p>Deploy autônomo com aprovação obrigatória nos testes E2E e QA.</p>
+            </div>
+            <div class="env-card prod">
+              <h3>Produção</h3>
+              <p>Aprovação humana explícita obrigatória no painel para qualquer deploy.</p>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <template id="project-template">
@@ -60,13 +224,14 @@
         </dl>
         <div class="actions">
           <button data-action="analyze">Analisar</button>
-          <button data-action="deploy" class="secondary">Preparar publicação</button>
+          <button data-action="simulate" class="secondary">Simular Mutação</button>
+          <button data-action="deploy" class="secondary">Deploy Staging</button>
           <a target="_blank" rel="noreferrer">GitHub</a>
         </div>
       </article>
     </template>
 
     <div id="toast" role="status" aria-live="polite"></div>
-    <script src="/app.js"></script>
+    <script src="/app-v2.js"></script>
   </body>
 </html>

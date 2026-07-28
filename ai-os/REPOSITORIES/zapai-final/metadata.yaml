@@ -1,0 +1,55 @@
+id: zapai-final
+name: ZAPAI-FINAL
+owner: Biel0071
+provider: github
+url: https://github.com/Biel0071/ZAPAI-FINAL
+visibility: public          # confirmado via API GitHub em 2026-07-24 (era private no seed antigo)
+branch: main
+revision: "2b267e61349355c82addc4b8cf3dafffe101abb3"   # HEAD real analisado
+primary_language: javascript
+stack: [node, express, react, typescript, vite, radix-ui, playwright, socket.io, baileys, openai, docker, postgres]
+family: whatsapp-crm-core
+role: canonical
+status: active
+
+# --- Análise real do GRG Services OS (não mock) ---
+analysis:
+  engine: grg-repo-intel
+  method: shallow-clone + fs-scan (checkout efêmero)
+  analyzed_at: 2026-07-24
+  file_count: 1762           # arquivos de texto analisados (binários/node_modules/.git filtrados)
+  duration_ms: 761
+  languages: { javascript: 381, typescript: 213, markdown: 136, shell: 34, json: 32, html: 7, yaml: 6, css: 3 }
+  dependency_count: 109
+  endpoint_count: 385
+  component_count: 95        # componentes React detectados
+  monorepo: [backend, frontend-official]
+  scores: { architecture: 100, ai: 80, security: 70, quality: 60, risk: 60 }
+
+capabilities: [whatsapp-crm, ai-gateway, payments-pix, payments-stripe, auth-rbac, analytics, realtime, ecommerce, dashboard]
+
+# Tabelas reais detectadas no schema (amostra das 49 encontradas)
+database_tables:
+  - users, contacts, leads, conversations, messages, campaigns, automations
+  - flows, flow_nodes, nodes, node_deployments, node_metrics, deployments
+  - sessions, whatsapp_sessions, whatsapp_lid_mappings, provider_keys
+  - ai_context, ai_logs, ai_memory_long, ai_memory_short, ai_conversation_memory
+  - agent_memory_nodes, agent_memory_edges, agent_learning_events, agent_evolution_log
+  - audit_logs, message_audit_logs, runtime_health, runtime_alerts, heartbeats
+
+duplication:
+  - with: swift-wa-assist
+    identical_files: 1539       # da análise de portfólio anterior
+    action: consolidar diferenças em módulos + feature flags do núcleo
+
+last_commit:
+  sha: "2b267e61349355c82addc4b8cf3dafffe101abb3"
+  date: "2026-07-24T20:56:45-03:00"
+  message: "chore(ai): add AI Architect framework — CLAUDE.md bootstrap + 13 project skills"
+
+snapshot_date: 2026-07-24
+notes: >
+  Monorepo maduro backend (Node/Express) + frontend-official (React/TS/Vite/Radix, 213 tsx).
+  49 tabelas incluindo memória evolutiva de agentes (agent_memory_nodes/edges) e multi-nó
+  (nodes/node_deployments). Endpoints CRUD gerados dinamicamente (padrão /api/${resourceName}).
+  Próximo: manter Baileys atrás de adapter de mensageria; consolidar com swift-wa-assist.

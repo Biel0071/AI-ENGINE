@@ -4,19 +4,59 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07090d">
-  <title>GRG Services OS | GRG FÊNIX — Centro Operacional Cognitivo</title>
+  <title>GRG Services OS | GRG FÊNIX — Centro Operacional Cognitivo V6.1</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/city-overrides.css">
 </head>
 <body>
   <div class="os-shell">
     <aside class="sidebar" aria-label="Navegação principal">
-      <a class="brand" href="#command"><span class="brand-mark">F</span><span><b>GRG FÊNIX</b><small>Cognitive OS</small></span></a>
-      <nav>
-        <a class="active" href="#command"><span>⌂</span>Comando</a><a href="#missions"><span>◆</span>Missões</a>
-        <a href="#city"><span>▦</span>AI City</a><a href="#knowledge"><span>◎</span>Knowledge</a>
-        <a href="#runtime"><span>⚡</span>Runtime</a><a href="#gateway"><span>◇</span>AI Gateway</a>
-        <a href="#observability"><span>⌁</span>Observabilidade</a><a href="/office"><span>▣</span>Empresas</a>
+      <a class="brand" href="#command"><span class="brand-mark">F</span><span><b>GRG FÊNIX V7.1</b><small>Master Node ACP</small></span></a>
+      <nav class="tree-nav">
+        <details open>
+          <summary><span>⌂</span> Operação & Comando</summary>
+          <div class="submenu">
+            <a class="active" href="#command">Dashboard</a>
+            <a href="#masterNode">Master Node VPS</a>
+            <a href="#deploys">Deploy Center</a>
+            <a href="#missions">Missões</a>
+            <a href="#runtime">Fila de Jobs</a>
+            <a href="/office">Empresas</a>
+            <a href="#projects">Projetos</a>
+            <a href="#city">AI City & NPCs</a>
+          </div>
+        </details>
+        <details open>
+          <summary><span>◎</span> Memória & Desempenho</summary>
+          <div class="submenu">
+            <a href="#performance">Cognitive Speed Score</a>
+            <a href="#hotmemory">Hot Memory (L0-L5)</a>
+            <a href="#knowledge">Knowledge Capsules</a>
+            <a href="#memory">Memória Hierárquica</a>
+            <a href="#twin">Digital Twin</a>
+            <a href="#kgraph">Knowledge Graph</a>
+          </div>
+        </details>
+        <details open>
+          <summary><span>⚡</span> Agentes & Plugins</summary>
+          <div class="submenu">
+            <a href="#swarm">Agent Swarm (15 Sp.)</a>
+            <a href="#plugins">Plugin Marketplace</a>
+            <a href="#skills">Skill Evolution</a>
+            <a href="#capabilities">Capabilities Catalog</a>
+          </div>
+        </details>
+        <details open>
+          <summary><span>⌁</span> Infraestrutura & DevOps</summary>
+          <div class="submenu">
+            <a href="#observability">Observabilidade Center</a>
+            <a href="#health">Health Orchestrator</a>
+            <a href="#calendar">Calendário Operacional</a>
+            <a href="#vps">VPS & Docker Infra</a>
+            <a href="#github">GitHub Operations</a>
+            <a href="#security">Criptografia & Audit</a>
+          </div>
+        </details>
       </nav>
       <div class="sidebar-health"><i id="sidebarDot"></i><span><b id="sidebarStatus">Conectando</b><small id="sidebarDetail">aguardando health</small></span></div>
       <button id="logout" class="ghost wide" type="button">Encerrar sessão</button>
@@ -24,9 +64,24 @@
 
     <main>
       <header class="topbar">
-        <div><span class="eyebrow">CENTRO DE COMANDO</span><h1>Ecossistema operacional</h1></div>
-        <div class="top-actions"><span id="clock" class="clock"></span><button id="refreshBtn" class="icon-button" title="Atualizar">↻</button><span id="actor" class="actor">GRG</span></div>
+        <div><span class="eyebrow">AUTONOMOUS COGNITIVE PLATFORM V7.1</span><h1>Painel Master Node de Operação</h1></div>
+        <div class="top-actions">
+          <button id="selfDeployBtn" class="action-btn" style="background:linear-gradient(135deg,var(--green),#169e53);" title="Executar Self Deploy Pipeline">🚀 Self Deploy</button>
+          <button id="multimodalBtn" class="action-btn" title="Upload Multimodal">📁 Multimodal Ingest</button>
+          <span id="clock" class="clock"></span>
+          <button id="refreshBtn" class="icon-button" title="Atualizar">↻</button>
+          <span id="actor" class="actor">GRG</span>
+        </div>
       </header>
+
+      <!-- CONSOLE OPERACIONAL UNIFICADO V7.1 -->
+      <section class="operational-console-bar">
+        <div class="console-item"><span class="label">MASTER NODE:</span><strong id="consoleMasterNode">VPS ONLINE</strong></div>
+        <div class="console-item"><span class="label">SPEED SCORE:</span><strong id="consoleSpeedScore">98.4 / 100</strong></div>
+        <div class="console-item"><span class="label">HOT MEMORY:</span><strong id="consoleHotMemory">L0-L5 PREWARMED</strong></div>
+        <div class="console-item"><span class="label">MISSÃO ATIVA:</span><strong id="consoleMission">SEM MISSÃO</strong></div>
+        <div class="console-item"><span class="label">AGENTES ATIVOS:</span><strong id="consoleAgents">15 Especialistas NPCs</strong></div>
+      </section>
 
       <section id="command" class="command-grid">
         <article id="fenix" class="fenix-card" data-state="SLEEPING">
@@ -41,25 +96,35 @@
             </svg>
             <div class="state-ring"></div>
           </div>
-          <div class="avatar-copy"><span class="live-label"><i></i> AVATAR MESTRE</span><h2>FÊNIX</h2><p id="avatarPhrase">O conhecimento permanece. Os modelos evoluem.</p><div class="avatar-state"><strong id="avatarState">DORMINDO</strong><span id="avatarLocation">Praça Central</span><span id="avatarProgress">0%</span></div></div>
+          <div class="avatar-copy">
+            <span class="live-label"><i></i> AVATAR MESTRE OPERADOR</span>
+            <h2>FÊNIX</h2>
+            <p id="avatarPhrase">O conhecimento permanece. Os modelos evoluem.</p>
+            <div class="avatar-state"><strong id="avatarState">DORMINDO</strong><span id="avatarLocation">Praça Central</span><span id="avatarProgress">0%</span></div>
+          </div>
         </article>
 
         <article class="copilot-card">
-          <div class="section-title"><div><span class="eyebrow">INTERFACE ÚNICA</span><h2>Converse com o FÊNIX</h2></div><div class="voice-controls"><button id="ttsToggle" class="toggle" type="button" aria-pressed="false">◖ Voz</button><span id="voiceSupport" class="support"></span></div></div>
+          <div class="section-title"><div><span class="eyebrow">INTERFACE ÚNICA OPERACIONAL</span><h2>Converse com o Avatar Mestre</h2></div><div class="voice-controls"><button id="ttsToggle" class="toggle" type="button" aria-pressed="false">◖ Voz</button><span id="voiceSupport" class="support"></span></div></div>
           <div id="chatlog" class="chatlog" aria-live="polite"></div>
-          <form id="chat" class="composer"><button id="micBtn" class="mic" type="button" title="Falar com o FÊNIX">●</button><label class="sr-only" for="msg">Mensagem</label><textarea id="msg" rows="1" placeholder="Crie uma missão ou converse com o Avatar Mestre…" required></textarea><button class="send" type="submit">Enviar <span>↗</span></button></form>
-          <div class="quick-actions"><button data-msg="Verifique a saúde do sistema">Saúde do sistema</button><button data-msg="Mostre as missões em andamento">Missões ativas</button><button data-msg="Analise este ERP">Analisar projeto</button><button data-msg="O que você aprendeu?" data-mode="conversation">Conhecimento</button></div>
+          <form id="chat" class="composer"><button id="micBtn" class="mic" type="button" title="Falar com o FÊNIX">●</button><label class="sr-only" for="msg">Mensagem</label><textarea id="msg" rows="1" placeholder="Descreva um objetivo operacional ou solicite uma missão…" required></textarea><button class="send" type="submit">Enviar <span>↗</span></button></form>
+          <div class="quick-actions">
+            <button data-msg="Criar um ERP com IA e checkout PIX">Criar ERP</button>
+            <button data-msg="Verifique a saúde da infraestrutura VPS">Saúde VPS</button>
+            <button data-msg="Execute a manutenção autônoma de segundo plano">Manutenção Idle</button>
+            <button data-msg="Quais hipóteses de evolução foram geradas?">Hipóteses</button>
+          </div>
         </article>
       </section>
 
       <section id="missions" class="mission-strip panel">
-        <div class="section-title"><div><span class="eyebrow">MISSION KERNEL</span><h2>Missão ativa</h2></div><span id="missionStatus" class="status-pill neutral">SEM MISSÃO</span></div>
+        <div class="section-title"><div><span class="eyebrow">MISSION KERNEL & DAG SCHEDULER</span><h2>Missão ativa</h2></div><span id="missionStatus" class="status-pill neutral">SEM MISSÃO</span></div>
         <div class="mission-main"><div><h3 id="missionTitle">Aguardando objetivo</h3><p id="missionMeta">O Avatar transformará solicitações operacionais em missões governadas.</p></div><strong id="missionPercent">0%</strong></div>
         <div class="progress"><i id="missionBar"></i></div><div id="missionSteps" class="steps"></div>
       </section>
 
       <section id="city" class="city-panel panel">
-        <div class="section-title"><div><span class="eyebrow">DIGITAL TWIN VISUAL</span><h2>GRG AI City</h2></div><div class="legend"><span><i class="active"></i>Ativo</span><span><i class="warning"></i>Atenção</span><span><i class="degraded"></i>Degradado</span></div></div>
+        <div class="section-title"><div><span class="eyebrow">DIGITAL TWIN DESKTOP CITY</span><h2>GRG AI City (Distritos, Prédios & Runtimes)</h2></div><div class="legend"><span><i class="active"></i>Ativo</span><span><i class="warning"></i>Atenção</span><span><i class="degraded"></i>Degradado</span></div></div>
         <div class="city-toolbar"><span id="citySummary">Carregando projeção…</span><div><button id="zoomOut" class="icon-button">−</button><button id="zoomIn" class="icon-button">+</button></div></div>
         <div id="cityViewport" class="city-viewport"><div class="city-sky"><i></i><i></i><i></i></div><div id="cityMap" class="city-map"></div></div>
       </section>
@@ -67,13 +132,28 @@
       <section class="telemetry-grid">
         <article id="observability" class="panel"><div class="section-title"><div><span class="eyebrow">HEALTH ORCHESTRATOR</span><h2>Saúde real</h2></div><span id="healthScore" class="score">—</span></div><div id="healthList" class="health-list"></div></article>
         <article id="runtime" class="panel"><div class="section-title"><div><span class="eyebrow">EXECUTION PLANE</span><h2>Fila e timeline</h2></div><span id="jobCount" class="count">0 jobs</span></div><div id="timeline" class="timeline"></div></article>
-        <article id="gateway" class="panel"><div class="section-title"><div><span class="eyebrow">AI GATEWAY</span><h2>Consumo de IA</h2></div><span id="gatewayState" class="status-pill neutral">SEM DADOS</span></div><div id="aiStats" class="ai-stats"></div><div id="systemMetrics" class="metric-grid"></div></article>
+        <article id="gateway" class="panel"><div class="section-title"><div><span class="eyebrow">AI GATEWAY & MODEL ROUTER</span><h2>Consumo de IA</h2></div><span id="gatewayState" class="status-pill neutral">SEM DADOS</span></div><div id="aiStats" class="ai-stats"></div><div id="systemMetrics" class="metric-grid"></div></article>
       </section>
-      <footer><span>GRG FÊNIX Cognitive Operating System</span><span id="lastUpdate">Nunca atualizado</span></footer>
+
+      <footer><span>GRG FÊNIX V6.1 Operation Genesis — Cognitive Operating System</span><span id="lastUpdate">Nunca atualizado</span></footer>
     </main>
   </div>
 
-  <dialog id="nodeDialog"><button id="closeDialog" class="dialog-close">×</button><span class="eyebrow">AI CITY ENTITY</span><h2 id="nodeTitle">Componente</h2><div id="nodeDetails"></div></dialog>
+  <!-- MULTIMODAL MODAL -->
+  <dialog id="multimodalDialog">
+    <button id="closeMultimodal" class="dialog-close">×</button>
+    <span class="eyebrow">MULTIMODAL WORKSPACE INGESTION</span>
+    <h2>Enviar arquivo / código / especificação</h2>
+    <form id="multimodalForm">
+      <label for="fileSelect">Selecione o arquivo ou arraste aqui:</label>
+      <input type="file" id="fileSelect" required>
+      <br><br>
+      <button type="submit" class="action-btn">Ingerir no Knowledge Genome</button>
+    </form>
+    <div id="ingestResult" style="margin-top:15px; font-size:13px; color:var(--green);"></div>
+  </dialog>
+
+  <dialog id="nodeDialog"><button id="closeDialog" class="dialog-close">×</button><span class="eyebrow">AI CITY ENTITY & DIGITAL TWIN</span><h2 id="nodeTitle">Componente</h2><div id="nodeDetails"></div></dialog>
   <script src="/app.js"></script>
 </body>
 </html>

@@ -28,7 +28,7 @@ const api = async (p, opts = {}, retried = false) => {
   return payload;
 };
 
-const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails'].map((id) => [id, document.getElementById(id)]));
+const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails','consoleMission','consoleJobs','consoleAgents','consoleAi','consoleVps','multimodalBtn','multimodalDialog','closeMultimodal','multimodalForm','fileSelect','ingestResult'].map((id) => [id, document.getElementById(id)]));
 const state = { city: null, missions: [], activeMission: null, operations: null, jobs: [], zoom: 1, speaking: false, refreshing: false };
 const statusClass = (value) => ['ACTIVE','READY','RUNNING','SUCCEEDED'].includes(String(value).toUpperCase()) ? 'active' : ['WARNING','PAUSED','AWAITING_APPROVAL','UNCONFIGURED'].includes(String(value).toUpperCase()) ? 'warning' : ['DEGRADED','FAILED','NOT_READY','DEAD_LETTER'].includes(String(value).toUpperCase()) ? 'degraded' : 'neutral';
 const escapeHtml = (value) => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
@@ -50,15 +50,20 @@ window.addEventListener('error', (event) => showFallback(event.error || new Erro
 window.addEventListener('unhandledrejection', (event) => { event.preventDefault(); showFallback(event.reason); });
 
 function setAvatar(data = {}) {
-  const labels = { SLEEPING:'DORMINDO', SCANNING:'ESCANEANDO', WALKING:'CAMINHANDO', BUILDING:'CONSTRUINDO', PROGRAMMING:'PROGRAMANDO', LEARNING:'APRENDENDO', WAITING:'AGUARDANDO', RECOVERING:'RECUPERANDO', DEPLOYING:'IMPLANTANDO', CELEBRATING:'COMEMORANDO' };
+  const labels = { SLEEPING:'DORMINDO', SCANNING:'ESCANEANDO', WALKING:'CAMINHANDO', BUILDING:'CONSTRUINDO', PROGRAMMING:'PROGRAMANDO', LEARNING:'APRENDENDO', WAITING:'AGUARDANDO', RECOVERING:'RECUPERANDO', DEPLOYING:'IMPLANTANDO', CELEBRATING:'COMEMORANDO', PENSANDO:'PENSANDO', PLANEJANDO:'PLANEJANDO', CONVERSANDO:'CONVERSANDO', ANALISANDO:'ANALISANDO', LENDO:'LENDO', EXECUTANDO:'EXECUTANDO', CORRIGINDO:'CORRIGINDO', TESTANDO:'TESTANDO', OBSERVANDO:'OBSERVANDO' };
   const phrases = { SLEEPING:'Pronto para transformar seu próximo objetivo em missão.', SCANNING:'Descobrindo serviços e evidências do ecossistema.', WALKING:'Coordenando agentes pela cidade cognitiva.', BUILDING:'A Engineering Factory está construindo com governança.', PROGRAMMING:'Código em execução dentro do Runtime autorizado.', LEARNING:'Consolidando conhecimento baseado em evidências.', WAITING:'Aguardando contexto ou aprovação humana.', RECOVERING:'Verificando saúde e recuperando serviços permitidos.', DEPLOYING:'Acompanhando a implantação governada.', CELEBRATING:'Missão concluída e conhecimento registrado.' };
   const current = data.state || 'SLEEPING'; ui.fenix.dataset.state = current; ui.avatarState.textContent = labels[current] || current; ui.avatarLocation.textContent = data.building || 'Praça Central'; ui.avatarProgress.textContent = `${Number(data.progress || 0)}%`; ui.avatarPhrase.textContent = phrases[current] || phrases.SLEEPING;
 }
 
 function renderMission(mission) {
-  if (!mission) { ui.missionStatus.className='status-pill neutral'; ui.missionStatus.textContent='SEM MISSÃO'; ui.missionTitle.textContent='Aguardando objetivo'; ui.missionMeta.textContent='O Avatar transformará solicitações operacionais em missões governadas.'; ui.missionPercent.textContent='0%'; ui.missionBar.style.width='0%'; ui.missionSteps.innerHTML=''; return; }
+  if (!mission) {
+    ui.missionStatus.className='status-pill neutral'; ui.missionStatus.textContent='SEM MISSÃO'; ui.missionTitle.textContent='Aguardando objetivo'; ui.missionMeta.textContent='O Avatar transformará solicitações operacionais em missões governadas.'; ui.missionPercent.textContent='0%'; ui.missionBar.style.width='0%'; ui.missionSteps.innerHTML='';
+    if (ui.consoleMission) ui.consoleMission.textContent = 'SEM MISSÃO';
+    return;
+  }
   const progress = Number(mission.progress || 0); ui.missionStatus.className=`status-pill ${statusClass(mission.status)}`; ui.missionStatus.textContent=mission.status; ui.missionTitle.textContent=mission.title; ui.missionMeta.textContent=`${mission.steps?.length || 0} etapas · criada ${formatTime(mission.createdAt)} · ${mission.id}`; ui.missionPercent.textContent=`${progress}%`; ui.missionBar.style.width=`${progress}%`;
   ui.missionSteps.innerHTML=(mission.steps || []).map((step)=>`<div class="step ${escapeHtml(step.status)}"><b>${escapeHtml(step.key)}</b>${escapeHtml(step.agent)} · ${escapeHtml(step.status)}</div>`).join('');
+  if (ui.consoleMission) ui.consoleMission.textContent = `${mission.title} (${progress}%)`;
 }
 function renderCity(city) {
   state.city=city; const nodes=Array.isArray(city?.nodes)?city.nodes:[]; const districts=nodes.filter((n)=>n.type==='DISTRICT'); const buildings=nodes.filter((n)=>n.type==='BUILDING'); ui.citySummary.textContent=`${districts.length} distritos · ${buildings.length} prédios · ${city?.projection?.eventCount || 0} eventos`;
@@ -74,7 +79,7 @@ function renderOperations(operations) {
   ui.healthList.innerHTML=components.length?components.slice().sort((a,b)=>Number(b.critical)-Number(a.critical)).map((item)=>`<div class="health-item ${escapeHtml(item.status)}"><i></i><b>${escapeHtml(item.label || item.componentId)}</b><span>${escapeHtml(item.status)} · ${Number(item.latencyMs || 0)}ms</span></div>`).join(''):'<div class="empty-city">Health Orchestrator ainda não executado.</div>';
   const readiness=operations?.readiness; ui.sidebarStatus.textContent=readiness?.status || 'SEM READINESS'; ui.sidebarDetail.textContent=readiness?`${readiness.score}% · ${readiness.blockers?.length || 0} bloqueios`:'aguardando ativação'; ui.sidebarDot.style.background=readiness?.status==='READY'?'var(--green)':readiness?'var(--red)':'var(--yellow)';
 }
-function renderJobs(jobs) { state.jobs=jobs; ui.jobCount.textContent=`${jobs.length} jobs`; const ordered=jobs.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0,12); ui.timeline.innerHTML=ordered.length?ordered.map((job)=>`<div class="timeline-item"><b>${escapeHtml(job.type)} · ${escapeHtml(job.status)}</b><small>${formatTime(job.updatedAt)} · tentativa ${job.attempts}/${job.maxAttempts}</small></div>`).join(''):'<div class="empty-city">Nenhuma execução registrada.</div>'; }
+function renderJobs(jobs) { state.jobs=jobs; ui.jobCount.textContent=`${jobs.length} jobs`; if (ui.consoleJobs) ui.consoleJobs.textContent = String(jobs.length); const ordered=jobs.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0,12); ui.timeline.innerHTML=ordered.length?ordered.map((job)=>`<div class="timeline-item"><b>${escapeHtml(job.type)} · ${escapeHtml(job.status)}</b><small>${formatTime(job.updatedAt)} · tentativa ${job.attempts}/${job.maxAttempts}</small></div>`).join(''):'<div class="empty-city">Nenhuma execução registrada.</div>'; }
 function renderTelemetry(telemetry, overview) { const calls=telemetry?.calls || telemetry?.totalCalls || overview?.metrics?.aiCalls || 0; const tokens=telemetry?.tokens || telemetry?.totalTokens || 0; const cost=telemetry?.costUsd || telemetry?.totalCostUsd || 0; ui.gatewayState.className=`status-pill ${calls?'active':'neutral'}`; ui.gatewayState.textContent=calls?'OPERACIONAL':'SEM CHAMADAS'; ui.aiStats.innerHTML=`<div class="ai-stat"><strong>${formatNumber(calls)}</strong><span>Chamadas</span></div><div class="ai-stat"><strong>${formatNumber(tokens)}</strong><span>Tokens</span></div><div class="ai-stat"><strong>$${Number(cost).toFixed(4)}</strong><span>Custo estimado</span></div><div class="ai-stat"><strong>${formatNumber(overview?.metrics?.capabilities)}</strong><span>Capabilities</span></div>`; const metrics=[['Projetos',overview?.metrics?.projects],['Repositórios',overview?.metrics?.repositories],['Memórias',overview?.metrics?.memories],['Nós da cidade',overview?.metrics?.cityNodes]]; ui.systemMetrics.innerHTML=metrics.map(([label,value])=>`<div class="mini-metric"><span>${escapeHtml(label)}</span><b>${formatNumber(value)}</b></div>`).join(''); }
 
 async function refresh() {
@@ -109,5 +114,30 @@ document.getElementById('refreshBtn').addEventListener('click',()=>refresh().cat
 document.getElementById('logout').addEventListener('click',async()=>{try{await fetch('/api/logout',{method:'POST',headers:{authorization:`Bearer ${accessToken}`}});}finally{clearSessionAndRedirect();}});
 document.getElementById('zoomIn').addEventListener('click',()=>{state.zoom=Math.min(1.35,state.zoom+.1);ui.cityMap.style.transform=`scale(${state.zoom})`;});document.getElementById('zoomOut').addEventListener('click',()=>{state.zoom=Math.max(.7,state.zoom-.1);ui.cityMap.style.transform=`scale(${state.zoom})`;});
 document.getElementById('closeDialog').addEventListener('click',()=>ui.nodeDialog.close());ui.nodeDialog.addEventListener('click',(event)=>{if(event.target===ui.nodeDialog)ui.nodeDialog.close();});
+
+if (ui.multimodalBtn && ui.multimodalDialog) {
+  ui.multimodalBtn.addEventListener('click', () => ui.multimodalDialog.showModal());
+  if (ui.closeMultimodal) ui.closeMultimodal.addEventListener('click', () => ui.multimodalDialog.close());
+  if (ui.multimodalForm) {
+    ui.multimodalForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = ui.fileSelect.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await api('/multimodal/ingest', { method: 'POST', body: JSON.stringify({ filename: file.name, content: reader.result }) });
+          ui.ingestResult.textContent = `Arquivo ${res.filename} ingerido com sucesso! Capsule: ${res.capsuleId || 'ok'}`;
+          await refresh();
+        } catch (err) {
+          ui.ingestResult.textContent = `Falha na ingestão: ${err.message}`;
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+}
+
 setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleString('pt-BR',{weekday:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);setInterval(()=>{if(!document.hidden)refresh().catch((error)=>{if(error.status!==401)showFallback(error);});},5000);
 updateTts();bubble('Olá. Eu sou o Avatar Mestre da GRG FÊNIX. Converse comigo ou descreva um objetivo para eu transformá-lo em uma missão governada.','bot');if(accessToken)refresh().catch((error)=>{if(error.status!==401)showFallback(error);});
+
