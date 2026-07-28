@@ -1,6 +1,6 @@
 const TENANT_ID = 'biel0071-software-house';
 const USER_ID = 'biel0071';
-const state = { projects: [], graph: null, acep: null, maturity: null, lcr: null, company: 'biel0071-corp' };
+const state = { projects: [], graph: null, acep: null, maturity: null, lcr: null, company: 'biel0071-corp', zoom: 3 };
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -126,51 +126,64 @@ async function refresh() {
   renderMaturity(maturity);
 }
 
-// Building Floor Modal Handlers
-const buildingNames = {
-  'ai-engine-core': 'AI Engine Core HQ (Prédio Central)',
-  'zapai-crm': 'ZapAI CRM Tower (Prédio de Vendas & WhatsApp)',
-  'ai-city': 'AI City Research Complex (Prédio de Agentes 3D)',
-  'fortlev': 'Fortlev Digital Mall (Prédio Commerce Core)',
-};
-
-document.querySelectorAll('.building-interactive').forEach((card) => {
-  card.addEventListener('click', () => {
-    const buildingKey = card.dataset.building;
-    const modal = document.querySelector('#building-modal');
-    const title = document.querySelector('#modal-building-title');
-    if (title) title.textContent = buildingNames[buildingKey] || buildingKey;
-    modal.classList.add('active');
+// 6-LEVEL ZOOM CONTROLS
+document.querySelectorAll('.btn-zoom').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.btn-zoom').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.zoom = Number(btn.dataset.zoom);
+    notify(`Zoom Nível ${state.zoom} ativado.`);
   });
 });
 
-document.querySelector('#btn-close-modal')?.addEventListener('click', () => {
-  document.querySelector('#building-modal').classList.remove('active');
+// MODAL LISTENERS (Daily Meeting & Knowledge Library)
+document.querySelector('#btn-daily-meeting')?.addEventListener('click', () => {
+  document.querySelector('#meeting-modal').classList.add('active');
 });
 
-document.querySelector('#building-modal')?.addEventListener('click', (e) => {
-  if (e.target.id === 'building-modal') e.target.classList.remove('active');
+document.querySelector('#btn-knowledge-lib')?.addEventListener('click', () => {
+  document.querySelector('#library-modal').classList.add('active');
 });
 
-// Company Picker Handler
-document.querySelector('#company-select')?.addEventListener('change', (e) => {
-  state.company = e.target.value;
-  const companyTitle = e.target.options[e.target.selectedIndex].text;
-  document.querySelector('#active-company-title').textContent = companyTitle;
-  notify(`Ilha alternada para: ${companyTitle}`);
+document.querySelectorAll('.modal-close-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('active'));
+  });
 });
 
-document.querySelector('#btn-create-company')?.addEventListener('click', () => {
-  const name = prompt('Digite o nome da nova empresa/ilha:');
-  if (name) {
-    const select = document.querySelector('#company-select');
-    const opt = document.createElement('option');
-    opt.value = name.toLowerCase().replace(/\s+/g, '-');
-    opt.text = `🏢 ${name}`;
-    select.appendChild(opt);
-    select.value = opt.value;
-    select.dispatchEvent(new Event('change'));
-  }
+document.querySelectorAll('.modal-overlay').forEach((modal) => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+  });
+});
+
+// NODE BUILDING CLICKS
+document.querySelectorAll('.node-building').forEach((node) => {
+  node.addEventListener('click', () => {
+    const district = node.dataset.district;
+    notify(`Explorando o distrito: ${district}`);
+  });
+});
+
+// GUARDIAN QUICK BUTTONS
+document.querySelector('#btn-rebuild-system')?.addEventListener('click', () => {
+  document.querySelector('#guardian-speech').textContent = '"Reconstruindo e otimizando módulos do sistema no Shadow Runtime..."';
+  notify('Otimização ativada no Shadow Runtime.');
+});
+
+document.querySelector('#btn-analyze-data')?.addEventListener('click', () => {
+  document.querySelector('#guardian-speech').textContent = '"Analisando 18 Grafos Universais e métricas de telemetria..."';
+  notify('Análise de dados iniciada.');
+});
+
+document.querySelector('#btn-automations')?.addEventListener('click', () => {
+  document.querySelector('#guardian-speech').textContent = '"Executando protocolo de auto-cura nos workers em background..."';
+  notify('Protocolo de auto-cura iniciado.');
+});
+
+document.querySelector('#btn-reports')?.addEventListener('click', () => {
+  document.querySelector('#guardian-speech').textContent = '"Relatório da Síntese Diária gerado com sucesso."';
+  notify('Síntese Diária atualizada.');
 });
 
 // Search & Filter Listeners

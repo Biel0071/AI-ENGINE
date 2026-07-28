@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createApp } = require('../src/app');
 
-test('GRG FÊNIX V6.1 Operation Genesis End-to-End Integration Test', async () => {
+test('GRG FENIX V6.1 Operation Genesis End-to-End Integration Test', async () => {
   const app = await createApp({ dataFile: null });
 
   const tenantId = 'grg';
