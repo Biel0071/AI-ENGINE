@@ -74,7 +74,7 @@ REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, r
 
     if (url && /(acopl|conect|analis|ingest|adicion|integr)/.test(t)) return { kind: 'connect_repo', url };
     if (url) return { kind: 'connect_repo', url };
-    if (/(gerar|criar|novo|construir|montar).*(sistema|projeto|app|site|loja|crm)/.test(t)) return { kind: 'generate', prompt: text };
+    if (/(gerar|ger[ae]|criar|cri[ae]|novo|construir|constr[ou]i|montar|monta|fazer|fa[çc]a).*(sistema|projeto|app|aplica|site|loja|crm|erp|saas|plataforma|marketplace|landing|bot|api)/.test(t)) return { kind: 'generate', prompt: text };
     if (/(insight|aprend|evolu|o que aprend|padr)/.test(t)) return { kind: 'insights' };
     if (/(mem[oó]ria|hist[oó]rico|decis)/.test(t)) return { kind: 'memory' };
     if (/(status|vis[aã]o|overview|painel|resumo|estado)/.test(t)) return { kind: 'overview' };
@@ -154,9 +154,29 @@ REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, r
           break;
         }
         case 'generate': {
-          const res = await this.app.orchestrator.buildFromPrompt(tenantId, actorId, { prompt: text, name: text.slice(0, 40), target: 'node' });
-          action = { type: 'generate', ok: true, projectId: res.projectId };
-          facts = { projectId: res.projectId, reused: res.reused, built: res.built, previewUrl: res.previewUrl, outputPath: res.outputPath };
+          // MISSION-FENIX-ACTIVATION: o chat deixa de executar direto. Um objetivo de
+          // construcao vira um PROGRAMA real via Executive Brain, que decompoe em missoes
+          // reais (via mission-planner) e as materializa. O usuario ve o programa nascer no
+          // chat. Se o Brain nao estiver ligado, cai no orchestrator antigo (compatibilidade).
+          if (this.app.executiveBrain) {
+            const program = await this.app.executiveBrain.createProgram(tenantId, actorId, text);
+            const approved = await this.app.executiveBrain.approve(tenantId, actorId, program.id);
+            const status = await this.app.executiveBrain.status(tenantId, actorId, program.id);
+            action = { type: 'program', ok: true, programId: program.id };
+            facts = {
+              programId: program.id,
+              objective: program.objective,
+              missions: approved.missions.map((m) => ({ key: m.key, mode: m.mode, missionId: m.missionId, status: m.status })),
+              materialized: approved.missions.filter((m) => m.missionId).length,
+              proposed: approved.missions.length,
+              programState: status.state?.value || approved.state,
+              progress: status.progress?.state === 'measured' ? status.progress.value : null,
+            };
+          } else {
+            const res = await this.app.orchestrator.buildFromPrompt(tenantId, actorId, { prompt: text, name: text.slice(0, 40), target: 'node' });
+            action = { type: 'generate', ok: true, projectId: res.projectId };
+            facts = { projectId: res.projectId, reused: res.reused, built: res.built, previewUrl: res.previewUrl, outputPath: res.outputPath };
+          }
           break;
         }
         case 'insights': {
@@ -279,6 +299,21 @@ REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, r
           `• Saúde: ${facts.health.score}/100 (mais fraco: ${facts.health.weakest})` +
           (facts.risks.length ? `\n• Riscos: ${facts.risks.join('; ')}` : '');
       case 'generate':
+        // Fluxo novo: Programa real via Executive Brain. Os numeros sao CONTADOS das missoes
+        // reais materializadas, nunca inventados ("6 missoes", nao "27").
+        if (facts.programId) {
+          const lines = facts.missions.map((m) => {
+            const mark = m.missionId ? '✓' : '·';
+            return `${mark} ${m.key} [${m.mode}] — ${m.missionId ? `missão ${m.missionId.slice(0, 8)} (${m.status})` : m.status}`;
+          });
+          return `**Programa criado** para: ${facts.objective}\n` +
+            `Estado: ${facts.programState} · ${facts.materialized}/${facts.proposed} missões materializadas` +
+            (facts.progress !== null ? ` · progresso ${facts.progress}%` : ' · progresso ainda não medido') +
+            `\n${lines.join('\n')}\n\n` +
+            `As missões são reais e executam pelo runtime (Router → Gateway → providers). ` +
+            `Acompanhe o progresso pelo painel de missões. Nota honesta: "materializada" significa ` +
+            `plano criado e enfileirado — o produto final depende da execução dos jobs, não está pronto ainda.`;
+        }
         return `Gerei o projeto **${facts.projectId}** — arquivos reais escritos em disco.\n` +
           (facts.outputPath ? `• Pasta: ${facts.outputPath}\n` : '') +
           `• Rode: cd "${facts.outputPath || facts.projectId}" && node src/index.js\n` +
