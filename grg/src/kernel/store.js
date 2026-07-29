@@ -150,6 +150,7 @@ const EMPTY_STATE = () => ({
   connectorMetrics: [],
   connectorEvents: [],
   aiRouterDecisions: [],
+  programs: [],
 });
 
 class MemoryStore {

@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 31;
+const CURRENT_SCHEMA_VERSION = 32;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -66,6 +66,10 @@ const COLLECTIONS_BY_VERSION = {
   // por que (tier/evidência), duração e resultado. Histórico append-only para o Learning
   // Router rankear providers por medição real. Teto de retenção como as demais telemetrias.
   31: ['aiRouterDecisions'],
+  // Executive Brain real — Programas: agrupamento de missoes que servem a UM objetivo
+  // estrategico. Estado (refs de missao), estado derivado do estado das missoes. O Brain
+  // decompoe um objetivo em N missoes via mission-planner e as agrupa aqui.
+  32: ['programs'],
 };
 
 function normalizeVersion(value) {
