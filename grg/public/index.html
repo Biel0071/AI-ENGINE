@@ -4,57 +4,53 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07090d">
-  <title>GRG Services OS | GRG FÊNIX — Centro Operacional Cognitivo V6.1</title>
+  <title>GRG Services OS | GRG FÊNIX — Centro Operacional Cognitivo | GRG FÊNIX Ω∞ — FÊNIX Live Workspace</title>
+  <link rel="stylesheet" href="/design-system.css">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/city-overrides.css">
 </head>
 <body>
   <div class="os-shell">
     <aside class="sidebar" aria-label="Navegação principal">
-      <a class="brand" href="#command"><span class="brand-mark">F</span><span><b>GRG FÊNIX V7.1</b><small>Master Node ACP</small></span></a>
+      <a class="brand" href="#command"><span class="brand-mark">F</span><span><b>GRG FÊNIX Ω∞</b><small>Live Workspace Core</small></span></a>
       <nav class="tree-nav">
         <details open>
           <summary><span>⌂</span> Operação & Comando</summary>
           <div class="submenu">
-            <a class="active" href="#command">Dashboard</a>
-            <a href="#masterNode">Master Node VPS</a>
-            <a href="#deploys">Deploy Center</a>
-            <a href="#missions">Missões</a>
-            <a href="#runtime">Fila de Jobs</a>
-            <a href="/office">Empresas</a>
-            <a href="#projects">Projetos</a>
-            <a href="#city">AI City & NPCs</a>
+            <a class="nav-link active" href="#command">Dashboard</a>
+            <a class="nav-link" href="#masterNode">Master Node VPS</a>
+            <a class="nav-link" href="#deploys">Deploy Center</a>
+            <a class="nav-link" href="#missions">Mission Workspace</a>
+            <a class="nav-link" href="#runtime">Task Center (Jobs)</a>
+            <a class="nav-link" href="/office">Empresas (SaaS Builder)</a>
+            <a class="nav-link" href="#projects">Projetos & Executive Brain</a>
+            <a class="nav-link" href="#city">AI City & NPCs</a>
           </div>
         </details>
         <details open>
           <summary><span>◎</span> Memória & Desempenho</summary>
           <div class="submenu">
-            <a href="#performance">Cognitive Speed Score</a>
-            <a href="#hotmemory">Hot Memory (L0-L5)</a>
-            <a href="#knowledge">Knowledge Capsules</a>
-            <a href="#memory">Memória Hierárquica</a>
-            <a href="#twin">Digital Twin</a>
-            <a href="#kgraph">Knowledge Graph</a>
+            <a class="nav-link" href="#performance">Cognitive Speed Score</a>
+            <a class="nav-link" href="#hotmemory">Hot Memory (L0-L5)</a>
+            <a class="nav-link" href="#knowledge">Knowledge Workspace</a>
+            <a class="nav-link" href="#twin">Digital Twin</a>
           </div>
         </details>
         <details open>
-          <summary><span>⚡</span> Agentes & Plugins</summary>
+          <summary><span>⚡</span> Agentes, SCOS & Capabilities</summary>
           <div class="submenu">
-            <a href="#swarm">Agent Swarm (15 Sp.)</a>
-            <a href="#plugins">Plugin Marketplace</a>
-            <a href="#skills">Skill Evolution</a>
-            <a href="#capabilities">Capabilities Catalog</a>
+            <a class="nav-link" href="#swarm">Agent Swarm (15 Sp.)</a>
+            <a class="nav-link" href="#capabilities">Capabilities Catalog</a>
+            <a class="nav-link" href="#scos">SCOS Design Factory</a>
+            <a class="nav-link" href="#onedeploy">OneDeploy Orchestrator</a>
           </div>
         </details>
         <details open>
           <summary><span>⌁</span> Infraestrutura & DevOps</summary>
           <div class="submenu">
-            <a href="#observability">Observabilidade Center</a>
-            <a href="#health">Health Orchestrator</a>
-            <a href="#calendar">Calendário Operacional</a>
-            <a href="#vps">VPS & Docker Infra</a>
-            <a href="#github">GitHub Operations</a>
-            <a href="#security">Criptografia & Audit</a>
+            <a class="nav-link" href="#observability">AI Runtime Telemetry</a>
+            <a class="nav-link" href="#connectors">Connector Runtime</a>
+            <a class="nav-link" href="#security">Criptografia & Audit</a>
           </div>
         </details>
       </nav>
@@ -64,8 +60,18 @@
 
     <main>
       <header class="topbar">
-        <div><span class="eyebrow">AUTONOMOUS COGNITIVE PLATFORM V7.1</span><h1>Painel Master Node de Operação</h1></div>
+        <div><span class="eyebrow">GRG FÊNIX Ω∞ — FÊNIX LIVE WORKSPACE</span><h1>Painel FÊNIX OS Live Workspace</h1></div>
         <div class="top-actions">
+          <div style="font-size:11px; background:rgba(15,23,42,0.6); padding:4px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); color:var(--gold);">
+            <span>MODELO IA:</span> <b id="activeAiModel">GPT-4o / Router</b>
+          </div>
+          <button id="cmdKBtn" class="action-btn" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);" title="Command Palette (Ctrl+K)">⌘K Command</button>
+          <button id="drawerToggleBtn" class="action-btn" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);" title="Toggle Task Drawer (Ctrl+J)">⚡ Tasks (Ctrl+J)</button>
+          <div class="workspace-mode-selector">
+            <span class="mode-label">Modo:</span>
+            <button id="modeBtn" class="mode-pill" title="Alternar modo de trabalho">COLLABORATOR</button>
+          </div>
+          <button id="inboxBtn" class="action-btn" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);" title="Executive Decision Inbox">📥 Inbox (<span id="inboxBadge">0</span>)</button>
           <button id="selfDeployBtn" class="action-btn" style="background:linear-gradient(135deg,var(--green),#169e53);" title="Executar Self Deploy Pipeline">🚀 Self Deploy</button>
           <button id="multimodalBtn" class="action-btn" title="Upload Multimodal">📁 Multimodal Ingest</button>
           <span id="clock" class="clock"></span>
@@ -83,66 +89,299 @@
         <div class="console-item"><span class="label">JOBS NA FILA:</span><strong id="consoleJobs">—</strong></div>
       </section>
 
-      <section id="command" class="command-grid">
-        <article id="fenix" class="fenix-card" data-state="SLEEPING">
-          <div class="avatar-stage">
-            <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
-            <svg class="phoenix" viewBox="0 0 220 220" role="img" aria-label="Avatar FÊNIX">
-              <defs><linearGradient id="fire" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff3b0a"/><stop offset=".5" stop-color="#ff8a00"/><stop offset="1" stop-color="#ffe36e"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-              <path class="wing left" d="M105 115C75 118 35 99 20 55c28 18 49 9 63-22 2 31 16 43 29 51z"/><path class="wing right" d="M115 115c30 3 70-16 85-60-28 18-49 9-63-22-2 31-16 43-29 51z"/>
-              <path class="flame" d="M110 34c-22 19-26 39-14 54-3-22 12-30 19-48 18 22 13 41 4 51 22-8 31-37 10-63-6-7-11-13-11-22-6 8-7 18-8 28z"/>
-              <circle class="head" cx="110" cy="103" r="39"/><path class="mask" d="M77 99c21-17 45-17 66 0l-11 35H88z"/><path class="eye" d="M85 101l20 5-17 9zM135 101l-20 5 17 9z"/><path class="beak" d="M101 119h18l-9 14z"/>
-              <path class="body" d="M88 137c11-12 33-12 44 0l14 48-36 21-36-21z"/><circle class="core" cx="110" cy="157" r="10"/><path class="tail" d="M91 176l-17 38 35-25 2 27 16-31 18 28-8-43z"/>
-            </svg>
-            <div class="state-ring"></div>
+      <!-- VIEW: DASHBOARD COMMAND -->
+      <div id="view-command" class="view-section active">
+        <section id="command" class="command-grid">
+          <article id="fenix" class="fenix-card" data-state="SLEEPING">
+            <div class="avatar-stage">
+              <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
+              <svg class="phoenix" viewBox="0 0 220 220" role="img" aria-label="Avatar FÊNIX">
+                <defs><linearGradient id="fire" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff3b0a"/><stop offset=".5" stop-color="#ff8a00"/><stop offset="1" stop-color="#ffe36e"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                <path class="wing left" d="M105 115C75 118 35 99 20 55c28 18 49 9 63-22 2 31 16 43 29 51z"/><path class="wing right" d="M115 115c30 3 70-16 85-60-28 18-49 9-63-22-2 31-16 43-29 51z"/>
+                <path class="flame" d="M110 34c-22 19-26 39-14 54-3-22 12-30 19-48 18 22 13 41 4 51 22-8 31-37 10-63-6-7-11-13-11-22-6 8-7 18-8 28z"/>
+                <circle class="head" cx="110" cy="103" r="39"/><path class="mask" d="M77 99c21-17 45-17 66 0l-11 35H88z"/><path class="eye" d="M85 101l20 5-17 9zM135 101l-20 5 17 9z"/><path class="beak" d="M101 119h18l-9 14z"/>
+                <path class="body" d="M88 137c11-12 33-12 44 0l14 48-36 21-36-21z"/><circle class="core" cx="110" cy="157" r="10"/><path class="tail" d="M91 176l-17 38 35-25 2 27 16-31 18 28-8-43z"/>
+              </svg>
+              <div class="state-ring"></div>
+            </div>
+            <div class="avatar-copy">
+              <span class="live-label"><i></i> AVATAR MESTRE OPERADOR</span>
+              <h2>FÊNIX</h2>
+              <p id="avatarPhrase">O conhecimento permanece. Os modelos evoluem.</p>
+              <div class="avatar-state"><strong id="avatarState">DORMINDO</strong><span id="avatarLocation">Praça Central</span><span id="avatarProgress">0%</span></div>
+            </div>
+          </article>
+
+          <article class="copilot-card">
+            <div class="section-title"><div><span class="eyebrow">INTERFACE ÚNICA OPERACIONAL</span><h2>Converse com o Avatar Mestre</h2></div><div class="voice-controls"><button id="ttsToggle" class="toggle" type="button" aria-pressed="false">◖ Voz</button><span id="voiceSupport" class="support"></span></div></div>
+            <div id="chatlog" class="chatlog" aria-live="polite"></div>
+            <form id="chat" class="composer"><button id="micBtn" class="mic" type="button" title="Falar com o FÊNIX">●</button><label class="sr-only" for="msg">Mensagem</label><textarea id="msg" rows="1" placeholder="Descreva um objetivo operacional ou solicite uma missão (Ctrl+K para Command Palette)…" required></textarea><button class="send" type="submit">Enviar <span>↗</span></button></form>
+            <div class="quick-actions">
+              <button data-msg="Criar um ERP com IA e checkout PIX">Criar ERP</button>
+              <button data-msg="Verifique a saúde da infraestrutura VPS">Saúde VPS</button>
+              <button data-msg="Execute a manutenção autônoma de segundo plano">Manutenção Idle</button>
+              <button data-msg="Quais hipóteses de evolução foram geradas?">Hipóteses</button>
+            </div>
+          </article>
+        </section>
+
+        <!-- OPERATIONAL COMMAND TERMINAL -->
+        <section id="opTerminal" class="panel" style="margin-top:20px; background:#070a0f; border:1px solid #1e293b;">
+          <div class="section-title"><div><span class="eyebrow">OPERATIONAL COMMAND TERMINAL</span><h2>Console Operacional em Tempo Real</h2></div><span class="status-pill active">LIVE LOGS</span></div>
+          <div id="terminalOutput" style="font-family:ui-monospace,monospace; font-size:12px; color:#38bdf8; background:#020617; padding:14px; border-radius:8px; height:140px; overflow-y:auto; margin-top:12px; line-height:1.5;">
+            <div>[SYSTEM] Terminal FÊNIX OS inicializado em modo live.</div>
+            <div>[KERNEL] Barramento cognitivo pronto. Ouvindo eventos em tempo real...</div>
           </div>
-          <div class="avatar-copy">
-            <span class="live-label"><i></i> AVATAR MESTRE OPERADOR</span>
-            <h2>FÊNIX</h2>
-            <p id="avatarPhrase">O conhecimento permanece. Os modelos evoluem.</p>
-            <div class="avatar-state"><strong id="avatarState">DORMINDO</strong><span id="avatarLocation">Praça Central</span><span id="avatarProgress">0%</span></div>
+        </section>
+
+        <!-- DAILY BRIEFING CARD -->
+        <section id="dailyBriefCard" class="panel" style="margin-top:20px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(15,23,42,0.8)); border:1px solid rgba(16,185,129,0.2);">
+          <div class="section-title"><div><span class="eyebrow">EXECUTIVE COGNITIVE ASSISTANT</span><h2>Daily Briefing & ROI Status</h2></div><span class="status-pill active">LIVE BRIEF</span></div>
+          <div id="dailyBriefContent" style="font-size:14px; line-height:1.6; color:#d1d5db;">
+            <p><strong>Bom dia Gabriel.</strong> Ontem o FÊNIX implementou 14 melhorias, corrigiu 3 bugs, atualizou 2 MCPs e pesquisou 7 papers de performance.</p>
           </div>
-        </article>
+        </section>
+      </div>
 
-        <article class="copilot-card">
-          <div class="section-title"><div><span class="eyebrow">INTERFACE ÚNICA OPERACIONAL</span><h2>Converse com o Avatar Mestre</h2></div><div class="voice-controls"><button id="ttsToggle" class="toggle" type="button" aria-pressed="false">◖ Voz</button><span id="voiceSupport" class="support"></span></div></div>
-          <div id="chatlog" class="chatlog" aria-live="polite"></div>
-          <form id="chat" class="composer"><button id="micBtn" class="mic" type="button" title="Falar com o FÊNIX">●</button><label class="sr-only" for="msg">Mensagem</label><textarea id="msg" rows="1" placeholder="Descreva um objetivo operacional ou solicite uma missão…" required></textarea><button class="send" type="submit">Enviar <span>↗</span></button></form>
-          <div class="quick-actions">
-            <button data-msg="Criar um ERP com IA e checkout PIX">Criar ERP</button>
-            <button data-msg="Verifique a saúde da infraestrutura VPS">Saúde VPS</button>
-            <button data-msg="Execute a manutenção autônoma de segundo plano">Manutenção Idle</button>
-            <button data-msg="Quais hipóteses de evolução foram geradas?">Hipóteses</button>
+      <!-- VIEW: MASTER NODE VPS -->
+      <div id="view-masterNode" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">MASTER NODE OPERATIONAL PLANE</span><h2>Status do Master Node VPS</h2></div><span id="masterNodePill" class="status-pill active">ONLINE</span></div>
+          <p>O Master Node VPS gerencia todos os runtimes, pipelines de self-deploy e monitoramento de saúde do ecossistema.</p>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Self-Deploy Pipeline</span><b id="mnSelfDeployStatus">READY</b></div>
+            <div class="mini-metric"><span>Master Uptime</span><b>99.99%</b></div>
+            <div class="mini-metric"><span>Docker Containers</span><b>12 Ativos</b></div>
+            <div class="mini-metric"><span>Canary Status</span><b style="color:var(--green)">HEALTHY</b></div>
           </div>
-        </article>
-      </section>
+        </section>
+      </div>
 
-      <section id="missions" class="mission-strip panel">
-        <div class="section-title"><div><span class="eyebrow">MISSION KERNEL & DAG SCHEDULER</span><h2>Missão ativa</h2></div><span id="missionStatus" class="status-pill neutral">SEM MISSÃO</span></div>
-        <div class="mission-main"><div><h3 id="missionTitle">Aguardando objetivo</h3><p id="missionMeta">O Avatar transformará solicitações operacionais em missões governadas.</p></div><strong id="missionPercent">0%</strong></div>
-        <div class="progress"><i id="missionBar"></i></div><div id="missionSteps" class="steps"></div>
-      </section>
+      <!-- VIEW: DEPLOY CENTER -->
+      <div id="view-deploys" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">GOVERNED PRODUCTION PIPELINE</span><h2>Deploy Center (11 Stages)</h2></div><span class="status-pill active">GOVERNED</span></div>
+          <p>Pipeline governado de produção: Draft → Implemented → Validated → Tests Passed → Security Checked → Benchmark Passed → Policy Auto-Approve → Staging → Production → Observed → Learning.</p>
+          <div id="deployPipelineStages" class="steps" style="margin-top:15px;">
+            <div class="step SUCCEEDED"><b>STAGE 1-6</b>Tests & Security Passed</div>
+            <div class="step RUNNING"><b>STAGE 7</b>Ready for Policy Auto-Approve</div>
+            <div class="step PENDING"><b>STAGE 8-11</b>Staging, Production & Observed</div>
+          </div>
+        </section>
+      </div>
 
-      <section id="city" class="city-panel panel">
-        <div class="section-title"><div><span class="eyebrow">DIGITAL TWIN DESKTOP CITY</span><h2>GRG AI City (Distritos, Prédios & Runtimes)</h2></div><div class="legend"><span><i class="active"></i>Ativo</span><span><i class="warning"></i>Atenção</span><span><i class="degraded"></i>Degradado</span></div></div>
-        <div class="city-toolbar"><span id="citySummary">Carregando projeção…</span><div><button id="zoomOut" class="icon-button">−</button><button id="zoomIn" class="icon-button">+</button></div></div>
-        <div id="cityViewport" class="city-viewport"><div class="city-sky"><i></i><i></i><i></i></div><div id="cityMap" class="city-map"></div></div>
-      </section>
+      <!-- VIEW: MISSIONS WORKSPACE & DAG TREE -->
+      <div id="view-missions" class="view-section">
+        <section id="missions" class="mission-strip panel">
+          <div class="section-title"><div><span class="eyebrow">MISSION WORKSPACE & KANBAN SCHEDULER</span><h2>Mission Workspace</h2></div><span id="missionStatus" class="status-pill neutral">SEM MISSÃO</span></div>
+          <div class="mission-main"><div><h3 id="missionTitle">Aguardando objetivo</h3><p id="missionMeta">O Avatar transformará solicitações operacionais em missões governadas.</p></div><strong id="missionPercent">0%</strong></div>
+          <div class="progress"><i id="missionBar"></i></div><div id="missionSteps" class="steps"></div>
 
-      <section class="telemetry-grid">
-        <article id="observability" class="panel"><div class="section-title"><div><span class="eyebrow">HEALTH ORCHESTRATOR</span><h2>Saúde real</h2></div><span id="healthScore" class="score">—</span></div><div id="healthList" class="health-list"></div></article>
-        <article id="runtime" class="panel"><div class="section-title"><div><span class="eyebrow">EXECUTION PLANE</span><h2>Fila e timeline</h2></div><span id="jobCount" class="count">0 jobs</span></div><div id="timeline" class="timeline"></div></article>
-        <article id="gateway" class="panel"><div class="section-title"><div><span class="eyebrow">AI GATEWAY & MODEL ROUTER</span><h2>Consumo de IA</h2></div><span id="gatewayState" class="status-pill neutral">SEM DADOS</span></div><div id="aiStats" class="ai-stats"></div><div id="systemMetrics" class="metric-grid"></div></article>
-      </section>
+          <!-- PROGRAM -> MISSION -> JOB DAG TREE -->
+          <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--line);">
+            <h3 style="font-size:14px; color:#f8fafc; margin-bottom:12px;">Árvore Hierárquica: Program → Mission → Job</h3>
+            <div id="dagTree" style="font-size:12px; line-height:1.8; color:#cbd5e1; background:rgba(15,23,42,0.5); padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+              <div>📁 <b>Program: FÊNIX Autonomous Software Factory</b></div>
+              <div style="padding-left:20px;">└─ 🎯 <b>Mission: Materializing Operational System</b></div>
+              <div style="padding-left:40px;">├─ ⚡ <b>Job #1: Unified Cognitive Core Dispatch</b> <span class="status-pill active">SUCCEEDED</span></div>
+              <div style="padding-left:40px;">└─ ⚡ <b>Job #2: OneDeploy Verification</b> <span class="status-pill active">RUNNING</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
 
-      <section id="connectors" class="panel">
-        <div class="section-title"><div><span class="eyebrow">CONNECTOR RUNTIME</span><h2>Conectores</h2></div><span id="connectorSummary" class="count">—</span></div>
-        <div id="connectorList" class="health-list"></div>
-      </section>
+      <!-- VIEW: TASK CENTER (JOBS) -->
+      <div id="view-runtime" class="view-section">
+        <section id="runtime" class="panel">
+          <div class="section-title"><div><span class="eyebrow">TASK CENTER & JOB RUNTIME</span><h2>Task Center (Running, Waiting, Retry, Completed)</h2></div><span id="jobCount" class="count">0 jobs</span></div>
+          <div id="timeline" class="timeline"></div>
+        </section>
+      </div>
 
-      <footer><span>GRG FÊNIX V6.1 Operation Genesis — Cognitive Operating System</span><span id="lastUpdate">Nunca atualizado</span></footer>
+      <!-- VIEW: PROJECTS & EXECUTIVE BRAIN -->
+      <div id="view-projects" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">PROJECT FACTORY & EXECUTIVE BRAIN</span><h2>Projetos, Programas & Roadmaps</h2></div><span class="count">1 Projeto Ativo</span></div>
+          <div id="projectList" class="health-list" style="margin-top:15px;">
+            <div class="health-item ACTIVE"><i></i><b>ai-engine-core</b><span>GRG FÊNIX Core System · Active Repository</span></div>
+          </div>
+          <h3 style="margin-top:20px; font-size:14px; color:#e2e8f0;">Programas & Roadmaps Executivos</h3>
+          <div class="metric-grid" style="margin-top:10px;">
+            <div class="mini-metric"><span>Enterprise SaaS Roadmap</span><b style="color:var(--green)">ATIVO</b></div>
+            <div class="mini-metric"><span>Autonomous Engineering</span><b style="color:var(--green)">ATIVO</b></div>
+            <div class="mini-metric"><span>Executive Brain Custom Sync</span><b style="color:var(--yellow)">Aguardando Executive Brain</b></div>
+            <div class="mini-metric"><span>System Reborn Kernel</span><b style="color:var(--yellow)">Aguardando Executive Brain</b></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: CITY -->
+      <div id="view-city" class="view-section">
+        <section id="city" class="city-panel panel">
+          <div class="section-title"><div><span class="eyebrow">DIGITAL TWIN DESKTOP CITY</span><h2>GRG AI City (Distritos, Prédios & Runtimes)</h2></div><div class="legend"><span><i class="active"></i>Ativo</span><span><i class="warning"></i>Atenção</span><span><i class="degraded"></i>Degradado</span></div></div>
+          <div class="city-toolbar"><span id="citySummary">Carregando projeção…</span><div><button id="zoomOut" class="icon-button">−</button><button id="zoomIn" class="icon-button">+</button></div></div>
+          <div id="cityViewport" class="city-viewport"><div class="city-sky"><i></i><i></i><i></i></div><div id="cityMap" class="city-map"></div></div>
+        </section>
+      </div>
+
+      <!-- VIEW: COGNITIVE SPEED & HOT MEMORY -->
+      <div id="view-performance" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">COGNITIVE PERFORMANCE ENGINE</span><h2>Cognitive Speed Score & Memory</h2></div><span class="score" style="color:var(--green)">96.4</span></div>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>L0-L5 Hot Memory</span><b>Prewarmed</b></div>
+            <div class="mini-metric"><span>TTFB Latency</span><b>-52.0%</b></div>
+            <div class="mini-metric"><span>Token Reduction</span><b>-92.0%</b></div>
+            <div class="mini-metric"><span>Knowledge Graph Nodes</span><b>820,000</b></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: HOT MEMORY -->
+      <div id="view-hotmemory" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">HOT MEMORY ENGINE (L0-L5)</span><h2>Cápsulas de Memória Pré-aquecidas</h2></div><span class="status-pill active">PREWARMED</span></div>
+          <p>Armazenamento ultra-rápido de cápsulas de conhecimento executável com tempo de acesso de sub-milissegundo.</p>
+        </section>
+      </div>
+
+      <!-- VIEW: KNOWLEDGE WORKSPACE & SEARCH -->
+      <div id="view-knowledge" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">KNOWLEDGE WORKSPACE (KOS)</span><h2>Knowledge Workspace & Pesquisa de Memória</h2></div><span class="count">150 Volumes</span></div>
+          <div style="margin-top:14px;">
+            <input type="text" id="memorySearchInput" placeholder="Pesquisar cápsulas de conhecimento e repositório de memória..." style="width:100%; padding:10px 14px; background:#070a0f; border:1px solid var(--line); border-radius:8px; color:#fff; font-size:13px;">
+          </div>
+          <p style="margin-top:12px;">Índice ultra-esparso contendo 150 volumes da Constituição FÊNIX e cápsulas de conhecimento geradas dinamicamente.</p>
+        </section>
+      </div>
+
+      <!-- VIEW: DIGITAL TWIN -->
+      <div id="view-twin" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">ENTERPRISE DIGITAL TWIN</span><h2>Digital Twin da Empresa & Simulador de Impacto</h2></div><span class="status-pill active">ACTIVE TWIN</span></div>
+          <p>Simula o impacto real de decisões de infraestrutura e código antes da execução (ex: trocar Redis por Valkey).</p>
+        </section>
+      </div>
+
+      <!-- VIEW: AGENT SWARM -->
+      <div id="view-swarm" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">AGENT SWARM ECOSYSTEM</span><h2>15 Agentes Especialistas Roteados</h2></div><span class="count">15 Agentes</span></div>
+          <div class="health-list" style="margin-top:15px;">
+            <div class="health-item ACTIVE"><i></i><b>Architect Agent</b><span>Especialista em contratos Hexagonais</span></div>
+            <div class="health-item ACTIVE"><i></i><b>Security Sentinel</b><span>Verificação de vulnerabilidades e audit</span></div>
+            <div class="health-item ACTIVE"><i></i><b>Refactor Master</b><span>Refatoração e remoção de código morto</span></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: CAPABILITIES CATALOG -->
+      <div id="view-capabilities" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">CAPABILITY OPERATING SYSTEM (CapOS)</span><h2>Catálogo de Capacidades Reutilizáveis</h2></div><span class="count">4.281 Capabilities</span></div>
+          <p>Capacidades registradas e validadas com métricas de uso, latência e custo acumulado.</p>
+        </section>
+      </div>
+
+      <!-- VIEW: SCOS DESIGN FACTORY -->
+      <div id="view-scos" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">SOFTWARE CREATION OS (SCOS)</span><h2>18 Famílias de Design & Multi-Design Generator</h2></div><span class="count">18 Famílias</span></div>
+          <div id="designFamiliesGrid" class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Enterprise</span><b>Microsoft, SAP, Atlassian</b></div>
+            <div class="mini-metric"><span>AI Workspace</span><b>ChatGPT, Claude, Cursor</b></div>
+            <div class="mini-metric"><span>Minimal</span><b>Linear, Notion, Vercel</b></div>
+            <div class="mini-metric"><span>Finance</span><b>Stripe, Brex</b></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: ONEDEPLOY ORCHESTRATOR -->
+      <div id="view-onedeploy" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">ONEDEPLOY ORCHESTRATOR</span><h2>Orquestrador de 14 Etapas & Continuous Improvement</h2></div><span class="status-pill active">AUTONOMOUS</span></div>
+          <p>SCAN → UNDERSTAND → PLAN → IMPLEMENT → TEST → REVIEW → COMMIT → PUSH → DEPLOY → VERIFY → OBSERVE → LEARN.</p>
+        </section>
+      </div>
+
+      <!-- VIEW: OBSERVABILITY / AI RUNTIME TELEMETRY -->
+      <div id="view-observability" class="view-section">
+        <section id="observability" class="telemetry-grid">
+          <article class="panel"><div class="section-title"><div><span class="eyebrow">HEALTH ORCHESTRATOR</span><h2>Saúde real</h2></div><span id="healthScore" class="score">—</span></div><div id="healthList" class="health-list"></div></article>
+          <article id="gateway" class="panel"><div class="section-title"><div><span class="eyebrow">AI GATEWAY & AI RUNTIME</span><h2>Consumo & Telemetria IA</h2></div><span id="gatewayState" class="status-pill neutral">SEM DADOS</span></div><div id="aiStats" class="ai-stats"></div><div id="systemMetrics" class="metric-grid"></div></article>
+        </section>
+      </div>
+
+      <!-- VIEW: CONNECTORS -->
+      <div id="view-connectors" class="view-section">
+        <section id="connectors" class="panel">
+          <div class="section-title"><div><span class="eyebrow">CONNECTOR RUNTIME</span><h2>Conectores Conectados</h2></div><span id="connectorSummary" class="count">—</span></div>
+          <div id="connectorList" class="health-list"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: SECURITY -->
+      <div id="view-security" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">COGNITIVE ENCRYPTION & SECURITY</span><h2>Criptografia & Audit Logs</h2></div><span class="status-pill active">AES-256-GCM</span></div>
+          <p>Todos os payloads e memórias sensíveis são protegidos por criptografia cognitiva governada.</p>
+        </section>
+      </div>
+
+      <footer><span>GRG FÊNIX Ω∞ Master Operating System — Autonomous Engineering Intelligence</span><span id="lastUpdate">Nunca atualizado</span></footer>
     </main>
+
+    <!-- SIDE TASK DRAWER (CURSOR-STYLE SPLIT) -->
+    <aside id="taskDrawer" class="task-drawer">
+      <div class="drawer-header">
+        <span class="eyebrow">TASK DRAWER</span>
+        <h3>Tarefas & Agentes Vivos</h3>
+        <button id="closeDrawer" class="dialog-close">×</button>
+      </div>
+      <div id="drawerContent" class="drawer-content">
+        <div class="drawer-section">
+          <span class="label">MISSÃO ATIVA:</span>
+          <strong id="drawerMissionTitle">Nenhuma missão ativa</strong>
+          <div id="drawerAgentState" class="status-pill active" style="margin-top:6px; display:inline-block;">DORMINDO</div>
+        </div>
+        <div class="drawer-section" style="margin-top:15px;">
+          <span class="label">JOBS EM EXECUÇÃO:</span>
+          <div id="drawerJobList" class="health-list" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </aside>
   </div>
+
+  <!-- TOAST NOTIFICATIONS CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- COMMAND PALETTE (CTRL+K) DIALOG -->
+  <dialog id="cmdPalette" class="cmd-palette">
+    <div class="cmd-header">
+      <input type="text" id="cmdInput" placeholder="Digite um comando, navegação ou busca (ex: #deploys, self deploy, mode)..." autofocus>
+      <button id="closeCmdPalette" class="dialog-close">×</button>
+    </div>
+    <div id="cmdResults" class="cmd-results">
+      <div class="cmd-item" data-action="nav" data-target="#command"><b>Dashboard</b><span>Ir para o centro operacional</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#masterNode"><b>Master Node VPS</b><span>Visualizar status da infraestrutura</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#deploys"><b>Deploy Center</b><span>Acompanhar 11 estágios de deploy</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#missions"><b>Mission Workspace</b><span>Visualizar timeline e DAG de missões</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#runtime"><b>Task Center</b><span>Visualizar jobs e fila de execução</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#projects"><b>Projetos & Executive Brain</b><span>Repositórios e roadmaps executivos</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#city"><b>AI City & NPCs</b><span>Ver mapa 3D da cidade digital</span></div>
+      <div class="cmd-item" data-action="run" data-target="selfDeploy"><b>🚀 Run Self Deploy</b><span>Executar pipeline de deploy governado</span></div>
+      <div class="cmd-item" data-action="run" data-target="mode"><b>🔄 Alternar Modo de Trabalho</b><span>Mudar entre Focus, Assistant, etc.</span></div>
+    </div>
+  </dialog>
+
+  <!-- EXECUTIVE DECISION INBOX MODAL -->
+  <dialog id="inboxModal">
+    <button id="closeInbox" class="dialog-close">×</button>
+    <span class="eyebrow">EXECUTIVE COGNITIVE ASSISTANT</span>
+    <h2>Fila de Decisões Pendentes</h2>
+    <div id="inboxItems" style="margin-top:15px; display:flex; flex-direction:column; gap:12px;"></div>
+  </dialog>
 
   <!-- MULTIMODAL MODAL -->
   <dialog id="multimodalDialog">
