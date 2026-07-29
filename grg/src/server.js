@@ -537,6 +537,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && /^\/api\/connectors\/[^/]+\/selftest$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.selfTest(tenantId, actorId, url.pathname.split('/')[3]), requestId);
       // MISSION-1003 — AI Router: qual provider seria escolhido agora, por evidência.
       if (req.method === 'GET' && url.pathname === '/api/ai/router/select') return sendJson(res, 200, await app.aiRouter.select(tenantId, actorId, { preferTier: url.searchParams.get('tier') || null }), requestId);
+      // Executive Brain: objetivo -> Programa de missões (decompõe + delega ao planner).
+      if (req.method === 'GET' && url.pathname === '/api/executive/programs') return sendJson(res, 200, { programs: await app.executiveBrain.list(tenantId, actorId) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/executive/decompose') { const b = await readJson(req); return sendJson(res, 200, await app.executiveBrain.decompose(tenantId, actorId, b.objective), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/executive/programs') { const b = await readJson(req); return sendJson(res, 201, await app.executiveBrain.createProgram(tenantId, actorId, b.objective), requestId); }
+      if (req.method === 'POST' && /^\/api\/executive\/programs\/[^/]+\/approve$/.test(url.pathname)) return sendJson(res, 200, await app.executiveBrain.approve(tenantId, actorId, url.pathname.split('/')[4]), requestId);
+      if (req.method === 'GET' && /^\/api\/executive\/programs\/[^/]+\/status$/.test(url.pathname)) return sendJson(res, 200, await app.executiveBrain.status(tenantId, actorId, url.pathname.split('/')[4]), requestId);
 
       if (req.method === 'POST' && url.pathname === '/api/chat') {
         const b = await readJson(req);

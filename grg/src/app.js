@@ -381,6 +381,10 @@ async function createApp(options = {}) {
   // O AI Router: escolhe provider por evidência (saúde real + política local→grátis→pago),
   // compondo o ConnectorRuntime e o gateway existentes. Nunca fixa provider.
   app.aiRouter = new AIRouter({ connectors: app.connectors, gateway: aiGateway, store });
+  // Executive Brain real: decompõe objetivo -> Programa de missões, delega ao missionPlanner
+  // existente. Orquestra, nunca executa IA (contrato proíbe). Compõe o que já existe.
+  const { ExecutiveBrain } = require('./executive/executive-brain');
+  app.executiveBrain = new ExecutiveBrain({ store, bus, controlPlane, missionPlanner });
   // MISSION-1005 — o fluxo governado de missão passa a decidir o provider pelo Router.
   // O SoftwareFactory chamava `aiGateway.invoke` direto; agora recebe o Router, que tem a
   // MESMA assinatura invoke() e delega ao Gateway (Router decide, Gateway executa). O
