@@ -38,6 +38,22 @@ class AIRouter {
   #providerName(connectorId) { return connectorId.startsWith('ai:') ? connectorId.slice(3) : connectorId; }
   #tierOf(name) { return TIER_ORDER.find((tier) => TIER[tier].includes(name)) || 'paid'; }
 
+  // Resolve o modelo do provider ESCOLHIDO — o dele, nunca o da rota default (que e de outro
+  // provider). Ordem: modelo pedido pelo chamador > modelo que o proprio connector declara >
+  // null (o Gateway entao decide se tem candidato configurado para esse provider). Isto e o
+  // conserto do bug que o code review da RC1 pegou: parear o provider escolhido com o modelo
+  // errado anulava silenciosamente a decisao do Router.
+  #modelFor(name, request = {}) {
+    if (request.model) return request.model;
+    const connector = this.connectors.connectors.get(`ai:${name}`);
+    if (connector && typeof connector.models === 'function') {
+      const m = connector.models();
+      const list = m && m.state === 'measured' ? m.value : (Array.isArray(m) ? m : null);
+      if (Array.isArray(list) && list.length) return list[0];
+    }
+    return null;
+  }
+
   // Seleciona um provider por evidência. Percorre os tiers na ordem da política; dentro do
   // tier, pega o primeiro connector de IA que está CONNECTED (selfTest real). Devolve a
   // escolha COM a evidência de por que — ou unknown se nenhum provider está saudável.
@@ -96,7 +112,7 @@ class AIRouter {
         prompt: request.prompt || '',
         temperature: request.temperature,
         provider: name,
-        model: request.model || null,
+        model: this.#modelFor(name, request),
       });
       const record = { provider: result.provider || name, chosen: name, tier: selection.chosen.tier, durationMs: Date.now() - started, cached: result.cached === true, ok: true };
       await this.#record(tenantId, record);
@@ -114,6 +130,9 @@ class AIRouter {
   // sem que o chamador mude uma linha. Se a seleção falhar (ninguém CONNECTED), cai para o
   // Gateway sem override — a rota configurada ainda responde, em vez de a missão travar.
   async invoke(tenantId, actorId, request = {}) {
+    if (!this.gateway || typeof this.gateway.invoke !== 'function') {
+      throw new Error('AI gateway not wired: the router decides but the gateway executes');
+    }
     const selection = await this.select(tenantId, actorId, { preferTier: request.preferTier });
     const chosen = selection.chosen.state === 'measured' ? selection.chosen.value : null;
     if (chosen) await this.#record(tenantId, { provider: chosen, chosen, tier: selection.chosen.tier, ok: true, delegated: true });
@@ -121,7 +140,7 @@ class AIRouter {
       taskType: request.taskType || 'default',
       prompt: request.prompt,
       temperature: request.temperature,
-      ...(chosen ? { provider: chosen, model: request.model || null } : {}),
+      ...(chosen ? { provider: chosen, model: this.#modelFor(chosen, request) } : {}),
     });
   }
 

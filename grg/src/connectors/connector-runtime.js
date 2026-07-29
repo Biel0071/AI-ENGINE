@@ -55,7 +55,9 @@ class ConnectorRuntime {
       await this.#recordMetric(tenantId, connectorId, { kind: 'status', ok: false, state: CONNECTOR_STATES.CONFIGURED });
       return this.#report(connectorId, CONNECTOR_STATES.CONFIGURED, {
         authenticated: false,
-        detail: auth.credential,
+        // Adaptadores diferentes nomeiam a evidência de forma diferente (github: `credential`;
+        // ai-provider: `detail`). Aceitar ambos evita perder a evidência no report.
+        detail: auth.credential || auth.detail || null,
       });
     }
 
