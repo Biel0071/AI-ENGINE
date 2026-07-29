@@ -42,7 +42,15 @@ class AIGateway {
     const base = [{ ...route, fallback: undefined }, ...fallback];
     if (base.some((item) => !item?.provider || !item?.model)) throw new ValidationError(`AI route ${taskType} has an invalid fallback`);
     if (override?.provider) {
-      const chosen = { provider: override.provider, model: override.model || route.model };
+      // BUG corrigido (code review RC1): o modelo TEM que pertencer ao provider escolhido,
+      // nunca o `route.model` da rota default (que e de OUTRO provider). Resolve o modelo
+      // do candidato configurado que casa com o provider escolhido; sem `override.model` e
+      // sem candidato correspondente, nao ha como parear um modelo com honestidade — entao
+      // volta a rota configurada em vez de mandar um modelo que o provider nao conhece.
+      const match = base.find((item) => item.provider === override.provider);
+      const model = override.model || match?.model;
+      if (!model) return base;
+      const chosen = { provider: override.provider, model };
       // O escolhido pelo Router primeiro; a rota configurada segue como fallback (sem duplicar o escolhido).
       return [chosen, ...base.filter((item) => item.provider !== chosen.provider)];
     }

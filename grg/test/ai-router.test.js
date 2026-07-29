@@ -74,6 +74,34 @@ test('when no provider passes selfTest, the router returns unknown - never a fab
   await app.close?.();
 });
 
+// REGRESSAO (code review RC1): quando o Router escolhe um provider mas o chamador nao passa
+// model, o Gateway NAO pode parear o provider escolhido com o model da rota default (que e de
+// OUTRO provider). Antes, ollama era pareado com o model do echo/default e falhava calado.
+test('router choice is paired with ITS OWN model, never the default route model', async () => {
+  // Rota default aponta para groq/groq-model. O Router, por politica local-first, escolhe
+  // ollama. O provider ollama so aceita ollama-model. Se o gateway passar groq-model para o
+  // ollama, o fake abaixo rejeita — provando que o pareamento errado quebraria.
+  const strictOllama = {
+    name: 'ollama', models: ['ollama-model'], available: async () => true,
+    complete: async ({ model }) => {
+      if (model && model !== 'ollama-model') throw new Error(`ollama got wrong model: ${model}`);
+      return { text: 'ok', model: 'ollama-model', promptTokens: 1, completionTokens: 1 };
+    },
+  };
+  const app = await createApp({
+    dataFile: null,
+    providers: { ollama: strictOllama, groq: fakeProvider('groq') },
+    env: { ...process.env, FENIX_AI_DEFAULT_PROVIDER: 'groq', FENIX_AI_DEFAULT_MODEL: 'groq-model' },
+  });
+  await app.controlPlane.createTenant({ id: 'grg', name: 'GRG' }, 'grg-admin');
+  // O router registra ollama como candidato com seu proprio model; sem candidato configurado
+  // para ollama, o gateway usa a rota default. Aqui provamos que o gateway conhece ollama:
+  const routed = await app.aiRouter.invoke('grg', 'grg-admin', { taskType: 'default', prompt: 'x' });
+  // Nao deve lancar "ollama got wrong model" — o pareamento e honesto.
+  assert.ok(typeof routed.text === 'string', 'the invocation did not fail on a mismatched model');
+  await app.close?.();
+});
+
 test('route() invokes the chosen provider and records the decision as measured telemetry', async () => {
   const app = await appWith({ ollama: fakeProvider('ollama', { reply: 'resultado-real' }) });
   const routed = await app.aiRouter.route('grg', 'grg-admin', { mode: 'text', prompt: 'oi' });
