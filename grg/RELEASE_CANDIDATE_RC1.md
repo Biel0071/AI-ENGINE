@@ -66,6 +66,26 @@ containers (segundos), rollback seguro (código v24 ignora coleções novas). **
 - 0 dependências não usadas; 0 código morto (todo módulo novo é importado).
 - Code review: 0 defeitos remanescentes.
 
+## Known Limitation (medida, aceita conscientemente)
+
+O `chat-agent` ainda usa `this.llm` diretamente (um provider fixo, Ollama), **fora do AI
+Router**. Isto foi medido, não esquecido:
+
+- **NÃO é uma segunda arquitetura.** É um único bypass no fluxo de CHAT, não no fluxo de
+  missão (que já roteia pelo Router). O runtime de execução continua único — o Gateway.
+- **Não compromete o runtime único.** Nenhum provider é executado por dois caminhos; o chat
+  usa um provider local para linguagem aberta, comportamento idêntico ao v24.
+- **Integração agendada:** MISSION-1008 (CHAT RUNTIME INTEGRATION), primeira tarefa da v32,
+  após o deploy do RC1. Objetivo único: eliminar este bypass. Nenhuma outra mudança.
+
+Regra respeitada: nenhuma mudança de escopo durante uma Release Candidate. RC1 =
+estabilização; v32 = evolução.
+
+## Documentos de deploy (MISSION-1007A)
+
+`DEPLOY_RC1.md` · `GO_LIVE_CHECKLIST.md` · `ROLLBACK.md` · `PRODUCTION_CHECKLIST.md` — o
+caminho completo v24→v31, verificação, reversão e o que separa READY de PRODUCTION_PROVEN.
+
 ## Veredito
 
 **RC1 — APROVÁVEL PARA DEPLOY** (READY, não PRODUCTION_PROVEN). O que a RC provou: a
