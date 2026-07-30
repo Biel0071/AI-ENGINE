@@ -31,6 +31,13 @@ services:
       FENIX_OIDC_CLIENT_ID: ${FENIX_OIDC_CLIENT_ID:-grg-console}
       FENIX_OIDC_REDIRECT_URI: ${FENIX_OIDC_REDIRECT_URI:?FENIX_OIDC_REDIRECT_URI is required}
       FENIX_BOOTSTRAP_OIDC_SUBJECT: ${FENIX_BOOTSTRAP_OIDC_SUBJECT:-grg-admin}
+      # Medido em producao (rc.22): as duas estavam AUSENTES no container, porque o bloco
+      # environment: e uma allowlist estrita -- definir no .env.production nao basta.
+      # Sem FENIX_ENCRYPTION_KEY a chave mestra e derivada de string fixa no codigo, e o
+      # /api/security/encryption/status reporta ACTIVE_UNMANAGED_KEY (nunca "seguro").
+      # Sem FENIX_PUBLIC_URL nao ha evidencia de TLS: transitEncryptedTLS fica unknown.
+      FENIX_ENCRYPTION_KEY: ${FENIX_ENCRYPTION_KEY:-}
+      FENIX_PUBLIC_URL: ${FENIX_PUBLIC_URL:-}
       FENIX_AI_DEFAULT_PROVIDER: ${FENIX_AI_DEFAULT_PROVIDER:?FENIX_AI_DEFAULT_PROVIDER is required}
       FENIX_AI_DEFAULT_MODEL: ${FENIX_AI_DEFAULT_MODEL:?FENIX_AI_DEFAULT_MODEL is required}
       GRG_AIPLATFORM_URL: ${GRG_AIPLATFORM_URL:-}

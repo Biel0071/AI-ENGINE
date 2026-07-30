@@ -30,7 +30,17 @@ function envLidasPor(...arquivosRelativos) {
 }
 
 test('every FENIX_* the runtime reads is passed through by the compose allowlist', () => {
-  const lidas = envLidasPor('src/runtime/worker.js', 'src/infrastructure/database/postgres-store.js');
+  // MEDIDO EM PRODUCAO (rc.22): a mesma lacuna reapareceu fora do worker.
+  // cognitive-encryption le FENIX_ENCRYPTION_KEY e FENIX_PUBLIC_URL para decidir se a chave
+  // e gerenciada e se ha evidencia de TLS -- nenhuma das duas estava na allowlist, entao o
+  // container reportava ACTIVE_UNMANAGED_KEY por AUSENCIA DE REPASSE, nao por escolha do
+  // operador. O teste cobria apenas worker+store; qualquer outro modulo que leia env ficava
+  // fora. Incluir a seguranca aqui e o minimo: e onde o silencio custa mais caro.
+  const lidas = envLidasPor(
+    'src/runtime/worker.js',
+    'src/infrastructure/database/postgres-store.js',
+    'src/security/cognitive-encryption.js',
+  );
   assert.ok(lidas.length >= 8, `esperava varias variaveis de runtime, achei ${lidas.length}`);
   const faltando = lidas.filter((nome) => !new RegExp(`^\\s+${nome}:`, 'm').test(compose));
   assert.deepEqual(faltando, [], `variaveis lidas pelo runtime e ausentes do compose (inertes em producao): ${faltando.join(', ')}`);
