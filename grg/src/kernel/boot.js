@@ -42,7 +42,7 @@ class BootManager extends SystemModule {
     this.bootLog = [];
 
     for (const step of this.bootSequence) {
-      const moduleInstance = this.registry.get(step);
+      let moduleInstance = this.registry.get(step);
       const stepLog = { step, startedAt: Date.now(), success: false, error: null, durationMs: 0 };
       
       try {
