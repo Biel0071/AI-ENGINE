@@ -79,8 +79,10 @@ function renderConsoleBar({ operations, speed, hotMemory, mission, jobs }) {
     ui.consoleSpeedScore.textContent = score === null ? '— sem chamadas' : `${Number(score).toFixed(1)} / 100`;
   }
   if (ui.consoleHotMemory) {
+    // cachedItemsCount e o cache DESTE processo (0 antes de qualquer prefetch). Dizer
+    // "pre-aquecidas" com 0 seria contraditorio; com 0 o estado e "cache vazio".
     const active = measuredValue(hotMemory?.cachedItemsCount);
-    ui.consoleHotMemory.textContent = active === null ? '— aguardando' : `${active} pré-aquecidas`;
+    ui.consoleHotMemory.textContent = active === null ? '— aguardando' : Number(active) === 0 ? 'cache vazio' : `${active} pré-aquecidas`;
   }
   if (ui.consoleMission) ui.consoleMission.textContent = mission ? `${mission.title} (${Number(mission.progress || 0)}%)` : 'SEM MISSÃO';
   if (ui.consoleJobs) ui.consoleJobs.textContent = String(jobs.length);
@@ -157,7 +159,7 @@ function formatUptime(seconds) {
   return d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function renderMasterNode({ health, operations, overview, obs }) {
+function renderMasterNode({ health, operations, overview, obs, readiness }) {
   const pill = el('masterNodePill');
   if (pill) {
     const ok = health?.ok === true;
@@ -166,7 +168,14 @@ function renderMasterNode({ health, operations, overview, obs }) {
     pill.className = `status-pill ${health ? (ok ? 'active' : 'degraded') : 'neutral'}`;
   }
   // O estado do self-deploy e o do readiness real; sem readiness, ausencia (nao "READY").
-  setText(el('mnSelfDeployStatus'), operations?.readiness?.status || null);
+  // /operations/state devolve readiness: null ate existir um relatorio gerado. A matriz de
+  // /governance/readiness-matrix, ao contrario, e calculada a cada consulta -- entao quando
+  // nao ha relatorio eu mostro a contagem MEDIDA de objetivos prontos, nunca um "READY".
+  const readyFromReport = operations?.readiness?.status || null;
+  // Contrato exato: totals = { objectives, byState, withBlockers, productionProven }.
+  const t = readiness?.totals || null;
+  setText(el('mnSelfDeployStatus'), readyFromReport
+    || (t && Number.isFinite(Number(t.objectives)) ? `${t.productionProven ?? 0}/${t.objectives} objetivos provados` : null));
   // uptime vem do envelope measured() de /observability/metrics (process.uptime), a unica
   // fonte real. /health nao expoe uptime -- ler dali daria undefined virando "—" sempre.
   setText(el('mnUptime'), formatUptime(measuredValue(obs?.system?.uptimeSeconds)));
@@ -180,13 +189,30 @@ function renderMasterNode({ health, operations, overview, obs }) {
 function renderPerformance({ speed, hotMemory, telemetry, overview }) {
   const score = measuredValue(speed?.overallScore);
   setText(el('perfScore'), score === null ? DASH : Number(score).toFixed(1));
-  // Hot memory: o UNICO campo real de /performance/hot-memory hoje e cachedItemsCount (conta
-  // itens de verdade). Os `levels` do endpoint ainda tem size/hitCount FABRICADOS (142, 89,
-  // 64...) -- o auditor marca `performance: 9 sinais` justamente por isso. Nao exibo aquilo
-  // como se fosse medido: mostro a contagem real e nada mais.
-  const cached = hotMemory?.cachedItemsCount;
-  setText(el('perfHotMemory'), Number.isFinite(Number(cached)) ? `${formatNumber(cached)} itens em cache` : null);
-  const latency = measuredValue(speed?.avgLatencyMs) ?? telemetry?.avgLatencyMs ?? null;
+  // Um "—" sozinho nao diz POR QUE nao ha score. O backend manda o motivo e o proximo passo
+  // (sampleSize medido em 0, "executar uma missao"): a tela repassa isso ao operador.
+  const scoreNote = el('perfScoreNote');
+  if (scoreNote) {
+    const sample = measuredValue(speed?.sampleSize);
+    scoreNote.textContent = score !== null
+      ? `Calculado sobre ${formatNumber(sample ?? 0)} chamadas reais de IA.`
+      : speed?.overallScore?.reason
+        ? `Sem score: ${speed.overallScore.reason}. ${speed.overallScore.pending?.action ? `Próximo passo: ${speed.overallScore.pending.action}.` : ''}`
+        : 'Speed score não respondeu.';
+  }
+  // Hot memory agora conta colecoes reais do store em cada nivel (L1=missions, L2=projects,
+  // L3=repositories, L4=knowledgeEntities, L5=artifacts) -- antes eram numeros de tabela
+  // (142, 89, 64...). Aqui somo o que foi MEDIDO e mostro o cache do processo a parte.
+  const levels = hotMemory?.levels && typeof hotMemory.levels === 'object' ? Object.values(hotMemory.levels) : [];
+  const sizes = levels.map((lvl) => measuredValue(lvl?.size)).filter((v) => v !== null && v !== undefined);
+  // Somar niveis nao medidos como 0 daria "0 itens" -- um numero que parece medicao. Sem
+  // nenhum nivel medido, a resposta e ausencia; com alguns, informo quantos foram medidos.
+  setText(el('perfHotMemory'), sizes.length
+    ? `${formatNumber(sizes.reduce((a, b) => a + Number(b), 0))} itens em ${sizes.length}/${levels.length} níveis medidos`
+    : null);
+  // avgResponseMs vem do envelope de /performance/speed-score, calculado sobre latencyMs
+  // gravado em cada chamada real do gateway. Sem chamada, unknown -> ausencia.
+  const latency = measuredValue(speed?.metrics?.avgResponseMs);
   setText(el('perfLatency'), latency === null ? null : `${Math.round(Number(latency))} ms`);
   // telemetry usa totalTokens; `tokens` nao existe no contrato e daria undefined.
   const tokens = telemetry?.totalTokens ?? telemetry?.tokens ?? null;
@@ -249,9 +275,148 @@ function renderKnowledge(constitution) {
   setText(el('knowledgeCount'), measured === null ? null : `${formatNumber(measured)} volumes`);
   const summary = el('knowledgeSummary');
   if (summary) {
+    // O motivo vem do proprio envelope unknown() ("no *VOLUME.md files found..."), com o
+    // caminho onde os volumes eram esperados. Isso e acionavel; "indisponivel" nao e.
+    const reason = count && count.state === 'unknown' ? count.reason : null;
     summary.innerHTML = measured === null
-      ? `<p class="empty-city">Índice da Constituição indisponível${constitution?.constitutionPath ? ` (${escapeHtml(constitution.constitutionPath)})` : ''}.</p>`
+      ? `<p class="empty-city">Índice da Constituição indisponível${reason ? `: ${escapeHtml(String(reason))}` : ''}${constitution?.constitutionPath ? `<br><small>Esperado em ${escapeHtml(constitution.constitutionPath)}</small>` : ''}</p>`
       : `<p>Índice esparso com ${formatNumber(measured)} volumes lidos do disco.</p>`;
+  }
+}
+
+// --- Telas que eram casca estatica ate aqui -------------------------------------------
+// As cinco a seguir tinham selo literal no HTML ("PREWARMED", "ACTIVE TWIN", "18 Familias",
+// "AUTONOMOUS", "AES-256-GCM") e nenhum dado. Cada uma passa a ler o endpoint real; onde o
+// backend devolve unknown(), a tela mostra a AUSENCIA e a pendencia, nunca um valor plausivel.
+
+// Renderiza um envelope measured()/unknown() como texto: valor medido, ou null (=> "—").
+const envText = (env, format = (v) => v) => { const v = measuredValue(env); return v === null || v === undefined ? null : format(v); };
+// Linha de lista com rotulo, valor e, quando ausente, o motivo declarado pelo backend.
+function envRow(label, env, format = (v) => String(v)) {
+  const v = measuredValue(env);
+  if (v !== null && v !== undefined) {
+    return `<div class="health-item"><span>${escapeHtml(label)}</span><b>${escapeHtml(format(v))}</b></div>`;
+  }
+  const reason = env && typeof env === 'object' ? (env.reason || env.pending?.action || '') : '';
+  return `<div class="health-item"><span>${escapeHtml(label)}</span><b class="muted">não medido${reason ? ` — ${escapeHtml(String(reason))}` : ''}</b></div>`;
+}
+
+function renderHotMemory(hotMemory) {
+  const pill = el('hotMemoryState');
+  if (pill) {
+    // predictiveCacheStatus e measured('PREWARMED') SO depois de um prefetch real.
+    const st = measuredValue(hotMemory?.predictiveCacheStatus);
+    pill.textContent = st === null ? 'CACHE VAZIO' : String(st);
+    pill.className = `status-pill ${st === null ? 'neutral' : 'active'}`;
+  }
+  const list = el('hotMemoryLevels');
+  if (list) {
+    const levels = hotMemory?.levels && typeof hotMemory.levels === 'object' ? Object.entries(hotMemory.levels) : [];
+    list.innerHTML = levels.length
+      ? levels.map(([key, lvl]) => {
+          const size = measuredValue(lvl?.size);
+          return `<div class="health-item"><span>${escapeHtml(key)} · ${escapeHtml(lvl?.name || '')}</span><b>${size === null ? 'não medido' : `${formatNumber(size)} itens`}<small class="muted"> · ${escapeHtml(lvl?.source || lvl?.ttl || '')}</small></b></div>`;
+        }).join('')
+      : '<p class="empty-city">Hot memory não respondeu.</p>';
+  }
+  setText(el('hotMemoryCached'), Number.isFinite(Number(hotMemory?.cachedItemsCount)) ? formatNumber(hotMemory.cachedItemsCount) : null);
+  setText(el('hotMemoryCheckedAt'), hotMemory?.timestamp ? formatTime(hotMemory.timestamp) : null);
+}
+
+function renderTwin(twin) {
+  const model = twin?.model || null;
+  const pill = el('twinHealth');
+  if (pill) {
+    const health = model?.operations?.health || null;
+    pill.textContent = health || DASH;
+    pill.className = `status-pill ${health ? statusClass(health) : 'neutral'}`;
+  }
+  const num = (v) => (Number.isFinite(Number(v)) ? formatNumber(v) : null);
+  setText(el('twinContainers'), num(model?.compute?.containers));
+  setText(el('twinWorkers'), num(model?.runtime?.workers));
+  setText(el('twinQueued'), num(model?.runtime?.queued));
+  setText(el('twinRunning'), num(model?.runtime?.running));
+  setText(el('twinFailed'), num(model?.runtime?.failed));
+  setText(el('twinDatabases'), num(model?.data?.databases));
+  setText(el('twinDeployments'), num(model?.delivery?.deployments));
+  setText(el('twinServices'), num(model?.operations?.services));
+  setText(el('twinSource'), twin?.sourceEventId ? `evento ${String(twin.sourceEventId).slice(0, 8)}` : null);
+  setText(el('twinBuiltAt'), twin?.builtAt ? formatTime(twin.builtAt) : null);
+  const note = el('twinUnmeasured');
+  if (note) {
+    // O endpoint devolve null para custo/latencia/performance porque nada os mede ainda.
+    // Isso e dito em voz alta em vez de virar um numero bonito no painel.
+    const missing = ['costs', 'latency', 'performance'].filter((k) => model && model.operations && model.operations[k] === null);
+    note.textContent = !model
+      ? 'Gêmeo digital não respondeu.'
+      : missing.length
+        ? `Sem medição para: ${missing.join(', ')}. O gêmeo projeta apenas o que o event store registra.`
+        : '';
+  }
+}
+
+function renderScos(families) {
+  const list = Array.isArray(families?.families) ? families.families : [];
+  setText(el('designFamilyCount'), list.length ? `${list.length} famílias` : null);
+  const grid = el('designFamiliesGrid');
+  if (grid) {
+    grid.innerHTML = list.length
+      ? list.map((f) => `<div class="mini-metric"><span>${escapeHtml(f.name || f.id)}</span><b>${escapeHtml(f.inspiredBy || f.typography || '—')}</b></div>`).join('')
+      : '<p class="empty-city">Registro de famílias de design não respondeu.</p>';
+  }
+}
+
+function renderSecurity(sec) {
+  const pill = el('secStatus');
+  if (pill) {
+    const st = sec?.status || null;
+    pill.textContent = st || DASH;
+    // ACTIVE_UNMANAGED_KEY nao e sucesso: a cripto funciona, mas o segredo esta no repo.
+    pill.className = `status-pill ${st === 'ACTIVE_MANAGED_KEY' ? 'active' : st === 'ACTIVE_UNMANAGED_KEY' ? 'warning' : st ? 'degraded' : 'neutral'}`;
+  }
+  setText(el('secAlgorithm'), sec?.algorithm || null);
+  setText(el('secKeyLength'), sec?.keyLengthBits ? `${sec.keyLengthBits} bits` : null);
+  setText(el('secSelfTest'), envText(sec?.selfTest));
+  setText(el('secKeyManagement'), envText(sec?.keyManagement) ?? (sec?.keyManagement ? 'chave derivada do código' : null));
+  const pending = el('secPending');
+  if (pending) {
+    if (!sec) { pending.innerHTML = '<p class="empty-city">Status de criptografia não respondeu.</p>'; return; }
+    pending.innerHTML = [
+      envRow('Gestão da chave', sec.keyManagement),
+      envRow('Cifragem em repouso', sec.memoryEncryptedAtRest, (v) => String(v)),
+      envRow('TLS em trânsito', sec.transitEncryptedTLS, (v) => String(v)),
+      envRow('Tokenização', sec.tokenizationActive, (v) => (v === true ? 'operacional' : String(v))),
+    ].join('');
+  }
+}
+
+function renderVeracity(audit) {
+  // Contrato exato do endpoint: { totals: { modules, files, byClassification, totalFakeSignals },
+  // modules: [{ module, classification, fileCount, fakeSignalCount, offenders }] }.
+  // Ler `audit.totalFakeSignals` (fora de totals) daria undefined e a tela mostraria 0 sinais
+  // -- ou seja, o painel de veracidade mentindo sobre a veracidade. Zero exige medicao.
+  const totals = audit?.totals || null;
+  const modules = Array.isArray(audit?.modules) ? audit.modules : [];
+  const byClass = totals?.byClassification || {};
+  const totalSignals = totals?.totalFakeSignals;
+  setText(el('veracitySummary'), totals ? `${formatNumber(totals.modules)} módulos · ${formatNumber(totalSignals)} sinais` : null);
+  setText(el('veracityModules'), Number.isFinite(Number(totals?.modules)) ? formatNumber(totals.modules) : null);
+  setText(el('veracitySignals'), Number.isFinite(Number(totalSignals)) ? formatNumber(totalSignals) : null);
+  setText(el('veracityProduction'), Number.isFinite(Number(byClass.production)) ? formatNumber(byClass.production) : null);
+  setText(el('veracitySimulated'), Number.isFinite(Number(byClass.simulated)) ? formatNumber(byClass.simulated) : null);
+  const worst = el('veracityWorst');
+  if (worst) {
+    // Lista os piores primeiro: o painel expoe a propria divida, sem suavizar.
+    const ranked = modules
+      .map((m) => ({ id: m.module || '?', n: Number(m.fakeSignalCount) || 0, cls: m.classification || '?' }))
+      .filter((m) => m.n > 0)
+      .sort((a, b) => b.n - a.n)
+      .slice(0, 12);
+    worst.innerHTML = !audit
+      ? '<p class="empty-city">Auditor de simulação não respondeu.</p>'
+      : ranked.length
+        ? ranked.map((m) => `<div class="health-item"><span>${escapeHtml(m.id)}<small class="muted"> · ${escapeHtml(m.cls)}</small></span><b>${m.n} sinais</b></div>`).join('')
+        : '<p>Nenhum sinal de fabricação nos módulos varridos.</p>';
   }
 }
 
@@ -324,9 +489,9 @@ async function refresh() {
     const extra = await Promise.allSettled([
       fetch('/health').then((r) => r.json()).catch(() => null),
       api('/events'), api('/agents/swarm'), api('/capabilities'),
-      // /uios/kos/manifest e a fonte HONESTA: le docs/constitution do disco e devolve
-      // measured() ou UNAVAILABLE + unknown(). O /keos/constitution/index ainda afirma
-      // "150 volumes" e "OPERATIONAL_GRAPH_INDEX" sem ler nada -- nao consumir dali.
+      // /uios/kos/manifest le docs/constitution do disco e devolve measured() ou UNAVAILABLE
+      // + unknown(). /keos/constitution/index agora COMPOE este mesmo manifesto (antes
+      // afirmava "150 volumes" sem ler nada), portanto as duas fontes nao podem divergir.
       api('/uios/kos/manifest'), api('/executive/programs'),
       api('/governance/readiness-matrix'), api('/insights'), api('/connection'),
       api('/observability/metrics'),
@@ -336,7 +501,20 @@ async function refresh() {
       caps=value(capsR,{capabilities:[]}), constitution=value(constR,null), programs=value(progR,{programs:[]}),
       readiness=value(readyR,null), insights=value(insightsR,{insights:[]}), connection=value(connR,null),
       obs=value(obsR,null);
-    renderMasterNode({ health, operations, overview, obs });
+    // Terceiro lote: telas que eram casca. Separado do segundo pelo mesmo motivo -- o
+    // simulation-audit varre o disco e e a chamada mais cara daqui; se falhar, o resto fica.
+    const [twinR, scosR, secR, auditR] = await Promise.allSettled([
+      api('/digital-twin/operational'),
+      api('/scos/design-families/list'),
+      api('/security/encryption/status'),
+      api('/governance/simulation-audit'),
+    ]);
+    renderTwin(value(twinR, {})?.twin || null);
+    renderScos(value(scosR, null));
+    renderSecurity(value(secR, null));
+    renderVeracity(value(auditR, null));
+    renderHotMemory(hotMemory);
+    renderMasterNode({ health, operations, overview, obs, readiness });
     renderPerformance({ speed, hotMemory, telemetry, overview });
     renderProjects({ overview, programs });
     renderSwarm(swarm); renderCapabilities(caps); renderKnowledge(constitution);
@@ -392,6 +570,68 @@ if (ui.multimodalBtn && ui.multimodalDialog) {
     });
   }
 }
+
+// Acoes das telas recem-ligadas. Cada botao dispara a operacao REAL do backend e mostra o
+// que ela devolveu, inclusive o erro -- nunca um "concluido" otimista.
+const bindAction = (id, run) => {
+  const btn = el(id);
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Executando...';
+    try { await run(); } catch (error) { showActionError(id, error); } finally { btn.disabled = false; btn.textContent = original; }
+  });
+};
+function showActionError(id, error) {
+  const target = id === 'onedeployScanBtn' ? el('onedeployResult') : id === 'genomeStructureBtn' ? el('genomeStructureResult') : el('hotMemoryPrefetchResult');
+  if (target) target.textContent = `Falhou: ${error?.message || 'erro desconhecido'}`;
+}
+
+bindAction('hotMemoryPrefetchBtn', async () => {
+  const result = await api('/performance/predictive-prefetch', { method: 'POST', body: JSON.stringify({ project: 'geral' }) });
+  const out = el('hotMemoryPrefetchResult');
+  const loaded = result?.prewarmed || {};
+  if (out) {
+    const parts = Object.entries(loaded).map(([k, v]) => `${k}: ${measuredValue(v) ?? 'não medido'}`);
+    out.textContent = `${measuredValue(result?.status) || 'sem status'} — carregado do store: ${parts.join(', ') || 'nada'}`;
+  }
+  // Recarrega o painel: o pill tem de virar PREWARMED por MEDICAO, nao por otimismo.
+  renderHotMemory(await api('/performance/hot-memory'));
+});
+
+bindAction('genomeStructureBtn', async () => {
+  const appType = el('genomeAppType')?.value || 'saas';
+  const genome = await api('/scos/genome/structure', { method: 'POST', body: JSON.stringify({ appType }) });
+  const out = el('genomeStructureResult');
+  if (!out) return;
+  const modules = Array.isArray(genome?.typicalModules) ? genome.typicalModules : [];
+  out.innerHTML = modules.length
+    ? `<div class="health-item"><span>Tipo</span><b>${escapeHtml(genome.appType || appType)}</b></div>`
+      + `<div class="health-item"><span>Família recomendada</span><b>${escapeHtml(genome.recommendedDesignFamily || '—')}</b></div>`
+      + modules.map((m) => `<div class="health-item"><span>Módulo</span><b>${escapeHtml(m)}</b></div>`).join('')
+    : '<p class="empty-city">Genoma sem módulos para este tipo.</p>';
+});
+
+bindAction('onedeployScanBtn', async () => {
+  const projectPath = el('onedeployPath')?.value?.trim() || '.';
+  const scan = await api('/onedeploy/scan-project', { method: 'POST', body: JSON.stringify({ projectPath }) });
+  const pill = el('onedeployState');
+  if (pill) {
+    pill.textContent = scan?.exists ? 'SCAN EXECUTADO' : 'CAMINHO INEXISTENTE';
+    pill.className = `status-pill ${scan?.exists ? 'active' : 'degraded'}`;
+  }
+  const out = el('onedeployResult');
+  if (!out) return;
+  const d = scan?.discovery || {};
+  // Cada aspecto vem measured() ou unknown() com o motivo: "no .github/workflows found"
+  // aparece na tela em vez de virar um "CI/CD: OK".
+  out.innerHTML = `<div class="health-item"><span>Caminho resolvido</span><b>${escapeHtml(scan?.projectPath || projectPath)}</b></div>`
+    + envRow('Framework frontend', d.frontendFramework)
+    + envRow('Framework backend', d.backendFramework)
+    + envRow('Dependências', d.dependencyCount, (v) => `${v} pacotes`)
+    + envRow('Containers', d.containers)
+    + envRow('CI/CD', d.ciCd);
+});
 
 setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleString('pt-BR',{weekday:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);setInterval(()=>{if(!document.hidden)refresh().catch((error)=>{if(error.status!==401)showFallback(error);});},5000);
 updateTts();bubble('Olá. Eu sou o Avatar Mestre da GRG FÊNIX. Converse comigo ou descreva um objetivo para eu transformá-lo em uma missão governada.','bot');if(accessToken)refresh().catch((error)=>{if(error.status!==401)showFallback(error);});

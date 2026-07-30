@@ -40,7 +40,9 @@
         <details open>
           <summary><span>⚡</span> Agentes, SCOS & Capabilities</summary>
           <div class="submenu">
-            <a class="nav-link" href="#swarm">Agent Swarm (15 Sp.)</a>
+            <!-- O "(15 Sp.)" era uma contagem escrita no menu: continuaria dizendo 15 se o
+                 enxame tivesse 3. A contagem real fica no proprio painel, vinda de /api/agents/swarm. -->
+            <a class="nav-link" href="#swarm">Agent Swarm</a>
             <a class="nav-link" href="#capabilities">Capabilities Catalog</a>
             <a class="nav-link" href="#scos">SCOS Design Factory</a>
             <a class="nav-link" href="#onedeploy">OneDeploy Orchestrator</a>
@@ -52,6 +54,7 @@
             <a class="nav-link" href="#observability">AI Runtime Telemetry</a>
             <a class="nav-link" href="#connectors">Connector Runtime</a>
             <a class="nav-link" href="#security">Criptografia & Audit</a>
+            <a class="nav-link" href="#veracity">Veracidade (Auditor)</a>
           </div>
         </details>
       </nav>
@@ -231,8 +234,10 @@
       <div id="view-performance" class="view-section">
         <section class="panel">
           <div class="section-title"><div><span class="eyebrow">COGNITIVE PERFORMANCE ENGINE</span><h2>Cognitive Speed Score & Memory</h2></div><span id="perfScore" class="score">—</span></div>
-          <!-- O speed score vem de /api/performance/speed-score e so existe apos chamadas reais
-               de IA. Sem chamadas, "— sem chamadas": ausencia de medicao, nao zero. -->
+          <!-- O speed score vem de /api/performance/speed-score, derivado do latencyMs gravado
+               em cada chamada real do gateway. Sem chamada nao existe score: a nota abaixo diz
+               o motivo e o proximo passo, em vez de deixar so um traco sem explicacao. -->
+          <div id="perfScoreNote" class="mono-note" style="margin-top:8px;"></div>
           <div class="metric-grid" style="margin-top:15px;">
             <div class="mini-metric"><span>Hot Memory (L0-L5)</span><b id="perfHotMemory">—</b></div>
             <div class="mini-metric"><span>Latência média medida</span><b id="perfLatency">—</b></div>
@@ -245,8 +250,18 @@
       <!-- VIEW: HOT MEMORY -->
       <div id="view-hotmemory" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">HOT MEMORY ENGINE (L0-L5)</span><h2>Cápsulas de Memória Pré-aquecidas</h2></div><span class="status-pill active">PREWARMED</span></div>
-          <p>Armazenamento ultra-rápido de cápsulas de conhecimento executável com tempo de acesso de sub-milissegundo.</p>
+          <!-- O pill dizia PREWARMED sempre, inclusive com o cache vazio. Agora vem de
+               /api/performance/hot-memory, que so devolve PREWARMED apos um prefetch real. -->
+          <div class="section-title"><div><span class="eyebrow">HOT MEMORY ENGINE (L0-L5)</span><h2>Cápsulas de Memória Pré-aquecidas</h2></div><span id="hotMemoryState" class="status-pill neutral">—</span></div>
+          <!-- Cada nivel L0-L5 e um COUNT de uma colecao real do store (missions, projects,
+               repositories, knowledgeEntities, artifacts). Nao existe tabela de tamanhos fixos. -->
+          <div id="hotMemoryLevels" class="health-list" style="margin-top:15px;"></div>
+          <div class="metric-grid" style="margin-top:12px;">
+            <div class="mini-metric"><span>Itens no cache do processo</span><b id="hotMemoryCached">—</b></div>
+            <div class="mini-metric"><span>Medido em</span><b id="hotMemoryCheckedAt">—</b></div>
+          </div>
+          <button id="hotMemoryPrefetchBtn" class="ghost-btn" style="margin-top:12px;">Executar prefetch real</button>
+          <div id="hotMemoryPrefetchResult" class="mono-note" style="margin-top:8px;"></div>
         </section>
       </div>
 
@@ -268,8 +283,27 @@
       <!-- VIEW: DIGITAL TWIN -->
       <div id="view-twin" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">ENTERPRISE DIGITAL TWIN</span><h2>Digital Twin da Empresa & Simulador de Impacto</h2></div><span class="status-pill active">ACTIVE TWIN</span></div>
-          <p>Simula o impacto real de decisões de infraestrutura e código antes da execução (ex: trocar Redis por Valkey).</p>
+          <!-- "ACTIVE TWIN" era literal. O gemeo vem de /api/digital-twin/operational, que
+               projeta o estado a partir do event store: se nao houver evento, os counts sao 0
+               de verdade (zero medido), e o pill mostra a saude que o modelo derivou. -->
+          <div class="section-title"><div><span class="eyebrow">ENTERPRISE DIGITAL TWIN</span><h2>Gêmeo Digital Operacional</h2></div><span id="twinHealth" class="status-pill neutral">—</span></div>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Containers</span><b id="twinContainers">—</b></div>
+            <div class="mini-metric"><span>Workers</span><b id="twinWorkers">—</b></div>
+            <div class="mini-metric"><span>Jobs na fila</span><b id="twinQueued">—</b></div>
+            <div class="mini-metric"><span>Jobs executando</span><b id="twinRunning">—</b></div>
+            <div class="mini-metric"><span>Jobs falhados</span><b id="twinFailed">—</b></div>
+            <div class="mini-metric"><span>Bancos de dados</span><b id="twinDatabases">—</b></div>
+            <div class="mini-metric"><span>Deploys</span><b id="twinDeployments">—</b></div>
+            <div class="mini-metric"><span>Serviços</span><b id="twinServices">—</b></div>
+          </div>
+          <div class="metric-grid" style="margin-top:12px;">
+            <div class="mini-metric"><span>Origem da projeção</span><b id="twinSource">—</b></div>
+            <div class="mini-metric"><span>Construído em</span><b id="twinBuiltAt">—</b></div>
+          </div>
+          <!-- Custo, latencia e performance vem null do endpoint: nada os mede ainda.
+               Aparecem como ausencia declarada, nunca como numero plausivel. -->
+          <div id="twinUnmeasured" class="mono-note" style="margin-top:10px;"></div>
         </section>
       </div>
 
@@ -298,21 +332,39 @@
       <!-- VIEW: SCOS DESIGN FACTORY -->
       <div id="view-scos" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">SOFTWARE CREATION OS (SCOS)</span><h2>18 Famílias de Design & Multi-Design Generator</h2></div><span class="count">18 Famílias</span></div>
-          <div id="designFamiliesGrid" class="metric-grid" style="margin-top:15px;">
-            <div class="mini-metric"><span>Enterprise</span><b>Microsoft, SAP, Atlassian</b></div>
-            <div class="mini-metric"><span>AI Workspace</span><b>ChatGPT, Claude, Cursor</b></div>
-            <div class="mini-metric"><span>Minimal</span><b>Linear, Notion, Vercel</b></div>
-            <div class="mini-metric"><span>Finance</span><b>Stripe, Brex</b></div>
+          <!-- "18 Famílias" era um numero escrito no HTML, e as 4 linhas abaixo eram uma
+               amostra fixa. O registro real e /api/scos/design-families/list: a contagem e o
+               grid inteiro passam a ser o que o endpoint devolve. -->
+          <div class="section-title"><div><span class="eyebrow">SOFTWARE CREATION OS (SCOS)</span><h2>Famílias de Design & Multi-Design Generator</h2></div><span id="designFamilyCount" class="count">—</span></div>
+          <div id="designFamiliesGrid" class="metric-grid" style="margin-top:15px;"></div>
+          <div class="section-title" style="margin-top:18px;"><div><span class="eyebrow">APP GENOME</span><h2>Estrutura típica por tipo de aplicação</h2></div></div>
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="genomeAppType" style="padding:8px 12px; background:#070a0f; border:1px solid var(--line); border-radius:8px; color:#fff; font-size:12px;">
+              <option value="saas">SaaS</option>
+              <option value="marketplace">Marketplace</option>
+              <option value="erp">ERP</option>
+              <option value="crm">CRM</option>
+              <option value="ecommerce">E-commerce</option>
+            </select>
+            <button id="genomeStructureBtn" class="ghost-btn">Consultar genoma</button>
           </div>
+          <div id="genomeStructureResult" class="health-list" style="margin-top:12px;"></div>
         </section>
       </div>
 
       <!-- VIEW: ONEDEPLOY ORCHESTRATOR -->
       <div id="view-onedeploy" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">ONEDEPLOY ORCHESTRATOR</span><h2>Orquestrador de 14 Etapas & Continuous Improvement</h2></div><span class="status-pill active">AUTONOMOUS</span></div>
+          <!-- "AUTONOMOUS" era um selo literal: nada media autonomia. O que existe de verdade
+               e /api/onedeploy/scan-project, que LE o disco e devolve measured()/unknown() por
+               aspecto descoberto. O pill agora reflete se o scan foi executado. -->
+          <div class="section-title"><div><span class="eyebrow">ONEDEPLOY ORCHESTRATOR</span><h2>Scan de Projeto & Pipeline</h2></div><span id="onedeployState" class="status-pill neutral">SEM SCAN</span></div>
           <p>SCAN → UNDERSTAND → PLAN → IMPLEMENT → TEST → REVIEW → COMMIT → PUSH → DEPLOY → VERIFY → OBSERVE → LEARN.</p>
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="onedeployPath" placeholder="Caminho do projeto (vazio = este repositório)" style="flex:1; min-width:220px; padding:8px 12px; background:#070a0f; border:1px solid var(--line); border-radius:8px; color:#fff; font-size:12px;">
+            <button id="onedeployScanBtn" class="ghost-btn">Escanear projeto</button>
+          </div>
+          <div id="onedeployResult" class="health-list" style="margin-top:12px;"></div>
         </section>
       </div>
 
@@ -335,8 +387,36 @@
       <!-- VIEW: SECURITY -->
       <div id="view-security" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">COGNITIVE ENCRYPTION & SECURITY</span><h2>Criptografia & Audit Logs</h2></div><span class="status-pill active">AES-256-GCM</span></div>
-          <p>Todos os payloads e memórias sensíveis são protegidos por criptografia cognitiva governada.</p>
+          <!-- Antes: pill verde "AES-256-GCM" e a frase "todos os payloads sao protegidos".
+               A cripto e real, mas o SELO nao era medido -- e sem FENIX_ENCRYPTION_KEY a chave
+               mestra vem de string fixa no codigo. /api/security/encryption/status agora cifra
+               e decifra um canario a cada consulta e devolve o veredito derivado, com unknown()
+               em tudo que este processo nao consegue verificar (repouso, TLS). -->
+          <div class="section-title"><div><span class="eyebrow">COGNITIVE ENCRYPTION & SECURITY</span><h2>Criptografia Medida</h2></div><span id="secStatus" class="status-pill neutral">—</span></div>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Algoritmo</span><b id="secAlgorithm">—</b></div>
+            <div class="mini-metric"><span>Tamanho da chave</span><b id="secKeyLength">—</b></div>
+            <div class="mini-metric"><span>Self-test (round-trip agora)</span><b id="secSelfTest">—</b></div>
+            <div class="mini-metric"><span>Gestão da chave</span><b id="secKeyManagement">—</b></div>
+          </div>
+          <div id="secPending" class="health-list" style="margin-top:12px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: VERACIDADE (AUDITOR DE SIMULACAO) -->
+      <div id="view-veracity" class="view-section">
+        <section class="panel">
+          <!-- Esta tela existe para o sistema se auto-acusar. Vem de
+               /api/governance/simulation-audit, que varre src/ e conta sinais de fabricacao
+               por modulo. Nao ha nada a esconder aqui: se o numero subir, aparece. -->
+          <div class="section-title"><div><span class="eyebrow">SIMULATION AUDIT</span><h2>Veracidade Operacional Medida</h2></div><span id="veracitySummary" class="count">—</span></div>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Módulos varridos</span><b id="veracityModules">—</b></div>
+            <div class="mini-metric"><span>Sinais de fabricação</span><b id="veracitySignals">—</b></div>
+            <div class="mini-metric"><span>Classe production</span><b id="veracityProduction">—</b></div>
+            <div class="mini-metric"><span>Classe simulated</span><b id="veracitySimulated">—</b></div>
+          </div>
+          <div id="veracityWorst" class="health-list" style="margin-top:12px;"></div>
         </section>
       </div>
 

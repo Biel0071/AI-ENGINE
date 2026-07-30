@@ -47,12 +47,26 @@ test('GRG FENIX KEOS Knowledge Execution Operating System Test Suite', async () 
   assert.equal(autoGatePromotion.policyAutoApproved, true);
 
   // 4. Expanded Constitution Index & Ultra-Sparse Loader
+  // O indice nao pode manter um total paralelo ao do KOS: ele COMPOE o manifesto medido.
+  // O contrato antigo exigia `totalConfiguredVolumes === 150` -- um numero que nunca existiu
+  // no disco. O teste agora exige que o total venha do envelope de medicao.
   const expandedIndex = await app.expandedConstitutionIndex.getExpandedIndex(tenantId, actorId);
-  assert.equal(expandedIndex.totalConfiguredVolumes, 150);
+  assert.equal(expandedIndex.totalConfiguredVolumes, undefined);
+  assert.ok(['measured', 'unknown'].includes(expandedIndex.totalVolumes.state));
+  const kosManifest = await app.kos.getManifest(tenantId, actorId);
+  // Duas fontes contando volumes tem de dar o MESMO resultado, senao uma esta inventando.
+  assert.deepEqual(expandedIndex.totalVolumes, kosManifest.totalVolumes);
+  assert.equal(expandedIndex.status, kosManifest.status === 'AVAILABLE' ? 'OPERATIONAL' : 'UNAVAILABLE');
 
   const sparseLoad = await app.expandedConstitutionIndex.loadSparseVolumes(tenantId, actorId, [1, 23]);
-  assert.equal(sparseLoad.loadedCount, 2);
-  assert.ok(sparseLoad.tokenReductionPercentage > 98);
+  // loadedCount conta arquivos que o KOS realmente abriu (bytes reais), nunca o tamanho do
+  // array pedido: pedir 2 volumes inexistentes tem de dar 0.
+  assert.equal(sparseLoad.loadedCount.state, 'measured');
+  assert.equal(sparseLoad.loadedCount.value, sparseLoad.loadedDocuments.length);
+  assert.equal(sparseLoad.loadedDocuments.length + sparseLoad.missingDocuments.length, 2);
+  // Reducao de tokens exige comparar com e sem loader: nao e mensuravel aqui.
+  assert.equal(sparseLoad.tokenReduction.state, 'unknown');
+  assert.equal(sparseLoad.tokenReductionPercentage, undefined);
 
   await app.close();
 });

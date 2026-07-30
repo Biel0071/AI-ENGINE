@@ -40,12 +40,27 @@ test('GRG FENIX V7.0/V7.1 Production Activation & ACP Integration Test Suite', a
   // 4. Cognitive Performance Engine (Hot Memory & Speed Score)
   const hotMemory = await app.cognitivePerformance.getHotMemoryState(tenantId, actorId);
   assert.ok(hotMemory.levels.L0_CONTEXT);
+  // Cada nivel e um COUNT com fonte no store, nao um numero de tabela.
+  assert.equal(hotMemory.levels.L4_GLOBAL.size.state, 'measured');
+  assert.equal(hotMemory.levels.L4_GLOBAL.size.source, 'store:knowledgeEntities');
+  // Cache vazio nunca pode dizer PREWARMED.
+  assert.equal(hotMemory.predictiveCacheStatus.state, 'unknown');
 
   const speedScore = await app.cognitivePerformance.getSpeedScore(tenantId, actorId);
-  assert.ok(speedScore.overallScore > 90);
+  // Sem chamadas de IA gravadas, nao existe score: existe unknown. E jamais um numero > 90.
+  assert.equal(speedScore.sampleSize.value, 0);
+  assert.equal(speedScore.overallScore.state, 'unknown');
+  assert.equal(typeof speedScore.overallScore, 'object');
 
   const prefetch = await app.cognitivePerformance.prefetchContext(tenantId, actorId, { project: 'CRM' });
-  assert.equal(prefetch.status, 'PREFETCH_COMPLETED');
+  assert.equal(prefetch.status.value, 'PREFETCH_COMPLETED');
+  assert.equal(prefetch.status.source, 'store:read');
+  assert.equal(prefetch.prewarmed.missions.state, 'measured');
+
+  // Depois de um prefetch real, o cache tem item e o status passa a ser medido.
+  const hotAfter = await app.cognitivePerformance.getHotMemoryState(tenantId, actorId);
+  assert.equal(hotAfter.predictiveCacheStatus.state, 'measured');
+  assert.ok(hotAfter.levels.L0_CONTEXT.size.value >= 1);
 
   const pacingHigh = app.cognitivePerformance.getMultiStagePacing('HIGH');
   assert.equal(pacingHigh.pacing, 'HUMANIZED_PROGRESSIVE');
@@ -74,12 +89,29 @@ test('GRG FENIX V7.0/V7.1 Production Activation & ACP Integration Test Suite', a
   // 7. Cognitive Encryption & Tokenization
   const encStatus = await app.cognitiveEncryption.getEncryptionStatus(tenantId, actorId);
   assert.equal(encStatus.algorithm, 'AES-256-GCM');
+  // O self-test tem de ser uma MEDICAO (cifra/decifra um canario agora), nao uma string fixa.
+  assert.equal(encStatus.selfTest.state, 'measured');
+  assert.equal(encStatus.selfTest.value, 'PASSED');
+  // Sem FENIX_ENCRYPTION_KEY no ambiente de teste, a chave e derivada de string fixa no
+  // codigo. O veredito precisa dizer isso, e nunca reivindicar seguranca.
+  assert.equal(encStatus.status, 'ACTIVE_UNMANAGED_KEY');
+  assert.notEqual(encStatus.status, 'ACTIVE_AND_SECURE');
+  assert.equal(encStatus.keyManagement.state, 'unknown');
+  // Cifragem em repouso nao e verificavel deste processo: tem de ser unknown, nunca true.
+  assert.equal(encStatus.memoryEncryptedAtRest.state, 'unknown');
+  assert.notEqual(encStatus.memoryEncryptedAtRest, true);
 
   const encrypted = await app.cognitiveEncryption.tokenizeAndEncrypt(tenantId, actorId, 'Sensitive Architecture Credential');
   assert.ok(encrypted.token.startsWith('enc:v71:'));
 
   const decrypted = await app.cognitiveEncryption.decryptToken(tenantId, actorId, encrypted.token);
   assert.equal(decrypted.decrypted, 'Sensitive Architecture Credential');
+  // A integridade vem do auth tag do GCM (final() lanca se adulterado), com fonte registrada.
+  assert.equal(decrypted.integrity.source, 'crypto:aes-256-gcm-authtag');
+
+  // Prova de que a integridade nao e uma afirmacao nossa: adulterar o ciphertext tem de lancar.
+  const tampered = `${encrypted.token.slice(0, -2)}${encrypted.token.slice(-2) === 'ff' ? 'ee' : 'ff'}`;
+  await assert.rejects(() => app.cognitiveEncryption.decryptToken(tenantId, actorId, tampered));
 
   // 8. Interactive NPC Agents in AI City
   const npcs = await app.npcCity.listNpcAgents(tenantId, actorId);
