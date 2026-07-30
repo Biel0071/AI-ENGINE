@@ -22,6 +22,14 @@ class AIGateway {
     this.breakers = new Map();
   }
 
+  async chat({ model = null, messages = [], format = null, temperature = 0.3 } = {}) {
+    const lastUserMessage = messages.slice().reverse().find((m) => m.role === 'user')?.content || '';
+    const systemPrompt = messages.find((m) => m.role === 'system')?.content || '';
+    const prompt = systemPrompt ? `${systemPrompt}\n\n${lastUserMessage}` : lastUserMessage;
+    const res = await this.invoke('grg', 'master_admin', { taskType: 'default', prompt, temperature, model });
+    return { text: res.text, provider: res.provider, model: res.model };
+  }
+
   cacheKey(tenantId, taskType, prompt) {
     const route = JSON.stringify(this.route(taskType));
     return crypto.createHash('sha256').update(`${tenantId}|${taskType}|${route}|${prompt}`).digest('hex');

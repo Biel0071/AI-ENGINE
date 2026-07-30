@@ -87,6 +87,7 @@ const { MissionPlanner } = require('./missions/mission-planner');
 const { MasterAvatar } = require('./cognitive/master-avatar');
 
 async function createApp(options = {}) {
+  const logger = options.logger || console;
   const store = options.store || (options.databaseUrl
     ? await PostgresStore.connect({
       connectionString: options.databaseUrl,

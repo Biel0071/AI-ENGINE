@@ -10,7 +10,7 @@ const GITHUB_URL_RE = /https?:\/\/github\.com\/[^\s]+/i;
 class ChatAgent {
   constructor({ app, llm = null }) {
     this.app = app; // { controlPlane, repoIntel, factory, orchestrator, digitalTwin, evolution, aiGateway, store }
-    this.llm = llm; // OllamaProvider opcional: quando presente, entende linguagem aberta e fala natural
+    this.llm = (llm && typeof llm.chat === 'function') ? llm : (app?.aiGateway && typeof app.aiGateway.chat === 'function' ? app.aiGateway : null);
     this.history = []; // memória de conversa progressiva (últimas trocas)
   }
 
@@ -37,6 +37,7 @@ class ChatAgent {
 
   // Classifica a intenção com o LLM (linguagem aberta). Fallback nas regras se LLM indisponível.
   async classifyWithLLM(text) {
+    if (!this.llm || typeof this.llm.chat !== 'function') return null;
     const sys = `Você é o classificador de intenções do GRG Services OS, uma plataforma que acopla e analisa repositórios GitHub, gera sistemas, mantém memória evolutiva e digital twins.
 Dada a mensagem do usuário, responda SOMENTE um JSON: {"intent": "<uma das opções>", "username": "<se houver>", "url": "<se houver>"}.
 Intents válidas:
@@ -51,11 +52,11 @@ Intents válidas:
 - overview: status geral, visão geral, resumo, números
 - chitchat: conversa casual, saudação, "tudo bem", agradecimento, pergunta genérica
 - help: pedir ajuda, o que sabe fazer`;
-    const res = await this.llm.chat({ messages: [
-      { role: 'system', content: sys },
-      { role: 'user', content: text },
-    ], format: 'json', temperature: 0 });
     try {
+      const res = await this.llm.chat({ messages: [
+        { role: 'system', content: sys },
+        { role: 'user', content: text },
+      ], format: 'json', temperature: 0 });
       const parsed = JSON.parse(res.text);
       if (parsed && parsed.intent) return parsed;
     } catch { /* cai no fallback */ }
@@ -65,7 +66,7 @@ Intents válidas:
   // Redige a resposta final em linguagem natural a partir dos FATOS reais (anti-alucinação:
   // o LLM só reformula os dados que passamos, não inventa).
   async speak(userText, intent, facts, fallbackReply) {
-    if (!this.llm) return fallbackReply;
+    if (!this.llm || typeof this.llm.chat !== 'function') return fallbackReply;
     try {
       const sys = `Você é a FÊNIX — o Enterprise Cognitive Kernel da GRG. Não é um chatbot: é o cérebro da plataforma; o modelo de IA é só seu motor de inferência.
 Personalidade FIXA: técnica, estratégica, direta. Explica antes de executar. Nunca inventa. Sempre informa nível de confiança quando relevante e cita riscos. Pensa em longo prazo. Fala em português, curto (2-5 frases).
