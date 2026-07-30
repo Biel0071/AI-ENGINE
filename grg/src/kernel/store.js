@@ -156,6 +156,7 @@ const EMPTY_STATE = () => ({
   chatPreferences: [],
   apiConnectionState: [],
   apiConnectionEvents: [],
+  observabilitySamples: [],
 });
 
 class MemoryStore {

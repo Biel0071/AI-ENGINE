@@ -112,6 +112,36 @@ function createHttpServerV2({ service, publicRoot }) {
         return sendJson(response, 200, await service.processLcrChat(tenantId, actorId, await readJson(request)));
       }
 
+      // Realtime Duplex Voice & Streaming Endpoints
+      if (request.method === 'POST' && url.pathname === '/api/v2/lcr/realtime/session') {
+        return sendJson(response, 201, await service.createRealtimeSession(tenantId, actorId, await readJson(request)));
+      }
+      if (request.method === 'POST' && url.pathname === '/api/v2/lcr/realtime/interrupt') {
+        const body = await readJson(request);
+        return sendJson(response, 200, await service.interruptRealtimeSession(tenantId, actorId, body.sessionId));
+      }
+      if (request.method === 'POST' && url.pathname === '/api/v2/lcr/realtime/audio') {
+        const body = await readJson(request);
+        return sendJson(response, 200, await service.processRealtimeAudio(tenantId, actorId, body.sessionId, body.audioChunk));
+      }
+      if (request.method === 'GET' && url.pathname === '/api/v2/lcr/realtime/stream') {
+        const sessionId = url.searchParams.get('sessionId');
+        const prompt = url.searchParams.get('prompt') || 'Olá Fênix';
+        if (!sessionId) return sendJson(response, 400, { error: 'sessionId é obrigatório' });
+
+        response.writeHead(200, {
+          'content-type': 'text/event-stream; charset=utf-8',
+          'cache-control': 'no-cache',
+          'connection': 'keep-alive'
+        });
+
+        for await (const chunk of service.streamRealtimeDuplex(sessionId, prompt)) {
+          response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        }
+        response.end();
+        return;
+      }
+
       const analysis = url.pathname.match(/^\/api\/v2\/projects\/([^/]+)\/actions\/analyze$/);
       if (request.method === 'POST' && analysis) {
         return sendJson(response, 202, await service.requestAnalysisFor(tenantId, actorId, analysis[1], await readJson(request)));

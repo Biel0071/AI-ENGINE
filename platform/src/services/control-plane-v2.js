@@ -1,6 +1,7 @@
 const { randomUUID } = require('node:crypto');
 const { ControlPlaneService, NotFoundError } = require('./control-plane');
 const { ROLE_PERMISSIONS, requirePermission } = require('../domain/access-control');
+const { FenixRealtimeDuplexEngine } = require('./realtime-engine');
 
 const DEFAULT_MASTER = Object.freeze({
   id: 'biel0071',
@@ -9,6 +10,11 @@ const DEFAULT_MASTER = Object.freeze({
 });
 
 class AccessControlledControlPlane extends ControlPlaneService {
+  constructor(store) {
+    super(store);
+    this.realtimeEngine = new FenixRealtimeDuplexEngine();
+  }
+
   async initialize() {
     await this.store.update((state) => {
       state.schemaVersion = Math.max(Number(state.schemaVersion || 1), 2);
@@ -370,6 +376,27 @@ class AccessControlledControlPlane extends ControlPlaneService {
     });
 
     return logEntry;
+  }
+
+  // --- REALTIME DUPLEX VOICE & STREAMING ---
+
+  async createRealtimeSession(tenantId, actorId, options = {}) {
+    await this.authorize(tenantId, actorId, 'project:analyze');
+    return this.realtimeEngine.createSession({ tenantId, actorId, ...options });
+  }
+
+  async interruptRealtimeSession(tenantId, actorId, sessionId) {
+    await this.authorize(tenantId, actorId, 'project:analyze');
+    return this.realtimeEngine.interruptSession(sessionId);
+  }
+
+  async processRealtimeAudio(tenantId, actorId, sessionId, audioChunk) {
+    await this.authorize(tenantId, actorId, 'project:analyze');
+    return this.realtimeEngine.processAudioChunk(sessionId, audioChunk);
+  }
+
+  streamRealtimeDuplex(sessionId, prompt, options) {
+    return this.realtimeEngine.streamDuplexResponse(sessionId, prompt, options);
   }
 }
 

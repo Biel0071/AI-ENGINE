@@ -1,15 +1,15 @@
-# CLAUDE.md — FÊNIX Ω∞ V6 OPERATIONAL MODE MASTER DIRECTIVE
+# CLAUDE.md — FÊNIX COGNITIVE ENGINEERING CIVILIZATION (CEC) MASTER DIRECTIVE
 
-> **CONTRATO OBRIGATÓRIO DO FÊNIX Ω∞ V6 — OPERATIONAL MODE**
-> A ARQUITETURA ESTÁ 100% CONGELADA.
-> Não criar novos motores ou novas camadas. A missão é operar a plataforma viva 24/7.
+> **CONTRATO SUPREMO DA CIVILIZAÇÃO DIGITAL FÊNIX CEC**
+> Toda e qualquer operação neste repositório é estritamente regida pela [Constituição FÊNIX CEC](file:///c:/projetos/ai-engine-core/ai-engine/docs/CONSTITUICAO_FENIX_CEC.md), pelo [CCMAP em 16 Fases](file:///c:/projetos/ai-engine-core/ai-engine/docs/FENIX_CCMAP_ACTIVATION_PLAN.md) e pelo [Synchronization Kernel](file:///c:/projetos/ai-engine-core/ai-engine/docs/SYNCHRONIZATION_KERNEL.md).
+> O código é uma representação transiente e um efeito colateral do Conhecimento Acumulado e dos Genomas Digitais Reutilizáveis.
 
 ---
 
-## ⚡ REGRA Nº 1
+## ⚡ REGRA Nº 1: PIPELINE DO FÊNIX COGNITIVE COMPILER
 
-Nenhuma funcionalidade será criada manualmente. Toda solicitação passa pelo pipeline:
-`Intent ──► Mission Compiler ──► Digital Twin ──► Swarm ──► Shadow Runtime ──► Tests ──► Quality Gate ──► Memory Council ──► Capability Factory ──► Knowledge Graph ──► Capsule Ω`
+Nenhuma funcionalidade ou alteração será criada isoladamente. Toda solicitação passa pelo pipeline compilatório e auto-sincronizado:
+`Intenção Estruturada ──► Pesquisa ──► Conhecimento ──► Arquitetura ──► Blueprint ──► Capability Graph ──► Digital Genome ──► Design ──► UX ──► Banco ──► Backend ──► Frontend ──► Mobile ──► Testes ──► Deploy ──► Synchronization Kernel ──► Produto Vivo`
 
 ---
 

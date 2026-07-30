@@ -17,18 +17,33 @@ AI_PROVIDER_KEY=""
 if [ -r /run/secrets/ai_provider_key ]; then
   AI_PROVIDER_KEY="$(read_secret /run/secrets/ai_provider_key)"
 fi
+
+# MEDIDO EM PRODUCAO (2026-07-30): o `export` do case abaixo SOBRESCREVE a variavel que o
+# compose injetou do .env. Com o secret guardando a chave ANTIGA e o .env a NOVA, o container
+# mostrava a chave nova em `printenv` e mandava a antiga na requisicao: o gateway respondia
+# 401 INVALID_API_KEY e o /health reportava "sem provider de LLM" com o gateway gerando texto.
+# Levou uma investigacao inteira porque toda evidencia acessivel (env do PID 1, .env, hash da
+# chave no arquivo) apontava para a chave certa. O arquivo de segredo continua sendo a fonte da
+# verdade -- o que faltava era DIZER quando ele discorda do .env, em vez de trocar em silencio.
+# Nenhum valor e impresso: o aviso compara e reporta divergencia, nunca conteudo.
+avisar_divergencia() {
+  nome="$1"; doEnv="$2"
+  if [ -n "$doEnv" ] && [ -n "$AI_PROVIDER_KEY" ] && [ "$doEnv" != "$AI_PROVIDER_KEY" ]; then
+    echo "aviso: $nome do ambiente difere de /run/secrets/ai_provider_key; o segredo montado prevalece (o valor do .env sera ignorado)" >&2
+  fi
+}
 require_key() {
   test -n "$AI_PROVIDER_KEY" || {
     echo "FENIX_AI_DEFAULT_PROVIDER=$1 requires /run/secrets/ai_provider_key" >&2; exit 1
   }
 }
 case "${FENIX_AI_DEFAULT_PROVIDER:-}" in
-  openai) require_key openai; export OPENAI_API_KEY="$AI_PROVIDER_KEY" ;;
-  groq) require_key groq; export GROQ_API_KEY="$AI_PROVIDER_KEY" ;;
-  anthropic) require_key anthropic; export ANTHROPIC_API_KEY="$AI_PROVIDER_KEY" ;;
-  gemini) require_key gemini; export GEMINI_API_KEY="$AI_PROVIDER_KEY" ;;
-  local) require_key local; export FENIX_OPENAI_COMPATIBLE_KEY="$AI_PROVIDER_KEY" ;;
-  aiplatform) require_key aiplatform; export GRG_AIPLATFORM_KEY="$AI_PROVIDER_KEY" ;;
+  openai) require_key openai; avisar_divergencia OPENAI_API_KEY "${OPENAI_API_KEY:-}"; export OPENAI_API_KEY="$AI_PROVIDER_KEY" ;;
+  groq) require_key groq; avisar_divergencia GROQ_API_KEY "${GROQ_API_KEY:-}"; export GROQ_API_KEY="$AI_PROVIDER_KEY" ;;
+  anthropic) require_key anthropic; avisar_divergencia ANTHROPIC_API_KEY "${ANTHROPIC_API_KEY:-}"; export ANTHROPIC_API_KEY="$AI_PROVIDER_KEY" ;;
+  gemini) require_key gemini; avisar_divergencia GEMINI_API_KEY "${GEMINI_API_KEY:-}"; export GEMINI_API_KEY="$AI_PROVIDER_KEY" ;;
+  local) require_key local; avisar_divergencia FENIX_OPENAI_COMPATIBLE_KEY "${FENIX_OPENAI_COMPATIBLE_KEY:-}"; export FENIX_OPENAI_COMPATIBLE_KEY="$AI_PROVIDER_KEY" ;;
+  aiplatform) require_key aiplatform; avisar_divergencia GRG_AIPLATFORM_KEY "${GRG_AIPLATFORM_KEY:-}"; export GRG_AIPLATFORM_KEY="$AI_PROVIDER_KEY" ;;
   ollama)
     # sem chave por design. Exige endereco explicito: dentro do container 127.0.0.1 e o
     # proprio container, onde nao ha Ollama -- o default do modulo seria errado por construcao.

@@ -46,6 +46,29 @@ test('every FENIX_* the runtime reads is passed through by the compose allowlist
   assert.deepEqual(faltando, [], `variaveis lidas pelo runtime e ausentes do compose (inertes em producao): ${faltando.join(', ')}`);
 });
 
+// MEDIDO EM PRODUCAO (2026-07-30): a lacuna reapareceu numa variavel que o teste acima NAO PODIA
+// pegar -- ele so varre nomes `FENIX_*`, e o provider do gateway le `GRG_AIPLATFORM_*`. A URL
+// estava na allowlist, a KEY nao. `AIPlatformProvider.available()` comeca com
+// `if (!this.baseUrl || !this.#apiKey) return false`, entao o FENIX reportava
+// "sem provider de LLM: chat, voz e decomposicao de objetivo indisponiveis" com o gateway de pe,
+// gerando texto real -- sem NUNCA emitir um request. Falha silenciosa de configuracao, nao de rede.
+test('every provider env the AI runtime reads is passed through by the compose allowlist', () => {
+  const fontes = ['src/ai-runtime/provider-registry.js', 'src/ai-runtime/aiplatform-provider.js', 'src/ai-runtime/ollama-provider.js'];
+  const nomes = new Set();
+  for (const relativo of fontes) {
+    const caminho = path.join(RAIZ, relativo);
+    if (!fs.existsSync(caminho)) continue;
+    const fonte = fs.readFileSync(caminho, 'utf8');
+    // Nomes de provider externo: GRG_* e FENIX_* lidos de env/process.env.
+    for (const achado of fonte.matchAll(/(?:env|process\.env)\.((?:GRG|FENIX)_[A-Z0-9_]+)/g)) nomes.add(achado[1]);
+  }
+  assert.ok(nomes.size >= 4, `esperava varias variaveis de provider, achei ${nomes.size}`);
+  // A chave e o par indissociavel da URL: sem ela o provider nunca tenta.
+  assert.ok(nomes.has('GRG_AIPLATFORM_KEY'), 'o registry deveria ler GRG_AIPLATFORM_KEY');
+  const faltando = [...nomes].filter((nome) => !new RegExp(`^\\s+${nome}:`, 'm').test(compose));
+  assert.deepEqual(faltando, [], `env de provider lida pelo codigo e ausente do compose (inerte em producao): ${faltando.join(', ')}`);
+});
+
 test('the retention knobs that dominate document bytes are tunable without a rebuild', () => {
   // O custo de TODA escrita cresce com o tamanho do documento (reserializado inteiro sob
   // SERIALIZABLE: 5,4 MB -> ~0,9 s por update no-op). `kernel/retention.js` ja le

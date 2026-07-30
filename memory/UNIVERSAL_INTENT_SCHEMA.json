@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UniversalIntentSpecification",
+  "description": "Schema de Validação para a linguagem UIS (FOS-001)",
+  "type": "object",
+  "required": ["intent_id", "version", "objective", "business", "constraints", "quality_targets"],
+  "properties": {
+    "intent_id": { "type": "string" },
+    "version": { "type": "string" },
+    "objective": {
+      "type": "object",
+      "required": ["name", "target_domain", "dna_inheritance"],
+      "properties": {
+        "name": { "type": "string" },
+        "target_domain": { "type": "string" },
+        "dna_inheritance": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "business": {
+      "type": "object",
+      "required": ["market_segment", "target_users"],
+      "properties": {
+        "market_segment": { "type": "string" },
+        "target_users": { "type": "integer" },
+        "sla_target": { "type": "string" }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": ["budget_tokens", "max_latency_ms"],
+      "properties": {
+        "budget_tokens": { "type": "integer" },
+        "max_latency_ms": { "type": "integer" },
+        "regulatory": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "quality_targets": {
+      "type": "object",
+      "required": ["architecture_score_min", "security_score_min"],
+      "properties": {
+        "architecture_score_min": { "type": "number" },
+        "security_score_min": { "type": "number" }
+      }
+    }
+  }
+}

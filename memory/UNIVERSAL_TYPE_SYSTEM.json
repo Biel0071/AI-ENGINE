@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UniversalTypeSystem",
+  "description": "Sistema de Tipos Globais Invioláveis do FÊNIX CEOS v3.0 (FOS-001)",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "types": {
+      "type": "object",
+      "required": [
+        "Entity", "Concept", "Capability", "Workflow", "Decision", 
+        "Knowledge", "Experience", "Artifact", "Policy", "Constraint", 
+        "Evidence", "Metric", "Risk", "Simulation", "Organization", 
+        "Resource", "Agent"
+      ],
+      "properties": {
+        "Entity": { "type": "string", "description": "Objeto de domínio primário" },
+        "Concept": { "type": "string", "description": "Abstração conceitual ou padrão" },
+        "Capability": { "type": "string", "description": "Unidade funcional operacional reutilizável" },
+        "Workflow": { "type": "string", "description": "Sequência orquestrada de ações" },
+        "Decision": { "type": "string", "description": "Escolha justificável e auditada" },
+        "Knowledge": { "type": "string", "description": "Informação estruturada nos grafos" },
+        "Experience": { "type": "string", "description": "Jornada visual, emocional e interativa" },
+        "Artifact": { "type": "string", "description": "Recurso físico ou lógico persistido" },
+        "Policy": { "type": "string", "description": "Regra declarativa de segurança/execução" },
+        "Constraint": { "type": "string", "description": "Restrição formal inviolável" },
+        "Evidence": { "type": "string", "description": "Prova científica ou benchmark" },
+        "Metric": { "type": "string", "description": "Medição quantitativa de desempenho/qualidade" },
+        "Risk": { "type": "string", "description": "Avaliação de vulnerabilidade ou impacto" },
+        "Simulation": { "type": "string", "description": "Modelo preditivo de validação" },
+        "Organization": { "type": "string", "description": "Entidade institucional ou produto" },
+        "Resource": { "type": "string", "description": "Ativo computacional (CPU, GPU, RAM, Tokens)" },
+        "Agent": { "type": "string", "description": "Entidade autônoma de raciocínio especializado" }
+      }
+    }
+  }
+}

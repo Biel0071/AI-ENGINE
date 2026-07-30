@@ -1,4 +1,5 @@
 const { estimateTokens } = require('./providers');
+const { assertNotFabricated } = require('./fabricated-response');
 
 class ProviderHttpError extends Error {
   constructor(provider, status, message, retryable = false) {
@@ -31,6 +32,23 @@ async function requestJson(provider, url, { method = 'POST', headers = {}, body,
   }
 }
 
+// MEDIDO NA .215 (2026-07-30): `GET /v1/models` do gateway do portfolio responde **HTTP 200 com 6
+// modelos listados** e `providers: []` -- ou seja, ha catalogo mas nao ha NENHUM backend capaz de
+// gerar. Como `available()` aqui so faz `GET /models` e olha o status, o FENIX registrava o provider
+// como disponivel e o router mandava trafego para ele; a geracao entao voltava fabricada
+// (`[Fallback Response] ...`) pela rota `/chat/completions`.
+//
+// O campo `providers` e extensao do gateway, nao existe no contrato da OpenAI. Por isso a regra e
+// "presente E vazio => indisponivel": ausente nao acusa nada (OpenAI/Groq reais nao mandam o campo),
+// e vazio e uma medicao explicita de que nao ha provider registrado.
+//
+// Nao troco o `available()` por inferencia real (como faz o AIPlatformProvider, que gera um prompt
+// minimo): aqui os provedores sao pagos por token, e um health-check que gera texto a cada checagem
+// custaria dinheiro em toda amostragem. Esta checagem e gratuita e pega o caso medido.
+function gatewayWithoutProviders(payload) {
+  return Array.isArray(payload?.providers) && payload.providers.length === 0;
+}
+
 class OpenAIResponsesProvider {
   #apiKey;
   constructor({ apiKey, baseUrl = 'https://api.openai.com/v1', fetchImpl, timeoutMs } = {}) {
@@ -43,13 +61,14 @@ class OpenAIResponsesProvider {
       body: { model, input: prompt, store: false, max_output_tokens: maxTokens, ...(temperature === undefined ? {} : { temperature }) },
     });
     const text = data.output_text || (data.output || []).flatMap((item) => item.content || []).filter((item) => item.type === 'output_text').map((item) => item.text).join('');
+    assertNotFabricated(text, { provider: this.name, endpoint: `${this.baseUrl}/responses` });
     return { text, model: data.model || model, promptTokens: data.usage?.input_tokens ?? estimateTokens(prompt), completionTokens: data.usage?.output_tokens ?? estimateTokens(text) };
   }
   async available() { return this.#modelsHealth(); }
   async #modelsHealth() {
     try {
-      await requestJson(this.name, `${this.baseUrl}/models`, { method: 'GET', fetchImpl: this.fetchImpl, timeoutMs: 5_000, headers: { authorization: `Bearer ${this.#apiKey}` } });
-      return true;
+      const payload = await requestJson(this.name, `${this.baseUrl}/models`, { method: 'GET', fetchImpl: this.fetchImpl, timeoutMs: 5_000, headers: { authorization: `Bearer ${this.#apiKey}` } });
+      return !gatewayWithoutProviders(payload);
     } catch { return false; }
   }
 }
@@ -66,12 +85,18 @@ class OpenAICompatibleProvider {
       body: { model, messages: [{ role: 'user', content: prompt }], temperature, max_completion_tokens: maxTokens },
     });
     const text = data.choices?.[0]?.message?.content || '';
+    // MEDIDO NA .215 (2026-07-30): esta rota exata -- `/chat/completions` do gateway do portfolio --
+    // responde HTTP 200 com `content: "[Fallback Response] Processado via groq"` e
+    // `usage.completion_tokens: 30` quando o registry de providers esta VAZIO. Este e o caminho que
+    // qualquer SDK OpenAI usa, e o que o FENIX usaria via GRG_OPENAI_COMPATIBLE_URL. Sem esta linha o
+    // texto inventado entrava no store como geracao real, com tokens e custo contados.
+    assertNotFabricated(text, { provider: this.name, endpoint: `${this.baseUrl}/chat/completions` });
     return { text, model: data.model || model, promptTokens: data.usage?.prompt_tokens ?? estimateTokens(prompt), completionTokens: data.usage?.completion_tokens ?? estimateTokens(text) };
   }
   async available() {
     try {
-      await requestJson(this.name, `${this.baseUrl}/models`, { method: 'GET', fetchImpl: this.fetchImpl, timeoutMs: 5_000, headers: { authorization: `Bearer ${this.#apiKey}` } });
-      return true;
+      const payload = await requestJson(this.name, `${this.baseUrl}/models`, { method: 'GET', fetchImpl: this.fetchImpl, timeoutMs: 5_000, headers: { authorization: `Bearer ${this.#apiKey}` } });
+      return !gatewayWithoutProviders(payload);
     } catch { return false; }
   }
 }
@@ -88,6 +113,7 @@ class AnthropicProvider {
       body: { model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }], temperature },
     });
     const text = (data.content || []).filter((item) => item.type === 'text').map((item) => item.text).join('');
+    assertNotFabricated(text, { provider: this.name, endpoint: `${this.baseUrl}/messages` });
     return { text, model: data.model || model, promptTokens: data.usage?.input_tokens ?? estimateTokens(prompt), completionTokens: data.usage?.output_tokens ?? estimateTokens(text) };
   }
   async available() {
@@ -111,6 +137,7 @@ class GeminiProvider {
       body: { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature, maxOutputTokens: maxTokens } },
     });
     const text = (data.candidates?.[0]?.content?.parts || []).map((item) => item.text || '').join('');
+    assertNotFabricated(text, { provider: this.name, endpoint: `${this.baseUrl}/models/${model}:generateContent` });
     return { text, model, promptTokens: data.usageMetadata?.promptTokenCount ?? estimateTokens(prompt), completionTokens: data.usageMetadata?.candidatesTokenCount ?? estimateTokens(text) };
   }
   async available() {
@@ -122,5 +149,6 @@ class GeminiProvider {
 }
 
 module.exports = {
-  ProviderHttpError, requestJson, OpenAIResponsesProvider, OpenAICompatibleProvider, AnthropicProvider, GeminiProvider,
+  ProviderHttpError, requestJson, gatewayWithoutProviders,
+  OpenAIResponsesProvider, OpenAICompatibleProvider, AnthropicProvider, GeminiProvider,
 };

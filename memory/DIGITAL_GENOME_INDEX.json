@@ -1,0 +1,80 @@
+{
+  "$schema": "https://fenix.ai-engine-core/schemas/digital-genome.json",
+  "version": "1.0.0",
+  "system": "FÊNIX Cognitive Engineering Civilization",
+  "updatedAt": "2026-07-29T20:10:00Z",
+  "genomes": {
+    "CRM_DNA": {
+      "name": "CRM DNA Vector",
+      "description": "Vetor genômico completo de relacionamento com cliente, funis de vendas, leads, oportunidades e automação de contatos.",
+      "capabilities": ["Authentication", "CRM", "Analytics", "Notifications", "Workflow", "Chat"],
+      "defaultMetrics": ["conversion_rate", "cac", "ltv", "pipeline_velocity"]
+    },
+    "ERP_DNA": {
+      "name": "ERP DNA Vector",
+      "description": "Vetor genômico de planejamento de recursos empresariais, financeiro, contábil, fiscal e suprimentos.",
+      "capabilities": ["Authentication", "ERP", "Payments", "Analytics", "Workflow", "Scheduling"],
+      "defaultMetrics": ["cash_flow_accuracy", "inventory_turnover", "margin_rate"]
+    },
+    "HOSPITAL_DNA": {
+      "name": "Healthcare & Hospital DNA Vector",
+      "description": "Vetor genômico de prontuário eletrônico (PEP), agendamentos médicos, triagem, telemedicina e conformidade regulatória.",
+      "capabilities": ["Authentication", "Scheduling", "Media", "Chat", "Voice", "Notifications", "AI"],
+      "defaultMetrics": ["patient_wait_time", "no_show_rate", "bed_occupancy_rate"]
+    },
+    "MARKETPLACE_DNA": {
+      "name": "Marketplace Multi-Vendor DNA Vector",
+      "description": "Vetor genômico de e-commerce e marketplace multi-vendor, catálogo flexível, checkout unificado e split de pagamentos.",
+      "capabilities": ["Authentication", "Payments", "Search", "Notifications", "Analytics", "Media"],
+      "defaultMetrics": ["gmv", "take_rate", "cart_abandonment_rate"]
+    },
+    "CONSTRUCTION_DNA": {
+      "name": "Construction & Civil Engineering DNA Vector",
+      "description": "Vetor genômico de gestão de obras, diário de obra, medições, almoxarifado, segurança do trabalho e cronograma físico-financeiro.",
+      "capabilities": ["Authentication", "ERP", "Workflow", "Media", "Maps", "Scheduling"],
+      "defaultMetrics": ["spi_schedule_performance", "cpi_cost_performance", "waste_ratio"]
+    },
+    "EDUCATION_DNA": {
+      "name": "Education & LMS DNA Vector",
+      "description": "Vetor genômico acadêmico, salas de aula virtuais, gestão de matrículas, conteúdos multimídia e avaliações adaptativas.",
+      "capabilities": ["Authentication", "Media", "Scheduling", "Chat", "Analytics", "AI"],
+      "defaultMetrics": ["completion_rate", "student_engagement_score", "retention_rate"]
+    },
+    "GOVERNMENT_DNA": {
+      "name": "Government & Civic Tech DNA Vector",
+      "description": "Vetor genômico de gestão pública, atendimento ao cidadão, processos eletrônicos, transparência e ouvidoria.",
+      "capabilities": ["Authentication", "Workflow", "Search", "Notifications", "OCR", "Analytics"],
+      "defaultMetrics": ["sla_resolution_time", "transparency_score", "citizen_satisfaction"]
+    },
+    "AI_DNA": {
+      "name": "AI & Agent Swarm DNA Vector",
+      "description": "Vetor genômico de orquestração multi-agente, RAG, enxame cognitivo, agentes de atendimento, análise preditiva e compilação de modelos.",
+      "capabilities": ["AI", "Chat", "Voice", "OCR", "Workflow", "Search"],
+      "defaultMetrics": ["agent_accuracy", "latency_p95", "token_efficiency_score"]
+    },
+    "SECURITY_DNA": {
+      "name": "Enterprise Security & Governance DNA Vector",
+      "description": "Vetor genômico de segurança corporativa, RBAC, ABAC, criptografia de ponta a ponta, audit trail imutável e conformidade LGPD/GDPR.",
+      "capabilities": ["Authentication", "Notifications", "Analytics", "Workflow"],
+      "defaultMetrics": ["zero_trust_compliance", "audit_trail_coverage", "threat_mitigation_time"]
+    },
+    "MOBILE_DNA": {
+      "name": "Cross-Platform Mobile DNA Vector",
+      "description": "Vetor genômico de aplicações móveis de alta performance, suporte offline-first, sincronização de fundo, biometria e push notifications.",
+      "capabilities": ["Authentication", "Notifications", "Media", "Maps", "Voice"],
+      "defaultMetrics": ["app_launch_speed", "offline_sync_reliability", "crash_free_rate"]
+    },
+    "EXECUTIVE_DASHBOARD_DNA": {
+      "name": "Executive Dashboard & BI DNA Vector",
+      "description": "Vetor genômico de inteligência executiva, dashboards em tempo real, forecasting, alertas operacionais e visualização interativa.",
+      "capabilities": ["Analytics", "Notifications", "Workflow", "AI"],
+      "defaultMetrics": ["data_freshness_latency", "query_execution_time", "executive_usage_index"]
+    },
+    "DIGITAL_GENOME_FENIX_FEDERATION": {
+      "name": "FÊNIX Federation & Capability Mesh DNA Vector",
+      "description": "Vetor genômico da Federação Universal de Recursos, Discovery Fabric zero-touch, Capability Marketplace e Cognitive Fabric.",
+      "capabilities": ["Federation", "Discovery", "CapabilityMesh", "CognitiveFabric", "ResourceFabric"],
+      "defaultMetrics": ["discovery_latency_sec", "capability_match_accuracy", "cognitive_synthesis_score"]
+    }
+  }
+}

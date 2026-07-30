@@ -13,3 +13,18 @@
 
 .action-btn { background: linear-gradient(135deg, var(--orange), #d44d00); color: #fff; border: 0; padding: 7px 14px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
 .action-btn:hover { opacity: 0.9; }
+
+/* SPARKLINE DE SERIE MEDIDA.
+   A linha e um <svg> com polyline montada dos pontos de /api/observability/series. Um cartao
+   sem serie medida NAO desenha linha reta no meio (isso leria como "estavel"): ele mostra o
+   motivo da ausencia. .spark-card[data-state="unknown"] existe para essa diferenca ser visivel. */
+.spark-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
+.spark-card { padding: 11px 12px; background: #0a0e14; border: 1px solid var(--line); border-radius: 10px; }
+.spark-card .spark-label { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.spark-card .spark-value { display: block; font-size: 19px; font-weight: 800; color: var(--gold); margin-top: 3px; line-height: 1.1; }
+.spark-card .spark-meta { display: block; font: 9px ui-monospace, monospace; color: var(--muted); margin-top: 2px; }
+.spark-card svg { display: block; width: 100%; height: 34px; margin-top: 7px; overflow: visible; }
+.spark-card polyline { fill: none; stroke: var(--orange); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.spark-card[data-trend="down"] polyline { stroke: var(--cyan); }
+.spark-card[data-state="unknown"] { border-style: dashed; }
+.spark-card[data-state="unknown"] .spark-value { color: var(--muted); font-size: 11px; font-weight: 600; }

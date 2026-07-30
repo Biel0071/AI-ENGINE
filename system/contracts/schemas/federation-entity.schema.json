@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fenix-cec.org/schemas/federation-entity.schema.json",
+  "title": "FederationEntity",
+  "description": "Universal Entity Schema for the FÊNIX Federation Registry",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "name",
+    "version",
+    "owner",
+    "capabilities",
+    "metadata"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "Human",
+        "Agent",
+        "Service",
+        "Tool",
+        "Resource",
+        "Capability",
+        "Cognitive",
+        "Workflow",
+        "Mission",
+        "Policy"
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ONLINE", "OFFLINE", "DEGRADED", "PROVISIONING", "UNREGISTERED"],
+      "default": "ONLINE"
+    },
+    "health": {
+      "type": "object",
+      "properties": {
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "lastCheck": { "type": "string", "format": "date-time" },
+        "latencyMs": { "type": "number" }
+      }
+    },
+    "sla": {
+      "type": "object",
+      "properties": {
+        "uptimePercent": { "type": "number" },
+        "maxTimeoutSec": { "type": "number" }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "properties": {
+        "currency": { "type": "string", "default": "USD" },
+        "unitCost": { "type": "number" },
+        "billingModel": { "type": "string", "enum": ["PER_TOKEN", "PER_JOB", "HOURLY", "FREE"] }
+      }
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "supports_streaming": { "type": "boolean", "default": false },
+        "supports_voice": { "type": "boolean", "default": false },
+        "supports_images": { "type": "boolean", "default": false },
+        "supports_code": { "type": "boolean", "default": false },
+        "supports_reasoning": { "type": "boolean", "default": false }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "requires": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "provides": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "depends_on": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

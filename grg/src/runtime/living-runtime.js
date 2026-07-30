@@ -213,28 +213,29 @@ function defaultLoops(env = process.env) {
       },
     },
     {
-      // Exercita a leitura de telemetria periodicamente. Nao grava metrica nova: as
-      // metricas ja saem de `livingRuntimeTicks` e do store. O que este loop prova e que
-      // o caminho de LEITURA funciona — um exportador que quebrou so aparece quando
-      // alguem abre o dashboard, e ai o alarme e a ausencia de dado, nao o erro.
       id: 'observability',
       intervalMs: 60_000,
       criticality: 'normal',
       timeoutMs: 30_000,
+      // Amostra a serie temporal de observabilidade.
+      //
+      // MEDIDO (2026-07-30) e importante para quem ler este arquivo: NADA INSTANCIA
+      // `LivingRuntime` hoje. A varredura por chamador em src/, ops/, test/, package.json e no
+      // compose nao achou nenhum -- nem o server, nem o worker, nem um teste. Este supervisor
+      // inteiro e codigo sem processo. Portanto este loop NAO e o que alimenta a serie em
+      // producao: quem amostra e `src/runtime/worker.js`, sob o lease de lider, com cadencia
+      // propria (FENIX_OBSERVABILITY_SAMPLE_MS). O corpo aqui esta correto e passa a valer no
+      // dia em que algum processo subir o supervisor -- mas ate lá ele nao roda, e afirmar o
+      // contrario no comentario faria a plataforma parecer coletar o que nao coleta.
+      //
+      // Antes, este loop lia as metricas e DESCARTAVA os valores. `coverage`/`pendencies` saiam
+      // no detail lendo `report.measurement`, um campo que `getMetrics()` nunca devolveu: dois
+      // `null` fixos em todo tick.
       run: async ({ app, tenantId, actorId }) => {
-        if (!app.metrics?.render || !app.observabilityCenter) return { idle: true, reason: 'metrics exporter or observability center is not wired' };
-        const exposition = await app.metrics.render();
-        const report = await app.observabilityCenter.getMetrics(tenantId, actorId);
-        return {
-          ran: true,
-          detail: {
-            metricBytes: Buffer.byteLength(exposition),
-            metricSeries: exposition.split('\n').filter((line) => line && !line.startsWith('#')).length,
-            coverage: report.measurement?.ratio ?? null,
-            pendencies: report.measurement?.pendencies?.length ?? null,
-            alerts: report.alerts?.length ?? 0,
-          },
-        };
+        if (!app.observabilitySeries) return { idle: true, reason: 'observability series collector is not wired' };
+        const result = await app.observabilitySeries.sample(tenantId, actorId, { trigger: 'living-runtime:observability' });
+        if (!result.recorded) return { idle: true, reason: result.reason };
+        return { ran: true, detail: { sampleId: result.sampleId, fields: result.fields, unmeasured: result.missing } };
       },
     },
     {

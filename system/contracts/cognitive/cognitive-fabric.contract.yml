@@ -1,0 +1,29 @@
+version: "3.0"
+kind: "CognitiveFabric"
+id: "cognitive-fabric-core"
+name: "Unified Cognitive, Knowledge & Memory Engine"
+
+subsystems:
+  - id: "cognitive.memory"
+    role: "Contextual & Short/Long-Term Memory"
+    storage: "Redis + Vector Store"
+  - id: "cognitive.ontology"
+    role: "Ontology & Domain Entities Hierarchy"
+    storage: "Temporal Knowledge Graph"
+  - id: "cognitive.genomes"
+    role: "Reusable Digital Genomes & Pattern Index"
+    storage: "DIGITAL_GENOME_INDEX.json"
+  - id: "cognitive.decisions"
+    role: "Architecture Decision Records (ADRs) & Trade-offs"
+    storage: "Git / Markdown + JSON Metadata"
+  - id: "cognitive.hypotheses"
+    role: "Experimental Hypotheses & Validation Logs"
+    storage: "Event Store"
+  - id: "cognitive.lessons"
+    role: "Compiled Lessons Learned & Self-Optimization Metrics"
+    storage: "Telemetry Twin"
+
+policies:
+  zero_cross_tenant_leakage: true
+  sanitization_before_persist: true
+  immutable_promoted_patterns: true

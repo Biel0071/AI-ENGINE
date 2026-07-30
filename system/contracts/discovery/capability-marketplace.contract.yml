@@ -1,0 +1,32 @@
+version: "3.0"
+kind: "CapabilityMarketplace"
+id: "capability-marketplace-core"
+name: "Dynamic Capability Auction & Resolver Engine"
+
+scoring_formula:
+  formula: "(quality * 0.40) + (confidence * 0.35) + ((1 / (1 + latencyMs)) * 0.15) + ((1 / (1 + unitCost)) * 0.10)"
+  weights:
+    quality: 0.40
+    confidence: 0.35
+    latency: 0.15
+    cost: 0.10
+
+matching_policy:
+  strategy: "highest-score"
+  enforce_sla: true
+  enforce_security_level: true
+  allow_fallback_chain: true
+
+capabilities_catalog:
+  - id: "capability.code.generate"
+    description: "Geração de código-fonte estruturado"
+    required_features: ["supports_code"]
+  - id: "capability.ui.build"
+    description: "Construção de interfaces e componentes UI/UX"
+    required_features: ["supports_code", "supports_images"]
+  - id: "capability.ai.inference"
+    description: "Inferência de LLM local ou cloud"
+    required_features: ["supports_reasoning"]
+  - id: "capability.media.comfyui"
+    description: "Geração e edição de imagens/mídia por workflow"
+    required_features: ["supports_images"]

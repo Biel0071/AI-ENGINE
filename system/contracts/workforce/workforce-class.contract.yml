@@ -1,0 +1,47 @@
+version: "3.0"
+kind: "WorkforceClass"
+id: "engineering-workforce"
+name: "Software Engineering & Architecture Workforce"
+role: "Engineering Executor"
+
+providers:
+  - id: "claude-code"
+    priority: 1
+    confidence: 0.98
+    quality: 0.96
+    capabilities: ["code.architecture", "code.refactoring", "code.testing", "code.review"]
+  - id: "codex"
+    priority: 2
+    confidence: 0.92
+    quality: 0.90
+    capabilities: ["code.generation", "code.completion"]
+  - id: "cursor"
+    priority: 3
+    confidence: 0.90
+    quality: 0.88
+    capabilities: ["code.editing", "code.debugging"]
+  - id: "openhands"
+    priority: 4
+    confidence: 0.85
+    quality: 0.84
+    capabilities: ["code.execution", "terminal.automation"]
+
+selection:
+  strategy: "capability-marketplace"
+  fallback: "automatic"
+  parallelism: true
+  max_concurrent_jobs: 10
+
+policy:
+  requires_approval_level: 2
+  allowed_autonomy_level: 3
+  sanitization_enforced: true
+
+events:
+  consumes:
+    - "mission.step.assigned"
+    - "resource.online"
+  produces:
+    - "engineering.job.completed"
+    - "engineering.job.failed"
+    - "code.artifact.generated"

@@ -41,7 +41,32 @@ services:
       FENIX_AI_DEFAULT_PROVIDER: ${FENIX_AI_DEFAULT_PROVIDER:?FENIX_AI_DEFAULT_PROVIDER is required}
       FENIX_AI_DEFAULT_MODEL: ${FENIX_AI_DEFAULT_MODEL:?FENIX_AI_DEFAULT_MODEL is required}
       GRG_AIPLATFORM_URL: ${GRG_AIPLATFORM_URL:-}
+      # MEDIDO EM PRODUCAO (2026-07-30): a KEY e o MODEL nao estavam nesta allowlist, entao
+      # `GRG_AIPLATFORM_KEY` no .env.production era inerte -- o AIPlatformProvider nascia sem
+      # credencial e `available()` devolvia false na primeira linha (`if (!this.baseUrl ||
+      # !this.#apiKey) return false`) SEM sequer tentar um request. O health reportava
+      # "sem provider de LLM" com o gateway de pe e gerando, porque a chave nunca chegou.
+      GRG_AIPLATFORM_KEY: ${GRG_AIPLATFORM_KEY:-}
+      GRG_AIPLATFORM_MODEL: ${GRG_AIPLATFORM_MODEL:-}
+      # Cadencia do polling do job assincrono do gateway (contrato medido em 2026-07-30: acima de
+      # `concurrency: 4` ele responde 202 + jobId em vez do texto). WAIT_MS=0 desliga o polling e
+      # restaura a recusa alta -- valvula do operador, nunca texto vazio.
+      GRG_AIPLATFORM_JOB_WAIT_MS: ${GRG_AIPLATFORM_JOB_WAIT_MS:-}
+      GRG_AIPLATFORM_JOB_POLL_MS: ${GRG_AIPLATFORM_JOB_POLL_MS:-}
       FENIX_OPENAI_COMPATIBLE_URL: ${FENIX_OPENAI_COMPATIBLE_URL:-}
+      FENIX_OPENAI_COMPATIBLE_KEY: ${FENIX_OPENAI_COMPATIBLE_KEY:-}
+      # Rotas por capacidade e provider local: TODAS eram inertes ate 2026-07-30 -- o
+      # provider-registry as le de process.env, mas nenhuma estava na allowlist. Ligar o Ollama
+      # pelo .env (`FENIX_ENABLE_OLLAMA=1`) simplesmente nao acontecia dentro do container.
+      FENIX_ENABLE_OLLAMA: ${FENIX_ENABLE_OLLAMA:-}
+      FENIX_OLLAMA_URL: ${FENIX_OLLAMA_URL:-}
+      GRG_OLLAMA_DIRECT_URL: ${GRG_OLLAMA_DIRECT_URL:-}
+      GRG_LLM_MODEL: ${GRG_LLM_MODEL:-}
+      FENIX_AI_ROUTES_JSON: ${FENIX_AI_ROUTES_JSON:-}
+      FENIX_AI_PLAN_PROVIDER: ${FENIX_AI_PLAN_PROVIDER:-}
+      FENIX_AI_PLAN_MODEL: ${FENIX_AI_PLAN_MODEL:-}
+      FENIX_AI_GENERATE_PROVIDER: ${FENIX_AI_GENERATE_PROVIDER:-}
+      FENIX_AI_GENERATE_MODEL: ${FENIX_AI_GENERATE_MODEL:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       GROQ_BASE_URL: ${GROQ_BASE_URL:-}
       # MEDIDO EM PRODUCAO (2026-07-29): este bloco e uma ALLOWLIST -- nada do .env chega ao
@@ -65,6 +90,11 @@ services:
       # mas o operador nao conseguiria ajustar a cadencia por .env sem rebuild.
       FENIX_CONNECTION_CHECK: ${FENIX_CONNECTION_CHECK:-}
       FENIX_CONNECTION_CHECK_MS: ${FENIX_CONNECTION_CHECK_MS:-}
+      # Cadencia da amostragem da serie temporal de observabilidade (default 60s). O teto de
+      # retencao e 720 amostras: a 60s isso e 12 h de historico, a 2s seriam 24 min. Poder
+      # ajustar sem rebuild e a diferenca entre trocar a janela do grafico e refazer o deploy.
+      FENIX_OBSERVABILITY_SAMPLE: ${FENIX_OBSERVABILITY_SAMPLE:-}
+      FENIX_OBSERVABILITY_SAMPLE_MS: ${FENIX_OBSERVABILITY_SAMPLE_MS:-}
       FENIX_STORE_RETRY_ATTEMPTS: ${FENIX_STORE_RETRY_ATTEMPTS:-}
       FENIX_STORE_RETRY_BASE_MS: ${FENIX_STORE_RETRY_BASE_MS:-}
       FENIX_STORE_RETRY_MAX_MS: ${FENIX_STORE_RETRY_MAX_MS:-}
@@ -81,6 +111,7 @@ services:
       FENIX_RETENTION_CHANGE_SETS: ${FENIX_RETENTION_CHANGE_SETS:-}
       FENIX_RETENTION_OPERATIONAL_COMPONENT_HISTORY: ${FENIX_RETENTION_OPERATIONAL_COMPONENT_HISTORY:-}
       FENIX_RETENTION_OPERATIONAL_READINESS_REPORTS: ${FENIX_RETENTION_OPERATIONAL_READINESS_REPORTS:-}
+      FENIX_RETENTION_OBSERVABILITY_SAMPLES: ${FENIX_RETENTION_OBSERVABILITY_SAMPLES:-}
       FENIX_RETENTION_CITY_NODES: ${FENIX_RETENTION_CITY_NODES:-}
       FENIX_RETENTION_CITY_EDGES: ${FENIX_RETENTION_CITY_EDGES:-}
     secrets: &fenix-secrets

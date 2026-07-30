@@ -23,7 +23,7 @@ Seis camadas, sentido único, sem ciclos. `kernel` é a raiz (216 fan-in). Detal
 `FENIX_ARCHITECTURE_MAP.md`.
 
 ```
-entrada (server.js 192 rotas / worker.js) → organismo vivo (11 loops)
+entrada (server.js rotas / worker.js loop periódico sob lease)
 → governança (gate) → domínio → superfícies cognitivas → kernel
 ```
 
@@ -66,7 +66,12 @@ Registries **não são duplicação** — são camadas e domínios distintos. N�
 
 ## 7. Evolução
 
-- **Runtime vivo**: `runtime/living-runtime.js` — 11 loops, 6 serviços por role, lease por role.
+- **Runtime periódico real**: `runtime/worker.js` — sob lease de líder, cuida de jobs, reconciliação
+  de missões, health-check de conexão e amostragem da série de observabilidade, cada um com cadência
+  própria. É o único processo periódico com chamador.
+- **Runtime vivo (não ativado)**: `runtime/living-runtime.js` — 11 loops, 6 serviços por role, lease
+  por role. **Medido em 2026-07-30: ninguém instancia esta classe.** O código está escrito e
+  testável, mas nenhum processo o sobe; tratar como PLANNED até existir um entrypoint.
 - **Auto-organização**: `onedeploy/continuous-improvement-loop.js` deriva achados de fontes reais.
 - **Governança de promoção**: gate default-DENY; produção só por autorização humana sobre evidência.
 
@@ -109,7 +114,8 @@ declarada; `PLANNED` tem contrato mas nenhuma lógica; `EXPERIMENTAL` existe atr
 |---|---|---|
 | Kernel / store / measurement | ACTIVE | 216 fan-in, contrato measured/unknown |
 | Identidade permanente | ACTIVE | ligada ao boot (createApp `ensure`), schema v29, `GET /api/organism/identity` |
-| Living Runtime (11 loops) | ACTIVE | 6 serviços por role, tick registrado |
+| Living Runtime (11 loops) | PLANNED | **medido 2026-07-30: `LivingRuntime` não tem chamador.** Nenhum processo o instancia (varredura em `src/`, `ops/`, `test/`, `package.json`, compose). O supervisor de 11 loops existe como código e nunca subiu. A cadência periódica real de produção é `runtime/worker.js` |
+| Série temporal de observabilidade | ACTIVE | `operations/observability-series.js`; amostrada pelo worker sob lease (`FENIX_OBSERVABILITY_SAMPLE_MS`, default 60s), schema v35 `observabilitySamples`, teto 720; `GET /api/observability/series` |
 | Mission Runtime | ACTIVE | mission-planner compila e materializa |
 | Observabilidade | ACTIVE | observability-center, exporter Prometheus |
 | Governança (gate, matriz, auditoria) | ACTIVE | default-DENY, 0 sinais falsos |

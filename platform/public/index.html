@@ -264,8 +264,23 @@
         <section class="chat-panel">
           <div>
             <span class="eyebrow">OPERATIONAL CONVERSATIONAL TERMINAL</span>
-            <h2>Copiloto de Engenharia FÊNIX Ω∞</h2>
-            <p>Converse diretamente com o sistema em tempo real ("Analise o backend", "Simule refatoração", "Prepare release").</p>
+            <h2>Copiloto de Engenharia FÊNIX Ω∞ (Realtime Duplex)</h2>
+            <p>Converse em tempo real por texto ou voz simultânea com suporte a interrupção instantânea (Barge-In).</p>
+          </div>
+
+          <!-- REALTIME DUPLEX VOICE CONTROL BAR -->
+          <div class="realtime-duplex-bar" style="background: rgba(0, 255, 170, 0.1); border: 1px solid #00ffaa; border-radius: 8px; padding: 12px 16px; margin: 12px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="rt-status-icon" style="font-size: 1.4rem;">🎙️</span>
+              <div>
+                <strong id="rt-status-text" style="color: #00ffaa;">Modo Duplex Simultâneo Pronto</strong>
+                <div style="font-size: 0.8rem; color: #aaa;">Streaming bidirecional SSE + suporte a interrupção (Barge-In)</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button id="btn-rt-start" class="btn-quick" style="background: #00ffaa; color: #111; font-weight: bold;">▶ Iniciar Voz Duplex</button>
+              <button id="btn-rt-interrupt" class="btn-quick" style="background: #ff4444; color: #fff; display: none;">🛑 Interromper (Barge-in)</button>
+            </div>
           </div>
           
           <div class="quick-prompts">
@@ -277,12 +292,12 @@
 
           <div id="chat-window" class="chat-window">
             <div class="chat-msg system">
-              <strong>FÊNIX Ω∞ LCR (Online):</strong> Olá! O organismo cognitivo está operando 24/7. Capsule Ω carregada. Como posso ajudar com os repositórios, missões ou simulações hoje?
+              <strong>FÊNIX Ω∞ LCR (Online):</strong> Olá! O organismo cognitivo está operando 24/7. Conversa simultânea em tempo real ativada.
             </div>
           </div>
 
           <form id="chat-form" class="chat-form">
-            <input id="chat-input" type="text" placeholder="Digite um comando operacional..." required>
+            <input id="chat-input" type="text" placeholder="Digite um comando ou fale com o Fênix..." required>
             <button type="submit">Enviar Comando</button>
           </form>
         </section>

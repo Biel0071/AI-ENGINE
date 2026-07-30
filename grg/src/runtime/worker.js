@@ -5,7 +5,11 @@ const { RedisLease } = require('./redis-lease');
 
 async function startWorker(options = {}) {
   const env = options.env || process.env; const securityConfig = loadSecurityConfig(env); const infra = loadInfrastructureConfig(env, { requireExternal: securityConfig.production });
-  const app = await createApp({ ...infra, securityConfig, env });
+  // `options` (menos `env`, que ja foi lido acima) sobrepoe a config de infra: e o unico jeito de
+  // exercitar o ciclo real do worker sem um Redis de verdade na maquina. Sem isso, o unico teste
+  // possivel seria testar as pecas separadas e ACREDITAR que o ciclo as chama na ordem certa.
+  const { env: _env, ...overrides } = options;
+  const app = await createApp({ ...infra, securityConfig, env, ...overrides });
   if (!app.redis) throw new Error('runtime worker requires Redis');
   // `ownerId` no RedisLease e default de PARAMETRO (`= crypto.randomUUID()`): ele so entra
   // quando o valor e undefined. String vazia atravessa e vira o id do worker -- e job-engine
@@ -15,7 +19,7 @@ async function startWorker(options = {}) {
   const lease = new RedisLease({ client: app.redis.client, ttlMs: Number(env.FENIX_LEADER_LEASE_MS || 15_000), ownerId: env.FENIX_WORKER_ID || undefined });
   const intervalMs = Number(env.FENIX_WORKER_POLL_MS || 2_000); let stopping = false; let running = false;
   // Cadencia propria do health-check de conexao (FLUXO 8); 0 forca o primeiro check ja no 1o ciclo.
-  const nowMs = () => Date.now(); let lastConnectionCheck = 0;
+  const nowMs = () => Date.now(); let lastConnectionCheck = 0; let lastObservabilitySample = 0;
   const cycle = async () => {
     const leader = lease.held ? await lease.renew() : await lease.acquire();
     if (leader) { const state = await app.store.read(); const dueTenants = [...new Set(state.runtimeSchedules.filter((item) => item.enabled).map((item) => item.tenantId))]; for (const tenantId of dueTenants) { const actor = state.runtimeSchedules.find((item) => item.tenantId === tenantId)?.createdBy; if (actor) await app.jobs.tick(tenantId, actor); } }
@@ -63,6 +67,34 @@ async function startWorker(options = {}) {
         lastConnectionCheck = nowMs();
         try { await app.apiConnection.check('aiplatform'); }
         catch (error) { process.stderr.write(`${JSON.stringify({ level: 'warn', component: 'runtime-worker', message: `connection check failed: ${error.message}` })}\n`); }
+      }
+    }
+    // SERIE TEMPORAL MEDIDA — amostragem periodica das metricas do runtime.
+    //
+    // MEDIDO (2026-07-30): o coletor nasceu ligado ao loop `observability` do
+    // `src/runtime/living-runtime.js`. So que `LivingRuntime` NAO TEM CHAMADOR: nenhum processo
+    // o instancia (nem server, nem worker, nem ops, nem teste) -- as 557 linhas do supervisor de
+    // 11 loops nunca subiram. Ligar a serie ali seria escrever um coletor que jamais amostra e
+    // um sparkline que nunca sai de "nao medido", com o painel parecendo correto.
+    // Entao a amostragem roda AQUI, no unico processo periodico que de fato existe, e sob o
+    // MESMO lease de lider: dois workers amostrando dobrariam as escritas no documento unico
+    // (cujo custo por escrita e o gargalo conhecido) e duplicariam cada ponto do grafico.
+    // Cadencia propria (FENIX_OBSERVABILITY_SAMPLE_MS, default 60s): a cada 2 s a serie encheria
+    // o teto de retencao (720 amostras) em 24 min de historico em vez de 12 h.
+    if (leader && app.observabilitySeries && env.FENIX_OBSERVABILITY_SAMPLE !== '0') {
+      const sampleEveryMs = Number(env.FENIX_OBSERVABILITY_SAMPLE_MS || 60_000);
+      if (nowMs() - lastObservabilitySample >= sampleEveryMs) {
+        lastObservabilitySample = nowMs();
+        // Ator: o dono do schedule do tenant. `getMetrics` exige runtime:admin, e a serie e
+        // por tenant -- sem tenant real nao ha o que amostrar (nao se inventa um ator sistema).
+        const state = await app.store.read();
+        const alvos = [...new Set(state.runtimeSchedules.filter((item) => item.enabled).map((item) => item.tenantId))];
+        for (const tenantId of alvos) {
+          const actor = state.runtimeSchedules.find((item) => item.tenantId === tenantId && item.enabled)?.createdBy;
+          if (!actor) continue;
+          try { await app.observabilitySeries.sample(tenantId, actor, { trigger: 'runtime-worker' }); }
+          catch (error) { process.stderr.write(`${JSON.stringify({ level: 'warn', component: 'runtime-worker', message: `observability sample failed for ${tenantId}: ${error.message}` })}\n`); }
+        }
       }
     }
     await app.jobs.recoverStale(Number(env.FENIX_STALE_JOB_MS || 60_000)); await app.jobs.runBatch(lease.ownerId, Number(env.FENIX_WORKER_BATCH || 10));

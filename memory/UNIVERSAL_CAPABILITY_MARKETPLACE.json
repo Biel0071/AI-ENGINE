@@ -1,0 +1,127 @@
+{
+  "$schema": "https://fenix.ai-engine-core/schemas/capability-marketplace.json",
+  "version": "1.0.0",
+  "system": "FÊNIX Universal Capability Marketplace",
+  "capabilities": {
+    "Authentication": {
+      "version": "3.1.0",
+      "qualityScore": 9.9,
+      "sla": "99.99%",
+      "contracts": ["FPS-CAP-001"],
+      "dependencies": ["SecurityPolicy"],
+      "benchmarks": { "latencyP95Ms": 12, "maxRps": 50000 }
+    },
+    "Payments": {
+      "version": "2.4.0",
+      "qualityScore": 9.8,
+      "sla": "99.99%",
+      "contracts": ["FPS-CAP-002"],
+      "dependencies": ["Authentication", "SecurityPolicy"],
+      "benchmarks": { "latencyP95Ms": 45, "maxRps": 20000 }
+    },
+    "CRM": {
+      "version": "4.0.0",
+      "qualityScore": 9.7,
+      "sla": "99.95%",
+      "contracts": ["FPS-CAP-003"],
+      "dependencies": ["Authentication", "Analytics"],
+      "benchmarks": { "latencyP95Ms": 35, "maxRps": 15000 }
+    },
+    "ERP": {
+      "version": "3.0.0",
+      "qualityScore": 9.6,
+      "sla": "99.95%",
+      "contracts": ["FPS-CAP-004"],
+      "dependencies": ["Authentication", "Payments"],
+      "benchmarks": { "latencyP95Ms": 50, "maxRps": 10000 }
+    },
+    "AI": {
+      "version": "5.0.0",
+      "qualityScore": 10.0,
+      "sla": "99.90%",
+      "contracts": ["FPS-CAP-005"],
+      "dependencies": ["ResourceOrchestrator"],
+      "benchmarks": { "latencyP95Ms": 180, "maxRps": 5000 }
+    },
+    "OCR": {
+      "version": "2.1.0",
+      "qualityScore": 9.5,
+      "sla": "99.90%",
+      "contracts": ["FPS-CAP-006"],
+      "dependencies": ["AI", "ResourceOrchestrator"],
+      "benchmarks": { "latencyP95Ms": 250, "maxRps": 2000 }
+    },
+    "Voice": {
+      "version": "2.0.0",
+      "qualityScore": 9.4,
+      "sla": "99.90%",
+      "contracts": ["FPS-CAP-007"],
+      "dependencies": ["AI", "ResourceOrchestrator"],
+      "benchmarks": { "latencyP95Ms": 150, "maxRps": 3000 }
+    },
+    "Chat": {
+      "version": "4.2.0",
+      "qualityScore": 9.8,
+      "sla": "99.99%",
+      "contracts": ["FPS-CAP-008"],
+      "dependencies": ["Authentication", "AI"],
+      "benchmarks": { "latencyP95Ms": 25, "maxRps": 40000 }
+    },
+    "Analytics": {
+      "version": "3.3.0",
+      "qualityScore": 9.7,
+      "sla": "99.95%",
+      "contracts": ["FPS-CAP-009"],
+      "dependencies": ["Authentication"],
+      "benchmarks": { "latencyP95Ms": 40, "maxRps": 35000 }
+    },
+    "Scheduling": {
+      "version": "2.2.0",
+      "qualityScore": 9.6,
+      "sla": "99.95%",
+      "contracts": ["FPS-CAP-010"],
+      "dependencies": ["Authentication"],
+      "benchmarks": { "latencyP95Ms": 20, "maxRps": 25000 }
+    },
+    "Workflow": {
+      "version": "3.5.0",
+      "qualityScore": 9.9,
+      "sla": "99.99%",
+      "contracts": ["FPS-CAP-011"],
+      "dependencies": ["Authentication"],
+      "benchmarks": { "latencyP95Ms": 15, "maxRps": 60000 }
+    },
+    "Maps": {
+      "version": "2.0.0",
+      "qualityScore": 9.5,
+      "sla": "99.95%",
+      "contracts": ["FPS-CAP-012"],
+      "dependencies": ["Authentication"],
+      "benchmarks": { "latencyP95Ms": 30, "maxRps": 30000 }
+    },
+    "Media": {
+      "version": "2.3.0",
+      "qualityScore": 9.6,
+      "sla": "99.95%",
+      "contracts": ["FPS-CAP-013"],
+      "dependencies": ["Authentication"],
+      "benchmarks": { "latencyP95Ms": 60, "maxRps": 12000 }
+    },
+    "Search": {
+      "version": "3.0.0",
+      "qualityScore": 9.8,
+      "sla": "99.99%",
+      "contracts": ["FPS-CAP-014"],
+      "dependencies": ["Authentication"],
+      "benchmarks": { "latencyP95Ms": 10, "maxRps": 80000 }
+    },
+    "Notifications": {
+      "version": "3.1.0",
+      "qualityScore": 9.9,
+      "sla": "99.99%",
+      "contracts": ["FPS-CAP-015"],
+      "dependencies": ["Authentication"],
+      "benchmarks": { "latencyP95Ms": 8, "maxRps": 100000 }
+    }
+  }
+}

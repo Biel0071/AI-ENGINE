@@ -94,6 +94,13 @@ const DEFAULT_LIMITS = {
   // O caminho definitivo e mover messages para uma tabela propria no Postgres, fora do
   // documento unico; enquanto o store e um JSON so, o teto e a unica protecao real.
   messages: 2_000,
+  // Serie temporal de observabilidade: uma amostra por tick do loop `observability` (60 s por
+  // padrao) = 1.440/dia. Cada amostra guarda SO numeros escalares ja medidos (sem envelope,
+  // sem payload): ~250 bytes. 720 = 12 h de historico em ~180 KB, que e o que um sparkline
+  // consome. Historico mais longo pertence ao Prometheus (que ja raspa /metrics), nao ao
+  // documento unico -- aqui a serie existe para a UI ter uma linha MEDIDA sem depender de um
+  // segundo sistema estar de pe.
+  observabilitySamples: 720,
   // `conversations` e `chatPreferences` NAO entram: sao estado. Perder uma preferencia
   // silenciosamente faria o modo de voz do usuario "voltar sozinho" para texto.
 };

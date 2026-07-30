@@ -1,0 +1,23 @@
+{
+  "$schema": "https://fenix.ai-engine-core/schemas/architecture-registry.json",
+  "version": "1.0.0",
+  "system": "FÊNIX Universal Architecture Registry (UAR)",
+  "artifactTypes": {
+    "Architecture": { "code": "ART_01", "description": "Topologia e especificação arquitetural" },
+    "Capability": { "code": "ART_02", "description": "Unidade funcional operacional reutilizável" },
+    "Blueprint": { "code": "ART_03", "description": "Modelo compilável de solução ou produto" },
+    "Workflow": { "code": "ART_04", "description": "Orquestração de tarefas e transições" },
+    "Protocol": { "code": "ART_05", "description": "Contrato tipado de comunicação ou interface" },
+    "Policy": { "code": "ART_06", "description": "Regra declarativa de governança ou segurança" },
+    "Decision": { "code": "ART_07", "description": "Registro de escolha justificável e auditada" },
+    "Research": { "code": "ART_08", "description": "Evidência, paper, RFC ou benchmark externo" },
+    "Experience": { "code": "ART_09", "description": "Jornada de UX, emoção e interface visual" },
+    "Genome": { "code": "ART_10", "description": "Vetor genômico de DNA de produto" },
+    "Knowledge": { "code": "ART_11", "description": "Nó ou subgrafo de conhecimento acumulado" },
+    "Artifact": { "code": "ART_12", "description": "Recurso persistido em repositório ou storage" },
+    "Deployment": { "code": "ART_13", "description": "Especificação de infraestrutura e runtime" },
+    "Dataset": { "code": "ART_14", "description": "Massa de dados ontológica de treino ou benchmark" },
+    "PromptTemplate": { "code": "ART_15", "description": "Template de estruturação compilado" },
+    "Agent": { "code": "ART_16", "description": "Especificação e contrato de agente autônomo" }
+  }
+}

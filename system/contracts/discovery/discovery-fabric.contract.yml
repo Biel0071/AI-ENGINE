@@ -1,0 +1,50 @@
+version: "3.0"
+kind: "DiscoveryFabric"
+id: "discovery-fabric-core"
+name: "Autonomous Resource & Capability Discovery Engine"
+
+collectors:
+  - name: "SSH Discovery"
+    target: "VPS / Remote Linux"
+    interval_sec: 300
+    enabled: true
+  - name: "Docker Discovery"
+    target: "Docker Daemon Socket"
+    interval_sec: 60
+    enabled: true
+  - name: "Kubernetes Discovery"
+    target: "K8s API Server"
+    interval_sec: 60
+    enabled: true
+  - name: "MCP Discovery"
+    target: "MCP Registry / Local Servers"
+    interval_sec: 30
+    enabled: true
+  - name: "AI Discovery"
+    target: "Ollama / Local APIs / Remote Providers"
+    interval_sec: 15
+    enabled: true
+
+pipeline:
+  - step: 1
+    action: "Connect"
+  - step: 2
+    action: "Inventory"
+  - step: 3
+    action: "CreateDigitalTwin"
+  - step: 4
+    action: "CreateResourceNode"
+  - step: 5
+    action: "PublishEvents"
+  - step: 6
+    action: "RegisterCapabilities"
+  - step: 7
+    action: "ExposeToCapabilityMesh"
+
+events:
+  produces:
+    - "resource.discovered"
+    - "resource.online"
+    - "resource.offline"
+    - "capability.registered"
+    - "capability.revoked"

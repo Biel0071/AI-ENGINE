@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 34;
+const CURRENT_SCHEMA_VERSION = 35;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -83,6 +83,14 @@ const COLLECTIONS_BY_VERSION = {
   // resposta ficticia: enquanto OFFLINE, o estado diz OFFLINE. `apiConnectionEvents` e o
   // historico append-only de transicoes (com teto de retencao) -- para o Digital Twin e alertas.
   34: ['apiConnectionState', 'apiConnectionEvents'],
+  // Serie temporal de observabilidade. MEDIDO: nao existia NENHUMA amostragem de metrica ao
+  // longo do tempo -- so estado corrente (`/api/observability/metrics`) e historico por
+  // entidade. Sem serie nao ha sparkline honesto: desenhar uma linha exige pontos medidos, e
+  // inventar os pontos seria exatamente a simulacao que o auditor existe para pegar.
+  // O loop `observability` do living-runtime ja lia as metricas a cada 60s e DESCARTAVA os
+  // valores; agora persiste uma amostra por tick. Append-only com teto de retencao, porque
+  // toda escrita no store reserializa o documento inteiro (ver kernel/retention.js).
+  35: ['observabilitySamples'],
 };
 
 function normalizeVersion(value) {

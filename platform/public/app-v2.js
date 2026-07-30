@@ -317,11 +317,42 @@ document.querySelector('#chat-form')?.addEventListener('submit', async (e) => {
   await sendChatMessage(msg);
 });
 
-document.querySelectorAll('.btn-quick').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const promptText = btn.dataset.prompt;
-    if (promptText) sendChatMessage(promptText);
-  });
+// Realtime Duplex Voice & Streaming Client
+let activeRtSessionId = null;
+
+document.querySelector('#btn-rt-start')?.addEventListener('click', async () => {
+  const statusText = document.querySelector('#rt-status-text');
+  const btnStart = document.querySelector('#btn-rt-start');
+  const btnInterrupt = document.querySelector('#btn-rt-interrupt');
+
+  try {
+    statusText.textContent = 'Iniciando Sessão Duplex...';
+    const res = await api('/api/v2/lcr/realtime/session', {
+      method: 'POST',
+      body: JSON.stringify({ voiceMode: 'duplex_simultaneous' })
+    });
+    activeRtSessionId = res.id;
+    statusText.textContent = `Voz Duplex Ativa (Sessão: ${activeRtSessionId.slice(0, 15)}...)`;
+    btnStart.style.display = 'none';
+    btnInterrupt.style.display = 'inline-block';
+    notify('Sessão Realtime Duplex Ativada!');
+  } catch (err) {
+    statusText.textContent = 'Erro ao iniciar voz duplex';
+    notify(err.message);
+  }
+});
+
+document.querySelector('#btn-rt-interrupt')?.addEventListener('click', async () => {
+  if (!activeRtSessionId) return;
+  try {
+    await api('/api/v2/lcr/realtime/interrupt', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId: activeRtSessionId })
+    });
+    notify('🛑 Interrupção Instantânea (Barge-in) Acionada!');
+  } catch (err) {
+    notify(err.message);
+  }
 });
 
 // Initialize Tabs & App
