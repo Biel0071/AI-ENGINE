@@ -40,6 +40,9 @@ class AuthService {
       let u = s.users.find((x) => x.id === userId);
       if (!u) { u = { id: userId, name: name || userId, status: 'active', createdAt: new Date().toISOString() }; s.users.push(u); }
       if (!u.passwordHash) u.passwordHash = hashPassword(password);
+      // Bootstrap sempre atualiza a senha para garantir acesso ao sistema.
+      // Sem isso, uma mudança na variável FENIX_BOOTSTRAP_ADMIN_PASSWORD não teria efeito.
+      else u.passwordHash = hashPassword(password);
       if (!s.memberships.some((m) => m.tenantId === tenantId && m.userId === userId)) {
         s.memberships.push({ tenantId, userId, role, status: 'active', createdAt: new Date().toISOString() });
       }
