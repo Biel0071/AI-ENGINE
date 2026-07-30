@@ -6,6 +6,32 @@ const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'DEAD_LETTER']);
 const now = () => new Date().toISOString();
 const errorInfo = (error) => ({ name: error?.name || 'Error', message: String(error?.message || error).slice(0, 2000) });
 
+// MEDIDO EM PRODUCAO (2026-07-29): o engine gravava em `job.result` o que o handler devolvesse,
+// sem limite. `operational.activation` devolve run + todos os componentes + o relatorio de
+// prontidao inteiro: 26 kB POR JOB. Com 60 jobs retidos, `runtimeJobs` virou 1,2 MB -- 19% de
+// um documento de 1,6 MB que e RESERIALIZADO A CADA ESCRITA, ~60 vezes por minuto. E duplicata:
+// o relatorio ja esta em `operationalReadinessReports`, e o run em `operationalActivationRuns`.
+// A retencao por CONTAGEM de itens nao alcanca isso; o custo aqui e byte, nao item.
+//
+// O limite mora no engine, nao em cada handler: qualquer handler futuro que devolva um objeto
+// grande cai na mesma armadilha, e um teto por handler seria esquecido no primeiro novo tipo.
+// O resultado nao e silenciosamente cortado -- fica um marcador dizendo o tamanho real e onde
+// procurar, para ninguem depurar achando que o handler devolveu vazio.
+const MAX_RESULT_BYTES = Number(process.env.FENIX_JOB_RESULT_MAX_BYTES || 4_096);
+function boundResult(result) {
+  if (result === null || result === undefined) return null;
+  const serialized = JSON.stringify(result);
+  if (serialized === undefined) return null;
+  if (Buffer.byteLength(serialized, 'utf8') <= MAX_RESULT_BYTES) return result;
+  return {
+    truncated: true,
+    bytes: Buffer.byteLength(serialized, 'utf8'),
+    limitBytes: MAX_RESULT_BYTES,
+    reason: 'job result exceeds the store budget; the handler persists its own record',
+    keys: result && typeof result === 'object' && !Array.isArray(result) ? Object.keys(result).slice(0, 20) : undefined,
+  };
+}
+
 class JobEngine {
   constructor({ store, controlPlane, events, queue = null, clock = Date }) {
     this.store = store; this.cp = controlPlane; this.events = events; this.queue = queue; this.clock = clock;
@@ -67,7 +93,7 @@ class JobEngine {
         new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('job execution timed out')), job.limits.timeoutMs); }),
       ]);
       clearTimeout(timer);
-      await this.store.update((state) => { const current = state.runtimeJobs.find((item) => item.id === job.id); current.status = current.cancelRequestedAt ? 'CANCELLED' : 'SUCCEEDED'; current.result = current.cancelRequestedAt ? null : result ?? null; current.completedAt = now(); current.updatedAt = now(); return state; });
+      await this.store.update((state) => { const current = state.runtimeJobs.find((item) => item.id === job.id); current.status = current.cancelRequestedAt ? 'CANCELLED' : 'SUCCEEDED'; current.result = current.cancelRequestedAt ? null : boundResult(result); current.completedAt = now(); current.updatedAt = now(); return state; });
     } catch (error) {
       clearTimeout(timer);
       await this.store.update((state) => {

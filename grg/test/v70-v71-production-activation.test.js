@@ -27,10 +27,15 @@ test('GRG FENIX V7.0/V7.1 Production Activation & ACP Integration Test Suite', a
   const deploysOverview = await app.deployCenter.getDeployOverview(tenantId, actorId);
   assert.ok(deploysOverview.checkedAt);
 
-  // 3. Observability Center Metrics
+  // 3. Observability Center Metrics (contrato honesto: cada campo carrega proveniencia
+  // measured/unknown. A versao antiga exigia cpuUsagePercent>0 e database:'HEALTHY' FIXOS --
+  // exatamente a simulacao que o modulo devia medir. Agora a RAM do processo e medida de
+  // verdade, e a saude da infra deriva dos probes reais em vez de um selo verde inventado.)
   const metrics = await app.observabilityCenter.getMetrics(tenantId, actorId);
-  assert.ok(metrics.system.cpuUsagePercent > 0);
-  assert.equal(metrics.infrastructure.database.status, 'HEALTHY');
+  assert.equal(metrics.system.processRssMb.state, 'measured');
+  assert.ok(metrics.system.processRssMb.value > 0);
+  assert.equal(metrics.system.cpuUsagePercent.state, 'unknown'); // honesto: nao medido por request
+  assert.equal(metrics.aiRuntime.totalTokensConsumed.state, 'measured');
 
   // 4. Cognitive Performance Engine (Hot Memory & Speed Score)
   const hotMemory = await app.cognitivePerformance.getHotMemoryState(tenantId, actorId);

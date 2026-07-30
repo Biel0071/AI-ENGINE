@@ -57,7 +57,11 @@ test('chat: generate a system by conversation', async () => {
   const r = await app.chat.handle('grg', 'grg-admin', 'gerar um sistema CRM de whatsapp com IA');
   assert.equal(r.intent, 'generate');
   assert.equal(r.action.ok, true);
-  assert.match(r.reply, /Gerei o projeto/);
+  // O chat migrou do orchestrator legado ('Gerei o projeto') para o Executive Brain: um objetivo
+  // de construcao vira um PROGRAMA real decomposto em missoes reais. O teste acompanha o produto.
+  assert.equal(r.action.type, 'program');
+  assert.ok(r.action.programId);
+  assert.match(r.reply, /Programa criado/);
 });
 
 test('chat: overview reflects real state', async () => {

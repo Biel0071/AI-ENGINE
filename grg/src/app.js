@@ -212,12 +212,32 @@ async function createApp(options = {}) {
   if (redis) health.register('redis', () => redis.health());
   if (queues) health.register('queue', () => queues.health());
   if (objects) health.register('object-storage', () => objects.health());
-  if (vectorStore) health.register('vector-store', () => vectorStore.health());
+  // 15s: o health() do qdrant faz retry 2s+4s para nao reportar "degraded" durante um boot
+  // pesado. O teto global de 2s cortaria o retry antes da segunda tentativa.
+  if (vectorStore) health.register('vector-store', () => vectorStore.health(), { timeoutMs: 15_000 });
+  // 25s: providerHealth() agora faz INFERENCIA real por provider (medido: 1.3s no caminho
+  // local), nao ping. O teto global de 2s cortaria a sonda e reportaria falha inexistente.
+  //
+  // critical permanece FALSE por decisao consciente, mas o motivo tem que estar dito: sem LLM
+  // o FENIX perde chat (texto e voz), decomposicao de objetivo em programa e sumarizacao --
+  // mas NAO perde estado, missoes ja criadas, deploy, nem os dados. Derrubar o /health para
+  // 503 faria o orquestrador reiniciar o container em loop por uma dependencia externa que o
+  // restart nao conserta.
+  //
+  // O risco desse critical:false foi MEDIDO em 2026-07-29, ao parar o AI Platform: o health
+  // respondeu {"ok":true,"status":"ready"} com "ai-providers":{"ok":false} -- verde com o
+  // cerebro desligado. Por isso o campo `degraded` abaixo: o painel e qualquer alerta passam
+  // a ter um sinal explicito para ler, em vez de precisar inspecionar o check aninhado.
   health.register('ai-providers', async () => {
     const providersHealth = await aiGateway.providerHealth();
     const routeReady = aiGateway.candidates('default').some((item) => providersHealth[item.provider]?.ok);
-    return { ok: routeReady, providers: providersHealth };
-  }, { critical: false });
+    return {
+      ok: routeReady,
+      providers: providersHealth,
+      // Consequencia declarada, nao deduzida por quem le o painel.
+      degraded: routeReady ? null : 'sem provider de LLM: chat, voz e decomposicao de objetivo indisponiveis',
+    };
+  }, { critical: false, timeoutMs: 25_000 });
   const operationalContext = { store, health, aiGateway, redis, queues, objects, vectorStore, sandboxConfigured: Boolean(sandboxAdapter), sandboxProductionSafe: sandboxAdapter?.productionSafe === true, databaseConfigured: Boolean(options.databaseUrl), policy, metrics };
   const operationalActivation = new OperationalActivationService({ store, controlPlane, events: fabricEvents, jobs, production: securityConfig.production, components: async (tenantId) => createOperationalComponents(operationalContext, tenantId) });
   jobs.register('operational.activation', (payload, context) => operationalActivation.boot(context.tenantId, context.actorId, payload));
@@ -232,6 +252,19 @@ async function createApp(options = {}) {
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
   };
+
+  // FLUXO 8 — monitor de conexao com servicos externos. Compartilha os MESMOS providers do
+  // gateway (available() faz inferencia real). Estado OFFLINE/ONLINE derivado, nunca ficticio.
+  // Trocar a API Platform e so mudar GRG_AIPLATFORM_URL/KEY: o manager re-testa e re-descobre.
+  const { ApiConnectionManager } = require('./ai-runtime/api-connection-manager');
+  app.apiConnection = new ApiConnectionManager({ store, bus, providers });
+
+  // FLUXO 9 (Living Mode) — Context Builder: reune o estado VIVO do FENIX num briefing que uma
+  // sessao de IA (Claude Code) consome para trabalhar "dentro" do sistema. O Claude nao roda
+  // sozinho; o FENIX fica vivo e entrega o contexto pronto. Nada fabricado: cada numero vem de
+  // fonte medida (auditor de simulacao, evolution engine, connection manager, missoes reais).
+  const { ContextBuilder } = require('./evolution/context-builder');
+  app.contextBuilder = new ContextBuilder({ store, controlPlane, evolution, capabilityRegistry, apiConnection: app.apiConnection, missions });
 
   app.close = async () => {
     await Promise.allSettled([
@@ -409,7 +442,7 @@ async function createApp(options = {}) {
   app.cognitiveOptimization = new CognitiveOptimizationEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
   app.pluginSkills = new PluginSkillsEcosystem({ store, bus, controlPlane, approvals });
   app.cognitiveEncryption = new CognitiveEncryptionService({ store, bus, controlPlane });
-  app.npcCity = new NpcCityEngine({ store, bus, controlPlane, agentSwarm: app.agentSwarm, digitalTwin });
+  app.npcCity = new NpcCityEngine({ store, bus, controlPlane, agentSwarm: app.agentSwarm, digitalTwin, eventStore });
   app.companyDailyAnalysis = new CompanyDailyAnalysisService({ store, bus, controlPlane, digitalTwin, knowledgeGenome: app.knowledgeGenome, masterNode: app.masterNode, agentSwarm: app.agentSwarm });
 
   // OMEGA Attachments
@@ -494,10 +527,11 @@ async function createApp(options = {}) {
   });
   app.analyzers = new ProjectAnalyzersService({ store, bus, controlPlane });
   app.testingSmokeE2e = new TestingSmokeE2eService({ store, bus, controlPlane, observabilityCenter: app.observabilityCenter, baseUrl: options.smokeBaseUrl });
-  // O pipeline executa os servicos reais: analyzers leem snapshots, testing bate HTTP.
+  // OneDeploy honesto: sem `deployExecutor` real injetado, o pipeline declara NOT_EXECUTED em
+  // vez de fingir 12 estagios completos. scanProject le o filesystem de verdade.
   app.oneDeploy = new OneDeployOrchestrator({
     store, bus, controlPlane, masterNode: app.masterNode, deployCenter: app.deployCenter,
-    analyzers: app.analyzers, testing: app.testingSmokeE2e,
+    deployExecutor: options.deployExecutor || null,
   });
   // selfEvolution: duplicidade e fragmentacao de conhecimento ja sao medidas por hash
   // real de conteudo la. A varredura reusa aquela medicao em vez de recalcular (Regra 1).
@@ -514,6 +548,11 @@ async function createApp(options = {}) {
 
   app.organismIdentity = organismIdentity;
   app.chat = new ChatAgent({ app, llm });
+  // Memoria da conversa (historico + contexto recuperado + resumo) e preferencias de voz.
+  // Compoe o MemoryEngine que ja existe para a busca semantica -- nao abre um segundo
+  // caminho de embedding, que divergiria na dimensao do vetor e na pontuacao.
+  const { ConversationStore } = require('./chat/conversation-store');
+  app.conversations = new ConversationStore({ store, memory, llm, events: fabricEvents });
   app.masterAvatar = new MasterAvatar({ chat: app.chat, missionPlanner });
   app.npcCity.masterAvatar = app.masterAvatar;
   return app;

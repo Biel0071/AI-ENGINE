@@ -49,6 +49,81 @@ class MissionKernel {
     await this.#event(mission, 'mission.started', null, { status: 'RUNNING' }, actorId); await this.#dispatchReady(tenantId, missionId); return this.get(tenantId, actorId, missionId);
   }
 
+  // MEDIDO em producao (2026-07-29): o ciclo de missao so avancava por EVENTO de job
+  // (attach() -> projectJobEvent). Nada reconciliava missoes fora desse caminho, entao:
+  //   - missao RUNNING cujo job morreu em DEAD_LETTER ficava orfa para sempre (3 steps
+  //     DISPATCHED apontando para jobs mortos, medido);
+  //   - step PLANNED com dependencias satisfeitas nunca era despachado se o evento que o
+  //     destravaria foi perdido (reinicio de container, evento anterior ao subscribe);
+  //   - 17 steps PLANNED e 4 missoes RUNNING presas com progresso 0.
+  // reconcile() e a varredura que fecha essa lacuna. Ela NAO inventa progresso: apenas
+  // (a) marca como FAILED o step cujo job terminou em estado terminal sem ter sido projetado,
+  // e (b) re-executa #dispatchReady, que ja aplica a governanca (RED continua exigindo
+  // aprovacao). Idempotente por construcao: sem nada a fazer, nao escreve.
+  async reconcile(tenantId, actorId, options = {}) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:admin');
+    const autoStart = options.autoStart === true;
+    const maxConcorrentes = Math.max(1, Number(options.maxConcurrent || 2));
+    const state = await this.store.read();
+    const ativas = state.missions.filter((item) => item.tenantId === tenantId && !TERMINAL.has(item.status));
+    const relatorio = { examinadas: ativas.length, orfaosResolvidos: 0, despachados: 0, iniciadas: 0 };
+    for (const mission of ativas) {
+      const steps = state.missionSteps.filter((item) => item.missionId === mission.id);
+      // (a) step preso apontando para job em estado terminal: projeta o desfecho do job.
+      for (const step of steps.filter((item) => item.status === 'DISPATCHED' && item.jobId)) {
+        const job = state.runtimeJobs.find((item) => item.id === step.jobId);
+        // Job inexistente conta como perdido: foi podado pela retencao sem projecao.
+        const terminal = !job || ['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED'].includes(job.status);
+        if (!terminal) continue;
+        const status = !job || job.status === 'SUCCEEDED' ? (job ? 'SUCCEEDED' : 'FAILED') : 'FAILED';
+        const motivo = job ? `job ${job.status}` : 'job ausente do estado (podado sem projecao)';
+        await this.store.update((next) => {
+          const current = next.missionSteps.find((item) => item.id === step.id);
+          current.status = status; current.updatedAt = now();
+          return next;
+        });
+        await this.#event(mission, 'mission.step.reconciled', step, { status, reason: motivo }, actorId);
+        relatorio.orfaosResolvidos += 1;
+      }
+      // (b) missao RUNNING volta a andar.
+      if (mission.status === 'RUNNING') {
+        const despachados = await this.#dispatchReady(tenantId, mission.id);
+        relatorio.despachados += despachados.length;
+        await this.#finalize(tenantId, mission.id);
+      }
+    }
+    // (c) O SCHEDULER que faltava. executive-brain.js:107 materializa as missoes de um programa
+    // com `autoStart:false` e comenta "o scheduler/humano inicia" -- mas o scheduler nunca foi
+    // escrito, so o humano. Medido em producao: as 5 missoes do programa de ERP nasceram
+    // PLANNED e ficaram paradas indefinidamente.
+    // Iniciar automaticamente e uma decisao de POLITICA, nao de conveniencia, entao:
+    //   - e opt-in por tenant (autoStartMissions), default DESLIGADO;
+    //   - respeita um teto de missoes simultaneas, para um programa de N missoes nao inundar
+    //     a fila de um documento unico cujo custo de escrita e o gargalo conhecido;
+    //   - nao concede nada: step RED continua indo para AWAITING_APPROVAL dentro do dispatch.
+    if (autoStart) {
+      const emCurso = ativas.filter((item) => item.status === 'RUNNING').length;
+      const vagas = Math.max(0, maxConcorrentes - emCurso);
+      const planejadas = ativas
+        .filter((item) => item.status === 'PLANNED')
+        .sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt))
+        .slice(0, vagas);
+      for (const mission of planejadas) {
+        try { await this.start(tenantId, mission.requestedBy, mission.id); relatorio.iniciadas += 1; }
+        catch (error) {
+          // Falha do start() nao pode parar a reconciliacao, mas engolir o motivo custou uma
+          // sessao inteira de diagnostico: com `iniciadas: 0` e nenhuma pista, "a politica
+          // recusou", "o ator perdeu permissao" e "a variavel nunca chegou ao processo" sao
+          // indistinguiveis de fora. O motivo entra no relatorio; quem chama decide o que
+          // fazer com ele. Sem stack e truncado: isto vai para log de operacao, nao debug.
+          relatorio.naoIniciadas = relatorio.naoIniciadas || [];
+          relatorio.naoIniciadas.push({ missionId: mission.id, reason: String(error.message || error).slice(0, 300) });
+        }
+      }
+    }
+    return relatorio;
+  }
+
   async pause(tenantId, actorId, missionId) { await this.cp.authorize(tenantId, actorId, 'runtime:execute'); const mission = await this.#mission(tenantId, missionId); await this.#authorizeScope(tenantId, actorId, mission, 'write'); if (!['RUNNING', 'AWAITING_APPROVAL'].includes(mission.status)) throw new ValidationError(`mission cannot pause from ${mission.status}`); await this.#setMissionStatus(missionId, 'PAUSED'); await this.#event(mission, 'mission.paused', null, { status: 'PAUSED' }, actorId); return this.get(tenantId, actorId, missionId); }
   async resume(tenantId, actorId, missionId) { return this.start(tenantId, actorId, missionId); }
 

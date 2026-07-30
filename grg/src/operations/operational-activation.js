@@ -18,8 +18,11 @@ class OperationalActivationService {
     await this.store.update((state) => { state.operationalActivationRuns.push(run); return state; });
     await this.#event(tenantId, 'operational.activation.started', run.id, { actorId, trigger: run.trigger, status: run.status });
     const definitions = await this.components(tenantId);
-    const results = [];
-    for (const definition of definitions) results.push(await this.#check(tenantId, actorId, run.id, definition));
+    // Sondagem sequencial (uma checagem por vez, como antes: um probe pode ser caro e
+    // paralelizar 26 mudaria o comportamento medido), e UMA escrita para o lote todo.
+    const probes = [];
+    for (const definition of definitions) probes.push(await this.#probe(tenantId, definition));
+    const results = await this.#persistSweep(tenantId, actorId, run.id, probes);
     const blockers = results.filter((item) => item.critical && item.status !== 'ACTIVE');
     const status = blockers.length ? 'DEGRADED' : 'READY';
     const completedAt = now();
@@ -29,7 +32,14 @@ class OperationalActivationService {
     return { run: await this.getRun(tenantId, actorId, run.id), components: results, readiness };
   }
 
-  async #check(tenantId, actorId, runId, definition) {
+  // Sonda o componente e MONTA o registro. Nao escreve nada: a escrita e do lote.
+  // MEDIDO EM PRODUCAO (2026-07-29): este metodo fazia uma escrita no store por componente.
+  // Com 26 componentes a cada 5 min, e um update() no-op custando ~0,9 s num documento de
+  // 5,4 MB (toda escrita reserializa tudo), a varredura sozinha ocupava o store por ~25 s e
+  // era a maior fonte de contencao da plataforma: jobs morriam com 40001 e com "worker
+  // heartbeat expired" -- nao por defeito proprio, mas por nao conseguirem escrever.
+  // Uma escrita por varredura em vez de 26 e a mesma informacao pelo custo de um item.
+  async #probe(tenantId, definition) {
     const started = this.clock.now(); let detail;
     try {
       detail = await withTimeout(Promise.resolve(definition.check()), COMPONENT_TIMEOUT_MS);
@@ -40,18 +50,32 @@ class OperationalActivationService {
     catch { detail = { ok: false, configured: true, error: 'unsafe health probe output rejected', evidence: { code: 'SECRET_OUTPUT_REJECTED' } }; }
     const configured = detail?.configured !== false;
     const status = !configured ? 'UNCONFIGURED' : detail?.ok === false ? 'DEGRADED' : 'ACTIVE';
-    const record = { id: uuid(), tenantId, runId, componentId: definition.id, label: definition.label || definition.id, state: status, status, version: String(detail?.version || definition.version || 'unknown'), dependencies: definition.dependencies || [], latencyMs: Math.max(0, this.clock.now() - started), availability: status === 'ACTIVE' ? 1 : 0, critical: definition.critical === true || (this.production && definition.productionCritical === true), lastHeartbeat: detail?.lastHeartbeat || null, evidence: detail?.evidence || {}, error: detail?.error || null, checkedAt: now() };
+    return { id: uuid(), tenantId, componentId: definition.id, label: definition.label || definition.id, state: status, status, version: String(detail?.version || definition.version || 'unknown'), dependencies: definition.dependencies || [], latencyMs: Math.max(0, this.clock.now() - started), availability: status === 'ACTIVE' ? 1 : 0, critical: definition.critical === true || (this.production && definition.productionCritical === true), lastHeartbeat: detail?.lastHeartbeat || null, evidence: detail?.evidence || {}, error: detail?.error || null, checkedAt: now() };
+  }
+
+  // Persiste a varredura inteira em UMA escrita. O trend continua sendo calculado contra o
+  // historico ja gravado, e os registros do proprio lote entram na conta na ordem em que
+  // foram sondados -- o resultado e identico ao de 26 escritas sequenciais.
+  async #persistSweep(tenantId, actorId, runId, records) {
     await this.store.update((state) => {
-      record.trend = componentTrend(state.operationalComponentHistory.filter((item) => item.tenantId === tenantId && item.componentId === record.componentId), record);
-      state.operationalComponentHistory.push(record);
-      state.operationalComponentStates = state.operationalComponentStates.filter((item) => !(item.tenantId === tenantId && item.componentId === record.componentId));
-      state.operationalComponentStates.push({ ...record, historyId: record.id });
-      if (status === 'DEGRADED' || (record.critical && status !== 'ACTIVE')) upsertInvestigation(state, record, actorId);
-      if (status === 'ACTIVE') resolveInvestigation(state, record);
+      for (const record of records) {
+        record.runId = runId;
+        record.trend = componentTrend(state.operationalComponentHistory.filter((item) => item.tenantId === tenantId && item.componentId === record.componentId), record);
+        state.operationalComponentHistory.push(record);
+        state.operationalComponentStates = state.operationalComponentStates.filter((item) => !(item.tenantId === tenantId && item.componentId === record.componentId));
+        state.operationalComponentStates.push({ ...record, historyId: record.id });
+        if (record.status === 'DEGRADED' || (record.critical && record.status !== 'ACTIVE')) upsertInvestigation(state, record, actorId);
+        if (record.status === 'ACTIVE') resolveInvestigation(state, record);
+      }
       return state;
     });
-    await this.#event(tenantId, 'operational.component.checked', `${runId}:${record.componentId}`, { actorId, runId, componentId: record.componentId, status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } });
-    return record;
+    // Os eventos seguem um por componente: cada um alimenta cidade, versionamento e twin, e
+    // um evento agregado apagaria a granularidade que o painel usa. O que sai do caminho
+    // critico e a ESCRITA, nao a trilha.
+    for (const record of records) {
+      await this.#event(tenantId, 'operational.component.checked', `${runId}:${record.componentId}`, { actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } });
+    }
+    return records;
   }
 
   async #readiness(tenantId, actorId, runId, components) {
@@ -125,7 +149,15 @@ class OperationalActivationService {
 function upsertInvestigation(state, component, actorId) {
   let item = state.operationalInvestigations.find((entry) => entry.tenantId === component.tenantId && entry.componentId === component.componentId && entry.status === 'OPEN');
   if (!item) { item = { id: uuid(), tenantId: component.tenantId, componentId: component.componentId, title: `Investigate degraded component: ${component.label}`, status: 'OPEN', severity: component.critical ? 'HIGH' : 'MEDIUM', evidence: [], openedBy: 'fenix-operational-activation', openedAt: now(), requestedBy: actorId }; state.operationalInvestigations.push(item); }
-  item.lastSeenAt = now(); item.occurrences = Number(item.occurrences || 0) + 1; item.evidence.push({ reference: `component-history:${component.id}`, status: component.status, checkedAt: component.checkedAt });
+  item.lastSeenAt = now(); item.occurrences = Number(item.occurrences || 0) + 1;
+  item.evidence.push({ reference: `component-history:${component.id}`, status: component.status, checkedAt: component.checkedAt });
+  // MEDIDO EM PRODUCAO (2026-07-29): uma investigacao ABERTA acumula uma evidencia por check,
+  // a cada 5 min, para sempre. 10 investigacoes ocupavam 369 kB -- 6% de um documento que e
+  // reserializado a cada escrita. A retencao (kernel/retention.js) limita o TAMANHO DA
+  // COLECAO, nunca um campo dentro de um registro: um array que cresce dentro de um item
+  // longevo passa por baixo dela. `occurrences` ja conta o total; as evidencias servem para
+  // ver o padrao recente, e 20 amostras e o que o trend de componente usa.
+  if (item.evidence.length > 20) item.evidence = item.evidence.slice(-20);
 }
 function resolveInvestigation(state, component) { for (const item of state.operationalInvestigations.filter((entry) => entry.tenantId === component.tenantId && entry.componentId === component.componentId && entry.status === 'OPEN')) { item.status = 'RESOLVED'; item.resolvedAt = now(); item.resolutionEvidence = { reference: `component-history:${component.id}`, status: component.status }; } }
 function currentAssurance(state, tenantId, kind) { return state.operationalAssurances.filter((item) => item.tenantId === tenantId && item.kind === kind && item.status === 'VERIFIED' && (!item.validUntil || Date.parse(item.validUntil) > Date.now())).at(-1) || null; }

@@ -14,6 +14,27 @@ class ChatAgent {
     this.history = []; // memória de conversa progressiva (últimas trocas)
   }
 
+  // Capacidades como FATO derivado, para o LLM nunca ter de adivinhar o que a FÊNIX faz.
+  // Fonte: `capabilityDefinitions` (registro governado) + `health`/`metrics` que o
+  // capability-registry escreve a partir de execução real de job. Não há lista escrita à mão
+  // aqui de propósito: uma capacidade só aparece como comprovada se algum job dela concluiu.
+  #capabilityFacts(state, tenantId) {
+    const definicoes = (state.capabilityDefinitions || []).filter((item) => item.tenantId === tenantId);
+    if (!definicoes.length) return { registradas: 0, nota: 'registro de capacidades vazio para este tenant' };
+    const comprovadas = definicoes.filter((item) => item.health === 'HEALTHY');
+    const degradadas = definicoes.filter((item) => item.health === 'DEGRADED');
+    return {
+      registradas: definicoes.length,
+      // O nome sozinho não diz nada ao modelo; a descrição é o que ele precisa para responder
+      // "o que você sabe fazer" sem inventar.
+      catalogo: definicoes.map((item) => `${item.capabilityId}: ${item.description}`),
+      comprovadas_por_execucao: comprovadas.map((item) => `${item.capabilityId} (${item.metrics?.successes ?? 0} sucesso(s), última ${item.lastExecutionAt})`),
+      degradadas: degradadas.map((item) => item.capabilityId),
+      // Distinção que o usuário precisa ver: "sem execução registrada" NÃO é "não existe".
+      sem_execucao_registrada: definicoes.filter((item) => item.health === 'UNKNOWN').map((item) => item.capabilityId),
+    };
+  }
+
   // Classifica a intenção com o LLM (linguagem aberta). Fallback nas regras se LLM indisponível.
   async classifyWithLLM(text) {
     const sys = `Você é o classificador de intenções do GRG Services OS, uma plataforma que acopla e analisa repositórios GitHub, gera sistemas, mantém memória evolutiva e digital twins.
@@ -48,7 +69,8 @@ Intents válidas:
     try {
       const sys = `Você é a FÊNIX — o Enterprise Cognitive Kernel da GRG. Não é um chatbot: é o cérebro da plataforma; o modelo de IA é só seu motor de inferência.
 Personalidade FIXA: técnica, estratégica, direta. Explica antes de executar. Nunca inventa. Sempre informa nível de confiança quando relevante e cita riscos. Pensa em longo prazo. Fala em português, curto (2-5 frases).
-REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, repos, capabilities ou URLs. Se os fatos estão vazios, diga objetivamente o que o operador pode fazer a seguir.`;
+REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, repos, capabilities ou URLs. Se os fatos estão vazios, diga objetivamente o que o operador pode fazer a seguir.
+REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ainda não usei", não "não sei fazer" — nunca diga que não é capaz de algo listado em "capacidades.catalogo". Se uma capacidade está em "sem_execucao_registrada", diga que existe e ainda não foi exercitada.`;
       const res = await this.llm.chat({ messages: [
         { role: 'system', content: sys },
         { role: 'user', content: `Mensagem do usuário: "${userText}"\nIntenção: ${intent}\nFatos reais (JSON):\n${JSON.stringify(facts).slice(0, 2500)}\n\nResponda ao usuário com base SÓ nesses fatos.` },
@@ -125,10 +147,29 @@ REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, r
 
     try {
       switch (intent.kind) {
+        // `help` NAO tinha case: saía com facts={} e o prompt manda não inventar, então a
+        // pergunta mais direta que existe ("o que você pode fazer?") chegava ao modelo sem um
+        // único fato. É o caminho default do roteador determinístico (detectIntent devolve
+        // 'help' quando nada casa), portanto o mais provável em produção. Recebe os mesmos
+        // fatos do chitchat: é a mesma pergunta.
+        case 'help':
         case 'chitchat': {
           const state = await this.app.store.read();
-          const f = (a) => a.filter((x) => x.tenantId === tenantId).length;
-          facts = { conversa: true, repos: f(state.repositories), projetos: f(state.projects), capabilities: f(state.capabilities) };
+          const f = (a) => (a || []).filter((x) => x.tenantId === tenantId).length;
+          // MEDIDO EM PRODUCAO (2026-07-29): antes daqui saía apenas `capabilities: 0`, porque
+          // `state.capabilities` é uma lista LEGADA que está vazia — o registro real é
+          // `capabilityDefinitions` (9 built-ins semeados no tenant). Com só zeros no JSON e a
+          // ordem "use APENAS os fatos", o modelo respondia ao usuário "não possuímos
+          // capacidades avançadas como pesquisar o repositório" — negando o que o FÊNIX faz.
+          // A correção não é escrever uma lista de habilidades à mão (isso seria sinal
+          // fabricado): é passar o registro com a saúde que já vem de execução real de job
+          // (capability-registry.js:52 recordRuntimeEvent) e deixar claro o que é medido.
+          facts = {
+            conversa: true,
+            repos: f(state.repositories),
+            projetos: f(state.projects),
+            capacidades: this.#capabilityFacts(state, tenantId),
+          };
           break;
         }
         case 'connect_repo': {
@@ -191,7 +232,13 @@ REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, r
         }
         case 'capabilities': {
           const state = await this.app.store.read();
-          facts = { capabilities: state.capabilities.filter((c) => c.tenantId === tenantId).map((c) => `${c.id}@${c.version}`) };
+          // `state.capabilities` (legado) está vazio em produção; o registro real é
+          // capabilityDefinitions. Mantenho o campo antigo para não quebrar quem o lê, mas a
+          // resposta ao usuário passa a vir do registro com saúde medida.
+          facts = {
+            capabilities: (state.capabilities || []).filter((c) => c.tenantId === tenantId).map((c) => `${c.id}@${c.version}`),
+            capacidades: this.#capabilityFacts(state, tenantId),
+          };
           break;
         }
         case 'twin': {
@@ -337,8 +384,13 @@ REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, r
         return `Repos: ${facts.repos.join(', ') || 'nenhum'}\nProjetos: ${facts.projects.join(', ') || 'nenhum'}`;
       case 'overview':
         return `Visão geral: ${facts.repos} repos, ${facts.projects} projetos, ${facts.capabilities} capabilities, ${facts.deployments} deploys, ${facts.insights} insights, ${facts.memory} eventos de memória.`;
-      case 'chitchat':
-        return `Tô por aqui. Você tem ${facts.repos || 0} repos e ${facts.projetos || 0} projetos no sistema. Posso acoplar um repositório, gerar um sistema ou te mostrar o que aprendi.`;
+      case 'chitchat': {
+        // Fallback sem LLM. Cita o numero REGISTRADO de capacidades (nao uma lista fixa) para
+        // que nem o caminho determinístico possa afirmar menos do que a plataforma tem.
+        const n = facts.capacidades?.registradas || 0;
+        return `Tô por aqui. Você tem ${facts.repos || 0} repos e ${facts.projetos || 0} projetos no sistema`
+          + `${n ? `, e ${n} capacidades registradas` : ''}. Posso acoplar um repositório, gerar um sistema ou te mostrar o que aprendi.`;
+      }
       default: {
         const help = Array.isArray(facts.help) ? facts.help : [
           'Cole uma URL do GitHub para acoplar e analisar um repo',

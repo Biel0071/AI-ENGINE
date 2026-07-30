@@ -65,3 +65,36 @@ test('bad key is rejected', async () => {
   await assert.rejects(() => p.chat({ messages: [{ role: 'user', content: 'x' }] }), /401/);
   server.close();
 });
+
+// MEDIDO na .215 com 5 requisicoes simultaneas: acima de `concurrency: 4` o gateway responde
+// 202 com {jobId, queue} em vez de gerar. Antes desta correcao o 202 passava pelo teste 2xx e
+// complete() devolvia texto VAZIO em silencio -- o chat responderia em branco sob concorrencia.
+function queueingGateway() {
+  return new Promise((resolve) => {
+    const server = http.createServer((req, res) => {
+      let body = ''; req.on('data', (c) => { body += c; }); req.on('end', () => {
+        res.writeHead(202, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true, jobId: 'job_test_1',
+          queue: { queue: 'text', state: 'active', concurrency: 4, position: 1, jobsAhead: 0 },
+        }));
+      });
+    });
+    server.listen(0, '127.0.0.1', () => resolve({ server, port: server.address().port }));
+  });
+}
+
+test('a 202 enqueued response fails loudly instead of returning empty text', async () => {
+  const { server, port } = await queueingGateway();
+  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${port}`, apiKey: 'ap_test' });
+  await assert.rejects(() => p.complete({ prompt: 'oi' }), /enfileirou.*jobId=job_test_1.*concurrency=4/s);
+  await assert.rejects(() => p.chat({ messages: [{ role: 'user', content: 'oi' }] }), /enfileirou/);
+  server.close();
+});
+
+test('available() reports false when the gateway only enqueues', async () => {
+  const { server, port } = await queueingGateway();
+  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${port}`, apiKey: 'ap_test' });
+  assert.equal(await p.available(), false, 'fila nao e geracao: nao pode contar como disponivel');
+  server.close();
+});

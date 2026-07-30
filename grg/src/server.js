@@ -7,6 +7,7 @@ const { CloningGitHostAdapter } = require('./repo-intel/cloning-git-host');
 const { loadSecurityConfig } = require('./security/config');
 const { loadInfrastructureConfig } = require('./infrastructure/config');
 const { createStructuredLogger } = require('./infrastructure/observability/structured-logger');
+const { handleLiveChat } = require('./chat/live-chat-routes');
 const crypto = require('node:crypto');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -529,6 +530,16 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       }
       // Telemetria real do host + infra (substitui as metricas simuladas).
       if (req.method === 'GET' && url.pathname === '/api/observability/metrics') return sendJson(res, 200, await app.observabilityCenter.getMetrics(tenantId, actorId), requestId);
+      // FLUXO 8 — estado de conexao com servicos externos (API Platform). Estado real
+      // OFFLINE/ONLINE/CONNECTING derivado de health-check, para o Digital Twin e alertas.
+      if (req.method === 'GET' && url.pathname === '/api/connection') { await app.controlPlane.authorize(tenantId, actorId, 'runtime:read'); return sendJson(res, 200, await app.apiConnection.status(), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/connection/check') { await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin'); const b = await readJson(req); return sendJson(res, 200, await app.apiConnection.check(b.provider || 'aiplatform'), requestId); }
+      // FLUXO 9 (Living Mode) — contexto vivo do FENIX para uma sessao de IA. JSON para maquina,
+      // ?format=md para o briefing que se cola no Claude Code. Tudo derivado de estado medido.
+      if (req.method === 'GET' && url.pathname === '/api/context') {
+        if (url.searchParams.get('format') === 'md') { const md = await app.contextBuilder.buildMarkdown(tenantId, actorId); res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8' }); return res.end(md); }
+        return sendJson(res, 200, await app.contextBuilder.build(tenantId, actorId), requestId);
+      }
       // MISSION-0003A — identidade permanente do organismo (organismId, nascimento, linhagem).
       if (req.method === 'GET' && url.pathname === '/api/organism/identity') return sendJson(res, 200, await app.organismIdentity.report(tenantId, actorId), requestId);
       // MISSION-0004 — Connector Runtime. Estado derivado por selfTest, nunca por config.
@@ -548,6 +559,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const b = await readJson(req);
         if (!b.message) return sendJson(res, 400, { error: 'message required' });
         return sendJson(res, 200, await app.chat.handle(tenantId, actorId, String(b.message)));
+      }
+      // Chat ao vivo (SSE streaming, historico, preferencias de voz, abort). Fica em modulo
+      // proprio: uma resposta SSE vive por minutos escrevendo em pedacos, o que nao cabe no
+      // padrao sendJson deste roteador.
+      if (url.pathname.startsWith('/api/chat/')) {
+        const handled = await handleLiveChat({ app, req, res, url, tenantId, actorId, readJson, sendJson, requestId });
+        if (handled) return undefined;
       }
       return sendJson(res, 404, { error: 'route not found' }, requestId);
     } catch (error) {

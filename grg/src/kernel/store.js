@@ -151,6 +151,11 @@ const EMPTY_STATE = () => ({
   connectorEvents: [],
   aiRouterDecisions: [],
   programs: [],
+  conversations: [],
+  messages: [],
+  chatPreferences: [],
+  apiConnectionState: [],
+  apiConnectionEvents: [],
 });
 
 class MemoryStore {

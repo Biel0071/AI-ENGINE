@@ -65,7 +65,11 @@ test('GRG FENIX V6.1 Operation Genesis End-to-End Integration Test', async () =>
   });
   assert.equal(swarmEvent.targetAgent, 'agent-architect');
 
-  // 7. VPS Operations
+  // 7. VPS Operations (contrato honesto: nao ha mais servidor FABRICADO. Um servidor so aparece
+  // se foi REGISTRADO de verdade -- entao registramos um e provamos que ele aparece na lista.)
+  const registered = await app.vpsOps.registerServer(tenantId, actorId, { hostname: 'vps-test-01', ip: '10.0.0.1' });
+  assert.equal(registered.status, 'REGISTERED'); // nao 'ONLINE' fabricado
+  assert.equal(registered.telemetry, null); // telemetria ausente ate um probe real medir
   const vpsServers = await app.vpsOps.listServers(tenantId, actorId);
   assert.ok(vpsServers.servers.length > 0);
 
@@ -75,12 +79,18 @@ test('GRG FENIX V6.1 Operation Genesis End-to-End Integration Test', async () =>
   });
   assert.equal(vpsPlan.status, 'PLANNED');
 
+  // Contrato honesto: sem executor real de VPS injetado, a operacao NAO finge sucesso. Antes
+  // devolvia 'EXECUTED' + 'Operation completed successfully' sem executar nada (deploy ficticio).
   const vpsExecuted = await app.vpsOps.executeOperationPlan(tenantId, actorId, vpsPlan.id);
-  assert.equal(vpsExecuted.plan.status, 'EXECUTED');
+  assert.equal(vpsExecuted.plan.status, 'NOT_IMPLEMENTED');
+  assert.equal(vpsExecuted.executed, false);
+  assert.ok(vpsExecuted.reason);
 
-  // 8. GitHub Operations
+  // 8. GitHub Operations (contrato honesto: sem org FABRICADA. Sem connector com token, a lista
+  // e vazia de verdade, e um PR e registrado LOCALMENTE -- marcado como tal, com number null,
+  // sem Math.random() -- em vez de fingir um PR remoto que nao existe no GitHub.)
   const ghOrgs = await app.githubOps.listOrgs(tenantId, actorId);
-  assert.ok(ghOrgs.orgs.length > 0);
+  assert.equal(ghOrgs.orgs.length, 0); // nenhuma org registrada => vazio honesto
 
   const ghPr = await app.githubOps.createPullRequest(tenantId, actorId, {
     repoId: 'repo-grg',
@@ -88,7 +98,9 @@ test('GRG FENIX V6.1 Operation Genesis End-to-End Integration Test', async () =>
     head: 'feature/v6-genesis',
     base: 'main',
   });
-  assert.equal(ghPr.state, 'OPEN');
+  assert.equal(ghPr.origin, 'local-record'); // nao foi aberto no GitHub (sem connector)
+  assert.equal(ghPr.state, 'OPEN_LOCAL');
+  assert.equal(ghPr.number, null); // sem numero aleatorio inventado
 
   // 9. Project Factory Demands
   const demand = await app.projectFactory.processDemand(tenantId, actorId, {
@@ -100,9 +112,12 @@ test('GRG FENIX V6.1 Operation Genesis End-to-End Integration Test', async () =>
   const bgReport = await app.backgroundCognition.runIdleMaintenance(tenantId, actorId);
   assert.equal(bgReport.status, 'IDLE_MAINTENANCE_COMPLETED');
 
-  // 11. External Search
+  // 11. External Search (contrato honesto: research desligado por padrao devolve `unknown`
+  // com motivo, NUNCA resultados fabricados. A versao antiga esperava length>0 porque o
+  // servico mentia com 2 achados fixos; agora o vazio honesto e o comportamento correto.)
   const searchResult = await app.externalSearch.search(tenantId, actorId, { q: 'Node.js Express Hexagonal' });
-  assert.ok(searchResult.results.length > 0);
+  assert.ok(['measured', 'unknown'].includes(searchResult.state));
+  if (searchResult.state === 'unknown') assert.ok(searchResult.reason && searchResult.results.length === 0);
 
   // 12. Master Avatar State Machine
   const avatarState = app.masterAvatar.getState();

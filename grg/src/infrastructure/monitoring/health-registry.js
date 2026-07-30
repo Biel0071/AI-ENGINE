@@ -4,9 +4,16 @@ class HealthRegistry {
     this.probes = new Map();
   }
 
+  // options.timeoutMs: teto por probe. Um probe que faz retry com backoff (qdrant: 2s+4s)
+  // nao cabe no teto global de 2s -- o race cortaria antes da segunda tentativa, tornando
+  // o retry inutil. Sem o override o comportamento e identico ao anterior.
   register(name, probe, options = {}) {
     if (!name || typeof probe !== 'function') throw new Error('health probe requires name and function');
-    this.probes.set(name, { probe, critical: options.critical !== false });
+    this.probes.set(name, {
+      probe,
+      critical: options.critical !== false,
+      timeoutMs: Number.isFinite(options.timeoutMs) ? options.timeoutMs : this.timeoutMs,
+    });
     return this;
   }
 
@@ -16,7 +23,7 @@ class HealthRegistry {
       let timer;
       try {
         const timeout = new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error('health probe timed out')), this.timeoutMs);
+          timer = setTimeout(() => reject(new Error('health probe timed out')), definition.timeoutMs);
         });
         const detail = await Promise.race([definition.probe(), timeout]);
         checks[name] = { ok: detail?.ok !== false, critical: definition.critical, ...detail };

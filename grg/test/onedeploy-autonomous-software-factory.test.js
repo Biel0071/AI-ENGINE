@@ -2,47 +2,75 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createApp } = require('../src/app');
 
-test('GRG FENIX OneDeploy Orchestrator & Autonomous Software Factory Test Suite', async () => {
+// OneDeploy HONESTO (reescrito). A versao anterior deste teste EXIGIA a simulacao:
+// ONEDEPLOY_SUCCESSFUL, accessibilityScore 100, ALL_SMOKE_TESTS_PASSED, passedScenariosCount 18
+// -- tudo fabricado sem executar nada. Sob REALITY FIRST, um teste que valida comportamento
+// inexistente e divida. Agora prova o contrato honesto: scan real do filesystem, e
+// pipeline/analise/testes que declaram NAO-EXECUTADO em vez de fingir sucesso perfeito.
+
+test('OneDeploy honesto: scanProject LE o filesystem real (nao inventa framework)', async () => {
   const app = await createApp({ dataFile: null });
+  await app.controlPlane.createTenant({ id: 'grg', name: 'GRG' }, 'grg-admin');
+  // '.' e o proprio grg/, que TEM package.json (express) e docker-compose reais.
+  const scan = await app.oneDeploy.scanProject('grg', 'grg-admin', '.');
+  assert.equal(scan.exists, true);
+  // grg usa HTTP nativo do Node (sem framework nas deps: pg/redis/bullmq/jose/aws-sdk), entao
+  // backendFramework e honestamente `unknown` -- o scan NAO inventa "Express". Mas o dependency
+  // count e MEDIDO do package.json real, e o docker-compose real e detectado.
+  assert.equal(scan.discovery.backendFramework.state, 'unknown');
+  assert.equal(scan.discovery.dependencyCount.state, 'measured');
+  assert.ok(scan.discovery.dependencyCount.value >= 5);
+  assert.match(scan.discovery.dependencyCount.source, /^fs:/);
+  assert.equal(scan.discovery.containers.state, 'measured');
+  await app.close();
+});
 
-  const tenantId = 'grg';
-  const actorId = 'grg-admin';
+test('OneDeploy honesto: scan de path inexistente reporta ausencia, nao framework fixo', async () => {
+  const app = await createApp({ dataFile: null });
+  await app.controlPlane.createTenant({ id: 'grg', name: 'GRG' }, 'grg-admin');
+  const scan = await app.oneDeploy.scanProject('grg', 'grg-admin', './nao-existe-xyz-9271');
+  assert.equal(scan.exists, false);
+  assert.equal(scan.discovery.frontendFramework.state, 'unknown');
+  await app.close();
+});
 
-  await app.controlPlane.createTenant({ id: tenantId, name: 'GRG' }, actorId);
+test('OneDeploy honesto: pipeline sem executor NAO finge sucesso', async () => {
+  const app = await createApp({ dataFile: null });
+  await app.controlPlane.createTenant({ id: 'grg', name: 'GRG' }, 'grg-admin');
+  const pipeline = await app.oneDeploy.runOneDeployPipeline('grg', 'grg-admin', { name: 'Release X', environment: 'STAGING' });
+  assert.equal(pipeline.status, 'NOT_EXECUTED'); // antes: ONEDEPLOY_SUCCESSFUL sem rodar
+  assert.ok(pipeline.reason);
+  assert.ok(pipeline.stages.every((s) => s.status === 'PENDING'));
+  await app.close();
+});
 
-  // 1. OneDeploy Orchestrator 14-Stage Pipeline Execution
-  const scan = await app.oneDeploy.scanProject(tenantId, actorId, './ai-engine/grg');
-  assert.equal(scan.discovery.frontendFramework.includes('React'), true);
+test('OneDeploy honesto: analyzers sem analisador real devolvem unknown, nao score 100', async () => {
+  const app = await createApp({ dataFile: null });
+  await app.controlPlane.createTenant({ id: 'grg', name: 'GRG' }, 'grg-admin');
+  const fe = await app.analyzers.analyzeFrontend('grg', 'grg-admin');
+  assert.equal(fe.frontendReport.state, 'unknown');
+  assert.ok(!JSON.stringify(fe).includes('HEALTHY_ZERO_SMELLS'));
+  await app.close();
+});
 
-  const pipeline = await app.oneDeploy.runOneDeployPipeline(tenantId, actorId, {
-    name: 'GRG FÊNIX Core Release v7.2',
-    environment: 'STAGING',
-  });
-  assert.equal(pipeline.status, 'ONEDEPLOY_SUCCESSFUL');
-  assert.equal(pipeline.stagesCount, 12);
+test('OneDeploy honesto: smoke/E2E sem runner declaram NAO-EXECUTADO, nao GREEN_PASS/18', async () => {
+  const app = await createApp({ dataFile: null });
+  await app.controlPlane.createTenant({ id: 'grg', name: 'GRG' }, 'grg-admin');
+  const smoke = await app.testingSmokeE2e.runSmokeTests('grg', 'grg-admin', 'STAGING');
+  assert.equal(smoke.result.state, 'unknown');
+  assert.ok(!JSON.stringify(smoke).includes('ALL_SMOKE_TESTS_PASSED'));
+  const e2e = await app.testingSmokeE2e.runE2ePlaywrightScenarios('grg', 'grg-admin', 'Suite');
+  assert.equal(e2e.result.state, 'unknown');
+  assert.ok(!JSON.stringify(e2e).includes('GREEN_PASS'));
+  await app.close();
+});
 
-  // 2. Frontend & Backend Analyzers
-  const feReport = await app.analyzers.analyzeFrontend(tenantId, actorId);
-  assert.equal(feReport.frontendReport.status, 'HEALTHY_ZERO_SMELLS');
-  assert.equal(feReport.frontendReport.accessibilityScore, 100.0);
-
-  const beReport = await app.analyzers.analyzeBackend(tenantId, actorId);
-  assert.equal(beReport.backendReport.status, 'HEALTHY_HEXAGONAL_ALIGNED');
-  assert.ok(beReport.backendReport.architectureQualityScore > 99.0);
-
-  // 3. Testing Smoke Engine & E2E Playwright Scenarios
-  const smoke = await app.testingSmokeE2e.runSmokeTests(tenantId, actorId, 'STAGING');
-  assert.equal(smoke.status, 'ALL_SMOKE_TESTS_PASSED');
-  assert.equal(smoke.scenariosCount, 5);
-
-  const e2e = await app.testingSmokeE2e.runE2ePlaywrightScenarios(tenantId, actorId, 'Full Checkout & RBAC Suite');
-  assert.equal(e2e.playwrightStatus, 'GREEN_PASS');
-  assert.equal(e2e.passedScenariosCount, 18);
-
-  // 4. Continuous Improvement Loop (Idle Scan)
-  const continuous = await app.continuousImprovement.runIdleImprovementScan(tenantId, actorId);
-  assert.equal(continuous.idleScanStatus, 'COMPLETED_BACKLOG_GENERATED');
-  assert.ok(continuous.improvementsCount >= 3);
-
+test('OneDeploy honesto: improvement scan vazio e honesto, nao 3 itens inventados', async () => {
+  const app = await createApp({ dataFile: null });
+  await app.controlPlane.createTenant({ id: 'grg', name: 'GRG' }, 'grg-admin');
+  const scan = await app.continuousImprovement.runIdleImprovementScan('grg', 'grg-admin');
+  assert.equal(scan.improvementsCount, 0);
+  assert.equal(scan.idleScanStatus, 'NO_PROPOSALS_YET');
+  assert.ok(!JSON.stringify(scan).includes('zero-copy streaming'));
   await app.close();
 });

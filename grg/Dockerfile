@@ -6,7 +6,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 FROM node:22.17.1-alpine
 ENV NODE_ENV=production
 WORKDIR /app
-RUN apk add --no-cache docker-cli && addgroup -S fenix && adduser -S -G fenix -u 10001 fenix
+# git: o repo-intel clona/le repositorios de verdade (git clone/log/diff). Sem ele o
+# scanner falha com "git: not found" e a capability cai em erro, nao em fallback.
+RUN apk add --no-cache docker-cli git && addgroup -S fenix && adduser -S -G fenix -u 10001 fenix
 COPY --from=dependencies --chown=fenix:fenix /app/node_modules ./node_modules
 COPY --chown=fenix:fenix src ./src
 COPY --chown=fenix:fenix public ./public

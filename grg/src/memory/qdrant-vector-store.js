@@ -65,9 +65,24 @@ class QdrantVectorStore {
     });
   }
 
-  async health() {
-    await this.request(`/collections/${encodeURIComponent(this.collection)}`, { method: 'GET' });
-    return { ok: true, adapter: 'qdrant', collection: this.collection };
+  // Uma sonda unica derruba o check critico quando o boot esta pesado: o qdrant responde,
+  // mas depois do timeout do HealthRegistry. Medido em producao (v32): container
+  // "Up 41 hours (healthy)" e /health degradado por "health probe timed out", verde na
+  // re-sondagem seguinte. O retry com backoff (2s/4s) distingue "esta subindo" de "caiu".
+  // O erro da ultima tentativa e propagado -- nunca engolido: qdrant fora do ar continua
+  // derrubando o health, que e o comportamento correto para um check critico.
+  async health(attempts = 3, sleep = (ms) => new Promise((r) => setTimeout(r, ms))) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        await this.request(`/collections/${encodeURIComponent(this.collection)}`, { method: 'GET' });
+        return { ok: true, adapter: 'qdrant', collection: this.collection, attempts: attempt };
+      } catch (error) {
+        lastError = error;
+        if (attempt < attempts) await sleep(2000 * attempt);
+      }
+    }
+    throw lastError;
   }
 }
 

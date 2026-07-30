@@ -41,9 +41,10 @@ test('GRG FENIX (OMEGA) Living Cognitive Operating System Test Suite', async () 
     title: 'Optimize REST Serialization for Zero-Copy Streaming',
     description: 'Implement buffer streaming to reduce TTFB by 40%',
   });
-  assert.equal(evaluation.status, 'APPROVED_BY_COUNCIL');
-  assert.equal(evaluation.unanimous, true);
-  assert.equal(evaluation.votes.length, 6);
+  // Conselho honesto: sem assentos staffed e sem votos reais lidos do ApprovalEngine, uma
+  // proposta recem-aberta decide NADA (antes: APPROVED_BY_COUNCIL unanime fabricado, sem revisao).
+  assert.equal(evaluation.status, 'PENDING_REVIEW');
+  assert.equal(evaluation.unanimous, false);
 
   // 4. Context Elimination & Model Economy Engine
   const routeCheckLocal = await app.modelEconomy.evaluateTaskRoute(tenantId, actorId, 'Criar um ERP com auth OIDC');

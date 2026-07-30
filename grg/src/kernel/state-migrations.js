@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 32;
+const CURRENT_SCHEMA_VERSION = 34;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -70,6 +70,19 @@ const COLLECTIONS_BY_VERSION = {
   // estrategico. Estado (refs de missao), estado derivado do estado das missoes. O Brain
   // decompoe um objetivo em N missoes via mission-planner e as agrupa aqui.
   32: ['programs'],
+  // Chat de voz ao vivo. `conversations` e `messages` sao a memoria da conversa: sem elas o
+  // chat esquecia tudo ao fechar a aba, o que em voz e pior que em texto (o usuario nao ve o
+  // que disse para poder repetir). `chatPreferences` guarda modo de entrada, TTS e
+  // sensibilidade do VAD por usuario -- no banco, nao no localStorage, porque o mesmo dono
+  // usa celular e desktop e espera o mesmo setup. Migracao ADITIVA: nenhuma coluna existente
+  // e tocada, nada e reescrito.
+  33: ['conversations', 'messages', 'chatPreferences'],
+  // FLUXO 8 — API Connection Manager. `apiConnectionState` e o estado CORRENTE de conexao com
+  // cada servico externo (a API Platform hoje): ONLINE/OFFLINE/CONNECTING/DEGRADED, derivado de
+  // health-check real, com motivo/ultima tentativa/proxima tentativa/tempo offline. Nunca
+  // resposta ficticia: enquanto OFFLINE, o estado diz OFFLINE. `apiConnectionEvents` e o
+  // historico append-only de transicoes (com teto de retencao) -- para o Digital Twin e alertas.
+  34: ['apiConnectionState', 'apiConnectionEvents'],
 };
 
 function normalizeVersion(value) {

@@ -11,13 +11,20 @@ test('GRG FENIX UIOS Universal Intelligence Operating System Test Suite', async 
   await app.controlPlane.createTenant({ id: tenantId, name: 'GRG' }, actorId);
 
   // 1. Knowledge Operating System (KOS Manifest & Semantic Loader)
+  // KOS honesto: conta arquivos *VOLUME.md reais. Sem eles embarcados, declara UNAVAILABLE com
+  // totalVolumes unknown (antes: 51 fabricado). O contrato aceita ambos, exigindo proveniencia.
   const manifest = await app.kos.getManifest(tenantId, actorId);
-  assert.equal(manifest.totalVolumes, 51);
-  assert.equal(manifest.status, 'OPERATIONAL_KNOWLEDGE_GRAPH');
+  if (manifest.status === 'UNAVAILABLE') {
+    assert.equal(manifest.totalVolumes.state, 'unknown');
+    assert.ok(manifest.constitutionPath);
+  } else {
+    assert.equal(manifest.totalVolumes.state, 'measured');
+  }
 
   const semanticContext = await app.kos.loadSemanticContext(tenantId, actorId, [0, 1, 2, 3, 10, 22, 23]);
   assert.equal(semanticContext.requestedVolumesCount, 7);
-  assert.ok(semanticContext.tokenReductionPercentage > 90);
+  // Sem inventar reducao de token: reporta quantos volumes REALMENTE existem no disco.
+  assert.equal(semanticContext.loadedCount + semanticContext.missing.length, 7);
 
   // 2. Capability Operating System (CapOS) Registry
   const registeredCap = await app.capOs.registerCapability(tenantId, actorId, {

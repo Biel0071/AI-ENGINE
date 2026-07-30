@@ -22,8 +22,16 @@ function buildProvidersFromEnv(env = process.env, options = {}) {
       model: env.GRG_AIPLATFORM_MODEL || null,
     });
   }
+  // baseUrl explicito: o DEFAULT_BASE_URL do OllamaProvider e resolvido de process.env no
+  // require do modulo, entao sem passar isto aqui um `env` injetado (teste, multi-tenant,
+  // preflight) seria ignorado em silencio e o provider apontaria para outro endereco.
   if (env.FENIX_ENABLE_OLLAMA === '1') {
-    providers.ollama = new OllamaProvider({ model: env.GRG_LLM_MODEL || 'qwen2.5:3b' });
+    providers.ollama = new OllamaProvider({
+      model: env.GRG_LLM_MODEL || 'qwen2.5:3b',
+      ...(env.FENIX_OLLAMA_URL || env.GRG_OLLAMA_DIRECT_URL
+        ? { baseUrl: env.FENIX_OLLAMA_URL || env.GRG_OLLAMA_DIRECT_URL }
+        : {}),
+    });
   }
   return providers;
 }

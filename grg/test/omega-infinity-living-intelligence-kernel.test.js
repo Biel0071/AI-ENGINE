@@ -10,15 +10,21 @@ test('GRG FENIX (OMEGA INFINITY) Living Intelligence Kernel Test Suite', async (
 
   await app.controlPlane.createTenant({ id: tenantId, name: 'GRG' }, actorId);
 
-  // 1. LAW 001 Enforcer Verification
-  const lawProof = await app.cognitiveLaws.verifyLaw001(tenantId, actorId, { name: 'Compress Memory Footprint to 5k Capabilities' });
+  // 1. LAW 001 honesta: o veredito DERIVA das medicoes reais (antes era true incondicional com
+  // deltas fabricados). Com melhoria medida e sem regressao -> COMPLIANT.
+  const lawProof = await app.cognitiveLaws.verifyLaw001(tenantId, actorId, {
+    name: 'Compress Memory Footprint to 5k Capabilities',
+    measurements: { tokens: { before: 5000, after: 3000 }, speed: { before: 100, after: 140 } },
+  });
+  assert.equal(lawProof.verdict, 'COMPLIANT');
   assert.equal(lawProof.law001Compliant, true);
-  assert.equal(lawProof.metricsDelta.tokensReduced, '-40.0%');
+  assert.ok(lawProof.improvedMetrics.includes('tokens'));
 
-  // 2. Intelligence Crystal Reorganization
+  // 2. Intelligence Crystal honesto: sem capsula no store, nodesCount medido = 0 e as taxas
+  // se declaram unknown (antes: nodesCount 1420 e duplicationRate 0.0 fabricados).
   const crystal = await app.selfEvolutionKernel.getIntelligenceCrystalState(tenantId, actorId);
-  assert.equal(crystal.crystalStructure, 'HYPER_DENSE_CRYSTALLINE');
-  assert.equal(crystal.duplicationRate, 0.0);
+  assert.equal(crystal.nodesCount.value, 0);
+  assert.equal(crystal.duplicationRate.state, 'unknown');
 
   // 3. Cognitive DNA Compiler (Intention DNA)
   const dna = await app.cognitiveDnaCompiler.compileToIntentionDna(tenantId, actorId, {

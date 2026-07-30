@@ -15,9 +15,12 @@ test('GRG FENIX KEOS Knowledge Execution Operating System Test Suite', async () 
     type: 'AI_RESPONSE',
     payload: { model: 'claude-3.5-sonnet', proposal: 'Refactor Auth middleware to zero-trust bearer token validation' },
   });
-  assert.equal(ucpResult.validationStatus, 'VALIDATED_AND_ENRICHED');
-  assert.equal(ucpResult.stagesCompleted, 13);
-  assert.ok(ucpResult.truthConfidenceScore > 0.95);
+  // UCP honesto: INGEST/VALIDATE/CLASSIFY executam de verdade (hash real); os estagios que
+  // dependem de embedding/simulacao ausentes sao NOT_IMPLEMENTED. Sem truthConfidenceScore fixo.
+  assert.equal(ucpResult.inputType, 'AI_RESPONSE');
+  assert.ok(ucpResult.payloadHash, 'o payload e enderecado por hash real');
+  assert.equal(ucpResult.stagesCompleted, 3); // 3 reais executados; os demais NOT_IMPLEMENTED
+  assert.equal(ucpResult.stages.find((s) => s.stage === 4).status, 'NOT_IMPLEMENTED');
 
   // 2. Universal AI & Technology Adapters
   const aiAdapter = await app.universalAdapters.invokeAiAdapter(tenantId, actorId, 'deepseek-r1', 'Optimize GraphQL query engine');

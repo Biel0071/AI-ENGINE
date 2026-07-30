@@ -82,6 +82,20 @@ const DEFAULT_LIMITS = {
   // Benchmark por missao concluida. Playbooks NAO entram aqui: sao conhecimento
   // reutilizavel (estado), e podar um playbook e perder o que a plataforma aprendeu.
   missionBenchmarks: 500,
+  // Chat de voz: `messages` tem a maior taxa de escrita depois dos ticks -- uma linha por
+  // turno, e conversa por voz gera turnos curtos e rapidos. Cada linha carrega o texto
+  // completo (~200-600 bytes). 2.000 = ~1 MB no documento unico.
+  //
+  // Limitacao conhecida e assumida: a poda e por colecao, entao ela corta as mensagens mais
+  // antigas GLOBALMENTE, misturando conversas de tenants diferentes. Uma conversa antiga pode
+  // perder o inicio e manter o fim. Isso e aceitavel porque (a) o resumo da conversa fica em
+  // `conversations`, que NAO e podada, e (b) o indice semantico vive no MemoryEngine/qdrant,
+  // fora deste documento -- o contexto recuperado sobrevive a poda do transcript literal.
+  // O caminho definitivo e mover messages para uma tabela propria no Postgres, fora do
+  // documento unico; enquanto o store e um JSON so, o teto e a unica protecao real.
+  messages: 2_000,
+  // `conversations` e `chatPreferences` NAO entram: sao estado. Perder uma preferencia
+  // silenciosamente faria o modo de voz do usuario "voltar sozinho" para texto.
 };
 
 // Campo de ordenacao temporal por colecao (fallback: ordem de insercao).
