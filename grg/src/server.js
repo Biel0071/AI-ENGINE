@@ -530,6 +530,25 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       }
       // Telemetria real do host + infra (substitui as metricas simuladas).
       if (req.method === 'GET' && url.pathname === '/api/observability/metrics') return sendJson(res, 200, await app.observabilityCenter.getMetrics(tenantId, actorId), requestId);
+      // Serie temporal medida das mesmas metricas (uma amostra por tick do loop observability).
+      // E a fonte dos sparklines do painel: sem serie, o painel mostra ausencia, nao uma linha
+      // inventada. `runtime:read` porque e leitura de telemetria agregada, sem segredo.
+      if (req.method === 'GET' && url.pathname === '/api/observability/series') {
+        const raw = Number(url.searchParams.get('windowMinutes'));
+        const names = url.searchParams.get('names');
+        return sendJson(res, 200, await app.observabilitySeries.series(tenantId, actorId, {
+          windowMinutes: Number.isFinite(raw) && raw > 0 ? raw : 120,
+          ...(names ? { names: names.split(',').map((n) => n.trim()).filter(Boolean) } : {}),
+        }), requestId);
+      }
+      // Forca UMA amostra agora, sem esperar a cadencia de 60s do worker. Existe por dois motivos
+      // medidos: (a) em desenvolvimento nao ha worker, entao sem isto a serie nunca sairia de
+      // "nao medido" e o painel nao poderia ser verificado; (b) em producao permite provar que o
+      // coletor funciona sem esperar um minuto. runtime:admin: e uma escrita no store.
+      if (req.method === 'POST' && url.pathname === '/api/observability/series/sample') {
+        await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin');
+        return sendJson(res, 200, await app.observabilitySeries.sample(tenantId, actorId, { trigger: 'operator' }), requestId);
+      }
       // FLUXO 8 — estado de conexao com servicos externos (API Platform). Estado real
       // OFFLINE/ONLINE/CONNECTING derivado de health-check, para o Digital Twin e alertas.
       if (req.method === 'GET' && url.pathname === '/api/connection') { await app.controlPlane.authorize(tenantId, actorId, 'runtime:read'); return sendJson(res, 200, await app.apiConnection.status(), requestId); }
@@ -598,6 +617,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         logger.error({ event: 'operational.activation.failed', error, capability: 'operations' });
       });
   }
+
+  // FÊNIX LIVE BOOT MODE & Runtime Kernel persistent loop
+  if (app.runtimeKernel) {
+    app.runtimeKernel.start().catch((err) => {
+      logger.error({ event: 'runtime.kernel.boot.failed', error: err, capability: 'kernel' });
+    });
+  }
+
   return server;
 }
 

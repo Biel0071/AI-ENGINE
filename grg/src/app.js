@@ -46,6 +46,8 @@ const { S3ObjectStore } = require('./infrastructure/storage/s3-object-store');
 const { MemoryEngine } = require('./memory/memory-engine');
 const { QdrantVectorStore } = require('./memory/qdrant-vector-store');
 const { KnowledgeGraph } = require('./knowledge-graph/knowledge-graph');
+const { LiveBootKernel } = require('./kernel/live-boot-kernel');
+const { RuntimeKernel } = require('./kernel/runtime-kernel');
 const { EventStore } = require('./eventing/event-store');
 const { FabricEventBus } = require('./eventing/fabric-event-bus');
 const { ServiceRegistry } = require('./fabric/service-registry');
@@ -245,12 +247,16 @@ async function createApp(options = {}) {
   const missions = new MissionKernel({ store, controlPlane, hierarchy, jobs, approvals, events: fabricEvents }).attach();
   const missionPlanner = new MissionPlanner({ store, controlPlane, hierarchy, missions, events: fabricEvents });
 
+  const liveBootKernel = new LiveBootKernel({ eventBus: bus, logger });
+  const runtimeKernel = new RuntimeKernel({ eventBus: bus, logger, liveBootKernel });
+
   const app = {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
+    liveBootKernel, runtimeKernel,
   };
 
   // FLUXO 8 — monitor de conexao com servicos externos. Compartilha os MESMOS providers do
@@ -321,6 +327,7 @@ async function createApp(options = {}) {
   const { MasterNodeService } = require('./ops/master-node');
   const { DeployCenterService } = require('./operations/deploy-center');
   const { ObservabilityCenterService } = require('./operations/observability-center');
+  const { ObservabilitySeriesService } = require('./operations/observability-series');
   const { CognitivePerformanceEngine } = require('./performance/cognitive-performance-engine');
   const { CognitiveOptimizationEngine } = require('./cognitive/cognitive-optimization-engine');
   const { PluginSkillsEcosystem } = require('./plugins/plugin-skills-ecosystem');
@@ -438,6 +445,9 @@ async function createApp(options = {}) {
   app.masterNode = new MasterNodeService({ store, bus, controlPlane, approvals, sandbox, vpsOps: app.vpsOps, health });
   app.deployCenter = new DeployCenterService({ store, bus, controlPlane, deployer });
   app.observabilityCenter = new ObservabilityCenterService({ store, bus, controlPlane, metrics, health, aiGateway });
+  // Serie temporal: compoe o center (nao remede nada) e persiste uma amostra por tick do loop
+  // `observability`. Sem ela o painel nao tem historico medido para desenhar um sparkline.
+  app.observabilitySeries = new ObservabilitySeriesService({ store, controlPlane, observabilityCenter: app.observabilityCenter, metrics });
   app.cognitivePerformance = new CognitivePerformanceEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
   app.cognitiveOptimization = new CognitiveOptimizationEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
   app.pluginSkills = new PluginSkillsEcosystem({ store, bus, controlPlane, approvals });
