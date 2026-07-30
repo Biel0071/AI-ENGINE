@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/design-system.css">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/city-overrides.css">
+  <link rel="stylesheet" href="/living-panels.css">
 </head>
 <body>
   <div class="os-shell">
@@ -62,8 +63,11 @@
       <header class="topbar">
         <div><span class="eyebrow">GRG FÊNIX Ω∞ — FÊNIX LIVE WORKSPACE</span><h1>Painel FÊNIX OS Live Workspace</h1></div>
         <div class="top-actions">
+          <!-- O modelo ativo vem de /api/ai/telemetry (ultima chamada real) ou do
+               provider-registry. "GPT-4o / Router" fixo aqui mentia sobre qual modelo
+               respondeu -- inclusive quando nenhum provider estava conectado. -->
           <div style="font-size:11px; background:rgba(15,23,42,0.6); padding:4px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); color:var(--gold);">
-            <span>MODELO IA:</span> <b id="activeAiModel">GPT-4o / Router</b>
+            <span>MODELO IA:</span> <b id="activeAiModel">—</b>
           </div>
           <button id="cmdKBtn" class="action-btn" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);" title="Command Palette (Ctrl+K)">⌘K Command</button>
           <button id="drawerToggleBtn" class="action-btn" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);" title="Toggle Task Drawer (Ctrl+J)">⚡ Tasks (Ctrl+J)</button>
@@ -128,31 +132,35 @@
         <!-- OPERATIONAL COMMAND TERMINAL -->
         <section id="opTerminal" class="panel" style="margin-top:20px; background:#070a0f; border:1px solid #1e293b;">
           <div class="section-title"><div><span class="eyebrow">OPERATIONAL COMMAND TERMINAL</span><h2>Console Operacional em Tempo Real</h2></div><span class="status-pill active">LIVE LOGS</span></div>
-          <div id="terminalOutput" style="font-family:ui-monospace,monospace; font-size:12px; color:#38bdf8; background:#020617; padding:14px; border-radius:8px; height:140px; overflow-y:auto; margin-top:12px; line-height:1.5;">
-            <div>[SYSTEM] Terminal FÊNIX OS inicializado em modo live.</div>
-            <div>[KERNEL] Barramento cognitivo pronto. Ouvindo eventos em tempo real...</div>
-          </div>
+          <!-- Vazio de proposito. Cada linha aqui e um evento REAL vindo de /api/events.
+               Log pre-escrito no HTML finge atividade que nunca aconteceu -- e a versao
+               visual do mesmo problema que o simulation-audit pega no backend. -->
+          <div id="terminalOutput" class="op-terminal" aria-live="polite"></div>
+          <div id="terminalEmpty" class="terminal-empty">Aguardando eventos do barramento.</div>
         </section>
 
         <!-- DAILY BRIEFING CARD -->
         <section id="dailyBriefCard" class="panel" style="margin-top:20px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(15,23,42,0.8)); border:1px solid rgba(16,185,129,0.2);">
           <div class="section-title"><div><span class="eyebrow">EXECUTIVE COGNITIVE ASSISTANT</span><h2>Daily Briefing & ROI Status</h2></div><span class="status-pill active">LIVE BRIEF</span></div>
-          <div id="dailyBriefContent" style="font-size:14px; line-height:1.6; color:#d1d5db;">
-            <p><strong>Bom dia Gabriel.</strong> Ontem o FÊNIX implementou 14 melhorias, corrigiu 3 bugs, atualizou 2 MCPs e pesquisou 7 papers de performance.</p>
-          </div>
+          <!-- Vazio de proposito. O briefing vem de /api/company/daily-analysis + /api/insights,
+               derivado de eventos reais. A versao anterior afirmava "14 melhorias, 3 bugs,
+               2 MCPs, 7 papers" -- quatro numeros que ninguem mediu, iguais todo dia. -->
+          <div id="dailyBriefContent" style="font-size:14px; line-height:1.6; color:#d1d5db;"></div>
         </section>
       </div>
 
       <!-- VIEW: MASTER NODE VPS -->
       <div id="view-masterNode" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">MASTER NODE OPERATIONAL PLANE</span><h2>Status do Master Node VPS</h2></div><span id="masterNodePill" class="status-pill active">ONLINE</span></div>
+          <div class="section-title"><div><span class="eyebrow">MASTER NODE OPERATIONAL PLANE</span><h2>Status do Master Node VPS</h2></div><span id="masterNodePill" class="status-pill neutral">—</span></div>
           <p>O Master Node VPS gerencia todos os runtimes, pipelines de self-deploy e monitoramento de saúde do ecossistema.</p>
+          <!-- Slots vazios de proposito: o valor chega por JS de /api/health e /api/observability/metrics.
+               Um "—" aqui significa "ainda nao medi" — nunca inventar um numero plausivel. -->
           <div class="metric-grid" style="margin-top:15px;">
-            <div class="mini-metric"><span>Self-Deploy Pipeline</span><b id="mnSelfDeployStatus">READY</b></div>
-            <div class="mini-metric"><span>Master Uptime</span><b>99.99%</b></div>
-            <div class="mini-metric"><span>Docker Containers</span><b>12 Ativos</b></div>
-            <div class="mini-metric"><span>Canary Status</span><b style="color:var(--green)">HEALTHY</b></div>
+            <div class="mini-metric"><span>Self-Deploy Pipeline</span><b id="mnSelfDeployStatus">—</b></div>
+            <div class="mini-metric"><span>Uptime do processo</span><b id="mnUptime">—</b></div>
+            <div class="mini-metric"><span>Recursos descobertos</span><b id="mnContainers">—</b></div>
+            <div class="mini-metric"><span>Saúde agregada</span><b id="mnHealth">—</b></div>
           </div>
         </section>
       </div>
@@ -162,11 +170,12 @@
         <section class="panel">
           <div class="section-title"><div><span class="eyebrow">GOVERNED PRODUCTION PIPELINE</span><h2>Deploy Center (11 Stages)</h2></div><span class="status-pill active">GOVERNED</span></div>
           <p>Pipeline governado de produção: Draft → Implemented → Validated → Tests Passed → Security Checked → Benchmark Passed → Policy Auto-Approve → Staging → Production → Observed → Learning.</p>
-          <div id="deployPipelineStages" class="steps" style="margin-top:15px;">
-            <div class="step SUCCEEDED"><b>STAGE 1-6</b>Tests & Security Passed</div>
-            <div class="step RUNNING"><b>STAGE 7</b>Ready for Policy Auto-Approve</div>
-            <div class="step PENDING"><b>STAGE 8-11</b>Staging, Production & Observed</div>
-          </div>
+          <!-- Vazio de proposito. Os estagios vem de /api/governance/readiness-matrix e do
+               onedeploy real. A versao anterior afirmava "STAGE 1-6 Tests & Security Passed"
+               sem nenhum teste ter rodado -- exatamente o que o onedeploy-orchestrator
+               parou de fazer no backend (12 estagios COMPLETED fabricados). -->
+          <div id="deployPipelineStages" class="steps" style="margin-top:15px;"></div>
+          <div id="deployStagesEmpty" class="dag-empty">Nenhum pipeline executado nesta sessão.</div>
         </section>
       </div>
 
@@ -180,12 +189,11 @@
           <!-- PROGRAM -> MISSION -> JOB DAG TREE -->
           <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--line);">
             <h3 style="font-size:14px; color:#f8fafc; margin-bottom:12px;">Árvore Hierárquica: Program → Mission → Job</h3>
-            <div id="dagTree" style="font-size:12px; line-height:1.8; color:#cbd5e1; background:rgba(15,23,42,0.5); padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
-              <div>📁 <b>Program: FÊNIX Autonomous Software Factory</b></div>
-              <div style="padding-left:20px;">└─ 🎯 <b>Mission: Materializing Operational System</b></div>
-              <div style="padding-left:40px;">├─ ⚡ <b>Job #1: Unified Cognitive Core Dispatch</b> <span class="status-pill active">SUCCEEDED</span></div>
-              <div style="padding-left:40px;">└─ ⚡ <b>Job #2: OneDeploy Verification</b> <span class="status-pill active">RUNNING</span></div>
-            </div>
+            <!-- Vazio de proposito. A arvore e montada de /api/executive/programs + /api/missions
+                 + jobs reais. A versao anterior mostrava um Job #1 SUCCEEDED e um Job #2 RUNNING
+                 que nunca existiram: hierarquia inventada com status inventado. -->
+            <div id="dagTree" class="dag-tree"></div>
+            <div id="dagEmpty" class="dag-empty">Nenhum programa ativo. Descreva um objetivo ao Avatar para gerar a hierarquia real.</div>
           </div>
         </section>
       </div>
@@ -201,17 +209,12 @@
       <!-- VIEW: PROJECTS & EXECUTIVE BRAIN -->
       <div id="view-projects" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">PROJECT FACTORY & EXECUTIVE BRAIN</span><h2>Projetos, Programas & Roadmaps</h2></div><span class="count">1 Projeto Ativo</span></div>
-          <div id="projectList" class="health-list" style="margin-top:15px;">
-            <div class="health-item ACTIVE"><i></i><b>ai-engine-core</b><span>GRG FÊNIX Core System · Active Repository</span></div>
-          </div>
+          <div class="section-title"><div><span class="eyebrow">PROJECT FACTORY & EXECUTIVE BRAIN</span><h2>Projetos, Programas & Roadmaps</h2></div><span id="projectCount" class="count">—</span></div>
+          <!-- Projetos vem de /api/overview (metrics.projects + repositories reais do store).
+               Programas vem de /api/executive/programs. Lista vazia = vazio honesto. -->
+          <div id="projectList" class="health-list" style="margin-top:15px;"></div>
           <h3 style="margin-top:20px; font-size:14px; color:#e2e8f0;">Programas & Roadmaps Executivos</h3>
-          <div class="metric-grid" style="margin-top:10px;">
-            <div class="mini-metric"><span>Enterprise SaaS Roadmap</span><b style="color:var(--green)">ATIVO</b></div>
-            <div class="mini-metric"><span>Autonomous Engineering</span><b style="color:var(--green)">ATIVO</b></div>
-            <div class="mini-metric"><span>Executive Brain Custom Sync</span><b style="color:var(--yellow)">Aguardando Executive Brain</b></div>
-            <div class="mini-metric"><span>System Reborn Kernel</span><b style="color:var(--yellow)">Aguardando Executive Brain</b></div>
-          </div>
+          <div id="programList" class="metric-grid" style="margin-top:10px;"></div>
         </section>
       </div>
 
@@ -227,12 +230,14 @@
       <!-- VIEW: COGNITIVE SPEED & HOT MEMORY -->
       <div id="view-performance" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">COGNITIVE PERFORMANCE ENGINE</span><h2>Cognitive Speed Score & Memory</h2></div><span class="score" style="color:var(--green)">96.4</span></div>
+          <div class="section-title"><div><span class="eyebrow">COGNITIVE PERFORMANCE ENGINE</span><h2>Cognitive Speed Score & Memory</h2></div><span id="perfScore" class="score">—</span></div>
+          <!-- O speed score vem de /api/performance/speed-score e so existe apos chamadas reais
+               de IA. Sem chamadas, "— sem chamadas": ausencia de medicao, nao zero. -->
           <div class="metric-grid" style="margin-top:15px;">
-            <div class="mini-metric"><span>L0-L5 Hot Memory</span><b>Prewarmed</b></div>
-            <div class="mini-metric"><span>TTFB Latency</span><b>-52.0%</b></div>
-            <div class="mini-metric"><span>Token Reduction</span><b>-92.0%</b></div>
-            <div class="mini-metric"><span>Knowledge Graph Nodes</span><b>820,000</b></div>
+            <div class="mini-metric"><span>Hot Memory (L0-L5)</span><b id="perfHotMemory">—</b></div>
+            <div class="mini-metric"><span>Latência média medida</span><b id="perfLatency">—</b></div>
+            <div class="mini-metric"><span>Tokens consumidos</span><b id="perfTokens">—</b></div>
+            <div class="mini-metric"><span>Nós no Knowledge Graph</span><b id="perfGraphNodes">—</b></div>
           </div>
         </section>
       </div>
@@ -248,11 +253,15 @@
       <!-- VIEW: KNOWLEDGE WORKSPACE & SEARCH -->
       <div id="view-knowledge" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">KNOWLEDGE WORKSPACE (KOS)</span><h2>Knowledge Workspace & Pesquisa de Memória</h2></div><span class="count">150 Volumes</span></div>
+          <div class="section-title"><div><span class="eyebrow">KNOWLEDGE WORKSPACE (KOS)</span><h2>Knowledge Workspace & Pesquisa de Memória</h2></div><span id="knowledgeCount" class="count">—</span></div>
           <div style="margin-top:14px;">
             <input type="text" id="memorySearchInput" placeholder="Pesquisar cápsulas de conhecimento e repositório de memória..." style="width:100%; padding:10px 14px; background:#070a0f; border:1px solid var(--line); border-radius:8px; color:#fff; font-size:13px;">
           </div>
-          <p style="margin-top:12px;">Índice ultra-esparso contendo 150 volumes da Constituição FÊNIX e cápsulas de conhecimento geradas dinamicamente.</p>
+          <!-- A contagem de volumes vem de /api/keos/constitution/index, que LE o diretorio
+               docs/constitution de verdade. Se o diretorio nao existe, o endpoint devolve
+               UNAVAILABLE + unknown() e aqui aparece a ausencia, nao um numero. -->
+          <div id="knowledgeSummary" style="margin-top:12px;"></div>
+          <div id="memorySearchResults" class="health-list" style="margin-top:12px;"></div>
         </section>
       </div>
 
@@ -267,20 +276,22 @@
       <!-- VIEW: AGENT SWARM -->
       <div id="view-swarm" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">AGENT SWARM ECOSYSTEM</span><h2>15 Agentes Especialistas Roteados</h2></div><span class="count">15 Agentes</span></div>
-          <div class="health-list" style="margin-top:15px;">
-            <div class="health-item ACTIVE"><i></i><b>Architect Agent</b><span>Especialista em contratos Hexagonais</span></div>
-            <div class="health-item ACTIVE"><i></i><b>Security Sentinel</b><span>Verificação de vulnerabilidades e audit</span></div>
-            <div class="health-item ACTIVE"><i></i><b>Refactor Master</b><span>Refatoração e remoção de código morto</span></div>
-          </div>
+          <div class="section-title"><div><span class="eyebrow">AGENT SWARM ECOSYSTEM</span><h2>Agentes Especialistas Roteados</h2></div><span id="swarmCount" class="count">—</span></div>
+          <!-- O enxame vem de /api/agents/swarm. Cada agente carrega o estado REAL derivado
+               do event store (ACTIVE se houve evento recente, IDLE se nao, UNKNOWN sem bus).
+               Nao existe agente "sempre ACTIVE" escrito aqui. -->
+          <div id="swarmList" class="health-list" style="margin-top:15px;"></div>
         </section>
       </div>
 
       <!-- VIEW: CAPABILITIES CATALOG -->
       <div id="view-capabilities" class="view-section">
         <section class="panel">
-          <div class="section-title"><div><span class="eyebrow">CAPABILITY OPERATING SYSTEM (CapOS)</span><h2>Catálogo de Capacidades Reutilizáveis</h2></div><span class="count">4.281 Capabilities</span></div>
-          <p>Capacidades registradas e validadas com métricas de uso, latência e custo acumulado.</p>
+          <div class="section-title"><div><span class="eyebrow">CAPABILITY OPERATING SYSTEM (CapOS)</span><h2>Catálogo de Capacidades Reutilizáveis</h2></div><span id="capabilityCount" class="count">—</span></div>
+          <p>Capacidades registradas com métricas de uso, latência e custo acumulado — cada uma medida na execução, não declarada no registro.</p>
+          <!-- Vem de /api/capabilities. Uma capability recem-registrada tem health unknown()
+               e usageCount 0 ate ser executada: e o padrao do tool-registry, nunca healthy fabricado. -->
+          <div id="capabilityList" class="health-list" style="margin-top:15px;"></div>
         </section>
       </div>
 

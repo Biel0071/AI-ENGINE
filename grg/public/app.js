@@ -135,6 +135,181 @@ function renderOperations(operations) {
 function renderJobs(jobs) { state.jobs=jobs; ui.jobCount.textContent=`${jobs.length} jobs`; if (ui.consoleJobs) ui.consoleJobs.textContent = String(jobs.length); const ordered=jobs.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0,12); ui.timeline.innerHTML=ordered.length?ordered.map((job)=>`<div class="timeline-item"><b>${escapeHtml(job.type)} · ${escapeHtml(job.status)}</b><small>${formatTime(job.updatedAt)} · tentativa ${job.attempts}/${job.maxAttempts}</small></div>`).join(''):'<div class="empty-city">Nenhuma execução registrada.</div>'; }
 function renderTelemetry(telemetry, overview) { const calls=telemetry?.calls || telemetry?.totalCalls || overview?.metrics?.aiCalls || 0; const tokens=telemetry?.tokens || telemetry?.totalTokens || 0; const cost=telemetry?.costUsd || telemetry?.totalCostUsd || 0; ui.gatewayState.className=`status-pill ${calls?'active':'neutral'}`; ui.gatewayState.textContent=calls?'OPERACIONAL':'SEM CHAMADAS'; ui.aiStats.innerHTML=`<div class="ai-stat"><strong>${formatNumber(calls)}</strong><span>Chamadas</span></div><div class="ai-stat"><strong>${formatNumber(tokens)}</strong><span>Tokens</span></div><div class="ai-stat"><strong>$${Number(cost).toFixed(4)}</strong><span>Custo estimado</span></div><div class="ai-stat"><strong>${formatNumber(overview?.metrics?.capabilities)}</strong><span>Capabilities</span></div>`; const metrics=[['Projetos',overview?.metrics?.projects],['Repositórios',overview?.metrics?.repositories],['Memórias',overview?.metrics?.memories],['Nós da cidade',overview?.metrics?.cityNodes]]; ui.systemMetrics.innerHTML=metrics.map(([label,value])=>`<div class="mini-metric"><span>${escapeHtml(label)}</span><b>${formatNumber(value)}</b></div>`).join(''); }
 
+// ---------------------------------------------------------------------------
+// PAINEIS VIVOS — cada slot que antes tinha numero escrito no HTML.
+//
+// Regra unica destes renderers: sem dado medido, escrever o marcador de ausencia.
+// Nunca zero no lugar de "nao sei", nunca um numero plausivel de fallback. Um "—" na
+// tela e informacao honesta ("o FENIX ainda nao mediu isso"); um 99.99% inventado
+// destroi a confianca em todos os outros numeros do painel.
+// ---------------------------------------------------------------------------
+
+const DASH = '—';
+const setText = (el, value) => { if (el) el.textContent = value === null || value === undefined || value === '' ? DASH : String(value); };
+const el = (id) => document.getElementById(id);
+
+// Uptime do processo vem de /health (checks) ou da telemetria de sistema. Formata em
+// dias/horas legiveis; sem medicao, ausencia.
+function formatUptime(seconds) {
+  const total = Number(seconds);
+  if (!Number.isFinite(total) || total <= 0) return null;
+  const d = Math.floor(total / 86400), h = Math.floor((total % 86400) / 3600), m = Math.floor((total % 3600) / 60);
+  return d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function renderMasterNode({ health, operations, overview, obs }) {
+  const pill = el('masterNodePill');
+  if (pill) {
+    const ok = health?.ok === true;
+    const status = health ? (ok ? 'READY' : 'DEGRADED') : null;
+    pill.textContent = status || DASH;
+    pill.className = `status-pill ${health ? (ok ? 'active' : 'degraded') : 'neutral'}`;
+  }
+  // O estado do self-deploy e o do readiness real; sem readiness, ausencia (nao "READY").
+  setText(el('mnSelfDeployStatus'), operations?.readiness?.status || null);
+  // uptime vem do envelope measured() de /observability/metrics (process.uptime), a unica
+  // fonte real. /health nao expoe uptime -- ler dali daria undefined virando "—" sempre.
+  setText(el('mnUptime'), formatUptime(measuredValue(obs?.system?.uptimeSeconds)));
+  // "Recursos descobertos" e a contagem real do discovery, nao um numero de containers fixo.
+  const discovered = overview?.metrics?.discoveredResources;
+  setText(el('mnContainers'), Number.isFinite(Number(discovered)) ? formatNumber(discovered) : null);
+  const critical = health?.checks ? Object.values(health.checks).filter((c) => c && c.critical) : [];
+  setText(el('mnHealth'), critical.length ? `${critical.filter((c) => c.ok).length}/${critical.length} críticos ok` : null);
+}
+
+function renderPerformance({ speed, hotMemory, telemetry, overview }) {
+  const score = measuredValue(speed?.overallScore);
+  setText(el('perfScore'), score === null ? DASH : Number(score).toFixed(1));
+  // Hot memory: o UNICO campo real de /performance/hot-memory hoje e cachedItemsCount (conta
+  // itens de verdade). Os `levels` do endpoint ainda tem size/hitCount FABRICADOS (142, 89,
+  // 64...) -- o auditor marca `performance: 9 sinais` justamente por isso. Nao exibo aquilo
+  // como se fosse medido: mostro a contagem real e nada mais.
+  const cached = hotMemory?.cachedItemsCount;
+  setText(el('perfHotMemory'), Number.isFinite(Number(cached)) ? `${formatNumber(cached)} itens em cache` : null);
+  const latency = measuredValue(speed?.avgLatencyMs) ?? telemetry?.avgLatencyMs ?? null;
+  setText(el('perfLatency'), latency === null ? null : `${Math.round(Number(latency))} ms`);
+  // telemetry usa totalTokens; `tokens` nao existe no contrato e daria undefined.
+  const tokens = telemetry?.totalTokens ?? telemetry?.tokens ?? null;
+  setText(el('perfTokens'), tokens === null ? null : formatNumber(tokens));
+  const nodes = overview?.metrics?.graphEdges;
+  setText(el('perfGraphNodes'), Number.isFinite(Number(nodes)) ? formatNumber(nodes) : null);
+}
+
+function renderProjects({ overview, programs }) {
+  const projects = overview?.metrics?.projects;
+  setText(el('projectCount'), Number.isFinite(Number(projects)) ? `${formatNumber(projects)} projetos` : null);
+  const list = el('projectList');
+  if (list) {
+    const repos = overview?.recentRepositories || [];
+    list.innerHTML = repos.length
+      ? repos.map((r) => `<div class="health-item ACTIVE"><i></i><b>${escapeHtml(r.name || r.id)}</b><span>${escapeHtml(r.url || r.provider || 'repositório registrado')}</span></div>`).join('')
+      : `<div class="empty-city">Nenhum repositório registrado${Number(projects) > 0 ? ` (${formatNumber(projects)} projetos sem repo vinculado)` : ''}.</div>`;
+  }
+  const programList = el('programList');
+  if (programList) {
+    const items = programs?.programs || [];
+    programList.innerHTML = items.length
+      ? items.slice(0, 8).map((p) => `<div class="mini-metric"><span>${escapeHtml(p.title || p.objective || p.id)}</span><b>${escapeHtml(p.status || DASH)}</b></div>`).join('')
+      : '<div class="empty-city">Nenhum programa criado. Descreva um objetivo ao Avatar.</div>';
+  }
+}
+
+function renderSwarm(swarm) {
+  const agents = swarm?.agents || swarm?.specialists || [];
+  setText(el('swarmCount'), agents.length ? `${agents.length} agentes` : null);
+  const list = el('swarmList');
+  if (!list) return;
+  list.innerHTML = agents.length
+    ? agents.map((a) => {
+        const status = a.status || 'UNKNOWN';
+        return `<div class="health-item ${escapeHtml(statusClass(status).toUpperCase())}"><i></i><b>${escapeHtml(a.name || a.role || a.id)}</b><span>${escapeHtml(status)}${a.lastEventAt ? ` · ${formatTime(a.lastEventAt)}` : ''}</span></div>`;
+      }).join('')
+    : '<div class="empty-city">Nenhum agente registrado no enxame.</div>';
+}
+
+function renderCapabilities(capabilities) {
+  const items = capabilities?.capabilities || [];
+  setText(el('capabilityCount'), items.length ? `${formatNumber(items.length)} capabilities` : null);
+  const list = el('capabilityList');
+  if (!list) return;
+  list.innerHTML = items.length
+    ? items.slice(0, 20).map((c) => {
+        // health chega como envelope measured()/unknown(): sem execucao, e unknown -- e a
+        // tela mostra "sem execucao" em vez de fingir saudavel.
+        const health = c.health && c.health.state === 'measured' ? String(c.health.value) : 'sem execução';
+        return `<div class="health-item ${escapeHtml(statusClass(health).toUpperCase())}"><i></i><b>${escapeHtml(c.id || c.name)}</b><span>${escapeHtml(health)} · ${Number(c.executions || c.usageCount || 0)} execuções</span></div>`;
+      }).join('')
+    : '<div class="empty-city">Nenhuma capability registrada.</div>';
+}
+
+function renderKnowledge(constitution) {
+  // O endpoint le o diretorio docs/constitution de verdade. UNAVAILABLE => ausencia honesta.
+  const count = constitution?.totalVolumes;
+  const measured = count && count.state === 'measured' ? count.value : (Number.isFinite(Number(count)) ? count : null);
+  setText(el('knowledgeCount'), measured === null ? null : `${formatNumber(measured)} volumes`);
+  const summary = el('knowledgeSummary');
+  if (summary) {
+    summary.innerHTML = measured === null
+      ? `<p class="empty-city">Índice da Constituição indisponível${constitution?.constitutionPath ? ` (${escapeHtml(constitution.constitutionPath)})` : ''}.</p>`
+      : `<p>Índice esparso com ${formatNumber(measured)} volumes lidos do disco.</p>`;
+  }
+}
+
+function renderEvents(events) {
+  const out = el('terminalOutput'); const empty = el('terminalEmpty');
+  const items = events?.events || [];
+  if (!out) return;
+  if (!items.length) { out.innerHTML = ''; if (empty) empty.hidden = false; return; }
+  if (empty) empty.hidden = true;
+  out.innerHTML = items.slice(-40).reverse()
+    .map((e) => `<div><span class="ev-time">${formatTime(e.occurredAt || e.recordedAt)}</span> <span class="ev-kind">[${escapeHtml(String(e.type || e.name || 'EVENT').toUpperCase())}]</span> ${escapeHtml(e.summary || e.message || JSON.stringify(e.payload || {}).slice(0, 120))}</div>`)
+    .join('');
+}
+
+function renderDag({ programs, missions, jobs }) {
+  const tree = el('dagTree'); const empty = el('dagEmpty');
+  if (!tree) return;
+  const items = programs?.programs || [];
+  if (!items.length) { tree.innerHTML = ''; if (empty) empty.hidden = false; return; }
+  if (empty) empty.hidden = true;
+  tree.innerHTML = items.slice(0, 4).map((p) => {
+    const own = missions.filter((m) => m.programId === p.id);
+    const missionRows = own.length
+      ? own.map((m) => {
+          const mjobs = jobs.filter((j) => j.missionId === m.id);
+          const jobRows = mjobs.map((j) => `<div class="dag-l3">⚡ ${escapeHtml(j.type)} <span class="status-pill ${statusClass(j.status)}">${escapeHtml(j.status)}</span></div>`).join('');
+          return `<div class="dag-l2">🎯 ${escapeHtml(m.title || m.objective || m.id)} <span class="status-pill ${statusClass(m.status)}">${escapeHtml(m.status)}</span></div>${jobRows}`;
+        }).join('')
+      : '<div class="dag-l2 dag-empty-inline">nenhuma missão vinculada</div>';
+    return `<div class="dag-l1">📁 ${escapeHtml(p.title || p.objective || p.id)}</div>${missionRows}`;
+  }).join('');
+}
+
+function renderDeployStages(readiness) {
+  const box = el('deployPipelineStages'); const empty = el('deployStagesEmpty');
+  if (!box) return;
+  const stages = readiness?.stages || readiness?.components || [];
+  if (!stages.length) { box.innerHTML = ''; if (empty) empty.hidden = false; return; }
+  if (empty) empty.hidden = true;
+  box.innerHTML = stages.map((s) => `<div class="step ${escapeHtml(String(s.status || 'PENDING'))}"><b>${escapeHtml(s.name || s.id)}</b>${escapeHtml(s.status || 'PENDING')}</div>`).join('');
+}
+
+function renderActiveModel({ telemetry, connection }) {
+  // Qual modelo respondeu de fato. Sem chamada registrada, ausencia -- nao "GPT-4o".
+  const model = telemetry?.lastModel || telemetry?.model || null;
+  const provider = telemetry?.lastProvider || connection?.provider || null;
+  setText(el('activeAiModel'), model ? (provider ? `${provider} / ${model}` : model) : (connection?.status === 'OFFLINE' ? 'provider OFFLINE' : null));
+}
+
+function renderBriefing(insights) {
+  const box = el('dailyBriefContent');
+  if (!box) return;
+  const items = insights?.insights || [];
+  box.innerHTML = items.length
+    ? `<ul class="brief-list">${items.slice(0, 5).map((i) => `<li><b>${escapeHtml(i.type || 'insight')}</b> — ${escapeHtml(i.summary || '')}</li>`).join('')}</ul>`
+    : '<p class="empty-city">Nenhum insight derivado ainda. O Evolution Engine gera insights a partir de execuções reais.</p>';
+}
+
 async function refresh() {
   if(state.refreshing)return; state.refreshing=true; document.getElementById('refreshBtn').textContent='…';
   try {
@@ -142,6 +317,33 @@ async function refresh() {
     const value=(result,fallback)=>result.status==='fulfilled'?result.value:fallback; const overview=value(overviewR,{metrics:{}}); const operations=value(operationsR,null); const missions=value(missionsR,{missions:[]}).missions || []; const avatar=value(avatarR,{}); const city=value(cityR,{nodes:[],edges:[]}); const jobs=value(jobsR,{jobs:[]}).jobs || []; const telemetry=value(telemetryR,{}); const speed=value(speedR,null); const hotMemory=value(hotMemoryR,null); const connectors=value(connectorsR,{connectors:[]});
     state.missions=missions; const active=missions.filter((item)=>!['SUCCEEDED','FAILED','CANCELLED'].includes(item.status)).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || missions.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))[0]; state.activeMission=active?await api(`/missions/${active.id}`).catch(()=>active):null;
     setAvatar(avatar); renderMission(state.activeMission); renderCity(city); renderOperations(operations); renderJobs(jobs); renderTelemetry(telemetry,overview); renderConsoleBar({operations,speed,hotMemory,mission:state.activeMission,jobs}); renderConnectors(connectors); ui.actor.textContent=String(overview?.tenant?.name || 'GRG').slice(0,3).toUpperCase(); ui.lastUpdate.textContent=`Atualizado ${new Date().toLocaleTimeString('pt-BR')}`;
+
+    // Segundo lote: alimenta os paineis que antes tinham numero escrito no HTML. Vai
+    // separado de proposito -- uma falha aqui nao pode derrubar o painel principal, e
+    // cada slot sem dado fica com o marcador de ausencia em vez de valor inventado.
+    const extra = await Promise.allSettled([
+      fetch('/health').then((r) => r.json()).catch(() => null),
+      api('/events'), api('/agents/swarm'), api('/capabilities'),
+      // /uios/kos/manifest e a fonte HONESTA: le docs/constitution do disco e devolve
+      // measured() ou UNAVAILABLE + unknown(). O /keos/constitution/index ainda afirma
+      // "150 volumes" e "OPERATIONAL_GRAPH_INDEX" sem ler nada -- nao consumir dali.
+      api('/uios/kos/manifest'), api('/executive/programs'),
+      api('/governance/readiness-matrix'), api('/insights'), api('/connection'),
+      api('/observability/metrics'),
+    ]);
+    const [healthR,eventsR,swarmR,capsR,constR,progR,readyR,insightsR,connR,obsR] = extra;
+    const health=value(healthR,null), events=value(eventsR,{events:[]}), swarm=value(swarmR,{agents:[]}),
+      caps=value(capsR,{capabilities:[]}), constitution=value(constR,null), programs=value(progR,{programs:[]}),
+      readiness=value(readyR,null), insights=value(insightsR,{insights:[]}), connection=value(connR,null),
+      obs=value(obsR,null);
+    renderMasterNode({ health, operations, overview, obs });
+    renderPerformance({ speed, hotMemory, telemetry, overview });
+    renderProjects({ overview, programs });
+    renderSwarm(swarm); renderCapabilities(caps); renderKnowledge(constitution);
+    renderEvents(events); renderDag({ programs, missions, jobs });
+    renderDeployStages(readiness);
+    renderActiveModel({ telemetry, connection: connection?.value || connection });
+    renderBriefing(insights);
   } finally { state.refreshing=false; document.getElementById('refreshBtn').textContent='↻'; }
 }
 
