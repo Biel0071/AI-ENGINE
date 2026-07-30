@@ -13,6 +13,10 @@ COPY --from=dependencies --chown=fenix:fenix /app/node_modules ./node_modules
 COPY --chown=fenix:fenix src ./src
 COPY --chown=fenix:fenix public ./public
 COPY --chown=fenix:fenix ops/container-entrypoint.sh ./ops/container-entrypoint.sh
+# Diagnostico read-only dentro do container: context-snapshot (Living Mode: veracidade
+# operacional medida pelo auditor), import-closure, llm-preflight, capability-probe.
+# Sem isto o operador nao consegue medir o runtime de dentro de producao, que e onde importa.
+COPY --chown=fenix:fenix ops/context-snapshot.js ops/import-closure.js ops/llm-preflight.js ops/capability-probe.js ./ops/
 COPY --chown=fenix:fenix package.json ./package.json
 USER 10001:10001
 EXPOSE 4400
