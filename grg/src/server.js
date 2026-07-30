@@ -101,6 +101,33 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     }
   };
 
+  // Phase 1 - Formal Boot Sequence Initialization
+  const { BootManager } = require('./kernel/boot');
+  const { ServiceRegistry } = require('./kernel/service-registry');
+  const { CapabilityRegistry } = require('./kernel/capability-registry');
+  const { EventBus } = require('./eventing/event-bus');
+  const { HealthMonitor } = require('./infrastructure/health');
+  const { Telemetry } = require('./infrastructure/telemetry');
+  const { WorkerScheduler } = require('./execution/worker-scheduler');
+
+  const bootManager = new BootManager();
+  const serviceRegistry = new ServiceRegistry();
+  const capabilityRegistry = new CapabilityRegistry(serviceRegistry);
+  const eventBus = new EventBus();
+  const healthMonitor = new HealthMonitor(bootManager);
+  const telemetry = new Telemetry(serviceRegistry, eventBus);
+  const workerScheduler = new WorkerScheduler(eventBus);
+
+  bootManager.registerModule('Service Registry', serviceRegistry);
+  bootManager.registerModule('Capability Registry', capabilityRegistry);
+  bootManager.registerModule('Event Bus', eventBus);
+  bootManager.registerModule('Health', healthMonitor);
+  bootManager.registerModule('Telemetry', telemetry);
+  bootManager.registerModule('Workers', workerScheduler);
+
+  // Execute the strict boot sequence
+  await bootManager.start();
+
   const server = http.createServer(async (req, res) => {
     let requestId = null;
     let correlationId = null;
@@ -116,10 +143,38 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       correlationId = /^[A-Za-z0-9._:-]{1,128}$/.test(requestedCorrelation) ? requestedCorrelation : requestId;
       res.setHeader('x-correlation-id', correlationId);
       if (!gate.allowed) return sendJson(res, gate.status, { error: gate.error }, requestId);
+      
+      if (req.method === 'GET' && url.pathname === '/api/system/boot-status') {
+        const bootHealth = await bootManager.health();
+        return sendJson(res, bootHealth.ok ? 200 : 503, bootHealth, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/runtime') {
+        const telemetryMetrics = await telemetry.metrics();
+        return sendJson(res, 200, telemetryMetrics, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/runtime/services') {
+        return sendJson(res, 200, {
+          services: serviceRegistry.getAll().map(s => ({ id: s.id, status: s.status, version: s.version }))
+        }, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/runtime/capabilities') {
+        return sendJson(res, 200, {
+          capabilities: capabilityRegistry.getCapabilities()
+        }, requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/test/event') {
+        const body = await readJson(req);
+        console.log(`[EVENT] Publishing test event: ${body.type}`);
+        eventBus.publish(body.type, body.payload);
+        return sendJson(res, 200, { published: true, type: body.type }, requestId);
+      }
+      
       if (req.method === 'GET' && url.pathname === '/health') {
         const health = await app.health.check();
-        return sendJson(res, health.ok ? 200 : 503, {
+        const bootHealth = await bootManager.health();
+        return sendJson(res, health.ok && bootHealth.ok ? 200 : 503, {
           ...health, service: 'grg-services-os', environment: securityConfig.runtimeEnv,
+          boot: bootHealth,
           // Progresso da ativacao operacional (roda em background apos o listen).
           activation: app.activation || { status: 'disabled' },
         }, requestId);
