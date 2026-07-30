@@ -48,6 +48,11 @@ const { QdrantVectorStore } = require('./memory/qdrant-vector-store');
 const { KnowledgeGraph } = require('./knowledge-graph/knowledge-graph');
 const { LiveBootKernel } = require('./kernel/live-boot-kernel');
 const { RuntimeKernel } = require('./kernel/runtime-kernel');
+const { AIOrchestratorKernel } = require('./orchestrator/ai-orchestrator');
+const { AutonomousEvolutionKernel } = require('./evolution/autonomous-evolution-kernel');
+const { DigitalTwinEngine } = require('./digital-twin/digital-twin-engine');
+const { CognitiveMemoryEngine } = require('./memory/cognitive-memory-engine');
+const { CapabilityMarketplace } = require('./capabilities/capability-marketplace');
 const { EventStore } = require('./eventing/event-store');
 const { FabricEventBus } = require('./eventing/fabric-event-bus');
 const { ServiceRegistry } = require('./fabric/service-registry');
@@ -249,6 +254,11 @@ async function createApp(options = {}) {
 
   const liveBootKernel = new LiveBootKernel({ eventBus: bus, logger });
   const runtimeKernel = new RuntimeKernel({ eventBus: bus, logger, liveBootKernel });
+  const aiOrchestrator = new AIOrchestratorKernel({ eventBus: bus });
+  const aek = new AutonomousEvolutionKernel({ eventBus: bus });
+  const digitalTwinEngine = new DigitalTwinEngine({ eventBus: bus });
+  const cognitiveMemory = new CognitiveMemoryEngine({ eventBus: bus });
+  const capabilityMarketplace = new CapabilityMarketplace();
 
   const app = {
     store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
@@ -256,7 +266,7 @@ async function createApp(options = {}) {
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
-    liveBootKernel, runtimeKernel,
+    liveBootKernel, runtimeKernel, aiOrchestrator, aek, digitalTwinEngine, cognitiveMemory, capabilityMarketplace,
   };
 
   // FLUXO 8 — monitor de conexao com servicos externos. Compartilha os MESMOS providers do

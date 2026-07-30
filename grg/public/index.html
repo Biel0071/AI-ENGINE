@@ -96,6 +96,15 @@
         <div class="console-item"><span class="label">JOBS NA FILA:</span><strong id="consoleJobs">—</strong></div>
       </section>
 
+      <!-- CONTINUOUS 4-LEVEL ZOOM CONTROL BAR -->
+      <section class="zoom-level-bar" style="display:flex; gap:10px; align-items:center; background:#0f172a; padding:10px 16px; border-radius:10px; border:1px solid #1e293b; margin-bottom:15px; flex-wrap:wrap;">
+        <span style="font-size:12px; font-weight:bold; color:var(--gold);">NÍVEL DE ZOOM:</span>
+        <button id="zoomL1" class="zoom-btn active" onclick="switchZoomLevel(1)" style="background:#3b82f6; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">Nível 1 — AI City (Digital Twin)</button>
+        <button id="zoomL2" class="zoom-btn" onclick="switchZoomLevel(2)" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">Nível 2 — Grafo Cognitivo</button>
+        <button id="zoomL3" class="zoom-btn" onclick="switchZoomLevel(3)" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">Nível 3 — Pipeline Operacional</button>
+        <button id="zoomL4" class="zoom-btn" onclick="switchZoomLevel(4)" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">Nível 4 — Workspace Context</button>
+      </section>
+
       <!-- VIEW: DASHBOARD COMMAND -->
       <div id="view-command" class="view-section active">
         <section id="command" class="command-grid">
@@ -373,6 +382,24 @@
         <section id="observability" class="telemetry-grid">
           <article class="panel"><div class="section-title"><div><span class="eyebrow">HEALTH ORCHESTRATOR</span><h2>Saúde real</h2></div><span id="healthScore" class="score">—</span></div><div id="healthList" class="health-list"></div></article>
           <article id="gateway" class="panel"><div class="section-title"><div><span class="eyebrow">AI GATEWAY & AI RUNTIME</span><h2>Consumo & Telemetria IA</h2></div><span id="gatewayState" class="status-pill neutral">SEM DADOS</span></div><div id="aiStats" class="ai-stats"></div><div id="systemMetrics" class="metric-grid"></div></article>
+        </section>
+
+        <!-- SERIE TEMPORAL MEDIDA (sparklines).
+             O painel de referencia pede linhas de tendencia. Elas vem de
+             /api/observability/series, alimentado pelo loop `observability` do living runtime
+             (uma amostra por tick, 60s). Antes de existir a serie, desenhar uma linha aqui
+             exigiria inventar os pontos -- entao os cartoes nascem VAZIOS e a linha aparece
+             conforme o coletor mede. Cada cartao sem amostra mostra o motivo, nao um traco reto. -->
+        <section class="panel" style="margin-top:20px;">
+          <div class="section-title">
+            <div><span class="eyebrow">SERIE TEMPORAL MEDIDA</span><h2>Tendência do runtime</h2></div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span id="seriesSummary" class="count">—</span>
+              <button id="seriesSampleBtn" class="action-btn" type="button" title="Coletar uma amostra agora, sem esperar a cadência do worker">Amostrar agora</button>
+            </div>
+          </div>
+          <div id="sparkGrid" class="spark-grid"></div>
+          <div id="seriesEmpty" class="dag-empty">Aguardando o coletor de observabilidade amostrar o runtime.</div>
         </section>
       </div>
 

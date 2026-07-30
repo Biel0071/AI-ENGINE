@@ -271,6 +271,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/knowledge-federation/publish') return sendJson(res, 202, await app.federation.publish(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/knowledge-federation/publications') return sendJson(res, 200, { publications: await app.federation.list(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/ai/telemetry') return sendJson(res, 200, await app.aiGateway.telemetry(tenantId, actorId));
+      if (req.method === 'GET' && url.pathname === '/api/system/boot-status') return sendJson(res, 200, app.runtimeKernel ? app.runtimeKernel.getState() : { status: 'UNKNOWN' }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/orchestrator/mission/decompose') { const body = await readJson(req); return sendJson(res, 200, await app.aiOrchestrator.processRequest(body.prompt || body.objective), requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/orchestrator/mission/approve') { const body = await readJson(req); return sendJson(res, 200, await app.aiOrchestrator.approveAndStartBuild(body.missionId), requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/evolution/backlog') { const findings = await app.aek.runLivingModeScan(); return sendJson(res, 200, { backlog: findings }, requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/digital-twin/city-state') return sendJson(res, 200, app.digitalTwinEngine.generateCityState(app.runtimeKernel ? app.runtimeKernel.getState() : {}), requestId);
       if (req.method === 'GET' && url.pathname === '/api/insights') { await app.controlPlane.authorize(tenantId, actorId, 'memory:read'); return sendJson(res, 200, { insights: await app.evolution.getInsights(tenantId) }); }
       if (req.method === 'GET' && url.pathname === '/api/evolution') { await app.controlPlane.authorize(tenantId, actorId, 'memory:read'); return sendJson(res, 200, await app.evolution.getEvolution(tenantId)); }
       if (req.method === 'POST' && url.pathname === '/api/memories') {

@@ -34,11 +34,35 @@ const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocat
 // explícito no painel: o organismo diz "ainda não existe" em vez de simular CONNECTED. Só
 // o GitHub é um conector real (vem do runtime); os demais são declaração de roadmap.
 const PLANNED_CONNECTORS = ['google','meta','whatsapp','supabase','cloudflare','openai'];
-const state = { city: null, missions: [], activeMission: null, operations: null, jobs: [], zoom: 1, speaking: false, refreshing: false };
-const statusClass = (value) => ['ACTIVE','READY','RUNNING','SUCCEEDED'].includes(String(value).toUpperCase()) ? 'active' : ['WARNING','PAUSED','AWAITING_APPROVAL','UNCONFIGURED'].includes(String(value).toUpperCase()) ? 'warning' : ['DEGRADED','FAILED','NOT_READY','DEAD_LETTER'].includes(String(value).toUpperCase()) ? 'degraded' : 'neutral';
-const escapeHtml = (value) => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-const formatTime = (value) => { const date = value ? new Date(value) : null; return date && !Number.isNaN(date.valueOf()) ? date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'; };
-const formatNumber = (value) => new Intl.NumberFormat('pt-BR',{notation:Number(value)>9999?'compact':'standard',maximumFractionDigits:2}).format(Number(value || 0));
+window.switchZoomLevel = function(level) {
+  state.zoom = level;
+  [1, 2, 3, 4].forEach((l) => {
+    const btn = document.getElementById(`zoomL${l}`);
+    if (btn) {
+      if (l === level) {
+        btn.style.background = '#3b82f6'; btn.style.color = '#fff';
+      } else {
+        btn.style.background = '#1e293b'; btn.style.color = '#cbd5e1';
+      }
+    }
+  });
+  console.log(`[FÊNIX Zoom UI] Switch to Level ${level}`);
+};
+
+window.decomposeAndRunMission = async function(promptText) {
+  try {
+    bubble(`**Iniciando Missão Cognitiva:** "${promptText}"`, 'user');
+    bubble(`⚡ FÊNIX AI Orchestrator assumindo missão... Analisando requisitos, stack e riscos.`, 'bot');
+    const res = await api('/orchestrator/mission/decompose', { method: 'POST', body: JSON.stringify({ prompt: promptText }) });
+    if (res && res.mission) {
+      bubble(`✅ **Missão ${res.mission.id} Criada com Sucesso!**\n\n• **Objetivo:** ${res.mission.objective}\n• **Complexidade:** ${res.mission.complexityScore}/10\n• **Tempo Estimado:** ${res.estimation.estimatedTime.totalFormatted}\n• **Custo Previsto:** $${res.estimation.estimatedCostUsd} USD (${res.estimation.tokenProjections.totalTokens.toLocaleString()} tokens)\n• **Jobs DAG:** ${res.dagGraph.jobs.length} tarefas criadas.\n\n*Aprovação Automática ativada pelo modo Collaborator. Iniciando Build!*`, 'bot');
+      window.switchZoomLevel(3);
+    }
+  } catch (err) {
+    bubble(`Erro ao decompor missão: ${err.message}`, 'bot');
+  }
+};
+
 
 function bubble(text, who = 'bot') {
   const div = document.createElement('div'); div.className = `bubble ${who}`;
@@ -420,6 +444,72 @@ function renderVeracity(audit) {
   }
 }
 
+// Rótulo e formato por série. Só entra aqui a série que o coletor realmente amostra
+// (/api/observability/series devolve `available` com a lista canônica).
+const SPARK_META = {
+  processRssMb: { label: 'RSS do processo', unit: 'MB' },
+  processHeapUsedMb: { label: 'Heap usado', unit: 'MB' },
+  cpuUsagePercent: { label: 'CPU do host', unit: '%' },
+  hostLoadAvg1m: { label: 'Load 1m', unit: '' },
+  queueDepth: { label: 'Fila de jobs', unit: '' },
+  knownWorkers: { label: 'Workers', unit: '' },
+  deadLetters: { label: 'Dead letters', unit: '' },
+  aiCalls: { label: 'Chamadas de IA', unit: '' },
+  aiTokens: { label: 'Tokens', unit: '' },
+  aiCostUsd: { label: 'Custo', unit: 'USD' },
+  metricBytes: { label: 'Superfície /metrics', unit: 'B' },
+};
+
+// Desenha a polyline a partir dos pontos MEDIDOS. Um ponto único não vira linha (não há
+// tendência com uma amostra) — vira o valor com a marca de amostra insuficiente.
+function sparkPath(points) {
+  if (points.length < 2) return null;
+  const values = points.map((p) => Number(p.value));
+  const min = Math.min(...values); const max = Math.max(...values);
+  const span = max - min || 1;
+  const step = 100 / (points.length - 1);
+  const coords = values.map((v, i) => `${(i * step).toFixed(2)},${(28 - ((v - min) / span) * 26).toFixed(2)}`);
+  return { d: coords.join(' '), first: values[0], last: values[values.length - 1] };
+}
+
+function renderSeries(series) {
+  const grid = el('sparkGrid'); const empty = el('seriesEmpty');
+  if (!grid) return;
+  // Sem resposta do endpoint a tela diz isso; não desenha grade vazia como se estivesse medida.
+  if (!series) { grid.innerHTML = ''; if (empty) { empty.hidden = false; empty.textContent = 'Série temporal não respondeu.'; } setText(el('seriesSummary'), null); return; }
+
+  const count = measuredValue(series.sampleCount);
+  const stored = measuredValue(series.totalStored);
+  setText(el('seriesSummary'), count === null ? null
+    : `${formatNumber(count)} amostras em ${formatNumber(series.windowMinutes)} min · ${formatNumber(stored ?? count)} guardadas`);
+
+  const names = (series.available || []).filter((n) => SPARK_META[n]);
+  const cards = names.map((name) => {
+    const meta = SPARK_META[name];
+    const env = series.series?.[name];
+    const points = measuredValue(env);
+    if (!Array.isArray(points) || !points.length) {
+      // AUSÊNCIA, não zero: o motivo do coletor aparece no cartão, sem linha desenhada.
+      const reason = env?.reason || 'sem série medida';
+      return `<div class="spark-card" data-state="unknown"><span class="spark-label">${escapeHtml(meta.label)}</span><span class="spark-value">não medido</span><span class="spark-meta">${escapeHtml(reason)}</span></div>`;
+    }
+    const path = sparkPath(points);
+    const last = Number(points[points.length - 1].value);
+    const valueText = `${formatNumber(last)}${meta.unit ? ` ${meta.unit}` : ''}`;
+    const trend = path && path.last < path.first ? 'down' : 'up';
+    const line = path
+      ? `<svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="${path.d}"></polyline></svg>`
+      : '';
+    const metaText = path
+      ? `${points.length} pontos · ${formatTime(points[points.length - 1].at)}`
+      : `1 amostra · ${formatTime(points[0].at)} · sem tendência ainda`;
+    return `<div class="spark-card" data-trend="${trend}"><span class="spark-label">${escapeHtml(meta.label)}</span><span class="spark-value">${escapeHtml(valueText)}</span><span class="spark-meta">${escapeHtml(metaText)}</span>${line}</div>`;
+  });
+
+  grid.innerHTML = cards.join('');
+  if (empty) empty.hidden = cards.length > 0;
+}
+
 function renderEvents(events) {
   const out = el('terminalOutput'); const empty = el('terminalEmpty');
   const items = events?.events || [];
@@ -503,16 +593,19 @@ async function refresh() {
       obs=value(obsR,null);
     // Terceiro lote: telas que eram casca. Separado do segundo pelo mesmo motivo -- o
     // simulation-audit varre o disco e e a chamada mais cara daqui; se falhar, o resto fica.
-    const [twinR, scosR, secR, auditR] = await Promise.allSettled([
+    const [twinR, scosR, secR, auditR, seriesR] = await Promise.allSettled([
       api('/digital-twin/operational'),
       api('/scos/design-families/list'),
       api('/security/encryption/status'),
       api('/governance/simulation-audit'),
+      // Série temporal medida: alimentada pelo loop `observability` do living runtime (60s).
+      api('/observability/series?windowMinutes=120'),
     ]);
     renderTwin(value(twinR, {})?.twin || null);
     renderScos(value(scosR, null));
     renderSecurity(value(secR, null));
     renderVeracity(value(auditR, null));
+    renderSeries(value(seriesR, null));
     renderHotMemory(hotMemory);
     renderMasterNode({ health, operations, overview, obs, readiness });
     renderPerformance({ speed, hotMemory, telemetry, overview });
@@ -582,9 +675,21 @@ const bindAction = (id, run) => {
     try { await run(); } catch (error) { showActionError(id, error); } finally { btn.disabled = false; btn.textContent = original; }
   });
 };
+// Onde a falha de cada ação aparece. A versão anterior era uma cadeia de ternários que caía em
+// `hotMemoryPrefetchResult` para QUALQUER id desconhecido: um botão novo falhava e a mensagem
+// aparecia no painel de outra tela (ou em nenhuma). Mapa explícito, e sem alvo o erro vai para o
+// console em vez de desaparecer — erro engolido é a mesma classe de problema que valor inventado.
+const ACTION_ERROR_TARGETS = {
+  onedeployScanBtn: 'onedeployResult',
+  genomeStructureBtn: 'genomeStructureResult',
+  hotMemoryPrefetchBtn: 'hotMemoryPrefetchResult',
+  seriesSampleBtn: 'seriesEmpty',
+};
 function showActionError(id, error) {
-  const target = id === 'onedeployScanBtn' ? el('onedeployResult') : id === 'genomeStructureBtn' ? el('genomeStructureResult') : el('hotMemoryPrefetchResult');
-  if (target) target.textContent = `Falhou: ${error?.message || 'erro desconhecido'}`;
+  const target = el(ACTION_ERROR_TARGETS[id]);
+  const message = `Falhou: ${error?.message || 'erro desconhecido'}`;
+  if (target) { target.textContent = message; target.hidden = false; }
+  else console.error(`[fenix] ação ${id} falhou sem alvo de mensagem:`, error);
 }
 
 bindAction('hotMemoryPrefetchBtn', async () => {
@@ -597,6 +702,13 @@ bindAction('hotMemoryPrefetchBtn', async () => {
   }
   // Recarrega o painel: o pill tem de virar PREWARMED por MEDICAO, nao por otimismo.
   renderHotMemory(await api('/performance/hot-memory'));
+});
+
+bindAction('seriesSampleBtn', async () => {
+  // Coleta real: uma amostra agora. Em desenvolvimento não há worker, então este é o único
+  // caminho para a série existir; em produção serve para provar o coletor sem esperar 60s.
+  await api('/observability/series/sample', { method: 'POST' });
+  renderSeries(await api('/observability/series?windowMinutes=120'));
 });
 
 bindAction('genomeStructureBtn', async () => {
