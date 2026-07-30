@@ -25,10 +25,10 @@
       </div>
 
       <div class="system-status-indicator" style="display:flex; align-items:center; gap: 8px; margin-bottom: 20px; border: 1px solid var(--line); padding: 8px; border-radius: 8px;">
-        <i style="width:8px; height:8px; background:var(--green); border-radius:50%; box-shadow:0 0 8px var(--green);"></i>
+        <i id="hdrStatusDot" style="width:8px; height:8px; background:var(--yellow); border-radius:50%; box-shadow:0 0 8px var(--yellow);"></i>
         <div>
-          <strong style="color:var(--green); font-size: 10px; display:block;">ONLINE</strong>
-          <span style="font-size: 9px; color: var(--muted);">99.999% UPTIME</span>
+          <strong id="hdrStatusText" style="color:var(--yellow); font-size: 10px; display:block;">AGUARDANDO...</strong>
+          <span id="hdrStatusSub" style="font-size: 9px; color: var(--muted);">— UPTIME</span>
         </div>
       </div>
 
@@ -38,8 +38,8 @@
         <a class="nav-link" href="#live-center"><i class="icon-activity"></i> LIVE CENTER <span class="badge warning">Tempo Real</span></a>
         
         <div class="nav-section">OPERATIONS</div>
-        <a class="nav-link" href="#mission-control"><i class="icon-target"></i> MISSION CONTROL <span class="badge info">6</span></a>
-        <a class="nav-link" href="#ai-assistant"><i class="icon-cpu"></i> AI ASSISTANT <span class="badge primary">AI</span></a>
+        <a class="nav-link" href="/app.html#missions"><i class="icon-target"></i> MISSION CONTROL <span class="badge info">6</span></a>
+        <a class="nav-link" href="/app.html#command"><i class="icon-cpu"></i> AI ASSISTANT <span class="badge primary">AI</span></a>
         <a class="nav-link" href="#city"><i class="icon-map"></i> AI CITY <span class="badge text">Digital Twin</span></a>
         
         <div class="nav-section">ECOSYSTEM</div>
@@ -82,23 +82,23 @@
       <header class="global-metrics-header">
         <div class="metric-card">
           <span class="metric-label">MISSÕES ATIVAS</span>
-          <div class="metric-value">32 <span class="trend up">+12 hoje</span></div>
+          <div id="hdrMissions" class="metric-value">— <span class="trend up"></span></div>
         </div>
         <div class="metric-card">
           <span class="metric-label">AGENTES ONLINE</span>
-          <div class="metric-value">128 <span class="trend up">+8 hoje</span></div>
+          <div id="hdrAgents" class="metric-value">— <span class="trend up"></span></div>
         </div>
         <div class="metric-card">
-          <span class="metric-label">WORKERS</span>
-          <div class="metric-value">342 <span class="trend up">+15 hoje</span></div>
+          <span class="metric-label">PROJETOS</span>
+          <div id="hdrProjects" class="metric-value">— <span class="trend up"></span></div>
         </div>
         <div class="metric-card">
           <span class="metric-label">REQUISIÇÕES / MIN</span>
-          <div class="metric-value">2.847 <span class="trend up">+18%</span></div>
+          <div id="hdrRequests" class="metric-value">— <span class="trend up"></span></div>
         </div>
         <div class="metric-card">
           <span class="metric-label">ERROS (24H)</span>
-          <div class="metric-value">3 <span class="trend down">-42%</span></div>
+          <div id="hdrErrors" class="metric-value">— <span class="trend down"></span></div>
         </div>
         
         <div class="top-actions">
@@ -140,18 +140,15 @@
                <!-- Greeting Overlay -->
                <div class="greeting-overlay glass-panel">
                  <h2>Bom dia, <span style="color:var(--gold);">Gabriel.</span></h2>
-                 <p>O ecossistema está operando perfeitamente.</p>
-                 <ul class="health-list-mini">
-                   <li><i class="dot active"></i> API Platform <span>99.99%</span></li>
-                   <li><i class="dot active"></i> AI Engine <span>99.98%</span></li>
-                   <li><i class="dot active"></i> ZapAI CRM <span>100%</span></li>
-                   <li><i class="dot active"></i> VPS Master <span>99.99%</span></li>
-                   <li><i class="dot active"></i> WhatsApp <span>100%</span></li>
-                   <li><i class="dot active"></i> GitHub Sync <span>100%</span></li>
+                 <p>O ecossistema está operando sob governança.</p>
+                 <ul id="cityHealthList" class="health-list-mini">
+                   <li><i class="dot warning"></i> API Platform <span>—</span></li>
+                   <li><i class="dot warning"></i> AI Engine <span>—</span></li>
+                   <li><i class="dot warning"></i> VPS Master <span>—</span></li>
                  </ul>
                  <div class="agent-count-mini">
                    <span>Agentes</span>
-                   <strong style="color:var(--orange);">32 ATIVAS</strong>
+                   <strong id="cityAgentCount" style="color:var(--orange);">— ATIVAS</strong>
                  </div>
                </div>
 
@@ -387,17 +384,70 @@
   </div>
   
   <script>
-    // Reality First Protocol: Connect to actual backend events using SSE or Polling
+    // Reality First Protocol: Connect to actual backend events
     async function fetchSystemState() {
+      const token = localStorage.getItem('grg_token');
+      if (!token) {
+        // Redireciona para login se não houver sessão e não estivermos no index público
+        // window.location.href = '/login.html'; 
+        return;
+      }
+      
       try {
-        const res = await fetch('/api/health'); // Assuming this exists
+        const res = await fetch('/api/overview', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.status === 401) {
+          localStorage.removeItem('grg_token');
+          window.location.href = '/GRG-login';
+          return;
+        }
+        
         const data = await res.json();
-        // Update DOM elements strictly based on real data
-        console.log("Reality First Protocol: Received Data", data);
+        
+        // Update Dashboard Metrics with real numbers
+        if (data.metrics) {
+          const update = (id, val) => { const e = document.getElementById(id); if (e) e.innerHTML = `${val} <span class="trend up"></span>`; };
+          update('hdrMissions', data.metrics.missions || '—');
+          update('hdrAgents', data.metrics.capabilities || '—');
+          update('hdrProjects', data.metrics.projects || '—');
+          update('hdrRequests', data.metrics.aiCalls || '—');
+        }
+        
+        // Update Health Uptime & Status
+        const st = document.getElementById('hdrStatusText');
+        const sdot = document.getElementById('hdrStatusDot');
+        const ssub = document.getElementById('hdrStatusSub');
+        if (st && data.health?.ok) {
+          st.textContent = 'ONLINE';
+          st.style.color = 'var(--green)';
+          sdot.style.background = 'var(--green)';
+          sdot.style.boxShadow = '0 0 8px var(--green)';
+          ssub.textContent = 'MONITORED';
+        } else if (st) {
+          st.textContent = 'DEGRADED';
+          st.style.color = 'var(--red)';
+          sdot.style.background = 'var(--red)';
+        }
+        
+        // Update City List
+        const list = document.getElementById('cityHealthList');
+        if (list && data.health?.checks) {
+          list.innerHTML = data.health.checks.map(c => 
+            `<li><i class="dot ${c.ok ? 'active' : 'degraded'}"></i> ${c.id} <span>${c.ok ? 'OK' : 'ERR'}</span></li>`
+          ).join('');
+        }
+        
       } catch(e) {
-        // Fallback UI to show absence of data (the honest absence)
+        console.error("Reality First: Data fetch failed", e);
+        const st = document.getElementById('hdrStatusText');
+        if(st) st.textContent = 'DISCONNECTED';
       }
     }
+    
+    fetchSystemState();
+    setInterval(fetchSystemState, 15000);
     
     // Periodically update clock
     setInterval(() => {

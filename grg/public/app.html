@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07090d">
+  <title>GRG Services OS | GRG F├èNIX ÔÇö Centro Operacional Cognitivo | GRG F├èNIX ╬®Ôê× ÔÇö F├èNIX Live Workspace</title>
+  <link rel="stylesheet" href="/design-system.css">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/city-overrides.css">
+  <link rel="stylesheet" href="/living-panels.css">
+</head>
+<body>
+  <div class="os-shell">
+    <aside class="sidebar" aria-label="Navega├º├úo principal">
+      <a class="brand" href="#command"><span class="brand-mark">F</span><span><b>GRG F├èNIX ╬®Ôê×</b><small>Live Workspace Core</small></span></a>
+      <nav class="tree-nav">
+        <details open>
+          <summary><span>Ôîé</span> Opera├º├úo & Comando</summary>
+          <div class="submenu">
+            <a class="nav-link" href="/index.html">Dashboard Geral</a>
+            <a class="nav-link active" href="#command">Avatar Terminal</a>
+            <a class="nav-link" href="#masterNode">Master Node VPS</a>
+            <a class="nav-link" href="#deploys">Deploy Center</a>
+            <a class="nav-link" href="#missions">Mission Workspace</a>
+            <a class="nav-link" href="#runtime">Task Center (Jobs)</a>
+            <a class="nav-link" href="/office">Empresas (SaaS Builder)</a>
+            <a class="nav-link" href="#projects">Projetos & Executive Brain</a>
+            <a class="nav-link" href="#city">AI City & NPCs</a>
+          </div>
+        </details>
+        <details open>
+          <summary><span>ÔùÄ</span> Mem├│ria & Desempenho</summary>
+          <div class="submenu">
+            <a class="nav-link" href="#performance">Cognitive Speed Score</a>
+            <a class="nav-link" href="#hotmemory">Hot Memory (L0-L5)</a>
+            <a class="nav-link" href="#knowledge">Knowledge Workspace</a>
+            <a class="nav-link" href="#twin">Digital Twin</a>
+          </div>
+        </details>
+        <details open>
+          <summary><span>ÔÜí</span> Agentes, SCOS & Capabilities</summary>
+          <div class="submenu">
+            <!-- O "(15 Sp.)" era uma contagem escrita no menu: continuaria dizendo 15 se o
+                 enxame tivesse 3. A contagem real fica no proprio painel, vinda de /api/agents/swarm. -->
+            <a class="nav-link" href="#swarm">Agent Swarm</a>
+            <a class="nav-link" href="#capabilities">Capabilities Catalog</a>
+            <a class="nav-link" href="#scos">SCOS Design Factory</a>
+            <a class="nav-link" href="#onedeploy">OneDeploy Orchestrator</a>
+          </div>
+        </details>
+        <details open>
+          <summary><span>Ôîü</span> Infraestrutura & DevOps</summary>
+          <div class="submenu">
+            <a class="nav-link" href="#observability">AI Runtime Telemetry</a>
+            <a class="nav-link" href="#connectors">Connector Runtime</a>
+            <a class="nav-link" href="#security">Criptografia & Audit</a>
+            <a class="nav-link" href="#veracity">Veracidade (Auditor)</a>
+          </div>
+        </details>
+      </nav>
+      <div class="sidebar-health"><i id="sidebarDot"></i><span><b id="sidebarStatus">Conectando</b><small id="sidebarDetail">aguardando health</small></span></div>
+      <button id="logout" class="ghost wide" type="button">Encerrar sess├úo</button>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div><span class="eyebrow">GRG F├èNIX ╬®Ôê× ÔÇö F├èNIX LIVE WORKSPACE</span><h1>Painel F├èNIX OS Live Workspace</h1></div>
+        <div class="top-actions">
+          <!-- O modelo ativo vem de /api/ai/telemetry (ultima chamada real) ou do
+               provider-registry. "GPT-4o / Router" fixo aqui mentia sobre qual modelo
+               respondeu -- inclusive quando nenhum provider estava conectado. -->
+          <div style="font-size:11px; background:rgba(15,23,42,0.6); padding:4px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); color:var(--gold);">
+            <span>MODELO IA:</span> <b id="activeAiModel">ÔÇö</b>
+          </div>
+          <button id="cmdKBtn" class="action-btn" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);" title="Command Palette (Ctrl+K)">ÔîÿK Command</button>
+          <button id="drawerToggleBtn" class="action-btn" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);" title="Toggle Task Drawer (Ctrl+J)">ÔÜí Tasks (Ctrl+J)</button>
+          <div class="workspace-mode-selector">
+            <span class="mode-label">Modo:</span>
+            <button id="modeBtn" class="mode-pill" title="Alternar modo de trabalho">COLLABORATOR</button>
+          </div>
+          <button id="inboxBtn" class="action-btn" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);" title="Executive Decision Inbox">­ƒôÑ Inbox (<span id="inboxBadge">0</span>)</button>
+          <button id="selfDeployBtn" class="action-btn" style="background:linear-gradient(135deg,var(--green),#169e53);" title="Executar Self Deploy Pipeline">­ƒÜÇ Self Deploy</button>
+          <button id="multimodalBtn" class="action-btn" title="Upload Multimodal">­ƒôü Multimodal Ingest</button>
+          <span id="clock" class="clock"></span>
+          <button id="refreshBtn" class="icon-button" title="Atualizar">Ôå╗</button>
+          <span id="actor" class="actor">GRG</span>
+        </div>
+      </header>
+
+      <!-- CONSOLE OPERACIONAL UNIFICADO V7.1 -->
+      <section class="operational-console-bar">
+        <div class="console-item"><span class="label">MASTER NODE:</span><strong id="consoleMasterNode">ÔÇö</strong></div>
+        <div class="console-item"><span class="label">SPEED SCORE:</span><strong id="consoleSpeedScore">ÔÇö</strong></div>
+        <div class="console-item"><span class="label">HOT MEMORY:</span><strong id="consoleHotMemory">ÔÇö</strong></div>
+        <div class="console-item"><span class="label">MISS├âO ATIVA:</span><strong id="consoleMission">ÔÇö</strong></div>
+        <div class="console-item"><span class="label">JOBS NA FILA:</span><strong id="consoleJobs">ÔÇö</strong></div>
+      </section>
+
+      <!-- CONTINUOUS 4-LEVEL ZOOM CONTROL BAR -->
+      <section class="zoom-level-bar" style="display:flex; gap:10px; align-items:center; background:#0f172a; padding:10px 16px; border-radius:10px; border:1px solid #1e293b; margin-bottom:15px; flex-wrap:wrap;">
+        <span style="font-size:12px; font-weight:bold; color:var(--gold);">N├ìVEL DE ZOOM:</span>
+        <button id="zoomL1" class="zoom-btn active" onclick="switchZoomLevel(1)" style="background:#3b82f6; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">N├¡vel 1 ÔÇö AI City (Digital Twin)</button>
+        <button id="zoomL2" class="zoom-btn" onclick="switchZoomLevel(2)" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">N├¡vel 2 ÔÇö Grafo Cognitivo</button>
+        <button id="zoomL3" class="zoom-btn" onclick="switchZoomLevel(3)" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">N├¡vel 3 ÔÇö Pipeline Operacional</button>
+        <button id="zoomL4" class="zoom-btn" onclick="switchZoomLevel(4)" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">N├¡vel 4 ÔÇö Workspace Context</button>
+      </section>
+
+      <!-- VIEW: DASHBOARD COMMAND -->
+      <div id="view-command" class="view-section active">
+        <section id="command" class="command-grid">
+          <article id="fenix" class="fenix-card" data-state="SLEEPING">
+            <div class="avatar-stage">
+              <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
+              <svg class="phoenix" viewBox="0 0 220 220" role="img" aria-label="Avatar F├èNIX">
+                <defs><linearGradient id="fire" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff3b0a"/><stop offset=".5" stop-color="#ff8a00"/><stop offset="1" stop-color="#ffe36e"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                <path class="wing left" d="M105 115C75 118 35 99 20 55c28 18 49 9 63-22 2 31 16 43 29 51z"/><path class="wing right" d="M115 115c30 3 70-16 85-60-28 18-49 9-63-22-2 31-16 43-29 51z"/>
+                <path class="flame" d="M110 34c-22 19-26 39-14 54-3-22 12-30 19-48 18 22 13 41 4 51 22-8 31-37 10-63-6-7-11-13-11-22-6 8-7 18-8 28z"/>
+                <circle class="head" cx="110" cy="103" r="39"/><path class="mask" d="M77 99c21-17 45-17 66 0l-11 35H88z"/><path class="eye" d="M85 101l20 5-17 9zM135 101l-20 5 17 9z"/><path class="beak" d="M101 119h18l-9 14z"/>
+                <path class="body" d="M88 137c11-12 33-12 44 0l14 48-36 21-36-21z"/><circle class="core" cx="110" cy="157" r="10"/><path class="tail" d="M91 176l-17 38 35-25 2 27 16-31 18 28-8-43z"/>
+              </svg>
+              <div class="state-ring"></div>
+            </div>
+            <div class="avatar-copy">
+              <span class="live-label"><i></i> AVATAR MESTRE OPERADOR</span>
+              <h2>F├èNIX</h2>
+              <p id="avatarPhrase">O conhecimento permanece. Os modelos evoluem.</p>
+              <div class="avatar-state"><strong id="avatarState">DORMINDO</strong><span id="avatarLocation">Pra├ºa Central</span><span id="avatarProgress">0%</span></div>
+            </div>
+          </article>
+
+          <article class="copilot-card">
+            <div class="section-title"><div><span class="eyebrow">INTERFACE ├ÜNICA OPERACIONAL</span><h2>Converse com o Avatar Mestre</h2></div><div class="voice-controls"><button id="ttsToggle" class="toggle" type="button" aria-pressed="false">Ôùû Voz</button><span id="voiceSupport" class="support"></span></div></div>
+            <div id="chatlog" class="chatlog" aria-live="polite"></div>
+            <form id="chat" class="composer"><button id="micBtn" class="mic" type="button" title="Falar com o F├èNIX">ÔùÅ</button><label class="sr-only" for="msg">Mensagem</label><textarea id="msg" rows="1" placeholder="Descreva um objetivo operacional ou solicite uma miss├úo (Ctrl+K para Command Palette)ÔÇª" required></textarea><button class="send" type="submit">Enviar <span>Ôåù</span></button></form>
+            <div class="quick-actions">
+              <button data-msg="Criar um ERP com IA e checkout PIX">Criar ERP</button>
+              <button data-msg="Verifique a sa├║de da infraestrutura VPS">Sa├║de VPS</button>
+              <button data-msg="Execute a manuten├º├úo aut├┤noma de segundo plano">Manuten├º├úo Idle</button>
+              <button data-msg="Quais hip├│teses de evolu├º├úo foram geradas?">Hip├│teses</button>
+            </div>
+          </article>
+        </section>
+
+        <!-- OPERATIONAL COMMAND TERMINAL -->
+        <section id="opTerminal" class="panel" style="margin-top:20px; background:#070a0f; border:1px solid #1e293b;">
+          <div class="section-title"><div><span class="eyebrow">OPERATIONAL COMMAND TERMINAL</span><h2>Console Operacional em Tempo Real</h2></div><span class="status-pill active">LIVE LOGS</span></div>
+          <!-- Vazio de proposito. Cada linha aqui e um evento REAL vindo de /api/events.
+               Log pre-escrito no HTML finge atividade que nunca aconteceu -- e a versao
+               visual do mesmo problema que o simulation-audit pega no backend. -->
+          <div id="terminalOutput" class="op-terminal" aria-live="polite"></div>
+          <div id="terminalEmpty" class="terminal-empty">Aguardando eventos do barramento.</div>
+        </section>
+
+        <!-- DAILY BRIEFING CARD -->
+        <section id="dailyBriefCard" class="panel" style="margin-top:20px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(15,23,42,0.8)); border:1px solid rgba(16,185,129,0.2);">
+          <div class="section-title"><div><span class="eyebrow">EXECUTIVE COGNITIVE ASSISTANT</span><h2>Daily Briefing & ROI Status</h2></div><span class="status-pill active">LIVE BRIEF</span></div>
+          <!-- Vazio de proposito. O briefing vem de /api/company/daily-analysis + /api/insights,
+               derivado de eventos reais. A versao anterior afirmava "14 melhorias, 3 bugs,
+               2 MCPs, 7 papers" -- quatro numeros que ninguem mediu, iguais todo dia. -->
+          <div id="dailyBriefContent" style="font-size:14px; line-height:1.6; color:#d1d5db;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: MASTER NODE VPS -->
+      <div id="view-masterNode" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">MASTER NODE OPERATIONAL PLANE</span><h2>Status do Master Node VPS</h2></div><span id="masterNodePill" class="status-pill neutral">ÔÇö</span></div>
+          <p>O Master Node VPS gerencia todos os runtimes, pipelines de self-deploy e monitoramento de sa├║de do ecossistema.</p>
+          <!-- Slots vazios de proposito: o valor chega por JS de /api/health e /api/observability/metrics.
+               Um "ÔÇö" aqui significa "ainda nao medi" ÔÇö nunca inventar um numero plausivel. -->
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Self-Deploy Pipeline</span><b id="mnSelfDeployStatus">ÔÇö</b></div>
+            <div class="mini-metric"><span>Uptime do processo</span><b id="mnUptime">ÔÇö</b></div>
+            <div class="mini-metric"><span>Recursos descobertos</span><b id="mnContainers">ÔÇö</b></div>
+            <div class="mini-metric"><span>Sa├║de agregada</span><b id="mnHealth">ÔÇö</b></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: DEPLOY CENTER -->
+      <div id="view-deploys" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">GOVERNED PRODUCTION PIPELINE</span><h2>Deploy Center (11 Stages)</h2></div><span class="status-pill active">GOVERNED</span></div>
+          <p>Pipeline governado de produ├º├úo: Draft ÔåÆ Implemented ÔåÆ Validated ÔåÆ Tests Passed ÔåÆ Security Checked ÔåÆ Benchmark Passed ÔåÆ Policy Auto-Approve ÔåÆ Staging ÔåÆ Production ÔåÆ Observed ÔåÆ Learning.</p>
+          <!-- Vazio de proposito. Os estagios vem de /api/governance/readiness-matrix e do
+               onedeploy real. A versao anterior afirmava "STAGE 1-6 Tests & Security Passed"
+               sem nenhum teste ter rodado -- exatamente o que o onedeploy-orchestrator
+               parou de fazer no backend (12 estagios COMPLETED fabricados). -->
+          <div id="deployPipelineStages" class="steps" style="margin-top:15px;"></div>
+          <div id="deployStagesEmpty" class="dag-empty">Nenhum pipeline executado nesta sess├úo.</div>
+        </section>
+      </div>
+
+      <!-- VIEW: MISSIONS WORKSPACE & DAG TREE -->
+      <div id="view-missions" class="view-section">
+        <section id="missions" class="mission-strip panel">
+          <div class="section-title"><div><span class="eyebrow">MISSION WORKSPACE & KANBAN SCHEDULER</span><h2>Mission Workspace</h2></div><span id="missionStatus" class="status-pill neutral">SEM MISS├âO</span></div>
+          <div class="mission-main"><div><h3 id="missionTitle">Aguardando objetivo</h3><p id="missionMeta">O Avatar transformar├í solicita├º├Áes operacionais em miss├Áes governadas.</p></div><strong id="missionPercent">0%</strong></div>
+          <div class="progress"><i id="missionBar"></i></div><div id="missionSteps" class="steps"></div>
+
+          <!-- PROGRAM -> MISSION -> JOB DAG TREE -->
+          <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--line);">
+            <h3 style="font-size:14px; color:#f8fafc; margin-bottom:12px;">├ürvore Hier├írquica: Program ÔåÆ Mission ÔåÆ Job</h3>
+            <!-- Vazio de proposito. A arvore e montada de /api/executive/programs + /api/missions
+                 + jobs reais. A versao anterior mostrava um Job #1 SUCCEEDED e um Job #2 RUNNING
+                 que nunca existiram: hierarquia inventada com status inventado. -->
+            <div id="dagTree" class="dag-tree"></div>
+            <div id="dagEmpty" class="dag-empty">Nenhum programa ativo. Descreva um objetivo ao Avatar para gerar a hierarquia real.</div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: TASK CENTER (JOBS) -->
+      <div id="view-runtime" class="view-section">
+        <section id="runtime" class="panel">
+          <div class="section-title"><div><span class="eyebrow">TASK CENTER & JOB RUNTIME</span><h2>Task Center (Running, Waiting, Retry, Completed)</h2></div><span id="jobCount" class="count">0 jobs</span></div>
+          <div id="timeline" class="timeline"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: PROJECTS & EXECUTIVE BRAIN -->
+      <div id="view-projects" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">PROJECT FACTORY & EXECUTIVE BRAIN</span><h2>Projetos, Programas & Roadmaps</h2></div><span id="projectCount" class="count">ÔÇö</span></div>
+          <!-- Projetos vem de /api/overview (metrics.projects + repositories reais do store).
+               Programas vem de /api/executive/programs. Lista vazia = vazio honesto. -->
+          <div id="projectList" class="health-list" style="margin-top:15px;"></div>
+          <h3 style="margin-top:20px; font-size:14px; color:#e2e8f0;">Programas & Roadmaps Executivos</h3>
+          <div id="programList" class="metric-grid" style="margin-top:10px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: CITY -->
+      <div id="view-city" class="view-section">
+        <section id="city" class="city-panel panel">
+          <div class="section-title"><div><span class="eyebrow">DIGITAL TWIN DESKTOP CITY</span><h2>GRG AI City (Distritos, Pr├®dios & Runtimes)</h2></div><div class="legend"><span><i class="active"></i>Ativo</span><span><i class="warning"></i>Aten├º├úo</span><span><i class="degraded"></i>Degradado</span></div></div>
+          <div class="city-toolbar"><span id="citySummary">Carregando proje├º├úoÔÇª</span><div><button id="zoomOut" class="icon-button">ÔêÆ</button><button id="zoomIn" class="icon-button">+</button></div></div>
+          <div id="cityViewport" class="city-viewport"><div class="city-sky"><i></i><i></i><i></i></div><div id="cityMap" class="city-map"></div></div>
+        </section>
+      </div>
+
+      <!-- VIEW: COGNITIVE SPEED & HOT MEMORY -->
+      <div id="view-performance" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">COGNITIVE PERFORMANCE ENGINE</span><h2>Cognitive Speed Score & Memory</h2></div><span id="perfScore" class="score">ÔÇö</span></div>
+          <!-- O speed score vem de /api/performance/speed-score, derivado do latencyMs gravado
+               em cada chamada real do gateway. Sem chamada nao existe score: a nota abaixo diz
+               o motivo e o proximo passo, em vez de deixar so um traco sem explicacao. -->
+          <div id="perfScoreNote" class="mono-note" style="margin-top:8px;"></div>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Hot Memory (L0-L5)</span><b id="perfHotMemory">ÔÇö</b></div>
+            <div class="mini-metric"><span>Lat├¬ncia m├®dia medida</span><b id="perfLatency">ÔÇö</b></div>
+            <div class="mini-metric"><span>Tokens consumidos</span><b id="perfTokens">ÔÇö</b></div>
+            <div class="mini-metric"><span>N├│s no Knowledge Graph</span><b id="perfGraphNodes">ÔÇö</b></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: HOT MEMORY -->
+      <div id="view-hotmemory" class="view-section">
+        <section class="panel">
+          <!-- O pill dizia PREWARMED sempre, inclusive com o cache vazio. Agora vem de
+               /api/performance/hot-memory, que so devolve PREWARMED apos um prefetch real. -->
+          <div class="section-title"><div><span class="eyebrow">HOT MEMORY ENGINE (L0-L5)</span><h2>C├ípsulas de Mem├│ria Pr├®-aquecidas</h2></div><span id="hotMemoryState" class="status-pill neutral">ÔÇö</span></div>
+          <!-- Cada nivel L0-L5 e um COUNT de uma colecao real do store (missions, projects,
+               repositories, knowledgeEntities, artifacts). Nao existe tabela de tamanhos fixos. -->
+          <div id="hotMemoryLevels" class="health-list" style="margin-top:15px;"></div>
+          <div class="metric-grid" style="margin-top:12px;">
+            <div class="mini-metric"><span>Itens no cache do processo</span><b id="hotMemoryCached">ÔÇö</b></div>
+            <div class="mini-metric"><span>Medido em</span><b id="hotMemoryCheckedAt">ÔÇö</b></div>
+          </div>
+          <button id="hotMemoryPrefetchBtn" class="ghost-btn" style="margin-top:12px;">Executar prefetch real</button>
+          <div id="hotMemoryPrefetchResult" class="mono-note" style="margin-top:8px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: KNOWLEDGE WORKSPACE & SEARCH -->
+      <div id="view-knowledge" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">KNOWLEDGE WORKSPACE (KOS)</span><h2>Knowledge Workspace & Pesquisa de Mem├│ria</h2></div><span id="knowledgeCount" class="count">ÔÇö</span></div>
+          <div style="margin-top:14px;">
+            <input type="text" id="memorySearchInput" placeholder="Pesquisar c├ípsulas de conhecimento e reposit├│rio de mem├│ria..." style="width:100%; padding:10px 14px; background:#070a0f; border:1px solid var(--line); border-radius:8px; color:#fff; font-size:13px;">
+          </div>
+          <!-- A contagem de volumes vem de /api/keos/constitution/index, que LE o diretorio
+               docs/constitution de verdade. Se o diretorio nao existe, o endpoint devolve
+               UNAVAILABLE + unknown() e aqui aparece a ausencia, nao um numero. -->
+          <div id="knowledgeSummary" style="margin-top:12px;"></div>
+          <div id="memorySearchResults" class="health-list" style="margin-top:12px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: DIGITAL TWIN -->
+      <div id="view-twin" class="view-section">
+        <section class="panel">
+          <!-- "ACTIVE TWIN" era literal. O gemeo vem de /api/digital-twin/operational, que
+               projeta o estado a partir do event store: se nao houver evento, os counts sao 0
+               de verdade (zero medido), e o pill mostra a saude que o modelo derivou. -->
+          <div class="section-title"><div><span class="eyebrow">ENTERPRISE DIGITAL TWIN</span><h2>G├¬meo Digital Operacional</h2></div><span id="twinHealth" class="status-pill neutral">ÔÇö</span></div>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Containers</span><b id="twinContainers">ÔÇö</b></div>
+            <div class="mini-metric"><span>Workers</span><b id="twinWorkers">ÔÇö</b></div>
+            <div class="mini-metric"><span>Jobs na fila</span><b id="twinQueued">ÔÇö</b></div>
+            <div class="mini-metric"><span>Jobs executando</span><b id="twinRunning">ÔÇö</b></div>
+            <div class="mini-metric"><span>Jobs falhados</span><b id="twinFailed">ÔÇö</b></div>
+            <div class="mini-metric"><span>Bancos de dados</span><b id="twinDatabases">ÔÇö</b></div>
+            <div class="mini-metric"><span>Deploys</span><b id="twinDeployments">ÔÇö</b></div>
+            <div class="mini-metric"><span>Servi├ºos</span><b id="twinServices">ÔÇö</b></div>
+          </div>
+          <div class="metric-grid" style="margin-top:12px;">
+            <div class="mini-metric"><span>Origem da proje├º├úo</span><b id="twinSource">ÔÇö</b></div>
+            <div class="mini-metric"><span>Constru├¡do em</span><b id="twinBuiltAt">ÔÇö</b></div>
+          </div>
+          <!-- Custo, latencia e performance vem null do endpoint: nada os mede ainda.
+               Aparecem como ausencia declarada, nunca como numero plausivel. -->
+          <div id="twinUnmeasured" class="mono-note" style="margin-top:10px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: AGENT SWARM -->
+      <div id="view-swarm" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">AGENT SWARM ECOSYSTEM</span><h2>Agentes Especialistas Roteados</h2></div><span id="swarmCount" class="count">ÔÇö</span></div>
+          <!-- O enxame vem de /api/agents/swarm. Cada agente carrega o estado REAL derivado
+               do event store (ACTIVE se houve evento recente, IDLE se nao, UNKNOWN sem bus).
+               Nao existe agente "sempre ACTIVE" escrito aqui. -->
+          <div id="swarmList" class="health-list" style="margin-top:15px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: CAPABILITIES CATALOG -->
+      <div id="view-capabilities" class="view-section">
+        <section class="panel">
+          <div class="section-title"><div><span class="eyebrow">CAPABILITY OPERATING SYSTEM (CapOS)</span><h2>Cat├ílogo de Capacidades Reutiliz├íveis</h2></div><span id="capabilityCount" class="count">ÔÇö</span></div>
+          <p>Capacidades registradas com m├®tricas de uso, lat├¬ncia e custo acumulado ÔÇö cada uma medida na execu├º├úo, n├úo declarada no registro.</p>
+          <!-- Vem de /api/capabilities. Uma capability recem-registrada tem health unknown()
+               e usageCount 0 ate ser executada: e o padrao do tool-registry, nunca healthy fabricado. -->
+          <div id="capabilityList" class="health-list" style="margin-top:15px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: SCOS DESIGN FACTORY -->
+      <div id="view-scos" class="view-section">
+        <section class="panel">
+          <!-- "18 Fam├¡lias" era um numero escrito no HTML, e as 4 linhas abaixo eram uma
+               amostra fixa. O registro real e /api/scos/design-families/list: a contagem e o
+               grid inteiro passam a ser o que o endpoint devolve. -->
+          <div class="section-title"><div><span class="eyebrow">SOFTWARE CREATION OS (SCOS)</span><h2>Fam├¡lias de Design & Multi-Design Generator</h2></div><span id="designFamilyCount" class="count">ÔÇö</span></div>
+          <div id="designFamiliesGrid" class="metric-grid" style="margin-top:15px;"></div>
+          <div class="section-title" style="margin-top:18px;"><div><span class="eyebrow">APP GENOME</span><h2>Estrutura t├¡pica por tipo de aplica├º├úo</h2></div></div>
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="genomeAppType" style="padding:8px 12px; background:#070a0f; border:1px solid var(--line); border-radius:8px; color:#fff; font-size:12px;">
+              <option value="saas">SaaS</option>
+              <option value="marketplace">Marketplace</option>
+              <option value="erp">ERP</option>
+              <option value="crm">CRM</option>
+              <option value="ecommerce">E-commerce</option>
+            </select>
+            <button id="genomeStructureBtn" class="ghost-btn">Consultar genoma</button>
+          </div>
+          <div id="genomeStructureResult" class="health-list" style="margin-top:12px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: ONEDEPLOY ORCHESTRATOR -->
+      <div id="view-onedeploy" class="view-section">
+        <section class="panel">
+          <!-- "AUTONOMOUS" era um selo literal: nada media autonomia. O que existe de verdade
+               e /api/onedeploy/scan-project, que LE o disco e devolve measured()/unknown() por
+               aspecto descoberto. O pill agora reflete se o scan foi executado. -->
+          <div class="section-title"><div><span class="eyebrow">ONEDEPLOY ORCHESTRATOR</span><h2>Scan de Projeto & Pipeline</h2></div><span id="onedeployState" class="status-pill neutral">SEM SCAN</span></div>
+          <p>SCAN ÔåÆ UNDERSTAND ÔåÆ PLAN ÔåÆ IMPLEMENT ÔåÆ TEST ÔåÆ REVIEW ÔåÆ COMMIT ÔåÆ PUSH ÔåÆ DEPLOY ÔåÆ VERIFY ÔåÆ OBSERVE ÔåÆ LEARN.</p>
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="onedeployPath" placeholder="Caminho do projeto (vazio = este reposit├│rio)" style="flex:1; min-width:220px; padding:8px 12px; background:#070a0f; border:1px solid var(--line); border-radius:8px; color:#fff; font-size:12px;">
+            <button id="onedeployScanBtn" class="ghost-btn">Escanear projeto</button>
+          </div>
+          <div id="onedeployResult" class="health-list" style="margin-top:12px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: OBSERVABILITY / AI RUNTIME TELEMETRY -->
+      <div id="view-observability" class="view-section">
+        <section id="observability" class="telemetry-grid">
+          <article class="panel"><div class="section-title"><div><span class="eyebrow">HEALTH ORCHESTRATOR</span><h2>Sa├║de real</h2></div><span id="healthScore" class="score">ÔÇö</span></div><div id="healthList" class="health-list"></div></article>
+          <article id="gateway" class="panel"><div class="section-title"><div><span class="eyebrow">AI GATEWAY & AI RUNTIME</span><h2>Consumo & Telemetria IA</h2></div><span id="gatewayState" class="status-pill neutral">SEM DADOS</span></div><div id="aiStats" class="ai-stats"></div><div id="systemMetrics" class="metric-grid"></div></article>
+        </section>
+
+        <!-- SERIE TEMPORAL MEDIDA (sparklines).
+             O painel de referencia pede linhas de tendencia. Elas vem de
+             /api/observability/series, alimentado pelo loop `observability` do living runtime
+             (uma amostra por tick, 60s). Antes de existir a serie, desenhar uma linha aqui
+             exigiria inventar os pontos -- entao os cartoes nascem VAZIOS e a linha aparece
+             conforme o coletor mede. Cada cartao sem amostra mostra o motivo, nao um traco reto. -->
+        <section class="panel" style="margin-top:20px;">
+          <div class="section-title">
+            <div><span class="eyebrow">SERIE TEMPORAL MEDIDA</span><h2>Tend├¬ncia do runtime</h2></div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span id="seriesSummary" class="count">ÔÇö</span>
+              <button id="seriesSampleBtn" class="action-btn" type="button" title="Coletar uma amostra agora, sem esperar a cad├¬ncia do worker">Amostrar agora</button>
+            </div>
+          </div>
+          <div id="sparkGrid" class="spark-grid"></div>
+          <div id="seriesEmpty" class="dag-empty">Aguardando o coletor de observabilidade amostrar o runtime.</div>
+        </section>
+      </div>
+
+      <!-- VIEW: CONNECTORS -->
+      <div id="view-connectors" class="view-section">
+        <section id="connectors" class="panel">
+          <div class="section-title"><div><span class="eyebrow">CONNECTOR RUNTIME</span><h2>Conectores Conectados</h2></div><span id="connectorSummary" class="count">ÔÇö</span></div>
+          <div id="connectorList" class="health-list"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: SECURITY -->
+      <div id="view-security" class="view-section">
+        <section class="panel">
+          <!-- Antes: pill verde "AES-256-GCM" e a frase "todos os payloads sao protegidos".
+               A cripto e real, mas o SELO nao era medido -- e sem FENIX_ENCRYPTION_KEY a chave
+               mestra vem de string fixa no codigo. /api/security/encryption/status agora cifra
+               e decifra um canario a cada consulta e devolve o veredito derivado, com unknown()
+               em tudo que este processo nao consegue verificar (repouso, TLS). -->
+          <div class="section-title"><div><span class="eyebrow">COGNITIVE ENCRYPTION & SECURITY</span><h2>Criptografia Medida</h2></div><span id="secStatus" class="status-pill neutral">ÔÇö</span></div>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>Algoritmo</span><b id="secAlgorithm">ÔÇö</b></div>
+            <div class="mini-metric"><span>Tamanho da chave</span><b id="secKeyLength">ÔÇö</b></div>
+            <div class="mini-metric"><span>Self-test (round-trip agora)</span><b id="secSelfTest">ÔÇö</b></div>
+            <div class="mini-metric"><span>Gest├úo da chave</span><b id="secKeyManagement">ÔÇö</b></div>
+          </div>
+          <div id="secPending" class="health-list" style="margin-top:12px;"></div>
+        </section>
+      </div>
+
+      <!-- VIEW: VERACIDADE (AUDITOR DE SIMULACAO) -->
+      <div id="view-veracity" class="view-section">
+        <section class="panel">
+          <!-- Esta tela existe para o sistema se auto-acusar. Vem de
+               /api/governance/simulation-audit, que varre src/ e conta sinais de fabricacao
+               por modulo. Nao ha nada a esconder aqui: se o numero subir, aparece. -->
+          <div class="section-title"><div><span class="eyebrow">SIMULATION AUDIT</span><h2>Veracidade Operacional Medida</h2></div><span id="veracitySummary" class="count">ÔÇö</span></div>
+          <div class="metric-grid" style="margin-top:15px;">
+            <div class="mini-metric"><span>M├│dulos varridos</span><b id="veracityModules">ÔÇö</b></div>
+            <div class="mini-metric"><span>Sinais de fabrica├º├úo</span><b id="veracitySignals">ÔÇö</b></div>
+            <div class="mini-metric"><span>Classe production</span><b id="veracityProduction">ÔÇö</b></div>
+            <div class="mini-metric"><span>Classe simulated</span><b id="veracitySimulated">ÔÇö</b></div>
+          </div>
+          <div id="veracityWorst" class="health-list" style="margin-top:12px;"></div>
+        </section>
+      </div>
+
+      <footer><span>GRG F├èNIX ╬®Ôê× Master Operating System ÔÇö Autonomous Engineering Intelligence</span><span id="lastUpdate">Nunca atualizado</span></footer>
+    </main>
+
+    <!-- SIDE TASK DRAWER (CURSOR-STYLE SPLIT) -->
+    <aside id="taskDrawer" class="task-drawer">
+      <div class="drawer-header">
+        <span class="eyebrow">TASK DRAWER</span>
+        <h3>Tarefas & Agentes Vivos</h3>
+        <button id="closeDrawer" class="dialog-close">├ù</button>
+      </div>
+      <div id="drawerContent" class="drawer-content">
+        <div class="drawer-section">
+          <span class="label">MISS├âO ATIVA:</span>
+          <strong id="drawerMissionTitle">Nenhuma miss├úo ativa</strong>
+          <div id="drawerAgentState" class="status-pill active" style="margin-top:6px; display:inline-block;">DORMINDO</div>
+        </div>
+        <div class="drawer-section" style="margin-top:15px;">
+          <span class="label">JOBS EM EXECU├ç├âO:</span>
+          <div id="drawerJobList" class="health-list" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- COMMAND PALETTE (CTRL+K) DIALOG -->
+  <dialog id="cmdPalette" class="cmd-palette">
+    <div class="cmd-header">
+      <input type="text" id="cmdInput" placeholder="Digite um comando, navega├º├úo ou busca (ex: #deploys, self deploy, mode)..." autofocus>
+      <button id="closeCmdPalette" class="dialog-close">├ù</button>
+    </div>
+    <div id="cmdResults" class="cmd-results">
+      <div class="cmd-item" data-action="nav" data-target="#command"><b>Dashboard</b><span>Ir para o centro operacional</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#masterNode"><b>Master Node VPS</b><span>Visualizar status da infraestrutura</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#deploys"><b>Deploy Center</b><span>Acompanhar 11 est├ígios de deploy</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#missions"><b>Mission Workspace</b><span>Visualizar timeline e DAG de miss├Áes</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#runtime"><b>Task Center</b><span>Visualizar jobs e fila de execu├º├úo</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#projects"><b>Projetos & Executive Brain</b><span>Reposit├│rios e roadmaps executivos</span></div>
+      <div class="cmd-item" data-action="nav" data-target="#city"><b>AI City & NPCs</b><span>Ver mapa 3D da cidade digital</span></div>
+      <div class="cmd-item" data-action="run" data-target="selfDeploy"><b>­ƒÜÇ Run Self Deploy</b><span>Executar pipeline de deploy governado</span></div>
+      <div class="cmd-item" data-action="run" data-target="mode"><b>­ƒöä Alternar Modo de Trabalho</b><span>Mudar entre Focus, Assistant, etc.</span></div>
+    </div>
+  </dialog>
+
+  <!-- EXECUTIVE DECISION INBOX MODAL -->
+  <dialog id="inboxModal">
+    <button id="closeInbox" class="dialog-close">├ù</button>
+    <span class="eyebrow">EXECUTIVE COGNITIVE ASSISTANT</span>
+    <h2>Fila de Decis├Áes Pendentes</h2>
+    <div id="inboxItems" style="margin-top:15px; display:flex; flex-direction:column; gap:12px;"></div>
+  </dialog>
+
+  <!-- MULTIMODAL MODAL -->
+  <dialog id="multimodalDialog">
+    <button id="closeMultimodal" class="dialog-close">├ù</button>
+    <span class="eyebrow">MULTIMODAL WORKSPACE INGESTION</span>
+    <h2>Enviar arquivo / c├│digo / especifica├º├úo</h2>
+    <form id="multimodalForm">
+      <label for="fileSelect">Selecione o arquivo ou arraste aqui:</label>
+      <input type="file" id="fileSelect" required>
+      <br><br>
+      <button type="submit" class="action-btn">Ingerir no Knowledge Genome</button>
+    </form>
+    <div id="ingestResult" style="margin-top:15px; font-size:13px; color:var(--green);"></div>
+  </dialog>
+
+  <dialog id="nodeDialog"><button id="closeDialog" class="dialog-close">├ù</button><span class="eyebrow">AI CITY ENTITY & DIGITAL TWIN</span><h2 id="nodeTitle">Componente</h2><div id="nodeDetails"></div></dialog>
+  <script src="/app.js"></script>
+</body>
+</html>
