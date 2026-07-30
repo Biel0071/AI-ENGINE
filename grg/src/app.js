@@ -576,6 +576,12 @@ async function createApp(options = {}) {
   app.conversations = new ConversationStore({ store, memory, llm, events: fabricEvents });
   app.masterAvatar = new MasterAvatar({ chat: app.chat, missionPlanner });
   app.npcCity.masterAvatar = app.masterAvatar;
+  
+  // SCOS: Kernel Initialization
+  app.capabilityMarketplace = new CapabilityMarketplace();
+  app.liveBootKernel = new LiveBootKernel({ eventBus: bus, logger });
+  app.runtimeKernel = new RuntimeKernel({ eventBus: bus, logger, liveBootKernel: app.liveBootKernel, intervalMs: 5000 });
+
   return app;
 }
 

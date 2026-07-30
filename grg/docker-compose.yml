@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: fenix_backend
+    restart: always
+    ports:
+      - "4400:4400"
+    environment:
+      - NODE_ENV=production
+      - PORT=4400
+      - REALITY_FIRST_PROTOCOL=enabled
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: fenix_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

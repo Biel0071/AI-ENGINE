@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (only production for smaller footprint if available)
+RUN npm install --production
+
+# Copy application source code
+COPY . .
+
+# Expose backend port
+EXPOSE 4400
+
+# Start the server (Live Boot & Runtime Kernel)
+CMD ["node", "src/server.js"]
