@@ -9,6 +9,10 @@
       "type": "router"
     },
     {
+      "id": "ExecutionBus",
+      "type": "bus"
+    },
+    {
       "id": "ExecutionPolicies",
       "type": "service"
     },
@@ -29,6 +33,10 @@
     {
       "from": "CapabilityRouter",
       "to": "CapabilityRegistry"
+    },
+    {
+      "from": "ExecutionBus",
+      "to": "EventRegistry"
     },
     {
       "from": "PluginManager",

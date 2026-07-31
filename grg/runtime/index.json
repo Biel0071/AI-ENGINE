@@ -227,11 +227,20 @@
     {
       "type": "router",
       "name": "CapabilityRouter",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "requires": [
         "CapabilityRegistry"
       ],
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\CapabilityRouter.js"
+    },
+    {
+      "type": "bus",
+      "name": "ExecutionBus",
+      "version": "1.0.0",
+      "requires": [
+        "EventRegistry"
+      ],
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\ExecutionBus.js"
     },
     {
       "type": "service",
@@ -300,7 +309,8 @@
     {
       "name": "RuntimeRegistry",
       "type": "legacy",
-      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\RuntimeRegistry.js",
+      "_duplicated": true
     },
     {
       "name": "RouteRegistry",
@@ -314,6 +324,11 @@
     },
     {
       "name": "PluginRegistry",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+    },
+    {
+      "name": "SessionRegistry",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },

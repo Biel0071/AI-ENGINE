@@ -47,6 +47,7 @@
           "ControlPlane",
           "CapabilityExecutor",
           "CapabilityRouter",
+          "ExecutionBus",
           "ExecutionPolicies",
           "Kernel",
           "Container",
@@ -62,6 +63,7 @@
           "RouteRegistry",
           "EventRegistry",
           "PluginRegistry",
+          "SessionRegistry",
           "Registry",
           "DigitalTwinEngine",
           "DigitalTwinService",
@@ -261,10 +263,31 @@
         "ProjectRegistry": [],
         "ProviderRegistry": [],
         "EvolutionRegistry": [],
-        "RuntimeRegistry": [],
+        "RuntimeRegistry": [
+          {
+            "id": "ExecutionPolicies",
+            "type": "object",
+            "status": "LOADED",
+            "health": "UNKNOWN",
+            "owner": "system",
+            "createdAt": "2026-07-31T18:20:01.017Z",
+            "updatedAt": "2026-07-31T18:20:01.039Z",
+            "metrics": {},
+            "dependencies": [],
+            "events": [],
+            "history": [],
+            "_raw": {
+              "type": "service",
+              "name": "ExecutionPolicies",
+              "version": "1.0.0",
+              "requires": []
+            }
+          }
+        ],
         "RouteRegistry": [],
         "EventRegistry": [],
-        "PluginRegistry": []
+        "PluginRegistry": [],
+        "SessionRegistry": []
       }
     }
   }

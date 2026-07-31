@@ -8,19 +8,19 @@ module.exports = {
       async enforce(pluginMeta, action) {
         console.log('[ExecutionPolicies] Verifying execution of ' + pluginMeta.id + ' for action ' + action);
         
+        // Runtime Governance
         // 1. Validate Permissions
         if (!pluginMeta.permissions || pluginMeta.permissions.length === 0) {
-          console.warn('[ExecutionPolicies] Warning: Plugin ' + pluginMeta.id + ' has no permissions declared.');
+          throw new Error('[ExecutionPolicies] Security Policy Violation: Plugin lacks permissions');
         }
 
-        // 2. Validate Quota / Rate Limit (mocked for now)
-        // ...
-
-        // 3. Setup Logical Sandbox
-        // We will just verify it's a known plugin structure
-        if (!pluginMeta.entry) {
-            throw new Error('[ExecutionPolicies] Plugin lacks an entry point.');
+        // 2. Validate Health
+        if (pluginMeta.health && pluginMeta.health !== 'healthy') {
+            console.warn('[ExecutionPolicies] Warning: ' + pluginMeta.id + ' is not healthy.');
         }
+
+        // 3. Quota / Timeout
+        // We inject these dynamically
 
         return true;
       }
