@@ -113,31 +113,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     }
   };
 
-  // Phase 1 - Formal Boot Sequence Initialization
-  const { BootManager } = require('./kernel/boot');
-  const { ServiceRegistry } = require('./kernel/service-registry');
-  const { CapabilityRegistry } = require('./kernel/capability-registry');
-  const { EventBus } = require('./eventing/event-bus');
-  const { HealthMonitor } = require('./infrastructure/health');
-  const { Telemetry } = require('./infrastructure/telemetry');
-  const { WorkerScheduler } = require('./execution/worker-scheduler');
-
-  const bootManager = new BootManager();
-  const serviceRegistry = new ServiceRegistry();
-  const capabilityRegistry = new CapabilityRegistry(serviceRegistry);
-  const eventBus = new EventBus();
-  const healthMonitor = new HealthMonitor(bootManager);
-  const telemetry = new Telemetry(serviceRegistry, eventBus);
-  const workerScheduler = new WorkerScheduler(eventBus);
-
-  bootManager.registerModule('Service Registry', serviceRegistry);
-  bootManager.registerModule('Capability Registry', capabilityRegistry);
-  bootManager.registerModule('Event Bus', eventBus);
-  bootManager.registerModule('Health', healthMonitor);
-  bootManager.registerModule('Telemetry', telemetry);
-  bootManager.registerModule('Workers', workerScheduler);
-
-  // Execute the strict boot sequence
+  // Single Source of Truth: The FÊNIX Kernel
+  // All discovery, registries, and activations are handled inside FENIX_KERNEL.boot()
+  const bootManager = {
+    start: async () => console.log('[Server] Bypassing legacy BootManager; using FÊNIX_KERNEL.')
+  };
   await bootManager.start();
 
   const server = http.createServer(async (req, res) => {
