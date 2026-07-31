@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/core/eventbus.ts","./src/core/runtimeclient.ts","./src/districts/developerdistrict.tsx","./src/districts/evolutiondistrict.tsx","./src/districts/knowledgedistrict.tsx","./src/districts/workersdistrict.tsx"],"errors":true,"version":"5.9.3"}

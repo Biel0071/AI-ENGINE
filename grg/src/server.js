@@ -1,6 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const { WebSocketServer } = require('ws');
 const { createApp, overview } = require('./app');
 const { httpStatusFor } = require('./kernel/errors');
 const { CloningGitHostAdapter } = require('./repo-intel/cloning-git-host');
@@ -682,6 +683,33 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   });
   server.on('close', () => { app.close().catch(() => {}); });
   server.app = app;
+
+  const wss = new WebSocketServer({ noServer: true });
+  server.on('upgrade', (request, socket, head) => {
+    if (request.url === '/events') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  });
+
+  wss.on('connection', (ws) => {
+    // Send initial connection event
+    ws.send(JSON.stringify({ type: 'RuntimeConnected', payload: { status: 'ok' } }));
+    
+    // Subscribe to EventBus and forward to WS
+    const unsubscribe = app.bus.subscribe('*', (event) => {
+      if (ws.readyState === 1) { // OPEN
+        ws.send(JSON.stringify({ type: event.type, payload: event }));
+      }
+    });
+
+    ws.on('close', () => {
+      app.bus.unsubscribe(unsubscribe);
+    });
+  });
 
   // Ativacao operacional em background: o servidor ja esta escutando e o
   // healthcheck do container passa enquanto os 26 probes rodam.

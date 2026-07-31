@@ -8,7 +8,7 @@ import { EvolutionDistrict } from './districts/EvolutionDistrict';
 import { DeveloperDistrict } from './districts/DeveloperDistrict';
 
 export const bus = new EventBus();
-export const client = new RuntimeClient('http://209.50.241.215:4400', bus);
+export const client = new RuntimeClient('http://209.50.241.22:4410', bus);
 
 function App() {
   const [status, setStatus] = useState('Connecting...');

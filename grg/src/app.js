@@ -11,7 +11,8 @@ const { ControlPlane } = require('./control-plane/control-plane');
 const { RepositoryIntelligence } = require('./repo-intel/repository-intelligence');
 const { LocalGitHostAdapter } = require('./repo-intel/ports');
 const { AIGateway } = require('./ai-runtime/ai-gateway');
-const { buildProvidersFromEnv, loadRoutes } = require('./ai-runtime/provider-registry');
+const { FileSystemService } = require('./storage/file-system-service');
+const { ExecutionEngine } = require('./execution/execution-engine');
 const { SoftwareFactory } = require('./software-factory/software-factory');
 const { Deployer } = require('./runtime/deployer');
 const { ProductSuite } = require('./product/white-label');
@@ -115,8 +116,8 @@ async function createApp(options = {}) {
   const approvals = new ApprovalEngine({ store, bus, controlPlane, audit, policy });
   const gitHost = options.gitHost || new LocalGitHostAdapter();
   const runtimeEnv = options.env || process.env;
-  const providers = options.providers || buildProvidersFromEnv(runtimeEnv, { fetchImpl: options.fetchImpl, production: securityConfig.production });
-  const routes = options.routes || loadRoutes(runtimeEnv, { production: securityConfig.production });
+  const providers = options.providers || {};
+  const routes = options.routes || {};
   if (securityConfig.production) {
     const configured = Object.values(routes).flatMap((route) => [route, ...(Array.isArray(route.fallback) ? route.fallback : route.fallback ? [route.fallback] : [])]);
     if (configured.some((route) => route.provider === 'echo' || !providers[route.provider])) console.warn('[App] production AI routes require configured real providers. Gracefully degrading AI.');
@@ -623,6 +624,8 @@ async function createApp(options = {}) {
   app.capabilityMarketplace = new CapabilityMarketplace();
   app.liveBootKernel = new LiveBootKernel({ eventBus: bus, logger });
   app.runtimeKernel = new RuntimeKernel({ eventBus: bus, logger, liveBootKernel: app.liveBootKernel, intervalMs: 5000 });
+  app.bus = bus;
+  app.eventBus = bus;
 
   return app;
 }
