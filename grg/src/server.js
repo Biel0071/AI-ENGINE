@@ -8,6 +8,10 @@ const { loadSecurityConfig } = require('./security/config');
 const { loadInfrastructureConfig } = require('./infrastructure/config');
 const { createStructuredLogger } = require('./infrastructure/observability/structured-logger');
 const { handleLiveChat } = require('./chat/live-chat-routes');
+const { handleMissionRoutes } = require('./missions/mission-routes');
+const { handleKnowledgeRoutes } = require('./knowledge/knowledge-routes');
+const { handleDeveloperRoutes } = require('./api/developer-routes');
+
 const crypto = require('node:crypto');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -191,6 +195,19 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         if (!safeToken(req.headers.authorization, env.FENIX_METRICS_TOKEN)) return sendJson(res, 401, { error: 'metrics authentication required' }, requestId);
         res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' }); return res.end(await app.metrics.render());
       }
+
+      if (url.pathname.startsWith('/api/workers') || url.pathname.startsWith('/api/providers') || url.pathname.startsWith('/api/jobs') || url.pathname.startsWith('/api/plans') || url.pathname.startsWith('/api/estimates') || url.pathname.startsWith('/api/orchestrator')) {
+        const handled = handleMissionRoutes(req, res, url, app, sendJson);
+        if (handled) return;
+      }
+      
+      const knowledgeHandled = handleKnowledgeRoutes(req, res, url, app, sendJson);
+      if (knowledgeHandled) return;
+
+      const developerHandled = handleDeveloperRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }));
+      if (developerHandled) return;
+
+      // -- Rotas nativas do server ------------------------------------------------------------
 
       // ---- Auth (público) ----
       if (req.method === 'POST' && url.pathname === '/api/login') {

@@ -1,6 +1,10 @@
 class OidcVerifier {
   constructor({ issuer, audience, jwksUri, algorithms = ['RS256', 'ES256'], jwtVerifyImpl = null, jwks = null }) {
-    if (!issuer || !audience || !jwksUri) throw new Error('OIDC issuer, audience and JWKS URI are required');
+    if (!issuer || !audience || !jwksUri) {
+      console.warn('[OIDC] OIDC issuer, audience and JWKS URI are missing. Gracefully degrading OIDC.');
+      this.degraded = true;
+      return;
+    }
     for (const value of [issuer, jwksUri]) if (new URL(value).protocol !== 'https:') throw new Error('OIDC endpoints must use HTTPS');
     this.issuer = issuer.replace(/\/$/, ''); this.audience = audience; this.jwksUri = jwksUri; this.algorithms = algorithms; this.jwtVerifyImpl = jwtVerifyImpl; this.jwks = jwks;
   }

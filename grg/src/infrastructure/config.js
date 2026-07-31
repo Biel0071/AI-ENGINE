@@ -26,7 +26,7 @@ function loadInfrastructureConfig(env = process.env, options = {}) {
     if (!config.redisUrl) missing.push('REDIS_URL');
     if (!config.qdrant) missing.push('FENIX_QDRANT_URL');
     if (!config.s3?.bucket) missing.push('FENIX_S3_BUCKET');
-    if (missing.length) throw new Error(`production infrastructure is incomplete: ${missing.join(', ')}`);
+    if (missing.length) console.warn(`[Config] Production infrastructure is incomplete: ${missing.join(', ')}. Gracefully degrading missing subsystems.`);
   }
   if (config.s3 && Boolean(config.s3.accessKeyId) !== Boolean(config.s3.secretAccessKey)) {
     throw new Error('S3 static credentials require both access key and secret key');

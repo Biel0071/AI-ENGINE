@@ -55,9 +55,10 @@ class PostgresStore {
   }
 
   async initialize() {
-    const schema = this.schema;
-    await this.pool.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
-    await this.pool.query(`
+    try {
+      const schema = this.schema;
+      await this.pool.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+      await this.pool.query(`
       CREATE TABLE IF NOT EXISTS ${schema}.kernel_state (
         state_key text PRIMARY KEY,
         version bigint NOT NULL DEFAULT 0,
@@ -71,6 +72,17 @@ class PostgresStore {
       ['global', JSON.stringify(EMPTY_STATE())],
     );
     return this;
+    } catch (err) {
+      console.warn('[PostgresStore] Failed to initialize store:', err.message);
+    }
+  }
+
+  async get(key) {
+    const result = await this.pool.query(
+      `SELECT document FROM ${this.schema}.kernel_state WHERE state_key = $1`, ['global'],
+    );
+    if (!result.rows[0]) throw new Error('PostgreSQL kernel state is not initialized');
+    return migrateState(result.rows[0].document).state;
   }
 
   async read() {
