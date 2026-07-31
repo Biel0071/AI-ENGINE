@@ -1,4 +1,5 @@
 const http = require('node:http');
+const { Kernel } = require('./core/Kernel');
 const fs = require('node:fs');
 const path = require('node:path');
 const { WebSocketServer } = require('ws');
@@ -33,6 +34,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     requireExternal: options.requireExternalInfrastructure,
   });
   const logger = options.logger || createStructuredLogger();
+
+  // FÊNIX UNIFICATION KERNEL - HYBRID DI BOOT & DISCOVERY
+  const kernel = new Kernel();
+  await kernel.boot(path.join(__dirname));
+  global.FENIX_KERNEL = kernel;
+
   const app = await createApp({
     dataFile: options.dataFile || env.GRG_DATA_FILE || path.join(__dirname, '..', '.data', 'state.json'),
     gitHost: options.gitHost || new CloningGitHostAdapter(),
