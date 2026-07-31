@@ -215,6 +215,32 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\control-plane\\control-plane.js"
     },
     {
+      "type": "executor",
+      "name": "CapabilityExecutor",
+      "version": "1.0.0",
+      "requires": [
+        "PluginRegistry",
+        "ExecutionPolicies"
+      ],
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\CapabilityExecutor.js"
+    },
+    {
+      "type": "router",
+      "name": "CapabilityRouter",
+      "version": "1.0.0",
+      "requires": [
+        "CapabilityRegistry"
+      ],
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\CapabilityRouter.js"
+    },
+    {
+      "type": "service",
+      "name": "ExecutionPolicies",
+      "version": "1.0.0",
+      "requires": [],
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\ExecutionPolicies.js"
+    },
+    {
       "name": "Kernel",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Kernel.js"
@@ -223,6 +249,16 @@
       "name": "Container",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Kernel.js"
+    },
+    {
+      "type": "manager",
+      "name": "PluginManager",
+      "version": "1.0.0",
+      "requires": [
+        "PluginRegistry",
+        "CapabilityRegistry"
+      ],
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\PluginManager.js"
     },
     {
       "name": "ModuleRegistry",

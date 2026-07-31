@@ -1,4 +1,42 @@
 {
-  "nodes": [],
-  "edges": []
+  "nodes": [
+    {
+      "id": "CapabilityExecutor",
+      "type": "executor"
+    },
+    {
+      "id": "CapabilityRouter",
+      "type": "router"
+    },
+    {
+      "id": "ExecutionPolicies",
+      "type": "service"
+    },
+    {
+      "id": "PluginManager",
+      "type": "manager"
+    }
+  ],
+  "edges": [
+    {
+      "from": "CapabilityExecutor",
+      "to": "PluginRegistry"
+    },
+    {
+      "from": "CapabilityExecutor",
+      "to": "ExecutionPolicies"
+    },
+    {
+      "from": "CapabilityRouter",
+      "to": "CapabilityRegistry"
+    },
+    {
+      "from": "PluginManager",
+      "to": "PluginRegistry"
+    },
+    {
+      "from": "PluginManager",
+      "to": "CapabilityRegistry"
+    }
+  ]
 }

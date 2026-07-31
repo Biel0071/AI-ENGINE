@@ -1,8 +1,9 @@
 {
   "version": "1.0",
-  "modules": 243,
+  "modules": 247,
+  "plugins": 0,
   "workers": 0,
-  "services": 0,
+  "services": 1,
   "providers": 0,
   "projects": 0,
   "routes": 0,

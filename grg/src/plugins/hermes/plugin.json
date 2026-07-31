@@ -1,0 +1,16 @@
+{
+  "id": "hermes",
+  "type": "desktop",
+  "version": "1.0.0",
+  "capabilities": [
+    "DesktopAutomation",
+    "Mouse",
+    "Keyboard",
+    "OCR"
+  ],
+  "permissions": [
+    "desktop",
+    "filesystem"
+  ],
+  "entry": "index.js"
+}

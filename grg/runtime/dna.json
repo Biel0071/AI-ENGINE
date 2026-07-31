@@ -45,8 +45,12 @@
           "GitHubConnectorAdapter",
           "ContextEngine",
           "ControlPlane",
+          "CapabilityExecutor",
+          "CapabilityRouter",
+          "ExecutionPolicies",
           "Kernel",
           "Container",
+          "PluginManager",
           "ModuleRegistry",
           "ServiceRegistry",
           "KnowledgeRegistry",
@@ -248,7 +252,9 @@
           "ExecutiveCognitiveAssistant"
         ],
         "CapabilityRegistry": [],
-        "ServiceRegistry": [],
+        "ServiceRegistry": [
+          "ExecutionPolicies"
+        ],
         "KnowledgeRegistry": [],
         "MissionRegistry": [],
         "WorkerRegistry": [],

@@ -52,6 +52,14 @@ class Kernel {
   async boot(srcDir) {
     console.log('[Kernel] Boot sequence initiated...');
     this.scanDirectory(srcDir);
+    
+    const pluginManager = this.container.get('PluginManager');
+    if (pluginManager) {
+      pluginManager.scan(path.join(srcDir, 'plugins'));
+    } else {
+      console.warn('[Kernel] PluginManager not found during boot.');
+    }
+
     this.generateMissions();
     this.writeArtifacts();
     console.log('[Kernel] Boot sequence complete. Operating System is alive.');
@@ -159,6 +167,7 @@ class Kernel {
     const manifest = {
       version: "1.0",
       modules: this.registries.ModuleRegistry.getAll().length,
+      plugins: this.registries.PluginRegistry.getAll().length,
       workers: this.registries.WorkerRegistry.getAll().length,
       services: this.registries.ServiceRegistry.getAll().length,
       providers: this.registries.ProviderRegistry.getAll().length,
