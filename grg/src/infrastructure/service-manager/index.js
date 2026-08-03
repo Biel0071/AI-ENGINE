@@ -1,5 +1,6 @@
 const os = require('node:os');
 const { WindowsServiceProvider } = require('./windows-service-provider');
+const { LinuxServiceProvider } = require('./linux-service-provider');
 
 function getServiceProvider(serviceName, scriptPath) {
   const platform = os.platform();
@@ -7,12 +8,9 @@ function getServiceProvider(serviceName, scriptPath) {
   if (platform === 'win32') {
     return new WindowsServiceProvider(serviceName, scriptPath);
   } else if (platform === 'linux') {
-    // Para simplificar a v2.0 neste momento, retornaremos um mock ou fallback
-    throw new Error('Linux Systemd provider not fully implemented yet');
-  } else if (platform === 'darwin') {
-    throw new Error('Mac Launchd provider not fully implemented yet');
+    return new LinuxServiceProvider(serviceName, scriptPath);
   } else {
-    throw new Error(`Unsupported OS: ${platform}`);
+    throw new Error(`Unsupported OS: ${platform}. Only Windows and Linux are fully supported in FENIX OS v4.`);
   }
 }
 
