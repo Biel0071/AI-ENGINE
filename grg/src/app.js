@@ -290,18 +290,26 @@ async function createApp(options = {}) {
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
     liveBootKernel, runtimeKernel, aiOrchestrator, aek, digitalTwinEngine, cognitiveMemory, capabilityMarketplace,
-    storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine // Expose to server.js
+    storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine
   };
 
   // Phase 4: Startup Recovery
   app.recoverPendingMissions = async () => {
     try {
-      const allMissions = await knowledgeEngine.missionStore.find({});
+      const store = knowledgeEngine?.missionStore;
+      if (!store) {
+        logger.warn('[StartupRecovery] missionStore not initialized, skipping recovery.');
+        return;
+      }
+      const allMissions = await store.find({});
+      if (!Array.isArray(allMissions)) {
+        logger.warn('[StartupRecovery] missionStore.find returned non-array, skipping.');
+        return;
+      }
       const pendingMissions = allMissions.filter(m => m.state === 'PENDING' || m.state === 'RUNNING');
       for (const m of pendingMissions) {
         logger.info(`[StartupRecovery] Recovering mission ${m.id} in state ${m.state}`);
         app.bus.emit('MissionRecovered', { mission: m });
-        // In a full implementation, we'd re-queue these into the JobScheduler.
       }
       logger.info(`[StartupRecovery] Recovered ${pendingMissions.length} pending missions.`);
     } catch (err) {

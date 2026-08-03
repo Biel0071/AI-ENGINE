@@ -1,6 +1,15 @@
-const { SQLiteDriver } = require('./drivers/local/sqlite-driver');
-const { MemoryCacheDriver } = require('./drivers/local/memory-cache-driver');
+/**
+ * StorageManager — orquestra os drivers de armazenamento.
+ *
+ * Em producao (DATABASE_URL definida): usa pg (PostgreSQL real).
+ * Em producao (REDIS_URL definida): usa ioredis/redis real.
+ * Fallback local: InMemoryDriver (zero dependencias nativas, funciona em read-only).
+ *
+ * NAO ha mocks. Cada caminho conecta de verdade ou falha com mensagem clara.
+ */
+const { InMemoryDriver } = require('./drivers/local/in-memory-driver');
 const { LocalVectorDriver } = require('./drivers/local/local-vector-driver');
+const { MemoryCacheDriver } = require('./drivers/local/memory-cache-driver');
 
 class StorageManager {
   constructor(options = {}) {
@@ -17,78 +26,94 @@ class StorageManager {
   }
 
   async boot() {
-    // 1. Relational/KV Storage (Missions, Conversations, Knowledge)
-    if (process.env.DATABASE_URL) {
-      console.log('[StorageManager] DATABASE_URL detected. Connecting to PostgreSQL... (Simulated PostgreSQL Driver)');
-      // In a real implementation, you would require the PG Driver here
-      // this.drivers.relational = new PostgreSQLDriver({ url: process.env.DATABASE_URL });
-      // this.stats.relationalProvider = 'postgresql';
+    // ─── 1. Relational ────────────────────────────────────────────────────────
+    const dbUrl = process.env.DATABASE_URL;
+    if (dbUrl) {
+      try {
+        const { PostgreSQLDriver } = require('./drivers/postgresql-driver');
+        this.drivers.relational = new PostgreSQLDriver({ url: dbUrl });
+        await this.drivers.relational.connect();
+        this.stats.relationalProvider = 'postgresql';
+        console.log('[StorageManager] PostgreSQL connected.');
+      } catch (err) {
+        console.warn('[StorageManager] PostgreSQL failed, falling back to InMemory:', err.message);
+        this.drivers.relational = new InMemoryDriver();
+        await this.drivers.relational.connect();
+        this.stats.relationalProvider = 'in-memory';
+      }
     } else {
-      console.log('[StorageManager] No DATABASE_URL. Falling back to SQLite.');
-      this.drivers.relational = new SQLiteDriver();
-      this.stats.relationalProvider = 'sqlite';
+      console.log('[StorageManager] No DATABASE_URL. Using InMemory driver.');
+      this.drivers.relational = new InMemoryDriver();
+      await this.drivers.relational.connect();
+      this.stats.relationalProvider = 'in-memory';
     }
 
-    // 2. Cache Storage
-    if (process.env.REDIS_URL) {
-      console.log('[StorageManager] REDIS_URL detected. Connecting to Redis... (Simulated Redis Driver)');
-      // this.drivers.cache = new RedisDriver({ url: process.env.REDIS_URL });
-      // this.stats.cacheProvider = 'redis';
+    // ─── 2. Cache (Redis) ─────────────────────────────────────────────────────
+    const redisUrl = process.env.REDIS_URL;
+    if (redisUrl) {
+      try {
+        const { RedisDriver } = require('./drivers/redis-driver');
+        this.drivers.cache = new RedisDriver({ url: redisUrl });
+        await this.drivers.cache.connect();
+        this.stats.cacheProvider = 'redis';
+        console.log('[StorageManager] Redis connected.');
+      } catch (err) {
+        console.warn('[StorageManager] Redis failed, falling back to MemoryCache:', err.message);
+        this.drivers.cache = new MemoryCacheDriver();
+        await this.drivers.cache.connect();
+        this.stats.cacheProvider = 'memory';
+      }
     } else {
-      console.log('[StorageManager] No REDIS_URL. Falling back to Memory Cache.');
+      console.log('[StorageManager] No REDIS_URL. Using MemoryCache driver.');
       this.drivers.cache = new MemoryCacheDriver();
+      await this.drivers.cache.connect();
       this.stats.cacheProvider = 'memory';
     }
 
-    // 3. Vector Storage
+    // ─── 3. Vector (Qdrant) ───────────────────────────────────────────────────
     const qdrantUrl = process.env.FENIX_QDRANT_URL || process.env.QDRANT_URL;
     if (qdrantUrl) {
-      console.log('[StorageManager] QDRANT_URL detected. Connecting to Qdrant... (Simulated Qdrant Driver)');
-      // this.drivers.vector = new QdrantDriver({ url: qdrantUrl });
-      // this.stats.vectorProvider = 'qdrant';
+      try {
+        const { QdrantDriver } = require('./drivers/qdrant-driver');
+        this.drivers.vector = new QdrantDriver({ url: qdrantUrl });
+        await this.drivers.vector.connect();
+        this.stats.vectorProvider = 'qdrant';
+        console.log('[StorageManager] Qdrant connected.');
+      } catch (err) {
+        console.warn('[StorageManager] Qdrant failed, falling back to LocalVector:', err.message);
+        this.drivers.vector = new LocalVectorDriver();
+        await this.drivers.vector.connect();
+        this.stats.vectorProvider = 'local';
+      }
     } else {
-      console.log('[StorageManager] No QDRANT_URL. Falling back to Local Vectors.');
+      console.log('[StorageManager] No QDRANT_URL. Using LocalVector driver.');
       this.drivers.vector = new LocalVectorDriver();
+      await this.drivers.vector.connect();
       this.stats.vectorProvider = 'local';
     }
 
-    // Connect all
-    await Promise.all([
-      this.drivers.relational?.connect(),
-      this.drivers.cache?.connect(),
-      this.drivers.vector?.connect()
-    ]);
-    
-    console.log('[StorageManager] All storage drivers connected.');
+    console.log(`[StorageManager] Boot complete — relational:${this.stats.relationalProvider} cache:${this.stats.cacheProvider} vector:${this.stats.vectorProvider}`);
   }
 
   async shutdown() {
-    await Promise.all([
-      this.drivers.relational?.disconnect(),
-      this.drivers.cache?.disconnect(),
-      this.drivers.vector?.disconnect()
+    await Promise.allSettled([
+      this.drivers.relational?.disconnect?.(),
+      this.drivers.cache?.disconnect?.(),
+      this.drivers.vector?.disconnect?.()
     ]);
     console.log('[StorageManager] All storage drivers disconnected.');
   }
 
-  getRelational() {
-    return this.drivers.relational;
-  }
-
-  getCache() {
-    return this.drivers.cache;
-  }
-
-  getVector() {
-    return this.drivers.vector;
-  }
+  getRelational() { return this.drivers.relational; }
+  getCache()      { return this.drivers.cache; }
+  getVector()     { return this.drivers.vector; }
 
   getStats() {
     return {
-      missions: this.stats.relationalProvider,
+      missions:  this.stats.relationalProvider,
       knowledge: this.stats.relationalProvider,
-      cache: this.stats.cacheProvider,
-      vectors: this.stats.vectorProvider
+      cache:     this.stats.cacheProvider,
+      vectors:   this.stats.vectorProvider
     };
   }
 }
