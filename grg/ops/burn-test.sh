@@ -13,7 +13,6 @@ fi
 cd /opt/fenix-os/grg || { echo "Codigo nao encontrado em /opt/fenix-os/grg. Faça o deploy primeiro."; exit 1; }
 
 echo "Criando .env de producao com dummy secrets (se nao existir)..."
-if [ ! -f .env.production ]; then
     cat << 'EOF' > .env.production
 POSTGRES_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/postgres_password
 REDIS_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/redis_password
@@ -34,7 +33,6 @@ FENIX_OIDC_REDIRECT_URI=http://localhost:4400/callback
 FENIX_PUBLIC_URL=http://localhost:4400
 FENIX_ROOTLESS_DOCKER_SOCKET=/var/run/docker.sock
 EOF
-fi
 
 mkdir -p .secrets
 for secret in postgres_password redis_password minio_access_key minio_secret_key ai_provider_key metrics_token keycloak_admin_password keycloak_user_password; do
