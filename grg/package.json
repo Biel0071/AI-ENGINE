@@ -15,7 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.1091.0",
     "bullmq": "5.81.2",
-    "jose": "6.2.3",
+    "jose": "6.2.5",
     "pg": "8.22.0",
     "redis": "6.1.0"
   }
