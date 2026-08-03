@@ -1,0 +1,10 @@
+{
+  "name": "fenix-installer",
+  "version": "1.0.0",
+  "description": "FÊNIX OS Bootstrap & Discovery Engine",
+  "main": "installer.js",
+  "scripts": {
+    "start": "node installer.js"
+  },
+  "dependencies": {}
+}
