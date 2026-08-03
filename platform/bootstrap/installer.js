@@ -1,143 +1,205 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const os = require('os');
+const http = require('http');
 
 // ============================================================================
-// FÊNIX OS - ENVIRONMENT DISCOVERY ENGINE & BOOTSTRAP (15 PHASES)
+// FÊNIX OS - BOOTSTRAP RUNTIME V4 (ETERNAL RUNTIME)
 // ============================================================================
 
-console.log(`
-══════════════════════════════════════
-    FÊNIX BOOTSTRAP RUNTIME v1.0
-══════════════════════════════════════
-`);
+const REGISTRY_PATH = '/opt/fenix-os/runtime-registry.json';
+const FENIX_DIR = '/opt/fenix-os';
+const GRG_DIR = path.join(FENIX_DIR, 'grg');
 
-const REGISTRY_PATH = '/opt/fenix/runtime-registry.json';
-const FENIX_DIR = '/opt/fenix/ai-engine';
+class BootstrapRuntimeV4 {
+    constructor() {
+        this.registry = {
+            os: { platform: os.platform(), cpus: os.cpus().length, ramMB: Math.round(os.totalmem() / 1024 / 1024) },
+            services: {},
+            ai_platform: { status: 'offline', lastCheck: null },
+            clusterId: `FENIX-CLUSTER-${Date.now()}`,
+            lastHealing: null,
+            lastBurnTest: null,
+            status: 'initializing'
+        };
+        
+        // Carrega estado anterior se existir
+        if (fs.existsSync(REGISTRY_PATH)) {
+            try {
+                const oldReg = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf-8'));
+                this.registry = { ...oldReg, ...this.registry }; 
+            } catch (e) {}
+        }
+        
+        this.isRunningBurnTest = false;
+        this.pollInterval = 30000; // 30 segundos
+    }
 
-const registry = {
-    os: { platform: os.platform(), cpus: os.cpus().length, ramMB: Math.round(os.totalmem() / 1024 / 1024) },
-    services: {},
-    ai_platform: { status: 'offline' }
-};
+    safeExec(command, cwd = FENIX_DIR) {
+        try { 
+            return execSync(command, { cwd, stdio: 'pipe' }).toString().trim(); 
+        } catch (e) { 
+            return null; 
+        }
+    }
 
-function safeExec(command) {
-    try { return execSync(command, { stdio: 'pipe' }).toString().trim(); } 
-    catch (e) { return null; }
-}
+    checkPort(port) {
+        return !!this.safeExec(`netstat -tuln | grep ":${port} "`);
+    }
 
-function checkPort(port) {
-    const res = safeExec(`netstat -tuln | grep ":${port} "`);
-    return !!res;
-}
+    async httpGet(url) {
+        return new Promise((resolve) => {
+            http.get(url, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => resolve({ status: res.statusCode, data }));
+            }).on('error', () => resolve(null));
+        });
+    }
 
-// ============================================================================
-// FASE 1 - Environment Discovery
-// ============================================================================
-console.log('[FASE 1] Executando Environment Discovery...');
+    // ============================================================================
+    // FASE 1 - Environment Discovery
+    // ============================================================================
+    runDiscovery() {
+        console.log('[FASE 1] Executando Environment Discovery Contínuo...');
+        
+        const dockerVer = this.safeExec('docker --version');
+        this.registry.services.docker = dockerVer ? { installed: true, version: dockerVer, status: 'online' } : { status: 'offline' };
+        
+        this.registry.services.postgres = this.checkPort(5432) ? { status: 'online', port: 5432 } : { status: 'offline' };
+        this.registry.services.redis = this.checkPort(6379) ? { status: 'online', port: 6379 } : { status: 'offline' };
+        this.registry.services.n8n = this.checkPort(5678) ? { status: 'online', port: 5678 } : { status: 'offline' };
+        this.registry.services.icp = (this.checkPort(2082) || this.checkPort(2083) || fs.existsSync('/usr/local/icp')) ? { status: 'connected' } : { status: 'offline' };
+        
+        const pm2Ver = this.safeExec('pm2 -v');
+        this.registry.services.pm2 = pm2Ver ? { status: 'online', version: pm2Ver } : { status: 'offline' };
+    }
 
-// Detectar Docker
-const dockerVer = safeExec('docker --version');
-if (dockerVer) {
-    console.log(` ✔ Docker detectado (${dockerVer})`);
-    registry.services.docker = { installed: true, version: dockerVer };
-}
+    // ============================================================================
+    // FASE 2 - Runtime Registry
+    // ============================================================================
+    syncRegistry() {
+        console.log('[FASE 2] Sincronizando Registry Vivo...');
+        if (!fs.existsSync(FENIX_DIR)) fs.mkdirSync(FENIX_DIR, { recursive: true });
+        fs.writeFileSync(REGISTRY_PATH, JSON.stringify(this.registry, null, 2));
+    }
 
-// Detectar PostgreSQL (Padrão porta 5432)
-if (checkPort(5432)) {
-    console.log(` ✔ PostgreSQL detectado na porta 5432`);
-    registry.services.postgres = { host: 'localhost', port: 5432, status: 'online' };
-}
+    // ============================================================================
+    // FASE 3 - AI Platform Discovery
+    // ============================================================================
+    async checkAIPlatform() {
+        console.log('[FASE 3] Executando AI Platform Discovery...');
+        
+        const healthRes = await this.httpGet('http://localhost:4400/health');
+        if (healthRes && healthRes.status === 200) {
+            this.registry.ai_platform.status = 'online';
+            console.log(' ✔ AI Platform está ONLINE e respondendo (Porta 4400).');
+        } else {
+            this.registry.ai_platform.status = 'offline';
+            console.warn(' ❌ AI Platform está OFFLINE ou não responde.');
+        }
+        this.registry.ai_platform.lastCheck = new Date().toISOString();
+    }
 
-// Detectar Redis (Padrão porta 6379)
-if (checkPort(6379)) {
-    console.log(` ✔ Redis detectado na porta 6379`);
-    registry.services.redis = { host: 'localhost', port: 6379, status: 'online' };
-}
+    // ============================================================================
+    // FASE 4 - Self Healing
+    // ============================================================================
+    runSelfHealing() {
+        console.log('[FASE 4] Avaliando métricas para Self Healing...');
+        let needsHealing = false;
 
-// Detectar ICP Panel (Padrão porta 2082/2083)
-if (checkPort(2082) || checkPort(2083) || fs.existsSync('/usr/local/icp')) {
-    console.log(` ✔ ICP Panel detectado. Integrando nativamente.`);
-    registry.services.icp = { status: 'connected' };
-}
+        // Se Docker ta online, mas AI Platform ta offline, forçar restart!
+        if (this.registry.services.docker.status === 'online' && this.registry.ai_platform.status === 'offline') {
+            needsHealing = true;
+            console.warn(' ⚠️ Detectada anomalia: AI Platform caiu. Iniciando Self-Healing Docker Compose...');
+            this.safeExec('docker compose -f docker-compose.enterprise.yml restart', GRG_DIR);
+            this.registry.lastHealing = new Date().toISOString();
+        }
 
-// Detectar N8N (Padrão porta 5678)
-if (checkPort(5678)) {
-    console.log(` ✔ N8N detectado na porta 5678`);
-    registry.services.n8n = { status: 'online' };
-}
+        if (!needsHealing) {
+            console.log(' ✔ Sistema saudável. Healing desnecessário.');
+        }
+    }
 
-// ============================================================================
-// FASE 2, 4 e 6 - Runtime Registry & Auto Configuration
-// ============================================================================
-console.log('\n[FASE 2, 4, 6] Gerando Registries e Auto-Configuração...');
-if (!fs.existsSync('/opt/fenix')) fs.mkdirSync('/opt/fenix', { recursive: true });
-fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2));
-console.log(` ✔ Runtime Registry unificado salvo em ${REGISTRY_PATH}`);
+    // ============================================================================
+    // FASE 5 - Mission Zero
+    // ============================================================================
+    runMissionZero() {
+        console.log('[FASE 5] Mission Zero (Inventário & Benchmark)...');
+        this.registry.benchmark = {
+            memoryUsage: process.memoryUsage(),
+            uptime: os.uptime(),
+            loadavg: os.loadavg()
+        };
+    }
 
-// ============================================================================
-// FASE 3 e 7 - AI Platform Discovery & Integration
-// ============================================================================
-console.log('\n[FASE 3, 7] Sincronizando AI Platform...');
-if (checkPort(3000) || checkPort(8080)) {
-    console.log(' ✔ Serviços de IA / Gateway detectados nas portas base.');
-    registry.ai_platform.status = 'connected';
-} else {
-    console.log(' - AI Platform nativa não encontrada (Subindo fallback interno...)');
-}
+    // ============================================================================
+    // FASE 6 - Production Readiness (Burn Test)
+    // ============================================================================
+    async runProductionReadiness() {
+        // Roda o Burn Test se AI Platform estiver offline OU se for a primeira vez
+        if (this.isRunningBurnTest) return;
 
-// ============================================================================
-// FASE 9 e 10 - Health Engine & Mission Zero
-// ============================================================================
-console.log('\n[FASE 9, 10] Acionando Health Check e Mission Zero...');
-console.log(' ✔ Benchmarks do Ambiente: Aprovados.');
-console.log(' ✔ Teste IA: Mock Passed.');
-console.log(' ✔ Memória inicial do sistema arquitetada.');
+        if (this.registry.ai_platform.status === 'offline') {
+            console.warn('\n[FASE 6] ATENÇÃO: AI Platform está OFFLINE. Executando Production Readiness (Burn Test) automaticamente!\n');
+            this.isRunningBurnTest = true;
+            
+            try {
+                const burnTestScript = path.join(GRG_DIR, 'ops', 'burn-test.sh');
+                if (fs.existsSync(burnTestScript)) {
+                    // Executa o script inteiro e espera terminar
+                    execSync(`bash ${burnTestScript}`, { cwd: GRG_DIR, stdio: 'inherit' });
+                    this.registry.lastBurnTest = new Date().toISOString();
+                    console.log(' ✔ Production Readiness executado com sucesso.');
+                } else {
+                    console.warn(` Script de Burn Test não encontrado em ${burnTestScript}`);
+                }
+            } catch (err) {
+                console.error(' ❌ Falha no Production Readiness (Burn Test).', err.message);
+            } finally {
+                this.isRunningBurnTest = false;
+            }
+        } else {
+            console.log('[FASE 6] Sistema Verde. Burn Test ignorado.');
+        }
+    }
 
-// ============================================================================
-// FASE 11, 12, 13 - Continuous Evolution, Self-Healing, Cluster
-// ============================================================================
-console.log('\n[FASE 11, 12, 13] Registrando Cluster e habilitando Auto-Healing...');
-registry.clusterId = `FENIX-CLUSTER-${Date.now()}`;
-fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2));
+    // ============================================================================
+    // ETERNAL LOOP
+    // ============================================================================
+    async loop() {
+        console.log('\n======================================================');
+        console.log(`[${new Date().toISOString()}] Iniciando Ciclo FENIX BOOTSTRAP RUNTIME V4`);
+        console.log('======================================================\n');
+        
+        try {
+            this.runDiscovery();
+            await this.checkAIPlatform();
+            this.runSelfHealing();
+            this.runMissionZero();
+            await this.runProductionReadiness();
+            
+            this.registry.status = 'active';
+            this.syncRegistry();
+            
+            console.log('\n ✔ Ciclo concluído com sucesso. Aguardando próximo tick...');
+        } catch (e) {
+            console.error('\n ❌ Falha crítica no ciclo do Runtime:', e);
+        }
 
-// ============================================================================
-// Iniciar via PM2
-// ============================================================================
-console.log('\n[ORQUESTRADOR] Instalando Daemon (PM2)...');
-if (fs.existsSync(FENIX_DIR)) {
-    try {
-        // Garantir que a plataforma suba
-        const pm2Target = path.join(FENIX_DIR, 'platform/bootstrap/runtime.js');
-        safeExec(`pm2 delete fenix-os-daemon`); // Limpar velhos
-        execSync(`pm2 start ${pm2Target} --name "fenix-os-daemon"`, { stdio: 'inherit' });
-        execSync(`pm2 save`, { stdio: 'inherit' });
-        console.log(' ✔ FÊNIX Daemon está ONLINE em background.');
-    } catch (e) {
-        console.error(' Falha ao subir daemon PM2.', e.message);
+        setTimeout(() => this.loop(), this.pollInterval);
+    }
+
+    start() {
+        this.loop();
     }
 }
 
-// ============================================================================
-// FASE 14 - Dashboard
-// ============================================================================
-console.log(`
-══════════════════════════════════════
-             FÊNIX OS
-STATUS              ONLINE
-Health              100%
-Runtime             ONLINE
-AI Platform         ${registry.ai_platform.status.toUpperCase()}
-Docker              ${registry.services.docker ? 'ONLINE' : 'OFFLINE'}
-Redis               ${registry.services.redis ? 'ONLINE' : 'OFFLINE'}
-Postgres            ${registry.services.postgres ? 'ONLINE' : 'OFFLINE'}
-ICP                 ${registry.services.icp ? 'CONNECTED' : 'OFFLINE'}
-Plugins             24
-Workers             12
-Mission Engine      READY
-CPU                 2%
-RAM                 ${registry.os.ramMB} MB Totais
-══════════════════════════════════════
-O comando 'fenix up' agora é nativo e autônomo!
-`);
+// Inicia se executado diretamente
+if (require.main === module) {
+    const runtime = new BootstrapRuntimeV4();
+    runtime.start();
+}
+
+module.exports = BootstrapRuntimeV4;
