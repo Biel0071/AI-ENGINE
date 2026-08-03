@@ -13,6 +13,10 @@ fi
 cd /opt/fenix-os/grg || { echo "Codigo nao encontrado em /opt/fenix-os/grg. Faça o deploy primeiro."; exit 1; }
 
 echo "Criando .env de producao com dummy secrets (se nao existir)..."
+POSTGRES_PASS=$(cat /opt/fenix-os/grg/.secrets/postgres_password 2>/dev/null || echo "dummy-secret-123")
+REDIS_PASS=$(cat /opt/fenix-os/grg/.secrets/redis_password 2>/dev/null || echo "dummy-secret-123")
+MINIO_KEY=$(cat /opt/fenix-os/grg/.secrets/minio_access_key 2>/dev/null || echo "dummy-secret-123")
+MINIO_SECRET=$(cat /opt/fenix-os/grg/.secrets/minio_secret_key 2>/dev/null || echo "dummy-secret-123")
 PUBLIC_IP=$(curl -s ipinfo.io/ip || echo "127.0.0.1")
     cat << EOF > .env.production
 POSTGRES_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/postgres_password
@@ -34,6 +38,17 @@ FENIX_OIDC_REDIRECT_URI=http://${PUBLIC_IP}:4400/callback
 FENIX_PUBLIC_URL=http://${PUBLIC_IP}:4400
 FENIX_BIND_ADDRESS=0.0.0.0
 FENIX_ROOTLESS_DOCKER_SOCKET=/var/run/docker.sock
+DATABASE_URL=postgresql://fenix:${POSTGRES_PASS}@postgres:5432/fenix
+REDIS_URL=redis://:${REDIS_PASS}@redis:6379
+FENIX_QDRANT_URL=http://qdrant:6333
+FENIX_S3_ENDPOINT=http://minio:9000
+FENIX_S3_BUCKET=fenix
+FENIX_S3_ACCESS_KEY_ID=${MINIO_KEY}
+FENIX_S3_SECRET_ACCESS_KEY=${MINIO_SECRET}
+FENIX_S3_REGION=us-east-1
+FENIX_S3_FORCE_PATH_STYLE=1
+POSTGRES_DB=fenix
+POSTGRES_USER=fenix
 EOF
 
 mkdir -p .secrets
