@@ -41,9 +41,10 @@ class StorageManager {
     }
 
     // 3. Vector Storage
-    if (process.env.QDRANT_URL) {
+    const qdrantUrl = process.env.FENIX_QDRANT_URL || process.env.QDRANT_URL;
+    if (qdrantUrl) {
       console.log('[StorageManager] QDRANT_URL detected. Connecting to Qdrant... (Simulated Qdrant Driver)');
-      // this.drivers.vector = new QdrantDriver({ url: process.env.QDRANT_URL });
+      // this.drivers.vector = new QdrantDriver({ url: qdrantUrl });
       // this.stats.vectorProvider = 'qdrant';
     } else {
       console.log('[StorageManager] No QDRANT_URL. Falling back to Local Vectors.');

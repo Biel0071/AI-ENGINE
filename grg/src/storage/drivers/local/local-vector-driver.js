@@ -5,7 +5,10 @@ const { StorageProvider } = require('../../storage-provider');
 class LocalVectorDriver extends StorageProvider {
   constructor(options = {}) {
     super({ name: 'LocalVector', type: 'vector' });
-    this.indexPath = options.indexPath || path.join(process.cwd(), '.data', 'vectors.json');
+    const dataDir = process.env.FENIX_ENV === 'production' 
+      ? '/tmp/.data' 
+      : path.join(process.cwd(), '.data');
+    this.indexPath = options.indexPath || path.join(dataDir, 'vectors.json');
     this.index = {};
   }
 
