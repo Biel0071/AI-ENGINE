@@ -18,16 +18,16 @@ class NodeRegistry extends SystemModule {
     this.status = STATE_MACHINE.READY;
     console.log('[NodeRegistry] Inicializando Service Registry Distribuído...');
     
-    // API Principal (Base URL)
+    // API Principal (Base URL - com proteção HTTPS mTLS)
     this.registerNode('api-core', {
-      address: 'http://209.50.241.215:3000', 
+      address: 'https://209.50.241.215:3000', 
       status: STATE_MACHINE.ONLINE,
       lastSeen: Date.now()
     });
 
-    // Novo Node FÊNIX na VPS Secundária
+    // Novo Node FÊNIX na VPS Secundária (HTTPS habilitado)
     this.registerNode('fenix-worker', {
-      address: 'http://209.50.241.22:3000', 
+      address: 'https://209.50.241.22:3000', 
       status: STATE_MACHINE.ONLINE,
       lastSeen: Date.now()
     });
