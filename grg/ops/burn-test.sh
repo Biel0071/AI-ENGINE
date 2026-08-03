@@ -13,7 +13,7 @@ fi
 cd /opt/fenix-os/grg || { echo "Codigo nao encontrado em /opt/fenix-os/grg. Faça o deploy primeiro."; exit 1; }
 
 echo "Criando .env de producao com dummy secrets (se nao existir)..."
-PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
+PUBLIC_IP=$(curl -s ipinfo.io/ip || echo "127.0.0.1")
     cat << EOF > .env.production
 POSTGRES_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/postgres_password
 REDIS_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/redis_password
