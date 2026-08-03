@@ -13,7 +13,8 @@ fi
 cd /opt/fenix-os/grg || { echo "Codigo nao encontrado em /opt/fenix-os/grg. Faça o deploy primeiro."; exit 1; }
 
 echo "Criando .env de producao com dummy secrets (se nao existir)..."
-    cat << 'EOF' > .env.production
+PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
+    cat << EOF > .env.production
 POSTGRES_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/postgres_password
 REDIS_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/redis_password
 MINIO_ACCESS_KEY_FILE=/opt/fenix-os/grg/.secrets/minio_access_key
@@ -24,13 +25,14 @@ KEYCLOAK_ADMIN_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/keycloak_admin_password
 KEYCLOAK_USER_PASSWORD_FILE=/opt/fenix-os/grg/.secrets/keycloak_user_password
 FENIX_AI_DEFAULT_PROVIDER=openai
 FENIX_AI_DEFAULT_MODEL=gpt-4o
-FENIX_OIDC_ISSUER=http://localhost:8080/auth/realms/grg
+FENIX_OIDC_ISSUER=http://${PUBLIC_IP}:8080/auth/realms/grg
 FENIX_OIDC_AUDIENCE=fenix
-FENIX_OIDC_JWKS_URI=http://localhost:8080/auth/realms/grg/protocol/openid-connect/certs
-FENIX_OIDC_AUTHORIZATION_ENDPOINT=http://localhost:8080/auth/realms/grg/protocol/openid-connect/auth
-FENIX_OIDC_TOKEN_ENDPOINT=http://localhost:8080/auth/realms/grg/protocol/openid-connect/token
-FENIX_OIDC_REDIRECT_URI=http://localhost:4400/callback
-FENIX_PUBLIC_URL=http://localhost:4400
+FENIX_OIDC_JWKS_URI=http://${PUBLIC_IP}:8080/auth/realms/grg/protocol/openid-connect/certs
+FENIX_OIDC_AUTHORIZATION_ENDPOINT=http://${PUBLIC_IP}:8080/auth/realms/grg/protocol/openid-connect/auth
+FENIX_OIDC_TOKEN_ENDPOINT=http://${PUBLIC_IP}:8080/auth/realms/grg/protocol/openid-connect/token
+FENIX_OIDC_REDIRECT_URI=http://${PUBLIC_IP}:4400/callback
+FENIX_PUBLIC_URL=http://${PUBLIC_IP}:4400
+FENIX_BIND_ADDRESS=0.0.0.0
 FENIX_ROOTLESS_DOCKER_SOCKET=/var/run/docker.sock
 EOF
 
