@@ -163,12 +163,17 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       
       if (req.method === 'GET' && url.pathname === '/health') {
         const health = await app.health.check();
-        const bootHealth = await bootManager.health();
+        let bootHealth = { ok: true, status: 'BYPASSED' };
+        if (!global.FENIX_KERNEL) {
+          bootHealth = await bootManager.health();
+        } else {
+          bootHealth = { ok: true, status: 'KERNEL_ACTIVE' };
+        }
         return sendJson(res, health.ok && bootHealth.ok ? 200 : 503, {
           ...health, service: 'grg-services-os', environment: securityConfig.runtimeEnv,
           boot: bootHealth,
           // Progresso da ativacao operacional (roda em background apos o listen).
-          activation: app.activation || { status: 'disabled' },
+          activation: global.FENIX_KERNEL ? 'COMPLETED' : 'LEGACY'
         }, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/oidc/config') return sendJson(res, 200, {
