@@ -4,7 +4,8 @@
   "description": "Reusable AI orchestration engine for SaaS systems.",
   "main": "index.js",
   "bin": {
-    "ai-engine": "./cli/index.js"
+    "ai-engine": "./cli/index.js",
+    "fenix": "./platform/cli/fenix.js"
   },
   "type": "commonjs",
   "private": true,
