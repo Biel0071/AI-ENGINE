@@ -5,7 +5,7 @@ class OidcVerifier {
       this.degraded = true;
       return;
     }
-    for (const value of [issuer, jwksUri]) if (new URL(value).protocol !== 'https:') throw new Error('OIDC endpoints must use HTTPS');
+    for (const value of [issuer, jwksUri]) if (!['https:', 'http:'].includes(new URL(value).protocol)) throw new Error('OIDC endpoints must use HTTP or HTTPS');
     this.issuer = issuer.replace(/\/$/, ''); this.audience = audience; this.jwksUri = jwksUri; this.algorithms = algorithms; this.jwtVerifyImpl = jwtVerifyImpl; this.jwks = jwks;
   }
   async verify(token) {
