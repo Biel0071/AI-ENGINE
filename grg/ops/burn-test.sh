@@ -43,24 +43,24 @@ for secret in postgres_password redis_password minio_access_key minio_secret_key
 done
 
 echo "Fazendo o build da AI Platform..."
-docker compose -f docker-compose.enterprise.yml build
+docker compose --env-file .env.production -f docker-compose.enterprise.yml build
 
 echo "Subindo servicos..."
-docker compose -f docker-compose.enterprise.yml up -d
+docker compose --env-file .env.production -f docker-compose.enterprise.yml up -d
 
 echo "Aguardando 15s para Health Checks internos..."
 sleep 15
 
 echo "Status dos containers:"
-docker compose -f docker-compose.enterprise.yml ps
+docker compose --env-file .env.production -f docker-compose.enterprise.yml ps
 
 echo "Rodando testes no container da API..."
-docker compose -f docker-compose.enterprise.yml exec -T api npm test || echo "Testes falharam. Cheque os logs."
+docker compose --env-file .env.production -f docker-compose.enterprise.yml exec -T api npm test || echo "Testes falharam. Cheque os logs."
 
 echo "Logs da API:"
-docker compose -f docker-compose.enterprise.yml logs api --tail=50
+docker compose --env-file .env.production -f docker-compose.enterprise.yml logs api --tail=50
 
 echo "Logs do Worker:"
-docker compose -f docker-compose.enterprise.yml logs worker --tail=50
+docker compose --env-file .env.production -f docker-compose.enterprise.yml logs worker --tail=50
 
 echo "Burn Test finalizado. Envie a saida deste script de volta ao Codex."
