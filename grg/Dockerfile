@@ -12,6 +12,7 @@ RUN apk add --no-cache docker-cli git && addgroup -S fenix && adduser -S -G feni
 COPY --from=dependencies --chown=fenix:fenix /app/node_modules ./node_modules
 COPY --chown=fenix:fenix src ./src
 COPY --chown=fenix:fenix public ./public
+COPY --chown=fenix:fenix runtime ./runtime
 COPY --chown=fenix:fenix ops/container-entrypoint.sh ./ops/container-entrypoint.sh
 # Diagnostico read-only dentro do container: context-snapshot (Living Mode: veracidade
 # operacional medida pelo auditor), import-closure, llm-preflight, capability-probe.

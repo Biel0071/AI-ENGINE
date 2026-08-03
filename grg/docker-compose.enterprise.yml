@@ -129,7 +129,7 @@ services:
     ports: ["${FENIX_BIND_ADDRESS:-127.0.0.1}:${FENIX_PORT:-4400}:4400"]
     networks: [fenix-backend, fenix-runtime]
     read_only: true
-    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m", "/app/runtime:rw,size=16m"]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     # Root inside a rootless daemon maps to the unprivileged host user. This is
@@ -149,7 +149,7 @@ services:
       api: { condition: service_healthy }
     networks: [fenix-backend, fenix-runtime]
     read_only: true
-    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m", "/app/runtime:rw,size=16m"]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     user: "0:0"
