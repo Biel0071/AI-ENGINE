@@ -13,6 +13,7 @@
     "dev": "node server.js",
     "build": "tsc",
     "start": "node server.js",
+    "test": "node --test engine/tests/*.test.js",
     "analyze:project": "node engine/runAnalysis.js",
     "analyze:crm": "node scripts/analyze-crm.js",
     "test:engine": "node --test engine/tests/*.test.js"

@@ -1,0 +1,57 @@
+{
+  "api_inventory": {
+    "auth": {
+      "routes": ["POST /api/login", "POST /api/logout", "GET /api/me", "GET /api/oidc/config"],
+      "status": "✔ Usado",
+      "dependencies": ["ControlPlane", "Security"]
+    },
+    "missions": {
+      "routes": [
+        "POST /api/missions",
+        "GET /api/missions",
+        "POST /api/missions/:id/start",
+        "POST /api/missions/:id/pause",
+        "POST /api/missions/:id/cancel",
+        "GET /api/missions/:id"
+      ],
+      "status": "✔ Usado",
+      "dependencies": ["MissionPlanner", "Queue Engine"]
+    },
+    "avatar": {
+      "routes": [
+        "POST /api/avatar/message",
+        "GET /api/missions/avatar-state"
+      ],
+      "status": "✔ Usado",
+      "dependencies": ["MasterAvatar", "API Platform"]
+    },
+    "operations": {
+      "routes": [
+        "GET /api/operations/state",
+        "GET /api/operations/history",
+        "POST /api/operations/activate",
+        "POST /api/operations/daily-intelligence"
+      ],
+      "status": "✔ Usado",
+      "dependencies": ["OperationalActivation"]
+    },
+    "performance": {
+      "routes": [
+        "GET /api/performance/speed-score",
+        "GET /api/performance/hot-memory",
+        "POST /api/performance/predictive-prefetch"
+      ],
+      "status": "✔ Usado",
+      "dependencies": ["CognitivePerformance"]
+    },
+    "knowledge_graph": {
+      "routes": [
+        "POST /api/knowledge-graph/entities",
+        "GET /api/knowledge-graph/entities/:id/neighbors",
+        "GET /api/knowledge-graph/path"
+      ],
+      "status": "⚠ Pouco usado (Front não exibe)",
+      "dependencies": ["KnowledgeEngine", "PostgreSQL", "Qdrant"]
+    }
+  }
+}

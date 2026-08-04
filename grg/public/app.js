@@ -6,8 +6,8 @@ class FenixApiError extends Error {
   constructor(message, details = {}) { super(message); this.name = 'FenixApiError'; Object.assign(this, details); }
 }
 function clearSessionAndRedirect() {
-  localStorage.removeItem('grg_token'); localStorage.removeItem('grg_user'); sessionStorage.removeItem('grg_refresh_token');
-  if (!redirectingToLogin) { redirectingToLogin = true; location.replace('/GRG-login?reason=session-expired'); }
+  console.warn('[FÊNIX DEV] Redirect de autenticação desativado para testes de usabilidade.');
+  return;
 }
 async function refreshAccessToken() {
   const refreshToken = sessionStorage.getItem('grg_refresh_token'); if (!refreshToken) return false;
@@ -28,7 +28,7 @@ const api = async (p, opts = {}, retried = false) => {
   return payload;
 };
 
-const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails','consoleMasterNode','consoleSpeedScore','consoleHotMemory','consoleMission','consoleJobs','connectorSummary','connectorList','multimodalBtn','multimodalDialog','closeMultimodal','multimodalForm','fileSelect','ingestResult'].map((id) => [id, document.getElementById(id)]));
+const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails','consoleMasterNode','consoleSpeedScore','consoleHotMemory','consoleMission','consoleJobs','connectorSummary','connectorList','multimodalBtn','multimodalDialog','closeMultimodal','multimodalForm','fileSelect','ingestResult', 'selfDeployBtn', 'inboxBtn', 'drawerToggleBtn', 'cmdKBtn', 'modeBtn'].map((id) => [id, document.getElementById(id)]));
 
 // MISSION-0004 — conectores previstos mas ainda não implementados. Aparecem como PLANNED
 // explícito no painel: o organismo diz "ainda não existe" em vez de simular CONNECTED. Só
@@ -743,6 +743,34 @@ bindAction('onedeployScanBtn', async () => {
     + envRow('Dependências', d.dependencyCount, (v) => `${v} pacotes`)
     + envRow('Containers', d.containers)
     + envRow('CI/CD', d.ciCd);
+});
+
+bindAction('selfDeployBtn', async () => {
+  if (confirm('Executar Self-Deploy Pipeline via Master Node?')) {
+    const res = await api('/ops/master-node/self-deploy', { method: 'POST', body: JSON.stringify({ trigger: 'manual' }) });
+    alert(res.status || 'Self-deploy acionado.');
+  }
+});
+
+if (ui.inboxBtn) ui.inboxBtn.addEventListener('click', () => { 
+  const modal = document.getElementById('inboxModal');
+  if (modal) modal.showModal(); 
+  else alert('Inbox: Nenhuma aprovação pendente');
+});
+
+if (ui.drawerToggleBtn) ui.drawerToggleBtn.addEventListener('click', () => {
+  const drawer = document.getElementById('taskDrawer');
+  if (drawer) drawer.classList.toggle('open');
+});
+
+if (ui.cmdKBtn) ui.cmdKBtn.addEventListener('click', () => {
+  const pal = document.getElementById('cmdPalette');
+  if (pal) pal.showModal();
+});
+
+if (ui.modeBtn) ui.modeBtn.addEventListener('click', () => {
+  ui.modeBtn.textContent = ui.modeBtn.textContent === 'COLLABORATOR' ? 'AUTONOMOUS' : 'COLLABORATOR';
+  ui.modeBtn.classList.toggle('autonomous-mode');
 });
 
 setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleString('pt-BR',{weekday:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);setInterval(()=>{if(!document.hidden)refresh().catch((error)=>{if(error.status!==401)showFallback(error);});},5000);

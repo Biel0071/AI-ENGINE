@@ -75,6 +75,12 @@
       "description": "Vetor genômico da Federação Universal de Recursos, Discovery Fabric zero-touch, Capability Marketplace e Cognitive Fabric.",
       "capabilities": ["Federation", "Discovery", "CapabilityMesh", "CognitiveFabric", "ResourceFabric"],
       "defaultMetrics": ["discovery_latency_sec", "capability_match_accuracy", "cognitive_synthesis_score"]
+    },
+    "AGENT_ECOSYSTEM_DNA": {
+      "name": "Open Source Agent Ecosystem DNA Vector",
+      "description": "Vetor genômico originado do mapeamento de ecossistemas maduros (CrewAI, LangGraph, AutoGen, OpenHands). Base para adaptadores de State Machine, Task Delegation e Tool Abstraction.",
+      "capabilities": ["TaskDelegation", "CyclicReasoning", "ToolAbstractions", "SemanticRouting", "DiffApplication", "BrowserVision"],
+      "defaultMetrics": ["adapter_compatibility_score", "tool_execution_success_rate", "state_recovery_rate"]
     }
   }
 }

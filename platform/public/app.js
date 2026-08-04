@@ -1,103 +1,79 @@
-const TENANT_ID = 'biel0071-software-house';
-const state = { projects: [], graph: null };
+document.addEventListener('DOMContentLoaded', () => {
+  const valSystem = document.getElementById('val-system');
+  const subSystem = document.getElementById('sub-system');
+  const valMission = document.getElementById('val-mission');
+  const subMission = document.getElementById('sub-mission');
+  const valProblems = document.getElementById('val-problems');
+  const subProblems = document.getElementById('sub-problems');
+  const valAction = document.getElementById('val-action');
+  const btnRun = document.getElementById('btn-run');
+  const chatOutput = document.getElementById('chat-output');
+  const chatInput = document.getElementById('chat-input');
+  const btnSend = document.getElementById('btn-send');
 
-async function api(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: { 'content-type': 'application/json', 'x-tenant-id': TENANT_ID, ...(options.headers || {}) },
-  });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.error || 'Falha na operação');
-  return body;
-}
+  async function loadDashboard() {
+    try {
+      const res = await fetch('/api/dashboard');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-function notify(message) {
-  const toast = document.querySelector('#toast');
-  toast.textContent = message;
-  toast.classList.add('show');
-  window.setTimeout(() => toast.classList.remove('show'), 3200);
-}
+      // Card 1: Sistema
+      valSystem.textContent = data.system.status || 'Online';
+      subSystem.textContent = `Uptime: ${data.system.uptime || '1 min'} | Workers: ${data.system.workersActive || 11} ativos`;
 
-function renderMetrics(metrics) {
-  const labels = {
-    projects: 'Projetos conectados',
-    publicRepositories: 'Repositórios públicos',
-    privateRepositories: 'Repositórios privados',
-    analysesQueued: 'Análises na fila',
-    deploymentsConfigured: 'Publicações preparadas',
-  };
-  document.querySelector('#metrics').innerHTML = Object.entries(labels)
-    .map(([key, label]) => `<div class="metric"><strong>${metrics[key]}</strong><span>${label}</span></div>`)
-    .join('');
-}
+      // Card 2: Missão
+      valMission.textContent = data.mission.title || 'Estabilizar Runtime';
+      subMission.textContent = `Objetivo: ${data.mission.objective || 'Manter 100% de testes'}`;
 
-function renderProjects() {
-  const query = document.querySelector('#search').value.trim().toLowerCase();
-  const visibility = document.querySelector('#visibility').value;
-  const projects = state.projects.filter((project) => {
-    const matchesQuery = `${project.name} ${project.repository.name} ${(project.tags || []).join(' ')}`.toLowerCase().includes(query);
-    return matchesQuery && (visibility === 'all' || project.repository.visibility === visibility);
-  });
-  const container = document.querySelector('#projects');
-  container.innerHTML = '';
+      // Card 3: Problemas
+      valProblems.textContent = `${data.problems.count} Alerta(s)`;
+      subProblems.textContent = data.problems.items[0] || 'Ambiente limpo';
 
-  for (const project of projects) {
-    const fragment = document.querySelector('#project-template').content.cloneNode(true);
-    const card = fragment.querySelector('.project-card');
-    card.dataset.projectId = project.id;
-    fragment.querySelector('h3').textContent = project.name;
-    fragment.querySelector('.repo').textContent = `${project.repository.owner}/${project.repository.name}`;
-    fragment.querySelector('.visibility').textContent = project.repository.visibility;
-    fragment.querySelector('.analysis').textContent = project.analysisStatus;
-    fragment.querySelector('.deployment').textContent = project.deploymentStatus;
-    fragment.querySelector('.tags').innerHTML = (project.tags || []).map((tag) => `<span class="tag">${tag}</span>`).join('');
-    const link = fragment.querySelector('a');
-    link.href = project.repository.url;
-    container.appendChild(fragment);
-  }
-}
+      // Card 4: Executar Ação
+      valAction.textContent = `Próximo Passo: ${data.nextAction.description || 'Pronto para deploy'}`;
 
-function renderGraph(graph) {
-  const projectCount = graph.nodes.filter((node) => node.type === 'project').length;
-  const capabilityNodes = graph.nodes.filter((node) => node.type === 'capability');
-  document.querySelector('#graph-summary').textContent = `${graph.nodes.length} nós e ${graph.edges.length} relações conectam ${projectCount} projetos.`;
-  document.querySelector('#capabilities').innerHTML = capabilityNodes
-    .map((node) => `<span class="capability">${node.label}</span>`)
-    .join('');
-}
-
-async function refresh() {
-  const [overview, projects, graph] = await Promise.all([
-    api('/api/v1/overview'), api('/api/v1/projects'), api('/api/v1/graph'),
-  ]);
-  state.projects = projects.projects;
-  state.graph = graph;
-  renderMetrics(overview.metrics);
-  renderProjects();
-  renderGraph(graph);
-}
-
-document.querySelector('#search').addEventListener('input', renderProjects);
-document.querySelector('#visibility').addEventListener('change', renderProjects);
-document.querySelector('#projects').addEventListener('click', async (event) => {
-  const button = event.target.closest('button');
-  if (!button) return;
-  const projectId = button.closest('.project-card').dataset.projectId;
-  button.disabled = true;
-  try {
-    if (button.dataset.action === 'analyze') {
-      await api(`/api/v1/projects/${projectId}/actions/analyze`, { method: 'POST', body: '{}' });
-      notify('Análise adicionada à fila.');
-    } else {
-      await api(`/api/v1/projects/${projectId}/deployments`, { method: 'POST', body: '{}' });
-      notify('Publicação aguardando configuração de provedor.');
+    } catch (err) {
+      valSystem.textContent = 'Offline';
+      subSystem.textContent = 'Erro ao conectar no servidor FÊNIX';
     }
-    await refresh();
-  } catch (error) {
-    notify(error.message);
-  } finally {
-    button.disabled = false;
   }
-});
 
-refresh().catch((error) => notify(error.message));
+  async function sendMessage(msgText) {
+    if (!msgText.trim()) return;
+
+    chatOutput.innerHTML += `\n> Você: ${msgText}`;
+    chatOutput.scrollTop = chatOutput.scrollHeight;
+    chatInput.value = '';
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msgText })
+      });
+      const data = await res.json();
+      chatOutput.innerHTML += `\n⚡ FÊNIX: ${data.response || 'Missão executada.'}`;
+    } catch (err) {
+      chatOutput.innerHTML += `\n❌ Erro ao enviar mensagem para o Supervisor.`;
+    }
+    chatOutput.scrollTop = chatOutput.scrollHeight;
+  }
+
+  btnRun.addEventListener('click', () => {
+    sendMessage('executar missão ativa');
+  });
+
+  btnSend.addEventListener('click', () => {
+    sendMessage(chatInput.value);
+  });
+
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sendMessage(chatInput.value);
+    }
+  });
+
+  // Carrega ao iniciar e atualiza a cada 10 segundos
+  loadDashboard();
+  setInterval(loadDashboard, 10000);
+});

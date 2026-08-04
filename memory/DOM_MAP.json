@@ -1,0 +1,58 @@
+{
+  "screens": {
+    "app.html": {
+      "name": "Dashboard Principal",
+      "components": [
+        "#cityMap",
+        "#chatlog",
+        "#systemMetrics",
+        "#telemetry",
+        "#nodeDialog",
+        "#multimodalDialog"
+      ],
+      "buttons": {
+        "#logout": { "event": "click", "route": "POST /api/logout", "status": "✔" },
+        "#refreshBtn": { "event": "click", "route": "múltiplas", "status": "✔" },
+        "#multimodalBtn": { "event": "click", "route": "UI local", "status": "✔" },
+        "#hotMemoryPrefetchBtn": { "event": "click", "route": "POST /api/performance/predictive-prefetch", "status": "✔" },
+        "#genomeStructureBtn": { "event": "click", "route": "nenhuma", "status": "❌" },
+        "#onedeployScanBtn": { "event": "click", "route": "nenhuma", "status": "❌" },
+        "#seriesSampleBtn": { "event": "click", "route": "nenhuma", "status": "❌" }
+      },
+      "backend_status": "Parcial (Botões órfãos detectados)"
+    },
+    "office.html": {
+      "name": "Virtual Office",
+      "components": [
+        "#buildings",
+        "#m-log",
+        "#m-staff",
+        "#m-role",
+        "#modal"
+      ],
+      "buttons": {
+        "#btn-standup": { "event": "click", "route": "POST /api/projects/:id/standup", "status": "✔" },
+        "#btn-report": { "event": "click", "route": "POST /api/projects/:id/daily-report", "status": "✔" },
+        "#m-ask": { "event": "submit", "route": "POST /api/projects/:id/ask", "status": "✔" }
+      },
+      "backend_status": "Conectado"
+    },
+    "login.html": {
+      "name": "Login",
+      "components": ["#loginForm"],
+      "buttons": {
+        "#loginButton": { "event": "submit", "route": "POST /api/login", "status": "✔" }
+      },
+      "backend_status": "Conectado"
+    },
+    "index.html": {
+      "name": "Landing / FÊNIX Connect",
+      "components": ["#hero", "#features"],
+      "buttons": {
+        ".voice-btn": { "event": "click", "route": "Nenhuma", "status": "❌" },
+        ".icon-btn": { "event": "click", "route": "Nenhuma", "status": "❌" }
+      },
+      "backend_status": "Desconectado"
+    }
+  }
+}

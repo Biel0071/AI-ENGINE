@@ -1,510 +1,318 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FÊNIX AI MASTER — SimCity da Engenharia de Software</title>
-    <link rel="stylesheet" href="/styles.css">
-  </head>
-  <body class="simcity-theme">
-    <!-- TOPBAR WITH 6-LEVEL ZOOM & MULTI-TENANT SELECTOR -->
-    <header class="topbar">
-      <div class="universe-selector">
-        <span class="eyebrow">🔥 FÊNIX AI MASTER · SIMCITY DA ENGENHARIA DE SOFTWARE</span>
-        <div class="company-picker">
-          <label for="company-select">Ilha / Empresa:</label>
-          <select id="company-select" aria-label="Selecionar Empresa">
-            <option value="biel0071-corp">🏢 Biel0071 Enterprise City</option>
-            <option value="zapai-inc">🏢 ZapAI Technology Island</option>
-            <option value="ai-city-labs">🏢 AI City Research Hub</option>
-            <option value="fortlev-group">🏢 Fortlev Digital Campus</option>
-          </select>
-          
-          <div class="zoom-controls">
-            <span class="zoom-label">Nível de Zoom:</span>
-            <button class="btn-zoom" data-zoom="1">1: Universo</button>
-            <button class="btn-zoom" data-zoom="2">2: Empresa</button>
-            <button class="btn-zoom active" data-zoom="3">3: Cidade</button>
-            <button class="btn-zoom" data-zoom="4">4: Prédio</button>
-            <button class="btn-zoom" data-zoom="5">5: Andar</button>
-            <button class="btn-zoom" data-zoom="6">6: Sala/Agentes</button>
-          </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FÊNIX Agent OS — Living Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-green: #10b981;
+      --accent-blue: #3b82f6;
+      --accent-orange: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.12) 0%, transparent 40%);
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(12px);
+      background: rgba(9, 13, 22, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 12px var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    .badge-status {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.35rem 0.8rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      backdrop-filter: blur(16px);
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-icon {
+      font-size: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .card-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-subtext {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .btn-execute {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      color: white;
+      border: none;
+      padding: 1rem 1.75rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    .btn-execute:hover {
+      opacity: 0.95;
+      transform: scale(1.02);
+    }
+
+    .chat-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .chat-output {
+      min-height: 100px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: #e5e7eb;
+      line-height: 1.5;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: white;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    .btn-send {
+      background: var(--card-border);
+      color: white;
+      border: 1px solid var(--card-border);
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-send:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    footer {
+      padding: 1.5rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon"></div>
+      <span>FÊNIX Agent OS</span>
+    </div>
+    <div id="system-badge" class="badge-status">🟢 RUNTIME ONLINE</div>
+  </header>
+
+  <main>
+    <div class="dashboard-grid">
+
+      <!-- Card 1: Sistema -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">🟢</span>
+          <span class="card-title">Sistema</span>
         </div>
+        <div class="card-value" id="val-system">Online</div>
+        <div class="card-subtext" id="sub-system">Uptime: -- | Workers: 11 ativos</div>
       </div>
-      <div class="header-right">
-        <button id="btn-daily-meeting" class="btn-meeting">🤝 Reunião Diária (08:00)</button>
-        <button id="btn-knowledge-lib" class="btn-library">📚 Biblioteca de Conhecimento</button>
-        <div id="env-weather" class="weather-badge healthy">☀️ CIDADE SAUDÁVEL (Score: 95)</div>
-        <div class="status"><span></span> LCR Online 24/7</div>
-      </div>
-    </header>
 
-    <nav class="nav-tabs" aria-label="Navegação Principal">
-      <button class="nav-tab active" data-tab="simcity-map">🎮 SimCity Cybernetic Map (Visão 3D Vivo)</button>
-      <button class="nav-tab" data-tab="agents-mesh">🤖 Enxame de Subagentes & Salas</button>
-      <button class="nav-tab" data-tab="portfolio">🏢 Portfólio & Prédios</button>
-      <button class="nav-tab" data-tab="terminal">💬 Terminal Conversacional Operacional</button>
-      <button class="nav-tab" data-tab="kernel">🧠 ACEP Kernel & Digital Twin</button>
-      <button class="nav-tab" data-tab="doi">🌐 Digital Operator (DOI)</button>
-      <button class="nav-tab" data-tab="maturity">📊 Framework N0–N5 & DNA</button>
-      <button class="nav-tab" data-tab="governance">🛡️ Governança & Níveis 0-4</button>
-    </nav>
-
-    <main>
-      <!-- TAB 0: SIMCITY CYBERNETIC MAP (MAPA PIXEL ART VIVO) -->
-      <div id="tab-simcity-map" class="tab-content active">
-        <div class="simcity-cockpit-layout">
-          <!-- LEFT SIDEBAR: FENIX GUARDIAN PANEL -->
-          <aside class="fenix-guardian-panel">
-            <div class="guardian-avatar-box">
-              <div class="pixel-fenix-avatar">🔥🤖</div>
-              <h3>FÊNIX AI MASTER</h3>
-              <span class="eyebrow">GUARDIÃO DA EVOLUÇÃO CONTÍNUA</span>
-            </div>
-            <div class="guardian-dialog-box">
-              <p id="guardian-speech">"Olá, Guardião! Estou monitorando a cidade em tempo real. O enxame de agentes está executando o protocolo de auto-cura no distrito do Data Center."</p>
-            </div>
-            <div class="guardian-quick-actions">
-              <button id="btn-rebuild-system" class="btn-pixel">🔄 Recriar Sistema</button>
-              <button id="btn-analyze-data" class="btn-pixel">📊 Analisar Dados</button>
-              <button id="btn-automations" class="btn-pixel">🤖 Automações</button>
-              <button id="btn-reports" class="btn-pixel">📝 Relatórios</button>
-            </div>
-          </aside>
-
-          <!-- RIGHT CANVAS: INTERACTIVE MAP GRID inspired by AI CITY -->
-          <section class="city-map-canvas-container">
-            <div class="map-title-bar">
-              <h2>GRG — AI CITY MAPA DO SISTEMA</h2>
-              <span class="map-sub">Visualização da Infraestrutura, Prédios e Telemetria em Tempo Real</span>
-            </div>
-
-            <div class="cyber-city-grid">
-              <div class="node-building ia-tower" data-district="Torre da IA">
-                <div class="building-icon">🗼</div>
-                <div class="building-name">TORRE DA IA</div>
-                <span class="node-status active">AI Router Active</span>
-              </div>
-
-              <div class="node-building datacenter" data-district="Centro de Dados">
-                <div class="building-icon">🏢</div>
-                <div class="building-name">CENTRO DE DADOS</div>
-                <span class="node-status load">CPU: 35% (Pulsando)</span>
-              </div>
-
-              <div class="node-building academy" data-district="Academia">
-                <div class="building-icon">🏛️</div>
-                <div class="building-name">ACADEMIA</div>
-                <span class="node-status">Treinando Modelos</span>
-              </div>
-
-              <div class="node-building marketplace" data-district="Marketplace">
-                <div class="building-icon">🏪</div>
-                <div class="building-name">MARKETPLACE</div>
-                <span class="node-status">Capability Store</span>
-              </div>
-
-              <div class="node-building lab" data-district="Laboratório">
-                <div class="building-icon">🧪</div>
-                <div class="building-name">LABORATÓRIO</div>
-                <span class="node-status pulse">Benchmark Ativo</span>
-              </div>
-
-              <div class="node-building plaza" data-district="Praça Central">
-                <div class="building-icon">⛲</div>
-                <div class="building-name">PRAÇA CENTRAL</div>
-                <span class="node-status">Conselho de Memória</span>
-              </div>
-
-              <div class="node-building database" data-district="Banco de Dados">
-                <div class="building-icon">🗄️</div>
-                <div class="building-name">BANCO DE DADOS</div>
-                <span class="node-status">Postgres / Redis RLS</span>
-              </div>
-
-              <div class="node-building hangar" data-district="Hangar">
-                <div class="building-icon">🛸</div>
-                <div class="building-name">HANGAR</div>
-                <span class="node-status">Workers & Queue</span>
-              </div>
-
-              <div class="node-building builder" data-district="Construtora">
-                <div class="building-icon">🏗️</div>
-                <div class="building-name">CONSTRUTORA</div>
-                <span class="node-status">Mission Compiler</span>
-              </div>
-
-              <div class="node-building port" data-district="Porto / Doca">
-                <div class="building-icon">⚓</div>
-                <div class="building-name">PORTO DE CARGAS</div>
-                <span class="node-status ship">Deploy Staging Active</span>
-              </div>
-
-              <div class="node-building mine" data-district="Mina de Recursos">
-                <div class="building-icon">⛏️</div>
-                <div class="building-name">MINA DE RECURSOS</div>
-                <span class="node-status">AST / Repo Intel</span>
-              </div>
-
-              <div class="node-building vps" data-district="Distrito VPS">
-                <div class="building-icon">🌩️</div>
-                <div class="building-name">DISTRITO VPS</div>
-                <span class="node-status active">4 Servidores Online</span>
-              </div>
-            </div>
-
-            <!-- LOWER LIVE PROGRESS & TELEMETRY PANEL -->
-            <div class="rebuilding-telemetry-panel">
-              <div class="rebuild-header">
-                <h3>RECRIANDO SISTEMA / OTIMIZANDO...</h3>
-                <span class="time-elapsed">Tempo de Processo: <strong>00:02:48</strong></span>
-              </div>
-              <div class="progress-bar-container">
-                <div class="progress-fill" style="width: 94%;">94% Concluído</div>
-              </div>
-              <div class="telemetry-resource-grid">
-                <div class="resource-col">
-                  <span class="res-label">CPU:</span>
-                  <div class="res-bar"><div class="res-fill" style="width: 35%;"></div></div>
-                  <span class="res-val">35%</span>
-                </div>
-                <div class="resource-col">
-                  <span class="res-label">MEMÓRIA:</span>
-                  <div class="res-bar"><div class="res-fill" style="width: 58%;"></div></div>
-                  <span class="res-val">58%</span>
-                </div>
-                <div class="resource-col">
-                  <span class="res-label">REDE:</span>
-                  <div class="res-bar"><div class="res-fill" style="width: 42%;"></div></div>
-                  <span class="res-val">42%</span>
-                </div>
-                <div class="resource-col">
-                  <span class="res-label">STORAGE:</span>
-                  <div class="res-bar"><div class="res-fill" style="width: 71%;"></div></div>
-                  <span class="res-val">71%</span>
-                </div>
-              </div>
-            </div>
-          </section>
+      <!-- Card 2: Missão -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">🎯</span>
+          <span class="card-title">Missão Ativa</span>
         </div>
+        <div class="card-value" id="val-mission">Calculando...</div>
+        <div class="card-subtext" id="sub-mission">Prioridade: Alta</div>
       </div>
 
-      <!-- TAB 1: SUBAGENTS MESH & DIALOGUES -->
-      <div id="tab-agents-mesh" class="tab-content">
-        <section class="agents-panel">
-          <div>
-            <span class="eyebrow">EPHEMERAL AGENT SWARM & DIALOGUES</span>
-            <h2>Enxame de Subagentes & Diálogo em Tempo Real</h2>
-            <p>Visualização dos subagentes especialistas trabalhando em salas virtuais.</p>
-          </div>
-          <div class="agents-live-grid">
-            <div class="agent-card-live" data-agent="1024">
-              <div class="agent-avatar">🤖 Supervisor Backend</div>
-              <div class="agent-info">
-                <strong>Agent #1024 (Backend)</strong>
-                <p>Status: <span class="status-tag active">Consultando Database Agent</span></p>
-                <div class="agent-dialogue">"Database Agent, preciso da validação das regras de RLS para o tenant Biel0071."</div>
-              </div>
-            </div>
-
-            <div class="agent-card-live" data-agent="1025">
-              <div class="agent-avatar">🛡️ Agent de Segurança</div>
-              <div class="agent-info">
-                <strong>Agent #1025 (Security)</strong>
-                <p>Status: <span class="status-tag active">OWASP Scan Passed</span></p>
-                <div class="agent-dialogue">"Auditoria concluída. Nenhuma vulnerabilidade detectada nos endpoints REST/v2."</div>
-              </div>
-            </div>
-
-            <div class="agent-card-live" data-agent="1026">
-              <div class="agent-avatar">🔧 Agent de Manutenção</div>
-              <div class="agent-info">
-                <strong>Agent #1026 (Auto-Healing)</strong>
-                <p>Status: <span class="status-tag active">Auto-Cura Executada</span></p>
-                <div class="agent-dialogue">"Worker no Hangar reiniciado com sucesso no Shadow Runtime. Telemetria restaurada."</div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- TAB 2: PORTFOLIO -->
-      <div id="tab-portfolio" class="tab-content">
-        <section id="metrics" class="metrics" aria-label="Métricas"></section>
-
-        <section class="toolbar">
-          <div>
-            <h2>Portfólio de Projetos Conectados</h2>
-            <p>Controle central de código, inteligência, simulação e publicação.</p>
-          </div>
-          <div class="filters">
-            <input id="search" type="search" placeholder="Buscar projeto..." aria-label="Buscar projeto">
-            <select id="visibility" aria-label="Filtrar visibilidade">
-              <option value="all">Todos os tipos</option>
-              <option value="public">Públicos</option>
-              <option value="private">Privados</option>
-            </select>
-          </div>
-        </section>
-
-        <section id="projects" class="project-grid" aria-live="polite"></section>
-
-        <section class="graph-panel">
-          <div>
-            <span class="eyebrow">MIRROR GRAPH & CAPABILITIES</span>
-            <h2>Mapa da Software House (18 Grafos)</h2>
-            <p id="graph-summary">Carregando relações...</p>
-          </div>
-          <div id="capabilities" class="capabilities"></div>
-        </section>
-      </div>
-
-      <!-- TAB 3: TERMINAL CONVERSACIONAL OPERACIONAL -->
-      <div id="tab-terminal" class="tab-content">
-        <section class="chat-panel">
-          <div>
-            <span class="eyebrow">OPERATIONAL CONVERSATIONAL TERMINAL</span>
-            <h2>Copiloto de Engenharia FÊNIX Ω∞ (Realtime Duplex)</h2>
-            <p>Converse em tempo real por texto ou voz simultânea com suporte a interrupção instantânea (Barge-In).</p>
-          </div>
-
-          <!-- REALTIME DUPLEX VOICE CONTROL BAR -->
-          <div class="realtime-duplex-bar" style="background: rgba(0, 255, 170, 0.1); border: 1px solid #00ffaa; border-radius: 8px; padding: 12px 16px; margin: 12px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span id="rt-status-icon" style="font-size: 1.4rem;">🎙️</span>
-              <div>
-                <strong id="rt-status-text" style="color: #00ffaa;">Modo Duplex Simultâneo Pronto</strong>
-                <div style="font-size: 0.8rem; color: #aaa;">Streaming bidirecional SSE + suporte a interrupção (Barge-In)</div>
-              </div>
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <button id="btn-rt-start" class="btn-quick" style="background: #00ffaa; color: #111; font-weight: bold;">▶ Iniciar Voz Duplex</button>
-              <button id="btn-rt-interrupt" class="btn-quick" style="background: #ff4444; color: #fff; display: none;">🛑 Interromper (Barge-in)</button>
-            </div>
-          </div>
-          
-          <div class="quick-prompts">
-            <button class="btn-quick" data-prompt="Analise todo o backend do projeto">Analise todo o backend</button>
-            <button class="btn-quick" data-prompt="Simule a refatoração do frontend no Digital Twin">Simule refatoração</button>
-            <button class="btn-quick" data-prompt="Prepare a release candidate para produção">Prepare release</button>
-            <button class="btn-quick" data-prompt="Mostre o estado atual dos 18 Grafos Universais">Estado dos 18 Grafos</button>
-          </div>
-
-          <div id="chat-window" class="chat-window">
-            <div class="chat-msg system">
-              <strong>FÊNIX Ω∞ LCR (Online):</strong> Olá! O organismo cognitivo está operando 24/7. Conversa simultânea em tempo real ativada.
-            </div>
-          </div>
-
-          <form id="chat-form" class="chat-form">
-            <input id="chat-input" type="text" placeholder="Digite um comando ou fale com o Fênix..." required>
-            <button type="submit">Enviar Comando</button>
-          </form>
-        </section>
-      </div>
-
-      <!-- TAB 4: ACEP KERNEL & DIGITAL TWIN -->
-      <div id="tab-kernel" class="tab-content">
-        <section class="kernel-hero">
-          <div class="kernel-card">
-            <span class="eyebrow">KERNEL STATUS</span>
-            <h3>Universal Cognitive Kernel</h3>
-            <p class="status-text">Status: <strong>ACTIVE_HEALTHY (N4 Predictive)</strong></p>
-            <p>Idle Engine: <span class="badge">Scanning Tech Debt (Background)</span></p>
-          </div>
-          <div class="kernel-card">
-            <span class="eyebrow">PROJECT DIGITAL TWIN</span>
-            <h3>Modelo Computacional Vivo</h3>
-            <p>Componentes Modelados: <strong>48 Nós Em Tempo Real</strong></p>
-            <p>Simulação Pré-Mutação: <span class="badge success">Ativa & Habilitada</span></p>
-          </div>
-        </section>
-
-        <section class="mission-compiler-box">
-          <span class="eyebrow">MISSION COMPILER</span>
-          <h2>Compilar Nova Missão de Engenharia</h2>
-          <p>Digite seu objetivo em linguagem natural para gerar o Blueprint de Missão autônomo.</p>
-          <form id="mission-form" class="mission-form">
-            <input id="mission-prompt" type="text" placeholder="Ex: Criar um CRM multi-tenant com funil de vendas e integração WhatsApp..." required>
-            <button type="submit">Compilar Blueprint</button>
-          </form>
-          <div id="mission-result" class="mission-result"></div>
-        </section>
-
-        <section class="simulation-box">
-          <span class="eyebrow">ARCHITECTURE SIMULATION ENGINE</span>
-          <h2>Simulação de Impacto Pré-Mutação</h2>
-          <div class="sim-actions">
-            <button id="btn-sim-refactor">Simular Refatoração Frontend</button>
-            <button id="btn-sim-db" class="secondary">Simular Migration de Banco</button>
-          </div>
-          <div id="sim-result" class="sim-result"></div>
-        </section>
-      </div>
-
-      <!-- TAB 5: DIGITAL OPERATOR INTELLIGENCE (DOI) -->
-      <div id="tab-doi" class="tab-content">
-        <section class="doi-panel">
-          <div>
-            <span class="eyebrow">DIGITAL OPERATOR INTELLIGENCE (DOI)</span>
-            <h2>Browser Cognition & Visual Learning Cockpit</h2>
-            <p>Navegação autônoma multibrowser, descoberta de rotas e síntese de Capabilities.</p>
-          </div>
-          <div class="doi-metrics-grid">
-            <div class="doi-card">
-              <strong>2 Instâncias</strong>
-              <span>Browser Sessions (Chrome/Firefox)</span>
-            </div>
-            <div class="doi-card">
-              <strong>28 Rotas</strong>
-              <span>Navigation Graph Mapeado</span>
-            </div>
-            <div class="doi-card">
-              <strong>14 Registros</strong>
-              <span>Operator Audit Logs</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="doi-features">
-          <div class="feature-card">
-            <h3>🌐 Browser Cognition Engine</h3>
-            <p>Interpretação visual e semântica de interfaces, tabelas e formulários com evidência auditável (DOM, screenshots e vídeo).</p>
-          </div>
-          <div class="feature-card">
-            <h3>👁️ Visual Cognition OS</h3>
-            <p>Extração automática de Design Genome (tokens visuais, acessibilidade WCAG, responsividade).</p>
-          </div>
-          <div class="feature-card">
-            <h3>⚙️ Capability Synthesizer</h3>
-            <p>Transformação de fluxos observados em novos componentes e automações reutilizáveis.</p>
-          </div>
-        </section>
-      </div>
-
-      <!-- TAB 6: MATURITY FRAMEWORK -->
-      <div id="tab-maturity" class="tab-content">
-        <section class="maturity-panel">
-          <div>
-            <span class="eyebrow">ENGINEERING DNA & MATURITY FRAMEWORK</span>
-            <h2>Engineering DNA Score & Avaliação de Maturidade (N0 – N5)</h2>
-            <p>Métrica contínua e auditável em 10 dimensões verificáveis.</p>
-          </div>
-          <div id="maturity-score-card" class="maturity-score-card">
-            <div class="global-score">
-              <strong>95/100</strong>
-              <span>Engineering DNA Score (N4 Preditivo)</span>
-            </div>
-          </div>
-        </section>
-
-        <section id="maturity-grid" class="maturity-grid"></section>
-      </div>
-
-      <!-- TAB 7: GOVERNANCE & SECURITY -->
-      <div id="tab-governance" class="tab-content">
-        <section class="governance-panel">
-          <span class="eyebrow">POLÍTICA DE AUTONOMIA EM 5 NÍVEIS</span>
-          <h2>Governança por Ambiente & Níveis 0 a 4</h2>
-          <div class="env-cards">
-            <div class="env-card dev">
-              <h3>Níveis 0–2 (Sandbox / Dev)</h3>
-              <p>Autonomia total: monitoramento 24/7, sugestões, simulações em Shadow Runtime e branches isoladas.</p>
-            </div>
-            <div class="env-card staging">
-              <h3>Nível 3 (Desenvolvimento PR)</h3>
-              <p>Geração automática de Pull Requests e execução da suíte de 272 testes integrados.</p>
-            </div>
-            <div class="env-card prod">
-              <h3>Nível 4 (Produção Assistida)</h3>
-              <p>Promoção para staging e produção ESTRITAMENTE sob aprovação humana explícita no Cockpit UI.</p>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-
-    <!-- DAILY ENGINEERING MEETING MODAL -->
-    <div id="meeting-modal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <div>
-            <span class="eyebrow">DAILY ENGINEERING MEETING (08:00 AM)</span>
-            <h2>Reunião Diária da Equipe de IAs Supervisoras</h2>
-          </div>
-          <button class="btn-close modal-close-btn">&times;</button>
+      <!-- Card 3: Problemas -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">⚠️</span>
+          <span class="card-title">Problemas / Alertas</span>
         </div>
-        <div class="meeting-content">
-          <p><strong>Participantes:</strong> Frontend Supervisor, Backend Supervisor, AI Supervisor, Security Supervisor, Database Supervisor, DevOps Supervisor, Mission Planner, FÊNIX AI Master.</p>
-          <div class="meeting-box">
-            <h4>📋 Resumo Executivo das Madrugadas</h4>
-            <ul>
-              <li><strong>Infraestrutura:</strong> 4 servidores VPS operando em 100% de disponibilidade. Carga média de CPU: 35%.</li>
-              <li><strong>Segurança:</strong> Auditoria OWASP concluída com zero vulnerabilidade crítica.</li>
-              <li><strong>Propostas de Refatoração:</strong> 3 queries lentas otimizadas no Shadow Runtime.</li>
-              <li><strong>Capabilities Universais:</strong> 4 novas capabilities prontas para o catálogo federado (`CAP-CBS-02`, `CAP-RLS-01`, `CAP-RE-03`, `CAP-DOI-04`).</li>
-            </ul>
-          </div>
-        </div>
+        <div class="card-value" id="val-problems">0 Bloqueadores</div>
+        <div class="card-subtext" id="sub-problems">Ambiente local operacional</div>
       </div>
+
+      <!-- Card 4: Executar -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">▶️</span>
+          <span class="card-title">Ação Recomendada</span>
+        </div>
+        <div class="card-subtext" id="val-action">Clique abaixo para disparar o Supervisor.</div>
+        <button class="btn-execute" id="btn-run">▶️ Executar Ação Supervisor</button>
+      </div>
+
     </div>
 
-    <!-- KNOWLEDGE LIBRARY MODAL -->
-    <div id="library-modal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <div>
-            <span class="eyebrow">BIBLIOTECA DE CONHECIMENTO & CAPABILITIES</span>
-            <h2>Knowledge Library (Livros de Patrimônio Cognitivo)</h2>
-          </div>
-          <button class="btn-close modal-close-btn">&times;</button>
-        </div>
-        <div class="library-content">
-          <p>Os subagentes consultam estes livros de conhecimento comprovado antes de executar qualquer missão de engenharia:</p>
-          <div class="library-books-grid">
-            <div class="book-card">
-              <span class="book-badge">UNIVERSAL</span>
-              <h4>📖 Livro 01: Multi-Tenant RLS Policy Pattern</h4>
-              <p>Evidência: `test:platform-membership-pass` | Score: 1.0</p>
-            </div>
-            <div class="book-card">
-              <span class="book-badge">CERTIFIED</span>
-              <h4>📖 Livro 02: Cognitive Bootstrap System (CBS)</h4>
-              <p>Evidência: `ai-os/SYSTEM_STATE.md` | Score: 1.0</p>
-            </div>
-            <div class="book-card">
-              <span class="book-badge">VALIDATED</span>
-              <h4>📖 Livro 03: Recursive Self-Refactoring Protocol</h4>
-              <p>Evidência: `ai-os/brain/RECURSIVE_ENGINEERING_SPEC.md` | Score: 0.95</p>
-            </div>
-          </div>
-        </div>
+    <!-- FÊNIX Chat -->
+    <div class="chat-section">
+      <div class="card-header">
+        <span class="card-icon">💬</span>
+        <span class="card-title">FÊNIX Chat</span>
+      </div>
+      <div class="chat-output" id="chat-output">
+        FÊNIX Agent OS inicializado. Digite uma instrução ou clique em Executar para iniciar.
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Digite uma mensagem para o FÊNIX..." />
+        <button class="btn-send" id="btn-send">Enviar</button>
       </div>
     </div>
+  </main>
 
-    <template id="project-template">
-      <article class="project-card">
-        <div class="card-head">
-          <div class="project-icon"></div>
-          <span class="visibility"></span>
-        </div>
-        <h3></h3>
-        <p class="repo"></p>
-        <div class="tags"></div>
-        <dl>
-          <div><dt>Análise</dt><dd class="analysis"></dd></div>
-          <div><dt>Publicação</dt><dd class="deployment"></dd></div>
-        </dl>
-        <div class="actions">
-          <button data-action="analyze">Analisar</button>
-          <button data-action="simulate" class="secondary">Simular Mutação</button>
-          <button data-action="deploy" class="secondary">Deploy Staging</button>
-          <a target="_blank" rel="noreferrer">GitHub</a>
-        </div>
-      </article>
-    </template>
+  <footer>
+    FÊNIX CEC &copy; 2026 — Single Source of Truth Agent Operating System
+  </footer>
 
-    <div id="toast" role="status" aria-live="polite"></div>
-    <script src="/app-v2.js"></script>
-  </body>
+  <script src="/app.js"></script>
+</body>
 </html>
