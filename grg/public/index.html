@@ -38,14 +38,14 @@
         <a class="nav-link" href="#live-center"><i class="icon-activity"></i> LIVE CENTER <span class="badge warning">Tempo Real</span></a>
         
         <div class="nav-section">OPERATIONS</div>
-        <a class="nav-link" href="/app.html#missions"><i class="icon-target"></i> MISSION CONTROL <span class="badge info">6</span></a>
+        <a class="nav-link" href="/app.html#missions"><i class="icon-target"></i> MISSION CONTROL</a>
         <a class="nav-link" href="/app.html#command"><i class="icon-cpu"></i> AI ASSISTANT <span class="badge primary">AI</span></a>
         <a class="nav-link" href="#city"><i class="icon-map"></i> AI CITY <span class="badge text">Digital Twin</span></a>
-        
+
         <div class="nav-section">ECOSYSTEM</div>
-        <a class="nav-link" href="#products"><i class="icon-box"></i> PRODUCTS <span class="badge count">12</span></a>
-        <a class="nav-link" href="#swarm"><i class="icon-users"></i> AGENTS SWARM <span class="badge warning">128</span></a>
-        <a class="nav-link" href="#devices"><i class="icon-hard-drive"></i> DEVICES <span class="badge count">342</span></a>
+        <a class="nav-link" href="#products"><i class="icon-box"></i> PRODUCTS</a>
+        <a class="nav-link" href="#swarm"><i class="icon-users"></i> AGENTS SWARM</a>
+        <a class="nav-link" href="#devices"><i class="icon-hard-drive"></i> DEVICES <span class="badge text">em dev</span></a>
         
         <div class="nav-section">SYSTEM</div>
         <a class="nav-link" href="#runtime"><i class="icon-monitor"></i> RUNTIME MONITOR</a>
@@ -103,14 +103,14 @@
         
         <div class="top-actions">
            <button class="icon-btn"><i class="icon-search"></i></button>
-           <button class="icon-btn"><i class="icon-bell"></i><span class="dot">12</span></button>
+           <button class="icon-btn"><i class="icon-bell"></i></button>
            <button class="icon-btn"><i class="icon-shield"></i></button>
            <div class="user-profile">
              <div class="user-info">
-               <span class="name">Gabriel</span>
-               <span class="role">Master User</span>
+               <span class="name" id="hdrUserName">—</span>
+               <span class="role" id="hdrUserRole">—</span>
              </div>
-             <div class="avatar-circle">G</div>
+             <div class="avatar-circle" id="hdrUserAvatar">·</div>
            </div>
         </div>
       </header>
@@ -139,41 +139,19 @@
                
                <!-- Greeting Overlay -->
                <div class="greeting-overlay glass-panel">
-                 <h2>Bom dia, <span style="color:var(--gold);">Gabriel.</span></h2>
-                 <p>O ecossistema está operando sob governança.</p>
+                 <h2 id="cityGreeting">FÊNIX OS</h2>
+                 <p>Estado do ecossistema em tempo real.</p>
                  <ul id="cityHealthList" class="health-list-mini">
-                   <li><i class="dot warning"></i> API Platform <span>—</span></li>
-                   <li><i class="dot warning"></i> AI Engine <span>—</span></li>
-                   <li><i class="dot warning"></i> VPS Master <span>—</span></li>
+                   <li><i class="dot warning"></i> carregando saude do runtime... <span>—</span></li>
                  </ul>
                  <div class="agent-count-mini">
-                   <span>Agentes</span>
-                   <strong id="cityAgentCount" style="color:var(--orange);">— ATIVAS</strong>
+                   <span>Capabilities</span>
+                   <strong id="cityAgentCount" style="color:var(--orange);">—</strong>
                  </div>
                </div>
 
-               <!-- Floating Labels -->
-               <div class="floating-label" style="top:20%; left:30%;">
-                 <strong>AI ENGINE</strong><small>v3.1.0</small><span class="status active">ONLINE</span>
-               </div>
-               <div class="floating-label" style="top:25%; left:60%;">
-                 <strong>ZAPAI CRM</strong><small>v2.4.0</small><span class="status active">ONLINE</span>
-               </div>
-               <div class="floating-label" style="top:35%; left:15%;">
-                 <strong>AI CITY</strong><small>v1.8.0</small><span class="status active">ONLINE</span>
-               </div>
-               <div class="floating-label" style="top:45%; left:50%; border-color:var(--orange);">
-                 <strong style="color:var(--orange); font-size:14px;">FÊNIX CORE</strong><small>v5.0.0</small><span class="status active">ONLINE</span>
-               </div>
-               <div class="floating-label" style="top:55%; left:75%;">
-                 <strong>RH SYSTEM</strong><small>v2.1.0</small><span class="status active">ONLINE</span>
-               </div>
-               <div class="floating-label" style="top:65%; left:45%;">
-                 <strong>DATA LAKE</strong><small>24.1 TB</small><span class="status warning">SYNCING</span>
-               </div>
-               <div class="floating-label" style="top:75%; left:65%;">
-                 <strong>ANALYTICS</strong><small>v1.6.0</small><span class="status active">ONLINE</span>
-               </div>
+               <!-- Nós da cidade: preenchidos do backend (cityNodes). Vazio ate haver dado real. -->
+               <div id="cityNodes"></div>
 
                <!-- Compass -->
                <div class="compass-widget">
@@ -199,63 +177,30 @@
                  <div class="controls"><span class="status-pill active">LIVE</span> <button class="icon-btn">Filtros</button></div>
                </div>
                <div class="op-terminal" id="terminalOutput">
-                 <div class="ev-row"><span class="ev-time">09:42:16</span> <span class="ev-kind">[SYSTEM]</span> Todos os serviços operacionais.</div>
-                 <div class="ev-row"><span class="ev-time">09:42:15</span> <span class="ev-kind">[DEPLOY]</span> Deploy realizado: api-platform@2.5.0</div>
-                 <div class="ev-row"><span class="ev-time">09:42:12</span> <span class="ev-kind">[AGENT]</span> 128 agentes conectados e prontos.</div>
-                 <div class="ev-row"><span class="ev-time">09:42:08</span> <span class="ev-kind warning">[MISSION]</span> Missão "Relatório Financeiro" em execução.</div>
-                 <div class="ev-row"><span class="ev-time">09:42:05</span> <span class="ev-kind success">[API]</span> Latency: 38ms | Status: 200 OK</div>
-                 <div class="ev-row"><span class="ev-time">09:42:01</span> <span class="ev-kind">[DATABASE]</span> Backup automático concluído com sucesso.</div>
-                 <div class="ev-row"><span class="ev-time">09:41:59</span> <span class="ev-kind">[WORKER]</span> Worker escalado automaticamente.</div>
+                 <div class="ev-row"><span class="ev-kind">[SYSTEM]</span> Conectando ao runtime...</div>
                </div>
              </section>
 
              <!-- Subagentes Ativos -->
              <section class="panel subagents-panel">
                <div class="section-header">
-                 <h2>SUBAGENTES ATIVOS (128)</h2>
-                 <a href="#" class="link">Ver todos</a>
+                 <h2>SUBAGENTES ATIVOS</h2>
+                 <span class="badge text">EM DESENVOLVIMENTO</span>
                </div>
                <div class="subagents-grid" id="subagentsList">
-                 <!-- Generated dynamically or placeholder for visual -->
-                 <div class="agent-item"><div class="agent-avatar">P</div><strong>Planner</strong><small>12 ativos</small><div class="bar"><i style="width:75%; background:var(--green)"></i></div><span>75%</span></div>
-                 <div class="agent-item"><div class="agent-avatar">D</div><strong>Developer</strong><small>38 ativos</small><div class="bar"><i style="width:82%; background:var(--orange)"></i></div><span>82%</span></div>
-                 <div class="agent-item"><div class="agent-avatar">A</div><strong>Designer</strong><small>8 ativos</small><div class="bar"><i style="width:55%; background:var(--cyan)"></i></div><span>55%</span></div>
-                 <div class="agent-item"><div class="agent-avatar">Q</div><strong>QA Tester</strong><small>10 ativos</small><div class="bar"><i style="width:61%; background:var(--green)"></i></div><span>61%</span></div>
-                 <div class="agent-item"><div class="agent-avatar">D</div><strong>DevOps</strong><small>18 ativos</small><div class="bar"><i style="width:67%; background:var(--green)"></i></div><span>67%</span></div>
-                 <div class="agent-item"><div class="agent-avatar">A</div><strong>Analyst</strong><small>10 ativos</small><div class="bar"><i style="width:45%; background:var(--yellow)"></i></div><span>45%</span></div>
-                 <div class="agent-item"><div class="agent-avatar">S</div><strong>Data Sci.</strong><small>12 ativos</small><div class="bar"><i style="width:71%; background:var(--green)"></i></div><span>71%</span></div>
-                 <div class="agent-item"><div class="agent-avatar">S</div><strong>Support</strong><small>10 ativos</small><div class="bar"><i style="width:66%; background:var(--green)"></i></div><span>66%</span></div>
+                 <div class="empty-state" style="padding:24px; text-align:center; color:var(--muted); font-size:11px;">Painel de subagentes em desenvolvimento — sem telemetria de agente publicada pelo runtime ainda.</div>
                </div>
              </section>
-             
+
              <!-- Fluxo e Missão -->
              <div class="mission-flow-container">
                <section class="panel flow-panel">
-                 <div class="section-header"><h2>FLUXO DE EXECUÇÃO EM TEMPO REAL</h2></div>
-                 <div class="flow-steps">
-                   <div class="f-step active"><i>U</i><span>Usuário</span></div><div class="f-line"></div>
-                   <div class="f-step active"><i>M</i><span>Missão</span></div><div class="f-line"></div>
-                   <div class="f-step active"><i>P</i><span>Planner</span></div><div class="f-line"></div>
-                   <div class="f-step active"><i>S</i><span>Subagentes</span></div><div class="f-line"></div>
-                   <div class="f-step current"><i>E</i><span>Execução</span></div><div class="f-line"></div>
-                   <div class="f-step"><i>V</i><span>Validação</span></div><div class="f-line"></div>
-                   <div class="f-step"><i>C</i><span>Conclusão</span></div>
-                 </div>
+                 <div class="section-header"><h2>FLUXO DE EXECUÇÃO</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
+                 <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Sem execução de missão ativa para exibir.</div>
                </section>
                <section class="panel dag-panel">
-                 <div class="section-header"><h2>MISSION MAP (EXECUÇÃO ATUAL)</h2></div>
-                 <div class="dag-visual">
-                   <!-- Simplified representation -->
-                   <div class="dag-node success">Objetivo</div> <div class="dag-edge"></div>
-                   <div class="dag-node success">Planejamento</div> <div class="dag-edge"></div>
-                   <div class="dag-node warning">Execução</div> <div class="dag-edge fork"></div>
-                   <div class="dag-branches">
-                     <div class="dag-node success">Subagente A</div>
-                     <div class="dag-node warning">Subagente B</div>
-                     <div class="dag-node success">Subagente C</div>
-                   </div>
-                   <div class="dag-edge join"></div> <div class="dag-node">Validação</div>
-                 </div>
+                 <div class="section-header"><h2>MISSION MAP</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
+                 <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Sem grafo de missão ativo.</div>
                </section>
              </div>
            </div>
@@ -266,116 +211,38 @@
           
           <!-- Telemetria -->
           <section class="panel telemetry-panel">
-            <div class="section-header"><h2>TELEMETRIA EM TEMPO REAL</h2></div>
-            <div class="telemetry-charts">
-              <div class="chart-item">
-                <span class="label">CPU</span>
-                <strong class="value">32%</strong>
-                <svg viewBox="0 0 100 30"><polyline points="0,25 20,20 40,28 60,10 80,15 100,5" stroke="var(--orange)" fill="none" stroke-width="2"/></svg>
-              </div>
-              <div class="chart-item">
-                <span class="label">MEMÓRIA</span>
-                <strong class="value">48%</strong>
-                <svg viewBox="0 0 100 30"><polyline points="0,20 20,22 40,18 60,25 80,15 100,20" stroke="#a855f7" fill="none" stroke-width="2"/></svg>
-              </div>
-              <div class="chart-item">
-                <span class="label">DISCO</span>
-                <strong class="value">61%</strong>
-                <svg viewBox="0 0 100 30"><polyline points="0,15 20,15 40,16 60,14 80,15 100,15" stroke="var(--cyan)" fill="none" stroke-width="2"/></svg>
-              </div>
-              <div class="chart-item">
-                <span class="label">REDE</span>
-                <strong class="value">12.4 GB/s</strong>
-                <svg viewBox="0 0 100 30"><polyline points="0,30 20,20 40,25 60,15 80,10 100,5" stroke="var(--green)" fill="none" stroke-width="2"/></svg>
-              </div>
-            </div>
+            <div class="section-header"><h2>TELEMETRIA</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
+            <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Métricas de CPU/memória/disco/rede em desenvolvimento — coletor de host ainda não publicado no runtime.</div>
           </section>
 
-          <!-- Eventos do Sistema -->
+          <!-- Eventos do Sistema: alimentados dos deployments/memoria reais do overview -->
           <section class="panel events-panel">
-            <div class="section-header"><h2>EVENTOS DO SISTEMA</h2><a href="#" class="link">Ver todos</a></div>
-            <ul class="event-list">
-              <li><span class="time">09:42:15</span><span class="tag deploy">[DEPLOY]</span> Build #343 concluído com sucesso.</li>
-              <li><span class="time">09:42:12</span><span class="tag agent">[AGENT]</span> Worker escalado: 128 agentes ativos.</li>
-              <li><span class="time">09:42:08</span><span class="tag mission">[MISSION]</span> Missão "Relatório Financeiro" em execução.</li>
-              <li><span class="time">09:42:05</span><span class="tag api">[API]</span> API Platform latency: 38ms | Status: 200 OK</li>
-              <li><span class="time">09:42:01</span><span class="tag security">[SECURITY]</span> Verificação de segurança concluída.</li>
+            <div class="section-header"><h2>EVENTOS DO SISTEMA</h2></div>
+            <ul class="event-list" id="eventsList">
+              <li><span class="tag">[SYSTEM]</span> Carregando eventos do runtime...</li>
             </ul>
           </section>
 
-          <!-- Missões Ativas (Barras) -->
+          <!-- Missões Ativas -->
           <section class="panel active-missions-panel">
-            <div class="section-header"><h2>MISSÕES ATIVAS</h2><a href="#" class="link">Ver todos</a></div>
-            <div class="mission-bars">
-              <div class="m-bar-item">
-                <div class="m-info"><span>Relatório Financeiro</span><span>67%</span><span class="status">EM EXECUÇÃO</span></div>
-                <div class="bar"><i style="width:67%; background:var(--orange);"></i></div>
-              </div>
-              <div class="m-bar-item">
-                <div class="m-info"><span>Integração ERP</span><span>41%</span><span class="status">EM EXECUÇÃO</span></div>
-                <div class="bar"><i style="width:41%; background:var(--orange);"></i></div>
-              </div>
-              <div class="m-bar-item">
-                <div class="m-info"><span>Dashboard Executivo</span><span>23%</span><span class="status">EM EXECUÇÃO</span></div>
-                <div class="bar"><i style="width:23%; background:var(--orange);"></i></div>
-              </div>
-              <div class="m-bar-item">
-                <div class="m-info"><span>Backup e Auditoria</span><span>12%</span><span class="status">EM EXECUÇÃO</span></div>
-                <div class="bar"><i style="width:12%; background:var(--orange);"></i></div>
-              </div>
-              <div class="m-bar-item">
-                <div class="m-info"><span>Sincronização de Dados</span><span>9%</span><span class="status">EM EXECUÇÃO</span></div>
-                <div class="bar"><i style="width:9%; background:var(--orange);"></i></div>
-              </div>
+            <div class="section-header"><h2>MISSÕES ATIVAS</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
+            <div class="mission-bars" id="missionBars">
+              <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Nenhuma missão ativa publicada pelo runtime.</div>
             </div>
           </section>
 
           <!-- Atividade Recente dos Agentes -->
           <section class="panel agent-activity-panel">
-            <div class="section-header"><h2>ATIVIDADE RECENTE DOS AGENTES</h2><a href="#" class="link">Ver todos</a></div>
+            <div class="section-header"><h2>ATIVIDADE DOS AGENTES</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
             <div class="activity-list">
-               <div class="act-item">
-                 <div class="avatar">P</div><div class="act-detail"><strong>Agent Planner</strong><small>Planejando próximos passos...</small><div class="bar"><i style="width:75%; background:var(--green)"></i></div></div><span class="time">73 04:15</span>
-               </div>
-               <div class="act-item">
-                 <div class="avatar">D</div><div class="act-detail"><strong>Agent Developer</strong><small>Codificando módulo de férias...</small><div class="bar"><i style="width:92%; background:var(--orange)"></i></div></div><span class="time">92 04:15</span>
-               </div>
-               <div class="act-item">
-                 <div class="avatar">A</div><div class="act-detail"><strong>Agent Analyst</strong><small>Analisando dados financeiros...</small><div class="bar"><i style="width:35%; background:var(--cyan)"></i></div></div><span class="time">35 05:14</span>
-               </div>
-               <div class="act-item">
-                 <div class="avatar">Q</div><div class="act-detail"><strong>Agent QA Tester</strong><small>Executando testes automatizados...</small><div class="bar"><i style="width:81%; background:var(--green)"></i></div></div><span class="time">81 42:13</span>
-               </div>
+              <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Sem atividade de agente registrada.</div>
             </div>
           </section>
 
           <!-- Recursos de IA & Economy -->
           <section class="panel ai-resources-panel">
-            <div class="section-header"><h2>RECURSOS DE IA</h2></div>
-            <div class="ai-circles">
-              <div class="circle">
-                <svg viewBox="0 0 36 36"><path class="bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path class="fill" stroke-dasharray="68, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/></svg>
-                <div class="c-info"><span>TOKENS USADOS</span><strong>68%</strong><small>1.2M / 1.8M</small></div>
-              </div>
-              <div class="circle">
-                <svg viewBox="0 0 36 36"><path class="bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path class="fill" stroke-dasharray="82, 100" stroke="var(--cyan)" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/></svg>
-                <div class="c-info"><span>CUSTO (MÊS)</span><strong>$342.18</strong><small class="down">-12.5%</small></div>
-              </div>
-              <div class="circle">
-                <svg viewBox="0 0 36 36"><path class="bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path class="fill" stroke-dasharray="98, 100" stroke="var(--green)" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/></svg>
-                <div class="c-info"><span>LATÊNCIA MÉDIA</span><strong>38ms</strong><small class="up">ÓTIMO</small></div>
-              </div>
-            </div>
-
-            <div class="top-models" style="margin-top:16px;">
-              <div class="section-header"><h3 style="font-size:10px; color:var(--muted); margin:0;">TOP MODELOS UTILIZADOS</h3><a href="#" class="link">Ver todos</a></div>
-              <div class="model-list">
-                <div class="mo-item"><span>GPT-4o</span><div class="bar"><i style="width:42%; background:var(--orange)"></i></div><span>42%</span><small>1.2M tokens</small></div>
-                <div class="mo-item"><span>Claude 3.5 Sonnet</span><div class="bar"><i style="width:28%; background:var(--orange)"></i></div><span>28%</span><small>0.8M tokens</small></div>
-                <div class="mo-item"><span>Gemini 1.5 Pro</span><div class="bar"><i style="width:18%; background:var(--orange)"></i></div><span>18%</span><small>0.6M tokens</small></div>
-                <div class="mo-item"><span>Llama 3.1 70B</span><div class="bar"><i style="width:12%; background:var(--orange)"></i></div><span>12%</span><small>0.4M tokens</small></div>
-              </div>
-            </div>
+            <div class="section-header"><h2>RECURSOS DE IA</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
+            <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Consumo de tokens, custo e top-modelos serão exibidos quando a telemetria do AI Gateway estiver publicada.</div>
           </section>
 
         </div>
@@ -384,75 +251,96 @@
   </div>
   
   <script>
-    // Reality First Protocol: Connect to actual backend events
-    async function fetchSystemState() {
-      const token = localStorage.getItem('grg_token');
-      if (!token) {
-        // Redireciona para login se não houver sessão e não estivermos no index público
-        // window.location.href = '/login.html'; 
-        return;
-      }
-      
+    // REALITY FIRST: cada valor exibido vem de /api/overview ou /health medidos. Onde nao ha
+    // endpoint real, o painel mostra estado honesto ("sem dado" / "EM DESENVOLVIMENTO"), nunca
+    // numero fabricado. O binding usa os campos que overview() REALMENTE devolve
+    // (tenant, metrics{...}, recentMemory, recentDeployments) -- medido em app.js:650.
+    const AUTH = () => { const t = localStorage.getItem('grg_token'); return t ? { Authorization: `Bearer ${t}` } : {}; };
+    const setText = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = (val === 0 || val) ? val : '—'; };
+
+    async function fetchOverview() {
       try {
-        const res = await fetch('/api/overview', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (res.status === 401) {
-          localStorage.removeItem('grg_token');
-          window.location.href = '/GRG-login';
-          return;
-        }
-        
-        const data = await res.json();
-        
-        // Update Dashboard Metrics with real numbers
-        if (data.metrics) {
-          const update = (id, val) => { const e = document.getElementById(id); if (e) e.innerHTML = `${val} <span class="trend up"></span>`; };
-          update('hdrMissions', data.metrics.missions || '—');
-          update('hdrAgents', data.metrics.capabilities || '—');
-          update('hdrProjects', data.metrics.projects || '—');
-          update('hdrRequests', data.metrics.aiCalls || '—');
-        }
-        
-        // Update Health Uptime & Status
-        const st = document.getElementById('hdrStatusText');
-        const sdot = document.getElementById('hdrStatusDot');
-        const ssub = document.getElementById('hdrStatusSub');
-        if (st && data.health?.ok) {
-          st.textContent = 'ONLINE';
-          st.style.color = 'var(--green)';
-          sdot.style.background = 'var(--green)';
-          sdot.style.boxShadow = '0 0 8px var(--green)';
-          ssub.textContent = 'MONITORED';
-        } else if (st) {
-          st.textContent = 'DEGRADED';
-          st.style.color = 'var(--red)';
-          sdot.style.background = 'var(--red)';
-        }
-        
-        // Update City List
-        const list = document.getElementById('cityHealthList');
-        if (list && data.health?.checks) {
-          list.innerHTML = data.health.checks.map(c => 
-            `<li><i class="dot ${c.ok ? 'active' : 'degraded'}"></i> ${c.id} <span>${c.ok ? 'OK' : 'ERR'}</span></li>`
-          ).join('');
-        }
-        
-      } catch(e) {
-        console.error("Reality First: Data fetch failed", e);
-        const st = document.getElementById('hdrStatusText');
-        if(st) st.textContent = 'DISCONNECTED';
+        const res = await fetch('/api/overview', { headers: AUTH() });
+        if (res.status === 401) { window.location.href = '/GRG-login'; return; }
+        if (!res.ok) throw new Error('overview ' + res.status);
+        const d = await res.json();
+        const m = d.metrics || {};
+        // KPIs do header ligados aos campos reais. missions/erros nao existem no overview:
+        // ficam '—' honesto ate haver endpoint, nunca um numero inventado.
+        setText('hdrMissions', '—');
+        setText('hdrAgents', m.capabilities);
+        setText('hdrProjects', m.projects);
+        setText('hdrRequests', m.aiCalls);
+        setText('hdrErrors', '—');
+        setText('cityAgentCount', (m.capabilities ?? 0) + ' CAPS');
+
+        // Console operacional + Eventos do sistema: eventos REAIS de memoria/deploy. Sem eventos -> vazio honesto.
+        const evRows = [];
+        for (const ev of (d.recentDeployments || [])) evRows.push({ kind: 'DEPLOY', at: ev.at || ev.createdAt || '', text: ev.name || ev.id || 'deployment' });
+        for (const ev of (d.recentMemory || [])) evRows.push({ kind: 'MEMORY', at: ev.at || ev.createdAt || '', text: ev.type || ev.kind || 'event' });
+        const term = document.getElementById('terminalOutput');
+        if (term) term.innerHTML = evRows.length
+          ? evRows.map(e => `<div class="ev-row"><span class="ev-time">${e.at.toString().slice(11,19)}</span> <span class="ev-kind">[${e.kind}]</span> ${e.text}</div>`).join('')
+          : '<div class="ev-row"><span class="ev-kind">[SYSTEM]</span> Sem eventos registrados ainda.</div>';
+        const evList = document.getElementById('eventsList');
+        if (evList) evList.innerHTML = evRows.length
+          ? evRows.map(e => `<li><span class="time">${e.at.toString().slice(11,19)}</span><span class="tag">[${e.kind}]</span> ${e.text}</li>`).join('')
+          : '<li><span class="tag">[SYSTEM]</span> Sem eventos registrados ainda.</li>';
+        return true;
+      } catch (e) {
+        setText('hdrAgents','—'); setText('hdrProjects','—'); setText('hdrRequests','—');
+        const term = document.getElementById('terminalOutput');
+        if (term) term.innerHTML = '<div class="ev-row"><span class="ev-kind">[SYSTEM]</span> Sem dados de overview (verifique sessao/permissao).</div>';
+        const evList = document.getElementById('eventsList');
+        if (evList) evList.innerHTML = '<li><span class="tag">[SYSTEM]</span> Sem dados de overview.</li>';
+        return false;
       }
     }
-    
-    fetchSystemState();
-    setInterval(fetchSystemState, 15000);
-    
-    // Periodically update clock
+
+    async function fetchHealth() {
+      const st = document.getElementById('hdrStatusText');
+      const sdot = document.getElementById('hdrStatusDot');
+      const ssub = document.getElementById('hdrStatusSub');
+      const list = document.getElementById('cityHealthList');
+      try {
+        const res = await fetch('/health');
+        const h = await res.json();
+        const ok = h.status === 'ready' || h.ok === true;
+        if (st) { st.textContent = ok ? 'ONLINE' : 'DEGRADED'; st.style.color = ok ? 'var(--green)' : 'var(--red)'; }
+        if (sdot) { sdot.style.background = ok ? 'var(--green)' : 'var(--red)'; sdot.style.boxShadow = `0 0 8px ${ok ? 'var(--green)' : 'var(--red)'}`; }
+        if (ssub) ssub.textContent = ok ? 'MONITORED' : 'CHECK';
+        // Lista de saude REAL: as checks que o /health devolve (state-store, redis, ai-providers...).
+        const checks = h.checks && (Array.isArray(h.checks) ? h.checks : Object.entries(h.checks).map(([id,v]) => ({ id, ok: v && v.ok !== false })));
+        if (list && checks) {
+          list.innerHTML = checks.map(c => `<li><i class="dot ${c.ok ? 'active' : 'degraded'}"></i> ${c.id || c.name} <span>${c.ok ? 'OK' : 'ERR'}</span></li>`).join('');
+        }
+      } catch (e) {
+        if (st) { st.textContent = 'DISCONNECTED'; st.style.color = 'var(--red)'; }
+        if (sdot) sdot.style.background = 'var(--red)';
+      }
+    }
+
+    async function fetchMe() {
+      try {
+        const res = await fetch('/api/me', { headers: AUTH() });
+        if (!res.ok) return;
+        const me = await res.json();
+        const name = me.actorId || '—';
+        setText('hdrUserName', name);
+        setText('hdrUserRole', me.authed ? (me.tenantId || 'tenant') : 'nao autenticado');
+        const av = document.getElementById('hdrUserAvatar');
+        if (av) av.textContent = (name && name !== '—') ? name[0].toUpperCase() : '·';
+      } catch (e) { /* mantem '—' honesto */ }
+    }
+
+    function refresh() { fetchOverview(); fetchHealth(); fetchMe(); }
+    refresh();
+    setInterval(refresh, 15000);
+
     setInterval(() => {
       const now = new Date();
-      document.getElementById('clockTime').textContent = now.toLocaleTimeString('pt-BR');
+      const ct = document.getElementById('clockTime'); if (ct) ct.textContent = now.toLocaleTimeString('pt-BR');
+      const cd = document.getElementById('clockDate'); if (cd) cd.textContent = now.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
     }, 1000);
   </script>
 </body>

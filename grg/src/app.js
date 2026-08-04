@@ -90,7 +90,7 @@ const { MasterAvatar } = require('./cognitive/master-avatar');
 // Phase 3 Dependencies
 const { StorageManager } = require('./storage/storage-manager');
 const { KnowledgeEngine } = require('./knowledge/knowledge-engine');
-const { ProviderRegistry } = require('./ai-runtime/provider-registry');
+const { ProviderRegistry, buildProvidersFromEnv, loadRoutes } = require('./ai-runtime/provider-registry');
 
 async function createApp(options = {}) {
   const logger = options.logger || console;
@@ -116,11 +116,19 @@ async function createApp(options = {}) {
   const approvals = new ApprovalEngine({ store, bus, controlPlane, audit, policy });
   const gitHost = options.gitHost || new LocalGitHostAdapter();
   const runtimeEnv = options.env || process.env;
-  const providers = options.providers || {};
-  const routes = options.routes || {};
+  // MEDIDO EM PRODUCAO (2026-08-04): sem construir do env, `providers`/`routes` nasciam vazios em
+  // producao (options undefined) e o AIGateway ficava sem provider nenhum -- /health reportava
+  // "ai-providers: {}" ok=false com a API Platform gerando texto. buildProvidersFromEnv/loadRoutes
+  // le GRG_AIPLATFORM_URL/KEY, FENIX_AI_DEFAULT_PROVIDER etc e monta o provider real. options.*
+  // continua tendo precedencia (testes injetam providers/rotas deterministicos).
+  const providers = options.providers || buildProvidersFromEnv(runtimeEnv, { fetchImpl: options.fetchImpl, production: securityConfig.production });
+  const routes = options.routes || loadRoutes(runtimeEnv, { production: securityConfig.production });
   if (securityConfig.production) {
+    // REALITY FIRST: em producao, rota apontando para provider inexistente ou echo e ERRO, nao
+    // "degradacao graciosa". Falhar alto aqui e melhor do que subir mostrando IA disponivel e
+    // responder vazio na primeira chamada -- o que o console.warn anterior deixava passar.
     const configured = Object.values(routes).flatMap((route) => [route, ...(Array.isArray(route.fallback) ? route.fallback : route.fallback ? [route.fallback] : [])]);
-    if (configured.some((route) => route.provider === 'echo' || !providers[route.provider])) console.warn('[App] production AI routes require configured real providers. Gracefully degrading AI.');
+    if (configured.some((route) => route.provider === 'echo' || !providers[route.provider])) throw new Error('production AI routes require configured real providers');
   }
 
   const repoIntel = new RepositoryIntelligence({ store, bus, controlPlane, gitHost });
