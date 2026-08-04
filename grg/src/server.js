@@ -91,14 +91,26 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   // A identidade já foi estabelecida em createApp; aqui a linhagem ganha a entrada desta
   // subida. Não regenera nada: entradas idênticas não se acumulam.
   try {
-    const state = await app.store.read();
+    const state = await Promise.race([
+      app.store.read(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Store read timeout')), 5000))
+    ]);
     await app.organismIdentity.recordGeneration({ schemaVersion: state.schemaVersion, reason: 'boot' });
   } catch (error) {
-    logger.error({ event: 'organism.generation.failed', error, capability: 'kernel' });
+    logger.error({ event: 'organism.generation.failed.bypassed', error: error.message, capability: 'kernel' });
   }
 
   const runActivation = async () => {
-    const state = await app.store.read();
+    let state;
+    try {
+      state = await Promise.race([
+        app.store.read(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Store read timeout')), 5000))
+      ]);
+    } catch(err) {
+      logger.error({ event: 'activation.bypassed', error: err.message });
+      return;
+    }
     for (const tenant of state.tenants) {
       const owner = state.memberships.find((item) => item.tenantId === tenant.id && item.status === 'active' && item.role === 'master_admin');
       if (!owner) continue;
@@ -222,6 +234,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (!url.pathname.startsWith('/api/')) return serveStatic(url.pathname, res);
 
       const cx = await app.security.authenticate(req.headers);
+      // REALITY FIRST + seguranca: acesso a /api SEM sessao autenticada e REJEITADO com 401.
+      // Nao ha fallback que auto-autentica -- o fallback anterior (actorId 'admin' hardcoded,
+      // authed:true) dava a ILUSAO de sistema aberto e ao mesmo tempo quebrava por membership
+      // ('admin' nao existe; o bootstrap cria grg-admin). As 19 views do workspace populam
+      // apos LOGIN real (/api/login -> Bearer token, ou OIDC em producao), provado no e2e-http
+      // "login then use bearer token works". Sem login, 401 honesto -- e o que os testes de
+      // seguranca exigem (rejects unauthenticated api access / rejects dev headers by default).
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
 
