@@ -1,14 +1,48 @@
-node_modules
+```
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Environment variables
 .env
-.env.production
-dist
-build
+.env.local
+.env.*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Logs
 *.log
-generated/
-engine/memory/*-runtime.json
-engine/memory/knowledge-fallback.json
-engine/memory/*-history.json
-engine/memory/design-*-memory.json
-.tmp-*.cjs
-crm/backend/crm/sessions/
-**/sessions/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Temporary files
+*.tmp
+*.temp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Cache directories
+.mypy_cache/
+.pytest_cache/
+.gradle/
+```
