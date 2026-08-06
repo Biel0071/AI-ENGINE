@@ -41,6 +41,9 @@ A execução de qualquer intenção estruturada (UIS) é orquestrada estritament
 ### Artigo 10º (Lei dos 5 Níveis de Governança)
 As mutações são governadas pelos níveis Estratégico, Arquitetural, Operacional, Técnico e Evolutivo conforme a especificação **FGS-001**.
 
+### Artigo 11º (Lei do Ciclo de Vida da Missão)
+Nenhuma missão pode ser encerrada como "SUCCESS" apenas pela finalização do código. Toda missão deve transitar sequencial e compulsoriamente por cinco estados: `PLANNED` $\rightarrow$ `IMPLEMENTED` $\rightarrow$ `VALIDATED` $\rightarrow$ `VERIFIED_SUCCESS` $\rightarrow$ `DEPLOYED`. Apenas capacidades comprovadamente funcionais em runtime (Evidence) recebem atestado de sucesso.
+
 ---
 
 ## HIERARQUIA NORMATIVA DO UNIVERSAL META MODEL (UMM)

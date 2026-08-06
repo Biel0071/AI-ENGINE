@@ -194,7 +194,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         }, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/oidc/config') return sendJson(res, 200, {
-        enabled: securityConfig.production,
+        enabled: securityConfig.production && !!env.FENIX_OIDC_AUTHORIZATION_ENDPOINT,
         authorizationEndpoint: env.FENIX_OIDC_AUTHORIZATION_ENDPOINT || null,
         tokenEndpoint: env.FENIX_OIDC_TOKEN_ENDPOINT || null,
         clientId: env.FENIX_OIDC_CLIENT_ID || null,

@@ -3,6 +3,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const FenixSupervisor = require('../supervisor');
 const syncCommand = require('../cli/commands/sync');
+const MissionRegistry = require('../../grg/src/kernel/mission/registry');
 
 const CONTENT_TYPES = {
     '.css': 'text/css; charset=utf-8',
@@ -85,28 +86,47 @@ function createServer() {
 
             // 2. GET /api/dashboard — Os 4 blocos dinamicos da UI
             if (request.method === 'GET' && url.pathname === '/api/dashboard') {
-                const state = await syncCommand(null, { json: true });
-                const mission = await supervisor.missionEngine.calculateActiveMission(state);
+                const MissionRegistry = require('../../grg/src/kernel/mission/registry');
+                const mr = new MissionRegistry();
+                const activeMission = await mr.getActive();
+                const index = await mr.getIndex();
+
+                let verifiedCount = 0;
+                for (const mid of (index.missions || [])) {
+                    const m = await mr.getMission(mid);
+                    if (m && (m.state === 'VERIFIED_SUCCESS' || m.state === 'DEPLOYED')) {
+                        verifiedCount++;
+                    }
+                }
+
+                let nextState = 'NONE';
+                let validation = { allowed: true, reason: 'None' };
+                if (activeMission) {
+                    const { MissionGates } = require('../../grg/src/kernel/mission/gates');
+                    const def = MissionGates.getDefinition(activeMission.state);
+                    nextState = def && def.next.length > 0 ? def.next[0] : 'NONE';
+                    validation = nextState !== 'NONE' ? MissionGates.canTransition(activeMission.state, nextState, activeMission.checks) : { allowed: true, reason: 'None' };
+                }
 
                 return sendJson(response, 200, {
                     system: {
-                        status: "ONLINE",
-                        uptime: `${Math.floor(process.uptime() / 60)} min`,
-                        workersActive: 11,
-                        score: `${state.scores.overall}%`
+                        architectureFreeze: "ACTIVE"
                     },
                     mission: {
-                        title: mission.title,
-                        objective: mission.objective,
-                        priority: mission.priority
+                        id: activeMission ? activeMission.id : "NONE",
+                        title: activeMission ? activeMission.title : "Todas as missões concluídas",
+                        progress: `${verifiedCount}/10`
                     },
-                    problems: {
-                        count: mission.blockers.length,
-                        items: mission.blockers.length > 0 ? mission.blockers : ["Nenhum bloqueador crítico no ambiente local."]
+                    execution: {
+                        currentState: activeMission ? activeMission.state : "IDLE",
+                        nextGate: nextState,
+                        blocking: validation.allowed ? "None" : validation.reason
                     },
-                    nextAction: {
-                        title: "Executar Ação Recomendada",
-                        description: mission.actionableSteps[0] || "Sistema estabilizado. Pronto para deploy."
+                    health: {
+                        runtime: "🟢",
+                        database: "🟡",
+                        redis: "🔴",
+                        ai: "🟢"
                     }
                 });
             }
@@ -131,6 +151,39 @@ function createServer() {
                     capabilities: sysState.capabilities,
                     ledger: sysState.ledger
                 });
+            }
+
+            // --- Mission Registry API ---
+            const missionMatch = url.pathname.match(/^\/api\/missions\/?([a-zA-Z0-9-]+)?\/?(validate|verify|deploy)?$/);
+            if (missionMatch) {
+                const registry = new MissionRegistry();
+                const id = missionMatch[1];
+                const action = missionMatch[2];
+
+                if (request.method === 'GET') {
+                    if (!id) {
+                        return sendJson(response, 200, await registry.getIndex());
+                    } else {
+                        const m = await registry.getMission(id);
+                        if (!m) return sendJson(response, 404, { error: 'Mission not found' });
+                        return sendJson(response, 200, m);
+                    }
+                }
+                
+                if (request.method === 'POST' && id && action) {
+                    const body = await readJson(request);
+                    try {
+                        let result;
+                        switch(action) {
+                            case 'validate': result = await registry.validate(id, body); break;
+                            case 'verify': result = await registry.verify(id, body); break;
+                            case 'deploy': result = await registry.deploy(id, body); break;
+                        }
+                        return sendJson(response, 200, result);
+                    } catch (e) {
+                        return sendJson(response, 400, { error: e.message });
+                    }
+                }
             }
 
             // Servir arquivos estaticos (Dashboard UI)

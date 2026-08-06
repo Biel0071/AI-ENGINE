@@ -1,6 +1,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const FenixIntelligenceClient = require('./core/intelligence-client');
 
 class CapabilityRegistry {
     constructor() {
@@ -44,6 +45,24 @@ class CapabilityRegistry {
     }
 
     getCapabilities() {
+        return this.capabilities;
+    }
+
+    async discoverRemoteCapabilities(intelligenceClient) {
+        try {
+            const remoteCaps = await intelligenceClient.capabilities();
+            for (const [key, enabled] of Object.entries(remoteCaps)) {
+                // Se a API retornar um objeto detalhado, tentamos usar o "enabled", senão tratamos como booleano
+                const isEnabled = typeof enabled === 'object' ? Boolean(enabled.enabled) : Boolean(enabled);
+                this.capabilities[key] = { 
+                    enabled: isEnabled, 
+                    provider: 'FÊNIX Intelligence Service',
+                    tools: typeof enabled === 'object' && enabled.tools ? enabled.tools : []
+                };
+            }
+        } catch (error) {
+            console.warn("[CapabilityRegistry] Falha ao descobrir capabilities remotos:", error.message);
+        }
         return this.capabilities;
     }
 
