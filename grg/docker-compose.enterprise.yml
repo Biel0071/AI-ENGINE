@@ -137,6 +137,9 @@ services:
     user: "0:0"
     volumes:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
+      - ./login.html:/app/public/login.html:ro
+      - ./src/server.js:/app/src/server.js:ro
+      - ./src/auth/auth.js:/app/src/auth/auth.js:ro
     extra_hosts: ["host.containers.internal:host-gateway"]
 
   worker:
