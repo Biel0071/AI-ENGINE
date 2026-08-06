@@ -33,7 +33,10 @@
       <label>Usuário</label>
       <input id="user" placeholder="admin1010" autocomplete="username" required />
       <label>Senha</label>
-      <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" required />
+      <div style="position:relative">
+        <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" required style="padding-right:40px;" />
+        <span id="togglePw" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none; filter:grayscale(1) brightness(1.5);">👁️</span>
+      </div>
       <button type="submit" id="loginButton">Entrar no escritório</button>
       <div class="err" id="err"></div>
     </form>
@@ -69,12 +72,12 @@
     }
     continueExistingSession().catch(() => { localStorage.removeItem('grg_token'); sessionStorage.removeItem('grg_refresh_token'); });
     finishOidc().catch(error => { document.getElementById('err').textContent = error.message; });
-    oidcConfig.then(config => { if (config.enabled) { document.querySelectorAll('label,input').forEach(element => { element.style.display='none'; if (element.matches('input')) element.disabled=true; }); document.getElementById('loginButton').textContent='Entrar com identidade GRG'; } });
+    oidcConfig.then(config => { if (config.enabled && window.crypto && crypto.subtle) { document.querySelectorAll('label,input').forEach(element => { element.style.display='none'; if (element.matches('input')) element.disabled=true; }); document.getElementById('loginButton').textContent='Entrar com identidade GRG'; } });
     document.getElementById('f').addEventListener('submit', async (e) => {
       e.preventDefault();
       const err = document.getElementById('err'); err.textContent = '';
       const config = await oidcConfig;
-      if (config.enabled) { const verifier=b64url(crypto.getRandomValues(new Uint8Array(32))); const challenge=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))); const state=b64url(crypto.getRandomValues(new Uint8Array(24))); sessionStorage.setItem('oidc_verifier',verifier); sessionStorage.setItem('oidc_state',state); const auth=new URL(config.authorizationEndpoint,location.origin); auth.search=new URLSearchParams({ response_type:'code', client_id:config.clientId, redirect_uri:config.redirectUri, scope:config.scope, state, code_challenge:challenge, code_challenge_method:'S256' }); location.href=auth; return; }
+      if (config.enabled && window.crypto && crypto.subtle) { const verifier=b64url(crypto.getRandomValues(new Uint8Array(32))); const challenge=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))); const state=b64url(crypto.getRandomValues(new Uint8Array(24))); sessionStorage.setItem('oidc_verifier',verifier); sessionStorage.setItem('oidc_state',state); const auth=new URL(config.authorizationEndpoint,location.origin); auth.search=new URLSearchParams({ response_type:'code', client_id:config.clientId, redirect_uri:config.redirectUri, scope:config.scope, state, code_challenge:challenge, code_challenge_method:'S256' }); location.href=auth; return; }
       const userId = document.getElementById('user').value.trim();
       const password = document.getElementById('pw').value;
       try {
@@ -85,6 +88,17 @@
         localStorage.setItem('grg_user', data.name || userId);
         location.href = '/app';
       } catch (ex) { err.textContent = 'Erro de conexão'; }
+    });
+
+    document.getElementById('togglePw').addEventListener('click', function() {
+      const pwInput = document.getElementById('pw');
+      if (pwInput.type === 'password') {
+        pwInput.type = 'text';
+        this.textContent = '🙈';
+      } else {
+        pwInput.type = 'password';
+        this.textContent = '👁️';
+      }
     });
   </script>
 </body>
