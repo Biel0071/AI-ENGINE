@@ -1,0 +1,5 @@
+{
+  "error": "OPENAI_API_KEY não encontrada no .env",
+  "patch": "",
+  "summary": "Error"
+}

@@ -1,0 +1,16 @@
+{
+  "mission": "0005",
+  "status": "DRY_RUN",
+  "failedStage": null,
+  "reason": "Simulated review and metrics",
+  "filesChanged": [
+    "grg/src/app.js",
+    "grg/src/kernel/store.js",
+    "platform/cli/commands/migrate.js"
+  ],
+  "tests": {
+    "passed": 0,
+    "failed": 0
+  },
+  "nextMission": null
+}

@@ -1,0 +1,18 @@
+﻿{
+  "id": "0008",
+  "title": "Provider LLM",
+  "kind": "FEATURE",
+  "state": "PLANNED",
+  "goal": "Executar Provider LLM",
+  "history": [],
+  "checks": {
+    "implementationCompleted": false,
+    "testsPassed": false,
+    "dryRunPassed": false,
+    "doctorPassed": false,
+    "hashValidated": false,
+    "rollbackPassed": false,
+    "deploymentApproved": false
+  },
+  "deployment": {}
+}

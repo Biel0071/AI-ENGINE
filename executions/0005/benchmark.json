@@ -1,0 +1,71 @@
+{
+  "mission": "0005",
+  "generatedAt": "2026-08-04T22:59:06.948Z",
+  "winner": null,
+  "ranking": [
+    {
+      "agent": "claude",
+      "score": 0,
+      "status": "DRY_RUN",
+      "executionTimeMs": 0,
+      "tokensInput": 0,
+      "tokensOutput": 0,
+      "warnings": 0,
+      "reviewIterations": 1,
+      "retryCount": 0,
+      "patchSize": 1,
+      "filesModified": 3,
+      "testsPassed": 0,
+      "testsFailed": 0,
+      "reviewApproved": false
+    },
+    {
+      "agent": "claude",
+      "score": 0,
+      "status": "DRY_RUN",
+      "executionTimeMs": 0,
+      "tokensInput": 0,
+      "tokensOutput": 0,
+      "warnings": 0,
+      "reviewIterations": 1,
+      "retryCount": 0,
+      "patchSize": 1,
+      "filesModified": 3,
+      "testsPassed": 0,
+      "testsFailed": 0,
+      "reviewApproved": false
+    },
+    {
+      "agent": "claude",
+      "score": 0,
+      "status": "DRY_RUN",
+      "executionTimeMs": 0,
+      "tokensInput": 0,
+      "tokensOutput": 0,
+      "warnings": 0,
+      "reviewIterations": 1,
+      "retryCount": 0,
+      "patchSize": 1,
+      "filesModified": 3,
+      "testsPassed": 0,
+      "testsFailed": 0,
+      "reviewApproved": false
+    },
+    {
+      "agent": "claude",
+      "score": 0,
+      "status": "DRY_RUN",
+      "executionTimeMs": 0,
+      "tokensInput": 0,
+      "tokensOutput": 0,
+      "warnings": 0,
+      "reviewIterations": 1,
+      "retryCount": 0,
+      "patchSize": 1,
+      "filesModified": 3,
+      "testsPassed": 0,
+      "testsFailed": 0,
+      "reviewApproved": false
+    }
+  ]
+}

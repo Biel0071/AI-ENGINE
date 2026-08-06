@@ -1,0 +1,18 @@
+﻿{
+  "id": "0009",
+  "title": "CI/CD",
+  "kind": "FEATURE",
+  "state": "PLANNED",
+  "goal": "Executar CI/CD",
+  "history": [],
+  "checks": {
+    "implementationCompleted": false,
+    "testsPassed": false,
+    "dryRunPassed": false,
+    "doctorPassed": false,
+    "hashValidated": false,
+    "rollbackPassed": false,
+    "deploymentApproved": false
+  },
+  "deployment": {}
+}

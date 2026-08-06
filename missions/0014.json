@@ -1,0 +1,18 @@
+﻿{
+  "id": "0014",
+  "title": "RC1",
+  "kind": "FEATURE",
+  "state": "PLANNED",
+  "goal": "Executar RC1",
+  "history": [],
+  "checks": {
+    "implementationCompleted": false,
+    "testsPassed": false,
+    "dryRunPassed": false,
+    "doctorPassed": false,
+    "hashValidated": false,
+    "rollbackPassed": false,
+    "deploymentApproved": false
+  },
+  "deployment": {}
+}

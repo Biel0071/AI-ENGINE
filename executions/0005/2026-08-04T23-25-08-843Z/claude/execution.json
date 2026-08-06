@@ -1,0 +1,27 @@
+{
+  "schema": "fenix.execution-package.v1",
+  "mission": {
+    "id": "0005",
+    "title": "Storage Migration",
+    "state": "PLANNED"
+  },
+  "goal": "Migrar a persistência principal do FÊNIX de FileStore para PostgreSQL. Provar que a migração funciona mantendo a integridade dos dados e que o rollback é possível.",
+  "allowedFiles": [
+    "grg/src/kernel/store.js"
+  ],
+  "checks": [
+    "DryRun",
+    "Hash",
+    "Rollback",
+    "Doctor"
+  ],
+  "constraints": {
+    "architectureFrozen": true,
+    "allowNewFiles": false,
+    "allowNewModules": false,
+    "allowDirectoryCreation": false
+  },
+  "expectedOutput": {
+    "type": "patch"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "project": "AI ENGINE CORE",
+  "version": "1.0.0",
+  "official": {
+    "entrypoint": "server.js",
+    "backend": "platform/http/server.js",
+    "frontend": "platform/public",
+    "dashboard": "platform/public/index.html",
+    "runtime": "platform/",
+    "domain": "grg/src/",
+    "knowledge": "memory/"
+  },
+  "protected": [
+    "server.js",
+    "package.json",
+    "platform/",
+    "grg/",
+    "memory/",
+    "system/"
+  ],
+  "taxonomy": {
+    "core": ["server.js", "platform/", "engine/", "grg/", "memory/", "system/"],
+    "configuration": ["package.json", "tsconfig.json", "tsconfig.engine.json", ".env.example", "docker-compose.yml", "README.md", "LICENSE"],
+    "modules": ["crm/", "clients/", "installer/", "ai-analysis/", "ai-os/"],
+    "artifacts": ["graphify-out/", "*.zip", "*.tar.gz", "deploy-*.ps1", "*.sh"],
+    "sandbox": ["future/", "generated/"],
+    "legacy": ["archive/", "drafts/"]
+  },
+  "hierarchy": {
+    "platform": "Orquestra o Agent OS e serve a API / HTTP Server único",
+    "engine": "Executa a Inteligência, Scanners e Análise de Código",
+    "grg": "Monólito de Domínio e Regras de Negócio",
+    "modules": "Produtos e Funcionalidades Verticais (CRM, Clients, Installer, AI-OS)",
+    "artifacts": "Saídas de Build, Pacotes de Deploy e Exportações",
+    "legacy": "Quarentena de Versões Antigas e Histórico"
+  }
+}

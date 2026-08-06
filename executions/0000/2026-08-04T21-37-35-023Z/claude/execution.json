@@ -1,0 +1,25 @@
+{
+  "schema": "fenix.execution-package.v1",
+  "mission": {
+    "id": "0000",
+    "title": "Agent OS Smoke Test",
+    "state": "PLANNED"
+  },
+  "goal": "Provar que a esteira funciona do início ao fim sem modificar código crítico. Alteração mínima requerida, por exemplo, adicionar um log ou comentário.",
+  "allowedFiles": [
+    "README.md",
+    "grg/src/app.js"
+  ],
+  "checks": [
+    "SmokeTest"
+  ],
+  "constraints": {
+    "architectureFrozen": true,
+    "allowNewFiles": false,
+    "allowNewModules": false,
+    "allowDirectoryCreation": false
+  },
+  "expectedOutput": {
+    "type": "patch"
+  }
+}

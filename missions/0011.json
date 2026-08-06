@@ -1,0 +1,18 @@
+﻿{
+  "id": "0011",
+  "title": "Sessões Persistentes",
+  "kind": "FEATURE",
+  "state": "PLANNED",
+  "goal": "Executar Sessões Persistentes",
+  "history": [],
+  "checks": {
+    "implementationCompleted": false,
+    "testsPassed": false,
+    "dryRunPassed": false,
+    "doctorPassed": false,
+    "hashValidated": false,
+    "rollbackPassed": false,
+    "deploymentApproved": false
+  },
+  "deployment": {}
+}

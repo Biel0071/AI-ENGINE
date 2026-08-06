@@ -1,0 +1,18 @@
+﻿{
+  "id": "0006",
+  "title": "PostgreSQL Produção",
+  "kind": "FEATURE",
+  "state": "PLANNED",
+  "goal": "Executar PostgreSQL Produção",
+  "history": [],
+  "checks": {
+    "implementationCompleted": false,
+    "testsPassed": false,
+    "dryRunPassed": false,
+    "doctorPassed": false,
+    "hashValidated": false,
+    "rollbackPassed": false,
+    "deploymentApproved": false
+  },
+  "deployment": {}
+}

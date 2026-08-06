@@ -1,0 +1,12 @@
+{
+  "mission": "0005",
+  "status": "FAILED",
+  "failedStage": "ScopeValidator",
+  "reason": "Nenhum patch gerado",
+  "filesChanged": [],
+  "tests": {
+    "passed": 0,
+    "failed": 0
+  },
+  "nextMission": null
+}

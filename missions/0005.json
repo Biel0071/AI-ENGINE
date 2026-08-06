@@ -1,0 +1,27 @@
+{
+  "id": "0005",
+  "title": "Storage Migration",
+  "kind": "INFRASTRUCTURE",
+  "state": "IMPLEMENTED",
+  "goal": "Homologar migração para PostgreSQL.",
+  "history": [
+    {
+      "state": "PLANNED",
+      "timestamp": "2026-08-04T18:00:00.000Z"
+    },
+    {
+      "state": "IMPLEMENTED",
+      "timestamp": "2026-08-04T18:05:00.000Z"
+    }
+  ],
+  "checks": {
+    "implementationCompleted": true,
+    "testsPassed": false,
+    "dryRunPassed": false,
+    "doctorPassed": false,
+    "hashValidated": false,
+    "rollbackPassed": false,
+    "deploymentApproved": false
+  },
+  "deployment": {}
+}

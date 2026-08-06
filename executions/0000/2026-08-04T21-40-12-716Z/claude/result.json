@@ -1,0 +1,15 @@
+{
+  "mission": "0000",
+  "status": "DRY_RUN",
+  "failedStage": null,
+  "reason": "Simulated review and metrics",
+  "filesChanged": [
+    "README.md",
+    "grg/src/app.js"
+  ],
+  "tests": {
+    "passed": 0,
+    "failed": 0
+  },
+  "nextMission": null
+}
