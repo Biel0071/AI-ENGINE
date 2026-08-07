@@ -129,29 +129,32 @@
                  <button class="icon-btn"><i class="icon-settings"></i></button>
                  <select class="view-select"><option>Visão: Geral</option></select>
                  <div class="zoom-controls">
-                   <button>-</button><span>100%</span><button>+</button>
+                   <button id="btnZoomOut">-</button><span id="zoomLevelText">100%</span><button id="btnZoomIn">+</button>
                  </div>
                  <button class="icon-btn"><i class="icon-maximize"></i></button>
                </div>
              </div>
              
-             <div class="city-map-container" style="background-image: url('/assets/ai-city-bg.png'); background-size: cover; background-position: center;">
-               
-               <!-- Greeting Overlay -->
-               <div class="greeting-overlay glass-panel">
-                 <h2 id="cityGreeting">FÊNIX OS</h2>
-                 <p>Estado do ecossistema em tempo real.</p>
-                 <ul id="cityHealthList" class="health-list-mini">
-                   <li><i class="dot warning"></i> carregando saude do runtime... <span>—</span></li>
-                 </ul>
-                 <div class="agent-count-mini">
-                   <span>Capabilities</span>
-                   <strong id="cityAgentCount" style="color:var(--orange);">—</strong>
-                 </div>
-               </div>
+             <div class="city-map-container" id="cityMapContainer" style="overflow: hidden; position: relative; background: #080c14;">
+                
+                <!-- Zoomable Map Layer -->
+                <div id="cityMapLayer" style="position: absolute; top:0; left:0; width:100%; height:100%; background-image: url('/assets/ai-city-bg.png'); background-size: cover; background-position: center; transform-origin: center center; transition: transform 0.1s ease-out;">
+                  <!-- Nós da cidade: preenchidos do backend (cityNodes). Vazio ate haver dado real. -->
+                  <div id="cityNodes"></div>
+                </div>
 
-               <!-- Nós da cidade: preenchidos do backend (cityNodes). Vazio ate haver dado real. -->
-               <div id="cityNodes"></div>
+                <!-- Greeting Overlay -->
+                <div class="greeting-overlay glass-panel">
+                  <h2 id="cityGreeting">FÊNIX OS</h2>
+                  <p>Estado do ecossistema em tempo real.</p>
+                  <ul id="cityHealthList" class="health-list-mini">
+                    <li><i class="dot warning"></i> carregando saude do runtime... <span>—</span></li>
+                  </ul>
+                  <div class="agent-count-mini">
+                    <span>Capabilities</span>
+                    <strong id="cityAgentCount" style="color:var(--orange);">—</strong>
+                  </div>
+                </div>
 
                <!-- Compass -->
                <div class="compass-widget">
@@ -342,6 +345,70 @@
       const ct = document.getElementById('clockTime'); if (ct) ct.textContent = now.toLocaleTimeString('pt-BR');
       const cd = document.getElementById('clockDate'); if (cd) cd.textContent = now.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
     }, 1000);
+
+    // --- INTERACTIVE MAP (ZOOM & PAN) ---
+    const mapContainer = document.getElementById('cityMapContainer');
+    const mapLayer = document.getElementById('cityMapLayer');
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    const zoomText = document.getElementById('zoomLevelText');
+
+    let mapScale = 1;
+    let mapPanX = 0;
+    let mapPanY = 0;
+    let isDragging = false;
+    let startX, startY;
+
+    function updateMapTransform() {
+      if(mapLayer) {
+        mapLayer.style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapScale})`;
+        if(zoomText) zoomText.textContent = Math.round(mapScale * 100) + '%';
+      }
+    }
+
+    if(btnZoomIn) {
+      btnZoomIn.addEventListener('click', () => {
+        mapScale = Math.min(mapScale + 0.25, 4);
+        updateMapTransform();
+      });
+    }
+    if(btnZoomOut) {
+      btnZoomOut.addEventListener('click', () => {
+        mapScale = Math.max(mapScale - 0.25, 0.5);
+        updateMapTransform();
+      });
+    }
+
+    if(mapContainer) {
+      mapContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        mapScale = Math.max(0.5, Math.min(mapScale + delta, 4));
+        updateMapTransform();
+      });
+
+      mapContainer.addEventListener('mousedown', (e) => {
+        // Ignora arrasto caso tenha clicado em painel, controles etc
+        if(e.target.closest('.glass-panel') || e.target.closest('.compass-widget')) return;
+        isDragging = true;
+        startX = e.clientX - mapPanX;
+        startY = e.clientY - mapPanY;
+        mapContainer.style.cursor = 'grabbing';
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+        if(mapContainer) mapContainer.style.cursor = 'default';
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        mapPanX = e.clientX - startX;
+        mapPanY = e.clientY - startY;
+        updateMapTransform();
+      });
+    }
   </script>
 </body>
 </html>
