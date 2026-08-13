@@ -123,6 +123,7 @@ async function refreshAll() {
     ['veracity', () => api('/governance/simulation-audit')],
     ['kos', () => api('/uios/kos/manifest')],
     ['skills', () => api('/skills')],
+    ['fullstackSlices', () => api('/scos/factory/slices')],
     ['twin', () => api('/digital-twin/operational')],
     ['agents', () => api('/agents/panel')],
     ['swarm', () => api('/agents/swarm')],
@@ -312,6 +313,43 @@ function renderSkills() {
   if (!$('skillContext').innerHTML) {
     $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
   }
+  renderFullstackSlices();
+}
+
+function renderFullstackSlices() {
+  const box = $('sliceList');
+  if (!box) return;
+  const slices = state.data.fullstackSlices?.slices || [];
+  box.innerHTML = slices.length
+    ? slices.map((slice) => row(slice.name, `${slice.backend?.routes?.length || 0} rotas API - ${slice.records?.length || 0} registros - ${slice.skillId}`, slice.status || 'READY')).join('')
+    : row('fullstack builder', state.data.fullstackSlices?.__error || 'nenhuma fatia criada ainda', 'READY');
+}
+
+async function createFullstackSlice(prompt) {
+  const value = String(prompt || '').trim();
+  if (!value) return;
+  $('sliceList').innerHTML = row('criando front + back', value, 'RUNNING') + $('sliceList').innerHTML;
+  try {
+    const slice = await api('/scos/factory/slices', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt: value,
+        fields: [
+          { name: 'title', type: 'string', required: true },
+          { name: 'status', type: 'enum:todo|doing|done', required: true },
+          { name: 'owner', type: 'string', required: false },
+        ],
+      }),
+    });
+    await api(`/scos/factory/slices/${encodeURIComponent(slice.id)}/data`, {
+      method: 'POST',
+      body: JSON.stringify({ title: value.slice(0, 80), status: 'doing', owner: localStorage.getItem('grg_user') || 'grg-admin' }),
+    });
+    $('slicePrompt').value = '';
+    await refreshAll();
+  } catch (error) {
+    $('sliceList').innerHTML = row('builder falhou', error.message, 'ERROR') + $('sliceList').innerHTML;
+  }
 }
 
 async function selectSkills(objective) {
@@ -479,6 +517,7 @@ function init() {
   $('programForm').addEventListener('submit', (event) => { event.preventDefault(); createProgram($('programObjective').value); });
   $('scanForm').addEventListener('submit', (event) => { event.preventDefault(); scanProject($('scanPath').value); });
   $('skillForm').addEventListener('submit', (event) => { event.preventDefault(); selectSkills($('skillObjective').value); });
+  $('sliceForm')?.addEventListener('submit', (event) => { event.preventDefault(); createFullstackSlice($('slicePrompt').value); });
   $('tickBtn').addEventListener('click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
   $('rebuildCityBtn').addEventListener('click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
   $('sampleBtn').addEventListener('click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });

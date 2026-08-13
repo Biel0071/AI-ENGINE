@@ -39,6 +39,27 @@ test('GRG FENIX SCOS Software Creation OS Test Suite', async () => {
   assert.equal(contractSync.syncStatus, 'SYNCHRONIZED_GREEN');
   assert.equal(contractSync.syncedComponents.length, 5);
 
+  const slice = await app.fullstackFactory.createFullStackSlice(tenantId, actorId, {
+    prompt: 'CRM de atendimento com lista e criacao',
+    fields: [
+      { name: 'title', type: 'string', required: true },
+      { name: 'status', type: 'enum:todo|doing|done', required: true },
+      { name: 'owner', type: 'string', required: false },
+    ],
+  });
+  assert.equal(slice.kind, 'fullstack-slice');
+  assert.equal(slice.skillId, 'fullstack-slice-builder');
+  assert.ok(slice.backend.routes.some((route) => route.path.endsWith('/data')));
+
+  const emptyData = await app.fullstackFactory.sliceData(tenantId, actorId, slice.id);
+  assert.equal(emptyData.records.length, 1);
+  const added = await app.fullstackFactory.appendSliceRecord(tenantId, actorId, slice.id, { title: 'Novo lead', status: 'doing', owner: 'ops' });
+  assert.equal(added.record.title, 'Novo lead');
+  const listed = await app.fullstackFactory.listFullStackSlices(tenantId, actorId);
+  assert.equal(listed.total, 1);
+  const capability = await app.capabilityRegistry.get(tenantId, actorId, 'fullstack-slice-builder');
+  assert.equal(capability.state, 'ACTIVE');
+
   // 4. Creation Evolution Engine
   const evoMetrics = await app.creationEvolution.evaluateDeliveryMetrics(tenantId, actorId, { name: 'CRM Pipeline UI' });
   assert.equal(evoMetrics.capabilityPromoted, true);

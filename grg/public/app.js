@@ -29,6 +29,7 @@ const api = async (p, opts = {}, retried = false) => {
 };
 
 const ui = Object.fromEntries(['fenix','avatarPhrase','avatarState','avatarLocation','avatarProgress','chatlog','msg','micBtn','ttsToggle','voiceSupport','missionStatus','missionTitle','missionMeta','missionPercent','missionBar','missionSteps','cityMap','citySummary','cityViewport','healthScore','healthList','timeline','jobCount','gatewayState','aiStats','systemMetrics','sidebarDot','sidebarStatus','sidebarDetail','actor','lastUpdate','nodeDialog','nodeTitle','nodeDetails','consoleMasterNode','consoleSpeedScore','consoleHotMemory','consoleMission','consoleJobs','connectorSummary','connectorList','multimodalBtn','multimodalDialog','closeMultimodal','multimodalForm','fileSelect','ingestResult', 'selfDeployBtn', 'inboxBtn', 'drawerToggleBtn', 'cmdKBtn', 'modeBtn'].map((id) => [id, document.getElementById(id)]));
+const state = { zoom: 1, refreshing: false, missions: [], activeMission: null, speaking: false };
 
 // MISSION-0004 — conectores previstos mas ainda não implementados. Aparecem como PLANNED
 // explícito no painel: o organismo diz "ainda não existe" em vez de simular CONNECTED. Só

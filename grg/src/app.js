@@ -594,7 +594,7 @@ async function createApp(options = {}) {
   // SCOS Attachments
   app.designIntel = new DesignIntelligenceOS({ store, bus, controlPlane });
   app.appGenome = new ApplicationGenomeService({ store, bus, controlPlane, designIntel: app.designIntel });
-  app.fullstackFactory = new FullStackFactoryService({ store, bus, controlPlane, designIntel: app.designIntel, appGenome: app.appGenome, projectFactory: app.projectFactory });
+  app.fullstackFactory = new FullStackFactoryService({ store, bus, controlPlane, designIntel: app.designIntel, appGenome: app.appGenome, projectFactory: app.projectFactory, capabilityRegistry });
   app.creationEvolution = new CreationEvolutionEngine({ store, bus, controlPlane, capOs: app.capOs });
 
   // OneDeploy Orchestrator Attachments

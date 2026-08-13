@@ -611,6 +611,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       if (req.method === 'POST' && url.pathname === '/api/scos/factory/generate-multi-design') { const b = await readJson(req); return sendJson(res, 200, await app.fullstackFactory.generateMultiDesignProposals(tenantId, actorId, b.spec), requestId); }
       if (req.method === 'POST' && url.pathname === '/api/scos/factory/sync-contract') { const b = await readJson(req); return sendJson(res, 200, await app.fullstackFactory.syncFrontendBackendContract(tenantId, actorId, b.update), requestId); }
+      if (req.method === 'GET' && url.pathname === '/api/scos/factory/slices') return sendJson(res, 200, await app.fullstackFactory.listFullStackSlices(tenantId, actorId), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/scos/factory/slices') return sendJson(res, 201, await app.fullstackFactory.createFullStackSlice(tenantId, actorId, await readJson(req)), requestId);
+      const sliceDataMatch = url.pathname.match(/^\/api\/scos\/factory\/slices\/([^/]+)\/data$/);
+      if (sliceDataMatch && req.method === 'GET') return sendJson(res, 200, await app.fullstackFactory.sliceData(tenantId, actorId, sliceDataMatch[1]), requestId);
+      if (sliceDataMatch && req.method === 'POST') return sendJson(res, 201, await app.fullstackFactory.appendSliceRecord(tenantId, actorId, sliceDataMatch[1], await readJson(req)), requestId);
+      const sliceMatch = url.pathname.match(/^\/api\/scos\/factory\/slices\/([^/]+)$/);
+      if (sliceMatch && req.method === 'GET') return sendJson(res, 200, await app.fullstackFactory.getFullStackSlice(tenantId, actorId, sliceMatch[1]), requestId);
 
       if (req.method === 'POST' && url.pathname === '/api/scos/evolution/metrics') { const b = await readJson(req); return sendJson(res, 200, await app.creationEvolution.evaluateDeliveryMetrics(tenantId, actorId, b.delivery), requestId); }
 
