@@ -3,424 +3,219 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#07090d">
-  <title>GRG Services OS | GRG FÊNIX — Centro Operacional Cognitivo</title>
+  <meta name="theme-color" content="#080b10">
+  <title>FENIX OS | Unified Workspace</title>
   <link rel="stylesheet" href="/design-system.css">
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="/living-panels.css">
+  <link rel="stylesheet" href="/unified.css">
 </head>
 <body>
-  <div class="os-shell">
-    
-    <!-- LEFT SIDEBAR -->
-    <aside class="sidebar" aria-label="Navegação principal">
-      <a class="brand" href="#command">
-        <img src="/assets/fenix-logo.svg" alt="FÊNIX" style="width:24px; filter: drop-shadow(0 0 5px var(--orange));" onerror="this.style.display='none'">
-        <span><b>FÊNIX OS</b><small>COGNITIVE OPERATING SYSTEM</small></span>
+  <div class="app-shell">
+    <aside class="rail" aria-label="Navegacao principal">
+      <a class="brand" href="#command" aria-label="FENIX OS">
+        <span class="brand-mark">F</span>
+        <span><b>FENIX OS</b><small>Unified Workspace</small></span>
       </a>
-      
-      <div class="clock-display" style="margin-top: 10px; margin-bottom: 20px; color: var(--muted); font-size: 10px; font-family: monospace;">
-        <span id="clockTime" style="font-size: 18px; color: var(--text);">09:42:17</span><br>
-        <span id="clockDate">Terça-feira, 29 de Julho</span>
+      <div class="rail-status">
+        <i id="statusDot"></i>
+        <span><b id="statusText">Conectando</b><small id="statusSub">runtime</small></span>
       </div>
-
-      <div class="system-status-indicator" style="display:flex; align-items:center; gap: 8px; margin-bottom: 20px; border: 1px solid var(--line); padding: 8px; border-radius: 8px;">
-        <i id="hdrStatusDot" style="width:8px; height:8px; background:var(--yellow); border-radius:50%; box-shadow:0 0 8px var(--yellow);"></i>
-        <div>
-          <strong id="hdrStatusText" style="color:var(--yellow); font-size: 10px; display:block;">AGUARDANDO...</strong>
-          <span id="hdrStatusSub" style="font-size: 9px; color: var(--muted);">— UPTIME</span>
-        </div>
-      </div>
-
-      <nav class="tree-nav">
-        <div class="nav-section">DASHBOARD</div>
-        <a class="nav-link active" href="#command"><i class="icon-home"></i> Home</a>
-        <a class="nav-link" href="#live-center"><i class="icon-activity"></i> LIVE CENTER <span class="badge warning">Tempo Real</span></a>
-        
-        <div class="nav-section">OPERATIONS</div>
-        <a class="nav-link" href="/app.html#missions"><i class="icon-target"></i> MISSION CONTROL</a>
-        <a class="nav-link" href="/app.html#command"><i class="icon-cpu"></i> AI ASSISTANT <span class="badge primary">AI</span></a>
-        <a class="nav-link" href="#city"><i class="icon-map"></i> AI CITY <span class="badge text">Digital Twin</span></a>
-
-        <div class="nav-section">ECOSYSTEM</div>
-        <a class="nav-link" href="#products"><i class="icon-box"></i> PRODUCTS</a>
-        <a class="nav-link" href="#swarm"><i class="icon-users"></i> AGENTS SWARM</a>
-        <a class="nav-link" href="#devices"><i class="icon-hard-drive"></i> DEVICES <span class="badge text">em dev</span></a>
-        
-        <div class="nav-section">SYSTEM</div>
-        <a class="nav-link" href="#runtime"><i class="icon-monitor"></i> RUNTIME MONITOR</a>
-        <a class="nav-link" href="#deploy"><i class="icon-upload"></i> DEPLOY CENTER</a>
-        <a class="nav-link" href="#infra"><i class="icon-server"></i> INFRASTRUCTURE</a>
-        <a class="nav-link" href="#knowledge"><i class="icon-database"></i> KNOWLEDGE BASE</a>
-        <a class="nav-link" href="#analytics"><i class="icon-bar-chart"></i> ANALYTICS</a>
-        <a class="nav-link" href="#observability"><i class="icon-eye"></i> OBSERVABILITY</a>
-        <a class="nav-link" href="#config"><i class="icon-settings"></i> CONFIGURAÇÕES</a>
+      <nav id="navList" class="nav-list">
+        <button class="active" data-nav="command" type="button"><span>CM</span> Comando</button>
+        <button data-nav="runtime" type="button"><span>RT</span> Runtime</button>
+        <button data-nav="missions" type="button"><span>MS</span> Missoes</button>
+        <button data-nav="city" type="button"><span>CT</span> AI City</button>
+        <button data-nav="office" type="button"><span>OF</span> Office</button>
+        <button data-nav="projects" type="button"><span>PR</span> Projetos</button>
+        <button data-nav="knowledge" type="button"><span>KG</span> Knowledge</button>
+        <button data-nav="skills" type="button"><span>SK</span> Skills</button>
+        <button data-nav="connectors" type="button"><span>CN</span> Conectores</button>
+        <button data-nav="deploy" type="button"><span>DP</span> Deploy</button>
+        <button data-nav="observability" type="button"><span>OB</span> Observabilidade</button>
+        <button data-nav="security" type="button"><span>SC</span> Seguranca</button>
+        <button data-nav="developer" type="button"><span>DV</span> Developer</button>
       </nav>
-      
-      <!-- FÊNIX AVATAR WIDGET -->
-      <div class="avatar-widget">
-        <span class="widget-title">FÊNIX AVATAR</span>
-        <div class="avatar-stage-mini">
-           <svg class="phoenix-mini" viewBox="0 0 220 220">
-             <!-- Simplified mini avatar for sidebar -->
-             <circle cx="110" cy="110" r="40" fill="#ff7b24" />
-             <path d="M70 110 Q110 50 150 110" stroke="#ffd45c" stroke-width="4" fill="none" />
-           </svg>
-           <div class="sound-wave">
-             <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-           </div>
-           <span class="status-text">Listening...</span>
-        </div>
-        <button class="voice-btn"><i class="icon-mic"></i> FALAR COM FÊNIX</button>
-      </div>
+      <button id="logoutBtn" class="ghost-btn" type="button">Sair</button>
     </aside>
 
-    <!-- CENTER & RIGHT MAIN AREA -->
-    <main class="main-content">
-      
-      <!-- TOP GLOBAL METRICS HEADER -->
-      <header class="global-metrics-header">
-        <div class="metric-card">
-          <span class="metric-label">MISSÕES ATIVAS</span>
-          <div id="hdrMissions" class="metric-value">— <span class="trend up"></span></div>
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">Single frontend oficial</span>
+          <h1 id="viewTitle">Comando</h1>
         </div>
-        <div class="metric-card">
-          <span class="metric-label">AGENTES ONLINE</span>
-          <div id="hdrAgents" class="metric-value">— <span class="trend up"></span></div>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">PROJETOS</span>
-          <div id="hdrProjects" class="metric-value">— <span class="trend up"></span></div>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">REQUISIÇÕES / MIN</span>
-          <div id="hdrRequests" class="metric-value">— <span class="trend up"></span></div>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">ERROS (24H)</span>
-          <div id="hdrErrors" class="metric-value">— <span class="trend down"></span></div>
-        </div>
-        
         <div class="top-actions">
-           <button class="icon-btn"><i class="icon-search"></i></button>
-           <button class="icon-btn"><i class="icon-bell"></i></button>
-           <button class="icon-btn"><i class="icon-shield"></i></button>
-           <div class="user-profile">
-             <div class="user-info">
-               <span class="name" id="hdrUserName">—</span>
-               <span class="role" id="hdrUserRole">—</span>
-             </div>
-             <div class="avatar-circle" id="hdrUserAvatar">·</div>
-           </div>
+          <button id="refreshBtn" class="icon-action" type="button" title="Atualizar dados">R</button>
+          <button id="cmdBtn" class="soft-btn" type="button">Command</button>
+          <div class="actor-pill"><span id="actorName">--</span><b id="actorRole">--</b></div>
         </div>
       </header>
 
-      <!-- 3-COLUMN CONTENT GRID -->
-      <div class="content-grid">
-        
-        <!-- CENTER COLUMN (AI CITY + BOTTOM PANELS) -->
-        <div class="center-column">
-           
-           <!-- AI CITY DIGITAL TWIN MAP -->
-           <section class="ai-city-viewport panel">
-             <div class="section-header">
-               <h2>AI CITY <span class="subtitle">DIGITAL TWIN</span> <span class="status-pill active">ATIVO</span></h2>
-               <div class="controls">
-                 <button class="icon-btn"><i class="icon-settings"></i></button>
-                 <select class="view-select"><option>Visão: Geral</option></select>
-                 <div class="zoom-controls">
-                   <button id="btnZoomOut">-</button><span id="zoomLevelText">100%</span><button id="btnZoomIn">+</button>
-                 </div>
-                 <button class="icon-btn"><i class="icon-maximize"></i></button>
-               </div>
-             </div>
-             
-             <div class="city-map-container" id="cityMapContainer" style="overflow: hidden; position: relative; background: #080c14;">
-                
-                <!-- Zoomable Map Layer -->
-                <div id="cityMapLayer" style="position: absolute; top:0; left:0; width:100%; height:100%; background-image: url('/assets/ai-city-bg.png'); background-size: cover; background-position: center; transform-origin: center center;">
-                  <!-- Nós da cidade: preenchidos do backend (cityNodes). Vazio ate haver dado real. -->
-                  <div id="cityNodes"></div>
-                </div>
+      <section class="kpi-strip" aria-label="Indicadores principais">
+        <article><span>Projetos</span><b id="kpiProjects">--</b></article>
+        <article><span>Repos</span><b id="kpiRepos">--</b></article>
+        <article><span>Capabilities</span><b id="kpiCaps">--</b></article>
+        <article><span>Jobs</span><b id="kpiJobs">--</b></article>
+        <article><span>AI calls</span><b id="kpiAi">--</b></article>
+      </section>
 
-                <!-- Greeting Overlay -->
-                <div class="greeting-overlay glass-panel">
-                  <h2 id="cityGreeting">FÊNIX OS</h2>
-                  <p>Estado do ecossistema em tempo real.</p>
-                  <ul id="cityHealthList" class="health-list-mini">
-                    <li><i class="dot warning"></i> carregando saude do runtime... <span>—</span></li>
-                  </ul>
-                  <div class="agent-count-mini">
-                    <span>Capabilities</span>
-                    <strong id="cityAgentCount" style="color:var(--orange);">—</strong>
-                  </div>
-                </div>
-
-               <!-- Compass -->
-               <div class="compass-widget">
-                 <img src="/assets/compass.svg" alt="N">
-               </div>
-               
-               <!-- Map Widget -->
-               <div class="map-widget glass-panel">
-                 <span>Mapa Global</span>
-                 <!-- world map placeholder -->
-                 <div style="height:80px; background:#111; border-radius:4px; margin-top:5px; opacity:0.5;"></div>
-               </div>
-             </div>
-           </section>
-
-           <!-- BOTTOM PANELS (CONSOLE, SUBAGENTS, PIPELINE) -->
-           <div class="bottom-panels-grid">
-             
-             <!-- Console Operacional -->
-             <section class="panel console-panel">
-               <div class="section-header">
-                 <h2>CONSOLE OPERACIONAL</h2>
-                 <div class="controls"><span class="status-pill active">LIVE</span> <button class="icon-btn">Filtros</button></div>
-               </div>
-               <div class="op-terminal" id="terminalOutput">
-                 <div class="ev-row"><span class="ev-kind">[SYSTEM]</span> Conectando ao runtime...</div>
-               </div>
-             </section>
-
-             <!-- Subagentes Ativos -->
-             <section class="panel subagents-panel">
-               <div class="section-header">
-                 <h2>SUBAGENTES ATIVOS</h2>
-                 <span class="badge text">EM DESENVOLVIMENTO</span>
-               </div>
-               <div class="subagents-grid" id="subagentsList">
-                 <div class="empty-state" style="padding:24px; text-align:center; color:var(--muted); font-size:11px;">Painel de subagentes em desenvolvimento — sem telemetria de agente publicada pelo runtime ainda.</div>
-               </div>
-             </section>
-
-             <!-- Fluxo e Missão -->
-             <div class="mission-flow-container">
-               <section class="panel flow-panel">
-                 <div class="section-header"><h2>FLUXO DE EXECUÇÃO</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
-                 <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Sem execução de missão ativa para exibir.</div>
-               </section>
-               <section class="panel dag-panel">
-                 <div class="section-header"><h2>MISSION MAP</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
-                 <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Sem grafo de missão ativo.</div>
-               </section>
-             </div>
-           </div>
-        </div>
-
-        <!-- RIGHT COLUMN (TELEMETRY & STATUS) -->
-        <div class="right-column">
-          
-          <!-- Telemetria -->
-          <section class="panel telemetry-panel">
-            <div class="section-header"><h2>TELEMETRIA</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
-            <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Métricas de CPU/memória/disco/rede em desenvolvimento — coletor de host ainda não publicado no runtime.</div>
-          </section>
-
-          <!-- Eventos do Sistema: alimentados dos deployments/memoria reais do overview -->
-          <section class="panel events-panel">
-            <div class="section-header"><h2>EVENTOS DO SISTEMA</h2></div>
-            <ul class="event-list" id="eventsList">
-              <li><span class="tag">[SYSTEM]</span> Carregando eventos do runtime...</li>
-            </ul>
-          </section>
-
-          <!-- Missões Ativas -->
-          <section class="panel active-missions-panel">
-            <div class="section-header"><h2>MISSÕES ATIVAS</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
-            <div class="mission-bars" id="missionBars">
-              <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Nenhuma missão ativa publicada pelo runtime.</div>
+      <section id="view-command" class="view active">
+        <div class="command-layout">
+          <section class="avatar-panel panel">
+            <div class="avatar-core">
+              <div class="orbital"></div>
+              <div class="phoenix-glyph">F</div>
+            </div>
+            <div>
+              <span class="eyebrow">Avatar Mestre</span>
+              <h2 id="avatarState">Aguardando</h2>
+              <p id="avatarPhrase">Descreva um objetivo, peca diagnostico ou acione uma missao governada.</p>
+            </div>
+            <div class="quick-grid">
+              <button data-prompt="resuma o estado atual do sistema" type="button">Status</button>
+              <button data-prompt="crie uma missao para validar producao" type="button">Missao</button>
+              <button data-prompt="verifique conexao com API Platform" type="button">API</button>
+              <button data-prompt="mostre riscos antes de deploy" type="button">Riscos</button>
             </div>
           </section>
-
-          <!-- Atividade Recente dos Agentes -->
-          <section class="panel agent-activity-panel">
-            <div class="section-header"><h2>ATIVIDADE DOS AGENTES</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
-            <div class="activity-list">
-              <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Sem atividade de agente registrada.</div>
+          <section class="chat-panel panel">
+            <div class="panel-head">
+              <div><span class="eyebrow">Chat operacional</span><h2>Fale com o FENIX</h2></div>
+              <span id="activeModel" class="status-pill">sem chamada</span>
             </div>
+            <div id="chatLog" class="chat-log" aria-live="polite"></div>
+            <form id="chatForm" class="composer">
+              <textarea id="chatInput" rows="1" placeholder="Digite um comando operacional..." required></textarea>
+              <button class="primary-btn" type="submit">Enviar</button>
+            </form>
           </section>
-
-          <!-- Recursos de IA & Economy -->
-          <section class="panel ai-resources-panel">
-            <div class="section-header"><h2>RECURSOS DE IA</h2><span class="badge text">EM DESENVOLVIMENTO</span></div>
-            <div class="empty-state" style="padding:20px; text-align:center; color:var(--muted); font-size:11px;">Consumo de tokens, custo e top-modelos serão exibidos quando a telemetria do AI Gateway estiver publicada.</div>
-          </section>
-
         </div>
-      </div>
+        <section class="panel">
+          <div class="panel-head"><div><span class="eyebrow">Eventos</span><h2>Console vivo</h2></div><span id="eventCount" class="count-pill">--</span></div>
+          <div id="eventStream" class="terminal"></div>
+        </section>
+      </section>
+
+      <section id="view-runtime" class="view">
+        <div class="two-col">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Saude</span><h2>Health checks</h2></div></div><div id="healthList" class="list"></div></section>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Servicos</span><h2>Runtime kernel</h2></div></div><div id="runtimeServices" class="list"></div></section>
+        </div>
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">Workers</span><h2>Fila e trabalhadores</h2></div><button id="tickBtn" class="soft-btn" type="button">Tick</button></div><div id="workerList" class="list"></div></section>
+      </section>
+
+      <section id="view-missions" class="view">
+        <div class="two-col">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Mission workspace</span><h2>Missoes</h2></div></div><div id="missionList" class="list"></div></section>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Task center</span><h2>Jobs</h2></div></div><div id="jobList" class="list"></div></section>
+        </div>
+        <section class="panel">
+          <div class="panel-head"><div><span class="eyebrow">Executive brain</span><h2>Programas</h2></div></div>
+          <form id="programForm" class="inline-form"><input id="programObjective" placeholder="Objetivo para decompor em programa"><button class="primary-btn" type="submit">Criar programa</button></form>
+          <div id="programList" class="list"></div>
+        </section>
+      </section>
+
+      <section id="view-city" class="view">
+        <section class="panel city-panel">
+          <div class="panel-head"><div><span class="eyebrow">AI City</span><h2>Digital twin visual</h2></div><button id="rebuildCityBtn" class="soft-btn" type="button">Rebuild</button></div>
+          <div id="cityCanvas" class="city-canvas"></div>
+        </section>
+        <div class="district-grid">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Knowledge District</span><h2>Memoria e grafo</h2></div></div><div id="knowledgeDistrict" class="mini-metrics"></div></section>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Workers District</span><h2>Workers</h2></div></div><div id="workersDistrict" class="list"></div></section>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Evolution District</span><h2>Evolucao</h2></div></div><div id="evolutionDistrict" class="list"></div></section>
+        </div>
+      </section>
+
+      <section id="view-office" class="view">
+        <section class="panel">
+          <div class="panel-head"><div><span class="eyebrow">Virtual Office</span><h2>Empresas, predios e equipes</h2></div></div>
+          <div id="officeList" class="office-grid"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><span class="eyebrow">Equipe selecionada</span><h2 id="officeTitle">Selecione uma empresa</h2></div></div>
+          <div id="officeDetail" class="list"></div>
+        </section>
+      </section>
+
+      <section id="view-projects" class="view">
+        <section class="panel">
+          <div class="panel-head"><div><span class="eyebrow">CRM + portfolio</span><h2>Projetos e repositorios</h2></div></div>
+          <div class="filters"><input id="projectSearch" placeholder="Filtrar projeto, repo ou tag"><select id="repoVisibility"><option value="all">Todos</option><option value="public">Publicos</option><option value="private">Privados</option></select></div>
+          <div id="projectList" class="project-grid"></div>
+        </section>
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">Grafo</span><h2>Resumo do portfolio</h2></div></div><div id="graphSummary" class="list"></div></section>
+      </section>
+
+      <section id="view-knowledge" class="view">
+        <div class="two-col">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">KOS</span><h2>Constituicao e contexto</h2></div></div><div id="kosManifest" class="list"></div></section>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Knowledge graph</span><h2>Anomalias e entidades</h2></div></div><div id="kgList" class="list"></div></section>
+        </div>
+      </section>
+
+      <section id="view-skills" class="view">
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Skill registry</span><h2>Skills carregaveis</h2></div><span id="skillCount" class="count-pill">--</span></div>
+            <div id="skillList" class="list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Context pack</span><h2>Selecao por objetivo</h2></div></div>
+            <form id="skillForm" class="inline-form"><input id="skillObjective" placeholder="Ex: validar front e deploy na VPS"><button class="primary-btn" type="submit">Selecionar</button></form>
+            <div id="skillContext" class="list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-connectors" class="view">
+        <div class="two-col">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Connector runtime</span><h2>Conectores reais</h2></div></div><div id="connectorList" class="list"></div></section>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">AI router</span><h2>Selecao por evidencia</h2></div><button id="checkApiBtn" class="soft-btn" type="button">Checar API</button></div><div id="routerState" class="list"></div></section>
+        </div>
+      </section>
+
+      <section id="view-deploy" class="view">
+        <section class="panel">
+          <div class="panel-head"><div><span class="eyebrow">OneDeploy</span><h2>Scan e readiness</h2></div></div>
+          <form id="scanForm" class="inline-form"><input id="scanPath" placeholder="Caminho do projeto (vazio = .)"><button class="primary-btn" type="submit">Escanear</button></form>
+          <div id="scanResult" class="list"></div>
+        </section>
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">Gatekeeper</span><h2>Bloqueios de producao</h2></div></div><div id="readinessList" class="list"></div></section>
+      </section>
+
+      <section id="view-observability" class="view">
+        <div class="two-col">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Metricas</span><h2>Observabilidade</h2></div></div><div id="observabilityMetrics" class="mini-metrics"></div></section>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Series</span><h2>Tendencias</h2></div><button id="sampleBtn" class="soft-btn" type="button">Amostrar agora</button></div><div id="seriesGrid" class="spark-grid"></div></section>
+        </div>
+      </section>
+
+      <section id="view-security" class="view">
+        <div class="two-col">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Security</span><h2>Criptografia</h2></div></div><div id="securityState" class="list"></div></section>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Simulation audit</span><h2>Veracidade</h2></div></div><div id="veracityState" class="list"></div></section>
+        </div>
+      </section>
+
+      <section id="view-developer" class="view">
+        <section class="panel">
+          <div class="panel-head"><div><span class="eyebrow">Developer District</span><h2>Arquivos e terminal governado</h2></div></div>
+          <div class="dev-layout">
+            <div><div class="filters"><input id="fsPath" placeholder="Pasta"><button id="fsLoadBtn" class="soft-btn" type="button">Listar</button></div><div id="fsList" class="list"></div></div>
+            <div><textarea id="fileViewer" class="file-viewer" spellcheck="false" placeholder="Selecione um arquivo para ler"></textarea><div class="filters"><input id="terminalCmd" placeholder="Comando permitido pelo runtime"><button id="terminalBtn" class="soft-btn" type="button">Executar</button></div><div id="terminalResult" class="terminal"></div></div>
+          </div>
+        </section>
+      </section>
     </main>
   </div>
-  
-  <script>
-    // REALITY FIRST: cada valor exibido vem de /api/overview ou /health medidos. Onde nao ha
-    // endpoint real, o painel mostra estado honesto ("sem dado" / "EM DESENVOLVIMENTO"), nunca
-    // numero fabricado. O binding usa os campos que overview() REALMENTE devolve
-    // (tenant, metrics{...}, recentMemory, recentDeployments) -- medido em app.js:650.
-    const AUTH = () => { const t = localStorage.getItem('grg_token'); return t ? { Authorization: `Bearer ${t}` } : {}; };
-    const setText = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = (val === 0 || val) ? val : '—'; };
 
-    async function fetchOverview() {
-      try {
-        const res = await fetch('/api/overview', { headers: AUTH() });
-        if (res.status === 401) { window.location.href = '/GRG-login'; return; }
-        if (!res.ok) throw new Error('overview ' + res.status);
-        const d = await res.json();
-        const m = d.metrics || {};
-        // KPIs do header ligados aos campos reais. missions/erros nao existem no overview:
-        // ficam '—' honesto ate haver endpoint, nunca um numero inventado.
-        setText('hdrMissions', '—');
-        setText('hdrAgents', m.capabilities);
-        setText('hdrProjects', m.projects);
-        setText('hdrRequests', m.aiCalls);
-        setText('hdrErrors', '—');
-        setText('cityAgentCount', (m.capabilities ?? 0) + ' CAPS');
+  <dialog id="cmdDialog" class="command-dialog">
+    <div class="panel-head"><div><span class="eyebrow">Command palette</span><h2>Navegar ou executar</h2></div><button id="closeCmdBtn" class="icon-action" type="button">X</button></div>
+    <input id="cmdInput" placeholder="Digite: deploy, city, api, missao...">
+    <div id="cmdResults" class="list"></div>
+  </dialog>
 
-        // Console operacional + Eventos do sistema: eventos REAIS de memoria/deploy. Sem eventos -> vazio honesto.
-        const evRows = [];
-        for (const ev of (d.recentDeployments || [])) evRows.push({ kind: 'DEPLOY', at: ev.at || ev.createdAt || '', text: ev.name || ev.id || 'deployment' });
-        for (const ev of (d.recentMemory || [])) evRows.push({ kind: 'MEMORY', at: ev.at || ev.createdAt || '', text: ev.type || ev.kind || 'event' });
-        const term = document.getElementById('terminalOutput');
-        if (term) term.innerHTML = evRows.length
-          ? evRows.map(e => `<div class="ev-row"><span class="ev-time">${e.at.toString().slice(11,19)}</span> <span class="ev-kind">[${e.kind}]</span> ${e.text}</div>`).join('')
-          : '<div class="ev-row"><span class="ev-kind">[SYSTEM]</span> Sem eventos registrados ainda.</div>';
-        const evList = document.getElementById('eventsList');
-        if (evList) evList.innerHTML = evRows.length
-          ? evRows.map(e => `<li><span class="time">${e.at.toString().slice(11,19)}</span><span class="tag">[${e.kind}]</span> ${e.text}</li>`).join('')
-          : '<li><span class="tag">[SYSTEM]</span> Sem eventos registrados ainda.</li>';
-        return true;
-      } catch (e) {
-        setText('hdrAgents','—'); setText('hdrProjects','—'); setText('hdrRequests','—');
-        const term = document.getElementById('terminalOutput');
-        if (term) term.innerHTML = '<div class="ev-row"><span class="ev-kind">[SYSTEM]</span> Sem dados de overview (verifique sessao/permissao).</div>';
-        const evList = document.getElementById('eventsList');
-        if (evList) evList.innerHTML = '<li><span class="tag">[SYSTEM]</span> Sem dados de overview.</li>';
-        return false;
-      }
-    }
-
-    async function fetchHealth() {
-      const st = document.getElementById('hdrStatusText');
-      const sdot = document.getElementById('hdrStatusDot');
-      const ssub = document.getElementById('hdrStatusSub');
-      const list = document.getElementById('cityHealthList');
-      try {
-        const res = await fetch('/health');
-        const h = await res.json();
-        const ok = h.status === 'ready' || h.ok === true;
-        if (st) { st.textContent = ok ? 'ONLINE' : 'DEGRADED'; st.style.color = ok ? 'var(--green)' : 'var(--red)'; }
-        if (sdot) { sdot.style.background = ok ? 'var(--green)' : 'var(--red)'; sdot.style.boxShadow = `0 0 8px ${ok ? 'var(--green)' : 'var(--red)'}`; }
-        if (ssub) ssub.textContent = ok ? 'MONITORED' : 'CHECK';
-        // Lista de saude REAL: as checks que o /health devolve (state-store, redis, ai-providers...).
-        const checks = h.checks && (Array.isArray(h.checks) ? h.checks : Object.entries(h.checks).map(([id,v]) => ({ id, ok: v && v.ok !== false })));
-        if (list && checks) {
-          list.innerHTML = checks.map(c => `<li><i class="dot ${c.ok ? 'active' : 'degraded'}"></i> ${c.id || c.name} <span>${c.ok ? 'OK' : 'ERR'}</span></li>`).join('');
-        }
-      } catch (e) {
-        if (st) { st.textContent = 'DISCONNECTED'; st.style.color = 'var(--red)'; }
-        if (sdot) sdot.style.background = 'var(--red)';
-      }
-    }
-
-    async function fetchMe() {
-      try {
-        const res = await fetch('/api/me', { headers: AUTH() });
-        if (!res.ok) return;
-        const me = await res.json();
-        const name = me.actorId || '—';
-        setText('hdrUserName', name);
-        setText('hdrUserRole', me.authed ? (me.tenantId || 'tenant') : 'nao autenticado');
-        const av = document.getElementById('hdrUserAvatar');
-        if (av) av.textContent = (name && name !== '—') ? name[0].toUpperCase() : '·';
-      } catch (e) { /* mantem '—' honesto */ }
-    }
-
-    function refresh() { fetchOverview(); fetchHealth(); fetchMe(); }
-    refresh();
-    setInterval(refresh, 15000);
-
-    setInterval(() => {
-      const now = new Date();
-      const ct = document.getElementById('clockTime'); if (ct) ct.textContent = now.toLocaleTimeString('pt-BR');
-      const cd = document.getElementById('clockDate'); if (cd) cd.textContent = now.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
-    }, 1000);
-
-    // --- INTERACTIVE MAP (ZOOM & PAN) ---
-    const mapContainer = document.getElementById('cityMapContainer');
-    const mapLayer = document.getElementById('cityMapLayer');
-    const btnZoomOut = document.getElementById('btnZoomOut');
-    const btnZoomIn = document.getElementById('btnZoomIn');
-    const zoomText = document.getElementById('zoomLevelText');
-
-    let mapScale = 1;
-    let mapPanX = 0;
-    let mapPanY = 0;
-    let isDragging = false;
-    let startX, startY;
-
-    function updateMapTransform() {
-      if(mapLayer) {
-        // Minimum zoom is 100% (1.0), so we never see background edges
-        if (mapScale < 1) mapScale = 1;
-        if (mapScale > 4) mapScale = 4;
-
-        // Clamp panning so we don't drag past the map edges
-        if(mapContainer) {
-          const maxPanX = (mapContainer.clientWidth * (mapScale - 1)) / 2;
-          const maxPanY = (mapContainer.clientHeight * (mapScale - 1)) / 2;
-          mapPanX = Math.max(-maxPanX, Math.min(maxPanX, mapPanX));
-          mapPanY = Math.max(-maxPanY, Math.min(maxPanY, mapPanY));
-        }
-
-        mapLayer.style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapScale})`;
-        if(zoomText) zoomText.textContent = Math.round(mapScale * 100) + '%';
-      }
-    }
-
-    if(btnZoomIn) {
-      btnZoomIn.addEventListener('click', () => {
-        mapScale = Math.min(mapScale + 0.25, 4);
-        updateMapTransform();
-      });
-    }
-    if(btnZoomOut) {
-      btnZoomOut.addEventListener('click', () => {
-        mapScale = Math.max(mapScale - 0.25, 1);
-        updateMapTransform();
-      });
-    }
-
-    if(mapContainer) {
-      mapContainer.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        mapScale = Math.max(1, Math.min(mapScale + delta, 4));
-        updateMapTransform();
-      });
-
-      mapContainer.addEventListener('mousedown', (e) => {
-        // Ignora arrasto caso tenha clicado em painel, controles etc
-        if(e.target.closest('.glass-panel') || e.target.closest('.compass-widget')) return;
-        isDragging = true;
-        startX = e.clientX - mapPanX;
-        startY = e.clientY - mapPanY;
-        mapContainer.style.cursor = 'grabbing';
-      });
-
-      window.addEventListener('mouseup', () => {
-        isDragging = false;
-        if(mapContainer) mapContainer.style.cursor = 'default';
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        e.preventDefault();
-        mapPanX = e.clientX - startX;
-        mapPanY = e.clientY - startY;
-        updateMapTransform();
-      });
-    }
-  </script>
+  <script src="/unified-app.js"></script>
 </body>
 </html>

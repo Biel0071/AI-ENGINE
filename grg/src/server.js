@@ -153,8 +153,18 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         return sendJson(res, bootHealth.ok ? 200 : 503, bootHealth, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/runtime') {
-        const telemetryMetrics = await telemetry.metrics();
-        return sendJson(res, 200, telemetryMetrics, requestId);
+        const health = await app.health.check();
+        return sendJson(res, 200, {
+          ok: health.ok,
+          status: global.FENIX_KERNEL ? 'KERNEL_ACTIVE' : health.status,
+          checkedAt: health.checkedAt,
+          services: Object.entries(health.checks || {}).map(([id, detail]) => ({
+            id,
+            status: detail.ok ? 'ready' : 'degraded',
+            critical: Boolean(detail.critical),
+            error: detail.error || null,
+          })),
+        }, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/runtime/services') {
         const services = global.FENIX_KERNEL ? global.FENIX_KERNEL.registries.ServiceRegistry.getAll() : [];
@@ -324,6 +334,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && capabilityHistory) return sendJson(res, 200, { versions: await app.capabilityRegistry.history(tenantId, actorId, capabilityHistory[1]) }, requestId);
       const capabilityGet = url.pathname.match(/^\/api\/capabilities\/([^/]+)$/);
       if (req.method === 'GET' && capabilityGet) return sendJson(res, 200, await app.capabilityRegistry.get(tenantId, actorId, capabilityGet[1]), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/skills') return sendJson(res, 200, await app.skillRegistry.listSkills(tenantId, actorId, { q: url.searchParams.get('q') || '' }), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/skills/select') return sendJson(res, 200, await app.skillRegistry.selectForTask(tenantId, actorId, await readJson(req)), requestId);
+      const agentSkills = url.pathname.match(/^\/api\/agents\/([^/]+)\/skills$/);
+      if (req.method === 'POST' && agentSkills) {
+        const body = await readJson(req);
+        const agent = app.agentSwarm.specialists.find((item) => item.id === agentSkills[1] || item.domain === agentSkills[1]);
+        return sendJson(res, 200, await app.skillRegistry.contextForAgent(tenantId, actorId, agent || { id: agentSkills[1], domain: body.domain || '' }, body), requestId);
+      }
       if (req.method === 'POST' && url.pathname === '/api/cognitive/goals') return sendJson(res, 201, await app.cognitiveCore.createGoal(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/cognitive/cycle') return sendJson(res, 202, await app.cognitiveCore.cycle(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/cognitive/context') return sendJson(res, 200, await app.cognitiveCore.context(tenantId, actorId), requestId);

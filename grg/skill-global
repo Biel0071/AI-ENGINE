@@ -1,0 +1,10 @@
+---
+name: fenix-runtime-skill-global
+description: Runtime-visible entrypoint for the FENIX SkillRegistry.
+---
+
+# FENIX Runtime Skill Global
+
+Select the smallest skill context for the requested objective. Use runtime skills under `grg/skills/` first, then project skills from `FENIX_SKILL_PATHS` when configured.
+
+For agent tasks, attach skill ids and compact context only. Never persist full skill bodies or any field containing `token`, `secret`, `password`, or API keys in event payloads.

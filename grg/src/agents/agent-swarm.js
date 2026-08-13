@@ -2,11 +2,12 @@ const { uuid } = require('../kernel/ids');
 const { ValidationError, NotFoundError } = require('../kernel/errors');
 
 class AgentSwarm {
-  constructor({ store, bus, controlPlane, fabricEvents }) {
+  constructor({ store, bus, controlPlane, fabricEvents, skillRegistry }) {
     this.store = store;
     this.bus = bus;
     this.cp = controlPlane;
     this.fabricEvents = fabricEvents;
+    this.skillRegistry = skillRegistry;
 
     this.specialists = [
       { id: 'agent-architect', name: 'Arquiteto', domain: 'architecture', role: 'System Architecture & Component Design' },
@@ -38,6 +39,27 @@ class AgentSwarm {
       throw new NotFoundError(`Specialized agent not found: ${swarmEvent.targetAgent}`);
     }
 
+    const skillContext = this.skillRegistry
+      ? await this.skillRegistry.contextForAgent(tenantId, actorId, agent, {
+        objective: swarmEvent.objective || swarmEvent.type,
+        prompt: swarmEvent.prompt || swarmEvent.data?.prompt,
+        maxTokens: swarmEvent.maxSkillTokens || 900,
+      })
+      : null;
+
+    const eventSkillContext = skillContext ? {
+      agentId: skillContext.agentId,
+      agentDomain: skillContext.agentDomain,
+      objective: skillContext.objective,
+      selectedSkills: skillContext.selectedSkills.map((skill) => ({
+        id: skill.id,
+        name: skill.name,
+        source: skill.source,
+        score: skill.score,
+      })),
+      selectedCount: skillContext.selectedSkills.length,
+    } : null;
+
     const payload = {
       id: uuid(),
       tenantId,
@@ -46,7 +68,7 @@ class AgentSwarm {
       agentName: agent.name,
       domain: agent.domain,
       type: String(swarmEvent.type),
-      data: swarmEvent.data || {},
+      data: { ...(swarmEvent.data || {}), ...(eventSkillContext ? { skillContext: eventSkillContext } : {}) },
       timestamp: new Date().toISOString(),
     };
 
@@ -68,7 +90,22 @@ class AgentSwarm {
 
   async listAgents(tenantId, actorId) {
     await this.cp.authorize(tenantId, actorId, 'governance:read');
-    return { agents: this.specialists, total: this.specialists.length };
+    const agents = [];
+    for (const agent of this.specialists) {
+      const skillContext = this.skillRegistry
+        ? await this.skillRegistry.contextForAgent(tenantId, actorId, agent, { objective: agent.role, maxTokens: 500, limit: 2 })
+        : null;
+      agents.push({
+        ...agent,
+        skills: skillContext ? skillContext.selectedSkills.map((skill) => ({
+          id: skill.id,
+          name: skill.name,
+          estimatedTokens: skill.contextTokens,
+        })) : [],
+        skillTokens: skillContext ? skillContext.estimatedTokens : 0,
+      });
+    }
+    return { agents, total: agents.length };
   }
 }
 

@@ -387,6 +387,7 @@ async function createApp(options = {}) {
   const { MultimodalPipeline } = require('./cognitive/multimodal-pipeline');
   const { ModelOrchestrator } = require('./ai-runtime/model-orchestrator');
   const { AgentSwarm } = require('./agents/agent-swarm');
+  const { SkillRegistry } = require('./skills/skill-registry');
   const { VpsOperationsService } = require('./ops/vps-operations');
   const { GitHubOperationsService } = require('./repo-intel/github-operations');
   const { ProjectFactoryService } = require('./software-factory/project-factory');
@@ -470,7 +471,13 @@ async function createApp(options = {}) {
   app.crossProjectLearning = new CrossProjectLearning({ store, bus, controlPlane, digitalTwin });
   app.multimodalPipeline = new MultimodalPipeline({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
   app.modelOrchestrator = new ModelOrchestrator({ aiGateway });
-  app.agentSwarm = new AgentSwarm({ store, bus, controlPlane, fabricEvents });
+  app.skillRegistry = new SkillRegistry({
+    rootDir: path.join(__dirname, '..'),
+    store, bus, controlPlane,
+    env: runtimeEnv,
+    extraPaths: options.skillPaths || [],
+  });
+  app.agentSwarm = new AgentSwarm({ store, bus, controlPlane, fabricEvents, skillRegistry: app.skillRegistry });
   app.vpsOps = new VpsOperationsService({ store, bus, controlPlane, approvals });
   app.githubOps = new GitHubOperationsService({ store, bus, controlPlane, repoIntel, digitalTwin, github });
   // MISSION-0004 — Connector Runtime. Registra o adapter do GitHub COMPONDO o mesmo

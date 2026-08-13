@@ -1,0 +1,16 @@
+---
+name: fenix-global-dev-activation
+description: Always-on entrypoint for dev agents working in AI-ENGINE/FENIX.
+---
+
+# FENIX Global Dev Activation
+
+Use the project skills before loading large docs. Start with:
+
+1. `fenix-system-understanding` for architecture, runtime boundaries, and current source of truth.
+2. `fenix-dev-workflow` for code changes, tests, and repository hygiene.
+3. `fenix-production-qa` for VPS, frontend click tests, deployment, and real system status.
+
+Token rule: load only the selected skill plus the exact files needed for the task. Prefer graph queries, focused `rg`, and endpoint checks over broad file dumps.
+
+Reality rule: do not claim deploy, health, login, API integration, workers, providers, or frontend clicks are working without measured evidence.
