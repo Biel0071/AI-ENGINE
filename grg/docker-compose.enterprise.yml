@@ -129,12 +129,15 @@ services:
     ports: ["${FENIX_BIND_ADDRESS:-127.0.0.1}:${FENIX_PORT:-4400}:4400"]
     networks: [fenix-backend, fenix-runtime]
     read_only: true
-    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m", "/app/runtime:rw,size=16m"]
+    tmpfs:
+      - "/tmp:rw,noexec,nosuid,size=64m"
+      - "/app/runtime:rw,uid=${FENIX_CONTAINER_UID:-0},gid=${FENIX_CONTAINER_GID:-0},mode=1777,size=16m"
+      - "/app/.data:rw,uid=${FENIX_CONTAINER_UID:-0},gid=${FENIX_CONTAINER_GID:-0},mode=1777,size=64m"
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     # Root inside a rootless daemon maps to the unprivileged host user. This is
     # required so bind-mounted 0600 secrets remain readable without weakening them.
-    user: "0:0"
+    user: "${FENIX_CONTAINER_USER:-0:0}"
     volumes:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
       - ./public/login.html:/app/public/login.html:ro
@@ -152,10 +155,13 @@ services:
       api: { condition: service_healthy }
     networks: [fenix-backend, fenix-runtime]
     read_only: true
-    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m", "/app/runtime:rw,size=16m"]
+    tmpfs:
+      - "/tmp:rw,noexec,nosuid,size=64m"
+      - "/app/runtime:rw,uid=${FENIX_CONTAINER_UID:-0},gid=${FENIX_CONTAINER_GID:-0},mode=1777,size=16m"
+      - "/app/.data:rw,uid=${FENIX_CONTAINER_UID:-0},gid=${FENIX_CONTAINER_GID:-0},mode=1777,size=64m"
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
-    user: "0:0"
+    user: "${FENIX_CONTAINER_USER:-0:0}"
     volumes:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
     extra_hosts: ["host.containers.internal:host-gateway"]
