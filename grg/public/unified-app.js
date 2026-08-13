@@ -84,6 +84,7 @@ function metric(label, value) {
 }
 
 function showView(name, push = true) {
+  name = String(name || 'command').split('?')[0] || 'command';
   document.querySelectorAll('.view').forEach((el) => el.classList.toggle('active', el.id === `view-${name}`));
   document.querySelectorAll('[data-nav]').forEach((el) => el.classList.toggle('active', el.dataset.nav === name));
   const label = document.querySelector(`[data-nav="${name}"]`)?.textContent?.replace(/^[A-Z]{2}/, '').trim() || name;
@@ -103,9 +104,38 @@ async function refreshAll() {
   if (state.refreshing) return;
   state.refreshing = true;
   try {
-    const data = await settle([
-    ['health', () => publicJson('/health')],
-    ['me', () => api('/me')],
+    const activeView = String(location.hash.slice(1) || 'command').split('?')[0] || 'command';
+    const essentialEntries = [
+      ['health', () => publicJson('/health')],
+      ['me', () => api('/me')],
+      ['overview', () => api('/overview')],
+    ];
+    const viewEntries = {
+      skills: [
+        ['skills', () => api('/skills')],
+        ['fullstackSlices', () => api('/scos/factory/slices')],
+      ],
+      connectors: [
+        ['connectors', () => api('/connectors')],
+        ['router', () => api('/ai/router/select')],
+        ['connection', () => api('/connection')],
+        ['providers', () => api('/providers')],
+      ],
+      deploy: [
+        ['readiness', () => api('/governance/readiness-matrix')],
+        ['gatekeeper', () => api('/governance/gatekeeper?action=deploy')],
+      ],
+      observability: [
+        ['observability', () => api('/observability/metrics')],
+        ['series', () => api('/observability/series?windowMinutes=120')],
+        ['workers', () => api('/workers')],
+        ['speed', () => api('/performance/speed-score')],
+        ['hotMemory', () => api('/performance/hot-memory')],
+      ],
+    };
+    const entries = viewEntries[activeView] ? [...essentialEntries, ...viewEntries[activeView]] : [
+      ['health', () => publicJson('/health')],
+      ['me', () => api('/me')],
     ['overview', () => api('/overview')],
     ['operations', () => api('/operations/state')],
     ['runtime', () => api('/runtime')],
@@ -138,10 +168,11 @@ async function refreshAll() {
     ['twin', () => api('/digital-twin/operational')],
     ['agents', () => api('/agents/panel')],
     ['swarm', () => api('/agents/swarm')],
-    ['speed', () => api('/performance/speed-score')],
-    ['hotMemory', () => api('/performance/hot-memory')],
-    ['dailyBrief', () => api('/workspace/eca/daily-brief')],
-    ]);
+      ['speed', () => api('/performance/speed-score')],
+      ['hotMemory', () => api('/performance/hot-memory')],
+      ['dailyBrief', () => api('/workspace/eca/daily-brief')],
+    ];
+    const data = await settle(entries, viewEntries[activeView] ? 2 : 4);
     state.data = data;
     state.projects = data.projects?.projects || [];
     state.repos = data.repositories?.repositories || [];
@@ -549,6 +580,7 @@ function init() {
   $('closeCmdBtn').addEventListener('click', () => $('cmdDialog').close());
   $('cmdInput').addEventListener('input', renderCommandPalette);
   window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'command', false));
+  window.addEventListener('hashchange', () => refreshAll());
   showView(location.hash.slice(1) || 'command', false);
   bubble('Workspace unico carregado. Eu consolidei comando, runtime, missoes, AI City, office, CRM, deploy, observabilidade e developer em uma tela.');
   refreshAll();
