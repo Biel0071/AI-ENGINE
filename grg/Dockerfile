@@ -11,6 +11,7 @@ WORKDIR /app
 RUN apk add --no-cache docker-cli git && addgroup -S fenix && adduser -S -G fenix -u 10001 fenix
 COPY --from=dependencies --chown=fenix:fenix /app/node_modules ./node_modules
 COPY --chown=fenix:fenix src ./src
+COPY --chown=fenix:fenix skills ./skills
 COPY --chown=fenix:fenix public ./public
 COPY --chown=fenix:fenix runtime ./runtime
 COPY --chown=fenix:fenix ops/container-entrypoint.sh ./ops/container-entrypoint.sh
