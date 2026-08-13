@@ -282,11 +282,13 @@ services:
       JAVA_OPTS_KC_HEAP: -Xms128m -Xmx512m
     volumes:
       - ./ops/keycloak/grg-realm.json:/opt/keycloak/data/import/grg-realm.json:ro
+    ports:
+      - "172.17.0.1:${FENIX_KEYCLOAK_HOST_PORT:-4402}:8080"
     secrets: [postgres_password, keycloak_admin_password]
     user: "0:0"
     depends_on:
       postgres: { condition: service_healthy }
-    networks: [fenix-backend]
+    networks: [fenix-backend, fenix-runtime]
     mem_limit: 768m
     security_opt: ["no-new-privileges:true"]
 
