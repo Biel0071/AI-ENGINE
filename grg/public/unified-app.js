@@ -14,6 +14,7 @@ const state = {
   events: [],
   jobs: [],
   missions: [],
+  refreshing: false,
 };
 
 function esc(value) {
@@ -55,12 +56,19 @@ async function publicJson(path) {
   return body;
 }
 
-async function settle(entries) {
+async function settle(entries, concurrency = 5) {
   const out = {};
-  await Promise.all(entries.map(async ([key, loader]) => {
-    try { out[key] = await loader(); }
-    catch (error) { out[key] = { __error: error.message }; }
-  }));
+  let index = 0;
+  const workers = Array.from({ length: Math.min(concurrency, entries.length) }, async () => {
+    while (index < entries.length) {
+      const current = index;
+      index += 1;
+      const [key, loader] = entries[current];
+      try { out[key] = await loader(); }
+      catch (error) { out[key] = { __error: error.message }; }
+    }
+  });
+  await Promise.all(workers);
   return out;
 }
 
@@ -92,7 +100,10 @@ function bubble(message, who = 'bot') {
 }
 
 async function refreshAll() {
-  const data = await settle([
+  if (state.refreshing) return;
+  state.refreshing = true;
+  try {
+    const data = await settle([
     ['health', () => publicJson('/health')],
     ['me', () => api('/me')],
     ['overview', () => api('/overview')],
@@ -130,15 +141,18 @@ async function refreshAll() {
     ['speed', () => api('/performance/speed-score')],
     ['hotMemory', () => api('/performance/hot-memory')],
     ['dailyBrief', () => api('/workspace/eca/daily-brief')],
-  ]);
-  state.data = data;
-  state.projects = data.projects?.projects || [];
-  state.repos = data.repositories?.repositories || [];
-  state.office = data.office?.office || [];
-  state.events = data.events?.events || [];
-  state.jobs = data.jobs?.jobs || [];
-  state.missions = data.missions?.missions || [];
-  renderAll();
+    ]);
+    state.data = data;
+    state.projects = data.projects?.projects || [];
+    state.repos = data.repositories?.repositories || [];
+    state.office = data.office?.office || [];
+    state.events = data.events?.events || [];
+    state.jobs = data.jobs?.jobs || [];
+    state.missions = data.missions?.missions || [];
+    renderAll();
+  } finally {
+    state.refreshing = false;
+  }
 }
 
 function renderAll() {
