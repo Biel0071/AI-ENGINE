@@ -16,13 +16,19 @@ class AuditTrail {
 
   attach(bus) {
     if (this.detach) return this;
-    this.detach = bus.on('*', (event) => this.record({
-      tenantId: event.payload && event.payload.tenantId || 'system',
-      actorId: event.payload && event.payload.actorId || 'system',
-      action: `event.${event.type}`,
-      resource: event.payload || null,
-      outcome: 'emitted',
-    }));
+    this.detach = bus.on('*', async (event) => {
+      try {
+        await this.record({
+          tenantId: event.payload && event.payload.tenantId || 'system',
+          actorId: event.payload && event.payload.actorId || 'system',
+          action: `event.${event.type}`,
+          resource: event.payload || null,
+          outcome: 'emitted',
+        });
+      } catch (error) {
+        console.warn('[AuditTrail] failed to record bus event:', error.message);
+      }
+    });
     return this;
   }
 
