@@ -30,7 +30,24 @@ function getMeasured(value) {
   return value && value.state === 'measured' ? value.value : value;
 }
 
-async function api(path, options = {}) {
+async function refreshAccessToken() {
+  const refreshToken = sessionStorage.getItem('grg_refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const configResponse = await fetch('/api/oidc/config');
+    const config = await configResponse.json();
+    const body = new URLSearchParams({ grant_type:'refresh_token', client_id:config.clientId, refresh_token:refreshToken });
+    const response = await fetch(config.tokenEndpoint, { method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body });
+    const tokens = await response.json();
+    if (!response.ok || !tokens.access_token) return false;
+    accessToken = tokens.access_token;
+    localStorage.setItem('grg_token', accessToken);
+    if (tokens.refresh_token) sessionStorage.setItem('grg_refresh_token', tokens.refresh_token);
+    return true;
+  } catch { return false; }
+}
+
+async function api(path, options = {}, retried = false) {
   const res = await fetch(`/api${path}`, {
     ...options,
     headers: {
@@ -39,6 +56,7 @@ async function api(path, options = {}) {
       ...(options.headers || {}),
     },
   });
+  if (res.status === 401 && !retried && await refreshAccessToken()) return api(path, options, true);
   if (res.status === 401) {
     localStorage.removeItem('grg_token');
     location.replace('/GRG-login');
