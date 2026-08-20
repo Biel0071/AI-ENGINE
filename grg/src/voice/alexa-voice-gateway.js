@@ -164,12 +164,8 @@ class AlexaVoiceGateway extends SystemModule {
 
       // 1. LaunchRequest: Dynamic greeting based on live runtime
       if (reqType === 'LaunchRequest') {
-        const prjCount = this.workspaceManager ? this.workspaceManager.listProjects().length : 1;
-        const agentStates = this.jobOrchestrator ? this.jobOrchestrator.getAgentStates() : { workingCount: 0, total: 19 };
-        const activeJobs = this.jobOrchestrator ? this.jobOrchestrator.getActiveJobs().length : 0;
-
-        speechText = `Fênix conectado. Tenho ${prjCount} projeto monitorado, ${agentStates.workingCount} de ${agentStates.total} agentes ativos e ${activeJobs} tarefas em execução. Estou pronto.`;
-        cardContent = `Fênix OS online. ${prjCount} projetos, ${agentStates.workingCount}/${agentStates.total} agentes, ${activeJobs} jobs.`;
+        speechText = 'Fênix conectado. Estou pronto.';
+        cardContent = 'Fênix OS online na VPS. Sistema operacional autônomo conectado.';
       }
       // 2. IntentRequest: Route to intent dispatcher
       else if (reqType === 'IntentRequest') {
