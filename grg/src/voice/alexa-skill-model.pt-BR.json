@@ -1,0 +1,177 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "fenix",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": [
+            "cancelar",
+            "pare",
+            "cancelar operação"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": [
+            "ajuda",
+            "o que você pode fazer",
+            "como funciona o fênix",
+            "quais comandos existem"
+          ]
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": [
+            "parar",
+            "desconectar",
+            "sair",
+            "fechar"
+          ]
+        },
+        {
+          "name": "AMAZON.YesIntent",
+          "samples": [
+            "sim",
+            "pode executar",
+            "confirmar",
+            "prosseguir",
+            "aprovar",
+            "estou de acordo"
+          ]
+        },
+        {
+          "name": "AMAZON.NoIntent",
+          "samples": [
+            "não",
+            "não execute",
+            "rejeitar",
+            "agora não"
+          ]
+        },
+        {
+          "name": "FenixStatusIntent",
+          "samples": [
+            "qual o status",
+            "status do sistema",
+            "como está o fênix",
+            "como está a saúde do sistema",
+            "relatório de telemetria",
+            "como estão as operações"
+          ]
+        },
+        {
+          "name": "FenixJobsIntent",
+          "samples": [
+            "quais tarefas estão rodando",
+            "quais jobs estão ativos",
+            "como está o job",
+            "listar jobs",
+            "status dos jobs",
+            "progresso da missão"
+          ]
+        },
+        {
+          "name": "FenixAgentsIntent",
+          "samples": [
+            "quais agentes estão trabalhando",
+            "listar agentes",
+            "quantos agentes estão ativos",
+            "status do enxame de agentes"
+          ]
+        },
+        {
+          "name": "FenixProjectsIntent",
+          "samples": [
+            "qual o projeto ativo",
+            "abra o projeto {project}",
+            "trocar para o projeto {project}",
+            "status do projeto {project}"
+          ],
+          "slots": [
+            {
+              "name": "project",
+              "type": "AMAZON.SearchQuery"
+            }
+          ]
+        },
+        {
+          "name": "FenixDiagnoseIntent",
+          "samples": [
+            "diagnostique o projeto ativo",
+            "faça um diagnóstico do projeto",
+            "verifique os bugs do projeto ativo",
+            "analise a saúde do projeto {project}",
+            "escaneie o projeto {project}"
+          ],
+          "slots": [
+            {
+              "name": "project",
+              "type": "AMAZON.SearchQuery"
+            }
+          ]
+        },
+        {
+          "name": "FenixApproveIntent",
+          "samples": [
+            "aprovar o job",
+            "posso aprovar",
+            "autorizar execução",
+            "aprovar correção",
+            "execute a alteração"
+          ]
+        },
+        {
+          "name": "FenixCancelIntent",
+          "samples": [
+            "cancele o job",
+            "pare a missão",
+            "abortar execução",
+            "cancelar tarefa"
+          ]
+        },
+        {
+          "name": "FenixOpenIdeIntent",
+          "samples": [
+            "abra a ide",
+            "abrir a ide",
+            "ir para a ide",
+            "mostrar editor de código",
+            "abrir visual ide"
+          ]
+        },
+        {
+          "name": "FenixCommandIntent",
+          "samples": [
+            "peça ao fênix para {command}",
+            "diga ao fênix para {command}",
+            "execute {command}",
+            "crie {command}",
+            "adicione {command}",
+            "melhore {command}",
+            "corrija {command}",
+            "{command}"
+          ],
+          "slots": [
+            {
+              "name": "command",
+              "type": "AMAZON.SearchQuery"
+            },
+            {
+              "name": "project",
+              "type": "AMAZON.SearchQuery"
+            },
+            {
+              "name": "target",
+              "type": "AMAZON.SearchQuery"
+            },
+            {
+              "name": "action",
+              "type": "AMAZON.SearchQuery"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
