@@ -13,12 +13,53 @@ class ControlPlane {
   async initialize(master = { userId: 'grg-admin', name: 'GRG Admin' }) {
     await this.store.update((state) => {
       state.schemaVersion = Math.max(state.schemaVersion || 1, CURRENT_SCHEMA_VERSION);
-      if (!state.users.some((u) => u.id === master.userId)) {
-        state.users.push({ id: master.userId, name: master.name, status: 'active', createdAt: now() });
+      const masterUserId = (master && master.userId) || 'grg-admin';
+
+      if (!state.users.some((u) => u.id === masterUserId)) {
+        state.users.push({ id: masterUserId, name: (master && master.name) || 'GRG Admin', status: 'active', createdAt: now() });
       }
+
+      if (master && master.tenantId) {
+        const masterTenantId = master.tenantId;
+        if (!state.tenants.some((t) => t.id === masterTenantId)) {
+          state.tenants.push({
+            id: masterTenantId,
+            name: master.tenantName || 'GRG FÊNIX',
+            status: 'active',
+            createdAt: now()
+          });
+        }
+
+        if (!state.memberships.some((m) => m.tenantId === masterTenantId && m.userId === masterUserId)) {
+          state.memberships.push({
+            tenantId: masterTenantId,
+            userId: masterUserId,
+            role: 'master_admin',
+            status: 'active',
+            createdAt: now()
+          });
+        }
+      }
+
       return state;
     });
     return this;
+  }
+
+  async ensureDefaultTenant({ id = 'grg', name = 'GRG FÊNIX', actorId = 'grg-admin' } = {}) {
+    await this.store.update((state) => {
+      if (!state.users.some((u) => u.id === actorId)) {
+        state.users.push({ id: actorId, name: actorId, status: 'active', createdAt: now() });
+      }
+      if (!state.tenants.some((t) => t.id === id)) {
+        state.tenants.push({ id, name, status: 'active', createdAt: now() });
+      }
+      if (!state.memberships.some((m) => m.tenantId === id && m.userId === actorId)) {
+        state.memberships.push({ tenantId: id, userId: actorId, role: 'master_admin', status: 'active', createdAt: now() });
+      }
+      return state;
+    });
+    return this.getTenant(id);
   }
 
   async createTenant(input, actorId) {

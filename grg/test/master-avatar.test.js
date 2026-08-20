@@ -10,6 +10,15 @@ test('Master Avatar keeps casual conversation outside the execution plane', asyn
   assert.equal(output.interface, 'MASTER_AVATAR'); assert.equal(output.mission, null); assert.equal((await app.store.read()).missionPlans.length, 0); assert.equal(typeof output.reply, 'string');
 });
 
+test('Master Avatar answers unified health questions as chat, not mission planning', async () => {
+  const app = await bootstrap(); const output = await app.masterAvatar.handle('grg', 'alice', { message: 'oi, boa noite esta funcionando o sistema?', mode: 'unified' });
+  assert.equal(output.interface, 'MASTER_AVATAR');
+  assert.equal(output.mission, null);
+  assert.equal(output.plan, null);
+  assert.equal((await app.store.read()).missionPlans.length, 0);
+  assert.match(output.reply, /sistema .*funcionando|Visão geral/i);
+});
+
 test('Master Avatar converts operational conversation into a running governed mission', async () => {
   const app = await bootstrap(); const output = await app.masterAvatar.handle('grg', 'alice', { message: 'Verifique a saúde do sistema' });
   assert.equal(output.plan.mode, 'OPERATE'); assert.equal(output.mission.status, 'RUNNING'); assert.equal((await app.store.read()).runtimeJobs.length, 1); assert.match(output.reply, /Missão/);

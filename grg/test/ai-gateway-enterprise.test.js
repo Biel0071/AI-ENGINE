@@ -25,15 +25,17 @@ async function gateway(options = {}) {
   };
 }
 
-test('OpenAI Responses adapter uses store=false and maps usage', async () => {
+test('OpenAI Responses adapter uses store=false, project headers and maps usage', async () => {
   let request;
-  const provider = new OpenAIResponsesProvider({ apiKey: 'secret', fetchImpl: async (url, options) => {
+  const provider = new OpenAIResponsesProvider({ apiKey: 'secret', projectId: 'proj_fenix', organizationId: 'org_grg', fetchImpl: async (url, options) => {
     request = { url, options };
     return response({ model: 'gpt-test', output_text: 'hello', usage: { input_tokens: 3, output_tokens: 2 } });
   } });
   const result = await provider.complete({ model: 'gpt-test', prompt: 'hi', maxTokens: 20 });
   const body = JSON.parse(request.options.body);
   assert.equal(request.url, 'https://api.openai.com/v1/responses');
+  assert.equal(request.options.headers['OpenAI-Project'], 'proj_fenix');
+  assert.equal(request.options.headers['OpenAI-Organization'], 'org_grg');
   assert.equal(body.store, false);
   assert.equal(body.max_output_tokens, 20);
   assert.deepEqual(result, { text: 'hello', model: 'gpt-test', promptTokens: 3, completionTokens: 2 });
@@ -52,6 +54,15 @@ test('provider registry only activates providers with configured credentials', (
   const providers = buildProvidersFromEnv({ OPENAI_API_KEY: 'x', GROQ_API_KEY: 'y' }, { fetchImpl: async () => response({}) });
   assert.deepEqual(Object.keys(providers).sort(), ['echo', 'groq', 'openai']);
   assert.equal(JSON.stringify(providers).includes('x'), false);
+});
+
+test('provider registry exposes Codex as a coding provider through Responses API', () => {
+  const providers = buildProvidersFromEnv({ FENIX_ENABLE_CODEX: '1', FENIX_CODEX_API_KEY: 'secret', FENIX_CODEX_MODEL: 'gpt-5.1-codex-max', FENIX_CODEX_PROJECT_ID: 'proj_codex' }, { fetchImpl: async () => response({}) });
+  assert.ok(providers.codex);
+  assert.equal(providers.codex.name, 'codex');
+  assert.ok(providers.codex.models.includes('gpt-5.1-codex-max'));
+  assert.equal(providers.codex.projectId, 'proj_codex');
+  assert.equal(JSON.stringify(providers).includes('secret'), false);
 });
 
 test('gateway retries retryable errors then falls back and records provider telemetry', async () => {

@@ -39,6 +39,7 @@ require_key() {
 }
 case "${FENIX_AI_DEFAULT_PROVIDER:-}" in
   openai) require_key openai; avisar_divergencia OPENAI_API_KEY "${OPENAI_API_KEY:-}"; export OPENAI_API_KEY="$AI_PROVIDER_KEY" ;;
+  codex) require_key codex; avisar_divergencia FENIX_CODEX_API_KEY "${FENIX_CODEX_API_KEY:-}"; export FENIX_CODEX_API_KEY="$AI_PROVIDER_KEY"; export FENIX_ENABLE_CODEX=1 ;;
   groq) require_key groq; avisar_divergencia GROQ_API_KEY "${GROQ_API_KEY:-}"; export GROQ_API_KEY="$AI_PROVIDER_KEY" ;;
   anthropic) require_key anthropic; avisar_divergencia ANTHROPIC_API_KEY "${ANTHROPIC_API_KEY:-}"; export ANTHROPIC_API_KEY="$AI_PROVIDER_KEY" ;;
   gemini) require_key gemini; avisar_divergencia GEMINI_API_KEY "${GEMINI_API_KEY:-}"; export GEMINI_API_KEY="$AI_PROVIDER_KEY" ;;

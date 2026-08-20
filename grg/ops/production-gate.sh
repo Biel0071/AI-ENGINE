@@ -47,16 +47,16 @@ rm -f /tmp/gate-build.$$ 2>/dev/null
 
 # --- 2. Build Front: HTML oficial existe e referencia assets presentes ---
 FRONT_OK=1; FRONT_DET=""
-for f in public/login.html public/index.html public/app.html; do
+for f in public/login.html public/index.html; do
   [ -f "$f" ] || { FRONT_OK=0; FRONT_DET="$f ausente"; break; }
 done
 if [ "$FRONT_OK" = 1 ]; then
-  # cada src/href local referenciado pelo app.html deve existir em public/
+  # cada src/href local referenciado pelo index.html deve existir em public/
   MISSING=""
-  for asset in $(grep -oE '(src|href)="/[^"]+"' public/app.html 2>/dev/null | sed -E 's/.*"\/([^"]+)".*/\1/' | grep -vE '^https?:|^api/|^app$' | sort -u); do
+  for asset in $(grep -oE '(src|href)="/[^"]+"' public/index.html 2>/dev/null | sed -E 's/.*"\/([^"]+)".*/\1/' | grep -vE '^https?:|^api/|^app$' | sort -u); do
     [ -f "public/$asset" ] || MISSING="$MISSING $asset"
   done
-  if [ -z "$MISSING" ]; then ok "Build Front" "3 telas + assets do app.html presentes"
+  if [ -z "$MISSING" ]; then ok "Build Front" "telas + assets do index.html presentes"
   else bad "Build Front" "assets ausentes:$MISSING"; fi
 else
   bad "Build Front" "$FRONT_DET"

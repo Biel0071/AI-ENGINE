@@ -14,6 +14,8 @@ const state = {
   events: [],
   jobs: [],
   missions: [],
+  currentFilePath: '',
+  previewTimer: null,
   refreshing: false,
 };
 
@@ -27,7 +29,24 @@ function text(id, value) {
 }
 
 function getMeasured(value) {
-  return value && value.state === 'measured' ? value.value : value;
+  if (!value || typeof value !== 'object') return value;
+  if (value.state === 'measured') return value.value;
+  if (value.state === 'unknown') return value.reason || value.value || 'unknown';
+  if ('value' in value && value.value != null) return value.value;
+  if ('reason' in value && value.reason) return value.reason;
+  return JSON.stringify(value);
+}
+
+function getStatus(value) {
+  if (!value || typeof value !== 'object') return '';
+  return value.state || value.status || '';
+}
+
+function compactValue(value, fallback = '--') {
+  const measured = getMeasured(value);
+  if (measured == null || measured === '') return fallback;
+  if (typeof measured === 'object') return JSON.stringify(measured).slice(0, 120);
+  return measured;
 }
 
 async function refreshAccessToken() {
@@ -116,6 +135,15 @@ function bubble(message, who = 'bot') {
   div.innerHTML = esc(message).replace(/\n/g, '<br>');
   $('chatLog').appendChild(div);
   $('chatLog').scrollTop = $('chatLog').scrollHeight;
+}
+
+function focusAvatarChat(seed = 'FENIX, qual e o estado do sistema agora?') {
+  showView('command');
+  const input = $('chatInput');
+  if (!input) return;
+  if (!input.value.trim()) input.value = seed;
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
 }
 
 async function refreshAll() {
@@ -230,9 +258,9 @@ function renderHeader() {
   text('actorName', me?.actorId || localStorage.getItem('grg_user') || 'usuario');
   text('actorRole', me?.tenantId || 'tenant');
   const metrics = overview?.metrics || {};
-  text('kpiProjects', metrics.projects ?? state.projects.length);
-  text('kpiRepos', metrics.repositories ?? state.repos.length);
-  text('kpiCaps', metrics.capabilities ?? state.data.capabilities?.capabilities?.length);
+  text('kpiProjects', Math.max(Number(metrics.projects || 0), state.projects.length));
+  text('kpiRepos', Math.max(Number(metrics.repositories || 0), state.repos.length));
+  text('kpiCaps', Math.max(Number(metrics.capabilities || 0), state.data.capabilities?.capabilities?.length || 0));
   text('kpiJobs', state.jobs.length);
   text('kpiAi', telemetry?.calls ?? metrics.aiCalls);
 }
@@ -526,11 +554,14 @@ async function scanProject(path) {
     const d = scan.discovery || {};
     $('scanResult').innerHTML = [
       row('caminho', scan.projectPath || path || '.', scan.exists ? 'FOUND' : 'MISSING'),
-      row('frontend', getMeasured(d.frontendFramework) || d.frontendFramework?.reason || '--', d.frontendFramework?.state || ''),
-      row('backend', getMeasured(d.backendFramework) || d.backendFramework?.reason || '--', d.backendFramework?.state || ''),
-      row('dependencias', getMeasured(d.dependencyCount) ?? '--', d.dependencyCount?.state || ''),
-      row('ci/cd', getMeasured(d.ciCd) ?? d.ciCd?.reason ?? '--', d.ciCd?.state || ''),
+      row('acoplamento', scan.coupling?.projectId || 'sem acoplamento', scan.coupling?.status || (scan.exists ? 'PENDING' : 'SKIPPED')),
+      row('frontend', compactValue(d.frontendFramework), getStatus(d.frontendFramework)),
+      row('backend', compactValue(d.backendFramework), getStatus(d.backendFramework)),
+      row('dependencias', compactValue(d.dependencyCount), getStatus(d.dependencyCount)),
+      row('containers', compactValue(d.containers), getStatus(d.containers)),
+      row('ci/cd', compactValue(d.ciCd), getStatus(d.ciCd)),
     ].join('');
+    await refreshAll();
   } catch (error) {
     $('scanResult').innerHTML = row('scan falhou', error.message, 'ERROR');
   }
@@ -543,6 +574,7 @@ async function loadFs(path = '') {
     document.querySelectorAll('#fsList .row').forEach((el) => {
       el.addEventListener('click', () => {
         const filePath = el.querySelector('small')?.textContent || '';
+        if ($('moveFromPath')) $('moveFromPath').value = filePath;
         if (el.textContent.includes('FILE')) openFile(filePath);
         else { $('fsPath').value = filePath; loadFs(filePath); }
       });
@@ -552,13 +584,172 @@ async function loadFs(path = '') {
   }
 }
 
+async function cloneProject(url, directory) {
+  const repoUrl = String(url || '').trim();
+  if (!repoUrl) return;
+  $('gitCloneResult').innerHTML = row('acoplando git', repoUrl, 'RUNNING');
+  try {
+    const result = await api('/dev/projects/clone', {
+      method: 'POST',
+      body: JSON.stringify({ url: repoUrl, directory: String(directory || '').trim() || null, scan: true }),
+    });
+    const target = result.cloned?.relativePath || result.cloned?.path || '';
+    $('gitCloneResult').innerHTML = [
+      row('clone', target || repoUrl, result.cloned?.status || 'DONE'),
+      row('acoplamento', result.scan?.coupling?.projectId || 'sem scan', result.scan?.coupling?.status || 'SKIPPED'),
+    ].join('');
+    if (target) {
+      $('fsPath').value = target;
+      await loadFs(target);
+    }
+    await refreshAll();
+  } catch (error) {
+    $('gitCloneResult').innerHTML = row('clone/acoplamento falhou', error.message, 'ERROR');
+  }
+}
+
 async function openFile(path) {
   try {
     const data = await api(`/dev/fs/file?path=${encodeURIComponent(path)}`);
+    state.currentFilePath = data.path || path;
+    if ($('currentFilePath')) $('currentFilePath').value = state.currentFilePath;
+    if ($('moveFromPath')) $('moveFromPath').value = state.currentFilePath;
     $('fileViewer').value = data.content || '';
+    renderLivePreview();
   } catch (error) {
+    state.currentFilePath = path;
+    if ($('currentFilePath')) $('currentFilePath').value = path;
     $('fileViewer').value = `Falha: ${error.message}`;
+    renderLivePreview();
   }
+}
+
+async function saveFile() {
+  const filePath = state.currentFilePath || $('currentFilePath')?.value || '';
+  if (!filePath) {
+    $('terminalResult').textContent = 'Selecione um arquivo antes de salvar.';
+    return;
+  }
+  try {
+    const saved = await api(`/dev/fs/file?path=${encodeURIComponent(filePath)}`, {
+      method: 'POST',
+      body: JSON.stringify({ content: $('fileViewer').value }),
+    });
+    $('terminalResult').textContent = `Arquivo salvo: ${saved.path || filePath}`;
+    renderLivePreview();
+    await loadFs($('fsPath').value);
+  } catch (error) {
+    $('terminalResult').textContent = `Falha ao salvar: ${error.message}`;
+  }
+}
+
+function renderLivePreview() {
+  const path = state.currentFilePath || $('currentFilePath')?.value || '';
+  const content = $('fileViewer')?.value || '';
+  const frame = $('livePreviewFrame');
+  const textBox = $('livePreviewText');
+  if (!frame || !textBox) return;
+  text('previewTitle', path || 'Arquivo aberto');
+  const isHtml = /\.html?$/i.test(path);
+  frame.style.display = isHtml ? 'block' : 'none';
+  textBox.style.display = isHtml ? 'none' : 'block';
+  if (isHtml) {
+    frame.srcdoc = content || '<!doctype html><html><body></body></html>';
+  } else {
+    textBox.textContent = content
+      ? content.slice(0, 20_000)
+      : 'Abra um arquivo HTML para preview visual, ou edite qualquer arquivo aqui e salve.';
+  }
+}
+
+function scheduleLivePreview() {
+  clearTimeout(state.previewTimer);
+  state.previewTimer = setTimeout(renderLivePreview, 250);
+}
+
+async function transformOpenFile() {
+  const path = state.currentFilePath || $('currentFilePath')?.value || '';
+  const instruction = $('aiEditInstruction')?.value || '';
+  if (!path) {
+    $('aiEditResult').innerHTML = row('edicao por IA', 'abra um arquivo primeiro', 'WAITING');
+    return;
+  }
+  if (!instruction.trim()) return;
+  $('aiEditResult').innerHTML = row('IA editando arquivo', path, 'RUNNING');
+  try {
+    const result = await api('/dev/ai/transform-file', {
+      method: 'POST',
+      body: JSON.stringify({ path, instruction }),
+    });
+    $('fileViewer').value = result.content || '';
+    $('aiEditResult').innerHTML = [
+      row('alteracao proposta', result.summary || 'conteudo atualizado no editor', 'REVIEW'),
+      row('provider', `${result.provider || '--'} ${result.model || ''}`.trim(), 'MEASURED'),
+      row('proximo passo', 'revise e clique Salvar para gravar no workspace', 'READY'),
+    ].join('');
+    renderLivePreview();
+  } catch (error) {
+    $('aiEditResult').innerHTML = row('IA editor falhou', error.message, 'ERROR');
+  }
+}
+
+async function movePath() {
+  const from = $('moveFromPath')?.value || '';
+  const to = $('moveToPath')?.value || '';
+  if (!from.trim() || !to.trim()) return;
+  $('moveResult').innerHTML = row('movendo item', `${from} -> ${to}`, 'RUNNING');
+  try {
+    const result = await api('/dev/fs/move', {
+      method: 'POST',
+      body: JSON.stringify({ from, to }),
+    });
+    $('moveResult').innerHTML = row('item movido', `${result.from} -> ${result.to}`, 'DONE');
+    if (state.currentFilePath === result.from) {
+      state.currentFilePath = result.to;
+      $('currentFilePath').value = result.to;
+    }
+    $('moveFromPath').value = result.to;
+    await loadFs($('fsPath').value);
+  } catch (error) {
+    $('moveResult').innerHTML = row('mover falhou', error.message, 'ERROR');
+  }
+}
+
+async function delegateDevAgents() {
+  const objective = $('devAgentObjective')?.value || '';
+  if (!objective.trim()) return;
+  $('devAgentResult').innerHTML = row('dividindo tarefas', objective, 'RUNNING');
+  try {
+    const program = await api('/executive/programs', { method: 'POST', body: JSON.stringify({ objective }) });
+    $('devAgentResult').innerHTML = [
+      row('programa criado', program.objective || objective, program.status || 'PROGRAM'),
+      row('missoes', `${program.missions?.length || 0} missao(oes)`, 'DELEGATED'),
+    ].join('');
+    $('devAgentObjective').value = '';
+    await refreshAll();
+  } catch (error) {
+    $('devAgentResult').innerHTML = row('agentes falharam', error.message, 'ERROR');
+  }
+}
+
+function renderTerminalSession(session) {
+  const lines = [
+    `$ ${session.command || ''}`,
+    `status=${session.status}${session.exitCode == null ? '' : ` exit=${session.exitCode}`} duration=${session.durationMs || 0}ms`,
+    ...((session.output || []).map((item) => `${item.type}> ${String(item.data || '').trimEnd()}`)),
+  ];
+  $('terminalResult').textContent = lines.join('\n');
+}
+
+async function pollTerminal(sessionId) {
+  for (let i = 0; i < 30; i += 1) {
+    const session = await api(`/dev/terminal/${encodeURIComponent(sessionId)}`);
+    renderTerminalSession(session);
+    if (session.status !== 'RUNNING') return session;
+    await new Promise((resolve) => setTimeout(resolve, 700));
+  }
+  $('terminalResult').textContent += '\nSessao ainda em execucao; consulte novamente em instantes.';
+  return null;
 }
 
 function init() {
@@ -574,11 +765,13 @@ function init() {
     $('chatInput').value = '';
     runChat(value);
   });
+  $('avatarOrb')?.addEventListener('click', () => focusAvatarChat());
   document.querySelectorAll('[data-prompt]').forEach((button) => button.addEventListener('click', () => runChat(button.dataset.prompt)));
   $('projectSearch').addEventListener('input', renderProjects);
   $('repoVisibility').addEventListener('change', renderProjects);
   $('programForm').addEventListener('submit', (event) => { event.preventDefault(); createProgram($('programObjective').value); });
   $('scanForm').addEventListener('submit', (event) => { event.preventDefault(); scanProject($('scanPath').value); });
+  $('gitCloneForm')?.addEventListener('submit', (event) => { event.preventDefault(); cloneProject($('gitRepoUrl').value, $('gitRepoDir').value); });
   $('skillForm').addEventListener('submit', (event) => { event.preventDefault(); selectSkills($('skillObjective').value); });
   $('sliceForm')?.addEventListener('submit', (event) => { event.preventDefault(); createFullstackSlice($('slicePrompt').value); });
   $('tickBtn').addEventListener('click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
@@ -586,10 +779,18 @@ function init() {
   $('sampleBtn').addEventListener('click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
   $('checkApiBtn').addEventListener('click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
   $('fsLoadBtn').addEventListener('click', () => loadFs($('fsPath').value));
+  $('fileSaveBtn')?.addEventListener('click', saveFile);
+  $('fileViewer')?.addEventListener('input', scheduleLivePreview);
+  $('previewRefreshBtn')?.addEventListener('click', renderLivePreview);
+  $('aiEditBtn')?.addEventListener('click', transformOpenFile);
+  $('movePathBtn')?.addEventListener('click', movePath);
+  $('devAgentBtn')?.addEventListener('click', delegateDevAgents);
   $('terminalBtn').addEventListener('click', async () => {
     try {
-      const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
-      $('terminalResult').textContent = JSON.stringify(out, null, 2);
+      const sessionId = `ui-${Date.now()}`;
+      const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId }) });
+      $('terminalResult').textContent = `Sessao aceita: ${out.sessionId || sessionId}`;
+      await pollTerminal(out.sessionId || sessionId);
     } catch (error) {
       $('terminalResult').textContent = error.message;
     }

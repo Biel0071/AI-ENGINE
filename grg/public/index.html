@@ -67,12 +67,12 @@
           <section class="avatar-panel panel">
             <div class="avatar-core">
               <div class="orbital"></div>
-              <div class="phoenix-glyph">F</div>
+              <button id="avatarOrb" class="phoenix-glyph" type="button" title="Conversar com o FENIX" aria-label="Conversar com o FENIX">F</button>
             </div>
             <div>
               <span class="eyebrow">Avatar Mestre</span>
               <h2 id="avatarState">Aguardando</h2>
-              <p id="avatarPhrase">Descreva um objetivo, peca diagnostico ou acione uma missao governada.</p>
+              <p id="avatarPhrase">Clique no F para conversar, pedir status ou abrir uma missao governada.</p>
             </div>
             <div class="quick-grid">
               <button data-prompt="resuma o estado atual do sistema" type="button">Status</button>
@@ -209,10 +209,47 @@
 
       <section id="view-developer" class="view">
         <section class="panel">
-          <div class="panel-head"><div><span class="eyebrow">Developer District</span><h2>Arquivos e terminal governado</h2></div></div>
+          <div class="panel-head"><div><span class="eyebrow">Developer District</span><h2>IDE Studio: arquivos, preview, agentes e terminal</h2></div></div>
+          <form id="gitCloneForm" class="filters">
+            <input id="gitRepoUrl" placeholder="URL Git HTTPS para acoplar">
+            <input id="gitRepoDir" placeholder="Pasta no workspace">
+            <button class="soft-btn" type="submit">Acoplar Git</button>
+          </form>
+          <div id="gitCloneResult" class="list"></div>
           <div class="dev-layout">
-            <div><div class="filters"><input id="fsPath" placeholder="Pasta"><button id="fsLoadBtn" class="soft-btn" type="button">Listar</button></div><div id="fsList" class="list"></div></div>
-            <div><textarea id="fileViewer" class="file-viewer" spellcheck="false" placeholder="Selecione um arquivo para ler"></textarea><div class="filters"><input id="terminalCmd" placeholder="Comando permitido pelo runtime"><button id="terminalBtn" class="soft-btn" type="button">Executar</button></div><div id="terminalResult" class="terminal"></div></div>
+            <div>
+              <div class="filters"><input id="fsPath" placeholder="Pasta"><button id="fsLoadBtn" class="soft-btn" type="button">Listar</button></div>
+              <div id="fsList" class="list"></div>
+              <div class="ide-toolbox">
+                <span class="eyebrow">Mover item</span>
+                <input id="moveFromPath" placeholder="Origem no workspace">
+                <input id="moveToPath" placeholder="Destino no workspace">
+                <button id="movePathBtn" class="soft-btn" type="button">Mover</button>
+                <div id="moveResult" class="list"></div>
+              </div>
+              <div class="ide-toolbox">
+                <span class="eyebrow">Agentes</span>
+                <textarea id="devAgentObjective" rows="3" placeholder="Objetivo para dividir em tarefas de agentes"></textarea>
+                <button id="devAgentBtn" class="primary-btn" type="button">Dividir em agentes</button>
+                <div id="devAgentResult" class="list"></div>
+              </div>
+            </div>
+            <div class="ide-main">
+              <div class="filters"><input id="currentFilePath" placeholder="Arquivo aberto" readonly><button id="fileSaveBtn" class="soft-btn" type="button">Salvar</button></div>
+              <textarea id="fileViewer" class="file-viewer" spellcheck="false" placeholder="Selecione um arquivo para ler"></textarea>
+              <div class="ide-ai-row">
+                <textarea id="aiEditInstruction" rows="2" placeholder="Peça alteração no arquivo aberto por texto"></textarea>
+                <button id="aiEditBtn" class="primary-btn" type="button">Alterar com IA</button>
+              </div>
+              <div id="aiEditResult" class="list"></div>
+              <div class="preview-pane">
+                <div class="panel-head"><div><span class="eyebrow">Preview vivo</span><h2 id="previewTitle">Arquivo aberto</h2></div><button id="previewRefreshBtn" class="soft-btn" type="button">Renderizar</button></div>
+                <iframe id="livePreviewFrame" title="Preview do front criado no FENIX"></iframe>
+                <pre id="livePreviewText"></pre>
+              </div>
+              <div class="filters"><input id="terminalCmd" placeholder="Comando permitido pelo runtime"><button id="terminalBtn" class="soft-btn" type="button">Executar</button></div>
+              <div id="terminalResult" class="terminal"></div>
+            </div>
           </div>
         </section>
       </section>

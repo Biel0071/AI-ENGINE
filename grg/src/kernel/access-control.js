@@ -4,7 +4,7 @@ const { ForbiddenError } = require('./errors');
 const ROLE_PERMISSIONS = Object.freeze({
   master_admin: ['*'],
   admin: [
-    'project:read', 'project:create', 'project:analyze', 'project:deploy',
+    'project:read', 'project:create', 'project:write', 'project:analyze', 'project:deploy',
     'repo:connect', 'repo:read',
     'capability:read', 'capability:write',
     'memory:read', 'memory:write',

@@ -22,6 +22,13 @@ test('OneDeploy honesto: scanProject LE o filesystem real (nao inventa framework
   assert.ok(scan.discovery.dependencyCount.value >= 5);
   assert.match(scan.discovery.dependencyCount.source, /^fs:/);
   assert.equal(scan.discovery.containers.state, 'measured');
+  assert.equal(scan.coupling.status, 'COUPLED');
+  const state = await app.store.read();
+  assert.ok(state.projects.some((item) => item.id === scan.coupling.projectId && item.analysisStatus === 'SCANNED'));
+  assert.ok(state.repositories.some((item) => item.id === scan.coupling.repoId && item.provider === 'local-filesystem'));
+  assert.ok(state.capabilities.some((item) => item.id === scan.coupling.capabilityId && item.status === 'DISCOVERED'));
+  assert.ok(state.graphEdges.some((item) => item.source === scan.coupling.projectId && item.target === scan.coupling.repoId && item.type === 'USES_REPOSITORY'));
+  assert.ok(state.knowledgeRelationships.some((item) => item.type === 'EXPOSES_CAPABILITY' && item.validTo === null));
   await app.close();
 });
 

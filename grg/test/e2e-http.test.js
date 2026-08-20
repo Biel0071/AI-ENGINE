@@ -47,7 +47,7 @@ test('serves dashboard html', withServer(async (base) => {
   const login = await fetch(`${base}/`).then((x) => x.text());
   assert.match(login, /GRG SERVI|login/i); // raiz agora e a tela de login
   const appHtml = await fetch(`${base}/app`).then((x) => x.text());
-  assert.match(appHtml, /GRG Services OS/);
+  assert.match(appHtml, /FENIX OS|Unified Workspace/);
 }));
 
 test('rejects unauthenticated api access with 401', withServer(async (base) => {

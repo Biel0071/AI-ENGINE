@@ -41,12 +41,20 @@ function sseSend(res, event, payload) {
 }
 
 function pickProvider(app) {
-  // Ordem: provider de chat injetado (app.llm) -> nada. Nunca inventa resposta: sem llm o
-  // chat de voz responde com erro explicito, porque uma resposta fabricada em voz alta e
-  // indistinguivel de uma real para quem esta ouvindo.
-  const llm = app.llm;
-  if (!llm) return { llm: null, reason: 'nenhum provider de LLM ligado (GRG_LLM=1 + GRG_AIPLATFORM_URL/KEY ou FENIX_OLLAMA_URL)' };
-  return { llm, reason: null };
+  // Ordem: provider de chat injetado (app.llm) -> AI Platform Provider -> Ollama -> nada.
+  // Nunca inventa resposta: sem llm o chat de voz responde com erro explicito.
+  if (app.llm) return { llm: app.llm, reason: null };
+  if (app.aiGateway && app.aiGateway.providers) {
+    const aiplatform = app.aiGateway.providers.aiplatform;
+    if (aiplatform && aiplatform.hasKey) {
+      return { llm: aiplatform, reason: null };
+    }
+    const ollama = app.aiGateway.providers.ollama;
+    if (ollama) {
+      return { llm: ollama, reason: null };
+    }
+  }
+  return { llm: null, reason: 'nenhum provider de LLM ligado (GRG_LLM=1 + GRG_AIPLATFORM_URL/KEY ou FENIX_OLLAMA_URL)' };
 }
 
 // Registra as rotas. Chamado pelo server.js com o contexto de request ja autenticado.

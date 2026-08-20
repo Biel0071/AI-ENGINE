@@ -57,7 +57,22 @@ async function runTest() {
   capabilityRegistry.registerProvider('claude-mock', mockClaude, ['architecture', 'reasoning', 'audit', 'planning', 'backend', 'crud', 'security', 'summaries']);
   capabilityRegistry.registerProvider('gemini-mock', mockGemini, ['classification', 'routing', 'ui', 'release']);
   
-  const router = new AIRouter(capabilityRegistry);
+  const mockConnectors = {
+    list: () => ['ai:claude', 'ai:gemini'],
+    status: async () => ({ state: { value: 'CONNECTED' } }),
+    connectors: new Map([
+      ['ai:claude', { models: () => ['claude-3-5-sonnet'] }],
+      ['ai:gemini', { models: () => ['gemini-2.0-flash'] }]
+    ])
+  };
+  const mockGateway = {
+    invoke: async (tenantId, actorId, req) => {
+      const prompt = req.prompt || '';
+      const res = await mockClaude.generate(prompt);
+      return { ok: true, result: res };
+    }
+  };
+  const router = new AIRouter({ connectors: mockConnectors, gateway: mockGateway });
 
   // 2. Setup Worker Registry (No Mock Workers)
   const workerRegistry = new WorkerRegistry({ eventBus, router });

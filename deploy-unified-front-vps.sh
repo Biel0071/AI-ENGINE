@@ -11,8 +11,7 @@ unzip -oq "$ZIP_PATH" -d "$WORK_DIR"
 
 cd "$APP_DIR"
 cp "$WORK_DIR/grg/public/index.html" public/index.html
-cp "$WORK_DIR/grg/public/app.html" public/app.html
-cp "$WORK_DIR/grg/public/office.html" public/office.html
+cp "$WORK_DIR/grg/public/login.html" public/login.html
 cp "$WORK_DIR/grg/public/unified.css" public/unified.css
 cp "$WORK_DIR/grg/public/unified-app.js" public/unified-app.js
 cp "$WORK_DIR/grg/src/server.js" src/server.js

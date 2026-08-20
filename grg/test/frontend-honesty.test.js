@@ -49,8 +49,8 @@ test('frontend: ausencia honesta e slot dinamico NAO sao punidos', () => {
 
 test('frontend: o painel principal consome API de verdade', () => {
   const audit = auditFrontend(PUBLIC_DIR);
-  const app = audit.files.find((f) => f.file === 'app.js');
-  assert.ok(app, 'public/app.js deve existir');
+  const app = audit.files.find((f) => f.file === 'unified-app.js');
+  assert.ok(app, 'public/unified-app.js deve existir');
   // 'honest' exige 0 sinais falsos E consumo real de fetch/api.
   assert.equal(app.classification, 'honest');
 });

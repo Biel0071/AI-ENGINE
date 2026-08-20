@@ -10,6 +10,7 @@ services:
       FENIX_ENV: production
       PORT: 4400
       FENIX_BIND_HOST: 0.0.0.0
+      FENIX_WORKSPACE_ROOT: ${FENIX_WORKSPACE_ROOT:-/app/workspaces}
       POSTGRES_DB: ${POSTGRES_DB:-fenix}
       POSTGRES_USER: ${POSTGRES_USER:-fenix}
       FENIX_QDRANT_URL: http://qdrant:6333
@@ -40,6 +41,12 @@ services:
       FENIX_PUBLIC_URL: ${FENIX_PUBLIC_URL:-}
       FENIX_AI_DEFAULT_PROVIDER: ${FENIX_AI_DEFAULT_PROVIDER:?FENIX_AI_DEFAULT_PROVIDER is required}
       FENIX_AI_DEFAULT_MODEL: ${FENIX_AI_DEFAULT_MODEL:?FENIX_AI_DEFAULT_MODEL is required}
+      FENIX_ENABLE_CODEX: ${FENIX_ENABLE_CODEX:-}
+      FENIX_CODEX_API_KEY: ${FENIX_CODEX_API_KEY:-}
+      FENIX_CODEX_BASE_URL: ${FENIX_CODEX_BASE_URL:-}
+      FENIX_CODEX_MODEL: ${FENIX_CODEX_MODEL:-}
+      FENIX_CODEX_PROJECT_ID: ${FENIX_CODEX_PROJECT_ID:-}
+      FENIX_CODEX_ORG_ID: ${FENIX_CODEX_ORG_ID:-}
       GRG_AIPLATFORM_URL: ${GRG_AIPLATFORM_URL:-}
       # MEDIDO EM PRODUCAO (2026-07-30): a KEY e o MODEL nao estavam nesta allowlist, entao
       # `GRG_AIPLATFORM_KEY` no .env.production era inerte -- o AIPlatformProvider nascia sem
@@ -68,6 +75,11 @@ services:
       FENIX_AI_GENERATE_PROVIDER: ${FENIX_AI_GENERATE_PROVIDER:-}
       FENIX_AI_GENERATE_MODEL: ${FENIX_AI_GENERATE_MODEL:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_PROJECT_ID: ${OPENAI_PROJECT_ID:-}
+      OPENAI_PROJECT: ${OPENAI_PROJECT:-}
+      OPENAI_ORG_ID: ${OPENAI_ORG_ID:-}
+      OPENAI_ORGANIZATION: ${OPENAI_ORGANIZATION:-}
       GROQ_BASE_URL: ${GROQ_BASE_URL:-}
       # MEDIDO EM PRODUCAO (2026-07-29): este bloco e uma ALLOWLIST -- nada do .env chega ao
       # container sem estar listado aqui. As variaveis de cadencia do runtime nunca estiveram
@@ -140,6 +152,7 @@ services:
     user: "${FENIX_CONTAINER_USER:-0:0}"
     volumes:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
+      - ${FENIX_WORKSPACE_HOST_DIR:-/opt/grg-fenix/workspaces}:/app/workspaces
       - ./public/login.html:/app/public/login.html:ro
       - ./src/server.js:/app/src/server.js:ro
       - ./src/auth/auth.js:/app/src/auth/auth.js:ro
@@ -164,9 +177,26 @@ services:
     user: "${FENIX_CONTAINER_USER:-0:0}"
     volumes:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
+      - ${FENIX_WORKSPACE_HOST_DIR:-/opt/grg-fenix/workspaces}:/app/workspaces
     extra_hosts: ["host.containers.internal:host-gateway"]
     healthcheck:
       disable: true
+
+  ollama:
+    image: ${FENIX_OLLAMA_IMAGE:-ollama/ollama:latest}
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_MODELS: /root/.ollama/models
+      OLLAMA_KEEP_ALIVE: ${FENIX_OLLAMA_KEEP_ALIVE:-10m}
+    volumes:
+      - ${FENIX_OLLAMA_HOME:-/usr/share/ollama/.ollama}:/root/.ollama
+    networks: [fenix-backend]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   postgres:
     image: postgres:17.9-alpine
@@ -198,12 +228,12 @@ services:
       - -ec
       - |
         umask 077
-        printf 'appendonly yes\nrequirepass %s\n' "$$(cat /run/secrets/redis_password)" > /tmp/fenix-redis.conf
+        printf 'appendonly yes\nrequirepass %s\n' "$$(tr -d '\r\n' < /run/secrets/redis_password)" > /tmp/fenix-redis.conf
         exec redis-server /tmp/fenix-redis.conf
     volumes:
       - fenix-redis:/data
     healthcheck:
-      test: ["CMD-SHELL", "REDISCLI_AUTH=$$(cat /run/secrets/redis_password) redis-cli ping | grep PONG"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$(tr -d '\r\n' < /run/secrets/redis_password) redis-cli ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -233,8 +263,8 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
-        export MINIO_ROOT_USER="$$(cat /run/secrets/minio_access_key)"
-        export MINIO_ROOT_PASSWORD="$$(cat /run/secrets/minio_secret_key)"
+        export MINIO_ROOT_USER="$$(tr -d '\r\n' < /run/secrets/minio_access_key)"
+        export MINIO_ROOT_PASSWORD="$$(tr -d '\r\n' < /run/secrets/minio_secret_key)"
         exec minio server /data --console-address :9001
     volumes: ["fenix-minio:/data"]
     secrets: [minio_access_key, minio_secret_key]

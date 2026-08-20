@@ -18,6 +18,7 @@ class ExecutionEngine {
     this.bus = eventBus;
     this.workspaceRoot = workspaceRoot;
     this.activeSessions = new Map();
+    this.completedSessions = new Map();
   }
 
   _validateCommand(cmd, args) {
@@ -68,7 +69,8 @@ class ExecutionEngine {
       command: commandString,
       cwd,
       status: 'RUNNING',
-      startTime: Date.now()
+      startTime: Date.now(),
+      output: []
     };
 
     this.activeSessions.set(sessionId, session);
@@ -82,6 +84,7 @@ class ExecutionEngine {
     }
 
     child.stdout.on('data', (data) => {
+      session.output.push({ type: 'stdout', data: data.toString(), at: new Date().toISOString() });
       this.bus.emit('dev:terminalOutput', {
         sessionId,
         type: 'stdout',
@@ -90,6 +93,7 @@ class ExecutionEngine {
     });
 
     child.stderr.on('data', (data) => {
+      session.output.push({ type: 'stderr', data: data.toString(), at: new Date().toISOString() });
       this.bus.emit('dev:terminalOutput', {
         sessionId,
         type: 'stderr',
@@ -101,12 +105,16 @@ class ExecutionEngine {
       child.on('close', (code) => {
         if (timeoutId) clearTimeout(timeoutId);
         session.status = 'FINISHED';
+        session.exitCode = code;
+        session.durationMs = Date.now() - session.startTime;
         this.activeSessions.delete(sessionId);
+        this.completedSessions.set(sessionId, session);
+        this._trimCompleted();
         
         this.bus.emit('dev:terminalFinished', {
           sessionId,
           exitCode: code,
-          durationMs: Date.now() - session.startTime
+          durationMs: session.durationMs
         });
         
         resolve({ code });
@@ -115,7 +123,13 @@ class ExecutionEngine {
       child.on('error', (err) => {
         if (timeoutId) clearTimeout(timeoutId);
         session.status = 'FAILED';
+        session.exitCode = 1;
+        session.error = err.message;
+        session.durationMs = Date.now() - session.startTime;
         this.activeSessions.delete(sessionId);
+        session.output.push({ type: 'stderr', data: `Error: ${err.message}\n`, at: new Date().toISOString() });
+        this.completedSessions.set(sessionId, session);
+        this._trimCompleted();
         
         this.bus.emit('dev:terminalOutput', {
           sessionId,
@@ -153,6 +167,29 @@ class ExecutionEngine {
     }, 2000);
     
     return true;
+  }
+
+  getSession(sessionId) {
+    const session = this.activeSessions.get(sessionId) || this.completedSessions.get(sessionId);
+    if (!session) return null;
+    return {
+      id: session.id,
+      command: session.command,
+      cwd: session.cwd,
+      status: session.status,
+      exitCode: session.exitCode ?? null,
+      error: session.error || null,
+      durationMs: session.durationMs ?? (Date.now() - session.startTime),
+      output: session.output || [],
+    };
+  }
+
+  _trimCompleted() {
+    const keep = 40;
+    while (this.completedSessions.size > keep) {
+      const first = this.completedSessions.keys().next().value;
+      this.completedSessions.delete(first);
+    }
   }
 }
 

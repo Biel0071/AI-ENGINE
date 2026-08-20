@@ -49,29 +49,46 @@
     async function continueExistingSession() {
       const token = localStorage.getItem('grg_token'); if (!token) return false;
       const current = await fetch('/api/me', { headers:{ authorization:`Bearer ${token}` } });
-      if (current.ok) { location.replace('/#command'); return true; }
+      if (current.ok) { location.replace('/app#command'); return true; }
       const refreshToken = sessionStorage.getItem('grg_refresh_token');
       if (refreshToken) {
         const config = await oidcConfig;
         const body = new URLSearchParams({ grant_type:'refresh_token', client_id:config.clientId, refresh_token:refreshToken });
         const response = await fetch(config.tokenEndpoint, { method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body });
         const tokens = await response.json();
-        if (response.ok && tokens.access_token) { storeTokens(tokens); location.replace('/#command'); return true; }
+        if (response.ok && tokens.access_token) { storeTokens(tokens); location.replace('/app#command'); return true; }
       }
       localStorage.removeItem('grg_token'); localStorage.removeItem('grg_user'); sessionStorage.removeItem('grg_refresh_token');
       return false;
     }
+    function cleanOidcState() {
+      sessionStorage.removeItem('oidc_state');
+      sessionStorage.removeItem('oidc_verifier');
+      localStorage.removeItem('grg_token');
+      localStorage.removeItem('grg_user');
+      sessionStorage.removeItem('grg_refresh_token');
+    }
+    function showLoginError(message) {
+      const err = document.getElementById('err');
+      err.textContent = message;
+      document.getElementById('loginButton').textContent = 'Tentar entrar novamente';
+      cleanOidcState();
+      history.replaceState({}, document.title, '/GRG-login');
+    }
     async function finishOidc() {
       const query = new URLSearchParams(location.search); if (!query.get('code')) return false;
       const config = await oidcConfig; const state = sessionStorage.getItem('oidc_state'); const verifier = sessionStorage.getItem('oidc_verifier');
-      if (!state || state !== query.get('state') || !verifier) throw new Error('Estado OIDC inválido');
+      if (!state || state !== query.get('state') || !verifier) throw new Error('Sessão de login expirada. Clique novamente para entrar.');
       const body = new URLSearchParams({ grant_type:'authorization_code', client_id:config.clientId, code:query.get('code'), redirect_uri:config.redirectUri, code_verifier:verifier });
       const response = await fetch(config.tokenEndpoint, { method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body }); const tokens = await response.json();
       if (!response.ok || !tokens.access_token) throw new Error(tokens.error_description || 'Falha OIDC');
-      storeTokens(tokens); sessionStorage.removeItem('oidc_state'); sessionStorage.removeItem('oidc_verifier'); location.replace('/#command'); return true;
+      storeTokens(tokens); sessionStorage.removeItem('oidc_state'); sessionStorage.removeItem('oidc_verifier'); location.replace('/app#command'); return true;
     }
-    continueExistingSession().catch(() => { localStorage.removeItem('grg_token'); sessionStorage.removeItem('grg_refresh_token'); });
-    finishOidc().catch(error => { document.getElementById('err').textContent = error.message; });
+    if (new URLSearchParams(location.search).get('code')) {
+      finishOidc().catch(error => showLoginError(error.message));
+    } else {
+      continueExistingSession().catch(() => { localStorage.removeItem('grg_token'); sessionStorage.removeItem('grg_refresh_token'); });
+    }
     oidcConfig.then(config => { if (config.enabled && window.crypto && crypto.subtle) { document.querySelectorAll('label,input').forEach(element => { element.style.display='none'; if (element.matches('input')) element.disabled=true; }); document.getElementById('loginButton').textContent='Entrar com identidade GRG'; } });
     document.getElementById('f').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -86,7 +103,7 @@
         if (!r.ok) { err.textContent = data.error || 'Falha no login'; return; }
         localStorage.setItem('grg_token', data.token);
         localStorage.setItem('grg_user', data.name || userId);
-        location.href = '/#command';
+        location.href = '/app#command';
       } catch (ex) { err.textContent = 'Erro de conexão'; }
     });
 

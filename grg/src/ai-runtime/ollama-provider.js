@@ -47,7 +47,7 @@ class OllamaProvider {
   // Um prompt de um token prova o caminho inteiro e devolve erro legivel se o modelo nao existe.
   async available() {
     try {
-      const res = await post(this.baseUrl, '/api/generate', { model: this.model, prompt: 'ok', stream: false }, 20000);
+      const res = await post(this.baseUrl, '/api/generate', { model: this.model, prompt: 'ok', stream: false, options: { num_predict: 1, temperature: 0 } }, 20000);
       if (res && res.error) return false;
       return typeof res?.response === 'string';
     } catch { return false; }
@@ -55,14 +55,19 @@ class OllamaProvider {
 
   // Mensagem legivel quando o modelo nao esta carregado, em vez de "bad json" ou timeout seco.
   async ensureModel() {
-    const res = await post(this.baseUrl, '/api/generate', { model: this.model, prompt: 'ok', stream: false }, 20000);
+    const res = await post(this.baseUrl, '/api/generate', { model: this.model, prompt: 'ok', stream: false, options: { num_predict: 1, temperature: 0 } }, 20000);
     if (res && res.error) throw new Error(`ollama: modelo "${this.model}" indisponivel (${res.error}). Rode: ollama pull ${this.model}`);
     return { ok: true, model: this.model, baseUrl: this.baseUrl };
   }
 
   // interface do AI Gateway
-  async complete({ model, prompt }) {
-    const res = await post(this.baseUrl, '/api/generate', { model: model || this.model, prompt, stream: false });
+  async complete({ model, prompt, temperature = 0, maxTokens = 2048 }) {
+    const res = await post(this.baseUrl, '/api/generate', {
+      model: model || this.model,
+      prompt,
+      stream: false,
+      options: { temperature, num_predict: maxTokens },
+    });
     if (res && res.error) throw new Error(`ollama: ${res.error}`);
     const text = res.response || '';
     return {

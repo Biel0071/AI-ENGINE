@@ -1,4 +1,4 @@
-function handleDeveloperRoutes(req, res, url, app, sendJson, sendError) {
+async function handleDeveloperRoutes(req, res, url, app, sendJson, sendError, context = {}) {
   if (!url.pathname.startsWith('/api/dev/')) return false;
 
   const { fileSystemService, executionEngine, eventBus } = app;
@@ -9,6 +9,33 @@ function handleDeveloperRoutes(req, res, url, app, sendJson, sendError) {
 
   // Parse path from query
   const targetPath = url.searchParams.get('path') || '';
+  const tenantId = context.tenantId || 'grg';
+  const actorId = context.actorId || 'grg-admin';
+
+  // POST /api/dev/projects/clone (clone + couple into FENIX ecosystem)
+  if (req.method === 'POST' && url.pathname === '/api/dev/projects/clone') {
+    if (app.controlPlane) await app.controlPlane.authorize(tenantId, actorId, 'project:write');
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const cloned = await fileSystemService.cloneRepository({
+          url: payload.url,
+          directory: payload.directory,
+          branch: payload.branch,
+        });
+        const scan = payload.scan === false || !app.oneDeploy
+          ? null
+          : await app.oneDeploy.scanProject(tenantId, actorId, cloned.path);
+        if (eventBus) await eventBus.emit('dev:projectCloned', { path: cloned.relativePath, url: cloned.url, coupled: Boolean(scan?.coupling) });
+        sendJson(res, 201, { cloned, scan });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
 
   // GET /api/dev/fs (list directory)
   if (req.method === 'GET' && url.pathname === '/api/dev/fs') {
@@ -28,18 +55,74 @@ function handleDeveloperRoutes(req, res, url, app, sendJson, sendError) {
 
   // POST /api/dev/fs/file (write file)
   if (req.method === 'POST' && url.pathname === '/api/dev/fs/file') {
-    let body = '';
-    req.on('data', chunk => body += chunk.toString());
-    req.on('end', async () => {
+    readBody(req).then(async (body) => {
       try {
         const payload = JSON.parse(body);
         await fileSystemService.writeFile(targetPath, payload.content || '');
-        if (eventBus) eventBus.emit('dev:fileSaved', { path: targetPath });
+        if (eventBus) await eventBus.emit('dev:fileSaved', { path: targetPath });
         sendJson(res, 200, { success: true });
       } catch (err) {
         sendError(res, 400, err.message);
       }
-    });
+    }).catch((err) => sendError(res, 400, err.message));
+    return true;
+  }
+
+  // POST /api/dev/fs/move (rename/move file or directory inside workspace)
+  if (req.method === 'POST' && url.pathname === '/api/dev/fs/move') {
+    if (app.controlPlane) await app.controlPlane.authorize(tenantId, actorId, 'project:write');
+    readBody(req).then(async (body) => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const from = String(payload.from || '').trim();
+        const to = String(payload.to || '').trim();
+        if (!from || !to) throw new Error('from and to are required');
+        await fileSystemService.move(from, to);
+        if (eventBus) await eventBus.emit('dev:pathMoved', { from, to });
+        sendJson(res, 200, { success: true, from, to });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    }).catch((err) => sendError(res, 400, err.message));
+    return true;
+  }
+
+  // POST /api/dev/ai/transform-file (AI proposes a full replacement for the open file)
+  if (req.method === 'POST' && url.pathname === '/api/dev/ai/transform-file') {
+    if (app.controlPlane) await app.controlPlane.authorize(tenantId, actorId, 'project:write');
+    const ai = app.aiRouter || app.aiGateway;
+    if (!ai || typeof ai.invoke !== 'function') {
+      sendError(res, 503, 'AI editor is not initialized');
+      return true;
+    }
+    readBody(req).then(async (body) => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const filePath = String(payload.path || targetPath || '').trim();
+        const instruction = String(payload.instruction || '').trim();
+        if (!filePath) throw new Error('path is required');
+        if (!instruction) throw new Error('instruction is required');
+        const stat = await fileSystemService.stat(filePath);
+        if (!stat.isFile()) throw new Error('path must point to a file');
+        if (stat.size > 180_000) throw new Error('file is too large for AI transform');
+        const current = await fileSystemService.readFile(filePath);
+        const prompt = buildAiEditPrompt(filePath, current, instruction);
+        const out = await ai.invoke(tenantId, actorId, { taskType: 'generate', prompt, temperature: 0.2 });
+        const parsed = parseAiEditResponse(out.text);
+        if (!parsed.content || typeof parsed.content !== 'string') throw new Error('AI response did not include replacement content');
+        if (parsed.content.length > 260_000) throw new Error('AI response is too large');
+        if (eventBus) await eventBus.emit('dev:aiFileTransformed', { path: filePath, provider: out.provider, model: out.model });
+        sendJson(res, 200, {
+          path: filePath,
+          content: parsed.content,
+          summary: parsed.summary || 'Alteracao proposta pela IA.',
+          provider: out.provider,
+          model: out.model,
+        });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    }).catch((err) => sendError(res, 400, err.message));
     return true;
   }
 
@@ -64,7 +147,62 @@ function handleDeveloperRoutes(req, res, url, app, sendJson, sendError) {
     return true;
   }
 
+  const terminalSession = url.pathname.match(/^\/api\/dev\/terminal\/([^/]+)$/);
+  if (req.method === 'GET' && terminalSession) {
+    const session = executionEngine.getSession(decodeURIComponent(terminalSession[1]));
+    if (!session) {
+      sendError(res, 404, 'terminal session not found');
+      return true;
+    }
+    sendJson(res, 200, session);
+    return true;
+  }
+
   return false;
 }
 
-module.exports = { handleDeveloperRoutes };
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+      if (body.length > 600_000) reject(new Error('request body too large'));
+    });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+function buildAiEditPrompt(filePath, content, instruction) {
+  return [
+    'Voce e o editor de codigo do FENIX IDE.',
+    'Receba um arquivo e uma instrucao. Retorne somente JSON valido, sem markdown.',
+    'Formato obrigatorio: {"summary":"resumo curto","content":"conteudo completo atualizado do arquivo"}.',
+    'Preserve a linguagem, imports, estilo do arquivo e nao remova funcionalidade existente sem pedido explicito.',
+    `Arquivo: ${filePath}`,
+    `Instrucao: ${instruction}`,
+    'Conteudo atual:',
+    '```',
+    content,
+    '```',
+  ].join('\n');
+}
+
+function parseAiEditResponse(text) {
+  const raw = String(text || '').trim();
+  const jsonBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]?.trim();
+  const candidate = jsonBlock || raw;
+  try {
+    const parsed = JSON.parse(candidate);
+    return {
+      summary: String(parsed.summary || '').slice(0, 600),
+      content: String(parsed.content || ''),
+    };
+  } catch {
+    const code = raw.match(/```[a-z0-9-]*\s*([\s\S]*?)```/i)?.[1];
+    if (code) return { summary: 'A IA retornou codigo em bloco; revise antes de salvar.', content: code.trimEnd() };
+    return { summary: 'A IA retornou texto livre; revise antes de salvar.', content: raw };
+  }
+}
+
+module.exports = { handleDeveloperRoutes, buildAiEditPrompt, parseAiEditResponse };

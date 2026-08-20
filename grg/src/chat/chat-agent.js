@@ -100,7 +100,7 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
     if (/(gerar|ger[ae]|criar|cri[ae]|novo|construir|constr[ou]i|montar|monta|fazer|fa[çc]a).*(sistema|projeto|app|aplica|site|loja|crm|erp|saas|plataforma|marketplace|landing|bot|api)/.test(t)) return { kind: 'generate', prompt: text };
     if (/(insight|aprend|evolu|o que aprend|padr)/.test(t)) return { kind: 'insights' };
     if (/(mem[oó]ria|hist[oó]rico|decis)/.test(t)) return { kind: 'memory' };
-    if (/(status|vis[aã]o|overview|painel|resumo|estado)/.test(t)) return { kind: 'overview' };
+    if (/(status|vis[aã]o|overview|painel|resumo|estado|funcion|rodando|online|operacional|sa[uú]de)/.test(t)) return { kind: 'overview' };
     if (/(capabilit|funcionalidad|cat[aá]logo|m[oó]dulo)/.test(t)) return { kind: 'capabilities' };
     if (/(twin|modelo|arquitetura|sa[uú]de|risco|analis[ae] o|conselho|advise|melhor)/.test(t)) {
       const repoId = this.matchRepoId(t);
@@ -260,7 +260,27 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
         case 'overview': {
           const state = await this.app.store.read();
           const f = (a) => a.filter((x) => x.tenantId === tenantId).length;
-          facts = { repos: f(state.repositories), projects: f(state.projects), capabilities: f(state.capabilities), deployments: f(state.deployments), insights: f(state.insights), memory: f(state.memoryEvents) };
+          let health = null;
+          try {
+            health = this.app.health?.check ? await this.app.health.check() : null;
+          } catch (error) {
+            health = { ok: false, status: 'degraded', checks: {}, error: error.message };
+          }
+          const checks = Object.entries(health?.checks || {});
+          facts = {
+            status: health?.status || 'unknown',
+            ok: health?.ok === true,
+            degraded: checks
+              .filter(([, detail]) => detail?.ok === false)
+              .map(([name, detail]) => ({ name, critical: detail.critical === true, reason: detail.degraded || detail.error || detail.reason || 'falha reportada' })),
+            repos: f(state.repositories),
+            projects: f(state.projects),
+            capabilities: f(state.capabilities),
+            registeredCapabilities: f(state.capabilityDefinitions || []),
+            deployments: f(state.deployments),
+            insights: f(state.insights),
+            memory: f(state.memoryEvents),
+          };
           break;
         }
         default:
@@ -384,7 +404,10 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
       case 'list':
         return `Repos: ${facts.repos.join(', ') || 'nenhum'}\nProjetos: ${facts.projects.join(', ') || 'nenhum'}`;
       case 'overview':
-        return `Visão geral: ${facts.repos} repos, ${facts.projects} projetos, ${facts.capabilities} capabilities, ${facts.deployments} deploys, ${facts.insights} insights, ${facts.memory} eventos de memória.`;
+        return `Visão geral: sistema ${facts.ok ? 'funcionando' : 'com atenção'} (${facts.status || 'unknown'}). ` +
+          `${facts.repos} repos, ${facts.projects} projetos, ${facts.registeredCapabilities ?? facts.capabilities} capacidades registradas, ` +
+          `${facts.deployments} deploys, ${facts.insights} insights, ${facts.memory} eventos de memória.` +
+          (facts.degraded?.length ? ` Pontos degradados: ${facts.degraded.map((item) => `${item.name}${item.critical ? ' crítico' : ''}: ${item.reason}`).join('; ')}.` : '');
       case 'chitchat': {
         // Fallback sem LLM. Cita o numero REGISTRADO de capacidades (nao uma lista fixa) para
         // que nem o caminho determinístico possa afirmar menos do que a plataforma tem.

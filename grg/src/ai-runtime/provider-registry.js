@@ -15,7 +15,25 @@ const { OllamaProvider } = require('./ollama-provider');
 function buildProvidersFromEnv(env = process.env, options = {}) {
   const providers = options.production ? {} : { echo: new EchoProvider() };
   const fetchImpl = options.fetchImpl;
-  if (env.OPENAI_API_KEY) providers.openai = new OpenAIResponsesProvider({ apiKey: env.OPENAI_API_KEY, baseUrl: env.OPENAI_BASE_URL, fetchImpl });
+  if (env.OPENAI_API_KEY) providers.openai = new OpenAIResponsesProvider({
+    apiKey: env.OPENAI_API_KEY,
+    baseUrl: env.OPENAI_BASE_URL,
+    fetchImpl,
+    projectId: env.OPENAI_PROJECT_ID || env.OPENAI_PROJECT,
+    organizationId: env.OPENAI_ORG_ID || env.OPENAI_ORGANIZATION,
+  });
+  const codexApiKey = env.FENIX_CODEX_API_KEY || env.OPENAI_API_KEY;
+  if (codexApiKey && (env.FENIX_ENABLE_CODEX === '1' || env.FENIX_CODEX_API_KEY || env.FENIX_CODEX_MODEL)) {
+    providers.codex = new OpenAIResponsesProvider({
+      name: 'codex',
+      apiKey: codexApiKey,
+      baseUrl: env.FENIX_CODEX_BASE_URL || env.OPENAI_BASE_URL,
+      fetchImpl,
+      projectId: env.FENIX_CODEX_PROJECT_ID || env.OPENAI_PROJECT_ID || env.OPENAI_PROJECT,
+      organizationId: env.FENIX_CODEX_ORG_ID || env.OPENAI_ORG_ID || env.OPENAI_ORGANIZATION,
+      models: [env.FENIX_CODEX_MODEL || 'gpt-5.1-codex-max', 'gpt-5.1-codex', 'gpt-5-codex'].filter(Boolean),
+    });
+  }
   if (env.ANTHROPIC_API_KEY) providers.anthropic = new AnthropicProvider({ apiKey: env.ANTHROPIC_API_KEY, baseUrl: env.ANTHROPIC_BASE_URL, fetchImpl });
   if (env.GEMINI_API_KEY) providers.gemini = new GeminiProvider({ apiKey: env.GEMINI_API_KEY, baseUrl: env.GEMINI_BASE_URL, fetchImpl });
   if (env.GROQ_API_KEY) providers.groq = new OpenAICompatibleProvider({ name: 'groq', apiKey: env.GROQ_API_KEY, baseUrl: env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1', fetchImpl });
@@ -25,10 +43,15 @@ function buildProvidersFromEnv(env = process.env, options = {}) {
       baseUrl: env.FENIX_OPENAI_COMPATIBLE_URL, fetchImpl,
     });
   }
-  if (env.GRG_AIPLATFORM_URL && env.GRG_AIPLATFORM_KEY) {
+  const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
+  const aiKey = resolveAIProviderKey(env);
+  const aiUrl = resolveAIPlatformUrl(env);
+  if (aiKey && aiUrl) {
     providers.aiplatform = new AIPlatformProvider({
-      baseUrl: env.GRG_AIPLATFORM_URL, apiKey: env.GRG_AIPLATFORM_KEY,
-      model: env.GRG_AIPLATFORM_MODEL || null,
+      baseUrl: aiUrl,
+      apiKey: aiKey,
+      model: resolveAIPlatformModel(env),
+      env
     });
   }
   // baseUrl explicito: o DEFAULT_BASE_URL do OllamaProvider e resolvido de process.env no

@@ -44,25 +44,38 @@ class MasterAvatar {
       throw new ValidationError('avatar message is required and must contain at most 4000 characters');
     }
 
-    if (input.mode === 'conversation' || !isOperationalRequest(message)) {
+    const shouldPlanMission = shouldCreateMission(message, input.mode);
+    if (!shouldPlanMission) {
       this.setState('CONVERSANDO');
       const response = await this.chat.handle(tenantId, actorId, message);
       return { ...response, interface: 'MASTER_AVATAR', state: this.currentState, mission: null, plan: null };
     }
 
     this.setState('PLANEJANDO');
-    const output = await this.missionPlanner.plan(tenantId, actorId, {
-      message,
-      objective: message,
-      title: input.title,
-      mode: input.mode === 'auto' ? undefined : input.mode,
-      scopeId: input.scopeId,
-      context: input.context,
-      contextRefs: input.contextRefs,
-      priority: input.priority,
-      policy: input.policy,
-      autoStart: input.autoStart !== false,
-    });
+    let output;
+    try {
+      output = await this.missionPlanner.plan(tenantId, actorId, {
+        message,
+        objective: message,
+        title: input.title,
+        mode: input.mode === 'auto' ? undefined : input.mode,
+        scopeId: input.scopeId,
+        context: input.context,
+        contextRefs: input.contextRefs,
+        priority: input.priority,
+        policy: input.policy,
+        autoStart: input.autoStart !== false,
+      });
+    } catch (error) {
+      this.setState('ANALISANDO');
+      return {
+        interface: 'MASTER_AVATAR',
+        state: this.currentState,
+        mission: null,
+        plan: null,
+        reply: `Nao consegui criar a missao agora: ${error.message}`,
+      };
+    }
 
     if (!output.mission) {
       this.setState('ANALISANDO');
@@ -92,4 +105,14 @@ function isOperationalRequest(value) {
   return /\b(analis|audit|verific|monitor|observ|cri(ar|e)|constru|ger(ar|e)|implant|deploy|evolu|corrig|otimiz|index|descobr|mape|teste|status|sa[uú]de|readiness|projeto|sistema|erp|crm|site|aplicativo|app)\w*/i.test(value);
 }
 
-module.exports = { MasterAvatar, isOperationalRequest };
+function shouldCreateMission(value, mode) {
+  if (mode === 'mission') return true;
+  const text = String(value || '');
+  const explicitMission = /\b(crie|criar|abre|abrir|inicie|iniciar|planeje|planejar|monte|montar)\b.{0,60}\bmiss[aã]o\b/i.test(text)
+    || /\bmiss[aã]o\b.{0,60}\b(crie|criar|abre|abrir|inicie|iniciar|planeje|planejar|monte|montar)\b/i.test(text);
+  if (explicitMission) return true;
+  if (mode === 'conversation' || mode === 'unified') return false;
+  return isOperationalRequest(text);
+}
+
+module.exports = { MasterAvatar, isOperationalRequest, shouldCreateMission };

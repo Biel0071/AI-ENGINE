@@ -51,13 +51,21 @@ function gatewayWithoutProviders(payload) {
 
 class OpenAIResponsesProvider {
   #apiKey;
-  constructor({ apiKey, baseUrl = 'https://api.openai.com/v1', fetchImpl, timeoutMs } = {}) {
-    this.name = 'openai'; this.#apiKey = apiKey; this.baseUrl = baseUrl.replace(/\/$/, ''); this.fetchImpl = fetchImpl; this.timeoutMs = timeoutMs;
+  constructor({ apiKey, baseUrl = 'https://api.openai.com/v1', fetchImpl, timeoutMs, name = 'openai', models = [], projectId = null, organizationId = null } = {}) {
+    this.name = name; this.#apiKey = apiKey; this.baseUrl = baseUrl.replace(/\/$/, ''); this.fetchImpl = fetchImpl; this.timeoutMs = timeoutMs; this.models = models; this.projectId = projectId; this.organizationId = organizationId;
+  }
+  headers(extra = {}) {
+    return {
+      authorization: `Bearer ${this.#apiKey}`,
+      ...(this.organizationId ? { 'OpenAI-Organization': this.organizationId } : {}),
+      ...(this.projectId ? { 'OpenAI-Project': this.projectId } : {}),
+      ...extra,
+    };
   }
   async complete({ model, prompt, temperature, maxTokens }) {
     const data = await requestJson(this.name, `${this.baseUrl}/responses`, {
       fetchImpl: this.fetchImpl, timeoutMs: this.timeoutMs,
-      headers: { authorization: `Bearer ${this.#apiKey}`, 'content-type': 'application/json' },
+      headers: this.headers({ 'content-type': 'application/json' }),
       body: { model, input: prompt, store: false, max_output_tokens: maxTokens, ...(temperature === undefined ? {} : { temperature }) },
     });
     const text = data.output_text || (data.output || []).flatMap((item) => item.content || []).filter((item) => item.type === 'output_text').map((item) => item.text).join('');
@@ -67,7 +75,7 @@ class OpenAIResponsesProvider {
   async available() { return this.#modelsHealth(); }
   async #modelsHealth() {
     try {
-      const payload = await requestJson(this.name, `${this.baseUrl}/models`, { method: 'GET', fetchImpl: this.fetchImpl, timeoutMs: 5_000, headers: { authorization: `Bearer ${this.#apiKey}` } });
+      const payload = await requestJson(this.name, `${this.baseUrl}/models`, { method: 'GET', fetchImpl: this.fetchImpl, timeoutMs: 5_000, headers: this.headers() });
       return !gatewayWithoutProviders(payload);
     } catch { return false; }
   }

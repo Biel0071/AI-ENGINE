@@ -7,29 +7,62 @@ const https = require('node:https');
 const { streamFromOllama } = require('./ollama-stream');
 const { assertNotFabricated } = require('./fabricated-response');
 
-function request(baseUrl, path, apiKey, payload, timeoutMs = 120000) {
-  return new Promise((resolve, reject) => {
-    let u;
-    try { u = new URL(baseUrl.replace(/\/$/, '') + path); } catch (e) { return reject(new Error('bad base url')); }
-    const lib = u.protocol === 'https:' ? https : http;
-    const data = JSON.stringify(payload);
-    const req = lib.request({
-      hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname + u.search,
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'content-length': Buffer.byteLength(data) },
-    }, (res) => {
-      let body = '';
-      res.on('data', (c) => { body += c; });
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          try { resolve(JSON.parse(body)); } catch { reject(new Error('aiplatform bad json')); }
-        } else reject(new Error(`aiplatform ${res.statusCode}: ${body.slice(0, 140)}`));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Enhanced HTTP request with Timeout Controller and Exponential Backoff Retry Policy
+async function request(baseUrl, path, apiKey, payload, timeoutMs = 120000, maxRetries = 3) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        let u;
+        try { u = new URL(baseUrl.replace(/\/$/, '') + path); } catch (e) { return reject(new Error('bad base url')); }
+        const lib = u.protocol === 'https:' ? https : http;
+        const data = JSON.stringify(payload);
+        const req = lib.request({
+          hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname + u.search,
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-api-key': apiKey,
+            'authorization': `Bearer ${apiKey}`,
+            'content-length': Buffer.byteLength(data)
+          },
+        }, (res) => {
+          let body = '';
+          res.on('data', (c) => { body += c; });
+          res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              try { resolve(JSON.parse(body)); } catch { reject(new Error('aiplatform bad json')); }
+            } else if (res.statusCode === 502 || res.statusCode === 503 || res.statusCode === 504) {
+              reject(new Error(`aiplatform transient error ${res.statusCode}: ${body.slice(0, 140)}`));
+            } else {
+              reject(new Error(`aiplatform ${res.statusCode}: ${body.slice(0, 140)}`));
+            }
+          });
+        });
+        req.on('error', reject);
+        req.setTimeout(timeoutMs, () => req.destroy(new Error('aiplatform timeout')));
+        req.end(data);
       });
-    });
-    req.on('error', reject);
-    req.setTimeout(timeoutMs, () => req.destroy(new Error('aiplatform timeout')));
-    req.end(data);
-  });
+      return result;
+    } catch (err) {
+      lastError = err;
+      const isTransient = err.message && (
+        err.message.includes('transient error') ||
+        err.message.includes('ECONNRESET') ||
+        err.message.includes('ETIMEDOUT') ||
+        err.message.includes('timeout')
+      );
+      if (attempt < maxRetries && isTransient) {
+        const backoffMs = Math.min(500 * Math.pow(2, attempt - 1), 5000);
+        await sleep(backoffMs);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
 }
 
 // MEDIDO em producao (5 requisicoes simultaneas contra o gateway da .215): acima da
@@ -52,27 +85,56 @@ function request(baseUrl, path, apiKey, payload, timeoutMs = 120000) {
 // GET com o mesmo header de credencial. Separado do request() acima porque o POST manda
 // content-length de um corpo que aqui nao existe: enviar `content-length: 2` num GET sem corpo
 // deixa a conexao pendurada esperando bytes que nunca vem.
-function requestGet(baseUrl, path, apiKey, timeoutMs = 20000) {
-  return new Promise((resolve, reject) => {
-    let u;
-    try { u = new URL(baseUrl.replace(/\/$/, '') + path); } catch (e) { return reject(new Error('bad base url')); }
-    const lib = u.protocol === 'https:' ? https : http;
-    const req = lib.request({
-      hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname + u.search,
-      method: 'GET', headers: { 'x-api-key': apiKey },
-    }, (res) => {
-      let body = '';
-      res.on('data', (c) => { body += c; });
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          try { resolve(JSON.parse(body)); } catch { reject(new Error('aiplatform bad json')); }
-        } else reject(new Error(`aiplatform ${res.statusCode}: ${body.slice(0, 140)}`));
+async function requestGet(baseUrl, path, apiKey, timeoutMs = 20000, maxRetries = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        let u;
+        try { u = new URL(baseUrl.replace(/\/$/, '') + path); } catch (e) { return reject(new Error('bad base url')); }
+        const lib = u.protocol === 'https:' ? https : http;
+        const req = lib.request({
+          hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname + u.search,
+          method: 'GET',
+          headers: {
+            'x-api-key': apiKey,
+            'authorization': `Bearer ${apiKey}`
+          },
+        }, (res) => {
+          let body = '';
+          res.on('data', (c) => { body += c; });
+          res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              try { resolve(JSON.parse(body)); } catch { reject(new Error('aiplatform bad json')); }
+            } else if (res.statusCode === 502 || res.statusCode === 503 || res.statusCode === 504) {
+              reject(new Error(`aiplatform transient error ${res.statusCode}: ${body.slice(0, 140)}`));
+            } else {
+              reject(new Error(`aiplatform ${res.statusCode}: ${body.slice(0, 140)}`));
+            }
+          });
+        });
+        req.on('error', reject);
+        req.setTimeout(timeoutMs, () => req.destroy(new Error('aiplatform timeout')));
+        req.end();
       });
-    });
-    req.on('error', reject);
-    req.setTimeout(timeoutMs, () => req.destroy(new Error('aiplatform timeout')));
-    req.end();
-  });
+      return result;
+    } catch (err) {
+      lastError = err;
+      const isTransient = err.message && (
+        err.message.includes('transient error') ||
+        err.message.includes('ECONNRESET') ||
+        err.message.includes('ETIMEDOUT') ||
+        err.message.includes('timeout')
+      );
+      if (attempt < maxRetries && isTransient) {
+        const backoffMs = Math.min(300 * Math.pow(2, attempt - 1), 3000);
+        await sleep(backoffMs);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
 }
 
 // CONTRATO MEDIDO (2026-07-30, 6 requisicoes simultaneas contra a .215 para forcar a fila):
@@ -98,7 +160,6 @@ function textoDoJob(job) {
   return (r.result && r.result.text) || r.text || (typeof r === 'string' ? r : '') || '';
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitForJob(baseUrl, apiKey, jobId, { waitMs = 120000, intervalMs = 1000 } = {}) {
   const prazo = Date.now() + waitMs;
@@ -163,15 +224,21 @@ function assertNotEnqueued(res) {
   return res;
 }
 
+const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
+
 class AIPlatformProvider {
   #apiKey;
   constructor({ baseUrl, apiKey, model = null, env = process.env } = {}) {
     this.name = 'aiplatform';
-    this.baseUrl = baseUrl || env.GRG_AIPLATFORM_URL || '';
-    this.#apiKey = apiKey || env.GRG_AIPLATFORM_KEY || '';
-    this.model = model;
-    this.models = model ? [model] : [];
+    this.baseUrl = baseUrl || resolveAIPlatformUrl(env);
+    this.#apiKey = apiKey || resolveAIProviderKey(env) || '';
+    this.model = model || resolveAIPlatformModel(env);
+    this.models = this.model ? [this.model] : [];
     this.jobWait = jobWaitConfig(env);
+  }
+
+  get hasKey() {
+    return Boolean(this.#apiKey && this.#apiKey.length > 0);
   }
 
   // Resolve a resposta 202+jobId para o texto real, pelo contrato medido. Com waitMs=0 o

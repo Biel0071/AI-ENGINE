@@ -13,6 +13,7 @@ const { handleLiveChat } = require('./chat/live-chat-routes');
 const { handleMissionRoutes } = require('./missions/mission-routes');
 const { handleKnowledgeRoutes } = require('./knowledge/knowledge-routes');
 const { handleDeveloperRoutes } = require('./api/developer-routes');
+const { handleProductExperienceRoutes } = require('./api/product-experience-routes');
 
 const crypto = require('node:crypto');
 
@@ -224,8 +225,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       const knowledgeHandled = handleKnowledgeRoutes(req, res, url, app, sendJson);
       if (knowledgeHandled) return;
 
-      const developerHandled = handleDeveloperRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }));
+      const developerHandled = await handleDeveloperRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }));
       if (developerHandled) return;
+
+      const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId: 'grg', actorId: 'grg-admin' });
+      if (productHandled) return;
 
       // -- Rotas nativas do server ------------------------------------------------------------
 

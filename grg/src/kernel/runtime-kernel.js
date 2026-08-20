@@ -33,10 +33,16 @@ class RuntimeKernel {
       await this.eventBus.emit('runtime.kernel.started', { at: new Date().toISOString() });
     }
 
-    this.timer = setInterval(() => this.tick(), this.intervalMs);
+    this.timer = setInterval(() => {
+      this.tick().catch((error) => {
+        this.logger.error({ event: 'runtime.kernel.tick.failed', error: error.message || String(error), capability: 'kernel' });
+      });
+    }, this.intervalMs);
     if (typeof this.timer.unref === 'function') this.timer.unref();
 
-    await this.tick();
+    await this.tick().catch((error) => {
+      this.logger.error({ event: 'runtime.kernel.tick.failed', error: error.message || String(error), capability: 'kernel' });
+    });
   }
 
   async stop() {

@@ -27,24 +27,29 @@ test('BootManager orchestrates 15 steps', async () => {
   assert.strictEqual(health.ok, true);
 });
 
-test('EventBus publishes and subscribes', (t, done) => {
+test('EventBus publishes and subscribes', async () => {
   const bus = new EventBus();
-  bus.subscribe('TestEvent', (evt) => {
-    assert.strictEqual(evt.payload.msg, 'hello');
-    done();
+  await bus.start();
+  await new Promise((resolve) => {
+    bus.subscribe('TestEvent', (evt) => {
+      assert.strictEqual(evt.payload.msg, 'hello');
+      resolve();
+    });
+    bus.publish('TestEvent', { msg: 'hello' });
   });
-  bus.publish('TestEvent', { msg: 'hello' });
 });
 
-test('WorkerScheduler test runner', (t, done) => {
+test('WorkerScheduler test runner', async () => {
   const bus = new EventBus();
+  await bus.start();
   const worker = new WorkerScheduler(bus);
-  worker.start();
+  await worker.start();
   
-  bus.subscribe('WorkerFinished', (evt) => {
-    assert.strictEqual(evt.payload.jobId, 'job-123');
-    done();
+  await new Promise((resolve) => {
+    bus.subscribe('WorkerFinished', (evt) => {
+      assert.strictEqual(evt.payload.jobId, 'job-123');
+      resolve();
+    });
+    bus.publish('WorkerTestRequested', { jobId: 'job-123' });
   });
-  
-  bus.publish('WorkerTestRequested', { jobId: 'job-123' });
 });

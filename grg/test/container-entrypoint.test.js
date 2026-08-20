@@ -122,6 +122,7 @@ test('cada provider remoto recebe a chave na variavel que o seu proprio cliente 
   // o provider (ou constroi sem credencial) e o health diz "sem provider" sem apontar o motivo.
   for (const [provider, variavel] of [
     ['openai', 'OPENAI_API_KEY'],
+    ['codex', 'FENIX_CODEX_API_KEY'],
     ['groq', 'GROQ_API_KEY'],
     ['anthropic', 'ANTHROPIC_API_KEY'],
     ['gemini', 'GEMINI_API_KEY'],

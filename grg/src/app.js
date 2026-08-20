@@ -105,6 +105,7 @@ async function createApp(options = {}) {
   const eventStore = new EventStore({ store });
   const fabricEvents = new FabricEventBus({ eventStore, liveBus: bus });
   const controlPlane = await new ControlPlane({ store, bus }).initialize(options.master);
+  await controlPlane.ensureDefaultTenant({ id: 'grg', name: 'GRG FÊNIX', actorId: 'grg-admin' });
   const securityConfig = options.securityConfig || loadSecurityConfig(options.env || process.env);
   // MISSION-0003A — identidade permanente do organismo, ligada ao boot. `ensure()` cria na
   // primeira vez e devolve a mesma identidade sempre; a chamada acontece aqui (não em
@@ -169,7 +170,7 @@ async function createApp(options = {}) {
 
   const oidcVerifier = options.oidcVerifier || (securityConfig.production ? new OidcVerifier({ issuer: runtimeEnv.FENIX_OIDC_ISSUER, audience: runtimeEnv.FENIX_OIDC_AUDIENCE, jwksUri: runtimeEnv.FENIX_OIDC_JWKS_URI }) : null);
   const auth = await new AuthService({
-    store, bus, controlPlane, audit, ttlMs: securityConfig.sessionTtlMs, externalVerifier: oidcVerifier, localLoginEnabled: !securityConfig.production,
+    store, bus, controlPlane, audit, ttlMs: securityConfig.sessionTtlMs, externalVerifier: oidcVerifier, localLoginEnabled: runtimeEnv.FENIX_ENABLE_LOCAL_LOGIN !== '0',
   }).initialize();
   const security = new SecurityPlane({ auth, config: securityConfig });
   const idempotency = new IdempotencyService({ store });
@@ -352,15 +353,17 @@ async function createApp(options = {}) {
   // → Ollama local → modo regras. Opt-in: options.llm (instância) OU env GRG_LLM=1.
   let llm = options.llm && options.llm !== true ? options.llm : null;
   app.llmSource = llm ? 'injected' : 'none';
-  if (!llm && (options.llm === true || process.env.GRG_LLM === '1')) {
+  if (!llm && (options.llm === true || process.env.GRG_LLM === '1' || process.env.GRG_LLM !== '0')) {
     // 1) AI Platform Enterprise (a "API GRATIS" — gateway multi-provider na VPS ou local)
-    if (process.env.GRG_AIPLATFORM_URL && process.env.GRG_AIPLATFORM_KEY) {
-      try {
-        const { AIPlatformProvider } = require('./ai-runtime/aiplatform-provider');
-        const gw = new AIPlatformProvider({});
-        if (await gw.available()) { llm = gw; app.llmSource = 'aiplatform:' + process.env.GRG_AIPLATFORM_URL; }
-      } catch { /* gateway fora do ar: tenta Ollama */ }
-    }
+    try {
+      const { AIPlatformProvider } = require('./ai-runtime/aiplatform-provider');
+      const gw = new AIPlatformProvider({ env: options.env || process.env });
+      if (gw.hasKey && await gw.available()) {
+        llm = gw;
+        app.llmSource = 'aiplatform:' + gw.baseUrl;
+      }
+    } catch { /* gateway fora do ar: tenta Ollama */ }
+
     // 2) Ollama local (fallback quando a VPS está fora do ar)
     if (!llm) {
       try {
