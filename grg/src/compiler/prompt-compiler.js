@@ -16,6 +16,7 @@
 const { SystemModule } = require('../kernel/module');
 const { STATE_MACHINE } = require('../kernel/states');
 const { FENIX_EVENTS, EVENT_PRIORITY } = require('../core/contracts/event-types');
+const { RealityEnforcementEngine } = require('../execution/reality-enforcement-engine');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -39,6 +40,7 @@ class PromptCompilerEngine extends SystemModule {
     this.aiPlatformUrl = aiPlatformUrl;
     this.defaultModel = defaultModel;
 
+    this.realityEnforcer = new RealityEnforcementEngine({ eventBus, workspaceManager });
     this.compilations = new Map(); // runId -> CompilationRecord
     this.learnedSkills = new Map(); // skillId -> SkillRecord
     this.status = STATE_MACHINE.BOOT;
@@ -46,12 +48,14 @@ class PromptCompilerEngine extends SystemModule {
 
   async start() {
     this.status = STATE_MACHINE.READY;
+    await this.realityEnforcer.start();
     this.status = STATE_MACHINE.ONLINE;
     this.startTime = Date.now();
     return this;
   }
 
   async stop() {
+    await this.realityEnforcer.stop();
     this.status = STATE_MACHINE.SHUTDOWN;
   }
 
@@ -397,33 +401,53 @@ test('${enhancement.domain} Contract Verification', () => {
     fs.writeFileSync(path.join(outputRoot, 'src', 'components', `${featureComponentName}.test.ts`), testCode, 'utf8');
     tasks[3].status = 'COMPLETED';
 
-    // Execute Microtask 5: Quality Gate & Reality Score
+    // Execute Microtask 5: Quality Gate & Reality Score via Reality Enforcement Engine
     tasks[4].status = 'RUNNING';
-    const realityScore = {
-      functionalScore: 100.0,
-      visualScore: 98.5,
-      apiScore: 100.0,
-      databaseScore: 100.0,
-      testScore: 100.0,
-      runtimeScore: 100.0,
-      overallRealityScore: 99.7
-    };
-    tasks[4].status = 'COMPLETED';
+    const generatedFiles = [
+      'package.json',
+      'index.html',
+      'src/App.tsx',
+      'src/main.tsx',
+      'src/components/Dashboard.tsx',
+      `src/components/${featureComponentName}.tsx`,
+      `src/components/${featureComponentName}.test.ts`,
+      'src/styles.css'
+    ];
 
-    // 4. SKILL EXTRACTION & OPERATIONAL MEMORY
-    const skillId = `skill_${enhancement.domain.toLowerCase()}_v1`;
-    if (!this.learnedSkills.has(skillId)) {
-      this.learnedSkills.set(skillId, {
-        id: skillId,
-        domain: enhancement.domain,
-        title: `Padrão de Construção Autônoma: ${enhancement.domain}`,
-        provenSuccessPatterns: [
-          'Scaffolding modular TypeScript + Vite',
-          'Componentes com estado e feedback visual imediato',
-          'Testes unitários associados ao slice'
-        ],
-        learnedAt: new Date().toISOString()
-      });
+    const realityEvidence = await this.realityEnforcer.enforceReality({
+      runId,
+      projectId,
+      outputRoot,
+      files: generatedFiles,
+      domain: enhancement.domain
+    });
+
+    tasks[4].status = realityEvidence.qualityGatePassed ? 'COMPLETED' : 'FAILED';
+
+    // 4. CONDITIONAL SKILL EXTRACTION & OPERATIONAL MEMORY (Only on proven Quality Gate Pass)
+    let skillLearned = null;
+    if (realityEvidence.qualityGatePassed) {
+      const skillId = `skill_${enhancement.domain.toLowerCase()}_v1`;
+      if (!this.learnedSkills.has(skillId)) {
+        this.learnedSkills.set(skillId, {
+          id: skillId,
+          domain: enhancement.domain,
+          title: `Padrão de Construção Autônoma: ${enhancement.domain}`,
+          provenSuccessPatterns: [
+            'Scaffolding modular TypeScript + Vite',
+            'Componentes com estado e feedback visual imediato',
+            'Testes unitários associados ao slice'
+          ],
+          evidenceProof: {
+            overallRealityScore: realityEvidence.overallRealityScore,
+            verifiedFiles: realityEvidence.evidence.filesystem.verifiedFiles.length,
+            zeroMockPassed: realityEvidence.evidence.zeroMock.pass,
+            persistenceVerified: realityEvidence.evidence.database.pass
+          },
+          learnedAt: new Date().toISOString()
+        });
+      }
+      skillLearned = this.learnedSkills.get(skillId);
     }
 
     // Register project in WorkspaceManager if available
@@ -438,9 +462,9 @@ test('${enhancement.domain} Contract Verification', () => {
       if (ws && ws.genomeBuilder) {
         ws.genomeBuilder.compile({
           projectDna: { name: projectName, stack: ['React', 'Vite'], modules: ['Dashboard', featureComponentName] },
-          operationalDna: { prompt: enhancement.originalPrompt, workflow: 'Scaffold -> Build -> Test -> Deploy', status: 'SUCCESS' },
+          operationalDna: { prompt: enhancement.originalPrompt, workflow: 'Scaffold -> Build -> Test -> Deploy', status: realityEvidence.status },
           visualDna: { theme: 'dark-obsidian', layout: 'responsive-grid' },
-          agentDna: { agentsUsed: ['Architect', 'Frontend', 'Developer', 'Testing'] }
+          agentDna: { agentsUsed: ['Architect', 'Frontend', 'Developer', 'Testing', 'QA'] }
         });
       }
     }
@@ -456,10 +480,15 @@ test('${enhancement.domain} Contract Verification', () => {
       assumptions: enhancement.assumptions,
       filesAffected: enhancement.filesAffected,
       tasks,
-      realityScore,
-      skillLearned: this.learnedSkills.get(skillId),
+      realityScore: {
+        ...realityEvidence.scores,
+        overallRealityScore: realityEvidence.overallRealityScore
+      },
+      overallRealityScore: realityEvidence.overallRealityScore,
+      realityEvidence,
+      skillLearned,
       durationMs,
-      status: 'COMPLETED_AND_VERIFIED',
+      status: realityEvidence.status === 'DONE' ? 'COMPLETED_AND_VERIFIED' : 'PARTIAL',
       completedAt: new Date().toISOString()
     };
 
@@ -469,8 +498,9 @@ test('${enhancement.domain} Contract Verification', () => {
       await this.eventBus.emit('prompt.compiler.completed', {
         runId,
         projectId,
-        realityScore: realityScore.overallRealityScore,
-        filesGenerated: 7
+        realityScore: realityEvidence.overallRealityScore,
+        status: resultRecord.status,
+        filesGenerated: generatedFiles.length
       }, EVENT_PRIORITY.HIGH);
     }
 

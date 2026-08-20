@@ -508,6 +508,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\preview-engine.js"
     },
     {
+      "name": "RealityEnforcementEngine",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\reality-enforcement-engine.js"
+    },
+    {
       "name": "SandboxExecutionEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\sandbox-execution-engine.js"

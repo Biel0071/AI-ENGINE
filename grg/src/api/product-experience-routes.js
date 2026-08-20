@@ -670,6 +670,54 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
+  // 17D. GET /api/v2/reality/evidence/:id (Get Physical Evidence of Compilation)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/reality\/evidence\/[^\/]+$/)) {
+    const parts = url.pathname.split('/');
+    const runId = parts[5];
+    if (!promptCompiler || !promptCompiler.realityEnforcer) {
+      sendError(res, 503, 'Reality Enforcer not initialized');
+      return true;
+    }
+    const evidence = promptCompiler.realityEnforcer.evidenceLog.get(runId);
+    if (!evidence) {
+      sendError(res, 404, `Reality evidence for run ${runId} not found`);
+      return true;
+    }
+    sendJson(res, 200, { success: true, evidence });
+    return true;
+  }
+
+  // 17E. POST /api/v2/reality/enforce (On-Demand Reality Gate Evaluation)
+  if (req.method === 'POST' && url.pathname === '/api/v2/reality/enforce') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { projectId = 'fenix_test_lab', outputRoot, files = [], domain = 'GENERAL_FEATURE' } = payload;
+        if (!promptCompiler || !promptCompiler.realityEnforcer) {
+          sendError(res, 503, 'Reality Enforcer not initialized');
+          return;
+        }
+
+        const runId = `enforce_${Date.now()}`;
+        const targetDir = outputRoot || path.join(__dirname, '..', '..', 'generated', projectId);
+        const evidence = await promptCompiler.realityEnforcer.enforceReality({
+          runId,
+          projectId,
+          outputRoot: targetDir,
+          files,
+          domain
+        });
+
+        sendJson(res, 200, { success: true, evidence });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
   // 18. GET /api/v2/jarvis/daily-operations (REAL 24/7 Daily Operations Report)
   if (req.method === 'GET' && url.pathname === '/api/v2/jarvis/daily-operations') {
     if (!jarvisOrchestrator) {
