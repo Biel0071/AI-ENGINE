@@ -31,7 +31,7 @@ class AlexaVoiceGateway extends SystemModule {
     fenixMind = null,
     jobOrchestrator = null,
     workspaceManager = null,
-    allowedAppIds = ['amzn1.ask.skill.fenix-core', 'amzn1.ask.skill.fenix-dev', 'fenix-voice-local', '*']
+    allowedAppIds = ['amzn1.ask.skill.d8464469-c6ed-428b-b52e-68789c41d21e', 'amzn1.ask.skill.fenix-core', 'amzn1.ask.skill.fenix-dev', 'fenix-voice-local', '*']
   } = {}) {
     super('alexa_voice_gateway', '2.0.0');
     this.eventBus = eventBus;
