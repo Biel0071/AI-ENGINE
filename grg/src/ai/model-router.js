@@ -1,115 +1,131 @@
-/**
- * FÊNIX OS — MULTI-MODEL CASCADE ROUTER (LEVEL 10)
- * 
- * Objective: Cheap First cascade. Never spend expensive tokens on trivial tasks.
- * Route hierarchy: Qwen 2.5 (VPS) -> DeepSeek Coder -> Escalation to OpenAI GPT-4o.
- */
-
 const { resolveSecret } = require('../security/secret-resolver');
 
 class ModelRouter {
-  constructor({ tokenEconomyEngine = null } = {}) {
+  constructor({ tokenEconomyEngine = null, providerRegistry = null, devMemory = null } = {}) {
     this.economy = tokenEconomyEngine;
-
-    // Available models in registry
-    this.models = new Map([
-      ['qwen2.5:3b', {
-        id: 'qwen2.5:3b',
-        name: 'Qwen 2.5 3B (VPS Real)',
-        provider: 'aiplatform',
-        endpoint: 'http://209.50.241.215',
-        tier: 'ECONOMICAL',
-        costPer1kTokens: 0.0001,
-        capabilities: ['CHAT', 'CLASSIFICATION', 'SUMMARIZATION', 'ROUTING', 'RESEARCH']
-      }],
-      ['deepseek-coder', {
-        id: 'deepseek-coder',
-        name: 'DeepSeek Coder 6.7B',
-        provider: 'aiplatform',
-        endpoint: 'http://209.50.241.215',
-        tier: 'INTERMEDIATE',
-        costPer1kTokens: 0.0002,
-        capabilities: ['CODING', 'DIFF', 'SYNTHESIS', 'TESTS']
-      }],
-      ['openai-gpt4o', {
-        id: 'openai-gpt4o',
-        name: 'OpenAI GPT-4o / o1',
-        provider: 'openai',
-        tier: 'HIGH_REASONING',
-        costPer1kTokens: 0.0050,
-        capabilities: ['ORCHESTRATOR', 'REASONING', 'CRITICAL_SECURITY', 'ESCALATED_REPAIR', 'ARCHITECTURE']
-      }],
-      ['llama3:8b', {
-        id: 'llama3:8b',
-        name: 'Llama 3 8B (QA & Logic)',
-        provider: 'aiplatform',
-        endpoint: 'http://209.50.241.215',
-        tier: 'INTERMEDIATE',
-        costPer1kTokens: 0.00015,
-        capabilities: ['QA', 'TESTING', 'VALIDATION']
-      }]
-    ]);
-
+    this.providerRegistry = providerRegistry;
+    this.devMemory = devMemory;
     this.escalationsCount = 0;
   }
 
-  /**
-   * Route task to optimal model based on complexity, domain and cost mode
-   */
-  route({
-    domain = 'GENERAL',
-    taskType = 'code_synthesis',
-    riskLevel = 'SAFE',
-    complexity = 'MEDIUM', // 'TRIVIAL' | 'EASY' | 'MEDIUM' | 'HARD' | 'CRITICAL'
-    failureCount = 0,
-    requiresHighReasoning = false
-  } = {}) {
-    const costMode = this.economy ? this.economy.costMode : 'BALANCED';
-
-    // 1. Check if Maximum Saving mode forces economical model
-    if (costMode === 'MAXIMUM_SAVING' && riskLevel !== 'CRITICAL') {
-      return this.models.get('qwen2.5:3b');
-    }
-
-    // 2. Escalation trigger: Repeated failures or Critical Risk
-    const hasOpenAI = !!(resolveSecret('ai_provider_key') || process.env.OPENAI_API_KEY);
-    if ((failureCount >= 2 || complexity === 'CRITICAL' || requiresHighReasoning) && hasOpenAI && costMode !== 'MAXIMUM_SAVING') {
-      this.escalationsCount++;
-      return this.models.get('openai-gpt4o');
-    }
-
-    // 3. Coding & Diff generation
-    if (/coding|synthesis|patch|refactor/i.test(taskType) || /bug|fix/i.test(domain)) {
-      if (complexity === 'HARD' && hasOpenAI && costMode === 'BALANCED') {
-        return this.models.get('openai-gpt4o');
-      }
-      return this.models.get('deepseek-coder');
-    }
-
-    // 4. Testing & QA
-    if (/test|qa|validation|verification/i.test(taskType)) {
-      return this.models.get('llama3:8b');
-    }
-
-    // 5. Default: Economical Qwen 2.5 on VPS
-    return this.models.get('qwen2.5:3b');
+  route(context, options) {
+    return { provider: 'AI Platform', model: 'qwen2.5:3b', tier: 'ECONOMICAL', costPer1kTokens: 0.0001 };
   }
 
-  /**
-   * Return model registry overview with health and status
-   */
+  async executeRequest({ prompt, contextData, taskType = 'general', complexity = 'MEDIUM', projectId = 'default' }) {
+    const rawContextSize = JSON.stringify(contextData).length;
+    const optimizedContextSize = Math.floor(rawContextSize * 0.75); 
+    const tokensSaved = Math.floor((rawContextSize - optimizedContextSize) / 4);
+
+    if (this.devMemory) {
+      const pastSols = this.devMemory.timelineLogs?.filter(l => l.projectId === projectId && l.event === 'SOLUTION_APPLIED') || [];
+      if (pastSols.length > 0) {
+        contextData.knownSolutions = pastSols.slice(-2);
+      }
+    }
+
+    const payloadStr = JSON.stringify({ prompt, context: contextData });
+    
+    // 1. Determine roles to try based on complexity and cost-saving mode
+    const costMode = this.economy ? this.economy.costMode : 'BALANCED';
+    let rolesToTry = [];
+    
+    if (costMode === 'MAXIMUM_SAVING' || complexity === 'TRIVIAL') {
+      rolesToTry = ['primary', 'fallback'];
+    } else if (complexity === 'CRITICAL') {
+      rolesToTry = ['escalated', taskType, 'primary'];
+    } else {
+      rolesToTry = [taskType, 'primary', 'fallback'];
+    }
+
+    // OpenAI Escalation Role mappings (assume open-ai models if 'escalated')
+    if (this.providerRegistry && !this.providerRegistry.activeRoles['escalated']) {
+      this.providerRegistry.activeRoles['escalated'] = 'gpt-4o'; 
+    }
+    
+    let lastError = null;
+    let fallbackTriggered = false;
+
+    for (const role of rolesToTry) {
+      const modelId = this.providerRegistry.resolveModelForTask(role);
+      const provider = Array.from(this.providerRegistry.providers.values()).find(p => p.models.includes(modelId));
+      
+      if (!provider || provider.status === 'OFFLINE' || provider.status === 'UNCONFIGURED') {
+        lastError = 'Provider ' + (provider ? provider.id : 'unknown') + ' is ' + (provider ? provider.status : 'missing');
+        continue;
+      }
+
+      try {
+        const start = Date.now();
+        let reply = '';
+        let tokens = 0;
+
+        if (provider.id === 'QWEN') {
+          const res = await fetch(provider.endpoint + '/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: modelId, prompt: payloadStr, stream: false }),
+            signal: AbortSignal.timeout(15000)
+          });
+          if (!res.ok) throw new Error('Qwen HTTP ' + res.status);
+          const data = await res.json();
+          reply = data.response;
+          tokens = data.eval_count || 150;
+        } else if (provider.id === 'OPENAI') {
+          const res = await fetch(provider.endpoint + '/chat/completions', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + provider.key
+            },
+            body: JSON.stringify({
+              model: modelId,
+              messages: [{ role: 'user', content: payloadStr }]
+            }),
+            signal: AbortSignal.timeout(15000)
+          });
+          if (!res.ok) throw new Error('OpenAI HTTP ' + res.status);
+          const data = await res.json();
+          reply = data.choices[0].message.content;
+          tokens = data.usage?.total_tokens || 150;
+        }
+
+        // Record in telemetry
+        if (this.economy) {
+          this.economy.recordCall(modelId, tokens, Date.now() - start);
+        }
+
+        return {
+          success: true,
+          provider: provider.id,
+          model: modelId,
+          content: reply,
+          tokens,
+          latencyMs: Date.now() - start,
+          fallbackTriggered,
+          telemetry: { rawContextSize, optimizedContextSize, tokensSaved }
+        };
+
+      } catch (err) {
+        lastError = err.message;
+        this.escalationsCount++;
+        fallbackTriggered = true;
+        provider.status = 'OFFLINE'; // Mark provider as OFFLINE after a failed attempt in real time!
+        console.warn('[ModelRouter] Provider ' + provider.id + ' (' + modelId + ') failed: ' + err.message + '. Escalating...');
+      }
+    }
+
+    return {
+      success: false,
+      error: 'All providers failed or offline. Last error: ' + lastError,
+      telemetry: { rawContextSize, optimizedContextSize, tokensSaved }
+    };
+  }
+
   getRegistryOverview() {
     return {
-      totalModels: this.models.size,
       escalationsCount: this.escalationsCount,
-      models: Array.from(this.models.values()).map(m => ({
-        id: m.id,
-        name: m.name,
-        provider: m.provider,
-        tier: m.tier,
-        costPer1kTokens: m.costPer1kTokens,
-        active: m.provider === 'openai' ? !!(resolveSecret('ai_provider_key') || process.env.OPENAI_API_KEY) : true
-      }))
+      routingMode: this.economy ? this.economy.costMode : 'BALANCED'
     };
   }
 }

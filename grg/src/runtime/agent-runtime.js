@@ -9,6 +9,7 @@ const { STATE_MACHINE } = require('../kernel/states');
 const { AgentRegistry } = require('../agents/agent-registry');
 const { FENIX_EVENTS, EVENT_PRIORITY } = require('../core/contracts/event-types');
 const crypto = require('crypto');
+const { RealWorldExecutor } = require('../orchestrator/real-world-executor');
 
 class AgentRuntime extends SystemModule {
   constructor({ eventBus = null, registry = null, store = null } = {}) {
@@ -19,6 +20,7 @@ class AgentRuntime extends SystemModule {
     this.activeAgents = new Map(); // instanceId -> AgentInstance
     this.sharedContext = new Map(); // projectId -> SharedContext
     this.status = STATE_MACHINE.BOOT;
+    this.tools = new RealWorldExecutor(null, eventBus);
   }
 
   async start() {
@@ -111,6 +113,7 @@ class AgentRuntime extends SystemModule {
         context: agent.context,
         heartbeat: () => this.heartbeat(instanceId),
         delegate: (targetRole, subTask) => this.delegate(instanceId, targetRole, subTask),
+        tools: this.tools,
         logDiscovery: (item) => {
           agent.context.project?.discoveries.push({ agent: agent.role, timestamp: new Date().toISOString(), item });
         }

@@ -1090,18 +1090,7 @@
       tailLength: 25 + Math.random() * 20
     }));
 
-    const agents = Array.from({ length: 8 }, (_, i) => ({
-      x: (Math.random() - 0.5) * 400,
-      y: (Math.random() - 0.5) * 300,
-      targetX: (Math.random() - 0.5) * 400,
-      targetY: (Math.random() - 0.5) * 300,
-      speed: 0.0008 + Math.random() * 0.0006,
-      avatar: ['📐', '💻', '🚀', '🛡️', '🤖', '⚡', '🎨', '🧪'][i % 8],
-      role: ['Architect', 'Developer', 'Deployer', 'Security', 'Orchestrator', 'Database', 'Frontend', 'Tester'][i % 8],
-      fullName: ['Architect Agent', 'Developer Agent', 'DevOps Agent', 'Security Agent', 'JARVIS Master Agent', 'Database Agent', 'Frontend Agent', 'Testing Agent'][i % 8],
-      color: ['#f97316', '#38bdf8', '#10b981', '#a78bfa', '#f59e0b', '#3b82f6', '#ec4899', '#14b8a6'][i % 8],
-      step: 0
-    }));
+    const agents = []; // REPLACED BY REAL AGENTS STATE
 
     const embers = Array.from({ length: 25 }, () => ({
       x: (Math.random() - 0.5) * 60,
@@ -1113,7 +1102,39 @@
 
     let tick = 0;
 
-    function render() {
+    
+      function mapRealAgentsToVisual() {
+         const realAgents = window.state?.agentStates || {};
+         const agentKeys = Object.keys(realAgents);
+         if (!window._visualAgents) window._visualAgents = [];
+         
+         const newVisuals = [];
+         agentKeys.forEach((key, i) => {
+            const ra = realAgents[key];
+            if (ra.status !== 'ACTIVE' && ra.status !== 'RUNNING') return;
+            
+            let va = window._visualAgents.find(a => a.key === key);
+            if (!va) {
+               va = {
+                 key,
+                 x: (Math.random() - 0.5) * 400,
+                 y: (Math.random() - 0.5) * 300,
+                 targetX: (Math.random() - 0.5) * 400,
+                 targetY: (Math.random() - 0.5) * 300,
+                 speed: 0.0008 + Math.random() * 0.0006,
+                 avatar: '🤖',
+                 role: ra.role || key,
+                 fullName: key,
+                 color: '#38bdf8',
+                 step: 0
+               };
+            }
+            newVisuals.push(va);
+         });
+         window._visualAgents = newVisuals;
+         return newVisuals;
+      }
+      function render() {
       tick++;
       ctx.clearRect(0, 0, width, height);
 
@@ -1148,7 +1169,7 @@
       drawTraffic(ctx, traffic);
       drawPhoenixMonument(ctx, tick, embers);
       drawAllCityBuildings(ctx, tick);
-      drawLivingAgents(ctx, agents, tick);
+      drawLivingAgents(ctx, mapRealAgentsToVisual(), tick);
 
       ctx.restore();
       requestAnimationFrame(render);
@@ -1310,16 +1331,22 @@
   }
 
   function drawAllCityBuildings(ctx, tick) {
-    const buildings = [
-      { key: 'software-factory', x: -180, y: -40, width: 44, height: 110, primaryColor: '#f97316' },
-      { key: 'agent-district', x: -160, y: 110, width: 48, height: 125, primaryColor: '#10b981' },
-      { key: 'neural-core', x: 0, y: -160, width: 50, height: 140, primaryColor: '#38bdf8' },
-      { key: 'security-citadel', x: 180, y: -50, width: 42, height: 100, primaryColor: '#ec4899' },
-      { key: 'knowledge-vault', x: 160, y: 100, width: 44, height: 95, primaryColor: '#a78bfa' },
-      { key: 'control-tower', x: 0, y: 150, width: 38, height: 130, primaryColor: '#f59e0b' }
-    ];
+    const buildings = []; // MOCKS REMOVED
 
-    buildings.forEach(b => {
+    
+      const realProjects = window.state?.projects || [];
+      const dynamicBuildings = realProjects.map((p, i) => {
+         const cols = ['#f97316', '#10b981', '#38bdf8', '#ec4899', '#a78bfa', '#f59e0b'];
+         return {
+            key: p.id || p.name || 'proj_'+i,
+            x: (i % 3 - 1) * 160,
+            y: Math.floor(i / 3) * 150 - 100,
+            width: 45,
+            height: 120,
+            primaryColor: cols[i % cols.length]
+         };
+      });
+      dynamicBuildings.forEach(b => {
       drawIsoBlock(ctx, b.x, b.y, b.width, b.height, 'rgba(15, 23, 42, 0.95)', 'rgba(30, 48, 85, 0.98)', 'rgba(10, 16, 30, 0.95)', b.primaryColor);
     });
   }
@@ -1470,11 +1497,7 @@
 
     const startTime = Date.now();
     try {
-      setTimeout(() => advanceJobStep(1, 5, 'Developer Agent', 'Gerando contratos, código TSX e persistência no disco...'), 400);
-      setTimeout(() => advanceJobStep(2, 5, 'Frontend Agent', 'Integrando componentes reativos e tokens de UI...'), 900);
-      setTimeout(() => advanceJobStep(3, 5, 'Testing Agent', 'Executando suíte de testes unitários automatizados...'), 1400);
-      setTimeout(() => advanceJobStep(4, 5, 'QA Agent', 'Auditoria Adversarial & Verificação de Evidências Físicas...'), 1900);
-
+                        
       const res = await fetch('/api/v2/mind/ingest', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -1557,34 +1580,31 @@
     });
   }
 
+  
   async function executeRealAgenticTask(prompt) {
-    openJobModal({
-      title: 'Desenvolvimento Agêntico na IDE',
-      objective: prompt,
-      estimatedTime: '8 min',
-      riskLevel: 'SAFE'
-    });
+      if (typeof appendTerminalLog === 'function') appendTerminalLog('[IDE Chat] Submitting request to FenixMind...', 'cyan');
+      const startTime = Date.now();
+      try {
+        const res = await fetch('/api/v2/mind/ingest', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            source: 'ide_chat',
+            message: prompt,
+            projectId: state.activeProjectId || 'fenix_test_lab'
+          })
+        });
+  
+        const data = await res.json();
+        
+        if (data.mindResponse && data.mindResponse.jobId) {
+            window.openJobInspector(data.mindResponse.jobId);
+        } else if (data.job && data.job.id) {
+            window.openJobInspector(data.job.id);
+        } else {
+            if (typeof appendTerminalLog === 'function') appendTerminalLog('[IDE Chat] Request processed by FenixMind.', 'green');
+        }
 
-    advanceJobStep(0, 5, 'Architect Agent', `Analisando projeto e criando especificação para "${prompt}"`);
-
-    const startTime = Date.now();
-    try {
-      setTimeout(() => advanceJobStep(1, 5, 'Developer Agent', 'Gerando código TypeScript e persistência no disco...'), 350);
-      setTimeout(() => advanceJobStep(2, 5, 'Frontend Agent', 'Integrando componentes reativos na UI...'), 750);
-      setTimeout(() => advanceJobStep(3, 5, 'Testing Agent', 'Executando testes automatizados...'), 1200);
-      setTimeout(() => advanceJobStep(4, 5, 'QA Agent', 'Certificando evidências no Reality Gate...'), 1600);
-
-      const res = await fetch('/api/v2/mind/ingest', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          source: 'ide_chat',
-          message: prompt,
-          projectId: state.activeProjectId || 'fenix_test_lab'
-        })
-      });
-
-      const data = await res.json();
       const latency = Date.now() - startTime;
 
       if (data.success) {
@@ -2010,3 +2030,72 @@
   }
 })();
 
+
+
+// ---- FENIX PHASE 2: GLOBAL ACTIONS & BINDS ----
+document.addEventListener('DOMContentLoaded', () => {
+  const navBar = document.querySelector('.nav-menu');
+  if (navBar && !navBar.innerHTML.includes('JARVIS')) {
+    const jarvisBtn = document.createElement('button');
+    jarvisBtn.className = 'nav-item';
+    jarvisBtn.innerHTML = '<span class="nav-icon">🤖</span><span class="nav-text">JARVIS</span>';
+    jarvisBtn.onclick = () => document.getElementById('jarvisDrawer').classList.toggle('open');
+    navBar.appendChild(jarvisBtn);
+
+    const secBtn = document.createElement('button');
+    secBtn.className = 'nav-item';
+    secBtn.innerHTML = '<span class="nav-icon">🛡️</span><span class="nav-text">Security</span>';
+    secBtn.onclick = () => document.getElementById('securityCenterModal').style.display='flex';
+    navBar.appendChild(secBtn);
+  }
+
+  // Job Inspector Logic
+  window.openJobInspector = async function(jobId) {
+    const modal = document.getElementById('jobInspectorModal');
+    modal.style.display = 'flex';
+    document.getElementById('inspJobId').innerText = jobId;
+    
+    try {
+      const res = await fetch('/api/v2/jarvis/jobs/' + jobId);
+      if (res.ok) {
+        const data = await res.json();
+        const j = data.job;
+        document.getElementById('inspProject').innerText = j.projectId;
+        document.getElementById('inspStatus').innerText = j.status;
+        document.getElementById('inspGoal').innerText = j.objective;
+        document.getElementById('inspCost').innerText = '$' + (j.cost || 0).toFixed(4);
+        document.getElementById('inspTokens').innerText = j.tokens || 0;
+        
+        let tl = j.timelineLogs.map(l => '<div><span style="color:var(--accent-cyan);">[' + l.timestamp + ']</span> <b>' + l.actor + '</b>: ' + l.message + '</div>').join('');
+        document.getElementById('inspTimeline').innerHTML = tl;
+      }
+    } catch(e) {}
+  };
+
+  const jarvisSend = document.getElementById('jarvisChatSend');
+  const jarvisInput = document.getElementById('jarvisChatInput');
+  const jarvisBody = document.getElementById('jarvisChatMessages');
+  if (jarvisSend && jarvisInput) {
+    jarvisSend.onclick = async () => {
+       const text = jarvisInput.value;
+       if(!text) return;
+       jarvisBody.innerHTML += '<div class="chat-msg msg-user">' + text + '</div>';
+       jarvisInput.value = '';
+       
+       if (text.toLowerCase().includes('analise') || text.toLowerCase().includes('corrija')) {
+          jarvisBody.innerHTML += '<div class="chat-msg msg-assistant">Criando job de análise contínua...</div>';
+          const res = await fetch('/api/v2/jarvis/jobs/submit', {
+             method: 'POST',
+             headers: {'Content-Type': 'application/json'},
+             body: JSON.stringify({ projectId: window.state?.activeProjectId || 'ZAPAI-FINAL', title: 'JARVIS Request', objective: text })
+          });
+          if(res.ok) {
+             const data = await res.json();
+             jarvisBody.innerHTML += '<div class="chat-msg msg-assistant">Job ' + data.job.id + ' submetido! <button onclick="openJobInspector(\'' + data.job.id + '\')" style="margin-top:5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--accent-cyan); padding:4px 8px; border-radius:4px; cursor:pointer;">🔍 Inspecionar Job</button></div>';
+          }
+       } else {
+          jarvisBody.innerHTML += '<div class="chat-msg msg-assistant">Processando pelo FenixMind... (Reconhecido: ' + text + ')</div>';
+       }
+    };
+  }
+});

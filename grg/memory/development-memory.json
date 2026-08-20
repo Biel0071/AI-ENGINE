@@ -1,6 +1,6 @@
 {
   "version": "5.0.0",
-  "totalEntries": 2,
+  "totalEntries": 4,
   "totalPatterns": 2,
   "entries": [
     {
@@ -44,6 +44,36 @@
       "source": "fenix_mind",
       "usedCount": 0,
       "createdAt": "2026-08-20T18:05:38.547Z"
+    },
+    {
+      "id": "mem_1787251396282_a7d3b6",
+      "category": "PROJECT",
+      "projectId": "ZAPAI-FINAL",
+      "title": "",
+      "description": "Operations.tsx was orphaned, route was redirecting, not linked in Sidebar",
+      "context": {},
+      "solution": null,
+      "filesAffected": [],
+      "tags": [],
+      "confidence": 1,
+      "source": "fenix_mind",
+      "usedCount": 0,
+      "createdAt": "2026-08-20T18:43:16.283Z"
+    },
+    {
+      "id": "mem_1787251401471_f90a9c",
+      "category": "PROJECT",
+      "projectId": "ZAPAI-FINAL",
+      "title": "",
+      "description": "Operations.tsx was orphaned, route was redirecting, not linked in Sidebar",
+      "context": {},
+      "solution": null,
+      "filesAffected": [],
+      "tags": [],
+      "confidence": 1,
+      "source": "fenix_mind",
+      "usedCount": 0,
+      "createdAt": "2026-08-20T18:43:21.472Z"
     }
   ],
   "patterns": [
@@ -82,5 +112,5 @@
       "lastSeen": "2026-08-20T18:05:38.547Z"
     }
   ],
-  "lastUpdated": "2026-08-20T18:05:38.547Z"
+  "lastUpdated": "2026-08-20T18:43:21.475Z"
 }

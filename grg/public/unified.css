@@ -1927,3 +1927,118 @@ html, body {
   border-color: var(--border-glow);
   transform: translateY(-2px);
 }
+
+.ide-grid.layout-v3 {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1fr);
+  flex: 1;
+  border-bottom: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+.ide-bottom-panel {
+  height: 250px;
+  background: var(--bg-core);
+  display: flex;
+  flex-direction: column;
+}
+.bottom-tabs {
+  display: flex;
+  background: rgba(0,0,0,0.5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.bottom-tab {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.bottom-tab.active {
+  color: var(--accent-cyan);
+  border-bottom: 2px solid var(--accent-cyan);
+}
+.bottom-content {
+  flex: 1;
+  overflow: hidden;
+}
+.bottom-view {
+  display: none;
+  height: 100%;
+}
+.bottom-view.active {
+  display: block;
+}
+.ide-panel-explorer {
+  border-right: 1px solid var(--border-subtle);
+  background: rgba(10, 16, 26, 0.95);
+  display: flex;
+  flex-direction: column;
+}
+.panel-header {
+  padding: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  text-transform: uppercase;
+}
+.jarvis-drawer {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100vh;
+  background: rgba(6, 9, 14, 0.98);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+  transition: right 0.3s ease;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+.jarvis-drawer.open {
+  right: 0;
+}
+.jarvis-header {
+  padding: 15px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  color: var(--accent-cyan);
+}
+.jarvis-body {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.jarvis-input {
+  padding: 15px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  gap: 10px;
+}
+.jarvis-input input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 10px;
+  border-radius: 4px;
+}
+.jarvis-input button {
+  background: var(--accent-cyan);
+  color: #000;
+  border: none;
+  padding: 0 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}

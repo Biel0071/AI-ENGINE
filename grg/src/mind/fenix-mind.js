@@ -33,6 +33,12 @@ class FenixMind extends SystemModule {
     jobOrchestrator = null,
     realityEnforcer = null,
     observer = null,
+    tokenEconomy = null,
+    contextAssembler = null,
+    modelRouter = null,
+    visualReality = null,
+    connectionBroker = null,
+    devMemory = null,
     aiPlatformUrl = 'http://209.50.241.215',
     defaultModel = 'qwen2.5:3b'
   } = {}) {
@@ -46,12 +52,15 @@ class FenixMind extends SystemModule {
     this.aiPlatformUrl = aiPlatformUrl;
     this.defaultModel = defaultModel;
 
-    // Advanced Level 10 Engines
-    this.economy = new TokenEconomyEngine({ eventBus: this.eventBus });
-    this.contextAssembler = new ContextAssembler({ tokenEconomyEngine: this.economy });
-    this.modelRouter = new ModelRouter({ tokenEconomyEngine: this.economy });
-    this.frontendReality = new VisualRealityEngine({ workspaceManager: this.workspaceManager, eventBus: this.eventBus, promptCompiler: this.promptCompiler });
-    this.connectionBroker = new ConnectionBroker({ eventBus: this.eventBus, workspaceManager: this.workspaceManager });
+    // Advanced Level 10 Engines (passed from core runtime)
+    this.economy = tokenEconomy || new TokenEconomyEngine({ eventBus: this.eventBus });
+    this.contextAssembler = contextAssembler || new ContextAssembler({ tokenEconomyEngine: this.economy });
+    this.modelRouter = modelRouter || new ModelRouter({ tokenEconomyEngine: this.economy });
+    this.frontendReality = visualReality || new VisualRealityEngine({ workspaceManager: this.workspaceManager, eventBus: this.eventBus, promptCompiler: this.promptCompiler });
+    this.connectionBroker = connectionBroker || new ConnectionBroker({ eventBus: this.eventBus, workspaceManager: this.workspaceManager });
+    
+    // Memory Reference
+    this.devMemory = devMemory;
 
     // Multi-Tier Memory Hierarchy
     this.memory = {
@@ -84,6 +93,7 @@ class FenixMind extends SystemModule {
   }
 
   async start() {
+      this._loadMemory();
     this.status = STATE_MACHINE.READY;
     this.status = STATE_MACHINE.ONLINE;
     this.startTime = Date.now();
@@ -109,7 +119,47 @@ class FenixMind extends SystemModule {
    * POST /api/v2/mind/ingest
    * =========================================================================
    */
-  async ingest({
+  
+    _loadMemory() {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const file = path.join(__dirname, '../../../../.data/mind_memory.json');
+        if (fs.existsSync(file)) {
+           const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+           if (data.conversations) {
+               Object.keys(data.conversations).forEach(k => {
+                   this.memory.conversations.set(k, data.conversations[k]);
+               });
+           }
+        }
+      } catch (e) {
+        console.warn('Error loading mind memory:', e.message);
+      }
+    }
+
+    _persistMemory() {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const dir = path.join(__dirname, '../../../../.data');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        
+        const convObj = {};
+        for (const [k, v] of this.memory.conversations.entries()) {
+           convObj[k] = v;
+        }
+        
+        fs.writeFileSync(path.join(dir, 'mind_memory.json'), JSON.stringify({
+            conversations: convObj,
+            updatedAt: new Date().toISOString()
+        }, null, 2));
+      } catch (e) {
+        console.warn('Error persisting mind memory:', e.message);
+      }
+    }
+
+    async ingest({
     source = 'fenix', // 'fenix' | 'ide' | 'chat' | 'codex' | 'qwen' | 'claude' | 'api' | 'voice' | 'github'
     message,
     projectId = 'fenix_test_lab',
@@ -204,6 +254,7 @@ class FenixMind extends SystemModule {
       this.memory.conversations.set(convId, []);
     }
     this.memory.conversations.get(convId).push(conversationEvent);
+      this._persistMemory();
 
     // 10. Update Project Memory & Operational Decision Ledger
     this.updateProjectMemory(projectId, {

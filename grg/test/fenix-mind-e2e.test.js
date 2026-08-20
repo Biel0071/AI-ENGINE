@@ -79,6 +79,7 @@ async function runSuite() {
   assert.strictEqual(ideRes.data.source, 'ide');
   assert.strictEqual(ideRes.data.status, 'COMPLETED_AND_VERIFIED');
   console.log(`   ✅ Run ID: ${ideRes.data.runId} | Reality Score: ${ideRes.data.realityScore}%`);
+  console.log(`   [DEBUG] QualityGate:`, ideRes.data.realityEvidence?.qualityGatePassed, ideRes.data.realityEvidence?.scores);
 
   // 2. Ingest via Central Mind Endpoint
   console.log('\n[2/10] Ingesting Prompt from Central Mind API...');
@@ -153,7 +154,7 @@ async function runSuite() {
   console.log('\n[8/10] Testing Skill Extraction & Operational Memory...');
   const skillsRes = await get('/api/v2/compiler/skills');
   assert.strictEqual(skillsRes.status, 200);
-  assert.ok(skillsRes.data.totalSkills > 0, 'Learned skills must exist');
+  assert.ok(skillsRes.data.total > 0, 'Learned skills must exist');
   console.log(`   ✅ Reusable Skills in Memory: ${skillsRes.data.skills.map(s => s.id).join(', ')}`);
 
   // 9. Research & Vision Tools
