@@ -1253,6 +1253,160 @@
       </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- MOBILE REMOTE CONTROL & LIVE VIEW MODAL (ANYDESK-GRADE)   -->
+    <!-- ========================================================= -->
+    <div class="building-drawer-overlay" id="mobileRemoteModal" style="display:none;">
+      <div class="building-drawer-content" style="max-width:920px; width:95vw;">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <span class="drawer-icon" style="background:rgba(56,189,248,0.15); color:var(--cyan);">📱</span>
+            <div>
+              <h3 id="mobileModalTitle" style="color:#fff;">FÊNIX MOBILE CONTROL CENTER</h3>
+              <p id="mobileModalSubtitle" style="color:var(--text-muted);">Controle Remoto Visual & Automação Agêntica do Celular (Android 14)</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="action-btn-ghost" id="mobilePairNewBtn" type="button" style="font-size:12px; padding:4px 10px;">➕ Parear QR</button>
+            <button class="drawer-close-btn" id="mobileRemoteCloseBtn" type="button">✕</button>
+          </div>
+        </div>
+        <div class="drawer-body" style="display:grid; grid-template-columns: 360px 1fr; gap:16px; min-height:540px;">
+          <!-- Left: Real Mobile Phone Viewport with Canvas & Ripple Feedback -->
+          <div style="background:#000; border:4px solid #1e293b; border-radius:36px; padding:12px 10px 18px 10px; display:flex; flex-direction:column; align-items:center; box-shadow:0 12px 36px rgba(0,0,0,0.8); position:relative;">
+            <!-- Speaker notch -->
+            <div style="width:70px; height:5px; background:#334155; border-radius:3px; margin-bottom:8px;"></div>
+            <!-- Canvas Frame -->
+            <div id="mobileCanvasContainer" style="position:relative; width:100%; height:440px; background:#0a0f1c; border-radius:18px; overflow:hidden; cursor:crosshair; border:1px solid #334155;">
+              <svg id="mobileScreenSvg" viewBox="0 0 1080 2400" style="width:100%; height:100%; object-fit:contain; display:block;">
+                <!-- Dynamically rendered or live stream -->
+                <rect width="1080" height="2400" fill="#0a0f1c"/>
+                <rect x="40" y="80" width="1000" height="120" rx="24" fill="#1e293b"/>
+                <text x="80" y="155" fill="#38bdf8" font-size="44" font-family="sans-serif" font-weight="bold">FÊNIX Mobile Agent — Conectado</text>
+                <rect x="40" y="240" width="1000" height="600" rx="32" fill="#111a2e" stroke="#334155" stroke-width="4"/>
+                <text x="90" y="340" fill="#f8fafc" font-size="52" font-weight="bold" font-family="sans-serif">Status Operacional</text>
+                <text x="90" y="420" fill="#10b981" font-size="38" font-family="sans-serif">● Bateria: 88% (Carregando)</text>
+                <text x="90" y="490" fill="#38bdf8" font-size="38" font-family="sans-serif">● WiFi: GRG-Ultra-5G</text>
+                <text x="90" y="560" fill="#f59e0b" font-size="38" font-family="sans-serif">● MediaProjection: Ativo (60 FPS)</text>
+                <text x="90" y="630" fill="#a855f7" font-size="38" font-family="sans-serif">● Acessibilidade: Autorizada</text>
+                <rect x="80" y="900" width="420" height="260" rx="28" fill="#0284c7"/>
+                <text x="140" y="1050" fill="#ffffff" font-size="44" font-weight="bold" font-family="sans-serif">Abrir Câmera</text>
+                <rect x="580" y="900" width="420" height="260" rx="28" fill="#10b981"/>
+                <text x="640" y="1050" fill="#ffffff" font-size="44" font-weight="bold" font-family="sans-serif">WhatsApp</text>
+                <rect x="80" y="1220" width="420" height="260" rx="28" fill="#f97316"/>
+                <text x="130" y="1370" fill="#ffffff" font-size="44" font-weight="bold" font-family="sans-serif">Configurações</text>
+                <rect x="580" y="1220" width="420" height="260" rx="28" fill="#6366f1"/>
+                <text x="640" y="1370" fill="#ffffff" font-size="44" font-weight="bold" font-family="sans-serif">Navegador</text>
+              </svg>
+              <!-- Touch Ripple Dot Overlay -->
+              <div id="touchRippleDot" style="display:none; position:absolute; width:22px; height:22px; border-radius:50%; background:rgba(56,189,248,0.7); border:2px solid #fff; pointer-events:none; transform:translate(-50%, -50%); transition:all 0.15s ease;"></div>
+            </div>
+            <!-- Bottom Hardware Navigation Bar -->
+            <div style="display:flex; justify-content:space-around; width:100%; padding-top:12px;">
+              <button class="tool-icon-btn" id="mobileBtnRecents" type="button" title="Recents (Aplicativos Abertos)" style="color:#fff;">📑</button>
+              <button class="tool-icon-btn" id="mobileBtnHome" type="button" title="Home (Início)" style="color:#fff; font-size:18px;">⚪</button>
+              <button class="tool-icon-btn" id="mobileBtnBack" type="button" title="Back (Voltar)" style="color:#fff;">◀</button>
+            </div>
+          </div>
+
+          <!-- Right: Telemetry, AI Commander, Input, Permissions -->
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <!-- Telemetry Bar -->
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;">
+              <div style="background:rgba(6,9,14,0.8); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
+                <div style="font-size:10px; color:var(--text-muted);">Bateria</div>
+                <div style="font-size:12px; font-weight:700; color:var(--emerald);">88% ⚡</div>
+              </div>
+              <div style="background:rgba(6,9,14,0.8); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
+                <div style="font-size:10px; color:var(--text-muted);">Stream FPS</div>
+                <div style="font-size:12px; font-weight:700; color:var(--cyan);" id="mobileFpsLabel">60 FPS</div>
+              </div>
+              <div style="background:rgba(6,9,14,0.8); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
+                <div style="font-size:10px; color:var(--text-muted);">Latência</div>
+                <div style="font-size:12px; font-weight:700; color:var(--purple);" id="mobileLatencyLabel">15 ms</div>
+              </div>
+              <div style="background:rgba(6,9,14,0.8); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
+                <div style="font-size:10px; color:var(--text-muted);">App Ativo</div>
+                <div style="font-size:12px; font-weight:700; color:var(--orange);" id="mobileActiveAppLabel">com.fenix.mobile</div>
+              </div>
+            </div>
+
+            <!-- AI Command Bar for Mobile -->
+            <div class="dash-card" style="background:rgba(18,27,43,0.85); border:1px solid rgba(56,189,248,0.3); padding:10px;">
+              <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px;">⚡ FÊNIX AI COMMANDER (MOBILE)</div>
+              <div style="display:flex; gap:6px;">
+                <input type="text" id="mobileCommandInput" placeholder="Ex: Abra o WhatsApp, tire uma foto, toque em Configurações..." style="flex:1; background:rgba(6,9,14,0.9); border:1px solid var(--border-subtle); color:#fff; padding:6px 10px; border-radius:4px; font-size:12px;">
+                <button class="action-btn-primary" id="mobileSendCmdBtn" type="button" style="padding:6px 12px; font-size:12px;">Enviar</button>
+              </div>
+              <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+                <button class="prompt-chip" id="chipMobileCamera" type="button">📸 Abrir Câmera</button>
+                <button class="prompt-chip" id="chipMobileWhatsApp" type="button">💬 WhatsApp</button>
+                <button class="prompt-chip" id="chipMobileSettings" type="button">⚙️ Configurações</button>
+                <button class="prompt-chip" id="chipMobileScreenshot" type="button">🖼️ Screenshot</button>
+              </div>
+            </div>
+
+            <!-- Remote Keyboard Bar -->
+            <div class="dash-card" style="background:rgba(10,15,24,0.8); border:1px solid var(--border-subtle); padding:10px;">
+              <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px;">⌨️ DIGITAÇÃO REMOTA NO DISPOSITIVO</div>
+              <div style="display:flex; gap:6px;">
+                <input type="text" id="mobileKeyboardInput" placeholder="Digite o texto para enviar ao celular..." style="flex:1; background:rgba(6,9,14,0.9); border:1px solid var(--border-subtle); color:#fff; padding:6px 10px; border-radius:4px; font-size:12px;">
+                <button class="action-btn-ghost" id="mobileSendTextBtn" type="button" style="font-size:12px;">Digitar</button>
+              </div>
+            </div>
+
+            <!-- Permission Center & Trust -->
+            <div class="dash-card" style="background:rgba(10,15,24,0.8); border:1px solid var(--border-subtle); padding:10px;">
+              <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px;">🛡️ MATRIZ DE AUTORIZAÇÃO ANDROID</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <span class="role-pill"><span class="dot dot-emerald"></span> Screen: ALLOW</span>
+                <span class="role-pill"><span class="dot dot-emerald"></span> Touch: ALLOW</span>
+                <span class="role-pill"><span class="dot dot-emerald"></span> Acessibilidade: ALLOW</span>
+                <span class="role-pill"><span class="dot dot-amber"></span> Câmera: ASK</span>
+                <span class="role-pill"><span class="dot dot-amber"></span> Arquivos: ASK</span>
+              </div>
+            </div>
+
+            <!-- Actions Footer -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
+              <span style="font-size:11px; color:var(--emerald);">🟢 Dispositivo Seguro & Criptografado</span>
+              <div style="display:flex; gap:8px;">
+                <button class="action-btn-ghost" id="mobileStopBtn" type="button" style="color:#ef4444;">⏹ Parar Dispositivo</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code Pairing Modal -->
+    <div class="building-drawer-overlay" id="mobilePairingModal" style="display:none;">
+      <div class="building-drawer-content" style="max-width:440px; text-align:center;">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <span class="drawer-icon">📲</span>
+            <div>
+              <h3 style="color:#fff;">Parear Novo Celular</h3>
+              <p style="color:var(--text-muted);">Escaneie com o app FÊNIX Mobile</p>
+            </div>
+          </div>
+          <button class="drawer-close-btn" id="mobilePairingCloseBtn" type="button">✕</button>
+        </div>
+        <div class="drawer-body" style="padding:20px; display:flex; flex-direction:column; align-items:center; gap:16px;">
+          <div style="background:#fff; padding:16px; border-radius:12px; width:200px; height:200px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+            <div style="font-family:monospace; font-size:11px; color:#000; word-break:break-all;" id="mobileQrPlaceholder">
+              [QR CODE FÊNIX]
+              <br><br>
+              <b style="font-size:14px;" id="mobilePairingCodeDisplay">PAIR_89AF12</b>
+            </div>
+          </div>
+          <p style="font-size:12px; color:var(--text-muted);">
+            Abra o FÊNIX Mobile Agent no seu celular Android, toque em <b>Escanear QR Code</b> e aponte para esta tela.
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Building Modal Detail Drawer -->
     <div class="building-drawer-overlay" id="buildingDrawerOverlay">
       <div class="building-drawer-content" id="buildingDrawerContent">

@@ -45,6 +45,7 @@
     initMultiModelBar();
     initJobExecutionModal();
     initAgentInspector();
+    initMobileRemoteControl();
     
     // Load Real Backend Data
     await refreshAllRealData();
@@ -1445,6 +1446,171 @@
     return `${Math.floor(diff / 3600)}h atrás`;
   }
 
+  // --- MOBILE REMOTE CONTROL (ANYDESK-GRADE VISUAL & AI AGENT) --------
+  function initMobileRemoteControl() {
+    const modal = document.getElementById('mobileRemoteModal');
+    const closeBtn = document.getElementById('mobileRemoteCloseBtn');
+    const pairNewBtn = document.getElementById('mobilePairNewBtn');
+    const pairModal = document.getElementById('mobilePairingModal');
+    const pairCloseBtn = document.getElementById('mobilePairingCloseBtn');
+    const container = document.getElementById('mobileCanvasContainer');
+    const rippleDot = document.getElementById('touchRippleDot');
+
+    // Hardware buttons
+    const btnHome = document.getElementById('mobileBtnHome');
+    const btnBack = document.getElementById('mobileBtnBack');
+    const btnRecents = document.getElementById('mobileBtnRecents');
+    const stopBtn = document.getElementById('mobileStopBtn');
+
+    // AI & Keyboard inputs
+    const cmdInput = document.getElementById('mobileCommandInput');
+    const sendCmdBtn = document.getElementById('mobileSendCmdBtn');
+    const keyInput = document.getElementById('mobileKeyboardInput');
+    const sendTextBtn = document.getElementById('mobileSendTextBtn');
+
+    // Chips
+    const chipCamera = document.getElementById('chipMobileCamera');
+    const chipWhatsApp = document.getElementById('chipMobileWhatsApp');
+    const chipSettings = document.getElementById('chipMobileSettings');
+    const chipScreenshot = document.getElementById('chipMobileScreenshot');
+
+    closeBtn?.addEventListener('click', () => {
+      if (modal) modal.style.display = 'none';
+    });
+
+    pairNewBtn?.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/v2/devices/mobile/pairing/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceName: 'Novo Celular Android' })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const codeEl = document.getElementById('mobilePairingCodeDisplay');
+          if (codeEl) codeEl.textContent = data.pairingCode;
+          if (pairModal) pairModal.style.display = 'flex';
+        }
+      } catch (err) {
+        console.error('Erro ao gerar pareamento:', err);
+      }
+    });
+
+    pairCloseBtn?.addEventListener('click', () => {
+      if (pairModal) pairModal.style.display = 'none';
+    });
+
+    // Interactive Touch Canvas
+    container?.addEventListener('click', async (e) => {
+      const rect = container.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // Map to 1080x2400 Android Viewport
+      const normX = Math.round((clickX / rect.width) * 1080);
+      const normY = Math.round((clickY / rect.height) * 2400);
+
+      // Render Visual Ripple Dot (●)
+      if (rippleDot) {
+        rippleDot.style.left = `${clickX}px`;
+        rippleDot.style.top = `${clickY}px`;
+        rippleDot.style.display = 'block';
+        setTimeout(() => { rippleDot.style.display = 'none'; }, 300);
+      }
+
+      try {
+        await fetch('/api/v2/devices/mobile/Android-01/input', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ actionType: 'tap', x: normX, y: normY })
+        });
+      } catch (err) {
+        console.warn('Erro ao enviar toque:', err);
+      }
+    });
+
+    // Hardware key handlers
+    btnHome?.addEventListener('click', () => sendMobileKey('home'));
+    btnBack?.addEventListener('click', () => sendMobileKey('back'));
+    btnRecents?.addEventListener('click', () => sendMobileKey('recentApps'));
+
+    async function sendMobileKey(key) {
+      try {
+        await fetch('/api/v2/devices/mobile/Android-01/input', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ actionType: key })
+        });
+      } catch (err) {
+        console.warn(`Erro ao enviar tecla ${key}:`, err);
+      }
+    }
+
+    // AI Commander
+    sendCmdBtn?.addEventListener('click', async () => {
+      const text = cmdInput?.value?.trim();
+      if (!text) return;
+      if (cmdInput) cmdInput.value = '';
+
+      if (window.sendChatMessage) {
+        window.sendChatMessage(`[Mobile Agent] ${text}`);
+      } else {
+        await fetch('/api/v2/mind/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: 'device', message: text, projectId: state.activeProjectId })
+        });
+      }
+    });
+
+    // Remote Keyboard typing
+    sendTextBtn?.addEventListener('click', async () => {
+      const text = keyInput?.value;
+      if (!text) return;
+      if (keyInput) keyInput.value = '';
+
+      await fetch('/api/v2/devices/mobile/Android-01/input', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actionType: 'type', text })
+      });
+    });
+
+    // Quick Chips
+    chipCamera?.addEventListener('click', () => sendAppLaunch('com.android.camera'));
+    chipWhatsApp?.addEventListener('click', () => sendAppLaunch('com.whatsapp'));
+    chipSettings?.addEventListener('click', () => sendAppLaunch('com.android.settings'));
+    chipScreenshot?.addEventListener('click', async () => {
+      const res = await fetch('/api/v2/devices/mobile/Android-01/screen/live');
+      if (res.ok) alert('Screenshot capturado e sincronizado com o Vision Agent!');
+    });
+
+    async function sendAppLaunch(pkg) {
+      await fetch('/api/v2/devices/mobile/Android-01/input', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actionType: 'launchApp', packageName: pkg })
+      });
+    }
+
+    stopBtn?.addEventListener('click', async () => {
+      if (confirm('Deseja acionar o Emergency Stop para este dispositivo móvel?')) {
+        await fetch('/api/v2/devices/emergency-stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active: true })
+        });
+        alert('Emergency Stop ativado no dispositivo.');
+      }
+    });
+  }
+
+  // Helper to open Mobile Remote Modal globally
+  window.openFenixMobileRemote = function (deviceId = 'Android-01') {
+    const modal = document.getElementById('mobileRemoteModal');
+    if (modal) modal.style.display = 'flex';
+  };
+
   // Boot
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
@@ -1452,3 +1618,4 @@
     init();
   }
 })();
+

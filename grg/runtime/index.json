@@ -431,6 +431,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\device-manager.js"
     },
     {
+      "name": "AndroidRemoteAgentManager",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\mobile\\android-remote-agent.js"
+    },
+    {
       "name": "DigitalTwinEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\digital-twin\\digital-twin-engine.js"

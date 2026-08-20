@@ -21,6 +21,7 @@ const { AlexaVoiceGateway } = require('../voice/alexa-voice-gateway');
 const { VisionAgent } = require('../vision/vision-agent');
 const { ComputerControlAgent } = require('../automation/computer-control-agent');
 const { DeviceManager } = require('../devices/device-manager');
+const { AndroidRemoteAgentManager } = require('../devices/mobile/android-remote-agent');
 
 // Singleton engine instances attached to global runtime
 let reverseEngine = null;
@@ -38,6 +39,7 @@ let voiceGateway = null;
 let visionAgent = null;
 let computerAgent = null;
 let deviceManager = null;
+let androidRemoteManager = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
@@ -118,6 +120,14 @@ function initEngines(app) {
     jobOrchestrator: jarvisOrchestrator
   });
   deviceManager.start();
+
+  androidRemoteManager = new AndroidRemoteAgentManager({
+    eventBus,
+    deviceManager,
+    visionAgent,
+    workspaceManager
+  });
+  androidRemoteManager.start();
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
@@ -1302,6 +1312,205 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         if (!deviceManager) throw new Error('Device Manager não inicializado');
         const resStop = deviceManager.setEmergencyStop(payload.active !== false);
         sendJson(res, 200, { success: true, ...resStop });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 53. POST /api/v2/devices/mobile/pairing/create (Generate QR Pairing Session)
+  if (req.method === 'POST' && url.pathname === '/api/v2/devices/mobile/pairing/create') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const sess = androidRemoteManager.createPairingSession(payload);
+        sendJson(res, 200, sess);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 54. POST /api/v2/devices/mobile/pairing/claim (Pair Mobile Phone from QR Scan)
+  if (req.method === 'POST' && url.pathname === '/api/v2/devices/mobile/pairing/claim') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const claimRes = await androidRemoteManager.claimPairingSession(payload.pairingCode, payload);
+        sendJson(res, 200, claimRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 55. GET /api/v2/devices/mobile/:id/screen/live (Live Viewport & Screen Frame)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/devices\/mobile\/[^\/]+\/screen\/live$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[5];
+    if (!androidRemoteManager) {
+      sendError(res, 503, 'Android Remote Manager não inicializado');
+      return true;
+    }
+    try {
+      const screen = androidRemoteManager.getLiveScreen(devId);
+      sendJson(res, 200, screen);
+    } catch (err) {
+      sendError(res, 404, err.message);
+    }
+    return true;
+  }
+
+  // 56. POST /api/v2/devices/mobile/:id/screen/frame (Push Screen Frame from Android)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/mobile\/[^\/]+\/screen\/frame$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[5];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const frameRes = androidRemoteManager.updateScreenFrame(devId, payload);
+        sendJson(res, 200, frameRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 57. POST /api/v2/devices/mobile/:id/screen/stream-control (Start / Stop / Quality)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/mobile\/[^\/]+\/screen\/stream-control$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[5];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const streamRes = androidRemoteManager.setStreamControl(devId, payload);
+        sendJson(res, 200, streamRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 58. POST /api/v2/devices/mobile/:id/input (Dispatch Tap, Swipe, Type, Key)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/mobile\/[^\/]+\/input$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[5];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const inputRes = await androidRemoteManager.dispatchInputEvent(devId, payload);
+        sendJson(res, 200, inputRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 59. GET /api/v2/devices/mobile/:id/accessibility-tree (Semantic View Hierarchy)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/devices\/mobile\/[^\/]+\/accessibility-tree$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[5];
+    if (!androidRemoteManager) {
+      sendError(res, 503, 'Android Remote Manager não inicializado');
+      return true;
+    }
+    try {
+      const tree = androidRemoteManager.getAccessibilityTree(devId);
+      sendJson(res, 200, tree);
+    } catch (err) {
+      sendError(res, 404, err.message);
+    }
+    return true;
+  }
+
+  // 60. POST /api/v2/devices/mobile/:id/accessibility-tree (Update Semantic Tree from Android)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/mobile\/[^\/]+\/accessibility-tree$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[5];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const treeRes = androidRemoteManager.updateAccessibilityTree(devId, payload);
+        sendJson(res, 200, treeRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 61. POST /api/v2/devices/mobile/:id/analyze-region (AI Vision Understanding of Touch Coordinate)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/mobile\/[^\/]+\/analyze-region$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[5];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const visRes = await androidRemoteManager.analyzeMobileScreenRegion(devId, payload);
+        sendJson(res, 200, visRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 62. POST /api/v2/devices/mobile/groups (Create Device Fleet Group)
+  if (req.method === 'POST' && url.pathname === '/api/v2/devices/mobile/groups') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const grp = androidRemoteManager.createDeviceGroup(payload.name || 'Frota Mobile', payload.devices || []);
+        sendJson(res, 200, grp);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 63. POST /api/v2/devices/mobile/groups/:groupId/execute (Multi-Device Group DAG Job)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/mobile\/groups\/[^\/]+\/execute$/)) {
+    const parts = url.pathname.split('/');
+    const grpId = parts[6];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        const dagRes = await androidRemoteManager.executeMultiDeviceJob(grpId, payload);
+        sendJson(res, 200, dagRes);
       } catch (err) {
         sendError(res, 400, err.message);
       }
