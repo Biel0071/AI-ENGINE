@@ -20,6 +20,7 @@ const { FenixMind } = require('../mind/fenix-mind');
 const { AlexaVoiceGateway } = require('../voice/alexa-voice-gateway');
 const { VisionAgent } = require('../vision/vision-agent');
 const { ComputerControlAgent } = require('../automation/computer-control-agent');
+const { DeviceManager } = require('../devices/device-manager');
 
 // Singleton engine instances attached to global runtime
 let reverseEngine = null;
@@ -36,6 +37,7 @@ let fenixMind = null;
 let voiceGateway = null;
 let visionAgent = null;
 let computerAgent = null;
+let deviceManager = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
@@ -109,6 +111,13 @@ function initEngines(app) {
     workspaceManager
   });
   computerAgent.start();
+
+  deviceManager = new DeviceManager({
+    eventBus,
+    workspaceManager,
+    jobOrchestrator: jarvisOrchestrator
+  });
+  deviceManager.start();
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
@@ -1119,6 +1128,184 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       return true;
     }
     sendJson(res, 200, { total: computerAgent.auditLog.length, logs: computerAgent.auditLog });
+    return true;
+  }
+
+  // 43. POST /api/v2/devices/register (Device Registration)
+  if (req.method === 'POST' && url.pathname === '/api/v2/devices/register') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        const reg = await deviceManager.registerDevice(payload);
+        sendJson(res, 200, reg);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 44. POST /api/v2/devices/auth/challenge (Challenge-Response Nonce)
+  if (req.method === 'POST' && url.pathname === '/api/v2/devices/auth/challenge') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        const ch = deviceManager.createAuthChallenge(payload.deviceId);
+        sendJson(res, 200, ch);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 45. POST /api/v2/devices/auth/verify (Verify Signature & Issue Token)
+  if (req.method === 'POST' && url.pathname === '/api/v2/devices/auth/verify') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        const tokenRes = deviceManager.verifyAuthChallenge(payload.nonce, payload.signature);
+        sendJson(res, 200, tokenRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 46. GET /api/v2/devices (List Registered Devices)
+  if (req.method === 'GET' && url.pathname === '/api/v2/devices') {
+    if (!deviceManager) {
+      sendError(res, 503, 'Device Manager não inicializado');
+      return true;
+    }
+    const devList = Array.from(deviceManager.devices.values());
+    sendJson(res, 200, {
+      total: devList.length,
+      online: devList.filter(d => d.status === 'ONLINE').length,
+      emergencyStopActive: deviceManager.emergencyStopActive,
+      devices: devList
+    });
+    return true;
+  }
+
+  // 47. GET /api/v2/devices/:id (Get Specific Device State)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/devices\/[^\/]+$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[4];
+    if (!deviceManager) {
+      sendError(res, 503, 'Device Manager não inicializado');
+      return true;
+    }
+    const dev = deviceManager.devices.get(devId);
+    if (!dev) {
+      sendError(res, 404, `Dispositivo ${devId} não encontrado`);
+      return true;
+    }
+    sendJson(res, 200, { success: true, device: dev });
+    return true;
+  }
+
+  // 48. POST /api/v2/devices/:id/heartbeat (Heartbeat Telemetry)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/[^\/]+\/heartbeat$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[4];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        const hb = await deviceManager.recordHeartbeat(devId, payload);
+        sendJson(res, 200, hb);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 49. POST /api/v2/devices/:id/execute (Execute Authorized Local Action)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/[^\/]+\/execute$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[4];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        const execRes = await deviceManager.executeOnDevice(devId, {
+          ...payload,
+          actor: context.actorId || 'operator:web_ui'
+        });
+        sendJson(res, 200, execRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 50. POST /api/v2/devices/:id/permissions (Update Granular Permissions)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/[^\/]+\/permissions$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[4];
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        const permRes = deviceManager.updatePermissions(devId, payload.permissions);
+        sendJson(res, 200, permRes);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 51. POST /api/v2/devices/:id/revoke (Revoke Device Token / Kill Switch)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/devices\/[^\/]+\/revoke$/)) {
+    const parts = url.pathname.split('/');
+    const devId = parts[4];
+    if (!deviceManager) {
+      sendError(res, 503, 'Device Manager não inicializado');
+      return true;
+    }
+    try {
+      const rev = deviceManager.revokeDevice(devId);
+      sendJson(res, 200, rev);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 52. POST /api/v2/devices/emergency-stop (Global Kill Switch)
+  if (req.method === 'POST' && url.pathname === '/api/v2/devices/emergency-stop') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        const resStop = deviceManager.setEmergencyStop(payload.active !== false);
+        sendJson(res, 200, { success: true, ...resStop });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
     return true;
   }
 

@@ -421,6 +421,16 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\UnifiedEventBus.js"
     },
     {
+      "name": "WindowsDeviceAgent",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\agent-runtime\\windows-agent.js"
+    },
+    {
+      "name": "DeviceManager",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\device-manager.js"
+    },
+    {
       "name": "DigitalTwinEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\digital-twin\\digital-twin-engine.js"
