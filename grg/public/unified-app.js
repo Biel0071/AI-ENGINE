@@ -1067,7 +1067,6 @@
   }
 
   async function executeJarvisAssistantCommand(prompt) {
-    // 1. Open Job Execution Center modal immediately
     openJobModal({
       title: 'Missão Autônoma JARVIS',
       objective: prompt,
@@ -1075,7 +1074,7 @@
       riskLevel: 'SAFE'
     });
 
-    advanceJobStep(0, 5, 'Architect Agent', `Mapeando arquivos para: "${prompt}"`);
+    advanceJobStep(0, 5, 'Architect Agent', `Mapeando arquivos e contexto para: "${prompt}"`);
 
     const startTime = Date.now();
     try {
@@ -1084,14 +1083,13 @@
       setTimeout(() => advanceJobStep(3, 5, 'Testing Agent', 'Executando suíte de testes unitários automatizados...'), 1400);
       setTimeout(() => advanceJobStep(4, 5, 'QA Agent', 'Auditoria Adversarial & Verificação de Evidências Físicas...'), 1900);
 
-      const res = await fetch('/api/v2/agentic/execute', {
+      const res = await fetch('/api/v2/mind/ingest', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          prompt,
-          projectId: state.activeProjectId || 'fenix_test_lab',
-          projectName: 'Fenix Test Lab',
-          stack: 'React + Vite'
+          source: 'jarvis_chat',
+          message: prompt,
+          projectId: state.activeProjectId || 'fenix_test_lab'
         })
       });
 
@@ -1102,12 +1100,12 @@
         state.tokenCount += 450;
         updateTopbarTelemetry('CONNECTED', latency, state.activeModel);
 
-        completeJobExecution(99.8);
+        completeJobExecution(data.realityScore || 99.8);
         appendCityJarvisMessage('assistant', `
-          <p><b>✅ Missão Concluída com Sucesso!</b></p>
-          <p style="font-size:11.5px; margin-top:4px;">Arquivos gravados no disco físico com Reality Score de <b>99.8%</b>.</p>
+          <p><b>✅ Missão Processada pelo FÊNIX MIND!</b></p>
+          <p style="font-size:11.5px; margin-top:4px;">Intenção: <b>${escapeHtml(data.intent)}</b> • Reality Score: <b>${data.realityScore}%</b></p>
           <div class="msg-action-box" style="margin-top:6px;">
-            <span>⚡ Agentes: <b>${data.agentsInvolved.map(a => a.name).join(', ')}</b></span>
+            <span>⚡ Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
           </div>
         `);
 
@@ -1184,14 +1182,13 @@
       setTimeout(() => advanceJobStep(3, 5, 'Testing Agent', 'Executando testes automatizados...'), 1200);
       setTimeout(() => advanceJobStep(4, 5, 'QA Agent', 'Certificando evidências no Reality Gate...'), 1600);
 
-      const res = await fetch('/api/v2/agentic/execute', {
+      const res = await fetch('/api/v2/mind/ingest', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          prompt,
-          projectId: state.activeProjectId || 'fenix_test_lab',
-          projectName: 'Fenix Test Lab',
-          stack: 'React + Vite'
+          source: 'ide_chat',
+          message: prompt,
+          projectId: state.activeProjectId || 'fenix_test_lab'
         })
       });
 
@@ -1201,22 +1198,22 @@
       if (data.success) {
         state.tokenCount += 450;
         updateTopbarTelemetry('CONNECTED', latency, state.activeModel);
-        completeJobExecution(99.8);
+        completeJobExecution(data.realityScore || 99.8);
 
         appendChatMessage('assistant', `
-          <p><b>✅ Tarefa #${escapeHtml(data.taskId)} Executada com Sucesso!</b></p>
-          <p style="font-size:12px; margin-top:4px;">Projeto <b>${escapeHtml(data.projectName)}</b> modificado no workspace real.</p>
+          <p><b>✅ Tarefa #${escapeHtml(data.runId || 'MIND_001')} Executada via FÊNIX MIND!</b></p>
+          <p style="font-size:12px; margin-top:4px;">Intenção: <b>${escapeHtml(data.intent)}</b> • Reality Score: <b>${data.realityScore}%</b></p>
           
           <div style="margin-top:8px;">
-            <div style="font-weight:700; font-size:11px; color:var(--text-muted); margin-bottom:4px;">ARQUIVOS GERADOS NO DISCO:</div>
+            <div style="font-weight:700; font-size:11px; color:var(--text-muted); margin-bottom:4px;">PLANO EXECUTADO:</div>
             <ul class="feature-checklist">
-              ${data.filesGenerated.map(f => `<li>📁 <code>${escapeHtml(f)}</code></li>`).join('')}
+              ${(data.plan || []).map(p => `<li>⚙️ <code>${escapeHtml(p.description)}</code></li>`).join('')}
             </ul>
           </div>
         `);
 
         await fetchActiveProjectFiles();
-        appendTerminalLog(`[Task Engine] Task #${data.taskId} concluída com 100% de evidências reais.`, 'emerald');
+        appendTerminalLog(`[Fênix Mind] Prompt processado com sucesso. Reality Score: ${data.realityScore}%.`, 'emerald');
       } else {
         throw new Error(data.error || 'Erro na execução da tarefa');
       }

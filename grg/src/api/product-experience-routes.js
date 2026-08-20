@@ -16,6 +16,7 @@ const { AgentRegistry } = require('../agents/agent-registry');
 const { FENIX_AGENTS } = require('../agents/agent-definitions');
 const { AutonomousJobOrchestrator } = require('../orchestrator/autonomous-job-orchestrator');
 const { PromptCompilerEngine } = require('../compiler/prompt-compiler');
+const { FenixMind } = require('../mind/fenix-mind');
 
 // Singleton engine instances attached to global runtime
 let reverseEngine = null;
@@ -28,6 +29,7 @@ let githubEngine = null;
 let agentRuntime = null;
 let jarvisOrchestrator = null;
 let promptCompiler = null;
+let fenixMind = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
@@ -70,6 +72,16 @@ function initEngines(app) {
     observer
   });
   promptCompiler.start();
+
+  fenixMind = new FenixMind({
+    eventBus,
+    workspaceManager,
+    promptCompiler,
+    jobOrchestrator: jarvisOrchestrator,
+    realityEnforcer: promptCompiler.realityEnforcer,
+    observer
+  });
+  fenixMind.start();
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
@@ -894,20 +906,125 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
-  // 30. GET /api/v2/jobs/:id/details
-  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/jobs\/[^\/]+\/details$/)) {
+  // 31. POST /api/v2/mind/ingest (CENTRAL INTELLIGENCE COMMAND INTERCEPTOR)
+  if (req.method === 'POST' && url.pathname === '/api/v2/mind/ingest') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { source = 'api', message, projectId = 'fenix_test_lab', conversationId, attachments, context: ctx } = payload;
+        if (!message) throw new Error('Campo "message" é obrigatório para ingestão no MIND');
+
+        if (!fenixMind) {
+          sendError(res, 503, 'FÊNIX MIND não inicializado');
+          return;
+        }
+
+        const result = await fenixMind.ingest({
+          source,
+          message,
+          projectId,
+          conversationId,
+          attachments,
+          context: ctx || context
+        });
+
+        sendJson(res, 200, { success: true, ...result });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 32. GET /api/v2/mind/memory/conversations (List Conversation Memory)
+  if (req.method === 'GET' && url.pathname === '/api/v2/mind/memory/conversations') {
+    if (!fenixMind) {
+      sendError(res, 503, 'FÊNIX MIND não inicializado');
+      return true;
+    }
+    const convs = Array.from(fenixMind.memory.conversations.entries()).map(([id, events]) => ({
+      conversationId: id,
+      totalEvents: events.length,
+      lastEvent: events[events.length - 1] || null
+    }));
+    sendJson(res, 200, { total: convs.length, conversations: convs });
+    return true;
+  }
+
+  // 33. GET /api/v2/mind/memory/conversations/:id (Get Specific Conversation Context)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/mind\/memory\/conversations\/[^\/]+$/)) {
     const parts = url.pathname.split('/');
-    const jobId = parts[4];
-    if (!jarvisOrchestrator) {
-      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+    const convId = parts[5];
+    if (!fenixMind) {
+      sendError(res, 503, 'FÊNIX MIND não inicializado');
       return true;
     }
-    const job = jarvisOrchestrator.jobs.get(jobId);
-    if (!job) {
-      sendError(res, 404, `Job ${jobId} não encontrado`);
+    const events = fenixMind.memory.conversations.get(convId) || [];
+    sendJson(res, 200, { conversationId: convId, total: events.length, events });
+    return true;
+  }
+
+  // 34. GET /api/v2/mind/memory/project/:id (Get Project Specific Memory & 4-DNA)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/mind\/memory\/project\/[^\/]+$/)) {
+    const parts = url.pathname.split('/');
+    const prjId = parts[5];
+    if (!fenixMind) {
+      sendError(res, 503, 'FÊNIX MIND não inicializado');
       return true;
     }
-    sendJson(res, 200, { success: true, job });
+    const mem = fenixMind.memory.projectMemories.get(prjId) || { projectId: prjId, patterns: [] };
+    sendJson(res, 200, { success: true, projectMemory: mem });
+    return true;
+  }
+
+  // 35. GET /api/v2/mind/models (Get Multi-Model Router Registry)
+  if (req.method === 'GET' && url.pathname === '/api/v2/mind/models') {
+    if (!fenixMind) {
+      sendError(res, 503, 'FÊNIX MIND não inicializado');
+      return true;
+    }
+    const models = Array.from(fenixMind.modelRegistry.values());
+    sendJson(res, 200, {
+      total: models.length,
+      activeRoles: fenixMind.roleModelMapping,
+      models
+    });
+    return true;
+  }
+
+  // 36. POST /api/v2/mind/research (Execute Web Research Tool)
+  if (req.method === 'POST' && url.pathname === '/api/v2/mind/research') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!fenixMind) throw new Error('FÊNIX MIND não inicializado');
+        const report = await fenixMind.executeWebResearch(payload.query || 'React Architecture');
+        sendJson(res, 200, { success: true, report });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 37. POST /api/v2/mind/vision (Execute Vision Analysis Tool)
+  if (req.method === 'POST' && url.pathname === '/api/v2/mind/vision') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!fenixMind) throw new Error('FÊNIX MIND não inicializado');
+        const analysis = await fenixMind.executeVisionAnalysis(payload);
+        sendJson(res, 200, { success: true, analysis });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
     return true;
   }
 

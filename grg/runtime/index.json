@@ -874,6 +874,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\qdrant-vector-store.js"
     },
     {
+      "name": "FenixMind",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\mind\\fenix-mind.js"
+    },
+    {
       "name": "Estimator",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\estimator.js"
