@@ -972,41 +972,40 @@
         </section>
 
         <!-- ======================================================= -->
-        <!-- VIEW: ⚡ OPERAÇÕES 24/7 & JARVIS AUTONOMOUS CENTER     -->
+        <!-- VIEW: ⚡ OPERAÇÕES 24/7 & LIVE MISSION CONTROL           -->
         <!-- ======================================================= -->
         <section id="view-operations" class="workspace-view">
           <div class="view-panel-container">
-            <div class="view-panel-header">
+            <div class="view-panel-header" style="border-bottom: 1px solid rgba(56,189,248,0.2); padding-bottom: 12px;">
               <div>
-                <h2>⚡ FÊNIX JARVIS — Painel de Operações Autônomas 24/7</h2>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <h2>⚡ FÊNIX LIVE MISSION CONTROL</h2>
+                  <span class="status-pill text-emerald" style="animation:pulse 2s infinite;">🟢 24/7 ONLINE</span>
+                </div>
                 <p style="color:var(--text-secondary); font-size:12px; margin-top:2px;">
-                  Monitoramento contínuo, orquestração de jobs, governança de aprovação e propagação cross-project.
+                  Orquestração de jobs concorrentes em tempo real, fluxo de microtarefas DAG, streaming de eventos e governança.
                 </p>
               </div>
-              <button class="action-btn-primary" id="manualHeartbeatTickBtn" type="button">🔄 Disparar Heartbeat Agora</button>
+              <div style="display:flex; gap:8px;">
+                <button class="action-btn-ghost" id="openCreateJobModalBtn" type="button">➕ Novo Job</button>
+                <button class="action-btn-primary" id="manualHeartbeatTickBtn" type="button">🔄 Heartbeat</button>
+              </div>
             </div>
 
-            <!-- Daily Operations Summary Cards -->
-            <div class="city-kpi-strip" style="background:rgba(18,27,43,0.4); border-radius:var(--radius-md); padding:12px;">
-              <div class="kpi-card">
-                <span class="kpi-icon">📁</span>
-                <div class="kpi-meta">
-                  <span class="kpi-label">Projetos Monitorados</span>
-                  <span class="kpi-value text-cyan" id="opsProjectsMonitored">0</span>
-                </div>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-icon">💚</span>
-                <div class="kpi-meta">
-                  <span class="kpi-label">Projetos Saudáveis</span>
-                  <span class="kpi-value text-emerald" id="opsProjectsHealthy">0</span>
-                </div>
-              </div>
+            <!-- Live Mission Control Telemetry Strip -->
+            <div class="city-kpi-strip" style="background:rgba(10,16,26,0.85); border:1px solid rgba(56,189,248,0.25); border-radius:var(--radius-md); padding:12px; margin-top:12px;">
               <div class="kpi-card">
                 <span class="kpi-icon">⚙️</span>
                 <div class="kpi-meta">
-                  <span class="kpi-label">Jobs Executados</span>
-                  <span class="kpi-value text-blue" id="opsJobsExecuted">0</span>
+                  <span class="kpi-label">Jobs Ativos</span>
+                  <span class="kpi-value text-cyan" id="opsActiveJobsCount">0</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-icon">🤖</span>
+                <div class="kpi-meta">
+                  <span class="kpi-label">Agentes Vivos</span>
+                  <span class="kpi-value text-emerald" id="opsAgentsWorkingCount">0 / 19</span>
                 </div>
               </div>
               <div class="kpi-card">
@@ -1017,54 +1016,93 @@
                 </div>
               </div>
               <div class="kpi-card">
-                <span class="kpi-icon">🐛</span>
+                <span class="kpi-icon">🧠</span>
                 <div class="kpi-meta">
-                  <span class="kpi-label">Bugs Corrigidos</span>
-                  <span class="kpi-value text-emerald" id="opsBugsFixed">0</span>
+                  <span class="kpi-label">Chamadas de IA</span>
+                  <span class="kpi-value text-blue" id="opsAiCallsCount">0</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-icon">⚡</span>
+                <div class="kpi-meta">
+                  <span class="kpi-label">Worker Pool</span>
+                  <span class="kpi-value text-amber" id="opsWorkerPoolUtilization">0 / 8</span>
                 </div>
               </div>
               <div class="kpi-card">
                 <span class="kpi-icon">💰</span>
                 <div class="kpi-meta">
                   <span class="kpi-label">Custo Estimado IA</span>
-                  <span class="kpi-value text-amber" id="opsEstimatedCost">R$ 0,00</span>
+                  <span class="kpi-value text-emerald" id="opsEstimatedCost">R$ 0,00</span>
                 </div>
               </div>
             </div>
 
-            <!-- Dual Split: Pending Approvals & Opportunities -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:8px;">
-              <!-- Panel: Pending Approvals -->
-              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(249,115,22,0.3);">
-                <div class="card-header-row">
-                  <span class="card-title" style="color:#fff;">🔔 Aguardando Aprovação Humana (<span id="opsPendingCount">0</span>)</span>
-                  <span class="pill-tag text-amber">Governança Segura</span>
+            <!-- Active Running Jobs Real-Time Progress Strip -->
+            <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(56,189,248,0.3); margin-top:12px; padding:12px;">
+              <div class="card-header-row" style="margin-bottom:8px;">
+                <span class="card-title" style="color:#fff; font-size:13px;">🚀 JOBS EM EXECUÇÃO CONCORRENTE NO RUNTIME</span>
+                <span class="pill-tag text-cyan" id="opsRunningJobsBadge">0 RUNNING</span>
+              </div>
+              <div id="opsActiveJobsProgressList" style="display:flex; flex-direction:column; gap:8px;">
+                <div style="color:var(--text-muted); font-size:11.5px; padding:8px;">Nenhum job em execução concorrente no momento.</div>
+              </div>
+            </div>
+
+            <!-- Live Event Stream & Terminal View -->
+            <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:12px; margin-top:12px;">
+              <!-- Live Event Stream Feed -->
+              <div class="dash-card" style="background:rgba(6,9,15,0.95); border:1px solid var(--border-subtle); padding:12px;">
+                <div class="card-header-row" style="margin-bottom:8px;">
+                  <span class="card-title" style="color:#fff; font-size:12.5px;">📡 LIVE EVENT STREAM (SSE PUSH)</span>
+                  <span class="pill-tag text-emerald" id="sseConnectionBadge">STREAM LIVE</span>
                 </div>
-                <div id="opsApprovalsList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
-                  <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma ação de risco aguardando autorização no momento.</div>
+                <div id="liveEventStreamFeed" style="font-family:'JetBrains Mono',monospace; font-size:11px; height:180px; overflow-y:auto; background:rgba(0,0,0,0.5); padding:8px; border-radius:6px; display:flex; flex-direction:column; gap:4px;">
+                  <div style="color:var(--text-muted);">[SSE] Conectado ao stream de eventos em tempo real do Fênix OS...</div>
                 </div>
               </div>
 
-              <!-- Panel: Cross-Project Opportunities -->
-              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(56,189,248,0.3);">
-                <div class="card-header-row">
-                  <span class="card-title" style="color:#fff;">💡 Oportunidades & Propagação (<span id="opsOpportunitiesCount">0</span>)</span>
-                  <span class="pill-tag text-cyan">Cross-Project Intelligence</span>
+              <!-- AI Calls & Intelligence Monitor -->
+              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(168,85,247,0.3); padding:12px;">
+                <div class="card-header-row" style="margin-bottom:8px;">
+                  <span class="card-title" style="color:#fff; font-size:12.5px;">🧠 INFERÊNCIA MULTI-MODELO (VPS)</span>
+                  <span class="pill-tag text-purple">qwen2.5:3b</span>
                 </div>
-                <div id="opsOpportunitiesList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
-                  <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma oportunidade de propagação pendente.</div>
+                <div id="opsRecentAiCallsList" style="font-size:11px; display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto;">
+                  <div style="color:var(--text-muted); padding:8px;">Nenhuma chamada recente de IA.</div>
                 </div>
               </div>
             </div>
 
-            <!-- Panel: Active & Recent Autonomous Jobs DAG -->
-            <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid var(--border-subtle); margin-top:8px;">
-              <div class="card-header-row">
-                <span class="card-title" style="color:#fff;">⚙️ Fila de Jobs & Microtarefas em Execução</span>
-                <span class="pill-tag text-emerald">24/7 Runtime Queue</span>
+            <!-- Visual Job Queue & Approvals Split -->
+            <div style="display:grid; grid-template-columns: 1.3fr 0.7fr; gap:12px; margin-top:12px;">
+              <!-- Visual Queue: RUNNING, WAITING, COMPLETED -->
+              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid var(--border-subtle); padding:12px;">
+                <div class="card-header-row" style="margin-bottom:8px;">
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <span class="card-title" style="color:#fff; font-size:12.5px;">📋 FILA DE JOBS (QUEUE)</span>
+                    <div class="device-preset-group">
+                      <button class="queue-tab-btn active" data-queue="all" type="button">Todos</button>
+                      <button class="queue-tab-btn" data-queue="running" type="button">Running</button>
+                      <button class="queue-tab-btn" data-queue="waiting" type="button">Waiting</button>
+                      <button class="queue-tab-btn" data-queue="completed" type="button">Completed</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="opsJobsQueueTable" style="display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto;">
+                  <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Carregando fila de jobs...</div>
+                </div>
               </div>
-              <div id="opsJobsList" style="display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto;">
-                <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhum job em fila no momento.</div>
+
+              <!-- Pending Approvals & Risk Governance -->
+              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(249,115,22,0.35); padding:12px;">
+                <div class="card-header-row" style="margin-bottom:8px;">
+                  <span class="card-title" style="color:#fff; font-size:12.5px;">🔔 APPROVAL CENTER (<span id="opsPendingCount">0</span>)</span>
+                  <span class="pill-tag text-amber">ASK-CONFIRM-EXECUTE</span>
+                </div>
+                <div id="opsApprovalsList" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;">
+                  <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma ação de risco pendente.</div>
+                </div>
               </div>
             </div>
           </div>
@@ -1421,6 +1459,25 @@
           <button class="drawer-close-btn" id="drawerCloseBtn" type="button">✕</button>
         </div>
         <div class="drawer-body" id="drawerBody">
+          <!-- Populated dynamically via unified-app.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Job Inspector Modal -->
+    <div class="building-drawer-overlay" id="jobInspectorModal" style="display:none;">
+      <div class="building-drawer-content" style="max-width:760px; max-height:85vh; display:flex; flex-direction:column;">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <span class="drawer-icon">🔍</span>
+            <div>
+              <h3 id="inspectorJobTitle" style="color:#fff;">Job Inspector</h3>
+              <p id="inspectorJobId" style="color:var(--cyan); font-family:monospace;">JOB-ID</p>
+            </div>
+          </div>
+          <button class="drawer-close-btn" id="jobInspectorCloseBtn" type="button">✕</button>
+        </div>
+        <div class="drawer-body" id="jobInspectorBody" style="padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;">
           <!-- Populated dynamically via unified-app.js -->
         </div>
       </div>

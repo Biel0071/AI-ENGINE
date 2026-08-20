@@ -372,6 +372,16 @@ class AlexaVoiceGateway extends SystemModule {
       };
     }
 
+    // 6B. FenixOpenIdeIntent: Abertura da Visual IDE
+    if (name === 'FenixOpenIdeIntent' || (name === 'FenixCommandIntent' && /abra a ide|abrir ide/i.test(slots.command?.value || ''))) {
+      sessionCtx.targetView = 'ide';
+      return {
+        speechText: `IDE aberta com o projeto ${sessionCtx.activeProjectId}. Árvore de arquivos, editor de código e terminal conectados.`,
+        cardTitle: 'Visual IDE — Conectada',
+        targetView: 'ide'
+      };
+    }
+
     // 7. FenixStopIntent / FenixCancelIntent: Cancelamento Seguro de Jobs
     if (name === 'FenixStopIntent' || name === 'FenixCancelIntent' || (name === 'FenixCommandIntent' && /pare o trabalho|cancele a tarefa|parar/i.test(slots.command?.value || ''))) {
       const activeJobs = this.jobOrchestrator ? this.jobOrchestrator.getActiveJobs() : [];

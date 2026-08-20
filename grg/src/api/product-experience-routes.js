@@ -40,12 +40,13 @@ let visionAgent = null;
 let computerAgent = null;
 let deviceManager = null;
 let androidRemoteManager = null;
+let eventBus = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
 function initEngines(app) {
   if (workspaceManager) return;
-  const eventBus = app.bus || app.eventBus;
+  eventBus = app.bus || app.eventBus;
 
   observer = new DevelopmentObserver({ eventBus });
   observer.start();
@@ -822,6 +823,151 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         sendError(res, 400, err.message);
       }
     });
+    return true;
+  }
+
+  // 20B. GET /api/v2/events/stream (SSE REAL-TIME EVENT STREAM)
+  if (req.method === 'GET' && url.pathname === '/api/v2/events/stream') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*'
+    });
+
+    const sendSse = (evtName, data) => {
+      res.write(`event: ${evtName}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+
+    sendSse('connected', { status: 'CONNECTED', timestamp: new Date().toISOString() });
+
+    const unsubList = [];
+    if (eventBus) {
+      const eventNames = [
+        'job.created', 'job.started', 'job.progress', 'job.paused', 'job.resumed', 'job.completed', 'job.cancelled', 'job.failed',
+        'agent.started', 'agent.thinking', 'agent.tool.called', 'agent.file.read', 'agent.file.modified', 'agent.test.started', 'agent.completed', 'agent.state.changed',
+        'ai.request.started', 'ai.request.completed',
+        'approval.requested', 'approval.granted', 'approval.denied',
+        'voice.command.received', 'voice.intent.detected',
+        'jarvis.heartbeat.tick'
+      ];
+
+      eventNames.forEach(evt => {
+        const handler = (data) => sendSse(evt, { event: evt, timestamp: new Date().toISOString(), payload: data });
+        eventBus.on(evt, handler);
+        unsubList.push({ evt, handler });
+      });
+    }
+
+    req.on('close', () => {
+      unsubList.forEach(({ evt, handler }) => {
+        if (eventBus && typeof eventBus.off === 'function') {
+          eventBus.off(evt, handler);
+        }
+      });
+    });
+    return true;
+  }
+
+  // 20C. GET /api/v2/jarvis/jobs/queue (Visual Queue: Running, Waiting, Completed)
+  if (req.method === 'GET' && url.pathname === '/api/v2/jarvis/jobs/queue') {
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    const queue = jarvisOrchestrator.getQueueState();
+    sendJson(res, 200, queue);
+    return true;
+  }
+
+  // 20D. GET /api/v2/jarvis/jobs/:id (Job Detailed Inspector)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/jarvis\/jobs\/[^\/]+$/) && !url.pathname.endsWith('/approve') && !url.pathname.endsWith('/reject') && !url.pathname.endsWith('/pause') && !url.pathname.endsWith('/resume') && !url.pathname.endsWith('/cancel') && !url.pathname.endsWith('/retry') && !url.pathname.endsWith('/submit') && !url.pathname.endsWith('/queue')) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[5];
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    const job = jarvisOrchestrator.getJob(jobId);
+    if (!job) {
+      sendError(res, 404, `Job ${jobId} não encontrado`);
+      return true;
+    }
+    sendJson(res, 200, { success: true, job });
+    return true;
+  }
+
+  // 20E. POST /api/v2/jarvis/jobs/:id/pause (Pause Job)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jarvis\/jobs\/[^\/]+\/pause$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[5];
+    try {
+      const job = await jarvisOrchestrator.pauseJob(jobId);
+      sendJson(res, 200, { success: true, job });
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 20F. POST /api/v2/jarvis/jobs/:id/resume (Resume Job)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jarvis\/jobs\/[^\/]+\/resume$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[5];
+    try {
+      const job = await jarvisOrchestrator.resumeJob(jobId);
+      sendJson(res, 200, { success: true, job });
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 20G. POST /api/v2/jarvis/jobs/:id/cancel (Cancel Job)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jarvis\/jobs\/[^\/]+\/cancel$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[5];
+    try {
+      const job = await jarvisOrchestrator.cancelJob(jobId, 'Cancelado pelo operador');
+      sendJson(res, 200, { success: true, job });
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 20H. POST /api/v2/jarvis/jobs/:id/retry (Retry Job)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jarvis\/jobs\/[^\/]+\/retry$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[5];
+    try {
+      const job = await jarvisOrchestrator.retryJob(jobId);
+      sendJson(res, 200, { success: true, job });
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 20I. GET /api/v2/telemetry/full (Comprehensive System & Worker Telemetry)
+  if (req.method === 'GET' && url.pathname === '/api/v2/telemetry/full') {
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    sendJson(res, 200, jarvisOrchestrator.getFullTelemetry());
+    return true;
+  }
+
+  // 20J. GET /api/v2/telemetry/project/:id (Project-Level Health & Metrics)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/telemetry\/project\/[^\/]+$/)) {
+    const parts = url.pathname.split('/');
+    const projectId = parts[5];
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    sendJson(res, 200, jarvisOrchestrator.getProjectTelemetry(projectId));
     return true;
   }
 

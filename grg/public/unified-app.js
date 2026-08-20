@@ -46,7 +46,40 @@
     initJobExecutionModal();
     initAgentInspector();
     initMobileRemoteControl();
-    
+    initEventStreamSSE();
+
+    // Setup Job Inspector Modal Close
+    document.getElementById('jobInspectorCloseBtn')?.addEventListener('click', () => {
+      const m = document.getElementById('jobInspectorModal');
+      if (m) m.style.display = 'none';
+    });
+
+    // Setup Queue Tab Filter Buttons
+    document.querySelectorAll('.queue-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.queue-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentQueueFilter = btn.dataset.queue || 'all';
+        renderVisualQueueTable();
+      });
+    });
+
+    // Setup Open Create Job Modal
+    document.getElementById('openCreateJobModalBtn')?.addEventListener('click', () => {
+      const title = prompt('Título da Missão / Job:', 'Diagnóstico e Otimização de Performance');
+      if (!title) return;
+      fetch('/api/v2/jarvis/jobs/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          objective: title,
+          projectId: state.activeProjectId || 'fenix_test_lab',
+          riskLevel: 'SAFE'
+        })
+      }).then(() => fetchDailyOperations());
+    });
+
     // Load Real Backend Data
     await refreshAllRealData();
 
@@ -350,7 +383,102 @@
     appendTerminalLog(`[Job Center] Job concluído com sucesso. Reality Score: ${realityScore}%.`, 'emerald');
   }
 
-  // --- DAILY OPERATIONS -------------------------------------------------
+  // --- LIVE EVENT STREAM SSE ---------------------------------------------
+  let sseEventSource = null;
+
+  function initEventStreamSSE() {
+    if (sseEventSource) return;
+
+    try {
+      sseEventSource = new EventSource('/api/v2/events/stream');
+
+      sseEventSource.onopen = () => {
+        const badge = document.getElementById('sseConnectionBadge');
+        if (badge) { badge.textContent = 'STREAM LIVE'; badge.className = 'pill-tag text-emerald'; }
+        appendLiveEventStream('SYSTEM', 'Conexão SSE estabelecida com o Kernel do Fênix OS.');
+      };
+
+      sseEventSource.onerror = () => {
+        const badge = document.getElementById('sseConnectionBadge');
+        if (badge) { badge.textContent = 'RECONNECTING'; badge.className = 'pill-tag text-amber'; }
+      };
+
+      const eventTypes = [
+        'job.created', 'job.started', 'job.progress', 'job.paused', 'job.resumed', 'job.completed', 'job.cancelled', 'job.failed',
+        'agent.started', 'agent.thinking', 'agent.tool.called', 'agent.file.read', 'agent.file.modified', 'agent.test.started', 'agent.completed', 'agent.state.changed',
+        'ai.request.started', 'ai.request.completed',
+        'approval.requested', 'approval.granted', 'approval.denied',
+        'voice.command.received', 'voice.intent.detected'
+      ];
+
+      eventTypes.forEach(evtName => {
+        sseEventSource.addEventListener(evtName, (e) => {
+          try {
+            const data = JSON.parse(e.data || '{}');
+            handleLiveIncomingEvent(evtName, data);
+          } catch (err) {
+            console.warn('[SSE Parse Error]:', err);
+          }
+        });
+      });
+    } catch (err) {
+      console.warn('[SSE Init Error]:', err.message);
+    }
+  }
+
+  function handleLiveIncomingEvent(evtName, eventData) {
+    const payload = eventData.payload || {};
+    const actor = payload.agent || payload.actor || 'FÊNIX';
+
+    if (evtName === 'job.created') {
+      appendLiveEventStream('JARVIS', `Novo Job criado: "${payload.title || payload.jobId}" (Status: QUEUED)`);
+      fetchDailyOperations();
+    } else if (evtName === 'job.started') {
+      appendLiveEventStream('ORCHESTRATOR', `Iniciando execução do Job #${payload.jobId}: "${payload.title || ''}"`);
+      fetchDailyOperations();
+    } else if (evtName === 'job.progress') {
+      appendLiveEventStream(payload.agent || 'AGENT', `[${payload.progressPercent}%] ${payload.currentTask || 'Executando microtarefa'}`);
+      updateActiveJobProgressBar(payload.jobId, payload.progressPercent, payload.currentTask);
+    } else if (evtName === 'job.completed') {
+      appendLiveEventStream('QA Agent', `🎉 Job #${payload.jobId} concluído com sucesso! Reality Gate aprovado.`);
+      fetchDailyOperations();
+    } else if (evtName === 'agent.file.modified') {
+      appendLiveEventStream(payload.agent, `Modificou arquivo físico: ${payload.file}`);
+    } else if (evtName === 'ai.request.completed') {
+      appendLiveEventStream('AI Platform', `Inferência concluída (${payload.model}) • ${payload.tokens} tokens processados`);
+      fetchDailyOperations();
+    } else if (evtName === 'approval.requested') {
+      appendLiveEventStream('SECURITY', `🔔 Ação de risco requer aprovação humana para o Job #${payload.jobId}`);
+      fetchDailyOperations();
+    }
+  }
+
+  function appendLiveEventStream(actor, text) {
+    const feed = document.getElementById('liveEventStreamFeed');
+    if (!feed) return;
+
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = '6px';
+    row.style.lineHeight = '1.4';
+    row.innerHTML = `<span style="color:var(--cyan); font-weight:700;">[${new Date().toLocaleTimeString()}]</span> <span style="color:var(--amber); font-weight:600;">${escapeHtml(actor)}:</span> <span style="color:#e2e8f0;">${escapeHtml(text)}</span>`;
+    feed.appendChild(row);
+    if (feed.children.length > 50) feed.removeChild(feed.children[0]);
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function updateActiveJobProgressBar(jobId, percent, taskName) {
+    const bar = document.getElementById(`live_bar_${jobId}`);
+    const pctText = document.getElementById(`live_pct_${jobId}`);
+    const taskText = document.getElementById(`live_task_${jobId}`);
+    if (bar) bar.style.width = `${percent}%`;
+    if (pctText) pctText.textContent = `${percent}%`;
+    if (taskText && taskName) taskText.textContent = taskName;
+  }
+
+  // --- DAILY OPERATIONS & LIVE MISSION CONTROL --------------------------
+  let currentQueueFilter = 'all';
+
   async function fetchDailyOperations() {
     try {
       const res = await fetch('/api/v2/jarvis/daily-operations');
@@ -366,76 +494,246 @@
   function renderDailyOperations(report) {
     if (!report) return;
 
-    setElemText('opsProjectsMonitored', report.summary?.projectsMonitored || '0');
-    setElemText('opsProjectsHealthy', report.summary?.projectsHealthy || '0');
-    setElemText('opsJobsExecuted', report.jobs?.completed || '0');
-    setElemText('opsMicrotasksCount', report.jobs?.microtasksCompleted || '0');
-    setElemText('opsBugsFixed', report.engineering?.bugsFixed || '0');
-    setElemText('opsEstimatedCost', report.intelligence?.estimatedCostBrl || 'R$ 0,00');
+    const summary = report.summary || {};
+    const jobs = report.jobs || {};
+    const agents = report.agents || {};
+    const activeJobsList = jobs.list || [];
+    const runningJobs = activeJobsList.filter(j => j.status === 'RUNNING');
 
-    const approvalsList = document.getElementById('opsApprovalsList');
-    const approvalsCount = document.getElementById('opsPendingCount');
-    const badge = document.getElementById('opsApprovalsCount');
-    const pending = report.pendingApprovals || [];
+    // 1. KPI Strip
+    setElemText('opsActiveJobsCount', activeJobsList.length);
+    setElemText('opsAgentsWorkingCount', `${agents.working || 0} / ${agents.total || 19}`);
+    setElemText('opsMicrotasksCount', summary.microtasksCompleted || 0);
+    setElemText('opsAiCallsCount', summary.aiRequests || 0);
+    setElemText('opsWorkerPoolUtilization', summary.workerPoolUtilization || '0 / 8');
+    setElemText('opsEstimatedCost', `R$ ${(summary.estimatedCostBrl || 0).toFixed(2)}`);
+    setElemText('opsRunningJobsBadge', `${runningJobs.length} RUNNING`);
 
-    if (approvalsCount) approvalsCount.textContent = pending.length;
-    if (badge) badge.textContent = pending.length > 0 ? `🔔 ${pending.length}` : '24/7';
-
-    if (approvalsList) {
-      if (pending.length === 0) {
-        approvalsList.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma ação de risco aguardando autorização no momento.</div>`;
+    // 2. Active Jobs Progress List
+    const activeContainer = document.getElementById('opsActiveJobsProgressList');
+    if (activeContainer) {
+      if (activeJobsList.length === 0) {
+        activeContainer.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhum job em execução concorrente no momento. Todos os agentes estão em prontidão.</div>`;
       } else {
-        approvalsList.innerHTML = pending.map(appr => `
-          <div style="background:rgba(18,27,43,0.7); border:1px solid rgba(249,115,22,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+        activeContainer.innerHTML = activeJobsList.map(job => `
+          <div style="background:rgba(18,27,43,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <b style="color:#fff; font-size:12px;">${escapeHtml(appr.title)}</b>
-              <span class="pill-tag text-amber">Pendente</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="pill-tag text-cyan" style="font-family:monospace; font-weight:700;">#${escapeHtml(job.id.slice(-6))}</span>
+                <b style="color:#fff; font-size:12px;">${escapeHtml(job.title)}</b>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="pill-tag ${job.status === 'RUNNING' ? 'text-emerald' : 'text-amber'}">${escapeHtml(job.status)}</span>
+                <b id="live_pct_${job.id}" style="color:var(--cyan); font-size:12px; font-family:monospace;">${job.progressPercent || 0}%</b>
+              </div>
             </div>
-            <p style="color:var(--text-secondary); font-size:11px;">${escapeHtml(appr.reason)}</p>
-            <div style="display:flex; gap:8px; margin-top:4px;">
-              <button class="action-btn-primary approve-job-btn" data-job-id="${escapeHtml(appr.jobId)}" style="font-size:10.5px; padding:3px 10px;" type="button">✅ Autorizar Execução</button>
-              <button class="action-btn-ghost reject-job-btn" data-job-id="${escapeHtml(appr.jobId)}" style="font-size:10.5px; padding:3px 10px;" type="button">❌ Recusar</button>
+            
+            <div style="background:rgba(0,0,0,0.5); border-radius:4px; height:6px; overflow:hidden; width:100%;">
+              <div id="live_bar_${job.id}" style="background:linear-gradient(90deg, var(--cyan), var(--emerald)); width:${job.progressPercent || 0}%; height:100%; transition:width 0.3s ease;"></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-secondary);">
+              <span id="live_task_${job.id}">Microtarefa: <b>${escapeHtml(job.microtasks?.[job.currentStepIndex - 1]?.name || 'Planejamento DAG')}</b></span>
+              <div style="display:flex; gap:6px;">
+                ${job.status === 'RUNNING' ? `<button class="action-btn-ghost pause-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 8px;" type="button">⏸ Pausar</button>` : `<button class="action-btn-ghost resume-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 8px;" type="button">▶ Retomar</button>`}
+                <button class="action-btn-ghost cancel-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 8px; color:#ef4444;" type="button">⏹ Cancelar</button>
+                <button class="action-btn-primary inspect-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 8px;" type="button">🔍 Inspecionar</button>
+              </div>
             </div>
           </div>
         `).join('');
 
-        approvalsList.querySelectorAll('.approve-job-btn').forEach(btn => {
+        // Wire Action Buttons
+        activeContainer.querySelectorAll('.pause-job-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
-            const jid = btn.dataset.jobId;
-            await fetch(`/api/v2/jarvis/jobs/${jid}/approve`, { method: 'POST' });
+            await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/pause`, { method: 'POST' });
             await fetchDailyOperations();
           });
         });
 
-        approvalsList.querySelectorAll('.reject-job-btn').forEach(btn => {
+        activeContainer.querySelectorAll('.resume-job-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
-            const jid = btn.dataset.jobId;
-            await fetch(`/api/v2/jarvis/jobs/${jid}/reject`, { method: 'POST' });
+            await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/resume`, { method: 'POST' });
             await fetchDailyOperations();
           });
+        });
+
+        activeContainer.querySelectorAll('.cancel-job-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (confirm('Deseja realmente cancelar a execução deste Job?')) {
+              await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/cancel`, { method: 'POST' });
+              await fetchDailyOperations();
+            }
+          });
+        });
+
+        activeContainer.querySelectorAll('.inspect-job-btn').forEach(btn => {
+          btn.addEventListener('click', () => openJobInspector(btn.dataset.jobId));
         });
       }
     }
 
-    const oppsList = document.getElementById('opsOpportunitiesList');
-    const oppsCount = document.getElementById('opsOpportunitiesCount');
-    const opps = report.opportunities || [];
+    // 3. Visual Queue Table (Tabs Filter)
+    renderVisualQueueTable();
 
-    if (oppsCount) oppsCount.textContent = opps.length;
-    if (oppsList) {
-      if (opps.length === 0) {
-        oppsList.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma oportunidade de propagação pendente.</div>`;
+    // 4. Recent AI Calls List
+    const aiCallsContainer = document.getElementById('opsRecentAiCallsList');
+    const recentCalls = report.recentAiCalls || [];
+    if (aiCallsContainer) {
+      if (recentCalls.length === 0) {
+        aiCallsContainer.innerHTML = `<div style="color:var(--text-muted); padding:8px;">Nenhuma chamada recente de IA registrada.</div>`;
       } else {
-        oppsList.innerHTML = opps.map(opp => `
-          <div style="background:rgba(18,27,43,0.7); border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:4px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <b style="color:#fff; font-size:12px;">${escapeHtml(opp.title)}</b>
-              <span class="pill-tag text-cyan">${escapeHtml(opp.type)}</span>
+        aiCallsContainer.innerHTML = recentCalls.map(call => `
+          <div style="background:rgba(18,27,43,0.7); border:1px solid rgba(168,85,247,0.2); border-radius:4px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <b style="color:#fff;">${escapeHtml(call.purpose)}</b>
+              <div style="color:var(--text-muted); font-size:10px;">${call.tokens} tokens • ${call.latencyMs}ms</div>
             </div>
-            <p style="color:var(--text-secondary); font-size:11px;">Alvo: <b>${escapeHtml(opp.targetProjectName || opp.targetProjectId)}</b></p>
+            <span class="pill-tag text-purple" style="font-size:10px;">${escapeHtml(call.model)}</span>
           </div>
         `).join('');
       }
+    }
+
+    // 5. Approvals List
+    const approvalsList = document.getElementById('opsApprovalsList');
+    const approvalsCount = document.getElementById('opsPendingCount');
+    const pending = report.jobs?.pendingApprovals || 0;
+    if (approvalsCount) approvalsCount.textContent = pending;
+
+    if (approvalsList) {
+      fetch('/api/v2/jarvis/jobs').then(r => r.json()).then(jobsData => {
+        const pendingJobs = (jobsData.jobs || []).filter(j => j.status === 'AWAITING_APPROVAL');
+        if (pendingJobs.length === 0) {
+          approvalsList.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma ação de risco aguardando autorização no momento.</div>`;
+        } else {
+          approvalsList.innerHTML = pendingJobs.map(appr => `
+            <div style="background:rgba(18,27,43,0.7); border:1px solid rgba(249,115,22,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <b style="color:#fff; font-size:12px;">${escapeHtml(appr.title)}</b>
+                <span class="pill-tag text-amber">Pendente</span>
+              </div>
+              <p style="color:var(--text-secondary); font-size:11px;">Risco: <b>${escapeHtml(appr.riskLevel)}</b></p>
+              <div style="display:flex; gap:8px; margin-top:4px;">
+                <button class="action-btn-primary approve-job-btn" data-job-id="${escapeHtml(appr.id)}" style="font-size:10.5px; padding:3px 10px;" type="button">✅ Autorizar</button>
+                <button class="action-btn-ghost reject-job-btn" data-job-id="${escapeHtml(appr.id)}" style="font-size:10.5px; padding:3px 10px;" type="button">❌ Recusar</button>
+              </div>
+            </div>
+          `).join('');
+
+          approvalsList.querySelectorAll('.approve-job-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/approve`, { method: 'POST' });
+              await fetchDailyOperations();
+            });
+          });
+
+          approvalsList.querySelectorAll('.reject-job-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/reject`, { method: 'POST' });
+              await fetchDailyOperations();
+            });
+          });
+        }
+      });
+    }
+  }
+
+  async function renderVisualQueueTable() {
+    const queueTable = document.getElementById('opsJobsQueueTable');
+    if (!queueTable) return;
+
+    try {
+      const res = await fetch('/api/v2/jarvis/jobs/queue');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      let jobsToDisplay = [];
+      if (currentQueueFilter === 'running') jobsToDisplay = data.running || [];
+      else if (currentQueueFilter === 'waiting') jobsToDisplay = data.waiting || [];
+      else if (currentQueueFilter === 'completed') jobsToDisplay = data.completed || [];
+      else jobsToDisplay = [...(data.running || []), ...(data.waiting || []), ...(data.completed || []), ...(data.failed || [])];
+
+      if (jobsToDisplay.length === 0) {
+        queueTable.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhum job nesta categoria de fila.</div>`;
+        return;
+      }
+
+      queueTable.innerHTML = jobsToDisplay.map(job => `
+        <div style="background:rgba(18,27,43,0.6); border:1px solid var(--border-subtle); border-radius:4px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-family:monospace; color:var(--cyan); font-weight:700; font-size:11px;">#${escapeHtml(job.id.slice(-6))}</span>
+            <span style="color:#fff; font-size:11.5px; font-weight:600;">${escapeHtml(job.title)}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="pill-tag ${job.status === 'COMPLETED' ? 'text-emerald' : (job.status === 'RUNNING' ? 'text-cyan' : 'text-amber')}" style="font-size:10px;">${escapeHtml(job.status)}</span>
+            <button class="action-btn-ghost inspect-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 6px;" type="button">👁 Inspecionar</button>
+          </div>
+        </div>
+      `).join('');
+
+      queueTable.querySelectorAll('.inspect-job-btn').forEach(btn => {
+        btn.addEventListener('click', () => openJobInspector(btn.dataset.jobId));
+      });
+    } catch (err) {
+      console.warn('Erro ao carregar fila visual:', err);
+    }
+  }
+
+  // --- JOB INSPECTOR MODAL ----------------------------------------------
+  async function openJobInspector(jobId) {
+    const modal = document.getElementById('jobInspectorModal');
+    const body = document.getElementById('jobInspectorBody');
+    const title = document.getElementById('inspectorJobTitle');
+    const idElem = document.getElementById('inspectorJobId');
+    if (!modal || !body) return;
+
+    try {
+      const res = await fetch(`/api/v2/jarvis/jobs/${jobId}`);
+      if (!res.ok) throw new Error('Job não encontrado');
+      const data = await res.json();
+      const job = data.job;
+
+      if (title) title.textContent = job.title;
+      if (idElem) idElem.textContent = `ID: ${job.id} | Projeto: ${job.projectId} | Status: ${job.status}`;
+
+      body.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:rgba(18,27,43,0.7); padding:10px; border-radius:6px;">
+          <div><span style="color:var(--text-muted); font-size:11px;">Objetivo:</span> <b style="color:#fff; font-size:12px;">${escapeHtml(job.objective)}</b></div>
+          <div><span style="color:var(--text-muted); font-size:11px;">Progresso:</span> <b style="color:var(--cyan); font-size:12px;">${job.progressPercent}% (${job.currentStepIndex}/${job.microtasks?.length || 0} Microtarefas)</b></div>
+          <div><span style="color:var(--text-muted); font-size:11px;">Iniciado em:</span> <span style="color:#e2e8f0; font-size:11.5px;">${job.startedAt ? new Date(job.startedAt).toLocaleTimeString() : 'Em fila'}</span></div>
+          <div><span style="color:var(--text-muted); font-size:11px;">Duração:</span> <span style="color:#e2e8f0; font-size:11.5px;">${job.elapsedSeconds || job.duration || 0}s</span></div>
+        </div>
+
+        <div>
+          <b style="color:#fff; font-size:12px; margin-bottom:6px; display:block;">📋 Microtarefas DAG:</b>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            ${(job.microtasks || []).map((m, idx) => `
+              <div style="background:rgba(6,9,15,0.8); border-left:3px solid ${m.status === 'COMPLETED' ? 'var(--emerald)' : (m.status === 'RUNNING' ? 'var(--cyan)' : 'var(--border-subtle)')}; padding:6px 10px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <span style="color:var(--text-muted); font-size:10px;">Etapa ${idx + 1}:</span>
+                  <b style="color:#fff; font-size:11.5px; margin-left:4px;">${escapeHtml(m.name)}</b>
+                  <span style="color:var(--cyan); font-size:11px; margin-left:6px;">(${escapeHtml(m.agent)})</span>
+                </div>
+                <span class="pill-tag ${m.status === 'COMPLETED' ? 'text-emerald' : (m.status === 'RUNNING' ? 'text-cyan' : 'text-amber')}" style="font-size:10px;">${escapeHtml(m.status)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div>
+          <b style="color:#fff; font-size:12px; margin-bottom:6px; display:block;">📜 Timeline de Execução & Logs:</b>
+          <div style="background:rgba(0,0,0,0.6); padding:8px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10.5px; max-height:140px; overflow-y:auto; display:flex; flex-direction:column; gap:3px;">
+            ${(job.timelineLogs || []).map(log => `
+              <div><span style="color:var(--cyan);">[${log.timestamp}]</span> <b style="color:var(--amber);">${escapeHtml(log.actor)}:</b> <span style="color:#e2e8f0;">${escapeHtml(log.message)}</span></div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      modal.style.display = 'flex';
+    } catch (err) {
+      alert(`Erro ao abrir Job Inspector: ${err.message}`);
     }
   }
 
