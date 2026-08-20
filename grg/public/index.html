@@ -130,10 +130,15 @@
               <span class="nav-text">IDE</span>
               <span class="nav-chip hot-chip">Pro</span>
             </button>
+            <button class="nav-item" data-view="operations" type="button">
+              <span class="nav-icon">⚡</span>
+              <span class="nav-text">Operações 24/7</span>
+              <span class="nav-chip live-chip" id="opsApprovalsCount">JARVIS</span>
+            </button>
             <button class="nav-item" data-view="projects" type="button">
               <span class="nav-icon">📁</span>
               <span class="nav-text">Projetos</span>
-              <span class="nav-count">12</span>
+              <span class="nav-count" id="navProjectsCount">1</span>
             </button>
             <button class="nav-item" data-view="agents" type="button">
               <span class="nav-icon">🤖</span>
@@ -929,6 +934,105 @@
               <span class="status-pill text-amber">Prometheus + Gateway Metrics</span>
             </div>
             <div class="metrics-dashboard-grid" id="metricsDashboardGrid"></div>
+          </div>
+        </section>
+
+        <!-- ======================================================= -->
+        <!-- VIEW: ⚡ OPERAÇÕES 24/7 & JARVIS AUTONOMOUS CENTER     -->
+        <!-- ======================================================= -->
+        <section id="view-operations" class="workspace-view">
+          <div class="view-panel-container">
+            <div class="view-panel-header">
+              <div>
+                <h2>⚡ FÊNIX JARVIS — Painel de Operações Autônomas 24/7</h2>
+                <p style="color:var(--text-secondary); font-size:12px; margin-top:2px;">
+                  Monitoramento contínuo, orquestração de jobs, governança de aprovação e propagação cross-project.
+                </p>
+              </div>
+              <button class="action-btn-primary" id="manualHeartbeatTickBtn" type="button">🔄 Disparar Heartbeat Agora</button>
+            </div>
+
+            <!-- Daily Operations Summary Cards -->
+            <div class="city-kpi-strip" style="background:rgba(18,27,43,0.4); border-radius:var(--radius-md); padding:12px;">
+              <div class="kpi-card">
+                <span class="kpi-icon">📁</span>
+                <div class="kpi-meta">
+                  <span class="kpi-label">Projetos Monitorados</span>
+                  <span class="kpi-value text-cyan" id="opsProjectsMonitored">0</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-icon">💚</span>
+                <div class="kpi-meta">
+                  <span class="kpi-label">Projetos Saudáveis</span>
+                  <span class="kpi-value text-emerald" id="opsProjectsHealthy">0</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-icon">⚙️</span>
+                <div class="kpi-meta">
+                  <span class="kpi-label">Jobs Executados</span>
+                  <span class="kpi-value text-blue" id="opsJobsExecuted">0</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-icon">📋</span>
+                <div class="kpi-meta">
+                  <span class="kpi-label">Microtarefas (DAG)</span>
+                  <span class="kpi-value text-purple" id="opsMicrotasksCount">0</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-icon">🐛</span>
+                <div class="kpi-meta">
+                  <span class="kpi-label">Bugs Corrigidos</span>
+                  <span class="kpi-value text-emerald" id="opsBugsFixed">0</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-icon">💰</span>
+                <div class="kpi-meta">
+                  <span class="kpi-label">Custo Estimado IA</span>
+                  <span class="kpi-value text-amber" id="opsEstimatedCost">R$ 0,00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dual Split: Pending Approvals & Opportunities -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:8px;">
+              <!-- Panel: Pending Approvals -->
+              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(249,115,22,0.3);">
+                <div class="card-header-row">
+                  <span class="card-title" style="color:#fff;">🔔 Aguardando Aprovação Humana (<span id="opsPendingCount">0</span>)</span>
+                  <span class="pill-tag text-amber">Governança Segura</span>
+                </div>
+                <div id="opsApprovalsList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
+                  <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma ação de risco aguardando autorização no momento.</div>
+                </div>
+              </div>
+
+              <!-- Panel: Cross-Project Opportunities -->
+              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(56,189,248,0.3);">
+                <div class="card-header-row">
+                  <span class="card-title" style="color:#fff;">💡 Oportunidades & Propagação (<span id="opsOpportunitiesCount">0</span>)</span>
+                  <span class="pill-tag text-cyan">Cross-Project Intelligence</span>
+                </div>
+                <div id="opsOpportunitiesList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
+                  <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma oportunidade de propagação pendente.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel: Active & Recent Autonomous Jobs DAG -->
+            <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid var(--border-subtle); margin-top:8px;">
+              <div class="card-header-row">
+                <span class="card-title" style="color:#fff;">⚙️ Fila de Jobs & Microtarefas em Execução</span>
+                <span class="pill-tag text-emerald">24/7 Runtime Queue</span>
+              </div>
+              <div id="opsJobsList" style="display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto;">
+                <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhum job em fila no momento.</div>
+              </div>
+            </div>
           </div>
         </section>
 

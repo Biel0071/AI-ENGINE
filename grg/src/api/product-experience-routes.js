@@ -14,6 +14,7 @@ const { GitHubEngine } = require('../connectors/github-engine');
 const { AgentRuntime } = require('../runtime/agent-runtime');
 const { AgentRegistry } = require('../agents/agent-registry');
 const { FENIX_AGENTS } = require('../agents/agent-definitions');
+const { AutonomousJobOrchestrator } = require('../orchestrator/autonomous-job-orchestrator');
 
 // Singleton engine instances attached to global runtime
 let reverseEngine = null;
@@ -24,6 +25,7 @@ let timeline = null;
 let factoryEngine = null;
 let githubEngine = null;
 let agentRuntime = null;
+let jarvisOrchestrator = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
@@ -49,6 +51,15 @@ function initEngines(app) {
 
   factoryEngine = new SoftwareFactoryEngine({ eventBus, observer });
   factoryEngine.start();
+
+  jarvisOrchestrator = new AutonomousJobOrchestrator({
+    eventBus,
+    workspaceManager,
+    agentRuntime,
+    observer,
+    githubEngine
+  });
+  jarvisOrchestrator.start();
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
@@ -720,6 +731,103 @@ export function Dashboard() {
         sendError(res, 400, err.message);
       }
     });
+    return true;
+  }
+
+  // 18. GET /api/v2/jarvis/daily-operations (REAL 24/7 Daily Operations Report)
+  if (req.method === 'GET' && url.pathname === '/api/v2/jarvis/daily-operations') {
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    const report = jarvisOrchestrator.getDailyOperationsReport();
+    sendJson(res, 200, report);
+    return true;
+  }
+
+  // 19. GET /api/v2/jarvis/jobs (List All Active and Completed Jobs)
+  if (req.method === 'GET' && url.pathname === '/api/v2/jarvis/jobs') {
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    const jobsList = Array.from(jarvisOrchestrator.jobs.values());
+    sendJson(res, 200, { total: jobsList.length, jobs: jobsList });
+    return true;
+  }
+
+  // 20. POST /api/v2/jarvis/jobs/submit (Submit New Autonomous Job)
+  if (req.method === 'POST' && url.pathname === '/api/v2/jarvis/jobs/submit') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { projectId, title, objective, riskLevel, targetFiles, allowAutoExecution } = payload;
+        if (!title || !objective) throw new Error('title and objective are required');
+
+        const job = await jarvisOrchestrator.submitJob({
+          projectId: projectId || 'default',
+          title,
+          objective,
+          riskLevel: riskLevel || 'SAFE',
+          targetFiles: targetFiles || [],
+          allowAutoExecution: allowAutoExecution !== false
+        });
+
+        sendJson(res, 201, { success: true, job });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 21. POST /api/v2/jarvis/jobs/:id/approve (Human Approval for Job)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jarvis\/jobs\/[^\/]+\/approve$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[5];
+    try {
+      const job = await jarvisOrchestrator.approveJob(jobId, context.actorId || 'grg-admin');
+      sendJson(res, 200, { success: true, job });
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 22. POST /api/v2/jarvis/jobs/:id/reject (Human Rejection for Job)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jarvis\/jobs\/[^\/]+\/reject$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[5];
+    try {
+      const job = await jarvisOrchestrator.rejectJob(jobId, 'Rejeitado via API');
+      sendJson(res, 200, { success: true, job });
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 23. GET /api/v2/jarvis/opportunities (List Cross-Project Evolution Opportunities)
+  if (req.method === 'GET' && url.pathname === '/api/v2/jarvis/opportunities') {
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    const opps = Array.from(jarvisOrchestrator.opportunities.values());
+    sendJson(res, 200, { total: opps.length, opportunities: opps });
+    return true;
+  }
+
+  // 24. POST /api/v2/jarvis/heartbeat/tick (Manual Trigger for Heartbeat)
+  if (req.method === 'POST' && url.pathname === '/api/v2/jarvis/heartbeat/tick') {
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    await jarvisOrchestrator.heartbeatTick();
+    sendJson(res, 200, { success: true, report: jarvisOrchestrator.getDailyOperationsReport() });
     return true;
   }
 

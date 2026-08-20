@@ -1156,6 +1156,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\ai-orchestrator.js"
     },
     {
+      "name": "AutonomousJobOrchestrator",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\autonomous-job-orchestrator.js"
+    },
+    {
       "name": "EstimatorEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\estimator-engine.js"

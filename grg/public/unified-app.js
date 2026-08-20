@@ -52,8 +52,100 @@
       fetchCityState(),
       fetchProjects(),
       fetchAiPlatformStatus(),
-      fetchActiveProjectFiles()
+      fetchActiveProjectFiles(),
+      fetchDailyOperations()
     ]);
+  }
+
+  async function fetchDailyOperations() {
+    try {
+      const res = await fetch('/api/v2/jarvis/daily-operations');
+      if (res.ok) {
+        const data = await res.json();
+        renderDailyOperations(data);
+      }
+    } catch (err) {
+      console.warn('[FÊNIX JARVIS] Daily operations unavailable:', err.message);
+    }
+  }
+
+  function renderDailyOperations(report) {
+    if (!report) return;
+
+    // Summary Cards
+    setElemText('opsProjectsMonitored', report.summary?.projectsMonitored || '0');
+    setElemText('opsProjectsHealthy', report.summary?.projectsHealthy || '0');
+    setElemText('opsJobsExecuted', report.jobs?.completed || '0');
+    setElemText('opsMicrotasksCount', report.jobs?.microtasksCompleted || '0');
+    setElemText('opsBugsFixed', report.engineering?.bugsFixed || '0');
+    setElemText('opsEstimatedCost', report.intelligence?.estimatedCostBrl || 'R$ 0,00');
+
+    // Pending Approvals
+    const approvalsList = document.getElementById('opsApprovalsList');
+    const approvalsCount = document.getElementById('opsPendingCount');
+    const badge = document.getElementById('opsApprovalsCount');
+    const pending = report.pendingApprovals || [];
+
+    if (approvalsCount) approvalsCount.textContent = pending.length;
+    if (badge) badge.textContent = pending.length > 0 ? `🔔 ${pending.length}` : '24/7';
+
+    if (approvalsList) {
+      if (pending.length === 0) {
+        approvalsList.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma ação de risco aguardando autorização no momento.</div>`;
+      } else {
+        approvalsList.innerHTML = pending.map(appr => `
+          <div style="background:rgba(18,27,43,0.7); border:1px solid rgba(249,115,22,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <b style="color:#fff; font-size:12px;">${escapeHtml(appr.title)}</b>
+              <span class="pill-tag text-amber">Pendente</span>
+            </div>
+            <p style="color:var(--text-secondary); font-size:11px;">${escapeHtml(appr.reason)}</p>
+            <div style="display:flex; gap:8px; margin-top:4px;">
+              <button class="action-btn-primary approve-job-btn" data-job-id="${escapeHtml(appr.jobId)}" style="font-size:10.5px; padding:3px 10px;" type="button">✅ Autorizar Execução</button>
+              <button class="action-btn-ghost reject-job-btn" data-job-id="${escapeHtml(appr.jobId)}" style="font-size:10.5px; padding:3px 10px;" type="button">❌ Recusar</button>
+            </div>
+          </div>
+        `).join('');
+
+        approvalsList.querySelectorAll('.approve-job-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const jid = btn.dataset.jobId;
+            await fetch(`/api/v2/jarvis/jobs/${jid}/approve`, { method: 'POST' });
+            await fetchDailyOperations();
+          });
+        });
+
+        approvalsList.querySelectorAll('.reject-job-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const jid = btn.dataset.jobId;
+            await fetch(`/api/v2/jarvis/jobs/${jid}/reject`, { method: 'POST' });
+            await fetchDailyOperations();
+          });
+        });
+      }
+    }
+
+    // Opportunities
+    const oppsList = document.getElementById('opsOpportunitiesList');
+    const oppsCount = document.getElementById('opsOpportunitiesCount');
+    const opps = report.opportunities || [];
+
+    if (oppsCount) oppsCount.textContent = opps.length;
+    if (oppsList) {
+      if (opps.length === 0) {
+        oppsList.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma oportunidade de propagação detectada.</div>`;
+      } else {
+        oppsList.innerHTML = opps.map(op => `
+          <div style="background:rgba(18,27,43,0.7); border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <b style="color:#fff; font-size:12px;">${escapeHtml(op.title)}</b>
+              <span class="pill-tag text-cyan">${escapeHtml(op.type)}</span>
+            </div>
+            <span style="font-size:10px; color:var(--text-muted);">Descoberto em: ${formatTimeAgo(op.discoveredAt)}</span>
+          </div>
+        `).join('');
+      }
+    }
   }
 
   async function fetchCityState() {
@@ -283,6 +375,12 @@
 
     document.getElementById('liveRefreshBtn')?.addEventListener('click', () => {
       refreshAllRealData();
+    });
+
+    document.getElementById('manualHeartbeatTickBtn')?.addEventListener('click', async () => {
+      await fetch('/api/v2/jarvis/heartbeat/tick', { method: 'POST' });
+      await refreshAllRealData();
+      appendTerminalLog('[JARVIS] Heartbeat 24/7 disparado manualmente. Projetos e jobs atualizados.', 'cyan');
     });
   }
 
