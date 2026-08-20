@@ -10,7 +10,8 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/"
+    "test": "node --test test/",
+    "build:windows-agent": "node scripts/build-windows-agent.js"
   },
   "engines": {
     "node": ">=18"

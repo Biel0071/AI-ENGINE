@@ -1,0 +1,101 @@
+{
+  "ai-engine-core": {
+    "projectId": "ai-engine-core",
+    "name": "ai-engine-core",
+    "localPath": "C:\\projetos\\ai-engine-core",
+    "connected": true,
+    "status": "HEALTHY",
+    "tags": [
+      "Git",
+      "Node",
+      "TypeScript",
+      "AI Operating System",
+      "Local"
+    ],
+    "framework": "Node.js + React + Vite",
+    "language": "TypeScript / JavaScript",
+    "architecture": "Microkernel + Multi-Agent Swarm + Reality Gate",
+    "frontend": "HTML5 + CSS Variables + Vanilla ESM Reactive Shell",
+    "backend": "Node.js HTTP/SSE Server + Autonomous Job Engine",
+    "database": "InMemory / SQLite / LocalVector (Zero Leak)",
+    "buildCommand": "npm run build",
+    "testCommand": "node --test test/",
+    "devCommand": "node src/server.js",
+    "entrypoints": [
+      "src/server.js",
+      "public/index.html"
+    ],
+    "importantFiles": [
+      "src/server.js",
+      "public/index.html",
+      "src/orchestrator/autonomous-job-orchestrator.js"
+    ],
+    "lastScan": "2026-08-20T17:33:29.187Z",
+    "lastCommit": "2200f245",
+    "healthScore": 99.8,
+    "knownIssues": []
+  },
+  "zapai-final": {
+    "projectId": "zapai-final",
+    "name": "ZAPAI-FINAL",
+    "localPath": "C:\\projetos\\ZAPAI-FINAL",
+    "connected": true,
+    "status": "CONNECTED",
+    "tags": [
+      "Local",
+      "Git",
+      "Node"
+    ],
+    "framework": "Node.js Core",
+    "language": "JavaScript",
+    "architecture": "Standard Architecture",
+    "frontend": "N/A",
+    "backend": "N/A",
+    "database": "N/A",
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "devCommand": "npm run dev",
+    "entrypoints": [],
+    "importantFiles": [
+      "package.json",
+      "README.md"
+    ],
+    "lastScan": "2026-08-20T17:43:24.635Z",
+    "lastCommit": "HEAD",
+    "healthScore": 96.5,
+    "knownIssues": [
+      "Aviso de tipagem em handler de webhook"
+    ]
+  },
+  "dview": {
+    "projectId": "dview",
+    "name": "dview",
+    "localPath": "C:\\projetos\\dview",
+    "connected": false,
+    "status": "DISCOVERED",
+    "tags": [
+      "Local",
+      "Git",
+      "Node",
+      "TypeScript"
+    ],
+    "framework": "Node.js Core",
+    "language": "TypeScript",
+    "architecture": "Standard Architecture",
+    "frontend": "N/A",
+    "backend": "N/A",
+    "database": "N/A",
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "devCommand": "npm run dev",
+    "entrypoints": [],
+    "importantFiles": [
+      "package.json",
+      "README.md"
+    ],
+    "lastScan": "2026-08-20T17:43:24.631Z",
+    "lastCommit": "HEAD",
+    "healthScore": 98,
+    "knownIssues": []
+  }
+}

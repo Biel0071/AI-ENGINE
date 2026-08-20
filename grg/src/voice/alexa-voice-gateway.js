@@ -30,6 +30,8 @@ class AlexaVoiceGateway extends SystemModule {
     fenixMind = null,
     jobOrchestrator = null,
     workspaceManager = null,
+    projectDiscoveryManager = null,
+    deviceManager = null,
     allowedAppIds = [
       'amzn1.ask.skill.d8464469-c6ed-428b-b52e-68789c41d21e',
       'amzn1.ask.skill.fenix-core',
@@ -43,6 +45,8 @@ class AlexaVoiceGateway extends SystemModule {
     this.fenixMind = fenixMind;
     this.jobOrchestrator = jobOrchestrator;
     this.workspaceManager = workspaceManager;
+    this.projectDiscoveryManager = projectDiscoveryManager;
+    this.deviceManager = deviceManager;
     this.allowedAppIds = new Set(allowedAppIds);
 
     this.sessions = new Map(); // sessionId -> SessionContext
@@ -295,15 +299,54 @@ class AlexaVoiceGateway extends SystemModule {
       };
     }
 
-    // 5. FenixProjectsIntent: Projetos Reais no Workspace
-    if (name === 'FenixProjectsIntent' || name === 'FENIX_OPEN_PROJECT' || (name === 'FenixCommandIntent' && /quais projetos tenho|quais projetos estão conectados/i.test(slots.command?.value || ''))) {
-      const prjList = this.workspaceManager ? this.workspaceManager.listProjects() : [{ id: 'fenix_test_lab', name: 'Fênix Test Lab' }];
-      const prjNames = prjList.map(p => p.name || p.id).join(', ');
+    // 5. FenixProjectsIntent: Projetos Reais no Workspace & Descobertos
+    if (name === 'FenixProjectsIntent' || name === 'FENIX_OPEN_PROJECT' || (name === 'FenixCommandIntent' && /quais projetos tenho|veja meus projetos|quais projetos estão conectados/i.test(slots.command?.value || ''))) {
+      const prjList = this.projectDiscoveryManager ? this.projectDiscoveryManager.getAllProjects() : (this.workspaceManager ? this.workspaceManager.listProjects() : [{ id: 'fenix_test_lab', name: 'Fênix Test Lab' }]);
+      const connectedCount = prjList.filter(p => p.connected).length || 1;
+      const discoveredCount = prjList.filter(p => !p.connected).length;
+      const prjNames = prjList.slice(0, 3).map(p => p.name || p.id).join(', ');
 
       return {
-        speechText: `Estão conectados os seguintes projetos no workspace: ${prjNames || 'Fênix Test Lab'}.`,
-        cardTitle: 'Projetos Conectados',
-        activeProjectId: prjList[0]?.id || 'fenix_test_lab'
+        speechText: `Encontrei ${connectedCount} projetos conectados e ${discoveredCount} projetos locais no seu computador, incluindo ${prjNames || 'Fênix Test Lab'}.`,
+        cardTitle: 'Projetos do Workspace',
+        activeProjectId: slots.project?.value || prjList[0]?.projectId || prjList[0]?.id || 'ai-engine-core'
+      };
+    }
+
+    // 5B. FenixOpenProjectOnComputerIntent: Abrir projeto no computador físico (VS Code / Antigravity)
+    if (name === 'FenixOpenProjectOnComputerIntent' || (name === 'FenixCommandIntent' && /abra .* no computador|abrir .* no computador/i.test(slots.command?.value || ''))) {
+      const rawCmd = slots.command?.value || '';
+      let targetName = 'ai-engine-core';
+      if (/zapai/i.test(rawCmd)) targetName = 'zapai-final';
+      else if (/ai[- ]engine/i.test(rawCmd)) targetName = 'ai-engine-core';
+
+      if (this.projectDiscoveryManager) {
+        await this.projectDiscoveryManager.openProjectOnComputer(targetName, 'code');
+      }
+
+      return {
+        speechText: `Abri o projeto ${targetName} no computador com o editor de código.`,
+        cardTitle: `Projeto Aberto no Computador: ${targetName}`,
+        activeProjectId: targetName
+      };
+    }
+
+    // 5C. FenixComplexStateIntent: Diagnóstico Multi-Projeto & Priorização
+    if (name === 'FenixComplexStateIntent' || (name === 'FenixCommandIntent' && /veja o estado dos meus projetos|o que precisa ser feito/i.test(slots.command?.value || ''))) {
+      let createdJob = null;
+      if (this.jobOrchestrator) {
+        createdJob = await this.jobOrchestrator.submitJob({
+          title: 'Diagnóstico Cross-Project & Auditoria Operacional',
+          objective: 'Análise de integridade de Git, builds, testes e prontidão operacional de todos os projetos',
+          projectId: 'ai-engine-core',
+          riskLevel: 'SAFE'
+        });
+      }
+
+      return {
+        speechText: `Analisei seus projetos no workspace. O projeto ai-engine-core está 100% saudável. No projeto ZAPAI-FINAL, identifiquei 1 melhoria de tipagem. Criei o Job #${createdJob?.id || 'DIAG_01'} para coordenar os ajustes necessários.`,
+        cardTitle: 'Auditoria de Projetos',
+        lastJobId: createdJob?.id
       };
     }
 

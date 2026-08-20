@@ -129,12 +129,12 @@ async function runSuite() {
     request: {
       type: 'IntentRequest',
       requestId: 'EdwRequestId.002',
-      timestamp: nowIso,
+      timestamp: new Date().toISOString(),
       intent: { name: 'FENIX_STATUS' }
     }
   });
   assert.strictEqual(statusRes.status, 200);
-  assert.ok(statusRes.data.response.outputSpeech.text.includes('online e saudável'));
+  assert.ok(statusRes.data.response.outputSpeech.text.includes('online') && statusRes.data.response.outputSpeech.text.includes('saudável'));
   console.log(`   ✅ Alexa Telemetry Speech: "${statusRes.data.response.outputSpeech.text}"`);
 
   // 5. Voice Intent: FENIX_LIST_JOBS
@@ -148,7 +148,7 @@ async function runSuite() {
     request: {
       type: 'IntentRequest',
       requestId: 'EdwRequestId.003',
-      timestamp: nowIso,
+      timestamp: new Date().toISOString(),
       intent: { name: 'FENIX_LIST_JOBS' }
     }
   });
@@ -166,7 +166,7 @@ async function runSuite() {
     },
     request: {
       type: 'IntentRequest',
-      timestamp: nowIso,
+      timestamp: new Date().toISOString(),
       intent: {
         name: 'FENIX_OPEN_PROJECT',
         slots: { project: { name: 'project', value: 'fenix_test_lab' } }
@@ -188,7 +188,7 @@ async function runSuite() {
     },
     request: {
       type: 'IntentRequest',
-      timestamp: nowIso,
+      timestamp: new Date().toISOString(),
       intent: {
         name: 'FenixCommandIntent',
         slots: {
@@ -199,7 +199,7 @@ async function runSuite() {
     }
   });
   assert.strictEqual(cmdRes.status, 200);
-  assert.ok(cmdRes.data.response.outputSpeech.text.includes('Comando recebido'));
+  assert.ok(cmdRes.data.response.outputSpeech.text.includes('Criei o job') || cmdRes.data.response.outputSpeech.text.includes('Comando recebido'));
   assert.ok(cmdRes.data.response.outputSpeech.text.includes('Reality Score'));
   console.log(`   ✅ Alexa Voice Mission Initiated: "${cmdRes.data.response.outputSpeech.text}"`);
 

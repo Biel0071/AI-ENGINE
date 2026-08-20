@@ -16,6 +16,12 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\autonomous-agent-ecosystem.js"
     },
     {
+      "name": "ProviderRegistry",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js",
+      "_duplicated": true
+    },
+    {
       "name": "AICityProjection",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\ai-city-projection.js"
@@ -86,12 +92,6 @@
       "name": "OllamaProvider",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\ollama-provider.js"
-    },
-    {
-      "name": "ProviderRegistry",
-      "type": "legacy",
-      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js",
-      "_duplicated": true
     },
     {
       "name": "EchoProvider",
@@ -1264,6 +1264,11 @@
       "name": "ProductSuite",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\product\\white-label.js"
+    },
+    {
+      "name": "ProjectDiscoveryManager",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\projects\\project-discovery-manager.js"
     },
     {
       "name": "ArtifactGraph",

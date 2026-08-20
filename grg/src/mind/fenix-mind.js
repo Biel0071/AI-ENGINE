@@ -262,7 +262,7 @@ class FenixMind extends SystemModule {
       projectName: projectId === 'fenix_test_lab' ? 'Fenix Test Lab' : projectId,
       recentHistoryCount: convHistory.length,
       lastIntent: convHistory[convHistory.length - 1]?.intent || null,
-      projectDna: prjMemory.dna,
+      projectDna: prjMemory.dna || { architecture: 'React 18 + Vite + Tailwind', state: 'Modular Context + Hooks' },
       reusableSkills,
       previousDecisions
     };
@@ -282,7 +282,8 @@ class FenixMind extends SystemModule {
     if (/teste|coverage|unit/i.test(rawPrompt)) intent = 'TEST_SUITE_GENERATION';
     if (/otimizar|performance|speed/i.test(rawPrompt)) intent = 'PERFORMANCE_OPTIMIZATION';
 
-    const enhancedPrompt = `Implementar módulo completo e resiliente para "${rawPrompt}" no projeto ${contextBundle.projectName}, preservando a arquitetura existente (${contextBundle.projectDna.architecture}), aplicando contratos de tipos rígidos, persistência física em disco, tratamento defensivo de erros, estados de loading/error, acessibilidade e testes unitários automatizados com verificação no Reality Gate (Zero-Mock Enforced).`;
+    const arch = contextBundle?.projectDna?.architecture || 'React 18 + Vite + TypeScript';
+    const enhancedPrompt = `Implementar módulo completo e resiliente para "${rawPrompt}" no projeto ${contextBundle.projectName}, preservando a arquitetura existente (${arch}), aplicando contratos de tipos rígidos, persistência física em disco, tratamento defensivo de erros, estados de loading/error, acessibilidade e testes unitários automatizados com verificação no Reality Gate (Zero-Mock Enforced).`;
 
     const plan = [
       { step: 1, agent: 'Architect Agent', description: 'Mapeamento Arquitetural, Análise de Contexto & Dependências' },

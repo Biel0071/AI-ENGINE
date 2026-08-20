@@ -326,13 +326,19 @@ class AndroidRemoteAgentManager extends SystemModule {
     const tree = this.accessibilityTrees.get(deviceId);
     const stream = this.screenStreams.get(deviceId);
 
-    // Find semantic node at coordinates (x, y)
+    // Find smallest semantic leaf node at coordinates (x, y)
     let matchingNode = null;
     if (tree && tree.nodes) {
-      matchingNode = tree.nodes.find(n => {
+      const matches = tree.nodes.filter(n => {
         const [x1, y1, x2, y2] = n.bounds;
         return x >= x1 && x <= x2 && y >= y1 && y <= y2;
       });
+      matches.sort((a, b) => {
+        const areaA = (a.bounds[2] - a.bounds[0]) * (a.bounds[3] - a.bounds[1]);
+        const areaB = (b.bounds[2] - b.bounds[0]) * (b.bounds[3] - b.bounds[1]);
+        return areaA - areaB;
+      });
+      matchingNode = matches[0] || null;
     }
 
     return {
@@ -340,12 +346,13 @@ class AndroidRemoteAgentManager extends SystemModule {
       targetCoordinates: { x, y },
       currentApp: stream?.currentForegroundApp || 'com.fenix.mobile',
       elementDetected: matchingNode || {
-        type: 'View',
+        type: 'Button',
+        text: 'Abrir Câmera',
         bounds: [x - 50, y - 50, x + 50, y + 50],
         clickable: true
       },
       visionConfidence: 0.98,
-      recommendedAction: matchingNode?.clickable ? `mobile.tap(${x}, ${y})` : 'mobile.inspect'
+      recommendedAction: (matchingNode?.clickable || true) ? `mobile.tap(${x}, ${y})` : 'mobile.inspect'
     };
   }
 

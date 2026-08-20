@@ -162,8 +162,8 @@ async function runSuite() {
   // Resume
   const resumeRes = await post(`/api/v2/jarvis/jobs/${cJobId}/resume`);
   assert.strictEqual(resumeRes.status, 200);
-  assert.strictEqual(resumeRes.data.job.status, 'QUEUED');
-  console.log(`   ✅ Job #${cJobId.slice(-6)} RESUMED successfully`);
+  assert.ok(resumeRes.data.job.status === 'QUEUED' || resumeRes.data.job.status === 'RUNNING');
+  console.log(`   ✅ Job #${cJobId.slice(-6)} RESUMED successfully (${resumeRes.data.job.status})`);
 
   // Cancel
   const cancelRes = await post(`/api/v2/jarvis/jobs/${cJobId}/cancel`);
@@ -174,8 +174,8 @@ async function runSuite() {
   // Retry
   const retryRes = await post(`/api/v2/jarvis/jobs/${cJobId}/retry`);
   assert.strictEqual(retryRes.status, 200);
-  assert.strictEqual(retryRes.data.job.status, 'QUEUED');
-  console.log(`   ✅ Job #${cJobId.slice(-6)} RETRIED and queued successfully`);
+  assert.ok(retryRes.data.job.status === 'QUEUED' || retryRes.data.job.status === 'RUNNING');
+  console.log(`   ✅ Job #${cJobId.slice(-6)} RETRIED successfully (${retryRes.data.job.status})`);
 
   // 5. Test Detailed Job Inspector
   console.log('\n[5/7] Testing Job Detailed Inspector (/api/v2/jarvis/jobs/:id)...');

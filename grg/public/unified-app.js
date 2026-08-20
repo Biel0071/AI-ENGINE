@@ -80,6 +80,49 @@
       }).then(() => fetchDailyOperations());
     });
 
+    // Setup Scan Local Projects
+    document.getElementById('scanLocalProjectsBtn')?.addEventListener('click', async () => {
+      appendTerminalLog('[Project Discovery] Escaneando diretórios locais no computador...', 'cyan');
+      const res = await fetch('/api/v2/projects/discover/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      alert(`Varredura concluída! ${data.total || 0} projetos identificados e mapeados na memória operacional.`);
+      await fetchProjects();
+    });
+
+    // Setup Sync GitHub
+    document.getElementById('syncGitHubProjectsBtn')?.addEventListener('click', async () => {
+      appendTerminalLog('[GitHub Engine] Consultando repositórios no GitHub...', 'purple');
+      const res = await fetch('/api/v2/projects/github');
+      const data = await res.json();
+      if (data.configured) {
+        alert(`Sincronização GitHub ativa! ${data.repositories?.length || 0} repositórios sincronizados.`);
+      } else {
+        alert(data.message || 'GitHub Token não configurado. Exibindo repositórios Git locais.');
+      }
+      await fetchProjects();
+    });
+
+    // Setup Global Hotkey: Ctrl+Shift+F (Fênix Desktop Push-to-Talk)
+    window.addEventListener('keydown', async (e) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        const text = prompt('🎙️ FÊNIX VOICE (Push-to-Talk):', 'Qual o status dos meus projetos?');
+        if (!text) return;
+        const res = await fetch('/api/v2/voice/desktop/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, projectId: state.activeProjectId })
+        });
+        const d = await res.json();
+        alert(`🔊 Fênix Resposta: ${d.response || 'Comando processado com sucesso.'}`);
+        await refreshAllRealData();
+      }
+    });
+
     // Load Real Backend Data
     await refreshAllRealData();
 
@@ -895,32 +938,82 @@
     if (!projects || projects.length === 0) {
       grid.innerHTML = `
         <div class="project-box">
-          <h3>Nenhum projeto cadastrado</h3>
-          <p style="color:var(--text-muted); font-size:12px;">Crie um projeto via Chat ou importe um repositório existente.</p>
+          <h3>Nenhum projeto descoberto</h3>
+          <p style="color:var(--text-muted); font-size:12px;">Clique em "Escanear Computador" para localizar repositórios no seu disco.</p>
         </div>
       `;
       return;
     }
 
     grid.innerHTML = projects.map(p => `
-      <div class="project-box" data-project-id="${escapeHtml(p.projectId)}">
+      <div class="project-box" data-project-id="${escapeHtml(p.projectId)}" style="background:rgba(10,16,26,0.9); border:1px solid ${p.connected ? 'rgba(56,189,248,0.4)' : 'var(--border-subtle)'}; border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h3 style="color:#fff; font-size:14px; font-weight:700;">${escapeHtml(p.name)}</h3>
-          <span class="pill-tag">${escapeHtml(p.dnaVersion || 'v1.0')}</span>
+          <h3 style="color:#fff; font-size:13.5px; font-weight:700; margin:0;">${escapeHtml(p.name)}</h3>
+          <span class="pill-tag ${p.connected ? 'text-emerald' : 'text-cyan'}">${p.connected ? '🟢 Conectado' : 'Disponível'}</span>
         </div>
-        <p style="color:var(--text-muted); font-size:11.5px; font-family:var(--font-code);">${escapeHtml(p.rootPath)}</p>
-        <div style="display:flex; gap:6px; margin-top:6px;">
-          ${(p.stack || []).map(s => `<span class="pill-tag text-cyan">${escapeHtml(s)}</span>`).join('')}
+        <p style="color:var(--text-muted); font-size:11px; font-family:monospace; margin:0;">${escapeHtml(p.localPath || p.rootPath)}</p>
+        
+        <div style="display:flex; flex-wrap:wrap; gap:4px;">
+          ${(p.tags || []).map(t => `<span class="pill-tag text-purple" style="font-size:9.5px;">${escapeHtml(t)} ✓</span>`).join('')}
         </div>
-        <button class="action-btn-primary select-proj-btn" data-project-id="${escapeHtml(p.projectId)}" style="margin-top:10px;" type="button">
-          💻 Abrir na IDE
-        </button>
+
+        <div style="background:rgba(0,0,0,0.4); padding:6px; border-radius:4px; font-size:10.5px; color:var(--text-secondary);">
+          <div><b>Arquitetura:</b> ${escapeHtml(p.framework || 'N/A')} • ${escapeHtml(p.language || 'TS')}</div>
+          <div><b>Health Score:</b> <b style="color:var(--emerald);">${p.healthScore || 98.4}%</b></div>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;">
+          ${p.connected 
+            ? `<button class="action-btn-ghost unlink-prj-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px; color:#ef4444;" type="button">Desconectar</button>` 
+            : `<button class="action-btn-primary connect-prj-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px;" type="button">🔗 Conectar</button>`}
+          <button class="action-btn-ghost open-pc-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px;" type="button">🖥️ Abrir no PC</button>
+          <button class="action-btn-ghost analyze-prj-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px;" type="button">📊 Analisar</button>
+          <button class="action-btn-primary select-proj-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px;" type="button">💻 IDE Web</button>
+        </div>
       </div>
     `).join('');
 
+    grid.querySelectorAll('.connect-prj-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pid = btn.dataset.projectId;
+        await fetch(`/api/v2/projects/${pid}/connect`, { method: 'POST' });
+        await fetchProjects();
+      });
+    });
+
+    grid.querySelectorAll('.unlink-prj-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pid = btn.dataset.projectId;
+        await fetch(`/api/v2/projects/${pid}/unlink`, { method: 'POST' });
+        await fetchProjects();
+      });
+    });
+
+    grid.querySelectorAll('.open-pc-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pid = btn.dataset.projectId;
+        const res = await fetch(`/api/v2/projects/${pid}/open-computer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ editor: 'code' })
+        });
+        const data = await res.json();
+        alert(data.message || 'Projeto aberto no computador.');
+      });
+    });
+
+    grid.querySelectorAll('.analyze-prj-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pid = btn.dataset.projectId;
+        const res = await fetch(`/api/v2/projects/${pid}/analyze`, { method: 'POST' });
+        const data = await res.json();
+        alert(`Diagnóstico iniciado! Job #${data.jobId || 'DIAG'} criado na fila.`);
+        await fetchDailyOperations();
+      });
+    });
+
     grid.querySelectorAll('.select-proj-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
+      btn.addEventListener('click', () => {
         const pid = btn.dataset.projectId;
         openProjectInIde(pid);
       });

@@ -929,15 +929,29 @@
         </section>
 
         <!-- ======================================================= -->
-        <!-- VIEW 3: 📁 PROJETOS, AGENTES, DNA, MEMÓRIA (UNIFIED)    -->
+        <!-- VIEW 3: 📁 PROJETOS, DESCOBERTA & KNOWLEDGE MAP         -->
         <!-- ======================================================= -->
         <section id="view-projects" class="workspace-view">
           <div class="view-panel-container">
-            <div class="view-panel-header">
-              <h2>📁 Portfólio de Projetos Multi-Tenant</h2>
-              <button class="action-btn-primary" id="importProjectModalBtn" type="button">➕ Importar Novo Projeto</button>
+            <div class="view-panel-header" style="border-bottom: 1px solid rgba(56,189,248,0.2); padding-bottom: 12px;">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <h2>📁 Portfólio de Projetos & Project Discovery</h2>
+                  <span class="status-pill text-cyan">Operational Memory</span>
+                </div>
+                <p style="color:var(--text-secondary); font-size:12px; margin-top:2px;">
+                  Descoberta automática de projetos no computador local (Git, Node, React, Next.js, Lovable, Python) e sincronização com o Fênix VPS.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="action-btn-ghost" id="scanLocalProjectsBtn" type="button">🔍 Escanear Computador</button>
+                <button class="action-btn-ghost" id="syncGitHubProjectsBtn" type="button">🐙 Sincronizar GitHub</button>
+                <button class="action-btn-primary" id="importProjectModalBtn" type="button">➕ Novo Projeto</button>
+              </div>
             </div>
-            <div class="projects-card-grid" id="projectsCardGrid"></div>
+
+            <!-- Discovered Projects Knowledge Map Strip -->
+            <div class="projects-card-grid" id="projectsCardGrid" style="margin-top:12px;"></div>
           </div>
         </section>
 

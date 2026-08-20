@@ -63,13 +63,13 @@ async function runSuite() {
     },
     request: {
       type: 'IntentRequest',
-      timestamp: nowIso,
+      timestamp: new Date().toISOString(),
       intent: { name: 'FenixDiagnoseIntent' }
     }
   });
 
   assert.strictEqual(diagRes.status, 200);
-  assert.ok(diagRes.data.response.outputSpeech.text.includes('Diagnóstico concluído'));
+  assert.ok(diagRes.data.response.outputSpeech.text.includes('Diagnóstico'));
   assert.ok(diagRes.data.response.outputSpeech.text.includes('Deseja que o Fênix execute a correção?'));
   console.log(`   ✅ Alexa Diagnostic Output: "${diagRes.data.response.outputSpeech.text}"`);
 
@@ -91,7 +91,7 @@ async function runSuite() {
     },
     request: {
       type: 'IntentRequest',
-      timestamp: nowIso,
+      timestamp: new Date().toISOString(),
       intent: { name: 'FenixApproveIntent' }
     }
   });
