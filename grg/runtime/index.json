@@ -237,6 +237,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\multimodal-pipeline.js"
     },
     {
+      "name": "PromptCompilerEngine",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\compiler\\prompt-compiler.js"
+    },
+    {
       "name": "AIProviderAdapter",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\ai-provider-adapter.js"

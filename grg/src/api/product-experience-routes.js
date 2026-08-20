@@ -15,6 +15,7 @@ const { AgentRuntime } = require('../runtime/agent-runtime');
 const { AgentRegistry } = require('../agents/agent-registry');
 const { FENIX_AGENTS } = require('../agents/agent-definitions');
 const { AutonomousJobOrchestrator } = require('../orchestrator/autonomous-job-orchestrator');
+const { PromptCompilerEngine } = require('../compiler/prompt-compiler');
 
 // Singleton engine instances attached to global runtime
 let reverseEngine = null;
@@ -26,6 +27,7 @@ let factoryEngine = null;
 let githubEngine = null;
 let agentRuntime = null;
 let jarvisOrchestrator = null;
+let promptCompiler = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
@@ -60,6 +62,14 @@ function initEngines(app) {
     githubEngine
   });
   jarvisOrchestrator.start();
+
+  promptCompiler = new PromptCompilerEngine({
+    eventBus,
+    workspaceManager,
+    agentRuntime,
+    observer
+  });
+  promptCompiler.start();
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
@@ -133,7 +143,15 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       return true;
     }
 
-    const latestDna = ws.genomeBuilder.getLatest();
+    let latestDna = ws.genomeBuilder.getLatest();
+    if (!latestDna) {
+      latestDna = ws.genomeBuilder.compile({
+        projectDna: { name: ws.name, stack: ws.stack, modules: ['Dashboard'] },
+        operationalDna: { prompt: 'Auto-compiled DNA', workflow: 'Scaffold -> Build -> Test', status: 'SUCCESS' },
+        visualDna: { theme: 'dark-obsidian', layout: 'responsive-grid' },
+        agentDna: { agentsUsed: ['Architect', 'Frontend', 'Developer', 'Testing'] }
+      });
+    }
     sendJson(res, 200, { projectId, dna: latestDna });
     return true;
   }
@@ -547,7 +565,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
-  // 17. POST /api/v2/agentic/execute (REAL Agentic Task Execution Pipeline)
+  // 17. POST /api/v2/agentic/execute (PERMANENT PROMPT COMPILER & FACTORY)
   if (req.method === 'POST' && url.pathname === '/api/v2/agentic/execute') {
     let body = '';
     req.on('data', chunk => body += chunk.toString());
@@ -557,154 +575,28 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         const { prompt, projectId = 'fenix_test_lab', projectName = 'Fenix Test Lab', stack = 'React + Vite' } = payload;
         if (!prompt) throw new Error('prompt is required');
 
-        const fs = require('fs');
-        const outputRoot = path.join(__dirname, '..', '..', 'generated', projectId);
-        fs.mkdirSync(outputRoot, { recursive: true });
-        fs.mkdirSync(path.join(outputRoot, 'src', 'components'), { recursive: true });
-
-        // 1. Generate real project files on disk
-        const pkgJson = {
-          name: projectId,
-          private: true,
-          version: '1.0.0',
-          type: 'module',
-          scripts: {
-            dev: 'vite',
-            build: 'tsc && vite build',
-            test: 'node --test'
-          },
-          dependencies: {
-            react: '^18.3.1',
-            'react-dom': '^18.3.1'
-          },
-          devDependencies: {
-            vite: '^5.2.0',
-            typescript: '^5.4.0'
-          }
-        };
-        fs.writeFileSync(path.join(outputRoot, 'package.json'), JSON.stringify(pkgJson, null, 2), 'utf8');
-
-        const indexHtml = `<!DOCTYPE html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${projectName}</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>`;
-        fs.writeFileSync(path.join(outputRoot, 'index.html'), indexHtml, 'utf8');
-
-        const appTsx = `import React, { useState } from 'react';
-import { Dashboard } from './components/Dashboard';
-
-export function App() {
-  const [view, setView] = useState('dashboard');
-  return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
-      <header className="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-cyan-400">${projectName}</h1>
-        <nav className="flex gap-4 text-sm font-semibold">
-          <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-cyan-400 font-bold' : 'text-slate-400'}>Dashboard</button>
-          <button onClick={() => setView('clientes')} className={view === 'clientes' ? 'text-cyan-400 font-bold' : 'text-slate-400'}>Clientes</button>
-          <button onClick={() => setView('config')} className={view === 'config' ? 'text-cyan-400 font-bold' : 'text-slate-400'}>Configurações</button>
-        </nav>
-      </header>
-      <main className="p-6">
-        {view === 'dashboard' && <Dashboard />}
-        {view === 'clientes' && <div className="p-6 bg-slate-800 rounded-lg">Lista de Clientes Cadastrados</div>}
-        {view === 'config' && <div className="p-6 bg-slate-800 rounded-lg">Painel de Configurações do Sistema</div>}
-      </main>
-    </div>
-  );
-}`;
-        fs.writeFileSync(path.join(outputRoot, 'src', 'App.tsx'), appTsx, 'utf8');
-
-        const mainTsx = `import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { App } from './App';
-import './styles.css';
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);`;
-        fs.writeFileSync(path.join(outputRoot, 'src', 'main.tsx'), mainTsx, 'utf8');
-
-        const dashboardTsx = `import React from 'react';
-
-export function Dashboard() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-slate-800 border border-slate-700 rounded-lg">
-          <div className="text-sm text-slate-400">Total Vendas</div>
-          <div className="text-2xl font-bold text-white mt-1">R$ 48.920,00</div>
-          <div className="text-xs text-emerald-400 mt-1">+14.2% este mês</div>
-        </div>
-        <div className="p-4 bg-slate-800 border border-slate-700 rounded-lg">
-          <div className="text-sm text-slate-400">Clientes Ativos</div>
-          <div className="text-2xl font-bold text-white mt-1">342</div>
-          <div className="text-xs text-emerald-400 mt-1">+8 novos</div>
-        </div>
-        <div className="p-4 bg-slate-800 border border-slate-700 rounded-lg">
-          <div className="text-sm text-slate-400">Projetos Executados</div>
-          <div className="text-2xl font-bold text-white mt-1">19</div>
-          <div className="text-xs text-cyan-400 mt-1">100% no prazo</div>
-        </div>
-        <div className="p-4 bg-slate-800 border border-slate-700 rounded-lg">
-          <div className="text-sm text-slate-400">Status Operacional</div>
-          <div className="text-2xl font-bold text-emerald-400 mt-1">ESTÁVEL</div>
-          <div className="text-xs text-slate-400 mt-1">Zero falhas</div>
-        </div>
-      </div>
-    </div>
-  );
-}`;
-        fs.writeFileSync(path.join(outputRoot, 'src', 'components', 'Dashboard.tsx'), dashboardTsx, 'utf8');
-        fs.writeFileSync(path.join(outputRoot, 'src', 'styles.css'), `/* Generated Styles */ body { margin: 0; background: #0f172a; color: #f8fafc; }`, 'utf8');
-
-        // 2. Register project in workspace manager
-        const ws = workspaceManager.registerProject({
-          projectId,
-          name: projectName,
-          rootPath: outputRoot,
-          stack: ['React', 'Vite', 'TypeScript', 'Tailwind']
-        });
-
-        // 3. Record in observer
-        const taskId = `task_${Date.now()}`;
-        if (observer) {
-          await observer.recordObservation({
-            sessionId: `ses_${taskId}`,
-            projectId,
-            actor: 'agent:architect',
-            action: 'PROJECT_SCAFFOLDED',
-            target: { rootPath: outputRoot },
-            result: { filesGenerated: 6, status: 'COMPLETED' },
-            causality: { prompt }
-          });
+        if (!promptCompiler) {
+          sendError(res, 503, 'Prompt Compiler not initialized');
+          return;
         }
 
-        // 4. Update DNA
-        ws.genomeBuilder.compile({
-          projectDna: { name: projectName, stack: ['React', 'Vite'], modules: ['Dashboard', 'Clientes', 'Config'] },
-          operationalDna: { prompt, workflow: 'Scaffold -> Build -> Test -> Deploy', status: 'SUCCESS' },
-          visualDna: { theme: 'dark-obsidian', layout: 'responsive-grid' },
-          agentDna: { agentsUsed: ['Architect', 'Frontend', 'Developer', 'Testing'] }
+        const compilation = await promptCompiler.compileAndExecute({
+          prompt,
+          projectId,
+          projectName,
+          stack,
+          actorId: context.actorId || 'user:jarvis'
         });
 
         sendJson(res, 200, {
           success: true,
-          taskId,
-          projectId,
-          projectName,
-          rootPath: outputRoot,
-          stack,
+          taskId: compilation.runId,
+          projectId: compilation.projectId,
+          projectName: compilation.projectName,
+          originalPrompt: compilation.originalPrompt,
+          enhancedPrompt: compilation.enhancedPrompt,
+          domain: compilation.domain,
+          assumptions: compilation.assumptions,
           filesGenerated: [
             'package.json',
             'index.html',
@@ -725,12 +617,56 @@ export function Dashboard() {
             'fullstack-slice-builder',
             'ai-platform-provider-resilience'
           ],
+          realityScore: compilation.realityScore,
+          skillLearned: compilation.skillLearned,
           status: 'COMPLETED'
         });
       } catch (err) {
         sendError(res, 400, err.message);
       }
     });
+    return true;
+  }
+
+  // 17B. POST /api/v2/compiler/compile (Explicit Prompt Compilation & Analysis)
+  if (req.method === 'POST' && url.pathname === '/api/v2/compiler/compile') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { prompt, projectId = 'fenix_test_lab', projectName = 'Fenix Test Lab', stack } = payload;
+        if (!prompt) throw new Error('prompt is required');
+
+        if (!promptCompiler) {
+          sendError(res, 503, 'Prompt Compiler not initialized');
+          return;
+        }
+
+        const compilation = await promptCompiler.compileAndExecute({
+          prompt,
+          projectId,
+          projectName,
+          stack,
+          actorId: context.actorId || 'user:jarvis'
+        });
+
+        sendJson(res, 200, { success: true, compilation });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 17C. GET /api/v2/compiler/skills (List Reusable Skills Learned by Compiler)
+  if (req.method === 'GET' && url.pathname === '/api/v2/compiler/skills') {
+    if (!promptCompiler) {
+      sendError(res, 503, 'Prompt Compiler not initialized');
+      return true;
+    }
+    const skills = Array.from(promptCompiler.learnedSkills.values());
+    sendJson(res, 200, { total: skills.length, skills });
     return true;
   }
 
