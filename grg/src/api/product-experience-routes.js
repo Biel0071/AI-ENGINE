@@ -1074,6 +1074,28 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
+  // 38b. GET /api/v2/voice/alexa/status (Observability & Metrics)
+  if (req.method === 'GET' && url.pathname === '/api/v2/voice/alexa/status') {
+    if (!voiceGateway) {
+      sendError(res, 503, 'Alexa Voice Gateway não inicializado');
+      return true;
+    }
+    sendJson(res, 200, voiceGateway.getObservabilityStatus());
+    return true;
+  }
+
+  // 38c. GET /api/v2/voice/alexa/health
+  if (req.method === 'GET' && url.pathname === '/api/v2/voice/alexa/health') {
+    sendJson(res, 200, {
+      ok: true,
+      status: voiceGateway?.status || 'ONLINE',
+      gateway: 'Alexa Voice Control First',
+      endpoint: 'https://fenix.209-50-241-22.sslip.io/api/v2/voice/alexa',
+      skillId: 'amzn1.ask.skill.d8464469-c6ed-428b-b52e-68789c41d21e'
+    });
+    return true;
+  }
+
   // 39. POST /api/v2/vision/inspect-element (DOM -> Component -> File -> Line)
   if (req.method === 'POST' && url.pathname === '/api/v2/vision/inspect-element') {
     let body = '';
