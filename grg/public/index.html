@@ -285,151 +285,176 @@
             </div>
           </div>
 
-          <!-- Main Interactive City Stage -->
-          <div class="city-stage-container" id="cityStageContainer">
-            <canvas id="cityCanvas" class="city-canvas"></canvas>
+          <!-- City Main Layout Split: 3D Stage + Lateral JARVIS Assistant -->
+          <div class="city-main-split">
+            <!-- Main Interactive City Stage -->
+            <div class="city-stage-container" id="cityStageContainer">
+              <canvas id="cityCanvas" class="city-canvas"></canvas>
 
-            <!-- Holographic Interactive Building Markers Overlay -->
-            <div class="city-markers-layer" id="cityMarkersLayer">
-              <!-- Building 1: Software Factory -->
-              <div class="building-card-pin" style="left: 22%; top: 28%;" data-building="factory">
-                <div class="pin-beacon"></div>
-                <div class="pin-card">
-                  <div class="pin-header">
-                    <span class="pin-icon">🏢</span>
-                    <span class="pin-title">SOFTWARE FACTORY</span>
+              <!-- Holographic Interactive Building Markers Overlay -->
+              <div class="city-markers-layer" id="cityMarkersLayer">
+                <!-- Building 1: Software Factory -->
+                <div class="building-card-pin" style="left: 20%; top: 32%;" data-building="factory">
+                  <div class="pin-beacon"></div>
+                  <div class="pin-card">
+                    <div class="pin-header">
+                      <span class="pin-icon">🏢</span>
+                      <span class="pin-title">SOFTWARE FACTORY</span>
+                    </div>
+                    <div class="pin-desc">Building • 4 agentes</div>
+                    <div class="pin-status-bar"><div class="fill" style="width: 85%;"></div></div>
                   </div>
-                  <div class="pin-desc">Building • 12 agentes</div>
-                  <div class="pin-status-bar"><div class="fill" style="width: 85%;"></div></div>
+                </div>
+
+                <!-- Building 2: Data Center -->
+                <div class="building-card-pin" style="left: 28%; top: 58%;" data-building="datacenter">
+                  <div class="pin-beacon"></div>
+                  <div class="pin-card">
+                    <div class="pin-header">
+                      <span class="pin-icon">🗄️</span>
+                      <span class="pin-title">DATA CENTER</span>
+                    </div>
+                    <div class="pin-desc">Infra • 3 agentes</div>
+                    <div class="pin-status-bar"><div class="fill" style="width: 92%;"></div></div>
+                  </div>
+                </div>
+
+                <!-- Building 3: Agent District -->
+                <div class="building-card-pin" style="left: 45%; top: 18%;" data-building="district">
+                  <div class="pin-beacon"></div>
+                  <div class="pin-card">
+                    <div class="pin-header">
+                      <span class="pin-icon">🏛️</span>
+                      <span class="pin-title">AGENT DISTRICT</span>
+                    </div>
+                    <div class="pin-desc">19/19 online</div>
+                    <div class="pin-status-bar"><div class="fill" style="width: 100%;"></div></div>
+                  </div>
+                </div>
+
+                <!-- Building 4: Project Tower -->
+                <div class="building-card-pin" style="left: 68%; top: 26%;" data-building="tower">
+                  <div class="pin-beacon"></div>
+                  <div class="pin-card">
+                    <div class="pin-header">
+                      <span class="pin-icon">🗼</span>
+                      <span class="pin-title">PROJECT TOWER</span>
+                    </div>
+                    <div class="pin-desc">Execução • Workspaces</div>
+                    <div class="pin-status-bar"><div class="fill" style="width: 80%;"></div></div>
+                  </div>
+                </div>
+
+                <!-- Building 5: Marketplace -->
+                <div class="building-card-pin" style="left: 60%; top: 56%;" data-building="marketplace">
+                  <div class="pin-beacon"></div>
+                  <div class="pin-card">
+                    <div class="pin-header">
+                      <span class="pin-icon">🏪</span>
+                      <span class="pin-title">MARKETPLACE</span>
+                    </div>
+                    <div class="pin-desc">Templates + Skills</div>
+                    <div class="pin-status-bar"><div class="fill" style="width: 70%;"></div></div>
+                  </div>
+                </div>
+
+                <!-- Building 6: Energy Plant -->
+                <div class="building-card-pin" style="left: 38%; top: 76%;" data-building="energy">
+                  <div class="pin-beacon"></div>
+                  <div class="pin-card">
+                    <div class="pin-header">
+                      <span class="pin-icon">⚡</span>
+                      <span class="pin-title">ENERGY PLANT</span>
+                    </div>
+                    <div class="pin-desc">AI Compute • 98%</div>
+                    <div class="pin-status-bar"><div class="fill" style="width: 98%;"></div></div>
+                  </div>
+                </div>
+
+                <!-- Central Phoenix Monument -->
+                <div class="monument-pin" style="left: 46%; top: 44%;" data-building="monument" title="Núcleo Central FÊNIX">
+                  <div class="monument-glow"></div>
+                  <div class="monument-phoenix">🔥</div>
                 </div>
               </div>
 
-              <!-- Building 2: Data Center -->
-              <div class="building-card-pin" style="left: 32%; top: 46%;" data-building="datacenter">
-                <div class="pin-beacon"></div>
-                <div class="pin-card">
-                  <div class="pin-header">
-                    <span class="pin-icon">🗄️</span>
-                    <span class="pin-title">DATA CENTER</span>
+              <!-- Floating Live Events Stream Card -->
+              <div class="floating-events-card">
+                <div class="events-card-header">
+                  <div class="events-header-title">
+                    <span class="pulse-emerald-dot"></span>
+                    <span>EVENTOS EM TEMPO REAL</span>
                   </div>
-                  <div class="pin-desc">Infra • 3 agentes</div>
-                  <div class="pin-status-bar"><div class="fill" style="width: 92%;"></div></div>
+                  <span class="events-refresh-badge">Live Feed</span>
+                </div>
+                <div class="events-list" id="cityEventsFeed">
+                  <div class="event-feed-item">
+                    <span class="agent-avatar-icon">ℹ️</span>
+                    <div class="event-text">Conectando ao EventBus...</div>
+                  </div>
+                </div>
+                <div class="events-card-footer">
+                  <button class="events-more-btn" id="seeAllEventsBtn" type="button">⚡ Atualização contínua 24/7</button>
                 </div>
               </div>
 
-              <!-- Building 3: Agent District -->
-              <div class="building-card-pin" style="left: 45%; top: 22%;" data-building="district">
-                <div class="pin-beacon"></div>
-                <div class="pin-card">
-                  <div class="pin-header">
-                    <span class="pin-icon">🏛️</span>
-                    <span class="pin-title">AGENT DISTRICT</span>
-                  </div>
-                  <div class="pin-desc">19/19 online</div>
-                  <div class="pin-status-bar"><div class="fill" style="width: 100%;"></div></div>
+              <!-- Floating Map Navigation Compass / Zoom Controls -->
+              <div class="city-nav-hud">
+                <button class="hud-circle-btn" id="hudCompass" title="Centralizar Norte" type="button">🧭</button>
+                <div class="hud-quick-layers">
+                  <button class="hud-pill-btn active" data-layer="all" type="button">Todos</button>
+                  <button class="hud-pill-btn" data-layer="agents" type="button">Agentes</button>
+                  <button class="hud-pill-btn" data-layer="traffic" type="button">Tráfego</button>
+                  <button class="hud-pill-btn" data-layer="energy" type="button">Energia</button>
                 </div>
-              </div>
-
-              <!-- Building 4: Project Tower -->
-              <div class="building-card-pin" style="left: 64%; top: 30%;" data-building="tower">
-                <div class="pin-beacon"></div>
-                <div class="pin-card">
-                  <div class="pin-header">
-                    <span class="pin-icon">🗼</span>
-                    <span class="pin-title">PROJECT TOWER</span>
-                  </div>
-                  <div class="pin-desc">Execução • 8 projetos</div>
-                  <div class="pin-status-bar"><div class="fill" style="width: 78%;"></div></div>
-                </div>
-              </div>
-
-              <!-- Building 5: Marketplace -->
-              <div class="building-card-pin" style="left: 54%; top: 48%;" data-building="marketplace">
-                <div class="pin-beacon"></div>
-                <div class="pin-card">
-                  <div class="pin-header">
-                    <span class="pin-icon">🏪</span>
-                    <span class="pin-title">MARKETPLACE</span>
-                  </div>
-                  <div class="pin-desc">Templates + Plugins</div>
-                  <div class="pin-status-bar"><div class="fill" style="width: 64%;"></div></div>
-                </div>
-              </div>
-
-              <!-- Building 6: Energy Plant -->
-              <div class="building-card-pin" style="left: 40%; top: 72%;" data-building="energy">
-                <div class="pin-beacon"></div>
-                <div class="pin-card">
-                  <div class="pin-header">
-                    <span class="pin-icon">⚡</span>
-                    <span class="pin-title">ENERGY PLANT</span>
-                  </div>
-                  <div class="pin-desc">Energia • 98%</div>
-                  <div class="pin-status-bar"><div class="fill" style="width: 98%;"></div></div>
-                </div>
-              </div>
-
-              <!-- Central Phoenix Monument -->
-              <div class="monument-pin" style="left: 48%; top: 40%;" data-building="monument" title="Núcleo Central FÊNIX">
-                <div class="monument-glow"></div>
-                <div class="monument-phoenix">🔥</div>
               </div>
             </div>
 
-            <!-- Floating Live Events Stream Card -->
-            <div class="floating-events-card">
-              <div class="events-card-header">
-                <div class="events-header-title">
-                  <span class="pulse-emerald-dot"></span>
-                  <span>EVENTOS EM TEMPO REAL</span>
+            <!-- Persistent Lateral JARVIS Assistant Panel -->
+            <aside class="city-jarvis-sidebar" id="cityJarvisSidebar">
+              <div class="jarvis-sidebar-header">
+                <div class="jarvis-agent-badge">
+                  <div class="jarvis-pulse-avatar">🔥</div>
+                  <div>
+                    <div class="jarvis-title">FÊNIX JARVIS</div>
+                    <div class="jarvis-status">● Assistente Operacional 24/7</div>
+                  </div>
                 </div>
-                <span class="events-refresh-badge">Live Feed</span>
+                <button class="jarvis-minimize-btn" id="toggleJarvisSideBtn" type="button" title="Minimizar / Expandir">⇄</button>
               </div>
-              <div class="events-list" id="cityEventsFeed">
-                <div class="event-feed-item">
-                  <span class="agent-avatar-icon">📐</span>
-                  <div class="event-text">
-                    <b>Architect Agent</b> iniciou análise
-                  </div>
-                  <span class="event-time">5s atrás</span>
-                </div>
-                <div class="event-feed-item">
-                  <span class="agent-avatar-icon">💻</span>
-                  <div class="event-text">
-                    <b>Code Assistant</b> gerou componentes
-                  </div>
-                  <span class="event-time">12s atrás</span>
-                </div>
-                <div class="event-feed-item">
-                  <span class="agent-avatar-icon">🚀</span>
-                  <div class="event-text">
-                    <b>Deploy Agent</b> publicou release
-                  </div>
-                  <span class="event-time">34s atrás</span>
-                </div>
-                <div class="event-feed-item">
-                  <span class="agent-avatar-icon">🛡️</span>
-                  <div class="event-text">
-                    <b>Security Agent</b> verificou vulnerabilidades
-                  </div>
-                  <span class="event-time">1m atrás</span>
-                </div>
-              </div>
-              <div class="events-card-footer">
-                <button class="events-more-btn" id="seeAllEventsBtn" type="button">⚡ + 12 eventos recentes</button>
-              </div>
-            </div>
 
-            <!-- Floating Map Navigation Compass / Zoom Controls -->
-            <div class="city-nav-hud">
-              <button class="hud-circle-btn" id="hudCompass" title="Centralizar Norte" type="button">🧭</button>
-              <div class="hud-quick-layers">
-                <button class="hud-pill-btn active" data-layer="all" type="button">Todos</button>
-                <button class="hud-pill-btn" data-layer="agents" type="button">Agentes</button>
-                <button class="hud-pill-btn" data-layer="traffic" type="button">Tráfego</button>
-                <button class="hud-pill-btn" data-layer="energy" type="button">Energia</button>
+              <div class="jarvis-quick-metrics">
+                <div class="q-metric"><span class="q-lbl">Jobs:</span> <b id="sideMetricJobs">0</b></div>
+                <div class="q-metric"><span class="q-lbl">DAG Tasks:</span> <b id="sideMetricTasks">0</b></div>
+                <div class="q-metric"><span class="q-lbl">Agentes:</span> <b class="text-emerald" id="sideMetricAgents">19</b></div>
               </div>
-            </div>
+
+              <div class="jarvis-messages-feed" id="cityJarvisMessagesFeed">
+                <div class="chat-msg msg-assistant">
+                  <div class="msg-header">
+                    <div class="msg-avatar">🔥</div>
+                    <span class="msg-author">FÊNIX JARVIS</span>
+                    <span class="msg-status-dot"></span>
+                    <span class="msg-badge">Online</span>
+                  </div>
+                  <div class="msg-body">
+                    Olá! Estou monitorando os sistemas 24/7. Peça qualquer tarefa, correção de bugs, criação de APIs ou orquestração de projetos.
+                  </div>
+                </div>
+              </div>
+
+              <div class="jarvis-composer-box">
+                <div class="jarvis-chips-row">
+                  <button class="jarvis-chip" type="button" data-cmd="Analise todos os projetos e me informe o status de saúde">🔍 Saúde Projetos</button>
+                  <button class="jarvis-chip" type="button" data-cmd="Crie um novo módulo no projeto ativo">➕ Novo Módulo</button>
+                  <button class="jarvis-chip" type="button" data-cmd="Dispare o ciclo de observação e testes 24/7">⚡ Executar Testes</button>
+                </div>
+                <form class="jarvis-input-form" id="cityJarvisForm">
+                  <input type="text" class="jarvis-text-input" id="cityJarvisInput" placeholder="Peça uma tarefa para o FÊNIX..." autocomplete="off">
+                  <button class="jarvis-send-btn" type="submit">Enviar</button>
+                </form>
+              </div>
+            </aside>
           </div>
         </section>
 

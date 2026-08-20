@@ -568,11 +568,194 @@ html, body {
 .kpi-value { font-size: 15px; font-weight: 800; font-family: var(--font-display); }
 
 /* Main Stage Canvas */
-.city-stage-container {
+.city-main-split {
   flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  overflow: hidden;
+  height: calc(100% - 92px);
+  position: relative;
+}
+
+.city-main-split.jarvis-collapsed {
+  grid-template-columns: minmax(0, 1fr) 0px;
+}
+
+.city-stage-container {
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 50%, #111c30 0%, #080d16 60%, #030509 100%);
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, #0d1527 0%, #060a12 60%, #020407 100%);
+}
+
+/* Persistent Lateral JARVIS Assistant Panel */
+.city-jarvis-sidebar {
+  background: rgba(10, 15, 24, 0.96);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  box-shadow: -6px 0 25px rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.jarvis-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(6, 9, 14, 0.8);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.jarvis-agent-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jarvis-pulse-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange), var(--flame));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  box-shadow: 0 0 12px var(--flame-glow);
+}
+
+.jarvis-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.jarvis-status {
+  font-size: 10px;
+  color: var(--emerald);
+  font-weight: 600;
+}
+
+.jarvis-minimize-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.jarvis-minimize-btn:hover {
+  color: #fff;
+  border-color: var(--cyan);
+}
+
+.jarvis-quick-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(18, 27, 43, 0.5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.q-metric {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 4px;
+}
+
+.q-metric b { color: #fff; }
+
+.jarvis-messages-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jarvis-composer-box {
+  padding: 10px 12px;
+  background: rgba(6, 9, 14, 0.95);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jarvis-chips-row {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.jarvis-chip {
+  white-space: nowrap;
+  background: rgba(18, 27, 43, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.jarvis-chip:hover {
+  border-color: var(--cyan);
+  color: #fff;
+  background: var(--bg-card-hover);
+}
+
+.jarvis-input-form {
+  display: flex;
+  gap: 6px;
+  background: rgba(18, 27, 43, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+}
+
+.jarvis-input-form:focus-within {
+  border-color: var(--border-amber);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.2);
+}
+
+.jarvis-text-input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+  font-family: var(--font-sans);
+}
+
+.jarvis-send-btn {
+  background: linear-gradient(135deg, var(--orange), var(--flame));
+  border: 0;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .city-canvas {
