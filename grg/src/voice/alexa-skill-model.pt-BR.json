@@ -61,11 +61,21 @@
           ]
         },
         {
+          "name": "FenixIdentityIntent",
+          "samples": [
+            "quem é você",
+            "quem você é",
+            "o que é o fênix",
+            "qual é a sua função"
+          ]
+        },
+        {
           "name": "FenixJobsIntent",
           "samples": [
-            "quais tarefas estão rodando",
+            "quais trabalhos estão rodando",
             "quais jobs estão ativos",
-            "como está o job",
+            "como estão minhas tarefas",
+            "como está meu trabalho",
             "listar jobs",
             "status dos jobs",
             "progresso da missão"
@@ -83,6 +93,8 @@
         {
           "name": "FenixProjectsIntent",
           "samples": [
+            "quais projetos tenho",
+            "quais projetos estão conectados",
             "qual o projeto ativo",
             "abra o projeto {project}",
             "trocar para o projeto {project}",
@@ -98,8 +110,10 @@
         {
           "name": "FenixDiagnoseIntent",
           "samples": [
+            "execute um diagnóstico do projeto ativo",
             "diagnostique o projeto ativo",
             "faça um diagnóstico do projeto",
+            "execute um diagnóstico",
             "verifique os bugs do projeto ativo",
             "analise a saúde do projeto {project}",
             "escaneie o projeto {project}"
@@ -109,6 +123,16 @@
               "name": "project",
               "type": "AMAZON.SearchQuery"
             }
+          ]
+        },
+        {
+          "name": "FenixStopIntent",
+          "samples": [
+            "pare o trabalho atual",
+            "pare o trabalho",
+            "cancele a tarefa",
+            "abortar trabalho",
+            "interromper tarefa"
           ]
         },
         {
@@ -122,30 +146,13 @@
           ]
         },
         {
-          "name": "FenixCancelIntent",
-          "samples": [
-            "cancele o job",
-            "pare a missão",
-            "abortar execução",
-            "cancelar tarefa"
-          ]
-        },
-        {
-          "name": "FenixOpenIdeIntent",
-          "samples": [
-            "abra a ide",
-            "abrir a ide",
-            "ir para a ide",
-            "mostrar editor de código",
-            "abrir visual ide"
-          ]
-        },
-        {
           "name": "FenixCommandIntent",
           "samples": [
+            "mande o comando {command}",
+            "execute {command}",
+            "faça {command}",
             "peça ao fênix para {command}",
             "diga ao fênix para {command}",
-            "execute {command}",
             "crie {command}",
             "adicione {command}",
             "melhore {command}",
