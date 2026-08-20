@@ -19,6 +19,12 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
+const { TokenEconomyEngine } = require('../ai/token-economy-engine');
+const { ContextAssembler } = require('../ai/context-assembler');
+const { ModelRouter } = require('../ai/model-router');
+const { VisualRealityEngine } = require('../frontend-reality/visual-reality-engine');
+const { ConnectionBroker } = require('../connections/connection-broker');
+
 class FenixMind extends SystemModule {
   constructor({
     eventBus = null,
@@ -30,7 +36,7 @@ class FenixMind extends SystemModule {
     aiPlatformUrl = 'http://209.50.241.215',
     defaultModel = 'qwen2.5:3b'
   } = {}) {
-    super('fenix_mind_control_plane', '4.0.0');
+    super('fenix_mind_control_plane', '5.0.0');
     this.eventBus = eventBus;
     this.workspaceManager = workspaceManager;
     this.promptCompiler = promptCompiler;
@@ -39,6 +45,13 @@ class FenixMind extends SystemModule {
     this.observer = observer;
     this.aiPlatformUrl = aiPlatformUrl;
     this.defaultModel = defaultModel;
+
+    // Advanced Level 10 Engines
+    this.economy = new TokenEconomyEngine({ eventBus: this.eventBus });
+    this.contextAssembler = new ContextAssembler({ tokenEconomyEngine: this.economy });
+    this.modelRouter = new ModelRouter({ tokenEconomyEngine: this.economy });
+    this.frontendReality = new VisualRealityEngine({ workspaceManager: this.workspaceManager, eventBus: this.eventBus, promptCompiler: this.promptCompiler });
+    this.connectionBroker = new ConnectionBroker({ eventBus: this.eventBus, workspaceManager: this.workspaceManager });
 
     // Multi-Tier Memory Hierarchy
     this.memory = {

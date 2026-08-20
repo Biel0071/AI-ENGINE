@@ -25,6 +25,12 @@ const { DeviceManager } = require('../devices/device-manager');
 const { AndroidRemoteAgentManager } = require('../devices/mobile/android-remote-agent');
 const { ProjectDiscoveryManager } = require('../projects/project-discovery-manager');
 const { ProviderRegistry } = require('../ai/provider-registry');
+const { TokenEconomyEngine } = require('../ai/token-economy-engine');
+const { ContextAssembler } = require('../ai/context-assembler');
+const { ModelRouter } = require('../ai/model-router');
+const { VisualRealityEngine } = require('../frontend-reality/visual-reality-engine');
+const { ConnectionBroker } = require('../connections/connection-broker');
+const { DevelopmentMemory } = require('../memory/development-memory');
 
 // Singleton engine instances attached to global runtime
 let reverseEngine = null;
@@ -46,6 +52,12 @@ let androidRemoteManager = null;
 let projectDiscoveryManager = null;
 let providerRegistry = null;
 let eventBus = null;
+let tokenEconomy = null;
+let contextAssembler = null;
+let modelRouter = null;
+let frontendReality = null;
+let connectionBroker = null;
+let devMemory = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
@@ -159,6 +171,22 @@ function initEngines(app) {
     workspaceManager
   });
   androidRemoteManager.start();
+
+  // LEVEL 10 — Token Economy, Context Intelligence, Model Router, Frontend Reality, Connection Broker & Dev Memory
+  tokenEconomy = new TokenEconomyEngine({ eventBus });
+  tokenEconomy.start();
+
+  contextAssembler = new ContextAssembler({ tokenEconomyEngine: tokenEconomy });
+
+  modelRouter = new ModelRouter({ tokenEconomyEngine: tokenEconomy });
+
+  frontendReality = new VisualRealityEngine({ workspaceManager, eventBus, promptCompiler });
+  frontendReality.start();
+
+  connectionBroker = new ConnectionBroker({ eventBus, deviceManager, workspaceManager });
+  connectionBroker.start();
+
+  devMemory = new DevelopmentMemory();
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
@@ -1846,6 +1874,334 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         sendError(res, 400, err.message);
       }
     });
+    return true;
+  }
+
+  // ========================================================================
+  // LEVEL 10 — TOKEN ECONOMY ENGINE ROUTES
+  // ========================================================================
+
+  // 64. GET /api/v2/economy/report (Dev Efficiency Score & Token Metrics)
+  if (req.method === 'GET' && url.pathname === '/api/v2/economy/report') {
+    initEngines(app);
+    sendJson(res, 200, tokenEconomy.getEfficiencyReport());
+    return true;
+  }
+
+  // 65. POST /api/v2/economy/mode (Set Dev Cost Mode: BALANCED, ECONOMY, MAXIMUM_SAVING)
+  if (req.method === 'POST' && url.pathname === '/api/v2/economy/mode') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    try {
+      const result = tokenEconomy.setCostMode(body.mode || 'BALANCED');
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 66. POST /api/v2/economy/compress-context (Context Compression)
+  if (req.method === 'POST' && url.pathname === '/api/v2/economy/compress-context') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    const result = tokenEconomy.compressContext({
+      projectDna: body.projectDna || {},
+      relevantFiles: body.relevantFiles || [],
+      diff: body.diff || '',
+      knownIssues: body.knownIssues || [],
+      maxTokens: body.maxTokens || 2000
+    });
+    sendJson(res, 200, result);
+    return true;
+  }
+
+  // 67. POST /api/v2/economy/record-call (Record AI Call Telemetry)
+  if (req.method === 'POST' && url.pathname === '/api/v2/economy/record-call') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    const result = tokenEconomy.recordCall(body);
+    sendJson(res, 200, result);
+    return true;
+  }
+
+  // ========================================================================
+  // LEVEL 10 — CONTEXT ASSEMBLER ROUTES
+  // ========================================================================
+
+  // 68. POST /api/v2/context/build (Build Targeted Context Package)
+  if (req.method === 'POST' && url.pathname === '/api/v2/context/build') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    const contextType = body.type || 'minimal';
+    let ctx = {};
+    switch (contextType) {
+      case 'coding': ctx = contextAssembler.buildCodingContext(body); break;
+      case 'architecture': ctx = contextAssembler.buildArchitectureContext(body); break;
+      case 'debug': ctx = contextAssembler.buildDebugContext(body); break;
+      case 'visual': ctx = contextAssembler.buildVisualContext(body); break;
+      case 'deployment': ctx = contextAssembler.buildDeploymentContext(body); break;
+      case 'research': ctx = contextAssembler.buildResearchContext(body); break;
+      default: ctx = contextAssembler.buildMinimalContext(body); break;
+    }
+    sendJson(res, 200, { contextType, context: ctx });
+    return true;
+  }
+
+  // ========================================================================
+  // LEVEL 10 — MODEL ROUTER ROUTES
+  // ========================================================================
+
+  // 69. POST /api/v2/model-router/route (Route Task to Optimal Model)
+  if (req.method === 'POST' && url.pathname === '/api/v2/model-router/route') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    const model = modelRouter.route({
+      domain: body.domain || 'GENERAL',
+      taskType: body.taskType || 'code_synthesis',
+      riskLevel: body.riskLevel || 'SAFE',
+      complexity: body.complexity || 'MEDIUM',
+      failureCount: body.failureCount || 0,
+      requiresHighReasoning: body.requiresHighReasoning || false
+    });
+    sendJson(res, 200, { selectedModel: model });
+    return true;
+  }
+
+  // 70. GET /api/v2/model-router/registry (Model Registry Overview)
+  if (req.method === 'GET' && url.pathname === '/api/v2/model-router/registry') {
+    initEngines(app);
+    sendJson(res, 200, modelRouter.getRegistryOverview());
+    return true;
+  }
+
+  // ========================================================================
+  // LEVEL 10 — FRONTEND REALITY ENGINE ROUTES
+  // ========================================================================
+
+  // 71. POST /api/v2/frontend-reality/scan (Full Project Screen Discovery)
+  if (req.method === 'POST' && url.pathname === '/api/v2/frontend-reality/scan') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    try {
+      const result = await frontendReality.scanProject(body.projectId || 'fenix_test_lab');
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 72. GET /api/v2/frontend-reality/screens (List Discovered Screens)
+  if (req.method === 'GET' && url.pathname === '/api/v2/frontend-reality/screens') {
+    initEngines(app);
+    const projectId = url.searchParams?.get('projectId') || 'fenix_test_lab';
+    const screens = frontendReality.discoveryEngine.getScreens(projectId);
+    sendJson(res, 200, { projectId, screens, totalScreens: screens.length });
+    return true;
+  }
+
+  // 73. GET /api/v2/frontend-reality/navigation-graph (Screen Navigation Graph)
+  if (req.method === 'GET' && url.pathname === '/api/v2/frontend-reality/navigation-graph') {
+    initEngines(app);
+    const projectId = url.searchParams?.get('projectId') || 'fenix_test_lab';
+    const graph = frontendReality.navigationGraph.getGraph(projectId);
+    sendJson(res, 200, graph);
+    return true;
+  }
+
+  // 74. GET /api/v2/frontend-reality/audit (Orphan Screen & Dead Button Audit)
+  if (req.method === 'GET' && url.pathname === '/api/v2/frontend-reality/audit') {
+    initEngines(app);
+    const projectId = url.searchParams?.get('projectId') || 'fenix_test_lab';
+    const audit = frontendReality.orphanDetector.auditProject(projectId);
+    sendJson(res, 200, audit);
+    return true;
+  }
+
+  // 75. POST /api/v2/frontend-reality/correlate (Visual <-> Code Correlation)
+  if (req.method === 'POST' && url.pathname === '/api/v2/frontend-reality/correlate') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    const result = frontendReality.correlateElement({
+      screenId: body.screenId || 'screen_dashboard_root',
+      elementLabel: body.elementLabel || 'Novo Projeto'
+    });
+    sendJson(res, 200, result);
+    return true;
+  }
+
+  // 76. POST /api/v2/frontend-reality/click-test (Click Everything Test)
+  if (req.method === 'POST' && url.pathname === '/api/v2/frontend-reality/click-test') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    const result = frontendReality.runClickEverythingTest(body.projectId || 'fenix_test_lab');
+    sendJson(res, 200, result);
+    return true;
+  }
+
+  // 77. POST /api/v2/frontend-reality/repair (Autonomous Frontend Repair)
+  if (req.method === 'POST' && url.pathname === '/api/v2/frontend-reality/repair') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    try {
+      const result = await frontendReality.executeAutonomousRepair(body.projectId || 'fenix_test_lab', body.issue || {});
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 78. GET /api/v2/frontend-reality/design-system (Design System DNA)
+  if (req.method === 'GET' && url.pathname === '/api/v2/frontend-reality/design-system') {
+    initEngines(app);
+    sendJson(res, 200, { designSystem: frontendReality.designSystem });
+    return true;
+  }
+
+  // ========================================================================
+  // LEVEL 10 — CONNECTION BROKER ROUTES
+  // ========================================================================
+
+  // 79. GET /api/v2/connections (List All Connections)
+  if (req.method === 'GET' && url.pathname === '/api/v2/connections') {
+    initEngines(app);
+    sendJson(res, 200, { connections: connectionBroker.listConnections() });
+    return true;
+  }
+
+  // 80. POST /api/v2/connections/request (Start OAuth Authorization Flow)
+  if (req.method === 'POST' && url.pathname === '/api/v2/connections/request') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    try {
+      const result = await connectionBroker.startAuthorization({
+        provider: body.provider || 'github',
+        scopes: body.scopes,
+        deviceId: body.deviceId || 'GRG-WINDOWS-01'
+      });
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 81. GET /api/v2/connections/oauth/callback (OAuth Callback Handler)
+  if (req.method === 'GET' && url.pathname === '/api/v2/connections/oauth/callback') {
+    initEngines(app);
+    const code = url.searchParams?.get('code');
+    const state = url.searchParams?.get('state');
+    const error = url.searchParams?.get('error');
+    const provider = url.searchParams?.get('provider') || 'github';
+    try {
+      const result = await connectionBroker.handleOAuthCallback({ provider, code, state, error });
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 82. POST /api/v2/connections/:id/test (Live Connection Test)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/connections\/[^\/]+\/test$/)) {
+    initEngines(app);
+    const parts = url.pathname.split('/');
+    const connId = parts[4];
+    try {
+      const result = await connectionBroker.testConnection(connId);
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 83. POST /api/v2/connections/:id/configure (Configure API Key / Credentials)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/connections\/[^\/]+\/configure$/)) {
+    initEngines(app);
+    const parts = url.pathname.split('/');
+    const connId = parts[4];
+    const body = await readJsonBody(req);
+    try {
+      const result = await connectionBroker.configureCredentials(connId, body);
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 84. POST /api/v2/connections/:id/revoke (Revoke Connection)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/connections\/[^\/]+\/revoke$/)) {
+    initEngines(app);
+    const parts = url.pathname.split('/');
+    const connId = parts[4];
+    try {
+      const result = await connectionBroker.revokeConnection(connId);
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // 85. POST /api/v2/connections/:id/link-project (Link Connection to Project)
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/connections\/[^\/]+\/link-project$/)) {
+    initEngines(app);
+    const parts = url.pathname.split('/');
+    const connId = parts[4];
+    const body = await readJsonBody(req);
+    try {
+      const result = connectionBroker.linkProject(connId, body.projectId || 'ai-engine-core', body);
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
+    return true;
+  }
+
+  // ========================================================================
+  // LEVEL 10 — DEVELOPMENT MEMORY & LEARNING ENGINE ROUTES
+  // ========================================================================
+
+  // 86. GET /api/v2/memory/development (Get Memory Stats & Patterns)
+  if (req.method === 'GET' && url.pathname === '/api/v2/memory/development') {
+    initEngines(app);
+    sendJson(res, 200, devMemory.getStats());
+    return true;
+  }
+
+  // 87. POST /api/v2/memory/development/record (Record Development Memory Entry)
+  if (req.method === 'POST' && url.pathname === '/api/v2/memory/development/record') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    const entry = devMemory.record(body);
+    sendJson(res, 201, entry);
+    return true;
+  }
+
+  // 88. POST /api/v2/memory/development/retrieve (Retrieve Relevant Memories)
+  if (req.method === 'POST' && url.pathname === '/api/v2/memory/development/retrieve') {
+    initEngines(app);
+    const body = await readJsonBody(req);
+    const results = devMemory.retrieve({
+      projectId: body.projectId,
+      category: body.category,
+      keywords: body.keywords || [],
+      limit: body.limit || 5
+    });
+    sendJson(res, 200, { results, count: results.length });
+    return true;
+  }
+
+  // 89. GET /api/v2/memory/development/patterns (Get Learned Patterns)
+  if (req.method === 'GET' && url.pathname === '/api/v2/memory/development/patterns') {
+    initEngines(app);
+    const projectId = url.searchParams?.get('projectId') || null;
+    const patterns = devMemory.getPatterns(projectId);
+    sendJson(res, 200, { patterns, count: patterns.length });
     return true;
   }
 

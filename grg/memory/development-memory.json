@@ -1,0 +1,86 @@
+{
+  "version": "5.0.0",
+  "totalEntries": 2,
+  "totalPatterns": 2,
+  "entries": [
+    {
+      "id": "mem_1787249138544_e948e4",
+      "category": "BUG",
+      "projectId": "fenix_test",
+      "title": "Dashboard rendering broken after project switch",
+      "description": "State was not being reset when changing projects in dashboard",
+      "context": {},
+      "solution": "Added useEffect cleanup and state reset in Dashboard component",
+      "filesAffected": [
+        "Dashboard.tsx",
+        "ProjectContext.tsx"
+      ],
+      "tags": [
+        "react",
+        "state",
+        "dashboard",
+        "bug"
+      ],
+      "confidence": 1,
+      "source": "fenix_mind",
+      "usedCount": 0,
+      "createdAt": "2026-08-20T18:05:38.544Z"
+    },
+    {
+      "id": "mem_1787249138547_875d74",
+      "category": "SUCCESSFUL_SOLUTION",
+      "projectId": "fenix_test",
+      "title": "Token optimization via context compression",
+      "description": "Reduced token usage by 60% using targeted context assembly",
+      "context": {},
+      "solution": "Use ContextAssembler.buildMinimalContext() instead of full project dump",
+      "filesAffected": [],
+      "tags": [
+        "optimization",
+        "tokens",
+        "context"
+      ],
+      "confidence": 1,
+      "source": "fenix_mind",
+      "usedCount": 0,
+      "createdAt": "2026-08-20T18:05:38.547Z"
+    }
+  ],
+  "patterns": [
+    {
+      "hash": "0b6470d0f53a3130",
+      "category": "BUG",
+      "projectId": "fenix_test",
+      "title": "Dashboard rendering broken after project switch",
+      "solution": "Added useEffect cleanup and state reset in Dashboard component",
+      "filesAffected": [
+        "Dashboard.tsx",
+        "ProjectContext.tsx"
+      ],
+      "tags": [
+        "react",
+        "state",
+        "dashboard",
+        "bug"
+      ],
+      "occurrences": 1,
+      "lastSeen": "2026-08-20T18:05:38.544Z"
+    },
+    {
+      "hash": "a27d38ea00cade39",
+      "category": "SUCCESSFUL_SOLUTION",
+      "projectId": "fenix_test",
+      "title": "Token optimization via context compression",
+      "solution": "Use ContextAssembler.buildMinimalContext() instead of full project dump",
+      "filesAffected": [],
+      "tags": [
+        "optimization",
+        "tokens",
+        "context"
+      ],
+      "occurrences": 1,
+      "lastSeen": "2026-08-20T18:05:38.547Z"
+    }
+  ],
+  "lastUpdated": "2026-08-20T18:05:38.547Z"
+}
