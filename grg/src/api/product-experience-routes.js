@@ -815,6 +815,102 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
+  // 25. GET /api/v2/agents/live-states (19 Agents Real-Time Lifecycle States)
+  if (req.method === 'GET' && url.pathname === '/api/v2/agents/live-states') {
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    const state = jarvisOrchestrator.getAgentStates();
+    sendJson(res, 200, state);
+    return true;
+  }
+
+  // 26. GET /api/v2/agents/:name/inspector (Agent Live Telemetry & Inspector)
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/agents\/[^\/]+\/inspector$/)) {
+    const parts = url.pathname.split('/');
+    const agentName = decodeURIComponent(parts[4]);
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    const inspector = jarvisOrchestrator.getAgentInspector(agentName);
+    if (!inspector) {
+      sendError(res, 404, `Agente "${agentName}" não encontrado`);
+      return true;
+    }
+    sendJson(res, 200, { success: true, agent: inspector });
+    return true;
+  }
+
+  // 27. POST /api/v2/jobs/:id/pause
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jobs\/[^\/]+\/pause$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[4];
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    try {
+      const job = await jarvisOrchestrator.pauseJob(jobId);
+      sendJson(res, 200, { success: true, job });
+    } catch (e) {
+      sendError(res, 400, e.message);
+    }
+    return true;
+  }
+
+  // 28. POST /api/v2/jobs/:id/resume
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jobs\/[^\/]+\/resume$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[4];
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    try {
+      const job = await jarvisOrchestrator.resumeJob(jobId);
+      sendJson(res, 200, { success: true, job });
+    } catch (e) {
+      sendError(res, 400, e.message);
+    }
+    return true;
+  }
+
+  // 29. POST /api/v2/jobs/:id/cancel
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jobs\/[^\/]+\/cancel$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[4];
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    try {
+      const job = await jarvisOrchestrator.cancelJob(jobId);
+      sendJson(res, 200, { success: true, job });
+    } catch (e) {
+      sendError(res, 400, e.message);
+    }
+    return true;
+  }
+
+  // 30. GET /api/v2/jobs/:id/details
+  if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/jobs\/[^\/]+\/details$/)) {
+    const parts = url.pathname.split('/');
+    const jobId = parts[4];
+    if (!jarvisOrchestrator) {
+      sendError(res, 503, 'JARVIS Orchestrator not initialized');
+      return true;
+    }
+    const job = jarvisOrchestrator.jobs.get(jobId);
+    if (!job) {
+      sendError(res, 404, `Job ${jobId} não encontrado`);
+      return true;
+    }
+    sendJson(res, 200, { success: true, job });
+    return true;
+  }
+
   return false;
 }
 
