@@ -119,6 +119,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\auth\\oidc-verifier.js"
     },
     {
+      "name": "ComputerControlAgent",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\automation\\computer-control-agent.js"
+    },
+    {
       "name": "CapabilityMarketplace",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\capability-marketplace.js",
@@ -1541,9 +1546,19 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\versioning\\global-version-engine.js"
     },
     {
+      "name": "VisionAgent",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\vision\\vision-agent.js"
+    },
+    {
       "name": "VisualCodeBidirectionalMapper",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\visual-ide\\visual-code-mapper.js"
+    },
+    {
+      "name": "AlexaVoiceGateway",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\voice\\alexa-voice-gateway.js"
     },
     {
       "name": "WorkforceService",

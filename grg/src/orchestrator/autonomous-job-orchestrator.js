@@ -170,7 +170,11 @@ class AutonomousJobOrchestrator extends SystemModule {
    * =========================================================================
    */
   async heartbeatTick() {
-    if (this.isTicking) return;
+    let retries = 0;
+    while (this.isTicking && retries < 30) {
+      await new Promise(r => setTimeout(r, 100));
+      retries++;
+    }
     this.isTicking = true;
 
     try {

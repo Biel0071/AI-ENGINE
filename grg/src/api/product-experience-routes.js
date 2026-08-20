@@ -17,6 +17,9 @@ const { FENIX_AGENTS } = require('../agents/agent-definitions');
 const { AutonomousJobOrchestrator } = require('../orchestrator/autonomous-job-orchestrator');
 const { PromptCompilerEngine } = require('../compiler/prompt-compiler');
 const { FenixMind } = require('../mind/fenix-mind');
+const { AlexaVoiceGateway } = require('../voice/alexa-voice-gateway');
+const { VisionAgent } = require('../vision/vision-agent');
+const { ComputerControlAgent } = require('../automation/computer-control-agent');
 
 // Singleton engine instances attached to global runtime
 let reverseEngine = null;
@@ -30,6 +33,9 @@ let agentRuntime = null;
 let jarvisOrchestrator = null;
 let promptCompiler = null;
 let fenixMind = null;
+let voiceGateway = null;
+let visionAgent = null;
+let computerAgent = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
@@ -82,6 +88,27 @@ function initEngines(app) {
     observer
   });
   fenixMind.start();
+
+  voiceGateway = new AlexaVoiceGateway({
+    eventBus,
+    fenixMind,
+    jobOrchestrator: jarvisOrchestrator,
+    workspaceManager
+  });
+  voiceGateway.start();
+
+  visionAgent = new VisionAgent({
+    eventBus,
+    workspaceManager,
+    realityEnforcer: promptCompiler.realityEnforcer
+  });
+  visionAgent.start();
+
+  computerAgent = new ComputerControlAgent({
+    eventBus,
+    workspaceManager
+  });
+  computerAgent.start();
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
@@ -1011,20 +1038,87 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
-  // 37. POST /api/v2/mind/vision (Execute Vision Analysis Tool)
-  if (req.method === 'POST' && url.pathname === '/api/v2/mind/vision') {
+  // 38. POST /api/v2/voice/alexa (OFFICIAL ALEXA CUSTOM SKILL GATEWAY)
+  if (req.method === 'POST' && url.pathname === '/api/v2/voice/alexa') {
     let body = '';
     req.on('data', chunk => body += chunk.toString());
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!fenixMind) throw new Error('FÊNIX MIND não inicializado');
-        const analysis = await fenixMind.executeVisionAnalysis(payload);
-        sendJson(res, 200, { success: true, analysis });
+        if (!voiceGateway) throw new Error('Alexa Voice Gateway não inicializado');
+        const response = await voiceGateway.handleAlexaRequest(payload, req.headers);
+        sendJson(res, 200, response);
       } catch (err) {
         sendError(res, 400, err.message);
       }
     });
+    return true;
+  }
+
+  // 39. POST /api/v2/vision/inspect-element (DOM -> Component -> File -> Line)
+  if (req.method === 'POST' && url.pathname === '/api/v2/vision/inspect-element') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!visionAgent) throw new Error('Vision Agent não inicializado');
+        const inspection = await visionAgent.inspectElement(payload);
+        sendJson(res, 200, { success: true, inspection });
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 40. POST /api/v2/vision/apply-visual-change (Visual Mod -> Disk Code Diff)
+  if (req.method === 'POST' && url.pathname === '/api/v2/vision/apply-visual-change') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        if (!visionAgent) throw new Error('Vision Agent não inicializado');
+        const result = await visionAgent.applyVisualChange(payload);
+        sendJson(res, 200, result);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 41. POST /api/v2/computer/execute-action (Secure Computer & Browser Action Executor)
+  if (req.method === 'POST' && url.pathname === '/api/v2/computer/execute-action') {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { actionType, params = {}, userConsentGranted = false } = payload;
+        if (!computerAgent) throw new Error('Computer Control Agent não inicializado');
+        const result = await computerAgent.executeAction({
+          actionType,
+          params,
+          userConsentGranted,
+          actor: context.actorId || 'operator:web_ui'
+        });
+        sendJson(res, 200, result);
+      } catch (err) {
+        sendError(res, 400, err.message);
+      }
+    });
+    return true;
+  }
+
+  // 42. GET /api/v2/computer/audit-log (Audit Trail)
+  if (req.method === 'GET' && url.pathname === '/api/v2/computer/audit-log') {
+    if (!computerAgent) {
+      sendError(res, 503, 'Computer Control Agent não inicializado');
+      return true;
+    }
+    sendJson(res, 200, { total: computerAgent.auditLog.length, logs: computerAgent.auditLog });
     return true;
   }
 
