@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>FÃŠNIX OS | Master Agentic IDE</title>
+  <title>FÃƒÅ NIX OS | Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Fonts & Icons -->
@@ -35,19 +35,19 @@
       <div class="topbar-left">
         <div class="brand-logo">
           <i class="ph-fill ph-fire"></i>
-          <span>FÃŠNIX OS <span class="version-badge">v2.1.0</span></span>
+          <span>FÃƒÅ NIX OS <span class="version-badge">v2.1.0</span></span>
         </div>
         <div class="connection-status">
-          <i class="ph-fill ph-circle" style="color: var(--green);"></i> AI Platform <span style="color: var(--green);">CONNECTED</span>
+          <i id="statusDot" class="ph-fill ph-circle" style="color: var(--green);"></i> AI Platform <span id="statusText" style="color: var(--green);">CONNECTED</span>
         </div>
       </div>
       
       <div class="topbar-metrics">
         <div class="metric"><small>Modelo Ativo</small><b>qwen2.5-coder</b></div>
-        <div class="metric"><small>LatÃªncia</small><b id="kpiLatency">-- ms</b></div>
+        <div class="metric"><small>LatÃƒÂªncia</small><b id="kpiLatency">-- ms</b></div>
         <div class="metric"><small>Tokens Usados</small><b id="kpiTokens">0</b></div>
         <div class="metric"><small>Agentes</small><b id="kpiAgents">0/19</b></div>
-        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% SaudÃ¡vel</b></div>
+        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% SaudÃƒÂ¡vel</b></div>
       </div>
       
       <div class="topbar-right">
@@ -69,11 +69,11 @@
           <button class="nav-item active" data-view="ide" title="Agentic IDE"><i class="ph ph-code"></i></button>
           <button class="nav-item" data-view="projects" title="Projetos"><i class="ph ph-folders"></i></button>
           <button class="nav-item" data-view="agents" title="Agentes"><i class="ph ph-users-three"></i></button>
-          <button class="nav-item" data-view="metrics" title="MÃ©tricas"><i class="ph ph-chart-line-up"></i></button>
-          <button class="nav-item" data-view="memory" title="MemÃ³ria"><i class="ph ph-brain"></i></button>
+          <button class="nav-item" data-view="metrics" title="MÃƒÂ©tricas"><i class="ph ph-chart-line-up"></i></button>
+          <button class="nav-item" data-view="memory" title="MemÃƒÂ³ria"><i class="ph ph-brain"></i></button>
         </div>
         <div class="nav-bottom">
-          <button class="nav-item" title="ConfiguraÃ§Ãµes"><i class="ph ph-gear"></i></button>
+          <button class="nav-item" title="ConfiguraÃƒÂ§ÃƒÂµes"><i class="ph ph-gear"></i></button>
         </div>
       </nav>
 
@@ -90,7 +90,7 @@
               <div class="panel-tabs">
                 <button class="panel-tab active">CHAT</button>
                 <button class="panel-tab">AGENTS</button>
-                <button class="panel-tab">JOBS</button><button class="panel-tab">MEMÓRIA</button><button class="panel-tab">GRAFO</button>
+                <button class="panel-tab">JOBS</button><button class="panel-tab">MEMÃ“RIA</button><button class="panel-tab">GRAFO</button>
               </div>
               
               <div class="panel-content chat-view">
@@ -98,14 +98,14 @@
                   <div class="chat-bubble chat-bot">
                     <div class="chat-avatar"><i class="ph-fill ph-robot"></i></div>
                     <div class="chat-text-wrapper">
-                      <strong>FÃŠNIX AI <span class="badge-online">Online</span></strong>
-                      <div class="chat-text">OlÃ¡! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
+                      <strong>FÃƒÅ NIX AI <span class="badge-online">Online</span></strong>
+                      <div class="chat-text">OlÃƒÂ¡! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
                     </div>
                   </div>
                 </div>
                 
                 <form id="cmdForm" class="chat-composer">
-                  <textarea id="prompt" placeholder="Digite seu comando para o FÃªnix..." rows="2"></textarea>
+                  <textarea id="prompt" placeholder="Digite seu comando para o FÃƒÂªnix..." rows="2"></textarea>
                   <div class="composer-actions">
                     <div class="composer-models">
                       <i class="ph ph-cpu"></i> <span>qwen2.5-coder</span>
@@ -119,61 +119,60 @@
             <!-- CENTER PANEL: Editor Visual / Code -->
             <div class="panel-center">
               
-              <div class="editor-header">
-                <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÃ“DIGO</span></div>
-                <div class="editor-toolbar">
-                  <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
-                  <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
-                  <div class="toolbar-divider"></div>
-                  <button class="toolbar-btn active">Visual</button>
-                  <button class="toolbar-btn">CÃ³digo</button>
-                  <button class="toolbar-btn">Split</button>
-                  <button class="toolbar-btn">Preview</button>
-                </div>
-                <button id="saveBtn" class="btn-primary-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
-              </div>
-              
-              <!-- Editor Container (Can hold Monaco or Visual Iframe) -->
-              <div class="editor-body">
-                
-                <!-- Visual Canvas (Overlay / Iframe) -->
-                <div id="visualCanvas" class="visual-canvas" style="display: none;">
-                  <iframe id="previewIframe" src="about:blank" frameborder="0"></iframe>
-                  <div id="visualOverlay" class="visual-overlay"></div>
-                </div>
-                
-                <!-- Monaco Code Editor -->
-                <div id="monacoEditor" class="monaco-container"></div>
-                
-              </div>
-              
-              <!-- Terminal Bottom Panel -->
-              <div class="terminal-panel">
-                <div class="terminal-header">
-                  <div class="terminal-tabs">
-                    <button class="terminal-tab active">TERMINAL</button>
-                    <button class="terminal-tab">OUTPUT</button>
-                    <button class="terminal-tab">DEBUG CONSOLE</button>
-                    <button class="terminal-tab">PORTS</button>
+                              <div class="editor-header">
+                  <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÓDIGO</span></div>
+                  <div class="editor-toolbar">
+                    <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
+                    <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
+                    <div class="toolbar-divider"></div>
+                    <button class="toolbar-btn active">Split</button>
                   </div>
-                  <div class="terminal-actions">
-                    <button class="icon-btn-small" id="clearTerminalBtn"><i class="ph ph-trash"></i></button>
-                    <button class="icon-btn-small"><i class="ph ph-x"></i></button>
+                  <button id="saveBtn" class="btn-primary-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
+                </div>
+                
+                <!-- Editor Container (Can hold Monaco or Visual Iframe) -->
+                <div class="editor-body" style="display: flex; flex-direction: row; height: 100%;">
+                  
+                  <!-- Visual Canvas (Overlay / Iframe) -->
+                  <div id="visualCanvas" class="visual-canvas" style="flex: 1; border-right: 1px solid var(--border); display: flex;">
+                    <iframe id="previewIframe" src="http://localhost:4400/app" frameborder="0" style="width: 100%; height: 100%;"></iframe>
+                    <div id="visualOverlay" class="visual-overlay" style="pointer-events: none; position: absolute; inset: 0;"></div>
+                  </div>
+                  
+                  <!-- Monaco Code Editor -->
+                  <div class="monaco-container" style="flex: 1; display: block; position: relative;">
+                    <div id="editorNode" style="width:100%; height:100%;"></div>
+                  </div>
+                  
+                </div>
+                
+                <!-- Terminal Bottom Panel -->
+                <div class="terminal-panel">
+                  <div class="terminal-header">
+                    <div class="terminal-tabs">
+                      <button class="terminal-tab active">TERMINAL</button>
+                      <button class="terminal-tab">OUTPUT</button>
+                      <button class="terminal-tab">DEBUG CONSOLE</button>
+                      <button class="terminal-tab">PORTS</button>
+                    </div>
+                    <div class="terminal-actions">
+                      <button class="icon-btn-small" id="clearTerminalBtn"><i class="ph ph-trash"></i></button>
+                      <button class="icon-btn-small"><i class="ph ph-x"></i></button>
+                    </div>
+                  </div>
+                  <div class="terminal-body">
+                    <div id="xtermContainer" style="width:100%; height:100%;"></div>
+                  </div>
+                  <div class="terminal-input-row">
+                    <i class="ph-bold ph-caret-right prompt-char"></i>
+                    <input id="terminalCmd" type="text" placeholder="Executar comando no workspace..." autocomplete="off">
+                    <button id="terminalBtn" class="btn-ghost-sm" style="display:none;">Run</button>
                   </div>
                 </div>
-                <div class="terminal-body">
-                  <div id="xtermContainer" style="width:100%; height:100%;"></div>
-                </div>
-                <div class="terminal-input-row">
-                  <i class="ph-bold ph-caret-right prompt-char"></i>
-                  <input id="terminalCmd" type="text" placeholder="Executar comando no workspace..." autocomplete="off">
-                  <button id="terminalBtn" class="btn-ghost-sm" style="display:none;">Run</button>
-                </div>
+
               </div>
               
-            </div>
-            
-            <!-- RIGHT PANEL: Structure / Files -->
+              <!-- RIGHT PANEL: Structure / Files -->
             <div class="panel-right">
               <div class="panel-header">
                 <span>ESTRUTURA</span>
@@ -206,10 +205,46 @@
         </div>
         
         <!-- OTHER VIEWS (City, Projects, Metrics, Memory) will be injected here. We focus on IDE first for execution -->
-        <div id="view-city" class="view">
-           <div class="empty-state"><h2>AI City Dashboard</h2><p>ConstruÃ§Ã£o da cidade isomÃ©trica em progresso...</p></div>
+        <!-- Restored AI City Dashboard View -->
+<div id="view-city" class="view" style="display: flex; flex-direction: column; height: 100%; gap: 16px; padding: 16px; overflow-y: auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+    <h2><i class="ph-fill ph-buildings"></i> AI City Dashboard & Models</h2>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-secondary" onclick="window.location.reload()"><i class="ph ph-arrows-clockwise"></i> Force Sync</button>
+    </div>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; flex: 1;">
+    <!-- City Map / Visual Canvas -->
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; position: relative; overflow: hidden; min-height: 400px; display: flex; flex-direction: column;">
+      <div class="panel-header">MAPA ISOMÃ‰TRICO (AGENTES FLUTUANTES)</div>
+      <div style="flex: 1; position: relative;" id="cityMapContainer">
+         <canvas id="cityCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;"></canvas>
+         <div id="cityNodesOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;"></div>
+      </div>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Real API Models -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; flex: 1; display: flex; flex-direction: column;">
+        <div class="panel-header">MODELOS LOCAIS (API)</div>
+        <div id="modelsList" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
+           <i>Carregando modelos da FÃªnix Mind...</i>
         </div>
-        <div id="view-projects" class="view">
+      </div>
+      
+      <!-- Repositories -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; flex: 1; display: flex; flex-direction: column;">
+        <div class="panel-header">REPOSITÃ“RIOS FÃŠNIX</div>
+        <div id="reposList" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
+           <i>Carregando repos...</i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+          <div id="view-projects" class="view">
            <div class="empty-state"><h2>Projects Management</h2></div>
         </div>
         
@@ -222,3 +257,5 @@
   <script src="/unified-app.js"></script>
 </body>
 </html>
+
+

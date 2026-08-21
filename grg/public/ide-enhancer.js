@@ -372,3 +372,59 @@ window.addEventListener('load', () => {
     } catch(e) {}
   }
 });
+
+// AI City Dashboard Logic
+window.addEventListener('load', () => {
+  const cityBtn = document.querySelector('[data-view="city"]');
+  if (cityBtn) {
+    cityBtn.addEventListener('click', () => {
+      loadCityModels();
+      loadCityRepos();
+      if (window.initCityCanvas) window.initCityCanvas();
+    });
+  }
+
+  async function loadCityModels() {
+    try {
+      if (!$('modelsList')) return;
+      $('modelsList').innerHTML = '<i class="ph ph-spinner ph-spin"></i> Sincronizando Modelos...';
+      const res = await api('/api/v2/mind/models').catch(() => ({}));
+      let html = '';
+      if (res.models && res.models.length > 0) {
+        res.models.forEach(m => {
+          html += `<div style="background: rgba(47,129,247,0.1); border: 1px solid rgba(47,129,247,0.3); padding: 8px; border-radius: 4px; font-size: 11px;">
+            <strong style="color: var(--accent);">${m.id}</strong><br/>
+            <span style="color: var(--text-muted);">${m.provider} - Context: ${m.maxContext || 'N/A'}</span>
+          </div>`;
+        });
+      } else {
+        html = '<div class="empty-state">Nenhum modelo retornado pela API.</div>';
+      }
+      $('modelsList').innerHTML = html;
+    } catch(e) {}
+  }
+
+  async function loadCityRepos() {
+    try {
+      if (!$('reposList')) return;
+      $('reposList').innerHTML = '<i class="ph ph-spinner ph-spin"></i> Sincronizando Repositórios...';
+      const res = await api('/projects').catch(() => ({}));
+      let html = '';
+      if (res.projects && res.projects.length > 0) {
+        res.projects.forEach(p => {
+          html += `<div style="background: var(--bg-input); border: 1px solid var(--border); padding: 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="document.querySelector('.brand-logo').click()">
+            <strong style="color: var(--green);"><i class="ph-fill ph-folder"></i> ${p.id}</strong><br/>
+            <span style="color: var(--text-muted);">Status: ${p.status || 'Active'}</span>
+          </div>`;
+        });
+      } else {
+        // Fallback or self-repo
+        html = `<div style="background: var(--bg-input); border: 1px solid var(--border); padding: 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">
+            <strong style="color: var(--green);"><i class="ph-fill ph-folder"></i> ai-engine-core (FÊNIX IDE)</strong><br/>
+            <span style="color: var(--text-muted);">Master Agentic Repo</span>
+          </div>`;
+      }
+      $('reposList').innerHTML = html;
+    } catch(e) {}
+  }
+});

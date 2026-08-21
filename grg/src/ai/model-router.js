@@ -1,9 +1,9 @@
-const { resolveSecret } = require('../security/secret-resolver');
+﻿const { resolveSecret } = require('../security/secret-resolver');
 
 class ModelRouter {
   constructor({ tokenEconomyEngine = null, providerRegistry = null, devMemory = null } = {}) {
     this.economy = tokenEconomyEngine;
-    this.providerRegistry = providerRegistry;
+    this.providerRegistry = providerRegistry || new (require('./provider-registry').ProviderRegistry)();
     this.devMemory = devMemory;
     this.escalationsCount = 0;
   }

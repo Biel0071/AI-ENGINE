@@ -1,0 +1,50 @@
+﻿                <div class="editor-header">
+                  <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÓDIGO</span></div>
+                  <div class="editor-toolbar">
+                    <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
+                    <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
+                    <div class="toolbar-divider"></div>
+                    <button class="toolbar-btn active">Split</button>
+                  </div>
+                  <button id="saveBtn" class="btn-primary-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
+                </div>
+                
+                <!-- Editor Container (Can hold Monaco or Visual Iframe) -->
+                <div class="editor-body" style="display: flex; flex-direction: row; height: 100%;">
+                  
+                  <!-- Visual Canvas (Overlay / Iframe) -->
+                  <div id="visualCanvas" class="visual-canvas" style="flex: 1; border-right: 1px solid var(--border); display: flex;">
+                    <iframe id="previewIframe" src="http://localhost:4400/app" frameborder="0" style="width: 100%; height: 100%;"></iframe>
+                    <div id="visualOverlay" class="visual-overlay" style="pointer-events: none; position: absolute; inset: 0;"></div>
+                  </div>
+                  
+                  <!-- Monaco Code Editor -->
+                  <div class="monaco-container" style="flex: 1; display: block; position: relative;">
+                    <div id="editorNode" style="width:100%; height:100%;"></div>
+                  </div>
+                  
+                </div>
+                
+                <!-- Terminal Bottom Panel -->
+                <div class="terminal-panel">
+                  <div class="terminal-header">
+                    <div class="terminal-tabs">
+                      <button class="terminal-tab active">TERMINAL</button>
+                      <button class="terminal-tab">OUTPUT</button>
+                      <button class="terminal-tab">DEBUG CONSOLE</button>
+                      <button class="terminal-tab">PORTS</button>
+                    </div>
+                    <div class="terminal-actions">
+                      <button class="icon-btn-small" id="clearTerminalBtn"><i class="ph ph-trash"></i></button>
+                      <button class="icon-btn-small"><i class="ph ph-x"></i></button>
+                    </div>
+                  </div>
+                  <div class="terminal-body">
+                    <div id="xtermContainer" style="width:100%; height:100%;"></div>
+                  </div>
+                  <div class="terminal-input-row">
+                    <i class="ph-bold ph-caret-right prompt-char"></i>
+                    <input id="terminalCmd" type="text" placeholder="Executar comando no workspace..." autocomplete="off">
+                    <button id="terminalBtn" class="btn-ghost-sm" style="display:none;">Run</button>
+                  </div>
+                </div>

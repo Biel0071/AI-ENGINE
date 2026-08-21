@@ -1,4 +1,4 @@
-const token = localStorage.getItem('grg_token');
+﻿const token = localStorage.getItem('grg_token');
 let accessToken = token;
 
 if (!accessToken) {
@@ -233,8 +233,10 @@ function renderAll() {
 function renderHeader() {
   const { health, me, overview, jobs, telemetry } = state.data;
   const ok = health?.ok === true || health?.status === 'ready';
-  $('statusDot').style.background = ok ? 'var(--green)' : 'var(--rose)';
-  $('statusDot').style.boxShadow = `0 0 12px ${ok ? 'var(--green)' : 'var(--rose)'}`;
+    if ($('statusDot')) {
+      $('statusDot').style.background = ok ? 'var(--green)' : 'var(--rose)';
+      $('statusDot').style.boxShadow = `0 0 12px ${ok ? 'var(--green)' : 'var(--rose)'}`;
+    }
   text('statusText', ok ? 'ONLINE' : 'DEGRADED');
   text('statusSub', health?.environment || health?.service || 'runtime');
   text('actorName', me?.actorId || localStorage.getItem('grg_user') || 'usuario');
@@ -256,7 +258,7 @@ function renderCommand() {
   text('eventCount', `${state.events.length} eventos`);
   if ($('eventStream')) $('eventStream').innerHTML = state.events.length
     ? state.events.slice(0, 48).map((event) => `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(event.summary || event.message || event.recordedAt || event.id)}</strong></div>`).join('')
-    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon">∿</span>Sem eventos</div>';
+    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon">âˆ¿</span>Sem eventos</div>';
 }
 
 function renderRuntime() {
@@ -288,7 +290,7 @@ function renderMissions() {
         </div>
         <div style="color:var(--text-muted); font-size:11px;">${esc(j.objective || j.name || 'Tarefa em andamento...')}</div>
       </div>`).join('')
-    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">⏱</span>Sem Jobs ativos</div>';
+    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">â±</span>Sem Jobs ativos</div>';
 
   const programs = state.data.programs?.programs || [];
   if ($('programList')) $('programList').innerHTML = programs.length
@@ -301,10 +303,10 @@ function renderCity() {
 
   const nodes = state.data.city?.nodes || [];
   if (!nodes.length) {
-    if ($('cityCanvas')) $('cityCanvas').innerHTML = '<div class="row"><b>AI City</b><small>Aguardando eventos reais para projetar a cidade.</small><span class="status-pill warn">EMPTY</span></div>';
+    if ($('cityCanvas')) if ($('cityNodesOverlay')) $('cityNodesOverlay').innerHTML = '<div class="row"><b>AI City</b><small>Aguardando eventos reais para projetar a cidade.</small><span class="status-pill warn">EMPTY</span></div>';
   } else {
     const visible = nodes.slice(0, 42);
-    if ($('cityCanvas')) $('cityCanvas').innerHTML = visible.map((n, i) => {
+    if ($('cityCanvas')) if ($('cityNodesOverlay')) $('cityNodesOverlay').innerHTML = visible.map((n, i) => {
       const x = 8 + ((i * 23) % 84);
       const y = 12 + ((i * 37) % 74);
       return `<button class="city-node ${esc(n.status || '')}" style="left:${x}%;top:${y}%;" title="${esc(n.id)}"><strong>${esc(n.label || n.name || n.id)}</strong><small>${esc(n.type || n.status || '')}</small></button>`;
@@ -397,7 +399,7 @@ function renderSkills() {
   const skills = state.data.skills?.skills || [];
   text('skillCount', `${skills.length} skills`);
   if ($('skillList')) $('skillList').innerHTML = skills.length
-    ? skills.map((skill) => row(skill.name, `${skill.source} Â· ${skill.estimatedTokens} tokens Â· ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
+    ? skills.map((skill) => row(skill.name, `${skill.source} Ã‚Â· ${skill.estimatedTokens} tokens Ã‚Â· ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
     : row('skills', state.data.skills?.__error || 'nenhuma skill encontrada', 'EMPTY');
   if (!$('skillContext').innerHTML) {
     if ($('skillContext')) $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
@@ -450,7 +452,7 @@ async function selectSkills(objective) {
     if ($('skillContext')) $('skillContext').innerHTML = [
       row('objetivo', pack.objective, `${pack.estimatedTokens} tokens`),
       row('economia estimada', `${pack.savedBySelectiveLoad || 0} tokens nao carregados`, 'MEASURED'),
-      ...(pack.selectedSkills || []).map((skill) => row(skill.name, `${skill.source} Â· score ${skill.score} Â· ${skill.contextTokens} tokens`, 'SELECTED')),
+      ...(pack.selectedSkills || []).map((skill) => row(skill.name, `${skill.source} Ã‚Â· score ${skill.score} Ã‚Â· ${skill.contextTokens} tokens`, 'SELECTED')),
     ].join('');
   } catch (error) {
     if ($('skillContext')) $('skillContext').innerHTML = row('skill select', error.message, 'ERROR');
@@ -733,7 +735,7 @@ init();
                  targetX: (Math.random() - 0.5) * 400,
                  targetY: (Math.random() - 0.5) * 300,
                  speed: 0.0008 + Math.random() * 0.0006,
-                 avatar: 'ðŸ¤–',
+                 avatar: 'Ã°Å¸Â¤â€“',
                  role: ra.role || key,
                  fullName: key,
                  color: '#38bdf8',
@@ -793,7 +795,7 @@ init();
     document.getElementById('cityResetCam')?.addEventListener('click', () => { state.zoom = 1.0; state.panX = 0; state.panY = 0; });
     document.getElementById('cityDayNightToggle')?.addEventListener('click', function() {
       state.cyberMode = !state.cyberMode;
-      this.textContent = state.cyberMode ? 'ðŸŒ™ Modo Cyber' : 'â˜€ï¸ Modo Dia';
+      this.textContent = state.cyberMode ? 'Ã°Å¸Å’â„¢ Modo Cyber' : 'Ã¢Ëœâ‚¬Ã¯Â¸Â Modo Dia';
     });
 
     let isDragging = false;
@@ -1041,9 +1043,9 @@ init();
     if (body) {
       body.innerHTML = `
         <div class="dash-card" style="background:rgba(18,27,43,0.85); border:1px solid var(--border-subtle);">
-          <h4>ðŸ¢ Painel do MÃ³dulo: ${escapeHtml(key)}</h4>
+          <h4>Ã°Å¸ÂÂ¢ Painel do MÃƒÂ³dulo: ${escapeHtml(key)}</h4>
           <p style="color:var(--text-secondary); font-size:12px; margin-top:4px;">
-            MÃ³dulo ativo e conectado ao runtime do FÃªnix OS.
+            MÃƒÂ³dulo ativo e conectado ao runtime do FÃƒÂªnix OS.
           </p>
           <div style="display:flex; gap:8px; margin-top:12px;">
             <button class="action-btn-primary" onclick="window.switchViewToIde()" type="button">Abrir na IDE</button>
@@ -1098,7 +1100,7 @@ init();
 
   async function executeJarvisAssistantCommand(prompt) {
     openJobModal({
-      title: 'MissÃ£o AutÃ´noma JARVIS',
+      title: 'MissÃƒÂ£o AutÃƒÂ´noma JARVIS',
       objective: prompt,
       estimatedTime: '12 min',
       riskLevel: 'SAFE'
@@ -1128,20 +1130,20 @@ init();
 
         completeJobExecution(data.realityScore || 99.8);
         appendCityJarvisMessage('assistant', `
-          <p><b>âœ… MissÃ£o Processada pelo FÃŠNIX MIND!</b></p>
-          <p style="font-size:11.5px; margin-top:4px;">IntenÃ§Ã£o: <b>${escapeHtml(data.intent)}</b> â€¢ Reality Score: <b>${data.realityScore}%</b></p>
+          <p><b>Ã¢Å“â€¦ MissÃƒÂ£o Processada pelo FÃƒÅ NIX MIND!</b></p>
+          <p style="font-size:11.5px; margin-top:4px;">IntenÃƒÂ§ÃƒÂ£o: <b>${escapeHtml(data.intent)}</b> Ã¢â‚¬Â¢ Reality Score: <b>${data.realityScore}%</b></p>
           <div class="msg-action-box" style="margin-top:6px;">
-            <span>âš¡ Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
+            <span>Ã¢Å¡Â¡ Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
           </div>
         `);
 
         await fetchActiveProjectFiles();
         await refreshAllRealData();
       } else {
-        throw new Error(data.error || 'Falha na execuÃ§Ã£o');
+        throw new Error(data.error || 'Falha na execuÃƒÂ§ÃƒÂ£o');
       }
     } catch (err) {
-      appendJobLog('QA Agent', `Falha na execuÃ§Ã£o: ${err.message}`, 'var(--flame)');
+      appendJobLog('QA Agent', `Falha na execuÃƒÂ§ÃƒÂ£o: ${err.message}`, 'var(--flame)');
       appendCityJarvisMessage('assistant', `<p style="color:var(--flame);"><b>Erro:</b> ${escapeHtml(err.message)}</p>`);
     }
   }
@@ -1156,8 +1158,8 @@ init();
 
     div.innerHTML = `
       <div class="msg-header">
-        <span class="msg-avatar">${role === 'user' ? 'ðŸ‘¤' : 'ðŸ”¥'}</span>
-        <span class="msg-author">${role === 'user' ? 'VocÃª' : 'FÃŠNIX JARVIS'}</span>
+        <span class="msg-avatar">${role === 'user' ? 'Ã°Å¸â€˜Â¤' : 'Ã°Å¸â€Â¥'}</span>
+        <span class="msg-author">${role === 'user' ? 'VocÃƒÂª' : 'FÃƒÅ NIX JARVIS'}</span>
       </div>
       <div class="msg-body">${htmlContent}</div>
     `;
@@ -1170,15 +1172,17 @@ init();
 
 
 window.openJobInspector = function(jobId, promptText) {
-  document.getElementById('jobInspectorModal').style.display = 'block';
-  document.getElementById('inspectorJobId').textContent = jobId;
-  document.getElementById('inspectorJobTitle').textContent = promptText || 'Real-time Autonomous Job';
-  document.getElementById('jobInspectorBody').innerHTML = '<div style="color:#888;">Aguardando eventos fÃ­sicos do AgentRuntime...</div>';
+  if (document.getElementById('jobInspectorModal')) {
+    document.getElementById('jobInspectorModal').style.display = 'block';
+    if (document.getElementById('inspectorJobId')) document.getElementById('inspectorJobId').textContent = jobId;
+    if (document.getElementById('inspectorJobTitle')) document.getElementById('inspectorJobTitle').textContent = promptText || 'Real-time Autonomous Job';
+    if (document.getElementById('jobInspectorBody')) document.getElementById('jobInspectorBody').innerHTML = '<div style="color:#888;">Aguardando eventos fÃƒÂ­sicos do AgentRuntime...</div>';
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('jobInspectorCloseBtn')?.addEventListener('click', () => {
-    document.getElementById('jobInspectorModal').style.display = 'none';
+    if (document.getElementById('jobInspectorModal')) document.getElementById('jobInspectorModal').style.display = 'none';
   });
   if (window.initCityCanvas) window.initCityCanvas();
   
@@ -1192,7 +1196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Append to job inspector if it's open
         const body = document.getElementById('jobInspectorBody');
-        if (body && document.getElementById('jobInspectorModal').style.display === 'block') {
+        if (body && document.getElementById('jobInspectorModal') && document.getElementById('jobInspectorModal').style.display === 'block') {
            const div = document.createElement('div');
            div.style.padding = '8px'; div.style.background = '#222'; div.style.borderRadius = '4px'; div.style.fontSize = '12px'; div.style.fontFamily = 'monospace'; div.style.color = '#ccc';
            div.textContent = '[' + ev.type + '] ' + (ev.details?.step || ev.details?.action || ev.details?.message || ev.details?.provider || '');

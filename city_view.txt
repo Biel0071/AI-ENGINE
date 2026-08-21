@@ -1,0 +1,38 @@
+﻿<!-- Restored AI City Dashboard View -->
+<div id="view-city" class="view" style="display: flex; flex-direction: column; height: 100%; gap: 16px; padding: 16px; overflow-y: auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+    <h2><i class="ph-fill ph-buildings"></i> AI City Dashboard & Models</h2>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-secondary" onclick="window.location.reload()"><i class="ph ph-arrows-clockwise"></i> Force Sync</button>
+    </div>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; flex: 1;">
+    <!-- City Map / Visual Canvas -->
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; position: relative; overflow: hidden; min-height: 400px; display: flex; flex-direction: column;">
+      <div class="panel-header">MAPA ISOMÉTRICO (AGENTES FLUTUANTES)</div>
+      <div style="flex: 1; position: relative;" id="cityMapContainer">
+         <canvas id="cityCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;"></canvas>
+         <div id="cityNodesOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;"></div>
+      </div>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Real API Models -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; flex: 1; display: flex; flex-direction: column;">
+        <div class="panel-header">MODELOS LOCAIS (API)</div>
+        <div id="modelsList" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
+           <i>Carregando modelos da Fênix Mind...</i>
+        </div>
+      </div>
+      
+      <!-- Repositories -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; flex: 1; display: flex; flex-direction: column;">
+        <div class="panel-header">REPOSITÓRIOS FÊNIX</div>
+        <div id="reposList" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
+           <i>Carregando repos...</i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
