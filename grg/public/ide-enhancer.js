@@ -297,3 +297,78 @@ window.addEventListener('load', () => {
     });
   }
 });
+// Add Panel Tab logic
+window.addEventListener('load', () => {
+  const pTabs = document.querySelectorAll('.panel-left .panel-tab');
+  pTabs.forEach(t => {
+    t.addEventListener('click', () => {
+      pTabs.forEach(b => b.classList.remove('active'));
+      t.classList.add('active');
+      
+      document.querySelector('.chat-view').style.display = 'none';
+      if (document.getElementById('memoryView')) document.getElementById('memoryView').style.display = 'none';
+      if (document.getElementById('graphView')) document.getElementById('graphView').style.display = 'none';
+      
+      if (t.textContent === 'CHAT') {
+        document.querySelector('.chat-view').style.display = 'flex';
+      } else if (t.textContent === 'MEMÓRIA') {
+        if (document.getElementById('memoryView')) document.getElementById('memoryView').style.display = 'flex';
+        loadMemory();
+      } else if (t.textContent === 'GRAFO') {
+        if (document.getElementById('graphView')) document.getElementById('graphView').style.display = 'block';
+        loadGraph();
+      }
+    });
+  });
+
+  async function loadMemory() {
+    try {
+      if ($('memoryItems')) $('memoryItems').innerHTML = '<i>Carregando memória...</i>';
+      // Mocks if not exists
+      const memoryApi = await api('/api/v2/mind/memory/project/fenix_test_lab').catch(() => ({}));
+      
+      let html = '';
+      if (memoryApi.projectMemory && memoryApi.projectMemory.patterns) {
+        memoryApi.projectMemory.patterns.forEach(m => {
+          html += `<div style="background:var(--bg-input); padding:8px; border-radius:6px; border:1px solid var(--border);">
+            <strong style="color:var(--accent);">${m.name || 'Padrão'}</strong>
+            <div style="color:var(--text-muted); margin-top:4px;">${m.description || ''}</div>
+          </div>`;
+        });
+      } else {
+        html = '<div class="empty-state"><i class="ph ph-brain"></i> Nenhuma memória ativa no RAG.</div>';
+      }
+      if ($('memoryItems')) $('memoryItems').innerHTML = html;
+    } catch(e) {}
+  }
+
+  async function loadGraph() {
+    if (!window.vis) return;
+    const container = document.getElementById('networkGraph');
+    if (container.dataset.loaded) return;
+    container.dataset.loaded = "true";
+    
+    try {
+      const gData = await api('/graph').catch(() => ({}));
+      const nodes = new vis.DataSet(gData.nodes || [
+        { id: 1, label: 'FÊNIX Kernel', shape: 'hexagon', color: '#2f81f7' },
+        { id: 2, label: 'React Frontend', shape: 'box', color: '#8957e5' },
+        { id: 3, label: 'Node Backend', shape: 'box', color: '#238636' },
+        { id: 4, label: 'Agents Swarm', shape: 'ellipse', color: '#d29922' }
+      ]);
+      const edges = new vis.DataSet(gData.edges || [
+        { from: 1, to: 2, arrows: 'to' },
+        { from: 1, to: 3, arrows: 'to' },
+        { from: 1, to: 4, arrows: 'to' },
+        { from: 4, to: 2, arrows: 'to' }
+      ]);
+      const data = { nodes, edges };
+      const options = {
+        nodes: { font: { color: '#ffffff' }, borderWidth: 2 },
+        edges: { color: '#30363d' },
+        physics: { stabilization: true }
+      };
+      new vis.Network(container, data, options);
+    } catch(e) {}
+  }
+});

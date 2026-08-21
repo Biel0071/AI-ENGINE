@@ -176,3 +176,63 @@ body { background: var(--bg-app); color: var(--text-main); font-family: var(--fo
 
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; color: var(--text-muted); gap: 12px; }
 .empty-state i { font-size: 32px; opacity: 0.5; }
+/* Enhanced Level 10 Agentic UI / UX */
+
+/* Isometric & Glassmorphism Details */
+.panel-left, .panel-center, .panel-right {
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+.editor-header {
+  background: linear-gradient(90deg, #161b22 0%, #0d1117 100%);
+}
+
+.terminal-header {
+  background: linear-gradient(90deg, #161b22 0%, #000 100%);
+}
+
+.btn-send {
+  background: linear-gradient(135deg, #8957e5 0%, #2f81f7 100%);
+  box-shadow: 0 4px 15px rgba(47,129,247,0.3);
+}
+
+.btn-send:hover {
+  background: linear-gradient(135deg, #9d6cfa 0%, #58a6ff 100%);
+  box-shadow: 0 0 20px rgba(137,87,229,0.6);
+  transform: translateY(-1px);
+}
+
+.status-running {
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(35,134,54,0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(35,134,54,0); }
+  100% { box-shadow: 0 0 0 0 rgba(35,134,54,0); }
+}
+
+/* Scrollbar styling enhanced */
+::-webkit-scrollbar-thumb { 
+  background: rgba(255,255,255,0.15); 
+  border: 2px solid var(--bg-panel); 
+  border-radius: 8px; 
+}
+::-webkit-scrollbar-thumb:hover { 
+  background: rgba(47,129,247,0.4); 
+}
+
+/* Fully responsive mobile adaptions */
+@media (max-width: 768px) {
+  .ide-split-layout { flex-direction: column; }
+  .panel-left { width: 100%; height: 300px; border-right: none; border-bottom: 1px solid var(--border); }
+  .panel-right { display: none; }
+  .panel-center { min-height: 400px; }
+  .global-topbar { padding: 0 8px; }
+  .topbar-metrics { display: none; }
+}
+
+/* Glowing text for brand */
+.brand-logo i {
+  filter: drop-shadow(0 0 5px rgba(47,129,247,0.8));
+}

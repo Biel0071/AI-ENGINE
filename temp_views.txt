@@ -1,0 +1,12 @@
+﻿              </div>
+              
+              <!-- Memory View -->
+              <div id="memoryView" class="panel-content" style="display:none; overflow-y: auto; padding: 16px; gap: 12px;">
+                <div class="panel-header" style="padding:0 0 8px 0;">Memória Ativa (RAG)</div>
+                <div id="memoryItems" style="display:flex; flex-direction:column; gap:8px;"></div>
+              </div>
+
+              <!-- Graph View -->
+              <div id="graphView" class="panel-content" style="display:none; position: relative;">
+                <div id="networkGraph" style="width:100%; height:100%; background: #0b0d10;"></div>
+              </div>

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>FÊNIX OS | Master Agentic IDE</title>
+  <title>FÃŠNIX OS | Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Fonts & Icons -->
@@ -14,8 +14,12 @@
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
 
-  <!-- Marked.js -->
+  <!-- Marked.js & DOMPurify -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+  <!-- Vis.js for Knowledge Graph -->
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
   <!-- Monaco Editor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
@@ -31,7 +35,7 @@
       <div class="topbar-left">
         <div class="brand-logo">
           <i class="ph-fill ph-fire"></i>
-          <span>FÊNIX OS <span class="version-badge">v2.1.0</span></span>
+          <span>FÃŠNIX OS <span class="version-badge">v2.1.0</span></span>
         </div>
         <div class="connection-status">
           <i class="ph-fill ph-circle" style="color: var(--green);"></i> AI Platform <span style="color: var(--green);">CONNECTED</span>
@@ -40,10 +44,10 @@
       
       <div class="topbar-metrics">
         <div class="metric"><small>Modelo Ativo</small><b>qwen2.5-coder</b></div>
-        <div class="metric"><small>Latência</small><b id="kpiLatency">-- ms</b></div>
+        <div class="metric"><small>LatÃªncia</small><b id="kpiLatency">-- ms</b></div>
         <div class="metric"><small>Tokens Usados</small><b id="kpiTokens">0</b></div>
         <div class="metric"><small>Agentes</small><b id="kpiAgents">0/19</b></div>
-        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% Saudável</b></div>
+        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% SaudÃ¡vel</b></div>
       </div>
       
       <div class="topbar-right">
@@ -65,11 +69,11 @@
           <button class="nav-item active" data-view="ide" title="Agentic IDE"><i class="ph ph-code"></i></button>
           <button class="nav-item" data-view="projects" title="Projetos"><i class="ph ph-folders"></i></button>
           <button class="nav-item" data-view="agents" title="Agentes"><i class="ph ph-users-three"></i></button>
-          <button class="nav-item" data-view="metrics" title="Métricas"><i class="ph ph-chart-line-up"></i></button>
-          <button class="nav-item" data-view="memory" title="Memória"><i class="ph ph-brain"></i></button>
+          <button class="nav-item" data-view="metrics" title="MÃ©tricas"><i class="ph ph-chart-line-up"></i></button>
+          <button class="nav-item" data-view="memory" title="MemÃ³ria"><i class="ph ph-brain"></i></button>
         </div>
         <div class="nav-bottom">
-          <button class="nav-item" title="Configurações"><i class="ph ph-gear"></i></button>
+          <button class="nav-item" title="ConfiguraÃ§Ãµes"><i class="ph ph-gear"></i></button>
         </div>
       </nav>
 
@@ -86,7 +90,7 @@
               <div class="panel-tabs">
                 <button class="panel-tab active">CHAT</button>
                 <button class="panel-tab">AGENTS</button>
-                <button class="panel-tab">JOBS</button>
+                <button class="panel-tab">JOBS</button><button class="panel-tab">MEMÓRIA</button><button class="panel-tab">GRAFO</button>
               </div>
               
               <div class="panel-content chat-view">
@@ -94,14 +98,14 @@
                   <div class="chat-bubble chat-bot">
                     <div class="chat-avatar"><i class="ph-fill ph-robot"></i></div>
                     <div class="chat-text-wrapper">
-                      <strong>FÊNIX AI <span class="badge-online">Online</span></strong>
-                      <div class="chat-text">Olá! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
+                      <strong>FÃŠNIX AI <span class="badge-online">Online</span></strong>
+                      <div class="chat-text">OlÃ¡! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
                     </div>
                   </div>
                 </div>
                 
                 <form id="cmdForm" class="chat-composer">
-                  <textarea id="prompt" placeholder="Digite seu comando para o Fênix..." rows="2"></textarea>
+                  <textarea id="prompt" placeholder="Digite seu comando para o FÃªnix..." rows="2"></textarea>
                   <div class="composer-actions">
                     <div class="composer-models">
                       <i class="ph ph-cpu"></i> <span>qwen2.5-coder</span>
@@ -116,13 +120,13 @@
             <div class="panel-center">
               
               <div class="editor-header">
-                <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÓDIGO</span></div>
+                <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÃ“DIGO</span></div>
                 <div class="editor-toolbar">
                   <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
                   <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
                   <div class="toolbar-divider"></div>
                   <button class="toolbar-btn active">Visual</button>
-                  <button class="toolbar-btn">Código</button>
+                  <button class="toolbar-btn">CÃ³digo</button>
                   <button class="toolbar-btn">Split</button>
                   <button class="toolbar-btn">Preview</button>
                 </div>
@@ -203,7 +207,7 @@
         
         <!-- OTHER VIEWS (City, Projects, Metrics, Memory) will be injected here. We focus on IDE first for execution -->
         <div id="view-city" class="view">
-           <div class="empty-state"><h2>AI City Dashboard</h2><p>Construção da cidade isométrica em progresso...</p></div>
+           <div class="empty-state"><h2>AI City Dashboard</h2><p>ConstruÃ§Ã£o da cidade isomÃ©trica em progresso...</p></div>
         </div>
         <div id="view-projects" class="view">
            <div class="empty-state"><h2>Projects Management</h2></div>
