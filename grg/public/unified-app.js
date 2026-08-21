@@ -1,1066 +1,651 @@
-/**
- * FÊNIX OS v2.1.0 — LEVEL 10 REAL AGENTIC OPERATING SYSTEM
- * 1. AI City: Connected to Real Runtime State & EventBus (NO MOCKS)
- * 2. IDE: Connected to Real Project Filesystem, File Reader/Writer & Observer
- * 3. JARVIS Chat & Task Engine: Real Microtask DAG, Job Execution Center & Quality Gate
- * 4. 19 Agents Real-Time Lifecycle (IDLE / PLANNING / WORKING / WAITING / TESTING / ERROR / DONE)
- * 5. Agent Live Inspector & Telemetry
- * 6. Reality Enforcement & Independent Evidence Verification
- */
+const token = localStorage.getItem('grg_token');
+let accessToken = token;
 
-(function () {
-  'use strict';
+if (!accessToken) {
+  location.replace('/GRG-login');
+}
 
-  // --- APPLICATION STATE (REAL DATA ONLY) --------------------------------
-  const state = {
-    view: 'city',
-    is3D: true,
-    cyberMode: true,
-    zoom: 1.0,
-    panX: 0,
-    panY: 0,
-    selectedBuilding: null,
-    activeProjectId: 'fenix_test_lab',
-    activeProject: null,
-    activeFile: 'src/components/Dashboard.tsx',
-    activeModel: 'qwen2.5:3b',
-    secondaryModel: 'deepseek-coder:6.7b',
-    tokenCount: 0,
-    latency: 182,
-    cityState: null,
-    agentStates: null,
-    currentRunningJob: null,
-    projects: [],
-    filesTree: [],
-    fileContents: {},
-    realEvents: []
-  };
+const $ = (id) => document.getElementById(id);
+window.state = {
+  data: {},
+  projects: [],
+  repos: [],
+  office: [],
+  events: [],
+  jobs: [],
+  missions: [],
+  refreshing: false,
+  agentStates: {}
+};
+const state = window.state;
 
-  // --- INITIALIZATION ---------------------------------------------------
-  async function init() {
-    initNavigation();
-    initCityCanvas();
-    initIdeChat();
-    initVisualCodeSync();
-    initMultiModelBar();
-    initJobExecutionModal();
-    initAgentInspector();
-    initMobileRemoteControl();
-    initEventStreamSSE();
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+}
 
-    // Setup Job Inspector Modal Close
-    document.getElementById('jobInspectorCloseBtn')?.addEventListener('click', () => {
-      const m = document.getElementById('jobInspectorModal');
-      if (m) m.style.display = 'none';
+function text(id, value) {
+  const el = $(id);
+  if (el) el.textContent = value === 0 || value ? String(value) : '--';
+}
+
+function getMeasured(value) {
+  return value && value.state === 'measured' ? value.value : value;
+}
+
+async function refreshAccessToken() {
+  const refreshToken = sessionStorage.getItem('grg_refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const configResponse = await fetch('/api/oidc/config');
+    const config = await configResponse.json();
+    const body = new URLSearchParams({ grant_type:'refresh_token', client_id:config.clientId, refresh_token:refreshToken });
+    const response = await fetch(config.tokenEndpoint, { method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body });
+    const tokens = await response.json();
+    if (!response.ok || !tokens.access_token) return false;
+    accessToken = tokens.access_token;
+    localStorage.setItem('grg_token', accessToken);
+    if (tokens.refresh_token) sessionStorage.setItem('grg_refresh_token', tokens.refresh_token);
+    return true;
+  } catch { return false; }
+}
+
+async function api(path, options = {}, retried = false) {
+  const res = await fetch(`/api${path}`, {
+    ...options,
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      'content-type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  if (res.status === 401 && !retried && await refreshAccessToken()) return api(path, options, true);
+  if (res.status === 401) {
+    localStorage.removeItem('grg_token');
+    location.replace('/GRG-login');
+    throw new Error('sessao expirada');
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  return body;
+}
+
+async function publicJson(path) {
+  const res = await fetch(path);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  return body;
+}
+
+async function settle(entries, concurrency = 5) {
+  const out = {};
+  let index = 0;
+  const workers = Array.from({ length: Math.min(concurrency, entries.length) }, async () => {
+    while (index < entries.length) {
+      const current = index;
+      index += 1;
+      const [key, loader] = entries[current];
+      try { out[key] = await loader(); }
+      catch (error) { out[key] = { __error: error.message }; }
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+function row(title, detail = '', status = '') {
+  const cls = /ok|ready|active|online|connected|succeeded/i.test(status) ? 'ok'
+    : /fail|error|degraded|missing|offline|blocked|denied/i.test(status) ? 'bad'
+    : status ? 'warn' : '';
+  return `<div class="row"><b>${esc(title)}</b><small>${esc(detail)}</small><span class="status-pill ${cls}">${esc(status || '--')}</span></div>`;
+}
+
+function metric(label, value) {
+  return `<div><span>${esc(label)}</span><b>${esc(value ?? '--')}</b></div>`;
+}
+
+function showView(name, push = true) {
+  name = String(name || 'command').split('?')[0] || 'command';
+  document.querySelectorAll('.view').forEach((el) => el.classList.toggle('active', el.id === `view-${name}`));
+  document.querySelectorAll('[data-nav]').forEach((el) => el.classList.toggle('active', el.dataset.nav === name));
+  const label = document.querySelector(`[data-nav="${name}"]`)?.textContent?.replace(/^[A-Z]{2}/, '').trim() || name;
+  text('viewTitle', label);
+  if (push) history.replaceState(null, '', `#${name}`);
+}
+
+function bubble(message, who = 'bot') {
+  const div = document.createElement('div');
+  div.className = `bubble ${who}`;
+  div.innerHTML = esc(message).replace(/\n/g, '<br>');
+  $('chatLog').appendChild(div);
+  $('chatLog').scrollTop = $('chatLog').scrollHeight;
+}
+
+async function refreshAll() {
+  if (state.refreshing) return;
+  state.refreshing = true;
+  try {
+    const activeView = String(location.hash.slice(1) || 'command').split('?')[0] || 'command';
+    const essentialEntries = [
+      ['health', () => publicJson('/health')],
+      ['me', () => api('/me')],
+      ['overview', () => api('/overview')],
+    ];
+    const viewEntries = {
+      skills: [
+        ['skills', () => api('/skills')],
+        ['fullstackSlices', () => api('/scos/factory/slices')],
+      ],
+      connectors: [
+        ['connectors', () => api('/connectors')],
+        ['router', () => api('/ai/router/select')],
+        ['connection', () => api('/connection')],
+        ['providers', () => api('/providers')],
+      ],
+      deploy: [
+        ['readiness', () => api('/governance/readiness-matrix')],
+        ['gatekeeper', () => api('/governance/gatekeeper?action=deploy')],
+      ],
+      observability: [
+        ['observability', () => api('/observability/metrics')],
+        ['series', () => api('/observability/series?windowMinutes=120')],
+        ['workers', () => api('/workers')],
+        ['speed', () => api('/performance/speed-score')],
+        ['hotMemory', () => api('/performance/hot-memory')],
+      ],
+    };
+    const entries = viewEntries[activeView] ? [...essentialEntries, ...viewEntries[activeView]] : [
+      ['health', () => publicJson('/health')],
+      ['me', () => api('/me')],
+    ['overview', () => api('/overview')],
+    ['operations', () => api('/operations/state')],
+    ['runtime', () => api('/runtime')],
+    ['missions', () => api('/missions')],
+    ['jobs', () => api('/runtime/jobs')],
+    ['city', () => api('/city')],
+    ['events', () => api('/events?limit=80')],
+    ['telemetry', () => api('/ai/telemetry')],
+    ['connectors', () => api('/connectors')],
+    ['router', () => api('/ai/router/select')],
+    ['connection', () => api('/connection')],
+    ['capabilities', () => api('/capabilities')],
+    ['projects', () => api('/projects')],
+    ['repositories', () => api('/repositories')],
+    ['graph', () => api('/graph')],
+    ['kg', () => api('/knowledge-graph/anomalies')],
+    ['office', () => api('/office')],
+    ['workers', () => api('/workers')],
+    ['providers', () => api('/providers')],
+    ['programs', () => api('/executive/programs')],
+    ['readiness', () => api('/governance/readiness-matrix')],
+    ['gatekeeper', () => api('/governance/gatekeeper?action=deploy')],
+    ['observability', () => api('/observability/metrics')],
+    ['series', () => api('/observability/series?windowMinutes=120')],
+    ['security', () => api('/security/encryption/status')],
+    ['veracity', () => api('/governance/simulation-audit')],
+    ['kos', () => api('/uios/kos/manifest')],
+    ['skills', () => api('/skills')],
+    ['fullstackSlices', () => api('/scos/factory/slices')],
+    ['twin', () => api('/digital-twin/operational')],
+    ['agents', () => api('/agents/panel')],
+    ['swarm', () => api('/agents/swarm')],
+      ['speed', () => api('/performance/speed-score')],
+      ['hotMemory', () => api('/performance/hot-memory')],
+      ['dailyBrief', () => api('/workspace/eca/daily-brief')],
+    ];
+    const data = await settle(entries, viewEntries[activeView] ? 2 : 4);
+    state.data = data;
+    state.projects = data.projects?.projects || [];
+    state.repos = data.repositories?.repositories || [];
+    state.office = data.office?.office || [];
+    state.events = data.events?.events || [];
+    state.jobs = data.jobs?.jobs || [];
+    state.missions = data.missions?.missions || [];
+    renderAll();
+  } finally {
+    state.refreshing = false;
+  }
+}
+
+function renderAll() {
+  renderHeader();
+  renderCommand();
+  renderRuntime();
+  renderMissions();
+  renderCity();
+  renderOffice();
+  renderProjects();
+  renderKnowledge();
+  renderSkills();
+  renderConnectors();
+  renderDeploy();
+  renderObservability();
+  renderSecurity();
+}
+
+function renderHeader() {
+  const { health, me, overview, jobs, telemetry } = state.data;
+  const ok = health?.ok === true || health?.status === 'ready';
+  $('statusDot').style.background = ok ? 'var(--green)' : 'var(--rose)';
+  $('statusDot').style.boxShadow = `0 0 12px ${ok ? 'var(--green)' : 'var(--rose)'}`;
+  text('statusText', ok ? 'ONLINE' : 'DEGRADED');
+  text('statusSub', health?.environment || health?.service || 'runtime');
+  text('actorName', me?.actorId || localStorage.getItem('grg_user') || 'usuario');
+  text('actorRole', me?.tenantId || 'tenant');
+  const metrics = overview?.metrics || {};
+  text('kpiProjects', metrics.projects ?? state.projects.length);
+  text('kpiRepos', metrics.repositories ?? state.repos.length);
+  text('kpiCaps', metrics.capabilities ?? state.data.capabilities?.capabilities?.length);
+  text('kpiJobs', state.jobs.length);
+  text('kpiAi', telemetry?.calls ?? metrics.aiCalls);
+}
+
+function renderCommand() {
+  const avatar = state.data.missions?.avatar || state.data.avatar || {};
+  text('avatarState', avatar.state || 'Operacional');
+  text('avatarPhrase', state.data.dailyBrief?.summary || 'Workspace unico: fronts de comando, office, CRM, AI City e developer reunidos aqui.');
+  const telemetry = state.data.telemetry || {};
+  text('activeModel', telemetry.lastModel || telemetry.model || (telemetry.calls ? 'IA medida' : 'sem chamada'));
+  text('eventCount', `${state.events.length} eventos`);
+  $('eventStream').innerHTML = state.events.length
+    ? state.events.slice(0, 48).map((event) => `<div>[${esc(event.type || event.name || 'event')}] ${esc(event.summary || event.message || event.recordedAt || event.id)}</div>`).join('')
+    : '<div>Sem eventos publicados ainda.</div>';
+}
+
+function renderRuntime() {
+  const checks = state.data.health?.checks || {};
+  const checkRows = Array.isArray(checks) ? checks : Object.entries(checks).map(([id, value]) => ({ id, ...value }));
+  $('healthList').innerHTML = checkRows.length
+    ? checkRows.map((c) => row(c.id || c.name, c.degraded || c.error || c.adapter || c.status || '', c.ok === false ? 'DEGRADED' : 'OK')).join('')
+    : row('health', state.data.health?.__error || 'sem checks', 'UNKNOWN');
+  const services = state.data.runtime?.services || state.data.runtime?.subsystems || state.data.health?.boot;
+  $('runtimeServices').innerHTML = Array.isArray(services)
+    ? services.map((s) => row(s.id || s.name, s.version || '', s.status || 'OK')).join('')
+    : Object.entries(services || {}).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 80) : value, value?.status || '')).join('') || row('kernel', 'sem inventario de servicos publicado', 'UNKNOWN');
+  const workers = state.data.workers?.workers || state.data.observability?.workers?.heartbeats || [];
+  $('workerList').innerHTML = Array.isArray(workers) && workers.length
+    ? workers.map((w) => row(w.name || w.id || w.workerId, w.activeJobs != null ? `${w.activeJobs} jobs ativos` : w.role || '', w.status || w.state || 'KNOWN')).join('')
+    : row('workers', state.data.workers?.__error || 'sem workers ativos medidos', 'UNKNOWN');
+}
+
+function renderMissions() {
+  $('missionList').innerHTML = state.missions.length
+    ? state.missions.slice(0, 20).map((m) => row(m.title || m.objective || m.id, `${m.steps?.length || 0} etapas`, m.status || m.state)).join('')
+    : row('missoes', 'nenhuma missao registrada', 'EMPTY');
+  $('jobList').innerHTML = state.jobs.length
+    ? state.jobs.slice(0, 30).map((j) => row(j.type || j.id, `tentativa ${j.attempts || 0}/${j.maxAttempts || 0}`, j.status)).join('')
+    : row('jobs', 'nenhum job registrado', 'EMPTY');
+  const programs = state.data.programs?.programs || [];
+  $('programList').innerHTML = programs.length
+    ? programs.map((p) => row(p.objective || p.title || p.id, `${p.missions?.length || 0} missoes`, p.status || 'PROGRAM')).join('')
+    : row('programas', 'sem programas executivos', 'EMPTY');
+}
+
+function renderCity() {
+    if (window.drawCity) { window.globalCityState = state.data; window.state.agentStates = state.data.swarm?.agents || state.data.agents || {}; window.drawCity(); }
+
+  const nodes = state.data.city?.nodes || [];
+  if (!nodes.length) {
+    $('cityCanvas').innerHTML = '<div class="row"><b>AI City</b><small>Aguardando eventos reais para projetar a cidade.</small><span class="status-pill warn">EMPTY</span></div>';
+  } else {
+    const visible = nodes.slice(0, 42);
+    $('cityCanvas').innerHTML = visible.map((n, i) => {
+      const x = 8 + ((i * 23) % 84);
+      const y = 12 + ((i * 37) % 74);
+      return `<button class="city-node ${esc(n.status || '')}" style="left:${x}%;top:${y}%;" title="${esc(n.id)}"><strong>${esc(n.label || n.name || n.id)}</strong><small>${esc(n.type || n.status || '')}</small></button>`;
+    }).join('');
+  }
+  const overview = state.data.overview?.metrics || {};
+  $('knowledgeDistrict').innerHTML = [
+    metric('Memorias', overview.memories),
+    metric('Graph edges', overview.graphEdges),
+    metric('City nodes', overview.cityNodes),
+    metric('Capabilities', overview.capabilities),
+  ].join('');
+  const workers = state.data.workers?.workers || [];
+  $('workersDistrict').innerHTML = workers.length ? workers.map((w) => row(w.name || w.id, w.role || '', w.status || 'KNOWN')).join('') : row('workers', 'sem workers publicados', 'EMPTY');
+  const proposals = state.data.agents?.tasks || state.data.swarm?.agents || [];
+  $('evolutionDistrict').innerHTML = Array.isArray(proposals) && proposals.length ? proposals.slice(0, 10).map((p) => row(p.name || p.id || p.role, p.summary || p.status || '', p.status || 'KNOWN')).join('') : row('evolucao', 'sem propostas ou agentes ativos', 'EMPTY');
+}
+
+function renderOffice() {
+  $('officeList').innerHTML = state.office.length
+    ? state.office.map((o) => `<article class="office-card"><h3>${esc(o.store || o.subjectName || o.projectId)}</h3><p>${esc(o.niche || '')}</p><p>${esc(o.headcount || 0)} membros</p><button class="soft-btn" data-office="${esc(o.projectId)}" type="button">Abrir equipe</button></article>`).join('')
+    : '<div class="row"><b>Office</b><small>Nenhuma workforce contratada ainda.</small><span class="status-pill warn">EMPTY</span></div>';
+  document.querySelectorAll('[data-office]').forEach((button) => button.addEventListener('click', () => openOffice(button.dataset.office)));
+}
+
+async function openOffice(projectId) {
+  try {
+    const workforce = await api(`/projects/${encodeURIComponent(projectId)}/workforce`);
+    text('officeTitle', workforce.subjectName || projectId);
+    const employees = workforce.employees || [];
+    $('officeDetail').innerHTML = employees.map((e) => row(e.title || e.role, e.focus || e.capability || '', `nivel ${e.level || 1}`)).join('') || row('equipe', 'sem funcionarios', 'EMPTY');
+  } catch (error) {
+    $('officeDetail').innerHTML = row(projectId, error.message, 'ERROR');
+  }
+}
+
+function renderProjects() {
+  const q = $('projectSearch')?.value?.toLowerCase() || '';
+  const visibility = $('repoVisibility')?.value || 'all';
+  const reposById = new Map(state.repos.map((repo) => [repo.id, repo]));
+  const projects = state.projects.filter((p) => {
+    const repo = reposById.get(p.repositoryId) || p.repository || {};
+    const hay = `${p.name || ''} ${repo.name || ''} ${repo.owner || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
+    return hay.includes(q) && (visibility === 'all' || repo.visibility === visibility);
+  });
+  $('projectList').innerHTML = projects.length
+    ? projects.map((p) => {
+      const repo = reposById.get(p.repositoryId) || p.repository || {};
+      return `<article class="project-card"><h3>${esc(p.name || p.id)}</h3><p>${esc(repo.owner || '')}/${esc(repo.name || '')}</p><p>${esc(p.analysisStatus || p.status || '')}</p><button class="soft-btn" data-hire="${esc(p.id)}" type="button">Contratar equipe</button></article>`;
+    }).join('')
+    : '<div class="row"><b>Projetos</b><small>Nenhum projeto encontrado.</small><span class="status-pill warn">EMPTY</span></div>';
+  document.querySelectorAll('[data-hire]').forEach((button) => button.addEventListener('click', () => hireWorkforce(button.dataset.hire)));
+  const graph = state.data.graph || {};
+  const nodes = graph.nodes || [];
+  const edges = graph.edges || [];
+  $('graphSummary').innerHTML = [
+    row('Projetos', `${projects.length} filtrados`, 'MEASURED'),
+    row('Grafo', `${nodes.length} nos, ${edges.length} relacoes`, nodes.length ? 'READY' : 'EMPTY'),
+  ].join('');
+}
+
+async function hireWorkforce(projectId) {
+  try {
+    await api(`/projects/${encodeURIComponent(projectId)}/hire`, { method: 'POST' });
+    await refreshAll();
+    showView('office');
+  } catch (error) {
+    $('graphSummary').innerHTML = row('Contratar equipe', error.message, 'ERROR') + $('graphSummary').innerHTML;
+  }
+}
+
+function renderKnowledge() {
+  const kos = state.data.kos || {};
+  $('kosManifest').innerHTML = Object.keys(kos).length
+    ? Object.entries(kos).slice(0, 12).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 120) : value, value?.state || '')).join('')
+    : row('KOS', kos.__error || 'manifesto indisponivel', 'UNKNOWN');
+  const anomalies = state.data.kg?.anomalies || state.data.graph?.edges || [];
+  $('kgList').innerHTML = Array.isArray(anomalies) && anomalies.length
+    ? anomalies.slice(0, 20).map((item, i) => row(item.type || item.id || `relacao ${i + 1}`, item.source || item.target || JSON.stringify(item).slice(0, 90), item.status || 'GRAPH')).join('')
+    : row('Knowledge graph', 'sem anomalias carregadas nesta tela', 'EMPTY');
+}
+
+function renderSkills() {
+  const skills = state.data.skills?.skills || [];
+  text('skillCount', `${skills.length} skills`);
+  $('skillList').innerHTML = skills.length
+    ? skills.map((skill) => row(skill.name, `${skill.source} Â· ${skill.estimatedTokens} tokens Â· ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
+    : row('skills', state.data.skills?.__error || 'nenhuma skill encontrada', 'EMPTY');
+  if (!$('skillContext').innerHTML) {
+    $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
+  }
+  renderFullstackSlices();
+}
+
+function renderFullstackSlices() {
+  const box = $('sliceList');
+  if (!box) return;
+  const slices = state.data.fullstackSlices?.slices || [];
+  box.innerHTML = slices.length
+    ? slices.map((slice) => row(slice.name, `${slice.backend?.routes?.length || 0} rotas API - ${slice.records?.length || 0} registros - ${slice.skillId}`, slice.status || 'READY')).join('')
+    : row('fullstack builder', state.data.fullstackSlices?.__error || 'nenhuma fatia criada ainda', 'READY');
+}
+
+async function createFullstackSlice(prompt) {
+  const value = String(prompt || '').trim();
+  if (!value) return;
+  $('sliceList').innerHTML = row('criando front + back', value, 'RUNNING') + $('sliceList').innerHTML;
+  try {
+    const slice = await api('/scos/factory/slices', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt: value,
+        fields: [
+          { name: 'title', type: 'string', required: true },
+          { name: 'status', type: 'enum:todo|doing|done', required: true },
+          { name: 'owner', type: 'string', required: false },
+        ],
+      }),
     });
+    await api(`/scos/factory/slices/${encodeURIComponent(slice.id)}/data`, {
+      method: 'POST',
+      body: JSON.stringify({ title: value.slice(0, 80), status: 'doing', owner: localStorage.getItem('grg_user') || 'grg-admin' }),
+    });
+    $('slicePrompt').value = '';
+    await refreshAll();
+  } catch (error) {
+    $('sliceList').innerHTML = row('builder falhou', error.message, 'ERROR') + $('sliceList').innerHTML;
+  }
+}
 
-    // Setup Queue Tab Filter Buttons
-    document.querySelectorAll('.queue-tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.queue-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentQueueFilter = btn.dataset.queue || 'all';
-        renderVisualQueueTable();
+async function selectSkills(objective) {
+  const value = String(objective || '').trim();
+  if (!value) return;
+  $('skillContext').innerHTML = row('selecionando skills', value, 'RUNNING');
+  try {
+    const pack = await api('/skills/select', { method: 'POST', body: JSON.stringify({ objective: value, maxTokens: 1200, limit: 4 }) });
+    $('skillContext').innerHTML = [
+      row('objetivo', pack.objective, `${pack.estimatedTokens} tokens`),
+      row('economia estimada', `${pack.savedBySelectiveLoad || 0} tokens nao carregados`, 'MEASURED'),
+      ...(pack.selectedSkills || []).map((skill) => row(skill.name, `${skill.source} Â· score ${skill.score} Â· ${skill.contextTokens} tokens`, 'SELECTED')),
+    ].join('');
+  } catch (error) {
+    $('skillContext').innerHTML = row('skill select', error.message, 'ERROR');
+  }
+}
+
+function renderConnectors() {
+  const connectors = state.data.connectors?.connectors || [];
+  $('connectorList').innerHTML = connectors.length
+    ? connectors.map((c) => row(c.connectorId || c.id, c.source || c.reason || '', c.state?.value || c.status || 'UNKNOWN')).join('')
+    : row('conectores', state.data.connectors?.__error || 'nenhum conector registrado', 'EMPTY');
+  const router = state.data.router || {};
+  const chosen = router.chosen?.value || router.chosen || router;
+  $('routerState').innerHTML = [
+    row('provider escolhido', chosen.provider || chosen.name || 'sem provider', chosen.model || chosen.reason || '', chosen.provider ? 'READY' : 'UNKNOWN'),
+    row('API connection', (state.data.connection?.providers || []).length ? `${state.data.connection.providers.length} providers monitorados` : 'sem check executado', (state.data.connection?.providers || [])[0]?.status || ''),
+  ].join('');
+}
+
+function renderDeploy() {
+  const readiness = state.data.readiness || {};
+  const totals = readiness.totals || {};
+  const gate = state.data.gatekeeper || {};
+  $('readinessList').innerHTML = [
+    row('production proven', `${totals.productionProven ?? 0}/${totals.objectives ?? 0}`, totals.productionProven ? 'PARTIAL' : 'BLOCKED'),
+    row('gatekeeper', gate.allowed ? 'acao liberada' : gate.reason || 'bloqueado ate haver evidencia', gate.allowed ? 'READY' : 'BLOCKED'),
+  ].join('');
+}
+
+function renderObservability() {
+  const obs = state.data.observability || {};
+  $('observabilityMetrics').innerHTML = [
+    metric('AI tokens', getMeasured(obs.aiRuntime?.totalTokensConsumed) ?? state.data.telemetry?.totalTokens),
+    metric('AI calls', getMeasured(obs.aiRuntime?.calls) ?? state.data.telemetry?.calls),
+    metric('Workers', getMeasured(obs.workers?.knownWorkers)),
+    metric('Queue depth', getMeasured(obs.workers?.queueDepth)),
+    metric('Dead letters', getMeasured(obs.workers?.deadLetters)),
+    metric('Speed', getMeasured(state.data.speed?.overallScore)),
+  ].join('');
+  const series = state.data.series?.series || {};
+  const cards = Object.entries(series).slice(0, 8).map(([name, points]) => {
+    const last = Array.isArray(points) ? points.at(-1) : null;
+    return `<div class="spark"><b>${esc(name)}</b><small>${esc(last?.value ?? '--')}</small><div class="spark-line"></div></div>`;
+  });
+  $('seriesGrid').innerHTML = cards.length ? cards.join('') : '<div class="row"><b>series</b><small>sem amostras ainda</small><span class="status-pill warn">EMPTY</span></div>';
+}
+
+function renderSecurity() {
+  const sec = state.data.security || {};
+  $('securityState').innerHTML = Object.keys(sec).length
+    ? Object.entries(sec).slice(0, 10).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 100) : value, value?.state || '')).join('')
+    : row('security', sec.__error || 'status indisponivel', 'UNKNOWN');
+  const audit = state.data.veracity || {};
+  const totals = audit.totals || audit.summary || {};
+  $('veracityState').innerHTML = [
+    row('modulos varridos', totals.modules ?? audit.modules?.length ?? '--', 'MEASURED'),
+    row('sinais falsos', totals.signals ?? totals.falseSignals ?? '--', (totals.signals || totals.falseSignals) ? 'ATTENTION' : 'OK'),
+    row('production', totals.production ?? '--', 'MEASURED'),
+    row('simulated', totals.simulated ?? '--', (totals.simulated || 0) > 0 ? 'ATTENTION' : 'OK'),
+  ].join('');
+}
+
+async function runChat(message) {
+  const value = String(message || '').trim();
+  if (!value) return;
+  bubble(value, 'user');
+  const pending = document.createElement('div');
+  pending.className = 'bubble system';
+  pending.textContent = 'Iniciando FenixMind Job...';
+  $('chatLog').appendChild(pending);
+  try {
+    const res = await api('/api/v2/mind/ingest', { method: 'POST', body: JSON.stringify({ message: value, context: {} }) });
+      if (window.openJobInspector) window.openJobInspector(res.jobId, value);
+    pending.remove();
+    bubble(res.reply || res.response || 'Sem resposta textual.', 'bot');
+    await refreshAll();
+  } catch (error) {
+    pending.remove();
+    bubble(`Falha: ${error.message}`, 'system');
+  }
+}
+
+async function createProgram(objective) {
+  const value = String(objective || '').trim();
+  if (!value) return;
+  $('programList').innerHTML = row('criando programa', value, 'RUNNING') + $('programList').innerHTML;
+  try {
+    await api('/executive/programs', { method: 'POST', body: JSON.stringify({ objective: value }) });
+    $('programObjective').value = '';
+    await refreshAll();
+  } catch (error) {
+    $('programList').innerHTML = row('erro ao criar programa', error.message, 'ERROR') + $('programList').innerHTML;
+  }
+}
+
+async function scanProject(path) {
+  $('scanResult').innerHTML = row('scan em andamento', path || '.', 'RUNNING');
+  try {
+    const scan = await api('/onedeploy/scan-project', { method: 'POST', body: JSON.stringify({ projectPath: path || '.' }) });
+    const d = scan.discovery || {};
+    $('scanResult').innerHTML = [
+      row('caminho', scan.projectPath || path || '.', scan.exists ? 'FOUND' : 'MISSING'),
+      row('frontend', getMeasured(d.frontendFramework) || d.frontendFramework?.reason || '--', d.frontendFramework?.state || ''),
+      row('backend', getMeasured(d.backendFramework) || d.backendFramework?.reason || '--', d.backendFramework?.state || ''),
+      row('dependencias', getMeasured(d.dependencyCount) ?? '--', d.dependencyCount?.state || ''),
+      row('ci/cd', getMeasured(d.ciCd) ?? d.ciCd?.reason ?? '--', d.ciCd?.state || ''),
+    ].join('');
+  } catch (error) {
+    $('scanResult').innerHTML = row('scan falhou', error.message, 'ERROR');
+  }
+}
+
+async function loadFs(path = '') {
+  try {
+    const data = await api(`/dev/fs?path=${encodeURIComponent(path)}`);
+    $('fsList').innerHTML = (data.items || []).map((item) => row(item.name, item.path, item.isDirectory ? 'DIR' : 'FILE')).join('') || row('fs', 'vazio', 'EMPTY');
+    document.querySelectorAll('#fsList .row').forEach((el) => {
+      el.addEventListener('click', () => {
+        const filePath = el.querySelector('small')?.textContent || '';
+        if (el.textContent.includes('FILE')) openFile(filePath);
+        else { $('fsPath').value = filePath; loadFs(filePath); }
       });
     });
-
-    // Setup Open Create Job Modal
-    document.getElementById('openCreateJobModalBtn')?.addEventListener('click', () => {
-      const title = prompt('Título da Missão / Job:', 'Diagnóstico e Otimização de Performance');
-      if (!title) return;
-      fetch('/api/v2/jarvis/jobs/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          objective: title,
-          projectId: state.activeProjectId || 'fenix_test_lab',
-          riskLevel: 'SAFE'
-        })
-      }).then(() => fetchDailyOperations());
-    });
-
-    // Setup Scan Local Projects
-    document.getElementById('scanLocalProjectsBtn')?.addEventListener('click', async () => {
-      appendTerminalLog('[Project Discovery] Escaneando diretórios locais no computador...', 'cyan');
-      const res = await fetch('/api/v2/projects/discover/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      const data = await res.json();
-      alert(`Varredura concluída! ${data.total || 0} projetos identificados e mapeados na memória operacional.`);
-      await fetchProjects();
-    });
-
-    // Setup Sync GitHub
-    document.getElementById('syncGitHubProjectsBtn')?.addEventListener('click', async () => {
-      appendTerminalLog('[GitHub Engine] Consultando repositórios no GitHub...', 'purple');
-      const res = await fetch('/api/v2/projects/github');
-      const data = await res.json();
-      if (data.configured) {
-        alert(`Sincronização GitHub ativa! ${data.repositories?.length || 0} repositórios sincronizados.`);
-      } else {
-        alert(data.message || 'GitHub Token não configurado. Exibindo repositórios Git locais.');
-      }
-      await fetchProjects();
-    });
-
-    // Setup Global Hotkey: Ctrl+Shift+F (Fênix Desktop Push-to-Talk)
-    window.addEventListener('keydown', async (e) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
-        e.preventDefault();
-        const text = prompt('🎙️ FÊNIX VOICE (Push-to-Talk):', 'Qual o status dos meus projetos?');
-        if (!text) return;
-        const res = await fetch('/api/v2/voice/desktop/ingest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, projectId: state.activeProjectId })
-        });
-        const d = await res.json();
-        alert(`🔊 Fênix Resposta: ${d.response || 'Comando processado com sucesso.'}`);
-        await refreshAllRealData();
-      }
-    });
-
-    // Load Real Backend Data
-    await refreshAllRealData();
-
-    // Periodic live telemetry & event refresh (every 4s)
-    setInterval(refreshAllRealData, 4000);
+  } catch (error) {
+    $('fsList').innerHTML = row('developer fs', error.message, 'ERROR');
   }
+}
 
-  // --- REAL DATA REFRESH ------------------------------------------------
-  async function refreshAllRealData() {
-    await Promise.allSettled([
-      fetchCityState(),
-      fetchAgentLiveStates(),
-      fetchProjects(),
-      fetchAiPlatformStatus(),
-      fetchActiveProjectFiles(),
-      fetchDailyOperations()
-    ]);
+async function openFile(path) {
+  try {
+    const data = await api(`/dev/fs/file?path=${encodeURIComponent(path)}`);
+    $('fileViewer').value = data.content || '';
+  } catch (error) {
+    $('fileViewer').value = `Falha: ${error.message}`;
   }
+}
 
-  // --- 19 AGENTS REAL-TIME LIFECYCLE & LIVE STATES ----------------------
-  async function fetchAgentLiveStates() {
+function init() {
+  document.querySelectorAll('[data-nav]').forEach((el) => el.addEventListener('click', () => showView(el.dataset.nav)));
+  $('refreshBtn').addEventListener('click', () => refreshAll());
+  $('logoutBtn').addEventListener('click', async () => {
+    try { await fetch('/api/logout', { method: 'POST', headers: { authorization: `Bearer ${accessToken}` } }); }
+    finally { localStorage.removeItem('grg_token'); location.replace('/GRG-login'); }
+  });
+  $('cmdForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const value = $('prompt').value;
+    $('prompt').value = '';
+    runChat(value);
+  });
+  document.querySelectorAll('[data-prompt]').forEach((button) => button.addEventListener('click', () => runChat(button.dataset.prompt)));
+  $('projectSearch').addEventListener('input', renderProjects);
+  $('repoVisibility').addEventListener('change', renderProjects);
+  $('programForm').addEventListener('submit', (event) => { event.preventDefault(); createProgram($('programObjective').value); });
+  $('scanForm').addEventListener('submit', (event) => { event.preventDefault(); scanProject($('scanPath').value); });
+  $('skillForm').addEventListener('submit', (event) => { event.preventDefault(); selectSkills($('skillObjective').value); });
+  $('sliceForm')?.addEventListener('submit', (event) => { event.preventDefault(); createFullstackSlice($('slicePrompt').value); });
+  $('tickBtn').addEventListener('click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
+  $('rebuildCityBtn').addEventListener('click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
+  $('sampleBtn').addEventListener('click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
+  $('checkApiBtn').addEventListener('click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
+  $('fsLoadBtn').addEventListener('click', () => loadFs($('fsPath').value));
+  $('terminalBtn').addEventListener('click', async () => {
     try {
-      const res = await fetch('/api/v2/agents/live-states');
-      if (res.ok) {
-        const data = await res.json();
-        state.agentStates = data;
-        renderAgentStates(data);
-      }
-    } catch (err) {
-      console.warn('[FÊNIX Agents] Agent states unavailable:', err.message);
+      const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
+      $('terminalResult').textContent = JSON.stringify(out, null, 2);
+    } catch (error) {
+      $('terminalResult').textContent = error.message;
     }
-  }
+  });
+  $('cmdBtn').addEventListener('click', openCommand);
+  $('closeCmdBtn').addEventListener('click', () => $('cmdDialog').close());
+  $('cmdInput').addEventListener('input', renderCommandPalette);
+  window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'command', false));
+  window.addEventListener('hashchange', () => refreshAll());
+  showView(location.hash.slice(1) || 'command', false);
+  bubble('Workspace unico carregado. Eu consolidei comando, runtime, missoes, AI City, office, CRM, deploy, observabilidade e developer em uma tela.');
+  refreshAll();
+  setInterval(() => { if (!document.hidden) refreshAll(); }, 15000);
+}
 
-  function renderAgentStates(data) {
-    if (!data) return;
+function openCommand() {
+  renderCommandPalette();
+  $('cmdDialog').showModal();
+  $('cmdInput').focus();
+}
 
-    // Topbar Pill
-    const agentsPill = document.getElementById('topAgents');
-    if (agentsPill) {
-      agentsPill.textContent = `${data.workingCount}/${data.total} Ativos`;
-      agentsPill.parentElement.title = `${data.workingCount} trabalhando no momento, ${data.idleCount} ociosos (${data.total} registrados)`;
-    }
-
-    // Roster Grid in view-agents
-    const roster = document.getElementById('agentsRosterGrid');
-    if (roster && data.agents) {
-      roster.innerHTML = data.agents.map(ag => {
-        const isWorking = ag.status === 'WORKING' || ag.status === 'PLANNING' || ag.status === 'TESTING';
-        const badgeClass = isWorking ? 'text-amber' : (ag.status === 'DONE' ? 'text-emerald' : 'text-cyan');
-        return `
-          <div class="agent-card-box ${isWorking ? 'agent-active' : ''}" data-agent-name="${escapeHtml(ag.name)}" style="background:rgba(10,16,26,0.85); border:1px solid ${isWorking ? 'var(--orange)' : 'var(--border-subtle)'}; border-radius:8px; padding:12px; cursor:pointer; transition:all 0.2s ease;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:20px;">${ag.icon || '🤖'}</span>
-                <div>
-                  <h4 style="color:#fff; font-size:13px; font-weight:700; margin:0;">${escapeHtml(ag.name)}</h4>
-                  <p style="color:var(--text-muted); font-size:11px; margin:0;">${escapeHtml(ag.role)}</p>
-                </div>
-              </div>
-              <span class="pill-tag ${badgeClass}">${ag.status}</span>
-            </div>
-            <div style="margin-top:8px; font-size:11px; color:var(--text-secondary); background:rgba(6,9,14,0.6); padding:6px; border-radius:4px;">
-              <b>Ação:</b> ${escapeHtml(ag.lastAction || 'Pronto')}
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10.5px; color:var(--text-muted);">
-              <span>⚡ ${escapeHtml(ag.model || 'qwen2.5')}</span>
-              <button class="action-btn-ghost inspect-agent-btn" data-agent-name="${escapeHtml(ag.name)}" style="font-size:10px; padding:2px 8px;" type="button">Inspecionar</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      roster.querySelectorAll('.agent-card-box, .inspect-agent-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const name = btn.dataset.agentName || btn.closest('.agent-card-box')?.dataset.agentName;
-          if (name) openAgentInspector(name);
-        });
-      });
-    }
-  }
-
-  // --- AGENT LIVE INSPECTOR CONTROLLER ----------------------------------
-  function initAgentInspector() {
-    const modal = document.getElementById('agentInspectorModal');
-    const closeBtn = document.getElementById('agentInspectorCloseBtn');
-
-    closeBtn?.addEventListener('click', () => {
-      if (modal) modal.style.display = 'none';
+function renderCommandPalette() {
+  const q = ($('cmdInput').value || '').toLowerCase();
+  const commands = [
+    ['command', 'Abrir comando'],
+    ['runtime', 'Abrir runtime'],
+    ['missions', 'Abrir missoes'],
+    ['city', 'Abrir AI City'],
+    ['office', 'Abrir office'],
+    ['projects', 'Abrir projetos CRM'],
+    ['skills', 'Abrir skills e agentes'],
+    ['connectors', 'Abrir conectores e API'],
+    ['deploy', 'Abrir deploy'],
+    ['observability', 'Abrir observabilidade'],
+    ['security', 'Abrir seguranca'],
+    ['developer', 'Abrir developer district'],
+  ].filter(([, label]) => label.toLowerCase().includes(q));
+  $('cmdResults').innerHTML = commands.map(([target, label]) => row(label, `#${target}`, 'NAV')).join('');
+  document.querySelectorAll('#cmdResults .row').forEach((el, i) => {
+    el.addEventListener('click', () => {
+      showView(commands[i][0]);
+      $('cmdDialog').close();
     });
+  });
+}
 
-    modal?.addEventListener('click', (e) => {
-      if (e.target.id === 'agentInspectorModal') modal.style.display = 'none';
-    });
+init();
 
-    document.getElementById('inspectorViewCodeBtn')?.addEventListener('click', () => {
-      if (modal) modal.style.display = 'none';
-      switchView('ide');
-    });
 
-    document.getElementById('inspectorViewTerminalBtn')?.addEventListener('click', () => {
-      if (modal) modal.style.display = 'none';
-      switchView('ide');
-      document.getElementById('ideTerminalBody')?.scrollIntoView({ behavior: 'smooth' });
-    });
-
-    document.getElementById('inspectorOpenProjectBtn')?.addEventListener('click', () => {
-      if (modal) modal.style.display = 'none';
-      switchView('ide');
-      fetchActiveProjectFiles();
-    });
-  }
-
-  async function openAgentInspector(agentName) {
-    const modal = document.getElementById('agentInspectorModal');
-    if (!modal) return;
-
-    try {
-      const res = await fetch(`/api/v2/agents/${encodeURIComponent(agentName)}/inspector`);
-      if (res.ok) {
-        const data = await res.json();
-        const ag = data.agent;
-
-        setElemText('inspectorAgentName', ag.name);
-        setElemText('inspectorAgentRole', ag.role);
-        setElemText('inspectorAgentIcon', ag.icon || '🤖');
-        setElemText('inspectorAgentStatus', ag.status);
-        setElemText('inspectorAgentModel', ag.model || 'qwen2.5:3b');
-        setElemText('inspectorAgentTokens', `${ag.tokensUsed || 0} tokens`);
-        setElemText('inspectorAgentLastAction', ag.lastAction || 'Aguardando Job');
-        setElemText('inspectorAgentTargetFile', ag.targetFile ? `Arquivo Alvo: ${ag.targetFile}` : 'Arquivo Alvo: Nenhum');
-
-        const skillsContainer = document.getElementById('inspectorAgentSkills');
-        if (skillsContainer) {
-          skillsContainer.innerHTML = (ag.skills || ['react-architecture', 'fullstack-slice-builder']).map(s => `
-            <span class="pill-tag text-purple" style="font-size:10.5px;">⭐ ${escapeHtml(s)}</span>
-          `).join('');
-        }
-
-        modal.style.display = 'flex';
-      }
-    } catch (err) {
-      console.warn('[FÊNIX Inspector] Error loading agent details:', err.message);
-    }
-  }
-
-  // --- JOB EXECUTION CENTER MODAL CONTROLLER ----------------------------
-  let jobTimerInterval = null;
-  let jobStartEpoch = 0;
-
-  function initJobExecutionModal() {
-    const modal = document.getElementById('jobModalOverlay');
-    const closeBtn = document.getElementById('jobModalCloseBtn');
-    const startBtn = document.getElementById('jobModalStartBtn');
-    const pauseBtn = document.getElementById('jobModalPauseBtn');
-    const cancelBtn = document.getElementById('jobModalCancelBtn');
-
-    closeBtn?.addEventListener('click', () => {
-      if (modal) modal.style.display = 'none';
-    });
-
-    modal?.addEventListener('click', (e) => {
-      if (e.target.id === 'jobModalOverlay') modal.style.display = 'none';
-    });
-
-    startBtn?.addEventListener('click', () => {
-      startBtn.style.display = 'none';
-      if (pauseBtn) pauseBtn.style.display = 'inline-block';
-      appendJobLog('JARVIS Master Agent', 'Iniciando pipeline de microtarefas no runtime...');
-    });
-
-    pauseBtn?.addEventListener('click', () => {
-      appendJobLog('JARVIS Master Agent', 'Execução pausada temporariamente pelo operador.');
-      setElemText('jobModalStatusBadge', 'PAUSED');
-    });
-
-    cancelBtn?.addEventListener('click', () => {
-      if (jobTimerInterval) clearInterval(jobTimerInterval);
-      setElemText('jobModalStatusBadge', 'CANCELLED');
-      appendJobLog('JARVIS Master Agent', 'Job cancelado pelo operador.');
-      setTimeout(() => { if (modal) modal.style.display = 'none'; }, 1000);
-    });
-  }
-
-  function openJobModal({
-    title = 'Corrigir bugs e validar projeto',
-    objective = 'Análise de código, execução de testes e certificação de veracidade',
-    estimatedTime = '12 min',
-    microtasks = [],
-    riskLevel = 'SAFE',
-    agentsCount = 5
-  }) {
-    const modal = document.getElementById('jobModalOverlay');
-    if (!modal) return;
-
-    setElemText('jobModalTitle', title);
-    setElemText('jobModalObjectiveText', objective);
-    setElemText('jobModalEstimatedTime', estimatedTime);
-    setElemText('jobModalMicrotasksCount', `${microtasks.length || 5} DAG`);
-    setElemText('jobModalAgentsCount', `${agentsCount} Agentes`);
-    setElemText('jobModalRiskLevel', riskLevel);
-    setElemText('jobModalStatusBadge', 'RUNNING');
-    setElemText('jobModalProgressPercent', '0%');
-    setElemText('jobModalTimer', '0s');
-
-    const progressBar = document.getElementById('jobModalProgressBar');
-    if (progressBar) progressBar.style.width = '0%';
-
-    // DAG list rendering
-    const dagContainer = document.getElementById('jobModalDagList');
-    if (dagContainer) {
-      const defaultTasks = microtasks.length > 0 ? microtasks : [
-        { name: 'Mapeamento Arquitetural & Scanner', agent: 'Architect Agent', status: 'RUNNING' },
-        { name: 'Síntese de Lógica & Contratos', agent: 'Developer Agent', status: 'QUEUED' },
-        { name: 'Síntese de Componentes & UI Tokens', agent: 'Frontend Agent', status: 'QUEUED' },
-        { name: 'Execução de Testes Unitários', agent: 'Testing Agent', status: 'QUEUED' },
-        { name: 'Auditoria de Veracidade & Reality Gate', agent: 'QA Agent', status: 'QUEUED' }
-      ];
-
-      dagContainer.innerHTML = defaultTasks.map((t, idx) => `
-        <div class="dag-task-row" id="dag_step_${idx}" style="display:flex; justify-content:space-between; align-items:center; background:rgba(6,9,14,0.7); padding:6px 10px; border-radius:5px; border-left:3px solid ${t.status === 'RUNNING' ? 'var(--orange)' : 'var(--border-subtle)'};">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:11px; font-weight:700; color:var(--text-muted);">${idx + 1}.</span>
-            <span style="font-size:12px; color:#fff; font-weight:600;">${escapeHtml(t.name)}</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span class="pill-tag text-purple" style="font-size:10px;">${escapeHtml(t.agent)}</span>
-            <span class="pill-tag ${t.status === 'RUNNING' ? 'text-amber' : 'text-cyan'}" id="dag_badge_${idx}" style="font-size:10px;">${t.status}</span>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    // Logs list
-    const logsContainer = document.getElementById('jobModalLogsList');
-    if (logsContainer) {
-      logsContainer.innerHTML = `
-        <div style="color:var(--text-muted);"><b style="color:var(--cyan);">[${new Date().toLocaleTimeString()}] JARVIS:</b> Job criado e vinculado ao projeto ${state.activeProjectId}.</div>
-        <div style="color:var(--text-muted);"><b style="color:var(--orange);">[${new Date().toLocaleTimeString()}] Architect:</b> Iniciando inspeção profunda da árvore de arquivos no disco...</div>
-      `;
-    }
-
-    // Timer Start
-    if (jobTimerInterval) clearInterval(jobTimerInterval);
-    jobStartEpoch = Date.now();
-    jobTimerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - jobStartEpoch) / 1000);
-      setElemText('jobModalTimer', `${elapsed}s`);
-    }, 1000);
-
-    modal.style.display = 'flex';
-  }
-
-  function appendJobLog(actor, message, color = 'var(--cyan)') {
-    const logsContainer = document.getElementById('jobModalLogsList');
-    if (!logsContainer) return;
-    const div = document.createElement('div');
-    div.innerHTML = `<b style="color:${color};">[${new Date().toLocaleTimeString()}] ${escapeHtml(actor)}:</b> ${escapeHtml(message)}`;
-    logsContainer.appendChild(div);
-    logsContainer.scrollTop = logsContainer.scrollHeight;
-  }
-
-  function advanceJobStep(stepIndex, totalSteps, agentName, actionMessage) {
-    const percent = Math.round(((stepIndex + 1) / totalSteps) * 100);
-    setElemText('jobModalProgressPercent', `${percent}%`);
-    const progressBar = document.getElementById('jobModalProgressBar');
-    if (progressBar) progressBar.style.width = `${percent}%`;
-
-    // Update prev step to COMPLETED
-    if (stepIndex > 0) {
-      const prevBadge = document.getElementById(`dag_badge_${stepIndex - 1}`);
-      const prevRow = document.getElementById(`dag_step_${stepIndex - 1}`);
-      if (prevBadge) { prevBadge.textContent = 'COMPLETED'; prevBadge.className = 'pill-tag text-emerald'; }
-      if (prevRow) prevRow.style.borderLeftColor = 'var(--emerald)';
-    }
-
-    // Update current step to RUNNING
-    const curBadge = document.getElementById(`dag_badge_${stepIndex}`);
-    const curRow = document.getElementById(`dag_step_${stepIndex}`);
-    if (curBadge) { curBadge.textContent = 'RUNNING'; curBadge.className = 'pill-tag text-amber'; }
-    if (curRow) curRow.style.borderLeftColor = 'var(--orange)';
-
-    appendJobLog(agentName, actionMessage);
-  }
-
-  function completeJobExecution(realityScore = 99.8) {
-    if (jobTimerInterval) clearInterval(jobTimerInterval);
-    setElemText('jobModalStatusBadge', 'COMPLETED');
-    setElemText('jobModalProgressPercent', '100%');
-    const progressBar = document.getElementById('jobModalProgressBar');
-    if (progressBar) progressBar.style.width = '100%';
-
-    // Mark all steps completed
-    document.querySelectorAll('.dag-task-row').forEach((row, i) => {
-      row.style.borderLeftColor = 'var(--emerald)';
-      const badge = document.getElementById(`dag_badge_${i}`);
-      if (badge) { badge.textContent = 'COMPLETED'; badge.className = 'pill-tag text-emerald'; }
-    });
-
-    appendJobLog('QA Agent', `🎉 Auditoria de Veracidade & Reality Gate APROVADOS (${realityScore}% Real Score)`, 'var(--emerald)');
-    appendTerminalLog(`[Job Center] Job concluído com sucesso. Reality Score: ${realityScore}%.`, 'emerald');
-  }
-
-  // --- LIVE EVENT STREAM SSE ---------------------------------------------
-  let sseEventSource = null;
-
-  function initEventStreamSSE() {
-    if (sseEventSource) return;
-
-    try {
-      sseEventSource = new EventSource('/api/v2/events/stream');
-
-      sseEventSource.onopen = () => {
-        const badge = document.getElementById('sseConnectionBadge');
-        if (badge) { badge.textContent = 'STREAM LIVE'; badge.className = 'pill-tag text-emerald'; }
-        appendLiveEventStream('SYSTEM', 'Conexão SSE estabelecida com o Kernel do Fênix OS.');
-      };
-
-      sseEventSource.onerror = () => {
-        const badge = document.getElementById('sseConnectionBadge');
-        if (badge) { badge.textContent = 'RECONNECTING'; badge.className = 'pill-tag text-amber'; }
-      };
-
-      const eventTypes = [
-        'job.created', 'job.started', 'job.progress', 'job.paused', 'job.resumed', 'job.completed', 'job.cancelled', 'job.failed',
-        'agent.started', 'agent.thinking', 'agent.tool.called', 'agent.file.read', 'agent.file.modified', 'agent.test.started', 'agent.completed', 'agent.state.changed',
-        'ai.request.started', 'ai.request.completed',
-        'approval.requested', 'approval.granted', 'approval.denied',
-        'voice.command.received', 'voice.intent.detected'
-      ];
-
-      eventTypes.forEach(evtName => {
-        sseEventSource.addEventListener(evtName, (e) => {
-          try {
-            const data = JSON.parse(e.data || '{}');
-            handleLiveIncomingEvent(evtName, data);
-          } catch (err) {
-            console.warn('[SSE Parse Error]:', err);
-          }
-        });
-      });
-    } catch (err) {
-      console.warn('[SSE Init Error]:', err.message);
-    }
-  }
-
-  function handleLiveIncomingEvent(evtName, eventData) {
-    const payload = eventData.payload || {};
-    const actor = payload.agent || payload.actor || 'FÊNIX';
-
-    if (evtName === 'job.created') {
-      appendLiveEventStream('JARVIS', `Novo Job criado: "${payload.title || payload.jobId}" (Status: QUEUED)`);
-      fetchDailyOperations();
-    } else if (evtName === 'job.started') {
-      appendLiveEventStream('ORCHESTRATOR', `Iniciando execução do Job #${payload.jobId}: "${payload.title || ''}"`);
-      fetchDailyOperations();
-    } else if (evtName === 'job.progress') {
-      appendLiveEventStream(payload.agent || 'AGENT', `[${payload.progressPercent}%] ${payload.currentTask || 'Executando microtarefa'}`);
-      updateActiveJobProgressBar(payload.jobId, payload.progressPercent, payload.currentTask);
-    } else if (evtName === 'job.completed') {
-      appendLiveEventStream('QA Agent', `🎉 Job #${payload.jobId} concluído com sucesso! Reality Gate aprovado.`);
-      fetchDailyOperations();
-    } else if (evtName === 'agent.file.modified') {
-      appendLiveEventStream(payload.agent, `Modificou arquivo físico: ${payload.file}`);
-    } else if (evtName === 'ai.request.completed') {
-      appendLiveEventStream('AI Platform', `Inferência concluída (${payload.model}) • ${payload.tokens} tokens processados`);
-      fetchDailyOperations();
-    } else if (evtName === 'approval.requested') {
-      appendLiveEventStream('SECURITY', `🔔 Ação de risco requer aprovação humana para o Job #${payload.jobId}`);
-      fetchDailyOperations();
-    }
-  }
-
-  function appendLiveEventStream(actor, text) {
-    const feed = document.getElementById('liveEventStreamFeed');
-    if (!feed) return;
-
-    const row = document.createElement('div');
-    row.style.display = 'flex';
-    row.style.gap = '6px';
-    row.style.lineHeight = '1.4';
-    row.innerHTML = `<span style="color:var(--cyan); font-weight:700;">[${new Date().toLocaleTimeString()}]</span> <span style="color:var(--amber); font-weight:600;">${escapeHtml(actor)}:</span> <span style="color:#e2e8f0;">${escapeHtml(text)}</span>`;
-    feed.appendChild(row);
-    if (feed.children.length > 50) feed.removeChild(feed.children[0]);
-    feed.scrollTop = feed.scrollHeight;
-  }
-
-  function updateActiveJobProgressBar(jobId, percent, taskName) {
-    const bar = document.getElementById(`live_bar_${jobId}`);
-    const pctText = document.getElementById(`live_pct_${jobId}`);
-    const taskText = document.getElementById(`live_task_${jobId}`);
-    if (bar) bar.style.width = `${percent}%`;
-    if (pctText) pctText.textContent = `${percent}%`;
-    if (taskText && taskName) taskText.textContent = taskName;
-  }
-
-  // --- DAILY OPERATIONS & LIVE MISSION CONTROL --------------------------
-  let currentQueueFilter = 'all';
-
-  async function fetchDailyOperations() {
-    try {
-      const res = await fetch('/api/v2/jarvis/daily-operations');
-      if (res.ok) {
-        const data = await res.json();
-        renderDailyOperations(data);
-      }
-    } catch (err) {
-      console.warn('[FÊNIX JARVIS] Daily operations unavailable:', err.message);
-    }
-  }
-
-  function renderDailyOperations(report) {
-    if (!report) return;
-
-    const summary = report.summary || {};
-    const jobs = report.jobs || {};
-    const agents = report.agents || {};
-    const activeJobsList = jobs.list || [];
-    const runningJobs = activeJobsList.filter(j => j.status === 'RUNNING');
-
-    // 1. KPI Strip
-    setElemText('opsActiveJobsCount', activeJobsList.length);
-    setElemText('opsAgentsWorkingCount', `${agents.working || 0} / ${agents.total || 19}`);
-    setElemText('opsMicrotasksCount', summary.microtasksCompleted || 0);
-    setElemText('opsAiCallsCount', summary.aiRequests || 0);
-    setElemText('opsWorkerPoolUtilization', summary.workerPoolUtilization || '0 / 8');
-    setElemText('opsEstimatedCost', `R$ ${(summary.estimatedCostBrl || 0).toFixed(2)}`);
-    setElemText('opsRunningJobsBadge', `${runningJobs.length} RUNNING`);
-
-    // 2. Active Jobs Progress List
-    const activeContainer = document.getElementById('opsActiveJobsProgressList');
-    if (activeContainer) {
-      if (activeJobsList.length === 0) {
-        activeContainer.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhum job em execução concorrente no momento. Todos os agentes estão em prontidão.</div>`;
-      } else {
-        activeContainer.innerHTML = activeJobsList.map(job => `
-          <div style="background:rgba(18,27,43,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="pill-tag text-cyan" style="font-family:monospace; font-weight:700;">#${escapeHtml(job.id.slice(-6))}</span>
-                <b style="color:#fff; font-size:12px;">${escapeHtml(job.title)}</b>
-              </div>
-              <div style="display:flex; align-items:center; gap:6px;">
-                <span class="pill-tag ${job.status === 'RUNNING' ? 'text-emerald' : 'text-amber'}">${escapeHtml(job.status)}</span>
-                <b id="live_pct_${job.id}" style="color:var(--cyan); font-size:12px; font-family:monospace;">${job.progressPercent || 0}%</b>
-              </div>
-            </div>
-            
-            <div style="background:rgba(0,0,0,0.5); border-radius:4px; height:6px; overflow:hidden; width:100%;">
-              <div id="live_bar_${job.id}" style="background:linear-gradient(90deg, var(--cyan), var(--emerald)); width:${job.progressPercent || 0}%; height:100%; transition:width 0.3s ease;"></div>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-secondary);">
-              <span id="live_task_${job.id}">Microtarefa: <b>${escapeHtml(job.microtasks?.[job.currentStepIndex - 1]?.name || 'Planejamento DAG')}</b></span>
-              <div style="display:flex; gap:6px;">
-                ${job.status === 'RUNNING' ? `<button class="action-btn-ghost pause-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 8px;" type="button">⏸ Pausar</button>` : `<button class="action-btn-ghost resume-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 8px;" type="button">▶ Retomar</button>`}
-                <button class="action-btn-ghost cancel-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 8px; color:#ef4444;" type="button">⏹ Cancelar</button>
-                <button class="action-btn-primary inspect-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 8px;" type="button">🔍 Inspecionar</button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-
-        // Wire Action Buttons
-        activeContainer.querySelectorAll('.pause-job-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/pause`, { method: 'POST' });
-            await fetchDailyOperations();
-          });
-        });
-
-        activeContainer.querySelectorAll('.resume-job-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/resume`, { method: 'POST' });
-            await fetchDailyOperations();
-          });
-        });
-
-        activeContainer.querySelectorAll('.cancel-job-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            if (confirm('Deseja realmente cancelar a execução deste Job?')) {
-              await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/cancel`, { method: 'POST' });
-              await fetchDailyOperations();
-            }
-          });
-        });
-
-        activeContainer.querySelectorAll('.inspect-job-btn').forEach(btn => {
-          btn.addEventListener('click', () => openJobInspector(btn.dataset.jobId));
-        });
-      }
-    }
-
-    // 3. Visual Queue Table (Tabs Filter)
-    renderVisualQueueTable();
-
-    // 4. Recent AI Calls List
-    const aiCallsContainer = document.getElementById('opsRecentAiCallsList');
-    const recentCalls = report.recentAiCalls || [];
-    if (aiCallsContainer) {
-      if (recentCalls.length === 0) {
-        aiCallsContainer.innerHTML = `<div style="color:var(--text-muted); padding:8px;">Nenhuma chamada recente de IA registrada.</div>`;
-      } else {
-        aiCallsContainer.innerHTML = recentCalls.map(call => `
-          <div style="background:rgba(18,27,43,0.7); border:1px solid rgba(168,85,247,0.2); border-radius:4px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <b style="color:#fff;">${escapeHtml(call.purpose)}</b>
-              <div style="color:var(--text-muted); font-size:10px;">${call.tokens} tokens • ${call.latencyMs}ms</div>
-            </div>
-            <span class="pill-tag text-purple" style="font-size:10px;">${escapeHtml(call.model)}</span>
-          </div>
-        `).join('');
-      }
-    }
-
-    // 5. Approvals List
-    const approvalsList = document.getElementById('opsApprovalsList');
-    const approvalsCount = document.getElementById('opsPendingCount');
-    const pending = report.jobs?.pendingApprovals || 0;
-    if (approvalsCount) approvalsCount.textContent = pending;
-
-    if (approvalsList) {
-      fetch('/api/v2/jarvis/jobs').then(r => r.json()).then(jobsData => {
-        const pendingJobs = (jobsData.jobs || []).filter(j => j.status === 'AWAITING_APPROVAL');
-        if (pendingJobs.length === 0) {
-          approvalsList.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma ação de risco aguardando autorização no momento.</div>`;
-        } else {
-          approvalsList.innerHTML = pendingJobs.map(appr => `
-            <div style="background:rgba(18,27,43,0.7); border:1px solid rgba(249,115,22,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <b style="color:#fff; font-size:12px;">${escapeHtml(appr.title)}</b>
-                <span class="pill-tag text-amber">Pendente</span>
-              </div>
-              <p style="color:var(--text-secondary); font-size:11px;">Risco: <b>${escapeHtml(appr.riskLevel)}</b></p>
-              <div style="display:flex; gap:8px; margin-top:4px;">
-                <button class="action-btn-primary approve-job-btn" data-job-id="${escapeHtml(appr.id)}" style="font-size:10.5px; padding:3px 10px;" type="button">✅ Autorizar</button>
-                <button class="action-btn-ghost reject-job-btn" data-job-id="${escapeHtml(appr.id)}" style="font-size:10.5px; padding:3px 10px;" type="button">❌ Recusar</button>
-              </div>
-            </div>
-          `).join('');
-
-          approvalsList.querySelectorAll('.approve-job-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/approve`, { method: 'POST' });
-              await fetchDailyOperations();
-            });
-          });
-
-          approvalsList.querySelectorAll('.reject-job-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              await fetch(`/api/v2/jarvis/jobs/${btn.dataset.jobId}/reject`, { method: 'POST' });
-              await fetchDailyOperations();
-            });
-          });
-        }
-      });
-    }
-  }
-
-  async function renderVisualQueueTable() {
-    const queueTable = document.getElementById('opsJobsQueueTable');
-    if (!queueTable) return;
-
-    try {
-      const res = await fetch('/api/v2/jarvis/jobs/queue');
-      if (!res.ok) return;
-      const data = await res.json();
-
-      let jobsToDisplay = [];
-      if (currentQueueFilter === 'running') jobsToDisplay = data.running || [];
-      else if (currentQueueFilter === 'waiting') jobsToDisplay = data.waiting || [];
-      else if (currentQueueFilter === 'completed') jobsToDisplay = data.completed || [];
-      else jobsToDisplay = [...(data.running || []), ...(data.waiting || []), ...(data.completed || []), ...(data.failed || [])];
-
-      if (jobsToDisplay.length === 0) {
-        queueTable.innerHTML = `<div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhum job nesta categoria de fila.</div>`;
-        return;
-      }
-
-      queueTable.innerHTML = jobsToDisplay.map(job => `
-        <div style="background:rgba(18,27,43,0.6); border:1px solid var(--border-subtle); border-radius:4px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-family:monospace; color:var(--cyan); font-weight:700; font-size:11px;">#${escapeHtml(job.id.slice(-6))}</span>
-            <span style="color:#fff; font-size:11.5px; font-weight:600;">${escapeHtml(job.title)}</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="pill-tag ${job.status === 'COMPLETED' ? 'text-emerald' : (job.status === 'RUNNING' ? 'text-cyan' : 'text-amber')}" style="font-size:10px;">${escapeHtml(job.status)}</span>
-            <button class="action-btn-ghost inspect-job-btn" data-job-id="${job.id}" style="font-size:10px; padding:2px 6px;" type="button">👁 Inspecionar</button>
-          </div>
-        </div>
-      `).join('');
-
-      queueTable.querySelectorAll('.inspect-job-btn').forEach(btn => {
-        btn.addEventListener('click', () => openJobInspector(btn.dataset.jobId));
-      });
-    } catch (err) {
-      console.warn('Erro ao carregar fila visual:', err);
-    }
-  }
-
-  // --- JOB INSPECTOR MODAL ----------------------------------------------
-  async function openJobInspector(jobId) {
-    const modal = document.getElementById('jobInspectorModal');
-    const body = document.getElementById('jobInspectorBody');
-    const title = document.getElementById('inspectorJobTitle');
-    const idElem = document.getElementById('inspectorJobId');
-    if (!modal || !body) return;
-
-    try {
-      const res = await fetch(`/api/v2/jarvis/jobs/${jobId}`);
-      if (!res.ok) throw new Error('Job não encontrado');
-      const data = await res.json();
-      const job = data.job;
-
-      if (title) title.textContent = job.title;
-      if (idElem) idElem.textContent = `ID: ${job.id} | Projeto: ${job.projectId} | Status: ${job.status}`;
-
-      body.innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:rgba(18,27,43,0.7); padding:10px; border-radius:6px;">
-          <div><span style="color:var(--text-muted); font-size:11px;">Objetivo:</span> <b style="color:#fff; font-size:12px;">${escapeHtml(job.objective)}</b></div>
-          <div><span style="color:var(--text-muted); font-size:11px;">Progresso:</span> <b style="color:var(--cyan); font-size:12px;">${job.progressPercent}% (${job.currentStepIndex}/${job.microtasks?.length || 0} Microtarefas)</b></div>
-          <div><span style="color:var(--text-muted); font-size:11px;">Iniciado em:</span> <span style="color:#e2e8f0; font-size:11.5px;">${job.startedAt ? new Date(job.startedAt).toLocaleTimeString() : 'Em fila'}</span></div>
-          <div><span style="color:var(--text-muted); font-size:11px;">Duração:</span> <span style="color:#e2e8f0; font-size:11.5px;">${job.elapsedSeconds || job.duration || 0}s</span></div>
-        </div>
-
-        <div>
-          <b style="color:#fff; font-size:12px; margin-bottom:6px; display:block;">📋 Microtarefas DAG:</b>
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            ${(job.microtasks || []).map((m, idx) => `
-              <div style="background:rgba(6,9,15,0.8); border-left:3px solid ${m.status === 'COMPLETED' ? 'var(--emerald)' : (m.status === 'RUNNING' ? 'var(--cyan)' : 'var(--border-subtle)')}; padding:6px 10px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                  <span style="color:var(--text-muted); font-size:10px;">Etapa ${idx + 1}:</span>
-                  <b style="color:#fff; font-size:11.5px; margin-left:4px;">${escapeHtml(m.name)}</b>
-                  <span style="color:var(--cyan); font-size:11px; margin-left:6px;">(${escapeHtml(m.agent)})</span>
-                </div>
-                <span class="pill-tag ${m.status === 'COMPLETED' ? 'text-emerald' : (m.status === 'RUNNING' ? 'text-cyan' : 'text-amber')}" style="font-size:10px;">${escapeHtml(m.status)}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div>
-          <b style="color:#fff; font-size:12px; margin-bottom:6px; display:block;">📜 Timeline de Execução & Logs:</b>
-          <div style="background:rgba(0,0,0,0.6); padding:8px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10.5px; max-height:140px; overflow-y:auto; display:flex; flex-direction:column; gap:3px;">
-            ${(job.timelineLogs || []).map(log => `
-              <div><span style="color:var(--cyan);">[${log.timestamp}]</span> <b style="color:var(--amber);">${escapeHtml(log.actor)}:</b> <span style="color:#e2e8f0;">${escapeHtml(log.message)}</span></div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-
-      modal.style.display = 'flex';
-    } catch (err) {
-      alert(`Erro ao abrir Job Inspector: ${err.message}`);
-    }
-  }
-
-  async function fetchCityState() {
-    try {
-      const res = await fetch('/api/v2/city/state');
-      if (res.ok) {
-        const data = await res.json();
-        state.cityState = data;
-        renderCityKPIs(data);
-        renderCityEvents(data.events || []);
-      }
-    } catch (err) {
-      console.warn('[FÊNIX City] Real state unavailable:', err.message);
-    }
-  }
-
-  async function fetchProjects() {
-    try {
-      const res = await fetch('/api/v2/projects');
-      if (res.ok) {
-        const data = await res.json();
-        state.projects = data.projects || [];
-        renderProjectsList(state.projects);
-      }
-    } catch (err) {
-      console.warn('[FÊNIX Projects] Error fetching projects:', err.message);
-    }
-  }
-
-  async function fetchAiPlatformStatus() {
-    try {
-      const startTime = Date.now();
-      const res = await fetch('/api/v2/ai-platform/status');
-      const latency = Date.now() - startTime;
-
-      if (res.ok) {
-        const data = await res.json();
-        state.latency = data.latencyMs || latency;
-        updateTopbarTelemetry(data.status || 'CONNECTED', state.latency, data.defaultModel);
-      } else {
-        updateTopbarTelemetry('OFFLINE', latency, 'Nenhum');
-      }
-    } catch {
-      updateTopbarTelemetry('DESCONECTADO', 0, 'N/A');
-    }
-  }
-
-  async function fetchActiveProjectFiles() {
-    if (!state.activeProjectId) return;
-    try {
-      const res = await fetch(`/api/v2/projects/${state.activeProjectId}/files`);
-      if (res.ok) {
-        const data = await res.json();
-        state.filesTree = data.tree || [];
-        renderFileTree(state.filesTree);
-        
-        if (!state.fileContents[state.activeFile]) {
-          await loadFileContent(state.activeFile);
-        }
-      }
-    } catch (err) {
-      console.warn('[FÊNIX Files] Project files not yet generated:', err.message);
-    }
-  }
-
-  async function loadFileContent(filePath) {
-    if (!state.activeProjectId || !filePath) return;
-    try {
-      const res = await fetch(`/api/v2/projects/${state.activeProjectId}/file?path=${encodeURIComponent(filePath)}`);
-      if (res.ok) {
-        const data = await res.json();
-        state.fileContents[filePath] = data.content;
-        if (state.activeFile === filePath) {
-          updateCodeEditor(data.content);
-        }
-      }
-    } catch (err) {
-      console.warn(`[FÊNIX Editor] Could not read ${filePath}:`, err.message);
-    }
-  }
-
-  async function saveFileContent(filePath, content) {
-    if (!state.activeProjectId || !filePath) return;
-    try {
-      const res = await fetch(`/api/v2/projects/${state.activeProjectId}/file`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ filePath, content })
-      });
-      if (res.ok) {
-        state.fileContents[filePath] = content;
-        showSaveFeedback(true);
-        appendTerminalLog(`[Observer] Arquivo real gravado em disco: ${filePath}`, 'emerald');
-      } else {
-        showSaveFeedback(false);
-      }
-    } catch (err) {
-      showSaveFeedback(false);
-      appendTerminalLog(`[Erro] Falha ao salvar arquivo: ${err.message}`, 'rose');
-    }
-  }
-
-  function updateTopbarTelemetry(status, latency, model) {
-    const statusEl = document.getElementById('topAiStatus');
-    const badgeEl = document.getElementById('topAiPlatformBadge');
-    const latEl = document.getElementById('topLatency');
-    const modelEl = document.getElementById('topActiveModel');
-
-    if (statusEl) statusEl.textContent = status;
-    if (latEl) latEl.textContent = `${latency}ms`;
-    if (modelEl && model) modelEl.textContent = model;
-
-    if (badgeEl) {
-      badgeEl.classList.toggle('live-connected', status === 'CONNECTED' || status === 'OK');
-    }
-  }
-
-  function renderCityKPIs(cityData) {
-    if (!cityData || !cityData.summary) return;
-    const s = cityData.summary;
-
-    setElemText('kpiBuildings', s.activeBuildings || '6');
-    setElemText('kpiProjects', s.totalProjects !== undefined ? s.totalProjects : '0');
-    setElemText('kpiOnlineAgents', s.onlineAgents || '19');
-    setElemText('kpiTasksToday', s.activeTasks !== undefined ? s.activeTasks : '0');
-    setElemText('kpiEventsTotal', s.totalEvents !== undefined ? s.totalEvents : '0');
-  }
-
-  function renderCityEvents(events) {
-    const feed = document.getElementById('cityEventsFeed');
-    if (!feed) return;
-
-    if (!events || events.length === 0) {
-      feed.innerHTML = `
-        <div class="event-feed-item">
-          <span class="agent-avatar-icon">ℹ️</span>
-          <div class="event-text">Nenhum evento registrado no runtime até o momento.</div>
-        </div>
-      `;
-      return;
-    }
-
-    feed.innerHTML = events.map(ev => `
-      <div class="event-feed-item">
-        <span class="agent-avatar-icon">⚡</span>
-        <div class="event-text">
-          <b>${escapeHtml(ev.agent)}</b>: ${escapeHtml(ev.message)}
-        </div>
-        <span class="event-time">${formatTimeAgo(ev.time)}</span>
-      </div>
-    `).join('');
-  }
-
-  function renderProjectsList(projects) {
-    const grid = document.getElementById('projectsCardGrid');
-    if (!grid) return;
-
-    if (!projects || projects.length === 0) {
-      grid.innerHTML = `
-        <div class="project-box">
-          <h3>Nenhum projeto descoberto</h3>
-          <p style="color:var(--text-muted); font-size:12px;">Clique em "Escanear Computador" para localizar repositórios no seu disco.</p>
-        </div>
-      `;
-      return;
-    }
-
-    grid.innerHTML = projects.map(p => `
-      <div class="project-box" data-project-id="${escapeHtml(p.projectId)}" style="background:rgba(10,16,26,0.9); border:1px solid ${p.connected ? 'rgba(56,189,248,0.4)' : 'var(--border-subtle)'}; border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h3 style="color:#fff; font-size:13.5px; font-weight:700; margin:0;">${escapeHtml(p.name)}</h3>
-          <span class="pill-tag ${p.connected ? 'text-emerald' : 'text-cyan'}">${p.connected ? '🟢 Conectado' : 'Disponível'}</span>
-        </div>
-        <p style="color:var(--text-muted); font-size:11px; font-family:monospace; margin:0;">${escapeHtml(p.localPath || p.rootPath)}</p>
-        
-        <div style="display:flex; flex-wrap:wrap; gap:4px;">
-          ${(p.tags || []).map(t => `<span class="pill-tag text-purple" style="font-size:9.5px;">${escapeHtml(t)} ✓</span>`).join('')}
-        </div>
-
-        <div style="background:rgba(0,0,0,0.4); padding:6px; border-radius:4px; font-size:10.5px; color:var(--text-secondary);">
-          <div><b>Arquitetura:</b> ${escapeHtml(p.framework || 'N/A')} • ${escapeHtml(p.language || 'TS')}</div>
-          <div><b>Health Score:</b> <b style="color:var(--emerald);">${p.healthScore || 98.4}%</b></div>
-        </div>
-
-        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;">
-          ${p.connected 
-            ? `<button class="action-btn-ghost unlink-prj-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px; color:#ef4444;" type="button">Desconectar</button>` 
-            : `<button class="action-btn-primary connect-prj-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px;" type="button">🔗 Conectar</button>`}
-          <button class="action-btn-ghost open-pc-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px;" type="button">🖥️ Abrir no PC</button>
-          <button class="action-btn-ghost analyze-prj-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px;" type="button">📊 Analisar</button>
-          <button class="action-btn-primary select-proj-btn" data-project-id="${escapeHtml(p.projectId)}" style="font-size:10.5px; padding:3px 8px;" type="button">💻 IDE Web</button>
-        </div>
-      </div>
-    `).join('');
-
-    grid.querySelectorAll('.connect-prj-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const pid = btn.dataset.projectId;
-        await fetch(`/api/v2/projects/${pid}/connect`, { method: 'POST' });
-        await fetchProjects();
-      });
-    });
-
-    grid.querySelectorAll('.unlink-prj-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const pid = btn.dataset.projectId;
-        await fetch(`/api/v2/projects/${pid}/unlink`, { method: 'POST' });
-        await fetchProjects();
-      });
-    });
-
-    grid.querySelectorAll('.open-pc-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const pid = btn.dataset.projectId;
-        const res = await fetch(`/api/v2/projects/${pid}/open-computer`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ editor: 'code' })
-        });
-        const data = await res.json();
-        alert(data.message || 'Projeto aberto no computador.');
-      });
-    });
-
-    grid.querySelectorAll('.analyze-prj-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const pid = btn.dataset.projectId;
-        const res = await fetch(`/api/v2/projects/${pid}/analyze`, { method: 'POST' });
-        const data = await res.json();
-        alert(`Diagnóstico iniciado! Job #${data.jobId || 'DIAG'} criado na fila.`);
-        await fetchDailyOperations();
-      });
-    });
-
-    grid.querySelectorAll('.select-proj-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const pid = btn.dataset.projectId;
-        openProjectInIde(pid);
-      });
-    });
-  }
-
-  function openProjectInIde(projectId) {
-    state.activeProjectId = projectId;
-    switchView('ide');
-    fetchActiveProjectFiles();
-  }
-
-  function initNavigation() {
-    document.querySelectorAll('.nav-item').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const view = btn.dataset.view;
-        switchView(view);
-      });
-    });
-
-    document.getElementById('quickOpenIde')?.addEventListener('click', () => switchView('ide'));
-    document.getElementById('quickFenixChat')?.addEventListener('click', () => switchView('ide'));
-    document.getElementById('openAgentsViewBtn')?.addEventListener('click', () => switchView('agents'));
-
-    document.getElementById('manualHeartbeatTickBtn')?.addEventListener('click', async () => {
-      await fetch('/api/v2/jarvis/heartbeat/tick', { method: 'POST' });
-      await refreshAllRealData();
-      appendTerminalLog('[JARVIS] Heartbeat 24/7 disparado manualmente. Projetos e jobs atualizados.', 'cyan');
-    });
-  }
-
-  function switchView(viewName) {
-    state.view = viewName;
-    document.querySelectorAll('.nav-item').forEach((b) => {
-      b.classList.toggle('active', b.dataset.view === viewName);
-    });
-    document.querySelectorAll('.workspace-view').forEach((v) => {
-      v.classList.toggle('active', v.id === `view-${viewName}`);
-    });
-
-    if (viewName === 'city') {
-      window.dispatchEvent(new Event('resize'));
-    }
-  }
-
-  // --- AI CITY 3D CANVAS & INTERACTION ----------------------------------
-  function initCityCanvas() {
+// --- AI CITY 3D CANVAS & INTERACTION ----------------------------------
+  window.initCityCanvas = function() {
     const canvas = document.getElementById('cityCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -1122,7 +707,7 @@
                  targetX: (Math.random() - 0.5) * 400,
                  targetY: (Math.random() - 0.5) * 300,
                  speed: 0.0008 + Math.random() * 0.0006,
-                 avatar: '🤖',
+                 avatar: 'ðŸ¤–',
                  role: ra.role || key,
                  fullName: key,
                  color: '#38bdf8',
@@ -1182,7 +767,7 @@
     document.getElementById('cityResetCam')?.addEventListener('click', () => { state.zoom = 1.0; state.panX = 0; state.panY = 0; });
     document.getElementById('cityDayNightToggle')?.addEventListener('click', function() {
       state.cyberMode = !state.cyberMode;
-      this.textContent = state.cyberMode ? '🌙 Modo Cyber' : '☀️ Modo Dia';
+      this.textContent = state.cyberMode ? 'ðŸŒ™ Modo Cyber' : 'â˜€ï¸ Modo Dia';
     });
 
     let isDragging = false;
@@ -1430,9 +1015,9 @@
     if (body) {
       body.innerHTML = `
         <div class="dash-card" style="background:rgba(18,27,43,0.85); border:1px solid var(--border-subtle);">
-          <h4>🏢 Painel do Módulo: ${escapeHtml(key)}</h4>
+          <h4>ðŸ¢ Painel do MÃ³dulo: ${escapeHtml(key)}</h4>
           <p style="color:var(--text-secondary); font-size:12px; margin-top:4px;">
-            Módulo ativo e conectado ao runtime do Fênix OS.
+            MÃ³dulo ativo e conectado ao runtime do FÃªnix OS.
           </p>
           <div style="display:flex; gap:8px; margin-top:12px;">
             <button class="action-btn-primary" onclick="window.switchViewToIde()" type="button">Abrir na IDE</button>
@@ -1487,7 +1072,7 @@
 
   async function executeJarvisAssistantCommand(prompt) {
     openJobModal({
-      title: 'Missão Autônoma JARVIS',
+      title: 'MissÃ£o AutÃ´noma JARVIS',
       objective: prompt,
       estimatedTime: '12 min',
       riskLevel: 'SAFE'
@@ -1517,20 +1102,20 @@
 
         completeJobExecution(data.realityScore || 99.8);
         appendCityJarvisMessage('assistant', `
-          <p><b>✅ Missão Processada pelo FÊNIX MIND!</b></p>
-          <p style="font-size:11.5px; margin-top:4px;">Intenção: <b>${escapeHtml(data.intent)}</b> • Reality Score: <b>${data.realityScore}%</b></p>
+          <p><b>âœ… MissÃ£o Processada pelo FÃŠNIX MIND!</b></p>
+          <p style="font-size:11.5px; margin-top:4px;">IntenÃ§Ã£o: <b>${escapeHtml(data.intent)}</b> â€¢ Reality Score: <b>${data.realityScore}%</b></p>
           <div class="msg-action-box" style="margin-top:6px;">
-            <span>⚡ Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
+            <span>âš¡ Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
           </div>
         `);
 
         await fetchActiveProjectFiles();
         await refreshAllRealData();
       } else {
-        throw new Error(data.error || 'Falha na execução');
+        throw new Error(data.error || 'Falha na execuÃ§Ã£o');
       }
     } catch (err) {
-      appendJobLog('QA Agent', `Falha na execução: ${err.message}`, 'var(--flame)');
+      appendJobLog('QA Agent', `Falha na execuÃ§Ã£o: ${err.message}`, 'var(--flame)');
       appendCityJarvisMessage('assistant', `<p style="color:var(--flame);"><b>Erro:</b> ${escapeHtml(err.message)}</p>`);
     }
   }
@@ -1545,8 +1130,8 @@
 
     div.innerHTML = `
       <div class="msg-header">
-        <span class="msg-avatar">${role === 'user' ? '👤' : '🔥'}</span>
-        <span class="msg-author">${role === 'user' ? 'Você' : 'FÊNIX JARVIS'}</span>
+        <span class="msg-avatar">${role === 'user' ? 'ðŸ‘¤' : 'ðŸ”¥'}</span>
+        <span class="msg-author">${role === 'user' ? 'VocÃª' : 'FÃŠNIX JARVIS'}</span>
       </div>
       <div class="msg-body">${htmlContent}</div>
     `;
@@ -1555,547 +1140,71 @@
     feed.scrollTop = feed.scrollHeight;
   }
 
-  // --- IDE CHAT CONTROLLER ----------------------------------------------
-  function initIdeChat() {
-    const form = document.getElementById('ideChatForm');
-    const input = document.getElementById('ideChatInput');
-
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const text = input?.value.trim();
-      if (!text) return;
-
-      appendChatMessage('user', text);
-      if (input) input.value = '';
-
-      await executeRealAgenticTask(text);
-    });
-
-    document.querySelectorAll('.prompt-preset-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const txt = chip.dataset.prompt;
-        if (input) input.value = txt;
-        form?.dispatchEvent(new Event('submit'));
-      });
-    });
-  }
-
   
-  async function executeRealAgenticTask(prompt) {
-      if (typeof appendTerminalLog === 'function') appendTerminalLog('[IDE Chat] Submitting request to FenixMind...', 'cyan');
-      const startTime = Date.now();
-      try {
-        const res = await fetch('/api/v2/mind/ingest', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            source: 'ide_chat',
-            message: prompt,
-            projectId: state.activeProjectId || 'fenix_test_lab'
-          })
-        });
-  
-        const data = await res.json();
-        
-        if (data.mindResponse && data.mindResponse.jobId) {
-            window.openJobInspector(data.mindResponse.jobId);
-        } else if (data.job && data.job.id) {
-            window.openJobInspector(data.job.id);
-        } else {
-            if (typeof appendTerminalLog === 'function') appendTerminalLog('[IDE Chat] Request processed by FenixMind.', 'green');
-        }
-
-      const latency = Date.now() - startTime;
-
-      if (data.success) {
-        state.tokenCount += 450;
-        updateTopbarTelemetry('CONNECTED', latency, state.activeModel);
-        completeJobExecution(data.realityScore || 99.8);
-
-        appendChatMessage('assistant', `
-          <p><b>✅ Tarefa #${escapeHtml(data.runId || 'MIND_001')} Executada via FÊNIX MIND!</b></p>
-          <p style="font-size:12px; margin-top:4px;">Intenção: <b>${escapeHtml(data.intent)}</b> • Reality Score: <b>${data.realityScore}%</b></p>
-          
-          <div style="margin-top:8px;">
-            <div style="font-weight:700; font-size:11px; color:var(--text-muted); margin-bottom:4px;">PLANO EXECUTADO:</div>
-            <ul class="feature-checklist">
-              ${(data.plan || []).map(p => `<li>⚙️ <code>${escapeHtml(p.description)}</code></li>`).join('')}
-            </ul>
-          </div>
-        `);
-
-        await fetchActiveProjectFiles();
-        appendTerminalLog(`[Fênix Mind] Prompt processado com sucesso. Reality Score: ${data.realityScore}%.`, 'emerald');
-      } else {
-        throw new Error(data.error || 'Erro na execução da tarefa');
-      }
-    } catch (err) {
-      appendJobLog('QA Agent', `Erro: ${err.message}`, 'var(--flame)');
-      appendChatMessage('assistant', `<p style="color:var(--flame);"><b>Erro:</b> ${escapeHtml(err.message)}</p>`);
-    }
-  }
-
-  function appendChatMessage(role, htmlContent, id = null) {
-    const container = document.getElementById('ideChatMessages');
-    if (!container) return;
-
-    const div = document.createElement('div');
-    div.className = `chat-msg msg-${role}`;
-    if (id) div.id = id;
-
-    div.innerHTML = `
-      <div class="msg-header">
-        <div class="msg-avatar">${role === 'user' ? '👤' : '🔥'}</div>
-        <span class="msg-author">${role === 'user' ? 'Você' : 'FÊNIX JARVIS'}</span>
-      </div>
-      <div class="msg-body">${htmlContent}</div>
-    `;
-
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-  }
-
-  // --- VISUAL ↔ CODE SYNC & FILE TREE -----------------------------------
-  function initVisualCodeSync() {
-    const editor = document.getElementById('codeEditorArea');
-    const saveBtn = document.getElementById('codeSaveBtn');
-    const saveDeployBtn = document.getElementById('saveAndDeployBtn');
-
-    editor?.addEventListener('input', () => {
-      state.fileContents[state.activeFile] = editor.value;
-      updateLineNumbers();
-    });
-
-    saveBtn?.addEventListener('click', () => {
-      saveFileContent(state.activeFile, editor?.value || '');
-    });
-
-    saveDeployBtn?.addEventListener('click', () => {
-      saveFileContent(state.activeFile, editor?.value || '');
-    });
-
-    document.querySelectorAll('.device-btn').forEach((b) => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.device-btn').forEach((x) => x.classList.remove('active'));
-        b.classList.add('active');
-        const res = b.dataset.res;
-        const liveView = document.getElementById('liveDashboardPreview');
-        if (liveView) {
-          liveView.style.maxWidth = res === '100%' ? '100%' : `${res}px`;
-        }
-      });
-    });
-
-    document.querySelectorAll('.mode-btn').forEach((b) => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.mode-btn').forEach((x) => x.classList.remove('active'));
-        b.classList.add('active');
-        const mode = b.dataset.mode;
-        const grid = document.querySelector('.ide-grid');
-        if (grid) {
-          if (mode === 'visual') grid.style.gridTemplateColumns = '320px 1fr 420px';
-          if (mode === 'code') grid.style.gridTemplateColumns = '320px 0 1fr';
-          if (mode === 'split') grid.style.gridTemplateColumns = '280px 1fr 1fr';
-          if (mode === 'preview') grid.style.gridTemplateColumns = '320px 1fr 0';
-        }
-      });
-    });
-
-    // Visual element inspector click
-    document.querySelectorAll('[data-inspect-target]').forEach((el) => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('[data-inspect-target]').forEach((x) => x.classList.remove('inspect-active'));
-        el.classList.add('inspect-active');
-        const target = el.dataset.inspectTarget;
-        locateTargetInCode(target);
-      });
-    });
-  }
-
-  function renderFileTree(tree) {
-    const container = document.getElementById('fileTreeView');
-    if (!container) return;
-
-    if (!tree || tree.length === 0) {
-      container.innerHTML = `<div style="color:var(--text-muted); font-size:11px; padding:4px;">Nenhum arquivo encontrado no workspace.</div>`;
-      return;
-    }
-
-    function buildHtml(nodes) {
-      return nodes.map(node => {
-        if (node.type === 'directory') {
-          return `
-            <div class="tree-node folder open">
-              <span class="node-icon">📁</span>
-              <span class="node-label">${escapeHtml(node.name)}</span>
-              <div class="tree-children">${buildHtml(node.children || [])}</div>
-            </div>
-          `;
-        }
-        const isActive = state.activeFile === node.path;
-        return `
-          <div class="tree-node file ${isActive ? 'active' : ''}" data-file-path="${escapeHtml(node.path)}">
-            <span class="node-icon">${getFileIcon(node.name)}</span>
-            <span class="node-label">${escapeHtml(node.name)}</span>
-          </div>
-        `;
-      }).join('');
-    }
-
-    container.innerHTML = buildHtml(tree);
-
-    container.querySelectorAll('.tree-node.file').forEach(node => {
-      node.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const fPath = node.dataset.filePath;
-        state.activeFile = fPath;
-        container.querySelectorAll('.tree-node.file').forEach(x => x.classList.remove('active'));
-        node.classList.add('active');
-        await loadFileContent(fPath);
-      });
-    });
-  }
-
-  function getFileIcon(filename) {
-    if (filename.endsWith('.tsx') || filename.endsWith('.jsx')) return '⚛️';
-    if (filename.endsWith('.ts') || filename.endsWith('.js')) return '📄';
-    if (filename.endsWith('.css')) return '🎨';
-    if (filename.endsWith('.json')) return '📦';
-    if (filename.endsWith('.html')) return '🌐';
-    return '📄';
-  }
-
-  function updateCodeEditor(content) {
-    const editor = document.getElementById('codeEditorArea');
-    if (editor) {
-      editor.value = content || '';
-    }
-    updateLineNumbers();
-  }
-
-  function updateLineNumbers() {
-    const editor = document.getElementById('codeEditorArea');
-    const numbers = document.getElementById('codeLineNumbers');
-    if (!editor || !numbers) return;
-
-    const count = (editor.value.match(/\n/g) || []).length + 1;
-    numbers.innerHTML = Array.from({ length: count }, (_, i) => `<div>${i + 1}</div>`).join('');
-  }
-
-  function locateTargetInCode(targetName) {
-    const editor = document.getElementById('codeEditorArea');
-    if (!editor) return;
-
-    const content = editor.value;
-    let searchStr = 'Dashboard';
-    if (targetName === 'card-vendas') searchStr = 'Total Vendas';
-    if (targetName === 'card-pedidos') searchStr = 'Clientes Ativos';
-    if (targetName === 'card-clientes') searchStr = 'Projetos Executados';
-    if (targetName === 'card-ticket') searchStr = 'Status Operacional';
-
-    const index = content.indexOf(searchStr);
-    if (index !== -1) {
-      editor.focus();
-      editor.setSelectionRange(index, index + searchStr.length);
-    }
-  }
-
-  function showSaveFeedback(success) {
-    const saveBtn = document.getElementById('codeSaveBtn');
-    if (saveBtn) {
-      saveBtn.textContent = success ? '✅ Salvo!' : '❌ Erro';
-      setTimeout(() => { saveBtn.textContent = '💾 Salvar'; }, 1500);
-    }
-  }
-
-  function appendTerminalLog(msg, color = 'muted') {
-    const term = document.getElementById('ideTerminalBody');
-    if (!term) return;
-
-    const line = document.createElement('div');
-    line.className = `term-line text-${color}`;
-    line.textContent = msg;
-    term.appendChild(line);
-    term.scrollTop = term.scrollHeight;
-  }
-
-  // --- MULTI-MODEL BAR --------------------------------------------------
-  function initMultiModelBar() {
-    const pSelect = document.getElementById('selectPrimaryModel');
-    const sSelect = document.getElementById('selectSecondaryModel');
-
-    pSelect?.addEventListener('change', () => {
-      state.activeModel = pSelect.value;
-      setElemText('topActiveModel', state.activeModel);
-    });
-
-    sSelect?.addEventListener('change', () => {
-      state.secondaryModel = sSelect.value;
-    });
-  }
-
-  // --- HELPERS ----------------------------------------------------------
-  function setElemText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-  }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, m => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    })[m]);
-  }
-
-  function formatTimeAgo(dateStr) {
-    if (!dateStr) return '';
-    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (diff < 10) return 'agora';
-    if (diff < 60) return `${diff}s atrás`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m atrás`;
-    return `${Math.floor(diff / 3600)}h atrás`;
-  }
-
-  // --- MOBILE REMOTE CONTROL (ANYDESK-GRADE VISUAL & AI AGENT) --------
-  function initMobileRemoteControl() {
-    const modal = document.getElementById('mobileRemoteModal');
-    const closeBtn = document.getElementById('mobileRemoteCloseBtn');
-    const pairNewBtn = document.getElementById('mobilePairNewBtn');
-    const pairModal = document.getElementById('mobilePairingModal');
-    const pairCloseBtn = document.getElementById('mobilePairingCloseBtn');
-    const container = document.getElementById('mobileCanvasContainer');
-    const rippleDot = document.getElementById('touchRippleDot');
-
-    // Hardware buttons
-    const btnHome = document.getElementById('mobileBtnHome');
-    const btnBack = document.getElementById('mobileBtnBack');
-    const btnRecents = document.getElementById('mobileBtnRecents');
-    const stopBtn = document.getElementById('mobileStopBtn');
-
-    // AI & Keyboard inputs
-    const cmdInput = document.getElementById('mobileCommandInput');
-    const sendCmdBtn = document.getElementById('mobileSendCmdBtn');
-    const keyInput = document.getElementById('mobileKeyboardInput');
-    const sendTextBtn = document.getElementById('mobileSendTextBtn');
-
-    // Chips
-    const chipCamera = document.getElementById('chipMobileCamera');
-    const chipWhatsApp = document.getElementById('chipMobileWhatsApp');
-    const chipSettings = document.getElementById('chipMobileSettings');
-    const chipScreenshot = document.getElementById('chipMobileScreenshot');
-
-    closeBtn?.addEventListener('click', () => {
-      if (modal) modal.style.display = 'none';
-    });
-
-    pairNewBtn?.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/v2/devices/mobile/pairing/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceName: 'Novo Celular Android' })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const codeEl = document.getElementById('mobilePairingCodeDisplay');
-          if (codeEl) codeEl.textContent = data.pairingCode;
-          if (pairModal) pairModal.style.display = 'flex';
-        }
-      } catch (err) {
-        console.error('Erro ao gerar pareamento:', err);
-      }
-    });
-
-    pairCloseBtn?.addEventListener('click', () => {
-      if (pairModal) pairModal.style.display = 'none';
-    });
-
-    // Interactive Touch Canvas
-    container?.addEventListener('click', async (e) => {
-      const rect = container.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-
-      // Map to 1080x2400 Android Viewport
-      const normX = Math.round((clickX / rect.width) * 1080);
-      const normY = Math.round((clickY / rect.height) * 2400);
-
-      // Render Visual Ripple Dot (●)
-      if (rippleDot) {
-        rippleDot.style.left = `${clickX}px`;
-        rippleDot.style.top = `${clickY}px`;
-        rippleDot.style.display = 'block';
-        setTimeout(() => { rippleDot.style.display = 'none'; }, 300);
-      }
-
-      try {
-        await fetch('/api/v2/devices/mobile/Android-01/input', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ actionType: 'tap', x: normX, y: normY })
-        });
-      } catch (err) {
-        console.warn('Erro ao enviar toque:', err);
-      }
-    });
-
-    // Hardware key handlers
-    btnHome?.addEventListener('click', () => sendMobileKey('home'));
-    btnBack?.addEventListener('click', () => sendMobileKey('back'));
-    btnRecents?.addEventListener('click', () => sendMobileKey('recentApps'));
-
-    async function sendMobileKey(key) {
-      try {
-        await fetch('/api/v2/devices/mobile/Android-01/input', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ actionType: key })
-        });
-      } catch (err) {
-        console.warn(`Erro ao enviar tecla ${key}:`, err);
-      }
-    }
-
-    // AI Commander
-    sendCmdBtn?.addEventListener('click', async () => {
-      const text = cmdInput?.value?.trim();
-      if (!text) return;
-      if (cmdInput) cmdInput.value = '';
-
-      if (window.sendChatMessage) {
-        window.sendChatMessage(`[Mobile Agent] ${text}`);
-      } else {
-        await fetch('/api/v2/mind/ingest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source: 'device', message: text, projectId: state.activeProjectId })
-        });
-      }
-    });
-
-    // Remote Keyboard typing
-    sendTextBtn?.addEventListener('click', async () => {
-      const text = keyInput?.value;
-      if (!text) return;
-      if (keyInput) keyInput.value = '';
-
-      await fetch('/api/v2/devices/mobile/Android-01/input', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actionType: 'type', text })
-      });
-    });
-
-    // Quick Chips
-    chipCamera?.addEventListener('click', () => sendAppLaunch('com.android.camera'));
-    chipWhatsApp?.addEventListener('click', () => sendAppLaunch('com.whatsapp'));
-    chipSettings?.addEventListener('click', () => sendAppLaunch('com.android.settings'));
-    chipScreenshot?.addEventListener('click', async () => {
-      const res = await fetch('/api/v2/devices/mobile/Android-01/screen/live');
-      if (res.ok) alert('Screenshot capturado e sincronizado com o Vision Agent!');
-    });
-
-    async function sendAppLaunch(pkg) {
-      await fetch('/api/v2/devices/mobile/Android-01/input', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actionType: 'launchApp', packageName: pkg })
-      });
-    }
-
-    stopBtn?.addEventListener('click', async () => {
-      if (confirm('Deseja acionar o Emergency Stop para este dispositivo móvel?')) {
-        await fetch('/api/v2/devices/emergency-stop', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ active: true })
-        });
-        alert('Emergency Stop ativado no dispositivo.');
-      }
-    });
-  }
-
-  // Helper to open Mobile Remote Modal globally
-  window.openFenixMobileRemote = function (deviceId = 'Android-01') {
-    const modal = document.getElementById('mobileRemoteModal');
-    if (modal) modal.style.display = 'flex';
-  };
-
-  // Boot
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
 
 
+window.openJobInspector = function(jobId, promptText) {
+  document.getElementById('jobInspectorModal').style.display = 'block';
+  document.getElementById('inspectorJobId').textContent = jobId;
+  document.getElementById('inspectorJobTitle').textContent = promptText || 'Real-time Autonomous Job';
+  document.getElementById('jobInspectorBody').innerHTML = '<div style="color:#888;">Aguardando eventos fÃ­sicos do AgentRuntime...</div>';
+};
 
-// ---- FENIX PHASE 2: GLOBAL ACTIONS & BINDS ----
 document.addEventListener('DOMContentLoaded', () => {
-  const navBar = document.querySelector('.nav-menu');
-  if (navBar && !navBar.innerHTML.includes('JARVIS')) {
-    const jarvisBtn = document.createElement('button');
-    jarvisBtn.className = 'nav-item';
-    jarvisBtn.innerHTML = '<span class="nav-icon">🤖</span><span class="nav-text">JARVIS</span>';
-    jarvisBtn.onclick = () => document.getElementById('jarvisDrawer').classList.toggle('open');
-    navBar.appendChild(jarvisBtn);
-
-    const secBtn = document.createElement('button');
-    secBtn.className = 'nav-item';
-    secBtn.innerHTML = '<span class="nav-icon">🛡️</span><span class="nav-text">Security</span>';
-    secBtn.onclick = () => document.getElementById('securityCenterModal').style.display='flex';
-    navBar.appendChild(secBtn);
-  }
-
-  // Job Inspector Logic
-  window.openJobInspector = async function(jobId) {
-    const modal = document.getElementById('jobInspectorModal');
-    modal.style.display = 'flex';
-    document.getElementById('inspJobId').innerText = jobId;
-    
-    try {
-      const res = await fetch('/api/v2/jarvis/jobs/' + jobId);
-      if (res.ok) {
-        const data = await res.json();
-        const j = data.job;
-        document.getElementById('inspProject').innerText = j.projectId;
-        document.getElementById('inspStatus').innerText = j.status;
-        document.getElementById('inspGoal').innerText = j.objective;
-        document.getElementById('inspCost').innerText = '$' + (j.cost || 0).toFixed(4);
-        document.getElementById('inspTokens').innerText = j.tokens || 0;
+  document.getElementById('jobInspectorCloseBtn')?.addEventListener('click', () => {
+    document.getElementById('jobInspectorModal').style.display = 'none';
+  });
+  if (window.initCityCanvas) window.initCityCanvas();
+  
+  if (!window.sseEventSource) {
+    window.sseEventSource = new EventSource('/api/v2/events/stream');
+    window.sseEventSource.onmessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        const ev = payload.data;
+        if (!ev) return;
         
-        let tl = j.timelineLogs.map(l => '<div><span style="color:var(--accent-cyan);">[' + l.timestamp + ']</span> <b>' + l.actor + '</b>: ' + l.message + '</div>').join('');
-        document.getElementById('inspTimeline').innerHTML = tl;
-      }
-    } catch(e) {}
-  };
-
-  const jarvisSend = document.getElementById('jarvisChatSend');
-  const jarvisInput = document.getElementById('jarvisChatInput');
-  const jarvisBody = document.getElementById('jarvisChatMessages');
-  if (jarvisSend && jarvisInput) {
-    jarvisSend.onclick = async () => {
-       const text = jarvisInput.value;
-       if(!text) return;
-       jarvisBody.innerHTML += '<div class="chat-msg msg-user">' + text + '</div>';
-       jarvisInput.value = '';
-       
-       if (text.toLowerCase().includes('analise') || text.toLowerCase().includes('corrija')) {
-          jarvisBody.innerHTML += '<div class="chat-msg msg-assistant">Criando job de análise contínua...</div>';
-          const res = await fetch('/api/v2/jarvis/jobs/submit', {
-             method: 'POST',
-             headers: {'Content-Type': 'application/json'},
-             body: JSON.stringify({ projectId: window.state?.activeProjectId || 'ZAPAI-FINAL', title: 'JARVIS Request', objective: text })
-          });
-          if(res.ok) {
-             const data = await res.json();
-             jarvisBody.innerHTML += '<div class="chat-msg msg-assistant">Job ' + data.job.id + ' submetido! <button onclick="openJobInspector(\'' + data.job.id + '\')" style="margin-top:5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--accent-cyan); padding:4px 8px; border-radius:4px; cursor:pointer;">🔍 Inspecionar Job</button></div>';
-          }
-       } else {
-          jarvisBody.innerHTML += '<div class="chat-msg msg-assistant">Processando pelo FenixMind... (Reconhecido: ' + text + ')</div>';
-       }
+        // Append to job inspector if it's open
+        const body = document.getElementById('jobInspectorBody');
+        if (body && document.getElementById('jobInspectorModal').style.display === 'block') {
+           const div = document.createElement('div');
+           div.style.padding = '8px'; div.style.background = '#222'; div.style.borderRadius = '4px'; div.style.fontSize = '12px'; div.style.fontFamily = 'monospace'; div.style.color = '#ccc';
+           div.textContent = '[' + ev.type + '] ' + (ev.details?.step || ev.details?.action || ev.details?.message || ev.details?.provider || '');
+           body.appendChild(div);
+           body.scrollTop = body.scrollHeight;
+        }
+      } catch (err) {}
     };
   }
 });
+
+
+
+
+// === SUB-VIEW ROUTING (ADDED FOR 7-TAB ARCHITECTURE) ===
+window.showSubView = function(viewId, subViewId) {
+  // Toggle buttons
+  const navContainer = document.querySelector(#view- + viewId +  .sub-nav);
+  if (navContainer) {
+    navContainer.querySelectorAll('button').forEach(btn => {
+      if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(' + subViewId + ')) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+  
+  // Toggle views
+  const viewContainer = document.querySelector(#view- + viewId);
+  if (viewContainer) {
+    viewContainer.querySelectorAll('.sub-view').forEach(sub => {
+      if (sub.id === sub- + viewId + - + subViewId) {
+        sub.classList.add('active');
+      } else {
+        sub.classList.remove('active');
+      }
+    });
+  }
+};
+

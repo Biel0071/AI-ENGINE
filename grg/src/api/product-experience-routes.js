@@ -1,5 +1,5 @@
 /**
- * FÊNIX OS — Product Experience Routes (M26–M37 Productization)
+ * FÃŠNIX OS â€” Product Experience Routes (M26â€“M37 Productization)
  * Unified REST API for Control Center, Onboarding, Visual Builder, 4-DNA, Timeline, and Cross-Project Intelligence.
  */
 
@@ -99,9 +99,9 @@ function initEngines(app) {
   factoryEngine.start();
 
   // Instantiate Level 10 Engines for Master Agentic Loop
-  const tokenEconomy = new TokenEconomyEngine({ eventBus });
-  const contextAssembler = new ContextAssembler({ tokenEconomyEngine: tokenEconomy });
-  const modelRouter = new ModelRouter({ tokenEconomyEngine: tokenEconomy });
+  tokenEconomy = new TokenEconomyEngine({ eventBus });
+  contextAssembler = new ContextAssembler({ tokenEconomyEngine: tokenEconomy });
+  modelRouter = new ModelRouter({ tokenEconomyEngine: tokenEconomy });
   devMemory = new DevelopmentMemory({ eventBus });
 
   promptCompiler = new PromptCompilerEngine({
@@ -115,11 +115,13 @@ function initEngines(app) {
   });
   promptCompiler.start();
 
-  const visualReality = new VisualRealityEngine({ workspaceManager, eventBus, promptCompiler });
-  const connectionBroker = new ConnectionBroker({ eventBus, workspaceManager });
+
+  frontendReality = new VisualRealityEngine({ workspaceManager, eventBus, promptCompiler });
+
 
   jarvisOrchestrator = new AutonomousJobOrchestrator({
     eventBus,
+
     workspaceManager,
     agentRuntime,
     observer,
@@ -127,7 +129,7 @@ function initEngines(app) {
     tokenEconomy,
     contextAssembler,
     modelRouter,
-    visualReality,
+    frontendReality,
     devMemory,
     promptCompiler
   });
@@ -159,7 +161,7 @@ function initEngines(app) {
     tokenEconomy,
     contextAssembler,
     modelRouter,
-    visualReality,
+    frontendReality,
     connectionBroker,
     devMemory
   });
@@ -196,21 +198,17 @@ function initEngines(app) {
   });
   androidRemoteManager.start();
 
-  // LEVEL 10 — Token Economy, Context Intelligence, Model Router, Frontend Reality, Connection Broker & Dev Memory
-  tokenEconomy = new TokenEconomyEngine({ eventBus });
+  // LEVEL 10 â€” Token Economy, Context Intelligence, Model Router, Frontend Reality, Connection Broker & Dev Memory
   tokenEconomy.start();
 
-  contextAssembler = new ContextAssembler({ tokenEconomyEngine: tokenEconomy });
 
-  modelRouter = new ModelRouter({ tokenEconomyEngine: tokenEconomy });
 
-  frontendReality = new VisualRealityEngine({ workspaceManager, eventBus, promptCompiler });
   frontendReality.start();
 
   connectionBroker = new ConnectionBroker({ eventBus, deviceManager, workspaceManager });
   connectionBroker.start();
 
-  devMemory = new DevelopmentMemory();
+
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
@@ -449,22 +447,22 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
 
         const provider = new AIPlatformProvider({ baseUrl, apiKey, model });
         
-        let systemPrompt = 'Você é o FÊNIX OS AI Assistant operando diretamente na VPS com inteligência real de engenharia de software.';
+        let systemPrompt = 'VocÃª Ã© o FÃŠNIX OS AI Assistant operando diretamente na VPS com inteligÃªncia real de engenharia de software.';
         
         // Context enrichment
         if (contextType === 'fenix_architecture') {
-          systemPrompt += '\n\n[CONTEXTO ARQUITETURAL DO FÊNIX OS]\n' +
-            '- Núcleo: FÊNIX OS / GRG Services OS\n' +
-            '- Módulos: Core EventBus, Agent Runtime (19 agentes), Task Engine, Observer, Visual IDE, Artifact Graph, Function Inventory, 4-DNA Model, Software Factory.\n' +
+          systemPrompt += '\n\n[CONTEXTO ARQUITETURAL DO FÃŠNIX OS]\n' +
+            '- NÃºcleo: FÃŠNIX OS / GRG Services OS\n' +
+            '- MÃ³dulos: Core EventBus, Agent Runtime (19 agentes), Task Engine, Observer, Visual IDE, Artifact Graph, Function Inventory, 4-DNA Model, Software Factory.\n' +
             '- Stacks suportadas: Node.js, React, Vite, Next.js, Docker, Prisma, Python, Lovable.\n' +
-            '- Gateway de Inferência: FÊNIX AI Platform (209.50.241.215) com Ollama, Groq, ComfyUI.';
+            '- Gateway de InferÃªncia: FÃŠNIX AI Platform (209.50.241.215) com Ollama, Groq, ComfyUI.';
         } else if (projectId && workspaceManager.getProject(projectId)) {
           const ws = workspaceManager.getProject(projectId);
           const latestDna = ws.genomeBuilder.getLatest();
           systemPrompt += `\n\n[CONTEXTO DO PROJETO: ${ws.name}]\n` +
             `- Stack: ${ws.stack.join(', ')}\n` +
-            `- Módulos: ${latestDna.projectDna.modules.join(', ')}\n` +
-            `- Nós no Grafo: ${ws.artifactGraph.nodes.size}`;
+            `- MÃ³dulos: ${latestDna.projectDna.modules.join(', ')}\n` +
+            `- NÃ³s no Grafo: ${ws.artifactGraph.nodes.size}`;
         }
 
         const startTs = Date.now();
@@ -941,7 +939,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     }
     const job = jarvisOrchestrator.getJob(jobId);
     if (!job) {
-      sendError(res, 404, `Job ${jobId} não encontrado`);
+      sendError(res, 404, `Job ${jobId} nÃ£o encontrado`);
       return true;
     }
     sendJson(res, 200, { success: true, job });
@@ -1224,7 +1222,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     }
     const inspector = jarvisOrchestrator.getAgentInspector(agentName);
     if (!inspector) {
-      sendError(res, 404, `Agente "${agentName}" não encontrado`);
+      sendError(res, 404, `Agente "${agentName}" nÃ£o encontrado`);
       return true;
     }
     sendJson(res, 200, { success: true, agent: inspector });
@@ -1290,10 +1288,10 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       try {
         const payload = JSON.parse(body || '{}');
         const { source = 'api', message, projectId = 'fenix_test_lab', conversationId, attachments, context: ctx } = payload;
-        if (!message) throw new Error('Campo "message" é obrigatório para ingestão no MIND');
+        if (!message) throw new Error('Campo "message" Ã© obrigatÃ³rio para ingestÃ£o no MIND');
 
         if (!fenixMind) {
-          sendError(res, 503, 'FÊNIX MIND não inicializado');
+          sendError(res, 503, 'FÃŠNIX MIND nÃ£o inicializado');
           return;
         }
 
@@ -1317,7 +1315,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 32. GET /api/v2/mind/memory/conversations (List Conversation Memory)
   if (req.method === 'GET' && url.pathname === '/api/v2/mind/memory/conversations') {
     if (!fenixMind) {
-      sendError(res, 503, 'FÊNIX MIND não inicializado');
+      sendError(res, 503, 'FÃŠNIX MIND nÃ£o inicializado');
       return true;
     }
     const convs = Array.from(fenixMind.memory.conversations.entries()).map(([id, events]) => ({
@@ -1334,7 +1332,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     const parts = url.pathname.split('/');
     const convId = parts[6];
     if (!fenixMind) {
-      sendError(res, 503, 'FÊNIX MIND não inicializado');
+      sendError(res, 503, 'FÃŠNIX MIND nÃ£o inicializado');
       return true;
     }
     const events = fenixMind.memory.conversations.get(convId) || [];
@@ -1347,7 +1345,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     const parts = url.pathname.split('/');
     const prjId = parts[6];
     if (!fenixMind) {
-      sendError(res, 503, 'FÊNIX MIND não inicializado');
+      sendError(res, 503, 'FÃŠNIX MIND nÃ£o inicializado');
       return true;
     }
     const mem = fenixMind.memory.projectMemories.get(prjId) || { projectId: prjId, patterns: [] };
@@ -1358,7 +1356,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 35. GET /api/v2/mind/models (Get Multi-Model Router Registry)
   if (req.method === 'GET' && url.pathname === '/api/v2/mind/models') {
     if (!fenixMind) {
-      sendError(res, 503, 'FÊNIX MIND não inicializado');
+      sendError(res, 503, 'FÃŠNIX MIND nÃ£o inicializado');
       return true;
     }
     const models = Array.from(fenixMind.modelRegistry.values());
@@ -1377,7 +1375,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!fenixMind) throw new Error('FÊNIX MIND não inicializado');
+        if (!fenixMind) throw new Error('FÃŠNIX MIND nÃ£o inicializado');
         const report = await fenixMind.executeWebResearch(payload.query || 'React Architecture');
         sendJson(res, 200, { success: true, report });
       } catch (err) {
@@ -1411,7 +1409,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!voiceGateway) throw new Error('Alexa Voice Gateway não inicializado');
+        if (!voiceGateway) throw new Error('Alexa Voice Gateway nÃ£o inicializado');
         const response = await voiceGateway.handleAlexaRequest(payload, req.headers);
         sendJson(res, 200, response);
       } catch (err) {
@@ -1424,7 +1422,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 38b. GET /api/v2/voice/alexa/status (Observability & Metrics)
   if (req.method === 'GET' && url.pathname === '/api/v2/voice/alexa/status') {
     if (!voiceGateway) {
-      sendError(res, 503, 'Alexa Voice Gateway não inicializado');
+      sendError(res, 503, 'Alexa Voice Gateway nÃ£o inicializado');
       return true;
     }
     sendJson(res, 200, voiceGateway.getObservabilityStatus());
@@ -1450,7 +1448,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!visionAgent) throw new Error('Vision Agent não inicializado');
+        if (!visionAgent) throw new Error('Vision Agent nÃ£o inicializado');
         const inspection = await visionAgent.inspectElement(payload);
         sendJson(res, 200, { success: true, inspection });
       } catch (err) {
@@ -1467,7 +1465,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!visionAgent) throw new Error('Vision Agent não inicializado');
+        if (!visionAgent) throw new Error('Vision Agent nÃ£o inicializado');
         const result = await visionAgent.applyVisualChange(payload);
         sendJson(res, 200, result);
       } catch (err) {
@@ -1485,7 +1483,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       try {
         const payload = JSON.parse(body || '{}');
         const { actionType, params = {}, userConsentGranted = false } = payload;
-        if (!computerAgent) throw new Error('Computer Control Agent não inicializado');
+        if (!computerAgent) throw new Error('Computer Control Agent nÃ£o inicializado');
         const result = await computerAgent.executeAction({
           actionType,
           params,
@@ -1503,7 +1501,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 42. GET /api/v2/computer/audit-log (Audit Trail)
   if (req.method === 'GET' && url.pathname === '/api/v2/computer/audit-log') {
     if (!computerAgent) {
-      sendError(res, 503, 'Computer Control Agent não inicializado');
+      sendError(res, 503, 'Computer Control Agent nÃ£o inicializado');
       return true;
     }
     sendJson(res, 200, { total: computerAgent.auditLog.length, logs: computerAgent.auditLog });
@@ -1517,7 +1515,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        if (!deviceManager) throw new Error('Device Manager nÃ£o inicializado');
         const reg = await deviceManager.registerDevice(payload);
         sendJson(res, 200, reg);
       } catch (err) {
@@ -1534,7 +1532,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        if (!deviceManager) throw new Error('Device Manager nÃ£o inicializado');
         const ch = deviceManager.createAuthChallenge(payload.deviceId);
         sendJson(res, 200, ch);
       } catch (err) {
@@ -1551,7 +1549,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        if (!deviceManager) throw new Error('Device Manager nÃ£o inicializado');
         const tokenRes = deviceManager.verifyAuthChallenge(payload.nonce, payload.signature);
         sendJson(res, 200, tokenRes);
       } catch (err) {
@@ -1564,7 +1562,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 46. GET /api/v2/devices (List Registered Devices)
   if (req.method === 'GET' && url.pathname === '/api/v2/devices') {
     if (!deviceManager) {
-      sendError(res, 503, 'Device Manager não inicializado');
+      sendError(res, 503, 'Device Manager nÃ£o inicializado');
       return true;
     }
     const devList = Array.from(deviceManager.devices.values());
@@ -1582,12 +1580,12 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     const parts = url.pathname.split('/');
     const devId = parts[4];
     if (!deviceManager) {
-      sendError(res, 503, 'Device Manager não inicializado');
+      sendError(res, 503, 'Device Manager nÃ£o inicializado');
       return true;
     }
     const dev = deviceManager.devices.get(devId);
     if (!dev) {
-      sendError(res, 404, `Dispositivo ${devId} não encontrado`);
+      sendError(res, 404, `Dispositivo ${devId} nÃ£o encontrado`);
       return true;
     }
     sendJson(res, 200, { success: true, device: dev });
@@ -1603,7 +1601,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        if (!deviceManager) throw new Error('Device Manager nÃ£o inicializado');
         const hb = await deviceManager.recordHeartbeat(devId, payload);
         sendJson(res, 200, hb);
       } catch (err) {
@@ -1622,7 +1620,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        if (!deviceManager) throw new Error('Device Manager nÃ£o inicializado');
         const execRes = await deviceManager.executeOnDevice(devId, {
           ...payload,
           actor: context.actorId || 'operator:web_ui'
@@ -1644,7 +1642,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        if (!deviceManager) throw new Error('Device Manager nÃ£o inicializado');
         const permRes = deviceManager.updatePermissions(devId, payload.permissions);
         sendJson(res, 200, permRes);
       } catch (err) {
@@ -1659,7 +1657,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     const parts = url.pathname.split('/');
     const devId = parts[4];
     if (!deviceManager) {
-      sendError(res, 503, 'Device Manager não inicializado');
+      sendError(res, 503, 'Device Manager nÃ£o inicializado');
       return true;
     }
     try {
@@ -1678,7 +1676,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!deviceManager) throw new Error('Device Manager não inicializado');
+        if (!deviceManager) throw new Error('Device Manager nÃ£o inicializado');
         const resStop = deviceManager.setEmergencyStop(payload.active !== false);
         sendJson(res, 200, { success: true, ...resStop });
       } catch (err) {
@@ -1695,7 +1693,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const sess = androidRemoteManager.createPairingSession(payload);
         sendJson(res, 200, sess);
       } catch (err) {
@@ -1712,7 +1710,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const claimRes = await androidRemoteManager.claimPairingSession(payload.pairingCode, payload);
         sendJson(res, 200, claimRes);
       } catch (err) {
@@ -1727,7 +1725,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     const parts = url.pathname.split('/');
     const devId = parts[5];
     if (!androidRemoteManager) {
-      sendError(res, 503, 'Android Remote Manager não inicializado');
+      sendError(res, 503, 'Android Remote Manager nÃ£o inicializado');
       return true;
     }
     try {
@@ -1748,7 +1746,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const frameRes = androidRemoteManager.updateScreenFrame(devId, payload);
         sendJson(res, 200, frameRes);
       } catch (err) {
@@ -1767,7 +1765,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const streamRes = androidRemoteManager.setStreamControl(devId, payload);
         sendJson(res, 200, streamRes);
       } catch (err) {
@@ -1786,7 +1784,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const inputRes = await androidRemoteManager.dispatchInputEvent(devId, payload);
         sendJson(res, 200, inputRes);
       } catch (err) {
@@ -1801,7 +1799,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     const parts = url.pathname.split('/');
     const devId = parts[5];
     if (!androidRemoteManager) {
-      sendError(res, 503, 'Android Remote Manager não inicializado');
+      sendError(res, 503, 'Android Remote Manager nÃ£o inicializado');
       return true;
     }
     try {
@@ -1822,7 +1820,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const treeRes = androidRemoteManager.updateAccessibilityTree(devId, payload);
         sendJson(res, 200, treeRes);
       } catch (err) {
@@ -1841,7 +1839,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const visRes = await androidRemoteManager.analyzeMobileScreenRegion(devId, payload);
         sendJson(res, 200, visRes);
       } catch (err) {
@@ -1858,7 +1856,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const grp = androidRemoteManager.createDeviceGroup(payload.name || 'Frota Mobile', payload.devices || []);
         sendJson(res, 200, grp);
       } catch (err) {
@@ -1877,7 +1875,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        if (!androidRemoteManager) throw new Error('Android Remote Manager não inicializado');
+        if (!androidRemoteManager) throw new Error('Android Remote Manager nÃ£o inicializado');
         const dagRes = await androidRemoteManager.executeMultiDeviceJob(grpId, payload);
         sendJson(res, 200, dagRes);
       } catch (err) {
@@ -1888,7 +1886,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   }
 
   // ========================================================================
-  // LEVEL 10 — TOKEN ECONOMY ENGINE ROUTES
+  // LEVEL 10 â€” TOKEN ECONOMY ENGINE ROUTES
   // ========================================================================
 
   // 64. GET /api/v2/economy/report (Dev Efficiency Score & Token Metrics)
@@ -1936,7 +1934,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   }
 
   // ========================================================================
-  // LEVEL 10 — CONTEXT ASSEMBLER ROUTES
+  // LEVEL 10 â€” CONTEXT ASSEMBLER ROUTES
   // ========================================================================
 
   // 68. POST /api/v2/context/build (Build Targeted Context Package)
@@ -1959,7 +1957,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   }
 
   // ========================================================================
-  // LEVEL 10 — MODEL ROUTER ROUTES
+  // LEVEL 10 â€” MODEL ROUTER ROUTES
   // ========================================================================
 
   // 69. POST /api/v2/model-router/route (Route Task to Optimal Model)
@@ -1986,7 +1984,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   }
 
   // ========================================================================
-  // LEVEL 10 — FRONTEND REALITY ENGINE ROUTES
+  // LEVEL 10 â€” FRONTEND REALITY ENGINE ROUTES
   // ========================================================================
 
   // 71. POST /api/v2/frontend-reality/scan (Full Project Screen Discovery)
@@ -2071,7 +2069,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   }
 
   // ========================================================================
-  // LEVEL 10 — CONNECTION BROKER ROUTES
+  // LEVEL 10 â€” CONNECTION BROKER ROUTES
   // ========================================================================
 
   // 79. GET /api/v2/connections (List All Connections)
@@ -2173,7 +2171,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   }
 
   // ========================================================================
-  // LEVEL 10 — DEVELOPMENT MEMORY & LEARNING ENGINE ROUTES
+  // LEVEL 10 â€” DEVELOPMENT MEMORY & LEARNING ENGINE ROUTES
   // ========================================================================
 
   // 86. GET /api/v2/memory/development (Get Memory Stats & Patterns)

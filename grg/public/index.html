@@ -1,1503 +1,289 @@
-<!doctype html>
-<html lang="pt-BR" class="dark">
+﻿<!doctype html>
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#06090e">
-  <title>FÊNIX OS v2.1.0 — AI City & Next-Gen Intelligent IDE</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#080b10">
+  <title>FENIX OS | Unified Workspace</title>
+  <link rel="stylesheet" href="/design-system.css">
   <link rel="stylesheet" href="/unified.css">
+  <link rel="stylesheet" href="/fenix.css">
+  <link rel="stylesheet" href="/living-panels.css">
+  <link rel="stylesheet" href="/city-overrides.css">
+  <link rel="stylesheet" href="/office.css">
 </head>
 <body>
-  <div id="app" class="app-container">
-    <!-- ========================================================= -->
-    <!-- TOP HEADER: SYSTEM STATUS & REAL AI PLATFORM TELEMETRY    -->
-    <!-- ========================================================= -->
-    <header class="fenix-topbar">
-      <div class="topbar-left">
-        <a class="brand-logo" href="#city" title="FÊNIX OS v2.1.0">
-          <div class="phoenix-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2L4 9l8 13 8-13-8-7z"/>
-              <path d="M12 2v20"/>
-              <path d="M4 9h16"/>
-              <path d="M7.5 5.5l9 7"/>
-              <path d="M16.5 5.5l-9 7"/>
-            </svg>
-          </div>
-          <div class="brand-titles">
-            <span class="brand-name">FÊNIX OS</span>
-            <span class="brand-version">v2.1.0</span>
-          </div>
-        </a>
-
-        <div class="status-badge-group">
-          <!-- AI Platform Badge -->
-          <div class="telemetry-pill live-connected" id="topAiPlatformBadge" title="AI Platform Gateway Real na VPS 209.50.241.215">
-            <span class="pulse-indicator"></span>
-            <div class="pill-info">
-              <span class="pill-label">AI Platform</span>
-              <span class="pill-value text-emerald" id="topAiStatus">CONNECTED</span>
-            </div>
-            <span class="pill-tag">209.50.241.215:80</span>
-          </div>
-
-          <!-- Active Model Badge -->
-          <div class="telemetry-pill" title="Modelo de inferência ativo">
-            <div class="pill-info">
-              <span class="pill-label">Modelo Ativo:</span>
-              <span class="pill-value text-cyan" id="topActiveModel">qwen2.5:3b</span>
-            </div>
-          </div>
-
-          <!-- Latency Badge -->
-          <div class="telemetry-pill" title="Latência de inferência medida">
-            <div class="pill-info">
-              <span class="pill-label">Latência:</span>
-              <span class="pill-value text-amber" id="topLatency">182ms</span>
-            </div>
-          </div>
-
-          <!-- Credits Badge -->
-          <div class="telemetry-pill" title="Créditos de inferência disponíveis">
-            <div class="pill-info">
-              <span class="pill-label">Créditos:</span>
-              <span class="pill-value text-emerald" id="topCredits">$2.430</span>
-            </div>
-          </div>
-
-          <!-- Agents Badge -->
-          <div class="telemetry-pill" title="Agentes especializados ativos">
-            <div class="pill-info">
-              <span class="pill-label">Agentes:</span>
-              <span class="pill-value text-cyan" id="topAgents">19/19</span>
-            </div>
-          </div>
-
-          <!-- System Health Badge -->
-          <div class="telemetry-pill system-health-pill" title="Saúde geral do sistema">
-            <div class="pill-info">
-              <span class="pill-label">Sistema:</span>
-              <span class="pill-value text-emerald">100% Saudável</span>
-            </div>
-          </div>
-
-          <!-- Voice & Alexa Gateway Badge -->
-          <div class="telemetry-pill live-connected" id="topVoiceGatewayBadge" title="Fênix Voice & Alexa Custom Skill Gateway Ativo">
-            <span class="pulse-indicator" style="background:#38bdf8;"></span>
-            <div class="pill-info">
-              <span class="pill-label">Voice / Alexa:</span>
-              <span class="pill-value text-cyan">ONLINE</span>
-            </div>
-          </div>
-        </div>
+  <div class="app-shell">
+    <aside class="rail" aria-label="Navegacao principal">
+      <a class="brand" href="#command" aria-label="FENIX OS">
+        <span class="brand-mark">F</span>
+        <span><b>FENIX OS</b><small>Unified Workspace</small></span>
+      </a>
+      <div class="rail-status">
+        <i id="statusDot"></i>
+        <span><b id="statusText">Conectando</b><small id="statusSub">runtime</small></span>
       </div>
+      <nav id="navList" class="nav-list">
+        <button class="active" data-nav="command" type="button"><span>CM</span> Comando</button>
+        <button data-nav="runtime" type="button"><span>RT</span> Runtime</button>
+        <button data-nav="agents" type="button"><span>AG</span> Agentes</button>
+        <button data-nav="workspace" type="button"><span>WS</span> Workspace</button>
+        <button data-nav="knowledge" type="button"><span>KG</span> Knowledge</button>
+        <button data-nav="connectors" type="button"><span>CN</span> Conectores</button>
+        <button data-nav="observability" type="button"><span>OB</span> Observabilidade</button>
+      </nav>
+      <button id="logoutBtn" class="ghost-btn" type="button">Sair</button>
+    </aside>
 
-      <div class="topbar-right">
-        <!-- Action Buttons -->
-        <button class="topbar-icon-btn" id="audioAmbientBtn" title="Som Ambiente Cyberpunk" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        </button>
-        <button class="topbar-icon-btn" id="liveRefreshBtn" title="Atualizar Runtime e Métricas" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-        </button>
-        <button class="topbar-icon-btn" id="fullscreenToggleBtn" title="Tela Cheia" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-        </button>
-
-        <!-- User Profile Pill -->
-        <div class="user-profile-pill" id="userProfileBadge">
-          <div class="user-avatar">
-            <span>GA</span>
-            <span class="user-online-dot"></span>
-          </div>
-          <div class="user-meta">
-            <span class="user-name" id="topUserName">grg-admin</span>
-            <span class="user-role-badge">MASTER ADMIN</span>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="main-layout">
-      <!-- ========================================================= -->
-      <!-- LEFT SIDEBAR: NAVIGATION & QUICK ACTIONS                  -->
-      <!-- ========================================================= -->
-      <aside class="fenix-sidebar" id="fenixSidebar">
-        <div class="sidebar-section">
-          <span class="section-title">NAVEGAÇÃO</span>
-          <nav class="nav-menu">
-            <button class="nav-item active" data-view="city" type="button">
-              <span class="nav-icon">🏙️</span>
-              <span class="nav-text">Cidade</span>
-              <span class="nav-chip live-chip">3D</span>
-            </button>
-            <button class="nav-item" data-view="ide" type="button">
-              <span class="nav-icon">💻</span>
-              <span class="nav-text">IDE</span>
-              <span class="nav-chip hot-chip">Pro</span>
-            </button>
-            <button class="nav-item" data-view="operations" type="button">
-              <span class="nav-icon">⚡</span>
-              <span class="nav-text">Operações 24/7</span>
-              <span class="nav-chip live-chip" id="opsApprovalsCount">JARVIS</span>
-            </button>
-            <button class="nav-item" data-view="projects" type="button">
-              <span class="nav-icon">📁</span>
-              <span class="nav-text">Projetos</span>
-              <span class="nav-count" id="navProjectsCount">1</span>
-            </button>
-            <button class="nav-item" data-view="agents" type="button">
-              <span class="nav-icon">🤖</span>
-              <span class="nav-text">Agentes</span>
-              <span class="nav-count">19</span>
-            </button>
-            <button class="nav-item" data-view="metrics" type="button">
-              <span class="nav-icon">📊</span>
-              <span class="nav-text">Métricas</span>
-            </button>
-            <button class="nav-item" data-view="dna" type="button">
-              <span class="nav-icon">🧬</span>
-              <span class="nav-text">DNA</span>
-              <span class="nav-chip">4-DNA</span>
-            </button>
-            <button class="nav-item" data-view="memory" type="button">
-              <span class="nav-icon">🧠</span>
-              <span class="nav-text">Memória</span>
-            </button>
-            <button class="nav-item" data-view="settings" type="button">
-              <span class="nav-icon">⚙️</span>
-              <span class="nav-text">Configurações</span>
-            </button>
-            <button class="nav-item" data-view="marketplace" type="button">
-              <span class="nav-icon">🛒</span>
-              <span class="nav-text">Marketplace</span>
-            </button>
-            <button class="nav-item" data-view="docs" type="button">
-              <span class="nav-icon">📖</span>
-              <span class="nav-text">Documentação</span>
-            </button>
-          </nav>
-        </div>
-
-        <div class="sidebar-section">
-          <span class="section-title">ATALHOS RÁPIDOS</span>
-          <div class="quick-shortcuts">
-            <button class="shortcut-item" id="quickOpenIde" type="button">
-              <span class="shortcut-icon">💻</span>
-              <span class="shortcut-label">Abrir IDE</span>
-              <kbd>⌥ I</kbd>
-            </button>
-            <button class="shortcut-item" id="quickNewProject" type="button">
-              <span class="shortcut-icon">➕</span>
-              <span class="shortcut-label">Novo Projeto</span>
-              <kbd>⌥ N</kbd>
-            </button>
-            <button class="shortcut-item" id="quickFenixChat" type="button">
-              <span class="shortcut-icon">💬</span>
-              <span class="shortcut-label">Fênix Chat</span>
-              <kbd>⌥ X</kbd>
-            </button>
-            <button class="shortcut-item" id="quickRelease" type="button">
-              <span class="shortcut-icon">🚀</span>
-              <span class="shortcut-label">Gerar Release</span>
-              <kbd>⌥ R</kbd>
-            </button>
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <h1 id="viewTitle">Comando</h1>
+          <div class="kpi-strip">
+            <span class="kpi"><b>Projetos:</b> <span id="kpiProjects">--</span></span>
+            <span class="kpi"><b>Repos:</b> <span id="kpiRepos">--</span></span>
+            <span class="kpi"><b>Jobs:</b> <span id="kpiJobs">--</span></span>
+            <span class="kpi"><b>IA Calls:</b> <span id="kpiAi">--</span></span>
           </div>
         </div>
-
-        <div class="sidebar-footer">
-          <button class="collapse-sidebar-btn" id="collapseSidebarBtn" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
-            <span>COLLAPSE</span>
-          </button>
-        </div>
-      </aside>
-
-      <!-- ========================================================= -->
-      <!-- MAIN WORKSPACE CONTENT VIEWS                              -->
-      <!-- ========================================================= -->
-      <main class="workspace-area">
-
-        <!-- ======================================================= -->
-        <!-- VIEW 1: 🏙️ FÊNIX AI CITY (ISOMETRIC / 3D DIGITAL CITY) -->
-        <!-- ======================================================= -->
-        <section id="view-city" class="workspace-view active">
-          <!-- AI City Subheader -->
-          <div class="city-header-bar">
-            <div class="city-title-wrapper">
-              <div class="view-tag-badge">1. PÁGINA PRINCIPAL — CIDADE INTERATIVA</div>
-              <div class="city-title-row">
-                <h2>FÊNIX AI CITY</h2>
-                <p class="city-subtitle">Cidade Digital Autônoma • Agentes constroem, operam e evoluem projetos em tempo real</p>
-              </div>
-            </div>
-
-            <!-- View & Camera Controls -->
-            <div class="city-controls">
-              <div class="toggle-group">
-                <button class="toggle-btn" id="cityToggle2D" type="button">2D</button>
-                <button class="toggle-btn active" id="cityToggle3D" type="button">3D</button>
-              </div>
-              <button class="city-ctrl-btn" id="cityZoomIn" title="Aproximar Zoom" type="button">🔍+</button>
-              <button class="city-ctrl-btn" id="cityZoomOut" title="Afastar Zoom" type="button">🔍-</button>
-              <button class="city-ctrl-btn" id="cityResetCam" title="Centralizar Câmera" type="button">🎯 Reset</button>
-              <button class="city-ctrl-btn" id="cityDayNightToggle" title="Modo Noite / Cyberpunk" type="button">🌙 Modo Cyber</button>
-            </div>
+        <div class="avatar-panel">
+          <div class="avatar-badge">
+            <b id="actorName">--</b>
+            <small id="actorRole">--</small>
           </div>
-
-          <!-- KPI Summary Strip -->
-          <div class="city-kpi-strip">
-            <div class="kpi-card">
-              <span class="kpi-icon">🏢</span>
-              <div class="kpi-meta">
-                <span class="kpi-label">Edifícios Ativos</span>
-                <span class="kpi-value text-cyan" id="kpiBuildings">24</span>
-              </div>
-            </div>
-            <div class="kpi-card">
-              <span class="kpi-icon">📁</span>
-              <div class="kpi-meta">
-                <span class="kpi-label">Projetos</span>
-                <span class="kpi-value text-blue" id="kpiProjects">12</span>
-              </div>
-            </div>
-            <div class="kpi-card">
-              <span class="kpi-icon">🤖</span>
-              <div class="kpi-meta">
-                <span class="kpi-label">Agentes Online</span>
-                <span class="kpi-value text-amber" id="kpiOnlineAgents">19</span>
-              </div>
-            </div>
-            <div class="kpi-card">
-              <span class="kpi-icon">📋</span>
-              <div class="kpi-meta">
-                <span class="kpi-label">Tarefas Hoje</span>
-                <span class="kpi-value text-emerald" id="kpiTasksToday">156</span>
-              </div>
-            </div>
-            <div class="kpi-card">
-              <span class="kpi-icon">⚡</span>
-              <div class="kpi-meta">
-                <span class="kpi-label">Eventos</span>
-                <span class="kpi-value text-purple" id="kpiEventsTotal">482</span>
-              </div>
-            </div>
-            <div class="kpi-card health-kpi">
-              <span class="kpi-icon">💚</span>
-              <div class="kpi-meta">
-                <span class="kpi-label">Status Geral</span>
-                <span class="kpi-value text-emerald">Saudável</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- City Main Layout Split: 3D Stage + Lateral JARVIS Assistant -->
-          <div class="city-main-split">
-            <!-- Main Interactive City Stage -->
-            <div class="city-stage-container" id="cityStageContainer">
-              <canvas id="cityCanvas" class="city-canvas"></canvas>
-
-              <!-- Holographic Interactive Building Markers Overlay -->
-              <div class="city-markers-layer" id="cityMarkersLayer">
-                <!-- Building 1: Software Factory -->
-                <div class="building-card-pin" style="left: 20%; top: 32%;" data-building="factory">
-                  <div class="pin-beacon"></div>
-                  <div class="pin-card">
-                    <div class="pin-header">
-                      <span class="pin-icon">🏢</span>
-                      <span class="pin-title">SOFTWARE FACTORY</span>
-                    </div>
-                    <div class="pin-desc">Building • 4 agentes</div>
-                    <div class="pin-status-bar"><div class="fill" style="width: 85%;"></div></div>
-                  </div>
-                </div>
-
-                <!-- Building 2: Data Center -->
-                <div class="building-card-pin" style="left: 28%; top: 58%;" data-building="datacenter">
-                  <div class="pin-beacon"></div>
-                  <div class="pin-card">
-                    <div class="pin-header">
-                      <span class="pin-icon">🗄️</span>
-                      <span class="pin-title">DATA CENTER</span>
-                    </div>
-                    <div class="pin-desc">Infra • 3 agentes</div>
-                    <div class="pin-status-bar"><div class="fill" style="width: 92%;"></div></div>
-                  </div>
-                </div>
-
-                <!-- Building 3: Agent District -->
-                <div class="building-card-pin" style="left: 45%; top: 18%;" data-building="district">
-                  <div class="pin-beacon"></div>
-                  <div class="pin-card">
-                    <div class="pin-header">
-                      <span class="pin-icon">🏛️</span>
-                      <span class="pin-title">AGENT DISTRICT</span>
-                    </div>
-                    <div class="pin-desc">19/19 online</div>
-                    <div class="pin-status-bar"><div class="fill" style="width: 100%;"></div></div>
-                  </div>
-                </div>
-
-                <!-- Building 4: Project Tower -->
-                <div class="building-card-pin" style="left: 68%; top: 26%;" data-building="tower">
-                  <div class="pin-beacon"></div>
-                  <div class="pin-card">
-                    <div class="pin-header">
-                      <span class="pin-icon">🗼</span>
-                      <span class="pin-title">PROJECT TOWER</span>
-                    </div>
-                    <div class="pin-desc">Execução • Workspaces</div>
-                    <div class="pin-status-bar"><div class="fill" style="width: 80%;"></div></div>
-                  </div>
-                </div>
-
-                <!-- Building 5: Marketplace -->
-                <div class="building-card-pin" style="left: 60%; top: 56%;" data-building="marketplace">
-                  <div class="pin-beacon"></div>
-                  <div class="pin-card">
-                    <div class="pin-header">
-                      <span class="pin-icon">🏪</span>
-                      <span class="pin-title">MARKETPLACE</span>
-                    </div>
-                    <div class="pin-desc">Templates + Skills</div>
-                    <div class="pin-status-bar"><div class="fill" style="width: 70%;"></div></div>
-                  </div>
-                </div>
-
-                <!-- Building 6: Energy Plant -->
-                <div class="building-card-pin" style="left: 38%; top: 76%;" data-building="energy">
-                  <div class="pin-beacon"></div>
-                  <div class="pin-card">
-                    <div class="pin-header">
-                      <span class="pin-icon">⚡</span>
-                      <span class="pin-title">ENERGY PLANT</span>
-                    </div>
-                    <div class="pin-desc">AI Compute • 98%</div>
-                    <div class="pin-status-bar"><div class="fill" style="width: 98%;"></div></div>
-                  </div>
-                </div>
-
-                <!-- Central Phoenix Monument -->
-                <div class="monument-pin" style="left: 46%; top: 44%;" data-building="monument" title="Núcleo Central FÊNIX">
-                  <div class="monument-glow"></div>
-                  <div class="monument-phoenix">🔥</div>
-                </div>
-              </div>
-
-              <!-- Floating Live Events Stream Card -->
-              <div class="floating-events-card">
-                <div class="events-card-header">
-                  <div class="events-header-title">
-                    <span class="pulse-emerald-dot"></span>
-                    <span>EVENTOS EM TEMPO REAL</span>
-                  </div>
-                  <span class="events-refresh-badge">Live Feed</span>
-                </div>
-                <div class="events-list" id="cityEventsFeed">
-                  <div class="event-feed-item">
-                    <span class="agent-avatar-icon">ℹ️</span>
-                    <div class="event-text">Conectando ao EventBus...</div>
-                  </div>
-                </div>
-                <div class="events-card-footer">
-                  <button class="events-more-btn" id="seeAllEventsBtn" type="button">⚡ Atualização contínua 24/7</button>
-                </div>
-              </div>
-
-              <!-- Floating Map Navigation Compass / Zoom Controls -->
-              <div class="city-nav-hud">
-                <button class="hud-circle-btn" id="hudCompass" title="Centralizar Norte" type="button">🧭</button>
-                <div class="hud-quick-layers">
-                  <button class="hud-pill-btn active" data-layer="all" type="button">Todos</button>
-                  <button class="hud-pill-btn" data-layer="agents" type="button">Agentes</button>
-                  <button class="hud-pill-btn" data-layer="traffic" type="button">Tráfego</button>
-                  <button class="hud-pill-btn" data-layer="energy" type="button">Energia</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Persistent Lateral JARVIS Assistant Panel -->
-            <aside class="city-jarvis-sidebar" id="cityJarvisSidebar">
-              <div class="jarvis-sidebar-header">
-                <div class="jarvis-agent-badge">
-                  <div class="jarvis-pulse-avatar">🔥</div>
-                  <div>
-                    <div class="jarvis-title">FÊNIX JARVIS</div>
-                    <div class="jarvis-status">● Assistente Operacional 24/7</div>
-                  </div>
-                </div>
-                <button class="jarvis-minimize-btn" id="toggleJarvisSideBtn" type="button" title="Minimizar / Expandir">⇄</button>
-              </div>
-
-              <div class="jarvis-quick-metrics">
-                <div class="q-metric"><span class="q-lbl">Jobs:</span> <b id="sideMetricJobs">0</b></div>
-                <div class="q-metric"><span class="q-lbl">DAG Tasks:</span> <b id="sideMetricTasks">0</b></div>
-                <div class="q-metric"><span class="q-lbl">Agentes:</span> <b class="text-emerald" id="sideMetricAgents">19</b></div>
-              </div>
-
-              <div class="jarvis-messages-feed" id="cityJarvisMessagesFeed">
-                <div class="chat-msg msg-assistant">
-                  <div class="msg-header">
-                    <div class="msg-avatar">🔥</div>
-                    <span class="msg-author">FÊNIX JARVIS</span>
-                    <span class="msg-status-dot"></span>
-                    <span class="msg-badge">Online</span>
-                  </div>
-                  <div class="msg-body">
-                    Olá! Estou monitorando os sistemas 24/7. Peça qualquer tarefa, correção de bugs, criação de APIs ou orquestração de projetos.
-                  </div>
-                </div>
-              </div>
-
-              <div class="jarvis-composer-box">
-                <div class="jarvis-chips-row">
-                  <button class="jarvis-chip" type="button" data-cmd="Analise todos os projetos e me informe o status de saúde">🔍 Saúde Projetos</button>
-                  <button class="jarvis-chip" type="button" data-cmd="Crie um novo módulo no projeto ativo">➕ Novo Módulo</button>
-                  <button class="jarvis-chip" type="button" data-cmd="Dispare o ciclo de observação e testes 24/7">⚡ Executar Testes</button>
-                </div>
-                <form class="jarvis-input-form" id="cityJarvisForm">
-                  <input type="text" class="jarvis-text-input" id="cityJarvisInput" placeholder="Peça uma tarefa para o FÊNIX..." autocomplete="off">
-                  <button class="jarvis-send-btn" type="submit">Enviar</button>
-                </form>
-              </div>
-            </aside>
-          </div>
-        </section>
-
-        <!-- ======================================================= -->
-        <!-- VIEW 2: 💻 IDE — AMBIENTE COMPLETO (LOVABLE STYLE)        -->
-        <!-- ======================================================= -->
-        <section id="view-ide" class="workspace-view">
-          <div class="ide-container">
-            <!-- IDE Subheader -->
-            <div class="ide-sub-header">
-              <div class="view-tag-badge">2. IDE — CHAT + EDIÇÃO VISUAL INTELIGENTE</div>
-              <div class="ide-title-meta">
-                <span class="project-indicator">Projeto Ativo: <b>fenix-sales-dashboard</b></span>
-                <span class="branch-pill">🌿 fenix/finalization-real-ai-platform</span>
-                <span class="framework-pill">⚛️ React + Tailwind CSS</span>
-              </div>
-            </div>
-
-            <!-- 3-Panel IDE Main Grid -->
-            <div class="ide-grid">
-
-              <!-- ================================================= -->
-              <!-- PANEL 1: FÊNIX CHAT LATERAL INTELIGENTE           -->
-              <!-- ================================================= -->
-              <div class="ide-chat-panel">
-                <div class="chat-tab-header">
-                  <button class="chat-tab-btn active" data-tab="chat" type="button">💬 Chat</button>
-                  <button class="chat-tab-btn" data-tab="history" type="button">📜 Histórico</button>
-                  <button class="chat-tab-btn" data-tab="agents" type="button">🤖 Agentes</button>
-                  <button class="chat-tab-btn" data-tab="memory" type="button">🧠 Memória</button>
-                </div>
-
-                <div class="chat-messages-container" id="ideChatMessages">
-                  <!-- Message 1 (Fênix AI) -->
-                  <div class="chat-msg msg-assistant">
-                    <div class="msg-header">
-                      <div class="msg-avatar">🔥</div>
-                      <span class="msg-author">FÊNIX AI</span>
-                      <span class="msg-status-dot"></span>
-                      <span class="msg-badge">Online</span>
-                    </div>
-                    <div class="msg-body">
-                      Olá! Como posso ajudar no desenvolvimento do seu projeto hoje?
-                    </div>
-                  </div>
-
-                  <!-- Message 2 (User) -->
-                  <div class="chat-msg msg-user">
-                    <div class="msg-header">
-                      <div class="msg-avatar">👤</div>
-                      <span class="msg-author">Você</span>
-                    </div>
-                    <div class="msg-body">
-                      Crie um dashboard moderno para métricas de vendas com gráfico, cards e tabela responsiva.
-                    </div>
-                  </div>
-
-                  <!-- Message 3 (Fênix AI Response) -->
-                  <div class="chat-msg msg-assistant">
-                    <div class="msg-header">
-                      <div class="msg-avatar">🔥</div>
-                      <span class="msg-author">FÊNIX AI</span>
-                      <span class="msg-status-dot"></span>
-                      <span class="msg-badge">Online</span>
-                    </div>
-                    <div class="msg-body">
-                      <p>Perfeito! Vou criar um dashboard moderno com:</p>
-                      <ul class="feature-checklist">
-                        <li>✅ Cards de métricas com variação percentual</li>
-                        <li>✅ Gráfico de evolução de vendas comparativo</li>
-                        <li>✅ Tabela responsiva com status badges</li>
-                        <li>✅ Design premium com Tailwind CSS e Dark Mode</li>
-                      </ul>
-                      <div class="msg-action-box">
-                        <span class="action-spinner"></span>
-                        <span class="action-text">Código gerado e renderizado no Editor Visual com sincronização bidirecional.</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Chat Composer -->
-                <div class="chat-composer-area">
-                  <div class="quick-prompt-chips">
-                    <button class="prompt-chip" type="button" data-prompt="Adicione filtro por período mensal/anual no dashboard">📅 Filtro Período</button>
-                    <button class="prompt-chip" type="button" data-prompt="Conecte a tabela com API real de pedidos">🔌 Conectar API</button>
-                    <button class="prompt-chip" type="button" data-prompt="Exporte os dados do dashboard em CSV/PDF">📥 Exportar CSV</button>
-                  </div>
-                  <form class="chat-input-form" id="ideChatForm">
-                    <textarea class="chat-input" id="ideChatInput" placeholder="Digite sua mensagem para o FÊNIX..." rows="2"></textarea>
-                    <div class="composer-actions-bar">
-                      <div class="composer-left-tools">
-                        <button class="tool-icon-btn" type="button" title="Anexar Arquivo">📎</button>
-                        <button class="tool-icon-btn" type="button" title="Usar Voz">🎙️</button>
-                        <button class="tool-icon-btn" type="button" title="Inserir Snippet">⚡</button>
-                      </div>
-                      <button class="send-btn" type="submit" id="ideSendBtn">
-                        <span>Enviar</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-
-              <!-- ================================================= -->
-              <!-- PANEL 2: EDITOR VISUAL (PREVIEW INTERATIVO)       -->
-              <!-- ================================================= -->
-              <div class="ide-visual-panel">
-                <!-- Visual Toolbar -->
-                <div class="visual-toolbar">
-                  <div class="toolbar-left">
-                    <span class="toolbar-title">EDITOR VISUAL</span>
-                    <div class="device-preset-group">
-                      <button class="device-btn active" data-res="1280" type="button" title="Desktop">🖥️ 1280px</button>
-                      <button class="device-btn" data-res="768" type="button" title="Tablet">📱 768px</button>
-                      <button class="device-btn" data-res="375" type="button" title="Mobile">📱 375px</button>
-                      <button class="device-btn" data-res="100%" type="button" title="Fluid">↔️ 100%</button>
-                    </div>
-                  </div>
-
-                  <div class="toolbar-center">
-                    <div class="view-mode-group">
-                      <button class="mode-btn active" data-mode="visual" type="button">Visual</button>
-                      <button class="mode-btn" data-mode="code" type="button">Código</button>
-                      <button class="mode-btn" data-mode="split" type="button">Split</button>
-                      <button class="mode-btn" data-mode="preview" type="button">Preview</button>
-                    </div>
-                  </div>
-
-                  <div class="toolbar-right">
-                    <button class="action-btn-ghost" id="inspectElementBtn" type="button" title="Inspecionar e Mapear Elemento">🔍 Inspecionar</button>
-                    <button class="action-btn-primary" id="saveAndDeployBtn" type="button">💾 Salvar</button>
-                  </div>
-                </div>
-
-                <!-- Visual Canvas / Live Preview Container -->
-                <div class="visual-viewport-container" id="visualViewport">
-                  <div class="live-dashboard-preview" id="liveDashboardPreview">
-                    <!-- Dashboard Header -->
-                    <div class="dash-header" data-inspect-target="dash-header">
-                      <div class="dash-title-group">
-                        <h2 class="dash-title" contenteditable="true" data-inspect-target="dash-title">Dashboard de Vendas</h2>
-                        <p class="dash-subtitle" data-inspect-target="dash-subtitle">Visão geral do desempenho de receita e clientes</p>
-                      </div>
-                      <div class="dash-header-actions">
-                        <button class="dash-btn-outline" type="button">📥 Exportar</button>
-                        <button class="dash-btn-primary" type="button">➕ Novo Pedido</button>
-                      </div>
-                    </div>
-
-                    <!-- 4 Metric Cards Grid -->
-                    <div class="dash-metrics-grid" data-inspect-target="metrics-grid">
-                      <div class="metric-card" data-inspect-target="card-vendas">
-                        <div class="metric-head">
-                          <span class="metric-name">Vendas Totais</span>
-                          <span class="metric-badge-green">+12.5% vs mês anterior</span>
-                        </div>
-                        <div class="metric-number" id="valVendas">R$ 125.430</div>
-                      </div>
-
-                      <div class="metric-card" data-inspect-target="card-pedidos">
-                        <div class="metric-head">
-                          <span class="metric-name">Pedidos</span>
-                          <span class="metric-badge-green">+8.2% vs mês anterior</span>
-                        </div>
-                        <div class="metric-number" id="valPedidos">1.250</div>
-                      </div>
-
-                      <div class="metric-card" data-inspect-target="card-clientes">
-                        <div class="metric-head">
-                          <span class="metric-name">Clientes</span>
-                          <span class="metric-badge-green">+15.3% vs mês anterior</span>
-                        </div>
-                        <div class="metric-number" id="valClientes">850</div>
-                      </div>
-
-                      <div class="metric-card" data-inspect-target="card-ticket">
-                        <div class="metric-head">
-                          <span class="metric-name">Ticket Médio</span>
-                          <span class="metric-badge-green">+5.7% vs mês anterior</span>
-                        </div>
-                        <div class="metric-number" id="valTicket">R$ 100,34</div>
-                      </div>
-                    </div>
-
-                    <!-- Chart & Top Products Row -->
-                    <div class="dash-charts-row">
-                      <!-- Evolution Chart Card -->
-                      <div class="dash-card chart-card" data-inspect-target="chart-card">
-                        <div class="card-header-row">
-                          <span class="card-title">Evolução de Vendas</span>
-                          <div class="chart-legend">
-                            <span class="legend-item"><span class="dot dot-gray"></span> 2024</span>
-                            <span class="legend-item"><span class="dot dot-purple"></span> 2025</span>
-                          </div>
-                        </div>
-                        <div class="chart-canvas-wrapper">
-                          <svg class="sales-chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.35"/>
-                                <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0"/>
-                              </linearGradient>
-                            </defs>
-                            <!-- Grid lines -->
-                            <line x1="40" y1="30" x2="580" y2="30" stroke="#1f293d" stroke-dasharray="4"/>
-                            <line x1="40" y1="80" x2="580" y2="80" stroke="#1f293d" stroke-dasharray="4"/>
-                            <line x1="40" y1="130" x2="580" y2="130" stroke="#1f293d" stroke-dasharray="4"/>
-                            <line x1="40" y1="170" x2="580" y2="170" stroke="#1f293d"/>
-
-                            <!-- Area fill -->
-                            <path d="M 50 140 Q 100 110 150 135 T 250 80 T 350 120 T 450 70 T 560 90 L 560 170 L 50 170 Z" fill="url(#chartGrad)" />
-
-                            <!-- 2024 Gray Line -->
-                            <path d="M 50 150 Q 100 130 150 145 T 250 110 T 350 130 T 450 95 T 560 110" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="3"/>
-
-                            <!-- 2025 Purple Line -->
-                            <path d="M 50 140 Q 100 110 150 135 T 250 80 T 350 120 T 450 70 T 560 90" fill="none" stroke="#a78bfa" stroke-width="3.2"/>
-
-                            <!-- Data Points -->
-                            <circle cx="250" cy="80" r="5" fill="#a78bfa" stroke="#fff" stroke-width="2"/>
-                            <circle cx="450" cy="70" r="5" fill="#a78bfa" stroke="#fff" stroke-width="2"/>
-                          </svg>
-                        </div>
-                        <div class="chart-x-axis">
-                          <span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span><span>Jul</span><span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span>
-                        </div>
-                      </div>
-
-                      <!-- Top Products List Card -->
-                      <div class="dash-card top-products-card" data-inspect-target="top-products">
-                        <span class="card-title">Top Produtos</span>
-                        <div class="products-list">
-                          <div class="product-item">
-                            <div class="product-info"><span class="prod-icon">📦</span><span>Produto A</span></div>
-                            <b class="prod-val">R$ 45.230</b>
-                          </div>
-                          <div class="product-item">
-                            <div class="product-info"><span class="prod-icon">📦</span><span>Produto B</span></div>
-                            <b class="prod-val">R$ 32.150</b>
-                          </div>
-                          <div class="product-item">
-                            <div class="product-info"><span class="prod-icon">📦</span><span>Produto C</span></div>
-                            <b class="prod-val">R$ 18.400</b>
-                          </div>
-                          <div class="product-item">
-                            <div class="product-info"><span class="prod-icon">📦</span><span>Produto D</span></div>
-                            <b class="prod-val">R$ 12.600</b>
-                          </div>
-                          <div class="product-item">
-                            <div class="product-info"><span class="prod-icon">📦</span><span>Produto E</span></div>
-                            <b class="prod-val">R$ 7.000</b>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Recent Orders Table -->
-                    <div class="dash-card orders-card" data-inspect-target="orders-table">
-                      <span class="card-title">Últimos Pedidos</span>
-                      <div class="table-responsive">
-                        <table class="dash-table">
-                          <thead>
-                            <tr>
-                              <th>Pedido</th>
-                              <th>Cliente</th>
-                              <th>Produto</th>
-                              <th>Valor</th>
-                              <th>Data</th>
-                              <th>Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td><b>#12345</b></td>
-                              <td>João Silva</td>
-                              <td>Produto A</td>
-                              <td>R$ 1.250,00</td>
-                              <td>28/06/2026</td>
-                              <td><span class="badge-status badge-success">Concluído</span></td>
-                            </tr>
-                            <tr>
-                              <td><b>#12344</b></td>
-                              <td>Maria Santos</td>
-                              <td>Produto B</td>
-                              <td>R$ 890,00</td>
-                              <td>28/06/2026</td>
-                              <td><span class="badge-status badge-warning">Processando</span></td>
-                            </tr>
-                            <tr>
-                              <td><b>#12343</b></td>
-                              <td>Pedro Costa</td>
-                              <td>Produto C</td>
-                              <td>R$ 2.150,00</td>
-                              <td>28/06/2026</td>
-                              <td><span class="badge-status badge-success">Concluído</span></td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ================================================= -->
-              <!-- PANEL 3: EDITOR DE CÓDIGO + ARQUIVOS + TERMINAL   -->
-              <!-- ================================================= -->
-              <div class="ide-code-panel">
-                <!-- Upper Code Editor -->
-                <div class="code-editor-wrapper">
-                  <div class="code-tab-bar">
-                    <button class="code-tab active" data-file="Dashboard.tsx" type="button">
-                      <span class="tab-icon">⚛️</span>
-                      <span>Dashboard.tsx</span>
-                    </button>
-                    <button class="code-tab" data-file="api.ts" type="button">
-                      <span class="tab-icon">📄</span>
-                      <span>api.ts</span>
-                    </button>
-                    <button class="code-tab" data-file="styles.css" type="button">
-                      <span class="tab-icon">🎨</span>
-                      <span>styles.css</span>
-                    </button>
-                    <button class="code-save-btn" id="codeSaveBtn" type="button">💾 Salvar</button>
-                  </div>
-
-                  <div class="code-lines-container" id="codeLinesContainer">
-                    <div class="line-numbers" id="codeLineNumbers"></div>
-                    <textarea class="code-editor-textarea" id="codeEditorArea" spellcheck="false"></textarea>
-                  </div>
-                </div>
-
-                <!-- Lower Explorer & Terminal Split -->
-                <div class="code-sub-grid">
-                  <!-- File Tree Explorer -->
-                  <div class="file-explorer-card">
-                    <div class="explorer-header">
-                      <span>ESTRUTURA</span>
-                      <button class="exp-btn" type="button" title="Novo Arquivo">+</button>
-                    </div>
-                    <div class="tree-view" id="fileTreeView">
-                      <div class="tree-node folder open">
-                        <span class="node-icon">📁</span>
-                        <span class="node-label">fenix-project</span>
-                        <div class="tree-children">
-                          <div class="tree-node folder open">
-                            <span class="node-icon">📁</span>
-                            <span class="node-label">src</span>
-                            <div class="tree-children">
-                              <div class="tree-node folder open">
-                                <span class="node-icon">📁</span>
-                                <span class="node-label">components</span>
-                                <div class="tree-children">
-                                  <div class="tree-node file active" data-file="Dashboard.tsx">
-                                    <span class="node-icon">⚛️</span>
-                                    <span class="node-label">Dashboard.tsx</span>
-                                  </div>
-                                  <div class="tree-node file" data-file="MetricCard.tsx">
-                                    <span class="node-icon">⚛️</span>
-                                    <span class="node-label">MetricCard.tsx</span>
-                                  </div>
-                                  <div class="tree-node file" data-file="SalesChart.tsx">
-                                    <span class="node-icon">⚛️</span>
-                                    <span class="node-label">SalesChart.tsx</span>
-                                  </div>
-                                  <div class="tree-node file" data-file="SalesTable.tsx">
-                                    <span class="node-icon">⚛️</span>
-                                    <span class="node-label">SalesTable.tsx</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div class="tree-node folder">
-                                <span class="node-icon">📁</span>
-                                <span class="node-label">pages</span>
-                              </div>
-                              <div class="tree-node folder">
-                                <span class="node-icon">📁</span>
-                                <span class="node-label">hooks</span>
-                              </div>
-                              <div class="tree-node folder">
-                                <span class="node-icon">📁</span>
-                                <span class="node-label">services</span>
-                              </div>
-                              <div class="tree-node folder">
-                                <span class="node-icon">📁</span>
-                                <span class="node-label">types</span>
-                              </div>
-                              <div class="tree-node file" data-file="App.tsx">
-                                <span class="node-icon">⚛️</span>
-                                <span class="node-label">App.tsx</span>
-                              </div>
-                              <div class="tree-node file" data-file="main.tsx">
-                                <span class="node-icon">📄</span>
-                                <span class="node-label">main.tsx</span>
-                              </div>
-                              <div class="tree-node file" data-file="styles.css">
-                                <span class="node-icon">🎨</span>
-                                <span class="node-label">styles.css</span>
-                              </div>
-                              <div class="tree-node file" data-file="package.json">
-                                <span class="node-icon">📦</span>
-                                <span class="node-label">package.json</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Terminal View -->
-                  <div class="terminal-card">
-                    <div class="terminal-header">
-                      <div class="terminal-tabs">
-                        <span class="term-tab active">TERMINAL</span>
-                        <span class="term-tab">LOGS</span>
-                        <span class="term-tab">GIT</span>
-                      </div>
-                      <div class="term-actions">
-                        <button class="term-btn" type="button" id="clearTermBtn" title="Limpar">🧹</button>
-                        <button class="term-btn" type="button" id="restartDevBtn" title="Restart Dev">🔄</button>
-                      </div>
-                    </div>
-                    <div class="terminal-body" id="ideTerminalBody">
-                      <div class="term-line text-muted">npm run dev</div>
-                      <div class="term-line text-emerald">VITE v5.2.0 ready in 320ms</div>
-                      <div class="term-line">➜ <span class="text-cyan">Local:</span> <a href="#" class="term-link">http://localhost:5173/</a></div>
-                      <div class="term-line">➜ <span class="text-cyan">Network:</span> <a href="#" class="term-link">http://192.168.1.100:5173/</a></div>
-                      <div class="term-line text-muted">[FÊNIX Observer] Listening to file mutations on workspace...</div>
-                    </div>
-
-                    <!-- Active Agents Bar in Terminal Footer -->
-                    <div class="active-agents-footer">
-                      <div class="agent-slot">
-                        <span class="slot-dot"></span>
-                        <span class="slot-name">Architect Agent:</span>
-                        <span class="slot-task">Analisando arquitetura</span>
-                      </div>
-                      <div class="agent-slot">
-                        <span class="slot-dot"></span>
-                        <span class="slot-name">Code Assistant:</span>
-                        <span class="slot-task">Editando Dashboard.tsx</span>
-                      </div>
-                      <div class="agent-slot">
-                        <span class="slot-dot"></span>
-                        <span class="slot-name">Test Agent:</span>
-                        <span class="slot-task">Gerando testes</span>
-                      </div>
-                      <div class="agent-slot">
-                        <span class="slot-dot"></span>
-                        <span class="slot-name">UI/UX Agent:</span>
-                        <span class="slot-task">Otimizando interface</span>
-                      </div>
-                      <button class="view-all-agents-btn" id="openAgentsViewBtn" type="button">Ver todos</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ======================================================= -->
-        <!-- VIEW 3: 📁 PROJETOS, DESCOBERTA & KNOWLEDGE MAP         -->
-        <!-- ======================================================= -->
-        <section id="view-projects" class="workspace-view">
-          <div class="view-panel-container">
-            <div class="view-panel-header" style="border-bottom: 1px solid rgba(56,189,248,0.2); padding-bottom: 12px;">
-              <div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <h2>📁 Portfólio de Projetos & Project Discovery</h2>
-                  <span class="status-pill text-cyan">Operational Memory</span>
-                </div>
-                <p style="color:var(--text-secondary); font-size:12px; margin-top:2px;">
-                  Descoberta automática de projetos no computador local (Git, Node, React, Next.js, Lovable, Python) e sincronização com o Fênix VPS.
-                </p>
-              </div>
-              <div style="display:flex; gap:8px;">
-                <button class="action-btn-ghost" id="scanLocalProjectsBtn" type="button">🔍 Escanear Computador</button>
-                <button class="action-btn-ghost" id="syncGitHubProjectsBtn" type="button">🐙 Sincronizar GitHub</button>
-                <button class="action-btn-primary" id="importProjectModalBtn" type="button">➕ Novo Projeto</button>
-              </div>
-            </div>
-
-            <!-- Discovered Projects Knowledge Map Strip -->
-            <div class="projects-card-grid" id="projectsCardGrid" style="margin-top:12px;"></div>
-          </div>
-        </section>
-
-        <section id="view-dna" class="workspace-view">
-          <div class="view-panel-container">
-            <div class="view-panel-header">
-              <h2>🧬 4-DNA Model & Digital Genome</h2>
-              <span class="status-pill text-cyan">Single Source of Truth</span>
-            </div>
-            <div class="dna-quad-grid" id="dnaQuadGrid"></div>
-          </div>
-        </section>
-
-        <section id="view-agents" class="workspace-view">
-          <div class="view-panel-container">
-            <div class="view-panel-header">
-              <h2>🤖 Ecossistema dos 19 Agentes Vivos</h2>
-              <span class="status-pill text-emerald">19/19 Ativos em Produção</span>
-            </div>
-            <div class="agents-roster-grid" id="agentsRosterGrid"></div>
-          </div>
-        </section>
-
-        <section id="view-metrics" class="workspace-view">
-          <div class="view-panel-container">
-            <div class="view-panel-header">
-              <h2>📊 Métricas em Tempo Real & Observabilidade</h2>
-              <span class="status-pill text-amber">Prometheus + Gateway Metrics</span>
-            </div>
-            <div class="metrics-dashboard-grid" id="metricsDashboardGrid"></div>
-          </div>
-        </section>
-
-        <!-- ======================================================= -->
-        <!-- VIEW: ⚡ OPERAÇÕES 24/7 & LIVE MISSION CONTROL           -->
-        <!-- ======================================================= -->
-        <section id="view-operations" class="workspace-view">
-          <div class="view-panel-container">
-            <div class="view-panel-header" style="border-bottom: 1px solid rgba(56,189,248,0.2); padding-bottom: 12px;">
-              <div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <h2>⚡ FÊNIX LIVE MISSION CONTROL</h2>
-                  <span class="status-pill text-emerald" style="animation:pulse 2s infinite;">🟢 24/7 ONLINE</span>
-                </div>
-                <p style="color:var(--text-secondary); font-size:12px; margin-top:2px;">
-                  Orquestração de jobs concorrentes em tempo real, fluxo de microtarefas DAG, streaming de eventos e governança.
-                </p>
-              </div>
-              <div style="display:flex; gap:8px;">
-                <button class="action-btn-ghost" id="openCreateJobModalBtn" type="button">➕ Novo Job</button>
-                <button class="action-btn-primary" id="manualHeartbeatTickBtn" type="button">🔄 Heartbeat</button>
-              </div>
-            </div>
-
-            <!-- Live Mission Control Telemetry Strip -->
-            <div class="city-kpi-strip" style="background:rgba(10,16,26,0.85); border:1px solid rgba(56,189,248,0.25); border-radius:var(--radius-md); padding:12px; margin-top:12px;">
-              <div class="kpi-card">
-                <span class="kpi-icon">⚙️</span>
-                <div class="kpi-meta">
-                  <span class="kpi-label">Jobs Ativos</span>
-                  <span class="kpi-value text-cyan" id="opsActiveJobsCount">0</span>
-                </div>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-icon">🤖</span>
-                <div class="kpi-meta">
-                  <span class="kpi-label">Agentes Vivos</span>
-                  <span class="kpi-value text-emerald" id="opsAgentsWorkingCount">0 / 19</span>
-                </div>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-icon">📋</span>
-                <div class="kpi-meta">
-                  <span class="kpi-label">Microtarefas (DAG)</span>
-                  <span class="kpi-value text-purple" id="opsMicrotasksCount">0</span>
-                </div>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-icon">🧠</span>
-                <div class="kpi-meta">
-                  <span class="kpi-label">Chamadas de IA</span>
-                  <span class="kpi-value text-blue" id="opsAiCallsCount">0</span>
-                </div>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-icon">⚡</span>
-                <div class="kpi-meta">
-                  <span class="kpi-label">Worker Pool</span>
-                  <span class="kpi-value text-amber" id="opsWorkerPoolUtilization">0 / 8</span>
-                </div>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-icon">💰</span>
-                <div class="kpi-meta">
-                  <span class="kpi-label">Custo Estimado IA</span>
-                  <span class="kpi-value text-emerald" id="opsEstimatedCost">R$ 0,00</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Active Running Jobs Real-Time Progress Strip -->
-            <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(56,189,248,0.3); margin-top:12px; padding:12px;">
-              <div class="card-header-row" style="margin-bottom:8px;">
-                <span class="card-title" style="color:#fff; font-size:13px;">🚀 JOBS EM EXECUÇÃO CONCORRENTE NO RUNTIME</span>
-                <span class="pill-tag text-cyan" id="opsRunningJobsBadge">0 RUNNING</span>
-              </div>
-              <div id="opsActiveJobsProgressList" style="display:flex; flex-direction:column; gap:8px;">
-                <div style="color:var(--text-muted); font-size:11.5px; padding:8px;">Nenhum job em execução concorrente no momento.</div>
-              </div>
-            </div>
-
-            <!-- Live Event Stream & Terminal View -->
-            <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:12px; margin-top:12px;">
-              <!-- Live Event Stream Feed -->
-              <div class="dash-card" style="background:rgba(6,9,15,0.95); border:1px solid var(--border-subtle); padding:12px;">
-                <div class="card-header-row" style="margin-bottom:8px;">
-                  <span class="card-title" style="color:#fff; font-size:12.5px;">📡 LIVE EVENT STREAM (SSE PUSH)</span>
-                  <span class="pill-tag text-emerald" id="sseConnectionBadge">STREAM LIVE</span>
-                </div>
-                <div id="liveEventStreamFeed" style="font-family:'JetBrains Mono',monospace; font-size:11px; height:180px; overflow-y:auto; background:rgba(0,0,0,0.5); padding:8px; border-radius:6px; display:flex; flex-direction:column; gap:4px;">
-                  <div style="color:var(--text-muted);">[SSE] Conectado ao stream de eventos em tempo real do Fênix OS...</div>
-                </div>
-              </div>
-
-              <!-- AI Calls & Intelligence Monitor -->
-              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(168,85,247,0.3); padding:12px;">
-                <div class="card-header-row" style="margin-bottom:8px;">
-                  <span class="card-title" style="color:#fff; font-size:12.5px;">🧠 INFERÊNCIA MULTI-MODELO (VPS)</span>
-                  <span class="pill-tag text-purple">qwen2.5:3b</span>
-                </div>
-                <div id="opsRecentAiCallsList" style="font-size:11px; display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto;">
-                  <div style="color:var(--text-muted); padding:8px;">Nenhuma chamada recente de IA.</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Visual Job Queue & Approvals Split -->
-            <div style="display:grid; grid-template-columns: 1.3fr 0.7fr; gap:12px; margin-top:12px;">
-              <!-- Visual Queue: RUNNING, WAITING, COMPLETED -->
-              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid var(--border-subtle); padding:12px;">
-                <div class="card-header-row" style="margin-bottom:8px;">
-                  <div style="display:flex; gap:8px; align-items:center;">
-                    <span class="card-title" style="color:#fff; font-size:12.5px;">📋 FILA DE JOBS (QUEUE)</span>
-                    <div class="device-preset-group">
-                      <button class="queue-tab-btn active" data-queue="all" type="button">Todos</button>
-                      <button class="queue-tab-btn" data-queue="running" type="button">Running</button>
-                      <button class="queue-tab-btn" data-queue="waiting" type="button">Waiting</button>
-                      <button class="queue-tab-btn" data-queue="completed" type="button">Completed</button>
-                    </div>
-                  </div>
-                </div>
-                <div id="opsJobsQueueTable" style="display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto;">
-                  <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Carregando fila de jobs...</div>
-                </div>
-              </div>
-
-              <!-- Pending Approvals & Risk Governance -->
-              <div class="dash-card" style="background:rgba(10,16,26,0.9); border:1px solid rgba(249,115,22,0.35); padding:12px;">
-                <div class="card-header-row" style="margin-bottom:8px;">
-                  <span class="card-title" style="color:#fff; font-size:12.5px;">🔔 APPROVAL CENTER (<span id="opsPendingCount">0</span>)</span>
-                  <span class="pill-tag text-amber">ASK-CONFIRM-EXECUTE</span>
-                </div>
-                <div id="opsApprovalsList" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;">
-                  <div style="color:var(--text-muted); font-size:11.5px; padding:10px;">Nenhuma ação de risco pendente.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-      </main>
-    </div>
-
-    <!-- ========================================================= -->
-    <!-- BOTTOM DUAL-MODEL SIMULTANEOUS SELECTION BAR              -->
-    <!-- ========================================================= -->
-    <footer class="multi-model-bar">
-      <div class="model-select-group">
-        <div class="model-slot-badge">
-          <span class="slot-tag">Modelo Principal:</span>
-          <select id="selectPrimaryModel" class="model-dropdown">
-            <option value="qwen2.5:3b" selected>qwen2.5:3b (AI Platform • Fast Chat)</option>
-            <option value="deepseek-coder:6.7b">deepseek-coder:6.7b (Coding Specialist)</option>
-            <option value="llama3:8b">llama3:8b (General Reasoning)</option>
-            <option value="qwen2.5:1.5b">qwen2.5:1.5b (Ultra Low Latency)</option>
-          </select>
-        </div>
-
-        <div class="model-slot-badge">
-          <span class="slot-tag">Modelo Secundário:</span>
-          <select id="selectSecondaryModel" class="model-dropdown">
-            <option value="deepseek-coder:6.7b" selected>deepseek-coder:6.7b (Code Synth & Diff)</option>
-            <option value="llama3:8b">llama3:8b (Logic Validation)</option>
-            <option value="gemma2:9b">gemma2:9b (Security & Audit)</option>
-            <option value="mistral:7b">mistral:7b (Refactor & Review)</option>
-          </select>
-        </div>
-
-        <div class="model-role-indicators">
-          <span class="role-pill"><span class="dot dot-cyan"></span> Chat: qwen2.5:3b</span>
-          <span class="role-pill"><span class="dot dot-purple"></span> Código: deepseek-coder</span>
-          <span class="role-pill"><span class="dot dot-amber"></span> Testes: llama3</span>
-          <span class="role-pill"><span class="dot dot-emerald"></span> Análise: qwen2.5</span>
-        </div>
-      </div>
-
-      <div class="model-telemetry-live">
-        <span class="live-metric">⚡ TPS: <b>42.8 t/s</b></span>
-        <span class="live-metric">⏳ P95: <b>182ms</b></span>
-        <span class="live-metric">📊 Total Tokens: <b id="footerTokenCount">18.420</b></span>
-      </div>
-    </footer>
-
-    <!-- ========================================================= -->
-    <!-- JOB EXECUTION CENTER MODAL (LEVEL 10)                     -->
-    <!-- ========================================================= -->
-    <div class="building-drawer-overlay" id="jobModalOverlay" style="display:none;">
-      <div class="building-drawer-content" style="max-width:760px;">
-        <div class="drawer-header">
-          <div class="drawer-title-group">
-            <span class="drawer-icon" style="background:rgba(249,115,22,0.15); color:var(--orange);">⚙️</span>
-            <div>
-              <h3 id="jobModalTitle" style="color:#fff;">FÊNIX JOB EXECUTION CENTER</h3>
-              <p id="jobModalSubtitle" style="color:var(--text-muted);">Missão de Desenvolvimento Agêntico Autônomo</p>
-            </div>
-          </div>
-          <button class="drawer-close-btn" id="jobModalCloseBtn" type="button">✕</button>
-        </div>
-        <div class="drawer-body" style="display:flex; flex-direction:column; gap:16px;">
-          <!-- Objective & Estimates Card -->
-          <div class="dash-card" style="background:rgba(18,27,43,0.85); border:1px solid rgba(56,189,248,0.3);">
-            <div class="card-header-row">
-              <span style="font-weight:700; color:var(--cyan); font-size:13px;" id="jobModalObjectiveLabel">Missão em Andamento</span>
-              <span class="pill-tag text-amber" id="jobModalStatusBadge">ANALYZING</span>
-            </div>
-            <div style="font-size:13px; color:#fff; margin-top:6px; font-weight:600;" id="jobModalObjectiveText">
-              Analisando arquitetura e executando tarefas...
-            </div>
-            <!-- Estimates Grid -->
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:14px; text-align:center;">
-              <div style="background:rgba(6,9,14,0.7); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
-                <div style="font-size:10.5px; color:var(--text-muted);">Estimativa</div>
-                <div style="font-size:13px; font-weight:700; color:#fff;" id="jobModalEstimatedTime">12 min</div>
-              </div>
-              <div style="background:rgba(6,9,14,0.7); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
-                <div style="font-size:10.5px; color:var(--text-muted);">Microtarefas</div>
-                <div style="font-size:13px; font-weight:700; color:var(--cyan);" id="jobModalMicrotasksCount">5 DAG</div>
-              </div>
-              <div style="background:rgba(6,9,14,0.7); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
-                <div style="font-size:10.5px; color:var(--text-muted);">Agentes</div>
-                <div style="font-size:13px; font-weight:700; color:var(--purple);" id="jobModalAgentsCount">5 Agentes</div>
-              </div>
-              <div style="background:rgba(6,9,14,0.7); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
-                <div style="font-size:10.5px; color:var(--text-muted);">Risco</div>
-                <div style="font-size:13px; font-weight:700; color:var(--emerald);" id="jobModalRiskLevel">SAFE</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Progress Bar & Timer -->
           <div>
-            <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:6px;">
-              <span style="color:var(--text-muted);">Progresso da Execução: <b id="jobModalProgressPercent" style="color:#fff;">0%</b></span>
-              <span style="color:var(--text-muted);">Tempo Decorrido: <b id="jobModalTimer" style="color:var(--cyan);">0s</b></span>
-            </div>
-            <div style="width:100%; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
-              <div id="jobModalProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, var(--orange), var(--cyan)); transition:width 0.3s ease;"></div>
-            </div>
-          </div>
-
-          <!-- Microtask DAG Checklist -->
-          <div class="dash-card" style="background:rgba(10,15,24,0.9); border:1px solid var(--border-subtle);">
-            <div style="font-weight:700; font-size:12px; margin-bottom:8px; color:var(--text-muted); text-transform:uppercase;">Plano de Execução Sequencial (DAG)</div>
-            <div id="jobModalDagList" style="display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto;">
-              <!-- Populated via unified-app.js -->
-            </div>
-          </div>
-
-          <!-- Live Timeline Logs -->
-          <div class="dash-card" style="background:#06090e; border:1px solid var(--border-subtle);">
-            <div style="font-weight:700; font-size:12px; margin-bottom:8px; color:var(--text-muted); text-transform:uppercase;">Timeline de Eventos do Runtime</div>
-            <div id="jobModalLogsList" style="display:flex; flex-direction:column; gap:4px; max-height:120px; overflow-y:auto; font-family:var(--font-code); font-size:11px;">
-              <!-- Populated via unified-app.js -->
-            </div>
-          </div>
-
-          <!-- Action Controls Footer -->
-          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;" id="jobModalActionButtons">
-            <button class="action-btn-ghost" id="jobModalPauseBtn" type="button">⏸ Pausar</button>
-            <button class="action-btn-ghost" id="jobModalCancelBtn" style="color:#ef4444;" type="button">⏹ Cancelar</button>
-            <button class="action-btn-primary" id="jobModalStartBtn" type="button">▶ Iniciar Job</button>
+            <b id="avatarState">--</b>
+            <small id="avatarPhrase">--</small>
           </div>
         </div>
+      </header>
+
+      <!-- 1. COMANDO -->
+      <section id="view-command" class="view active">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('command', 'chat')">Chat & Execução</button>
+          <button onclick="showSubView('command', 'missions')">Missões</button>
+          <button onclick="showSubView('command', 'developer')">Terminal & IDE</button>
+        </nav>
+        
+        <div id="sub-command-chat" class="sub-view active">
+          <div class="command-layout">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Natural language</span><h2>Comando</h2></div></div>
+              <div id="chatLog" class="chat-log"></div>
+              <form id="cmdForm" class="composer">
+                <textarea id="prompt" placeholder="Ex: revisar a arquitetura do front e deployar na VPS..." rows="1"></textarea>
+                <div class="composer-actions">
+                  <span class="model-badge">Motor: <b id="activeModel">--</b></span>
+                  <button type="submit" class="primary-btn"><b>Enviar</b></button>
+                </div>
+              </form>
+            </section>
+            <div class="side-panel">
+              <section class="panel"><div class="panel-head"><div><span class="eyebrow">Events</span><h2>Telemetria</h2></div><span id="eventCount" class="count-pill">0 eventos</span></div><div id="eventStream" class="terminal"></div></section>
+            </div>
+          </div>
+        </div>
+
+        <div id="sub-command-missions" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Mission Control</span><h2>Ativas e concluidas</h2></div></div><div id="missionList" class="list"></div></section>
+        </div>
+
+        <div id="sub-command-developer" class="sub-view">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Developer District</span><h2>Arquivos e terminal governado</h2></div></div>
+            <div class="dev-layout">
+              <div><div class="filters"><input id="fsPath" placeholder="Pasta"><button id="fsLoadBtn" class="soft-btn" type="button">Listar</button></div><div id="fsList" class="list"></div></div>
+              <div><textarea id="fileViewer" class="file-viewer" spellcheck="false" placeholder="Selecione um arquivo para ler"></textarea><div class="filters"><input id="terminalCmd" placeholder="Comando permitido pelo runtime"><button id="terminalBtn" class="soft-btn" type="button">Executar</button></div><div id="terminalResult" class="terminal"></div></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 2. RUNTIME -->
+      <section id="view-runtime" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('runtime', 'jobs')">Jobs</button>
+          <button onclick="showSubView('runtime', 'city')">AI City (Visual)</button>
+        </nav>
+        
+        <div id="sub-runtime-jobs" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Runtime</span><h2>Jobs e estado</h2></div></div><div id="runtimeList" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">DAG Executions</span><h2>Fila de Tarefas</h2></div></div><div id="jobQueue" class="list"></div></section>
+          </div>
+        </div>
+        
+        <div id="sub-runtime-city" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Virtual World</span><h2>AI City (3D Cyberpunk)</h2></div></div><div id="cityCanvas" class="city-canvas"></div></section>
+        </div>
+      </section>
+
+      <!-- 3. AGENTES -->
+      <section id="view-agents" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('agents', 'swarm')">Swarm Agents</button>
+          <button onclick="showSubView('agents', 'evolution')">Evolução</button>
+        </nav>
+        
+        <div id="sub-agents-swarm" class="sub-view active">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Agents</span><h2>19 Agentes Vivos</h2></div></div><div id="agentsGrid" class="agents-roster-grid"></div></section>
+        </div>
+
+        <div id="sub-agents-evolution" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Evolution District</span><h2>Evolucao Automatica</h2></div></div><div id="evolutionDistrict" class="list"></div></section>
+        </div>
+      </section>
+
+      <!-- 4. WORKSPACE -->
+      <section id="view-workspace" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('workspace', 'projects')">Projetos</button>
+          <button onclick="showSubView('workspace', 'office')">Office</button>
+          <button onclick="showSubView('workspace', 'mobile')">Mobile (DEV)</button>
+        </nav>
+        
+        <div id="sub-workspace-projects" class="sub-view active">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">CRM + portfolio</span><h2>Projetos e repositorios</h2></div></div>
+            <div class="filters"><input id="projectSearch" placeholder="Filtrar projeto, repo ou tag"><select id="repoVisibility"><option value="all">Todos</option><option value="public">Publicos</option><option value="private">Privados</option></select></div>
+            <div id="projectList" class="project-grid"></div>
+          </section>
+        </div>
+
+        <div id="sub-workspace-office" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Virtual Office</span><h2>Empresas e equipes</h2></div></div>
+              <div id="officeList" class="office-grid"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Equipe selecionada</span><h2 id="officeTitle">Selecione uma empresa</h2></div></div>
+              <div id="officeDetail" class="list"></div>
+            </section>
+          </div>
+        </div>
+
+        <div id="sub-workspace-mobile" class="sub-view">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Android Agent</span><h2>Controle Mobile Remoto <span style="color:var(--orange)">[DEV]</span></h2></div></div>
+            <div class="list" style="text-align: center; padding: 40px; border: 1px dashed var(--line); border-radius: 8px;">
+              <div style="font-size: 32px; margin-bottom: 15px;">📱</div>
+              <h3 style="color: #fff;">Integração Mobile em Desenvolvimento</h3>
+              <p style="color: var(--muted); margin-top: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                A comunicação com o Android Remote AgentManager (MediaProjection e touch streaming) está arquitetada no backend, mas aguardando a finalização do APK (Phase 16).
+              </p>
+              <button class="primary-btn" style="margin-top: 20px;" disabled>Aguardando Agent.apk</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 5. KNOWLEDGE -->
+      <section id="view-knowledge" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('knowledge', 'memory')">Memória e KOS</button>
+          <button onclick="showSubView('knowledge', 'graphify')">Graphify</button>
+          <button onclick="showSubView('knowledge', 'skills')">Skills e Builder</button>
+        </nav>
+        
+        <div id="sub-knowledge-memory" class="sub-view active">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">KOS</span><h2>Constituicao e contexto</h2></div></div><div id="kosManifest" class="list"></div></section>
+        </div>
+
+        <div id="sub-knowledge-graphify" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Knowledge graph</span><h2>Anomalias e entidades</h2></div></div><div id="kgList" class="list"></div></section>
+        </div>
+
+        <div id="sub-knowledge-skills" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Skill registry</span><h2>Skills carregaveis</h2></div><span id="skillCount" class="count-pill">--</span></div>
+              <div id="skillList" class="list"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Fullstack builder</span><h2>Front + back no mesmo contrato</h2></div></div>
+              <form id="sliceForm" class="inline-form"><input id="slicePrompt" placeholder="Ex: criar CRM simples com lista, cadastro e status"><button class="primary-btn" type="submit">Criar fatia real</button></form>
+              <div id="sliceList" class="list"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. CONECTORES -->
+      <section id="view-connectors" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('connectors', 'ai')">AI Router & Conectores</button>
+          <button onclick="showSubView('connectors', 'deploy')">OneDeploy & Gatekeeper</button>
+        </nav>
+        
+        <div id="sub-connectors-ai" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Connector runtime</span><h2>Conectores reais</h2></div></div><div id="connectorList" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">AI router</span><h2>Selecao por evidencia</h2></div><button id="checkApiBtn" class="soft-btn" type="button">Checar API</button></div><div id="routerState" class="list"></div></section>
+          </div>
+        </div>
+
+        <div id="sub-connectors-deploy" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">OneDeploy</span><h2>Scan e readiness</h2></div></div>
+              <form id="scanForm" class="inline-form"><input id="scanPath" placeholder="Caminho do projeto (vazio = .)"><button class="primary-btn" type="submit">Escanear</button></form>
+              <div id="scanResult" class="list"></div>
+            </section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Gatekeeper</span><h2>Bloqueios de producao</h2></div></div><div id="readinessList" class="list"></div></section>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. OBSERVABILIDADE -->
+      <section id="view-observability" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('observability', 'metrics')">Métricas e Séries</button>
+          <button onclick="showSubView('observability', 'security')">Segurança e Auditoria</button>
+        </nav>
+        
+        <div id="sub-observability-metrics" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Metricas</span><h2>Observabilidade</h2></div></div><div id="observabilityMetrics" class="mini-metrics"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Series</span><h2>Tendencias</h2></div><button id="sampleBtn" class="soft-btn" type="button">Amostrar agora</button></div><div id="seriesGrid" class="spark-grid"></div></section>
+          </div>
+        </div>
+
+        <div id="sub-observability-security" class="sub-view">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Security</span><h2>Criptografia</h2></div></div><div id="securityState" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Simulation audit</span><h2>Veracidade</h2></div></div><div id="veracityState" class="list"></div></section>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <dialog id="cmdDialog" class="command-dialog">
+    <div class="panel-head"><div><span class="eyebrow">Command palette</span><h2>Navegar ou executar</h2></div><button id="closeCmdBtn" class="icon-action" type="button">X</button></div>
+    <input id="cmdInput" placeholder="Digite: deploy, city, api, missao...">
+    <div id="cmdResults" class="list"></div>
+  </dialog>
+
+  <script src="/unified-app.js"></script>
+
+  <div class="building-drawer-overlay" id="jobInspectorModal" style="display:none; z-index:9999; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8);">
+    <div class="building-drawer-content" style="max-width:760px; max-height:85vh; display:flex; flex-direction:column; margin: 5vh auto; background:#111; border:1px solid #333; border-radius:8px;">
+      <div class="drawer-header" style="display:flex; justify-content:space-between; padding:16px; border-bottom:1px solid #333;">
+        <div class="drawer-title-group">
+          <div>
+            <h3 id="inspectorJobTitle" style="color:#fff; margin:0;">Job Inspector</h3>
+            <p id="inspectorJobId" style="color:#0ff; font-family:monospace; margin:0;">JOB-ID</p>
+          </div>
+        </div>
+        <button class="drawer-close-btn" id="jobInspectorCloseBtn" type="button" style="background:transparent; color:#fff; border:none; cursor:pointer;">X</button>
       </div>
-    </div>
-
-    <!-- ========================================================= -->
-    <!-- AGENT LIVE INSPECTOR MODAL                                -->
-    <!-- ========================================================= -->
-    <div class="building-drawer-overlay" id="agentInspectorModal" style="display:none;">
-      <div class="building-drawer-content" style="max-width:680px;">
-        <div class="drawer-header">
-          <div class="drawer-title-group">
-            <span class="drawer-icon" id="inspectorAgentIcon">🤖</span>
-            <div>
-              <h3 id="inspectorAgentName" style="color:#fff;">ARCHITECT AGENT</h3>
-              <p id="inspectorAgentRole" style="color:var(--text-muted);">Especialista em Planejamento & Scaffolding</p>
-            </div>
-          </div>
-          <button class="drawer-close-btn" id="agentInspectorCloseBtn" type="button">✕</button>
-        </div>
-        <div class="drawer-body" style="display:flex; flex-direction:column; gap:14px;">
-          <!-- Status Grid -->
-          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
-            <div style="background:rgba(6,9,14,0.8); padding:10px; border-radius:6px; border:1px solid var(--border-subtle);">
-              <div style="font-size:10.5px; color:var(--text-muted);">Estado Atual</div>
-              <div style="font-size:13px; font-weight:700; color:var(--cyan); margin-top:2px;" id="inspectorAgentStatus">IDLE</div>
-            </div>
-            <div style="background:rgba(6,9,14,0.8); padding:10px; border-radius:6px; border:1px solid var(--border-subtle);">
-              <div style="font-size:10.5px; color:var(--text-muted);">Modelo Ativo</div>
-              <div style="font-size:13px; font-weight:700; color:var(--purple); margin-top:2px;" id="inspectorAgentModel">deepseek-coder</div>
-            </div>
-            <div style="background:rgba(6,9,14,0.8); padding:10px; border-radius:6px; border:1px solid var(--border-subtle);">
-              <div style="font-size:10.5px; color:var(--text-muted);">Tokens Consumidos</div>
-              <div style="font-size:13px; font-weight:700; color:var(--emerald); margin-top:2px;" id="inspectorAgentTokens">1.280</div>
-            </div>
-          </div>
-
-          <!-- Current Action & Target File -->
-          <div class="dash-card" style="background:rgba(18,27,43,0.7); border:1px solid var(--border-subtle);">
-            <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Ação em Andamento</div>
-            <div style="font-size:13px; font-weight:600; color:#fff; margin-top:4px;" id="inspectorAgentLastAction">Aguardando atribuição de microtarefa</div>
-            <div style="font-size:11.5px; color:var(--cyan); margin-top:4px;" id="inspectorAgentTargetFile">Arquivo Alvo: —</div>
-          </div>
-
-          <!-- Skills Utilized -->
-          <div class="dash-card" style="background:rgba(10,15,24,0.8); border:1px solid var(--border-subtle);">
-            <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700; margin-bottom:6px;">Skills Disponíveis & Utilizadas</div>
-            <div id="inspectorAgentSkills" style="display:flex; flex-wrap:wrap; gap:6px;">
-              <!-- Populated via unified-app.js -->
-            </div>
-          </div>
-
-          <!-- Agent Action Buttons -->
-          <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
-            <button class="action-btn-ghost" id="inspectorViewCodeBtn" type="button">💻 Ver Código</button>
-            <button class="action-btn-ghost" id="inspectorViewTerminalBtn" type="button">📟 Terminal</button>
-            <button class="action-btn-primary" id="inspectorOpenProjectBtn" type="button">📁 Abrir Workspace</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ========================================================= -->
-    <!-- MOBILE REMOTE CONTROL & LIVE VIEW MODAL (ANYDESK-GRADE)   -->
-    <!-- ========================================================= -->
-    <div class="building-drawer-overlay" id="mobileRemoteModal" style="display:none;">
-      <div class="building-drawer-content" style="max-width:920px; width:95vw;">
-        <div class="drawer-header">
-          <div class="drawer-title-group">
-            <span class="drawer-icon" style="background:rgba(56,189,248,0.15); color:var(--cyan);">📱</span>
-            <div>
-              <h3 id="mobileModalTitle" style="color:#fff;">FÊNIX MOBILE CONTROL CENTER</h3>
-              <p id="mobileModalSubtitle" style="color:var(--text-muted);">Controle Remoto Visual & Automação Agêntica do Celular (Android 14)</p>
-            </div>
-          </div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <button class="action-btn-ghost" id="mobilePairNewBtn" type="button" style="font-size:12px; padding:4px 10px;">➕ Parear QR</button>
-            <button class="drawer-close-btn" id="mobileRemoteCloseBtn" type="button">✕</button>
-          </div>
-        </div>
-        <div class="drawer-body" style="display:grid; grid-template-columns: 360px 1fr; gap:16px; min-height:540px;">
-          <!-- Left: Real Mobile Phone Viewport with Canvas & Ripple Feedback -->
-          <div style="background:#000; border:4px solid #1e293b; border-radius:36px; padding:12px 10px 18px 10px; display:flex; flex-direction:column; align-items:center; box-shadow:0 12px 36px rgba(0,0,0,0.8); position:relative;">
-            <!-- Speaker notch -->
-            <div style="width:70px; height:5px; background:#334155; border-radius:3px; margin-bottom:8px;"></div>
-            <!-- Canvas Frame -->
-            <div id="mobileCanvasContainer" style="position:relative; width:100%; height:440px; background:#0a0f1c; border-radius:18px; overflow:hidden; cursor:crosshair; border:1px solid #334155;">
-              <svg id="mobileScreenSvg" viewBox="0 0 1080 2400" style="width:100%; height:100%; object-fit:contain; display:block;">
-                <!-- Dynamically rendered or live stream -->
-                <rect width="1080" height="2400" fill="#0a0f1c"/>
-                <rect x="40" y="80" width="1000" height="120" rx="24" fill="#1e293b"/>
-                <text x="80" y="155" fill="#38bdf8" font-size="44" font-family="sans-serif" font-weight="bold">FÊNIX Mobile Agent — Conectado</text>
-                <rect x="40" y="240" width="1000" height="600" rx="32" fill="#111a2e" stroke="#334155" stroke-width="4"/>
-                <text x="90" y="340" fill="#f8fafc" font-size="52" font-weight="bold" font-family="sans-serif">Status Operacional</text>
-                <text x="90" y="420" fill="#10b981" font-size="38" font-family="sans-serif">● Bateria: 88% (Carregando)</text>
-                <text x="90" y="490" fill="#38bdf8" font-size="38" font-family="sans-serif">● WiFi: GRG-Ultra-5G</text>
-                <text x="90" y="560" fill="#f59e0b" font-size="38" font-family="sans-serif">● MediaProjection: Ativo (60 FPS)</text>
-                <text x="90" y="630" fill="#a855f7" font-size="38" font-family="sans-serif">● Acessibilidade: Autorizada</text>
-                <rect x="80" y="900" width="420" height="260" rx="28" fill="#0284c7"/>
-                <text x="140" y="1050" fill="#ffffff" font-size="44" font-weight="bold" font-family="sans-serif">Abrir Câmera</text>
-                <rect x="580" y="900" width="420" height="260" rx="28" fill="#10b981"/>
-                <text x="640" y="1050" fill="#ffffff" font-size="44" font-weight="bold" font-family="sans-serif">WhatsApp</text>
-                <rect x="80" y="1220" width="420" height="260" rx="28" fill="#f97316"/>
-                <text x="130" y="1370" fill="#ffffff" font-size="44" font-weight="bold" font-family="sans-serif">Configurações</text>
-                <rect x="580" y="1220" width="420" height="260" rx="28" fill="#6366f1"/>
-                <text x="640" y="1370" fill="#ffffff" font-size="44" font-weight="bold" font-family="sans-serif">Navegador</text>
-              </svg>
-              <!-- Touch Ripple Dot Overlay -->
-              <div id="touchRippleDot" style="display:none; position:absolute; width:22px; height:22px; border-radius:50%; background:rgba(56,189,248,0.7); border:2px solid #fff; pointer-events:none; transform:translate(-50%, -50%); transition:all 0.15s ease;"></div>
-            </div>
-            <!-- Bottom Hardware Navigation Bar -->
-            <div style="display:flex; justify-content:space-around; width:100%; padding-top:12px;">
-              <button class="tool-icon-btn" id="mobileBtnRecents" type="button" title="Recents (Aplicativos Abertos)" style="color:#fff;">📑</button>
-              <button class="tool-icon-btn" id="mobileBtnHome" type="button" title="Home (Início)" style="color:#fff; font-size:18px;">⚪</button>
-              <button class="tool-icon-btn" id="mobileBtnBack" type="button" title="Back (Voltar)" style="color:#fff;">◀</button>
-            </div>
-          </div>
-
-          <!-- Right: Telemetry, AI Commander, Input, Permissions -->
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            <!-- Telemetry Bar -->
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;">
-              <div style="background:rgba(6,9,14,0.8); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
-                <div style="font-size:10px; color:var(--text-muted);">Bateria</div>
-                <div style="font-size:12px; font-weight:700; color:var(--emerald);">88% ⚡</div>
-              </div>
-              <div style="background:rgba(6,9,14,0.8); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
-                <div style="font-size:10px; color:var(--text-muted);">Stream FPS</div>
-                <div style="font-size:12px; font-weight:700; color:var(--cyan);" id="mobileFpsLabel">60 FPS</div>
-              </div>
-              <div style="background:rgba(6,9,14,0.8); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
-                <div style="font-size:10px; color:var(--text-muted);">Latência</div>
-                <div style="font-size:12px; font-weight:700; color:var(--purple);" id="mobileLatencyLabel">15 ms</div>
-              </div>
-              <div style="background:rgba(6,9,14,0.8); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
-                <div style="font-size:10px; color:var(--text-muted);">App Ativo</div>
-                <div style="font-size:12px; font-weight:700; color:var(--orange);" id="mobileActiveAppLabel">com.fenix.mobile</div>
-              </div>
-            </div>
-
-            <!-- AI Command Bar for Mobile -->
-            <div class="dash-card" style="background:rgba(18,27,43,0.85); border:1px solid rgba(56,189,248,0.3); padding:10px;">
-              <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px;">⚡ FÊNIX AI COMMANDER (MOBILE)</div>
-              <div style="display:flex; gap:6px;">
-                <input type="text" id="mobileCommandInput" placeholder="Ex: Abra o WhatsApp, tire uma foto, toque em Configurações..." style="flex:1; background:rgba(6,9,14,0.9); border:1px solid var(--border-subtle); color:#fff; padding:6px 10px; border-radius:4px; font-size:12px;">
-                <button class="action-btn-primary" id="mobileSendCmdBtn" type="button" style="padding:6px 12px; font-size:12px;">Enviar</button>
-              </div>
-              <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
-                <button class="prompt-chip" id="chipMobileCamera" type="button">📸 Abrir Câmera</button>
-                <button class="prompt-chip" id="chipMobileWhatsApp" type="button">💬 WhatsApp</button>
-                <button class="prompt-chip" id="chipMobileSettings" type="button">⚙️ Configurações</button>
-                <button class="prompt-chip" id="chipMobileScreenshot" type="button">🖼️ Screenshot</button>
-              </div>
-            </div>
-
-            <!-- Remote Keyboard Bar -->
-            <div class="dash-card" style="background:rgba(10,15,24,0.8); border:1px solid var(--border-subtle); padding:10px;">
-              <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px;">⌨️ DIGITAÇÃO REMOTA NO DISPOSITIVO</div>
-              <div style="display:flex; gap:6px;">
-                <input type="text" id="mobileKeyboardInput" placeholder="Digite o texto para enviar ao celular..." style="flex:1; background:rgba(6,9,14,0.9); border:1px solid var(--border-subtle); color:#fff; padding:6px 10px; border-radius:4px; font-size:12px;">
-                <button class="action-btn-ghost" id="mobileSendTextBtn" type="button" style="font-size:12px;">Digitar</button>
-              </div>
-            </div>
-
-            <!-- Permission Center & Trust -->
-            <div class="dash-card" style="background:rgba(10,15,24,0.8); border:1px solid var(--border-subtle); padding:10px;">
-              <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px;">🛡️ MATRIZ DE AUTORIZAÇÃO ANDROID</div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                <span class="role-pill"><span class="dot dot-emerald"></span> Screen: ALLOW</span>
-                <span class="role-pill"><span class="dot dot-emerald"></span> Touch: ALLOW</span>
-                <span class="role-pill"><span class="dot dot-emerald"></span> Acessibilidade: ALLOW</span>
-                <span class="role-pill"><span class="dot dot-amber"></span> Câmera: ASK</span>
-                <span class="role-pill"><span class="dot dot-amber"></span> Arquivos: ASK</span>
-              </div>
-            </div>
-
-            <!-- Actions Footer -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
-              <span style="font-size:11px; color:var(--emerald);">🟢 Dispositivo Seguro & Criptografado</span>
-              <div style="display:flex; gap:8px;">
-                <button class="action-btn-ghost" id="mobileStopBtn" type="button" style="color:#ef4444;">⏹ Parar Dispositivo</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- QR Code Pairing Modal -->
-    <div class="building-drawer-overlay" id="mobilePairingModal" style="display:none;">
-      <div class="building-drawer-content" style="max-width:440px; text-align:center;">
-        <div class="drawer-header">
-          <div class="drawer-title-group">
-            <span class="drawer-icon">📲</span>
-            <div>
-              <h3 style="color:#fff;">Parear Novo Celular</h3>
-              <p style="color:var(--text-muted);">Escaneie com o app FÊNIX Mobile</p>
-            </div>
-          </div>
-          <button class="drawer-close-btn" id="mobilePairingCloseBtn" type="button">✕</button>
-        </div>
-        <div class="drawer-body" style="padding:20px; display:flex; flex-direction:column; align-items:center; gap:16px;">
-          <div style="background:#fff; padding:16px; border-radius:12px; width:200px; height:200px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
-            <div style="font-family:monospace; font-size:11px; color:#000; word-break:break-all;" id="mobileQrPlaceholder">
-              [QR CODE FÊNIX]
-              <br><br>
-              <b style="font-size:14px;" id="mobilePairingCodeDisplay">PAIR_89AF12</b>
-            </div>
-          </div>
-          <p style="font-size:12px; color:var(--text-muted);">
-            Abra o FÊNIX Mobile Agent no seu celular Android, toque em <b>Escanear QR Code</b> e aponte para esta tela.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Building Modal Detail Drawer -->
-    <div class="building-drawer-overlay" id="buildingDrawerOverlay">
-      <div class="building-drawer-content" id="buildingDrawerContent">
-        <div class="drawer-header">
-          <div class="drawer-title-group">
-            <span class="drawer-icon" id="drawerIcon">🏢</span>
-            <div>
-              <h3 id="drawerTitle">SOFTWARE FACTORY</h3>
-              <p id="drawerSubtitle">Módulo de Construção e Refatoração de Código Autônomo</p>
-            </div>
-          </div>
-          <button class="drawer-close-btn" id="drawerCloseBtn" type="button">✕</button>
-        </div>
-        <div class="drawer-body" id="drawerBody">
-          <!-- Populated dynamically via unified-app.js -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Job Inspector Modal -->
-    <div class="building-drawer-overlay" id="jobInspectorModal" style="display:none;">
-      <div class="building-drawer-content" style="max-width:760px; max-height:85vh; display:flex; flex-direction:column;">
-        <div class="drawer-header">
-          <div class="drawer-title-group">
-            <span class="drawer-icon">🔍</span>
-            <div>
-              <h3 id="inspectorJobTitle" style="color:#fff;">Job Inspector</h3>
-              <p id="inspectorJobId" style="color:var(--cyan); font-family:monospace;">JOB-ID</p>
-            </div>
-          </div>
-          <button class="drawer-close-btn" id="jobInspectorCloseBtn" type="button">✕</button>
-        </div>
-        <div class="drawer-body" id="jobInspectorBody" style="padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;">
-          <!-- Populated dynamically via unified-app.js -->
-        </div>
+      <div class="drawer-body" id="jobInspectorBody" style="padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;">
       </div>
     </div>
   </div>
 
-  <script src="/unified-app.js"></script>
 </body>
 </html>

@@ -82,8 +82,7 @@ class RealWorldExecutor {
 
   async runAutonomousTest(projectId) {
     if (this.eventBus) this.eventBus.emit('test.started', { projectId });
-    const result = this.executeTerminal(projectId, 'npm run build'); // Fallback to build if test isn't set up
-    // In a real scenario we could check if "test" exists in package.json
+    const result = this.executeTerminal(projectId, 'npm test');
     if (this.eventBus) this.eventBus.emit('test.completed', { projectId, success: result.success });
     return result;
   }

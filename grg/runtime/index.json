@@ -3,333 +3,333 @@
     {
       "name": "AgentRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-registry.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-registry.js"
     },
     {
       "name": "AgentSwarm",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-swarm.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-swarm.js"
     },
     {
       "name": "AutonomousAgentEcosystem",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\autonomous-agent-ecosystem.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\autonomous-agent-ecosystem.js"
     },
     {
       "name": "ContextAssembler",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai\\context-assembler.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai\\context-assembler.js"
     },
     {
       "name": "ModelRouter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai\\model-router.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai\\model-router.js"
     },
     {
       "name": "ProviderRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js",
       "_duplicated": true
     },
     {
       "name": "TokenEconomyEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai\\token-economy-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai\\token-economy-engine.js"
     },
     {
       "name": "AICityProjection",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\ai-city-projection.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\ai-city-projection.js"
     },
     {
       "name": "NpcCityEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\npc-city-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\npc-city-engine.js"
     },
     {
       "name": "AIGateway",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\ai-gateway\\ai-gateway.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\ai-gateway\\ai-gateway.js",
       "_duplicated": true
     },
     {
       "name": "AIRouter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\ai-router.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\ai-router.js"
     },
     {
       "name": "AIPlatformProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\aiplatform-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\aiplatform-provider.js"
     },
     {
       "name": "ApiConnectionManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\api-connection-manager.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\api-connection-manager.js"
     },
     {
       "name": "CapabilityRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\capability-registry.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\capability-registry.js",
       "_duplicated": true
     },
     {
       "name": "ProviderHttpError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
     },
     {
       "name": "OpenAIResponsesProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
     },
     {
       "name": "OpenAICompatibleProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
     },
     {
       "name": "AnthropicProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
     },
     {
       "name": "GeminiProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\http-providers.js"
     },
     {
       "name": "ModelOrchestrator",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\model-orchestrator.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\model-orchestrator.js"
     },
     {
       "name": "OllamaProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\ollama-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\ollama-provider.js"
     },
     {
       "name": "EchoProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\providers.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-runtime\\providers.js"
     },
     {
       "name": "AppFactory",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\app-factory\\app-factory.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\app-factory\\app-factory.js"
     },
     {
       "name": "DevelopmentPackager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\app-factory\\app-factory.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\app-factory\\app-factory.js"
     },
     {
       "name": "AuthService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\auth\\auth.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\auth\\auth.js"
     },
     {
       "name": "OidcVerifier",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\auth\\oidc-verifier.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\auth\\oidc-verifier.js"
     },
     {
       "name": "ComputerControlAgent",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\automation\\computer-control-agent.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\automation\\computer-control-agent.js"
     },
     {
       "name": "CapabilityMarketplace",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\capability-marketplace.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\capability-marketplace.js",
       "_duplicated": true
     },
     {
       "name": "ChatAgent",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\chat\\chat-agent.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\chat\\chat-agent.js"
     },
     {
       "name": "ConversationGateway",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\chat\\conversation-gateway.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\chat\\conversation-gateway.js"
     },
     {
       "name": "ConversationStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js",
       "_duplicated": true
     },
     {
       "name": "RuntimeConsole",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cli\\runtime-console.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cli\\runtime-console.js"
     },
     {
       "name": "CognitiveBank",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\cognitive-bank.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\cognitive-bank.js"
     },
     {
       "name": "DigitalTwin",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\digital-twin.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\digital-twin.js"
     },
     {
       "name": "KnowledgeGraph",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\knowledge-graph\\knowledge-graph.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\knowledge-graph\\knowledge-graph.js",
       "_duplicated": true
     },
     {
       "name": "MissionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\mission-engine\\mission-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\mission-engine\\mission-engine.js"
     },
     {
       "name": "MissionLearner",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\mission-engine\\mission-learner.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\mission-engine\\mission-learner.js"
     },
     {
       "name": "MissionValidator",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\mission-engine\\mission-validator.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\mission-engine\\mission-validator.js"
     },
     {
       "name": "PromptRuntime",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\prompt-runtime.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\prompt-runtime.js"
     },
     {
       "name": "AdminAvatar",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\admin-avatar.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\admin-avatar.js"
     },
     {
       "name": "BackgroundCognition",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\background-cognition.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\background-cognition.js"
     },
     {
       "name": "CognitiveCore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\cognitive-core.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\cognitive-core.js"
     },
     {
       "name": "CognitiveHierarchy",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\cognitive-hierarchy.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\cognitive-hierarchy.js"
     },
     {
       "name": "CognitiveOptimizationEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\cognitive-optimization-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\cognitive-optimization-engine.js"
     },
     {
       "name": "CrossProjectLearning",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\cross-project-learning.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\cross-project-learning.js"
     },
     {
       "name": "ExternalSearchService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\external-search.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\external-search.js"
     },
     {
       "name": "HypothesisEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\hypothesis-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\hypothesis-engine.js"
     },
     {
       "name": "CognitiveLearningProjection",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\learning-projection.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\learning-projection.js"
     },
     {
       "name": "MasterAvatar",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\master-avatar.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\master-avatar.js"
     },
     {
       "name": "MultimodalPipeline",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\multimodal-pipeline.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognitive\\multimodal-pipeline.js"
     },
     {
       "name": "PromptCompilerEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\compiler\\prompt-compiler.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\compiler\\prompt-compiler.js"
     },
     {
       "name": "ConnectionBroker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\connection-broker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\connection-broker.js"
     },
     {
       "name": "ConnectionBrowserSession",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\connection-browser-session.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\connection-browser-session.js"
     },
     {
       "name": "GitHubProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\github-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\github-provider.js"
     },
     {
       "name": "GoogleProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\google-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\google-provider.js"
     },
     {
       "name": "OpenAIProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\openai-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\openai-provider.js"
     },
     {
       "name": "SupabaseProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\openai-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\openai-provider.js"
     },
     {
       "name": "VPSProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\openai-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\openai-provider.js"
     },
     {
       "name": "GenericOAuthProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\openai-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connections\\providers\\openai-provider.js"
     },
     {
       "name": "AIProviderAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\ai-provider-adapter.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\ai-provider-adapter.js"
     },
     {
       "name": "ConnectorRuntime",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\connector-runtime.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\connector-runtime.js"
     },
     {
       "name": "GitHubConnectorAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\github-connector-adapter.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\github-connector-adapter.js"
     },
     {
       "name": "GitHubEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\github-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\connectors\\github-engine.js"
     },
     {
       "name": "ContextEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\context\\context-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\context\\context-engine.js"
     },
     {
       "name": "ControlPlane",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\control-plane\\control-plane.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\control-plane\\control-plane.js"
     },
     {
       "type": "executor",
@@ -339,7 +339,7 @@
         "PluginRegistry",
         "ExecutionPolicies"
       ],
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\CapabilityExecutor.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\CapabilityExecutor.js"
     },
     {
       "type": "router",
@@ -348,27 +348,27 @@
       "requires": [
         "CapabilityRegistry"
       ],
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\CapabilityRouter.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\CapabilityRouter.js"
     },
     {
       "name": "SystemReconstructionScore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\contracts\\dna-types.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\contracts\\dna-types.js"
     },
     {
       "name": "FunctionCoverage",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\contracts\\dna-types.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\contracts\\dna-types.js"
     },
     {
       "name": "ObservationEvent",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\contracts\\observation-event.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\contracts\\observation-event.js"
     },
     {
       "name": "Task",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\contracts\\task.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\contracts\\task.js"
     },
     {
       "type": "bus",
@@ -377,1328 +377,1328 @@
       "requires": [
         "EventRegistry"
       ],
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\ExecutionBus.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\ExecutionBus.js"
     },
     {
       "type": "service",
       "name": "ExecutionPolicies",
       "version": "1.0.0",
       "requires": [],
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\ExecutionPolicies.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\ExecutionPolicies.js"
     },
     {
       "name": "Kernel",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Kernel.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Kernel.js"
     },
     {
       "name": "Container",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Kernel.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Kernel.js"
     },
     {
       "name": "PluginManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\plugin-manager.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\plugin-manager.js",
       "_duplicated": true
     },
     {
       "name": "ModuleRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "ServiceRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\service-registry.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\service-registry.js",
       "_duplicated": true
     },
     {
       "name": "KnowledgeRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "MissionRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "WorkerRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\worker-registry.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\worker-registry.js",
       "_duplicated": true
     },
     {
       "name": "ProjectRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "EvolutionRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "RuntimeRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\RuntimeRegistry.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\RuntimeRegistry.js",
       "_duplicated": true
     },
     {
       "name": "RouteRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "EventRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "PluginRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "SessionRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
     },
     {
       "name": "Registry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registry.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registry.js"
     },
     {
       "name": "UnifiedEventBus",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\UnifiedEventBus.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\UnifiedEventBus.js"
     },
     {
       "name": "WindowsDeviceAgent",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\agent-runtime\\windows-agent.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\agent-runtime\\windows-agent.js"
     },
     {
       "name": "DesktopAgentManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\desktop\\desktop-agent-manager.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\desktop\\desktop-agent-manager.js"
     },
     {
       "name": "DeviceManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\device-manager.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\device-manager.js"
     },
     {
       "name": "AndroidRemoteAgentManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\mobile\\android-remote-agent.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\devices\\mobile\\android-remote-agent.js"
     },
     {
       "name": "DigitalTwinEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\digital-twin\\digital-twin-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\digital-twin\\digital-twin-engine.js"
     },
     {
       "name": "DigitalTwinService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\digital-twin\\digital-twin.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\digital-twin\\digital-twin.js"
     },
     {
       "name": "DiscoveryEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\discovery\\discovery-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\discovery\\discovery-engine.js"
     },
     {
       "name": "DiscoveryNetwork",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\discovery-network\\discovery-network.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\discovery-network\\discovery-network.js"
     },
     {
       "name": "DiscoveryProjection",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\discovery-network\\discovery-projection.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\discovery-network\\discovery-projection.js"
     },
     {
       "name": "DockerCliProbe",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\discovery-network\\docker-cli-probe.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\discovery-network\\docker-cli-probe.js"
     },
     {
       "name": "EventBus",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\event-bus.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\event-bus.js",
       "_duplicated": true
     },
     {
       "name": "EventStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\eventing\\event-store.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\eventing\\event-store.js"
     },
     {
       "name": "FabricEventBus",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\eventing\\fabric-event-bus.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\eventing\\fabric-event-bus.js"
     },
     {
       "name": "AIEconomyEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\ai-economy-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\ai-economy-engine.js"
     },
     {
       "name": "AutonomousEvolutionKernel",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\autonomous-evolution-kernel.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\autonomous-evolution-kernel.js"
     },
     {
       "name": "ContextBuilder",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\context-builder.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\context-builder.js"
     },
     {
       "name": "EvolutionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\evolution-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\evolution-engine.js"
     },
     {
       "name": "LearningEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\knowledge\\learning-engine.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\knowledge\\learning-engine.js",
       "_duplicated": true
     },
     {
       "name": "DockerRootlessSandbox",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\docker-rootless-sandbox.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\docker-rootless-sandbox.js"
     },
     {
       "name": "ExecutionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\execution-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\execution-engine.js"
     },
     {
       "name": "PermissionMatrix",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\permission-matrix.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\permission-matrix.js"
     },
     {
       "name": "PreviewEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\preview-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\preview-engine.js"
     },
     {
       "name": "RealityEnforcementEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\reality-enforcement-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\reality-enforcement-engine.js"
     },
     {
       "name": "SandboxExecutionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\sandbox-execution-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\sandbox-execution-engine.js"
     },
     {
       "name": "ScriptLibrary",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\script-library.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\script-library.js"
     },
     {
       "name": "TaskEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\task-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\task-engine.js"
     },
     {
       "name": "ToolRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\tool-registry.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\tool-registry.js"
     },
     {
       "name": "WorkerScheduler",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\worker-scheduler.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\worker-scheduler.js"
     },
     {
       "name": "ExecutiveBrain",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\executive\\executive-brain.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\executive\\executive-brain.js"
     },
     {
       "name": "FabricProjection",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\fabric\\fabric-projection.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\fabric\\fabric-projection.js"
     },
     {
       "name": "FenixFabric",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\fabric\\fenix-fabric.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\fabric\\fenix-fabric.js"
     },
     {
       "name": "LocalIdentityProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\fabric\\identity-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\fabric\\identity-provider.js"
     },
     {
       "name": "WorkloadIdentityProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\fabric\\identity-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\fabric\\identity-provider.js"
     },
     {
       "name": "SoftwareFactoryEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\factory\\software-factory-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\factory\\software-factory-engine.js"
     },
     {
       "name": "FederationProjection",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\federation\\federation-projection.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\federation\\federation-projection.js"
     },
     {
       "name": "KnowledgeFederation",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\federation\\knowledge-federation.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\federation\\knowledge-federation.js"
     },
     {
       "name": "OrphanScreenDetector",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\frontend-reality\\orphan-screen-detector.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\frontend-reality\\orphan-screen-detector.js"
     },
     {
       "name": "ScreenDiscoveryEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\frontend-reality\\screen-discovery-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\frontend-reality\\screen-discovery-engine.js"
     },
     {
       "name": "ScreenNavigationGraph",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\frontend-reality\\screen-navigation-graph.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\frontend-reality\\screen-navigation-graph.js"
     },
     {
       "name": "VisualRealityEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\frontend-reality\\visual-reality-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\frontend-reality\\visual-reality-engine.js"
     },
     {
       "name": "ApprovalEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\approval-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\approval-engine.js"
     },
     {
       "name": "AuditTrail",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\audit-trail.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\audit-trail.js"
     },
     {
       "name": "Gatekeeper",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\gatekeeper.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\gatekeeper.js"
     },
     {
       "name": "PolicyEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\policy-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\policy-engine.js"
     },
     {
       "name": "ProductionReadinessService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\production-readiness.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\production-readiness.js"
     },
     {
       "name": "ReadinessMatrixService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\readiness-matrix.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\readiness-matrix.js"
     },
     {
       "name": "SimulationAuditService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\simulation-audit.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\governance\\simulation-audit.js"
     },
     {
       "name": "APIRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\api-registry.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\api-registry.js"
     },
     {
       "name": "AutonomousDoctor",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\autonomous-doctor.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\autonomous-doctor.js"
     },
     {
       "name": "FileBackupService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\backup\\file-backup-service.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\backup\\file-backup-service.js"
     },
     {
       "name": "PostgresStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\database\\postgres-store.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\database\\postgres-store.js"
     },
     {
       "name": "HealthMonitor",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\health.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\health.js"
     },
     {
       "name": "IdempotencyService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\messaging\\idempotency.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\messaging\\idempotency.js"
     },
     {
       "name": "InboxService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\messaging\\inbox.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\messaging\\inbox.js"
     },
     {
       "name": "OutboxService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\messaging\\outbox.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\messaging\\outbox.js"
     },
     {
       "name": "HealthRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\monitoring\\health-registry.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\monitoring\\health-registry.js"
     },
     {
       "name": "PrometheusExporter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\monitoring\\prometheus-exporter.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\monitoring\\prometheus-exporter.js"
     },
     {
       "name": "BullMQRuntime",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\queue\\bullmq-runtime.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\queue\\bullmq-runtime.js"
     },
     {
       "name": "RedisCache",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\redis\\redis-cache.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\redis\\redis-cache.js"
     },
     {
       "name": "RedisRateLimiter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\redis\\redis-rate-limiter.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\redis\\redis-rate-limiter.js"
     },
     {
       "name": "CircuitBreaker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\resilience\\circuit-breaker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\resilience\\circuit-breaker.js"
     },
     {
       "name": "CircuitOpenError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\resilience\\circuit-breaker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\resilience\\circuit-breaker.js"
     },
     {
       "name": "IntelligentScheduler",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\scheduler.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\scheduler.js"
     },
     {
       "name": "LinuxServiceProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\service-manager\\linux-service-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\service-manager\\linux-service-provider.js"
     },
     {
       "name": "IServiceProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\service-manager\\service-provider-contract.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\service-manager\\service-provider-contract.js"
     },
     {
       "name": "S3ObjectStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\storage\\s3-object-store.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\storage\\s3-object-store.js"
     },
     {
       "name": "TelemetryManifest",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\telemetry-manifest.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\telemetry-manifest.js"
     },
     {
       "name": "Telemetry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\telemetry.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\infrastructure\\telemetry.js"
     },
     {
       "name": "CognitiveInspectionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\inspection\\cognitive-inspection-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\inspection\\cognitive-inspection-engine.js"
     },
     {
       "name": "CausalAnalyzer",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\intelligence\\causal-analyzer.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\intelligence\\causal-analyzer.js"
     },
     {
       "name": "GenomeBuilder",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\intelligence\\genome-builder.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\intelligence\\genome-builder.js"
     },
     {
       "name": "WorkflowExtractor",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\intelligence\\workflow-extractor.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\intelligence\\workflow-extractor.js"
     },
     {
       "name": "ConfigurablePipelineService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\keos\\configurable-pipeline.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\keos\\configurable-pipeline.js"
     },
     {
       "name": "ExpandedConstitutionIndex",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\keos\\expanded-constitution-index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\keos\\expanded-constitution-index.js"
     },
     {
       "name": "UniversalAdaptersEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\keos\\universal-adapters.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\keos\\universal-adapters.js"
     },
     {
       "name": "UniversalCognitiveProtocol",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\keos\\universal-cognitive-protocol.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\keos\\universal-cognitive-protocol.js"
     },
     {
       "name": "BootManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\boot.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\boot.js"
     },
     {
       "name": "CapabilityGraph",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\capability-graph.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\capability-graph.js"
     },
     {
       "name": "DomainError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
     },
     {
       "name": "NotFoundError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
     },
     {
       "name": "ConflictError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
     },
     {
       "name": "ForbiddenError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
     },
     {
       "name": "ValidationError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
     },
     {
       "name": "RateLimitError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\errors.js"
     },
     {
       "name": "LiveBootKernel",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\live-boot-kernel.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\live-boot-kernel.js"
     },
     {
       "name": "MissingSubsystem",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\missing-subsystem.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\missing-subsystem.js"
     },
     {
       "name": "MissionGates",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\mission\\gates.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\mission\\gates.js"
     },
     {
       "name": "SystemModule",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\module.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\module.js"
     },
     {
       "name": "OrganismIdentityService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\organism-identity.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\organism-identity.js"
     },
     {
       "name": "RuntimeKernel",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\runtime-kernel.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\runtime-kernel.js"
     },
     {
       "name": "MemoryStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js",
       "_duplicated": true
     },
     {
       "name": "FileStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\store.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\store.js"
     },
     {
       "name": "Supervisor",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\supervisor.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\kernel\\supervisor.js"
     },
     {
       "name": "DecisionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\knowledge\\decision-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\knowledge\\decision-engine.js"
     },
     {
       "name": "KnowledgeEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\knowledge\\knowledge-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\knowledge\\knowledge-engine.js"
     },
     {
       "name": "CognitiveMemoryEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\cognitive-memory-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\cognitive-memory-engine.js"
     },
     {
       "name": "DevelopmentMemory",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\development-memory.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\development-memory.js"
     },
     {
       "name": "KnowledgeGenomeEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\knowledge-genome.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\knowledge-genome.js"
     },
     {
       "name": "MemoryEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-engine.js"
     },
     {
       "name": "QdrantVectorStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\qdrant-vector-store.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\qdrant-vector-store.js"
     },
     {
       "name": "FenixMind",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\mind\\fenix-mind.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\mind\\fenix-mind.js"
     },
     {
       "name": "Estimator",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\estimator.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\estimator.js"
     },
     {
       "name": "IntentEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\intent-engine.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\intent-engine.js",
       "_duplicated": true
     },
     {
       "name": "JobScheduler",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\job-scheduler.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\job-scheduler.js"
     },
     {
       "name": "MissionArtifactsService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-artifacts.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-artifacts.js"
     },
     {
       "name": "MissionDNA",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-dna.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-dna.js"
     },
     {
       "name": "MissionKernel",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-kernel.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-kernel.js"
     },
     {
       "name": "MissionPlanner",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-planner.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-planner.js"
     },
     {
       "name": "Mission",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-schema.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-schema.js"
     },
     {
       "name": "Job",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-schema.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-schema.js"
     },
     {
       "name": "InvalidStateTransitionError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-schema.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-schema.js"
     },
     {
       "name": "QualityGate",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\quality-gate.js",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\quality-gate.js",
       "_duplicated": true
     },
     {
       "name": "WorkerBase",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\worker-base.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\worker-base.js"
     },
     {
       "name": "ArchitectWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\architect-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\architect-worker.js"
     },
     {
       "name": "BackendWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\backend-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\backend-worker.js"
     },
     {
       "name": "DatabaseWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\database-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\database-worker.js"
     },
     {
       "name": "DeployWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\deploy-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\deploy-worker.js"
     },
     {
       "name": "DevOpsWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\devops-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\devops-worker.js"
     },
     {
       "name": "DocumentationWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\documentation-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\documentation-worker.js"
     },
     {
       "name": "FrontendWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\frontend-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\frontend-worker.js"
     },
     {
       "name": "PlannerWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\planner-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\planner-worker.js"
     },
     {
       "name": "QAWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\qa-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\qa-worker.js"
     },
     {
       "name": "SecurityWorker",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\security-worker.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\workers\\security-worker.js"
     },
     {
       "name": "CognitiveMarketplaceService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\nexus\\cognitive-marketplace.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\nexus\\cognitive-marketplace.js"
     },
     {
       "name": "ExecutiveCommandCenterService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\nexus\\executive-command-center.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\nexus\\executive-command-center.js"
     },
     {
       "name": "ExecutiveTimelineService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\nexus\\executive-timeline.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\nexus\\executive-timeline.js"
     },
     {
       "name": "UnifiedCognitiveCore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\nexus\\unified-cognitive-core.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\nexus\\unified-cognitive-core.js"
     },
     {
       "name": "DevelopmentObserver",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\observer\\development-observer.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\observer\\development-observer.js"
     },
     {
       "name": "SessionRecorder",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\observer\\session-recorder.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\observer\\session-recorder.js"
     },
     {
       "name": "VisualTimeline",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\observer\\visual-timeline.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\observer\\visual-timeline.js"
     },
     {
       "name": "AutonomousResearchEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\autonomous-research.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\autonomous-research.js"
     },
     {
       "name": "BrainFederation",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\brain-federation.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\brain-federation.js"
     },
     {
       "name": "CognitiveAtomsFabric",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\cognitive-atoms-fabric.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\cognitive-atoms-fabric.js"
     },
     {
       "name": "CognitiveCouncil",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\cognitive-council.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\cognitive-council.js"
     },
     {
       "name": "CollectiveIntelligenceEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\collective-intelligence.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\collective-intelligence.js"
     },
     {
       "name": "ContextExpansionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\context-expansion-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\context-expansion-engine.js"
     },
     {
       "name": "HumanDigitalTwin",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\human-digital-twin.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\human-digital-twin.js"
     },
     {
       "name": "ModelEconomyEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\model-economy-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\model-economy-engine.js"
     },
     {
       "name": "RecursiveIntelligenceLoop",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\recursive-intelligence.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega\\recursive-intelligence.js"
     },
     {
       "name": "CognitiveDnaCompiler",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\cognitive-dna-compiler.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\cognitive-dna-compiler.js"
     },
     {
       "name": "CognitiveLawsEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\cognitive-laws-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\cognitive-laws-engine.js"
     },
     {
       "name": "LivingPhysicsEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\living-physics-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\living-physics-engine.js"
     },
     {
       "name": "MetaConsciousnessEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\meta-consciousness.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\meta-consciousness.js"
     },
     {
       "name": "RealityFeedbackEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\reality-feedback-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\reality-feedback-engine.js"
     },
     {
       "name": "SelfEvolutionKernel",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\self-evolution-kernel.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\omega-infinity\\self-evolution-kernel.js"
     },
     {
       "name": "ProjectAnalyzersService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\onedeploy\\analyzers.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\onedeploy\\analyzers.js"
     },
     {
       "name": "ContinuousImprovementLoopService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\onedeploy\\continuous-improvement-loop.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\onedeploy\\continuous-improvement-loop.js"
     },
     {
       "name": "OneDeployOrchestrator",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\onedeploy\\onedeploy-orchestrator.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\onedeploy\\onedeploy-orchestrator.js"
     },
     {
       "name": "TestingSmokeE2eService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\onedeploy\\testing-smoke-e2e.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\onedeploy\\testing-smoke-e2e.js"
     },
     {
       "name": "CompanyDailyAnalysisService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\company-daily-analysis.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\company-daily-analysis.js"
     },
     {
       "name": "DeployCenterService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\deploy-center.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\deploy-center.js"
     },
     {
       "name": "ObservabilityCenterService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\observability-center.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\observability-center.js"
     },
     {
       "name": "ObservabilitySeriesService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\observability-series.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\observability-series.js"
     },
     {
       "name": "OperationalActivationService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\operational-activation.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\operations\\operational-activation.js"
     },
     {
       "name": "MasterNodeService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ops\\master-node.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ops\\master-node.js"
     },
     {
       "name": "VpsOperationsService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ops\\vps-operations.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ops\\vps-operations.js"
     },
     {
       "name": "AICeoEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\ai-ceo-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\ai-ceo-engine.js"
     },
     {
       "name": "AICtoEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\ai-cto-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\ai-cto-engine.js"
     },
     {
       "name": "AIOrchestratorKernel",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\ai-orchestrator.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\ai-orchestrator.js"
     },
     {
       "name": "AutonomousJobOrchestrator",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\autonomous-job-orchestrator.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\autonomous-job-orchestrator.js"
     },
     {
       "name": "EstimatorEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\estimator-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\estimator-engine.js"
     },
     {
       "name": "JobOrchestrator",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\job-orchestrator.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\job-orchestrator.js"
     },
     {
       "name": "Orchestrator",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\orchestrator.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\orchestrator.js"
     },
     {
       "name": "RealWorldExecutor",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\real-world-executor.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\real-world-executor.js"
     },
     {
       "name": "ResourceModelRouter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\resource-model-router.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\resource-model-router.js"
     },
     {
       "name": "CognitivePerformanceEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\performance\\cognitive-performance-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\performance\\cognitive-performance-engine.js"
     },
     {
       "name": "BaseEcosystemAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
     },
     {
       "name": "HierarchicalSwarmAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
     },
     {
       "name": "StateMachineDAGAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
     },
     {
       "name": "AgenticEnvironmentAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
     },
     {
       "name": "UniversalGatewayAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
     },
     {
       "name": "BrowserVisionAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\open-source-adapters.js"
     },
     {
       "name": "PluginSkillsEcosystem",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\plugin-skills-ecosystem.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\plugins\\plugin-skills-ecosystem.js"
     },
     {
       "name": "ProjectDNA",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\product\\project-dna.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\product\\project-dna.js"
     },
     {
       "name": "ProductSuite",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\product\\white-label.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\product\\white-label.js"
     },
     {
       "name": "ProjectDiscoveryManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\projects\\project-discovery-manager.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\projects\\project-discovery-manager.js"
     },
     {
       "name": "ArtifactGraph",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\artifact-graph.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\artifact-graph.js"
     },
     {
       "name": "CloningGitHostAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\cloning-git-host.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\cloning-git-host.js"
     },
     {
       "name": "FsGitHostAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\fs-git-host.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\fs-git-host.js"
     },
     {
       "name": "FunctionInventory",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\function-inventory.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\function-inventory.js"
     },
     {
       "name": "GitHubConnector",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\github-connector.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\github-connector.js"
     },
     {
       "name": "GitHubOperationsService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\github-operations.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\github-operations.js"
     },
     {
       "name": "PortfolioService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\portfolio.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\portfolio.js"
     },
     {
       "name": "LocalGitHostAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\ports.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\ports.js"
     },
     {
       "name": "ProjectUnderstandingScanner",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\project-understanding-scanner.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\project-understanding-scanner.js"
     },
     {
       "name": "RepositoryIntelligence",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\repository-intelligence.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\repository-intelligence.js"
     },
     {
       "name": "ReverseEngineeringEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\reverse-engineering-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\reverse-engineering-engine.js"
     },
     {
       "name": "ResearchSourceClient",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\research\\source-client.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\research\\source-client.js"
     },
     {
       "name": "ResearchDisabledError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\research\\source-client.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\research\\source-client.js"
     },
     {
       "name": "SourceNotAllowedError",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\research\\source-client.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\research\\source-client.js"
     },
     {
       "name": "AgentRuntime",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\agent-runtime.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\agent-runtime.js"
     },
     {
       "name": "AutoUpdateEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\auto-update.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\auto-update.js"
     },
     {
       "name": "Deployer",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\deployer.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\deployer.js"
     },
     {
       "name": "DevelopmentDeployAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\deployer.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\deployer.js"
     },
     {
       "name": "DockerDeployAdapter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\docker-deploy-adapter.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\docker-deploy-adapter.js"
     },
     {
       "name": "JobEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\job-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\job-engine.js"
     },
     {
       "name": "LivingRuntime",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\living-runtime.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\living-runtime.js"
     },
     {
       "name": "StoreLease",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\living-runtime.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\living-runtime.js"
     },
     {
       "name": "RedisLease",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\redis-lease.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\runtime\\redis-lease.js"
     },
     {
       "name": "ApplicationGenomeService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\scos\\application-genome.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\scos\\application-genome.js"
     },
     {
       "name": "CreationEvolutionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\scos\\creation-evolution-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\scos\\creation-evolution-engine.js"
     },
     {
       "name": "DesignIntelligenceOS",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\scos\\design-intelligence-os.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\scos\\design-intelligence-os.js"
     },
     {
       "name": "FullStackFactoryService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\scos\\fullstack-factory.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\scos\\fullstack-factory.js"
     },
     {
       "name": "CognitiveEncryptionService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\cognitive-encryption.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\cognitive-encryption.js"
     },
     {
       "name": "FenixVault",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\fenix-vault.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\fenix-vault.js"
     },
     {
       "name": "SecretVault",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\secret-vault.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\secret-vault.js"
     },
     {
       "name": "SecurityPlane",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\security-plane.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\security-plane.js"
     },
     {
       "name": "LocalRateLimiter",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\security-plane.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\security-plane.js"
     },
     {
       "name": "SecurityShield",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\security-shield.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\security\\security-shield.js"
     },
     {
       "name": "SkillEvolutionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\skills\\skill-evolution-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\skills\\skill-evolution-engine.js"
     },
     {
       "name": "SkillRegistry",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\skills\\skill-registry.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\skills\\skill-registry.js"
     },
     {
       "name": "ProjectFactoryService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\project-factory.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\project-factory.js"
     },
     {
       "name": "SoftwareFactory",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\software-factory.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\software-factory.js"
     },
     {
       "name": "InMemoryDriver",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\local\\in-memory-driver.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\local\\in-memory-driver.js"
     },
     {
       "name": "LocalVectorDriver",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\local\\local-vector-driver.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\local\\local-vector-driver.js"
     },
     {
       "name": "MemoryCacheDriver",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\local\\memory-cache-driver.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\local\\memory-cache-driver.js"
     },
     {
       "name": "SQLiteDriver",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\local\\sqlite-driver.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\local\\sqlite-driver.js"
     },
     {
       "name": "PostgreSQLDriver",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\postgresql-driver.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\postgresql-driver.js"
     },
     {
       "name": "QdrantDriver",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\qdrant-driver.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\qdrant-driver.js"
     },
     {
       "name": "RedisDriver",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\redis-driver.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\drivers\\redis-driver.js"
     },
     {
       "name": "FileSystemService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\file-system-service.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\file-system-service.js"
     },
     {
       "name": "StorageManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\storage-manager.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\storage-manager.js"
     },
     {
       "name": "StorageProvider",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\storage-provider.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\storage-provider.js"
     },
     {
       "name": "MissionStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
     },
     {
       "name": "KnowledgeStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
     },
     {
       "name": "ArtifactStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
     },
     {
       "name": "VectorStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
     },
     {
       "name": "CacheStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
     },
     {
       "name": "ExperienceStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
     },
     {
       "name": "PatternStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
     },
     {
       "name": "ProjectStore",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\storage\\stores\\index.js"
     },
     {
       "name": "CapabilityOperatingSystem",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\uios\\capability-operating-system.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\uios\\capability-operating-system.js"
     },
     {
       "name": "KnowledgeOperatingSystem",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\uios\\knowledge-operating-system.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\uios\\knowledge-operating-system.js"
     },
     {
       "name": "MissionCompiler",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\uios\\mission-compiler.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\uios\\mission-compiler.js"
     },
     {
       "name": "WorldModelFactory",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\uios\\world-model-factory.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\uios\\world-model-factory.js"
     },
     {
       "name": "GlobalVersionEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\versioning\\global-version-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\versioning\\global-version-engine.js"
     },
     {
       "name": "VisionAgent",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\vision\\vision-agent.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\vision\\vision-agent.js"
     },
     {
       "name": "VisualCodeBidirectionalMapper",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\visual-ide\\visual-code-mapper.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\visual-ide\\visual-code-mapper.js"
     },
     {
       "name": "AlexaVoiceGateway",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\voice\\alexa-voice-gateway.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\voice\\alexa-voice-gateway.js"
     },
     {
       "name": "WorkforceService",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workforce\\workforce.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workforce\\workforce.js"
     },
     {
       "name": "CognitivePresenceEngine",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workspace\\cognitive-presence-engine.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workspace\\cognitive-presence-engine.js"
     },
     {
       "name": "CognitiveWorkspaceModes",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workspace\\cognitive-workspace-modes.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workspace\\cognitive-workspace-modes.js"
     },
     {
       "name": "ExecutiveCognitiveAssistant",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workspace\\executive-cognitive-assistant.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workspace\\executive-cognitive-assistant.js"
     },
     {
       "name": "MultiProjectWorkspaceManager",
       "type": "legacy",
-      "filePath": "c:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workspace\\multi-project-workspace-manager.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\workspace\\multi-project-workspace-manager.js"
     }
   ],
   "capabilities": []
