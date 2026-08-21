@@ -93,16 +93,10 @@ async function settle(entries, concurrency = 5) {
 }
 
 function row(title, detail = '', status = '') {
-  let badgeCls = '';
-  if (/ok|ready|active|online|connected|succeeded|completed/i.test(status)) badgeCls = 'badge green';
-  else if (/fail|error|degraded|missing|offline|blocked|denied/i.test(status)) badgeCls = 'badge rose';
-  else if (status) badgeCls = 'badge warn';
-  
-  return `<tr>
-    <td><b>${esc(title)}</b></td>
-    <td><small>${esc(detail)}</small></td>
-    <td>${status ? `<span class="${badgeCls}">${esc(status)}</span>` : '--'}</td>
-  </tr>`;
+  const cls = /ok|ready|active|online|connected|succeeded/i.test(status) ? 'ok'
+    : /fail|error|degraded|missing|offline|blocked|denied/i.test(status) ? 'bad'
+    : status ? 'warn' : '';
+  return `<div class="row"><b>${esc(title)}</b><small>${esc(detail)}</small><span class="status-pill ${cls}">${esc(status || '--')}</span></div>`;
 }
 
 function metric(label, value) {
@@ -252,44 +246,36 @@ function renderCommand() {
   const telemetry = state.data.telemetry || {};
   text('activeModel', telemetry.lastModel || telemetry.model || (telemetry.calls ? 'IA medida' : 'sem chamada'));
   text('eventCount', `${state.events.length} eventos`);
-  if ($('eventStream')) $('eventStream').innerHTML = state.events.length
-    ? state.events.slice(0, 48).map((event) => `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(event.summary || event.message || event.recordedAt || event.id)}</strong></div>`).join('')
-    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon">∿</span>Sem eventos</div>';
+  $('eventStream').innerHTML = state.events.length
+    ? state.events.slice(0, 48).map((event) => `<div>[${esc(event.type || event.name || 'event')}] ${esc(event.summary || event.message || event.recordedAt || event.id)}</div>`).join('')
+    : '<div>Sem eventos publicados ainda.</div>';
 }
 
 function renderRuntime() {
   const checks = state.data.health?.checks || {};
   const checkRows = Array.isArray(checks) ? checks : Object.entries(checks).map(([id, value]) => ({ id, ...value }));
-  if ($('healthList')) $('healthList').innerHTML = checkRows.length
+  $('healthList').innerHTML = checkRows.length
     ? checkRows.map((c) => row(c.id || c.name, c.degraded || c.error || c.adapter || c.status || '', c.ok === false ? 'DEGRADED' : 'OK')).join('')
     : row('health', state.data.health?.__error || 'sem checks', 'UNKNOWN');
   const services = state.data.runtime?.services || state.data.runtime?.subsystems || state.data.health?.boot;
-  if ($('runtimeServices')) $('runtimeServices').innerHTML = Array.isArray(services)
+  $('runtimeServices').innerHTML = Array.isArray(services)
     ? services.map((s) => row(s.id || s.name, s.version || '', s.status || 'OK')).join('')
     : Object.entries(services || {}).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 80) : value, value?.status || '')).join('') || row('kernel', 'sem inventario de servicos publicado', 'UNKNOWN');
   const workers = state.data.workers?.workers || state.data.observability?.workers?.heartbeats || [];
-  if ($('workerList')) $('workerList').innerHTML = Array.isArray(workers) && workers.length
+  $('workerList').innerHTML = Array.isArray(workers) && workers.length
     ? workers.map((w) => row(w.name || w.id || w.workerId, w.activeJobs != null ? `${w.activeJobs} jobs ativos` : w.role || '', w.status || w.state || 'KNOWN')).join('')
     : row('workers', state.data.workers?.__error || 'sem workers ativos medidos', 'UNKNOWN');
 }
 
 function renderMissions() {
-  if ($('missionList')) $('missionList').innerHTML = state.missions.length
-    ? state.missions.map((m) => row(m.id || 'mission', m.objective || m.name || '', m.status || 'ACTIVE')).join('')
-    : row('missoes', 'sem historico', 'EMPTY');
-  
-  if ($('jobList')) $('jobList').innerHTML = state.jobs.length
-    ? state.jobs.map((j) => `<div style="padding:12px; border-bottom:1px solid var(--border); margin-bottom:8px; background:var(--bg-base); border-radius:6px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-          <strong style="color:var(--text-main);">${esc(j.id || 'job')}</strong>
-          <span class="badge ${j.status === 'COMPLETED' ? 'green' : (j.status==='FAILED'?'rose':'warn')}">${esc(j.status || 'RUNNING')}</span>
-        </div>
-        <div style="color:var(--text-muted); font-size:11px;">${esc(j.objective || j.name || 'Tarefa em andamento...')}</div>
-      </div>`).join('')
-    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">⏱</span>Sem Jobs ativos</div>';
-
+  $('missionList').innerHTML = state.missions.length
+    ? state.missions.slice(0, 20).map((m) => row(m.title || m.objective || m.id, `${m.steps?.length || 0} etapas`, m.status || m.state)).join('')
+    : row('missoes', 'nenhuma missao registrada', 'EMPTY');
+  $('jobList').innerHTML = state.jobs.length
+    ? state.jobs.slice(0, 30).map((j) => row(j.type || j.id, `tentativa ${j.attempts || 0}/${j.maxAttempts || 0}`, j.status)).join('')
+    : row('jobs', 'nenhum job registrado', 'EMPTY');
   const programs = state.data.programs?.programs || [];
-  if ($('programList')) $('programList').innerHTML = programs.length
+  $('programList').innerHTML = programs.length
     ? programs.map((p) => row(p.objective || p.title || p.id, `${p.missions?.length || 0} missoes`, p.status || 'PROGRAM')).join('')
     : row('programas', 'sem programas executivos', 'EMPTY');
 }
@@ -299,30 +285,30 @@ function renderCity() {
 
   const nodes = state.data.city?.nodes || [];
   if (!nodes.length) {
-    if ($('cityCanvas')) $('cityCanvas').innerHTML = '<div class="row"><b>AI City</b><small>Aguardando eventos reais para projetar a cidade.</small><span class="status-pill warn">EMPTY</span></div>';
+    $('cityCanvas').innerHTML = '<div class="row"><b>AI City</b><small>Aguardando eventos reais para projetar a cidade.</small><span class="status-pill warn">EMPTY</span></div>';
   } else {
     const visible = nodes.slice(0, 42);
-    if ($('cityCanvas')) $('cityCanvas').innerHTML = visible.map((n, i) => {
+    $('cityCanvas').innerHTML = visible.map((n, i) => {
       const x = 8 + ((i * 23) % 84);
       const y = 12 + ((i * 37) % 74);
       return `<button class="city-node ${esc(n.status || '')}" style="left:${x}%;top:${y}%;" title="${esc(n.id)}"><strong>${esc(n.label || n.name || n.id)}</strong><small>${esc(n.type || n.status || '')}</small></button>`;
     }).join('');
   }
   const overview = state.data.overview?.metrics || {};
-  if ($('knowledgeDistrict')) $('knowledgeDistrict').innerHTML = [
+  $('knowledgeDistrict').innerHTML = [
     metric('Memorias', overview.memories),
     metric('Graph edges', overview.graphEdges),
     metric('City nodes', overview.cityNodes),
     metric('Capabilities', overview.capabilities),
   ].join('');
   const workers = state.data.workers?.workers || [];
-  if ($('workersDistrict')) $('workersDistrict').innerHTML = workers.length ? workers.map((w) => row(w.name || w.id, w.role || '', w.status || 'KNOWN')).join('') : row('workers', 'sem workers publicados', 'EMPTY');
+  $('workersDistrict').innerHTML = workers.length ? workers.map((w) => row(w.name || w.id, w.role || '', w.status || 'KNOWN')).join('') : row('workers', 'sem workers publicados', 'EMPTY');
   const proposals = state.data.agents?.tasks || state.data.swarm?.agents || [];
-  if ($('evolutionDistrict')) $('evolutionDistrict').innerHTML = Array.isArray(proposals) && proposals.length ? proposals.slice(0, 10).map((p) => row(p.name || p.id || p.role, p.summary || p.status || '', p.status || 'KNOWN')).join('') : row('evolucao', 'sem propostas ou agentes ativos', 'EMPTY');
+  $('evolutionDistrict').innerHTML = Array.isArray(proposals) && proposals.length ? proposals.slice(0, 10).map((p) => row(p.name || p.id || p.role, p.summary || p.status || '', p.status || 'KNOWN')).join('') : row('evolucao', 'sem propostas ou agentes ativos', 'EMPTY');
 }
 
 function renderOffice() {
-  if ($('officeList')) $('officeList').innerHTML = state.office.length
+  $('officeList').innerHTML = state.office.length
     ? state.office.map((o) => `<article class="office-card"><h3>${esc(o.store || o.subjectName || o.projectId)}</h3><p>${esc(o.niche || '')}</p><p>${esc(o.headcount || 0)} membros</p><button class="soft-btn" data-office="${esc(o.projectId)}" type="button">Abrir equipe</button></article>`).join('')
     : '<div class="row"><b>Office</b><small>Nenhuma workforce contratada ainda.</small><span class="status-pill warn">EMPTY</span></div>';
   document.querySelectorAll('[data-office]').forEach((button) => button.addEventListener('click', () => openOffice(button.dataset.office)));
@@ -333,9 +319,9 @@ async function openOffice(projectId) {
     const workforce = await api(`/projects/${encodeURIComponent(projectId)}/workforce`);
     text('officeTitle', workforce.subjectName || projectId);
     const employees = workforce.employees || [];
-    if ($('officeDetail')) $('officeDetail').innerHTML = employees.map((e) => row(e.title || e.role, e.focus || e.capability || '', `nivel ${e.level || 1}`)).join('') || row('equipe', 'sem funcionarios', 'EMPTY');
+    $('officeDetail').innerHTML = employees.map((e) => row(e.title || e.role, e.focus || e.capability || '', `nivel ${e.level || 1}`)).join('') || row('equipe', 'sem funcionarios', 'EMPTY');
   } catch (error) {
-    if ($('officeDetail')) $('officeDetail').innerHTML = row(projectId, error.message, 'ERROR');
+    $('officeDetail').innerHTML = row(projectId, error.message, 'ERROR');
   }
 }
 
@@ -348,23 +334,17 @@ function renderProjects() {
     const hay = `${p.name || ''} ${repo.name || ''} ${repo.owner || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
     return hay.includes(q) && (visibility === 'all' || repo.visibility === visibility);
   });
-  if ($('projectList')) $('projectList').innerHTML = projects.length
+  $('projectList').innerHTML = projects.length
     ? projects.map((p) => {
       const repo = reposById.get(p.repositoryId) || p.repository || {};
-      const status = p.analysisStatus || p.status || 'Active';
-      return `<tr>
-        <td><b>${esc(p.name || p.id)}</b> <small style="color:var(--text-muted)">${esc(repo.owner || '')}/${esc(repo.name || '')}</small></td>
-        <td><span class="badge ${/active/i.test(status)?'green':'warn'}">${esc(status)}</span></td>
-        <td>${p.agents?.length || 0} agentes</td>
-        <td><button class="btn btn-sm" data-hire="${esc(p.id)}" type="button"><i class="ph ph-briefcase"></i> Contratar</button></td>
-      </tr>`;
+      return `<article class="project-card"><h3>${esc(p.name || p.id)}</h3><p>${esc(repo.owner || '')}/${esc(repo.name || '')}</p><p>${esc(p.analysisStatus || p.status || '')}</p><button class="soft-btn" data-hire="${esc(p.id)}" type="button">Contratar equipe</button></article>`;
     }).join('')
-    : '<tr><td colspan="4" style="text-align:center; padding:32px 0; color:var(--text-muted);">Nenhum projeto encontrado.</td></tr>';
+    : '<div class="row"><b>Projetos</b><small>Nenhum projeto encontrado.</small><span class="status-pill warn">EMPTY</span></div>';
   document.querySelectorAll('[data-hire]').forEach((button) => button.addEventListener('click', () => hireWorkforce(button.dataset.hire)));
   const graph = state.data.graph || {};
   const nodes = graph.nodes || [];
   const edges = graph.edges || [];
-  if ($('graphSummary')) $('graphSummary').innerHTML = [
+  $('graphSummary').innerHTML = [
     row('Projetos', `${projects.length} filtrados`, 'MEASURED'),
     row('Grafo', `${nodes.length} nos, ${edges.length} relacoes`, nodes.length ? 'READY' : 'EMPTY'),
   ].join('');
@@ -376,17 +356,17 @@ async function hireWorkforce(projectId) {
     await refreshAll();
     showView('office');
   } catch (error) {
-    if ($('graphSummary')) $('graphSummary').innerHTML = row('Contratar equipe', error.message, 'ERROR') + $('graphSummary').innerHTML;
+    $('graphSummary').innerHTML = row('Contratar equipe', error.message, 'ERROR') + $('graphSummary').innerHTML;
   }
 }
 
 function renderKnowledge() {
   const kos = state.data.kos || {};
-  if ($('kosManifest')) $('kosManifest').innerHTML = Object.keys(kos).length
+  $('kosManifest').innerHTML = Object.keys(kos).length
     ? Object.entries(kos).slice(0, 12).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 120) : value, value?.state || '')).join('')
     : row('KOS', kos.__error || 'manifesto indisponivel', 'UNKNOWN');
   const anomalies = state.data.kg?.anomalies || state.data.graph?.edges || [];
-  if ($('kgList')) $('kgList').innerHTML = Array.isArray(anomalies) && anomalies.length
+  $('kgList').innerHTML = Array.isArray(anomalies) && anomalies.length
     ? anomalies.slice(0, 20).map((item, i) => row(item.type || item.id || `relacao ${i + 1}`, item.source || item.target || JSON.stringify(item).slice(0, 90), item.status || 'GRAPH')).join('')
     : row('Knowledge graph', 'sem anomalias carregadas nesta tela', 'EMPTY');
 }
@@ -394,11 +374,11 @@ function renderKnowledge() {
 function renderSkills() {
   const skills = state.data.skills?.skills || [];
   text('skillCount', `${skills.length} skills`);
-  if ($('skillList')) $('skillList').innerHTML = skills.length
+  $('skillList').innerHTML = skills.length
     ? skills.map((skill) => row(skill.name, `${skill.source} Â· ${skill.estimatedTokens} tokens Â· ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
     : row('skills', state.data.skills?.__error || 'nenhuma skill encontrada', 'EMPTY');
   if (!$('skillContext').innerHTML) {
-    if ($('skillContext')) $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
+    $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
   }
   renderFullstackSlices();
 }
@@ -415,7 +395,7 @@ function renderFullstackSlices() {
 async function createFullstackSlice(prompt) {
   const value = String(prompt || '').trim();
   if (!value) return;
-  if ($('sliceList')) $('sliceList').innerHTML = row('criando front + back', value, 'RUNNING') + $('sliceList').innerHTML;
+  $('sliceList').innerHTML = row('criando front + back', value, 'RUNNING') + $('sliceList').innerHTML;
   try {
     const slice = await api('/scos/factory/slices', {
       method: 'POST',
@@ -435,34 +415,34 @@ async function createFullstackSlice(prompt) {
     $('slicePrompt').value = '';
     await refreshAll();
   } catch (error) {
-    if ($('sliceList')) $('sliceList').innerHTML = row('builder falhou', error.message, 'ERROR') + $('sliceList').innerHTML;
+    $('sliceList').innerHTML = row('builder falhou', error.message, 'ERROR') + $('sliceList').innerHTML;
   }
 }
 
 async function selectSkills(objective) {
   const value = String(objective || '').trim();
   if (!value) return;
-  if ($('skillContext')) $('skillContext').innerHTML = row('selecionando skills', value, 'RUNNING');
+  $('skillContext').innerHTML = row('selecionando skills', value, 'RUNNING');
   try {
     const pack = await api('/skills/select', { method: 'POST', body: JSON.stringify({ objective: value, maxTokens: 1200, limit: 4 }) });
-    if ($('skillContext')) $('skillContext').innerHTML = [
+    $('skillContext').innerHTML = [
       row('objetivo', pack.objective, `${pack.estimatedTokens} tokens`),
       row('economia estimada', `${pack.savedBySelectiveLoad || 0} tokens nao carregados`, 'MEASURED'),
       ...(pack.selectedSkills || []).map((skill) => row(skill.name, `${skill.source} Â· score ${skill.score} Â· ${skill.contextTokens} tokens`, 'SELECTED')),
     ].join('');
   } catch (error) {
-    if ($('skillContext')) $('skillContext').innerHTML = row('skill select', error.message, 'ERROR');
+    $('skillContext').innerHTML = row('skill select', error.message, 'ERROR');
   }
 }
 
 function renderConnectors() {
   const connectors = state.data.connectors?.connectors || [];
-  if ($('connectorList')) $('connectorList').innerHTML = connectors.length
+  $('connectorList').innerHTML = connectors.length
     ? connectors.map((c) => row(c.connectorId || c.id, c.source || c.reason || '', c.state?.value || c.status || 'UNKNOWN')).join('')
     : row('conectores', state.data.connectors?.__error || 'nenhum conector registrado', 'EMPTY');
   const router = state.data.router || {};
   const chosen = router.chosen?.value || router.chosen || router;
-  if ($('routerState')) $('routerState').innerHTML = [
+  $('routerState').innerHTML = [
     row('provider escolhido', chosen.provider || chosen.name || 'sem provider', chosen.model || chosen.reason || '', chosen.provider ? 'READY' : 'UNKNOWN'),
     row('API connection', (state.data.connection?.providers || []).length ? `${state.data.connection.providers.length} providers monitorados` : 'sem check executado', (state.data.connection?.providers || [])[0]?.status || ''),
   ].join('');
@@ -472,7 +452,7 @@ function renderDeploy() {
   const readiness = state.data.readiness || {};
   const totals = readiness.totals || {};
   const gate = state.data.gatekeeper || {};
-  if ($('readinessList')) $('readinessList').innerHTML = [
+  $('readinessList').innerHTML = [
     row('production proven', `${totals.productionProven ?? 0}/${totals.objectives ?? 0}`, totals.productionProven ? 'PARTIAL' : 'BLOCKED'),
     row('gatekeeper', gate.allowed ? 'acao liberada' : gate.reason || 'bloqueado ate haver evidencia', gate.allowed ? 'READY' : 'BLOCKED'),
   ].join('');
@@ -480,7 +460,7 @@ function renderDeploy() {
 
 function renderObservability() {
   const obs = state.data.observability || {};
-  if ($('observabilityMetrics')) $('observabilityMetrics').innerHTML = [
+  $('observabilityMetrics').innerHTML = [
     metric('AI tokens', getMeasured(obs.aiRuntime?.totalTokensConsumed) ?? state.data.telemetry?.totalTokens),
     metric('AI calls', getMeasured(obs.aiRuntime?.calls) ?? state.data.telemetry?.calls),
     metric('Workers', getMeasured(obs.workers?.knownWorkers)),
@@ -493,17 +473,17 @@ function renderObservability() {
     const last = Array.isArray(points) ? points.at(-1) : null;
     return `<div class="spark"><b>${esc(name)}</b><small>${esc(last?.value ?? '--')}</small><div class="spark-line"></div></div>`;
   });
-  if ($('seriesGrid')) $('seriesGrid').innerHTML = cards.length ? cards.join('') : '<div class="row"><b>series</b><small>sem amostras ainda</small><span class="status-pill warn">EMPTY</span></div>';
+  $('seriesGrid').innerHTML = cards.length ? cards.join('') : '<div class="row"><b>series</b><small>sem amostras ainda</small><span class="status-pill warn">EMPTY</span></div>';
 }
 
 function renderSecurity() {
   const sec = state.data.security || {};
-  if ($('securityState')) $('securityState').innerHTML = Object.keys(sec).length
+  $('securityState').innerHTML = Object.keys(sec).length
     ? Object.entries(sec).slice(0, 10).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 100) : value, value?.state || '')).join('')
     : row('security', sec.__error || 'status indisponivel', 'UNKNOWN');
   const audit = state.data.veracity || {};
   const totals = audit.totals || audit.summary || {};
-  if ($('veracityState')) $('veracityState').innerHTML = [
+  $('veracityState').innerHTML = [
     row('modulos varridos', totals.modules ?? audit.modules?.length ?? '--', 'MEASURED'),
     row('sinais falsos', totals.signals ?? totals.falseSignals ?? '--', (totals.signals || totals.falseSignals) ? 'ATTENTION' : 'OK'),
     row('production', totals.production ?? '--', 'MEASURED'),
@@ -534,22 +514,22 @@ async function runChat(message) {
 async function createProgram(objective) {
   const value = String(objective || '').trim();
   if (!value) return;
-  if ($('programList')) $('programList').innerHTML = row('criando programa', value, 'RUNNING') + $('programList').innerHTML;
+  $('programList').innerHTML = row('criando programa', value, 'RUNNING') + $('programList').innerHTML;
   try {
     await api('/executive/programs', { method: 'POST', body: JSON.stringify({ objective: value }) });
     $('programObjective').value = '';
     await refreshAll();
   } catch (error) {
-    if ($('programList')) $('programList').innerHTML = row('erro ao criar programa', error.message, 'ERROR') + $('programList').innerHTML;
+    $('programList').innerHTML = row('erro ao criar programa', error.message, 'ERROR') + $('programList').innerHTML;
   }
 }
 
 async function scanProject(path) {
-  if ($('scanResult')) $('scanResult').innerHTML = row('scan em andamento', path || '.', 'RUNNING');
+  $('scanResult').innerHTML = row('scan em andamento', path || '.', 'RUNNING');
   try {
     const scan = await api('/onedeploy/scan-project', { method: 'POST', body: JSON.stringify({ projectPath: path || '.' }) });
     const d = scan.discovery || {};
-    if ($('scanResult')) $('scanResult').innerHTML = [
+    $('scanResult').innerHTML = [
       row('caminho', scan.projectPath || path || '.', scan.exists ? 'FOUND' : 'MISSING'),
       row('frontend', getMeasured(d.frontendFramework) || d.frontendFramework?.reason || '--', d.frontendFramework?.state || ''),
       row('backend', getMeasured(d.backendFramework) || d.backendFramework?.reason || '--', d.backendFramework?.state || ''),
@@ -557,14 +537,14 @@ async function scanProject(path) {
       row('ci/cd', getMeasured(d.ciCd) ?? d.ciCd?.reason ?? '--', d.ciCd?.state || ''),
     ].join('');
   } catch (error) {
-    if ($('scanResult')) $('scanResult').innerHTML = row('scan falhou', error.message, 'ERROR');
+    $('scanResult').innerHTML = row('scan falhou', error.message, 'ERROR');
   }
 }
 
 async function loadFs(path = '') {
   try {
     const data = await api(`/dev/fs?path=${encodeURIComponent(path)}`);
-    if ($('fsList')) $('fsList').innerHTML = (data.items || []).map((item) => row(item.name, item.path, item.isDirectory ? 'DIR' : 'FILE')).join('') || row('fs', 'vazio', 'EMPTY');
+    $('fsList').innerHTML = (data.items || []).map((item) => row(item.name, item.path, item.isDirectory ? 'DIR' : 'FILE')).join('') || row('fs', 'vazio', 'EMPTY');
     document.querySelectorAll('#fsList .row').forEach((el) => {
       el.addEventListener('click', () => {
         const filePath = el.querySelector('small')?.textContent || '';
@@ -573,7 +553,7 @@ async function loadFs(path = '') {
       });
     });
   } catch (error) {
-    if ($('fsList')) $('fsList').innerHTML = row('developer fs', error.message, 'ERROR');
+    $('fsList').innerHTML = row('developer fs', error.message, 'ERROR');
   }
 }
 
@@ -588,44 +568,40 @@ async function openFile(path) {
 
 function init() {
   document.querySelectorAll('[data-nav]').forEach((el) => el.addEventListener('click', () => showView(el.dataset.nav)));
-  
-  // Helpers for safe binding
-  const addEvt = (id, event, handler) => { const el = $(id); if (el) el.addEventListener(event, handler); };
-
-  addEvt('refreshBtn', 'click', () => refreshAll());
-  addEvt('logoutBtn', 'click', async () => {
-    await api('/login/logout', { method: 'POST' }).catch(() => {});
-    localStorage.removeItem('grg_token');
-    location.replace('/GRG-login');
+  $('refreshBtn').addEventListener('click', () => refreshAll());
+  $('logoutBtn').addEventListener('click', async () => {
+    try { await fetch('/api/logout', { method: 'POST', headers: { authorization: `Bearer ${accessToken}` } }); }
+    finally { localStorage.removeItem('grg_token'); location.replace('/GRG-login'); }
   });
-  addEvt('cmdForm', 'submit', (event) => {
+  $('cmdForm').addEventListener('submit', (event) => {
     event.preventDefault();
-    const value = $('prompt') ? $('prompt').value : '';
-    if ($('prompt')) $('prompt').value = '';
+    const value = $('prompt').value;
+    $('prompt').value = '';
     runChat(value);
   });
   document.querySelectorAll('[data-prompt]').forEach((button) => button.addEventListener('click', () => runChat(button.dataset.prompt)));
-  addEvt('projectSearch', 'input', renderProjects);
-  addEvt('repoVisibility', 'change', renderProjects);
-  addEvt('programForm', 'submit', (event) => { event.preventDefault(); if ($('programObjective')) createProgram($('programObjective').value); });
-  addEvt('scanForm', 'submit', (event) => { event.preventDefault(); if ($('scanPath')) scanProject($('scanPath').value); });
-  addEvt('skillForm', 'submit', (event) => { event.preventDefault(); if ($('skillObjective')) selectSkills($('skillObjective').value); });
-  addEvt('sliceForm', 'submit', (event) => { event.preventDefault(); if ($('slicePrompt')) createFullstackSlice($('slicePrompt').value); });
-  addEvt('tickBtn', 'click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
-  addEvt('rebuildCityBtn', 'click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
-  addEvt('sampleBtn', 'click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
-  addEvt('checkApiBtn', 'click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
-  addEvt('fsLoadBtn', 'click', () => { if ($('fsPath')) loadFs($('fsPath').value); });
-  addEvt('terminalBtn', 'click', async () => {
-    if (!$('terminalCmd')) return;
-    const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
-    if ($('terminalResult')) $('terminalResult').textContent += `\n$ ${$('terminalCmd').value}\n${out.stdout || out.stderr || 'ok'}`;
-    $('terminalCmd').value = '';
+  $('projectSearch').addEventListener('input', renderProjects);
+  $('repoVisibility').addEventListener('change', renderProjects);
+  $('programForm').addEventListener('submit', (event) => { event.preventDefault(); createProgram($('programObjective').value); });
+  $('scanForm').addEventListener('submit', (event) => { event.preventDefault(); scanProject($('scanPath').value); });
+  $('skillForm').addEventListener('submit', (event) => { event.preventDefault(); selectSkills($('skillObjective').value); });
+  $('sliceForm')?.addEventListener('submit', (event) => { event.preventDefault(); createFullstackSlice($('slicePrompt').value); });
+  $('tickBtn').addEventListener('click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
+  $('rebuildCityBtn').addEventListener('click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
+  $('sampleBtn').addEventListener('click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
+  $('checkApiBtn').addEventListener('click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
+  $('fsLoadBtn').addEventListener('click', () => loadFs($('fsPath').value));
+  $('terminalBtn').addEventListener('click', async () => {
+    try {
+      const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
+      $('terminalResult').textContent = JSON.stringify(out, null, 2);
+    } catch (error) {
+      $('terminalResult').textContent = error.message;
+    }
   });
-  
-  addEvt('cmdBtn', 'click', openCommand);
-  addEvt('closeCmdBtn', 'click', () => { if ($('cmdDialog')) $('cmdDialog').close(); });
-  addEvt('cmdInput', 'input', renderCommandPalette);
+  $('cmdBtn').addEventListener('click', openCommand);
+  $('closeCmdBtn').addEventListener('click', () => $('cmdDialog').close());
+  $('cmdInput').addEventListener('input', renderCommandPalette);
   window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'command', false));
   window.addEventListener('hashchange', () => refreshAll());
   showView(location.hash.slice(1) || 'command', false);
@@ -656,7 +632,7 @@ function renderCommandPalette() {
     ['security', 'Abrir seguranca'],
     ['developer', 'Abrir developer district'],
   ].filter(([, label]) => label.toLowerCase().includes(q));
-  if ($('cmdResults')) $('cmdResults').innerHTML = commands.map(([target, label]) => row(label, `#${target}`, 'NAV')).join('');
+  $('cmdResults').innerHTML = commands.map(([target, label]) => row(label, `#${target}`, 'NAV')).join('');
   document.querySelectorAll('#cmdResults .row').forEach((el, i) => {
     el.addEventListener('click', () => {
       showView(commands[i][0]);
