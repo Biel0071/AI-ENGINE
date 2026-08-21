@@ -50,12 +50,14 @@ async function refreshAccessToken() {
 }
 
 async function api(path, options = {}, retried = false) {
-  const res = await fetch(`/api${path}`, {
+  const url = path.startsWith('/api') ? path : (path.startsWith('/') ? `/api${path}` : `/api/${path}`);
+  const res = await fetch(url, {
     ...options,
     headers: {
       authorization: `Bearer ${accessToken}`,
-      'content-type': 'application/json',
-      ...(options.headers || {}),
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
     },
   });
   if (res.status === 401 && !retried && await refreshAccessToken()) return api(path, options, true);

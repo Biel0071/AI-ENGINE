@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>FÊNIX OS | Master Agentic IDE</title>
+  <title>FÃŠNIX OS | Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Fontes e Ícones -->
+  <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   
@@ -17,266 +17,204 @@
   <!-- Marked.js -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <!-- Monaco Editor Loader -->
+  <!-- Monaco Editor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
   <link rel="stylesheet" href="/unified.css">
 </head>
-<body>
-  <div class="app-shell">
+<body class="dark-theme">
+  
+  <div class="fenix-os-layout">
     
-    <!-- TOP BAR -->
-    <header class="topbar">
+    <!-- TOP GLOBAL BAR -->
+    <header class="global-topbar">
       <div class="topbar-left">
-        <div class="brand">
-          <div class="brand-icon"><i class="ph-bold ph-bird"></i></div>
-          <span>FÊNIX OS <span class="badge" style="margin-left: 8px;">LEVEL 10</span></span>
+        <div class="brand-logo">
+          <i class="ph-fill ph-fire"></i>
+          <span>FÃŠNIX OS <span class="version-badge">v2.1.0</span></span>
         </div>
-        <div class="kpi-bar">
-          <div class="kpi-item" title="Status do Kernel">
-            <i id="statusDot" class="status-dot"></i> <b id="statusText">Conectando...</b> <small id="statusSub"></small>
-          </div>
+        <div class="connection-status">
+          <i class="ph-fill ph-circle" style="color: var(--green);"></i> AI Platform <span style="color: var(--green);">CONNECTED</span>
         </div>
       </div>
       
-      <div class="topbar-center kpi-bar">
-        <div class="kpi-item"><i class="ph ph-folder-notch"></i> Proj: <b id="kpiProjects">0</b></div>
-        <div class="kpi-item"><i class="ph ph-git-branch"></i> Repo: <b id="kpiRepos">0</b></div>
-        <div class="kpi-item"><i class="ph ph-cpu"></i> Jobs: <b id="kpiJobs">0</b></div>
-        <div class="kpi-item"><i class="ph ph-lightning"></i> IA: <b id="kpiAi">0</b></div>
-        <div class="kpi-item"><i class="ph ph-brain"></i> Engine: <b id="activeModel">--</b></div>
+      <div class="topbar-metrics">
+        <div class="metric"><small>Modelo Ativo</small><b>qwen2.5-coder</b></div>
+        <div class="metric"><small>LatÃªncia</small><b id="kpiLatency">-- ms</b></div>
+        <div class="metric"><small>Tokens Usados</small><b id="kpiTokens">0</b></div>
+        <div class="metric"><small>Agentes</small><b id="kpiAgents">0/19</b></div>
+        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% SaudÃ¡vel</b></div>
       </div>
-
+      
       <div class="topbar-right">
-        <div class="user-profile">
-          <i class="ph-fill ph-user-circle" style="font-size: 20px; color: var(--text-muted);"></i>
-          <span><b id="actorName">--</b> <small id="actorRole">--</small></span>
+        <div class="user-info">
+          <div class="avatar"><i class="ph-fill ph-user"></i></div>
+          <span>grg-admin <small>MASTER ADMIN</small></span>
         </div>
-        <div class="topbar-actions">
-          <button id="refreshBtn" class="icon-btn" title="Force Sync"><i class="ph ph-arrows-clockwise"></i></button>
-          <button id="logoutBtn" class="icon-btn" title="Logout"><i class="ph ph-sign-out"></i></button>
-        </div>
+        <button id="refreshBtn" class="btn-ghost" title="Force Sync"><i class="ph ph-arrows-clockwise"></i></button>
+        <button id="logoutBtn" class="btn-ghost" title="Logout"><i class="ph ph-sign-out"></i></button>
       </div>
     </header>
 
-    <!-- LEFT SIDEBAR -->
-    <aside class="rail">
-      <div class="rail-group">Core Ecosystem</div>
-      <button class="rail-btn active" data-nav="command"><i class="ph ph-terminal-window"></i> Command Center</button>
-      <button class="rail-btn" data-nav="ide"><i class="ph ph-code"></i> Agentic IDE</button>
-      <button class="rail-btn" data-nav="projects"><i class="ph ph-folders"></i> Workspaces</button>
+    <div class="main-body">
       
-      <div class="rail-group">Fênix Mind</div>
-      <button class="rail-btn" data-nav="agents"><i class="ph ph-users-three"></i> Swarm Agents</button>
-      <button class="rail-btn" data-nav="missions"><i class="ph ph-crosshair"></i> Mission Registry</button>
-      <button class="rail-btn" data-nav="memory"><i class="ph ph-brain"></i> Memory System</button>
-      
-      <div class="rail-group">Infrastructure</div>
-      <button class="rail-btn" data-nav="connectors"><i class="ph ph-plugs"></i> Connectors</button>
-      <button class="rail-btn" data-nav="telemetry"><i class="ph ph-activity"></i> Telemetry</button>
-      <button class="rail-btn" data-nav="settings"><i class="ph ph-gear"></i> Settings</button>
-    </aside>
-
-    <!-- MAIN WORKSPACE -->
-    <main class="workspace">
-      
-      <!-- 1. COMMAND CENTER -->
-      <section id="view-command" class="view active">
-        <div class="view-header">
-          <h2>Command Center</h2>
-          <p>Jarvis Intelligence Node. Delegue tarefas complexas e orquestre agentes em linguagem natural.</p>
+      <!-- NAV SIDEBAR (Tiniest left bar) -->
+      <nav class="activity-bar">
+        <div class="nav-top">
+          <button class="nav-item" data-view="city" title="Cidade"><i class="ph ph-buildings"></i></button>
+          <button class="nav-item active" data-view="ide" title="Agentic IDE"><i class="ph ph-code"></i></button>
+          <button class="nav-item" data-view="projects" title="Projetos"><i class="ph ph-folders"></i></button>
+          <button class="nav-item" data-view="agents" title="Agentes"><i class="ph ph-users-three"></i></button>
+          <button class="nav-item" data-view="metrics" title="MÃ©tricas"><i class="ph ph-chart-line-up"></i></button>
+          <button class="nav-item" data-view="memory" title="MemÃ³ria"><i class="ph ph-brain"></i></button>
         </div>
+        <div class="nav-bottom">
+          <button class="nav-item" title="ConfiguraÃ§Ãµes"><i class="ph ph-gear"></i></button>
+        </div>
+      </nav>
+
+      <!-- VIEWS CONTAINER -->
+      <div class="views-container">
         
-        <div class="chat-container">
-          <div id="chatLog" class="chat-history">
-            <div class="chat-bubble chat-bot">
-              <div class="chat-avatar"><i class="ph-fill ph-robot"></i></div>
-              <div class="chat-content">
-                <strong>FÊNIX Mind</strong>
-                <div class="chat-text">Sistemas operacionais. Conexão SSE estabelecida com sucesso. Qual a missão de hoje?</div>
-              </div>
-            </div>
-          </div>
-          <form id="cmdForm" class="chat-composer">
-            <div class="composer-inner">
-              <textarea id="prompt" class="composer-input" rows="1" placeholder="Ex: Refatore a engine de rotas para suportar autenticação JWT..."></textarea>
-              <button type="submit" class="btn btn-primary composer-send"><i class="ph-bold ph-paper-plane-right"></i> Enviar</button>
-            </div>
-            <div class="composer-footer">
-              <span class="badge green"><i class="ph-bold ph-check-circle"></i> Prompt Compiler Active</span>
-              <span class="composer-hint">Pressione Enter para enviar, Shift+Enter para nova linha</span>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- 2. IDE -->
-      <section id="view-ide" class="view">
-        <div class="ide-layout">
-          <!-- File Explorer -->
-          <div class="ide-sidebar">
-            <div class="ide-header">
-              <span>EXPLORER</span>
-              <div class="ide-header-actions">
-                <button id="fsLoadBtn" class="icon-btn-small" title="Reload Directory"><i class="ph ph-arrows-clockwise"></i></button>
-              </div>
-            </div>
-            <div style="padding: 8px;">
-              <input id="fsPath" type="text" class="sm-input" placeholder="/path/to/project" value="C:/projetos/ai-engine-core/ai-engine" style="width: 100%;">
-            </div>
-            <div id="fsList" class="ide-fs">
-              <div class="empty-state">
-                <i class="ph ph-folder-open empty-icon"></i>
-                <span>Nenhum diretório carregado</span>
-                <button class="btn btn-outline" style="margin-top: 12px;" onclick="document.getElementById('fsLoadBtn').click()">Carregar Workspace</button>
-              </div>
-            </div>
-          </div>
+        <!-- IDE VIEW -->
+        <div id="view-ide" class="view active">
           
-          <!-- Editor & Terminal Split -->
-          <div class="ide-main">
-            <!-- Code Editor -->
-            <div class="ide-editor-container">
-              <div class="ide-tabs">
-                <div class="ide-tab active" id="currentFileName"><i class="ph ph-file-code"></i> <span>untitled</span></div>
+          <div class="ide-split-layout">
+            
+            <!-- LEFT PANEL: Chat / Agents / Memory -->
+            <div class="panel-left">
+              <div class="panel-tabs">
+                <button class="panel-tab active">CHAT</button>
+                <button class="panel-tab">AGENTS</button>
+                <button class="panel-tab">JOBS</button>
               </div>
-              <div id="monacoEditor" class="ide-editor-surface">
-                <!-- Monaco Injected Here -->
+              
+              <div class="panel-content chat-view">
+                <div id="chatLog" class="chat-history">
+                  <div class="chat-bubble chat-bot">
+                    <div class="chat-avatar"><i class="ph-fill ph-robot"></i></div>
+                    <div class="chat-text-wrapper">
+                      <strong>FÃŠNIX AI <span class="badge-online">Online</span></strong>
+                      <div class="chat-text">OlÃ¡! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <form id="cmdForm" class="chat-composer">
+                  <textarea id="prompt" placeholder="Digite seu comando para o FÃªnix..." rows="2"></textarea>
+                  <div class="composer-actions">
+                    <div class="composer-models">
+                      <i class="ph ph-cpu"></i> <span>qwen2.5-coder</span>
+                    </div>
+                    <button type="submit" class="btn-send"><i class="ph-fill ph-paper-plane-right"></i></button>
+                  </div>
+                </form>
               </div>
             </div>
             
-            <!-- Terminal -->
-            <div class="ide-terminal-container">
-              <div class="ide-tabs">
-                <div class="ide-tab active"><i class="ph ph-terminal"></i> <span>Terminal</span></div>
-                <div class="ide-tab"><i class="ph ph-bug"></i> <span>Debug Console</span></div>
+            <!-- CENTER PANEL: Editor Visual / Code -->
+            <div class="panel-center">
+              
+              <div class="editor-header">
+                <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÃ“DIGO</span></div>
+                <div class="editor-toolbar">
+                  <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
+                  <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
+                  <div class="toolbar-divider"></div>
+                  <button class="toolbar-btn active">Visual</button>
+                  <button class="toolbar-btn">CÃ³digo</button>
+                  <button class="toolbar-btn">Split</button>
+                  <button class="toolbar-btn">Preview</button>
+                </div>
+                <button id="saveBtn" class="btn-primary-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
               </div>
-              <div class="ide-terminal-wrapper">
-                <div id="xtermContainer" style="height: 100%; width: 100%;"></div>
+              
+              <!-- Editor Container (Can hold Monaco or Visual Iframe) -->
+              <div class="editor-body">
+                
+                <!-- Visual Canvas (Overlay / Iframe) -->
+                <div id="visualCanvas" class="visual-canvas" style="display: none;">
+                  <iframe id="previewIframe" src="about:blank" frameborder="0"></iframe>
+                  <div id="visualOverlay" class="visual-overlay"></div>
+                </div>
+                
+                <!-- Monaco Code Editor -->
+                <div id="monacoEditor" class="monaco-container"></div>
+                
               </div>
-              <div class="ide-terminal-input">
-                <i class="ph-bold ph-caret-right prompt-char"></i>
-                <input id="terminalCmd" type="text" placeholder="npm run dev..." autocomplete="off">
-                <button id="terminalBtn" class="btn btn-primary btn-sm">Run</button>
+              
+              <!-- Terminal Bottom Panel -->
+              <div class="terminal-panel">
+                <div class="terminal-header">
+                  <div class="terminal-tabs">
+                    <button class="terminal-tab active">TERMINAL</button>
+                    <button class="terminal-tab">OUTPUT</button>
+                    <button class="terminal-tab">DEBUG CONSOLE</button>
+                    <button class="terminal-tab">PORTS</button>
+                  </div>
+                  <div class="terminal-actions">
+                    <button class="icon-btn-small" id="clearTerminalBtn"><i class="ph ph-trash"></i></button>
+                    <button class="icon-btn-small"><i class="ph ph-x"></i></button>
+                  </div>
+                </div>
+                <div class="terminal-body">
+                  <div id="xtermContainer" style="width:100%; height:100%;"></div>
+                </div>
+                <div class="terminal-input-row">
+                  <i class="ph-bold ph-caret-right prompt-char"></i>
+                  <input id="terminalCmd" type="text" placeholder="Executar comando no workspace..." autocomplete="off">
+                  <button id="terminalBtn" class="btn-ghost-sm" style="display:none;">Run</button>
+                </div>
+              </div>
+              
+            </div>
+            
+            <!-- RIGHT PANEL: Structure / Files -->
+            <div class="panel-right">
+              <div class="panel-header">
+                <span>ESTRUTURA</span>
+                <div class="header-actions">
+                  <button class="icon-btn-small" id="fsLoadBtn"><i class="ph ph-arrows-clockwise"></i></button>
+                  <button class="icon-btn-small"><i class="ph ph-files"></i></button>
+                </div>
+              </div>
+              
+              <div class="panel-content fs-explorer">
+                <input id="fsPath" type="text" class="hidden-input" value="C:/projetos/ai-engine-core/ai-engine">
+                <div id="fsList" class="fs-tree">
+                  <!-- Injected via JS -->
+                  <div class="empty-state">
+                    <i class="ph ph-spinner ph-spin"></i> Loading Workspace...
+                  </div>
+                </div>
+              </div>
+              
+              <div class="panel-header" style="border-top: 1px solid var(--border); margin-top: auto;">
+                <span>AI AGENTS (LIVE)</span>
+              </div>
+              <div id="liveAgentsList" class="panel-content agents-mini-list">
+                <!-- Mini agent statuses injected here -->
               </div>
             </div>
+            
           </div>
+          
         </div>
-      </section>
-
-      <!-- 3. PROJECTS -->
-      <section id="view-projects" class="view">
-        <div class="view-header">
-          <h2>Workspaces & Repositories</h2>
-          <p>Gestão de ambientes locais e remotos.</p>
+        
+        <!-- OTHER VIEWS (City, Projects, Metrics, Memory) will be injected here. We focus on IDE first for execution -->
+        <div id="view-city" class="view">
+           <div class="empty-state"><h2>AI City Dashboard</h2><p>ConstruÃ§Ã£o da cidade isomÃ©trica em progresso...</p></div>
         </div>
-        <div class="card">
-          <table class="data-table">
-            <thead><tr><th><i class="ph ph-folder"></i> Projeto</th><th><i class="ph ph-activity"></i> Status</th><th><i class="ph ph-users"></i> Agentes</th><th><i class="ph ph-clock"></i> Última Atividade</th></tr></thead>
-            <tbody id="projectList"></tbody>
-          </table>
+        <div id="view-projects" class="view">
+           <div class="empty-state"><h2>Projects Management</h2></div>
         </div>
-      </section>
-
-      <!-- 4. AGENTS -->
-      <section id="view-agents" class="view">
-        <div class="view-header">
-          <h2>Swarm Agents</h2>
-          <p>Força de trabalho autônoma ativa no runtime.</p>
-        </div>
-        <div class="card">
-          <table class="data-table">
-            <thead><tr><th><i class="ph ph-robot"></i> Agent ID</th><th><i class="ph ph-briefcase"></i> Role</th><th><i class="ph ph-heartbeat"></i> Status</th></tr></thead>
-            <tbody id="workerList"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- 5. MISSIONS -->
-      <section id="view-missions" class="view">
-        <div class="view-header">
-          <h2>Mission Registry</h2>
-          <p>Ledger de missões planejadas, ativas e concluídas.</p>
-        </div>
-        <div class="card">
-          <table class="data-table">
-            <thead><tr><th><i class="ph ph-hash"></i> Mission ID</th><th><i class="ph ph-target"></i> Objective</th><th><i class="ph ph-check-circle"></i> Status</th></tr></thead>
-            <tbody id="missionList"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- 6. CONNECTORS -->
-      <section id="view-connectors" class="view">
-        <div class="view-header">
-          <h2>Connectors</h2>
-          <p>SecretVault e integrações externas.</p>
-        </div>
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-title"><i class="ph ph-plugs-connected"></i> Active Connections</div>
-            <table class="data-table">
-              <thead><tr><th>Provider</th><th>Details</th><th>Status</th></tr></thead>
-              <tbody id="connectorList"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- 7. TELEMETRY -->
-      <section id="view-telemetry" class="view">
-        <div class="view-header">
-          <h2>Telemetry & System Health</h2>
-          <p>Métricas de consumo, memória e performance.</p>
-        </div>
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-title"><i class="ph ph-heartbeat"></i> System Checks</div>
-            <table class="data-table">
-              <thead><tr><th>Component</th><th>Message</th><th>Status</th></tr></thead>
-              <tbody id="healthList"></tbody>
-            </table>
-          </div>
-          <div class="card">
-            <div class="card-title"><i class="ph ph-cpu"></i> Runtime Services</div>
-            <table class="data-table">
-              <thead><tr><th>Service</th><th>Details</th><th>State</th></tr></thead>
-              <tbody id="runtimeServices"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-memory" class="view"><div class="empty-state"><i class="ph ph-brain empty-icon"></i><span>Memory System Offline</span></div></section>
-      <section id="view-settings" class="view"><div class="empty-state"><i class="ph ph-gear empty-icon"></i><span>Settings Panel</span></div></section>
-
-    </main>
-
-    <!-- RIGHT SIDEBAR -->
-    <aside class="right-sidebar">
+        
+      </div>
       
-      <!-- LIVE FEED -->
-      <div class="right-panel">
-        <div class="right-panel-header">
-          <div class="header-title"><i class="ph ph-pulse"></i> Live Telemetry</div>
-          <span id="eventCount" class="badge">0</span>
-        </div>
-        <div id="eventStream" class="right-panel-content"></div>
-      </div>
-
-      <!-- ACTIVE JOBS -->
-      <div class="right-panel">
-        <div class="right-panel-header">
-          <div class="header-title"><i class="ph ph-stack"></i> Active Jobs</div>
-          <span class="badge green pulse-anim">Running</span>
-        </div>
-        <div id="jobList" class="right-panel-content"></div>
-      </div>
-
-    </aside>
-
+    </div>
   </div>
-
-  <script src="/ide-enhancer.js"></script><script src="/unified-app.js"></script>
+  
+  <script src="/ide-enhancer.js"></script>
+  <script src="/unified-app.js"></script>
 </body>
 </html>
