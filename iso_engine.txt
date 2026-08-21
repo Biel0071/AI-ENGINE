@@ -1,0 +1,160 @@
+﻿  window.initCityCanvas = function() {
+    const canvas = document.getElementById('cityCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    // Camera / Pan / Zoom
+    let camera = { x: 0, y: 0, zoom: 1 };
+    let isDragging = false;
+    let lastMouse = { x: 0, y: 0 };
+
+    function resize() {
+      width = canvas.width = canvas.parentElement.offsetWidth;
+      height = canvas.height = canvas.parentElement.offsetHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Mouse Controls
+    canvas.parentElement.addEventListener('mousedown', (e) => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        camera.x += (e.clientX - lastMouse.x) / camera.zoom;
+        camera.y += (e.clientY - lastMouse.y) / camera.zoom;
+        lastMouse = { x: e.clientX, y: e.clientY };
+      }
+    });
+    canvas.parentElement.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomAmount = e.deltaY > 0 ? 0.9 : 1.1;
+      camera.zoom = Math.max(0.2, Math.min(camera.zoom * zoomAmount, 3));
+    });
+
+    const TILE_W = 100;
+    const TILE_H = 50;
+    const GRID_SIZE = 15;
+
+    function toIso(x, y) {
+      return {
+        isoX: (x - y) * (TILE_W / 2),
+        isoY: (x + y) * (TILE_H / 2)
+      };
+    }
+
+    function drawIsometricTile(x, y, color = 'rgba(20, 20, 25, 0.8)', stroke = '#30363d') {
+      const pt = toIso(x, y);
+      ctx.beginPath();
+      ctx.moveTo(pt.isoX, pt.isoY - TILE_H / 2);
+      ctx.lineTo(pt.isoX + TILE_W / 2, pt.isoY);
+      ctx.lineTo(pt.isoX, pt.isoY + TILE_H / 2);
+      ctx.lineTo(pt.isoX - TILE_W / 2, pt.isoY);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+    }
+
+    function drawBuilding(x, y, heightZ, colorMain, colorSide, label) {
+      const pt = toIso(x, y);
+      const h = heightZ;
+
+      // Left face
+      ctx.beginPath();
+      ctx.moveTo(pt.isoX - TILE_W / 2, pt.isoY);
+      ctx.lineTo(pt.isoX, pt.isoY + TILE_H / 2);
+      ctx.lineTo(pt.isoX, pt.isoY + TILE_H / 2 - h);
+      ctx.lineTo(pt.isoX - TILE_W / 2, pt.isoY - h);
+      ctx.closePath();
+      ctx.fillStyle = colorSide;
+      ctx.fill();
+      ctx.stroke();
+
+      // Right face
+      ctx.beginPath();
+      ctx.moveTo(pt.isoX, pt.isoY + TILE_H / 2);
+      ctx.lineTo(pt.isoX + TILE_W / 2, pt.isoY);
+      ctx.lineTo(pt.isoX + TILE_W / 2, pt.isoY - h);
+      ctx.lineTo(pt.isoX, pt.isoY + TILE_H / 2 - h);
+      ctx.closePath();
+      ctx.fillStyle = colorMain;
+      ctx.fill();
+      ctx.stroke();
+
+      // Top face
+      ctx.beginPath();
+      ctx.moveTo(pt.isoX, pt.isoY - TILE_H / 2 - h);
+      ctx.lineTo(pt.isoX + TILE_W / 2, pt.isoY - h);
+      ctx.lineTo(pt.isoX, pt.isoY + TILE_H / 2 - h);
+      ctx.lineTo(pt.isoX - TILE_W / 2, pt.isoY - h);
+      ctx.closePath();
+      ctx.fillStyle = colorMain;
+      ctx.fill();
+      ctx.stroke();
+
+      // Label
+      if (label && camera.zoom > 0.5) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, pt.isoX, pt.isoY - h - 20);
+      }
+    }
+
+    let time = 0;
+
+    window.drawCity = function() {
+      if (!$('#view-city') || !$('#view-city').classList.contains('active')) return;
+      time += 0.05;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.save();
+      ctx.translate(width / 2, height / 4);
+      ctx.scale(camera.zoom, camera.zoom);
+      ctx.translate(camera.x, camera.y);
+
+      // Draw Base Grid (Tibia/Habbo floor)
+      for (let x = 0; x < GRID_SIZE; x++) {
+        for (let y = 0; y < GRID_SIZE; y++) {
+          const isRoad = (x === 7 || y === 7);
+          const color = isRoad ? 'rgba(30, 30, 35, 0.9)' : 'rgba(15, 15, 20, 0.9)';
+          drawIsometricTile(x, y, color, '#222');
+        }
+      }
+
+      // Draw "Empresas" / Nodes
+      const nodes = window.globalCityState?.city?.nodes || window.globalCityState?.projects || [];
+      if (nodes.length > 0) {
+        nodes.slice(0, 25).forEach((n, i) => {
+          const gx = (i % 5) * 3 + 1;
+          const gy = Math.floor(i / 5) * 3 + 1;
+          const h = 40 + Math.abs(Math.sin(time + i) * 10);
+          drawBuilding(gx, gy, h, '#b91c1c', '#7f1d1d', n.id || n.name || n.label);
+        });
+      } else {
+        // Mock default city if no nodes
+        drawBuilding(2, 2, 80, '#b91c1c', '#7f1d1d', 'FÊNIX HQ');
+        drawBuilding(10, 3, 60, '#238636', '#166534', 'Data Center');
+        drawBuilding(4, 10, 50, '#d29922', '#854d0e', 'Agents Swarm');
+      }
+
+      // Draw floating agents
+      const pt = toIso(7, 7); // Center road
+      const floatY = Math.sin(time * 2) * 10;
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(pt.isoX, pt.isoY - 30 + floatY, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#38bdf8';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      ctx.restore();
+      requestAnimationFrame(window.drawCity);
+    };
+
+    window.drawCity();
+  };

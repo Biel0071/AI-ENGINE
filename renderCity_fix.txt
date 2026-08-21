@@ -1,0 +1,8 @@
+﻿function renderCity() {
+    if (window.drawCity) { 
+      window.globalCityState = state.data; 
+      window.state = window.state || {};
+      window.state.agentStates = state.data.swarm?.agents || state.data.agents || {}; 
+      window.drawCity();
+    }
+}
