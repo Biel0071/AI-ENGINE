@@ -6,7 +6,7 @@ window.openFile = async function(path) {
     const data = await api(`/dev/fs/file?path=${encodeURIComponent(path)}`);
     const content = data.content || '';
     
-    const filename = path.split('/').pop() || path.split('\\').pop() || 'untitled';
+    window.currentOpenPath = path; const filename = path.split('/').pop() || path.split('\\').pop() || 'untitled';
     if ($('currentEditorTitle')) $('currentEditorTitle').innerHTML = `${filename}`;
     
     if (monacoEditorInstance) {
@@ -246,11 +246,7 @@ window.addEventListener('load', () => {
     $('clearTerminalBtn').addEventListener('click', () => xtermInstance.clear());
   }
 
-  setTimeout(() => {
-    if ($('fsPath') && $('fsPath').value) {
-      loadFs($('fsPath').value);
-    }
-  }, 500);
+  setTimeout(() => { if ($('fsPath')) loadFs($('fsPath').value || '/'); }, 500);
 });
 // Append visual editor capability to ide-enhancer.js
 window.addEventListener('load', () => {
@@ -588,3 +584,228 @@ window.addEventListener('load', () => {
 
     window.drawCity();
   };
+  // --- IDE ACTIONS & CHAT HOOKUP ---
+  window.addEventListener('load', () => {
+    const cmdForm = document.getElementById('cmdForm');
+    const promptInput = document.getElementById('prompt');
+    const chatLog = document.getElementById('chatLog');
+
+    if (cmdForm) {
+      // Allow Enter to submit (Shift+Enter for newline)
+      promptInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          cmdForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      });
+
+      cmdForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = promptInput?.value.trim();
+        if (!text) return;
+        
+        // Append user message
+        chatLog.innerHTML += `
+          <div class="chat-bubble chat-user" style="align-self: flex-end; background: var(--border); padding: 12px; border-radius: 8px; margin: 8px 0; max-width: 85%;">
+            <div class="chat-text">${text.replace(/</g, '&lt;')}</div>
+          </div>
+        `;
+        if (promptInput) promptInput.value = '';
+        chatLog.scrollTop = chatLog.scrollHeight;
+        
+        // Loader
+        const loaderId = 'loader-' + Date.now();
+        chatLog.innerHTML += `
+          <div id="${loaderId}" class="chat-bubble chat-bot" style="margin: 8px 0; display: flex; align-items: center; gap: 8px;">
+            <i class="ph ph-spinner ph-spin" style="color: var(--accent);"></i> Processando...
+          </div>
+        `;
+        chatLog.scrollTop = chatLog.scrollHeight;
+
+        try {
+          const res = await fetch('/api/v2/mind/ingest', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ message: text, source: 'ide_chat' })
+          });
+          const data = await res.json();
+          
+          document.getElementById(loaderId)?.remove();
+          
+          if (data.success) {
+            // Append success message
+            chatLog.innerHTML += `
+              <div class="chat-bubble chat-bot" style="background: rgba(185,28,28,0.1); border-left: 2px solid var(--accent); padding: 12px; border-radius: 8px; margin: 8px 0;">
+                <div class="chat-text">
+                  <strong><i class="ph-fill ph-check-circle"></i> Intenção Identificada: ${data.intent}</strong><br>
+                  Execução autônoma disparada. Score de Realidade: ${data.realityScore}%<br>
+                  <small style="color: var(--text-muted);">Agents: ${(data.requiredAgents || []).join(', ')}</small>
+                </div>
+              </div>
+            `;
+            // Refresh models/jobs
+            if (window.refreshAll) window.refreshAll();
+          } else {
+            throw new Error(data.error || 'Erro interno.');
+          }
+        } catch (err) {
+          document.getElementById(loaderId)?.remove();
+          chatLog.innerHTML += `
+            <div class="chat-bubble chat-bot" style="background: rgba(220,38,38,0.1); border-left: 2px solid var(--rose); padding: 12px; border-radius: 8px; margin: 8px 0;">
+              <div class="chat-text" style="color: var(--rose);">Erro: ${err.message}</div>
+            </div>
+          `;
+        }
+        chatLog.scrollTop = chatLog.scrollHeight;
+      });
+    }
+  });
+  // Fix Tab Switching for Left Panel (Agents, Jobs, Graph)
+  window.addEventListener('load', () => {
+    const panels = ['CHAT', 'AGENTS', 'JOBS', 'MEMÓRIA', 'GRAFO'];
+    
+    // Inject missing panel divs if they don't exist
+    const ideLeftPanel = document.querySelector('.panel-left');
+    if (ideLeftPanel) {
+      if (!document.querySelector('.agents-view')) ideLeftPanel.innerHTML += `<div class="panel-content agents-view" style="display:none;"><div class="empty-state"><i class="ph ph-users"></i> Agents Swarm Loading...</div></div>`;
+      if (!document.querySelector('.jobs-view')) ideLeftPanel.innerHTML += `<div class="panel-content jobs-view" style="display:none;"><div class="empty-state"><i class="ph ph-briefcase"></i> Jobs Queue...</div></div>`;
+      if (!document.querySelector('.memory-view')) ideLeftPanel.innerHTML += `<div class="panel-content memory-view" style="display:none;"><div class="empty-state"><i class="ph ph-brain"></i> Memory Base...</div></div>`;
+      if (!document.querySelector('.graph-view')) ideLeftPanel.innerHTML += `<div class="panel-content graph-view" style="display:none;"><div class="empty-state"><i class="ph ph-graph"></i> Knowledge Graph...</div></div>`;
+    }
+
+    const pTabs = document.querySelectorAll('.panel-left .panel-tab');
+    pTabs.forEach(t => {
+      t.addEventListener('click', () => {
+        pTabs.forEach(b => b.classList.remove('active'));
+        t.classList.add('active');
+        
+        // Hide all
+        document.querySelectorAll('.panel-left .panel-content').forEach(el => el.style.display = 'none');
+        
+        // Show specific
+        const txt = t.textContent.trim();
+        if (txt === 'CHAT') document.querySelector('.chat-view').style.display = 'flex';
+        else if (txt === 'AGENTS') document.querySelector('.agents-view').style.display = 'flex';
+        else if (txt === 'JOBS') document.querySelector('.jobs-view').style.display = 'flex';
+        else if (txt === 'MEMÓRIA') document.querySelector('.memory-view').style.display = 'flex';
+        else if (txt === 'GRAFO') document.querySelector('.graph-view').style.display = 'flex';
+      });
+    });
+
+    // Fix Visual Canvas hide issue
+    window.openFile = async function(path) {
+      try {
+        const data = await api(`/dev/fs/file?path=${encodeURIComponent(path)}`);
+        const content = data.content || '';
+        
+        window.currentOpenPath = path; const filename = path.split('/').pop() || path.split('\\').pop() || 'untitled';
+        if (document.getElementById('currentEditorTitle')) document.getElementById('currentEditorTitle').innerHTML = `${filename}`;
+        
+        if (window.monacoEditorInstance) {
+          let ext = filename.split('.').pop();
+          let lang = 'javascript';
+          if (ext === 'json') lang = 'json';
+          if (ext === 'html') lang = 'html';
+          if (ext === 'css') lang = 'css';
+          if (ext === 'md') lang = 'markdown';
+          if (ext === 'py') lang = 'python';
+          
+          window.monaco.editor.setModelLanguage(window.monacoEditorInstance.getModel(), lang);
+          window.monacoEditorInstance.setValue(content);
+          
+          // KEEP VISUAL CANVAS VISIBLE (Side-by-side)
+          document.querySelector('.visual-canvas').style.display = 'flex';
+          document.querySelector('.monaco-container').style.display = 'block';
+        }
+      } catch (error) {
+        if (window.monacoEditorInstance) window.monacoEditorInstance.setValue(`Erro ao abrir:\n${error.message}`);
+      }
+    };
+  });
+
+  // SAVE BUTTON HOOK
+  window.addEventListener('load', () => {
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        if (!window.monacoEditorInstance) return;
+        const currentPath = document.getElementById('currentEditorTitle').textContent;
+        const content = window.monacoEditorInstance.getValue();
+        
+        saveBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...';
+        
+        try {
+          const basePath = document.getElementById('fsPath') ? document.getElementById('fsPath').value : '';
+          const fullPath = window.currentOpenPath || currentPath;
+          
+          await fetch('/api/dev/fs/file?path=' + encodeURIComponent(fullPath), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+          });
+          
+          saveBtn.innerHTML = '<i class="ph ph-check"></i> Salvo';
+          setTimeout(() => {
+            saveBtn.innerHTML = '<i class="ph ph-floppy-disk"></i> Salvar';
+          }, 2000);
+          
+          // Trigger visual iframe reload if it's open
+          const iframe = document.getElementById('previewIframe');
+          if (iframe) iframe.src = iframe.src; 
+        } catch (err) {
+          saveBtn.innerHTML = '<i class="ph ph-warning"></i> Erro';
+          alert('Erro ao salvar: ' + err.message);
+        }
+      });
+    }
+  });
+  // Fix Terminal Polling
+  window.addEventListener('load', () => {
+    const oldBtn = document.getElementById('terminalBtn');
+    if (!oldBtn) return;
+    
+    // Replace the terminal click logic we added previously
+    const newBtn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+    
+    if (document.getElementById('terminalCmd')) {
+      document.getElementById('terminalCmd').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') newBtn.click();
+      });
+    }
+    
+    newBtn.addEventListener('click', async () => {
+      const cmdInput = document.getElementById('terminalCmd');
+      const cmd = cmdInput ? cmdInput.value : '';
+      if (!cmd) return;
+      if (window.xtermInstance) window.xtermInstance.writeln(`\r\n\x1b[32m$ ${cmd}\x1b[0m`);
+      if (cmdInput) cmdInput.value = '';
+      
+      try {
+        const sessionId = `ui-${Date.now()}`; window.terminalOffset = 0;
+        const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: cmd, sessionId }) });
+        
+        // Poll for output
+        const poll = setInterval(async () => {
+          try {
+            const state = await api(`/dev/terminal/${sessionId}`);
+            if (window.xtermInstance) {
+              if (state.logs && state.logs.length > 0) {
+                state.logs.slice(window.terminalOffset || 0).forEach(log => {
+                  window.terminalOffset = (window.terminalOffset || 0) + 1; window.xtermInstance.writeln(log.replace(/\n/g, '\r\n'));
+                });
+                // clear logs after reading? the backend doesn't clear them, so we'd print duplicates.
+                // Actually the backend returns everything.
+              }
+            }
+            if (state.status === 'COMPLETED' || state.status === 'FAILED') {
+              clearInterval(poll);
+              if (window.xtermInstance) window.xtermInstance.writeln(`\x1b[36m[Process Exited]\x1b[0m`);
+            }
+          } catch(e) { clearInterval(poll); }
+        }, 1000);
+      } catch (err) {
+        if (window.xtermInstance) window.xtermInstance.writeln(`\x1b[31mError: ${err.message}\x1b[0m`);
+      }
+    });
+  });
