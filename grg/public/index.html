@@ -67,6 +67,7 @@
         <div class="nav-top">
           <button class="nav-item" data-view="cockpit" title="DEV COMMAND CENTER"><i class="ph ph-rocket-launch"></i></button>
           <button class="nav-item" data-view="city" title="Cidade"><i class="ph ph-buildings"></i></button>
+          <button class="nav-item" data-view="jobs" title="Jobs"><i class="ph ph-list-numbers"></i></button>
           <button class="nav-item active" data-view="ide" title="Agentic IDE"><i class="ph ph-code"></i></button>
           <button class="nav-item" data-view="projects" title="Projetos"><i class="ph ph-folders"></i></button>
           <button class="nav-item" data-view="agents" title="Agentes"><i class="ph ph-users-three"></i></button>
@@ -119,6 +120,17 @@
           </div>
 
           <!-- IDE VIEW -->
+        
+        <!-- JOBS VIEW -->
+        <div id="view-jobs" class="view" style="display: none; flex-direction: column; flex: 1; background: var(--bg-dark);">
+          <div class="panel-header">
+            <h3>Job Queue</h3>
+          </div>
+          <div id="jobsListContainer" class="panel-content" style="padding: 20px; overflow-y: auto;">
+            <!-- Jobs will be rendered here -->
+          </div>
+        </div>
+
         <div id="view-ide" class="view active">
           
           <div class="ide-split-layout">
@@ -300,6 +312,7 @@
     </div>
     <script src="/cockpit-app.js"></script>
   <script src="/visual-inspector.js"></script>
+  <script src="/jobs-app.js"></script>
 </body>
 </html>
 
