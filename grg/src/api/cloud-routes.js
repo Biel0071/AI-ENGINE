@@ -113,7 +113,7 @@ async function handleCloudRoutes(req, res, url, app, sendJson, sendError, contex
     let job = null;
     if (jobQueue) {
       job = jobQueue.enqueue({
-        type: 'dev_task',
+        type: 'MISSION_PLANNER', legacyType: 'dev_task',
         client: client || 'unknown',
         projectId,
         enhancedPrompt,
