@@ -14,14 +14,14 @@ cd /opt/fenix-os/grg || { echo "Codigo nao encontrado em /opt/fenix-os/grg. Faç
 
 echo "Criando .env de producao com dummy secrets (se nao existir)..."
 mkdir -p /opt/fenix-os/grg/.secrets
-[ ! -f /opt/fenix-os/grg/.secrets/postgres_password ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/postgres_password
-[ ! -f /opt/fenix-os/grg/.secrets/redis_password ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/redis_password
-[ ! -f /opt/fenix-os/grg/.secrets/minio_access_key ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/minio_access_key
-[ ! -f /opt/fenix-os/grg/.secrets/minio_secret_key ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/minio_secret_key
-[ ! -f /opt/fenix-os/grg/.secrets/ai_provider_key ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/ai_provider_key
-[ ! -f /opt/fenix-os/grg/.secrets/metrics_token ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/metrics_token
-[ ! -f /opt/fenix-os/grg/.secrets/keycloak_admin_password ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/keycloak_admin_password
-[ ! -f /opt/fenix-os/grg/.secrets/keycloak_user_password ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/keycloak_user_password
+[ ! -f /opt/fenix-os/grg/.secrets/postgres_password ] && echo -n "dummy-secret-123" > /opt/fenix-os/grg/.secrets/postgres_password
+[ ! -f /opt/fenix-os/grg/.secrets/redis_password ] && echo -n "dummy-secret-123" > /opt/fenix-os/grg/.secrets/redis_password
+[ ! -f /opt/fenix-os/grg/.secrets/minio_access_key ] && echo -n "dummy-secret-123" > /opt/fenix-os/grg/.secrets/minio_access_key
+[ ! -f /opt/fenix-os/grg/.secrets/minio_secret_key ] && echo -n "dummy-secret-123" > /opt/fenix-os/grg/.secrets/minio_secret_key
+[ ! -f /opt/fenix-os/grg/.secrets/ai_provider_key ] && echo -n "dummy-secret-123" > /opt/fenix-os/grg/.secrets/ai_provider_key
+[ ! -f /opt/fenix-os/grg/.secrets/metrics_token ] && echo -n "dummy-secret-123" > /opt/fenix-os/grg/.secrets/metrics_token
+[ ! -f /opt/fenix-os/grg/.secrets/keycloak_admin_password ] && echo -n "dummy-secret-123" > /opt/fenix-os/grg/.secrets/keycloak_admin_password
+[ ! -f /opt/fenix-os/grg/.secrets/keycloak_user_password ] && echo -n "dummy-secret-123" > /opt/fenix-os/grg/.secrets/keycloak_user_password
 
 POSTGRES_PASS=$(cat /opt/fenix-os/grg/.secrets/postgres_password 2>/dev/null || echo "dummy-secret-123")
 REDIS_PASS=$(cat /opt/fenix-os/grg/.secrets/redis_password 2>/dev/null || echo "dummy-secret-123")
@@ -63,7 +63,7 @@ EOF
 
 mkdir -p .secrets
 for secret in postgres_password redis_password minio_access_key minio_secret_key ai_provider_key metrics_token keycloak_admin_password keycloak_user_password; do
-    echo "dummy-secret-123" > ".secrets/$secret"
+    echo -n "dummy-secret-123" > ".secrets/$secret"
     chmod 600 ".secrets/$secret"
 done
 
