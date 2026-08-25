@@ -1,4 +1,4 @@
-﻿let monacoEditorInstance = null;
+let monacoEditorInstance = null;
 let xtermInstance = null;
 
 window.openFile = async function(path) {
@@ -181,15 +181,16 @@ window.addEventListener('load', () => {
 
   // Init Monaco
   if (window.require && document.getElementById('monacoEditor')) {
+    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
     require(['vs/editor/editor.main'], function() {
       monacoEditorInstance = monaco.editor.create(document.getElementById('monacoEditor'), {
         value: '// FÊNIX OS Level 10 IDE\n// Conectado ao kernel local.',
         language: 'javascript',
         theme: 'vs-dark',
         automaticLayout: true,
-        minimap: { enabled: true, scale: 0.75 },
+        minimap: { enabled: false },
         fontSize: 13,
-        fontFamily: '"JetBrains Mono", monospace',
+        fontFamily: "'JetBrains Mono', monospace",
         padding: { top: 16 }
       });
     });
@@ -314,7 +315,7 @@ window.addEventListener('load', () => {
       } else if (t.textContent === 'MEMÓRIA') {
         if (document.getElementById('memoryView')) document.getElementById('memoryView').style.display = 'flex';
         loadMemory();
-      } else if (t.textContent === 'GRAFO') {
+      } else if (t.textContent === 'GRAFOS') {
         if (document.getElementById('graphView')) document.getElementById('graphView').style.display = 'block';
         loadGraph();
       }
@@ -372,3 +373,4 @@ window.addEventListener('load', () => {
     } catch(e) {}
   }
 });
+
