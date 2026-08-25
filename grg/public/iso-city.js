@@ -19,7 +19,22 @@ class IsoCityEngine {
     // Virtual World Data
     this.world = {
       companies: [], // Derived from window.state.projects
-      agents: []     // Derived from window.state.agentStates
+      agents: [],    // Derived from window.state.agentStates
+      stars: Array.from({ length: 80 }, () => ({
+        x: Math.random(), y: Math.random(), size: Math.random() * 1.5 + 0.5,
+        twinkleSpeed: Math.random() * 0.03 + 0.01, phase: Math.random() * Math.PI * 2
+      })),
+      traffic: Array.from({ length: 24 }, (_, i) => ({
+        axis: i % 2 === 0 ? 'X' : 'Y', pos: (Math.random() - 0.5) * 800,
+        lane: (i % 4 - 1.5) * 60, speed: (Math.random() * 1.2 + 0.8) * (i % 2 === 0 ? 1 : -1),
+        color: i % 3 === 0 ? '#38bdf8' : (i % 3 === 1 ? '#f59e0b' : '#a78bfa'),
+        tailLength: 25 + Math.random() * 20
+      })),
+      embers: Array.from({ length: 30 }, () => ({
+        x: (Math.random() - 0.5) * 60, y: (Math.random() - 0.5) * 40,
+        vy: Math.random() * 0.8 + 0.4, size: Math.random() * 2.5 + 1,
+        alpha: Math.random(), hue: Math.random() * 30 + 15
+      }))
     };
 
     this.resize();
@@ -212,6 +227,17 @@ class IsoCityEngine {
       // Clear Canvas
       this.ctx.fillStyle = '#04070c';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+      // Draw Stars
+      if (this.world.stars) {
+        this.world.stars.forEach(st => {
+          const tw = (Math.sin(time * st.twinkleSpeed + st.phase) + 1) / 2;
+          this.ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + tw * 0.6})`;
+          this.ctx.beginPath();
+          this.ctx.arc(st.x * this.canvas.width, st.y * this.canvas.height, st.size, 0, Math.PI * 2);
+          this.ctx.fill();
+        });
+      }
       
       this.ctx.save();
       this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
@@ -219,6 +245,8 @@ class IsoCityEngine {
       this.ctx.translate(this.state.camera.x, this.state.camera.y);
       
       this.drawFloor();
+      this.drawTraffic();
+      this.drawPhoenixMonument(time);
       
       // Z-Sort everything
       const renderables = [];
@@ -400,6 +428,84 @@ class IsoCityEngine {
       this.ctx.font = '9px "JetBrains Mono", monospace';
       this.ctx.fillText(a.status.toUpperCase(), pos.x, yOff - 25);
     }
+  }
+
+  drawTraffic() {
+    if (!this.world.traffic) return;
+    this.world.traffic.forEach(t => {
+      t.pos += t.speed;
+      if (t.pos > 400) t.pos = -400;
+      if (t.pos < -400) t.pos = 400;
+
+      let x, y, tx, ty;
+      if (t.axis === 'X') {
+        x = t.pos;
+        y = t.lane * 0.5;
+        tx = x - (t.speed > 0 ? t.tailLength : -t.tailLength);
+        ty = y;
+      } else {
+        x = t.lane * 0.5;
+        y = t.pos;
+        tx = x;
+        ty = y - (t.speed > 0 ? t.tailLength : -t.tailLength);
+      }
+
+      const p1 = this.toIso(x, y);
+      const p2 = this.toIso(tx, ty);
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1.x, p1.y);
+      this.ctx.lineTo(p2.x, p2.y);
+      this.ctx.strokeStyle = t.color;
+      this.ctx.lineWidth = 2.5;
+      this.ctx.shadowColor = t.color;
+      this.ctx.shadowBlur = 10;
+      this.ctx.stroke();
+      this.ctx.shadowBlur = 0;
+    });
+  }
+
+  drawPhoenixMonument(time) {
+    if (!this.world.embers) return;
+    this.ctx.save();
+    
+    // Monument base position in Iso
+    const cx = 0;
+    const cy = -120; // Some central offset
+    const centerIso = this.toIso(cx, cy);
+
+    // Radial Plaza
+    const plazaRadius = 60;
+    this.ctx.beginPath();
+    this.ctx.ellipse(centerIso.x, centerIso.y, plazaRadius, plazaRadius * 0.5, 0, 0, Math.PI * 2);
+    this.ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    this.ctx.fill();
+    this.ctx.strokeStyle = 'rgba(249, 115, 22, 0.5)';
+    this.ctx.lineWidth = 2;
+    this.ctx.shadowColor = '#f97316';
+    this.ctx.shadowBlur = 15;
+    this.ctx.stroke();
+    this.ctx.shadowBlur = 0;
+
+    // Embers
+    this.world.embers.forEach(em => {
+      em.y -= em.vy;
+      em.alpha -= 0.008;
+      if (em.alpha <= 0) {
+        em.x = (Math.random() - 0.5) * 50;
+        em.y = 10;
+        em.alpha = 1.0;
+      }
+      
+      const emPos = this.toIso(cx + em.x, cy - em.y);
+      this.ctx.fillStyle = `hsla(${em.hue}, 100%, 60%, ${em.alpha})`;
+      this.ctx.shadowColor = `hsla(${em.hue}, 100%, 60%, ${em.alpha})`;
+      this.ctx.shadowBlur = 8;
+      this.ctx.beginPath();
+      this.ctx.arc(emPos.x, emPos.y - 15, em.size, 0, Math.PI * 2);
+      this.ctx.fill();
+    });
+    this.ctx.restore();
   }
 }
 
