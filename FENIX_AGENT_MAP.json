@@ -1,0 +1,17 @@
+[
+  {
+    "name": "agent-avatar-registry.js"
+  },
+  {
+    "name": "agent-definitions.js"
+  },
+  {
+    "name": "agent-registry.js"
+  },
+  {
+    "name": "agent-swarm.js"
+  },
+  {
+    "name": "autonomous-agent-ecosystem.js"
+  }
+]

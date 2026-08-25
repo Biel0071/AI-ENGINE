@@ -1,0 +1,19 @@
+{
+  "baseline": {
+    "timestamp": "2026-08-25T13:48:26-03:00",
+    "commit": "c7e745e7bb5c74ec5aefecee2bf15fed424f21ef",
+    "branch": "fenix/stabilize-canonical-frontend"
+  },
+  "frontend": {
+    "status": "FROZEN",
+    "canonical_path": "grg/public/index.html"
+  },
+  "backend": {
+    "status": "ONLINE",
+    "port": 2150
+  },
+  "vps": {
+    "status": "READY",
+    "ip": "209.50.241.22"
+  }
+}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">
+  <text x="50" y="50" font-family="Arial" font-size="24">FÊNIX OS SYSTEM GRAPH</text>
+  <rect x="50" y="100" width="150" height="50" fill="lightblue" />
+  <text x="60" y="130">FRONTEND</text>
+  <path d="M 200 125 L 300 125" stroke="black" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="300" y="100" width="150" height="50" fill="lightgreen" />
+  <text x="310" y="130">BACKEND</text>
+  <path d="M 450 125 L 550 125" stroke="black" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="550" y="100" width="150" height="50" fill="lightpink" />
+  <text x="560" y="130">VPS / QWEN</text>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#f00" />
+    </marker>
+  </defs>
+</svg>

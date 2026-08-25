@@ -1,0 +1,38 @@
+{
+  "frontend": {
+    "views": [
+      "city",
+      "ide",
+      "operations",
+      "projects",
+      "agents",
+      "metrics",
+      "dna"
+    ],
+    "shell": "grg/public/index.html",
+    "logic": "grg/public/unified-app.js",
+    "css": "grg/public/unified.css"
+  },
+  "backend": {
+    "entry": "server.js",
+    "router": "platform/http/server.js"
+  },
+  "agents": [
+    "Vitória",
+    "Camila",
+    "Jojão",
+    "Barte",
+    "JARVIS",
+    "Roberto",
+    "Marina",
+    "Lucas",
+    "FÊNIX MASTER"
+  ],
+  "memory": [
+    "FENIX_PROJECT_MEMORY"
+  ],
+  "vps": {
+    "ip": "209.50.241.22",
+    "status": "REAL"
+  }
+}

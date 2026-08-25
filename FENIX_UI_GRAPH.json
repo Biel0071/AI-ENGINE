@@ -1,0 +1,39 @@
+{
+  "views": [
+    {
+      "route": "#city",
+      "name": "AI City 3D Isométrica Interativa",
+      "status": "WORKING"
+    },
+    {
+      "route": "#ide",
+      "name": "IDE Lovable-Style Integrada",
+      "status": "WORKING"
+    },
+    {
+      "route": "#operations",
+      "name": "Painel de Operações 24/7",
+      "status": "WORKING"
+    },
+    {
+      "route": "#projects",
+      "name": "Projetos e Workspaces",
+      "status": "WORKING"
+    },
+    {
+      "route": "#agents",
+      "name": "Painel de Agentes Vivos",
+      "status": "WORKING"
+    },
+    {
+      "route": "#metrics",
+      "name": "Métricas em Tempo Real",
+      "status": "WORKING"
+    },
+    {
+      "route": "#dna",
+      "name": "4-DNA Model Quad Grid",
+      "status": "WORKING"
+    }
+  ]
+}

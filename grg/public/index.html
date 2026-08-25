@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
@@ -11,103 +11,253 @@
   <link rel="stylesheet" href="/living-panels.css">
   <link rel="stylesheet" href="/city-overrides.css">
   <link rel="stylesheet" href="/office.css">
-  <link rel="stylesheet" href="/level30.css">
-  <script src="/iso-city.js"></script>
 </head>
 <body>
-  <div class="level30-shell">
-    <header class="level30-topbar">
-      <div class="brand-area">
+  <div class="app-shell">
+    <aside class="rail" aria-label="Navegacao principal">
+      <a class="brand" href="#command" aria-label="FENIX OS">
         <span class="brand-mark">F</span>
-        <div class="brand-text">
-          <b>FÊNIX OS</b>
-          <small>DIGITAL COMPANY OS</small>
-        </div>
+        <span><b>FENIX OS</b><small>Unified Workspace</small></span>
+      </a>
+      <div class="rail-status">
+        <i id="statusDot"></i>
+        <span><b id="statusText">Conectando</b><small id="statusSub">runtime</small></span>
       </div>
-      
-      <div class="app-title-area">
-        <h1>FÊNIX AI CITY</h1>
-        <small>MAPA INTERATIVO <span class="level-badge">Nível 30</span></small>
-      </div>
+      <nav id="navList" class="nav-list">
+        <button class="active" data-nav="command" type="button"><span>CM</span> Comando</button>
+        <button data-nav="runtime" type="button"><span>RT</span> Runtime</button>
+        <button data-nav="agents" type="button"><span>AG</span> Agentes</button>
+        <button data-nav="workspace" type="button"><span>WS</span> Workspace</button>
+        <button data-nav="knowledge" type="button"><span>KG</span> Knowledge</button>
+        <button data-nav="connectors" type="button"><span>CN</span> Conectores</button>
+        <button data-nav="observability" type="button"><span>OB</span> Observabilidade</button>
+      </nav>
+      <button id="logoutBtn" class="ghost-btn" type="button">Sair</button>
+    </aside>
 
-      <div class="global-kpis">
-        <span class="kpi-box">AGENTES <b id="kpiAgents">11</b> ONLINE</span>
-        <span class="kpi-box">JOBS <b id="kpiJobs">17</b> RUNNING</span>
-        <span class="kpi-box">WORKERS <b id="kpiWorkers">8/12</b></span>
-        <span class="kpi-box">LATÊNCIA <b id="kpiLatency">18ms</b></span>
-        <span class="kpi-box">MEMÓRIA <b id="kpiMemory">78%</b></span>
-      </div>
-
-      <div class="avatar-panel">
-        <div class="avatar-badge">
-          <b id="actorName">FÊNIX MASTER</b>
-          <small id="actorRole">ADMIN</small>
-        </div>
-      </div>
-    </header>
-
-    <nav id="navList" class="level30-nav">
-      <button class="active" data-nav="runtime" type="button"><i class="icon-city"></i> CIDADE</button>
-      <button data-nav="workspace" type="button"><i class="icon-companies"></i> EMPRESAS</button>
-      <button data-nav="workspace" type="button"><i class="icon-buildings"></i> PRÉDIOS</button>
-      <button data-nav="knowledge" type="button"><i class="icon-floors"></i> ANDARES</button>
-      <button data-nav="agents" type="button"><i class="icon-rooms"></i> SALAS</button>
-      <button data-nav="agents" type="button"><i class="icon-agents"></i> AGENTES</button>
-      <button data-nav="runtime" type="button"><i class="icon-jobs"></i> JOBS</button>
-      <button data-nav="observability" type="button"><i class="icon-telemetry"></i> TELEMETRIA</button>
-      <button data-nav="knowledge" type="button"><i class="icon-memory"></i> MEMÓRIA</button>
-      <button data-nav="knowledge" type="button"><i class="icon-rag"></i> RAG</button>
-      <button data-nav="command" type="button"><i class="icon-ide"></i> IDE</button>
-    </nav>
-
-    <div class="canvas-container">
-      <canvas id="cityCanvas" class="city-canvas"></canvas>
-    </div>
-
-    <main class="level30-workspace">
-      <aside class="left-panel overlay-panel">
-        <section class="panel-section">
-          <h3>VISÃO GERAL</h3>
-          <div class="world-status">
-            <b>MUNDO</b>
-            <span>FÊNIX AI CITY</span>
-            <small class="status-online">ONLINE</small>
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <h1 id="viewTitle">Comando</h1>
+          <div class="kpi-strip">
+            <span class="kpi"><b>Projetos:</b> <span id="kpiProjects">--</span></span>
+            <span class="kpi"><b>Repos:</b> <span id="kpiRepos">--</span></span>
+            <span class="kpi"><b>Jobs:</b> <span id="kpiJobs">--</span></span>
+            <span class="kpi"><b>IA Calls:</b> <span id="kpiAi">--</span></span>
           </div>
-        </section>
-        <section class="panel-section telemetry-global">
-          <h3>TELEMETRIA GLOBAL</h3>
-          <div class="kpi-grid">
-            <div class="kpi-card"><b>17</b><small>RUNNING</small></div>
-            <div class="kpi-card"><b>4</b><small>AGUARDANDO</small></div>
-            <div class="kpi-card"><b>8/12</b><small>ATIVOS</small></div>
-            <div class="kpi-card text-green"><b>34%</b><small>CPU</small></div>
-            <div class="kpi-card text-yellow"><b>78%</b><small>RAM</small></div>
-            <div class="kpi-card"><b>257.3K</b><small>TOKENS</small></div>
+        </div>
+        <div class="avatar-panel">
+          <div class="avatar-badge">
+            <b id="actorName">--</b>
+            <small id="actorRole">--</small>
           </div>
-        </section>
-        <section class="panel-section agents-online">
-          <h3>AGENTES ONLINE (11)</h3>
-          <div id="agentsGrid" class="agents-list"></div>
-        </section>
-        <section class="panel-section minimap-container">
-          <h3>MINIMAPA</h3>
-          <div id="minimapUi" class="minimap-box"></div>
-        </section>
-      </aside>
+          <div>
+            <b id="avatarState">--</b>
+            <small id="avatarPhrase">--</small>
+          </div>
+        </div>
+      </header>
 
-      <div class="center-views">
-        <section id="view-command" class="view">
+      <!-- 1. COMANDO -->
+      <section id="view-command" class="view active">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('command', 'chat')">Chat & Execução</button>
+          <button onclick="showSubView('command', 'missions')">Missões</button>
+          <button onclick="showSubView('command', 'developer')">Terminal & IDE</button>
+        </nav>
+        
+        <div id="sub-command-chat" class="sub-view active">
           <div class="command-layout">
-            <section class="panel floating-panel">
-              <div class="panel-head"><h2>IDE & Comando</h2></div>
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Natural language</span><h2>Comando</h2></div></div>
               <div id="chatLog" class="chat-log"></div>
               <form id="cmdForm" class="composer">
-                <textarea id="prompt" placeholder="Ex: revisar a arquitetura do front..."></textarea>
-                <button type="submit" class="primary-btn">Enviar</button>
+                <textarea id="prompt" placeholder="Ex: revisar a arquitetura do front e deployar na VPS..." rows="1"></textarea>
+                <div class="composer-actions">
+                  <span class="model-badge">Motor: <b id="activeModel">--</b></span>
+                  <button type="submit" class="primary-btn"><b>Enviar</b></button>
+                </div>
               </form>
             </section>
+            <div class="side-panel">
+              <section class="panel"><div class="panel-head"><div><span class="eyebrow">Events</span><h2>Telemetria</h2></div><span id="eventCount" class="count-pill">0 eventos</span></div><div id="eventStream" class="terminal"></div></section>
+            </div>
+          </div>
+        </div>
 
-      </div>
+        <div id="sub-command-missions" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Mission Control</span><h2>Ativas e concluidas</h2></div></div><div id="missionList" class="list"></div></section>
+        </div>
+
+        <div id="sub-command-developer" class="sub-view">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Developer District</span><h2>Arquivos e terminal governado</h2></div></div>
+            <div class="dev-layout">
+              <div><div class="filters"><input id="fsPath" placeholder="Pasta"><button id="fsLoadBtn" class="soft-btn" type="button">Listar</button></div><div id="fsList" class="list"></div></div>
+              <div><textarea id="fileViewer" class="file-viewer" spellcheck="false" placeholder="Selecione um arquivo para ler"></textarea><div class="filters"><input id="terminalCmd" placeholder="Comando permitido pelo runtime"><button id="terminalBtn" class="soft-btn" type="button">Executar</button></div><div id="terminalResult" class="terminal"></div></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 2. RUNTIME -->
+      <section id="view-runtime" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('runtime', 'jobs')">Jobs</button>
+          <button onclick="showSubView('runtime', 'city')">AI City (Visual)</button>
+        </nav>
+        
+        <div id="sub-runtime-jobs" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Runtime</span><h2>Jobs e estado</h2></div></div><div id="runtimeList" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">DAG Executions</span><h2>Fila de Tarefas</h2></div></div><div id="jobQueue" class="list"></div></section>
+          </div>
+        </div>
+        
+        <div id="sub-runtime-city" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Virtual World</span><h2>AI City (3D Cyberpunk)</h2></div></div><div id="cityCanvas" class="city-canvas"></div></section>
+        </div>
+      </section>
+
+      <!-- 3. AGENTES -->
+      <section id="view-agents" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('agents', 'swarm')">Swarm Agents</button>
+          <button onclick="showSubView('agents', 'evolution')">Evolução</button>
+        </nav>
+        
+        <div id="sub-agents-swarm" class="sub-view active">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Agents</span><h2>19 Agentes Vivos</h2></div></div><div id="agentsGrid" class="agents-roster-grid"></div></section>
+        </div>
+
+        <div id="sub-agents-evolution" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Evolution District</span><h2>Evolucao Automatica</h2></div></div><div id="evolutionDistrict" class="list"></div></section>
+        </div>
+      </section>
+
+      <!-- 4. WORKSPACE -->
+      <section id="view-workspace" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('workspace', 'projects')">Projetos</button>
+          <button onclick="showSubView('workspace', 'office')">Office</button>
+          <button onclick="showSubView('workspace', 'mobile')">Mobile (DEV)</button>
+        </nav>
+        
+        <div id="sub-workspace-projects" class="sub-view active">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">CRM + portfolio</span><h2>Projetos e repositorios</h2></div></div>
+            <div class="filters"><input id="projectSearch" placeholder="Filtrar projeto, repo ou tag"><select id="repoVisibility"><option value="all">Todos</option><option value="public">Publicos</option><option value="private">Privados</option></select></div>
+            <div id="projectList" class="project-grid"></div>
+          </section>
+        </div>
+
+        <div id="sub-workspace-office" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Virtual Office</span><h2>Empresas e equipes</h2></div></div>
+              <div id="officeList" class="office-grid"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Equipe selecionada</span><h2 id="officeTitle">Selecione uma empresa</h2></div></div>
+              <div id="officeDetail" class="list"></div>
+            </section>
+          </div>
+        </div>
+
+        <div id="sub-workspace-mobile" class="sub-view">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Android Agent</span><h2>Controle Mobile Remoto <span style="color:var(--orange)">[DEV]</span></h2></div></div>
+            <div class="list" style="text-align: center; padding: 40px; border: 1px dashed var(--line); border-radius: 8px;">
+              <div style="font-size: 32px; margin-bottom: 15px;">📱</div>
+              <h3 style="color: #fff;">Integração Mobile em Desenvolvimento</h3>
+              <p style="color: var(--muted); margin-top: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                A comunicação com o Android Remote AgentManager (MediaProjection e touch streaming) está arquitetada no backend, mas aguardando a finalização do APK (Phase 16).
+              </p>
+              <button class="primary-btn" style="margin-top: 20px;" disabled>Aguardando Agent.apk</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 5. KNOWLEDGE -->
+      <section id="view-knowledge" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('knowledge', 'memory')">Memória e KOS</button>
+          <button onclick="showSubView('knowledge', 'graphify')">Graphify</button>
+          <button onclick="showSubView('knowledge', 'skills')">Skills e Builder</button>
+        </nav>
+        
+        <div id="sub-knowledge-memory" class="sub-view active">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">KOS</span><h2>Constituicao e contexto</h2></div></div><div id="kosManifest" class="list"></div></section>
+        </div>
+
+        <div id="sub-knowledge-graphify" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Knowledge graph</span><h2>Anomalias e entidades</h2></div></div><div id="kgList" class="list"></div></section>
+        </div>
+
+        <div id="sub-knowledge-skills" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Skill registry</span><h2>Skills carregaveis</h2></div><span id="skillCount" class="count-pill">--</span></div>
+              <div id="skillList" class="list"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Fullstack builder</span><h2>Front + back no mesmo contrato</h2></div></div>
+              <form id="sliceForm" class="inline-form"><input id="slicePrompt" placeholder="Ex: criar CRM simples com lista, cadastro e status"><button class="primary-btn" type="submit">Criar fatia real</button></form>
+              <div id="sliceList" class="list"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. CONECTORES -->
+      <section id="view-connectors" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('connectors', 'ai')">AI Router & Conectores</button>
+          <button onclick="showSubView('connectors', 'deploy')">OneDeploy & Gatekeeper</button>
+        </nav>
+        
+        <div id="sub-connectors-ai" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Connector runtime</span><h2>Conectores reais</h2></div></div><div id="connectorList" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">AI router</span><h2>Selecao por evidencia</h2></div><button id="checkApiBtn" class="soft-btn" type="button">Checar API</button></div><div id="routerState" class="list"></div></section>
+          </div>
+        </div>
+
+        <div id="sub-connectors-deploy" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">OneDeploy</span><h2>Scan e readiness</h2></div></div>
+              <form id="scanForm" class="inline-form"><input id="scanPath" placeholder="Caminho do projeto (vazio = .)"><button class="primary-btn" type="submit">Escanear</button></form>
+              <div id="scanResult" class="list"></div>
+            </section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Gatekeeper</span><h2>Bloqueios de producao</h2></div></div><div id="readinessList" class="list"></div></section>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. OBSERVABILIDADE -->
+      <section id="view-observability" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('observability', 'metrics')">Métricas e Séries</button>
+          <button onclick="showSubView('observability', 'security')">Segurança e Auditoria</button>
+        </nav>
+        
+        <div id="sub-observability-metrics" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Metricas</span><h2>Observabilidade</h2></div></div><div id="observabilityMetrics" class="mini-metrics"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Series</span><h2>Tendencias</h2></div><button id="sampleBtn" class="soft-btn" type="button">Amostrar agora</button></div><div id="seriesGrid" class="spark-grid"></div></section>
+          </div>
+        </div>
+
+        <div id="sub-observability-security" class="sub-view">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Security</span><h2>Criptografia</h2></div></div><div id="securityState" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Simulation audit</span><h2>Veracidade</h2></div></div><div id="veracityState" class="list"></div></section>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
