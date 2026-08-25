@@ -709,7 +709,23 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const handled = await handleLiveChat({ app, req, res, url, tenantId, actorId, readJson, sendJson, requestId });
         if (handled) return undefined;
       }
-      // Memory Fabric 2.0 API
+      
+        if (req.method === 'POST' && url.pathname === '/api/dev/pipeline') {
+          await app.controlPlane.authorize(tenantId, actorId, 'runtime:execute');
+          const body = await readJson(req);
+          if (!body.prompt) return sendJson(res, 400, { error: 'prompt required' }, requestId);
+          
+          if (!app.devPipeline) return sendJson(res, 500, { error: 'devPipeline not initialized' }, requestId);
+          
+          const result = await app.devPipeline.execute(tenantId, actorId, {
+             prompt: body.prompt,
+             projectPath: body.projectPath,
+             autoDeploy: body.autoDeploy
+          });
+          return sendJson(res, 202, { mission: result }, requestId);
+        }
+
+        // Memory Fabric 2.0 API
       if (req.method === 'POST' && url.pathname === '/api/memory/write') { 
         const b = await readJson(req); 
         return sendJson(res, 201, await app.memory.remember(tenantId, actorId, b), requestId); 
