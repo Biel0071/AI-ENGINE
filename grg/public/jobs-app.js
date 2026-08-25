@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.cancelJob = async (id) => {
     try {
-      await fetch(\`/api/dev/jobs/\${id}/cancel\`, { method: 'POST' });
+      await fetch(`/api/dev/jobs/\${id}/cancel`, { method: 'POST' });
       fetchJobs();
     } catch(e) {}
   };
@@ -66,3 +66,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+

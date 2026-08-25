@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!inspectorActive) return;
       // In a real scenario, we'd send postMessage to the iframe to get element at (e.offsetX, e.offsetY)
       // Since it's a mock overlay, we just draw a hover box.
-      overlay.innerHTML = \`<div style="position:absolute; left:\${e.offsetX - 25}px; top:\${e.offsetY - 25}px; width:50px; height:50px; border:2px dashed #0f0; pointer-events:none;"></div>\`;
+      overlay.innerHTML = `<div style="position:absolute; left:\${e.offsetX - 25}px; top:\${e.offsetY - 25}px; width:50px; height:50px; border:2px dashed #0f0; pointer-events:none;"></div>`;
     });
 
     overlay.addEventListener('click', (e) => {
@@ -45,9 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Simulate Element Selection
       const cockpitPrompt = document.getElementById('cockpitPrompt');
       if (cockpitPrompt) {
-        cockpitPrompt.value = \`[ELEMENT SELECTED: .agent-card (public/unified-app.js)] \`;
+        cockpitPrompt.value = `[ELEMENT SELECTED: .agent-card (public/unified-app.js)] `;
         document.querySelector('button[data-view="cockpit"]')?.click();
       }
     });
   }
 });
+

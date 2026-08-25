@@ -1000,9 +1000,39 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\knowledge-genome.js"
     },
     {
+      "name": "MemoryConsolidator",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-consolidator.js"
+    },
+    {
       "name": "MemoryEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-engine.js"
+    },
+    {
+      "name": "MemoryProvider",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-fabric.js"
+    },
+    {
+      "name": "FenixEngineProvider",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-fabric.js"
+    },
+    {
+      "name": "GraphitiProvider",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-fabric.js"
+    },
+    {
+      "name": "ZepProvider",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-fabric.js"
+    },
+    {
+      "name": "MemoryGateway",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-fabric.js"
     },
     {
       "name": "ProceduralLearningEngine",

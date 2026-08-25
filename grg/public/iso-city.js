@@ -106,6 +106,8 @@ class IsoCityEngine {
       this.canvas.width = parent.offsetWidth || window.innerWidth;
       this.canvas.height = parent.offsetHeight || window.innerHeight;
     }
+  }
+
   handleClick(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
     const x = clientX - rect.left;
@@ -619,3 +621,4 @@ window.initCityCanvas = function() {
     window.fenixCity = new IsoCityEngine('cityCanvas');
   }
 };
+
