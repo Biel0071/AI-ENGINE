@@ -1,6 +1,11 @@
 {
   "modules": [
     {
+      "name": "AgentAvatarRegistry",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-avatar-registry.js"
+    },
+    {
       "name": "AgentRegistry",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-registry.js"
@@ -45,6 +50,11 @@
       "name": "NpcCityEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\npc-city-engine.js"
+    },
+    {
+      "name": "PerceptionEngine",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\perception-engine.js"
     },
     {
       "name": "AIGateway",
@@ -432,7 +442,8 @@
     {
       "name": "ProjectRegistry",
       "type": "legacy",
-      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\core\\Registries.js"
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\projects\\project-registry.js",
+      "_duplicated": true
     },
     {
       "name": "EvolutionRegistry",
@@ -542,6 +553,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\eventing\\fabric-event-bus.js"
     },
     {
+      "name": "FenixWSBridge",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\eventing\\fenix-ws-bridge.js"
+    },
+    {
       "name": "AIEconomyEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\evolution\\ai-economy-engine.js"
@@ -568,6 +584,11 @@
       "_duplicated": true
     },
     {
+      "name": "DevMissionPlanner",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\dev-mission-planner.js"
+    },
+    {
       "name": "DockerRootlessSandbox",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\docker-rootless-sandbox.js"
@@ -576,6 +597,16 @@
       "name": "ExecutionEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\execution-engine.js"
+    },
+    {
+      "name": "JobQueue",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\job-queue.js"
+    },
+    {
+      "name": "JobWorker",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\execution\\job-worker.js"
     },
     {
       "name": "PermissionMatrix",
@@ -972,6 +1003,11 @@
       "name": "MemoryEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\memory-engine.js"
+    },
+    {
+      "name": "ProceduralLearningEngine",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\procedural-learning-engine.js"
     },
     {
       "name": "QdrantVectorStore",
@@ -1534,6 +1570,11 @@
       "name": "SkillRegistry",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\skills\\skill-registry.js"
+    },
+    {
+      "name": "FenixDevPipeline",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\dev-pipeline.js"
     },
     {
       "name": "ProjectFactoryService",

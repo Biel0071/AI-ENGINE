@@ -84,7 +84,10 @@ class Gatekeeper {
     // bloqueia: uma plataforma que mente sobre si mesma nao pode autorizar seu proprio
     // deploy.
     try {
-      const audit = auditTree(this.srcDir);
+      if (!this.cachedAudit) {
+        this.cachedAudit = auditTree(this.srcDir);
+      }
+      const audit = this.cachedAudit;
       evidence.push({ kind: 'simulation-audit', reference: `${audit.totals.modules} modules / ${audit.totals.files} files`, fakeSignals: audit.totals.totalFakeSignals });
       const offending = audit.modules.filter((item) => item.classification === CLASSES.SIMULATED || item.classification === CLASSES.STUB);
       for (const module of offending) {

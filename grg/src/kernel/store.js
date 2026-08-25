@@ -170,7 +170,7 @@ class MemoryStore {
   }
 
   async read() {
-    return clone(this.state);
+    return this.state;
   }
 
   #prune(state) {
