@@ -13,6 +13,16 @@ fi
 cd /opt/fenix-os/grg || { echo "Codigo nao encontrado em /opt/fenix-os/grg. Faça o deploy primeiro."; exit 1; }
 
 echo "Criando .env de producao com dummy secrets (se nao existir)..."
+mkdir -p /opt/fenix-os/grg/.secrets
+[ ! -f /opt/fenix-os/grg/.secrets/postgres_password ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/postgres_password
+[ ! -f /opt/fenix-os/grg/.secrets/redis_password ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/redis_password
+[ ! -f /opt/fenix-os/grg/.secrets/minio_access_key ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/minio_access_key
+[ ! -f /opt/fenix-os/grg/.secrets/minio_secret_key ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/minio_secret_key
+[ ! -f /opt/fenix-os/grg/.secrets/ai_provider_key ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/ai_provider_key
+[ ! -f /opt/fenix-os/grg/.secrets/metrics_token ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/metrics_token
+[ ! -f /opt/fenix-os/grg/.secrets/keycloak_admin_password ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/keycloak_admin_password
+[ ! -f /opt/fenix-os/grg/.secrets/keycloak_user_password ] && echo "dummy-secret-123" > /opt/fenix-os/grg/.secrets/keycloak_user_password
+
 POSTGRES_PASS=$(cat /opt/fenix-os/grg/.secrets/postgres_password 2>/dev/null || echo "dummy-secret-123")
 REDIS_PASS=$(cat /opt/fenix-os/grg/.secrets/redis_password 2>/dev/null || echo "dummy-secret-123")
 MINIO_KEY=$(cat /opt/fenix-os/grg/.secrets/minio_access_key 2>/dev/null || echo "dummy-secret-123")
@@ -58,6 +68,7 @@ for secret in postgres_password redis_password minio_access_key minio_secret_key
 done
 
 echo "Fazendo o build da AI Platform..."
+cp .env.production .env
 set -a
 source .env.production
 set +a
