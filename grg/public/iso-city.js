@@ -154,6 +154,25 @@ class IsoCityEngine {
       const skills = a.capabilities || ['Research', 'Code', 'Debug'];
       e('inspectorSkills').innerHTML = skills.map(sk => `<span style="padding:2px 6px; background:rgba(56,189,248,0.1); border-radius:4px;">${sk}</span>`).join('');
     }
+
+    if(e('inspectorChatBtn')) {
+      e('inspectorChatBtn').onclick = () => {
+        if(window.chatWithAgent) window.chatWithAgent(a.name || a.id);
+        hud.style.display = 'none';
+      };
+    }
+    if(e('inspectorTaskBtn')) {
+      e('inspectorTaskBtn').onclick = () => {
+        const input = document.getElementById('chatInput');
+        if (input) {
+           input.value = `@${a.name || a.id} [TASK] `;
+           input.focus();
+           const chatTab = document.querySelector('.tab-btn[data-tab="chat"]');
+           if (chatTab) chatTab.click();
+        }
+        hud.style.display = 'none';
+      };
+    }
   }
 
   setupEvents() {
@@ -248,10 +267,19 @@ class IsoCityEngine {
 
   updateSemanticZoom() {
     const z = this.state.camera.zoom;
-    if (z < 0.8) this.state.zoomLevel = 'city';
-    else if (z < 2.0) this.state.zoomLevel = 'building';
-    else if (z < 3.5) this.state.zoomLevel = 'floor';
+    if (z < 0.4) this.state.zoomLevel = 'world';
+    else if (z < 0.8) this.state.zoomLevel = 'city';
+    else if (z < 1.3) this.state.zoomLevel = 'district';
+    else if (z < 2.0) this.state.zoomLevel = 'company';
+    else if (z < 2.8) this.state.zoomLevel = 'building';
+    else if (z < 3.8) this.state.zoomLevel = 'floor';
+    else if (z < 5.0) this.state.zoomLevel = 'room';
     else this.state.zoomLevel = 'agent';
+
+    const zoomDisplay = document.getElementById('cityZoomDisplay');
+    if (zoomDisplay) {
+      zoomDisplay.textContent = `[ ${this.state.zoomLevel.toUpperCase()} LEVEL ] - ${z.toFixed(1)}x`;
+    }
     
     // Push zoom to global state so HUD can read it
     if (window.state) window.state.zoom = z;
