@@ -1,320 +1,289 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>FÃƒÅ NIX OS | Master Agentic IDE</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  
-  <!-- Xterm.js -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
-  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
-
-  <!-- Marked.js & DOMPurify -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-
-  <!-- Vis.js for Knowledge Graph -->
-  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-
-  <!-- Monaco Editor -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
-
-  <link rel="stylesheet" href="/unified.css?v=3">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080b10">
+  <title>FENIX OS | Unified Workspace</title>
+  <link rel="stylesheet" href="/design-system.css">
+  <link rel="stylesheet" href="/unified.css">
+  <link rel="stylesheet" href="/fenix.css">
+  <link rel="stylesheet" href="/living-panels.css">
+  <link rel="stylesheet" href="/city-overrides.css">
+  <link rel="stylesheet" href="/office.css">
 </head>
-<body class="dark-theme">
-  
-  <div class="fenix-os-layout">
-    
-    <!-- TOP GLOBAL BAR -->
-    <header class="global-topbar">
-      <div class="topbar-left">
-        <div class="brand-logo">
-          <i class="ph-fill ph-fire"></i>
-          <span>FÃƒÅ NIX OS <span class="version-badge">v2.1.0</span></span>
-        </div>
-        <div class="connection-status">
-          <i id="statusDot" class="ph-fill ph-circle" style="color: var(--green);"></i> AI Platform <span id="statusText" style="color: var(--green);">CONNECTED</span>
-        </div>
+<body>
+  <div class="app-shell">
+    <aside class="rail" aria-label="Navegacao principal">
+      <a class="brand" href="#command" aria-label="FENIX OS">
+        <span class="brand-mark">F</span>
+        <span><b>FENIX OS</b><small>Unified Workspace</small></span>
+      </a>
+      <div class="rail-status">
+        <i id="statusDot"></i>
+        <span><b id="statusText">Conectando</b><small id="statusSub">runtime</small></span>
       </div>
-      
-      <div class="topbar-metrics">
-        <div class="metric"><small>Modelo Ativo</small><b>qwen2.5-coder</b></div>
-        <div class="metric"><small>LatÃƒÂªncia</small><b id="kpiLatency">-- ms</b></div>
-        <div class="metric"><small>Tokens Usados</small><b id="kpiTokens">0</b></div>
-        <div class="metric"><small>Agentes</small><b id="kpiAgents">0/19</b></div>
-        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% SaudÃƒÂ¡vel</b></div>
-      </div>
-      
-      <div class="topbar-right">
-        <div class="user-info">
-          <div class="avatar"><i class="ph-fill ph-user"></i></div>
-          <span>grg-admin <small>MASTER ADMIN</small></span>
-        </div>
-        <button id="refreshBtn" class="btn-ghost" title="Force Sync"><i class="ph ph-arrows-clockwise"></i></button>
-        <button id="logoutBtn" class="btn-ghost" title="Logout"><i class="ph ph-sign-out"></i></button>
-      </div>
-    </header>
-
-    <div class="main-body">
-      
-      <!-- NAV SIDEBAR (Tiniest left bar) -->
-      <nav class="activity-bar">
-        <div class="nav-top">
-          <button class="nav-item" data-view="cockpit" title="DEV COMMAND CENTER"><i class="ph ph-rocket-launch"></i></button>
-          <button class="nav-item" data-view="city" title="Cidade"><i class="ph ph-buildings"></i></button>
-          <button class="nav-item" data-view="jobs" title="Jobs"><i class="ph ph-list-numbers"></i></button>
-          <button class="nav-item active" data-view="ide" title="Agentic IDE"><i class="ph ph-code"></i></button>
-          <button class="nav-item" data-view="projects" title="Projetos"><i class="ph ph-folders"></i></button>
-          <button class="nav-item" data-view="agents" title="Agentes"><i class="ph ph-users-three"></i></button>
-          <button class="nav-item" data-view="metrics" title="MÃƒÂ©tricas"><i class="ph ph-chart-line-up"></i></button>
-          <button class="nav-item" data-view="memory" title="MemÃƒÂ³ria"><i class="ph ph-brain"></i></button>
-        </div>
-        <div class="nav-bottom">
-          <button class="nav-item" title="ConfiguraÃƒÂ§ÃƒÂµes"><i class="ph ph-gear"></i></button>
-        </div>
+      <nav id="navList" class="nav-list">
+        <button class="active" data-nav="command" type="button"><span>CM</span> Comando</button>
+        <button data-nav="runtime" type="button"><span>RT</span> Runtime</button>
+        <button data-nav="agents" type="button"><span>AG</span> Agentes</button>
+        <button data-nav="workspace" type="button"><span>WS</span> Workspace</button>
+        <button data-nav="knowledge" type="button"><span>KG</span> Knowledge</button>
+        <button data-nav="connectors" type="button"><span>CN</span> Conectores</button>
+        <button data-nav="observability" type="button"><span>OB</span> Observabilidade</button>
       </nav>
+      <button id="logoutBtn" class="ghost-btn" type="button">Sair</button>
+    </aside>
 
-      <!-- VIEWS CONTAINER -->
-      <div class="views-container">
-        
-        
-          <!-- COCKPIT VIEW -->
-          <div id="view-cockpit" class="view" style="display:none; flex-direction:column; overflow-y:auto; padding:20px; gap:20px;">
-              <div style="background:var(--bg-panel); border:1px solid var(--border); padding:16px; border-radius:6px;">
-                <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i class="ph ph-terminal-window"></i> COMMAND ROUTER</h3>
-                <div style="display:flex; gap:10px; margin-bottom:12px;">
-                  <input type="text" id="cockpitProjectId" class="grg-input" placeholder="Project ID" style="width:250px;" value="fenix_main" />
-                  <button id="cockpitConnectBtn" class="conn-btn primary"><i class="ph ph-plug"></i> CONNECT</button>
-                  <span id="cockpitStatus" style="margin-left:10px; align-self:center; font-weight:bold; color:var(--text-muted);"></span>
-                </div>
-                <div style="display:flex; gap:10px;">
-                  <textarea id="cockpitPrompt" class="grg-input" placeholder="Ex: /FULLDEV Crie uma função de autenticação com JWT..." style="flex:1; height:60px; resize:vertical;"></textarea>
-                  <button id="cockpitExecuteBtn" class="conn-btn primary" style="width:120px; font-weight:bold; font-size:14px;">EXECUTE</button>
-                </div>
-              </div>
-
-              <div style="display:flex; gap:20px; flex:1;">
-                <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
-                  <div style="background:var(--bg-panel); border:1px solid var(--border); padding:16px; border-radius:6px; flex:1; display:flex; flex-direction:column;">
-                    <h4 style="margin:0 0 10px 0; border-bottom:1px solid var(--border); padding-bottom:8px;"><i class="ph ph-git-commit"></i> ACTIVE MISSION DAG</h4>
-                    <div id="cockpitMissionJobs" style="flex:1; overflow-y:auto; padding-right:10px; display:flex; flex-direction:column; gap:8px;">
-                      <div style="color:var(--text-muted); font-size:12px;">Waiting for mission...</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
-                  <div style="background:var(--bg-panel); border:1px solid var(--border); padding:16px; border-radius:6px; flex:1; display:flex; flex-direction:column;">
-                    <h4 style="margin:0 0 10px 0; border-bottom:1px solid var(--border); padding-bottom:8px;"><i class="ph ph-terminal"></i> LIVE EVIDENCE & RAG</h4>
-                    <div id="cockpitLogs" style="flex:1; overflow-y:auto; background:#000; color:#0f0; font-family:monospace; font-size:12px; padding:10px; border-radius:4px;">
-                      > SYSTEM READY
-                    </div>
-                  </div>
-                </div>
-              </div>
-          </div>
-
-          <!-- IDE VIEW -->
-        
-        <!-- JOBS VIEW -->
-        <div id="view-jobs" class="view" style="display: none; flex-direction: column; flex: 1; background: var(--bg-dark);">
-          <div class="panel-header">
-            <h3>Job Queue</h3>
-          </div>
-          <div id="jobsListContainer" class="panel-content" style="padding: 20px; overflow-y: auto;">
-            <!-- Jobs will be rendered here -->
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <h1 id="viewTitle">Comando</h1>
+          <div class="kpi-strip">
+            <span class="kpi"><b>Projetos:</b> <span id="kpiProjects">--</span></span>
+            <span class="kpi"><b>Repos:</b> <span id="kpiRepos">--</span></span>
+            <span class="kpi"><b>Jobs:</b> <span id="kpiJobs">--</span></span>
+            <span class="kpi"><b>IA Calls:</b> <span id="kpiAi">--</span></span>
           </div>
         </div>
+        <div class="avatar-panel">
+          <div class="avatar-badge">
+            <b id="actorName">--</b>
+            <small id="actorRole">--</small>
+          </div>
+          <div>
+            <b id="avatarState">--</b>
+            <small id="avatarPhrase">--</small>
+          </div>
+        </div>
+      </header>
 
-        <div id="view-ide" class="view active">
-          
-          <div class="ide-split-layout">
-            
-            <!-- LEFT PANEL: Chat / Agents / Memory -->
-            <div class="panel-left">
-              <div class="panel-tabs">
-                <button class="panel-tab active">CHAT</button>
-                <button class="panel-tab">AGENTS</button>
-                <button class="panel-tab">JOBS</button><button class="panel-tab">MEMÃ“RIA</button><button class="panel-tab">GRAFO</button>
-              </div>
-              
-              <div class="panel-content chat-view">
-                <div id="chatLog" class="chat-history">
-                  <div class="chat-bubble chat-bot">
-                    <div class="chat-avatar"><i class="ph-fill ph-robot"></i></div>
-                    <div class="chat-text-wrapper">
-                      <strong>FÃƒÅ NIX AI <span class="badge-online">Online</span></strong>
-                      <div class="chat-text">OlÃƒÂ¡! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
-                    </div>
-                  </div>
+      <!-- 1. COMANDO -->
+      <section id="view-command" class="view active">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('command', 'chat')">Chat & Execução</button>
+          <button onclick="showSubView('command', 'missions')">Missões</button>
+          <button onclick="showSubView('command', 'developer')">Terminal & IDE</button>
+        </nav>
+        
+        <div id="sub-command-chat" class="sub-view active">
+          <div class="command-layout">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Natural language</span><h2>Comando</h2></div></div>
+              <div id="chatLog" class="chat-log"></div>
+              <form id="cmdForm" class="composer">
+                <textarea id="prompt" placeholder="Ex: revisar a arquitetura do front e deployar na VPS..." rows="1"></textarea>
+                <div class="composer-actions">
+                  <span class="model-badge">Motor: <b id="activeModel">--</b></span>
+                  <button type="submit" class="primary-btn"><b>Enviar</b></button>
                 </div>
-                
-                <form id="cmdForm" class="chat-composer">
-                  <textarea id="prompt" placeholder="Digite seu comando para o FÃƒÂªnix..." rows="2"></textarea>
-                  <div class="composer-actions">
-                    <div class="composer-models">
-                      <i class="ph ph-cpu"></i> <span>qwen2.5-coder</span>
-                    </div>
-                    <button type="submit" class="btn-send"><i class="ph-fill ph-paper-plane-right"></i></button>
-                  </div>
-                </form>
-              </div>
+              </form>
+            </section>
+            <div class="side-panel">
+              <section class="panel"><div class="panel-head"><div><span class="eyebrow">Events</span><h2>Telemetria</h2></div><span id="eventCount" class="count-pill">0 eventos</span></div><div id="eventStream" class="terminal"></div></section>
             </div>
-            
-            <!-- CENTER PANEL: Editor Visual / Code -->
-            <div class="panel-center">
-              
-                              <div class="editor-header">
-                  <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÓDIGO</span></div>
-                  <div class="editor-toolbar">
-                    <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
-                    <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
-                    <div class="toolbar-divider"></div>
-                    <button class="toolbar-btn active">Split</button>
-                  </div>
-                  <button id="saveBtn" class="btn-primary-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
-                </div>
-                
-                <!-- Editor Container (Can hold Monaco or Visual Iframe) -->
-                <div class="editor-body" style="display: flex; flex-direction: row; height: 100%;">
-                  
-                  <!-- Visual Canvas (Overlay / Iframe) -->
-                  <div id="visualCanvas" class="visual-canvas" style="flex: 1; border-right: 1px solid var(--border); display: flex;">
-                    <iframe id="previewIframe" src="/app" frameborder="0" style="width: 100%; height: 100%;"></iframe>
-                    <div id="visualOverlay" class="visual-overlay" style="pointer-events: none; position: absolute; inset: 0;"></div>
-                  </div>
-                  
-                  <!-- Monaco Code Editor -->
-                  <div class="monaco-container" style="flex: 1; display: block; position: relative;">
-                    <div id="editorNode" style="width:100%; height:100%;"></div>
-                  </div>
-                  
-                </div>
-                
-                <!-- Terminal Bottom Panel -->
-                <div class="terminal-panel">
-                  <div class="terminal-header">
-                    <div class="terminal-tabs">
-                      <button class="terminal-tab active">TERMINAL</button>
-                      <button class="terminal-tab">OUTPUT</button>
-                      <button class="terminal-tab">DEBUG CONSOLE</button>
-                      <button class="terminal-tab">PORTS</button>
-                    </div>
-                    <div class="terminal-actions">
-                      <button class="icon-btn-small" id="clearTerminalBtn"><i class="ph ph-trash"></i></button>
-                      <button class="icon-btn-small"><i class="ph ph-x"></i></button>
-                    </div>
-                  </div>
-                  <div class="terminal-body">
-                    <div id="xtermContainer" style="width:100%; height:100%;"></div>
-                  </div>
-                  <div class="terminal-input-row">
-                    <i class="ph-bold ph-caret-right prompt-char"></i>
-                    <input id="terminalCmd" type="text" placeholder="Executar comando no workspace..." autocomplete="off">
-                    <button id="terminalBtn" class="btn-ghost-sm" style="display:none;">Run</button>
-                  </div>
-                </div>
-
-              </div>
-              
-              <!-- RIGHT PANEL: Structure / Files -->
-            <div class="panel-right">
-              <div class="panel-header">
-                <span>ESTRUTURA</span>
-                <div class="header-actions">
-                  <button class="icon-btn-small" id="fsLoadBtn"><i class="ph ph-arrows-clockwise"></i></button>
-                  <button class="icon-btn-small"><i class="ph ph-files"></i></button>
-                </div>
-              </div>
-              
-              <div class="panel-content fs-explorer">
-                <input id="fsPath" type="text" class="hidden-input" value="C:/projetos/ai-engine-core/ai-engine">
-                <div id="fsList" class="fs-tree">
-                  <!-- Injected via JS -->
-                  <div class="empty-state">
-                    <i class="ph ph-spinner ph-spin"></i> Loading Workspace...
-                  </div>
-                </div>
-              </div>
-              
-              <div class="panel-header" style="border-top: 1px solid var(--border); margin-top: auto;">
-                <span>AI AGENTS (LIVE)</span>
-              </div>
-              <div id="liveAgentsList" class="panel-content agents-mini-list">
-                <!-- Mini agent statuses injected here -->
-              </div>
-            </div>
-            
           </div>
-          
+        </div>
+
+        <div id="sub-command-missions" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Mission Control</span><h2>Ativas e concluidas</h2></div></div><div id="missionList" class="list"></div></section>
+        </div>
+
+        <div id="sub-command-developer" class="sub-view">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Developer District</span><h2>Arquivos e terminal governado</h2></div></div>
+            <div class="dev-layout">
+              <div><div class="filters"><input id="fsPath" placeholder="Pasta"><button id="fsLoadBtn" class="soft-btn" type="button">Listar</button></div><div id="fsList" class="list"></div></div>
+              <div><textarea id="fileViewer" class="file-viewer" spellcheck="false" placeholder="Selecione um arquivo para ler"></textarea><div class="filters"><input id="terminalCmd" placeholder="Comando permitido pelo runtime"><button id="terminalBtn" class="soft-btn" type="button">Executar</button></div><div id="terminalResult" class="terminal"></div></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 2. RUNTIME -->
+      <section id="view-runtime" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('runtime', 'jobs')">Jobs</button>
+          <button onclick="showSubView('runtime', 'city')">AI City (Visual)</button>
+        </nav>
+        
+        <div id="sub-runtime-jobs" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Runtime</span><h2>Jobs e estado</h2></div></div><div id="runtimeList" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">DAG Executions</span><h2>Fila de Tarefas</h2></div></div><div id="jobQueue" class="list"></div></section>
+          </div>
         </div>
         
-        <!-- OTHER VIEWS (City, Projects, Metrics, Memory) will be injected here. We focus on IDE first for execution -->
-        <!-- Restored AI City Dashboard View -->
-<div id="view-city" class="view" style=" flex-direction: column; height: 100%; gap: 16px; padding: 16px; overflow-y: auto;">
-  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-    <h2><i class="ph-fill ph-buildings"></i> AI City Dashboard & Models</h2>
-    <div style="display: flex; gap: 8px;">
-      <button class="btn btn-secondary" onclick="window.location.reload()"><i class="ph ph-arrows-clockwise"></i> Force Sync</button>
-    </div>
-  </div>
-  
-  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; flex: 1;">
-    <!-- City Map / Visual Canvas -->
-    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; position: relative; overflow: hidden; min-height: 400px; display: flex; flex-direction: column;">
-      <div class="panel-header">MAPA ISOMÃ‰TRICO (AGENTES FLUTUANTES)</div>
-      <div style="flex: 1; position: relative;" id="cityMapContainer">
-         <canvas id="cityCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;"></canvas>
-         <div id="cityNodesOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;"></div>
-      </div>
-    </div>
-    
-    <div style="display: flex; flex-direction: column; gap: 16px;">
-      <!-- Real API Models -->
-      <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; flex: 1; display: flex; flex-direction: column;">
-        <div class="panel-header">MODELOS LOCAIS (API)</div>
-        <div id="modelsList" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
-           <i>Carregando modelos da FÃªnix Mind...</i>
+        <div id="sub-runtime-city" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Virtual World</span><h2>AI City (3D Cyberpunk)</h2></div></div><div id="cityCanvas" class="city-canvas"></div></section>
         </div>
-      </div>
-      
-      <!-- Repositories -->
-      <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; flex: 1; display: flex; flex-direction: column;">
-        <div class="panel-header">REPOSITÃ“RIOS FÃŠNIX</div>
-        <div id="reposList" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
-           <i>Carregando repos...</i>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+      </section>
 
-          <div id="view-projects" class="view">
-           <div class="empty-state"><h2>Projects Management</h2></div>
-        </div>
+      <!-- 3. AGENTES -->
+      <section id="view-agents" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('agents', 'swarm')">Swarm Agents</button>
+          <button onclick="showSubView('agents', 'evolution')">Evolução</button>
+        </nav>
         
+        <div id="sub-agents-swarm" class="sub-view active">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Agents</span><h2>19 Agentes Vivos</h2></div></div><div id="agentsGrid" class="agents-roster-grid"></div></section>
+        </div>
+
+        <div id="sub-agents-evolution" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Evolution District</span><h2>Evolucao Automatica</h2></div></div><div id="evolutionDistrict" class="list"></div></section>
+        </div>
+      </section>
+
+      <!-- 4. WORKSPACE -->
+      <section id="view-workspace" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('workspace', 'projects')">Projetos</button>
+          <button onclick="showSubView('workspace', 'office')">Office</button>
+          <button onclick="showSubView('workspace', 'mobile')">Mobile (DEV)</button>
+        </nav>
+        
+        <div id="sub-workspace-projects" class="sub-view active">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">CRM + portfolio</span><h2>Projetos e repositorios</h2></div></div>
+            <div class="filters"><input id="projectSearch" placeholder="Filtrar projeto, repo ou tag"><select id="repoVisibility"><option value="all">Todos</option><option value="public">Publicos</option><option value="private">Privados</option></select></div>
+            <div id="projectList" class="project-grid"></div>
+          </section>
+        </div>
+
+        <div id="sub-workspace-office" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Virtual Office</span><h2>Empresas e equipes</h2></div></div>
+              <div id="officeList" class="office-grid"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Equipe selecionada</span><h2 id="officeTitle">Selecione uma empresa</h2></div></div>
+              <div id="officeDetail" class="list"></div>
+            </section>
+          </div>
+        </div>
+
+        <div id="sub-workspace-mobile" class="sub-view">
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Android Agent</span><h2>Controle Mobile Remoto <span style="color:var(--orange)">[DEV]</span></h2></div></div>
+            <div class="list" style="text-align: center; padding: 40px; border: 1px dashed var(--line); border-radius: 8px;">
+              <div style="font-size: 32px; margin-bottom: 15px;">📱</div>
+              <h3 style="color: #fff;">Integração Mobile em Desenvolvimento</h3>
+              <p style="color: var(--muted); margin-top: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                A comunicação com o Android Remote AgentManager (MediaProjection e touch streaming) está arquitetada no backend, mas aguardando a finalização do APK (Phase 16).
+              </p>
+              <button class="primary-btn" style="margin-top: 20px;" disabled>Aguardando Agent.apk</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 5. KNOWLEDGE -->
+      <section id="view-knowledge" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('knowledge', 'memory')">Memória e KOS</button>
+          <button onclick="showSubView('knowledge', 'graphify')">Graphify</button>
+          <button onclick="showSubView('knowledge', 'skills')">Skills e Builder</button>
+        </nav>
+        
+        <div id="sub-knowledge-memory" class="sub-view active">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">KOS</span><h2>Constituicao e contexto</h2></div></div><div id="kosManifest" class="list"></div></section>
+        </div>
+
+        <div id="sub-knowledge-graphify" class="sub-view">
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">Knowledge graph</span><h2>Anomalias e entidades</h2></div></div><div id="kgList" class="list"></div></section>
+        </div>
+
+        <div id="sub-knowledge-skills" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Skill registry</span><h2>Skills carregaveis</h2></div><span id="skillCount" class="count-pill">--</span></div>
+              <div id="skillList" class="list"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Fullstack builder</span><h2>Front + back no mesmo contrato</h2></div></div>
+              <form id="sliceForm" class="inline-form"><input id="slicePrompt" placeholder="Ex: criar CRM simples com lista, cadastro e status"><button class="primary-btn" type="submit">Criar fatia real</button></form>
+              <div id="sliceList" class="list"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. CONECTORES -->
+      <section id="view-connectors" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('connectors', 'ai')">AI Router & Conectores</button>
+          <button onclick="showSubView('connectors', 'deploy')">OneDeploy & Gatekeeper</button>
+        </nav>
+        
+        <div id="sub-connectors-ai" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Connector runtime</span><h2>Conectores reais</h2></div></div><div id="connectorList" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">AI router</span><h2>Selecao por evidencia</h2></div><button id="checkApiBtn" class="soft-btn" type="button">Checar API</button></div><div id="routerState" class="list"></div></section>
+          </div>
+        </div>
+
+        <div id="sub-connectors-deploy" class="sub-view">
+          <div class="two-col">
+            <section class="panel">
+              <div class="panel-head"><div><span class="eyebrow">OneDeploy</span><h2>Scan e readiness</h2></div></div>
+              <form id="scanForm" class="inline-form"><input id="scanPath" placeholder="Caminho do projeto (vazio = .)"><button class="primary-btn" type="submit">Escanear</button></form>
+              <div id="scanResult" class="list"></div>
+            </section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Gatekeeper</span><h2>Bloqueios de producao</h2></div></div><div id="readinessList" class="list"></div></section>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. OBSERVABILIDADE -->
+      <section id="view-observability" class="view">
+        <nav class="sub-nav">
+          <button class="active" onclick="showSubView('observability', 'metrics')">Métricas e Séries</button>
+          <button onclick="showSubView('observability', 'security')">Segurança e Auditoria</button>
+        </nav>
+        
+        <div id="sub-observability-metrics" class="sub-view active">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Metricas</span><h2>Observabilidade</h2></div></div><div id="observabilityMetrics" class="mini-metrics"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Series</span><h2>Tendencias</h2></div><button id="sampleBtn" class="soft-btn" type="button">Amostrar agora</button></div><div id="seriesGrid" class="spark-grid"></div></section>
+          </div>
+        </div>
+
+        <div id="sub-observability-security" class="sub-view">
+          <div class="two-col">
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Security</span><h2>Criptografia</h2></div></div><div id="securityState" class="list"></div></section>
+            <section class="panel"><div class="panel-head"><div><span class="eyebrow">Simulation audit</span><h2>Veracidade</h2></div></div><div id="veracityState" class="list"></div></section>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <dialog id="cmdDialog" class="command-dialog">
+    <div class="panel-head"><div><span class="eyebrow">Command palette</span><h2>Navegar ou executar</h2></div><button id="closeCmdBtn" class="icon-action" type="button">X</button></div>
+    <input id="cmdInput" placeholder="Digite: deploy, city, api, missao...">
+    <div id="cmdResults" class="list"></div>
+  </dialog>
+
+  <script src="/unified-app.js"></script>
+
+  <div class="building-drawer-overlay" id="jobInspectorModal" style="display:none; z-index:9999; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8);">
+    <div class="building-drawer-content" style="max-width:760px; max-height:85vh; display:flex; flex-direction:column; margin: 5vh auto; background:#111; border:1px solid #333; border-radius:8px;">
+      <div class="drawer-header" style="display:flex; justify-content:space-between; padding:16px; border-bottom:1px solid #333;">
+        <div class="drawer-title-group">
+          <div>
+            <h3 id="inspectorJobTitle" style="color:#fff; margin:0;">Job Inspector</h3>
+            <p id="inspectorJobId" style="color:#0ff; font-family:monospace; margin:0;">JOB-ID</p>
+          </div>
+        </div>
+        <button class="drawer-close-btn" id="jobInspectorCloseBtn" type="button" style="background:transparent; color:#fff; border:none; cursor:pointer;">X</button>
       </div>
-      
+      <div class="drawer-body" id="jobInspectorBody" style="padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;">
+      </div>
     </div>
   </div>
-  
-  <script src="/ide-enhancer.js?v=3"></script>
-  <script src="/unified-app.js?v=3"></script>
 
-    <div id="fenix-mascot-container">
-      <div id="fenix-mascot-bubble">Olá! Eu sou a Fênix. Estou online e monitorando o servidor.</div>
-      <div id="fenix-mascot" onclick="document.getElementById('fenix-mascot-bubble').classList.toggle('active')"><i class="ph-fill ph-fire"></i></div>
-    </div>
-    <script src="/cockpit-app.js"></script>
-  <script src="/visual-inspector.js"></script>
-  <script src="/jobs-app.js"></script>
 </body>
 </html>
-
-
-

@@ -745,14 +745,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     ws.send(JSON.stringify({ type: 'RuntimeConnected', payload: { status: 'ok' } }));
     
     // Subscribe to EventBus and forward to WS
-    const unsubscribe = app.bus.subscribe('*', (event) => {
+    const unsubscribe = app.bus.on('*', (event) => {
       if (ws.readyState === 1) { // OPEN
         ws.send(JSON.stringify({ type: event.type, payload: event }));
       }
     });
 
     ws.on('close', () => {
-      app.bus.unsubscribe(unsubscribe);
+      unsubscribe();
     });
   });
 
@@ -786,7 +786,7 @@ function capabilityFromPath(pathname) {
 }
 
 function serveStatic(pathname, res) {
-  const ALIASES = { '/': 'login.html', '/GRG-login': 'login.html', '/login': 'login.html', '/app': 'index.html', '/office': 'office.html' };
+  const ALIASES = { '/': 'login.html', '/GRG-login': 'login.html', '/login': 'login.html', '/app': 'index.html', '/app.html': 'index.html', '/office': 'index.html', '/office.html': 'index.html' };
   const rel = ALIASES[pathname] || pathname.replace(/^\//, '');
   const file = path.resolve(PUBLIC, rel);
   if (!file.startsWith(PUBLIC) || !fs.existsSync(file)) { res.writeHead(404); return res.end('not found'); }
