@@ -1,4 +1,4 @@
-const http = require('node:http');
+﻿const http = require('node:http');
 const { Kernel } = require('./core/Kernel');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -709,6 +709,32 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const handled = await handleLiveChat({ app, req, res, url, tenantId, actorId, readJson, sendJson, requestId });
         if (handled) return undefined;
       }
+      // Memory Fabric 2.0 API
+      if (req.method === 'POST' && url.pathname === '/api/memory/write') { 
+        const b = await readJson(req); 
+        return sendJson(res, 201, await app.memory.remember(tenantId, actorId, b), requestId); 
+      }
+      if (req.method === 'GET' && url.pathname === '/api/memory/search') { 
+        return sendJson(res, 200, await app.memory.query(tenantId, actorId, url.searchParams.get('q'), { 
+          kind: url.searchParams.get('kind'), 
+          limit: Number(url.searchParams.get('limit')) || 10 
+        }), requestId); 
+      }
+      if (req.method === 'GET' && url.pathname.startsWith('/api/memory/agent/')) { 
+        const agentId = url.pathname.split('/')[4];
+        return sendJson(res, 200, await app.memory.query(tenantId, actorId, '*', { agentId, limit: 50 }), requestId); 
+      }
+      if (req.method === 'GET' && url.pathname.startsWith('/api/memory/project/')) { 
+        const projectId = url.pathname.split('/')[4];
+        return sendJson(res, 200, await app.memory.query(tenantId, actorId, '*', { projectId, limit: 50 }), requestId); 
+      }
+      if (req.method === 'POST' && url.pathname === '/api/memory/consolidate') { 
+        if (app.memoryConsolidator) {
+          app.memoryConsolidator.consolidate();
+          return sendJson(res, 200, { status: 'Memory consolidation job dispatched.' }, requestId); 
+        }
+        return sendJson(res, 400, { error: 'Consolidator not initialized' }, requestId); 
+      }
       return sendJson(res, 404, { error: 'route not found' }, requestId);
     } catch (error) {
       const status = httpStatusFor(error);
@@ -799,3 +825,4 @@ function safeToken(header, expected) { const supplied = String(header || '').rep
 
 if (require.main === module) start();
 module.exports = { start, safeToken, capabilityFromPath };
+

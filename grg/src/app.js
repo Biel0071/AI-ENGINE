@@ -189,7 +189,13 @@ async function createApp(options = {}) {
   const objects = options.objects || (options.s3 ? await S3ObjectStore.create(options.s3).initialize() : null);
   const vectorStore = options.vectorStore || (options.qdrant ? await new QdrantVectorStore(options.qdrant).initialize() : null);
   const hierarchy = new CognitiveHierarchy({ store, controlPlane, bus });
-  const memory = new MemoryEngine({ store, bus, controlPlane, hierarchy, vectorStore, cache: redis });
+  const { MemoryFabric, MemoryGateway, FenixEngineProvider, GraphitiProvider } = require('./memory/memory-fabric');
+  
+  const baseMemoryEngine = new MemoryEngine({ store, bus, controlPlane, hierarchy, vectorStore, cache: redis });
+  const fenixProvider = new FenixEngineProvider(baseMemoryEngine);
+  const memory = new MemoryGateway([fenixProvider]);
+  
+  // Future: memory.use(new GraphitiProvider(process.env.GRAPHITI_URL));
   const knowledgeGraph = new KnowledgeGraph({ store, bus, controlPlane });
   const registry = new ServiceRegistry({ store, controlPlane });
   const configuredIdentity = runtimeEnv.FENIX_IDENTITY_PROVIDER === 'spiffe' ? new WorkloadIdentityProvider({ trustDomain: runtimeEnv.FENIX_SPIFFE_TRUST_DOMAIN, credentialRef: runtimeEnv.FENIX_SPIFFE_CREDENTIAL_REF }) : null;
@@ -512,8 +518,14 @@ async function createApp(options = {}) {
   // Injetado aqui (não na construção do factory, linha ~119) porque o Router depende do
   // ConnectorRuntime, criado depois. Sem esta linha, o factory seguiria no gateway direto.
   factory.ai = app.aiRouter;
-  app.projectFactory = new ProjectFactoryService({ store, bus, controlPlane, factory, missionPlanner, digitalTwin });
+  
+  const { MemoryConsolidator } = require('./memory/memory-consolidator');
+  
   app.backgroundCognition = new BackgroundCognition({ store, bus, controlPlane, memory, digitalTwin, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
+  app.memoryConsolidator = new MemoryConsolidator(memory, bus);
+  app.memoryConsolidator.start(1000 * 60 * 30); // 30 minutes
+
+  app.projectFactory = new ProjectFactoryService({ store, bus, controlPlane, factory, missionPlanner, digitalTwin });
   // V11 — a unica saida para a internet aberta da plataforma: allowlist de dominios,
   // HTTPS+GET, sem redirect cross-host, cache com TTL e rate limit por host. DESLIGADO por
   // padrao (FENIX_RESEARCH_ENABLED): desligado, nenhuma requisicao sai da maquina.
