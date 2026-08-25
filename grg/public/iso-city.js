@@ -123,6 +123,26 @@ class IsoCityEngine {
         return;
       }
     }
+
+    // Check companies
+    for (const c of this.world.companies) {
+      const pos = this.toIso(c.x, c.y);
+      if (Math.hypot(worldX - pos.x, worldY - pos.y) < 60) {
+        this.enterCompany(c);
+        return;
+      }
+    }
+  }
+
+  enterCompany(c) {
+    // Zoom into company
+    this.state.targetCamera.x = -this.toIso(c.x, c.y).x;
+    this.state.targetCamera.y = -this.toIso(c.x, c.y).y;
+    this.state.targetCamera.zoom = 3.2; // Building level zoom
+    
+    if (window.showToast) {
+      window.showToast(`Acessando instalações da empresa ${c.name}`, 'info');
+    }
   }
   
   openAgentInspector(a) {
