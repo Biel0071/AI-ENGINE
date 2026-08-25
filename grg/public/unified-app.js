@@ -645,7 +645,7 @@ init();
 
 
 // --- AI CITY 3D CANVAS & INTERACTION ----------------------------------
-  window.initCityCanvas = function() {
+  window.initLegacyCityCanvas = function() {
     const canvas = document.getElementById('cityCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
