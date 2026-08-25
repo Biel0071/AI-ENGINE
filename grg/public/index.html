@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -25,9 +25,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
   <link rel="stylesheet" href="/unified.css">
-  <link rel="stylesheet" href="/fenix-ide-v2.css">
-  <link rel="stylesheet" href="/city-overrides.css">
-  <link rel="stylesheet" href="/living-panels.css">
 </head>
 <body class="dark-theme">
   
@@ -93,9 +90,7 @@
               <div class="panel-tabs">
                 <button class="panel-tab active">CHAT</button>
                 <button class="panel-tab">AGENTS</button>
-                <button class="panel-tab">JOBS</button>
-                <button class="panel-tab">MEMÓRIA</button>
-                <button class="panel-tab">GRAFOS</button>
+                <button class="panel-tab">JOBS</button><button class="panel-tab">MEMÓRIA</button><button class="panel-tab">GRAFO</button>
               </div>
               
               <div class="panel-content chat-view">
@@ -212,7 +207,7 @@
         
         <!-- OTHER VIEWS (City, Projects, Metrics, Memory) will be injected here. We focus on IDE first for execution -->
         <div id="view-city" class="view">
-           <canvas id="cityCanvas"></canvas>
+           <div class="empty-state"><h2>AI City Dashboard</h2><p>ConstruÃ§Ã£o da cidade isomÃ©trica em progresso...</p></div>
         </div>
         <div id="view-projects" class="view">
            <div class="empty-state"><h2>Projects Management</h2></div>
@@ -223,10 +218,6 @@
     </div>
   </div>
   
-  <script src="/live-runtime.js"></script>
-  <script src="/runtime-cockpit.js"></script>
-  <script src="/visual-inspector.js"></script>
-  <script src="/iso-city.js"></script>
   <script src="/ide-enhancer.js"></script>
   <script src="/unified-app.js"></script>
 </body>

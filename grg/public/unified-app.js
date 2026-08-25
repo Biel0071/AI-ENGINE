@@ -256,7 +256,7 @@ function renderCommand() {
   text('eventCount', `${state.events.length} eventos`);
   if ($('eventStream')) $('eventStream').innerHTML = state.events.length
     ? state.events.slice(0, 48).map((event) => `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(event.summary || event.message || event.recordedAt || event.id)}</strong></div>`).join('')
-    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon">Ôê┐</span>Sem eventos</div>';
+    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon">∿</span>Sem eventos</div>';
 }
 
 function renderRuntime() {
@@ -288,7 +288,7 @@ function renderMissions() {
         </div>
         <div style="color:var(--text-muted); font-size:11px;">${esc(j.objective || j.name || 'Tarefa em andamento...')}</div>
       </div>`).join('')
-    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">ÔÅ▒</span>Sem Jobs ativos</div>';
+    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">⏱</span>Sem Jobs ativos</div>';
 
   const programs = state.data.programs?.programs || [];
   if ($('programList')) $('programList').innerHTML = programs.length
@@ -397,7 +397,7 @@ function renderSkills() {
   const skills = state.data.skills?.skills || [];
   text('skillCount', `${skills.length} skills`);
   if ($('skillList')) $('skillList').innerHTML = skills.length
-    ? skills.map((skill) => row(skill.name, `${skill.source} ├é┬À ${skill.estimatedTokens} tokens ├é┬À ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
+    ? skills.map((skill) => row(skill.name, `${skill.source} Â· ${skill.estimatedTokens} tokens Â· ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
     : row('skills', state.data.skills?.__error || 'nenhuma skill encontrada', 'EMPTY');
   if (!$('skillContext').innerHTML) {
     if ($('skillContext')) $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
@@ -450,7 +450,7 @@ async function selectSkills(objective) {
     if ($('skillContext')) $('skillContext').innerHTML = [
       row('objetivo', pack.objective, `${pack.estimatedTokens} tokens`),
       row('economia estimada', `${pack.savedBySelectiveLoad || 0} tokens nao carregados`, 'MEASURED'),
-      ...(pack.selectedSkills || []).map((skill) => row(skill.name, `${skill.source} ├é┬À score ${skill.score} ├é┬À ${skill.contextTokens} tokens`, 'SELECTED')),
+      ...(pack.selectedSkills || []).map((skill) => row(skill.name, `${skill.source} Â· score ${skill.score} Â· ${skill.contextTokens} tokens`, 'SELECTED')),
     ].join('');
   } catch (error) {
     if ($('skillContext')) $('skillContext').innerHTML = row('skill select', error.message, 'ERROR');
@@ -517,13 +517,6 @@ async function runChat(message) {
   const value = String(message || '').trim();
   if (!value) return;
   bubble(value, 'user');
-
-  const isDevPrompt = /(crie|adicione|melhore|corrija|analise|refatore|implemente|teste|construa|pipeline|task board)/i.test(value);
-  if (isDevPrompt && window.executeDevPipeline) {
-    await window.executeDevPipeline(value);
-    return;
-  }
-
   const pending = document.createElement('div');
   pending.className = 'bubble system';
   pending.textContent = 'Iniciando FenixMind Job...';
@@ -740,7 +733,7 @@ init();
                  targetX: (Math.random() - 0.5) * 400,
                  targetY: (Math.random() - 0.5) * 300,
                  speed: 0.0008 + Math.random() * 0.0006,
-                 avatar: '├░┼©┬ñÔÇô',
+                 avatar: 'ðŸ¤–',
                  role: ra.role || key,
                  fullName: key,
                  color: '#38bdf8',
@@ -800,7 +793,7 @@ init();
     document.getElementById('cityResetCam')?.addEventListener('click', () => { state.zoom = 1.0; state.panX = 0; state.panY = 0; });
     document.getElementById('cityDayNightToggle')?.addEventListener('click', function() {
       state.cyberMode = !state.cyberMode;
-      this.textContent = state.cyberMode ? '├░┼©┼ÆÔäó Modo Cyber' : '├ó╦£Ôé¼├»┬©┬Å Modo Dia';
+      this.textContent = state.cyberMode ? 'ðŸŒ™ Modo Cyber' : 'â˜€ï¸ Modo Dia';
     });
 
     let isDragging = false;
@@ -1048,9 +1041,9 @@ init();
     if (body) {
       body.innerHTML = `
         <div class="dash-card" style="background:rgba(18,27,43,0.85); border:1px solid var(--border-subtle);">
-          <h4>├░┼©┬Å┬ó Painel do M├â┬│dulo: ${escapeHtml(key)}</h4>
+          <h4>ðŸ¢ Painel do MÃ³dulo: ${escapeHtml(key)}</h4>
           <p style="color:var(--text-secondary); font-size:12px; margin-top:4px;">
-            M├â┬│dulo ativo e conectado ao runtime do F├â┬¬nix OS.
+            MÃ³dulo ativo e conectado ao runtime do FÃªnix OS.
           </p>
           <div style="display:flex; gap:8px; margin-top:12px;">
             <button class="action-btn-primary" onclick="window.switchViewToIde()" type="button">Abrir na IDE</button>
@@ -1105,7 +1098,7 @@ init();
 
   async function executeJarvisAssistantCommand(prompt) {
     openJobModal({
-      title: 'Miss├â┬úo Aut├â┬┤noma JARVIS',
+      title: 'MissÃ£o AutÃ´noma JARVIS',
       objective: prompt,
       estimatedTime: '12 min',
       riskLevel: 'SAFE'
@@ -1135,20 +1128,20 @@ init();
 
         completeJobExecution(data.realityScore || 99.8);
         appendCityJarvisMessage('assistant', `
-          <p><b>├ó┼ôÔÇª Miss├â┬úo Processada pelo F├â┼áNIX MIND!</b></p>
-          <p style="font-size:11.5px; margin-top:4px;">Inten├â┬º├â┬úo: <b>${escapeHtml(data.intent)}</b> ├óÔé¼┬ó Reality Score: <b>${data.realityScore}%</b></p>
+          <p><b>âœ… MissÃ£o Processada pelo FÃŠNIX MIND!</b></p>
+          <p style="font-size:11.5px; margin-top:4px;">IntenÃ§Ã£o: <b>${escapeHtml(data.intent)}</b> â€¢ Reality Score: <b>${data.realityScore}%</b></p>
           <div class="msg-action-box" style="margin-top:6px;">
-            <span>├ó┼í┬í Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
+            <span>âš¡ Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
           </div>
         `);
 
         await fetchActiveProjectFiles();
         await refreshAllRealData();
       } else {
-        throw new Error(data.error || 'Falha na execu├â┬º├â┬úo');
+        throw new Error(data.error || 'Falha na execuÃ§Ã£o');
       }
     } catch (err) {
-      appendJobLog('QA Agent', `Falha na execu├â┬º├â┬úo: ${err.message}`, 'var(--flame)');
+      appendJobLog('QA Agent', `Falha na execuÃ§Ã£o: ${err.message}`, 'var(--flame)');
       appendCityJarvisMessage('assistant', `<p style="color:var(--flame);"><b>Erro:</b> ${escapeHtml(err.message)}</p>`);
     }
   }
@@ -1163,8 +1156,8 @@ init();
 
     div.innerHTML = `
       <div class="msg-header">
-        <span class="msg-avatar">${role === 'user' ? '├░┼©ÔÇÿ┬ñ' : '├░┼©ÔÇØ┬Ñ'}</span>
-        <span class="msg-author">${role === 'user' ? 'Voc├â┬¬' : 'F├â┼áNIX JARVIS'}</span>
+        <span class="msg-avatar">${role === 'user' ? 'ðŸ‘¤' : 'ðŸ”¥'}</span>
+        <span class="msg-author">${role === 'user' ? 'VocÃª' : 'FÃŠNIX JARVIS'}</span>
       </div>
       <div class="msg-body">${htmlContent}</div>
     `;
@@ -1180,7 +1173,7 @@ window.openJobInspector = function(jobId, promptText) {
   document.getElementById('jobInspectorModal').style.display = 'block';
   document.getElementById('inspectorJobId').textContent = jobId;
   document.getElementById('inspectorJobTitle').textContent = promptText || 'Real-time Autonomous Job';
-  document.getElementById('jobInspectorBody').innerHTML = '<div style="color:#888;">Aguardando eventos f├â┬¡sicos do AgentRuntime...</div>';
+  document.getElementById('jobInspectorBody').innerHTML = '<div style="color:#888;">Aguardando eventos fÃ­sicos do AgentRuntime...</div>';
 };
 
 document.addEventListener('DOMContentLoaded', () => {

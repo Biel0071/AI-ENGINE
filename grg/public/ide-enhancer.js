@@ -314,7 +314,7 @@ window.addEventListener('load', () => {
       } else if (t.textContent === 'MEMÓRIA') {
         if (document.getElementById('memoryView')) document.getElementById('memoryView').style.display = 'flex';
         loadMemory();
-      } else if (t.textContent === 'GRAFOS') {
+      } else if (t.textContent === 'GRAFO') {
         if (document.getElementById('graphView')) document.getElementById('graphView').style.display = 'block';
         loadGraph();
       }
@@ -372,4 +372,3 @@ window.addEventListener('load', () => {
     } catch(e) {}
   }
 });
-
