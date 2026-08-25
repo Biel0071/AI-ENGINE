@@ -106,13 +106,63 @@ class IsoCityEngine {
       this.canvas.width = parent.offsetWidth || window.innerWidth;
       this.canvas.height = parent.offsetHeight || window.innerHeight;
     }
+  handleClick(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    
+    // Convert screen x,y to world coordinates
+    const worldX = (x - this.canvas.width / 2) / this.state.camera.zoom - this.state.camera.x;
+    const worldY = (y - this.canvas.height / 2) / this.state.camera.zoom - this.state.camera.y;
+    
+    // Check agents
+    for (const a of this.world.agents) {
+      const pos = this.toIso(a.x, a.y);
+      if (Math.hypot(worldX - pos.x, worldY - (pos.y - 15)) < 25) {
+        this.openAgentInspector(a);
+        return;
+      }
+    }
+  }
+  
+  openAgentInspector(a) {
+    const hud = document.getElementById('agentInspectorHud');
+    if (!hud) return;
+    hud.style.display = 'flex';
+    
+    const s = String(a.status).toUpperCase();
+    const isError = s.includes('FAIL') || s.includes('ERR');
+    const isWorking = s.includes('WORK') || s.includes('RUN');
+    
+    const e = (id) => document.getElementById(id);
+    if(e('inspectorName')) e('inspectorName').textContent = a.name || a.id;
+    if(e('inspectorRole')) e('inspectorRole').textContent = a.role || a.domain || 'Agent';
+    
+    const statusEl = e('inspectorStatus');
+    if(statusEl) {
+      statusEl.textContent = s;
+      statusEl.className = 'status-pill ' + (isError ? 'error' : (isWorking ? 'working' : 'ok'));
+    }
+    
+    if(e('inspectorCurrentJob')) {
+      e('inspectorCurrentJob').textContent = window.state.jobs && window.state.jobs.length > 0 
+        ? window.state.jobs[0].title || 'Processing Task...' 
+        : 'Observing Runtime';
+    }
+    
+    if(e('inspectorSkills')) {
+      const skills = a.capabilities || ['Research', 'Code', 'Debug'];
+      e('inspectorSkills').innerHTML = skills.map(sk => `<span style="padding:2px 6px; background:rgba(56,189,248,0.1); border-radius:4px;">${sk}</span>`).join('');
+    }
   }
 
   setupEvents() {
+    let clickStart = { x: 0, y: 0 };
     this.canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       this.state.isDragging = true;
       this.state.lastMouse = { x: e.clientX, y: e.clientY };
+      clickStart = { x: e.clientX, y: e.clientY };
     });
     
     window.addEventListener('mousemove', (e) => {
@@ -127,8 +177,12 @@ class IsoCityEngine {
       }
     });
     
-    window.addEventListener('mouseup', () => {
+    window.addEventListener('mouseup', (e) => {
       this.state.isDragging = false;
+      const dist = Math.hypot(e.clientX - clickStart.x, e.clientY - clickStart.y);
+      if (dist < 5) {
+        this.handleClick(e.clientX, e.clientY);
+      }
     });
 
     this.canvas.addEventListener('wheel', (e) => {
