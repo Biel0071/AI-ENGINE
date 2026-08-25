@@ -50,12 +50,14 @@ async function refreshAccessToken() {
 }
 
 async function api(path, options = {}, retried = false) {
-  const res = await fetch(`/api${path}`, {
+  const url = path.startsWith('/api') ? path : (path.startsWith('/') ? `/api${path}` : `/api/${path}`);
+  const res = await fetch(url, {
     ...options,
     headers: {
       authorization: `Bearer ${accessToken}`,
-      'content-type': 'application/json',
-      ...(options.headers || {}),
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
     },
   });
   if (res.status === 401 && !retried && await refreshAccessToken()) return api(path, options, true);
@@ -93,10 +95,16 @@ async function settle(entries, concurrency = 5) {
 }
 
 function row(title, detail = '', status = '') {
-  const cls = /ok|ready|active|online|connected|succeeded/i.test(status) ? 'ok'
-    : /fail|error|degraded|missing|offline|blocked|denied/i.test(status) ? 'bad'
-    : status ? 'warn' : '';
-  return `<div class="row"><b>${esc(title)}</b><small>${esc(detail)}</small><span class="status-pill ${cls}">${esc(status || '--')}</span></div>`;
+  let badgeCls = '';
+  if (/ok|ready|active|online|connected|succeeded|completed/i.test(status)) badgeCls = 'badge green';
+  else if (/fail|error|degraded|missing|offline|blocked|denied/i.test(status)) badgeCls = 'badge rose';
+  else if (status) badgeCls = 'badge warn';
+  
+  return `<tr>
+    <td><b>${esc(title)}</b></td>
+    <td><small>${esc(detail)}</small></td>
+    <td>${status ? `<span class="${badgeCls}">${esc(status)}</span>` : '--'}</td>
+  </tr>`;
 }
 
 function metric(label, value) {
@@ -246,36 +254,44 @@ function renderCommand() {
   const telemetry = state.data.telemetry || {};
   text('activeModel', telemetry.lastModel || telemetry.model || (telemetry.calls ? 'IA medida' : 'sem chamada'));
   text('eventCount', `${state.events.length} eventos`);
-  $('eventStream').innerHTML = state.events.length
-    ? state.events.slice(0, 48).map((event) => `<div>[${esc(event.type || event.name || 'event')}] ${esc(event.summary || event.message || event.recordedAt || event.id)}</div>`).join('')
-    : '<div>Sem eventos publicados ainda.</div>';
+  if ($('eventStream')) $('eventStream').innerHTML = state.events.length
+    ? state.events.slice(0, 48).map((event) => `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(event.summary || event.message || event.recordedAt || event.id)}</strong></div>`).join('')
+    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon">Ôê┐</span>Sem eventos</div>';
 }
 
 function renderRuntime() {
   const checks = state.data.health?.checks || {};
   const checkRows = Array.isArray(checks) ? checks : Object.entries(checks).map(([id, value]) => ({ id, ...value }));
-  $('healthList').innerHTML = checkRows.length
+  if ($('healthList')) $('healthList').innerHTML = checkRows.length
     ? checkRows.map((c) => row(c.id || c.name, c.degraded || c.error || c.adapter || c.status || '', c.ok === false ? 'DEGRADED' : 'OK')).join('')
     : row('health', state.data.health?.__error || 'sem checks', 'UNKNOWN');
   const services = state.data.runtime?.services || state.data.runtime?.subsystems || state.data.health?.boot;
-  $('runtimeServices').innerHTML = Array.isArray(services)
+  if ($('runtimeServices')) $('runtimeServices').innerHTML = Array.isArray(services)
     ? services.map((s) => row(s.id || s.name, s.version || '', s.status || 'OK')).join('')
     : Object.entries(services || {}).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 80) : value, value?.status || '')).join('') || row('kernel', 'sem inventario de servicos publicado', 'UNKNOWN');
   const workers = state.data.workers?.workers || state.data.observability?.workers?.heartbeats || [];
-  $('workerList').innerHTML = Array.isArray(workers) && workers.length
+  if ($('workerList')) $('workerList').innerHTML = Array.isArray(workers) && workers.length
     ? workers.map((w) => row(w.name || w.id || w.workerId, w.activeJobs != null ? `${w.activeJobs} jobs ativos` : w.role || '', w.status || w.state || 'KNOWN')).join('')
     : row('workers', state.data.workers?.__error || 'sem workers ativos medidos', 'UNKNOWN');
 }
 
 function renderMissions() {
-  $('missionList').innerHTML = state.missions.length
-    ? state.missions.slice(0, 20).map((m) => row(m.title || m.objective || m.id, `${m.steps?.length || 0} etapas`, m.status || m.state)).join('')
-    : row('missoes', 'nenhuma missao registrada', 'EMPTY');
-  $('jobList').innerHTML = state.jobs.length
-    ? state.jobs.slice(0, 30).map((j) => row(j.type || j.id, `tentativa ${j.attempts || 0}/${j.maxAttempts || 0}`, j.status)).join('')
-    : row('jobs', 'nenhum job registrado', 'EMPTY');
+  if ($('missionList')) $('missionList').innerHTML = state.missions.length
+    ? state.missions.map((m) => row(m.id || 'mission', m.objective || m.name || '', m.status || 'ACTIVE')).join('')
+    : row('missoes', 'sem historico', 'EMPTY');
+  
+  if ($('jobList')) $('jobList').innerHTML = state.jobs.length
+    ? state.jobs.map((j) => `<div style="padding:12px; border-bottom:1px solid var(--border); margin-bottom:8px; background:var(--bg-base); border-radius:6px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <strong style="color:var(--text-main);">${esc(j.id || 'job')}</strong>
+          <span class="badge ${j.status === 'COMPLETED' ? 'green' : (j.status==='FAILED'?'rose':'warn')}">${esc(j.status || 'RUNNING')}</span>
+        </div>
+        <div style="color:var(--text-muted); font-size:11px;">${esc(j.objective || j.name || 'Tarefa em andamento...')}</div>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">ÔÅ▒</span>Sem Jobs ativos</div>';
+
   const programs = state.data.programs?.programs || [];
-  $('programList').innerHTML = programs.length
+  if ($('programList')) $('programList').innerHTML = programs.length
     ? programs.map((p) => row(p.objective || p.title || p.id, `${p.missions?.length || 0} missoes`, p.status || 'PROGRAM')).join('')
     : row('programas', 'sem programas executivos', 'EMPTY');
 }
@@ -285,30 +301,30 @@ function renderCity() {
 
   const nodes = state.data.city?.nodes || [];
   if (!nodes.length) {
-    $('cityCanvas').innerHTML = '<div class="row"><b>AI City</b><small>Aguardando eventos reais para projetar a cidade.</small><span class="status-pill warn">EMPTY</span></div>';
+    if ($('cityCanvas')) $('cityCanvas').innerHTML = '<div class="row"><b>AI City</b><small>Aguardando eventos reais para projetar a cidade.</small><span class="status-pill warn">EMPTY</span></div>';
   } else {
     const visible = nodes.slice(0, 42);
-    $('cityCanvas').innerHTML = visible.map((n, i) => {
+    if ($('cityCanvas')) $('cityCanvas').innerHTML = visible.map((n, i) => {
       const x = 8 + ((i * 23) % 84);
       const y = 12 + ((i * 37) % 74);
       return `<button class="city-node ${esc(n.status || '')}" style="left:${x}%;top:${y}%;" title="${esc(n.id)}"><strong>${esc(n.label || n.name || n.id)}</strong><small>${esc(n.type || n.status || '')}</small></button>`;
     }).join('');
   }
   const overview = state.data.overview?.metrics || {};
-  $('knowledgeDistrict').innerHTML = [
+  if ($('knowledgeDistrict')) $('knowledgeDistrict').innerHTML = [
     metric('Memorias', overview.memories),
     metric('Graph edges', overview.graphEdges),
     metric('City nodes', overview.cityNodes),
     metric('Capabilities', overview.capabilities),
   ].join('');
   const workers = state.data.workers?.workers || [];
-  $('workersDistrict').innerHTML = workers.length ? workers.map((w) => row(w.name || w.id, w.role || '', w.status || 'KNOWN')).join('') : row('workers', 'sem workers publicados', 'EMPTY');
+  if ($('workersDistrict')) $('workersDistrict').innerHTML = workers.length ? workers.map((w) => row(w.name || w.id, w.role || '', w.status || 'KNOWN')).join('') : row('workers', 'sem workers publicados', 'EMPTY');
   const proposals = state.data.agents?.tasks || state.data.swarm?.agents || [];
-  $('evolutionDistrict').innerHTML = Array.isArray(proposals) && proposals.length ? proposals.slice(0, 10).map((p) => row(p.name || p.id || p.role, p.summary || p.status || '', p.status || 'KNOWN')).join('') : row('evolucao', 'sem propostas ou agentes ativos', 'EMPTY');
+  if ($('evolutionDistrict')) $('evolutionDistrict').innerHTML = Array.isArray(proposals) && proposals.length ? proposals.slice(0, 10).map((p) => row(p.name || p.id || p.role, p.summary || p.status || '', p.status || 'KNOWN')).join('') : row('evolucao', 'sem propostas ou agentes ativos', 'EMPTY');
 }
 
 function renderOffice() {
-  $('officeList').innerHTML = state.office.length
+  if ($('officeList')) $('officeList').innerHTML = state.office.length
     ? state.office.map((o) => `<article class="office-card"><h3>${esc(o.store || o.subjectName || o.projectId)}</h3><p>${esc(o.niche || '')}</p><p>${esc(o.headcount || 0)} membros</p><button class="soft-btn" data-office="${esc(o.projectId)}" type="button">Abrir equipe</button></article>`).join('')
     : '<div class="row"><b>Office</b><small>Nenhuma workforce contratada ainda.</small><span class="status-pill warn">EMPTY</span></div>';
   document.querySelectorAll('[data-office]').forEach((button) => button.addEventListener('click', () => openOffice(button.dataset.office)));
@@ -319,9 +335,9 @@ async function openOffice(projectId) {
     const workforce = await api(`/projects/${encodeURIComponent(projectId)}/workforce`);
     text('officeTitle', workforce.subjectName || projectId);
     const employees = workforce.employees || [];
-    $('officeDetail').innerHTML = employees.map((e) => row(e.title || e.role, e.focus || e.capability || '', `nivel ${e.level || 1}`)).join('') || row('equipe', 'sem funcionarios', 'EMPTY');
+    if ($('officeDetail')) $('officeDetail').innerHTML = employees.map((e) => row(e.title || e.role, e.focus || e.capability || '', `nivel ${e.level || 1}`)).join('') || row('equipe', 'sem funcionarios', 'EMPTY');
   } catch (error) {
-    $('officeDetail').innerHTML = row(projectId, error.message, 'ERROR');
+    if ($('officeDetail')) $('officeDetail').innerHTML = row(projectId, error.message, 'ERROR');
   }
 }
 
@@ -334,17 +350,23 @@ function renderProjects() {
     const hay = `${p.name || ''} ${repo.name || ''} ${repo.owner || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
     return hay.includes(q) && (visibility === 'all' || repo.visibility === visibility);
   });
-  $('projectList').innerHTML = projects.length
+  if ($('projectList')) $('projectList').innerHTML = projects.length
     ? projects.map((p) => {
       const repo = reposById.get(p.repositoryId) || p.repository || {};
-      return `<article class="project-card"><h3>${esc(p.name || p.id)}</h3><p>${esc(repo.owner || '')}/${esc(repo.name || '')}</p><p>${esc(p.analysisStatus || p.status || '')}</p><button class="soft-btn" data-hire="${esc(p.id)}" type="button">Contratar equipe</button></article>`;
+      const status = p.analysisStatus || p.status || 'Active';
+      return `<tr>
+        <td><b>${esc(p.name || p.id)}</b> <small style="color:var(--text-muted)">${esc(repo.owner || '')}/${esc(repo.name || '')}</small></td>
+        <td><span class="badge ${/active/i.test(status)?'green':'warn'}">${esc(status)}</span></td>
+        <td>${p.agents?.length || 0} agentes</td>
+        <td><button class="btn btn-sm" data-hire="${esc(p.id)}" type="button"><i class="ph ph-briefcase"></i> Contratar</button></td>
+      </tr>`;
     }).join('')
-    : '<div class="row"><b>Projetos</b><small>Nenhum projeto encontrado.</small><span class="status-pill warn">EMPTY</span></div>';
+    : '<tr><td colspan="4" style="text-align:center; padding:32px 0; color:var(--text-muted);">Nenhum projeto encontrado.</td></tr>';
   document.querySelectorAll('[data-hire]').forEach((button) => button.addEventListener('click', () => hireWorkforce(button.dataset.hire)));
   const graph = state.data.graph || {};
   const nodes = graph.nodes || [];
   const edges = graph.edges || [];
-  $('graphSummary').innerHTML = [
+  if ($('graphSummary')) $('graphSummary').innerHTML = [
     row('Projetos', `${projects.length} filtrados`, 'MEASURED'),
     row('Grafo', `${nodes.length} nos, ${edges.length} relacoes`, nodes.length ? 'READY' : 'EMPTY'),
   ].join('');
@@ -356,17 +378,17 @@ async function hireWorkforce(projectId) {
     await refreshAll();
     showView('office');
   } catch (error) {
-    $('graphSummary').innerHTML = row('Contratar equipe', error.message, 'ERROR') + $('graphSummary').innerHTML;
+    if ($('graphSummary')) $('graphSummary').innerHTML = row('Contratar equipe', error.message, 'ERROR') + $('graphSummary').innerHTML;
   }
 }
 
 function renderKnowledge() {
   const kos = state.data.kos || {};
-  $('kosManifest').innerHTML = Object.keys(kos).length
+  if ($('kosManifest')) $('kosManifest').innerHTML = Object.keys(kos).length
     ? Object.entries(kos).slice(0, 12).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 120) : value, value?.state || '')).join('')
     : row('KOS', kos.__error || 'manifesto indisponivel', 'UNKNOWN');
   const anomalies = state.data.kg?.anomalies || state.data.graph?.edges || [];
-  $('kgList').innerHTML = Array.isArray(anomalies) && anomalies.length
+  if ($('kgList')) $('kgList').innerHTML = Array.isArray(anomalies) && anomalies.length
     ? anomalies.slice(0, 20).map((item, i) => row(item.type || item.id || `relacao ${i + 1}`, item.source || item.target || JSON.stringify(item).slice(0, 90), item.status || 'GRAPH')).join('')
     : row('Knowledge graph', 'sem anomalias carregadas nesta tela', 'EMPTY');
 }
@@ -374,11 +396,11 @@ function renderKnowledge() {
 function renderSkills() {
   const skills = state.data.skills?.skills || [];
   text('skillCount', `${skills.length} skills`);
-  $('skillList').innerHTML = skills.length
-    ? skills.map((skill) => row(skill.name, `${skill.source} Â· ${skill.estimatedTokens} tokens Â· ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
+  if ($('skillList')) $('skillList').innerHTML = skills.length
+    ? skills.map((skill) => row(skill.name, `${skill.source} ├é┬À ${skill.estimatedTokens} tokens ├é┬À ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
     : row('skills', state.data.skills?.__error || 'nenhuma skill encontrada', 'EMPTY');
   if (!$('skillContext').innerHTML) {
-    $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
+    if ($('skillContext')) $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
   }
   renderFullstackSlices();
 }
@@ -395,7 +417,7 @@ function renderFullstackSlices() {
 async function createFullstackSlice(prompt) {
   const value = String(prompt || '').trim();
   if (!value) return;
-  $('sliceList').innerHTML = row('criando front + back', value, 'RUNNING') + $('sliceList').innerHTML;
+  if ($('sliceList')) $('sliceList').innerHTML = row('criando front + back', value, 'RUNNING') + $('sliceList').innerHTML;
   try {
     const slice = await api('/scos/factory/slices', {
       method: 'POST',
@@ -415,34 +437,34 @@ async function createFullstackSlice(prompt) {
     $('slicePrompt').value = '';
     await refreshAll();
   } catch (error) {
-    $('sliceList').innerHTML = row('builder falhou', error.message, 'ERROR') + $('sliceList').innerHTML;
+    if ($('sliceList')) $('sliceList').innerHTML = row('builder falhou', error.message, 'ERROR') + $('sliceList').innerHTML;
   }
 }
 
 async function selectSkills(objective) {
   const value = String(objective || '').trim();
   if (!value) return;
-  $('skillContext').innerHTML = row('selecionando skills', value, 'RUNNING');
+  if ($('skillContext')) $('skillContext').innerHTML = row('selecionando skills', value, 'RUNNING');
   try {
     const pack = await api('/skills/select', { method: 'POST', body: JSON.stringify({ objective: value, maxTokens: 1200, limit: 4 }) });
-    $('skillContext').innerHTML = [
+    if ($('skillContext')) $('skillContext').innerHTML = [
       row('objetivo', pack.objective, `${pack.estimatedTokens} tokens`),
       row('economia estimada', `${pack.savedBySelectiveLoad || 0} tokens nao carregados`, 'MEASURED'),
-      ...(pack.selectedSkills || []).map((skill) => row(skill.name, `${skill.source} Â· score ${skill.score} Â· ${skill.contextTokens} tokens`, 'SELECTED')),
+      ...(pack.selectedSkills || []).map((skill) => row(skill.name, `${skill.source} ├é┬À score ${skill.score} ├é┬À ${skill.contextTokens} tokens`, 'SELECTED')),
     ].join('');
   } catch (error) {
-    $('skillContext').innerHTML = row('skill select', error.message, 'ERROR');
+    if ($('skillContext')) $('skillContext').innerHTML = row('skill select', error.message, 'ERROR');
   }
 }
 
 function renderConnectors() {
   const connectors = state.data.connectors?.connectors || [];
-  $('connectorList').innerHTML = connectors.length
+  if ($('connectorList')) $('connectorList').innerHTML = connectors.length
     ? connectors.map((c) => row(c.connectorId || c.id, c.source || c.reason || '', c.state?.value || c.status || 'UNKNOWN')).join('')
     : row('conectores', state.data.connectors?.__error || 'nenhum conector registrado', 'EMPTY');
   const router = state.data.router || {};
   const chosen = router.chosen?.value || router.chosen || router;
-  $('routerState').innerHTML = [
+  if ($('routerState')) $('routerState').innerHTML = [
     row('provider escolhido', chosen.provider || chosen.name || 'sem provider', chosen.model || chosen.reason || '', chosen.provider ? 'READY' : 'UNKNOWN'),
     row('API connection', (state.data.connection?.providers || []).length ? `${state.data.connection.providers.length} providers monitorados` : 'sem check executado', (state.data.connection?.providers || [])[0]?.status || ''),
   ].join('');
@@ -452,7 +474,7 @@ function renderDeploy() {
   const readiness = state.data.readiness || {};
   const totals = readiness.totals || {};
   const gate = state.data.gatekeeper || {};
-  $('readinessList').innerHTML = [
+  if ($('readinessList')) $('readinessList').innerHTML = [
     row('production proven', `${totals.productionProven ?? 0}/${totals.objectives ?? 0}`, totals.productionProven ? 'PARTIAL' : 'BLOCKED'),
     row('gatekeeper', gate.allowed ? 'acao liberada' : gate.reason || 'bloqueado ate haver evidencia', gate.allowed ? 'READY' : 'BLOCKED'),
   ].join('');
@@ -460,7 +482,7 @@ function renderDeploy() {
 
 function renderObservability() {
   const obs = state.data.observability || {};
-  $('observabilityMetrics').innerHTML = [
+  if ($('observabilityMetrics')) $('observabilityMetrics').innerHTML = [
     metric('AI tokens', getMeasured(obs.aiRuntime?.totalTokensConsumed) ?? state.data.telemetry?.totalTokens),
     metric('AI calls', getMeasured(obs.aiRuntime?.calls) ?? state.data.telemetry?.calls),
     metric('Workers', getMeasured(obs.workers?.knownWorkers)),
@@ -473,17 +495,17 @@ function renderObservability() {
     const last = Array.isArray(points) ? points.at(-1) : null;
     return `<div class="spark"><b>${esc(name)}</b><small>${esc(last?.value ?? '--')}</small><div class="spark-line"></div></div>`;
   });
-  $('seriesGrid').innerHTML = cards.length ? cards.join('') : '<div class="row"><b>series</b><small>sem amostras ainda</small><span class="status-pill warn">EMPTY</span></div>';
+  if ($('seriesGrid')) $('seriesGrid').innerHTML = cards.length ? cards.join('') : '<div class="row"><b>series</b><small>sem amostras ainda</small><span class="status-pill warn">EMPTY</span></div>';
 }
 
 function renderSecurity() {
   const sec = state.data.security || {};
-  $('securityState').innerHTML = Object.keys(sec).length
+  if ($('securityState')) $('securityState').innerHTML = Object.keys(sec).length
     ? Object.entries(sec).slice(0, 10).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 100) : value, value?.state || '')).join('')
     : row('security', sec.__error || 'status indisponivel', 'UNKNOWN');
   const audit = state.data.veracity || {};
   const totals = audit.totals || audit.summary || {};
-  $('veracityState').innerHTML = [
+  if ($('veracityState')) $('veracityState').innerHTML = [
     row('modulos varridos', totals.modules ?? audit.modules?.length ?? '--', 'MEASURED'),
     row('sinais falsos', totals.signals ?? totals.falseSignals ?? '--', (totals.signals || totals.falseSignals) ? 'ATTENTION' : 'OK'),
     row('production', totals.production ?? '--', 'MEASURED'),
@@ -495,6 +517,13 @@ async function runChat(message) {
   const value = String(message || '').trim();
   if (!value) return;
   bubble(value, 'user');
+
+  const isDevPrompt = /(crie|adicione|melhore|corrija|analise|refatore|implemente|teste|construa|pipeline|task board)/i.test(value);
+  if (isDevPrompt && window.executeDevPipeline) {
+    await window.executeDevPipeline(value);
+    return;
+  }
+
   const pending = document.createElement('div');
   pending.className = 'bubble system';
   pending.textContent = 'Iniciando FenixMind Job...';
@@ -514,22 +543,22 @@ async function runChat(message) {
 async function createProgram(objective) {
   const value = String(objective || '').trim();
   if (!value) return;
-  $('programList').innerHTML = row('criando programa', value, 'RUNNING') + $('programList').innerHTML;
+  if ($('programList')) $('programList').innerHTML = row('criando programa', value, 'RUNNING') + $('programList').innerHTML;
   try {
     await api('/executive/programs', { method: 'POST', body: JSON.stringify({ objective: value }) });
     $('programObjective').value = '';
     await refreshAll();
   } catch (error) {
-    $('programList').innerHTML = row('erro ao criar programa', error.message, 'ERROR') + $('programList').innerHTML;
+    if ($('programList')) $('programList').innerHTML = row('erro ao criar programa', error.message, 'ERROR') + $('programList').innerHTML;
   }
 }
 
 async function scanProject(path) {
-  $('scanResult').innerHTML = row('scan em andamento', path || '.', 'RUNNING');
+  if ($('scanResult')) $('scanResult').innerHTML = row('scan em andamento', path || '.', 'RUNNING');
   try {
     const scan = await api('/onedeploy/scan-project', { method: 'POST', body: JSON.stringify({ projectPath: path || '.' }) });
     const d = scan.discovery || {};
-    $('scanResult').innerHTML = [
+    if ($('scanResult')) $('scanResult').innerHTML = [
       row('caminho', scan.projectPath || path || '.', scan.exists ? 'FOUND' : 'MISSING'),
       row('frontend', getMeasured(d.frontendFramework) || d.frontendFramework?.reason || '--', d.frontendFramework?.state || ''),
       row('backend', getMeasured(d.backendFramework) || d.backendFramework?.reason || '--', d.backendFramework?.state || ''),
@@ -537,14 +566,14 @@ async function scanProject(path) {
       row('ci/cd', getMeasured(d.ciCd) ?? d.ciCd?.reason ?? '--', d.ciCd?.state || ''),
     ].join('');
   } catch (error) {
-    $('scanResult').innerHTML = row('scan falhou', error.message, 'ERROR');
+    if ($('scanResult')) $('scanResult').innerHTML = row('scan falhou', error.message, 'ERROR');
   }
 }
 
 async function loadFs(path = '') {
   try {
     const data = await api(`/dev/fs?path=${encodeURIComponent(path)}`);
-    $('fsList').innerHTML = (data.items || []).map((item) => row(item.name, item.path, item.isDirectory ? 'DIR' : 'FILE')).join('') || row('fs', 'vazio', 'EMPTY');
+    if ($('fsList')) $('fsList').innerHTML = (data.items || []).map((item) => row(item.name, item.path, item.isDirectory ? 'DIR' : 'FILE')).join('') || row('fs', 'vazio', 'EMPTY');
     document.querySelectorAll('#fsList .row').forEach((el) => {
       el.addEventListener('click', () => {
         const filePath = el.querySelector('small')?.textContent || '';
@@ -553,7 +582,7 @@ async function loadFs(path = '') {
       });
     });
   } catch (error) {
-    $('fsList').innerHTML = row('developer fs', error.message, 'ERROR');
+    if ($('fsList')) $('fsList').innerHTML = row('developer fs', error.message, 'ERROR');
   }
 }
 
@@ -568,40 +597,44 @@ async function openFile(path) {
 
 function init() {
   document.querySelectorAll('[data-nav]').forEach((el) => el.addEventListener('click', () => showView(el.dataset.nav)));
-  $('refreshBtn')?.addEventListener('click', () => refreshAll());
-  $('logoutBtn')?.addEventListener('click', async () => {
-    try { await fetch('/api/logout', { method: 'POST', headers: { authorization: `Bearer ${accessToken}` } }); }
-    finally { localStorage.removeItem('grg_token'); location.replace('/GRG-login'); }
+  
+  // Helpers for safe binding
+  const addEvt = (id, event, handler) => { const el = $(id); if (el) el.addEventListener(event, handler); };
+
+  addEvt('refreshBtn', 'click', () => refreshAll());
+  addEvt('logoutBtn', 'click', async () => {
+    await api('/login/logout', { method: 'POST' }).catch(() => {});
+    localStorage.removeItem('grg_token');
+    location.replace('/GRG-login');
   });
-  $('cmdForm')?.addEventListener('submit', (event) => {
+  addEvt('cmdForm', 'submit', (event) => {
     event.preventDefault();
-    const value = $('prompt').value;
-    $('prompt').value = '';
+    const value = $('prompt') ? $('prompt').value : '';
+    if ($('prompt')) $('prompt').value = '';
     runChat(value);
   });
   document.querySelectorAll('[data-prompt]').forEach((button) => button.addEventListener('click', () => runChat(button.dataset.prompt)));
-  $('projectSearch')?.addEventListener('input', renderProjects);
-  $('repoVisibility')?.addEventListener('change', renderProjects);
-  $('programForm')?.addEventListener('submit', (event) => { event.preventDefault(); createProgram($('programObjective').value); });
-  $('scanForm')?.addEventListener('submit', (event) => { event.preventDefault(); scanProject($('scanPath').value); });
-  $('skillForm')?.addEventListener('submit', (event) => { event.preventDefault(); selectSkills($('skillObjective').value); });
-  $('sliceForm')?.addEventListener('submit', (event) => { event.preventDefault(); createFullstackSlice($('slicePrompt').value); });
-  $('tickBtn')?.addEventListener('click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
-  $('rebuildCityBtn')?.addEventListener('click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
-  $('sampleBtn')?.addEventListener('click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
-  $('checkApiBtn')?.addEventListener('click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
-  $('fsLoadBtn')?.addEventListener('click', () => loadFs($('fsPath').value));
-  $('terminalBtn')?.addEventListener('click', async () => {
-    try {
-      const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
-      $('terminalResult').textContent = JSON.stringify(out, null, 2);
-    } catch (error) {
-      $('terminalResult').textContent = error.message;
-    }
+  addEvt('projectSearch', 'input', renderProjects);
+  addEvt('repoVisibility', 'change', renderProjects);
+  addEvt('programForm', 'submit', (event) => { event.preventDefault(); if ($('programObjective')) createProgram($('programObjective').value); });
+  addEvt('scanForm', 'submit', (event) => { event.preventDefault(); if ($('scanPath')) scanProject($('scanPath').value); });
+  addEvt('skillForm', 'submit', (event) => { event.preventDefault(); if ($('skillObjective')) selectSkills($('skillObjective').value); });
+  addEvt('sliceForm', 'submit', (event) => { event.preventDefault(); if ($('slicePrompt')) createFullstackSlice($('slicePrompt').value); });
+  addEvt('tickBtn', 'click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
+  addEvt('rebuildCityBtn', 'click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
+  addEvt('sampleBtn', 'click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
+  addEvt('checkApiBtn', 'click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
+  addEvt('fsLoadBtn', 'click', () => { if ($('fsPath')) loadFs($('fsPath').value); });
+  addEvt('terminalBtn', 'click', async () => {
+    if (!$('terminalCmd')) return;
+    const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
+    if ($('terminalResult')) $('terminalResult').textContent += `\n$ ${$('terminalCmd').value}\n${out.stdout || out.stderr || 'ok'}`;
+    $('terminalCmd').value = '';
   });
-  $('cmdBtn')?.addEventListener('click', openCommand);
-  $('closeCmdBtn')?.addEventListener('click', () => $('cmdDialog').close());
-  $('cmdInput')?.addEventListener('input', renderCommandPalette);
+  
+  addEvt('cmdBtn', 'click', openCommand);
+  addEvt('closeCmdBtn', 'click', () => { if ($('cmdDialog')) $('cmdDialog').close(); });
+  addEvt('cmdInput', 'input', renderCommandPalette);
   window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'command', false));
   window.addEventListener('hashchange', () => refreshAll());
   showView(location.hash.slice(1) || 'command', false);
@@ -632,7 +665,7 @@ function renderCommandPalette() {
     ['security', 'Abrir seguranca'],
     ['developer', 'Abrir developer district'],
   ].filter(([, label]) => label.toLowerCase().includes(q));
-  $('cmdResults').innerHTML = commands.map(([target, label]) => row(label, `#${target}`, 'NAV')).join('');
+  if ($('cmdResults')) $('cmdResults').innerHTML = commands.map(([target, label]) => row(label, `#${target}`, 'NAV')).join('');
   document.querySelectorAll('#cmdResults .row').forEach((el, i) => {
     el.addEventListener('click', () => {
       showView(commands[i][0]);
@@ -645,7 +678,7 @@ init();
 
 
 // --- AI CITY 3D CANVAS & INTERACTION ----------------------------------
-  window.initLegacyCityCanvas = function() {
+  window.initCityCanvas = function() {
     const canvas = document.getElementById('cityCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -707,7 +740,7 @@ init();
                  targetX: (Math.random() - 0.5) * 400,
                  targetY: (Math.random() - 0.5) * 300,
                  speed: 0.0008 + Math.random() * 0.0006,
-                 avatar: 'ðŸ¤–',
+                 avatar: '├░┼©┬ñÔÇô',
                  role: ra.role || key,
                  fullName: key,
                  color: '#38bdf8',
@@ -767,7 +800,7 @@ init();
     document.getElementById('cityResetCam')?.addEventListener('click', () => { state.zoom = 1.0; state.panX = 0; state.panY = 0; });
     document.getElementById('cityDayNightToggle')?.addEventListener('click', function() {
       state.cyberMode = !state.cyberMode;
-      this.textContent = state.cyberMode ? 'ðŸŒ™ Modo Cyber' : 'â˜€ï¸ Modo Dia';
+      this.textContent = state.cyberMode ? '├░┼©┼ÆÔäó Modo Cyber' : '├ó╦£Ôé¼├»┬©┬Å Modo Dia';
     });
 
     let isDragging = false;
@@ -1015,9 +1048,9 @@ init();
     if (body) {
       body.innerHTML = `
         <div class="dash-card" style="background:rgba(18,27,43,0.85); border:1px solid var(--border-subtle);">
-          <h4>ðŸ¢ Painel do MÃ³dulo: ${escapeHtml(key)}</h4>
+          <h4>├░┼©┬Å┬ó Painel do M├â┬│dulo: ${escapeHtml(key)}</h4>
           <p style="color:var(--text-secondary); font-size:12px; margin-top:4px;">
-            MÃ³dulo ativo e conectado ao runtime do FÃªnix OS.
+            M├â┬│dulo ativo e conectado ao runtime do F├â┬¬nix OS.
           </p>
           <div style="display:flex; gap:8px; margin-top:12px;">
             <button class="action-btn-primary" onclick="window.switchViewToIde()" type="button">Abrir na IDE</button>
@@ -1072,7 +1105,7 @@ init();
 
   async function executeJarvisAssistantCommand(prompt) {
     openJobModal({
-      title: 'MissÃ£o AutÃ´noma JARVIS',
+      title: 'Miss├â┬úo Aut├â┬┤noma JARVIS',
       objective: prompt,
       estimatedTime: '12 min',
       riskLevel: 'SAFE'
@@ -1102,20 +1135,20 @@ init();
 
         completeJobExecution(data.realityScore || 99.8);
         appendCityJarvisMessage('assistant', `
-          <p><b>âœ… MissÃ£o Processada pelo FÃŠNIX MIND!</b></p>
-          <p style="font-size:11.5px; margin-top:4px;">IntenÃ§Ã£o: <b>${escapeHtml(data.intent)}</b> â€¢ Reality Score: <b>${data.realityScore}%</b></p>
+          <p><b>├ó┼ôÔÇª Miss├â┬úo Processada pelo F├â┼áNIX MIND!</b></p>
+          <p style="font-size:11.5px; margin-top:4px;">Inten├â┬º├â┬úo: <b>${escapeHtml(data.intent)}</b> ├óÔé¼┬ó Reality Score: <b>${data.realityScore}%</b></p>
           <div class="msg-action-box" style="margin-top:6px;">
-            <span>âš¡ Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
+            <span>├ó┼í┬í Agentes: <b>${(data.requiredAgents || []).join(', ')}</b></span>
           </div>
         `);
 
         await fetchActiveProjectFiles();
         await refreshAllRealData();
       } else {
-        throw new Error(data.error || 'Falha na execuÃ§Ã£o');
+        throw new Error(data.error || 'Falha na execu├â┬º├â┬úo');
       }
     } catch (err) {
-      appendJobLog('QA Agent', `Falha na execuÃ§Ã£o: ${err.message}`, 'var(--flame)');
+      appendJobLog('QA Agent', `Falha na execu├â┬º├â┬úo: ${err.message}`, 'var(--flame)');
       appendCityJarvisMessage('assistant', `<p style="color:var(--flame);"><b>Erro:</b> ${escapeHtml(err.message)}</p>`);
     }
   }
@@ -1130,8 +1163,8 @@ init();
 
     div.innerHTML = `
       <div class="msg-header">
-        <span class="msg-avatar">${role === 'user' ? 'ðŸ‘¤' : 'ðŸ”¥'}</span>
-        <span class="msg-author">${role === 'user' ? 'VocÃª' : 'FÃŠNIX JARVIS'}</span>
+        <span class="msg-avatar">${role === 'user' ? '├░┼©ÔÇÿ┬ñ' : '├░┼©ÔÇØ┬Ñ'}</span>
+        <span class="msg-author">${role === 'user' ? 'Voc├â┬¬' : 'F├â┼áNIX JARVIS'}</span>
       </div>
       <div class="msg-body">${htmlContent}</div>
     `;
@@ -1147,7 +1180,7 @@ window.openJobInspector = function(jobId, promptText) {
   document.getElementById('jobInspectorModal').style.display = 'block';
   document.getElementById('inspectorJobId').textContent = jobId;
   document.getElementById('inspectorJobTitle').textContent = promptText || 'Real-time Autonomous Job';
-  document.getElementById('jobInspectorBody').innerHTML = '<div style="color:#888;">Aguardando eventos fÃ­sicos do AgentRuntime...</div>';
+  document.getElementById('jobInspectorBody').innerHTML = '<div style="color:#888;">Aguardando eventos f├â┬¡sicos do AgentRuntime...</div>';
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1187,7 +1220,7 @@ window.showSubView = function(viewId, subViewId) {
   const navContainer = document.querySelector('#view-' + viewId + ' .sub-nav');
   if (navContainer) {
     navContainer.querySelectorAll('button').forEach(btn => {
-      if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(' + subViewId + ')) {
+      if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + subViewId + "'")) {
         btn.classList.add('active');
       } else {
         btn.classList.remove('active');
@@ -1199,7 +1232,7 @@ window.showSubView = function(viewId, subViewId) {
   const viewContainer = document.querySelector('#view-' + viewId);
   if (viewContainer) {
     viewContainer.querySelectorAll('.sub-view').forEach(sub => {
-      if (sub.id === sub- + viewId + - + subViewId) {
+      if (sub.id === 'sub-' + viewId + '-' + subViewId) {
         sub.classList.add('active');
       } else {
         sub.classList.remove('active');
