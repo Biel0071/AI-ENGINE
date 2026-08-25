@@ -568,30 +568,30 @@ async function openFile(path) {
 
 function init() {
   document.querySelectorAll('[data-nav]').forEach((el) => el.addEventListener('click', () => showView(el.dataset.nav)));
-  $('refreshBtn').addEventListener('click', () => refreshAll());
-  $('logoutBtn').addEventListener('click', async () => {
+  $('refreshBtn')?.addEventListener('click', () => refreshAll());
+  $('logoutBtn')?.addEventListener('click', async () => {
     try { await fetch('/api/logout', { method: 'POST', headers: { authorization: `Bearer ${accessToken}` } }); }
     finally { localStorage.removeItem('grg_token'); location.replace('/GRG-login'); }
   });
-  $('cmdForm').addEventListener('submit', (event) => {
+  $('cmdForm')?.addEventListener('submit', (event) => {
     event.preventDefault();
     const value = $('prompt').value;
     $('prompt').value = '';
     runChat(value);
   });
   document.querySelectorAll('[data-prompt]').forEach((button) => button.addEventListener('click', () => runChat(button.dataset.prompt)));
-  $('projectSearch').addEventListener('input', renderProjects);
-  $('repoVisibility').addEventListener('change', renderProjects);
-  $('programForm').addEventListener('submit', (event) => { event.preventDefault(); createProgram($('programObjective').value); });
-  $('scanForm').addEventListener('submit', (event) => { event.preventDefault(); scanProject($('scanPath').value); });
-  $('skillForm').addEventListener('submit', (event) => { event.preventDefault(); selectSkills($('skillObjective').value); });
+  $('projectSearch')?.addEventListener('input', renderProjects);
+  $('repoVisibility')?.addEventListener('change', renderProjects);
+  $('programForm')?.addEventListener('submit', (event) => { event.preventDefault(); createProgram($('programObjective').value); });
+  $('scanForm')?.addEventListener('submit', (event) => { event.preventDefault(); scanProject($('scanPath').value); });
+  $('skillForm')?.addEventListener('submit', (event) => { event.preventDefault(); selectSkills($('skillObjective').value); });
   $('sliceForm')?.addEventListener('submit', (event) => { event.preventDefault(); createFullstackSlice($('slicePrompt').value); });
-  $('tickBtn').addEventListener('click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
-  $('rebuildCityBtn').addEventListener('click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
-  $('sampleBtn').addEventListener('click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
-  $('checkApiBtn').addEventListener('click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
-  $('fsLoadBtn').addEventListener('click', () => loadFs($('fsPath').value));
-  $('terminalBtn').addEventListener('click', async () => {
+  $('tickBtn')?.addEventListener('click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
+  $('rebuildCityBtn')?.addEventListener('click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
+  $('sampleBtn')?.addEventListener('click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
+  $('checkApiBtn')?.addEventListener('click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
+  $('fsLoadBtn')?.addEventListener('click', () => loadFs($('fsPath').value));
+  $('terminalBtn')?.addEventListener('click', async () => {
     try {
       const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
       $('terminalResult').textContent = JSON.stringify(out, null, 2);
@@ -599,9 +599,9 @@ function init() {
       $('terminalResult').textContent = error.message;
     }
   });
-  $('cmdBtn').addEventListener('click', openCommand);
-  $('closeCmdBtn').addEventListener('click', () => $('cmdDialog').close());
-  $('cmdInput').addEventListener('input', renderCommandPalette);
+  $('cmdBtn')?.addEventListener('click', openCommand);
+  $('closeCmdBtn')?.addEventListener('click', () => $('cmdDialog').close());
+  $('cmdInput')?.addEventListener('input', renderCommandPalette);
   window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'command', false));
   window.addEventListener('hashchange', () => refreshAll());
   showView(location.hash.slice(1) || 'command', false);
@@ -1184,7 +1184,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // === SUB-VIEW ROUTING (ADDED FOR 7-TAB ARCHITECTURE) ===
 window.showSubView = function(viewId, subViewId) {
   // Toggle buttons
-  const navContainer = document.querySelector(#view- + viewId +  .sub-nav);
+  const navContainer = document.querySelector('#view-' + viewId + ' .sub-nav');
   if (navContainer) {
     navContainer.querySelectorAll('button').forEach(btn => {
       if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(' + subViewId + ')) {
@@ -1196,7 +1196,7 @@ window.showSubView = function(viewId, subViewId) {
   }
   
   // Toggle views
-  const viewContainer = document.querySelector(#view- + viewId);
+  const viewContainer = document.querySelector('#view-' + viewId);
   if (viewContainer) {
     viewContainer.querySelectorAll('.sub-view').forEach(sub => {
       if (sub.id === sub- + viewId + - + subViewId) {
