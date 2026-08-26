@@ -130,6 +130,24 @@ class MemoryGateway {
   async getVisualMemory(id) {
     return this.visualMemories.get(id);
   }
+
+  async history(tenantId, actorId, memoryId) {
+    const p = this.providers.find(x => x.name === 'FenixEngineProvider');
+    if (p && p.engine.history) return await p.engine.history(tenantId, actorId, memoryId);
+    return [];
+  }
+
+  async forget(tenantId, actorId, memoryId, reason) {
+    const p = this.providers.find(x => x.name === 'FenixEngineProvider');
+    if (p && p.engine.forget) return await p.engine.forget(tenantId, actorId, memoryId, reason);
+    return { success: false };
+  }
+
+  async consolidate(tenantId, actorId, payload) {
+    const p = this.providers.find(x => x.name === 'FenixEngineProvider');
+    if (p && p.engine.consolidate) return await p.engine.consolidate(tenantId, actorId, payload);
+    return { consolidated: 0 };
+  }
 }
 
 module.exports = {
