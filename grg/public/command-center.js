@@ -1,20 +1,59 @@
+(function () {
+  'use strict';
 
-(function() {
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+  }[char]));
+
+  function empty(message) {
+    return `<div class="empty-state"><span>${esc(message)}</span></div>`;
+  }
+
+  function rows(items, render) {
+    return Array.isArray(items) && items.length ? items.slice(0, 8).map(render).join('') : '';
+  }
+
   function renderPanels() {
+    const state = window.state || {};
+    const data = state.data || {};
+    const health = data.health || {};
+    const agents = data.agents?.agents || data.swarm?.agents || [];
+    const projects = state.projects || data.projects?.projects || [];
+    const events = state.events || data.events?.events || [];
+    const connectors = data.connectors?.connectors || data.connections?.connections || [];
+    const memories = data.overview?.metrics?.memories;
+
     const panels = {
-      cmdAgentsContainer: '<div style="padding: 10px; font-size: 12px; display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;"><div style="display: flex; align-items: center; gap: 8px;"><img src="https://ui-avatars.com/api/?name=Vitoria&background=random" style="width:24px; border-radius:50%"> <b>Vit�ria</b></div><span style="color: var(--green); font-size: 10px;">WORKING</span><span>CPU 45%</span></div><div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;"><div style="display: flex; align-items: center; gap: 8px;"><img src="https://ui-avatars.com/api/?name=Qwen&background=random" style="width:24px; border-radius:50%"> <b>QWEN</b></div><span style="color: var(--accent); font-size: 10px;">THINKING</span><span>CPU 89%</span></div></div>',
-      cmdRuntimeContainer: '<div style="padding: 10px; font-size: 11px; height: 100%; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; gap: 10px; justify-content: space-between; text-align: center;"><div style="flex: 1; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px;"><b>EVENTS/SEC</b><br><span style="font-size:16px; color:#fff">142</span></div><div style="flex: 1; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px;"><b>JOBS/SEC</b><br><span style="font-size:16px; color:#fff">8.4</span></div><div style="flex: 1; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px;"><b>LATENCY</b><br><span style="font-size:16px; color:var(--green)">24ms</span></div></div><div style="flex: 1; border: 1px dashed #333; display: flex; align-items: center; justify-content: center; color: #555;">[TELEMETRY GRAPH]</div></div>',
-      cmdProjectsContainer: '<div style="padding: 10px; font-size: 11px;"><table style="width: 100%; text-align: left; border-collapse: collapse;"><tr style="border-bottom: 1px solid #333; color: #888;"><th style="padding: 4px;">PROJECT</th><th style="padding: 4px;">STATUS</th><th style="padding: 4px;">AGENTS</th></tr><tr><td style="padding: 6px 4px; color: #fff;">F�NIX OS Core</td><td style="padding: 6px 4px; color: var(--green);">ATIVO</td><td style="padding: 6px 4px;">3</td></tr><tr><td style="padding: 6px 4px; color: #fff;">AI City Engine</td><td style="padding: 6px 4px; color: var(--green);">ATIVO</td><td style="padding: 6px 4px;">2</td></tr><tr><td style="padding: 6px 4px; color: #fff;">Memory Fabric 2.0</td><td style="padding: 6px 4px; color: var(--accent);">BUILDING</td><td style="padding: 6px 4px;">1</td></tr></table></div>',
-      cmdMemoryContainer: '<div style="padding: 10px; font-size: 11px; height: 100%; display: flex; flex-direction: column;"><div style="display: flex; gap: 10px; margin-bottom: 10px;"><div style="color: #888;">MEMORIES: <b style="color:#fff">15.2K</b></div><div style="color: #888;">VECTORS: <b style="color:#fff">2.1M</b></div></div><div style="flex: 1; border: 1px dashed #333; display: flex; align-items: center; justify-content: center; color: #555;">[MEMORY DAG VISUALIZATION]</div></div>',
-      cmdKnowledgeContainer: '<div style="padding: 10px; font-size: 11px; height:100%; display:flex; align-items:center; justify-content:center; color:#555; border:1px dashed #333; margin:10px; box-sizing:border-box;">[KNOWLEDGE GRAPH]</div>',
-      cmdObservabilityContainer: '<div style="padding: 10px; font-size: 11px; height:100%; display:flex; align-items:center; justify-content:center; color:#555; border:1px dashed #333; margin:10px; box-sizing:border-box;">[SYSTEM MONITORING]</div>',
-      cmdMcpContainer: '<div style="padding: 10px; font-size: 11px; height:100%; display:flex; align-items:center; justify-content:center; color:#555; border:1px dashed #333; margin:10px; box-sizing:border-box;">[MCP CONNECTORS]</div>',
-      cmdQaContainer: '<div style="padding: 10px; font-size: 11px; height:100%; display:flex; align-items:center; justify-content:center; color:#555; border:1px dashed #333; margin:10px; box-sizing:border-box;">[PLAYWRIGHT RESULTS]</div>'
+      cmdAgentsContainer: rows(Array.isArray(agents) ? agents : Object.values(agents), (agent) =>
+        `<div class="runtime-row"><b>${esc(agent.name || agent.id || agent.role)}</b><span>${esc(agent.status || agent.state || 'UNKNOWN')}</span></div>`,
+      ) || empty('Nenhum agente ativo medido.'),
+      cmdRuntimeContainer: health.checks
+        ? rows(Object.entries(health.checks).map(([id, check]) => ({ id, ...check })), (check) =>
+          `<div class="runtime-row"><b>${esc(check.id)}</b><span>${check.ok === false ? 'DEGRADED' : 'READY'}</span></div>`,
+        )
+        : empty('Health ainda não publicado.'),
+      cmdProjectsContainer: rows(projects, (project) =>
+        `<div class="runtime-row"><b>${esc(project.name || project.id)}</b><span>${esc(project.status || project.analysisStatus || 'UNKNOWN')}</span></div>`,
+      ) || empty('Nenhum projeto publicado.'),
+      cmdMemoryContainer: memories == null
+        ? empty('Métricas de memória indisponíveis.')
+        : `<div class="runtime-summary"><small>MEMÓRIAS</small><b>${esc(memories)}</b></div>`,
+      cmdKnowledgeContainer: empty(data.graph ? 'Grafo carregado; abra Knowledge para explorar.' : 'Grafo não publicado.'),
+      cmdObservabilityContainer: rows(events, (event) =>
+        `<div class="runtime-row"><b>${esc(event.type || event.name || 'event')}</b><span>${esc(event.status || event.recordedAt || '')}</span></div>`,
+      ) || empty('Nenhum evento medido.'),
+      cmdMcpContainer: rows(connectors, (connector) =>
+        `<div class="runtime-row"><b>${esc(connector.name || connector.id)}</b><span>${esc(connector.status || 'UNKNOWN')}</span></div>`,
+      ) || empty('Nenhum conector publicado.'),
+      cmdQaContainer: empty(data.frontendReality ? 'Evidência disponível em Browser QA.' : 'Nenhuma execução visual publicada.'),
     };
+
     for (const [id, html] of Object.entries(panels)) {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = html;
+      const element = document.getElementById(id);
+      if (element) element.innerHTML = html;
     }
   }
+
   window.addEventListener('DOMContentLoaded', renderPanels);
+  window.addEventListener('fenix:data', renderPanels);
 })();

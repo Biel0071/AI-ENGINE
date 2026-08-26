@@ -87,7 +87,7 @@
       const xhr = new XMLHttpRequest();
       xhr.open(options.method || 'GET', path, true);
       Object.entries(headers).forEach(([key, value]) => xhr.setRequestHeader(key, value));
-      xhr.timeout = options.timeout || 12000;
+      xhr.timeout = options.timeout ?? 12_000;
       xhr.onload = () => {
         if (xhr.status < 200 || xhr.status >= 300) {
           reject(new Error(`HTTP ${xhr.status}`));

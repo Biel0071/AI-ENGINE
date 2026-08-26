@@ -15,7 +15,8 @@ window.state = {
   jobs: [],
   missions: [],
   refreshing: false,
-  agentStates: {}
+  agentStates: {},
+  currentFilePath: ''
 };
 const state = window.state;
 
@@ -30,6 +31,13 @@ function text(id, value) {
 
 function getMeasured(value) {
   return value && value.state === 'measured' ? value.value : value;
+}
+
+function compactValue(value) {
+  const measured = getMeasured(value);
+  if (measured == null || measured === '') return '--';
+  if (typeof measured === 'object') return JSON.stringify(measured);
+  return String(measured);
 }
 
 async function refreshAccessToken() {
@@ -219,6 +227,8 @@ function renderAll() {
   renderCommand();
   renderRuntime();
   renderMissions();
+  renderAgents();
+  renderMemory();
   renderCity();
   renderOffice();
   renderProjects();
@@ -228,6 +238,7 @@ function renderAll() {
   renderDeploy();
   renderObservability();
   renderSecurity();
+  window.dispatchEvent(new CustomEvent('fenix:data', { detail: state.data }));
 }
 
 function renderHeader() {
@@ -245,12 +256,22 @@ function renderHeader() {
   text('kpiCaps', metrics.capabilities ?? state.data.capabilities?.capabilities?.length);
   text('kpiJobs', state.jobs.length);
   text('kpiAi', telemetry?.calls ?? metrics.aiCalls);
+  text('appVersion', health?.version || state.data.runtime?.version || '--');
+  text('kpiLatency', telemetry?.lastLatencyMs != null ? `${telemetry.lastLatencyMs} ms` : '--');
+  text('kpiTokens', telemetry?.tokens ?? telemetry?.totalTokens ?? '--');
+  text('composerModel', telemetry?.lastModel || telemetry?.model || '--');
+  text('aiStatusBadge', telemetry?.calls ? 'Medido' : 'Nao medido');
+  const agents = state.data.agents?.agents || state.data.swarm?.agents || [];
+  text('kpiAgents', Array.isArray(agents) ? agents.length : Object.keys(agents || {}).length);
+  text('kpiSystem', ok ? 'READY' : 'DEGRADED');
+  text('systemHealthValue', ok ? 'READY' : 'DEGRADED');
+  text('systemErrorValue', health?.degraded || health?.error || 'sem erro crítico reportado');
 }
 
 function renderCommand() {
   const avatar = state.data.missions?.avatar || state.data.avatar || {};
-  text('avatarState', avatar.state || 'Operacional');
-  text('avatarPhrase', state.data.dailyBrief?.summary || 'Workspace unico: fronts de comando, office, CRM, AI City e developer reunidos aqui.');
+  text('avatarState', avatar.state || 'Nao medido');
+  text('avatarPhrase', state.data.dailyBrief?.summary || 'Nenhum resumo operacional foi publicado nesta sessao.');
   const telemetry = state.data.telemetry || {};
   text('activeModel', telemetry.lastModel || telemetry.model || (telemetry.calls ? 'IA medida' : 'sem chamada'));
   text('eventCount', `${state.events.length} eventos`);
@@ -294,6 +315,27 @@ function renderMissions() {
   if ($('programList')) $('programList').innerHTML = programs.length
     ? programs.map((p) => row(p.objective || p.title || p.id, `${p.missions?.length || 0} missoes`, p.status || 'PROGRAM')).join('')
     : row('programas', 'sem programas executivos', 'EMPTY');
+}
+
+function renderAgents() {
+  const source = state.data.agents?.agents || state.data.swarm?.agents || [];
+  const agents = Array.isArray(source) ? source : Object.entries(source).map(([id, value]) => ({ id, ...(value || {}) }));
+  if ($('agentList')) $('agentList').innerHTML = agents.length
+    ? agents.map((agent) => row(agent.name || agent.id || agent.role, agent.role || agent.objective || agent.summary || '', agent.status || agent.state || 'KNOWN')).join('')
+    : row('agentes', state.data.agents?.__error || state.data.swarm?.__error || 'nenhum agente publicado pelo runtime', 'EMPTY');
+}
+
+function renderMemory() {
+  const metrics = state.data.overview?.metrics || {};
+  const hot = state.data.hotMemory || {};
+  if ($('memoryMetrics')) $('memoryMetrics').innerHTML = [
+    metric('Memorias', metrics.memories),
+    metric('Hot memory', getMeasured(hot.status || hot.state)),
+    metric('Entradas quentes', getMeasured(hot.entries || hot.count)),
+    metric('Graph edges', metrics.graphEdges),
+  ].join('');
+  const brief = state.data.dailyBrief || {};
+  if ($('memoryBrief')) $('memoryBrief').textContent = brief.summary || brief.message || brief.__error || 'Nenhum resumo de memoria foi publicado nesta sessao.';
 }
 
 function renderCity() {
@@ -529,7 +571,7 @@ async function runChat(message) {
   pending.textContent = 'Iniciando FenixMind Job...';
   $('chatLog').appendChild(pending);
   try {
-    const res = await api('/api/v2/mind/ingest', { method: 'POST', body: JSON.stringify({ message: value, context: {} }) });
+    const res = await api('/avatar/message', { method: 'POST', body: JSON.stringify({ message: value, context: {} }) });
       if (window.openJobInspector) window.openJobInspector(res.jobId, value);
     pending.remove();
     bubble(res.reply || res.response || 'Sem resposta textual.', 'bot');
@@ -560,10 +602,11 @@ async function scanProject(path) {
     const d = scan.discovery || {};
     if ($('scanResult')) $('scanResult').innerHTML = [
       row('caminho', scan.projectPath || path || '.', scan.exists ? 'FOUND' : 'MISSING'),
-      row('frontend', getMeasured(d.frontendFramework) || d.frontendFramework?.reason || '--', d.frontendFramework?.state || ''),
-      row('backend', getMeasured(d.backendFramework) || d.backendFramework?.reason || '--', d.backendFramework?.state || ''),
-      row('dependencias', getMeasured(d.dependencyCount) ?? '--', d.dependencyCount?.state || ''),
-      row('ci/cd', getMeasured(d.ciCd) ?? d.ciCd?.reason ?? '--', d.ciCd?.state || ''),
+      row('frontend', compactValue(d.frontendFramework), d.frontendFramework?.state || ''),
+      row('backend', compactValue(d.backendFramework), d.backendFramework?.state || ''),
+      row('dependencias', compactValue(d.dependencyCount), d.dependencyCount?.state || ''),
+      row('ci/cd', compactValue(d.ciCd), d.ciCd?.state || ''),
+      row('acoplamento', compactValue(d.coupling || scan.coupling), (d.coupling || scan.coupling)?.state || ''),
     ].join('');
   } catch (error) {
     if ($('scanResult')) $('scanResult').innerHTML = row('scan falhou', error.message, 'ERROR');
@@ -592,13 +635,85 @@ async function loadFs(path = '') {
     }
   }
 
-  async function openFile(path) {
+async function openFile(path) {
   try {
     const data = await api(`/dev/fs/file?path=${encodeURIComponent(path)}`);
-    $('fileViewer').value = data.content || '';
+    state.currentFilePath = path;
+    if ($('currentFilePath')) $('currentFilePath').value = path;
+    if ($('fileViewer')) $('fileViewer').value = data.content || '';
+    if ($('currentEditorTitle')) $('currentEditorTitle').textContent = path;
+    if (window.editor?.setValue) window.editor.setValue(data.content || '');
+    if ($('moveFromPath')) $('moveFromPath').value = path;
   } catch (error) {
-    $('fileViewer').value = `Falha: ${error.message}`;
+    if ($('fileViewer')) $('fileViewer').value = `Falha: ${error.message}`;
   }
+}
+
+async function saveFile() {
+  const filePath = state.currentFilePath || $('currentFilePath')?.value;
+  if (!filePath) throw new Error('Abra um arquivo antes de salvar.');
+  const content = window.editor?.getValue ? window.editor.getValue() : ($('fileViewer')?.value || '');
+  await api(`/dev/fs/file?path=${encodeURIComponent(filePath)}`, { method: 'POST', body: JSON.stringify({ content }) });
+  if ($('fileViewer')) $('fileViewer').value = content;
+  if ($('fileSaveResult')) $('fileSaveResult').textContent = `Salvo: ${filePath}`;
+  return { filePath, content };
+}
+
+async function pollTerminal(sessionId) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const session = await api(`/dev/terminal/${encodeURIComponent(sessionId)}`);
+    const streamedOutput = Array.isArray(session.output) ? session.output.map((entry) => entry.data || entry.message || '').join('') : '';
+    if ($('terminalResult')) $('terminalResult').textContent = streamedOutput || [session.stdout, session.stderr].filter(Boolean).join('\n') || `${session.status || 'RUNNING'}...`;
+    if (/finished|completed|failed|error|cancelled|succeeded/i.test(session.status || session.state || '')) return session;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error('O terminal continua executando; consulte novamente em instantes.');
+}
+
+async function cloneProject() {
+  const url = $('gitRepoUrl')?.value?.trim();
+  const directory = $('gitRepoDir')?.value?.trim();
+  if (!url) throw new Error('Informe a URL Git.');
+  const result = await api('/dev/projects/clone', { method: 'POST', body: JSON.stringify({ url, directory: directory || undefined, scan: true }) });
+  if ($('gitCloneResult')) $('gitCloneResult').textContent = JSON.stringify(result, null, 2);
+  const clonedPath = result.cloned?.relativePath || result.cloned?.path;
+  if (clonedPath && $('fsPath')) { $('fsPath').value = clonedPath; await loadFs(clonedPath); }
+  return result;
+}
+
+function renderLivePreview() {
+  const raw = $('livePreviewText')?.value?.trim() || '/app';
+  const url = raw.startsWith('http://') || raw.startsWith('https://') ? raw : new URL(raw.startsWith('/') ? raw : `/${raw}`, location.origin).href;
+  if ($('livePreviewFrame')) $('livePreviewFrame').src = url;
+}
+
+async function transformOpenFile() {
+  const path = state.currentFilePath || $('currentFilePath')?.value;
+  const instruction = $('aiEditInstruction')?.value?.trim();
+  if (!path || !instruction) throw new Error('Abra um arquivo e informe a instrucao.');
+  const result = await api('/dev/ai/transform-file', { method: 'POST', body: JSON.stringify({ path, instruction }) });
+  if ($('fileViewer')) $('fileViewer').value = result.content || '';
+  if (window.editor?.setValue) window.editor.setValue(result.content || '');
+  if ($('aiEditResult')) $('aiEditResult').textContent = `${result.summary || 'Proposta gerada.'}\nProvider: ${result.provider || '--'} / ${result.model || '--'}\nRevise e use Salvar arquivo para aplicar.`;
+  return result;
+}
+
+async function movePath() {
+  const from = $('moveFromPath')?.value?.trim();
+  const to = $('moveToPath')?.value?.trim();
+  if (!from || !to) throw new Error('Informe origem e destino.');
+  const result = await api('/dev/fs/move', { method: 'POST', body: JSON.stringify({ from, to }) });
+  if (state.currentFilePath === from) { state.currentFilePath = to; if ($('currentFilePath')) $('currentFilePath').value = to; }
+  if ($('moveResult')) $('moveResult').textContent = `Movido: ${from} -> ${to}`;
+  return result;
+}
+
+async function delegateDevAgents() {
+  const prompt = $('devAgentObjective')?.value?.trim();
+  if (!prompt) throw new Error('Informe o objetivo do pipeline.');
+  const result = await api('/dev/pipeline', { method: 'POST', body: JSON.stringify({ prompt, projectPath: $('fsPath')?.value || '.', autoDeploy: false }) });
+  if ($('devAgentResult')) $('devAgentResult').textContent = JSON.stringify(result, null, 2);
+  return result;
 }
 
 function init() {
@@ -631,11 +746,20 @@ function init() {
   addEvt('sampleBtn', 'click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
   addEvt('checkApiBtn', 'click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
   addEvt('fsLoadBtn', 'click', () => { if ($('fsPath')) loadFs($('fsPath').value); });
+  addEvt('saveBtn', 'click', () => saveFile().catch((error) => { if ($('fileSaveResult')) $('fileSaveResult').textContent = error.message; }));
+  addEvt('fileSaveBtn', 'click', () => saveFile().catch((error) => { if ($('fileSaveResult')) $('fileSaveResult').textContent = error.message; }));
+  addEvt('gitCloneForm', 'submit', (event) => { event.preventDefault(); cloneProject().catch((error) => { if ($('gitCloneResult')) $('gitCloneResult').textContent = error.message; }); });
+  addEvt('previewRefreshBtn', 'click', renderLivePreview);
+  addEvt('aiEditBtn', 'click', () => transformOpenFile().catch((error) => { if ($('aiEditResult')) $('aiEditResult').textContent = error.message; }));
+  addEvt('movePathBtn', 'click', () => movePath().catch((error) => { if ($('moveResult')) $('moveResult').textContent = error.message; }));
+  addEvt('devAgentBtn', 'click', () => delegateDevAgents().catch((error) => { if ($('devAgentResult')) $('devAgentResult').textContent = error.message; }));
   addEvt('terminalBtn', 'click', async () => {
-    if (!$('terminalCmd')) return;
-    const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
-    if ($('terminalResult')) $('terminalResult').textContent += `\n$ ${$('terminalCmd').value}\n${out.stdout || out.stderr || 'ok'}`;
+    if (!$('terminalCmd')?.value?.trim()) return;
+    const command = $('terminalCmd').value.trim();
+    const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command, sessionId: `ui-${Date.now()}` }) });
+    if ($('terminalResult')) $('terminalResult').textContent = `$ ${command}\n${out.status || 'ACCEPTED'}`;
     $('terminalCmd').value = '';
+    pollTerminal(out.sessionId).catch((error) => { if ($('terminalResult')) $('terminalResult').textContent += `\n${error.message}`; });
   });
   
   addEvt('cmdBtn', 'click', openCommand);
@@ -659,17 +783,18 @@ function renderCommandPalette() {
   const q = ($('cmdInput').value || '').toLowerCase();
   const commands = [
     ['command', 'Abrir comando'],
-    ['runtime', 'Abrir runtime'],
-    ['missions', 'Abrir missoes'],
     ['city', 'Abrir AI City'],
-    ['office', 'Abrir office'],
-    ['projects', 'Abrir projetos CRM'],
-    ['skills', 'Abrir skills e agentes'],
-    ['connectors', 'Abrir conectores e API'],
-    ['deploy', 'Abrir deploy'],
+    ['agents', 'Abrir agentes'],
+    ['ide', 'Abrir IDE'],
+    ['operations', 'Abrir operacoes'],
+    ['runtime', 'Abrir runtime'],
+    ['projects', 'Abrir projetos'],
+    ['memory', 'Abrir memoria'],
+    ['knowledge', 'Abrir conhecimento'],
+    ['mcp', 'Abrir MCP Hub'],
+    ['browser', 'Abrir Browser QA'],
     ['observability', 'Abrir observabilidade'],
-    ['security', 'Abrir seguranca'],
-    ['developer', 'Abrir developer district'],
+    ['terminal', 'Abrir terminal e developer district'],
   ].filter(([, label]) => label.toLowerCase().includes(q));
   if ($('cmdResults')) $('cmdResults').innerHTML = commands.map(([target, label]) => row(label, `#${target}`, 'NAV')).join('');
   document.querySelectorAll('#cmdResults .row').forEach((el, i) => {
@@ -682,7 +807,9 @@ function renderCommandPalette() {
 
 init();
 
-
+/* Legacy city controller disabled: iso-city.js is the canonical implementation.
+   Kept temporarily for archaeological comparison and scheduled for physical removal. */
+/*
 // --- AI CITY 3D CANVAS & INTERACTION ----------------------------------
   window.initCityCanvas = function() {
     const canvas = document.getElementById('cityCanvas');
@@ -1139,7 +1266,7 @@ init();
         state.tokenCount += 450;
         updateTopbarTelemetry('CONNECTED', latency, state.activeModel);
 
-        completeJobExecution(data.realityScore || 99.8);
+        if (Number.isFinite(data.realityScore)) completeJobExecution(data.realityScore);
         appendCityJarvisMessage('assistant', `
           <p><b>├ó┼ôÔÇª Miss├â┬úo Processada pelo F├â┼áNIX MIND!</b></p>
           <p style="font-size:11.5px; margin-top:4px;">Inten├â┬º├â┬úo: <b>${escapeHtml(data.intent)}</b> ├óÔé¼┬ó Reality Score: <b>${data.realityScore}%</b></p>
@@ -1246,4 +1373,5 @@ window.showSubView = function(viewId, subViewId) {
     });
   }
 };
+*/
 

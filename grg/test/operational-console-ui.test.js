@@ -9,11 +9,11 @@ const js = readFileSync(join(root, 'unified-app.js'), 'utf8');
 const css = readFileSync(join(root, 'unified.css'), 'utf8');
 
 test('unified workspace exposes all primary command navigation districts', () => {
-  for (const nav of ['command', 'runtime', 'missions', 'city', 'office', 'projects', 'knowledge', 'skills', 'connectors', 'deploy', 'observability', 'security', 'developer']) {
+  for (const nav of ['command', 'city', 'agents', 'ide', 'operations', 'runtime', 'projects', 'memory', 'knowledge', 'mcp', 'browser', 'observability', 'terminal']) {
     assert.match(html, new RegExp(`data-nav="${nav}"`));
   }
-  assert.match(html, /FENIX OS/);
-  assert.match(css, /\.app-shell/);
+  assert.match(html, /FÊNIX OS/);
+  assert.match(css, /\.fenix-os-layout/);
 });
 
 test('console consumes real operational contracts from unified controller', () => {

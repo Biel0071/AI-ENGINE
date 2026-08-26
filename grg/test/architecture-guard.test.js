@@ -64,19 +64,25 @@ async function runArchitectureGuard() {
   console.log('\n[3/5] Inspecting Official Shell Integrated Views...');
   const htmlContent = fs.readFileSync(officialHtml, 'utf8');
   const requiredViews = [
+    'view-command',
     'view-city',
+    'view-agents',
     'view-ide',
     'view-operations',
+    'view-runtime',
     'view-projects',
-    'view-agents',
-    'view-dna',
-    'view-metrics'
+    'view-memory',
+    'view-knowledge',
+    'view-mcp',
+    'view-browser',
+    'view-observability',
+    'view-terminal'
   ];
 
   for (const viewId of requiredViews) {
     assert.ok(htmlContent.includes(viewId), `Official shell must contain view: ${viewId}`);
   }
-  console.log('   ✅ All 7 Core Views are natively integrated in the Single Shell.');
+  console.log('   ✅ All 13 canonical views are natively integrated in the Single Shell.');
 
   // 4. Zero Mocks — Real Telemetry & Runtime Verification
   console.log('\n[4/5] Testing Runtime Zero-Mock Contract...');
@@ -85,7 +91,9 @@ async function runArchitectureGuard() {
   assert.ok(Array.isArray(cityState.data.projects), 'Projects must be an array of projects');
   assert.ok(typeof cityState.data.summary.totalProjects === 'number', 'totalProjects must be a number');
   assert.ok(cityState.data.summary.ramUsage.includes('MB'), 'RAM usage must be real MB');
-  console.log('   ✅ Live Runtime Metrics Verified: RAM', cityState.data.summary.ramUsage, '| CPU', cityState.data.summary.cpuUsage);
+  assert.ok(typeof cityState.data.summary.cpuUserSeconds === 'number', 'CPU user time must be a measured number');
+  assert.strictEqual(cityState.data.buildings.energy.loadPercent, null, 'unmeasured energy cannot use a plausible fallback');
+  console.log('   ✅ Live Runtime Metrics Verified: RAM', cityState.data.summary.ramUsage, '| CPU user seconds', cityState.data.summary.cpuUserSeconds);
 
   // 5. Daily Operations & Human Governance Verification
   console.log('\n[5/5] Testing 24/7 Daily Operations Source of Truth...');

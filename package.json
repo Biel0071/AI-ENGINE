@@ -10,9 +10,10 @@
   "type": "commonjs",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "node grg/src/server.js",
     "build": "tsc",
-    "start": "node server.js",
+    "start": "node grg/src/server.js",
+    "start:legacy": "node server.js",
     "test": "node --test engine/tests/*.test.js",
     "analyze:project": "node engine/runAnalysis.js",
     "analyze:crm": "node scripts/analyze-crm.js",

@@ -519,7 +519,10 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     try {
       const projects = workspaceManager ? workspaceManager.listProjects() : [];
       const agents = agentRuntime && agentRuntime.activeAgents ? Array.from(agentRuntime.activeAgents.values()) : [];
+      const registeredAgents = agentRuntime && agentRuntime.registry ? agentRuntime.registry.list() : [];
+      const knownAgents = agents.length ? agents : registeredAgents;
       const memUsage = process.memoryUsage();
+      const cpuUsage = process.cpuUsage();
       const eventBus = app.bus || app.eventBus;
       const history = eventBus && typeof eventBus.getHistory === 'function' ? eventBus.getHistory(20) : [];
 
@@ -527,16 +530,17 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         timestamp: new Date().toISOString(),
         status: 'HEALTHY',
         summary: {
-          activeBuildings: 6 + projects.length,
+          activeBuildings: projects.length,
           totalProjects: projects.length,
-          onlineAgents: agents.length || 19,
+          onlineAgents: agents.length,
+          registeredAgents: registeredAgents.length,
           activeTasks: factoryEngine && factoryEngine.reconstructions ? factoryEngine.reconstructions.size : 0,
           totalEvents: history.length,
-          cpuUsage: `${Math.round(process.cpuUsage().user / 1000000)}%`,
+          cpuUserSeconds: Number((cpuUsage.user / 1000000).toFixed(2)),
           ramUsage: `${(memUsage.rss / (1024 * 1024)).toFixed(1)} MB`
         },
         projects,
-        agents: agents.length ? agents : (agentRuntime && agentRuntime.registry ? agentRuntime.registry.list() : []),
+        agents: knownAgents,
         events: history.slice(0, 10).map((ev, i) => ({
           id: `ev_${i}`,
           type: ev.type || 'system.heartbeat',
@@ -547,10 +551,10 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         buildings: {
           factory: { agents: ['Architect', 'Developer', 'Frontend', 'Backend'], activeDemands: factoryEngine && factoryEngine.reconstructions ? factoryEngine.reconstructions.size : 0 },
           datacenter: { status: 'ONLINE', memoryRss: `${(memUsage.rss / (1024 * 1024)).toFixed(1)} MB`, heapUsed: `${(memUsage.heapUsed / (1024 * 1024)).toFixed(1)} MB` },
-          district: { totalAgents: 19, activeCount: agents.length || 19 },
+          district: { totalAgents: registeredAgents.length, activeCount: agents.length },
           tower: { projectsCount: projects.length, list: projects.map(p => p.name) },
           marketplace: { availableSkills: ['fullstack-slice-builder', 'ai-platform-provider-resilience', 'react-architecture', 'project-scaffolding'] },
-          energy: { status: 'OPTIMAL', loadPercent: 98 }
+          energy: { status: 'UNMEASURED', loadPercent: null }
         }
       };
 

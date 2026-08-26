@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>F?NIX OS | Master Agentic IDE</title>
+  <title>FÊNIX OS | Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Fonts & Icons -->
@@ -44,21 +44,21 @@
       <div class="topbar-left">
         <div class="brand-logo">
           <i class="ph-fill ph-fire"></i>
-          <span>F?NIX OS <span class="version-badge">v2.1.0</span></span>
+          <span>FÊNIX OS <span id="appVersion" class="version-badge">--</span></span>
         </div>
         <div class="connection-status">
-          <i id="statusDot" class="ph-fill ph-circle" style="color: var(--green);"></i> 
-          <span id="statusSub">AI Platform</span> 
-          <span id="statusText" style="color: var(--green);">CONNECTED</span>
+          <i id="statusDot" class="ph-fill ph-circle"></i>
+          <span id="statusSub">runtime</span>
+          <span id="statusText">UNKNOWN</span>
         </div>
       </div>
       
       <div class="topbar-metrics">
-        <div class="metric"><small>Modelo Ativo</small><b>qwen2.5-coder</b></div>
-        <div class="metric"><small>Lat?ncia</small><b id="kpiLatency">-- ms</b></div>
-        <div class="metric"><small>Tokens Usados</small><b id="kpiTokens">0</b></div>
-        <div class="metric"><small>Agentes</small><b id="kpiAgents">0/19</b></div>
-        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% Saud?vel</b></div>
+        <div class="metric"><small>Modelo ativo</small><b id="activeModel">--</b></div>
+        <div class="metric"><small>Latência</small><b id="kpiLatency">--</b></div>
+        <div class="metric"><small>Tokens usados</small><b id="kpiTokens">--</b></div>
+        <div class="metric"><small>Agentes</small><b id="kpiAgents">--</b></div>
+        <div class="metric"><small>Sistema</small><b id="kpiSystem">UNKNOWN</b></div>
       </div>
       
       <div class="topbar-right">
@@ -76,26 +76,27 @@
               <!-- NAV SIDEBAR -->
         <nav class="sidebar-nav">
           <div class="nav-top">
-            <button class="nav-item active" data-view="command"><i class="ph ph-squares-four"></i> COMMAND</button>
-            <button class="nav-item" data-view="city"><i class="ph ph-buildings"></i> AI CITY</button>
-            <button class="nav-item" data-view="agents"><i class="ph ph-users-three"></i> AGENTS</button>
-            <button class="nav-item" data-view="ide"><i class="ph ph-code"></i> IDE</button>
-            <button class="nav-item" data-view="runtime"><i class="ph ph-activity"></i> RUNTIME</button>
-            <button class="nav-item" data-view="projects"><i class="ph ph-folders"></i> PROJECTS</button>
-            <button class="nav-item" data-view="memory"><i class="ph ph-brain"></i> MEMORY</button>
-            <button class="nav-item" data-view="knowledge"><i class="ph ph-graph"></i> KNOWLEDGE</button>
-            <button class="nav-item" data-view="mcp"><i class="ph ph-plug"></i> MCP HUB</button>
-            <button class="nav-item" data-view="browser"><i class="ph ph-browser"></i> BROWSER QA</button>
-            <button class="nav-item" data-view="observability"><i class="ph ph-chart-line-up"></i> OBSERVABILITY</button>
-            <button class="nav-item" data-view="terminal"><i class="ph ph-terminal"></i> TERMINAL</button>
+            <button class="nav-item active" data-view="command" data-nav="command"><i class="ph ph-squares-four"></i> COMMAND</button>
+            <button class="nav-item" data-view="city" data-nav="city"><i class="ph ph-buildings"></i> AI CITY</button>
+            <button class="nav-item" data-view="agents" data-nav="agents"><i class="ph ph-users-three"></i> AGENTS</button>
+            <button class="nav-item" data-view="ide" data-nav="ide"><i class="ph ph-code"></i> IDE</button>
+            <button class="nav-item" data-view="operations" data-nav="operations"><i class="ph ph-kanban"></i> OPERATIONS</button>
+            <button class="nav-item" data-view="runtime" data-nav="runtime"><i class="ph ph-activity"></i> RUNTIME</button>
+            <button class="nav-item" data-view="projects" data-nav="projects"><i class="ph ph-folders"></i> PROJECTS</button>
+            <button class="nav-item" data-view="memory" data-nav="memory"><i class="ph ph-brain"></i> MEMORY</button>
+            <button class="nav-item" data-view="knowledge" data-nav="knowledge"><i class="ph ph-graph"></i> KNOWLEDGE</button>
+            <button class="nav-item" data-view="mcp" data-nav="mcp"><i class="ph ph-plug"></i> MCP HUB</button>
+            <button class="nav-item" data-view="browser" data-nav="browser"><i class="ph ph-browser"></i> BROWSER QA</button>
+            <button class="nav-item" data-view="observability" data-nav="observability"><i class="ph ph-chart-line-up"></i> OBSERVABILITY</button>
+            <button class="nav-item" data-view="terminal" data-nav="terminal"><i class="ph ph-terminal"></i> TERMINAL</button>
           </div>
           <div class="nav-bottom">
             <div class="system-health">
               <small>SYSTEM HEALTH</small>
-              <b style="color: var(--green);">100%</b>
-              <small>0 errors unhandled</small>
+              <b id="systemHealthValue">--</b>
+              <small id="systemErrorValue">estado não medido</small>
             </div>
-            <button class="nav-item" title="Configura��es"><i class="ph ph-gear"></i></button>
+            <button class="nav-item" title="Configurações"><i class="ph ph-gear"></i></button>
           </div>
         </nav>
 
@@ -105,7 +106,7 @@
           <div id="view-command" class="view active">
             <div class="command-center-grid">
               <div class="cmd-panel cmd-panel-city">
-                <div class="cmd-panel-header"><span class="cmd-badge">1</span> AI CITY - VISTA ISOM?TRICA</div>
+                <div class="cmd-panel-header"><span class="cmd-badge">1</span> AI CITY - VISTA ISOMÉTRICA</div>
                 <div class="cmd-panel-body" id="cmdCityContainer"></div>
               </div>
               <div class="cmd-panel cmd-panel-ide">
@@ -113,7 +114,7 @@
                 <div class="cmd-panel-body" id="cmdIdeContainer"></div>
               </div>
               <div class="cmd-panel cmd-panel-agents">
-                <div class="cmd-panel-header"><span class="cmd-badge">3</span> AGENTS - GEST?O DE AGENTES</div>
+                <div class="cmd-panel-header"><span class="cmd-badge">3</span> AGENTS - GESTÃO DE AGENTES</div>
                 <div class="cmd-panel-body" id="cmdAgentsContainer"></div>
               </div>
               <div class="cmd-panel cmd-panel-runtime">
@@ -121,7 +122,7 @@
                 <div class="cmd-panel-body" id="cmdRuntimeContainer"></div>
               </div>
               <div class="cmd-panel cmd-panel-projects">
-                <div class="cmd-panel-header"><span class="cmd-badge">5</span> PROJECTS - GEST?O DE PROJETOS</div>
+                <div class="cmd-panel-header"><span class="cmd-badge">5</span> PROJECTS - GESTÃO DE PROJETOS</div>
                 <div class="cmd-panel-body" id="cmdProjectsContainer"></div>
               </div>
               <div class="cmd-panel cmd-panel-memory">
@@ -158,7 +159,7 @@
                 <button class="panel-tab active">CHAT</button>
                 <button class="panel-tab">AGENTS</button>
                 <button class="panel-tab">JOBS</button>
-                <button class="panel-tab">MEM�RIA</button>
+                <button class="panel-tab">MEMÓRIA</button>
                 <button class="panel-tab">GRAFOS</button>
               </div>
               
@@ -167,17 +168,17 @@
                   <div class="chat-bubble chat-bot">
                     <div class="chat-avatar"><i class="ph-fill ph-robot"></i></div>
                     <div class="chat-text-wrapper">
-                      <strong>F?NIX AI <span class="badge-online">Online</span></strong>
-                      <div class="chat-text">Ol?! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
+                      <strong>FÊNIX AI <span id="aiStatusBadge" class="badge-online">Nao medido</span></strong>
+                      <div class="chat-text">Olá! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
                     </div>
                   </div>
                 </div>
                 
                 <form id="cmdForm" class="chat-composer">
-                  <textarea id="prompt" placeholder="Digite seu comando para o F?nix..." rows="2"></textarea>
+                  <textarea id="prompt" placeholder="Digite seu comando para o Fênix..." rows="2"></textarea>
                   <div class="composer-actions">
                     <div class="composer-models">
-                      <i class="ph ph-cpu"></i> <span>qwen2.5-coder</span>
+                      <i class="ph ph-cpu"></i> <span id="composerModel">--</span>
                     </div>
                     <button type="submit" class="btn-send"><i class="ph-fill ph-paper-plane-right"></i></button>
                   </div>
@@ -189,13 +190,13 @@
             <div class="split-handle" id="splitLeft"></div><div class="panel-center" id="idePanelCenter">
               
               <div class="editor-header">
-                <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + C?DIGO</span></div>
+                <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÓDIGO</span></div>
                 <div class="editor-toolbar">
                   <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
                   <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
                   <div class="toolbar-divider"></div>
                   <button class="toolbar-btn active">Visual</button>
-                  <button class="toolbar-btn">C?digo</button>
+                  <button class="toolbar-btn">Código</button>
                   <button class="toolbar-btn">Split</button>
                   <button class="toolbar-btn">Preview</button>
                 </div>
@@ -212,7 +213,11 @@
                 </div>
                 
                 <!-- Monaco Code Editor -->
-                <div id="monacoEditor" class="monaco-container"></div><!-- RIGHT PANEL: Structure / Files -->
+                <div id="monacoEditor" class="monaco-container"></div>
+              </div>
+            </div>
+
+            <!-- RIGHT PANEL: Structure / Files -->
             <div class="split-handle" id="splitRight"></div><div class="panel-right" id="idePanelRight">
               <div class="panel-header">
                 <span>ESTRUTURA</span>
@@ -249,7 +254,51 @@
            <canvas id="cityCanvas"></canvas>
         </div>
         <div id="view-projects" class="view">
-           <div class="empty-state"><h2>Projects Management</h2></div>
+          <main class="workspace-view">
+            <header class="workspace-header"><div><small>WORKSPACE</small><h1>Projetos</h1></div></header>
+            <section class="workspace-grid two-columns">
+              <article class="workspace-card"><h2>Projetos acoplados</h2><div class="toolbar-row"><input id="projectSearch" placeholder="Filtrar projeto"><select id="repoVisibility"><option value="all">Todos</option><option value="private">Privados</option><option value="public">Publicos</option></select></div><table><tbody id="projectList"></tbody></table></article>
+              <article class="workspace-card"><h2>Grafo do workspace</h2><table><tbody id="graphSummary"></tbody></table></article>
+            </section>
+          </main>
+        </div>
+
+        <div id="view-agents" class="view"><main class="workspace-view"><header class="workspace-header"><div><small>SWARM</small><h1>Agentes</h1></div></header><section class="workspace-card"><table><tbody id="agentList"></tbody></table></section></main></div>
+
+        <div id="view-operations" class="view">
+          <main class="workspace-view"><header class="workspace-header"><div><small>EXECUCAO</small><h1>Operacoes</h1></div></header>
+            <section class="workspace-grid two-columns">
+              <article class="workspace-card"><h2>Missoes</h2><table><tbody id="missionList"></tbody></table></article>
+              <article class="workspace-card"><h2>Jobs</h2><div id="jobList"></div></article>
+              <article class="workspace-card full-span"><h2>Novo programa</h2><form id="programForm" class="toolbar-row"><input id="programObjective" required placeholder="Objetivo operacional verificavel"><button type="submit">Decompor e criar</button></form><table><tbody id="programList"></tbody></table></article>
+            </section>
+          </main>
+        </div>
+
+        <div id="view-runtime" class="view"><main class="workspace-view"><header class="workspace-header"><div><small>KERNEL</small><h1>Runtime</h1></div><button id="tickBtn">Executar tick</button></header><section class="workspace-grid three-columns"><article class="workspace-card"><h2>Health</h2><table><tbody id="healthList"></tbody></table></article><article class="workspace-card"><h2>Servicos</h2><table><tbody id="runtimeServices"></tbody></table></article><article class="workspace-card"><h2>Workers</h2><table><tbody id="workerList"></tbody></table></article></section></main></div>
+
+        <div id="view-memory" class="view"><main class="workspace-view"><header class="workspace-header"><div><small>MEMORY FABRIC</small><h1>Memoria</h1></div></header><section class="workspace-grid two-columns"><article class="workspace-card"><h2>Estado medido</h2><div id="memoryMetrics" class="metric-grid"></div></article><article class="workspace-card"><h2>Resumo diario</h2><div id="memoryBrief" class="text-output"></div></article></section></main></div>
+
+        <div id="view-knowledge" class="view"><main class="workspace-view"><header class="workspace-header"><div><small>KNOWLEDGE OS</small><h1>Conhecimento</h1></div></header><section class="workspace-grid two-columns"><article class="workspace-card"><h2>Manifesto KOS</h2><table><tbody id="kosManifest"></tbody></table></article><article class="workspace-card"><h2>Knowledge Graph</h2><table><tbody id="kgList"></tbody></table></article></section></main></div>
+
+        <div id="view-mcp" class="view"><main class="workspace-view"><header class="workspace-header"><div><small>INTEGRACOES</small><h1>MCP Hub</h1></div><button id="checkApiBtn">Verificar conexao</button></header><section class="workspace-grid two-columns"><article class="workspace-card"><h2>Conectores</h2><table><tbody id="connectorList"></tbody></table></article><article class="workspace-card"><h2>Roteamento de IA</h2><table><tbody id="routerState"></tbody></table></article></section></main></div>
+
+        <div id="view-browser" class="view"><main class="workspace-view"><header class="workspace-header"><div><small>VALIDACAO VISUAL</small><h1>Browser QA</h1></div></header><section class="workspace-card"><div id="browserQaState" class="text-output">Nenhuma auditoria visual executada nesta sessao.</div></section></main></div>
+
+        <div id="view-observability" class="view"><main class="workspace-view"><header class="workspace-header"><div><small>EVIDENCIA</small><h1>Observabilidade</h1></div><button id="sampleBtn">Coletar amostra</button></header><section class="workspace-grid two-columns"><article class="workspace-card"><h2>Metricas</h2><div id="observabilityMetrics" class="metric-grid"></div></article><article class="workspace-card"><h2>Series</h2><div id="seriesGrid" class="metric-grid"></div></article></section></main></div>
+
+        <div id="view-terminal" class="view">
+          <main class="workspace-view"><header class="workspace-header"><div><small>DEVELOPER DISTRICT</small><h1>Projeto, arquivo, terminal e preview</h1></div></header>
+            <section class="workspace-grid two-columns">
+              <article class="workspace-card"><h2>Clonar projeto</h2><form id="gitCloneForm" class="stack-form"><input id="gitRepoUrl" required placeholder="URL Git"><input id="gitRepoDir" placeholder="Diretorio de destino"><button type="submit">Clonar e analisar</button></form><pre id="gitCloneResult" class="text-output">Aguardando.</pre></article>
+              <article class="workspace-card"><h2>Arquivo aberto</h2><input id="currentFilePath" readonly placeholder="Abra um arquivo na IDE"><textarea id="fileViewer" rows="12" spellcheck="false"></textarea><button id="fileSaveBtn">Salvar arquivo</button><pre id="fileSaveResult" class="text-output">Nenhum arquivo aberto.</pre></article>
+              <article class="workspace-card"><h2>Terminal isolado</h2><div class="toolbar-row"><input id="terminalCmd" placeholder="Comando"><button id="terminalBtn">Executar</button></div><pre id="terminalResult" class="text-output">Aguardando comando.</pre></article>
+              <article class="workspace-card"><h2>Preview vivo</h2><div class="toolbar-row"><input id="livePreviewText" value="/app" aria-label="URL do preview"><button id="previewRefreshBtn">Atualizar</button></div><iframe id="livePreviewFrame" title="Preview vivo" src="about:blank"></iframe></article>
+              <article class="workspace-card"><h2>Edicao assistida por IA</h2><textarea id="aiEditInstruction" rows="4" placeholder="Instrucao objetiva para o arquivo aberto"></textarea><button id="aiEditBtn">Gerar proposta</button><pre id="aiEditResult" class="text-output">Aguardando instrucao.</pre></article>
+              <article class="workspace-card"><h2>Mover ou renomear</h2><div class="stack-form"><input id="moveFromPath" placeholder="Caminho atual"><input id="moveToPath" placeholder="Novo caminho"><button id="movePathBtn">Mover</button></div><pre id="moveResult" class="text-output">Aguardando.</pre></article>
+              <article class="workspace-card full-span"><h2>Delegar pipeline aos agentes</h2><div class="toolbar-row"><input id="devAgentObjective" placeholder="Objetivo do pipeline"><button id="devAgentBtn">Delegar</button></div><pre id="devAgentResult" class="text-output">Aguardando objetivo.</pre></article>
+            </section>
+          </main>
         </div>
         
       </div>
@@ -261,7 +310,8 @@
   <script src="/visual-inspector.js"></script>
   <script src="/iso-city.js"></script>
   <script src="/ide-enhancer.js"></script>
-  <script src="/dev-pipeline-client.js"></script>`n  <script src="/command-center.js"></script>
+  <script src="/dev-pipeline-client.js"></script>
+  <script src="/command-center.js"></script>
   <script src="/unified-app.js"></script>
   <script>
     // Move canvas between Command Center and Full City view based on active tab

@@ -1,5 +1,10 @@
 # CLAUDE.md — FÊNIX COGNITIVE ENGINEERING CIVILIZATION (CEC) MASTER DIRECTIVE
 
+> **LEITURA OBRIGATORIA:** a fonte unica da verdade operacional deste repositorio e
+> [`AGENTS.md`](./AGENTS.md). Em qualquer conflito entre este arquivo, outros docs,
+> memorias ou branches, `AGENTS.md` prevalece. Este documento mantem apenas contexto
+> historico e principios complementares.
+
 > **CONTRATO SUPREMO DA CIVILIZAÇÃO DIGITAL FÊNIX CEC**
 > Toda e qualquer operação neste repositório é estritamente regida pela [Constituição FÊNIX CEC](file:///c:/projetos/ai-engine-core/ai-engine/docs/CONSTITUICAO_FENIX_CEC.md), pelo [CCMAP em 16 Fases](file:///c:/projetos/ai-engine-core/ai-engine/docs/FENIX_CCMAP_ACTIVATION_PLAN.md) e pelo [Synchronization Kernel](file:///c:/projetos/ai-engine-core/ai-engine/docs/SYNCHRONIZATION_KERNEL.md).
 > O código é uma representação transiente e um efeito colateral do Conhecimento Acumulado e dos Genomas Digitais Reutilizáveis.
