@@ -1,3 +1,9 @@
+/**
+ * FÊNIX AGENTIC CITY 2.0
+ * Interactive Isometric Digital Twin for FÊNIX OS
+ * Real-time connection to AutonomousJobOrchestrator
+ */
+
 class IsoCityEngine {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
@@ -5,641 +11,461 @@ class IsoCityEngine {
     this.ctx = this.canvas.getContext('2d');
     
     this.state = {
-      camera: { x: 0, y: 0, zoom: 1.2 },
-      targetCamera: { x: 0, y: 0, zoom: 1.2 },
+      camera: { x: 0, y: 0, zoom: 1.0 },
+      targetCamera: { x: 0, y: 0, zoom: 1.0 },
       isDragging: false,
       lastMouse: { x: 0, y: 0 },
-      tileSize: 120,
-      zoomLevel: 'city',
-      hoveredItem: null,
-      selectedItem: null,
-      lastUpdate: performance.now()
+      tileSize: 60,
+      hoveredAgent: null,
+      lastTime: performance.now()
     };
 
-    // Virtual World Data
     this.world = {
-      companies: [], // Derived from window.state.projects
-      agents: [],    // Derived from window.state.agentStates
-      stars: Array.from({ length: 80 }, () => ({
-        x: Math.random(), y: Math.random(), size: Math.random() * 1.5 + 0.5,
-        twinkleSpeed: Math.random() * 0.03 + 0.01, phase: Math.random() * Math.PI * 2
-      })),
-      traffic: Array.from({ length: 24 }, (_, i) => ({
-        axis: i % 2 === 0 ? 'X' : 'Y', pos: (Math.random() - 0.5) * 800,
-        lane: (i % 4 - 1.5) * 60, speed: (Math.random() * 1.2 + 0.8) * (i % 2 === 0 ? 1 : -1),
-        color: i % 3 === 0 ? '#38bdf8' : (i % 3 === 1 ? '#f59e0b' : '#a78bfa'),
-        tailLength: 25 + Math.random() * 20
-      })),
-      embers: Array.from({ length: 30 }, () => ({
-        x: (Math.random() - 0.5) * 60, y: (Math.random() - 0.5) * 40,
-        vy: Math.random() * 0.8 + 0.4, size: Math.random() * 2.5 + 1,
-        alpha: Math.random(), hue: Math.random() * 30 + 15
-      }))
+      agents: new Map(),
+      particles: []
+    };
+
+    this.DISTRICTS = {
+      'CENTRAL': { x: 0, y: 0, w: 4, h: 4, color: '#1e293b', label: 'CENTRAL PLAZA' },
+      'MASTER_HQ': { x: -6, y: -6, w: 3, h: 3, color: '#b91c1c', label: 'MASTER HQ' },
+      'FRONTEND': { x: 6, y: -2, w: 3, h: 3, color: '#2563eb', label: 'FRONTEND DISTRICT' },
+      'BACKEND': { x: 6, y: 4, w: 3, h: 3, color: '#16a34a', label: 'BACKEND DISTRICT' },
+      'QA': { x: -6, y: 4, w: 3, h: 3, color: '#f59e0b', label: 'QA LAB' },
+      'DEVOPS': { x: -8, y: -2, w: 3, h: 3, color: '#9333ea', label: 'DEVOPS CENTER' },
+      'AI_MODELS': { x: 0, y: -8, w: 4, h: 3, color: '#db2777', label: 'AI CORE' },
+      'MEMORY': { x: 0, y: 8, w: 4, h: 3, color: '#0d9488', label: 'MEMORY VAULT' }
     };
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
     this.setupEvents();
     
-    // Connect to external state periodically
-    setInterval(() => this.syncRealData(), 1000);
+    // Sync data from FENIX API
+    setInterval(() => this.syncRealData(), 1500);
     this.syncRealData();
 
     this.startLoop();
   }
 
-  syncRealData() {
-    if (!window.state) return;
-
-    // Map projects to companies
-          let projects = window.state.projects || [];
-      if (projects.length === 0) {
-         projects = [
-            { id: 'p1', name: 'F�NIX OS Core', status: 'ACTIVE' },
-            { id: 'p2', name: 'AI City Engine', status: 'ACTIVE' },
-            { id: 'p3', name: 'Memory Fabric', status: 'ACTIVE' },
-            { id: 'p4', name: 'Visual QA Lab', status: 'ACTIVE' },
-            { id: 'p5', name: 'DevOps Hub', status: 'ACTIVE' },
-         ];
-      }
-    const colors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
-    
-    // We lay them out in a grid
-    const layoutW = Math.ceil(Math.sqrt(projects.length || 1));
-    this.world.companies = projects.map((p, i) => {
-      const cx = (i % layoutW) * 3 - (layoutW * 1.5);
-      const cy = Math.floor(i / layoutW) * 3 - (layoutW * 1.5);
-      return {
-        id: p.id,
-        name: p.name || 'Empresa S/N',
-        type: 'tech',
-        level: p.status === 'ACTIVE' ? 30 : 15,
-        x: cx, y: cy, w: 1.5, h: 1.5,
-        color: colors[i % colors.length],
-        workspaces: p.workspaces || [],
-        raw: p
-      };
-    });
-
-    // Map agents
-          let states = window.state.agentStates || {};
-      if (Object.keys(states).length === 0) {
-         states = {
-            'Vit�ria': { role: 'UX/UI Engineer', status: 'WORKING', roomId: 'r1' },
-            'QWEN': { role: 'AI Core', status: 'THINKING', roomId: 'r2' },
-            'Jarvis': { role: 'DevOps', status: 'IDLE', roomId: 'r3' },
-            'Camila': { role: 'Frontend', status: 'WORKING', roomId: 'r1' },
-            'Roberto': { role: 'Architect', status: 'OBSERVING', roomId: 'r2' }
-         };
-      }
-    this.world.agents = Object.values(states).map(a => {
-      // Find existing agent in engine to keep physical state (x,y,tx,ty)
-      const existing = this.world.agents?.find(xa => xa.id === (a.id || a.agentId));
-      
-      // Default to center if no company, or place near company
-      let base_x = 0;
-      let base_y = 0;
-      if (a.projectId) {
-        const comp = this.world.companies.find(c => c.id === a.projectId);
-        if (comp) { base_x = comp.x + 1; base_y = comp.y + 1; }
-      }
-
-      return {
-        id: a.id || a.agentId,
-        name: a.name || 'Agent',
-        role: a.role || a.capability || 'Worker',
-        status: a.status || a.state || 'IDLE',
-        x: existing ? existing.x : base_x + (Math.random()*2-1),
-        y: existing ? existing.y : base_y + (Math.random()*2-1),
-        tx: existing ? existing.tx : base_x,
-        ty: existing ? existing.ty : base_y,
-        raw: a
-      };
-    });
-  }
-
   resize() {
     const parent = this.canvas.parentElement;
     if (parent) {
-      this.canvas.width = parent.offsetWidth || window.innerWidth;
-      this.canvas.height = parent.offsetHeight || window.innerHeight;
-    }
-  }
-
-  handleClick(clientX, clientY) {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    
-    // Convert screen x,y to world coordinates
-    const worldX = (x - this.canvas.width / 2) / this.state.camera.zoom - this.state.camera.x;
-    const worldY = (y - this.canvas.height / 2) / this.state.camera.zoom - this.state.camera.y;
-    
-    // Check agents
-    for (const a of this.world.agents) {
-      const pos = this.toIso(a.x, a.y);
-      if (Math.hypot(worldX - pos.x, worldY - (pos.y - 15)) < 25) {
-        this.openAgentInspector(a);
-        return;
-      }
-    }
-
-    // Check companies
-    for (const c of this.world.companies) {
-      const pos = this.toIso(c.x, c.y);
-      if (Math.hypot(worldX - pos.x, worldY - pos.y) < 60) {
-        this.enterCompany(c);
-        return;
-      }
-    }
-  }
-
-  enterCompany(c) {
-    // Zoom into company
-    this.state.targetCamera.x = -this.toIso(c.x, c.y).x;
-    this.state.targetCamera.y = -this.toIso(c.x, c.y).y;
-    this.state.targetCamera.zoom = 3.2; // Building level zoom
-    
-    if (window.showToast) {
-      window.showToast(`Acessando instalações da empresa ${c.name}`, 'info');
-    }
-  }
-  
-  openAgentInspector(a) {
-    const hud = document.getElementById('agentInspectorHud');
-    if (!hud) return;
-    hud.style.display = 'flex';
-    
-    const s = String(a.status).toUpperCase();
-    const isError = s.includes('FAIL') || s.includes('ERR');
-    const isWorking = s.includes('WORK') || s.includes('RUN');
-    
-    const e = (id) => document.getElementById(id);
-    if(e('inspectorName')) e('inspectorName').textContent = a.name || a.id;
-    if(e('inspectorRole')) e('inspectorRole').textContent = a.role || a.domain || 'Agent';
-    
-    const statusEl = e('inspectorStatus');
-    if(statusEl) {
-      statusEl.textContent = s;
-      statusEl.className = 'status-pill ' + (isError ? 'error' : (isWorking ? 'working' : 'ok'));
-    }
-    
-    if(e('inspectorCurrentJob')) {
-      e('inspectorCurrentJob').textContent = window.state.jobs && window.state.jobs.length > 0 
-        ? window.state.jobs[0].title || 'Processing Task...' 
-        : 'Observing Runtime';
-    }
-    
-    if(e('inspectorSkills')) {
-      const skills = a.capabilities || ['Research', 'Code', 'Debug'];
-      e('inspectorSkills').innerHTML = skills.map(sk => `<span style="padding:2px 6px; background:rgba(56,189,248,0.1); border-radius:4px;">${sk}</span>`).join('');
-    }
-
-    if(e('inspectorChatBtn')) {
-      e('inspectorChatBtn').onclick = () => {
-        if(window.chatWithAgent) window.chatWithAgent(a.name || a.id);
-        hud.style.display = 'none';
-      };
-    }
-    if(e('inspectorTaskBtn')) {
-      e('inspectorTaskBtn').onclick = () => {
-        const input = document.getElementById('chatInput');
-        if (input) {
-           input.value = `@${a.name || a.id} [TASK] `;
-           input.focus();
-           const chatTab = document.querySelector('.tab-btn[data-tab="chat"]');
-           if (chatTab) chatTab.click();
-        }
-        hud.style.display = 'none';
-      };
+      this.canvas.width = parent.clientWidth;
+      this.canvas.height = parent.clientHeight;
     }
   }
 
   setupEvents() {
-    let clickStart = { x: 0, y: 0 };
-    this.canvas.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
+    this.canvas.addEventListener('mousedown', e => {
       this.state.isDragging = true;
       this.state.lastMouse = { x: e.clientX, y: e.clientY };
-      clickStart = { x: e.clientX, y: e.clientY };
     });
-    
-    window.addEventListener('mousemove', (e) => {
+    window.addEventListener('mouseup', () => this.state.isDragging = false);
+    window.addEventListener('mousemove', e => {
       if (this.state.isDragging) {
         const dx = e.clientX - this.state.lastMouse.x;
         const dy = e.clientY - this.state.lastMouse.y;
-        this.state.camera.x += dx / this.state.camera.zoom;
-        this.state.camera.y += dy / this.state.camera.zoom;
-        this.state.targetCamera.x = this.state.camera.x;
-        this.state.targetCamera.y = this.state.camera.y;
+        this.state.targetCamera.x += dx;
+        this.state.targetCamera.y += dy;
         this.state.lastMouse = { x: e.clientX, y: e.clientY };
       }
+      
+      // Hit testing for hover
+      const rect = this.canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      this.checkHover(mx, my);
     });
-    
-    window.addEventListener('mouseup', (e) => {
-      this.state.isDragging = false;
-      const dist = Math.hypot(e.clientX - clickStart.x, e.clientY - clickStart.y);
-      if (dist < 5) {
-        this.handleClick(e.clientX, e.clientY);
-      }
-    });
-
-    this.canvas.addEventListener('wheel', (e) => {
+    this.canvas.addEventListener('wheel', e => {
       e.preventDefault();
-      const zoomSpeed = 0.15;
-      const zoomDelta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
-      
-      const newZoom = Math.max(0.2, Math.min(6.0, this.state.targetCamera.zoom + (this.state.targetCamera.zoom * zoomDelta)));
-      
-      const rect = this.canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      
-      // Adjust target camera to zoom towards mouse
-      this.state.targetCamera.x -= (mouseX - this.canvas.width/2) / newZoom - (mouseX - this.canvas.width/2) / this.state.targetCamera.zoom;
-      this.state.targetCamera.y -= (mouseY - this.canvas.height/2) / newZoom - (mouseY - this.canvas.height/2) / this.state.targetCamera.zoom;
-      this.state.targetCamera.zoom = newZoom;
-    }, { passive: false });
-
-    // Click selection
-    this.canvas.addEventListener('click', (e) => {
-      if (this.state.isDragging) return; // ignore clicks after dragging
-      
-      const rect = this.canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      // Project mouse back to world space
-      const worldX = (mouseX - this.canvas.width/2) / this.state.camera.zoom - this.state.camera.x;
-      const worldY = (mouseY - this.canvas.height/2) / this.state.camera.zoom - this.state.camera.y;
-      
-      // Inverse isometric projection to find tile coordinates roughly
-      const tileY = (worldY / (this.state.tileSize/4) - worldX / (this.state.tileSize/2)) / 2;
-      const tileX = (worldY / (this.state.tileSize/4) + worldX / (this.state.tileSize/2)) / 2;
-      
-      // Find clicked agent
-      const clickedAgent = this.world.agents.find(a => {
-        const dx = a.x - tileX;
-        const dy = a.y - tileY;
-        return (dx*dx + dy*dy) < 0.5; // distance squared threshold
-      });
-
-      if (clickedAgent && window.openAgentInspector) {
-        window.openAgentInspector(clickedAgent.id);
-        return;
-      }
-    });
-
-    // Double click to zoom in
-    this.canvas.addEventListener('dblclick', (e) => {
-      const rect = this.canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      
-      const worldX = (mouseX - this.canvas.width/2) / this.state.camera.zoom - this.state.camera.x;
-      const worldY = (mouseY - this.canvas.height/2) / this.state.camera.zoom - this.state.camera.y;
-
-      this.state.targetCamera.x = -worldX;
-      this.state.targetCamera.y = -worldY;
-      this.state.targetCamera.zoom = this.state.targetCamera.zoom < 2.0 ? 2.5 : 0.8;
+      const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
+      this.state.targetCamera.zoom = Math.max(0.5, Math.min(2.5, this.state.targetCamera.zoom * zoomDelta));
     });
   }
 
-  updateSemanticZoom() {
-    const z = this.state.camera.zoom;
-    if (z < 0.4) this.state.zoomLevel = 'world';
-    else if (z < 0.8) this.state.zoomLevel = 'city';
-    else if (z < 1.3) this.state.zoomLevel = 'district';
-    else if (z < 2.0) this.state.zoomLevel = 'company';
-    else if (z < 2.8) this.state.zoomLevel = 'building';
-    else if (z < 3.8) this.state.zoomLevel = 'floor';
-    else if (z < 5.0) this.state.zoomLevel = 'room';
-    else this.state.zoomLevel = 'agent';
+  checkHover(mx, my) {
+    this.state.hoveredAgent = null;
+    const { camera, tileSize } = this.state;
+    const cx = this.canvas.width / 2 + camera.x;
+    const cy = this.canvas.height / 2 + camera.y;
 
-    const zoomDisplay = document.getElementById('cityZoomDisplay');
-    if (zoomDisplay) {
-      zoomDisplay.textContent = `[ ${this.state.zoomLevel.toUpperCase()} LEVEL ] - ${z.toFixed(1)}x`;
+    let closest = null;
+    let minDist = 40;
+
+    for (const agent of this.world.agents.values()) {
+      const screen = this.toScreen(agent.x, agent.y, 0, cx, cy, camera.zoom);
+      // Adjust for avatar height
+      screen.y -= 30 * camera.zoom;
+      
+      const dist = Math.hypot(mx - screen.x, my - screen.y);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = agent;
+      }
     }
     
-    // Push zoom to global state so HUD can read it
-    if (window.state) window.state.zoom = z;
+    this.state.hoveredAgent = closest;
+    this.canvas.style.cursor = closest ? 'pointer' : (this.state.isDragging ? 'grabbing' : 'grab');
   }
 
-  toIso(x, y) {
-    return {
-      x: (x - y) * (this.state.tileSize / 2),
-      y: (x + y) * (this.state.tileSize / 4)
-    };
+  async syncRealData() {
+    try {
+      const res = await fetch('/api/agents/panel');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.agents) {
+        this.updateAgents(data.agents);
+      }
+    } catch (e) {
+      console.warn('IsoCity: Failed to fetch agents', e);
+    }
+  }
+
+  getAgentDistrict(role) {
+    if (!role) return 'CENTRAL';
+    const r = role.toLowerCase();
+    if (r.includes('frontend')) return 'FRONTEND';
+    if (r.includes('backend') || r.includes('database')) return 'BACKEND';
+    if (r.includes('qa') || r.includes('test')) return 'QA';
+    if (r.includes('devops') || r.includes('security')) return 'DEVOPS';
+    if (r.includes('master') || r.includes('architect')) return 'MASTER_HQ';
+    if (r.includes('memory') || r.includes('knowledge')) return 'MEMORY';
+    if (r.includes('ai') || r.includes('model')) return 'AI_MODELS';
+    return 'CENTRAL';
+  }
+
+  updateAgents(apiAgents) {
+    const currentIds = new Set(apiAgents.map(a => a.name));
+    
+    // Remove old
+    for (const [id, agent] of this.world.agents.entries()) {
+      if (!currentIds.has(id)) this.world.agents.delete(id);
+    }
+
+    // Add / Update
+    for (const a of apiAgents) {
+      let agent = this.world.agents.get(a.name);
+      if (!agent) {
+        agent = {
+          id: a.name, name: a.name, role: a.role,
+          x: 0, y: 0, tx: 0, ty: 0,
+          status: 'IDLE', lastStatus: '',
+          district: 'CENTRAL',
+          trail: []
+        };
+        this.world.agents.set(a.name, agent);
+      }
+      
+      agent.role = a.role;
+      agent.status = a.status || 'IDLE';
+      
+      const targetDistrict = agent.status === 'IDLE' ? 'CENTRAL' : this.getAgentDistrict(agent.role);
+      
+      if (agent.status !== agent.lastStatus || agent.district !== targetDistrict) {
+        agent.lastStatus = agent.status;
+        agent.district = targetDistrict;
+        
+        const dist = this.DISTRICTS[targetDistrict];
+        if (dist) {
+          agent.tx = dist.x + (Math.random() * (dist.w - 1)) - (dist.w/2 - 0.5);
+          agent.ty = dist.y + (Math.random() * (dist.h - 1)) - (dist.h/2 - 0.5);
+        }
+      }
+    }
+  }
+
+  toScreen(x, y, z, cx, cy, zoom) {
+    const tw = this.state.tileSize * zoom;
+    const th = (this.state.tileSize / 2) * zoom;
+    
+    const sx = (x - y) * tw;
+    const sy = (x + y) * th - (z * tw);
+    
+    return { x: cx + sx, y: cy + sy };
   }
 
   startLoop() {
-    const draw = (time) => {
-      const dt = time - this.state.lastUpdate;
-      this.state.lastUpdate = time;
-      
-      this.updatePhysics(dt);
-      
-      // Smooth camera interpolation
-      this.state.camera.x += (this.state.targetCamera.x - this.state.camera.x) * 0.1;
-      this.state.camera.y += (this.state.targetCamera.y - this.state.camera.y) * 0.1;
-      this.state.camera.zoom += (this.state.targetCamera.zoom - this.state.camera.zoom) * 0.1;
-      
-      this.updateSemanticZoom();
-
-      // Clear Canvas
-      this.ctx.fillStyle = '#04070c';
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-      // Draw Stars
-      if (this.world.stars) {
-        this.world.stars.forEach(st => {
-          const tw = (Math.sin(time * st.twinkleSpeed + st.phase) + 1) / 2;
-          this.ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + tw * 0.6})`;
-          this.ctx.beginPath();
-          this.ctx.arc(st.x * this.canvas.width, st.y * this.canvas.height, st.size, 0, Math.PI * 2);
-          this.ctx.fill();
-        });
-      }
-      
-      this.ctx.save();
-      this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
-      this.ctx.scale(this.state.camera.zoom, this.state.camera.zoom);
-      this.ctx.translate(this.state.camera.x, this.state.camera.y);
-      
-      this.drawFloor();
-      this.drawTraffic();
-      this.drawPhoenixMonument(time);
-      
-      // Z-Sort everything
-      const renderables = [];
-      this.world.companies.forEach(c => renderables.push({ type: 'company', data: c, depth: c.x + c.y }));
-      this.world.agents.forEach(a => renderables.push({ type: 'agent', data: a, depth: a.x + a.y }));
-      
-      renderables.sort((a, b) => a.depth - b.depth);
-      
-      renderables.forEach(r => {
-        if (r.type === 'company') this.drawCompany(r.data);
-        if (r.type === 'agent') this.drawAgent(r.data);
-      });
-      
-      this.ctx.restore();
-      requestAnimationFrame(draw);
+    const loop = (time) => {
+      const delta = (time - this.state.lastTime) / 1000;
+      this.state.lastTime = time;
+      this.update(delta);
+      this.draw();
+      requestAnimationFrame(loop);
     };
-    requestAnimationFrame(draw);
+    requestAnimationFrame(loop);
   }
 
-  updatePhysics(dt) {
-    // Agent behavior and movement logic
-    this.world.agents.forEach(agent => {
-      const s = String(agent.status).toLowerCase();
-      const isWorking = s.includes('work') || s.includes('run') || s.includes('cod');
-      
-      // Behavior: Random movement if idle, static if working
-      if (!isWorking && Math.random() < 0.005) {
-        // Wander around base company
-        agent.tx = agent.x + (Math.random() * 2 - 1);
-        agent.ty = agent.y + (Math.random() * 2 - 1);
-      }
-      
-      // Movement interpolation
+  update(delta) {
+    // Smooth camera
+    this.state.camera.x += (this.state.targetCamera.x - this.state.camera.x) * 5 * delta;
+    this.state.camera.y += (this.state.targetCamera.y - this.state.camera.y) * 5 * delta;
+    this.state.camera.zoom += (this.state.targetCamera.zoom - this.state.camera.zoom) * 5 * delta;
+
+    // Update agents
+    for (const agent of this.world.agents.values()) {
       const dx = agent.tx - agent.x;
       const dy = agent.ty - agent.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
+      const dist = Math.hypot(dx, dy);
       
       if (dist > 0.05) {
-        const speed = isWorking ? 0.0005 : 0.002;
-        agent.x += (dx / dist) * speed * dt;
-        agent.y += (dy / dist) * speed * dt;
+        const speed = (agent.status === 'WORKING' ? 1.5 : 2.5) * delta;
+        const moveDist = Math.min(speed, dist);
+        agent.x += (dx / dist) * moveDist;
+        agent.y += (dy / dist) * moveDist;
+        
+        // Trail
+        agent.trail.push({x: agent.x, y: agent.y, life: 1.0});
       } else {
-        agent.x = agent.tx;
-        agent.y = agent.ty;
+        // Wandering slightly if working
+        if (agent.status === 'WORKING' && Math.random() < 0.02) {
+           const distObj = this.DISTRICTS[agent.district];
+           if (distObj) {
+             agent.tx = distObj.x + (Math.random() * (distObj.w - 1)) - (distObj.w/2 - 0.5);
+             agent.ty = distObj.y + (Math.random() * (distObj.h - 1)) - (distObj.h/2 - 0.5);
+           }
+        }
       }
-    });
+      
+      // Update trail
+      agent.trail.forEach(t => t.life -= delta * 1.5);
+      agent.trail = agent.trail.filter(t => t.life > 0);
+    }
   }
 
-  drawFloor() {
-    const gridSize = 30; // expand grid
-    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.03)'; // subtle cyan grid
-    this.ctx.lineWidth = 1;
-    
-    this.ctx.beginPath();
-    for (let x = -gridSize; x <= gridSize; x+=2) {
-      const p1 = this.toIso(x, -gridSize);
-      const p2 = this.toIso(x, gridSize);
-      this.ctx.moveTo(p1.x, p1.y);
-      this.ctx.lineTo(p2.x, p2.y);
+  draw() {
+    const ctx = this.ctx;
+    const { width, height } = this.canvas;
+    const { camera, zoomLevel, tileSize } = this.state;
+    const zoom = camera.zoom;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const cx = width / 2 + camera.x;
+    const cy = height / 2 + camera.y;
+
+    // 1. Draw Grid
+    this.drawGrid(ctx, cx, cy, zoom);
+
+    // 2. Draw Districts
+    // Sort districts by Painter's Algorithm (x + y)
+    const districts = Object.values(this.DISTRICTS).sort((a,b) => (a.x + a.y) - (b.x + b.y));
+    for (const d of districts) {
+      this.drawDistrict(ctx, d, cx, cy, zoom);
     }
-    for (let y = -gridSize; y <= gridSize; y+=2) {
-      const p1 = this.toIso(-gridSize, y);
-      const p2 = this.toIso(gridSize, y);
-      this.ctx.moveTo(p1.x, p1.y);
-      this.ctx.lineTo(p2.x, p2.y);
+
+    // 3. Draw Agent Trails
+    for (const agent of this.world.agents.values()) {
+      this.drawTrail(ctx, agent, cx, cy, zoom);
     }
-    this.ctx.stroke();
+
+    // 4. Draw Agents
+    // Sort agents by Painter's algorithm
+    const sortedAgents = Array.from(this.world.agents.values()).sort((a,b) => (a.x + a.y) - (b.x + b.y));
+    for (const agent of sortedAgents) {
+      this.drawAgent(ctx, agent, cx, cy, zoom);
+    }
   }
 
-  drawIsoCube(x, y, w, h, height, baseColor, highlightColor) {
-    const p1 = this.toIso(x, y);
-    const p2 = this.toIso(x + w, y);
-    const p3 = this.toIso(x + w, y + h);
-    const p4 = this.toIso(x, y + h);
+  drawGrid(ctx, cx, cy, zoom) {
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = -15; i <= 15; i++) {
+      const p1 = this.toScreen(i, -15, 0, cx, cy, zoom);
+      const p2 = this.toScreen(i, 15, 0, cx, cy, zoom);
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      
+      const p3 = this.toScreen(-15, i, 0, cx, cy, zoom);
+      const p4 = this.toScreen(15, i, 0, cx, cy, zoom);
+      ctx.moveTo(p3.x, p3.y);
+      ctx.lineTo(p4.x, p4.y);
+    }
+    ctx.stroke();
+  }
+
+  drawDistrict(ctx, d, cx, cy, zoom) {
+    // Base platform
+    const top = this.toScreen(d.x - d.w/2, d.y - d.h/2, 0, cx, cy, zoom);
+    const right = this.toScreen(d.x + d.w/2, d.y - d.h/2, 0, cx, cy, zoom);
+    const bottom = this.toScreen(d.x + d.w/2, d.y + d.h/2, 0, cx, cy, zoom);
+    const left = this.toScreen(d.x - d.w/2, d.y + d.h/2, 0, cx, cy, zoom);
     
-    const hOff = -height * this.state.tileSize;
+    // Depth (Block)
+    const depth = 0.2;
+    const topZ = this.toScreen(d.x - d.w/2, d.y - d.h/2, depth, cx, cy, zoom);
+    const rightZ = this.toScreen(d.x + d.w/2, d.y - d.h/2, depth, cx, cy, zoom);
+    const bottomZ = this.toScreen(d.x + d.w/2, d.y + d.h/2, depth, cx, cy, zoom);
+    const leftZ = this.toScreen(d.x - d.w/2, d.y + d.h/2, depth, cx, cy, zoom);
+
+    // Left Face
+    ctx.fillStyle = this.adjustColor(d.color, -40);
+    ctx.beginPath();
+    ctx.moveTo(left.x, left.y);
+    ctx.lineTo(bottom.x, bottom.y);
+    ctx.lineTo(bottomZ.x, bottomZ.y);
+    ctx.lineTo(leftZ.x, leftZ.y);
+    ctx.fill();
+    ctx.strokeStyle = this.adjustColor(d.color, 20);
+    ctx.stroke();
+
+    // Right Face
+    ctx.fillStyle = this.adjustColor(d.color, -20);
+    ctx.beginPath();
+    ctx.moveTo(bottom.x, bottom.y);
+    ctx.lineTo(right.x, right.y);
+    ctx.lineTo(rightZ.x, rightZ.y);
+    ctx.lineTo(bottomZ.x, bottomZ.y);
+    ctx.fill();
+    ctx.stroke();
+
+    // Top Face
+    ctx.fillStyle = d.color + '40'; // Transparent top
+    ctx.beginPath();
+    ctx.moveTo(topZ.x, topZ.y);
+    ctx.lineTo(rightZ.x, rightZ.y);
+    ctx.lineTo(bottomZ.x, bottomZ.y);
+    ctx.lineTo(leftZ.x, leftZ.y);
+    ctx.closePath();
+    ctx.fill();
     
+    // Glowing border
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 2 * zoom;
+    ctx.stroke();
+    
+    // Floor grid inside district
+    ctx.strokeStyle = d.color + '40';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 1; i < d.w; i++) {
+        const p1 = this.toScreen(d.x - d.w/2 + i, d.y - d.h/2, depth, cx, cy, zoom);
+        const p2 = this.toScreen(d.x - d.w/2 + i, d.y + d.h/2, depth, cx, cy, zoom);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+    }
+    for (let i = 1; i < d.h; i++) {
+        const p1 = this.toScreen(d.x - d.w/2, d.y - d.h/2 + i, depth, cx, cy, zoom);
+        const p2 = this.toScreen(d.x + d.w/2, d.y - d.h/2 + i, depth, cx, cy, zoom);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+    }
+    ctx.stroke();
+
+    // Label
+    const centerZ = this.toScreen(d.x, d.y, depth, cx, cy, zoom);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = `${10 * zoom}px "Inter", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(d.label, centerZ.x, centerZ.y - (30 * zoom));
+  }
+
+  drawTrail(ctx, agent, cx, cy, zoom) {
+    if (agent.trail.length < 2) return;
+    
+    const color = agent.status === 'WORKING' ? '#38bdf8' : '#94a3b8';
+    
+    ctx.beginPath();
+    const first = this.toScreen(agent.trail[0].x, agent.trail[0].y, 0.2, cx, cy, zoom);
+    ctx.moveTo(first.x, first.y);
+    
+    for (let i = 1; i < agent.trail.length; i++) {
+      const p = this.toScreen(agent.trail[i].x, agent.trail[i].y, 0.2, cx, cy, zoom);
+      ctx.lineTo(p.x, p.y);
+    }
+    
+    const head = this.toScreen(agent.x, agent.y, 0.2, cx, cy, zoom);
+    ctx.lineTo(head.x, head.y);
+
+    ctx.strokeStyle = color + '80'; // 50% opacity
+    ctx.lineWidth = 3 * zoom;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+
+  drawAgent(ctx, agent, cx, cy, zoom) {
+    const isHovered = this.state.hoveredAgent === agent;
+    const isWorking = agent.status === 'WORKING';
+    
+    // Position
+    // Bounce if working
+    const bounce = isWorking ? Math.abs(Math.sin(performance.now() / 150)) * 0.1 : 0;
+    const pos = this.toScreen(agent.x, agent.y, 0.2 + bounce, cx, cy, zoom);
+    
+    const radius = 6 * zoom;
+    const height = 18 * zoom;
+
+    // Base shadow
+    const shadow = this.toScreen(agent.x, agent.y, 0.2, cx, cy, zoom);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(shadow.x, shadow.y, radius, radius/2, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Agent Color based on status
+    let agentColor = '#94a3b8'; // IDLE
+    if (isWorking) agentColor = '#3b82f6'; // Blue
+    if (agent.status === 'TESTING' || agent.status === 'QA') agentColor = '#f59e0b'; // Amber
+    if (agent.status === 'ERROR') agentColor = '#ef4444'; // Red
+
+    // Body (Cylinder)
+    ctx.fillStyle = this.adjustColor(agentColor, -20);
+    ctx.beginPath();
+    ctx.ellipse(pos.x, pos.y, radius, radius/2, 0, 0, Math.PI, false);
+    ctx.lineTo(pos.x - radius, pos.y - height);
+    ctx.ellipse(pos.x, pos.y - height, radius, radius/2, 0, Math.PI, 0, true);
+    ctx.lineTo(pos.x + radius, pos.y);
+    ctx.fill();
+
     // Top
-    this.ctx.fillStyle = '#1e293b'; // Slate top
-    this.ctx.strokeStyle = highlightColor;
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    this.ctx.moveTo(p1.x, p1.y + hOff);
-    this.ctx.lineTo(p2.x, p2.y + hOff);
-    this.ctx.lineTo(p3.x, p3.y + hOff);
-    this.ctx.lineTo(p4.x, p4.y + hOff);
-    this.ctx.fill();
-    this.ctx.stroke();
-    
-    // Left face
-    this.ctx.fillStyle = '#0f172a';
-    this.ctx.beginPath();
-    this.ctx.moveTo(p4.x, p4.y);
-    this.ctx.lineTo(p3.x, p3.y);
-    this.ctx.lineTo(p3.x, p3.y + hOff);
-    this.ctx.lineTo(p4.x, p4.y + hOff);
-    this.ctx.fill();
-    this.ctx.stroke();
-    
-    // Right face
-    this.ctx.fillStyle = '#0b1120';
-    this.ctx.beginPath();
-    this.ctx.moveTo(p1.x, p1.y);
-    this.ctx.lineTo(p4.x, p4.y);
-    this.ctx.lineTo(p4.x, p4.y + hOff);
-    this.ctx.lineTo(p1.x, p1.y + hOff);
-    this.ctx.fill();
-    this.ctx.stroke();
-  }
+    ctx.fillStyle = agentColor;
+    ctx.beginPath();
+    ctx.ellipse(pos.x, pos.y - height, radius, radius/2, 0, 0, Math.PI*2);
+    ctx.fill();
 
-  drawCompany(c) {
-    // In city view, just draw the big building
-    const height = c.level / 10;
-    this.drawIsoCube(c.x, c.y, c.w, c.h, height, '#0f172a', c.color);
-    
-    const topCenter = this.toIso(c.x + c.w/2, c.y + c.h/2);
-    const hOff = height * this.state.tileSize;
+    // Glow if working
+    if (isWorking) {
+      ctx.shadowColor = agentColor;
+      ctx.shadowBlur = 10 * zoom;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
 
-    // Neon core
-    this.ctx.shadowColor = c.color;
-    this.ctx.shadowBlur = 30;
-    this.ctx.fillStyle = c.color;
-    this.ctx.beginPath();
-    this.ctx.ellipse(topCenter.x, topCenter.y - hOff, 15, 7, 0, 0, Math.PI*2);
-    this.ctx.fill();
-    this.ctx.shadowBlur = 0;
-
-    // Semantic Labels
-    if (this.state.zoomLevel === 'city' || this.state.zoomLevel === 'building') {
-      this.ctx.fillStyle = '#f8fafc';
-      this.ctx.font = 'bold 18px "JetBrains Mono", monospace';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(c.name, topCenter.x, topCenter.y - hOff - 40);
+    // Name Tag
+    if (isHovered || isWorking) {
+      ctx.font = `${10 * zoom}px "Inter", sans-serif`;
+      ctx.textAlign = 'center';
       
-      this.ctx.fillStyle = c.color;
-      this.ctx.font = '12px "JetBrains Mono", monospace';
-      this.ctx.fillText(`LVL ${c.level} | ${c.type}`, topCenter.x, topCenter.y - hOff - 20);
+      const tagY = pos.y - height - (10 * zoom);
+      
+      // Bg
+      const textWidth = ctx.measureText(agent.name).width;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+      ctx.beginPath();
+      ctx.roundRect(pos.x - textWidth/2 - 4, tagY - 10*zoom, textWidth + 8, 14*zoom, 4);
+      ctx.fill();
+
+      // Text
+      ctx.fillStyle = '#fff';
+      ctx.fillText(agent.name, pos.x, tagY);
+
+      // Status below
+      if (isHovered) {
+        ctx.fillStyle = agentColor;
+        ctx.font = `${8 * zoom}px "Inter", monospace`;
+        ctx.fillText(`[${agent.status}]`, pos.x, tagY + (10 * zoom));
+      }
     }
   }
 
-  drawAgent(a) {
-    // if (this.state.zoomLevel === 'city') return; // Always show agents for now
-    
-    const pos = this.toIso(a.x, a.y);
-    const s = String(a.status).toLowerCase();
-    const isWorking = s.includes('work') || s.includes('run') || s.includes('cod');
-    const isError = s.includes('fail') || s.includes('err');
-    
-    const color = isError ? '#ef4444' : (isWorking ? '#22c55e' : '#38bdf8');
-    
-    // Pulse effect
-    const time = performance.now() / 300;
-    const bounce = Math.sin(time) * 3;
-    const yOff = pos.y - 10 + bounce;
-
-    // Avatar Circle
-    this.ctx.fillStyle = color;
-    this.ctx.shadowColor = color;
-    this.ctx.shadowBlur = 10;
-    this.ctx.beginPath();
-    this.ctx.arc(pos.x, yOff - 15, 6, 0, Math.PI * 2);
-    this.ctx.fill();
-    this.ctx.shadowBlur = 0;
-    
-    // Shadow
-    this.ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    this.ctx.beginPath();
-    this.ctx.ellipse(pos.x, pos.y, 8, 4, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-    
-    // Info tag
-    if (this.state.zoomLevel === 'floor' || this.state.zoomLevel === 'agent') {
-      this.ctx.fillStyle = '#f8fafc';
-      this.ctx.font = '600 11px "JetBrains Mono", monospace';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(a.name, pos.x, yOff - 35);
-      
-      this.ctx.fillStyle = color;
-      this.ctx.font = '9px "JetBrains Mono", monospace';
-      this.ctx.fillText(a.status.toUpperCase(), pos.x, yOff - 25);
-    }
-  }
-
-  drawTraffic() {
-    if (!this.world.traffic) return;
-    this.world.traffic.forEach(t => {
-      t.pos += t.speed;
-      if (t.pos > 400) t.pos = -400;
-      if (t.pos < -400) t.pos = 400;
-
-      let x, y, tx, ty;
-      if (t.axis === 'X') {
-        x = t.pos;
-        y = t.lane * 0.5;
-        tx = x - (t.speed > 0 ? t.tailLength : -t.tailLength);
-        ty = y;
-      } else {
-        x = t.lane * 0.5;
-        y = t.pos;
-        tx = x;
-        ty = y - (t.speed > 0 ? t.tailLength : -t.tailLength);
-      }
-
-      const p1 = this.toIso(x, y);
-      const p2 = this.toIso(tx, ty);
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(p1.x, p1.y);
-      this.ctx.lineTo(p2.x, p2.y);
-      this.ctx.strokeStyle = t.color;
-      this.ctx.lineWidth = 2.5;
-      this.ctx.shadowColor = t.color;
-      this.ctx.shadowBlur = 10;
-      this.ctx.stroke();
-      this.ctx.shadowBlur = 0;
-    });
-  }
-
-  drawPhoenixMonument(time) {
-    if (!this.world.embers) return;
-    this.ctx.save();
-    
-    // Monument base position in Iso
-    const cx = 0;
-    const cy = -120; // Some central offset
-    const centerIso = this.toIso(cx, cy);
-
-    // Radial Plaza
-    const plazaRadius = 60;
-    this.ctx.beginPath();
-    this.ctx.ellipse(centerIso.x, centerIso.y, plazaRadius, plazaRadius * 0.5, 0, 0, Math.PI * 2);
-    this.ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-    this.ctx.fill();
-    this.ctx.strokeStyle = 'rgba(249, 115, 22, 0.5)';
-    this.ctx.lineWidth = 2;
-    this.ctx.shadowColor = '#f97316';
-    this.ctx.shadowBlur = 15;
-    this.ctx.stroke();
-    this.ctx.shadowBlur = 0;
-
-    // Embers
-    this.world.embers.forEach(em => {
-      em.y -= em.vy;
-      em.alpha -= 0.008;
-      if (em.alpha <= 0) {
-        em.x = (Math.random() - 0.5) * 50;
-        em.y = 10;
-        em.alpha = 1.0;
-      }
-      
-      const emPos = this.toIso(cx + em.x, cy - em.y);
-      this.ctx.fillStyle = `hsla(${em.hue}, 100%, 60%, ${em.alpha})`;
-      this.ctx.shadowColor = `hsla(${em.hue}, 100%, 60%, ${em.alpha})`;
-      this.ctx.shadowBlur = 8;
-      this.ctx.beginPath();
-      this.ctx.arc(emPos.x, emPos.y - 15, em.size, 0, Math.PI * 2);
-      this.ctx.fill();
-    });
-    this.ctx.restore();
+  adjustColor(color, amount) {
+    return '#' + color.replace(/^#/, '').replace(/../g, color => 
+      ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2)
+    );
   }
 }
 
-// Global Initialization Hook
-window.initCityCanvas = function() {
-  if (window.fenixCity) return; // Prevent double init
-  const canvas = document.getElementById('cityCanvas');
-  if (canvas) {
-    window.fenixCity = new IsoCityEngine('cityCanvas');
-  }
-};
-
-
-
-
+window.IsoCityEngine = IsoCityEngine;
