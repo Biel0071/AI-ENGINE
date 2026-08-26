@@ -122,8 +122,11 @@ Evidencias auditadas:
   `/api/system/boot-status` foi corrigido.
 - O fluxo autenticado via API validou login, listagem de 30 arquivos, leitura e
   escrita real. O terminal isolado, executado fora do sandbox, terminou com exit 0.
-- O provider QWEN terminou o discovery como `OFFLINE`; OpenAI permanece
-  `UNCONFIGURED`. Nenhuma tela deve apresenta-los como disponiveis.
+- O runtime canonico agora carrega o `.env` da raiz antes de compor os providers,
+  sem expor ou versionar secrets. QWEN terminou o discovery como `OFFLINE`; a chave
+  OpenAI foi detectada, mas seu health terminou `DEGRADED`. O router operacional
+  selecionou somente `echo`, unico provider com self-test conectado. Nenhuma tela
+  deve apresentar QWEN/OpenAI como disponiveis enquanto esses checks nao mudarem.
 - Os gates `frontend-honesty` (4/4), `frontend-runtime-safety` (5/5),
   `operational-console-ui` (6/6) e `architecture-guard` passaram neste ciclo.
 - A sessao visual autenticada no navegador continua pendente; o login publico foi
@@ -222,12 +225,13 @@ $env:PORT=4400
   as 13 views canonicas listadas na secao 5.
 - Decidido: o comando `npm start`/`npm run dev` da raiz aponta para
   `grg/src/server.js`; o servidor anterior existe apenas como `npm run start:legacy`.
-- Pendente: remover fisicamente o controlador legado da AI City atualmente isolado
-  em comentario ao final de `unified-app.js`; `iso-city.js` e a implementacao ativa.
+- Decidido: o controlador duplicado da AI City foi removido de `unified-app.js`;
+  `iso-city.js` e a unica implementacao ativa da cidade.
 - Pendente: substituir os adaptadores in-memory por Postgres/Redis/Qdrant configurados
   no ambiente de producao e comprovar persistencia entre reinicios.
-- Pendente: configurar ou restaurar pelo menos um provider de IA real e executar uma
-  chamada de inferencia com provider, modelo, latencia e tokens registrados.
+- Pendente: restaurar conectividade/autenticacao de pelo menos um provider de IA
+  externo e executar uma chamada de inferencia com provider, modelo, latencia e
+  tokens registrados. A presenca de chave, isoladamente, nao prova disponibilidade.
 - Pendente: concluir o E2E visual autenticado em desktop e breakpoint menor.
 
 Enquanto essas decisoes nao forem fechadas, implementar primeiro o fluxo principal:

@@ -1,7 +1,10 @@
 const http = require('node:http');
-const { Kernel } = require('./core/Kernel');
 const fs = require('node:fs');
 const path = require('node:path');
+const envFile = path.join(__dirname, '..', '..', '.env');
+if (fs.existsSync(envFile)) require('dotenv').config({ path: envFile });
+
+const { Kernel } = require('./core/Kernel');
 const { WebSocketServer } = require('ws');
 const { createApp, overview } = require('./app');
 const { httpStatusFor } = require('./kernel/errors');
