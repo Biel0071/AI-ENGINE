@@ -10,7 +10,9 @@ const GITHUB_URL_RE = /https?:\/\/github\.com\/[^\s]+/i;
 class ChatAgent {
   constructor({ app, llm = null }) {
     this.app = app; // { controlPlane, repoIntel, factory, orchestrator, digitalTwin, evolution, aiGateway, store }
-    this.llm = (llm && typeof llm.chat === 'function') ? llm : (app?.aiGateway && typeof app.aiGateway.chat === 'function' ? app.aiGateway : null);
+    this.llm = llm === false
+      ? null
+      : ((llm && typeof llm.chat === 'function') ? llm : (app?.aiGateway && typeof app.aiGateway.chat === 'function' ? app.aiGateway : null));
     this.history = []; // memória de conversa progressiva (últimas trocas)
   }
 
@@ -100,14 +102,14 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
     if (/(gerar|ger[ae]|criar|cri[ae]|novo|construir|constr[ou]i|montar|monta|fazer|fa[çc]a).*(sistema|projeto|app|aplica|site|loja|crm|erp|saas|plataforma|marketplace|landing|bot|api)/.test(t)) return { kind: 'generate', prompt: text };
     if (/(insight|aprend|evolu|o que aprend|padr)/.test(t)) return { kind: 'insights' };
     if (/(mem[oó]ria|hist[oó]rico|decis)/.test(t)) return { kind: 'memory' };
-    if (/(status|vis[aã]o|overview|painel|resumo|estado|funcion|rodando|online|operacional|sa[uú]de)/.test(t)) return { kind: 'overview' };
     if (/(capabilit|funcionalidad|cat[aá]logo|m[oó]dulo)/.test(t)) return { kind: 'capabilities' };
+    if (/(status|vis[aã]o|overview|painel|resumo|estado|funcion|rodando|online|operacional|sa[uú]de)/.test(t)) return { kind: 'overview' };
     if (/(twin|modelo|arquitetura|sa[uú]de|risco|analis[ae] o|conselho|advise|melhor)/.test(t)) {
       const repoId = this.matchRepoId(t);
       return { kind: 'twin', repoId };
     }
     if (/(repos|projetos|lista|quais)/.test(t)) return { kind: 'list' };
-    if (/(ajuda|help|o que voc|comandos|pode fazer)/.test(t)) return { kind: 'help' };
+    if (/(ajuda|help|o que voc|comandos|pode fazer)/.test(t)) return { kind: 'help', deterministic: true };
     return { kind: 'help' };
   }
 
@@ -137,7 +139,7 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
     // 1) tenta regras determinísticas (rápidas, confiáveis para URL/comandos claros)
     let intent = this.detectIntent(text);
     // 2) se o LLM está ligado e as regras caíram em 'help' (baixa confiança), pergunta ao LLM
-    if (this.llm && intent.kind === 'help') {
+    if (this.llm && intent.kind === 'help' && !intent.deterministic) {
       const llmIntent = await this.classifyWithLLM(text);
       if (llmIntent) {
         intent = { kind: llmIntent.intent, url: llmIntent.url || intent.url, username: llmIntent.username || null };

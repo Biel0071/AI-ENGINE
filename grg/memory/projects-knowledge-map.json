@@ -6,32 +6,25 @@
     "connected": true,
     "status": "HEALTHY",
     "tags": [
-      "Git",
-      "Node",
-      "TypeScript",
-      "AI Operating System",
-      "Local"
+      "Local",
+      "Node"
     ],
-    "framework": "Node.js + React + Vite",
-    "language": "TypeScript / JavaScript",
-    "architecture": "Microkernel + Multi-Agent Swarm + Reality Gate",
-    "frontend": "HTML5 + CSS Variables + Vanilla ESM Reactive Shell",
-    "backend": "Node.js HTTP/SSE Server + Autonomous Job Engine",
-    "database": "InMemory / SQLite / LocalVector (Zero Leak)",
+    "framework": "Node.js Core",
+    "language": "JavaScript",
+    "architecture": "Standard Architecture",
+    "frontend": "N/A",
+    "backend": "N/A",
+    "database": "N/A",
     "buildCommand": "npm run build",
-    "testCommand": "node --test test/",
-    "devCommand": "node src/server.js",
-    "entrypoints": [
-      "src/server.js",
-      "public/index.html"
-    ],
+    "testCommand": "npm test",
+    "devCommand": "npm run dev",
+    "entrypoints": [],
     "importantFiles": [
-      "src/server.js",
-      "public/index.html",
-      "src/orchestrator/autonomous-job-orchestrator.js"
+      "package.json",
+      "README.md"
     ],
-    "lastScan": "2026-08-20T17:33:29.187Z",
-    "lastCommit": "2200f245",
+    "lastScan": "2026-08-26T13:11:00.254Z",
+    "lastCommit": "HEAD",
     "healthScore": 99.8,
     "knownIssues": []
   },
@@ -60,7 +53,7 @@
       "package.json",
       "README.md"
     ],
-    "lastScan": "2026-08-20T18:06:21.012Z",
+    "lastScan": "2026-08-26T13:11:00.279Z",
     "lastCommit": "HEAD",
     "healthScore": 96.5,
     "knownIssues": [
@@ -93,7 +86,36 @@
       "package.json",
       "README.md"
     ],
-    "lastScan": "2026-08-20T18:06:21.008Z",
+    "lastScan": "2026-08-26T13:11:00.267Z",
+    "lastCommit": "HEAD",
+    "healthScore": 98,
+    "knownIssues": []
+  },
+  "devcloud-test": {
+    "projectId": "devcloud-test",
+    "name": "devcloud-test",
+    "localPath": "C:\\projetos\\devcloud-test",
+    "connected": false,
+    "status": "DISCOVERED",
+    "tags": [
+      "Local",
+      "Git"
+    ],
+    "framework": "Desconhecido",
+    "language": "Desconhecido",
+    "architecture": "Standard Architecture",
+    "frontend": "N/A",
+    "backend": "N/A",
+    "database": "N/A",
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "devCommand": "npm run dev",
+    "entrypoints": [],
+    "importantFiles": [
+      "package.json",
+      "README.md"
+    ],
+    "lastScan": "2026-08-26T13:11:00.257Z",
     "lastCommit": "HEAD",
     "healthScore": 98,
     "knownIssues": []

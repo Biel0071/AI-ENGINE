@@ -105,7 +105,8 @@ async function createApp(options = {}) {
   const eventStore = new EventStore({ store });
   const fabricEvents = new FabricEventBus({ eventStore, liveBus: bus });
   const controlPlane = await new ControlPlane({ store, bus }).initialize(options.master);
-  await controlPlane.ensureDefaultTenant({ id: 'grg', name: 'GRG FÊNIX', actorId: 'grg-admin' });
+  const isTest = options.env?.NODE_ENV === 'test' || process.env.NODE_ENV === 'test' || process.argv[1]?.includes('test');
+  if (options.bootstrap !== false && !isTest) { await controlPlane.ensureDefaultTenant({ id: 'grg', name: 'GRG FENIX', actorId: 'grg-admin' }); }
   const securityConfig = options.securityConfig || loadSecurityConfig(options.env || process.env);
   // MISSION-0003A — identidade permanente do organismo, ligada ao boot. `ensure()` cria na
   // primeira vez e devolve a mesma identidade sempre; a chamada acontece aqui (não em

@@ -55,7 +55,7 @@ class IsoCityEngine {
           let projects = window.state.projects || [];
       if (projects.length === 0) {
          projects = [
-            { id: 'p1', name: 'FÊNIX OS Core', status: 'ACTIVE' },
+            { id: 'p1', name: 'Fï¿½NIX OS Core', status: 'ACTIVE' },
             { id: 'p2', name: 'AI City Engine', status: 'ACTIVE' },
             { id: 'p3', name: 'Memory Fabric', status: 'ACTIVE' },
             { id: 'p4', name: 'Visual QA Lab', status: 'ACTIVE' },
@@ -85,7 +85,7 @@ class IsoCityEngine {
           let states = window.state.agentStates || {};
       if (Object.keys(states).length === 0) {
          states = {
-            'Vitória': { role: 'UX/UI Engineer', status: 'WORKING', roomId: 'r1' },
+            'Vitï¿½ria': { role: 'UX/UI Engineer', status: 'WORKING', roomId: 'r1' },
             'QWEN': { role: 'AI Core', status: 'THINKING', roomId: 'r2' },
             'Jarvis': { role: 'DevOps', status: 'IDLE', roomId: 'r3' },
             'Camila': { role: 'Frontend', status: 'WORKING', roomId: 'r1' },
