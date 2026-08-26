@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -26,6 +26,7 @@
 
   <link rel="stylesheet" href="/unified.css">
   <link rel="stylesheet" href="/fenix-ide-v2.css">
+  <link rel="stylesheet" href="/command-center.css">
   <link rel="stylesheet" href="/city-overrides.css">
   <link rel="stylesheet" href="/living-panels.css">
 </head>
@@ -67,26 +68,82 @@
 
     <div class="main-body">
       
-      <!-- NAV SIDEBAR (Tiniest left bar) -->
-      <nav class="activity-bar">
-        <div class="nav-top">
-          <button class="nav-item" data-view="city" title="Cidade"><i class="ph ph-buildings"></i></button>
-          <button class="nav-item active" data-view="ide" title="Agentic IDE"><i class="ph ph-code"></i></button>
-          <button class="nav-item" data-view="projects" title="Projetos"><i class="ph ph-folders"></i></button>
-          <button class="nav-item" data-view="agents" title="Agentes"><i class="ph ph-users-three"></i></button>
-          <button class="nav-item" data-view="metrics" title="Métricas"><i class="ph ph-chart-line-up"></i></button>
-          <button class="nav-item" data-view="memory" title="Memória"><i class="ph ph-brain"></i></button>
-        </div>
-        <div class="nav-bottom">
-          <button class="nav-item" title="Configurações"><i class="ph ph-gear"></i></button>
-        </div>
-      </nav>
+              <!-- NAV SIDEBAR -->
+        <nav class="sidebar-nav">
+          <div class="nav-top">
+            <button class="nav-item active" data-view="command"><i class="ph ph-squares-four"></i> COMMAND</button>
+            <button class="nav-item" data-view="city"><i class="ph ph-buildings"></i> AI CITY</button>
+            <button class="nav-item" data-view="agents"><i class="ph ph-users-three"></i> AGENTS</button>
+            <button class="nav-item" data-view="ide"><i class="ph ph-code"></i> IDE</button>
+            <button class="nav-item" data-view="runtime"><i class="ph ph-activity"></i> RUNTIME</button>
+            <button class="nav-item" data-view="projects"><i class="ph ph-folders"></i> PROJECTS</button>
+            <button class="nav-item" data-view="memory"><i class="ph ph-brain"></i> MEMORY</button>
+            <button class="nav-item" data-view="knowledge"><i class="ph ph-graph"></i> KNOWLEDGE</button>
+            <button class="nav-item" data-view="mcp"><i class="ph ph-plug"></i> MCP HUB</button>
+            <button class="nav-item" data-view="browser"><i class="ph ph-browser"></i> BROWSER QA</button>
+            <button class="nav-item" data-view="observability"><i class="ph ph-chart-line-up"></i> OBSERVABILITY</button>
+            <button class="nav-item" data-view="terminal"><i class="ph ph-terminal"></i> TERMINAL</button>
+          </div>
+          <div class="nav-bottom">
+            <div class="system-health">
+              <small>SYSTEM HEALTH</small>
+              <b style="color: var(--green);">100%</b>
+              <small>0 errors unhandled</small>
+            </div>
+            <button class="nav-item" title="Configura��es"><i class="ph ph-gear"></i></button>
+          </div>
+        </nav>
 
-      <!-- VIEWS CONTAINER -->
-      <div class="views-container">
+        <!-- VIEWS CONTAINER -->
+        <div class="views-container">
+          <!-- COMMAND CENTER VIEW -->
+          <div id="view-command" class="view active">
+            <div class="command-center-grid">
+              <div class="cmd-panel cmd-panel-city">
+                <div class="cmd-panel-header"><span class="cmd-badge">1</span> AI CITY - VISTA ISOM�TRICA</div>
+                <div class="cmd-panel-body" id="cmdCityContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-ide">
+                <div class="cmd-panel-header"><span class="cmd-badge">2</span> IDE - AGENTIC WORKSPACE</div>
+                <div class="cmd-panel-body" id="cmdIdeContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-agents">
+                <div class="cmd-panel-header"><span class="cmd-badge">3</span> AGENTS - GEST�O DE AGENTES</div>
+                <div class="cmd-panel-body" id="cmdAgentsContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-runtime">
+                <div class="cmd-panel-header"><span class="cmd-badge">4</span> RUNTIME - TELEMETRIA EM TEMPO REAL</div>
+                <div class="cmd-panel-body" id="cmdRuntimeContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-projects">
+                <div class="cmd-panel-header"><span class="cmd-badge">5</span> PROJECTS - GEST�O DE PROJETOS</div>
+                <div class="cmd-panel-body" id="cmdProjectsContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-memory">
+                <div class="cmd-panel-header"><span class="cmd-badge">6</span> MEMORY - MEMORY FABRIC 2.0</div>
+                <div class="cmd-panel-body" id="cmdMemoryContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-knowledge">
+                <div class="cmd-panel-header"><span class="cmd-badge">7</span> KNOWLEDGE - GRAFO DE CONHECIMENTO</div>
+                <div class="cmd-panel-body" id="cmdKnowledgeContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-observability">
+                <div class="cmd-panel-header"><span class="cmd-badge">8</span> OBSERVABILITY - MONITORAMENTO</div>
+                <div class="cmd-panel-body" id="cmdObservabilityContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-mcp">
+                <div class="cmd-panel-header"><span class="cmd-badge">9</span> MCP HUB - CONECTORES</div>
+                <div class="cmd-panel-body" id="cmdMcpContainer"></div>
+              </div>
+              <div class="cmd-panel cmd-panel-qa">
+                <div class="cmd-panel-header"><span class="cmd-badge">10</span> BROWSER QA - TESTES VISUAIS</div>
+                <div class="cmd-panel-body" id="cmdQaContainer"></div>
+              </div>
+            </div>
+          </div>
         
         <!-- IDE VIEW -->
-        <div id="view-ide" class="view active">
+        <div id="view-ide" class="view">
           
           <div class="ide-split-layout">
             
@@ -96,7 +153,7 @@
                 <button class="panel-tab active">CHAT</button>
                 <button class="panel-tab">AGENTS</button>
                 <button class="panel-tab">JOBS</button>
-                <button class="panel-tab">MEM�RIA</button>
+                <button class="panel-tab">MEM�RIA</button>
                 <button class="panel-tab">GRAFOS</button>
               </div>
               
@@ -230,8 +287,57 @@
   <script src="/iso-city.js"></script>
   <script src="/ide-enhancer.js"></script>
   <script src="/dev-pipeline-client.js"></script>`n  <script src="/unified-app.js"></script>
+  <script>
+    // Move canvas between Command Center and Full City view based on active tab
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const view = btn.dataset.view;
+        const canvas = document.getElementById('cityCanvas');
+        if (canvas) {
+          if (view === 'command') {
+            document.getElementById('cmdCityContainer').appendChild(canvas);
+       const ideLayout = document.querySelector('.ide-split-layout');
+       if (ideLayout && document.getElementById('cmdIdeContainer')) {
+          document.getElementById('cmdIdeContainer').appendChild(ideLayout);
+       }
+          } else if (view === 'city') {
+            document.getElementById('view-city').appendChild(canvas);
+          }
+          if (window.fenixCity) window.fenixCity.resize();
+        const ideLayout = document.querySelector('.ide-split-layout');
+        if (ideLayout) {
+          if (view === 'command') {
+            document.getElementById('cmdIdeContainer').appendChild(ideLayout);
+          } else if (view === 'ide') {
+            document.getElementById('view-ide').appendChild(ideLayout);
+          }
+          if (window.editor) window.editor.layout();
+        }
+        }
+      });
+    });
+    
+    // Set initial position
+    window.addEventListener('DOMContentLoaded', () => {
+       const canvas = document.getElementById('cityCanvas');
+       if (canvas && document.getElementById('cmdCityContainer')) {
+          document.getElementById('cmdCityContainer').appendChild(canvas);
+       const ideLayout = document.querySelector('.ide-split-layout');
+       if (ideLayout && document.getElementById('cmdIdeContainer')) {
+          document.getElementById('cmdIdeContainer').appendChild(ideLayout);
+       }
+       }
+    });
+  </script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 
 

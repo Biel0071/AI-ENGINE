@@ -1,0 +1,136 @@
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 240px;
+  background: #151822;
+  border-right: 1px solid #1f2333;
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+
+.sidebar-nav .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  color: #7b85a3;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.sidebar-nav .nav-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+.sidebar-nav .nav-item.active {
+  color: #e63946;
+  background: rgba(230, 57, 70, 0.1);
+  border-right: 3px solid #e63946;
+}
+.sidebar-nav .nav-item i {
+  font-size: 18px;
+}
+
+.system-health {
+  padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid #1f2333;
+  margin-top: 10px;
+}
+.system-health small {
+  color: #7b85a3;
+  font-size: 10px;
+}
+
+.command-center-grid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  gap: 12px;
+  background: #090a0f;
+  grid-template-columns: 1fr 1fr 1.5fr 1.5fr;
+  grid-template-rows: 2fr 1fr 1fr;
+  grid-template-areas:
+    "city city ide ide"
+    "agents runtime projects memory"
+    "knowledge observability mcp qa";
+}
+
+.cmd-panel {
+  background: #11131a;
+  border: 1px solid #1f2333;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cmd-panel-header {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: #151822;
+  border-bottom: 1px solid #1f2333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cmd-badge {
+  background: #e63946;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.cmd-panel-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.cmd-panel-city { grid-area: city; }
+.cmd-panel-ide { grid-area: ide; }
+.cmd-panel-agents { grid-area: agents; }
+.cmd-panel-runtime { grid-area: runtime; }
+.cmd-panel-projects { grid-area: projects; }
+.cmd-panel-memory { grid-area: memory; }
+.cmd-panel-knowledge { grid-area: knowledge; }
+.cmd-panel-observability { grid-area: observability; }
+.cmd-panel-mcp { grid-area: mcp; }
+.cmd-panel-qa { grid-area: qa; }
+
+/* In Command view, hide the sidebar icons if not using activity bar */
+/* We replaced activity bar with sidebar-nav */
+
+
+.cmd-panel-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.cmd-panel-body canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* IDE Split layout inside panel */
+.cmd-panel-body .ide-split-layout {
+  width: 100%;
+  height: 100%;
+}
+
