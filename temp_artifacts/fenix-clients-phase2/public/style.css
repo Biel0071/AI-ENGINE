@@ -1,0 +1,41 @@
+:root {
+  color-scheme: dark;
+  --bg: #101214;
+  --panel: #181c20;
+  --line: #2d343b;
+  --text: #f4f7f8;
+  --muted: #9eacb5;
+  --accent: #41d0a4;
+  --warn: #f0bf4f;
+  --bad: #ff6b6b;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, Segoe UI, Arial, sans-serif; background: var(--bg); color: var(--text); }
+.shell { min-height: 100vh; padding: 24px; display: grid; gap: 18px; }
+.topbar, .toolbar, .workspace, .client-form, .client-card { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 20px; }
+.eyebrow { color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: 0; }
+h1, h2, p { margin: 0; }
+h1 { font-size: 32px; }
+h2 { font-size: 18px; }
+.summary { display: grid; justify-items: end; gap: 2px; color: var(--muted); }
+.summary strong { color: var(--text); font-size: 28px; }
+.toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 220px; gap: 12px; padding: 14px; }
+label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
+input, select, button { min-height: 40px; border-radius: 6px; border: 1px solid var(--line); background: #0c0f11; color: var(--text); padding: 0 12px; font: inherit; }
+button { background: var(--accent); color: #05100d; font-weight: 800; cursor: pointer; }
+.workspace { display: grid; grid-template-columns: 280px 1fr; gap: 16px; padding: 16px; align-items: start; }
+.client-form { padding: 16px; display: grid; gap: 10px; }
+.client-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.client-card { padding: 16px; display: grid; gap: 10px; min-height: 160px; }
+.client-card header { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+.badge { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; font-size: 12px; color: var(--muted); }
+.badge.risco { color: var(--bad); border-color: rgba(255,107,107,.4); }
+.badge.ativo { color: var(--accent); border-color: rgba(65,208,164,.4); }
+.metric-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; color: var(--muted); }
+.health { height: 8px; border-radius: 999px; background: #0c0f11; overflow: hidden; }
+.health span { display: block; height: 100%; background: var(--accent); }
+@media (max-width: 760px) {
+  .topbar, .toolbar, .workspace { grid-template-columns: 1fr; display: grid; }
+  .summary { justify-items: start; }
+}

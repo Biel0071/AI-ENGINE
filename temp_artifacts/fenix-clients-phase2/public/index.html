@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clientes | Fenix CRM</title>
+  <link rel="stylesheet" href="/style.css" data-source="public/style.css">
+</head>
+<body>
+  <main class="shell" data-source="public/index.html">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">CRM OPERACIONAL</span>
+        <h1>Clientes</h1>
+      </div>
+      <div class="summary" aria-label="Resumo de clientes">
+        <strong id="totalClients">0</strong>
+        <span>clientes ativos no radar</span>
+      </div>
+    </header>
+
+    <section class="toolbar" data-source="public/app.js">
+      <label>
+        <span>Buscar</span>
+        <input id="clientSearch" type="search" placeholder="Nome, segmento ou responsavel">
+      </label>
+      <label>
+        <span>Status</span>
+        <select id="statusFilter">
+          <option value="all">Todos</option>
+          <option value="Ativo">Ativo</option>
+          <option value="Risco">Risco</option>
+          <option value="Onboarding">Onboarding</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="workspace">
+      <form id="clientForm" class="client-form" data-source="public/app.js">
+        <h2>Novo cliente</h2>
+        <input name="name" required placeholder="Nome da empresa">
+        <input name="segment" required placeholder="Segmento">
+        <input name="owner" required placeholder="Responsavel">
+        <input name="mrr" type="number" min="0" step="100" placeholder="MRR">
+        <button type="submit">Adicionar</button>
+      </form>
+      <div id="clientGrid" class="client-grid" data-source="public/app.js"></div>
+    </section>
+  </main>
+  <script src="/app.js" data-source="public/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+cd /opt/fenix-os/grg && docker rm -f grg-fenix-enterprise-worker-1 && docker compose -f docker-compose.enterprise.yml up -d

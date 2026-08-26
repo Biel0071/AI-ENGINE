@@ -1,0 +1,47 @@
+{
+  "domEvidence": {
+    "agentPanel": false,
+    "agentsText": 0,
+    "buildingPanel": false,
+    "cityPanel": false,
+    "completedVisible": false,
+    "floorPanel": false,
+    "h1": "",
+    "hasAgent": false,
+    "hasCharacters": 0,
+    "hasJob": false,
+    "hasRoom": false,
+    "jobsText": 0,
+    "missionPanel": false,
+    "missionVisible": false,
+    "oldHeaderHidden": true,
+    "runtimeReal": false,
+    "title": "",
+    "url": "about:blank",
+    "visualPanels": 0
+  },
+  "navResults": [
+    {
+      "name": "CIDADE",
+      "found": false,
+      "clicked": false
+    },
+    {
+      "name": "PRÉDIO",
+      "found": false,
+      "clicked": false
+    },
+    {
+      "name": "ANDAR",
+      "found": false,
+      "clicked": false
+    },
+    {
+      "name": "AGENTE",
+      "found": false,
+      "clicked": false
+    }
+  ],
+  "screenshot": "C:/projetos/ai-engine-core/ai-engine/temp_fenix_digital_company_evolution_browser_authenticated.png",
+  "capturedAt": "2026-08-24T23:56:17.540Z"
+}

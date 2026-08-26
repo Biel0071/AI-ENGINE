@@ -1,0 +1,38 @@
+[
+  {
+    "id": "CLI-1001",
+    "name": "Aurora Foods",
+    "segment": "Enterprise",
+    "owner": "Marina Costa",
+    "status": "Ativo",
+    "mrr": 18400,
+    "health": 94
+  },
+  {
+    "id": "CLI-1002",
+    "name": "Nexa Clinics",
+    "segment": "Healthcare",
+    "owner": "Rafael Lima",
+    "status": "Risco",
+    "mrr": 9700,
+    "health": 61
+  },
+  {
+    "id": "CLI-1003",
+    "name": "Atlas Retail",
+    "segment": "Retail",
+    "owner": "Bianca Alves",
+    "status": "Onboarding",
+    "mrr": 12300,
+    "health": 78
+  },
+  {
+    "id": "CLI-1004",
+    "name": "Volt Logistics",
+    "segment": "Operations",
+    "owner": "Caio Mendes",
+    "status": "Ativo",
+    "mrr": 22100,
+    "health": 88
+  }
+]

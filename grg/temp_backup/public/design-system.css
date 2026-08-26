@@ -1,0 +1,148 @@
+/* ============================================================================
+   GRG FÊNIX Ω∞ — DESIGN SYSTEM (replicável)
+   ----------------------------------------------------------------------------
+   Fundação de tokens + primitivas responsivas para construir QUALQUER sistema
+   futuro rápido, consistente e ajustável. Importe este arquivo ANTES do CSS
+   específico do sistema:  <link rel="stylesheet" href="/design-system.css">
+   Depois sobrescreva só os tokens que quiser em um :root do seu proprio CSS.
+   NAO reescreve styles.css (o painel atual) — estende. Regra 1: compor.
+   ============================================================================ */
+
+:root {
+  /* --- COR (herda a paleta FÊNIX; ajuste aqui para re-tematizar um sistema) --- */
+  --ds-bg: #07090d;
+  --ds-surface: #0d1118;
+  --ds-surface-2: #111722;
+  --ds-line: #222b38;
+  --ds-text: #edf1f6;
+  --ds-muted: #8c98a9;
+  --ds-primary: #ff6a00;      /* trocar por sistema: a cor de marca */
+  --ds-primary-2: #ffae35;
+  --ds-ok: #36d47c;
+  --ds-warn: #ffc247;
+  --ds-danger: #ff4e55;
+  --ds-info: #3dc8ff;
+
+  /* --- ESCALA DE ESPACAMENTO (base 4px, previsivel) --- */
+  --ds-space-1: 4px;  --ds-space-2: 8px;  --ds-space-3: 12px;
+  --ds-space-4: 16px; --ds-space-5: 24px; --ds-space-6: 32px;
+  --ds-space-7: 48px; --ds-space-8: 64px;
+
+  /* --- TIPOGRAFIA (escala modular ~1.2) --- */
+  --ds-font: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --ds-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --ds-text-xs: 10px; --ds-text-sm: 12px; --ds-text-md: 14px;
+  --ds-text-lg: 17px; --ds-text-xl: 21px; --ds-text-2xl: 26px; --ds-text-3xl: 33px;
+  --ds-leading: 1.5;
+
+  /* --- FORMA --- */
+  --ds-radius-sm: 8px; --ds-radius: 12px; --ds-radius-lg: 16px; --ds-radius-pill: 999px;
+  --ds-shadow: 0 8px 30px rgba(0,0,0,.35);
+  --ds-shadow-sm: 0 2px 10px rgba(0,0,0,.25);
+
+  /* --- BREAKPOINTS (referencia; usados nos @media abaixo) ---
+     mobile  < 640px   |  tablet 640–1024px  |  web > 1024px */
+  --ds-bp-tablet: 640px;
+  --ds-bp-web: 1024px;
+
+  /* --- LARGURA DE CONTEUDO (fluida, ajustavel) --- */
+  --ds-container: min(1200px, 100% - var(--ds-space-5));
+}
+
+/* ---------------------------------------------------------------------------
+   PRIMITIVAS — classes utilitarias que qualquer sistema reusa. Prefixo .ds-
+   para nunca colidir com o CSS existente do painel.
+   --------------------------------------------------------------------------- */
+
+.ds-container { width: var(--ds-container); margin-inline: auto; }
+
+/* Grid responsivo automatico: cai de N colunas para 1 sem media query manual.
+   Uso: <div class="ds-grid" style="--ds-col:280px"> — cada card tem min 280px. */
+.ds-grid {
+  display: grid;
+  gap: var(--ds-space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--ds-col, 260px), 100%), 1fr));
+}
+
+.ds-stack { display: flex; flex-direction: column; gap: var(--ds-space-3); }
+.ds-row { display: flex; gap: var(--ds-space-3); align-items: center; flex-wrap: wrap; }
+.ds-spread { display: flex; justify-content: space-between; align-items: center; gap: var(--ds-space-3); }
+
+.ds-card {
+  background: linear-gradient(145deg, var(--ds-surface-2), var(--ds-surface));
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-lg);
+  padding: var(--ds-space-5);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-btn {
+  border: 0; border-radius: var(--ds-radius-sm);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  font: 600 var(--ds-text-sm)/1 var(--ds-font);
+  background: linear-gradient(135deg, var(--ds-primary), var(--ds-primary-2));
+  color: #120800; cursor: pointer;
+  min-height: 44px; /* alvo de toque acessivel (mobile) */
+}
+.ds-btn--ghost { background: transparent; border: 1px solid var(--ds-line); color: var(--ds-muted); }
+.ds-btn:hover { filter: brightness(1.06); }
+
+.ds-pill {
+  font-size: var(--ds-text-xs); padding: var(--ds-space-1) var(--ds-space-3);
+  border-radius: var(--ds-radius-pill); border: 1px solid var(--ds-line); color: var(--ds-muted);
+}
+.ds-pill--ok { color: var(--ds-ok); border-color: #235c3a; }
+.ds-pill--warn { color: var(--ds-warn); border-color: #65501d; }
+.ds-pill--danger { color: var(--ds-danger); border-color: #65232a; }
+
+.ds-input {
+  width: 100%; background: var(--ds-bg); border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-sm); padding: var(--ds-space-3);
+  color: var(--ds-text); font: var(--ds-text-md)/1 var(--ds-font); min-height: 44px;
+}
+
+.ds-muted { color: var(--ds-muted); }
+.ds-mono { font-family: var(--ds-mono); }
+
+/* Tipografia utilitaria */
+.ds-h1 { font-size: var(--ds-text-3xl); margin: 0; }
+.ds-h2 { font-size: var(--ds-text-xl); margin: 0; }
+.ds-h3 { font-size: var(--ds-text-lg); margin: 0; }
+.ds-eyebrow { font-size: var(--ds-text-xs); letter-spacing: .16em; color: var(--ds-primary); font-weight: 800; text-transform: uppercase; }
+
+/* ---------------------------------------------------------------------------
+   RESPONSIVO — 3 versoes automaticas: mobile, tablet, web.
+   As primitivas .ds-grid ja se adaptam sozinhas; estes ajustes afinam
+   spacing e tipografia por faixa, sem o sistema precisar declarar nada.
+   --------------------------------------------------------------------------- */
+
+/* MOBILE (default, < 640px): base menor, alvos de toque, uma coluna */
+@media (max-width: 639px) {
+  :root { --ds-text-3xl: 26px; --ds-text-2xl: 21px; --ds-space-5: 16px; --ds-space-6: 24px; }
+  .ds-card { padding: var(--ds-space-4); border-radius: var(--ds-radius); }
+  .ds-row { gap: var(--ds-space-2); }
+}
+
+/* TABLET (640–1024px): densidade intermediaria */
+@media (min-width: 640px) and (max-width: 1024px) {
+  :root { --ds-container: min(920px, 100% - var(--ds-space-5)); }
+}
+
+/* WEB (> 1024px): espaco cheio */
+@media (min-width: 1025px) {
+  :root { --ds-container: min(1200px, 100% - var(--ds-space-6)); }
+}
+
+/* Preferencia de tema claro do SO — inverte os tokens de superficie/texto.
+   Ajustavel: um sistema pode forcar dark ignorando isto. */
+@media (prefers-color-scheme: light) {
+  :root.ds-auto-theme {
+    --ds-bg: #f4f6fa; --ds-surface: #ffffff; --ds-surface-2: #f0f3f8;
+    --ds-line: #dce2ea; --ds-text: #10151d; --ds-muted: #5a6675;
+  }
+}
+
+/* Reduz movimento se o usuario pedir (acessibilidade) */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

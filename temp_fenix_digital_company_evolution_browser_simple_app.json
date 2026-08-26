@@ -1,0 +1,16 @@
+{
+  "ev": {
+    "agent": false,
+    "avatars": 0,
+    "building": false,
+    "city": false,
+    "floor": false,
+    "mission": false,
+    "panels": 0,
+    "text": "FÊNIX OS v2.1.0\nAI Platform\nCONNECTED\nMODELO ATIVO\nqwen2.5-coder\nLATÊNCIA\n-- ms\nTOKENS USADOS\n0\nJOBS\n0 running\nFILA\n0 queued\nWSS\nCONNECTING\ngrg-admin\nMASTER ADMIN\nLIVE RUNTIME\nFENIX AI CITY\nNORMAL\nFOLLOW AGENT\nFOLLOW JOB\nFOLLOW MISSION\nDEV IDE\nCIDADE\nPRÉDIO\nANDAR\nAGENTE\nNO ACTIVE AGENTS\nLIVE JOB DAG\nAGENTS\nEVENTS\nPRINCIPAL\nMISSION\nPROJECT\nRUNTIME\nMEMORY\nRAG\nSKILLS\nMCP\nMAP\nOlá! Eu sou a Fênix. Estou online e monitorando o servidor.",
+    "title": "FENIX OS | Unified Workspace | FÊNIX OS | Master Agentic IDE",
+    "url": "http://127.0.0.1:4400/app?fenix_visual_revolution=1#city"
+  },
+  "screenshot": "C:/projetos/ai-engine-core/ai-engine/temp_fenix_digital_company_evolution_browser_simple_app.png",
+  "capturedAt": "2026-08-24T23:59:36.656Z"
+}

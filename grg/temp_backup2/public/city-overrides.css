@@ -1,0 +1,12 @@
+.city-map {
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 32px;
+  align-items: start;
+}
+
+.district {
+  min-height: 210px;
+  padding: 13px;
+  gap: 9px;
+  align-content: flex-end;
+}

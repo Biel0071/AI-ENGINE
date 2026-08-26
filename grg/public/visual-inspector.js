@@ -1,14 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Add a "VISUAL INSPECTOR" button to the tabs header
-  const tabsHeader = document.querySelector('.tabs-header > div:first-child');
-  if (tabsHeader) {
+  let inspectorActive = false;
+  
+  // Create an inspect button inside the editor header
+  const editorToolbar = document.querySelector('.editor-toolbar');
+  if (editorToolbar) {
     const inspectBtn = document.createElement('button');
-    inspectBtn.className = 'tab-btn';
-    inspectBtn.innerHTML = '<i class="ph ph-bounding-box"></i> VISUAL INSPECT';
+    inspectBtn.className = 'toolbar-btn';
+    inspectBtn.innerHTML = '<i class="ph ph-bounding-box"></i> Inspect';
     inspectBtn.id = 'visualInspectBtn';
-    tabsHeader.appendChild(inspectBtn);
+    editorToolbar.appendChild(inspectBtn);
 
-    let inspectorActive = false;
     const overlay = document.getElementById('visualOverlay');
     const iframe = document.getElementById('previewIframe');
 
@@ -17,38 +18,64 @@ document.addEventListener('DOMContentLoaded', () => {
       if (inspectorActive) {
         inspectBtn.classList.add('active');
         inspectBtn.style.color = 'var(--accent)';
-        overlay.style.pointerEvents = 'auto'; // Capture clicks
-        overlay.style.background = 'rgba(0, 255, 0, 0.1)';
-        overlay.style.cursor = 'crosshair';
-        console.log('[Visual Inspector] Activated');
+        if (overlay) {
+          overlay.style.pointerEvents = 'auto'; // Capture events over iframe
+          overlay.style.background = 'rgba(230, 57, 70, 0.05)';
+          overlay.style.cursor = 'crosshair';
+        }
       } else {
         inspectBtn.classList.remove('active');
         inspectBtn.style.color = '';
-        overlay.style.pointerEvents = 'none';
-        overlay.style.background = 'transparent';
-        overlay.style.cursor = 'default';
-        overlay.innerHTML = '';
+        if (overlay) {
+          overlay.style.pointerEvents = 'none';
+          overlay.style.background = 'transparent';
+          overlay.style.cursor = 'default';
+          overlay.innerHTML = '';
+        }
       }
     });
 
-    overlay.addEventListener('mousemove', (e) => {
-      if (!inspectorActive) return;
-      // In a real scenario, we'd send postMessage to the iframe to get element at (e.offsetX, e.offsetY)
-      // Since it's a mock overlay, we just draw a hover box.
-      overlay.innerHTML = `<div style="position:absolute; left:\${e.offsetX - 25}px; top:\${e.offsetY - 25}px; width:50px; height:50px; border:2px dashed #0f0; pointer-events:none;"></div>`;
-    });
+    if (overlay && iframe) {
+      overlay.addEventListener('mousemove', (e) => {
+        if (!inspectorActive) return;
+        
+        // Find element in iframe
+        try {
+          const iframeDoc = iframe.contentWindow.document;
+          // Temporarily disable overlay pointer events to get element below it
+          overlay.style.pointerEvents = 'none';
+          const el = iframeDoc.elementFromPoint(e.offsetX, e.offsetY);
+          overlay.style.pointerEvents = 'auto';
+          
+          if (el && el !== iframeDoc.body && el !== iframeDoc.documentElement) {
+            const rect = el.getBoundingClientRect();
+            overlay.innerHTML = `<div style="position:absolute; left:${rect.left}px; top:${rect.top}px; width:${rect.width}px; height:${rect.height}px; border:2px solid var(--accent); background:rgba(230,57,70,0.2); pointer-events:none; z-index:9999;">
+               <div style="position:absolute; top:-20px; left:0; background:var(--accent); color:#fff; font-size:10px; padding:2px 4px; border-radius:2px; white-space:nowrap;">
+                 ${el.tagName.toLowerCase()}${el.id ? '#'+el.id : ''}${el.className ? '.'+el.className.split(' ').join('.') : ''}
+               </div>
+            </div>`;
+            overlay._lastHoveredElement = el;
+          }
+        } catch (err) {
+          // Cross-origin or not loaded yet
+        }
+      });
 
-    overlay.addEventListener('click', (e) => {
-      if (!inspectorActive) return;
-      console.log('[Visual Inspector] Clicked at', e.offsetX, e.offsetY);
-      
-      // Simulate Element Selection
-      const cockpitPrompt = document.getElementById('cockpitPrompt');
-      if (cockpitPrompt) {
-        cockpitPrompt.value = `[ELEMENT SELECTED: .agent-card (public/unified-app.js)] `;
-        document.querySelector('button[data-view="cockpit"]')?.click();
-      }
-    });
+      overlay.addEventListener('click', (e) => {
+        if (!inspectorActive) return;
+        const el = overlay._lastHoveredElement;
+        if (el) {
+          const promptInput = document.getElementById('prompt');
+          if (promptInput) {
+             const selector = `${el.tagName.toLowerCase()}${el.id ? '#'+el.id : ''}${el.className ? '.'+el.className.split(' ')[0] : ''}`;
+             promptInput.value = `[ALVO: ${selector}] `;
+             promptInput.focus();
+          }
+          
+          // Disable inspector
+          inspectBtn.click();
+        }
+      });
+    }
   }
 });
-

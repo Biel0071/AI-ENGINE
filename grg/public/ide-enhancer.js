@@ -167,7 +167,7 @@ window.addEventListener('load', () => {
         if (btn.textContent === 'Visual') {
           document.querySelector('.monaco-container').style.display = 'none';
           document.querySelector('.visual-canvas').style.display = 'flex';
-          $('previewIframe').src = 'http://localhost:4400/app'; // Fênix Own View
+          $('previewIframe').src = '/preview'; // Fênix Own View
         } else if (btn.textContent === 'Código') {
           document.querySelector('.monaco-container').style.display = 'block';
           document.querySelector('.visual-canvas').style.display = 'none';
@@ -373,4 +373,5 @@ window.addEventListener('load', () => {
     } catch(e) {}
   }
 });
+
 

@@ -5,8 +5,8 @@ class IsoCityEngine {
     this.ctx = this.canvas.getContext('2d');
     
     this.state = {
-      camera: { x: 0, y: 0, zoom: 0.8 },
-      targetCamera: { x: 0, y: 0, zoom: 0.8 },
+      camera: { x: 0, y: 0, zoom: 1.2 },
+      targetCamera: { x: 0, y: 0, zoom: 1.2 },
       isDragging: false,
       lastMouse: { x: 0, y: 0 },
       tileSize: 120,
@@ -52,20 +52,29 @@ class IsoCityEngine {
     if (!window.state) return;
 
     // Map projects to companies
-    const projects = window.state.projects || [];
+          let projects = window.state.projects || [];
+      if (projects.length === 0) {
+         projects = [
+            { id: 'p1', name: 'FÊNIX OS Core', status: 'ACTIVE' },
+            { id: 'p2', name: 'AI City Engine', status: 'ACTIVE' },
+            { id: 'p3', name: 'Memory Fabric', status: 'ACTIVE' },
+            { id: 'p4', name: 'Visual QA Lab', status: 'ACTIVE' },
+            { id: 'p5', name: 'DevOps Hub', status: 'ACTIVE' },
+         ];
+      }
     const colors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
     
     // We lay them out in a grid
     const layoutW = Math.ceil(Math.sqrt(projects.length || 1));
     this.world.companies = projects.map((p, i) => {
-      const cx = (i % layoutW) * 8 - (layoutW * 4);
-      const cy = Math.floor(i / layoutW) * 8 - (layoutW * 4);
+      const cx = (i % layoutW) * 3 - (layoutW * 1.5);
+      const cy = Math.floor(i / layoutW) * 3 - (layoutW * 1.5);
       return {
         id: p.id,
         name: p.name || 'Empresa S/N',
         type: 'tech',
         level: p.status === 'ACTIVE' ? 30 : 15,
-        x: cx, y: cy, w: 3, h: 3,
+        x: cx, y: cy, w: 1.5, h: 1.5,
         color: colors[i % colors.length],
         workspaces: p.workspaces || [],
         raw: p
@@ -73,7 +82,16 @@ class IsoCityEngine {
     });
 
     // Map agents
-    const states = window.state.agentStates || {};
+          let states = window.state.agentStates || {};
+      if (Object.keys(states).length === 0) {
+         states = {
+            'Vitória': { role: 'UX/UI Engineer', status: 'WORKING', roomId: 'r1' },
+            'QWEN': { role: 'AI Core', status: 'THINKING', roomId: 'r2' },
+            'Jarvis': { role: 'DevOps', status: 'IDLE', roomId: 'r3' },
+            'Camila': { role: 'Frontend', status: 'WORKING', roomId: 'r1' },
+            'Roberto': { role: 'Architect', status: 'OBSERVING', roomId: 'r2' }
+         };
+      }
     this.world.agents = Object.values(states).map(a => {
       // Find existing agent in engine to keep physical state (x,y,tx,ty)
       const existing = this.world.agents?.find(xa => xa.id === (a.id || a.agentId));
@@ -492,7 +510,7 @@ class IsoCityEngine {
   }
 
   drawAgent(a) {
-    if (this.state.zoomLevel === 'city') return; // semantic hide
+    // if (this.state.zoomLevel === 'city') return; // Always show agents for now
     
     const pos = this.toIso(a.x, a.y);
     const s = String(a.status).toLowerCase();
@@ -621,4 +639,7 @@ window.initCityCanvas = function() {
     window.fenixCity = new IsoCityEngine('cityCanvas');
   }
 };
+
+
+
 

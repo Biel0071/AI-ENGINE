@@ -1,4 +1,4 @@
-ï»¿const http = require('node:http');
+const http = require('node:http');
 const { Kernel } = require('./core/Kernel');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -36,7 +36,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   });
   const logger = options.logger || createStructuredLogger();
 
-  // FÃŠNIX UNIFICATION KERNEL - HYBRID DI BOOT & DISCOVERY
+  // FÊNIX UNIFICATION KERNEL - HYBRID DI BOOT & DISCOVERY
   const kernel = new Kernel();
   await kernel.boot(path.join(__dirname));
   global.FENIX_KERNEL = kernel;
@@ -63,7 +63,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   if (bootstrap) {
     try {
       await app.controlPlane.createTenant({ id: bootstrap.tenantId, name: bootstrap.tenantName }, bootstrap.userId);
-    } catch { /* tenant jÃ¡ provisionado */ }
+    } catch { /* tenant já provisionado */ }
     await app.auth.ensureUser(bootstrap.tenantId, bootstrap.userId, bootstrap.password, bootstrap.role || 'master_admin', bootstrap.name);
   }
   const oidcBootstrap = securityConfig.bootstrapOidc;
@@ -77,7 +77,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     }
   }
   // A ativacao operacional roda 26 probes, cada um com escrita no store. Num store
-  // grande isso leva dezenas de segundos e ANTES bloqueava o listen() â€” o container
+  // grande isso leva dezenas de segundos e ANTES bloqueava o listen() — o container
   // ficava unhealthy porque a porta nunca abria. Agora ela roda DEPOIS do servidor
   // estar escutando, em background, e o /health reporta o progresso.
   // Ativacao operacional: o servidor HTTP apenas GARANTE os schedules; quem executa
@@ -88,9 +88,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   // colidia, entrava em retry e re-serializava o documento inteiro. Resultado medido
   // em producao: ~25 s por componente (11 min para os 26) e 17 runs presos em RUNNING
   // de boots anteriores que morreram no meio. Rodar em um lugar so elimina a disputa.
-  // MISSION-0003A â€” registra a geraÃ§Ã£o observada (release + versÃ£o de esquema) ao subir.
-  // A identidade jÃ¡ foi estabelecida em createApp; aqui a linhagem ganha a entrada desta
-  // subida. NÃ£o regenera nada: entradas idÃªnticas nÃ£o se acumulam.
+  // MISSION-0003A — registra a geração observada (release + versão de esquema) ao subir.
+  // A identidade já foi estabelecida em createApp; aqui a linhagem ganha a entrada desta
+  // subida. Não regenera nada: entradas idênticas não se acumulam.
   try {
     const state = await Promise.race([
       app.store.read(),
@@ -126,10 +126,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     }
   };
 
-  // Single Source of Truth: The FÃŠNIX Kernel
+  // Single Source of Truth: The FÊNIX Kernel
   // All discovery, registries, and activations are handled inside FENIX_KERNEL.boot()
   const bootManager = {
-    start: async () => console.log('[Server] Bypassing legacy BootManager; using FÃŠNIX_KERNEL.')
+    start: async () => console.log('[Server] Bypassing legacy BootManager; using FÊNIX_KERNEL.')
   };
   await bootManager.start();
 
@@ -233,7 +233,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       // -- Rotas nativas do server ------------------------------------------------------------
 
-      // ---- Auth (pÃºblico) ----
+      // ---- Auth (público) ----
       if (req.method === 'POST' && url.pathname === '/api/login') {
         const b = await readJson(req);
         const sess = await app.auth.login(b.tenantId || 'grg', b.userId || b.user, b.password);
@@ -432,7 +432,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       const twinAdvise = url.pathname.match(/^\/api\/twins\/([^/]+)\/advise$/);
       if (req.method === 'GET' && twinAdvise) return sendJson(res, 200, await app.digitalTwin.advise(tenantId, actorId, twinAdvise[1]));
 
-      // Workforce (escritÃ³rio de lojas com donos IA + funcionÃ¡rios)
+      // Workforce (escritório de lojas com donos IA + funcionários)
       if (req.method === 'GET' && url.pathname === '/api/office') return sendJson(res, 200, { office: await app.workforce.office(tenantId, actorId) });
       if (req.method === 'GET' && url.pathname === '/api/workforces') return sendJson(res, 200, { workforces: await app.workforce.listWorkforces(tenantId, actorId) });
       const wfHire = url.pathname.match(/^\/api\/projects\/([^/]+)\/hire$/);
@@ -464,7 +464,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const b = await readJson(req); return sendJson(res, 201, await app.orchestrator.buildFromPrompt(tenantId, actorId, b));
       }
 
-      // ---- GRG FÃŠNIX V6.1 ENDPOINTS ----
+      // ---- GRG FÊNIX V6.1 ENDPOINTS ----
       if (req.method === 'POST' && url.pathname === '/api/knowledge-genome/capsules') return sendJson(res, 201, await app.knowledgeGenome.createCapsule(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/knowledge-genome/capsules') return sendJson(res, 200, await app.knowledgeGenome.queryCapsules(tenantId, actorId, { level: url.searchParams.get('level'), query: url.searchParams.get('q'), limit: url.searchParams.get('limit') }), requestId);
       const promoteCapsule = url.pathname.match(/^\/api\/knowledge-genome\/capsules\/([^/]+)\/promote$/);
@@ -528,7 +528,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/company/daily-analysis') return sendJson(res, 200, await app.companyDailyAnalysis.getDailyReport(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/company/calendar') return sendJson(res, 200, await app.companyDailyAnalysis.getOperationalCalendar(tenantId, actorId), requestId);
 
-      // GRG FÃŠNIX Î© (OMEGA) Endpoints
+      // GRG FÊNIX O (OMEGA) Endpoints
       if (req.method === 'GET' && url.pathname === '/api/omega/fabric/density') return sendJson(res, 200, await app.cognitiveAtomsFabric.getCognitiveDensity(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/omega/fabric/atoms') return sendJson(res, 201, await app.cognitiveAtomsFabric.createCognitiveAtom(tenantId, actorId, await readJson(req)), requestId);
 
@@ -541,7 +541,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/omega/economy/route-check') { const b = await readJson(req); return sendJson(res, 200, await app.modelEconomy.evaluateTaskRoute(tenantId, actorId, b.prompt), requestId); }
       if (req.method === 'POST' && url.pathname === '/api/omega/research/scan') { const b = await readJson(req); return sendJson(res, 200, await app.autonomousResearch.runResearchCycle(tenantId, actorId, b.topic), requestId); }
 
-      // GRG FÃŠNIX Î© (OMEGA) V2.0 Endpoints
+      // GRG FÊNIX O (OMEGA) V2.0 Endpoints
       if (req.method === 'POST' && url.pathname === '/api/omega/v2/consensus/debate') { const b = await readJson(req); return sendJson(res, 200, await app.collectiveIntelligence.runMultiModelConsensus(tenantId, actorId, b.prompt, b.models), requestId); }
       if (req.method === 'GET' && url.pathname === '/api/omega/v2/consensus/models') return sendJson(res, 200, await app.collectiveIntelligence.getModelRankings(tenantId, actorId), requestId);
 
@@ -552,7 +552,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/omega/v2/human-twin/cop') return sendJson(res, 200, await app.humanDigitalTwin.getCognitiveOperatingProfile(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/omega/v2/human-twin/autopilot') { const b = await readJson(req); return sendJson(res, 200, await app.humanDigitalTwin.runAutopilot(tenantId, actorId, b.command), requestId); }
 
-      // GRG FÃŠNIX Î©âˆž (OMEGA INFINITY) Endpoints
+      // GRG FÊNIX O8 (OMEGA INFINITY) Endpoints
       if (req.method === 'POST' && url.pathname === '/api/omega-infinity/laws/verify') { const b = await readJson(req); return sendJson(res, 200, await app.cognitiveLaws.verifyLaw001(tenantId, actorId, b.proposal), requestId); }
       if (req.method === 'GET' && url.pathname === '/api/omega-infinity/crystal/state') return sendJson(res, 200, await app.selfEvolutionKernel.getIntelligenceCrystalState(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/omega-infinity/dna/compile') { const b = await readJson(req); return sendJson(res, 200, await app.cognitiveDnaCompiler.compileToIntentionDna(tenantId, actorId, b.source), requestId); }
@@ -560,7 +560,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/omega-infinity/reality/feedback') { const b = await readJson(req); return sendJson(res, 200, await app.realityFeedback.processDeploymentFeedback(tenantId, actorId, b.feedback), requestId); }
       if (req.method === 'GET' && url.pathname === '/api/omega-infinity/meta/index') return sendJson(res, 200, await app.metaConsciousness.getUniversalIntelligenceIndex(tenantId, actorId), requestId);
 
-      // GRG FÃŠNIX UIOS Endpoints
+      // GRG FÊNIX UIOS Endpoints
       if (req.method === 'GET' && url.pathname === '/api/uios/kos/manifest') return sendJson(res, 200, await app.kos.getManifest(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/uios/kos/semantic-load') { const b = await readJson(req); return sendJson(res, 200, await app.kos.loadSemanticContext(tenantId, actorId, b.volumes), requestId); }
 
@@ -572,7 +572,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/uios/world-model/state') return sendJson(res, 200, await app.worldModelFactory.getWorldState(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/uios/factory/create') { const b = await readJson(req); return sendJson(res, 201, await app.worldModelFactory.createArtifact(tenantId, actorId, b.spec), requestId); }
 
-      // GRG FÃŠNIX KEOS Endpoints
+      // GRG FÊNIX KEOS Endpoints
       if (req.method === 'POST' && url.pathname === '/api/keos/ucp/process') { const b = await readJson(req); return sendJson(res, 200, await app.ucp.processInput(tenantId, actorId, b.input), requestId); }
 
       if (req.method === 'POST' && url.pathname === '/api/keos/adapters/ai') { const b = await readJson(req); return sendJson(res, 200, await app.universalAdapters.invokeAiAdapter(tenantId, actorId, b.provider, b.prompt), requestId); }
@@ -583,7 +583,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/keos/constitution/index') return sendJson(res, 200, await app.expandedConstitutionIndex.getExpandedIndex(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/keos/constitution/load-sparse') { const b = await readJson(req); return sendJson(res, 200, await app.expandedConstitutionIndex.loadSparseVolumes(tenantId, actorId, b.volumes), requestId); }
 
-      // GRG FÃŠNIX Cognitive Workspace OS & ECA Endpoints
+      // GRG FÊNIX Cognitive Workspace OS & ECA Endpoints
       if (req.method === 'GET' && url.pathname === '/api/workspace/mode') return sendJson(res, 200, await app.workspaceModes.getActiveMode(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/workspace/mode') { const b = await readJson(req); return sendJson(res, 200, await app.workspaceModes.setMode(tenantId, actorId, b.mode), requestId); }
 
@@ -595,7 +595,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/workspace/presence/config') return sendJson(res, 200, await app.cognitivePresence.getPresenceConfig(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/workspace/presence/config') { const b = await readJson(req); return sendJson(res, 200, await app.cognitivePresence.updatePresenceConfig(tenantId, actorId, b), requestId); }
 
-      // GRG FÃŠNIX NEXUS Î©âˆž Endpoints
+      // GRG FÊNIX NEXUS O8 Endpoints
       if (req.method === 'GET' && url.pathname === '/api/nexus/ucc/status') return sendJson(res, 200, await app.ucc.getUccStatus(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/nexus/bus/emit') { const b = await readJson(req); return sendJson(res, 200, await app.ucc.emitCognitiveEvent(tenantId, actorId, b.event), requestId); }
 
@@ -606,7 +606,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/nexus/marketplace/list') return sendJson(res, 200, await app.cognitiveMarketplace.listPublishedArtifacts(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/nexus/marketplace/publish') { const b = await readJson(req); return sendJson(res, 201, await app.cognitiveMarketplace.publishArtifact(tenantId, actorId, b.artifact), requestId); }
 
-      // GRG FÃŠNIX SCOS (Software Creation OS) Endpoints
+      // GRG FÊNIX SCOS (Software Creation OS) Endpoints
       if (req.method === 'GET' && url.pathname === '/api/scos/design-families/list') return sendJson(res, 200, await app.designIntel.listDesignFamilies(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/scos/design-tokens') { const b = await readJson(req); return sendJson(res, 200, await app.designIntel.getFamilyTokens(tenantId, actorId, b.familyId), requestId); }
 
@@ -625,7 +625,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       if (req.method === 'POST' && url.pathname === '/api/scos/evolution/metrics') { const b = await readJson(req); return sendJson(res, 200, await app.creationEvolution.evaluateDeliveryMetrics(tenantId, actorId, b.delivery), requestId); }
 
-      // GRG FÃŠNIX Î©âˆž OneDeploy Orchestrator & Software Factory Endpoints
+      // GRG FÊNIX O8 OneDeploy Orchestrator & Software Factory Endpoints
       if (req.method === 'POST' && url.pathname === '/api/onedeploy/run-pipeline') { const b = await readJson(req); return sendJson(res, 200, await app.oneDeploy.runOneDeployPipeline(tenantId, actorId, b.project), requestId); }
       if (req.method === 'POST' && url.pathname === '/api/onedeploy/scan-project') { const b = await readJson(req); return sendJson(res, 200, await app.oneDeploy.scanProject(tenantId, actorId, b.projectPath), requestId); }
 
@@ -637,7 +637,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       if (req.method === 'GET' && url.pathname === '/api/onedeploy/continuous-improvement/idle-scan') return sendJson(res, 200, await app.continuousImprovement.runIdleImprovementScan(tenantId, actorId), requestId);
 
-      // FASE 1: auditoria de simulacao â€” o sistema classifica seus proprios modulos.
+      // FASE 1: auditoria de simulacao — o sistema classifica seus proprios modulos.
       if (req.method === 'GET' && url.pathname === '/api/governance/simulation-audit') return sendJson(res, 200, await app.simulationAudit.audit(tenantId, actorId), requestId);
       // V10: estado de cada objetivo, derivado de artefatos verificaveis.
       if (req.method === 'GET' && url.pathname === '/api/governance/readiness-matrix') return sendJson(res, 200, await app.readinessMatrix.build(tenantId, actorId), requestId);
@@ -672,25 +672,25 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin');
         return sendJson(res, 200, await app.observabilitySeries.sample(tenantId, actorId, { trigger: 'operator' }), requestId);
       }
-      // FLUXO 8 â€” estado de conexao com servicos externos (API Platform). Estado real
+      // FLUXO 8 — estado de conexao com servicos externos (API Platform). Estado real
       // OFFLINE/ONLINE/CONNECTING derivado de health-check, para o Digital Twin e alertas.
       if (req.method === 'GET' && url.pathname === '/api/connection') { await app.controlPlane.authorize(tenantId, actorId, 'runtime:read'); return sendJson(res, 200, await app.apiConnection.status(), requestId); }
       if (req.method === 'POST' && url.pathname === '/api/connection/check') { await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin'); const b = await readJson(req); return sendJson(res, 200, await app.apiConnection.check(b.provider || 'aiplatform'), requestId); }
-      // FLUXO 9 (Living Mode) â€” contexto vivo do FENIX para uma sessao de IA. JSON para maquina,
+      // FLUXO 9 (Living Mode) — contexto vivo do FENIX para uma sessao de IA. JSON para maquina,
       // ?format=md para o briefing que se cola no Claude Code. Tudo derivado de estado medido.
       if (req.method === 'GET' && url.pathname === '/api/context') {
         if (url.searchParams.get('format') === 'md') { const md = await app.contextBuilder.buildMarkdown(tenantId, actorId); res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8' }); return res.end(md); }
         return sendJson(res, 200, await app.contextBuilder.build(tenantId, actorId), requestId);
       }
-      // MISSION-0003A â€” identidade permanente do organismo (organismId, nascimento, linhagem).
+      // MISSION-0003A — identidade permanente do organismo (organismId, nascimento, linhagem).
       if (req.method === 'GET' && url.pathname === '/api/organism/identity') return sendJson(res, 200, await app.organismIdentity.report(tenantId, actorId), requestId);
-      // MISSION-0004 â€” Connector Runtime. Estado derivado por selfTest, nunca por config.
+      // MISSION-0004 — Connector Runtime. Estado derivado por selfTest, nunca por config.
       if (req.method === 'GET' && url.pathname === '/api/connectors') return sendJson(res, 200, await app.connectors.statusAll(tenantId, actorId), requestId);
       if (req.method === 'GET' && /^\/api\/connectors\/[^/]+\/health$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.health(tenantId, actorId, url.pathname.split('/')[3]), requestId);
       if (req.method === 'POST' && /^\/api\/connectors\/[^/]+\/selftest$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.selfTest(tenantId, actorId, url.pathname.split('/')[3]), requestId);
-      // MISSION-1003 â€” AI Router: qual provider seria escolhido agora, por evidÃªncia.
+      // MISSION-1003 — AI Router: qual provider seria escolhido agora, por evidência.
       if (req.method === 'GET' && url.pathname === '/api/ai/router/select') return sendJson(res, 200, await app.aiRouter.select(tenantId, actorId, { preferTier: url.searchParams.get('tier') || null }), requestId);
-      // Executive Brain: objetivo -> Programa de missÃµes (decompÃµe + delega ao planner).
+      // Executive Brain: objetivo -> Programa de missões (decompõe + delega ao planner).
       if (req.method === 'GET' && url.pathname === '/api/executive/programs') return sendJson(res, 200, { programs: await app.executiveBrain.list(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/executive/decompose') { const b = await readJson(req); return sendJson(res, 200, await app.executiveBrain.decompose(tenantId, actorId, b.objective), requestId); }
       if (req.method === 'POST' && url.pathname === '/api/executive/programs') { const b = await readJson(req); return sendJson(res, 201, await app.executiveBrain.createProgram(tenantId, actorId, b.objective), requestId); }
@@ -757,7 +757,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       const capability = capabilityFromPath(routePath);
       logger.error({ event: 'http.request.failed', error, correlationId, requestId, capability,
         tenant: tenantId, actor: actorId, method: req.method, path: routePath });
-      const safeError = status >= 500 ? 'Falha interna no FÃŠNIX. Use o ID de correlaÃ§Ã£o para suporte.' : (error.message || 'RequisiÃ§Ã£o invÃ¡lida');
+      const safeError = status >= 500 ? 'Falha interna no FÊNIX. Use o ID de correlação para suporte.' : (error.message || 'Requisição inválida');
       return sendJson(res, status, { error: safeError, code: status >= 500 ? 'INTERNAL_ERROR' : (error.code || 'REQUEST_ERROR'), correlationId }, requestId);
     }
   });
@@ -810,7 +810,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       });
   }
 
-  // FÃŠNIX LIVE BOOT MODE & Runtime Kernel persistent loop
+  // FÊNIX LIVE BOOT MODE & Runtime Kernel persistent loop
   if (app.runtimeKernel) {
     app.runtimeKernel.start().catch((err) => {
       logger.error({ event: 'runtime.kernel.boot.failed', error: err, capability: 'kernel' });
@@ -841,4 +841,5 @@ function safeToken(header, expected) { const supplied = String(header || '').rep
 
 if (require.main === module) start();
 module.exports = { start, safeToken, capabilityFromPath };
+
 

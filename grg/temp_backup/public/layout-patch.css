@@ -1,0 +1,82 @@
+﻿/* Layout Principal - 3 Colunas + Terminal Base */
+.fenix-os-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+.middle-section {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Painéis de Área de Trabalho */
+.workspace-panel {
+  display: none;
+  background: var(--bg-app);
+}
+.workspace-panel.active {
+  display: block; /* chat uses flex via js */
+}
+
+/* Abas */
+.tab-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 2px solid transparent;
+}
+.tab-btn:hover { color: var(--text-main); }
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* File System items */
+.fs-item {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  user-select: none;
+}
+.fs-item:hover {
+  background: var(--bg-panel);
+}
+.fs-item.active {
+  background: rgba(220,38,38,0.1);
+  color: var(--accent);
+  font-weight: 600;
+}
+.icon-btn-small {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+.icon-btn-small:hover {
+  color: var(--text-main);
+  background: var(--bg-surface);
+}
+
+/* Chat e Logs */
+.chat-bubble {
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+.chat-system {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-main);
+}

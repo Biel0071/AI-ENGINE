@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>FENIX OS | Unified Workspace | FÊNIX OS | Master Agentic IDE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web" async></script>
+  
+  <!-- Xterm.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js" async></script>
+
+  <!-- Marked.js & DOMPurify -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" async></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" async></script>
+
+  <!-- Vis.js for Knowledge Graph -->
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js" async></script>
+
+  <!-- Monaco Editor is loaded lazily by the IDE layer. Do not block the live city boot. -->
+
+  <link rel="stylesheet" href="/unified.css?v=13">
+</head>
+<body class="dark-theme">
+  
+  <div class="fenix-os-layout">
+    
+    <!-- TOP GLOBAL BAR -->
+    <header class="global-topbar">
+      <div class="topbar-left">
+        <div class="brand-logo">
+          <i class="ph-fill ph-fire"></i>
+          <span>FÊNIX OS <span class="version-badge">v2.1.0</span></span>
+        </div>
+        <div class="connection-status">
+          <i id="statusDot" class="ph-fill ph-circle" style="color: var(--green);"></i> AI Platform <span id="statusText" style="color: var(--green);">CONNECTED</span>
+        </div>
+      </div>
+      
+      <div class="topbar-metrics">
+        <div class="metric"><small>Modelo Ativo</small><b>qwen2.5-coder</b></div>
+        <div class="metric"><small>Latência</small><b id="kpiLatency">-- ms</b></div>
+        <div class="metric"><small>Tokens Usados</small><b id="kpiTokens">0</b></div>
+        <div class="metric"><small>Jobs</small><b id="kpiAgents">0 running</b></div>
+        <div class="metric"><small>Fila</small><b id="liveQueueBadge" style="color: var(--accent);">0 queued</b></div>
+        <div class="metric"><small>WSS</small><b id="wsStatus" style="color: var(--text-muted);">CONNECTING</b></div>
+      </div>
+      
+      <div class="topbar-right">
+        <div class="user-info">
+          <div class="avatar"><i class="ph-fill ph-user"></i></div>
+          <span>grg-admin <small>MASTER ADMIN</small></span>
+        </div>
+        <button id="refreshBtn" class="btn-ghost" title="Force Sync"><i class="ph ph-arrows-clockwise"></i></button>
+        <button id="logoutBtn" class="btn-ghost" title="Logout"><i class="ph ph-sign-out"></i></button>
+      </div>
+    </header>
+
+    <div class="main-body">
+      
+      <!-- NAV SIDEBAR (Tiniest left bar) -->
+      <nav class="activity-bar">
+        <div class="nav-top">
+          <button class="nav-item" data-view="cockpit" title="DEV COMMAND CENTER"><i class="ph ph-rocket-launch"></i></button>
+          <button class="nav-item" data-view="city" title="Cidade"><i class="ph ph-buildings"></i></button>
+          <button class="nav-item" data-view="jobs" title="Jobs"><i class="ph ph-list-numbers"></i></button>
+          <button class="nav-item" data-view="ide" title="Agentic IDE"><i class="ph ph-code"></i></button>
+          <button class="nav-item" data-view="projects" title="Projetos"><i class="ph ph-folders"></i></button>
+          <button class="nav-item" data-view="agents" title="Agentes"><i class="ph ph-users-three"></i></button>
+          <button class="nav-item" data-view="metrics" title="Métricas"><i class="ph ph-chart-line-up"></i></button>
+          <button class="nav-item" data-view="memory" title="Memória"><i class="ph ph-brain"></i></button>
+        </div>
+        <div class="nav-bottom">
+          <button class="nav-item" title="Configurações"><i class="ph ph-gear"></i></button>
+        </div>
+      </nav>
+
+      <!-- VIEWS CONTAINER -->
+      <div class="views-container">
+        
+        
+          <!-- COCKPIT VIEW -->
+          <div id="view-cockpit" class="view" style="display:none; flex-direction:column; overflow-y:auto; padding:20px; gap:20px;">
+
+            <!-- COMMAND INPUT -->
+            <div style="background:var(--bg-panel); border:1px solid var(--border); padding:16px; border-radius:6px;">
+              <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i class="ph ph-terminal-window"></i> DEV COMMAND CENTER</h3>
+              <div style="display:flex; gap:10px; margin-bottom:12px;">
+                <input type="text" id="cockpitProjectId" class="grg-input" placeholder="Project ID" style="width:200px;" value="fenix_main" />
+                <button id="cockpitConnectBtn" class="conn-btn primary"><i class="ph ph-plug"></i> CONNECT</button>
+                <span id="cockpitStatus" style="margin-left:10px; align-self:center; font-weight:bold; color:var(--text-muted);"></span>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <textarea id="cockpitPrompt" class="grg-input" placeholder="Missão para o FÊNIX (ex: Crie tela de clientes completa)" style="flex:1; height:60px; resize:vertical;"></textarea>
+                <button id="cockpitExecuteBtn" class="conn-btn primary" style="width:120px; font-weight:bold; font-size:14px;">EXECUTE</button>
+              </div>
+            </div>
+
+            <!-- LIVE GRID: Jobs | Agents | Logs -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; flex:1; min-height:400px;">
+
+              <!-- LIVE JOB TREE -->
+              <div style="background:var(--bg-panel); border:1px solid var(--border); padding:16px; border-radius:6px; display:flex; flex-direction:column;">
+                <h4 style="margin:0 0 10px 0; border-bottom:1px solid var(--border); padding-bottom:8px; display:flex; justify-content:space-between;">
+                  <span><i class="ph ph-git-commit"></i> LIVE JOB TREE</span>
+                  <span id="liveJobCount" style="font-size:11px; color:var(--text-muted);">0 jobs</span>
+                </h4>
+                <div id="cockpitMissionJobs" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+                  <div style="color:var(--text-muted); font-size:12px;">Aguardando eventos...</div>
+                </div>
+              </div>
+
+              <!-- LIVE AGENTS -->
+              <div style="background:var(--bg-panel); border:1px solid var(--border); padding:16px; border-radius:6px; display:flex; flex-direction:column;">
+                <h4 style="margin:0 0 10px 0; border-bottom:1px solid var(--border); padding-bottom:8px;"><i class="ph ph-robot"></i> AGENTS ATIVOS</h4>
+                <div id="cockpitAgents" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+                  <div style="color:var(--text-muted); font-size:12px;">Nenhum agente ativo</div>
+                </div>
+              </div>
+
+              <!-- LIVE LOG STREAM -->
+              <div style="background:var(--bg-panel); border:1px solid var(--border); padding:16px; border-radius:6px; display:flex; flex-direction:column;">
+                <h4 style="margin:0 0 10px 0; border-bottom:1px solid var(--border); padding-bottom:8px;"><i class="ph ph-terminal"></i> LIVE LOG</h4>
+                <div id="cockpitLogs" style="flex:1; overflow-y:auto; background:#0a0a0a; color:#4ade80; font-family:'JetBrains Mono',monospace; font-size:11px; padding:10px; border-radius:4px; line-height:1.6;">> SYSTEM READY</div>
+              </div>
+
+            </div>
+
+            <!-- RUNTIME STATUS BAR -->
+            <div style="background:var(--bg-panel); border:1px solid var(--border); padding:12px 16px; border-radius:6px; display:flex; gap:24px; font-size:12px; align-items:center;">
+              <span>RUNTIME <b id="runtimeStatusBadge" style="color:var(--green);">● ONLINE</b></span>
+              <span>UPTIME <b id="runtimeUptime">--</b></span>
+              <span>WORKERS <b id="runtimeWorkers">--</b></span>
+              <span>RUNNING <b id="runtimeRunning" style="color:var(--accent);">0</b></span>
+              <span>QUEUED <b id="runtimeQueued">0</b></span>
+              <span>COMPLETED <b id="runtimeCompleted" style="color:var(--green);">0</b></span>
+              <span>FAILED <b id="runtimeFailed" style="color:var(--rose);">0</b></span>
+            </div>
+
+          </div>
+
+          <!-- IDE VIEW -->
+        
+        <!-- JOBS VIEW -->
+        <div id="view-jobs" class="view" style="display: none; flex-direction: column; flex: 1; background: var(--bg-dark);">
+          <div class="panel-header">
+            <h3>Job Queue</h3>
+          </div>
+          <div id="jobsListContainer" class="panel-content" style="padding: 20px; overflow-y: auto;">
+            <!-- Jobs will be rendered here -->
+          </div>
+        </div>
+
+        <div id="view-ide" class="view">
+          
+          <div class="ide-split-layout">
+            
+            <!-- LEFT PANEL: Chat / Agents / Memory -->
+            <div class="panel-left">
+              <div class="panel-tabs">
+                <button class="panel-tab active">CHAT</button>
+                <button class="panel-tab">AGENTS</button>
+                <button class="panel-tab">JOBS</button><button class="panel-tab">MEMÓRIA</button><button class="panel-tab">GRAFO</button>
+              </div>
+              
+              <div class="panel-content chat-view">
+                <div id="chatLog" class="chat-history">
+                  <div class="chat-bubble chat-bot">
+                    <div class="chat-avatar"><i class="ph-fill ph-robot"></i></div>
+                    <div class="chat-text-wrapper">
+                      <strong>FÊNIX AI <span class="badge-online">Online</span></strong>
+                      <div class="chat-text">Olá! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <form id="cmdForm" class="chat-composer">
+                  <textarea id="prompt" placeholder="Digite seu comando para o Fênix..." rows="2"></textarea>
+                  <div class="composer-actions">
+                    <div class="composer-models">
+                      <i class="ph ph-cpu"></i> <span>qwen2.5-coder</span>
+                    </div>
+                    <button type="submit" class="btn-send"><i class="ph-fill ph-paper-plane-right"></i></button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            
+            <!-- CENTER PANEL: Editor Visual / Code -->
+            <div class="panel-center">
+              
+                              <div class="editor-header">
+                  <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÓDIGO</span></div>
+                  <div class="editor-toolbar">
+                    <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
+                    <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
+                    <div class="toolbar-divider"></div>
+                    <button class="toolbar-btn active">Split</button>
+                  </div>
+                  <button id="saveBtn" class="btn-primary-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
+                </div>
+                
+                <!-- Editor Container (Can hold Monaco or Visual Iframe) -->
+                <div class="editor-body" style="display: flex; flex-direction: row; height: 100%;">
+                  
+                  <!-- Visual Canvas (Overlay / Iframe) -->
+                  <div id="visualCanvas" class="visual-canvas" style="flex: 1; border-right: 1px solid var(--border); display: flex;">
+                    <iframe id="previewIframe" src="/app" frameborder="0" style="width: 100%; height: 100%;"></iframe>
+                    <div id="visualOverlay" class="visual-overlay" style="pointer-events: none; position: absolute; inset: 0;"></div>
+                  </div>
+                  
+                  <!-- Monaco Code Editor -->
+                  <div class="monaco-container" style="flex: 1; display: block; position: relative;">
+                    <div id="editorNode" style="width:100%; height:100%;"></div>
+                  </div>
+                  
+                </div>
+                
+                <!-- Terminal Bottom Panel -->
+                <div class="terminal-panel">
+                  <div class="terminal-header">
+                    <div class="terminal-tabs">
+                      <button class="terminal-tab active">TERMINAL</button>
+                      <button class="terminal-tab">OUTPUT</button>
+                      <button class="terminal-tab">DEBUG CONSOLE</button>
+                      <button class="terminal-tab">PORTS</button>
+                    </div>
+                    <div class="terminal-actions">
+                      <button class="icon-btn-small" id="clearTerminalBtn"><i class="ph ph-trash"></i></button>
+                      <button class="icon-btn-small"><i class="ph ph-x"></i></button>
+                    </div>
+                  </div>
+                  <div class="terminal-body">
+                    <div id="xtermContainer" style="width:100%; height:100%;"></div>
+                  </div>
+                  <div class="terminal-input-row">
+                    <i class="ph-bold ph-caret-right prompt-char"></i>
+                    <input id="terminalCmd" type="text" placeholder="Executar comando no workspace..." autocomplete="off">
+                    <button id="terminalBtn" class="btn-ghost-sm" style="display:none;">Run</button>
+                  </div>
+                </div>
+
+              </div>
+              
+              <!-- RIGHT PANEL: Structure / Files -->
+            <div class="panel-right">
+              <div class="panel-header">
+                <span>ESTRUTURA</span>
+                <div class="header-actions">
+                  <button class="icon-btn-small" id="fsLoadBtn"><i class="ph ph-arrows-clockwise"></i></button>
+                  <button class="icon-btn-small"><i class="ph ph-files"></i></button>
+                </div>
+              </div>
+              
+              <div class="panel-content fs-explorer">
+                <input id="fsPath" type="text" class="hidden-input" value="C:/projetos/ai-engine-core/ai-engine">
+                <div id="fsList" class="fs-tree">
+                  <!-- Injected via JS -->
+                  <div class="empty-state">
+                    <i class="ph ph-spinner ph-spin"></i> Loading Workspace...
+                  </div>
+                </div>
+              </div>
+              
+              <div class="panel-header" style="border-top: 1px solid var(--border); margin-top: auto;">
+                <span>AI AGENTS (LIVE)</span>
+              </div>
+              <div id="liveAgentsList" class="panel-content agents-mini-list">
+                <!-- Mini agent statuses injected here -->
+              </div>
+            </div>
+            
+          </div>
+          
+        </div>
+        
+        <!-- Runtime AI City View: runtime-cockpit.js owns this surface. -->
+        <div id="view-city" class="view active runtime-city-view">
+          <section class="runtime-city-loading">
+            <span class="eyebrow">LIVE RUNTIME</span>
+            <h2>FENIX AI CITY</h2>
+            <p>Carregando cidade operacional, andares, salas e agentes reais...</p>
+          </section>
+        </div>
+
+          <div id="view-projects" class="view">
+           <div class="empty-state"><h2>Projects Management</h2></div>
+        </div>
+
+        <dialog id="runtimeInspector" class="runtime-inspector">
+          <div class="runtime-inspector-shell">
+            <header>
+              <div>
+                <span id="runtimeInspectorKind">DETAILS</span>
+                <h3 id="runtimeInspectorTitle">Runtime object</h3>
+              </div>
+              <button id="runtimeInspectorClose" class="icon-btn-small" type="button" title="Close"><i class="ph ph-x"></i></button>
+            </header>
+            <div id="runtimeInspectorBody" class="runtime-inspector-body"></div>
+          </div>
+        </dialog>
+        
+      </div>
+      
+    </div>
+  </div>
+  
+  <template id="legacy-static-contract"><script src="/unified-app.js"></script></template>
+  <script id="fenix-script--runtime-cockpit-js" src="/runtime-cockpit.js?v=12"></script>
+  <script src="/ai-city-physics.js?v=1"></script>
+  <script src="/fenix-bootstrap.js?v=12"></script>
+
+    <div id="fenix-mascot-container">
+      <div id="fenix-mascot-bubble">Olá! Eu sou a Fênix. Estou online e monitorando o servidor.</div>
+      <div id="fenix-mascot" onclick="document.getElementById('fenix-mascot-bubble').classList.toggle('active')"><i class="ph-fill ph-fire"></i></div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,862 @@
+{
+  "createdAt": "2026-08-24T14:58:56.8236332-03:00",
+  "gitStatus": [
+    " D city_view.txt",
+    " D editor_restore.txt",
+    " M grg/public/cockpit-app.js",
+    " M grg/public/ide-enhancer.js",
+    " M grg/public/index.html",
+    " M grg/public/jobs-app.js",
+    " M grg/public/unified-app.js",
+    " M grg/public/unified.css",
+    " M grg/public/visual-inspector.js",
+    " M grg/runtime/dna.json",
+    " M grg/runtime/index.json",
+    " M grg/runtime/runtime-manifest.json",
+    " M grg/src/api/cloud-routes.js",
+    " M grg/src/api/developer-routes.js",
+    " M grg/src/execution/execution-engine.js",
+    " M grg/src/execution/job-queue.js",
+    " M grg/src/execution/job-worker.js",
+    " M grg/src/security/security-plane.js",
+    " M grg/src/server.js",
+    " M grg/src/storage/file-system-service.js",
+    " D iso_engine.txt",
+    " M package-lock.json",
+    " M package.json",
+    " D patch.js",
+    " D patch.py",
+    " D patch_styles.js",
+    " D renderCity_fix.txt",
+    " D temp_views.txt",
+    "?? \"F\\303\\212NIX_OS_REAL_VALIDATION_REPORT.md\"",
+    "?? fix.js",
+    "?? fix_devpipeline.js",
+    "?? fix_enc.js",
+    "?? grg/patch.js",
+    "?? grg/public-files.txt",
+    "?? grg/public/connections-panel.js",
+    "?? grg/public/fenix-bootstrap.js",
+    "?? grg/public/fenix-ide-v2.css",
+    "?? grg/public/index.html.bkp",
+    "?? grg/public/layout-patch.css",
+    "?? grg/public/live-runtime.js",
+    "?? grg/public/runtime-cockpit.js",
+    "?? grg/public/task-creator.js",
+    "?? grg/src-files.txt",
+    "?? grg/src/eventing/fenix-ws-bridge.js",
+    "?? grg/src/execution/dev-mission-planner.js",
+    "?? patch3.js",
+    "?? patch_html.js",
+    "?? patch_index2_js.js",
+    "?? patch_index_js.js",
+    "?? patch_jobs_backend.js",
+    "?? patch_jobs_html.js",
+    "?? patch_js.js",
+    "?? patch_logic.js",
+    "?? patch_pipeline.js",
+    "?? patch_reconnect.js",
+    "?? patch_registry.js",
+    "?? patch_routes.js",
+    "?? patch_sleep.js",
+    "?? patch_sleep2.js",
+    "?? patch_trigger.js",
+    "?? patch_trigger2.js",
+    "?? patch_ui.js",
+    "?? patch_ui.py",
+    "?? patch_ui2.py",
+    "?? patch_ui_v2.js",
+    "?? playwright.config.js",
+    "?? projects/",
+    "?? real_server_log.txt",
+    "?? scratch_add_project.js",
+    "?? scratch_backend_jobs.js",
+    "?? scratch_fix_devpipeline.js",
+    "?? scratch_fix_project.js",
+    "?? scratch_fix_queue.js",
+    "?? scratch_patch_html3.js",
+    "?? scratch_patch_routes.js",
+    "?? scratch_patch_sleep.js",
+    "?? scratch_patch_trigger.js",
+    "?? scratch_patch_worker.js",
+    "?? scratch_patch_worker2.js",
+    "?? scratch_reconnect.js",
+    "?? scratch_test_fix.js",
+    "?? server_crash_log.txt",
+    "?? temp-runtime-city.png",
+    "?? temp_artifacts/",
+    "?? test-results/",
+    "?? tests/cockpit.spec.js",
+    "?? tests/e2e/crash-recovery.spec.js",
+    "?? tests/e2e/fenix-os.spec.js",
+    "?? tests/e2e/real-daemon.spec.js",
+    "?? tests/e2e/trigger.js",
+    "?? {"
+  ],
+  "health": {
+    "ok": true,
+    "status": "ready",
+    "checks": {
+      "security-plane": {
+        "ok": true,
+        "critical": true,
+        "killSwitch": false
+      },
+      "state-store": {
+        "ok": true,
+        "critical": true,
+        "schemaVersion": 35,
+        "adapter": "file"
+      },
+      "ai-providers": {
+        "ok": true,
+        "critical": false,
+        "providers": {
+          "echo": {
+            "ok": true,
+            "circuit": {
+              "name": "ai:echo",
+              "state": "CLOSED",
+              "failures": 0,
+              "retryAt": null
+            }
+          }
+        },
+        "degraded": null
+      }
+    },
+    "checkedAt": "2026-08-24T17:58:57.276Z",
+    "service": "grg-services-os",
+    "environment": "development",
+    "boot": {
+      "ok": true,
+      "status": "KERNEL_ACTIVE"
+    },
+    "activation": "COMPLETED",
+    "requestId": "67fbf88d-bf42-4044-8789-7ab93e193573"
+  },
+  "snapshot": {
+    "serverTime": "2026-08-24T17:58:57.282Z",
+    "uptime": 417,
+    "status": "ONLINE",
+    "wsClients": 0,
+    "lastSeq": 222,
+    "workers": {
+      "active": 0,
+      "total": 3
+    },
+    "queue": {
+      "running": 0,
+      "queued": 0,
+      "completed": 13,
+      "failed": 0
+    },
+    "jobs": [
+      {
+        "id": "devjob-a7085e9a-d377-4899-a146-02bce67f85d6",
+        "type": "BACKEND_IMPLEMENT",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [
+          "devjob-09fa38da-06ef-4e24-b9e4-d57dca8c36a8",
+          "devjob-0a6c2432-a43b-4866-8bcc-32ece8e0531e"
+        ],
+        "agentId": "Backend",
+        "skill": "fullstack-slice-builder",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:48:02.05Z",
+        "completedAt": "2026-08-24T17:48:02.213Z",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [
+          "data/clients.json",
+          "src/server.js"
+        ],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:48:02.213Z",
+            "level": "completed",
+            "message": "Clients backend/data surface written"
+          }
+        ]
+      },
+      {
+        "id": "devjob-c0a3eaae-75eb-41d6-9285-6b592077ec02",
+        "type": "FRONTEND_IMPLEMENT",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [
+          "devjob-09fa38da-06ef-4e24-b9e4-d57dca8c36a8",
+          "devjob-0a6c2432-a43b-4866-8bcc-32ece8e0531e"
+        ],
+        "agentId": "Frontend",
+        "skill": "fullstack-slice-builder",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:48:05.052Z",
+        "completedAt": "2026-08-24T17:48:05.268Z",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [
+          "public/index.html",
+          "public/style.css",
+          "public/app.js"
+        ],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:48:05.268Z",
+            "level": "completed",
+            "message": "Complete clients screen written"
+          }
+        ]
+      },
+      {
+        "id": "devjob-09fa38da-06ef-4e24-b9e4-d57dca8c36a8",
+        "type": "DEV_CONTEXT",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [],
+        "agentId": "Architect",
+        "skill": "fenix-system-understanding",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:47:56.036Z",
+        "completedAt": "2026-08-24T17:47:56.223Z",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:47:56.223Z",
+            "level": "completed",
+            "message": "Project context inspected"
+          }
+        ]
+      },
+      {
+        "id": "devjob-0a6c2432-a43b-4866-8bcc-32ece8e0531e",
+        "type": "RAG_CONTEXT",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [
+          "devjob-09fa38da-06ef-4e24-b9e4-d57dca8c36a8"
+        ],
+        "agentId": "Knowledge",
+        "skill": "rag-context",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:47:59.041Z",
+        "completedAt": "2026-08-24T17:47:59.828Z",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:47:59.828Z",
+            "level": "completed",
+            "message": "RAG context queried"
+          }
+        ]
+      },
+      {
+        "id": "devjob-758bc565-baa8-40f7-955d-53bbe5dd9544",
+        "type": "INTEGRATION_CHECK",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [
+          "devjob-09fa38da-06ef-4e24-b9e4-d57dca8c36a8",
+          "devjob-a7085e9a-d377-4899-a146-02bce67f85d6",
+          "devjob-c0a3eaae-75eb-41d6-9285-6b592077ec02"
+        ],
+        "agentId": "Integrator",
+        "skill": "contract-check",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:48:08.066Z",
+        "completedAt": "2026-08-24T17:48:08.263Z",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:48:08.263Z",
+            "level": "completed",
+            "message": "Frontend/backend client contract verified"
+          }
+        ]
+      },
+      {
+        "id": "devjob-5d3edbe8-8094-4e5b-9a02-6667c3333240",
+        "type": "QA_TESTS",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [
+          "devjob-758bc565-baa8-40f7-955d-53bbe5dd9544"
+        ],
+        "agentId": "QA",
+        "skill": "frontend-click-qa",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:49:53.435Z",
+        "completedAt": "2026-08-24T17:49:53.637Z",
+        "failedAt": null,
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [],
+        "tests": {
+          "ran": true,
+          "passed": 4,
+          "failed": 0,
+          "checks": [
+            "syntax parse public/app.js",
+            "syntax parse src/server.js",
+            "DOM markers verified",
+            "client seed data verified"
+          ]
+        },
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:48:11.316Z",
+            "level": "retry",
+            "message": "spawnSync C:\\projetos\\ai-engine-core\\node.exe EPERM"
+          },
+          {
+            "at": "2026-08-24T17:48:14.26Z",
+            "level": "failed",
+            "message": "spawnSync C:\\projetos\\ai-engine-core\\node.exe EPERM"
+          },
+          {
+            "at": "2026-08-24T17:49:53.637Z",
+            "level": "completed",
+            "message": "Automated client checks passed"
+          }
+        ]
+      },
+      {
+        "id": "devjob-4bf4864a-9f8f-4ac6-ab3b-719fcc384eb6",
+        "type": "VISUAL_QA",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [
+          "devjob-5d3edbe8-8094-4e5b-9a02-6667c3333240"
+        ],
+        "agentId": "VisualQA",
+        "skill": "playwright-visual-qa",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:49:56.441Z",
+        "completedAt": "2026-08-24T17:49:58.561Z",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [],
+        "tests": null,
+        "browser": {
+          "ran": true,
+          "url": "http://127.0.0.1:56377"
+        },
+        "visualQa": {
+          "title": "Clientes",
+          "cards": 4,
+          "sourceMapped": true,
+          "search": true,
+          "form": true
+        },
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:49:58.561Z",
+            "level": "completed",
+            "message": "Playwright visual QA passed"
+          }
+        ]
+      },
+      {
+        "id": "devjob-a50a7bee-4019-446c-8033-6c73e055cfa6",
+        "type": "GIT_DIFF",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [
+          "devjob-4bf4864a-9f8f-4ac6-ab3b-719fcc384eb6"
+        ],
+        "agentId": "Release",
+        "skill": "git-status",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:49:59.443Z",
+        "completedAt": "2026-08-24T17:50:00.496Z",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:50:00.496Z",
+            "level": "completed",
+            "message": "Git status captured"
+          }
+        ]
+      },
+      {
+        "id": "devjob-410a8141-8e4b-4f88-926f-ab481ee7f8b0",
+        "type": "MEMORY_WRITE",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "parentId": null,
+        "dependencies": [
+          "devjob-a50a7bee-4019-446c-8033-6c73e055cfa6"
+        ],
+        "agentId": "Memory",
+        "skill": "mission-memory",
+        "model": {
+          "provider": "ollama",
+          "modelId": "qwen2.5:3b",
+          "tier": "MEDIUM"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "startedAt": "2026-08-24T17:50:02.446Z",
+        "completedAt": "2026-08-24T17:50:03.097Z",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": [
+          {
+            "at": "2026-08-24T17:50:03.097Z",
+            "level": "completed",
+            "message": "Mission memory persisted"
+          }
+        ]
+      },
+      {
+        "id": "1ee4301b-b9be-44e6-8fa9-e1f304c5f2ff",
+        "type": "MISSION_PLANNER",
+        "status": "COMPLETED",
+        "projectId": "daemon-test",
+        "client": "Playwright",
+        "parentId": null,
+        "dependencies": [],
+        "agentId": null,
+        "skill": null,
+        "model": null,
+        "createdAt": "2026-08-24T14:31:43.676Z",
+        "startedAt": "2026-08-24T14:31:44.316Z",
+        "completedAt": "2026-08-24T14:31:44.319Z",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": []
+      },
+      {
+        "id": "74a93bc0-b064-4cf8-9771-128441f6609b",
+        "type": "ANALYSIS",
+        "status": "COMPLETED",
+        "projectId": "daemon-test",
+        "parentId": null,
+        "dependencies": [],
+        "agentId": null,
+        "skill": null,
+        "model": null,
+        "createdAt": "2026-08-24T14:31:44.317Z",
+        "startedAt": "2026-08-24T14:31:44.32Z",
+        "completedAt": "2026-08-24T14:31:47.33Z",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": []
+      },
+      {
+        "id": "66971acc-ee55-4b9c-9bd5-a4f2746a7ea2",
+        "type": "FRONTEND",
+        "status": "COMPLETED",
+        "projectId": "daemon-test",
+        "parentId": null,
+        "dependencies": [
+          "74a93bc0-b064-4cf8-9771-128441f6609b"
+        ],
+        "agentId": null,
+        "skill": null,
+        "model": null,
+        "createdAt": "2026-08-24T14:31:44.318Z",
+        "startedAt": "2026-08-24T14:31:47.427Z",
+        "completedAt": "2026-08-24T14:31:50.441Z",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": []
+      },
+      {
+        "id": "f34e7ac9-52fb-464e-87aa-6b83d224679a",
+        "type": "MISSION_PLANNER",
+        "status": "COMPLETED",
+        "projectId": "daemon-test",
+        "client": "CodexSelfCheck",
+        "parentId": null,
+        "dependencies": [],
+        "agentId": null,
+        "skill": null,
+        "model": null,
+        "createdAt": "2026-08-24T17:20:13.904Z",
+        "startedAt": "2026-08-24T17:20:14.276Z",
+        "completedAt": "2026-08-24T17:20:15.23Z",
+        "filesChanged": [],
+        "tests": null,
+        "browser": null,
+        "visualQa": null,
+        "error": null,
+        "logs": []
+      }
+    ],
+    "runtimeJobs": [
+      {
+        "id": "4583c4ee-5d95-41b7-afd9-209103a96869",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:50:47.265Z",
+        "workerId": null
+      },
+      {
+        "id": "d3ee69eb-b4fd-4294-b066-0517b6b3bfd2",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:50:50.3Z",
+        "workerId": null
+      },
+      {
+        "id": "2087e619-e864-4a9d-8e6f-0cff8967c29d",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:51:31.709Z",
+        "workerId": null
+      },
+      {
+        "id": "eb5a9dd4-33b2-445e-97a6-40b36ec63ec3",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:51:37.908Z",
+        "workerId": null
+      },
+      {
+        "id": "1fba9f5d-dd79-4322-ad07-b95489d0607d",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:52:34.488Z",
+        "workerId": null
+      },
+      {
+        "id": "58fec6bf-394f-440d-9aef-91786e259308",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:52:42.066Z",
+        "workerId": null
+      },
+      {
+        "id": "1708d0bc-9048-4acd-acc2-3fbbad2696a1",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:53:14.172Z",
+        "workerId": null
+      },
+      {
+        "id": "29ecaeb3-6ccf-447b-ac14-a34b60a42791",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:53:21.41Z",
+        "workerId": null
+      },
+      {
+        "id": "e8dec3c2-2230-4d18-b724-3a100692c729",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:53:53.114Z",
+        "workerId": null
+      },
+      {
+        "id": "c8185def-cb5f-413b-b2d5-77fa6decfb63",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:54:02.049Z",
+        "workerId": null
+      },
+      {
+        "id": "372706bc-53a5-4726-9ae1-c2d54227b47e",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:55:14.062Z",
+        "workerId": null
+      },
+      {
+        "id": "f90417f8-50bf-4449-bf00-6afbf0c32788",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:55:17.831Z",
+        "workerId": null
+      },
+      {
+        "id": "692babf3-7fb6-4b89-8251-0fcded314036",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:56:32.306Z",
+        "workerId": null
+      },
+      {
+        "id": "2e6233bd-39a3-4ffe-8db8-1007953229e7",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:56:38.501Z",
+        "workerId": null
+      },
+      {
+        "id": "9bcbd8fa-f3a9-4d37-9499-fadbe73cabc5",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:57:53.994Z",
+        "workerId": null
+      },
+      {
+        "id": "a8dcff65-5136-47e3-8623-2a2fe00c2cff",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:57:58.311Z",
+        "workerId": null
+      },
+      {
+        "id": "d5fbef6e-1bef-4653-9b85-4588077715eb",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:58:59.826Z",
+        "workerId": null
+      },
+      {
+        "id": "853b5a6c-5a6a-4429-94d5-b7addce76ef3",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T20:59:06.119Z",
+        "workerId": null
+      },
+      {
+        "id": "4897078d-a2d2-4656-838d-3b7afe2da039",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T21:29:55.089Z",
+        "workerId": null
+      },
+      {
+        "id": "129d3cbf-40fe-43d8-88ee-6bde8d940009",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T21:29:58.654Z",
+        "workerId": null
+      },
+      {
+        "id": "a0be64a8-366f-475f-b360-dae266aa09e7",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T21:45:39.2Z",
+        "workerId": null
+      },
+      {
+        "id": "94a9f7c6-b6de-4a46-b04a-bbf1192145a2",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-21T21:45:43.679Z",
+        "workerId": null
+      },
+      {
+        "id": "cb56caea-0b6d-4bea-92fc-e6b33e5c96fa",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-24T12:03:02.364Z",
+        "workerId": null
+      },
+      {
+        "id": "d0e5c314-ee67-4a79-a473-8992c77247e3",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-24T12:03:08.289Z",
+        "workerId": null
+      },
+      {
+        "id": "977613af-b713-4a40-b39a-2ea2da7e77af",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-24T12:05:50.57Z",
+        "workerId": null
+      },
+      {
+        "id": "17defb30-3177-420a-9a1c-6dcce2da61a9",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-24T12:06:14.331Z",
+        "workerId": null
+      },
+      {
+        "id": "d5761295-37ef-4778-9f6b-5a7632bfbea5",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-24T12:09:34.428Z",
+        "workerId": null
+      },
+      {
+        "id": "c6bf5922-4650-4588-869d-81b87de5d148",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-24T12:09:39.247Z",
+        "workerId": null
+      },
+      {
+        "id": "8e42d53c-7da4-4cd7-8ad2-d5a869cd189d",
+        "type": "discovery.scan",
+        "status": "QUEUED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-24T12:16:09.311Z",
+        "workerId": null
+      },
+      {
+        "id": "08eae471-a295-4ccf-8d33-13614d1b7be8",
+        "type": "discovery.scan",
+        "status": "CANCELLED",
+        "tenantId": "grg",
+        "createdAt": "2026-08-24T12:16:15.022Z",
+        "workerId": null
+      }
+    ],
+    "agents": [],
+    "missions": [
+      {
+        "id": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "missionId": "devmission-38865e68-9c24-48cd-a431-212b0e20fe48",
+        "status": "COMPLETED",
+        "projectId": "fenix_clients_phase2",
+        "client": "CodexPhase2MandatoryTest",
+        "objective": "Crie uma tela completa de clientes com cadastro, busca, filtros, cards, backend API e validacao visual real.",
+        "intent": "FULLSTACK_FEATURE",
+        "stats": {
+          "totalJobs": 9,
+          "completed": 9,
+          "failed": 0,
+          "cancelled": 0,
+          "running": 0,
+          "queued": 0,
+          "paused": 0
+        },
+        "definitionOfDone": {
+          "mission": "all jobs terminal and no failed dependency",
+          "frontend": "real files changed and UI entrypoint verified",
+          "backend": "real data/API surface verified",
+          "tests": "automated checks executed with captured output",
+          "visual": "browser evidence captured or SOURCE_MAPPING_UNAVAILABLE reported",
+          "memory": "mission summary persisted after terminal jobs"
+        },
+        "createdAt": "2026-08-24T17:47:55.037Z",
+        "updatedAt": "2026-08-24T17:51:37.491Z",
+        "completedAt": "2026-08-24T17:50:03.097Z",
+        "failedAt": null
+      }
+    ],
+    "requestId": "c8a40378-f00e-4eaa-8e24-2c3ca9a0189e"
+  }
+}

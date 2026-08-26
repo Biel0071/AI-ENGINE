@@ -1,0 +1,92 @@
+/* ============================================================================
+   GRG FÊNIX Ω∞ — LIVING PANELS
+   ----------------------------------------------------------------------------
+   Estilos dos paineis que passaram a receber dado MEDIDO em vez de literal no
+   HTML: console operacional de eventos, arvore Program→Mission→Job, briefing e
+   os marcadores de ausencia.
+
+   Principio visual (padrao FENIX OS): poucas cores, muito contraste, laranja
+   dominante, glow discreto, nada pisca sem motivo. Estende styles.css — nao
+   reescreve. Regra 1: compor o que existe.
+
+   Principio de honestidade: o marcador de ausencia ("—") tem tratamento visual
+   PROPRIO e discreto. Ele nao deve parecer um numero nem um erro: e a informacao
+   "o FENIX ainda nao mediu isto", e precisa ser legivel como tal.
+   ============================================================================ */
+
+/* --- AUSENCIA HONESTA -------------------------------------------------------
+   Um slot vazio nunca deve gritar. Cor de texto secundario e peso normal
+   distinguem "nao medido" de um valor real, sem parecer falha. */
+.mini-metric b:empty::after,
+.count:empty::after { content: "—"; color: var(--muted); font-weight: 400; }
+
+.empty-city,
+.dag-empty,
+.terminal-empty {
+  color: var(--muted);
+  font-size: 11px;
+  padding: 12px 4px;
+  text-align: center;
+}
+.dag-empty[hidden], .terminal-empty[hidden] { display: none; }
+
+.dag-empty-inline { color: var(--muted); font-style: italic; }
+
+/* --- CONSOLE OPERACIONAL (estilo Warp) -------------------------------------
+   Compacto por regra: "Nunca texto enorme. Sempre compacto." Cada linha e um
+   evento real do barramento; o timestamp vem do evento, nao do render. */
+.op-terminal {
+  font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  background: #020617;
+  color: #cbd5e1;
+  padding: 12px 14px;
+  border-radius: 8px;
+  height: 160px;
+  overflow-y: auto;
+  margin-top: 12px;
+  border: 1px solid #16202e;
+  scrollbar-width: thin;
+}
+.op-terminal > div {
+  padding: 1px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.op-terminal > div:hover { background: #0b1220; }
+.ev-time { color: #475569; }
+.ev-kind { color: var(--gold); font-weight: 600; }
+
+/* --- ARVORE PROGRAM -> MISSION -> JOB --------------------------------------
+   Hierarquia por indentacao e cor, sem borda pesada. Cada nivel derivado de
+   dado real; sem programa, a arvore fica vazia e o aviso aparece. */
+.dag-tree {
+  font: 12px/1.75 Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, .5);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  max-height: 260px;
+  overflow: auto;
+}
+.dag-l1 { color: var(--gold); font-weight: 650; margin-top: 6px; }
+.dag-l1:first-child { margin-top: 0; }
+.dag-l2 { padding-left: 20px; color: #e2e8f0; }
+.dag-l2::before { content: "└─ "; color: #475569; }
+.dag-l3 { padding-left: 42px; color: var(--muted); font-size: 11px; }
+.dag-l3::before { content: "├─ "; color: #475569; }
+
+/* --- BRIEFING DERIVADO ----------------------------------------------------- */
+.brief-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.brief-list li { font-size: 13px; }
+.brief-list b { color: var(--gold); font-weight: 650; text-transform: lowercase; }
+
+/* --- RESPONSIVO ------------------------------------------------------------
+   Mobile: o console e a arvore encolhem em vez de estourar a largura. */
+@media (max-width: 760px) {
+  .op-terminal { height: 120px; font-size: 11px; }
+  .op-terminal > div { white-space: normal; }
+  .dag-tree { max-height: 200px; }
+  .dag-l3 { padding-left: 30px; }
+}

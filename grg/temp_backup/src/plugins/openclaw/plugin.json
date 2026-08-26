@@ -1,0 +1,15 @@
+{
+  "id": "openclaw",
+  "type": "browser",
+  "version": "1.0.0",
+  "capabilities": [
+    "BrowserAutomation",
+    "Navigation",
+    "Forms",
+    "Cookies"
+  ],
+  "permissions": [
+    "network"
+  ],
+  "entry": "index.js"
+}

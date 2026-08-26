@@ -1,0 +1,21 @@
+{
+  "ev": {
+    "hasAgent": true,
+    "hasAgente": true,
+    "hasAndar": true,
+    "hasCidade": true,
+    "hasJob": true,
+    "hasOnline": true,
+    "hasPredio": true,
+    "hasRuntimeReal": true,
+    "nodes": 23,
+    "panels": 5,
+    "renderErrors": null,
+    "snapshotStatus": null,
+    "textStart": "FÊNIX OS v2.1.0\nAI Platform\nCONNECTED\nMODELO ATIVO\nqwen2.5-coder\nLATÊNCIA\n-- ms\nTOKENS USADOS\n0\nJOBS\n0 running\nFILA\n0 queued\nWSS\nCONNECTING\ngrg-admin\nMASTER ADMIN\nCIDADE\nPRÉDIO\nANDAR\nAGENTE\n1\nVISAO DA CIDADE\nRUNTIME REAL · ONLINE\nAPI DISTRICT\n80 jobs\nFENIX TOWER\n11 agentes\nDEV DISTRICT\n48 salas\nDATA",
+    "title": "FENIX OS | Unified Workspace | FÊNIX OS | Master Agentic IDE",
+    "url": "http://127.0.0.1:4400/app?fenix_visual_revolution=1#city"
+  },
+  "screenshot": "C:/projetos/ai-engine-core/ai-engine/temp_fenix_digital_company_evolution_final_app.png",
+  "capturedAt": "2026-08-25T00:04:43.423Z"
+}
