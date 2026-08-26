@@ -279,18 +279,21 @@
   gap: 16px;
 }
 .diag-card {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: var(--bg-glass-blur);
+  -webkit-backdrop-filter: var(--bg-glass-blur);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .diag-card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 8px 32px rgba(47, 129, 247, 0.2);
+  transform: translateY(-2px);
 }
 .diag-card-header {
   display: flex;
@@ -332,6 +335,6 @@
   font-weight: 700;
   text-transform: uppercase;
 }
-.diag-badge.online { background: rgba(35, 134, 54, 0.2); color: var(--green); border: 1px solid rgba(35, 134, 54, 0.4); }
-.diag-badge.offline { background: rgba(248, 81, 73, 0.2); color: var(--rose); border: 1px solid rgba(248, 81, 73, 0.4); }
-.diag-badge.warn { background: rgba(210, 153, 34, 0.2); color: var(--warn); border: 1px solid rgba(210, 153, 34, 0.4); }
+.diag-badge.online { background: rgba(35, 134, 54, 0.2); color: var(--green); border: 1px solid rgba(35, 134, 54, 0.5); box-shadow: 0 0 10px rgba(35, 134, 54, 0.3); }
+.diag-badge.offline { background: rgba(248, 81, 73, 0.2); color: var(--rose); border: 1px solid rgba(248, 81, 73, 0.5); box-shadow: 0 0 10px rgba(248, 81, 73, 0.3); }
+.diag-badge.warn { background: rgba(210, 153, 34, 0.2); color: var(--warn); border: 1px solid rgba(210, 153, 34, 0.5); box-shadow: 0 0 10px rgba(210, 153, 34, 0.3); }

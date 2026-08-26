@@ -34,8 +34,27 @@
        document.documentElement.classList.add('is-preview-mode');
     }
   </script>
+  <style>
+    .mesh-background {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      z-index: -1;
+      background-image: 
+        radial-gradient(at 40% 20%, rgba(59,130,246,0.15) 0px, transparent 50%),
+        radial-gradient(at 80% 0%, rgba(139,92,246,0.15) 0px, transparent 50%),
+        radial-gradient(at 0% 50%, rgba(14,165,233,0.15) 0px, transparent 50%);
+      background-color: #030712;
+      animation: meshPulse 15s ease-in-out infinite alternate;
+    }
+    @keyframes meshPulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.05); opacity: 1; }
+    }
+  </style>
 </head>
 <body class="dark-theme">
+  <!-- Animated Mesh Background -->
+  <div class="mesh-background"></div>
   
   <div class="fenix-os-layout">
     
