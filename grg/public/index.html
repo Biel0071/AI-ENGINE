@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>FÊNIX OS | Master Agentic IDE</title>
+  <title>F?NIX OS | Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Fonts & Icons -->
@@ -29,6 +29,11 @@
   <link rel="stylesheet" href="/command-center.css">
   <link rel="stylesheet" href="/city-overrides.css">
   <link rel="stylesheet" href="/living-panels.css">
+  <script>
+    if (window.location.search.includes('is_preview=true')) {
+       document.documentElement.classList.add('is-preview-mode');
+    }
+  </script>
 </head>
 <body class="dark-theme">
   
@@ -39,7 +44,7 @@
       <div class="topbar-left">
         <div class="brand-logo">
           <i class="ph-fill ph-fire"></i>
-          <span>FÊNIX OS <span class="version-badge">v2.1.0</span></span>
+          <span>F?NIX OS <span class="version-badge">v2.1.0</span></span>
         </div>
         <div class="connection-status">
           <i id="statusDot" class="ph-fill ph-circle" style="color: var(--green);"></i> 
@@ -50,10 +55,10 @@
       
       <div class="topbar-metrics">
         <div class="metric"><small>Modelo Ativo</small><b>qwen2.5-coder</b></div>
-        <div class="metric"><small>Latência</small><b id="kpiLatency">-- ms</b></div>
+        <div class="metric"><small>Lat?ncia</small><b id="kpiLatency">-- ms</b></div>
         <div class="metric"><small>Tokens Usados</small><b id="kpiTokens">0</b></div>
         <div class="metric"><small>Agentes</small><b id="kpiAgents">0/19</b></div>
-        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% Saudável</b></div>
+        <div class="metric"><small>Sistema</small><b id="kpiSystem" style="color: var(--green);">100% Saud?vel</b></div>
       </div>
       
       <div class="topbar-right">
@@ -90,7 +95,7 @@
               <b style="color: var(--green);">100%</b>
               <small>0 errors unhandled</small>
             </div>
-            <button class="nav-item" title="Configura??es"><i class="ph ph-gear"></i></button>
+            <button class="nav-item" title="Configurações"><i class="ph ph-gear"></i></button>
           </div>
         </nav>
 
@@ -148,12 +153,12 @@
           <div class="ide-split-layout">
             
             <!-- LEFT PANEL: Chat / Agents / Memory -->
-            <div class="panel-left">
+            <div class="panel-left" id="idePanelLeft">
               <div class="panel-tabs">
                 <button class="panel-tab active">CHAT</button>
                 <button class="panel-tab">AGENTS</button>
                 <button class="panel-tab">JOBS</button>
-                <button class="panel-tab">MEM?RIA</button>
+                <button class="panel-tab">MEMÓRIA</button>
                 <button class="panel-tab">GRAFOS</button>
               </div>
               
@@ -162,14 +167,14 @@
                   <div class="chat-bubble chat-bot">
                     <div class="chat-avatar"><i class="ph-fill ph-robot"></i></div>
                     <div class="chat-text-wrapper">
-                      <strong>FÊNIX AI <span class="badge-online">Online</span></strong>
-                      <div class="chat-text">Olá! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
+                      <strong>F?NIX AI <span class="badge-online">Online</span></strong>
+                      <div class="chat-text">Ol?! Como posso ajudar no desenvolvimento do seu projeto hoje?</div>
                     </div>
                   </div>
                 </div>
                 
                 <form id="cmdForm" class="chat-composer">
-                  <textarea id="prompt" placeholder="Digite seu comando para o Fênix..." rows="2"></textarea>
+                  <textarea id="prompt" placeholder="Digite seu comando para o F?nix..." rows="2"></textarea>
                   <div class="composer-actions">
                     <div class="composer-models">
                       <i class="ph ph-cpu"></i> <span>qwen2.5-coder</span>
@@ -181,16 +186,16 @@
             </div>
             
             <!-- CENTER PANEL: Editor Visual / Code -->
-            <div class="panel-center">
+            <div class="split-handle" id="splitLeft"></div><div class="panel-center" id="idePanelCenter">
               
               <div class="editor-header">
-                <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + CÓDIGO</span></div>
+                <div class="editor-title"><i class="ph ph-paint-brush-broad"></i> <span id="currentEditorTitle">EDITOR VISUAL + C?DIGO</span></div>
                 <div class="editor-toolbar">
                   <button class="toolbar-btn"><i class="ph ph-desktop"></i></button>
                   <button class="toolbar-btn"><i class="ph ph-device-mobile"></i></button>
                   <div class="toolbar-divider"></div>
                   <button class="toolbar-btn active">Visual</button>
-                  <button class="toolbar-btn">Código</button>
+                  <button class="toolbar-btn">C?digo</button>
                   <button class="toolbar-btn">Split</button>
                   <button class="toolbar-btn">Preview</button>
                 </div>
@@ -207,38 +212,8 @@
                 </div>
                 
                 <!-- Monaco Code Editor -->
-                <div id="monacoEditor" class="monaco-container"></div>
-                
-              </div>
-              
-              <!-- Terminal Bottom Panel -->
-              <div class="terminal-panel">
-                <div class="terminal-header">
-                  <div class="terminal-tabs">
-                    <button class="terminal-tab active">TERMINAL</button>
-                    <button class="terminal-tab">OUTPUT</button>
-                    <button class="terminal-tab">DEBUG CONSOLE</button>
-                    <button class="terminal-tab">PORTS</button>
-                  </div>
-                  <div class="terminal-actions">
-                    <button class="icon-btn-small" id="clearTerminalBtn"><i class="ph ph-trash"></i></button>
-                    <button class="icon-btn-small"><i class="ph ph-x"></i></button>
-                  </div>
-                </div>
-                <div class="terminal-body">
-                  <div id="xtermContainer" style="width:100%; height:100%;"></div>
-                </div>
-                <div class="terminal-input-row">
-                  <i class="ph-bold ph-caret-right prompt-char"></i>
-                  <input id="terminalCmd" type="text" placeholder="Executar comando no workspace..." autocomplete="off">
-                  <button id="terminalBtn" class="btn-ghost-sm" style="display:none;">Run</button>
-                </div>
-              </div>
-              
-            </div>
-            
-            <!-- RIGHT PANEL: Structure / Files -->
-            <div class="panel-right">
+                <div id="monacoEditor" class="monaco-container"></div><!-- RIGHT PANEL: Structure / Files -->
+            <div class="split-handle" id="splitRight"></div><div class="panel-right" id="idePanelRight">
               <div class="panel-header">
                 <span>ESTRUTURA</span>
                 <div class="header-actions">
@@ -332,6 +307,11 @@
   </script>
 </body>
 </html>
+
+
+
+
+
 
 
 

@@ -167,7 +167,7 @@ window.addEventListener('load', () => {
         if (btn.textContent === 'Visual') {
           document.querySelector('.monaco-container').style.display = 'none';
           document.querySelector('.visual-canvas').style.display = 'flex';
-          $('previewIframe').src = '/preview'; // Fênix Own View
+          $('previewIframe').src = '/app?is_preview=true'; // Fênix Own View
         } else if (btn.textContent === 'Código') {
           document.querySelector('.monaco-container').style.display = 'block';
           document.querySelector('.visual-canvas').style.display = 'none';
@@ -375,3 +375,59 @@ window.addEventListener('load', () => {
 });
 
 
+
+  // Resizing Logic
+  const splitLeft = document.getElementById('splitLeft');
+  const splitRight = document.getElementById('splitRight');
+  const panelLeft = document.getElementById('idePanelLeft');
+  const panelRight = document.getElementById('idePanelRight');
+  const layout = document.querySelector('.ide-split-layout');
+  
+  let isDragging = null;
+  
+  if (splitLeft) splitLeft.addEventListener('mousedown', () => isDragging = 'left');
+  if (splitRight) splitRight.addEventListener('mousedown', () => isDragging = 'right');
+  
+  document.addEventListener('mousemove', (e) => {
+     if (!isDragging || !layout) return;
+     const rect = layout.getBoundingClientRect();
+     if (isDragging === 'left') {
+        const w = e.clientX - rect.left;
+        if (w > 100 && w < rect.width - 200) panelLeft.style.width = w + 'px';
+     } else if (isDragging === 'right') {
+        const w = rect.right - e.clientX;
+        if (w > 100 && w < rect.width - 200) panelRight.style.width = w + 'px';
+     }
+  });
+  
+  document.addEventListener('mouseup', () => isDragging = null);
+  
+  // Swap Panels Logic
+  const swapBtn = document.createElement('button');
+  swapBtn.className = 'icon-btn-small';
+  swapBtn.innerHTML = '<i class="ph ph-arrows-left-right"></i>';
+  swapBtn.title = 'Inverter Lados';
+  const rightHeader = document.querySelector('#idePanelRight .header-actions');
+  if (rightHeader) {
+     rightHeader.insertBefore(swapBtn, rightHeader.firstChild);
+     swapBtn.addEventListener('click', () => {
+        const isReversed = layout.style.flexDirection === 'row-reverse';
+        layout.style.flexDirection = isReversed ? 'row' : 'row-reverse';
+     });
+  }
+  const splitBottom = document.getElementById('splitBottom');
+  const termPanel = document.getElementById('globalTerminalPanel');
+  
+  if (splitBottom) splitBottom.addEventListener('mousedown', () => isDragging = 'bottom');
+  
+  document.addEventListener('mousemove', (e) => {
+     if (isDragging === 'bottom' && termPanel) {
+        const h = window.innerHeight - e.clientY;
+        if (h > 100 && h < window.innerHeight - 200) termPanel.style.height = h + 'px';
+     }
+  });
+
+  const closeTerm = document.getElementById('closeTerminalBtn');
+  if (closeTerm) closeTerm.addEventListener('click', () => {
+      termPanel.style.display = 'none';
+  });
