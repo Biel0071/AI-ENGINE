@@ -358,9 +358,10 @@ async function createApp(options = {}) {
 
   // LLM para o chat entender/falar. Cadeia de fallback: AI Platform (VPS/gateway do usuário)
   // → Ollama local → modo regras. Opt-in: options.llm (instância) OU env GRG_LLM=1.
-  let llm = options.llm && options.llm !== true ? options.llm : null;
-  app.llmSource = llm ? 'injected' : 'none';
-  if (!llm && (options.llm === true || process.env.GRG_LLM === '1' || process.env.GRG_LLM !== '0')) {
+  const llmDisabled = options.llm === false;
+  let llm = (!llmDisabled && options.llm && options.llm !== true) ? options.llm : (llmDisabled ? false : null);
+  app.llmSource = (llm && llm !== false) ? 'injected' : 'none';
+  if (llm !== false && !llm && (options.llm === true || process.env.GRG_LLM === '1' || process.env.GRG_LLM !== '0')) {
     // 1) AI Platform Enterprise (a "API GRATIS" — gateway multi-provider na VPS ou local)
     try {
       const { AIPlatformProvider } = require('./ai-runtime/aiplatform-provider');

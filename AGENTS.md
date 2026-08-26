@@ -127,6 +127,10 @@ Evidencias auditadas:
   OpenAI foi detectada, mas seu health terminou `DEGRADED`. O router operacional
   selecionou somente `echo`, unico provider com self-test conectado. Nenhuma tela
   deve apresentar QWEN/OpenAI como disponiveis enquanto esses checks nao mudarem.
+- Em 2026-08-26 o runtime canonico foi religado com `PORT=4400`; `GET /health`
+  respondeu `ready` e `GET /api/system/boot-status` respondeu `KERNEL_ACTIVE`.
+  Sem `PORT` explicita, a execucao direta ainda sobe em `:4000`, portanto a porta
+  canonica depende do ambiente/dev script e nao do default interno do servidor.
 - Os gates `frontend-honesty` (4/4), `frontend-runtime-safety` (5/5),
   `operational-console-ui` (6/6) e `architecture-guard` passaram neste ciclo.
 - A sessao visual autenticada no navegador continua pendente; o login publico foi
@@ -227,11 +231,16 @@ $env:PORT=4400
   `grg/src/server.js`; o servidor anterior existe apenas como `npm run start:legacy`.
 - Decidido: o controlador duplicado da AI City foi removido de `unified-app.js`;
   `iso-city.js` e a unica implementacao ativa da cidade.
+- Decidido: `options.llm = false` desliga o chat natural de forma explicita e nao
+  pode reativar fallback por variavel de ambiente; o modo regras passa a ser
+  respeitado ate `ChatAgent` e `ConversationStore`.
 - Pendente: substituir os adaptadores in-memory por Postgres/Redis/Qdrant configurados
   no ambiente de producao e comprovar persistencia entre reinicios.
 - Pendente: restaurar conectividade/autenticacao de pelo menos um provider de IA
   externo e executar uma chamada de inferencia com provider, modelo, latencia e
   tokens registrados. A presenca de chave, isoladamente, nao prova disponibilidade.
+- Pendente: tornar `:4400` o default interno do runtime canonico ou garantir esse
+  bind por script/deploy sem depender de export manual de `PORT`.
 - Pendente: concluir o E2E visual autenticado em desktop e breakpoint menor.
 
 Enquanto essas decisoes nao forem fechadas, implementar primeiro o fluxo principal:
