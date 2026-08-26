@@ -859,7 +859,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        const { projectId, title, objective, riskLevel, targetFiles, allowAutoExecution } = payload;
+        const { projectId, title, objective, riskLevel, targetFiles, allowAutoExecution, planSteps } = payload;
         if (!title || !objective) throw new Error('title and objective are required');
 
         const job = await jarvisOrchestrator.submitJob({
@@ -868,7 +868,8 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
           objective,
           riskLevel: riskLevel || 'SAFE',
           targetFiles: targetFiles || [],
-          allowAutoExecution: allowAutoExecution !== false
+          allowAutoExecution: allowAutoExecution !== false,
+          planSteps
         });
 
         sendJson(res, 201, { success: true, job });

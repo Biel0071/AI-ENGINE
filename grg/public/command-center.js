@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  // Melhoria Segura Fenix 2.0
 
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',

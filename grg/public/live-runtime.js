@@ -45,7 +45,7 @@
 
   function wsUrl() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${location.host}/runtime`;
+    return `${proto}//${location.host}/events`;
   }
 
   function emit(type, detail) {
