@@ -1,10 +1,17 @@
 function loadInfrastructureConfig(env = process.env, options = {}) {
   const production = (env.FENIX_ENV || env.NODE_ENV) === 'production';
+  const fs = require('fs');
+  const readSecret = (path) => { try { return fs.readFileSync(path, 'utf8').trim(); } catch { return null; } };
+  const pgPassword = readSecret('/run/secrets/postgres_password') || '';
+  const redisPassword = readSecret('/run/secrets/redis_password') || '';
+  const dbUrl = env.DATABASE_URL || (pgPassword ? `postgresql://${env.POSTGRES_USER || 'fenix'}:${pgPassword}@postgres:5432/${env.POSTGRES_DB || 'fenix'}?schema=${env.FENIX_DATABASE_SCHEMA || 'fenix'}` : null);
+  const rdUrl = env.REDIS_URL || (redisPassword ? `redis://default:${redisPassword}@redis:6379` : null);
+
   const config = {
-    databaseUrl: env.DATABASE_URL || null,
+    databaseUrl: dbUrl,
     databaseSchema: env.FENIX_DATABASE_SCHEMA || 'fenix',
-    redisUrl: env.REDIS_URL || null,
-    queueRedisUrl: env.FENIX_QUEUE_REDIS_URL || env.REDIS_URL || null,
+    redisUrl: rdUrl,
+    queueRedisUrl: env.FENIX_QUEUE_REDIS_URL || rdUrl,
     qdrant: env.FENIX_QDRANT_URL ? {
       baseUrl: env.FENIX_QDRANT_URL,
       apiKey: env.FENIX_QDRANT_API_KEY || null,

@@ -269,7 +269,7 @@ class JobEngine {
   async #enqueue(job) {
     const delay = Math.max(0, Date.parse(job.scheduledFor) - this.clock.now());
     await this.queue.enqueue('fenix-runtime', job.type, { tenantId: job.tenantId, jobId: job.id }, {
-      idempotencyKey: `${job.id}:${job.attempts}`, attempts: 1, delay,
+      idempotencyKey: `${job.id}-${job.attempts}`, attempts: 5, backoff: { type: 'exponential', delay: 500 }, delay,
     });
   }
   async #publish(job, type, actorId) { if (!this.events) return; await this.events.publish({ tenantId: job.tenantId, stream: `job:${job.id}`, type, source: 'fenix-runtime', subject: job.id, data: { actorId, jobId: job.id, jobType: job.type, status: job.status, attempts: job.attempts, limits: job.limits }, idempotencyKey: `${type}:${job.id}:${job.attempts}` }); }

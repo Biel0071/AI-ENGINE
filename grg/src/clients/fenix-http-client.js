@@ -24,6 +24,9 @@ class FenixHttpClient {
   reject(jobId, reason) { return this.request(`/api/v2/jobs/${encodeURIComponent(jobId)}/reject`, { method: 'POST', body: { reason } }); }
   rollback(jobId) { return this.request(`/api/v2/jobs/${encodeURIComponent(jobId)}/rollback`, { method: 'POST', body: {} }); }
   status() { return this.request('/api/v2/system/status'); }
+  projectMap() { return this.request('/api/project-mirror'); }
+  getScreen(name) { return this.request(`/api/project-mirror/screen/${encodeURIComponent(name)}`); }
+  generateScreen(input) { return this.request('/api/v2/jobs', { method: 'POST', body: { ...input, type: 'screen.generate' } }); }
 }
 
 module.exports = { FenixHttpClient };

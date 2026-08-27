@@ -11,6 +11,10 @@ const TOOLS = [
   tool('fenix_approve_job', 'Approve a HIGH/CRITICAL FENIX job as a separate approver', { jobId: str(true) }),
   tool('fenix_reject_job', 'Reject a HIGH/CRITICAL FENIX job', { jobId: str(true), reason: str() }),
   tool('fenix_rollback_job', 'Remove the isolated worktree and mark a FENIX job rolled back', { jobId: str(true) }),
+  tool('fenix_project_map', 'Get the FENIX Project Mirror map (files, routes, APIs, screens)', {}),
+  tool('fenix_get_screen', 'Get details of a specific UI screen (components, APIs)', { name: str(true) }),
+  tool('fenix_generate_screen', 'Submit a job to generate a new screen from prompt', { prompt: str(true) }),
+  tool('fenix_get_context', 'Get the active system and project context', {}),
 ];
 
 function str(required = false) { return { type: 'string', ...(required ? { required: true } : {}) }; }
@@ -29,6 +33,10 @@ async function callTool(client, name, args = {}) {
   if (name === 'fenix_approve_job') return client.approve(args.jobId);
   if (name === 'fenix_reject_job') return client.reject(args.jobId, args.reason);
   if (name === 'fenix_rollback_job') return client.rollback(args.jobId);
+  if (name === 'fenix_project_map') return client.projectMap();
+  if (name === 'fenix_get_screen') return client.getScreen(args.name);
+  if (name === 'fenix_generate_screen') return client.generateScreen(args);
+  if (name === 'fenix_get_context') return { project: await client.projectMap().catch(()=>({})), status: await client.status().catch(()=>({})) };
   throw new Error(`unknown MCP tool: ${name}`);
 }
 
