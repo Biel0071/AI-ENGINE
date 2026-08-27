@@ -176,6 +176,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cli\\runtime-console.js"
     },
     {
+      "name": "FenixHttpClient",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\clients\\fenix-http-client.js"
+    },
+    {
       "name": "CognitiveBank",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\cognition\\cognitive-bank.js"
@@ -1607,9 +1612,19 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\dev-pipeline.js"
     },
     {
+      "name": "GitWorktreeManager",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\git-worktree-manager.js"
+    },
+    {
       "name": "ProjectFactoryService",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\project-factory.js"
+    },
+    {
+      "name": "SafeDevPipeline",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\software-factory\\safe-dev-pipeline.js"
     },
     {
       "name": "SoftwareFactory",

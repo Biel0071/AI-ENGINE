@@ -174,6 +174,7 @@ async function refreshAll() {
         ['speed', () => api('/performance/speed-score')],
         ['hotMemory', () => api('/performance/hot-memory')],
       ],
+      command: []
     };
     const entries = viewEntries[activeView] ? [...essentialEntries, ...viewEntries[activeView]] : [
       ['health', () => publicJson('/health')],
