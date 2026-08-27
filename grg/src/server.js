@@ -17,6 +17,8 @@ const { handleMissionRoutes } = require('./missions/mission-routes');
 const { handleKnowledgeRoutes } = require('./knowledge/knowledge-routes');
 const { handleDeveloperRoutes } = require('./api/developer-routes');
 const { handleProductExperienceRoutes } = require('./api/product-experience-routes');
+const { handleUniversalJobRoutes } = require('./api/universal-job-routes');
+const { handleProjectMirrorRoutes } = require('./api/project-mirror-routes');
 
 const crypto = require('node:crypto');
 
@@ -31,8 +33,15 @@ async function readJson(req) {
   for await (const chunk of req) { body += chunk; if (body.length > 2_000_000) throw new Error('body too large'); }
   return body ? JSON.parse(body) : {};
 }
-async function start(port = Number(process.env.PORT || 4400), options = {}) {
+function resolveCanonicalPort(env = process.env) {
+  const value = env.FENIX_PORT || env.GRG_PORT || 4400;
+  const port = Number(value);
+  return Number.isInteger(port) && port > 0 ? port : 4400;
+}
+
+async function start(port = null, options = {}) {
   const env = options.env || process.env;
+  const listenPort = port == null ? resolveCanonicalPort(env) : Number(port);
   const securityConfig = options.securityConfig || loadSecurityConfig(env);
   const infrastructure = options.infrastructure || loadInfrastructureConfig(env, {
     requireExternal: options.requireExternalInfrastructure,
@@ -160,42 +169,6 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const bootHealth = await bootManager.health();
         return sendJson(res, bootHealth.ok ? 200 : 503, bootHealth, requestId);
       }
-      if (req.method === 'GET' && url.pathname === '/api/runtime') {
-        const health = await app.health.check();
-        return sendJson(res, 200, {
-          ok: health.ok,
-          status: global.FENIX_KERNEL ? 'KERNEL_ACTIVE' : health.status,
-          checkedAt: health.checkedAt,
-          services: Object.entries(health.checks || {}).map(([id, detail]) => ({
-            id,
-            status: detail.ok ? 'ready' : 'degraded',
-            critical: Boolean(detail.critical),
-            error: detail.error || null,
-          })),
-        }, requestId);
-      }
-      if (req.method === 'GET' && url.pathname === '/api/runtime/services') {
-        const services = global.FENIX_KERNEL ? global.FENIX_KERNEL.registries.ServiceRegistry.getAll() : [];
-        return sendJson(res, 200, {
-          services: services.map(s => ({ id: s.id, status: s.status, version: s.version }))
-        }, requestId);
-      }
-      if (req.method === 'GET' && url.pathname === '/api/runtime/capabilities') {
-        const capabilities = global.FENIX_KERNEL ? global.FENIX_KERNEL.registries.CapabilityRegistry.getAll() : [];
-        return sendJson(res, 200, {
-          capabilities: capabilities
-        }, requestId);
-      }
-      if (req.method === 'POST' && url.pathname === '/api/test/event') {
-        const body = await readJson(req);
-        console.log(`[EVENT] Publishing test event: ${body.type}`);
-        if (global.FENIX_KERNEL && global.FENIX_KERNEL.registries.EventRegistry) {
-          // Em um Kernel unificado, a API de eventos pode variar, usar de forma agnostica
-          console.log(`[EventRegistry] Route active but publishing logic depends on adapter.`);
-        }
-        return sendJson(res, 200, { published: true, type: body.type }, requestId);
-      }
-      
       if (req.method === 'GET' && url.pathname === '/health') {
         const health = await app.health.check();
         let bootHealth = { ok: true, status: 'BYPASSED' };
@@ -223,20 +196,6 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         if (!safeToken(req.headers.authorization, env.FENIX_METRICS_TOKEN)) return sendJson(res, 401, { error: 'metrics authentication required' }, requestId);
         res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' }); return res.end(await app.metrics.render());
       }
-
-      if (url.pathname.startsWith('/api/workers') || url.pathname.startsWith('/api/providers') || url.pathname.startsWith('/api/jobs') || url.pathname.startsWith('/api/plans') || url.pathname.startsWith('/api/estimates') || url.pathname.startsWith('/api/orchestrator')) {
-        const handled = handleMissionRoutes(req, res, url, app, sendJson);
-        if (handled) return;
-      }
-      
-      const knowledgeHandled = handleKnowledgeRoutes(req, res, url, app, sendJson);
-      if (knowledgeHandled) return;
-
-      const developerHandled = await handleDeveloperRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }));
-      if (developerHandled) return;
-
-      const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId: 'grg', actorId: 'grg-admin' });
-      if (productHandled) return;
 
       // -- Rotas nativas do server ------------------------------------------------------------
 
@@ -266,6 +225,64 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       ({ tenantId, actorId } = cx);
 
       if (req.method === 'GET' && url.pathname === '/api/me') return sendJson(res, 200, { tenantId, actorId, authed: cx.authed });
+
+      // Todos os contratos operacionais sao privados. Os handlers especializados recebem a
+      // identidade autenticada; nenhum deles pode assumir tenant/ator fixo ou executar antes
+      // desta barreira. Isto inclui filesystem, comandos, jobs, workers, conhecimento e v2.
+      if (req.method === 'GET' && url.pathname === '/api/runtime') {
+        const health = await app.health.check();
+        return sendJson(res, 200, {
+          ok: health.ok,
+          status: global.FENIX_KERNEL ? 'KERNEL_ACTIVE' : health.status,
+          checkedAt: health.checkedAt,
+          services: Object.entries(health.checks || {}).map(([id, detail]) => ({
+            id,
+            status: detail.ok ? 'ready' : 'degraded',
+            critical: Boolean(detail.critical),
+            error: detail.error || null,
+          })),
+        }, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/runtime/services') {
+        const services = global.FENIX_KERNEL ? global.FENIX_KERNEL.registries.ServiceRegistry.getAll() : [];
+        return sendJson(res, 200, {
+          services: services.map((service) => ({ id: service.id, status: service.status, version: service.version })),
+        }, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/runtime/capabilities') {
+        const capabilities = global.FENIX_KERNEL ? global.FENIX_KERNEL.registries.CapabilityRegistry.getAll() : [];
+        return sendJson(res, 200, { capabilities }, requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/test/event') {
+        const body = await readJson(req);
+        if (global.FENIX_KERNEL && global.FENIX_KERNEL.registries.EventRegistry) {
+          logger.info?.({ event: 'kernel.test-event.requested', type: body.type, tenant: tenantId, actor: actorId });
+        }
+        return sendJson(res, 200, { published: true, type: body.type }, requestId);
+      }
+
+      const universalJobHandled = await handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId });
+      if (universalJobHandled) return;
+
+      if (url.pathname.startsWith('/api/project-mirror')) {
+        const mirrorHandled = await handleProjectMirrorRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId });
+        if (mirrorHandled) return;
+      }
+
+      if (url.pathname.startsWith('/api/workers') || url.pathname.startsWith('/api/providers') || url.pathname.startsWith('/api/jobs') || url.pathname.startsWith('/api/plans') || url.pathname.startsWith('/api/estimates') || url.pathname.startsWith('/api/orchestrator')) {
+        const handled = await handleMissionRoutes(req, res, url, app, sendJson, { tenantId, actorId });
+        if (handled) return;
+      }
+
+      const knowledgeHandled = await handleKnowledgeRoutes(req, res, url, app, sendJson, { tenantId, actorId });
+      if (knowledgeHandled) return;
+
+      const developerHandled = await handleDeveloperRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
+      if (developerHandled) return;
+
+      const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
+      if (productHandled) return;
+
       if (req.method === 'POST' && url.pathname === '/api/avatar/message') return sendJson(res, 200, await app.masterAvatar.handle(tenantId, actorId, await readJson(req)), requestId);
 
       if (req.method === 'GET' && url.pathname === '/api/overview') return sendJson(res, 200, await overview(app, tenantId, actorId));
@@ -280,6 +297,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/missions/plans') return sendJson(res, 200, { plans: await app.missionPlanner.list(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/missions') return sendJson(res, 201, await app.missions.create(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/missions') return sendJson(res, 200, { missions: await app.missions.list(tenantId, actorId) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/autonomous/cycle') return sendJson(res, 202, await runAutonomousCycle(app, tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/missions/avatar-state') return sendJson(res, 200, await app.missions.avatarState(tenantId, actorId), requestId);
       const missionStart = url.pathname.match(/^\/api\/missions\/([^/]+)\/start$/);
       if (req.method === 'POST' && missionStart) return sendJson(res, 202, await app.missions.start(tenantId, actorId, missionStart[1]), requestId);
@@ -722,14 +740,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           const body = await readJson(req);
           if (!body.prompt) return sendJson(res, 400, { error: 'prompt required' }, requestId);
           
-          if (!app.devPipeline) return sendJson(res, 500, { error: 'devPipeline not initialized' }, requestId);
-          
-          const result = await app.devPipeline.execute(tenantId, actorId, {
-             prompt: body.prompt,
-             projectPath: body.projectPath,
-             autoDeploy: body.autoDeploy
+          const job = await app.jobs.submit(tenantId, actorId, {
+            type: 'development.execute', source: body.source || 'web', prompt: body.prompt,
+            workspace: body.projectPath, riskLevel: body.riskLevel || 'MEDIUM', policy: body.policy,
+            payload: { prompt: body.prompt, projectPath: body.projectPath, gates: body.gates },
           });
-          return sendJson(res, 202, { mission: result }, requestId);
+          return sendJson(res, 202, { jobId: job.id, status: job.status, createdAt: job.createdAt }, requestId);
         }
 
         // Memory Fabric 2.0 API
@@ -769,7 +785,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     }
   });
   await new Promise((resolve) => {
-    server.listen(port, options.bindHost || env.FENIX_BIND_HOST || '127.0.0.1', () => {
+    server.listen(listenPort, options.bindHost || env.FENIX_BIND_HOST || '127.0.0.1', () => {
       const actual = server.address().port;
       if (require.main === module) process.stdout.write(`GRG Services OS: http://127.0.0.1:${actual}\n`);
       resolve();
@@ -834,6 +850,64 @@ function capabilityFromPath(pathname) {
   return parts[0] === 'api' ? (parts[1] || 'api') : 'web';
 }
 
+async function runAutonomousCycle(app, tenantId, actorId, body = {}) {
+  await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin');
+  const objective = String(body.objective || body.message || '').trim();
+  if (!objective || objective.length > 4_000) {
+    const { ValidationError } = require('./kernel/errors');
+    throw new ValidationError('objective is required and must contain at most 4000 characters');
+  }
+
+  const workerId = String(body.workerId || 'fenix-autonomous-cycle').slice(0, 80);
+  const maxConcurrent = Math.max(1, Math.min(6, Number(body.maxConcurrent || 2)));
+  const workLimit = Math.max(1, Math.min(12, Number(body.workLimit || 5)));
+
+  const program = await app.executiveBrain.createProgram(tenantId, actorId, objective);
+  const approved = await app.executiveBrain.approve(tenantId, actorId, program.id);
+
+  const started = [];
+  for (const missionRef of approved.missions.filter((item) => item.missionId).slice(0, maxConcurrent)) {
+    try {
+      started.push(await app.missions.start(tenantId, actorId, missionRef.missionId));
+    } catch (error) {
+      started.push({ id: missionRef.missionId, status: 'BLOCKED', error: String(error.message || error).slice(0, 300) });
+    }
+  }
+
+  const reconciled = await app.missions.reconcile(tenantId, actorId, { autoStart: true, maxConcurrent });
+  const jobs = await app.jobs.runBatch(workerId, workLimit);
+  const status = await app.executiveBrain.status(tenantId, actorId, approved.id);
+
+  if (app.fabricEvents) {
+    await app.fabricEvents.publish({
+      tenantId,
+      stream: `program:${approved.id}`,
+      type: 'autonomous.cycle.completed',
+      source: 'fenix-autonomous-cycle',
+      subject: approved.id,
+      data: {
+        actorId,
+        programId: approved.id,
+        objectiveHash: crypto.createHash('sha256').update(approved.objective).digest('hex'),
+        startedMissions: started.length,
+        jobsTouched: jobs.length,
+        status,
+      },
+      idempotencyKey: `autonomous.cycle.completed:${approved.id}:${Date.now()}`,
+    });
+  }
+
+  return {
+    ok: true,
+    mode: 'CANONICAL_EXECUTIVE_PROGRAM',
+    program: approved,
+    startedMissions: started.map((mission) => ({ id: mission.id, status: mission.status, progress: mission.progress ?? null, error: mission.error || null })),
+    reconciled,
+    jobs,
+    status,
+  };
+}
+
 function serveStatic(pathname, res) {
   const ALIASES = { '/': 'login.html', '/GRG-login': 'login.html', '/login': 'login.html', '/app': 'index.html', '/app.html': 'index.html', '/office': 'index.html', '/office.html': 'index.html' };
   const rel = ALIASES[pathname] || pathname.replace(/^\//, '');
@@ -847,6 +921,6 @@ function serveStatic(pathname, res) {
 function safeToken(header, expected) { const supplied = String(header || '').replace(/^Bearer\s+/i, ''); if (!supplied || !expected) return false; const a = crypto.createHash('sha256').update(supplied).digest(); const b = crypto.createHash('sha256').update(String(expected)).digest(); return crypto.timingSafeEqual(a, b); }
 
 if (require.main === module) start();
-module.exports = { start, safeToken, capabilityFromPath };
+module.exports = { start, safeToken, capabilityFromPath, resolveCanonicalPort, runAutonomousCycle };
 
 

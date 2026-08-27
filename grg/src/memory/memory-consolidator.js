@@ -8,12 +8,17 @@ class MemoryConsolidator {
   }
 
   start(intervalMs = 1000 * 60 * 60) { // Default every 1 hour
+    if (this.interval) return;
     this.interval = setInterval(() => this.consolidate(), intervalMs);
+    if (typeof this.interval.unref === 'function') this.interval.unref();
     console.log('[MemoryConsolidator] Memory loop activated.');
   }
 
   stop() {
-    if (this.interval) clearInterval(this.interval);
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
   }
 
   async consolidate() {

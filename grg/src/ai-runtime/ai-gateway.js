@@ -249,7 +249,7 @@ class AIGateway {
   async providerHealth() {
     const health = {};
     await Promise.all(Object.entries(this.providers).map(async ([name, provider]) => {
-      try { health[name] = { ok: typeof provider.available === 'function' ? await provider.available() : true, circuit: this.breaker(name).snapshot() }; }
+      try { const ok = typeof provider.available === 'function' ? await provider.available() : true; health[name] = { ok, ...(ok || !provider.lastError ? {} : { error: provider.lastError }), circuit: this.breaker(name).snapshot() }; }
       catch (error) { health[name] = { ok: false, error: error.name, circuit: this.breaker(name).snapshot() }; }
     }));
     return health;

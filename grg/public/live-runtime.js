@@ -220,8 +220,6 @@
 
   function updateQueueMetrics() {
     const q = window.FENIX.live.queue;
-    const el = document.getElementById('kpiAgents');
-    if (el) el.textContent = `${q.running || 0} running`;
     const jobsEl = document.getElementById('liveQueueBadge');
     if (jobsEl) jobsEl.textContent = `${q.queued || 0} queued`;
   }

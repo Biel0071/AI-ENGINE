@@ -19,6 +19,8 @@ window.state = {
   currentFilePath: ''
 };
 const state = window.state;
+window.FENIX = window.FENIX || {};
+window.FENIX.state = state;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
@@ -78,6 +80,7 @@ async function api(path, options = {}, retried = false) {
   if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
   return body;
 }
+window.FENIX.api = api;
 
 async function publicJson(path) {
   const res = await fetch(path);
@@ -339,18 +342,18 @@ function renderMemory() {
 }
 
 function renderCity() {
-    if (window.drawCity) { window.globalCityState = state.data; window.state.agentStates = state.data.swarm?.agents || state.data.agents || {}; window.drawCity(); }
+  const agentSource = state.data.swarm?.agents || state.data.agents?.agents || [];
+  if (window.fenixCity?.updateAgents) {
+    window.fenixCity.updateAgents(Array.isArray(agentSource) ? agentSource : Object.values(agentSource || {}));
+  }
+  if (window.drawCity) { window.globalCityState = state.data; window.state.agentStates = state.data.swarm?.agents || state.data.agents || {}; window.drawCity(); }
 
   const nodes = state.data.city?.nodes || [];
-  if (!nodes.length) {
-    if ($('cityCanvas')) $('cityCanvas').innerHTML = '<div class="row"><b>AI City</b><small>Aguardando eventos reais para projetar a cidade.</small><span class="status-pill warn">EMPTY</span></div>';
-  } else {
-    const visible = nodes.slice(0, 42);
-    if ($('cityCanvas')) $('cityCanvas').innerHTML = visible.map((n, i) => {
-      const x = 8 + ((i * 23) % 84);
-      const y = 12 + ((i * 37) % 74);
-      return `<button class="city-node ${esc(n.status || '')}" style="left:${x}%;top:${y}%;" title="${esc(n.id)}"><strong>${esc(n.label || n.name || n.id)}</strong><small>${esc(n.type || n.status || '')}</small></button>`;
-    }).join('');
+  if ($('cityCanvas')) {
+    $('cityCanvas').dataset.state = nodes.length ? 'READY' : 'EMPTY';
+    $('cityCanvas').title = nodes.length
+      ? `${nodes.length} nos publicados pela API /city`
+      : 'AI City aguardando eventos reais publicados pelo runtime';
   }
   const overview = state.data.overview?.metrics || {};
   if ($('knowledgeDistrict')) $('knowledgeDistrict').innerHTML = [
@@ -441,8 +444,8 @@ function renderSkills() {
   if ($('skillList')) $('skillList').innerHTML = skills.length
     ? skills.map((skill) => row(skill.name, `${skill.source} - ${skill.estimatedTokens} tokens - ${skill.triggers.join(', ') || 'always-on'}`, skill.alwaysOn ? 'GLOBAL' : 'TRIGGER')).join('')
     : row('skills', state.data.skills?.__error || 'nenhuma skill encontrada', 'EMPTY');
-  if (!$('skillContext').innerHTML) {
-    if ($('skillContext')) $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
+  if ($('skillContext') && !$('skillContext').innerHTML) {
+    $('skillContext').innerHTML = row('context pack', 'digite um objetivo para selecionar skills', 'READY');
   }
   renderFullstackSlices();
 }
@@ -560,25 +563,35 @@ async function runChat(message) {
   if (!value) return;
   bubble(value, 'user');
 
-  const isDevPrompt = /(crie|adicione|melhore|corrija|analise|refatore|implemente|teste|construa|pipeline|task board)/i.test(value);
-  if (isDevPrompt && window.executeDevPipeline) {
-    await window.executeDevPipeline(value);
-    return;
+  const pendingId = 'pipe-' + Date.now();
+  const pending = document.createElement('div');
+  pending.id = pendingId;
+  pending.className = 'bubble system';
+  pending.innerHTML = '<span class="status-pill wait">RUNNING</span> Analisando comando e gerando plano de jobs...';
+  if ($('chatLog')) {
+    $('chatLog').appendChild(pending);
+    $('chatLog').scrollTop = $('chatLog').scrollHeight;
   }
 
-  const pending = document.createElement('div');
-  pending.className = 'bubble system';
-  pending.textContent = 'Iniciando FenixMind Job...';
-  $('chatLog').appendChild(pending);
   try {
-    const res = await api('/avatar/message', { method: 'POST', body: JSON.stringify({ message: value, context: {} }) });
-      if (window.openJobInspector) window.openJobInspector(res.jobId, value);
-    pending.remove();
-    bubble(res.reply || res.response || 'Sem resposta textual.', 'bot');
+    const res = await api('/autonomous/cycle', {
+      method: 'POST',
+      body: JSON.stringify({
+        objective: value,
+        maxConcurrent: 2,
+        workLimit: 5
+      })
+    });
+
+    if (res && res.program) {
+      const status = res.status?.state?.value || res.status?.state || res.program.state || 'RUNNING';
+      pending.innerHTML = `<span class="status-pill ok">DELEGATED</span> Programa ${res.program.id} materializado pelo Executive Brain. ${res.startedMissions?.length || 0} missões iniciadas; ${res.jobs?.length || 0} jobs processados; estado ${esc(status)}.`;
+    } else {
+      pending.innerHTML = `<span class="status-pill err">ERROR</span> Resposta inesperada da API.`;
+    }
     await refreshAll();
-  } catch (error) {
-    pending.remove();
-    bubble(`Falha: ${error.message}`, 'system');
+  } catch (err) {
+    pending.innerHTML = `<span class="status-pill err">ERROR</span> Falha ao iniciar missão: ${err.message}`;
   }
 }
 
@@ -769,6 +782,8 @@ function init() {
   window.addEventListener('hashchange', () => refreshAll());
   showView(location.hash.slice(1) || 'command', false);
   bubble('Workspace unico carregado. Eu consolidei comando, runtime, missoes, AI City, office, CRM, deploy, observabilidade e developer em uma tela.');
+  window.FENIX_READY = true;
+  document.dispatchEvent(new Event('FENIX_READY'));
   refreshAll();
   setInterval(() => { if (!document.hidden) refreshAll(); }, 15000);
 }

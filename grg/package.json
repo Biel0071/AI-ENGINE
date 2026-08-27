@@ -5,13 +5,15 @@
   "description": "GRG Services OS — AI-native software engineering operating system (local-first core).",
   "type": "commonjs",
   "bin": {
-    "fenix": "./bin/fenix.js"
+    "fenix": "./bin/fenix.js",
+    "fenix-mcp": "./bin/fenix-mcp.js"
   },
   "main": "src/app.js",
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test test/",
-    "build:windows-agent": "node scripts/build-windows-agent.js"
+    "build:windows-agent": "node scripts/build-windows-agent.js",
+    "mcp": "node bin/fenix-mcp.js"
   },
   "engines": {
     "node": ">=18"

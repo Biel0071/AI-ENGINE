@@ -211,7 +211,7 @@ async function createApp(options = {}) {
   const federation = new KnowledgeFederation({ store, controlPlane, events: fabricEvents });
   const versionEngine = new GlobalVersionEngine({ store, controlPlane, events: fabricEvents, approvals, bus }).attach();
   const aiCity = new AICityProjection({ store, controlPlane, events: fabricEvents, eventStore, bus }).attach();
-  const jobs = new JobEngine({ store, controlPlane, events: fabricEvents, queue: queues });
+  const jobs = new JobEngine({ store, controlPlane, events: fabricEvents, queue: queues, approvals });
   jobs.register('factory.generate', (payload, context) => factory.generate(context.tenantId, context.actorId, payload));
   jobs.register('project.orchestrate', (payload, context) => orchestrator.buildFromPrompt(context.tenantId, context.actorId, payload));
   jobs.register('discovery.scan', (payload, context) => discoveryNetwork.scan(context.tenantId, context.actorId, payload));
@@ -333,8 +333,10 @@ async function createApp(options = {}) {
     }
   };
   
-  // Trigger recovery in the background
-  setTimeout(() => app.recoverPendingMissions(), 1000);
+  // Trigger recovery in the background. O handle pertence ao app para que close() possa
+  // cancelar um boot ainda pendente; unref evita manter processos de teste vivos sozinho.
+  app.recoveryTimer = setTimeout(() => app.recoverPendingMissions(), 1000);
+  if (typeof app.recoveryTimer.unref === 'function') app.recoveryTimer.unref();
 
   // FLUXO 8 — monitor de conexao com servicos externos. Compartilha os MESMOS providers do
   // gateway (available() faz inferencia real). Estado OFFLINE/ONLINE derivado, nunca ficticio.
@@ -349,11 +351,23 @@ async function createApp(options = {}) {
   const { ContextBuilder } = require('./evolution/context-builder');
   app.contextBuilder = new ContextBuilder({ store, controlPlane, evolution, capabilityRegistry, apiConnection: app.apiConnection, missions });
 
+  let closingPromise = null;
   app.close = async () => {
-    await storageManager.shutdown();
-    await Promise.allSettled([
-      queues?.close(), redis?.close(), objects?.close(), typeof store.close === 'function' ? store.close() : null,
-    ].filter(Boolean));
+    if (closingPromise) return closingPromise;
+    closingPromise = (async () => {
+      if (app.recoveryTimer) {
+        clearTimeout(app.recoveryTimer);
+        app.recoveryTimer = null;
+      }
+      app.memoryConsolidator?.stop();
+      await app.livingRuntime?.stop?.();
+      await app.runtimeKernel?.stop?.();
+      await Promise.allSettled([
+        queues?.close(), redis?.close(), objects?.close(), typeof store.close === 'function' ? store.close() : null,
+      ].filter(Boolean));
+      await storageManager.shutdown();
+    })();
+    return closingPromise;
   };
 
   // LLM para o chat entender/falar. Cadeia de fallback: AI Platform (VPS/gateway do usuário)
@@ -666,6 +680,13 @@ async function createApp(options = {}) {
   app.runtimeKernel = new RuntimeKernel({ eventBus: bus, logger, liveBootKernel: app.liveBootKernel, intervalMs: 5000 });
   app.bus = bus;
   app.eventBus = bus;
+
+  // Um unico pipeline de desenvolvimento: recebe trabalho pelo JobEngine, usa o AI Gateway
+  // compartilhado e escreve somente em worktree isolado. O dev-pipeline legado permanece no
+  // repositorio para migracao, mas nao e instanciado nem possui worker/queue paralelos.
+  const { SafeDevPipeline } = require('./software-factory/safe-dev-pipeline');
+  app.devPipeline = new SafeDevPipeline({ aiGateway });
+  jobs.register('development.execute', (payload, context) => app.devPipeline.execute(context.tenantId, context.actorId, payload, context));
 
   return app;
 }

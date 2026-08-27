@@ -55,6 +55,22 @@ test('rejects unauthenticated api access with 401', withServer(async (base) => {
   assert.equal(r.status, 401);
 }));
 
+test('rejects every privileged router before specialized handlers run', withServer(async (base) => {
+  const privateRoutes = [
+    '/api/runtime',
+    '/api/jobs',
+    '/api/workers',
+    '/api/knowledge',
+    '/api/context',
+    '/api/dev/fs?path=',
+    '/api/v2/projects',
+  ];
+  for (const route of privateRoutes) {
+    const response = await fetch(`${base}${route}`);
+    assert.equal(response.status, 401, `${route} must require an authenticated session`);
+  }
+}));
+
 test('rejects development identity headers by default', withServer(async (base) => {
   const response = await fetch(`${base}/api/overview`, { headers: { 'x-tenant-id': 'grg', 'x-user-id': 'test-admin' } });
   assert.equal(response.status, 401);
@@ -65,6 +81,39 @@ test('login then use bearer token works', withServer(async (base) => {
   assert.ok(login.token);
   const ov = await fetch(`${base}/api/overview`, { headers: { authorization: `Bearer ${login.token}` } });
   assert.equal(ov.status, 200);
+}));
+
+test('universal v2 job contract persists real state, events, queue view and cancellation', withServer(async (base) => {
+  const headers = await authHeaders(base);
+  const submittedResponse = await fetch(`${base}/api/v2/jobs`, {
+    method: 'POST', headers,
+    body: JSON.stringify({ type: 'discovery.scan', source: 'codex', sessionId: 'ide-session', prompt: 'inspect runtime', riskLevel: 'LOW' }),
+  });
+  assert.equal(submittedResponse.status, 202);
+  const submitted = await submittedResponse.json();
+  assert.ok(submitted.jobId);
+  assert.equal(submitted.status, 'QUEUED');
+
+  const job = await fetch(`${base}/api/v2/jobs/${submitted.jobId}`, { headers }).then((response) => response.json());
+  assert.equal(job.jobId, submitted.jobId);
+  assert.equal(job.source, 'codex');
+  assert.equal(job.prompt, 'inspect runtime');
+
+  const history = await fetch(`${base}/api/v2/jobs/${submitted.jobId}/events`, { headers }).then((response) => response.json());
+  assert.ok(history.events.some((event) => event.type === 'runtime.job.queued'));
+
+  const queueView = await fetch(`${base}/api/jobs`, { headers }).then((response) => response.json());
+  assert.ok(queueView.jobs.some((item) => item.jobId === submitted.jobId));
+  assert.equal(queueView.bullmq, null);
+
+  const cancelledResponse = await fetch(`${base}/api/v2/jobs/${submitted.jobId}/cancel`, { method: 'POST', headers });
+  assert.equal(cancelledResponse.status, 202);
+  const cancelled = await cancelledResponse.json();
+  assert.equal(cancelled.status, 'CANCELLED');
+
+  const workers = await fetch(`${base}/api/workers`, { headers }).then((response) => response.json());
+  assert.equal(workers.configured, false);
+  assert.deepEqual(workers.workers, []);
 }));
 
 test('full HTTP flow: orchestrate then overview reflects it', withServer(async (base) => {

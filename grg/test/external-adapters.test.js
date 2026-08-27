@@ -58,6 +58,9 @@ test('BullMQ runtime parses TLS credentials and submits idempotent jobs', async 
   class FakeQueue {
     constructor(name, options) { this.name = name; this.options = options; this.client = Promise.resolve({ ping: async () => 'PONG' }); }
     async add(name, payload, options) { added.push({ name, payload, options }); return { id: options.jobId }; }
+    async getJobCounts() { return { waiting: 1, active: 0, completed: 0, failed: 0, delayed: 0, paused: 0 }; }
+    async getJobs() { return [{ id: 'build-p1', data: { jobId: 'p1' }, progress: 25, attemptsMade: 1, timestamp: 1, getState: async () => 'waiting' }]; }
+    async getWorkers() { return [{ id: 'redis-client-1', name: 'bull:software-builds:w:worker-1', addr: '127.0.0.1:1', age: '10', idle: '1' }]; }
     async close() {}
   }
   class FakeWorker { async close() {} }
@@ -69,7 +72,13 @@ test('BullMQ runtime parses TLS credentials and submits idempotent jobs', async 
   await runtime.enqueue('software-builds', 'build', { projectId: 'p1' }, { idempotencyKey: 'build-p1' });
   assert.equal(added[0].options.jobId, 'build-p1');
   assert.equal(added[0].options.attempts, 3);
+  assert.equal(added[0].options.delay, 0);
   assert.equal((await runtime.health()).ok, true);
+  const status = await runtime.status('software-builds');
+  assert.equal(status.counts.waiting, 1);
+  assert.equal(status.jobs[0].state, 'waiting');
+  const workers = await runtime.workersStatus('software-builds');
+  assert.equal(workers.workers[0].workerId, 'worker-1');
 });
 
 test('S3 object adapter stores tenant-prefixed objects and verifies checksums', async () => {

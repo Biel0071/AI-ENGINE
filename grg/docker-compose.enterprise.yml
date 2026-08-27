@@ -90,10 +90,15 @@ services:
       # Identidade do dono do lease de lider. Sem passar, dois workers assumem o mesmo id
       # default e disputam o mesmo lease -- exatamente o que o lease existe para evitar.
       FENIX_WORKER_ID: ${FENIX_WORKER_ID:-}
+      FENIX_WORKERS_ENABLED: ${FENIX_WORKERS_ENABLED:-1}
+      FENIX_WORKER_CONCURRENCY: ${FENIX_WORKER_CONCURRENCY:-5}
       FENIX_WORKER_POLL_MS: ${FENIX_WORKER_POLL_MS:-}
       FENIX_WORKER_BATCH: ${FENIX_WORKER_BATCH:-}
       FENIX_STALE_JOB_MS: ${FENIX_STALE_JOB_MS:-}
       FENIX_LEADER_LEASE_MS: ${FENIX_LEADER_LEASE_MS:-}
+      FENIX_LIVING_RUNTIME: ${FENIX_LIVING_RUNTIME:-1}
+      FENIX_LIVING_TICK_MS: ${FENIX_LIVING_TICK_MS:-2000}
+      FENIX_WORKTREE_ROOT: ${FENIX_WORKTREE_ROOT:-/app/workspaces/.fenix-worktrees}
       FENIX_MISSION_RECONCILE: ${FENIX_MISSION_RECONCILE:-}
       FENIX_MISSION_AUTOSTART: ${FENIX_MISSION_AUTOSTART:-}
       FENIX_MISSION_MAX_CONCURRENT: ${FENIX_MISSION_MAX_CONCURRENT:-}
@@ -154,8 +159,9 @@ services:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
       - ${FENIX_WORKSPACE_HOST_DIR:-/opt/grg-fenix/workspaces}:/app/workspaces
       - ./public/login.html:/app/public/login.html:ro
-      - ./src/server.js:/app/src/server.js:ro
-      - ./src/auth/auth.js:/app/src/auth/auth.js:ro
+      - ./src:/app/src:ro
+      
+        
     extra_hosts: ["host.containers.internal:host-gateway"]
 
   worker:

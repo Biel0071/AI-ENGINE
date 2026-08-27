@@ -1,0 +1,6 @@
+cd /workspace
+git fetch origin
+git checkout FENIX_GOLDEN_BASELINE
+git reset --hard origin/FENIX_GOLDEN_BASELINE
+docker compose up -d --build
+docker ps

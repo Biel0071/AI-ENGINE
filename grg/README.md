@@ -16,6 +16,8 @@ node --test test/
 node src/server.js
 ```
 
+O runtime universal para IDEs usa `POST /api/v2/jobs`, BullMQ, worker persistente, worktree isolado e gates reais. CLI e MCP são apenas adaptadores desse contrato. Consulte [`docs/UNIVERSAL_ORCHESTRATOR.md`](docs/UNIVERSAL_ORCHESTRATOR.md).
+
 ## Planos implementados (todos com testes)
 
 | Plano | Módulo | Fase |

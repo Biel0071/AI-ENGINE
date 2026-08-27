@@ -41,15 +41,16 @@ function apiRequest(port, method, pathname, body = null) {
   });
 }
 
-test('🔥 FÊNIX REAL AI PLATFORM INTEGRATION & SELF-DEVELOPMENT TEST', async () => {
+test('🔥 FÊNIX REAL AI PLATFORM INTEGRATION & SELF-DEVELOPMENT TEST', async (t) => {
   console.log('\n===============================================================');
   console.log('🚀 INITIATING REAL AI PLATFORM INTEGRATION & SELF-DEVELOPMENT');
   console.log('===============================================================');
 
   // 1. BOOT REAL FÊNIX OS SERVER ON AN ISOLATED TEST PORT
-  process.env.GRG_AIPLATFORM_URL = process.env.GRG_AIPLATFORM_URL || 'http://209.50.241.215';
-  process.env.GRG_AIPLATFORM_KEY = process.env.GRG_AIPLATFORM_KEY || 'ap_0c2d115b2c2b63b739cfc552506b8ddb72fd3fab44bae102';
-  process.env.GRG_AIPLATFORM_MODEL = process.env.GRG_AIPLATFORM_MODEL || 'qwen2.5:3b';
+  if (!process.env.GRG_AIPLATFORM_URL || !process.env.GRG_AIPLATFORM_KEY || !process.env.GRG_AIPLATFORM_MODEL) {
+    t.skip('real AI Platform test requires GRG_AIPLATFORM_URL, GRG_AIPLATFORM_KEY and GRG_AIPLATFORM_MODEL');
+    return;
+  }
 
   const { createApp } = require('../src/app');
   const { handleDeveloperRoutes } = require('../src/api/developer-routes');

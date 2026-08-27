@@ -2,6 +2,7 @@ const { createApp } = require('../app');
 const { loadInfrastructureConfig } = require('../infrastructure/config');
 const { loadSecurityConfig } = require('../security/config');
 const { RedisLease } = require('./redis-lease');
+const { LivingRuntime, defaultLoops } = require('./living-runtime');
 
 async function startWorker(options = {}) {
   const env = options.env || process.env; const securityConfig = loadSecurityConfig(env); const infra = loadInfrastructureConfig(env, { requireExternal: securityConfig.production });
@@ -17,10 +18,31 @@ async function startWorker(options = {}) {
   // quando o compose passou a repassar FENIX_WORKER_ID: uma variavel ausente no .env chega ao
   // container como '' em vez de nao existir. `|| undefined` devolve o default ao seu lugar.
   const lease = new RedisLease({ client: app.redis.client, ttlMs: Number(env.FENIX_LEADER_LEASE_MS || 15_000), ownerId: env.FENIX_WORKER_ID || undefined });
+  // Quando BullMQ esta configurado, ele e o gatilho real. O JobEngine continua sendo a fonte
+  // persistente de verdade e faz o claim pelo jobId; assim uma entrega duplicada do Redis nao
+  // executa o mesmo trabalho duas vezes. Sem BullMQ, o polling abaixo permanece como fallback.
+  const queueWorker = app.queues && env.FENIX_WORKERS_ENABLED !== '0'
+    ? app.queues.worker('fenix-runtime', async (queueJob) => {
+      const { tenantId, jobId } = queueJob.data || {};
+      if (!tenantId || !jobId) throw new Error('BullMQ runtime message requires tenantId and jobId');
+      return app.jobs.run(tenantId, jobId, lease.ownerId);
+    }, { concurrency: Number(env.FENIX_WORKER_CONCURRENCY || 5), workerId: lease.ownerId })
+    : null;
   const intervalMs = Number(env.FENIX_WORKER_POLL_MS || 2_000); let stopping = false; let running = false;
+  // O mesmo processo persistente do worker supervisiona os loops cognitivos que antes nao
+  // tinham chamador. Jobs e schedules ficam fora: BullMQ e o lease acima continuam sendo os
+  // unicos donos desses dois fluxos. O modo pode ser desligado explicitamente para operacao
+  // segmentada em containers dedicados.
+  const livingRuntime = env.FENIX_LIVING_RUNTIME === '0' ? null : new LivingRuntime({
+    app, role: 'worker-companion', workerId: `${lease.ownerId}:living`,
+    loops: defaultLoops(env).filter((loop) => !['jobs', 'schedules'].includes(loop.id)),
+    tickIntervalMs: Number(env.FENIX_LIVING_TICK_MS || 2_000),
+  }).start();
+  app.livingRuntime = livingRuntime;
   // Cadencia propria do health-check de conexao (FLUXO 8); 0 forca o primeiro check ja no 1o ciclo.
   const nowMs = () => Date.now(); let lastConnectionCheck = 0; let lastObservabilitySample = 0;
   const cycle = async () => {
+    await app.jobs.workerHeartbeat(lease.ownerId);
     const leader = lease.held ? await lease.renew() : await lease.acquire();
     if (leader) { const state = await app.store.read(); const dueTenants = [...new Set(state.runtimeSchedules.filter((item) => item.enabled).map((item) => item.tenantId))]; for (const tenantId of dueTenants) { const actor = state.runtimeSchedules.find((item) => item.tenantId === tenantId)?.createdBy; if (actor) await app.jobs.tick(tenantId, actor); } }
     // MEDIDO em producao: o worker cuidava de JOBS e ninguem cuidava de MISSOES. O ciclo de
@@ -97,11 +119,12 @@ async function startWorker(options = {}) {
         }
       }
     }
-    await app.jobs.recoverStale(Number(env.FENIX_STALE_JOB_MS || 60_000)); await app.jobs.runBatch(lease.ownerId, Number(env.FENIX_WORKER_BATCH || 10));
+    await app.jobs.recoverStale(Number(env.FENIX_STALE_JOB_MS || 60_000));
+    if (!queueWorker) await app.jobs.runBatch(lease.ownerId, Number(env.FENIX_WORKER_BATCH || 10));
   };
   const guardedCycle = async () => { if (running) return; running = true; try { await cycle(); } finally { running = false; } };
   const timer = setInterval(() => guardedCycle().catch((error) => process.stderr.write(`${JSON.stringify({ level: 'error', component: 'runtime-worker', message: error.message })}\n`)), intervalMs); timer.unref();
-  const stop = async () => { if (stopping) return; stopping = true; clearInterval(timer); if (lease.held) await lease.release(); await app.close(); };
+  const stop = async () => { if (stopping) return; stopping = true; clearInterval(timer); await livingRuntime?.stop(); if (lease.held) await lease.release(); await app.close(); };
   return { app, lease, cycle: guardedCycle, stop };
 }
 

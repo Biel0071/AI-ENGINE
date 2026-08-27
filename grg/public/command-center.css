@@ -56,7 +56,10 @@
   height: 100%;
   padding: 12px;
   gap: 12px;
-  background: #090a0f;
+  background:
+    radial-gradient(circle at 25% 10%, rgba(47,129,247,0.10), transparent 28%),
+    radial-gradient(circle at 76% 18%, rgba(230,57,70,0.08), transparent 26%),
+    #090a0f;
   grid-template-columns: 1fr 1fr 1.5fr 1.5fr;
   grid-template-rows: 2fr 1fr 1fr;
   grid-template-areas:
@@ -66,12 +69,13 @@
 }
 
 .cmd-panel {
-  background: #11131a;
-  border: 1px solid #1f2333;
-  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(17,19,26,0.98), rgba(10,13,20,0.98));
+  border: 1px solid rgba(88,166,255,0.16);
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.035);
 }
 
 .cmd-panel-header {
@@ -79,11 +83,12 @@
   font-size: 12px;
   font-weight: 600;
   color: #fff;
-  background: #151822;
-  border-bottom: 1px solid #1f2333;
+  background: linear-gradient(90deg, rgba(21,24,34,0.98), rgba(13,17,28,0.98));
+  border-bottom: 1px solid rgba(148,163,184,0.12);
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: .02em;
 }
 
 .cmd-badge {
@@ -96,7 +101,7 @@
 
 .cmd-panel-body {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
 }
 
@@ -117,20 +122,31 @@
 
 .cmd-panel-body {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
   display: flex;
   flex-direction: column;
+  color: #cbd5e1;
 }
 
 .cmd-panel-body canvas {
   width: 100% !important;
   height: 100% !important;
+  min-height: 220px;
 }
 
 /* IDE Split layout inside panel */
 .cmd-panel-body .ide-split-layout {
   width: 100%;
   height: 100%;
+}
+
+.cmd-panel-city .cmd-panel-body,
+.cmd-panel-ide .cmd-panel-body {
+  overflow: hidden;
+}
+
+.cmd-panel-body .runtime-row:first-child {
+  border-top: 0;
 }
 

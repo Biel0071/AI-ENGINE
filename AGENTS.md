@@ -24,10 +24,9 @@ ate que a contradicao seja validada no runtime e registrada aqui.
 - Estado e infraestrutura: `grg/src/kernel/` e `grg/src/infrastructure/`.
 - Deploy canonico: `grg/docker-compose.enterprise.yml` + `grg/Dockerfile`.
 
-O `npm start` da raiz executa `server.js` -> `platform/http/server.js` na porta
-2150 e serve `platform/public`. Esse caminho NAO e o produto canonico e deve ser
-tratado como legado de migracao ate ser removido ou convertido em proxy explicito
-para o runtime `grg`.
+O `npm start` e o `npm run dev` da raiz executam `node grg/src/server.js`.
+O servidor anterior permanece apenas em `npm run start:legacy` e deve ser tratado
+como legado de migracao ate ser removido ou convertido em proxy explicito.
 
 ## 2. Arvore arqueologica canonica
 
@@ -64,6 +63,27 @@ ai-engine/
 |-- graphify-out/                     <- mapa derivado; nao e fonte normativa
 `-- patch_*, scratch_*, temp_*        <- artefatos de reparo; nao sao arquitetura
 ```
+
+### 2.1 Arqueologia real de `grg/public/` em 2026-08-26
+
+| Arquivo | Classe | Papel atual |
+|---|---|---|
+| `index.html` | CANONICO | shell autenticado; declara nav e as 13 views |
+| `unified-app.js` | CANONICO | `window.state`, API autenticada, roteamento e render principal |
+| `unified.css` | CANONICO | base visual do shell e workspace |
+| `login.html` | CANONICO | login local/OIDC e emissao de token |
+| `iso-city.js` | CANONICO | unica City ativa; canvas 2.5D instanciado em `cityCanvas` |
+| `live-runtime.js` | ATIVO | WebSocket `/events`, `window.FENIX.live` e eventos `fenix-live` |
+| `command-center.js` / `command-center.css` | ATIVO | painéis do Command consumindo `window.state` |
+| `ide-enhancer.js` | ATIVO | Monaco, terminal visual, preview e inspector da IDE |
+| `dev-pipeline-client.js` | ATIVO | delegacao para `/api/dev/pipeline` |
+| `visual-inspector.js` | ATIVO | inspector visual do iframe de preview |
+| `fenix-ide-v2.css`, `city-overrides.css`, `living-panels.css` | DEPENDENCIA | estilos carregados pelo shell canonico |
+| `preview.html`, `assets/ai-city-bg.png`, `fenix.css`, `office.css`, `design-system.css`, `level30.css`, `layout-patch.css` | DEPENDENCIA/LEGACY | assets/estilos mantidos; so promover apos referencia explicita no shell |
+| `fenix-bootstrap.js`, `runtime-cockpit.js`, `cockpit-app.js`, `jobs-app.js` | LEGACY/PARALELO | nao sao carregados por `index.html`; nao podem comandar o shell canonico sem integracao |
+| `connections-panel.js`, `task-creator.js` | LEGACY/PARALELO | aparecem em backup antigo; nao entram no runtime atual |
+| `index_frozen_backup.html`, `index.html.bkp` | BACKUP | snapshots historicos; nao importar ou servir como fonte |
+| `ai-city-physics.js`, `live-dashboard.js` | REMOVIDO/ORFAO | removidos do working tree atual; nao referenciados pelo shell canonico |
 
 ## 3. Fluxo real de uma requisicao
 
@@ -127,14 +147,33 @@ Evidencias auditadas:
   OpenAI foi detectada, mas seu health terminou `DEGRADED`. O router operacional
   selecionou somente `echo`, unico provider com self-test conectado. Nenhuma tela
   deve apresentar QWEN/OpenAI como disponiveis enquanto esses checks nao mudarem.
-- Em 2026-08-26 o runtime canonico foi religado com `PORT=4400`; `GET /health`
-  respondeu `ready` e `GET /api/system/boot-status` respondeu `KERNEL_ACTIVE`.
-  Sem `PORT` explicita, a execucao direta ainda sobe em `:4000`, portanto a porta
-  canonica depende do ambiente/dev script e nao do default interno do servidor.
+- Em 2026-08-26 o runtime canonico foi corrigido para ignorar `PORT` generico
+  como default; sem `PORT` explicita, mesmo com `.env` contendo `PORT=4000`, a
+  execucao direta sobe em `:4400`. `GET /health` respondeu `ready` e
+  `GET /api/system/boot-status` respondeu `KERNEL_ACTIVE`.
+- `unified-app.js` publica `window.FENIX.api/state` e dispara `FENIX_READY`;
+  `live-runtime.js` conecta o WebSocket sem sobrescrever o KPI de agentes; e
+  `iso-city.js` instancia a City canonica no `cityCanvas` existente.
+- O tema visual canonico depende de `unified.css` iniciar em `:root`. Em
+  2026-08-26 foi removida corrupcao de encoding antes de `:root`, que quebrava
+  variaveis CSS e fazia o shell autenticado regredir para barra branca/textos
+  pretos. O Command Center agora possui linhas/status legiveis, cards com
+  contraste e AI City com fundo escuro proprio.
+- O Command Center foi aproximado do cockpit operacional-alvo sem criar nova tela:
+  o painel 5 mostra jobs reais quando publicados e cai para projetos; o painel 8
+  mostra eventos reais; e o painel 9 mostra providers a partir de `/health`,
+  `/providers` ou `/connection`. Se o runtime nao publicar dado, a UI mostra
+  estado vazio/degradado em vez de preencher numeros plausiveis.
+- `iso-city.js` evoluiu sem criar City paralela: adicionou distritos
+  `KNOWLEDGE` e `MCP`, estruturas estaticas nos distritos, legenda e sincronismo
+  com `window.FENIX.state.data.agents/swarm`. Contagens e agentes continuam
+  vindo somente do estado real.
 - Os gates `frontend-honesty` (4/4), `frontend-runtime-safety` (5/5),
-  `operational-console-ui` (6/6) e `architecture-guard` passaram neste ciclo.
-- A sessao visual autenticada no navegador continua pendente; o login publico foi
-  renderizado sem erros de console.
+  `operational-console-ui` (7/7) e `architecture-guard` passaram neste ciclo.
+- A sessao visual nao autenticada no navegador confirmou `/GRG-login` sem erros
+  de console e `/app` anonimo redirecionando para login. A sessao visual
+  autenticada continua pendente: a extensao do Chrome nao expos aba local
+  autenticada para inspecao read-only e digitar senha exige confirmacao explicita.
 
 Conclusao: os contratos estruturais convergiram e o fluxo developer tem backend e
 controles reais. Os bloqueios atuais sao prova visual autenticada, provedores de IA
@@ -219,7 +258,6 @@ e `grg/`.
 ..\node.exe test\operational-console-ui.test.js
 
 # Runtime canonico
-$env:PORT=4400
 ..\node.exe src\server.js
 ```
 
@@ -234,13 +272,13 @@ $env:PORT=4400
 - Decidido: `options.llm = false` desliga o chat natural de forma explicita e nao
   pode reativar fallback por variavel de ambiente; o modo regras passa a ser
   respeitado ate `ChatAgent` e `ConversationStore`.
+- Decidido: `FENIX_PORT`/`GRG_PORT` podem alterar a porta canonica; `PORT`
+  generico nao pode desviar a execucao local padrao de `:4400`.
 - Pendente: substituir os adaptadores in-memory por Postgres/Redis/Qdrant configurados
   no ambiente de producao e comprovar persistencia entre reinicios.
 - Pendente: restaurar conectividade/autenticacao de pelo menos um provider de IA
   externo e executar uma chamada de inferencia com provider, modelo, latencia e
   tokens registrados. A presenca de chave, isoladamente, nao prova disponibilidade.
-- Pendente: tornar `:4400` o default interno do runtime canonico ou garantir esse
-  bind por script/deploy sem depender de export manual de `PORT`.
 - Pendente: concluir o E2E visual autenticado em desktop e breakpoint menor.
 
 Enquanto essas decisoes nao forem fechadas, implementar primeiro o fluxo principal:

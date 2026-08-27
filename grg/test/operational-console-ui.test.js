@@ -17,7 +17,7 @@ test('unified workspace exposes all primary command navigation districts', () =>
 });
 
 test('console consumes real operational contracts from unified controller', () => {
-  for (const endpoint of ['/avatar/message', '/overview', '/missions', '/city', '/office', '/projects', '/skills', '/connectors', '/governance/readiness-matrix', '/observability/series', '/security/encryption/status', '/onedeploy/scan-project', '/dev/fs', '/dev/fs/move', '/dev/ai/transform-file', '/dev/terminal', '/dev/projects/clone']) {
+  for (const endpoint of ['/autonomous/cycle', '/overview', '/missions', '/city', '/office', '/projects', '/skills', '/connectors', '/governance/readiness-matrix', '/observability/series', '/security/encryption/status', '/onedeploy/scan-project', '/dev/fs', '/dev/fs/move', '/dev/ai/transform-file', '/dev/terminal', '/dev/projects/clone']) {
     assert.ok(js.includes(endpoint), `missing endpoint ${endpoint}`);
   }
 });
@@ -29,8 +29,17 @@ test('operational console bar is data-driven, not frozen literals', () => {
   assert.doesNotMatch(html, /VPS ONLINE/, 'the invented master node status must not be hardcoded');
 });
 
-test('operational messages go through the Master Avatar and refresh mission state', () => {
-  assert.match(js, /api\('\/avatar\/message'/);
+test('theme root and command rows stay readable in the canonical shell', () => {
+  assert.ok(css.startsWith(':root') || css.startsWith('\uFEFF:root'), 'unified.css must start at :root so CSS variables are parsed');
+  assert.match(css, /--bg-app:\s*#0d1117/);
+  assert.match(css, /\.runtime-row\s*\{/);
+  assert.match(css, /\.empty-state-mini\s*\{/);
+  assert.match(css, /#view-city\s*\{/);
+});
+
+test('operational messages go through the canonical autonomous cycle and refresh mission state', () => {
+  assert.match(js, /api\('\/autonomous\/cycle'/);
+  assert.match(js, /Executive Brain/);
   assert.match(js, /refreshAll\(\)/);
 });
 

@@ -67,6 +67,22 @@ class ApprovalEngine {
     return this.get(tenantId, approvalId);
   }
 
+  async reject(tenantId, actorId, approvalId, reason = null) {
+    const request = await this.get(tenantId, approvalId);
+    const decision = this.policy.evaluate(request.action);
+    await this.cp.authorize(tenantId, actorId, decision.permission);
+    if (request.status !== 'pending') throw new ValidationError(`Approval is ${request.status}`);
+    if (request.separateApprover && request.requestedBy === actorId) throw new ForbiddenError('Requester cannot reject this operation');
+    await this.store.update((state) => {
+      const current = state.approvalRequests.find((item) => item.id === approvalId);
+      current.status = 'rejected'; current.rejectedBy = actorId; current.rejectedAt = new Date().toISOString(); current.rejectionReason = String(reason || '').slice(0, 500) || null;
+      return state;
+    });
+    await this.audit.record({ tenantId, actorId, action: 'approval.rejected', resource: { approvalId, action: request.action }, outcome: 'rejected' });
+    await this.bus.emit('approval.rejected', { tenantId, actorId, approvalId, action: request.action });
+    return this.get(tenantId, approvalId);
+  }
+
   async consume(tenantId, actorId, approvalId, expected) {
     const request = await this.get(tenantId, approvalId);
     if (request.status !== 'approved' || request.consumedAt) throw new ValidationError('Approval is not consumable');

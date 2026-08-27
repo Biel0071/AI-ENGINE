@@ -9,8 +9,11 @@ test('browser API rejects non-success responses before rendering their payload',
   assert.match(source, /if \(!res\.ok\) throw/);
 });
 
-test('chat renderer guards missing replies and handles chat errors cleanly', () => {
-  assert.match(source, /bubble\(res\.reply/);
+test('command chat delegates operator prompts to the canonical autonomous cycle', () => {
+  assert.match(source, /api\('\/autonomous\/cycle'/);
+  assert.match(source, /Executive Brain/);
+  assert.match(source, /DELEGATED/);
+  assert.match(source, /Falha ao iniciar missão/);
   assert.match(source, /refreshAll\(\)/);
 });
 

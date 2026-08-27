@@ -13,6 +13,15 @@
   display: flex !important;
 }
 
+#view-city {
+  min-height: 0;
+  overflow: hidden;
+}
+
+#view-city #cityCanvas {
+  min-height: 100%;
+}
+
 .city-canvas-fullscreen {
   position: absolute;
   top: 0; left: 0;

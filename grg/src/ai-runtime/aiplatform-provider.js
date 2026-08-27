@@ -256,7 +256,8 @@ class AIPlatformProvider {
   // uma unica geracao fosse possivel. Um prompt minimo e a unica prova de que o caminho
   // completo (gateway -> ollama -> modelo carregado) funciona. Custo medido: 1.3s, 39 tokens.
   async available() {
-    if (!this.baseUrl || !this.#apiKey) return false;
+    this.lastError = null;
+    if (!this.baseUrl || !this.#apiKey) { this.lastError = 'missing URL or API key'; return false; }
     try {
       const res = await request(this.baseUrl, '/v1/text', this.#apiKey, { prompt: 'ok', ...(this.model ? { model: this.model } : {}) }, 20000);
       // MEDIDO (2026-07-30): o health do FENIX roda as sondas em paralelo, entao ESTA sonda
@@ -274,8 +275,10 @@ class AIPlatformProvider {
       // assertNotFabricated lanca, o catch abaixo devolve false, e o connection-manager grava
       // OFFLINE com o motivo -- que e a verdade medida.
       assertNotFabricated(text, { provider: 'aiplatform', endpoint: '/v1/text' });
-      return typeof text === 'string' && text.length > 0;
-    } catch { return false; }
+      const available = typeof text === 'string' && text.length > 0;
+      if (!available) this.lastError = 'inference returned empty text';
+      return available;
+    } catch (error) { this.lastError = String(error.message || error).slice(0, 300); return false; }
   }
 
   // Streaming token a token. O gateway /v1/text nao faz stream, entao o FENIX vai direto ao

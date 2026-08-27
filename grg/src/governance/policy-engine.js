@@ -8,6 +8,7 @@ const RULES = Object.freeze({
   'factory.generate': { risk: 'medium', approvalRequired: false, separateApprover: false, permission: 'factory:generate' },
   'cognitive.execute.low': { risk: 'low', approvalRequired: false, separateApprover: false, permission: 'runtime:execute' },
   'cognitive.execute.high': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
+  'development.execute.high': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
   'sandbox.execute.production': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
   'agent.execute.red': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },
   'mission.step.red': { risk: 'critical', approvalRequired: true, separateApprover: true, permission: 'security:manage' },

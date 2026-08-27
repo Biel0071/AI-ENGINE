@@ -36,7 +36,7 @@ class ApiConnectionManager {
     } else {
       try {
         online = await provider.available();
-        if (!online) reason = 'health check returned not-available (gateway up but no generation possible, or unreachable)';
+        if (!online) reason = provider.lastError || 'health check returned not-available (gateway up but no generation possible, or unreachable)';
       } catch (error) {
         online = false;
         reason = `health check threw: ${String(error.message || error).slice(0, 200)}`;

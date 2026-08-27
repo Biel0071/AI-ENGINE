@@ -86,7 +86,7 @@ function queueingGateway() {
 
 test('a 202 enqueued response fails loudly instead of returning empty text', async () => {
   const { server, port } = await queueingGateway();
-  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${port}`, apiKey: 'ap_test' });
+  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${port}`, apiKey: 'ap_test', env: { GRG_AIPLATFORM_JOB_WAIT_MS: '0' } });
   await assert.rejects(() => p.complete({ prompt: 'oi' }), /enfileirou.*jobId=job_test_1.*concurrency=4/s);
   await assert.rejects(() => p.chat({ messages: [{ role: 'user', content: 'oi' }] }), /enfileirou/);
   server.close();
@@ -94,7 +94,7 @@ test('a 202 enqueued response fails loudly instead of returning empty text', asy
 
 test('available() reports false when the gateway only enqueues', async () => {
   const { server, port } = await queueingGateway();
-  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${port}`, apiKey: 'ap_test' });
+  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${port}`, apiKey: 'ap_test', env: { GRG_AIPLATFORM_JOB_WAIT_MS: '0' } });
   assert.equal(await p.available(), false, 'fila nao e geracao: nao pode contar como disponivel');
   server.close();
 });

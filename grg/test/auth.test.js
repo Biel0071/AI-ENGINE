@@ -32,6 +32,12 @@ test('login com senha errada e rejeitado', async () => {
   await assert.rejects(() => app.auth.login('grg', 'admin1010', 'errada'), ForbiddenError);
 });
 
+test('credenciais mestras legadas nao contornam o usuario persistido', async () => {
+  const app = await bootstrap();
+  await assert.rejects(() => app.auth.login('grg', 'grg-admin', 'grg-admin'), ForbiddenError);
+  await assert.rejects(() => app.auth.login('grg', 'admin', 'admin1010'), ForbiddenError);
+});
+
 test('token valido resolve contexto; invalido nao', async () => {
   const app = await bootstrap();
   const { token } = await app.auth.login('grg', 'admin1010', TEST_PASSWORD);
