@@ -144,10 +144,13 @@ async function refreshAll() {
   state.refreshing = true;
   try {
     const activeView = String(location.hash.slice(1) || 'command').split('?')[0] || 'command';
+    const pSwitcher = $('projectSwitcher');
+    const selectedProjectId = pSwitcher ? pSwitcher.value : 'ai-engine-core';
     const essentialEntries = [
       ['health', () => publicJson('/health')],
       ['me', () => api('/me')],
       ['overview', () => api('/overview')],
+      ['projectMirror', () => api('/v2/project-mirror/' + selectedProjectId)],
     ];
     const viewEntries = {
       skills: [
@@ -272,15 +275,88 @@ function renderHeader() {
 }
 
 function renderCommand() {
-  const avatar = state.data.missions?.avatar || state.data.avatar || {};
-  text('avatarState', avatar.state || 'Nao medido');
-  text('avatarPhrase', state.data.dailyBrief?.summary || 'Nenhum resumo operacional foi publicado nesta sessao.');
   const telemetry = state.data.telemetry || {};
-  text('activeModel', telemetry.lastModel || telemetry.model || (telemetry.calls ? 'IA medida' : 'sem chamada'));
-  text('eventCount', `${state.events.length} eventos`);
-  if ($('eventStream')) $('eventStream').innerHTML = state.events.length
-    ? state.events.slice(0, 48).map((event) => `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(event.summary || event.message || event.recordedAt || event.id)}</strong></div>`).join('')
-    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon">--</span>Sem eventos</div>';
+  const ok = state.data.health?.ok === true || state.data.health?.status === 'ready';
+
+  const pSwitcher = $('projectSwitcher');
+  if (pSwitcher && state.projects && state.projects.length > 0) {
+    const existingOpts = Array.from(pSwitcher.options).map(o => o.value);
+    for (const p of state.projects) {
+      if (!existingOpts.includes(p.id)) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = (p.name || p.id).toUpperCase();
+        pSwitcher.appendChild(opt);
+      }
+    }
+  }
+
+  const activeJob = state.jobs.find(j => j.status === 'processing' || j.status === 'running' || j.status === 'RUNNING' || j.status === 'PROCESSING');
+  const barActiveJob = $('barActiveJob');
+  if (barActiveJob) {
+    if (activeJob) {
+      barActiveJob.textContent = activeJob.id.split('-')[0].toUpperCase();
+      barActiveJob.style.color = 'var(--accent)';
+    } else {
+      barActiveJob.textContent = 'WAITING';
+      barActiveJob.style.color = 'var(--text-main)';
+    }
+  }
+
+  const barWorker = $('barWorker');
+  if (barWorker) {
+    const workers = Array.isArray(state.data.workers?.workers) ? state.data.workers.workers : [];
+    const busyWorker = workers.find(w => w.activeJobs > 0 || w.status === 'busy');
+    if (busyWorker) {
+      barWorker.textContent = 'BUSY';
+      barWorker.style.color = 'var(--accent)';
+    } else if (workers.length > 0) {
+      barWorker.textContent = 'IDLE';
+      barWorker.style.color = 'var(--text-main)';
+    } else {
+      barWorker.textContent = 'OFFLINE';
+      barWorker.style.color = 'var(--rose)';
+    }
+  }
+
+  const barAi = $('barAi');
+  if (barAi) {
+    if (telemetry.calls > 0) {
+      barAi.textContent = 'ONLINE';
+      barAi.style.color = 'var(--green)';
+    } else {
+      barAi.textContent = 'IDLE';
+      barAi.style.color = 'var(--text-main)';
+    }
+  }
+
+  const barRuntime = $('barRuntime');
+  if (barRuntime) {
+    barRuntime.textContent = ok ? 'ONLINE' : 'DEGRADED';
+    barRuntime.style.color = ok ? 'var(--green)' : 'var(--rose)';
+  }
+
+  const pmScreens = $('pmScreensBadge');
+  const mirror = state.data.projectMirror || {};
+  if (pmScreens) {
+    pmScreens.textContent = mirror.screens ? mirror.screens.length : '0';
+  }
+  const pmComponents = $('pmComponentsBadge');
+  if (pmComponents) {
+    pmComponents.textContent = mirror.components ? mirror.components.length : '0';
+  }
+  const pmApis = $('pmApisBadge');
+  if (pmApis) {
+    pmApis.textContent = mirror.apis ? mirror.apis.length : '0';
+  }
+  const pmWorkers = $('pmWorkersBadge');
+  if (pmWorkers) {
+    pmWorkers.textContent = mirror.workers ? mirror.workers.length : '0';
+  }
+  const pmBackend = $('pmBackendBadge');
+  if (pmBackend) {
+    pmBackend.textContent = mirror.apis ? mirror.apis.length : '0'; // placeholder mapping
+  }
 }
 
 function renderRuntime() {
@@ -761,6 +837,7 @@ function init() {
   addEvt('fsLoadBtn', 'click', () => { if ($('fsPath')) loadFs($('fsPath').value); });
   addEvt('saveBtn', 'click', () => saveFile().catch((error) => { if ($('fileSaveResult')) $('fileSaveResult').textContent = error.message; }));
   addEvt('fileSaveBtn', 'click', () => saveFile().catch((error) => { if ($('fileSaveResult')) $('fileSaveResult').textContent = error.message; }));
+  addEvt('projectSwitcher', 'change', refreshAll);
   addEvt('gitCloneForm', 'submit', (event) => { event.preventDefault(); cloneProject().catch((error) => { if ($('gitCloneResult')) $('gitCloneResult').textContent = error.message; }); });
   addEvt('previewRefreshBtn', 'click', renderLivePreview);
   addEvt('aiEditBtn', 'click', () => transformOpenFile().catch((error) => { if ($('aiEditResult')) $('aiEditResult').textContent = error.message; }));

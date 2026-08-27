@@ -272,6 +272,69 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
+  // 2b. GET /api/v2/project-mirror/:id (Fenix OS - Phase 2)
+  const pmMatch = url.pathname.match(/^\/api\/v2\/project-mirror\/([^/]+)$/);
+  if (req.method === 'GET' && pmMatch) {
+    const projectId = pmMatch[1];
+    let project = projectDiscoveryManager ? projectDiscoveryManager.knowledgeMap.get(projectId) : null;
+    
+    // Fallback if not in knowledge map but is in workspaceManager
+    if (!project) {
+       const wsProject = workspaceManager.getProject(projectId);
+       if (wsProject) {
+         project = { localPath: wsProject.rootPath, name: wsProject.name, projectId };
+       }
+    }
+
+    if (!project || !project.localPath) {
+      sendError(res, 404, 'Project not found or local path missing for mirror');
+      return true;
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+    
+    const readDirSafe = (dir, ext) => {
+      try {
+        if (!fs.existsSync(dir)) return [];
+        return fs.readdirSync(dir)
+          .filter(f => fs.statSync(path.join(dir, f)).isFile() && (!ext || f.endsWith(ext)))
+          .map(f => ({ name: f, path: path.join(dir, f) }));
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const screens = readDirSafe(path.join(project.localPath, 'public'), '.html');
+    // Se for um projeto react, screens podem estar em src/pages ou app/
+    if (screens.length === 0) {
+      screens.push(...readDirSafe(path.join(project.localPath, 'src/pages'), '.tsx'));
+      screens.push(...readDirSafe(path.join(project.localPath, 'app'), '.tsx'));
+    }
+
+    const components = readDirSafe(path.join(project.localPath, 'src/components'), '.js');
+    if (components.length === 0) {
+      components.push(...readDirSafe(path.join(project.localPath, 'src/components'), '.tsx'));
+    }
+
+    const apis = readDirSafe(path.join(project.localPath, 'src/api'), '.js');
+    const workers = readDirSafe(path.join(project.localPath, 'src/workers'), '.js');
+
+    sendJson(res, 200, {
+      projectId,
+      name: project.name,
+      screens,
+      components,
+      apis,
+      workers,
+      graph: {
+        nodes: screens.length + components.length + apis.length + workers.length,
+        edges: Math.floor((screens.length + components.length) * 1.5)
+      }
+    });
+    return true;
+  }
+
   // 3. GET /api/v2/projects/:id/dna (M31: Digital DNA)
   if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/projects\/[^\/]+\/dna$/)) {
     const parts = url.pathname.split('/');
