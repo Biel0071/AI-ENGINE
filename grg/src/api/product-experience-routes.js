@@ -669,7 +669,10 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
-  // 15. GET /api/v2/projects/:id/file (REAL File Content Reader)
+  if (req.method === 'GET' && url.pathname === '/api/v2/test-fail') {
+    return sendError(res, 500, 'Intentional Failure Route');
+  }
+
   if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/projects\/[^\/]+\/file$/)) {
     const parts = url.pathname.split('/');
     const projectId = parts[4];
@@ -679,21 +682,23 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       sendError(res, 404, `Project ${projectId} not found`);
       return true;
     }
-    if (!filePath) {
-      sendError(res, 400, 'path query param is required');
-      return true;
-    }
 
-    const fs = require('fs');
+    const fs = require('fs/promises');
+    const fsSync = require('fs');
     const fullPath = path.join(ws.rootPath, filePath);
-    if (!fs.existsSync(fullPath)) {
+    if (!fsSync.existsSync(fullPath)) {
       sendError(res, 404, `File ${filePath} not found`);
       return true;
     }
 
-    const content = fs.readFileSync(fullPath, 'utf8');
-    sendJson(res, 200, { projectId, path: filePath, content });
-    return true;
+    try {
+      const content = await fs.readFile(fullPath, 'utf8');
+      sendJson(res, 200, { projectId, path: filePath, content });
+      return true;
+    } catch (err) {
+      sendError(res, 500, `Failed to read file: ${err.message}`);
+      return true;
+    }
   }
 
   // 16. POST /api/v2/projects/:id/file (REAL File Content Writer)

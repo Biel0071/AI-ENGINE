@@ -18,7 +18,8 @@ const { handleKnowledgeRoutes } = require('./knowledge/knowledge-routes');
 const { handleDeveloperRoutes } = require('./api/developer-routes');
 const { handleProductExperienceRoutes } = require('./api/product-experience-routes');
 const { handleUniversalJobRoutes } = require('./api/universal-job-routes');
-const { handleProjectMirrorRoutes } = require('./api/project-mirror-routes');
+const { handleProjectMirrorRoutes, authorizeProjectPath } = require('./api/project-mirror-routes');
+const { handleOrchestrationRoutes } = require('./api/orchestration-routes');
 
 const crypto = require('node:crypto');
 
@@ -229,9 +230,10 @@ async function start(port = null, options = {}) {
 
       if (req.method === 'GET' && url.pathname === '/api/me') return sendJson(res, 200, { tenantId, actorId, authed: cx.authed });
 
-      if (url.pathname.startsWith('/api/v2/') || url.pathname.startsWith('/api/project-mirror/')) {
+      if (url.pathname.startsWith('/api/v2/') || url.pathname.startsWith('/api/project-mirror/') || url.pathname.startsWith('/api/orchestration/')) {
         if (await handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, cx)) return;
         if (await handleProjectMirrorRoutes(req, res, url, app, sendJson, readJson, cx)) return;
+        if (await handleOrchestrationRoutes(req, res, url, app, sendJson, readJson, cx)) return;
       }
 
       // Todos os contratos operacionais sao privados. Os handlers especializados recebem a
@@ -513,7 +515,31 @@ async function start(port = null, options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/models/catalog') return sendJson(res, 200, { catalog: app.modelOrchestrator.getCatalog() }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/models/execute') { const b = await readJson(req); return sendJson(res, 200, await app.modelOrchestrator.executeTask(tenantId, actorId, b.taskType, b), requestId); }
 
-      if (req.method === 'GET' && url.pathname === '/api/agents/swarm') return sendJson(res, 200, await app.agentSwarm.listAgents(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/agents/swarm') {
+        const swarm = await app.agentSwarm.listAgents(tenantId, actorId);
+        if (app.centralOrchestrator) {
+          const agentsArray = Array.isArray(swarm) ? swarm : (swarm.agents || []);
+          for (const mission of app.centralOrchestrator.missions.values()) {
+            if (mission.status === 'COMPLETED' || mission.status === 'FAILED') continue;
+            const agentNode = agentsArray.find(a => a.id === mission.agent || (a.role && a.role.toUpperCase() === mission.agent.toUpperCase()));
+            if (agentNode) {
+              agentNode.status = mission.status;
+              agentNode.currentMission = mission.id;
+              agentNode.activity = mission.objective;
+            } else {
+              agentsArray.push({
+                 id: mission.agent || 'SYSTEM',
+                 name: mission.agent || 'SYSTEM',
+                 role: mission.agent ? mission.agent.toLowerCase() : 'executor',
+                 status: mission.status,
+                 currentMission: mission.id,
+                 activity: mission.objective
+              });
+            }
+          }
+        }
+        return sendJson(res, 200, swarm, requestId);
+      }
       if (req.method === 'POST' && url.pathname === '/api/agents/swarm/events') return sendJson(res, 201, await app.agentSwarm.dispatchEvent(tenantId, actorId, await readJson(req)), requestId);
 
       if (req.method === 'GET' && url.pathname === '/api/ops/vps/servers') return sendJson(res, 200, await app.vpsOps.listServers(tenantId, actorId), requestId);

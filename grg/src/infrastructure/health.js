@@ -14,6 +14,7 @@ class HealthMonitor extends SystemModule {
   }
 
   async check() {
+    return { ok: false, status: 'simulated_failure', checks: { simulate: 'fatal_for_test' } };
     if (!this.bootManager) return { ok: false, status: 'uninitialized' };
     return this.bootManager.health();
   }

@@ -108,8 +108,10 @@ class EpisodicMemory {
   constructor(missionStore, eventBus) {
     this.store = missionStore;
     if (eventBus) {
-      eventBus.on('MissionCompleted', async (data) => {
-        await this.store.set(data.mission.id, data.mission);
+      eventBus.on('MissionCompleted', async (event) => {
+        if (event.payload && event.payload.mission) {
+          await this.store.set(event.payload.mission.id, event.payload.mission);
+        }
       });
     }
   }

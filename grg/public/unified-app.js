@@ -59,8 +59,10 @@ async function refreshAccessToken() {
   } catch { return false; }
 }
 
-async function api(path, options = {}, retried = false) {
-  const url = path.startsWith('/api') ? path : (path.startsWith('/') ? `/api${path}` : `/api/${path}`);
+const apiCache = new Map();
+const apiPending = new Map();
+
+async function executeFetch(url, options, retried) {
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -70,7 +72,7 @@ async function api(path, options = {}, retried = false) {
       ...(options.headers || {})
     },
   });
-  if (res.status === 401 && !retried && await refreshAccessToken()) return api(path, options, true);
+  if (res.status === 401 && !retried && await refreshAccessToken()) return executeFetch(url, options, true);
   if (res.status === 401) {
     localStorage.removeItem('grg_token');
     location.replace('/GRG-login');
@@ -80,13 +82,64 @@ async function api(path, options = {}, retried = false) {
   if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
   return body;
 }
+
+async function api(path, options = {}, retried = false) {
+  const url = path.startsWith('/api') ? path : (path.startsWith('/') ? `/api${path}` : `/api/${path}`);
+  const method = options.method || 'GET';
+  
+  if (method !== 'GET') {
+    return executeFetch(url, options, retried);
+  }
+
+  // Frontend Cache (15s TTL) & Request Deduplication
+  const cacheKey = `api:${url}`;
+  
+  if (apiCache.has(cacheKey)) {
+    const entry = apiCache.get(cacheKey);
+    if (Date.now() - entry.ts < 15000) return entry.data;
+  }
+  
+  if (apiPending.has(cacheKey)) {
+    return apiPending.get(cacheKey);
+  }
+  
+  const promise = executeFetch(url, options, retried).then(data => {
+    apiCache.set(cacheKey, { ts: Date.now(), data });
+    apiPending.delete(cacheKey);
+    return data;
+  }).catch(err => {
+    apiPending.delete(cacheKey);
+    throw err;
+  });
+  
+  apiPending.set(cacheKey, promise);
+  return promise;
+}
 window.FENIX.api = api;
 
+const publicPending = new Map();
+const publicCache = new Map();
+
 async function publicJson(path) {
-  const res = await fetch(path);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
-  return body;
+  if (publicCache.has(path)) {
+    const entry = publicCache.get(path);
+    if (Date.now() - entry.ts < 5000) return entry.data;
+  }
+
+  if (publicPending.has(path)) return publicPending.get(path);
+  
+  const promise = (async () => {
+    const res = await fetch(path);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+    return body;
+  })();
+  
+  publicPending.set(path, promise);
+  promise.then(data => {
+    publicCache.set(path, { ts: Date.now(), data });
+  }).finally(() => publicPending.delete(path));
+  return promise;
 }
 
 async function settle(entries, concurrency = 5) {
@@ -146,12 +199,15 @@ async function refreshAll() {
     const activeView = String(location.hash.slice(1) || 'command').split('?')[0] || 'command';
     const pSwitcher = $('projectSwitcher');
     const selectedProjectPath = pSwitcher?.selectedOptions?.[0]?.dataset?.path || '';
+    
+    // FASE 5: BOOTSTRAP RÁPIDO - FASE A (CRITICAL PATH)
     const essentialEntries = [
       ['health', () => publicJson('/health')],
       ['me', () => api('/me')],
       ['overview', () => api('/overview')],
       ['projectMirror', () => api(`/project-mirror${selectedProjectPath ? `?path=${encodeURIComponent(selectedProjectPath)}` : ''}`)],
     ];
+    
     const viewEntries = {
       skills: [
         ['skills', () => api('/skills')],
@@ -174,56 +230,63 @@ async function refreshAll() {
         ['speed', () => api('/performance/speed-score')],
         ['hotMemory', () => api('/performance/hot-memory')],
       ],
-      command: []
+      command: [
+        ['jobs', () => api('/runtime/jobs')],
+        ['workers', () => api('/workers')],
+        ['telemetry', () => api('/ai/telemetry')]
+      ],
+      agents: [
+        ['agents', () => api('/agents/panel')],
+        ['swarm', () => api('/agents/swarm')]
+      ],
+      runtime: [
+        ['runtime', () => api('/runtime')],
+        ['operations', () => api('/operations/state')]
+      ],
+      missions: [
+        ['missions', () => api('/missions')]
+      ],
+      memory: [
+        ['kg', () => api('/knowledge-graph/anomalies')]
+      ],
+      projects: [
+        ['projects', () => api('/projects')],
+        ['repositories', () => api('/repositories')]
+      ]
     };
-    const entries = viewEntries[activeView] ? [...essentialEntries, ...viewEntries[activeView]] : [
-      ['health', () => publicJson('/health')],
-      ['me', () => api('/me')],
-    ['overview', () => api('/overview')],
-    ['operations', () => api('/operations/state')],
-    ['runtime', () => api('/runtime')],
-    ['missions', () => api('/missions')],
-    ['jobs', () => api('/runtime/jobs')],
-    ['city', () => api('/city')],
-    ['events', () => api('/events?limit=80')],
-    ['telemetry', () => api('/ai/telemetry')],
-    ['connectors', () => api('/connectors')],
-    ['router', () => api('/ai/router/select')],
-    ['connection', () => api('/connection')],
-    ['capabilities', () => api('/capabilities')],
-    ['projects', () => api('/projects')],
-    ['repositories', () => api('/repositories')],
-    ['graph', () => api('/graph')],
-    ['kg', () => api('/knowledge-graph/anomalies')],
-    ['office', () => api('/office')],
-    ['workers', () => api('/workers')],
-    ['providers', () => api('/providers')],
-    ['programs', () => api('/executive/programs')],
-    ['readiness', () => api('/governance/readiness-matrix')],
-    ['gatekeeper', () => api('/governance/gatekeeper?action=deploy')],
-    ['observability', () => api('/observability/metrics')],
-    ['series', () => api('/observability/series?windowMinutes=120')],
-    ['security', () => api('/security/encryption/status')],
-    ['veracity', () => api('/governance/simulation-audit')],
-    ['kos', () => api('/uios/kos/manifest')],
-    ['skills', () => api('/skills')],
-    ['fullstackSlices', () => api('/scos/factory/slices')],
-    ['twin', () => api('/digital-twin/operational')],
-    ['agents', () => api('/agents/panel')],
-    ['swarm', () => api('/agents/swarm')],
-      ['speed', () => api('/performance/speed-score')],
-      ['hotMemory', () => api('/performance/hot-memory')],
-      ['dailyBrief', () => api('/workspace/eca/daily-brief')],
-    ];
-    const data = await settle(entries, viewEntries[activeView] ? 2 : 4);
-    state.data = data;
-    state.projects = data.projects?.projects || [];
-    state.repos = data.repositories?.repositories || [];
-    state.office = data.office?.office || [];
-    state.events = data.events?.events || [];
-    state.jobs = data.jobs?.jobs || [];
-    state.missions = data.missions?.missions || [];
+    
+    const entriesToLoad = [...essentialEntries, ...(viewEntries[activeView] || [])];
+    
+    // Carrega o Critical Path para a view atual
+    const data = await settle(entriesToLoad, 4);
+    
+    // Mescla com dados existentes no estado para nao limpar o que ja carregou antes
+    state.data = { ...(state.data || {}), ...data };
+    
+    if (data.projects) state.projects = data.projects.projects || [];
+    if (data.repositories) state.repos = data.repositories.repositories || [];
+    if (data.office) state.office = data.office.office || [];
+    if (data.events) state.events = data.events.events || [];
+    if (data.jobs) state.jobs = data.jobs.jobs || [];
+    if (data.missions) state.missions = data.missions.missions || [];
+    
     renderAll();
+    
+    // FASE 5: BOOTSTRAP RÁPIDO - FASE B (BACKGROUND PREFETCH DE VIEWS COMUNS)
+    if (!window._backgroundPrefetchDone) {
+      window._backgroundPrefetchDone = true;
+      setTimeout(() => {
+        const bgEntries = [
+          ['agents', () => api('/agents/panel')],
+          ['runtime', () => api('/runtime')],
+          ['observability', () => api('/observability/metrics')]
+        ];
+        settle(bgEntries, 2).then(bgData => {
+          state.data = { ...state.data, ...bgData };
+          if (!state.refreshing) renderAll(); // Soft update se nao estiver dando refresh
+        });
+      }, 3000);
+    }
   } finally {
     state.refreshing = false;
   }
@@ -384,11 +447,48 @@ function renderMissions() {
     : row('programas', 'sem programas executivos', 'EMPTY');
 }
 
+const HABBO_ROLES = [
+  { id: 'master',      name: 'MASTER',     color: '#ef4444', role: 'architect',   emoji: '👑' },
+  { id: 'frontend',    name: 'FRONTEND',   color: '#3b82f6', role: 'frontend',    emoji: '🎨' },
+  { id: 'backend',     name: 'BACKEND',    color: '#22c55e', role: 'backend',     emoji: '⚙️' },
+  { id: 'qa',         name: 'QA',         color: '#f59e0b', role: 'qa',          emoji: '🧪' },
+  { id: 'devops',     name: 'DEVOPS',     color: '#9333ea', role: 'devops',      emoji: '🚀' },
+  { id: 'ai_core',    name: 'AI-CORE',    color: '#db2777', role: 'ai',          emoji: '🤖' },
+  { id: 'memory',     name: 'MEMORY',     color: '#0d9488', role: 'memory',      emoji: '🧠' },
+  { id: 'knowledge',  name: 'KNOWLEDGE',  color: '#7c3aed', role: 'knowledge',   emoji: '📚' },
+  { id: 'mcp',        name: 'MCP-HUB',   color: '#38bdf8', role: 'connector',   emoji: '🔌' },
+  { id: 'observer',   name: 'OBSERVER',   color: '#fb923c', role: 'observability', emoji: '👁️' },
+  { id: 'security',   name: 'SECURITY',   color: '#f43f5e', role: 'security',    emoji: '🛡️' },
+  { id: 'analyst',    name: 'ANALYST',    color: '#a78bfa', role: 'analyst',     emoji: '📊' },
+];
+
 function renderAgents() {
   const source = state.data.agents?.agents || state.data.swarm?.agents || [];
-  const agents = Array.isArray(source) ? source : Object.entries(source).map(([id, value]) => ({ id, ...(value || {}) }));
-  if ($('agentList')) $('agentList').innerHTML = agents.length
-    ? agents.map((agent) => row(agent.name || agent.id || agent.role, agent.role || agent.objective || agent.summary || '', agent.status || agent.state || 'KNOWN')).join('')
+  let agents = Array.isArray(source) ? source : Object.entries(source).map(([id, value]) => ({ id, ...(value || {}) }));
+  
+  // Merge AI City Simulated Agents with Real Agents
+  const simulated = HABBO_ROLES.map(h => ({
+    id: h.id,
+    name: h.name,
+    role: h.role,
+    status: 'SIMULATED',
+    emoji: h.emoji,
+    color: h.color
+  }));
+
+  // Sobrescreve simulated com dados reais, se existirem
+  const merged = simulated.map(sim => {
+    const real = agents.find(a => (a.role || '').toLowerCase() === sim.role || a.id === sim.id || a.name === sim.name);
+    if (real) return { ...sim, ...real, isReal: true, status: real.status || 'WORKING' };
+    return sim;
+  });
+
+  if ($('agentList')) $('agentList').innerHTML = merged.length
+    ? merged.map((agent) => row(
+        `<span style="background:${agent.color}22; border:1px solid ${agent.color}; padding: 2px 6px; border-radius: 4px; color:${agent.color}; margin-right:8px;">${agent.emoji}</span> ` + (agent.name || agent.id || agent.role),
+        agent.role || agent.objective || agent.summary || '',
+        agent.isReal ? (agent.status || agent.state || 'REAL') : 'SIMULATED'
+      )).join('')
     : row('agentes', state.data.agents?.__error || state.data.swarm?.__error || 'nenhum agente publicado pelo runtime', 'EMPTY');
 }
 
@@ -493,9 +593,21 @@ async function hireWorkforce(projectId) {
 
 function renderKnowledge() {
   const kos = state.data.kos || {};
-  if ($('kosManifest')) $('kosManifest').innerHTML = Object.keys(kos).length
-    ? Object.entries(kos).slice(0, 12).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 120) : value, value?.state || '')).join('')
-    : row('KOS', kos.__error || 'manifesto indisponivel', 'UNKNOWN');
+  let kosContent = '';
+  if (kos.status === 'UNAVAILABLE') {
+    kosContent = `<div class="empty-state" style="padding: 24px 0; border: 1px dashed var(--border); border-radius: 8px; text-align: center; margin-bottom: 16px;">
+        <span class="empty-icon" style="font-size: 24px; display: block; margin-bottom: 8px;">📚</span>
+        <strong style="color: var(--text-main); display: block; margin-bottom: 4px;">Knowledge Base Vazia</strong>
+        <span style="color: var(--text-muted); font-size: 12px;">Nenhum arquivo <code>VOLUME.md</code> encontrado no diretório de constituição.<br>O KOS está aguardando indexação ou documentação local.</span>
+      </div>`;
+  } else if (Object.keys(kos).length) {
+    kosContent = Object.entries(kos).slice(0, 12).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 120) : value, value?.state || '')).join('');
+  } else {
+    kosContent = row('KOS', kos.__error || 'manifesto indisponivel', 'UNKNOWN');
+  }
+  
+  if ($('kosManifest')) $('kosManifest').innerHTML = kosContent;
+
   const anomalies = state.data.kg?.anomalies || state.data.graph?.edges || [];
   if ($('kgList')) $('kgList').innerHTML = Array.isArray(anomalies) && anomalies.length
     ? anomalies.slice(0, 20).map((item, i) => row(item.type || item.id || `relacao ${i + 1}`, item.source || item.target || JSON.stringify(item).slice(0, 90), item.status || 'GRAPH')).join('')

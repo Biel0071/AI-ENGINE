@@ -1,14 +1,36 @@
 /**
- * FÊNIX AGENTIC CITY 2.0
- * Interactive Isometric Digital Twin for FÊNIX OS
- * Real-time connection to AutonomousJobOrchestrator
+ * FÊNIX AGENTIC CITY 3.0 — Habbo-style Isometric World
+ * Active agents always visible, animated walking, particle work effects
+ * Syncs with real FÊNIX API when available
  */
+
+const AGENT_ROLES = [
+  { id: 'master',      name: 'MASTER',     color: '#ef4444', role: 'architect',   district: 'MASTER_HQ', emoji: '👑' },
+  { id: 'frontend',    name: 'FRONTEND',   color: '#3b82f6', role: 'frontend',    district: 'FRONTEND',  emoji: '🎨' },
+  { id: 'backend',     name: 'BACKEND',    color: '#22c55e', role: 'backend',     district: 'BACKEND',   emoji: '⚙️' },
+  { id: 'qa',         name: 'QA',         color: '#f59e0b', role: 'qa',          district: 'QA',        emoji: '🧪' },
+  { id: 'devops',     name: 'DEVOPS',     color: '#9333ea', role: 'devops',      district: 'DEVOPS',    emoji: '🚀' },
+  { id: 'ai_core',    name: 'AI-CORE',    color: '#db2777', role: 'ai',          district: 'AI_MODELS', emoji: '🤖' },
+  { id: 'memory',     name: 'MEMORY',     color: '#0d9488', role: 'memory',      district: 'MEMORY',    emoji: '🧠' },
+  { id: 'knowledge',  name: 'KNOWLEDGE',  color: '#7c3aed', role: 'knowledge',   district: 'KNOWLEDGE', emoji: '📚' },
+  { id: 'mcp',        name: 'MCP-HUB',   color: '#38bdf8', role: 'connector',   district: 'MCP',       emoji: '🔌' },
+  { id: 'observer',   name: 'OBSERVER',   color: '#fb923c', role: 'observability',district:'CENTRAL',   emoji: '👁️' },
+  { id: 'security',   name: 'SECURITY',   color: '#f43f5e', role: 'security',    district: 'DEVOPS',    emoji: '🛡️' },
+  { id: 'analyst',    name: 'ANALYST',    color: '#a78bfa', role: 'analyst',     district: 'KNOWLEDGE', emoji: '📊' },
+];
+
+const WORK_MESSAGES = [
+  'analyzing...', 'building...', 'testing...', 'deploying...', 
+  'learning...', 'optimizing...', 'scanning...', 'connecting...',
+  'compiling...', 'validating...', 'evolving...', 'syncing...'
+];
 
 class IsoCityEngine {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');
+    this.time = 0;
     
     this.state = {
       camera: { x: 0, y: 0, zoom: 1.0 },
@@ -17,43 +39,85 @@ class IsoCityEngine {
       lastMouse: { x: 0, y: 0 },
       tileSize: 60,
       hoveredAgent: null,
-      lastTime: performance.now()
+      lastTime: performance.now(),
+      selectedAgent: null
     };
 
     this.world = {
       agents: new Map(),
-      particles: []
+      particles: [],
+      bubbles: []
     };
 
     this.DISTRICTS = {
-      'CENTRAL': { x: 0, y: 0, w: 4, h: 4, color: '#1e293b', label: 'CENTRAL PLAZA' },
-      'MASTER_HQ': { x: -6, y: -6, w: 3, h: 3, color: '#b91c1c', label: 'MASTER HQ' },
-      'FRONTEND': { x: 6, y: -2, w: 3, h: 3, color: '#2563eb', label: 'FRONTEND DISTRICT' },
-      'BACKEND': { x: 6, y: 4, w: 3, h: 3, color: '#16a34a', label: 'BACKEND DISTRICT' },
-      'QA': { x: -6, y: 4, w: 3, h: 3, color: '#f59e0b', label: 'QA LAB' },
-      'DEVOPS': { x: -8, y: -2, w: 3, h: 3, color: '#9333ea', label: 'DEVOPS CENTER' },
-      'AI_MODELS': { x: 0, y: -8, w: 4, h: 3, color: '#db2777', label: 'AI CORE' },
-      'MEMORY': { x: 0, y: 8, w: 4, h: 3, color: '#0d9488', label: 'MEMORY VAULT' },
-      'KNOWLEDGE': { x: -4, y: 9, w: 3, h: 3, color: '#7c3aed', label: 'KNOWLEDGE CENTER' },
-      'MCP': { x: 8, y: 1, w: 3, h: 3, color: '#38bdf8', label: 'MCP HUB' }
+      'CENTRAL':    { x: 0,  y: 0,  w: 4, h: 4, color: '#1e293b', label: 'CENTRAL PLAZA' },
+      'MASTER_HQ':  { x: -6, y: -6, w: 3, h: 3, color: '#b91c1c', label: 'MASTER HQ' },
+      'FRONTEND':   { x: 6,  y: -2, w: 3, h: 3, color: '#2563eb', label: 'FRONTEND DISTRICT' },
+      'BACKEND':    { x: 6,  y: 4,  w: 3, h: 3, color: '#16a34a', label: 'BACKEND DISTRICT' },
+      'QA':         { x: -6, y: 4,  w: 3, h: 3, color: '#d97706', label: 'QA LAB' },
+      'DEVOPS':     { x: -8, y: -2, w: 3, h: 3, color: '#7c3aed', label: 'DEVOPS CENTER' },
+      'AI_MODELS':  { x: 0,  y: -8, w: 4, h: 3, color: '#be185d', label: 'AI CORE' },
+      'MEMORY':     { x: 0,  y: 8,  w: 4, h: 3, color: '#0f766e', label: 'MEMORY VAULT' },
+      'KNOWLEDGE':  { x: -4, y: 9,  w: 3, h: 3, color: '#6d28d9', label: 'KNOWLEDGE CENTER' },
+      'MCP':        { x: 8,  y: 1,  w: 3, h: 3, color: '#0284c7', label: 'MCP HUB' }
     };
 
+    this._initSimulatedAgents();
     this.resize();
     window.addEventListener('resize', () => this.resize());
     this.setupEvents();
     
-    // Sync data from FENIX API
-    setInterval(() => this.syncRealData(), 1500);
+    // Sync with real API every 3s
+    this._syncInterval = setInterval(() => this.syncRealData(), 3000);
     this.syncRealData();
-
     this.startLoop();
+  }
+
+  _initSimulatedAgents() {
+    for (const tmpl of AGENT_ROLES) {
+      const dist = this.DISTRICTS[tmpl.district];
+      if (!dist) continue;
+      const agent = {
+        id: tmpl.id,
+        name: tmpl.name,
+        role: tmpl.role,
+        color: tmpl.color,
+        emoji: tmpl.emoji,
+        district: tmpl.district,
+        x: dist.x + (Math.random() - 0.5) * (dist.w - 1),
+        y: dist.y + (Math.random() - 0.5) * (dist.h - 1),
+        tx: dist.x, ty: dist.y,
+        status: Math.random() < 0.6 ? 'WORKING' : 'IDLE',
+        workMsg: WORK_MESSAGES[Math.floor(Math.random() * WORK_MESSAGES.length)],
+        trail: [],
+        // Walk animation
+        walkFrame: 0,
+        walkTimer: 0,
+        // Wander timer
+        wanderTimer: Math.random() * 4,
+        // Speech bubble
+        bubbleTimer: Math.random() * 6,
+        bubble: null,
+        // Real API override
+        isReal: false
+      };
+      this._setNewTarget(agent);
+      this.world.agents.set(tmpl.id, agent);
+    }
+  }
+
+  _setNewTarget(agent) {
+    const dist = this.DISTRICTS[agent.district];
+    if (!dist) return;
+    agent.tx = dist.x + (Math.random() - 0.5) * (dist.w * 0.8);
+    agent.ty = dist.y + (Math.random() - 0.5) * (dist.h * 0.8);
   }
 
   resize() {
     const parent = this.canvas.parentElement;
     if (parent) {
-      this.canvas.width = parent.clientWidth;
-      this.canvas.height = parent.clientHeight;
+      this.canvas.width = parent.clientWidth || 800;
+      this.canvas.height = parent.clientHeight || 600;
     }
   }
 
@@ -71,130 +135,88 @@ class IsoCityEngine {
         this.state.targetCamera.y += dy;
         this.state.lastMouse = { x: e.clientX, y: e.clientY };
       }
-      
-      // Hit testing for hover
       const rect = this.canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      this.checkHover(mx, my);
+      this.checkHover(e.clientX - rect.left, e.clientY - rect.top);
     });
     this.canvas.addEventListener('wheel', e => {
       e.preventDefault();
-      const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
-      this.state.targetCamera.zoom = Math.max(0.5, Math.min(2.5, this.state.targetCamera.zoom * zoomDelta));
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      this.state.targetCamera.zoom = Math.max(0.4, Math.min(2.8, this.state.targetCamera.zoom * delta));
+    }, { passive: false });
+    this.canvas.addEventListener('click', e => {
+      const rect = this.canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const agent = this._hitTestAgent(mx, my);
+      this.state.selectedAgent = agent === this.state.selectedAgent ? null : agent;
+    });
+    // Double-click to reset camera
+    this.canvas.addEventListener('dblclick', () => {
+      this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
     });
   }
 
-  checkHover(mx, my) {
-    this.state.hoveredAgent = null;
-    const { camera, tileSize } = this.state;
+  _hitTestAgent(mx, my) {
+    const { camera } = this.state;
     const cx = this.canvas.width / 2 + camera.x;
     const cy = this.canvas.height / 2 + camera.y;
-
-    let closest = null;
-    let minDist = 40;
-
+    let closest = null, minDist = 44;
     for (const agent of this.world.agents.values()) {
-      const screen = this.toScreen(agent.x, agent.y, 0, cx, cy, camera.zoom);
-      // Adjust for avatar height
-      screen.y -= 30 * camera.zoom;
-      
-      const dist = Math.hypot(mx - screen.x, my - screen.y);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = agent;
-      }
+      const sc = this.toScreen(agent.x, agent.y, 0.2, cx, cy, camera.zoom);
+      sc.y -= 28 * camera.zoom;
+      const d = Math.hypot(mx - sc.x, my - sc.y);
+      if (d < minDist) { minDist = d; closest = agent; }
     }
-    
-    this.state.hoveredAgent = closest;
-    this.canvas.style.cursor = closest ? 'pointer' : (this.state.isDragging ? 'grabbing' : 'grab');
+    return closest;
+  }
+
+  checkHover(mx, my) {
+    this.state.hoveredAgent = this._hitTestAgent(mx, my);
+    this.canvas.style.cursor = this.state.hoveredAgent ? 'pointer' : (this.state.isDragging ? 'grabbing' : 'grab');
   }
 
   syncRealData() {
     try {
-      if (window.FENIX && window.FENIX.live && window.FENIX.live.agents) {
-        this.updateAgents(window.FENIX.live.agents);
-      } else if (window.FENIX && window.FENIX.state && window.FENIX.state.data) {
-        const data = window.FENIX.state.data;
-        this.updateAgents(data.agents?.agents || data.swarm?.agents || []);
-      } else if (window.state && window.state.api && window.state.api.agentsPanel) {
-        // Fallback to Shell state
-        this.updateAgents(window.state.api.agentsPanel.agents || []);
-      }
-    } catch (e) {
-      console.warn('IsoCity: Failed to sync agents', e);
-    }
-  }
+      let apiAgents = [];
+      if (window.FENIX?.live?.agents?.length) apiAgents = window.FENIX.live.agents;
+      else if (window.state?.api?.agentsPanel?.agents?.length) apiAgents = window.state.api.agentsPanel.agents;
+      else if (window.state?.api?.agents?.agents?.length) apiAgents = window.state.api.agents.agents;
 
-  getAgentDistrict(role) {
-    if (!role) return 'CENTRAL';
-    const r = role.toLowerCase();
-    if (r.includes('frontend')) return 'FRONTEND';
-    if (r.includes('backend') || r.includes('database')) return 'BACKEND';
-    if (r.includes('qa') || r.includes('test')) return 'QA';
-    if (r.includes('devops') || r.includes('security')) return 'DEVOPS';
-    if (r.includes('master') || r.includes('architect')) return 'MASTER_HQ';
-    if (r.includes('knowledge') || r.includes('graph')) return 'KNOWLEDGE';
-    if (r.includes('memory')) return 'MEMORY';
-    if (r.includes('mcp') || r.includes('connector')) return 'MCP';
-    if (r.includes('ai') || r.includes('model')) return 'AI_MODELS';
-    return 'CENTRAL';
-  }
-
-  updateAgents(apiAgents) {
-    const currentIds = new Set(apiAgents.map(a => a.name));
-    
-    // Remove old
-    for (const [id, agent] of this.world.agents.entries()) {
-      if (!currentIds.has(id)) this.world.agents.delete(id);
-    }
-
-    // Add / Update
-    for (const a of apiAgents) {
-      let agent = this.world.agents.get(a.name);
-      if (!agent) {
-        agent = {
-          id: a.name, name: a.name, role: a.role,
-          x: 0, y: 0, tx: 0, ty: 0,
-          status: 'IDLE', lastStatus: '',
-          district: 'CENTRAL',
-          trail: []
-        };
-        this.world.agents.set(a.name, agent);
-      }
-      
-      agent.role = a.role;
-      agent.status = a.status || 'IDLE';
-      
-      const targetDistrict = agent.status === 'IDLE' ? 'CENTRAL' : this.getAgentDistrict(agent.role);
-      
-      if (agent.status !== agent.lastStatus || agent.district !== targetDistrict) {
-        agent.lastStatus = agent.status;
-        agent.district = targetDistrict;
-        
-        const dist = this.DISTRICTS[targetDistrict];
-        if (dist) {
-          agent.tx = dist.x + (Math.random() * (dist.w - 1)) - (dist.w/2 - 0.5);
-          agent.ty = dist.y + (Math.random() * (dist.h - 1)) - (dist.h/2 - 0.5);
+      if (apiAgents.length > 0) {
+        // Overlay real agents on top of simulated ones
+        for (const a of apiAgents) {
+          const id = a.id || a.name;
+          const existingRole = AGENT_ROLES.find(r => r.role === (a.role || '').toLowerCase() || r.id === id);
+          if (existingRole && this.world.agents.has(existingRole.id)) {
+            const agent = this.world.agents.get(existingRole.id);
+            agent.status = a.status || agent.status;
+            agent.isReal = true;
+          }
         }
       }
-    }
+
+      // Randomly cycle statuses for simulated agents to keep city alive
+      for (const agent of this.world.agents.values()) {
+        if (!agent.isReal && Math.random() < 0.08) {
+          agent.status = Math.random() < 0.55 ? 'WORKING' : 'IDLE';
+          if (agent.status === 'WORKING') {
+            agent.workMsg = WORK_MESSAGES[Math.floor(Math.random() * WORK_MESSAGES.length)];
+          }
+        }
+      }
+    } catch(e) {}
   }
 
   toScreen(x, y, z, cx, cy, zoom) {
     const tw = this.state.tileSize * zoom;
     const th = (this.state.tileSize / 2) * zoom;
-    
-    const sx = (x - y) * tw;
-    const sy = (x + y) * th - (z * tw);
-    
-    return { x: cx + sx, y: cy + sy };
+    return { x: cx + (x - y) * tw, y: cy + (x + y) * th - z * tw };
   }
 
   startLoop() {
-    const loop = (time) => {
-      const delta = (time - this.state.lastTime) / 1000;
-      this.state.lastTime = time;
+    const loop = (t) => {
+      const delta = Math.min((t - this.state.lastTime) / 1000, 0.1);
+      this.state.lastTime = t;
+      this.time = t / 1000;
       this.update(delta);
       this.draw();
       requestAnimationFrame(loop);
@@ -204,382 +226,454 @@ class IsoCityEngine {
 
   update(delta) {
     // Smooth camera
-    this.state.camera.x += (this.state.targetCamera.x - this.state.camera.x) * 5 * delta;
-    this.state.camera.y += (this.state.targetCamera.y - this.state.camera.y) * 5 * delta;
-    this.state.camera.zoom += (this.state.targetCamera.zoom - this.state.camera.zoom) * 5 * delta;
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const s = 1 - Math.pow(0.01, delta * 5);
+    this.state.camera.x = lerp(this.state.camera.x, this.state.targetCamera.x, s);
+    this.state.camera.y = lerp(this.state.camera.y, this.state.targetCamera.y, s);
+    this.state.camera.zoom = lerp(this.state.camera.zoom, this.state.targetCamera.zoom, s);
 
-    // Update agents
     for (const agent of this.world.agents.values()) {
-      const dx = agent.tx - agent.x;
-      const dy = agent.ty - agent.y;
-      const dist = Math.hypot(dx, dy);
-      
-      if (dist > 0.05) {
-        const speed = (agent.status === 'WORKING' ? 1.5 : 2.5) * delta;
-        const moveDist = Math.min(speed, dist);
-        agent.x += (dx / dist) * moveDist;
-        agent.y += (dy / dist) * moveDist;
-        
-        // Trail
-        agent.trail.push({x: agent.x, y: agent.y, life: 1.0});
-      } else {
-        // Wandering slightly if working
-        if (agent.status === 'WORKING' && Math.random() < 0.02) {
-           const distObj = this.DISTRICTS[agent.district];
-           if (distObj) {
-             agent.tx = distObj.x + (Math.random() * (distObj.w - 1)) - (distObj.w/2 - 0.5);
-             agent.ty = distObj.y + (Math.random() * (distObj.h - 1)) - (distObj.h/2 - 0.5);
-           }
-        }
+      this._updateAgent(agent, delta);
+    }
+
+    // Update particles
+    this.world.particles = this.world.particles.filter(p => p.life > 0);
+    for (const p of this.world.particles) {
+      p.x += p.vx * delta;
+      p.y += p.vy * delta;
+      p.z += p.vz * delta;
+      p.life -= delta * p.decay;
+    }
+  }
+
+  _updateAgent(agent, delta) {
+    const isWorking = agent.status === 'WORKING' || agent.status === 'RUNNING';
+
+    // Walk animation
+    agent.walkTimer += delta;
+    if (agent.walkTimer > 0.15) {
+      agent.walkFrame = (agent.walkFrame + 1) % 4;
+      agent.walkTimer = 0;
+    }
+
+    // Move toward target
+    const dx = agent.tx - agent.x;
+    const dy = agent.ty - agent.y;
+    const dist = Math.hypot(dx, dy);
+    const speed = isWorking ? 1.2 : 1.8;
+    agent._moving = dist > 0.08;
+
+    if (agent._moving) {
+      const move = Math.min(speed * delta, dist);
+      agent.x += (dx / dist) * move;
+      agent.y += (dy / dist) * move;
+      agent.trail.push({ x: agent.x, y: agent.y, life: 0.6 });
+      if (agent.trail.length > 20) agent.trail.shift();
+    }
+
+    // Wander timer — pick new target periodically
+    agent.wanderTimer -= delta;
+    if (agent.wanderTimer <= 0) {
+      agent.wanderTimer = 3 + Math.random() * 5;
+      this._setNewTarget(agent);
+      // Occasionally visit a different district
+      if (Math.random() < 0.25) {
+        const keys = Object.keys(this.DISTRICTS);
+        const nextKey = keys[Math.floor(Math.random() * keys.length)];
+        agent.district = nextKey;
+        this._setNewTarget(agent);
       }
-      
-      // Update trail
-      agent.trail.forEach(t => t.life -= delta * 1.5);
-      agent.trail = agent.trail.filter(t => t.life > 0);
+    }
+
+    // Trail decay
+    for (const t of agent.trail) t.life -= delta * 2.5;
+    agent.trail = agent.trail.filter(t => t.life > 0);
+
+    // Bubble timer
+    agent.bubbleTimer -= delta;
+    if (agent.bubbleTimer <= 0) {
+      agent.bubbleTimer = 4 + Math.random() * 8;
+      if (isWorking) {
+        agent.bubble = { text: agent.workMsg, life: 2.5 };
+      }
+    }
+    if (agent.bubble) {
+      agent.bubble.life -= delta;
+      if (agent.bubble.life <= 0) agent.bubble = null;
+    }
+
+    // Emit work particles
+    if (isWorking && Math.random() < 0.3) {
+      this.world.particles.push({
+        x: agent.x, y: agent.y, z: 0.5,
+        vx: (Math.random() - 0.5) * 1.2,
+        vy: (Math.random() - 0.5) * 1.2,
+        vz: 0.4 + Math.random() * 0.8,
+        color: agent.color,
+        size: 1.5 + Math.random() * 2,
+        life: 1, decay: 1.2
+      });
     }
   }
 
   draw() {
     const ctx = this.ctx;
     const { width, height } = this.canvas;
-    const { camera, zoomLevel, tileSize } = this.state;
+    const { camera } = this.state;
     const zoom = camera.zoom;
-
-    this.drawBackdrop(ctx, width, height);
-
     const cx = width / 2 + camera.x;
     const cy = height / 2 + camera.y;
 
-    // 1. Draw Grid
-    this.drawGrid(ctx, cx, cy, zoom);
+    this._drawBackdrop(ctx, width, height);
+    this._drawGrid(ctx, cx, cy, zoom);
 
-    // 2. Draw Districts
-    // Sort districts by Painter's Algorithm (x + y)
-    const districts = Object.values(this.DISTRICTS).sort((a,b) => (a.x + a.y) - (b.x + b.y));
-    for (const d of districts) {
-      this.drawDistrict(ctx, d, cx, cy, zoom);
-    }
+    const districts = Object.values(this.DISTRICTS).sort((a,b) => (a.x+a.y)-(b.x+b.y));
+    for (const d of districts) this._drawDistrict(ctx, d, cx, cy, zoom);
 
-    // 3. Draw Agent Trails
-    for (const agent of this.world.agents.values()) {
-      this.drawTrail(ctx, agent, cx, cy, zoom);
-    }
+    // Trails
+    for (const agent of this.world.agents.values()) this._drawTrail(ctx, agent, cx, cy, zoom);
 
-    // 4. Draw Agents
-    // Sort agents by Painter's algorithm
-    const sortedAgents = Array.from(this.world.agents.values()).sort((a,b) => (a.x + a.y) - (b.x + b.y));
-    for (const agent of sortedAgents) {
-      this.drawAgent(ctx, agent, cx, cy, zoom);
-    }
+    // Particles
+    for (const p of this.world.particles) this._drawParticle(ctx, p, cx, cy, zoom);
 
-    this.drawLegend(ctx, width, height);
+    // Agents sorted by painter's algo
+    const sorted = [...this.world.agents.values()].sort((a,b) => (a.x+a.y)-(b.x+b.y));
+    for (const agent of sorted) this._drawAgent(ctx, agent, cx, cy, zoom);
+
+    this._drawHUD(ctx, width, height);
+    this._drawMinimap(ctx, width, height);
   }
 
-  drawBackdrop(ctx, width, height) {
-    const gradient = ctx.createRadialGradient(width * 0.5, height * 0.35, 0, width * 0.5, height * 0.35, Math.max(width, height) * 0.72);
-    gradient.addColorStop(0, '#101827');
-    gradient.addColorStop(0.48, '#070b13');
-    gradient.addColorStop(1, '#03050a');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.04)';
+  _drawBackdrop(ctx, w, h) {
+    const g = ctx.createRadialGradient(w*.5, h*.35, 0, w*.5, h*.35, Math.max(w,h)*.75);
+    g.addColorStop(0, '#0f172a');
+    g.addColorStop(0.5, '#070b13');
+    g.addColorStop(1, '#020408');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    // Ambient glow
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.035)';
     ctx.beginPath();
-    ctx.arc(width * 0.5, height * 0.42, Math.min(width, height) * 0.34, 0, Math.PI * 2);
+    ctx.arc(w*.5, h*.45, Math.min(w,h)*.38, 0, Math.PI*2);
     ctx.fill();
+    // Stars
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    const seed = 42;
+    for (let i = 0; i < 60; i++) {
+      const sx = ((i*137.5 + seed) % w);
+      const sy = ((i*97.3 + seed*2) % (h*0.6));
+      const blink = 0.3 + 0.7 * Math.abs(Math.sin(this.time*0.5 + i));
+      ctx.globalAlpha = blink * 0.4;
+      ctx.fillRect(sx, sy, 1, 1);
+    }
+    ctx.globalAlpha = 1;
   }
 
-  drawGrid(ctx, cx, cy, zoom) {
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+  _drawGrid(ctx, cx, cy, zoom) {
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.04)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    for (let i = -15; i <= 15; i++) {
-      const p1 = this.toScreen(i, -15, 0, cx, cy, zoom);
-      const p2 = this.toScreen(i, 15, 0, cx, cy, zoom);
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
-      
-      const p3 = this.toScreen(-15, i, 0, cx, cy, zoom);
-      const p4 = this.toScreen(15, i, 0, cx, cy, zoom);
-      ctx.moveTo(p3.x, p3.y);
-      ctx.lineTo(p4.x, p4.y);
+    for (let i = -16; i <= 16; i++) {
+      let p; 
+      p = this.toScreen(i,-16,0,cx,cy,zoom); ctx.moveTo(p.x,p.y);
+      p = this.toScreen(i, 16,0,cx,cy,zoom); ctx.lineTo(p.x,p.y);
+      p = this.toScreen(-16,i,0,cx,cy,zoom); ctx.moveTo(p.x,p.y);
+      p = this.toScreen( 16,i,0,cx,cy,zoom); ctx.lineTo(p.x,p.y);
     }
     ctx.stroke();
   }
 
-  drawDistrict(ctx, d, cx, cy, zoom) {
-    // Base platform
-    const top = this.toScreen(d.x - d.w/2, d.y - d.h/2, 0, cx, cy, zoom);
-    const right = this.toScreen(d.x + d.w/2, d.y - d.h/2, 0, cx, cy, zoom);
-    const bottom = this.toScreen(d.x + d.w/2, d.y + d.h/2, 0, cx, cy, zoom);
-    const left = this.toScreen(d.x - d.w/2, d.y + d.h/2, 0, cx, cy, zoom);
-    
-    // Depth (Block)
-    const depth = 0.2;
-    const topZ = this.toScreen(d.x - d.w/2, d.y - d.h/2, depth, cx, cy, zoom);
-    const rightZ = this.toScreen(d.x + d.w/2, d.y - d.h/2, depth, cx, cy, zoom);
-    const bottomZ = this.toScreen(d.x + d.w/2, d.y + d.h/2, depth, cx, cy, zoom);
-    const leftZ = this.toScreen(d.x - d.w/2, d.y + d.h/2, depth, cx, cy, zoom);
+  _drawDistrict(ctx, d, cx, cy, zoom) {
+    const hw = d.w/2, hh = d.h/2;
+    const tl = this.toScreen(d.x-hw, d.y-hh, 0, cx, cy, zoom);
+    const tr = this.toScreen(d.x+hw, d.y-hh, 0, cx, cy, zoom);
+    const br = this.toScreen(d.x+hw, d.y+hh, 0, cx, cy, zoom);
+    const bl = this.toScreen(d.x-hw, d.y+hh, 0, cx, cy, zoom);
+    const dep = 0.22;
+    const tlZ = this.toScreen(d.x-hw, d.y-hh, dep, cx, cy, zoom);
+    const trZ = this.toScreen(d.x+hw, d.y-hh, dep, cx, cy, zoom);
+    const brZ = this.toScreen(d.x+hw, d.y+hh, dep, cx, cy, zoom);
+    const blZ = this.toScreen(d.x-hw, d.y+hh, dep, cx, cy, zoom);
 
-    // Left Face
-    ctx.fillStyle = this.adjustColor(d.color, -40);
-    ctx.beginPath();
-    ctx.moveTo(left.x, left.y);
-    ctx.lineTo(bottom.x, bottom.y);
-    ctx.lineTo(bottomZ.x, bottomZ.y);
-    ctx.lineTo(leftZ.x, leftZ.y);
-    ctx.fill();
-    ctx.strokeStyle = this.adjustColor(d.color, 20);
-    ctx.stroke();
+    // Pulse for active districts
+    const agentsHere = [...this.world.agents.values()].filter(a => this.DISTRICTS[a.district] === d).length;
+    const pulse = agentsHere > 0 ? (0.7 + 0.3 * Math.sin(this.time * 2 + d.x)) : 1;
 
-    // Right Face
-    ctx.fillStyle = this.adjustColor(d.color, -20);
-    ctx.beginPath();
-    ctx.moveTo(bottom.x, bottom.y);
-    ctx.lineTo(right.x, right.y);
-    ctx.lineTo(rightZ.x, rightZ.y);
-    ctx.lineTo(bottomZ.x, bottomZ.y);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fillStyle = this._adjustColor(d.color, -55);
+    ctx.beginPath(); ctx.moveTo(bl.x,bl.y); ctx.lineTo(br.x,br.y); ctx.lineTo(brZ.x,brZ.y); ctx.lineTo(blZ.x,blZ.y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = this._adjustColor(d.color, -35);
+    ctx.beginPath(); ctx.moveTo(br.x,br.y); ctx.lineTo(tr.x,tr.y); ctx.lineTo(trZ.x,trZ.y); ctx.lineTo(brZ.x,brZ.y); ctx.closePath(); ctx.fill();
 
-    // Top Face
-    ctx.fillStyle = d.color + '40'; // Transparent top
-    ctx.beginPath();
-    ctx.moveTo(topZ.x, topZ.y);
-    ctx.lineTo(rightZ.x, rightZ.y);
-    ctx.lineTo(bottomZ.x, bottomZ.y);
-    ctx.lineTo(leftZ.x, leftZ.y);
-    ctx.closePath();
-    ctx.fill();
-    
-    // Glowing border
+    // Top face
+    ctx.fillStyle = d.color + '30';
+    ctx.beginPath(); ctx.moveTo(tlZ.x,tlZ.y); ctx.lineTo(trZ.x,trZ.y); ctx.lineTo(brZ.x,brZ.y); ctx.lineTo(blZ.x,blZ.y); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = d.color;
-    ctx.lineWidth = 2 * zoom;
+    ctx.lineWidth = (agentsHere > 0 ? 2.5 : 1.5) * zoom * pulse;
+    ctx.globalAlpha = pulse;
     ctx.stroke();
-    
-    // Floor grid inside district
-    ctx.strokeStyle = d.color + '40';
-    ctx.lineWidth = 1;
+    ctx.globalAlpha = 1;
+
+    // Floor grid inside
+    ctx.strokeStyle = d.color + '30'; ctx.lineWidth = 1;
     ctx.beginPath();
-    for (let i = 1; i < d.w; i++) {
-        const p1 = this.toScreen(d.x - d.w/2 + i, d.y - d.h/2, depth, cx, cy, zoom);
-        const p2 = this.toScreen(d.x - d.w/2 + i, d.y + d.h/2, depth, cx, cy, zoom);
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-    }
-    for (let i = 1; i < d.h; i++) {
-        const p1 = this.toScreen(d.x - d.w/2, d.y - d.h/2 + i, depth, cx, cy, zoom);
-        const p2 = this.toScreen(d.x + d.w/2, d.y - d.h/2 + i, depth, cx, cy, zoom);
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-    }
+    for (let i=1;i<d.w;i++){let p1=this.toScreen(d.x-hw+i,d.y-hh,dep,cx,cy,zoom),p2=this.toScreen(d.x-hw+i,d.y+hh,dep,cx,cy,zoom);ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);}
+    for (let i=1;i<d.h;i++){let p1=this.toScreen(d.x-hw,d.y-hh+i,dep,cx,cy,zoom),p2=this.toScreen(d.x+hw,d.y-hh+i,dep,cx,cy,zoom);ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);}
     ctx.stroke();
 
-    this.drawDistrictStructures(ctx, d, cx, cy, zoom, depth);
+    // District structures
+    this._drawDistrictBuildings(ctx, d, cx, cy, zoom, dep);
 
     // Label
-    const centerZ = this.toScreen(d.x, d.y, depth, cx, cy, zoom);
-    const count = this.countAgentsInDistrict(d.label);
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = `700 ${11 * zoom}px "Inter", sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(15, 23, 42, 0.85)';
-    ctx.shadowBlur = 8 * zoom;
-    ctx.fillText(d.label, centerZ.x, centerZ.y - (34 * zoom));
-    if (count > 0) {
-      ctx.font = `600 ${8 * zoom}px "JetBrains Mono", monospace`;
-      ctx.fillStyle = d.color;
-      ctx.fillText(`${count} AGENTE${count === 1 ? '' : 'S'}`, centerZ.x, centerZ.y - (22 * zoom));
-    }
-    ctx.shadowBlur = 0;
-  }
-
-  drawDistrictStructures(ctx, d, cx, cy, zoom, depth) {
-    const structures = [
-      { ox: -0.75, oy: -0.55, h: 0.55 },
-      { ox: 0.48, oy: -0.35, h: 0.38 },
-      { ox: -0.15, oy: 0.48, h: 0.30 }
-    ];
-
-    if (d.label.includes('CENTRAL')) {
-      structures.push({ ox: 0.65, oy: 0.65, h: 0.22 });
-    }
-
-    for (const s of structures) {
-      if (Math.abs(s.ox) > d.w / 2 - 0.35 || Math.abs(s.oy) > d.h / 2 - 0.35) continue;
-      this.drawBlock(ctx, d.x + s.ox, d.y + s.oy, depth, s.h, d.color, cx, cy, zoom);
-    }
-  }
-
-  drawBlock(ctx, x, y, baseZ, height, color, cx, cy, zoom) {
-    const half = 0.22;
-    const a = this.toScreen(x - half, y - half, baseZ, cx, cy, zoom);
-    const b = this.toScreen(x + half, y - half, baseZ, cx, cy, zoom);
-    const c = this.toScreen(x + half, y + half, baseZ, cx, cy, zoom);
-    const d = this.toScreen(x - half, y + half, baseZ, cx, cy, zoom);
-    const az = this.toScreen(x - half, y - half, baseZ + height, cx, cy, zoom);
-    const bz = this.toScreen(x + half, y - half, baseZ + height, cx, cy, zoom);
-    const cz = this.toScreen(x + half, y + half, baseZ + height, cx, cy, zoom);
-    const dz = this.toScreen(x - half, y + half, baseZ + height, cx, cy, zoom);
-
-    ctx.fillStyle = this.adjustColor(color, -48);
-    ctx.beginPath();
-    ctx.moveTo(d.x, d.y);
-    ctx.lineTo(c.x, c.y);
-    ctx.lineTo(cz.x, cz.y);
-    ctx.lineTo(dz.x, dz.y);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = this.adjustColor(color, -28);
-    ctx.beginPath();
-    ctx.moveTo(c.x, c.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.lineTo(bz.x, bz.y);
-    ctx.lineTo(cz.x, cz.y);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = color + 'a8';
-    ctx.beginPath();
-    ctx.moveTo(az.x, az.y);
-    ctx.lineTo(bz.x, bz.y);
-    ctx.lineTo(cz.x, cz.y);
-    ctx.lineTo(dz.x, dz.y);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  countAgentsInDistrict(label) {
-    const district = Object.entries(this.DISTRICTS).find(([, value]) => value.label === label)?.[0];
-    if (!district) return 0;
-    return Array.from(this.world.agents.values()).filter(agent => agent.district === district).length;
-  }
-
-  drawTrail(ctx, agent, cx, cy, zoom) {
-    if (agent.trail.length < 2) return;
-    
-    const color = agent.status === 'WORKING' ? '#38bdf8' : '#94a3b8';
-    
-    ctx.beginPath();
-    const first = this.toScreen(agent.trail[0].x, agent.trail[0].y, 0.2, cx, cy, zoom);
-    ctx.moveTo(first.x, first.y);
-    
-    for (let i = 1; i < agent.trail.length; i++) {
-      const p = this.toScreen(agent.trail[i].x, agent.trail[i].y, 0.2, cx, cy, zoom);
-      ctx.lineTo(p.x, p.y);
-    }
-    
-    const head = this.toScreen(agent.x, agent.y, 0.2, cx, cy, zoom);
-    ctx.lineTo(head.x, head.y);
-
-    ctx.strokeStyle = color + '80'; // 50% opacity
-    ctx.lineWidth = 3 * zoom;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-  }
-
-  drawAgent(ctx, agent, cx, cy, zoom) {
-    const isHovered = this.state.hoveredAgent === agent;
-    const status = String(agent.status || 'IDLE').toUpperCase();
-    const isWorking = ['WORKING', 'RUNNING', 'TESTING', 'VALIDATING', 'QUEUED'].includes(status);
-    
-    // Position
-    // Bounce if working
-    const bounce = isWorking ? Math.abs(Math.sin(performance.now() / 150)) * 0.1 : 0;
-    const pos = this.toScreen(agent.x, agent.y, 0.2 + bounce, cx, cy, zoom);
-    
-    const radius = 6 * zoom;
-    const height = 18 * zoom;
-
-    // Base shadow
-    const shadow = this.toScreen(agent.x, agent.y, 0.2, cx, cy, zoom);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(shadow.x, shadow.y, radius, radius/2, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    // Agent Color based on status
-    let agentColor = '#94a3b8'; // IDLE
-    if (status === 'QUEUED') agentColor = '#38bdf8';
-    if (status === 'WORKING' || status === 'RUNNING') agentColor = '#3b82f6';
-    if (status === 'TESTING' || status === 'QA' || status === 'VALIDATING') agentColor = '#f59e0b';
-    if (status === 'COMPLETED' || status === 'DONE') agentColor = '#22c55e';
-    if (status === 'ERROR' || status === 'FAILED') agentColor = '#ef4444';
-
-    // Body (Cylinder)
-    ctx.fillStyle = this.adjustColor(agentColor, -20);
-    ctx.beginPath();
-    ctx.ellipse(pos.x, pos.y, radius, radius/2, 0, 0, Math.PI, false);
-    ctx.lineTo(pos.x - radius, pos.y - height);
-    ctx.ellipse(pos.x, pos.y - height, radius, radius/2, 0, Math.PI, 0, true);
-    ctx.lineTo(pos.x + radius, pos.y);
-    ctx.fill();
-
-    // Top
-    ctx.fillStyle = agentColor;
-    ctx.beginPath();
-    ctx.ellipse(pos.x, pos.y - height, radius, radius/2, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    // Glow if working
-    if (isWorking) {
-      ctx.shadowColor = agentColor;
-      ctx.shadowBlur = 10 * zoom;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
-
-    // Name Tag
-    if (isHovered || isWorking) {
-      ctx.font = `${10 * zoom}px "Inter", sans-serif`;
-      ctx.textAlign = 'center';
-      
-      const tagY = pos.y - height - (10 * zoom);
-      
-      // Bg
-      const textWidth = ctx.measureText(agent.name).width;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-      ctx.beginPath();
-      ctx.roundRect(pos.x - textWidth/2 - 4, tagY - 10*zoom, textWidth + 8, 14*zoom, 4);
-      ctx.fill();
-
-      // Text
-      ctx.fillStyle = '#fff';
-      ctx.fillText(agent.name, pos.x, tagY);
-
-      // Status below
-      if (isHovered) {
-        ctx.fillStyle = agentColor;
-        ctx.font = `${8 * zoom}px "Inter", monospace`;
-        ctx.fillText(`[${status}]`, pos.x, tagY + (10 * zoom));
-      }
-    }
-  }
-
-  drawLegend(ctx, width, height) {
-    const agentCount = this.world.agents.size;
+    const center = this.toScreen(d.x, d.y, dep, cx, cy, zoom);
     ctx.save();
-    ctx.font = '11px "JetBrains Mono", monospace';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.72)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(16, height - 54, 245, 34, 8);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText(`AI CITY ONLINE · ${agentCount} agente${agentCount === 1 ? '' : 's'} real(is)`, 30, height - 33);
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10*zoom;
+    ctx.font = `700 ${Math.max(9, 11*zoom)}px 'Inter',sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillText(d.label, center.x, center.y - 38*zoom);
+    if (agentsHere > 0) {
+      ctx.font = `600 ${Math.max(7,8*zoom)}px 'JetBrains Mono',monospace`;
+      ctx.fillStyle = d.color;
+      ctx.fillText(`${agentsHere} AGENTE${agentsHere>1?'S':''}`, center.x, center.y - 26*zoom);
+    }
     ctx.restore();
   }
 
-  adjustColor(color, amount) {
-    return '#' + color.replace(/^#/, '').replace(/../g, color => 
-      ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2)
+  _drawDistrictBuildings(ctx, d, cx, cy, zoom, dep) {
+    const structs = [
+      {ox:-0.7, oy:-0.5, h:0.6},{ox:0.45, oy:-0.32, h:0.4},{ox:-0.15, oy:0.45, h:0.3}
+    ];
+    for (const s of structs) {
+      if (Math.abs(s.ox) > d.w/2-0.4 || Math.abs(s.oy) > d.h/2-0.4) continue;
+      this._drawBlock(ctx, d.x+s.ox, d.y+s.oy, dep, s.h, d.color, cx, cy, zoom);
+    }
+  }
+
+  _drawBlock(ctx, x, y, bz, height, color, cx, cy, zoom) {
+    const h = 0.24;
+    const corners = [[-h,-h],[h,-h],[h,h],[-h,h]];
+    const bot = corners.map(([dx,dy]) => this.toScreen(x+dx,y+dy,bz,cx,cy,zoom));
+    const top = corners.map(([dx,dy]) => this.toScreen(x+dx,y+dy,bz+height,cx,cy,zoom));
+    const path = (pts) => { ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath(); };
+    ctx.fillStyle = this._adjustColor(color,-52); path([bot[3],bot[2],top[2],top[3]]); ctx.fill();
+    ctx.fillStyle = this._adjustColor(color,-32); path([bot[2],bot[1],top[1],top[2]]); ctx.fill();
+    ctx.fillStyle = color+'aa'; path(top); ctx.fill();
+    ctx.strokeStyle = color+'60'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  _drawTrail(ctx, agent, cx, cy, zoom) {
+    if (agent.trail.length < 2) return;
+    ctx.beginPath();
+    const first = this.toScreen(agent.trail[0].x, agent.trail[0].y, 0.22, cx, cy, zoom);
+    ctx.moveTo(first.x, first.y);
+    for (let i=1;i<agent.trail.length;i++){
+      const p = this.toScreen(agent.trail[i].x, agent.trail[i].y, 0.22, cx, cy, zoom);
+      ctx.lineTo(p.x, p.y);
+    }
+    const head = this.toScreen(agent.x, agent.y, 0.22, cx, cy, zoom);
+    ctx.lineTo(head.x, head.y);
+    ctx.strokeStyle = agent.color + '50';
+    ctx.lineWidth = 2*zoom; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.stroke();
+  }
+
+  _drawParticle(ctx, p, cx, cy, zoom) {
+    const sc = this.toScreen(p.x, p.y, p.z, cx, cy, zoom);
+    ctx.globalAlpha = p.life * 0.85;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(sc.x, sc.y, p.size * zoom, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  _drawAgent(ctx, agent, cx, cy, zoom) {
+    const isSelected = this.state.selectedAgent === agent;
+    const isHovered  = this.state.hoveredAgent === agent;
+    const isWorking  = ['WORKING','RUNNING','TESTING','QUEUED'].includes((agent.status||'').toUpperCase());
+
+    // Habbo-style walk bounce
+    const walkBounce = agent._moving ? Math.abs(Math.sin(agent.walkFrame * Math.PI/2)) * 3 * zoom : 0;
+    const workBounce = isWorking && !agent._moving ? Math.abs(Math.sin(this.time*3)) * 2 * zoom : 0;
+    const sc = this.toScreen(agent.x, agent.y, 0.22, cx, cy, zoom);
+    sc.y -= walkBounce + workBounce;
+
+    const r = Math.max(5, 7 * zoom);
+    const bodyH = Math.max(14, 20 * zoom);
+    const headR = Math.max(4, 6 * zoom);
+
+    // Selection ring
+    if (isSelected) {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2*zoom;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.ellipse(sc.x, sc.y + bodyH*0.3, r*1.8, r*0.9, 0, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Shadow
+    const shadowSc = this.toScreen(agent.x, agent.y, 0.2, cx, cy, zoom);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(shadowSc.x, shadowSc.y, r, r*0.45, 0, 0, Math.PI*2); ctx.fill();
+
+    // Body — Habbo cylinder
+    const grad = ctx.createLinearGradient(sc.x-r, sc.y-bodyH, sc.x+r, sc.y);
+    grad.addColorStop(0, this._adjustColor(agent.color, 30));
+    grad.addColorStop(1, this._adjustColor(agent.color, -30));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(sc.x, sc.y, r, r*0.5, 0, 0, Math.PI, false);
+    ctx.lineTo(sc.x-r, sc.y-bodyH);
+    ctx.ellipse(sc.x, sc.y-bodyH, r, r*0.5, 0, Math.PI, 0, true);
+    ctx.lineTo(sc.x+r, sc.y);
+    ctx.fill();
+    // Body top
+    ctx.fillStyle = this._adjustColor(agent.color, 20);
+    ctx.beginPath(); ctx.ellipse(sc.x, sc.y-bodyH, r, r*0.5, 0, 0, Math.PI*2); ctx.fill();
+
+    // Head (round)
+    const headY = sc.y - bodyH - headR*1.4;
+    const hg = ctx.createRadialGradient(sc.x-headR*0.3, headY-headR*0.3, 0, sc.x, headY, headR);
+    hg.addColorStop(0, this._adjustColor(agent.color, 60));
+    hg.addColorStop(1, agent.color);
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.arc(sc.x, headY, headR, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = this._adjustColor(agent.color, 40);
+    ctx.lineWidth = zoom; ctx.stroke();
+
+    // Eyes (2 white dots)
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(sc.x - headR*0.3, headY - headR*0.1, headR*0.18, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sc.x + headR*0.3, headY - headR*0.1, headR*0.18, 0, Math.PI*2); ctx.fill();
+
+    // Work glow
+    if (isWorking) {
+      ctx.shadowColor = agent.color; ctx.shadowBlur = 14*zoom;
+      ctx.strokeStyle = agent.color + '80'; ctx.lineWidth = 1.5*zoom;
+      ctx.beginPath(); ctx.arc(sc.x, headY, headR+2*zoom, 0, Math.PI*2); ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    // Leg animation (walking)
+    if (agent._moving) {
+      const legSwing = Math.sin(agent.walkFrame * Math.PI/2) * 3 * zoom;
+      ctx.strokeStyle = this._adjustColor(agent.color, -20);
+      ctx.lineWidth = r * 0.45;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(sc.x-r*0.35, sc.y); ctx.lineTo(sc.x-r*0.35, sc.y + r*0.6 + legSwing); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sc.x+r*0.35, sc.y); ctx.lineTo(sc.x+r*0.35, sc.y + r*0.6 - legSwing); ctx.stroke();
+    }
+
+    // Name tag (hover / selected / working)
+    if (isHovered || isSelected || isWorking) {
+      ctx.save();
+      ctx.font = `700 ${Math.max(9,10*zoom)}px 'Inter',sans-serif`;
+      ctx.textAlign = 'center';
+      const tagY = headY - headR - 6*zoom;
+      const tw = ctx.measureText(agent.name).width;
+      // Pill bg
+      ctx.fillStyle = 'rgba(10,14,30,0.88)';
+      ctx.strokeStyle = agent.color + '90';
+      ctx.lineWidth = zoom;
+      ctx.beginPath(); ctx.roundRect(sc.x-tw/2-6, tagY-13*zoom, tw+12, 16*zoom, 5); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(agent.name, sc.x, tagY);
+      if (isSelected || isHovered) {
+        ctx.font = `500 ${Math.max(7,8*zoom)}px 'JetBrains Mono',monospace`;
+        ctx.fillStyle = agent.color;
+        ctx.fillText(`[${agent.status||'IDLE'}]`, sc.x, tagY + 13*zoom);
+      }
+      ctx.restore();
+    }
+
+    // Speech bubble (work message)
+    if (agent.bubble && agent.bubble.life > 0) {
+      const bAlpha = Math.min(1, agent.bubble.life);
+      ctx.save();
+      ctx.globalAlpha = bAlpha;
+      const bText = agent.bubble.text;
+      ctx.font = `500 ${Math.max(8,9*zoom)}px 'Inter',sans-serif`;
+      ctx.textAlign = 'center';
+      const bw = ctx.measureText(bText).width + 14;
+      const bh = 18*zoom;
+      const bx = sc.x - bw/2;
+      const by = headY - headR - bh - 10*zoom;
+      ctx.fillStyle = agent.color + 'dd';
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill();
+      // Tail
+      ctx.beginPath(); ctx.moveTo(sc.x-4, by+bh); ctx.lineTo(sc.x+4, by+bh); ctx.lineTo(sc.x, by+bh+6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(bText, sc.x, by + bh*0.68);
+      ctx.restore();
+    }
+  }
+
+  _drawHUD(ctx, w, h) {
+    const agents = [...this.world.agents.values()];
+    const real = agents.filter(a => a.isReal).length;
+    const working = agents.filter(a => ['WORKING','RUNNING'].includes((a.status||'').toUpperCase())).length;
+    const total = agents.length;
+
+    ctx.save();
+    // Bottom left pill
+    ctx.fillStyle = 'rgba(2,6,23,0.82)';
+    ctx.strokeStyle = 'rgba(56,189,248,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(14, h-54, 320, 34, 8); ctx.fill(); ctx.stroke();
+    ctx.font = '11px "JetBrains Mono",monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText(`AI CITY ONLINE`, 28, h-33);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(` · ${total} AGENTES · ${working} ATIVOS · ${real} REAIS`, 28+92, h-33);
+
+    // Top right legend
+    ctx.font = '9px "JetBrains Mono",monospace';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(148,163,184,0.6)';
+    ctx.fillText('2×clique = reset câmera · scroll = zoom · drag = mover', w-14, h-22);
+
+    ctx.restore();
+  }
+
+  _drawMinimap(ctx, w, h) {
+    const mw = 110, mh = 80;
+    const mx = w - mw - 14, my = 14;
+    ctx.save();
+    ctx.fillStyle = 'rgba(2,6,23,0.82)';
+    ctx.strokeStyle = 'rgba(56,189,248,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(mx, my, mw, mh, 6); ctx.fill(); ctx.stroke();
+
+    // Districts on minimap
+    const scaleX = mw / 30, scaleY = mh / 22;
+    for (const d of Object.values(this.DISTRICTS)) {
+      const px = mx + (d.x + 15) * scaleX - d.w*scaleX/2;
+      const py = my + (d.y + 11) * scaleY - d.h*scaleY/2;
+      ctx.fillStyle = d.color + '70';
+      ctx.fillRect(px, py, d.w*scaleX, d.h*scaleY);
+    }
+    // Agents on minimap
+    for (const a of this.world.agents.values()) {
+      const px = mx + (a.x + 15) * scaleX;
+      const py = my + (a.y + 11) * scaleY;
+      ctx.fillStyle = a.color;
+      ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI*2); ctx.fill();
+    }
+    // Viewport indicator
+    const vx = -this.state.camera.x / (this.state.tileSize * this.state.camera.zoom);
+    const vy = -this.state.camera.y / (this.state.tileSize * this.state.camera.zoom * 0.5);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth=1;
+    const vPx = mx + (vx + 15) * scaleX - 10, vPy = my + (vy + 11) * scaleY - 7;
+    ctx.strokeRect(vPx, vPy, 20, 14);
+
+    ctx.restore();
+  }
+
+  _adjustColor(color, amount) {
+    return '#' + color.replace(/^#/, '').replace(/../g, c =>
+      ('0' + Math.min(255, Math.max(0, parseInt(c,16) + amount)).toString(16)).substr(-2)
     );
   }
 }
@@ -593,7 +687,7 @@ function bootIsoCity() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => setTimeout(bootIsoCity, 0), { once: true });
+  document.addEventListener('DOMContentLoaded', () => setTimeout(bootIsoCity, 150), { once: true });
 } else {
-  bootIsoCity();
+  setTimeout(bootIsoCity, 150);
 }

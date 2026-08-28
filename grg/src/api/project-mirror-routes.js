@@ -27,16 +27,40 @@ const PREVIEW_CONTENT_TYPES = {
   '.webp': 'image/webp',
 };
 
+const pendingScans = new Map();
+
 async function getSnapshot(projectPath) {
   const abs = path.resolve(projectPath);
   const cached = cache.get(abs);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.data;
+  
+  // SWR: Se tiver cache recente (10s), retorna logo
+  if (cached && Date.now() - cached.ts < 10000) return cached.data;
 
-  const scan = await scanProject(abs);
-  const screens = await extractScreens(abs, scan);
-  const snapshot = { ...scan, screens };
-  cache.set(abs, { ts: Date.now(), data: snapshot });
-  return snapshot;
+  // Se ja tem um scan em andamento
+  if (pendingScans.has(abs)) {
+    // Retorna o cache stale (SWR) se existir, senao aguarda o scan
+    if (cached) return cached.data;
+    return pendingScans.get(abs);
+  }
+
+  // Inicia um novo scan em background
+  const scanPromise = (async () => {
+    try {
+      const scan = await scanProject(abs);
+      const screens = await extractScreens(abs, scan);
+      const snapshot = { ...scan, screens };
+      cache.set(abs, { ts: Date.now(), data: snapshot });
+      return snapshot;
+    } finally {
+      pendingScans.delete(abs);
+    }
+  })();
+
+  pendingScans.set(abs, scanPromise);
+
+  // Retorna o cache stale (SWR) se existir, senao aguarda o scan novo (Cold Start)
+  if (cached) return cached.data;
+  return scanPromise;
 }
 
 function resolveActiveProject(app) {
@@ -61,7 +85,8 @@ function authorizeProjectPath(projectPath, app) {
 
 function resolveProjectFile(projectPath, relativeFile, app) {
   const root = authorizeProjectPath(projectPath, app);
-  const clean = String(relativeFile || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+  const fileWithoutQuery = String(relativeFile || '').split(/[?#]/)[0];
+  const clean = String(fileWithoutQuery).replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
   if (!clean || path.isAbsolute(clean) || clean.split('/').includes('..')) throw new Error('valid project-relative file is required');
   const target = path.resolve(root, clean);
   const relative = path.relative(root, target);
@@ -115,6 +140,80 @@ function rewritePreviewAssets(html, projectPath, htmlFile) {
   });
 }
 
+const PREVIEW_WRAPPER_CSS = `
+<style id="fenix-preview-reset">
+  :root {
+    --bg: #0f172a; --bg2: #1e293b; --accent: #38bdf8; --text: #e2e8f0;
+    --text2: #94a3b8; --border: rgba(56,189,248,0.15); --success: #22c55e;
+    --warn: #f59e0b; --danger: #ef4444; --radius: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--bg) !important; color: var(--text) !important;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+    font-size: 14px; line-height: 1.6; margin: 0; padding: 16px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1,h2,h3,h4 { color: var(--text); margin: 0 0 12px; font-weight: 700; }
+  h1 { font-size: 1.5rem; background: linear-gradient(135deg, var(--accent), #818cf8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  h2 { font-size: 1.2rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th { background: var(--bg2); color: var(--accent); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .08em; padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+  td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text2); }
+  tr:hover td { background: rgba(56,189,248,0.05); color: var(--text); }
+  input, select, textarea { background: var(--bg2) !important; border: 1px solid var(--border) !important;
+    color: var(--text) !important; border-radius: var(--radius); padding: 8px 12px; width: 100%; outline: none; }
+  input:focus, select:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(56,189,248,.15); }
+  button, [type=submit], [type=button] {
+    background: linear-gradient(135deg, var(--accent), #6366f1) !important;
+    color: #fff !important; border: none !important; border-radius: var(--radius); padding: 8px 18px;
+    cursor: pointer; font-weight: 600; font-size: 13px; transition: opacity .2s; }
+  button:hover { opacity: .85; }
+  form { background: var(--bg2); padding: 20px; border-radius: 12px;
+    border: 1px solid var(--border); margin: 12px 0; }
+  ul, ol { padding-left: 20px; }
+  li { color: var(--text2); margin: 4px 0; }
+  li a { color: var(--accent); }
+  .nav, nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0;
+    background: var(--bg2); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border); }
+  .nav a, nav a { color: var(--accent); font-size: 13px; padding: 4px 10px;
+    border-radius: 6px; border: 1px solid transparent; }
+  .nav a:hover, nav a:hover { background: rgba(56,189,248,.12); border-color: var(--border); text-decoration: none; }
+  pre, code { background: var(--bg2); color: #a5f3fc; border-radius: 6px; padding: 2px 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  pre { padding: 12px; overflow-x: auto; border: 1px solid var(--border); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-ok { background: rgba(34,197,94,.2); color: var(--success); }
+  .badge-warn { background: rgba(245,158,11,.2); color: var(--warn); }
+  .badge-err { background: rgba(239,68,68,.2); color: var(--danger); }
+  /* Fenix Preview Banner */
+  #fenix-preview-banner {
+    position: fixed; top: 0; right: 0; left: 0; z-index: 9999;
+    background: linear-gradient(90deg, rgba(15,23,42,.95), rgba(30,41,59,.95));
+    border-bottom: 1px solid var(--border); padding: 6px 16px;
+    display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text2);
+    backdrop-filter: blur(8px);
+  }
+  #fenix-preview-banner .dot { width:8px;height:8px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 6px var(--accent); animation: blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+  body { padding-top: 40px !important; }
+</style>
+<div id="fenix-preview-banner">
+  <div class="dot"></div>
+  <span>FÊNIX Preview — API-PLATAFORM · Modo: Analisador Ativo</span>
+</div>
+`;
+
+function injectPreviewStyle(html) {
+  // Already has full HTML structure — just inject before </head> or before <body>
+  if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, PREVIEW_WRAPPER_CSS + '</head>');
+  if (/<body/i.test(html)) return html.replace(/<body([^>]*)>/i, `<body$1>${PREVIEW_WRAPPER_CSS}`);
+  // Bare HTML — wrap it entirely
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Preview</title></head><body>${PREVIEW_WRAPPER_CSS}${html}</body></html>`;
+}
+
 async function handleProjectMirrorRoutes(req, res, url, app, sendJson, readJson, identity) {
   const { tenantId, actorId } = identity;
 
@@ -143,7 +242,7 @@ async function handleProjectMirrorRoutes(req, res, url, app, sendJson, readJson,
       const projectPath = url.searchParams.get('path') || resolveActiveProject(app);
       const { target, root, relativeFile } = resolveProjectFile(projectPath, url.searchParams.get('file'), app);
       if (path.extname(target).toLowerCase() !== '.html') throw new Error('preview requires an HTML file');
-      const html = rewritePreviewAssets(await fs.readFile(target, 'utf8'), root, relativeFile);
+      const html = injectPreviewStyle(rewritePreviewAssets(await fs.readFile(target, 'utf8'), root, relativeFile));
       res.setHeader?.('x-frame-options', 'SAMEORIGIN');
       res.writeHead(200, { 'content-type': PREVIEW_CONTENT_TYPES['.html'], 'cache-control': 'no-store' });
       res.end(html);

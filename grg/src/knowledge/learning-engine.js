@@ -13,8 +13,8 @@ class LearningEngine {
     }
   }
 
-  async handleMissionEnd(success, payload) {
-    const mission = payload.mission || payload;
+  async handleMissionEnd(success, event) {
+    const mission = event?.payload?.mission || event?.mission || event;
     
     // Layer 1: Deterministic Heuristic Extraction
     const layer1Data = this.extractHeuristics(mission, success);

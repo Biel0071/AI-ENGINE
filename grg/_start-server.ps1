@@ -1,0 +1,11 @@
+﻿$env:FENIX_ALLOW_DEV_HEADERS = '1'
+$env:FENIX_ENV = 'development'
+$env:PORT = '4400'
+$env:FENIX_AI_DEFAULT_PROVIDER = 'ollama'
+$env:FENIX_AI_DEFAULT_MODEL = 'qwen2.5:3b'
+$env:FENIX_ENABLE_OLLAMA = '1'
+$env:FENIX_BOOTSTRAP_ADMIN_USER = 'grg-admin'
+$env:FENIX_BOOTSTRAP_ADMIN_PASSWORD = 'admin123'
+$env:FENIX_PUBLIC_URL = 'http://localhost:4400'
+Set-Location 'C:\projetos\ai-engine-core\ai-engine\grg'
+node src/server.js 2>&1 | Tee-Object -FilePath 'C:\projetos\ai-engine-core\ai-engine\grg\server.log' -Append
