@@ -51,11 +51,18 @@ test('canonical jobs preserve universal client context and can be claimed by Bul
   const job = await app.jobs.submit('grg', 'alice', {
     type: 'test.universal', source: 'codex', sessionId: 'session-1', prompt: 'inspect auth',
     repository: 'org/repo', workspace: 'C:/work/repo', branch: 'fenix/job-1', riskLevel: 'MEDIUM',
+    projectId: 'fenix-os', workspaceId: 'workspace-1', screenId: 'command', route: '/app#command',
+    context: { projectId: 'fenix-os', screenId: 'command', sourceFiles: ['grg/public/index.html'] },
     policy: { allowedPaths: ['src/**'], blockedPaths: ['.env'], maxIterations: 4, maxTokens: 2000 },
   });
   assert.equal(job.jobId, job.id);
   assert.equal(job.source, 'codex');
   assert.equal(job.currentStage, 'QUEUED');
+  assert.equal(job.projectId, 'fenix-os');
+  assert.equal(job.workspaceId, 'workspace-1');
+  assert.equal(job.screenId, 'command');
+  assert.equal(job.route, '/app#command');
+  assert.deepEqual(job.context.sourceFiles, ['grg/public/index.html']);
   assert.equal(job.policy.requireApproval, false);
   assert.equal(enqueued[0][0], 'fenix-runtime');
   assert.equal(enqueued[0][3].idempotencyKey, `${job.id}:0`);

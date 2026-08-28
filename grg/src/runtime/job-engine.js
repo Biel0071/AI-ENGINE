@@ -50,6 +50,7 @@ class JobEngine {
     const payload = { ...(input.payload || {}) };
     if (input.prompt !== undefined && payload.prompt === undefined) payload.prompt = input.prompt;
     assertNoSecrets(payload);
+    assertNoSecrets(input.context || {});
     const policy = normalizePolicy(input.policy || input.executionPolicy || {}, input.limits);
     const limits = normalizeLimits({ ...input.limits, timeoutMs: input.limits?.timeoutMs || policy.maxRuntime });
     const id = uuid();
@@ -62,6 +63,11 @@ class JobEngine {
     const job = {
       id, jobId: id, tenantId, sessionId: input.sessionId || null, source,
       type: input.type, prompt: input.prompt || input.payload?.prompt || null,
+      projectId: input.projectId || input.context?.projectId || payload.projectId || null,
+      workspaceId: input.workspaceId || input.context?.workspaceId || payload.workspaceId || null,
+      screenId: input.screenId || input.context?.screenId || payload.screenId || null,
+      route: input.route || input.context?.route || payload.route || null,
+      context: input.context || payload.context || null,
       repository: input.repository || null, workspace: input.workspace || input.payload?.projectPath || null,
       branch: input.branch || null, payload, priority: Number(input.priority || 0),
       riskLevel, policy: { ...policy, requireApproval: approvalRequired }, status: approvalRequired ? 'AWAITING_APPROVAL' : 'QUEUED', currentStage: approvalRequired ? 'AWAITING_APPROVAL' : 'QUEUED', progress: 0,
@@ -269,7 +275,7 @@ class JobEngine {
   async #enqueue(job) {
     const delay = Math.max(0, Date.parse(job.scheduledFor) - this.clock.now());
     await this.queue.enqueue('fenix-runtime', job.type, { tenantId: job.tenantId, jobId: job.id }, {
-      idempotencyKey: `${job.id}-${job.attempts}`, attempts: 5, backoff: { type: 'exponential', delay: 500 }, delay,
+      idempotencyKey: `${job.id}:${job.attempts}`, attempts: 5, backoff: { type: 'exponential', delay: 500 }, delay,
     });
   }
   async #publish(job, type, actorId) { if (!this.events) return; await this.events.publish({ tenantId: job.tenantId, stream: `job:${job.id}`, type, source: 'fenix-runtime', subject: job.id, data: { actorId, jobId: job.id, jobType: job.type, status: job.status, attempts: job.attempts, limits: job.limits }, idempotencyKey: `${type}:${job.id}:${job.attempts}` }); }

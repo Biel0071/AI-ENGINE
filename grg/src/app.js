@@ -686,6 +686,7 @@ async function createApp(options = {}) {
   // repositorio para migracao, mas nao e instanciado nem possui worker/queue paralelos.
   const { SafeDevPipeline } = require('./software-factory/safe-dev-pipeline');
   app.devPipeline = new SafeDevPipeline({ aiGateway });
+  jobs.register('development.analyze', (payload, context) => app.devPipeline.analyze(context.tenantId, context.actorId, payload, context));
   jobs.register('development.execute', (payload, context) => app.devPipeline.execute(context.tenantId, context.actorId, payload, context));
 
   return app;

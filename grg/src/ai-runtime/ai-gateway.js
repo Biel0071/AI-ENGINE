@@ -113,7 +113,7 @@ class AIGateway {
   // `provider`/`model` opcionais: quando o AI Router já decidiu por evidência, ele os passa
   // e o Gateway executa essa escolha (mantendo cache/breaker/rate-limit/aiCalls). Ausentes,
   // o Gateway roteia pela config como sempre — retrocompatível.
-  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, provider = null, model = null }) {
+  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, format = null, provider = null, model = null }) {
     await this.cp.authorize(tenantId, actorId, 'ai:invoke');
     if (!prompt) throw new ValidationError('prompt is required');
     if (this.rateLimiter) await this.rateLimiter.consume(tenantId, 'ai.invoke');
@@ -149,6 +149,7 @@ class AIGateway {
           const result = await this.breaker(candidate.provider).execute(() => withRetry(
             () => provider.complete({
               model: candidate.model, prompt, temperature,
+              format,
               maxTokens: Number(candidate.maxOutputTokens || 2_048),
             }),
             { attempts: 2, baseDelayMs: 100, retryable: (error) => error?.retryable === true },

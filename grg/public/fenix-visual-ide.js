@@ -6,12 +6,44 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   const api = window.FENIX?.api || (async (path, opt) => fetch(path, opt).then(r => r.json()));
+  const safe = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 
   // ==========================================
   // FASE C: PROJECT MIRROR & SCREEN GALLERY
   // ==========================================
   
   let projectSnapshot = null;
+  let selectedScreen = null;
+  let selectedElement = null;
+
+  function selectedProjectPath() {
+    return $('projectSwitcher')?.selectedOptions?.[0]?.dataset?.path || projectSnapshot?.path || '';
+  }
+
+  function mirrorPath(route, projectPath = selectedProjectPath()) {
+    if (!projectPath) return route;
+    return `${route}${route.includes('?') ? '&' : '?'}path=${encodeURIComponent(projectPath)}`;
+  }
+
+  function previewUrl(screen, projectPath = selectedProjectPath()) {
+    const file = screen?.previewTarget?.file || screen?.file;
+    if (!projectPath || !file) return screen?.previewTarget?.path || screen?.route || null;
+    const hash = String(screen?.route || '').startsWith('#') ? screen.route : '';
+    return `/api/project-mirror/preview?path=${encodeURIComponent(projectPath)}&file=${encodeURIComponent(file)}${hash}`;
+  }
+
+  async function loadMirrorProjects() {
+    const response = await api('/project-mirror/projects');
+    const switcher = $('projectSwitcher');
+    if (!switcher) return response.projects || [];
+    const previousPath = selectedProjectPath();
+    switcher.innerHTML = (response.projects || []).map((project) =>
+      `<option value="${safe(project.projectId)}" data-path="${safe(project.path)}">${safe(project.name || project.projectId).toUpperCase()} · ${Number(project.screens || 0)} TELAS</option>`
+    ).join('');
+    const matching = Array.from(switcher.options).find((option) => option.dataset.path === previousPath);
+    if (matching) switcher.value = matching.value;
+    return response.projects || [];
+  }
 
   async function loadProjectMirror() {
     try {
@@ -19,12 +51,59 @@
       if (!pmContent) return;
       pmContent.innerHTML = '<div style="padding: 40px; text-align: center;"><i class="ph ph-spinner ph-spin" style="font-size: 32px;"></i><p>Scanning Active Project...</p></div>';
       
-      projectSnapshot = await api('/project-mirror');
+      const [snapshot, runtimeStatus] = await Promise.all([
+        api(mirrorPath('/project-mirror')),
+        api('/v2/system/status').catch(() => null),
+      ]);
+      projectSnapshot = snapshot;
+      if ($('commandRuntimeState')) $('commandRuntimeState').textContent = runtimeStatus?.api?.ok ? 'ONLINE' : 'UNKNOWN';
+      renderCommandMirror();
       
       // Auto-load Overview
       renderProjectSection('overview');
     } catch (e) {
       if ($('pmContent')) $('pmContent').innerHTML = `<div style="color: var(--danger);">Error loading Project Mirror: ${e.message}</div>`;
+    }
+  }
+
+  function renderCommandMirror() {
+    const container = $('projectMirrorList');
+    if (!container || !projectSnapshot) return;
+    const screens = projectSnapshot.screens || [];
+    container.innerHTML = screens.length ? screens.map((screen) => `
+      <button class="nav-item command-screen-item" data-screen-id="${safe(screen.id)}" style="width:100%;text-align:left;padding:7px 8px;background:transparent;border:0;color:var(--text-main);cursor:pointer">
+        <i class="ph ${safe(screen.icon || 'ph-rectangle')}"></i> ${safe(screen.name)}
+      </button>
+    `).join('') : '<div style="padding:12px;color:var(--text-muted)">NO SCREENS DISCOVERED</div>';
+    container.querySelectorAll('.command-screen-item').forEach((button) => button.addEventListener('click', () => selectCommandScreen(button.dataset.screenId)));
+    if ($('pmScreensBadge')) $('pmScreensBadge').textContent = String(screens.length);
+    if ($('pmApisBadge')) $('pmApisBadge').textContent = String(projectSnapshot.apis?.length || 0);
+    if ($('pmBackendBadge')) $('pmBackendBadge').textContent = String(projectSnapshot.services?.length || 0);
+    if ($('pmWorkersBadge')) $('pmWorkersBadge').textContent = String(projectSnapshot.workers?.length || 0);
+  }
+
+  async function selectCommandScreen(screenId) {
+    try {
+      const data = await api(mirrorPath(`/project-mirror/screen/${encodeURIComponent(screenId)}`));
+      const screen = data.screen;
+      selectedScreen = { ...screen, projectId: data.projectId, workspaceId: data.workspaceId, projectPath: data.projectPath, git: data.git };
+      const previewPath = previewUrl(screen, data.projectPath);
+      if (previewPath && $('wsPreviewFrame')) {
+        $('wsPreviewFrame').src = previewPath;
+        if ($('wsPreviewLabel')) $('wsPreviewLabel').textContent = `${screen.name} · ${previewPath}`;
+        window.setWorkspaceMode?.('preview');
+      }
+      window.inspectItem?.({
+        name: screen.name,
+        type: screen.type,
+        file: (screen.sourceFiles || []).map((source) => `${source.file}:${source.line || 1}`).join('\n') || screen.file,
+        api: (data.relatedApis || []).map((item) => `${item.method} ${item.path}`).join('\n') || 'NOT DETECTED',
+        state: previewPath ? 'DISCOVERED' : 'PREVIEW NOT AVAILABLE',
+        component: (screen.components || []).map((component) => component.name || component.id).join(', ') || 'NOT DETECTED',
+        url: previewPath,
+      });
+    } catch (error) {
+      window.inspectItem?.({ name: screenId, type: 'screen', file: 'NOT AVAILABLE', api: 'NOT AVAILABLE', state: `ERROR: ${error.message}`, component: 'NOT AVAILABLE' });
     }
   }
 
@@ -71,21 +150,22 @@
 
       let html = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">`;
       screens.forEach(s => {
+        const preview = previewUrl(s, projectSnapshot.path);
         html += `
-          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s;" onclick="window.showScreenDetail('${s.name}')">
-            <div style="height: 160px; background: var(--bg-base); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: center;">
-              <i class="ph ph-browser" style="font-size: 48px; color: var(--text-muted);"></i>
-              <!-- Real preview could be rendered here -->
+          <div class="pm-screen-card" data-screen-id="${safe(s.id)}" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s;">
+            <div style="height: 160px; background: var(--bg-base); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+              ${preview ? `<iframe title="Preview ${safe(s.name)}" src="${safe(preview)}" loading="lazy" tabindex="-1" style="width: 1440px; height: 900px; border: 0; transform: scale(.2); transform-origin: center; pointer-events: none;"></iframe>` : '<span style="color:var(--text-muted)">PREVIEW NOT AVAILABLE</span>'}
             </div>
             <div style="padding: 16px;">
-              <h4 style="margin: 0; font-size: 16px;">${s.name}</h4>
-              <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted); font-family: monospace;">${s.path || s.file}</p>
+              <h4 style="margin: 0; font-size: 16px;">${safe(s.name)}</h4>
+              <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted); font-family: monospace;">${safe(s.route || s.file)}</p>
             </div>
           </div>
         `;
       });
       html += `</div>`;
       pmContent.innerHTML = html;
+      pmContent.querySelectorAll('.pm-screen-card').forEach((card) => card.addEventListener('click', () => window.showScreenDetail(card.dataset.screenId)));
     } else if (section === 'apis') {
       pmTitle.textContent = 'API Registry';
       const apis = projectSnapshot.apis || [];
@@ -122,6 +202,7 @@
       pmContent.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-muted);">Detailed view for ${section} is under construction in this vertical slice.</div>`;
     }
   }
+  window.renderProjectSection = renderProjectSection;
 
   // ==========================================
   // FASE F: ARCHITECTURE & RUNTIME GRAPH
@@ -129,38 +210,32 @@
 
   async function renderArchitectureGraph() {
     const container = document.getElementById('visNetworkContainer');
-    if (!container || !window.vis) return;
+    if (!container) return;
+    if (!window.vis) {
+      container.innerHTML = '<div style="padding:24px;color:var(--text-muted)">GRAPH RENDERER NOT AVAILABLE</div>';
+      return;
+    }
 
     try {
-      const status = await api('/v2/system/status');
-      
-      const nodes = new vis.DataSet([
-        { id: 1, label: 'FÊNIX API\n(Orchestrator)', shape: 'box', color: '#3b82f6' },
-        { id: 2, label: 'ExecutiveBrain', shape: 'ellipse', color: '#6366f1' },
-        { id: 3, label: 'MissionKernel', shape: 'ellipse', color: '#6366f1' },
-        { id: 4, label: 'PostgreSQL\n(State Store)', shape: 'database', color: (status.postgres?.ok ? '#10b981' : '#ef4444') },
-        { id: 5, label: 'Redis / BullMQ\n(Queue)', shape: 'cylinder', color: (status.bullmq?.ok ? '#10b981' : '#ef4444') },
-        { id: 6, label: 'Worker Pool\n(' + (status.workers?.connected || 0) + ' active)', shape: 'box', color: (status.workers?.connected > 0 ? '#10b981' : '#f59e0b') },
-        { id: 7, label: 'AI Layer', shape: 'ellipse', color: '#8b5cf6' },
-        { id: 8, label: 'AI Platform', shape: 'box', color: (status.aiPlatform?.ok ? '#10b981' : '#ef4444') },
-        { id: 9, label: 'Qwen 2.5:3b', shape: 'ellipse', color: (status.aiPlatform?.ok ? '#10b981' : '#ef4444') },
-        { id: 10, label: 'IDE / MCP', shape: 'box', color: '#eab308' },
-      ]);
-
-      const edges = new vis.DataSet([
-        { from: 10, to: 1, label: 'MCP / REST' },
-        { from: 1, to: 2 },
-        { from: 1, to: 3 },
-        { from: 1, to: 4, label: 'state' },
-        { from: 1, to: 5, label: 'jobs' },
-        { from: 2, to: 5 },
-        { from: 3, to: 5 },
-        { from: 5, to: 6, label: 'consume' },
-        { from: 6, to: 4, label: 'update state' },
-        { from: 6, to: 7 },
-        { from: 7, to: 8 },
-        { from: 8, to: 9, label: 'LLM calls' }
-      ]);
+      if (!projectSnapshot) await loadProjectMirror();
+      const rawNodes = [{ id: 'project', label: projectSnapshot.name, kind: 'project', detail: projectSnapshot.path, shape: 'box', color: '#3b82f6' }];
+      const rawEdges = [];
+      const add = (kind, items, color, labelOf, detailOf) => items.forEach((item, index) => {
+        const id = `${kind}:${index}`;
+        rawNodes.push({ id, label: labelOf(item), kind, detail: detailOf(item), shape: kind === 'api' ? 'ellipse' : 'box', color });
+        rawEdges.push({ from: 'project', to: id, label: kind });
+      });
+      add('screen', projectSnapshot.screens || [], '#8b5cf6', (item) => item.name, (item) => `${item.route} · ${item.file}`);
+      add('api', (projectSnapshot.apis || []).slice(0, 40), '#10b981', (item) => `${item.method} ${item.path}`, (item) => item.definedAt || item.file);
+      add('service', projectSnapshot.services || [], '#eab308', (item) => item.name, (item) => item.file);
+      add('worker', projectSnapshot.workers || [], '#f97316', (item) => item.name, (item) => item.file);
+      add('queue', projectSnapshot.queues || [], '#06b6d4', (item) => item.name, (item) => item.file);
+      if (rawNodes.length === 1) {
+        container.innerHTML = '<div style="padding:24px;color:var(--text-muted)">NO ARCHITECTURE NODES DISCOVERED</div>';
+        return;
+      }
+      const nodes = new vis.DataSet(rawNodes);
+      const edges = new vis.DataSet(rawEdges);
 
       const data = { nodes: nodes, edges: edges };
       const options = {
@@ -177,14 +252,8 @@
         const details = document.getElementById('graphDetails');
         if (!details) return;
         
-        let html = '<b>' + nodes.get(nodeId).label.replace('\\n', ' ') + '</b><hr style="border-color: var(--border); margin: 8px 0;">';
-        if (nodeId === 4) html += 'Status: ' + (status.postgres?.ok ? 'ONLINE' : 'OFFLINE');
-        else if (nodeId === 5) html += 'Status: ' + (status.bullmq?.ok ? 'ONLINE' : 'OFFLINE') + '<br>Waiting: ' + (status.bullmq?.waiting || 0) + '<br>Active: ' + (status.bullmq?.active || 0);
-        else if (nodeId === 6) html += 'Connected: ' + (status.workers?.connected || 0) + '<br>Queue: ' + status.workers?.queue;
-        else if (nodeId === 8) html += 'Status: ' + (status.aiPlatform?.ok ? 'ONLINE' : 'OFFLINE');
-        else html += 'Core System Component';
-        
-        details.innerHTML = html;
+        const node = nodes.get(nodeId);
+        details.innerHTML = `<b>${safe(node.label)}</b><hr style="border-color:var(--border);margin:8px 0">Type: ${safe(node.kind)}<br>${safe(node.detail || 'NO DETAIL AVAILABLE')}`;
       });
 
     } catch (e) {
@@ -209,11 +278,11 @@
 
       pmContent.innerHTML = `
         <div style="max-width: 800px; margin: 0 auto;">
-          ${renderItem('FÊNIX API', status.api?.ok, 'Port: 4400')}
+          ${renderItem('FÊNIX API', status.api?.ok, status.checkedAt || 'CHECK TIME NOT AVAILABLE')}
           ${renderItem('PostgreSQL', status.postgres?.ok, 'State Store')}
-          ${renderItem('Redis / BullMQ', status.bullmq?.ok, `Jobs Waiting: ${status.bullmq?.waiting || 0}`)}
-          ${renderItem('Worker Pool', status.workers?.connected > 0, `Connected: ${status.workers?.connected || 0}`)}
-          ${renderItem('AI Platform', status.aiPlatform?.ok, 'Qwen Provider')}
+          ${renderItem('Redis / BullMQ', status.bullmq?.ok, `Jobs Waiting: ${status.bullmq?.waiting ?? '--'}`)}
+          ${renderItem('Worker Pool', status.workers?.connected > 0, `Connected: ${status.workers?.connected ?? '--'}`)}
+          ${renderItem('AI Providers', status.aiProviders?.ok, status.aiProviders?.configured ? 'CONFIGURED' : 'NOT CONFIGURED')}
           
           <h3 style="margin-top: 32px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Job Activity</h3>
           <pre style="background: var(--bg-surface); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">${JSON.stringify(status.runtime?.jobs || {}, null, 2)}</pre>
@@ -228,23 +297,31 @@
     const pmContent = $('pmContent');
     pmContent.innerHTML = '<div style="padding: 40px; text-align: center;"><i class="ph ph-spinner ph-spin" style="font-size: 32px;"></i></div>';
     try {
-      const data = await api(`/project-mirror/screen/${encodeURIComponent(name)}`);
+      const data = await api(mirrorPath(`/project-mirror/screen/${encodeURIComponent(name)}`));
       const screen = data.screen;
+      selectedScreen = { ...screen, projectId: data.projectId, workspaceId: data.workspaceId, projectPath: data.projectPath, git: data.git };
+      const source = screen.sourceFiles?.[0] || { file: screen.file, line: screen.sourceLine || 1 };
+      const sourceResponse = await api(`/project-mirror/source?path=${encodeURIComponent(data.projectPath)}&file=${encodeURIComponent(source.file)}&line=${encodeURIComponent(source.line || 1)}`);
+      const preview = previewUrl(screen, data.projectPath);
       
       let html = `
         <div style="display: flex; gap: 24px; height: 100%;">
           <div style="flex: 2; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-base); display: flex; flex-direction: column;">
             <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
               <span style="font-weight: 500;">Visual Preview</span>
-              <span style="font-family: monospace; font-size: 12px; color: var(--text-muted);">${screen.path}</span>
+              <span style="font-family: monospace; font-size: 12px; color: var(--text-muted);">${safe(screen.route)}</span>
             </div>
-            <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative;">
-              <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(59,130,246,0.05); pointer-events: none;"></div>
-              <p style="color: var(--text-muted); text-align: center;">
-                <i class="ph ph-browser" style="font-size: 64px;"></i><br>
-                Interactive preview maps to:<br>
-                <strong>${screen.file}</strong>
-              </p>
+            <div style="display:flex; gap:8px; padding:8px; border-bottom:1px solid var(--border);">
+              <button class="btn-primary-sm" data-screen-mode="preview">PREVIEW</button>
+              <button class="btn-primary-sm" data-screen-mode="code">CODE</button>
+              <button class="btn-primary-sm" data-screen-mode="split">SPLIT</button>
+            </div>
+            <div id="screenPreviewPane" style="flex: 1; min-height: 0; ${preview ? '' : 'display:flex;align-items:center;justify-content:center;color:var(--text-muted);'}">
+              ${preview ? `<iframe id="selectedScreenFrame" title="Live preview ${safe(screen.name)}" src="${safe(preview)}" style="width:100%;height:100%;border:0;background:#fff"></iframe>` : 'PREVIEW NOT AVAILABLE'}
+            </div>
+            <pre id="screenCodePane" data-source-line="${Number(sourceResponse.line || 1)}" style="display:none; flex:1; min-height:0; overflow:auto; margin:0; padding:16px; background:#070711; color:var(--text-main); font:12px/1.55 var(--font-mono); white-space:pre;">${safe(sourceResponse.content)}</pre>
+            <div style="padding:8px 12px;border-top:1px solid var(--border);font:11px var(--font-mono);color:var(--text-muted)">
+              ${safe(source.file)}:${Number(sourceResponse.line || 1)} · ${Number(sourceResponse.bytes || 0)} bytes
             </div>
           </div>
           
@@ -252,32 +329,88 @@
             <div style="background: var(--bg-surface); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
               <h4 style="margin-top: 0;">Components</h4>
               <ul style="padding-left: 20px; font-family: monospace; font-size: 12px; margin-bottom: 0;">
-                ${(screen.components || []).map(c => `<li>${c}</li>`).join('')}
+                ${(screen.components || []).map(c => `<li>${safe(c.name || c.id)} <span style="color:var(--text-muted)">${safe(c.file)}:${Number(c.line || 1)}</span></li>`).join('') || '<li style="color:var(--text-muted)">NOT DETECTED</li>'}
               </ul>
+            </div>
+
+            <div style="background: var(--bg-surface); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+              <h4 style="margin-top: 0;">Elemento visual selecionado</h4>
+              <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px">Clique em qualquer item dentro do preview para anexá-lo ao prompt.</p>
+              <pre id="selectedElementContext" style="font:11px/1.45 var(--font-mono);white-space:pre-wrap;margin:0">NENHUM ELEMENTO SELECIONADO</pre>
             </div>
             
             <div style="background: var(--bg-surface); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
               <h4 style="margin-top: 0;">APIs (Dependencies)</h4>
               <ul style="padding-left: 20px; font-family: monospace; font-size: 12px; margin-bottom: 0;">
-                ${(data.relatedApis || []).map(a => `<li>${a.method} ${a.path}</li>`).join('')}
+                ${(data.relatedApis || []).map(a => `<li>${safe(a.method)} ${safe(a.path)} <span style="color:var(--text-muted)">${safe(a.definedAt || a.file)}</span></li>`).join('')}
                 ${(data.relatedApis || []).length === 0 ? '<li style="color: var(--text-muted); list-style: none;">None detected explicitly</li>' : ''}
               </ul>
             </div>
             
-            <button class="btn-primary" onclick="alert('Sending Context to Chat...')">Edit Screen with AI</button>
+            <button id="editSelectedScreenBtn" class="btn-primary">Edit Screen with AI</button>
           </div>
         </div>
       `;
       
       $('pmTitle').innerHTML = `<span style="cursor: pointer; color: var(--text-muted);" onclick="window.renderProjectSection('screens')">Screens</span> / ${screen.name}`;
       pmContent.innerHTML = html;
+      const previewPane = $('screenPreviewPane');
+      const codePane = $('screenCodePane');
+      const previewFrame = $('selectedScreenFrame');
+      selectedElement = null;
+      previewFrame?.addEventListener('load', () => {
+        try {
+          const doc = previewFrame.contentDocument;
+          if (!doc) return;
+          doc.addEventListener('click', (event) => {
+            const target = event.target?.closest?.('a,button,input,select,textarea,[id],[class]') || event.target;
+            if (!target || target === doc.body || target === doc.documentElement) return;
+            event.preventDefault();
+            event.stopPropagation();
+            doc.querySelectorAll('[data-fenix-selected]').forEach((element) => {
+              element.style.outline = element.dataset.fenixPreviousOutline || '';
+              delete element.dataset.fenixSelected;
+              delete element.dataset.fenixPreviousOutline;
+            });
+            target.dataset.fenixPreviousOutline = target.style.outline || '';
+            target.dataset.fenixSelected = 'true';
+            target.style.outline = '3px solid #f97316';
+            const selector = target.id
+              ? `#${target.id}`
+              : `${target.tagName.toLowerCase()}${Array.from(target.classList || []).slice(0, 3).map((name) => `.${name}`).join('')}`;
+            selectedElement = {
+              selector,
+              tag: target.tagName.toLowerCase(),
+              text: String(target.innerText || target.value || target.getAttribute?.('aria-label') || '').trim().slice(0, 300),
+              html: target.outerHTML?.slice(0, 1200) || '',
+            };
+            if ($('selectedElementContext')) $('selectedElementContext').textContent = `${selector}\n${selectedElement.text || '(sem texto)'}`;
+          }, true);
+        } catch (error) {
+          if ($('selectedElementContext')) $('selectedElementContext').textContent = `INSPEÇÃO INDISPONÍVEL: ${error.message}`;
+        }
+      });
+      pmContent.querySelectorAll('[data-screen-mode]').forEach((button) => button.addEventListener('click', () => {
+        const mode = button.dataset.screenMode;
+        if (previewPane) { previewPane.style.display = mode === 'code' ? 'none' : 'block'; previewPane.style.flex = '1'; }
+        if (codePane) { codePane.style.display = mode === 'preview' ? 'none' : 'block'; codePane.style.flex = '1'; }
+        if (mode === 'split' && previewPane && codePane) { previewPane.style.width = '50%'; codePane.style.width = '50%'; previewPane.parentElement.style.flexDirection = 'column'; }
+      }));
+      $('editSelectedScreenBtn')?.addEventListener('click', () => {
+        const input = $('masterPrompt') || $('prompt');
+        const elementHint = selectedElement ? ` O elemento selecionado é ${selectedElement.selector}, texto "${selectedElement.text}".` : '';
+        document.querySelector('[data-view="command"]')?.click();
+        if (input) { input.value = `Na tela ${screen.name}, faça uma alteração pequena e segura.${elementHint}`; input.focus(); }
+      });
     } catch (e) {
       pmContent.innerHTML = `<div style="color: var(--danger);">Error loading screen detail: ${e.message}</div>`;
     }
   };
 
   // Bind Sidebar Nav
-  document.addEventListener('FENIX_READY', () => {
+  function initializeVisualIDE() {
+    if (document.documentElement.dataset.fenixVisualIdeReady === 'true') return;
+    document.documentElement.dataset.fenixVisualIdeReady = 'true';
     document.querySelectorAll('.pm-nav-item').forEach(el => {
       el.addEventListener('click', (e) => {
         renderProjectSection(e.currentTarget.dataset.pm);
@@ -288,9 +421,31 @@
     if (pmScanBtn) {
       pmScanBtn.addEventListener('click', async () => {
         pmScanBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Scanning...';
-        await api('/project-mirror/scan', { method: 'POST', body: JSON.stringify({}) });
+        await api('/project-mirror/scan', { method: 'POST', body: JSON.stringify({ projectPath: selectedProjectPath() }) });
         await loadProjectMirror();
         pmScanBtn.innerHTML = '<i class="ph ph-scan"></i> Scan Real';
+      });
+    }
+
+    // Command and Project views share the same real snapshot/cache.
+    loadMirrorProjects().then(loadProjectMirror).catch((error) => {
+      if ($('pmContent')) $('pmContent').textContent = `Falha ao listar projetos: ${error.message}`;
+    });
+    $('projectSwitcher')?.addEventListener('change', async () => {
+      projectSnapshot = null;
+      selectedScreen = null;
+      selectedElement = null;
+      await loadProjectMirror();
+    });
+    const masterForm = $('masterCmdForm');
+    if (masterForm && !masterForm.dataset.fenixBound) {
+      masterForm.dataset.fenixBound = 'true';
+      masterForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const input = $('masterPrompt');
+        const value = input?.value || '';
+        if (input) input.value = '';
+        window.runChat(value);
       });
     }
 
@@ -298,7 +453,9 @@
     document.querySelector('[data-view="project"]')?.addEventListener('click', () => {
       if (!projectSnapshot) loadProjectMirror();
     });
-  });
+  }
+  document.addEventListener('FENIX_READY', initializeVisualIDE);
+  if (window.FENIX_READY) initializeVisualIDE();
 
 
   // ==========================================
@@ -332,14 +489,53 @@
     }
 
     try {
+      if (!projectSnapshot) await loadProjectMirror();
+      const screen = selectedScreen;
+      const sourceFiles = (screen?.sourceFiles || []).map((source) => source.repositoryFile || source.file).filter(Boolean);
+      const repositoryRoot = screen?.git?.repositoryRoot || projectSnapshot?.git?.repositoryRoot || projectSnapshot?.path;
+      const screenContext = {
+        projectId: screen?.projectId || projectSnapshot?.projectId || null,
+        workspaceId: screen?.workspaceId || projectSnapshot?.workspaceId || null,
+        screenId: screen?.id || null,
+        route: screen?.route || null,
+        sourceFiles,
+        components: screen?.components || [],
+        apiDependencies: screen?.apiDependencies || [],
+        designSystem: projectSnapshot?.designSystem || { sourceFiles: [] },
+        runtime: projectSnapshot?.runtime || null,
+        gitStatus: projectSnapshot?.git || null,
+        previewTarget: screen?.previewTarget || null,
+        selectedElement: selectedElement ? { ...selectedElement } : null,
+      };
+      const gates = projectSnapshot?.git?.projectRelativePath === 'grg'
+        ? [
+          { name: 'project-mirror-contract', command: 'node', args: ['grg/test/project-mirror.test.js'] },
+          { name: 'frontend-runtime-safety', command: 'node', args: ['grg/test/frontend-runtime-safety.test.js'] },
+        ]
+        : undefined;
       // 1. Send Prompt to create a Job
       const jobRes = await api('/v2/jobs', {
         method: 'POST',
         body: JSON.stringify({
           prompt: value,
           type: 'development.execute',
-          source: 'fenix-chat',
-          workspace: window.state?.currentFilePath || (projectSnapshot ? projectSnapshot.path : undefined)
+          source: 'web',
+          projectId: screenContext.projectId,
+          workspaceId: screenContext.workspaceId,
+          screenId: screenContext.screenId,
+          route: screenContext.route,
+          workspace: repositoryRoot,
+          riskLevel: 'MEDIUM',
+          context: screenContext,
+          policy: {
+            allowedPaths: sourceFiles.length ? sourceFiles : [projectSnapshot?.git?.projectRelativePath && projectSnapshot.git.projectRelativePath !== '.' ? `${projectSnapshot.git.projectRelativePath}/**` : '**'],
+            blockedPaths: ['.env', '.env.*', '**/.env', '**/.env.*', 'node_modules/**'],
+            allowRollback: true,
+            allowDeploy: false,
+            maxIterations: 5,
+            maxTokens: 100000,
+          },
+          payload: { prompt: value, projectPath: repositoryRoot, context: screenContext, ...(gates ? { gates } : {}) }
         })
       });
 
@@ -353,6 +549,8 @@
           </div>
         </div>
       `;
+      if ($('barActiveJob')) $('barActiveJob').textContent = jobRes.jobId;
+      if ($('barWorker')) $('barWorker').textContent = jobRes.status || 'QUEUED';
     } catch (e) {
       pending.innerHTML = `
         <div class="chat-text-wrapper" style="border-left: 3px solid var(--danger); padding-left: 12px; margin-bottom: 12px;">
@@ -360,6 +558,8 @@
           <div class="chat-text" style="margin-top: 8px;">${e.message}</div>
         </div>
       `;
+      if ($('barActiveJob')) $('barActiveJob').textContent = 'ERROR';
+      if ($('barWorker')) $('barWorker').textContent = e.message;
     }
   };
 
@@ -403,6 +603,9 @@
           api(`/v2/jobs/${jobId}`),
           api(`/v2/jobs/${jobId}/events`)
         ]);
+        const diffEvidence = job.status === 'SUCCEEDED'
+          ? await api(`/v2/jobs/${jobId}/diff`).catch(() => null)
+          : null;
 
         const events = eventsRes.events || [];
         
@@ -429,6 +632,14 @@
                 <div style="margin-bottom: 16px;">
                   <div style="font-size: 12px; color: var(--text-muted);">Worker ID</div>
                   <div style="font-family: monospace; font-size: 12px;">${job.workerId || 'Pending Allocation'}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <div style="font-size: 12px; color: var(--text-muted);">Project / Screen</div>
+                  <div style="font-family: monospace; font-size: 12px;">${safe(job.projectId || 'NOT AVAILABLE')}<br>${safe(job.screenId || 'NOT AVAILABLE')} · ${safe(job.route || 'NOT AVAILABLE')}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <div style="font-size: 12px; color: var(--text-muted);">Allowed Paths</div>
+                  <div style="font-family: monospace; font-size: 11px; white-space:pre-wrap;">${safe((job.policy?.allowedPaths || []).join('\n') || 'NOT RESTRICTED')}</div>
                 </div>
                 
                 ${job.status === 'AWAITING_APPROVAL' ? `
@@ -468,10 +679,10 @@
                       </div>
                       <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-left: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                          <strong style="font-size: 14px;">${ev.message || ev.type}</strong>
-                          <span style="font-size: 11px; color: var(--text-muted);">${new Date(ev.timestamp).toLocaleTimeString()}</span>
+                          <strong style="font-size: 14px;">${safe(ev.message || ev.type)}</strong>
+                          <span style="font-size: 11px; color: var(--text-muted);">${ev.createdAt ? new Date(ev.createdAt).toLocaleTimeString() : '--'}</span>
                         </div>
-                        ${ev.details ? `<pre style="margin: 0; padding: 8px; background: var(--bg-base); border-radius: 4px; font-size: 11px; max-height: 200px; overflow: auto;">${JSON.stringify(ev.details, null, 2)}</pre>` : ''}
+                        ${ev.data ? `<pre style="margin: 0; padding: 8px; background: var(--bg-base); border-radius: 4px; font-size: 11px; max-height: 200px; overflow: auto;">${safe(JSON.stringify(ev.data, null, 2))}</pre>` : ''}
                       </div>
                     </div>
                   `;
@@ -488,6 +699,18 @@
                   </div>
                 ` : ''}
               </div>
+              ${job.result ? `
+                <h3>Quality Evidence</h3>
+                <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px">
+                  <div><strong>Result:</strong> ${safe(job.result.status || job.status)}</div>
+                  <div><strong>Tests:</strong> ${safe((job.tests || []).map((test) => `${test.name}: ${test.status}`).join(' · ') || 'NOT AVAILABLE')}</div>
+                  <div><strong>Preview:</strong> ${safe(job.result.preview?.status || 'NOT AVAILABLE')}</div>
+                  ${job.result.preview?.reason ? `<div style="color:var(--text-muted);font-size:12px;margin-top:6px">${safe(job.result.preview.reason)}</div>` : ''}
+                </div>
+                <h3>Code Diff</h3>
+                <pre style="background:#070711;border:1px solid var(--border);border-radius:8px;padding:12px;max-height:420px;overflow:auto;white-space:pre-wrap">${safe(diffEvidence?.diff || job.result.diffPreview || 'DIFF NOT AVAILABLE')}</pre>
+                ${job.policy?.allowRollback ? `<button class="btn-ghost" style="color:var(--danger);margin-top:12px" onclick="window.rollbackJob('${jobId}')">Rollback isolated worktree</button>` : ''}
+              ` : ''}
             </div>
             
           </div>
@@ -529,6 +752,16 @@
       alert('Job rejected.');
     } catch (e) {
       alert('Error rejecting: ' + e.message);
+    }
+  };
+
+  window.rollbackJob = async function(jobId) {
+    if (!confirm('Remove the isolated worktree and its FÊNIX job branch?')) return;
+    try {
+      await api(`/v2/jobs/${jobId}/rollback`, { method: 'POST' });
+      alert('Isolated worktree rolled back.');
+    } catch (e) {
+      alert('Rollback failed: ' + e.message);
     }
   };
 

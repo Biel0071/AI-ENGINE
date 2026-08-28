@@ -14,12 +14,14 @@ test('HTTP client sends every IDE through the authenticated v2 contract', async 
   });
   await client.submit({ prompt: 'work', source: 'windsurf' });
   await client.events('job/1');
+  await client.diff('job/1');
   await client.approve('job/1');
   assert.equal(calls[0].url, 'https://fenix.example/api/v2/jobs');
   assert.equal(calls[0].options.headers.authorization, 'Bearer session-token');
   assert.equal(JSON.parse(calls[0].options.body).source, 'windsurf');
   assert.match(calls[1].url, /job%2F1\/events$/);
-  assert.match(calls[2].url, /job%2F1\/approve$/);
+  assert.match(calls[2].url, /job%2F1\/diff$/);
+  assert.match(calls[3].url, /job%2F1\/approve$/);
 });
 
 test('MCP exposes only adapters over the canonical FENIX client', async () => {

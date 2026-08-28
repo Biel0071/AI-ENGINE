@@ -1,0 +1,80 @@
+{
+  "screens": [
+    {
+      "id": "command",
+      "name": "Command Center",
+      "icon": "ph-terminal-window",
+      "route": "/app#command",
+      "file": "public/index.html",
+      "description": "Hub principal de controle do Fênix — Project Mirror, Visual Workspace e Inspector",
+      "components": [
+        { "id": "nav", "name": "NavBar", "file": "public/index.html#L1-50" },
+        { "id": "project-mirror", "name": "Project Mirror", "file": "public/index.html" },
+        { "id": "visual-workspace", "name": "Visual Workspace", "file": "public/index.html" },
+        { "id": "inspector", "name": "Inspector", "file": "public/index.html" },
+        { "id": "chat-bar", "name": "Chat Command Bar", "file": "public/index.html" }
+      ],
+      "apis": ["/api/screens", "/api/health", "/api/jobs"]
+    },
+    {
+      "id": "city",
+      "name": "AI City",
+      "icon": "ph-buildings",
+      "route": "/app#city",
+      "file": "public/iso-city.js",
+      "description": "Visualização isométrica dos agentes em execução em tempo real",
+      "components": [
+        { "id": "iso-city-engine", "name": "IsoCityEngine", "file": "public/iso-city.js" },
+        { "id": "agent-nodes", "name": "Agent Nodes", "file": "public/iso-city.js" },
+        { "id": "city-canvas", "name": "City Canvas", "file": "public/index.html" }
+      ],
+      "apis": ["/api/agents", "/api/jobs"]
+    },
+    {
+      "id": "ide",
+      "name": "IDE Visual",
+      "icon": "ph-code",
+      "route": "/app#ide",
+      "file": "public/index.html",
+      "description": "Editor de código com AI integrada e Monaco Editor",
+      "components": [
+        { "id": "monaco-editor", "name": "Monaco Editor", "file": "public/index.html" },
+        { "id": "chat-panel", "name": "Chat Panel", "file": "public/unified-app.js" },
+        { "id": "file-tree", "name": "File Tree", "file": "public/unified-app.js" }
+      ],
+      "apis": ["/api/chat", "/api/jobs", "/api/workspaces"]
+    },
+    {
+      "id": "agents",
+      "name": "Agentes",
+      "icon": "ph-robot",
+      "route": "/app#agents",
+      "file": "public/unified-app.js",
+      "description": "Gestão e monitoramento de agentes de AI",
+      "components": [
+        { "id": "agent-list", "name": "Agent List", "file": "public/unified-app.js" },
+        { "id": "agent-card", "name": "Agent Card", "file": "public/unified-app.js" }
+      ],
+      "apis": ["/api/agents", "/api/agents/:id/status"]
+    },
+    {
+      "id": "projects",
+      "name": "Projetos",
+      "icon": "ph-folder-open",
+      "route": "/app#projects",
+      "file": "public/unified-app.js",
+      "description": "Gerenciador de projetos e workspaces",
+      "components": [
+        { "id": "project-list", "name": "Project List", "file": "public/unified-app.js" },
+        { "id": "project-card", "name": "Project Card", "file": "public/unified-app.js" }
+      ],
+      "apis": ["/api/workspaces", "/api/projects"]
+    }
+  ],
+  "components": [
+    { "id": "nav", "name": "NavBar", "file": "public/index.html", "usedIn": ["command", "city", "ide", "agents", "projects"] },
+    { "id": "chat-bar", "name": "Chat Bar", "file": "public/index.html", "usedIn": ["command"] },
+    { "id": "iso-city", "name": "ISO City Engine", "file": "public/iso-city.js", "usedIn": ["city", "command"] },
+    { "id": "monaco", "name": "Monaco Editor", "file": "public/index.html", "usedIn": ["ide"] }
+  ]
+}

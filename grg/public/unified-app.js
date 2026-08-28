@@ -145,12 +145,12 @@ async function refreshAll() {
   try {
     const activeView = String(location.hash.slice(1) || 'command').split('?')[0] || 'command';
     const pSwitcher = $('projectSwitcher');
-    const selectedProjectId = pSwitcher ? pSwitcher.value : 'ai-engine-core';
+    const selectedProjectPath = pSwitcher?.selectedOptions?.[0]?.dataset?.path || '';
     const essentialEntries = [
       ['health', () => publicJson('/health')],
       ['me', () => api('/me')],
       ['overview', () => api('/overview')],
-      ['projectMirror', () => api('/v2/project-mirror/' + selectedProjectId)],
+      ['projectMirror', () => api(`/project-mirror${selectedProjectPath ? `?path=${encodeURIComponent(selectedProjectPath)}` : ''}`)],
     ];
     const viewEntries = {
       skills: [
@@ -278,19 +278,6 @@ function renderHeader() {
 function renderCommand() {
   const telemetry = state.data.telemetry || {};
   const ok = state.data.health?.ok === true || state.data.health?.status === 'ready';
-
-  const pSwitcher = $('projectSwitcher');
-  if (pSwitcher && state.projects && state.projects.length > 0) {
-    const existingOpts = Array.from(pSwitcher.options).map(o => o.value);
-    for (const p of state.projects) {
-      if (!existingOpts.includes(p.id)) {
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = (p.name || p.id).toUpperCase();
-        pSwitcher.appendChild(opt);
-      }
-    }
-  }
 
   const activeJob = state.jobs.find(j => j.status === 'processing' || j.status === 'running' || j.status === 'RUNNING' || j.status === 'PROCESSING');
   const barActiveJob = $('barActiveJob');
@@ -831,7 +818,18 @@ function init() {
   addEvt('scanForm', 'submit', (event) => { event.preventDefault(); if ($('scanPath')) scanProject($('scanPath').value); });
   addEvt('skillForm', 'submit', (event) => { event.preventDefault(); if ($('skillObjective')) selectSkills($('skillObjective').value); });
   addEvt('sliceForm', 'submit', (event) => { event.preventDefault(); if ($('slicePrompt')) createFullstackSlice($('slicePrompt').value); });
-  addEvt('tickBtn', 'click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
+  addEvt('tickBtn', 'click', async () => {
+    const output = $('runtimeRunResult');
+    if (output) output.textContent = 'Executando scheduler e consumindo jobs enfileirados...';
+    try {
+      const schedules = await api('/runtime/tick', { method: 'POST' });
+      const queue = await api('/v2/jobs/run-batch', { method: 'POST', body: JSON.stringify({ limit: 3 }) });
+      if (output) output.textContent = JSON.stringify({ schedulesCreated: schedules.jobs?.length || 0, jobsProcessed: queue.processed, jobs: queue.jobs?.map((job) => ({ id: job.id, status: job.status, stage: job.currentStage, error: job.error?.message || null })) || [] }, null, 2);
+      await refreshAll();
+    } catch (error) {
+      if (output) output.textContent = `Falha ao executar fila: ${error.message}`;
+    }
+  });
   addEvt('rebuildCityBtn', 'click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
   addEvt('sampleBtn', 'click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
   addEvt('checkApiBtn', 'click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });

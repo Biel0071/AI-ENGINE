@@ -50,12 +50,45 @@ function inferIcon(name) {
   return 'ph-rectangle';
 }
 
+function lineAt(content, offset) {
+  return content.slice(0, Math.max(0, offset)).split(/\r?\n/).length;
+}
+
+function htmlLabel(content, viewName) {
+  const match = content.match(new RegExp(`<[^>]+data-view=["']${viewName}["'][^>]*>([\\s\\S]*?)<\\/[^>]+>`, 'i'));
+  return match ? match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : viewName;
+}
+
+function htmlViewEvidence(content, rel, viewName) {
+  const marker = new RegExp(`<([a-z0-9-]+)[^>]*id=["']view-${viewName}["'][^>]*>`, 'i').exec(content);
+  if (!marker) return { sourceLine: null, components: [] };
+  const sourceLine = lineAt(content, marker.index);
+  const nextView = content.slice(marker.index + marker[0].length).search(/<[a-z0-9-]+[^>]*id=["']view-[^"']+["']/i);
+  const blockEnd = nextView < 0 ? content.length : marker.index + marker[0].length + nextView;
+  const block = content.slice(marker.index, blockEnd);
+  const components = [];
+  for (const match of block.matchAll(/<([a-z0-9-]+)[^>]*\sid=["']([^"']+)["'][^>]*>/gi)) {
+    const id = match[2];
+    components.push({
+      id,
+      name: id,
+      type: `dom-${match[1].toLowerCase()}`,
+      file: rel,
+      line: sourceLine + lineAt(block, match.index || 0) - 1,
+      discoveredBy: 'html-id',
+    });
+  }
+  return { sourceLine, components: components.slice(0, 80) };
+}
+
 /**
  * Extract screens from FÊNIX-style HTML (data-view attributes).
  */
-async function extractFromHtml(projectPath) {
+async function extractFromHtml(projectPath, scanResult = null) {
   const screens = [];
-  const htmlFiles = ['public/index.html', 'index.html', 'public/app.html'];
+  const discoveredHtml = (scanResult?.files?.list || scanResult?.filePaths || [])
+    .filter((file) => /(^|\/)public\/(?:index|app)\.html$/i.test(file));
+  const htmlFiles = [...new Set(['public/index.html', 'index.html', 'public/app.html', ...discoveredHtml])];
   for (const rel of htmlFiles) {
     const filePath = path.join(projectPath, rel);
     try {
@@ -67,21 +100,43 @@ async function extractFromHtml(projectPath) {
       // id="view-name" divs
       const viewDivs = [...content.matchAll(/id="view-([^"]+)"/g)].map(([, v]) => v);
       const allViews = [...new Set([...viewIds, ...viewDivs])];
+      const hashRoutes = [...content.matchAll(/<a[^>]+href=["']#\/([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+      for (const match of hashRoutes) {
+        const viewName = match[1].replace(/^\/+|\/+$/g, '').replace(/\//g, '-') || 'home';
+        if (!allViews.includes(viewName)) allViews.push(viewName);
+      }
+      const loadedSources = [...content.matchAll(/<(?:script|link)[^>]+(?:src|href)=["']\/([^"'?]+)[^"']*["']/gi)]
+        .map((match) => ({ file: `public/${match[1]}`.replace(/^public\/public\//, 'public/'), line: lineAt(content, match.index || 0) }))
+        .filter((source) => /\.(?:js|css)$/i.test(source.file));
+      for (const match of content.matchAll(/<(?:script|link)[^>]+(?:src|href)=["']([^/][^"'?]+)[^"']*["']/gi)) {
+        if (!/\.(?:js|css)$/i.test(match[1])) continue;
+        loadedSources.push({ file: path.posix.join(path.posix.dirname(rel), match[1]), line: lineAt(content, match.index || 0) });
+      }
 
       for (const viewName of allViews) {
-        const navBtn = content.match(new RegExp(`data-view="${viewName}"[^>]*>([^<]*)`));
-        const label = navBtn ? navBtn[1].trim().replace(/<[^>]+>/g, '').trim() : viewName;
+        const routeMatch = hashRoutes.find((match) => match[1].replace(/^\/+|\/+$/g, '').replace(/\//g, '-') === viewName);
+        const anchorLabel = routeMatch?.[2]
+          ? routeMatch[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+          : '';
+        const label = anchorLabel || htmlLabel(content, viewName);
+        const evidence = htmlViewEvidence(content, rel, viewName);
+        const route = routeMatch ? `#/${routeMatch[1]}` : `/app#${viewName}`;
         screens.push({
           id: viewName,
           name: label || viewName,
           type: 'html-view',
           file: rel,
-          route: `#${viewName}`,
+          sourceLine: evidence.sourceLine,
+          sourceFiles: [{ file: rel, line: evidence.sourceLine }, ...loadedSources],
+          components: evidence.components,
+          apiDependencies: [],
+          route,
+          previewTarget: { type: 'PROJECT_HTML', path: route, file: rel },
           icon: inferIcon(viewName),
           discoveredBy: 'html-data-view',
         });
       }
-      if (screens.length > 0) break; // found our main html
+      // Continue: monorepos can contain more than one real frontend.
     } catch { /* skip */ }
   }
   return screens;
@@ -111,7 +166,12 @@ async function extractFromReactRouter(projectPath) {
           name: name.charAt(0).toUpperCase() + name.slice(1),
           type: 'react-route',
           file: rel,
+          sourceLine: lineAt(content, routeMatches.find((match) => match[1] === routePath)?.index || 0),
+          sourceFiles: [{ file: rel, line: lineAt(content, routeMatches.find((match) => match[1] === routePath)?.index || 0) }],
+          components: [],
+          apiDependencies: [],
           route: routePath,
+          previewTarget: { type: 'FULL_APP', path: routePath },
           icon: inferIcon(name),
           discoveredBy: 'react-router',
         });
@@ -141,7 +201,12 @@ async function extractFromNextJs(projectPath) {
             name: base.charAt(0).toUpperCase() + base.slice(1),
             type: 'nextjs-page',
             file: `${pagesDir}/${entry.name}`,
+            sourceLine: 1,
+            sourceFiles: [{ file: `${pagesDir}/${entry.name}`, line: 1 }],
+            components: [],
+            apiDependencies: [],
             route,
+            previewTarget: { type: 'FULL_APP', path: route },
             icon: inferIcon(base),
             discoveredBy: 'nextjs-pages',
           });
@@ -172,7 +237,12 @@ async function extractFromVueRouter(projectPath) {
           name: name.charAt(0).toUpperCase() + name.slice(1),
           type: 'vue-route',
           file: rel,
+          sourceLine: lineAt(content, routeMatches[i]?.index || 0),
+          sourceFiles: [{ file: rel, line: lineAt(content, routeMatches[i]?.index || 0) }],
+          components: [],
+          apiDependencies: [],
           route: routePath,
+          previewTarget: { type: 'FULL_APP', path: routePath },
           icon: inferIcon(name),
           discoveredBy: 'vue-router',
         });
@@ -194,7 +264,7 @@ async function extractScreens(projectPath, scanResult = null) {
 
   // Try all extractors and use whichever finds the most screens
   const [htmlScreens, reactScreens, nextScreens, vueScreens] = await Promise.all([
-    extractFromHtml(projectPath),
+    extractFromHtml(projectPath, scanResult),
     tech !== 'vue' && tech !== 'angular' ? extractFromReactRouter(projectPath) : Promise.resolve([]),
     extractFromNextJs(projectPath),
     tech === 'vue' ? extractFromVueRouter(projectPath) : Promise.resolve([]),

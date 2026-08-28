@@ -82,8 +82,7 @@ class FileSystemService {
 
   async cloneRepository({ url, directory = null, branch = null } = {}) {
     const repoUrl = normalizeGitUrl(url);
-    const targetName = safeDirectoryName(directory || repoUrl.split('/').pop().replace(/\.git$/i, ''));
-    if (!targetName) throw new Error('target directory is required');
+    const targetName = safeRelativeDirectory(directory || repoUrl.split('/').pop().replace(/\.git$/i, ''));
     await fs.mkdir(this.workspaceRoot, { recursive: true });
     const targetPath = this._resolveAndValidatePath(targetName);
     const targetExists = await this.exists(targetName);
@@ -98,9 +97,10 @@ class FileSystemService {
     }
     const args = ['clone', '--depth', '1', '--single-branch'];
     if (branch) args.push('--branch', String(branch));
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
     args.push(repoUrl, targetPath);
     const result = await execFileAsync('git', args, { cwd: this.workspaceRoot, timeout: 180_000, windowsHide: true });
-    return { status: 'CLONED', path: targetPath, relativePath: targetName, url: repoUrl, stdout: result.stdout || '', stderr: result.stderr || '' };
+    return { status: 'CLONED', path: targetPath, relativePath: targetName.split(path.sep).join('/'), url: repoUrl, stdout: result.stdout || '', stderr: result.stderr || '' };
   }
 
   async rename(oldPath, newPath) {
@@ -151,4 +151,21 @@ function safeDirectoryName(value) {
   return String(value || '').trim().replace(/\.git$/i, '').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
 }
 
-module.exports = { FileSystemService };
+function safeRelativeDirectory(value) {
+  const raw = String(value || '').trim().replace(/\\/g, '/');
+  if (!raw) throw new Error('target directory is required');
+  if (raw.startsWith('/') || /^[a-zA-Z]:\//.test(raw)) throw new Error('target directory must be relative to the workspace');
+  const segments = raw.split('/').filter(Boolean);
+  if (!segments.length || segments.length > 8) throw new Error('target directory must contain between 1 and 8 path segments');
+  const sanitized = segments.map((segment) => {
+    if (segment === '.' || segment === '..') throw new Error('target directory cannot contain traversal segments');
+    const safe = safeDirectoryName(segment);
+    if (!safe || safe === '.' || safe === '..') throw new Error('target directory contains an invalid path segment');
+    return safe;
+  });
+  const relative = sanitized.join(path.sep);
+  if (relative.length > 240) throw new Error('target directory is too long');
+  return relative;
+}
+
+module.exports = { FileSystemService, safeRelativeDirectory };

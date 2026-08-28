@@ -1,5 +1,7 @@
 const { spawn } = require('node:child_process');
 const { EventEmitter } = require('node:events');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const ALLOWED_COMMANDS = new Set([
   'npm', 'pnpm', 'yarn', 
@@ -12,6 +14,25 @@ const ALLOWED_SUBCOMMANDS = {
   git: new Set(['status', 'add', 'commit', 'push', 'pull', 'checkout', 'branch', 'diff', 'fetch', 'merge', 'stash', 'log']),
   docker: new Set(['compose', 'ps', 'logs'])
 };
+
+function resolveInvocation(command, args, options = {}) {
+  const platform = options.platform || process.platform;
+  const env = options.env || process.env;
+  const execPath = options.execPath || process.execPath;
+  const exists = options.exists || fs.existsSync;
+  if (platform !== 'win32' || !['npm', 'pnpm', 'yarn'].includes(command)) return { command, args };
+
+  const configured = env[`FENIX_${command.toUpperCase()}_CLI`];
+  const programFiles = env.ProgramFiles || 'C:\\Program Files';
+  const candidates = {
+    npm: [configured, path.join(path.dirname(execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'), path.join(programFiles, 'nodejs', 'node_modules', 'npm', 'bin', 'npm-cli.js')],
+    pnpm: [configured, path.join(programFiles, 'nodejs', 'node_modules', 'pnpm', 'bin', 'pnpm.cjs')],
+    yarn: [configured, path.join(programFiles, 'nodejs', 'node_modules', 'yarn', 'bin', 'yarn.js')],
+  }[command].filter(Boolean);
+  const cli = candidates.find((candidate) => exists(candidate));
+  if (!cli) throw new Error(`ExecutionEngine cannot locate the ${command} CLI on Windows; configure FENIX_${command.toUpperCase()}_CLI`);
+  return { command: execPath, args: [cli, ...args] };
+}
 
 class ExecutionEngine {
   constructor(eventBus, workspaceRoot) {
@@ -57,7 +78,8 @@ class ExecutionEngine {
 
     this._validateCommand(cmd, args);
 
-    const child = spawn(cmd, args, {
+    const invocation = resolveInvocation(cmd, args, { env });
+    const child = spawn(invocation.command, invocation.args, {
       cwd,
       env,
       shell: false // Enforce NO shell execution to prevent injection (&&, ;, |)
@@ -193,4 +215,4 @@ class ExecutionEngine {
   }
 }
 
-module.exports = { ExecutionEngine };
+module.exports = { ExecutionEngine, resolveInvocation };

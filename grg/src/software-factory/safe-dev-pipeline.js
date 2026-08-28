@@ -13,6 +13,37 @@ class SafeDevPipeline {
     this.aiGateway = aiGateway; this.worktrees = worktrees; this.exec = exec;
   }
 
+  async analyze(tenantId, actorId, payload = {}, context = {}) {
+    const prompt = String(payload.prompt || '').trim();
+    if (!prompt) throw new ValidationError('development analysis job requires prompt');
+    const sourcePath = payload.projectPath || context.job?.workspace || context.job?.repository;
+    if (!sourcePath) throw new ValidationError('development analysis job requires projectPath or workspace');
+
+    await context.stage?.('context.loaded', 20);
+    const project = await collectContext(path.resolve(sourcePath), payload.context || context.job?.context || {}, {
+      contentBudget: 6_000,
+      maxSelected: 2,
+      hintedOnly: true,
+    });
+    await context.stage?.('ai.started', 40);
+    const ai = await this.aiGateway.invoke(tenantId, actorId, {
+      taskType: 'plan',
+      prompt: buildAnalysisPrompt(prompt, project),
+      format: 'json',
+    });
+    await context.stage?.('ai.completed', 75);
+    const analysis = parseAnalysis(ai.text, new Set(project.files));
+    const validation = { passed: true, readOnly: true, proposals: analysis.proposals.length };
+    const artifacts = [{
+      type: 'analysis',
+      status: 'READ_ONLY',
+      filesInspected: project.contents.map((item) => item.path),
+      proposalCount: analysis.proposals.length,
+    }];
+    await context.stage?.('analysis.completed', 95, { validation, artifacts });
+    return { status: 'ANALYZED', readOnly: true, ...analysis, provider: ai.provider, model: ai.model };
+  }
+
   async execute(tenantId, actorId, payload = {}, context = {}) {
     const prompt = String(payload.prompt || '').trim();
     if (!prompt) throw new ValidationError('development job requires prompt');
@@ -24,7 +55,7 @@ class SafeDevPipeline {
     await context.stage?.('worker.assigned', 15, { artifacts });
 
     try {
-      const project = await collectContext(isolated.path);
+      const project = await collectContext(isolated.path, payload.context || context.job?.context || {});
       await context.stage?.('plan.created', 25, { artifacts });
       await context.stage?.('ai.started', 30);
       const ai = await this.aiGateway.invoke(tenantId, actorId, {
@@ -43,10 +74,12 @@ class SafeDevPipeline {
       await context.stage?.('tests.completed', 82, { tests });
       await context.stage?.('validation.started', 86);
       const evidence = await this.worktrees.diff(isolated.path);
-      const validation = { passed: tests.every((gate) => gate.status === 'PASS'), changedFiles: evidence.status, summary: plan.summary || null };
-      await context.stage?.('validation.completed', 95, { validation, artifacts: [...artifacts, { type: 'git-diff', path: isolated.path, bytes: Buffer.byteLength(evidence.diff) }] });
+      const validation = { passed: tests.length > 0 && tests.every((gate) => gate.status === 'PASS'), changedFiles: evidence.status, summary: plan.summary || null };
+      const preview = buildPreviewArtifact(payload.context || context.job?.context || {}, changed, isolated.path);
+      const finalArtifacts = [...artifacts, { type: 'git-diff', path: isolated.path, bytes: Buffer.byteLength(evidence.diff) }, preview];
+      await context.stage?.('validation.completed', 95, { validation, artifacts: finalArtifacts });
       if (!validation.passed) throw new Error(`quality gate failed: ${tests.filter((gate) => gate.status !== 'PASS').map((gate) => gate.name).join(', ')}`);
-      return { status: 'READY_FOR_REVIEW', worktree: isolated.path, branch: isolated.branch, changedFiles: evidence.status, diff: evidence.diff.slice(0, 200_000), tests, validation, provider: ai.provider, model: ai.model };
+      return { status: 'READY_FOR_REVIEW', worktree: isolated.path, branch: isolated.branch, changedFiles: evidence.status, diffPreview: evidence.diff.slice(0, 1_500), preview, provider: ai.provider, model: ai.model };
     } catch (error) {
       await context.stage?.('job.failed', 98, { rollback: { available: true, worktree: isolated.path, branch: isolated.branch } }).catch(() => {});
       throw error;
@@ -58,10 +91,22 @@ class SafeDevPipeline {
     if (!worktree) throw new ValidationError('job has no isolated worktree artifact');
     return this.worktrees.rollback(worktree.source, worktree.path, worktree.branch);
   }
+
+  async diff(job) {
+    const worktree = (job.artifacts || []).find((item) => item.type === 'worktree');
+    if (!worktree) throw new ValidationError('job has no isolated worktree artifact');
+    return this.worktrees.diff(worktree.path);
+  }
 }
 
-async function collectContext(root) {
+async function collectContext(root, hints = {}, options = {}) {
   const files = []; const skip = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', 'graphify-out']);
+  const hintedCandidates = [...new Set([
+    ...(Array.isArray(hints.sourceFiles) ? hints.sourceFiles : []),
+    ...(Array.isArray(hints.allowedPaths) ? hints.allowedPaths : []),
+  ].map((item) => typeof item === 'string' ? item : item?.repositoryFile || item?.file).filter(Boolean)
+    .map((file) => String(file).replace(/\\/g, '/').replace(/^\.\//, ''))
+    .filter((file) => !file.includes('*') && !path.isAbsolute(file) && !file.split('/').includes('..')))];
   async function walk(dir) {
     if (files.length >= 120) return;
     for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
@@ -72,9 +117,22 @@ async function collectContext(root) {
     }
   }
   await walk(root);
-  const selected = files.filter((file) => /(^|\/)(package\.json|README[^/]*|src\/.*\.(js|ts|jsx|tsx|py|go)|test\/.*|tests\/.*)$/i.test(file)).slice(0, 35);
+  const hintedFiles = [];
+  for (const file of hintedCandidates) {
+    const target = path.resolve(root, file); const relative = path.relative(root, target);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) continue;
+    const stat = await fs.stat(target).catch(() => null);
+    if (!stat?.isFile()) continue;
+    hintedFiles.push(file);
+    if (!files.includes(file)) files.unshift(file);
+  }
+  const discovered = options.hintedOnly && hintedFiles.length ? [] : files.filter((file) => /(^|\/)(package\.json|README[^/]*|src\/.*\.(js|ts|jsx|tsx|py|go)|public\/.*\.(html|js|css)|test\/.*|tests\/.*)$/i.test(file));
+  const selected = [...new Set([
+    ...hintedFiles,
+    ...discovered,
+  ])].slice(0, Number(options.maxSelected || 45));
   const contents = [];
-  let budget = 80_000;
+  let budget = Number(options.contentBudget || 80_000);
   for (const file of selected) {
     if (budget <= 0) break;
     const text = await fs.readFile(path.join(root, file), 'utf8').catch(() => '');
@@ -83,7 +141,7 @@ async function collectContext(root) {
   }
   let packageJson = null;
   try { packageJson = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')); } catch {}
-  return { files, contents, packageJson };
+  return { files, contents, packageJson, context: hints };
 }
 
 function buildPrompt(objective, project, policy) {
@@ -94,9 +152,59 @@ function buildPrompt(objective, project, policy) {
     `Objective: ${objective}`,
     `Allowed paths: ${JSON.stringify(policy.allowedPaths?.length ? policy.allowedPaths : ['**'])}`,
     `Blocked paths: ${JSON.stringify([...(policy.blockedPaths || []), ...DEFAULT_BLOCKED])}`,
+    `Screen/project context: ${JSON.stringify(project.context || {})}`,
     `Project files: ${JSON.stringify(project.files)}`,
     `Relevant contents: ${JSON.stringify(project.contents)}`,
   ].join('\n\n');
+}
+
+function buildAnalysisPrompt(objective, project) {
+  return [
+    'You are the read-only analysis engine inside FENIX.',
+    'Do not propose file contents and do not modify anything.',
+    'Return ONLY valid JSON: {"summary":"...","proposals":[{"title":"...","impact":"LOW|MEDIUM|HIGH","risk":"LOW|MEDIUM|HIGH","rationale":"...","files":["relative/path"],"tests":["..."]}]}.',
+    'Return exactly three concrete proposals grounded in the supplied project evidence.',
+    `Objective: ${objective}`,
+    `Screen/project context: ${JSON.stringify(project.context || {})}`,
+    `Project files: ${JSON.stringify(project.files)}`,
+    `Relevant contents: ${JSON.stringify(project.contents)}`,
+    'FINAL CONTRACT: output exactly {"summary":"...","proposals":[{"title":"...","impact":"LOW|MEDIUM|HIGH","risk":"LOW|MEDIUM|HIGH","rationale":"...","files":["real/relative/path"],"tests":["..."]},{"title":"...","impact":"LOW|MEDIUM|HIGH","risk":"LOW|MEDIUM|HIGH","rationale":"...","files":["real/relative/path"],"tests":["..."]},{"title":"...","impact":"LOW|MEDIUM|HIGH","risk":"LOW|MEDIUM|HIGH","rationale":"...","files":["real/relative/path"],"tests":["..."]}]}. Output no other keys, prose, markdown, or code fences.',
+  ].join('\n\n');
+}
+
+function parseAnalysis(text, knownFiles = null) {
+  const normalized = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const firstBrace = normalized.indexOf('{');
+  const lastBrace = normalized.lastIndexOf('}');
+  const raw = firstBrace >= 0 && lastBrace > firstBrace ? normalized.slice(firstBrace, lastBrace + 1) : normalized;
+  let analysis;
+  try { analysis = JSON.parse(raw); } catch { throw new ValidationError('AI analysis response is not valid JSON'); }
+  if (!Array.isArray(analysis.proposals) || analysis.proposals.length !== 3) throw new ValidationError('AI analysis response requires exactly 3 proposals');
+  for (const [index, proposal] of analysis.proposals.entries()) {
+    if (!proposal || typeof proposal.title !== 'string' || typeof proposal.rationale !== 'string') throw new ValidationError(`invalid AI analysis proposal at index ${index}`);
+    if (proposal.files !== undefined && !Array.isArray(proposal.files)) throw new ValidationError(`invalid proposal files at index ${index}`);
+    if (knownFiles) {
+      if (!proposal.files?.length) throw new ValidationError(`analysis proposal at index ${index} requires grounded files`);
+      const unknown = proposal.files.filter((file) => !knownFiles.has(String(file).replace(/\\/g, '/').replace(/^\.\//, '')));
+      if (unknown.length) throw new ValidationError(`analysis proposal at index ${index} cites unknown files: ${unknown.join(', ')}`);
+    }
+  }
+  return { summary: typeof analysis.summary === 'string' ? analysis.summary : '', proposals: analysis.proposals };
+}
+
+function buildPreviewArtifact(context, changed, worktree) {
+  const target = context.previewTarget || null;
+  if (!target?.path) {
+    return { type: 'preview', status: 'NOT_AVAILABLE', reason: 'selected screen has no discovered previewTarget' };
+  }
+  return {
+    type: 'preview',
+    status: 'WORKTREE_READY',
+    target,
+    worktree,
+    changedFiles: changed,
+    reason: 'worktree code is ready; a preview server must expose this isolated checkout before the UI can claim an updated live preview',
+  };
 }
 
 function parsePlan(text) {
@@ -157,4 +265,4 @@ async function runGates(root, gates, maxRuntime = 300_000, exec = runFile) {
   return results;
 }
 
-module.exports = { SafeDevPipeline, collectContext, parsePlan, applyPlan, globMatch, normalizeGates, runGates };
+module.exports = { SafeDevPipeline, collectContext, buildAnalysisPrompt, parseAnalysis, parsePlan, applyPlan, globMatch, normalizeGates, runGates, buildPreviewArtifact };

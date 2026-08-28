@@ -19,6 +19,7 @@ class FenixHttpClient {
   submit(input) { return this.request('/api/v2/jobs', { method: 'POST', body: input }); }
   get(jobId) { return this.request(`/api/v2/jobs/${encodeURIComponent(jobId)}`); }
   events(jobId) { return this.request(`/api/v2/jobs/${encodeURIComponent(jobId)}/events`); }
+  diff(jobId) { return this.request(`/api/v2/jobs/${encodeURIComponent(jobId)}/diff`); }
   cancel(jobId) { return this.request(`/api/v2/jobs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST', body: {} }); }
   approve(jobId) { return this.request(`/api/v2/jobs/${encodeURIComponent(jobId)}/approve`, { method: 'POST', body: {} }); }
   reject(jobId, reason) { return this.request(`/api/v2/jobs/${encodeURIComponent(jobId)}/reject`, { method: 'POST', body: { reason } }); }

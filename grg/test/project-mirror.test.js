@@ -22,7 +22,7 @@ test('scanner: maps a minimal node project', async () => {
   const dir = mkProject({
     'package.json': JSON.stringify({ name: 'test-app', version: '1.0.0', dependencies: { express: '^4', bullmq: '^5', pg: '^8' } }),
     'src/app.js': 'const express = require("express"); module.exports = express();',
-    'src/routes/api.js': 'router.get("/health", (req, res) => res.json({ ok: true }));\nrouter.post("/jobs", handler);',
+    'src/routes/api.js': 'router.get("/health", (req, res) => res.json({ ok: true }));\nrouter.post("/jobs", handler);\nif (req.method === "GET" && url.pathname === "/api/runtime") return true;',
     'test/app.test.js': 'const test = require("node:test");',
   });
   try {
@@ -39,6 +39,8 @@ test('scanner: maps a minimal node project', async () => {
     assert.ok(snap.apis.length >= 1);
     assert.equal(snap.apis[0].method, 'GET');
     assert.equal(snap.apis[0].path, '/health');
+    assert.ok(snap.apis.some((api) => api.method === 'GET' && api.path === '/api/runtime'));
+    assert.ok(snap.apis.every((api) => Number.isInteger(api.line) && api.line > 0));
     assert.ok(snap.scannedAt);
     assert.ok(snap.durationMs >= 0);
   } finally {
@@ -55,6 +57,28 @@ test('scanner: handles missing package.json gracefully', async () => {
     assert.ok(snap.files.total >= 1);
     assert.equal(snap.tech.frontend, null);
     assert.equal(snap.tech.backend, null);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('scanner: aggregates workspace packages and avoids generic .get false-positive routes', async () => {
+  const dir = mkProject({
+    'package.json': JSON.stringify({ name: 'workspace-root', workspaces: ['apps/*', 'packages/*'], devDependencies: { typescript: '^5' } }),
+    'apps/api/package.json': JSON.stringify({ name: '@workspace/api', dependencies: { fastify: '^5', bullmq: '^5', '@prisma/client': '^6', openai: '^6' } }),
+    'apps/api/src/routes/v1/index.ts': 'export async function routes(app) { app.post("/v1/text", handler); app.get("/v1/providers", handler); }',
+    'packages/shared/src/resource-controller.ts': 'const value = fields.get("MemTotal");',
+  });
+  try {
+    const snap = await scanProject(dir);
+    assert.equal(snap.tech.backend, 'fastify');
+    assert.deepEqual(snap.tech.queues, ['bullmq']);
+    assert.ok(snap.tech.databases.includes('@prisma/client'));
+    assert.ok(snap.tech.ai.includes('openai'));
+    assert.equal(snap.packages.length, 2);
+    assert.ok(snap.dependencies.production.includes('fastify'));
+    assert.ok(snap.apis.some((api) => api.method === 'POST' && api.path === '/v1/text'));
+    assert.ok(snap.apis.every((api) => api.path !== 'MemTotal'));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -83,10 +107,35 @@ test('screen-extractor: discovers HTML data-view screens', async () => {
     assert.ok(screens.some((s) => s.id === 'command'));
     assert.ok(screens.some((s) => s.id === 'ide'));
     assert.ok(screens.some((s) => s.id === 'projects'));
+    const command = screens.find((s) => s.id === 'command');
+    assert.equal(command.route, '/app#command');
+    assert.deepEqual(command.previewTarget, { type: 'PROJECT_HTML', path: '/app#command', file: 'public/index.html' });
+    assert.ok(command.sourceFiles.some((source) => source.file === 'public/index.html' && source.line > 0));
+    assert.ok(command.components.some((component) => component.id === 'view-command' && component.line > 0));
     // Check icons are assigned
     assert.ok(screens.every((s) => s.icon));
     // Check discoveredBy
     assert.ok(screens.every((s) => s.discoveredBy === 'html-data-view'));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('screen-extractor: stitches hash-routed screens from a nested workspace dashboard', async () => {
+  const html = `<!doctype html><nav>
+    <a href="#/home">Overview</a><a href="#/providers">Providers</a><a href="#/settings">Settings</a>
+    </nav><main id="content"></main><script src="app.js"></script>`;
+  const dir = mkProject({
+    'package.json': JSON.stringify({ name: 'monorepo', workspaces: ['apps/*'] }),
+    'apps/dashboard/public/index.html': html,
+    'apps/dashboard/public/app.js': 'window.dashboard = true;',
+  });
+  try {
+    const scan = await scanProject(dir);
+    const screens = await extractScreens(dir, scan);
+    assert.deepEqual(screens.map((screen) => screen.route), ['#/home', '#/providers', '#/settings']);
+    assert.ok(screens.every((screen) => screen.file === 'apps/dashboard/public/index.html'));
+    assert.ok(screens.every((screen) => screen.sourceFiles.some((source) => source.file === 'apps/dashboard/public/app.js')));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

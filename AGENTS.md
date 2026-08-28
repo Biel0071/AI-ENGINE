@@ -130,14 +130,23 @@ Evidencias auditadas:
 - Runtime `:4400/health` responde `200` e `ready`.
 - Login renderiza corretamente e impede acesso anonimo a `/app`.
 - Os quatro JS principais passam em `node --check`.
-- A taxonomia canonica possui 13 destinos e 13 views DOM sem IDs duplicados:
-  `command`, `city`, `agents`, `ide`, `operations`, `runtime`, `projects`, `memory`,
+- A taxonomia canonica possui 14 destinos e 14 views DOM sem IDs duplicados:
+  `command`, `city`, `agents`, `ide`, `operations`, `runtime`, `project`, `projects`, `memory`,
   `knowledge`, `mcp`, `browser`, `observability` e `terminal`.
 - O HTML quebrado entre editor e painel direito foi reparado.
 - Metricas e status plausiveis do shell foram substituidos por valores medidos ou
   estados explicitos `--`, `UNKNOWN`, `EMPTY`, `DEGRADED` e `UNMEASURED`.
 - O Developer District usa contratos reais para clone, arvore, leitura, escrita,
   transformacao por IA, move, terminal com polling, preview e pipeline de agentes.
+- O Project Mirror canonico deriva telas, arquivos, componentes DOM, APIs, Git,
+  design system e runtime do filesystem. `GET /api/project-mirror/source` entrega
+  codigo real limitado ao projeto selecionado; o registry e apenas indice/cache.
+- A barra de comando de uma Screen envia `source: web` para `POST /api/v2/jobs`
+  com `projectId`, `workspaceId`, `screenId`, rota, arquivos, componentes, APIs,
+  design system, runtime e Git. O JobEngine persiste o contexto e o pipeline usa
+  worktree isolada, IA, gates reais, diff e rollback. Preview do checkout alterado
+  permanece `WORKTREE_READY` ate existir um servidor de preview isolado; a UI nao
+  o apresenta como live antes disso.
 - O runtime fresco em `:4401` publicou `KERNEL_ACTIVE`; o bug 500 de
   `/api/system/boot-status` foi corrigido.
 - O fluxo autenticado via API validou login, listagem de 30 arquivos, leitura e
@@ -263,8 +272,8 @@ e `grg/`.
 
 ## 10. Decisoes e pendencias atuais
 
-- Decidido: manter os 12 distritos atuais e acrescentar `operations`, totalizando
-  as 13 views canonicas listadas na secao 5.
+- Decidido: manter os 13 distritos operacionais anteriores e incorporar `project`
+  como Project Mirror no mesmo shell, totalizando as 14 views listadas na secao 5.
 - Decidido: o comando `npm start`/`npm run dev` da raiz aponta para
   `grg/src/server.js`; o servidor anterior existe apenas como `npm run start:legacy`.
 - Decidido: o controlador duplicado da AI City foi removido de `unified-app.js`;
@@ -280,6 +289,20 @@ e `grg/`.
   externo e executar uma chamada de inferencia com provider, modelo, latencia e
   tokens registrados. A presenca de chave, isoladamente, nao prova disponibilidade.
 - Pendente: concluir o E2E visual autenticado em desktop e breakpoint menor.
+- Pendente: servir e autenticar um preview do worktree isolado para promover o
+  artefato `WORKTREE_READY` a preview visual pos-alteracao.
+- Validado em 2026-08-28: `POST /api/dev/projects/clone` preserva diretorios relativos
+  organizados (por exemplo `projects/API-PLATAFORM`), rejeita caminhos absolutos/traversal
+  e aciona o scan real que registra projeto, repositorio, capacidade e relacoes no store.
+- Validado em 2026-08-28: o repositorio API-PLATAFORM e consumido pelo provider canonico
+  `aiplatform` via `/v1/text`, `/v1/chat` e polling de `/v1/jobs/:id`; nao existe gateway
+  paralelo dentro do FENIX.
+- Validado em 2026-08-28: o Project Mirror agrega dependencias dos workspaces de monorepos,
+  reconhece o stack real do API-PLATAFORM e limita descoberta REST a receptores HTTP
+  conhecidos, evitando classificar chamadas genericas `.get()` como endpoints.
+- Validado em 2026-08-28: o terminal seguro resolve CLIs de package managers no Windows
+  e as executa via Node, preservando `shell:false`, whitelist e validacao de subcomando;
+  uma CLI ausente falha explicitamente e pode ser configurada por `FENIX_<NOME>_CLI`.
 
 Enquanto essas decisoes nao forem fechadas, implementar primeiro o fluxo principal:
 **login -> selecionar projeto -> conversar -> editar codigo -> executar -> visualizar

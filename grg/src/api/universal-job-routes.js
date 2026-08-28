@@ -49,6 +49,16 @@ async function handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, 
     return true;
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/v2/jobs/run-batch') {
+    await app.controlPlane.authorize(tenantId, actorId, 'runtime:execute');
+    const body = await readJson(req);
+    const limit = Math.min(10, Math.max(1, Number(body.limit || 3)));
+    const workerId = `web-runtime:${actorId}`;
+    const jobs = await app.jobs.runBatch(workerId, limit);
+    sendJson(res, 200, { workerId, processed: jobs.length, jobs: jobs.map(presentJob) });
+    return true;
+  }
+
   const eventsMatch = url.pathname.match(/^\/api\/v2\/jobs\/([^/]+)\/events$/);
   if (req.method === 'GET' && eventsMatch) {
     sendJson(res, 200, { jobId: eventsMatch[1], events: await app.jobs.eventsFor(tenantId, actorId, eventsMatch[1]) });
@@ -77,6 +87,13 @@ async function handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, 
   const rollbackMatch = url.pathname.match(/^\/api\/v2\/jobs\/([^/]+)\/rollback$/);
   if (req.method === 'POST' && rollbackMatch) {
     sendJson(res, 202, presentJob(await app.jobs.rollbackJob(tenantId, actorId, rollbackMatch[1], (job) => app.devPipeline.rollback(job))));
+    return true;
+  }
+
+  const diffMatch = url.pathname.match(/^\/api\/v2\/jobs\/([^/]+)\/diff$/);
+  if (req.method === 'GET' && diffMatch) {
+    const job = await app.jobs.get(tenantId, actorId, diffMatch[1]);
+    sendJson(res, 200, { jobId: job.id, ...(await app.devPipeline.diff(job)) });
     return true;
   }
 

@@ -61,11 +61,12 @@ class OllamaProvider {
   }
 
   // interface do AI Gateway
-  async complete({ model, prompt, temperature = 0, maxTokens = 2048 }) {
+  async complete({ model, prompt, temperature = 0, maxTokens = 2048, format = null }) {
     const res = await post(this.baseUrl, '/api/generate', {
       model: model || this.model,
       prompt,
       stream: false,
+      ...(format ? { format } : {}),
       options: { temperature, num_predict: maxTokens },
     });
     if (res && res.error) throw new Error(`ollama: ${res.error}`);
