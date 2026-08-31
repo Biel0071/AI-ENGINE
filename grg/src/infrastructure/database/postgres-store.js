@@ -25,6 +25,10 @@ class PostgresStore {
     this.retentionEnabled = retention !== false;
     this.retentionLimits = retentionLimits || loadLimits(env || process.env);
     this.lastPruned = {};
+    // A process must not fill its PostgreSQL pool with writers waiting for the same
+    // canonical row. Serializing locally leaves one API and one worker transaction at
+    // most in contention, instead of a 20-connection lock convoy doing duplicate clones.
+    this.writeQueue = Promise.resolve();
   }
 
   #prune(state) {
@@ -105,10 +109,22 @@ class PostgresStore {
   }
 
   async update(mutator) {
+    const task = this.writeQueue.then(() => this.#updateTransaction(mutator));
+    this.writeQueue = task.catch(() => {});
+    return task;
+  }
+
+  async #updateTransaction(mutator) {
     return withRetry(async () => {
       const client = await this.pool.connect();
       try {
-        await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+        // The canonical state is one row and SELECT ... FOR UPDATE already gives every
+        // writer exclusive, ordered access to it. SERIALIZABLE added transaction-wide
+        // snapshot conflicts on top of that row lock, so concurrent API/worker writers
+        // repeatedly failed with 40001 after doing the expensive JSON serialization.
+        // READ COMMITTED waits for the preceding writer and then reads its committed row,
+        // preserving mutation order without false serialization failures.
+        await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
         const result = await client.query(
           `SELECT document FROM ${this.schema}.kernel_state WHERE state_key = $1 FOR UPDATE`, ['global'],
         );
@@ -131,12 +147,8 @@ class PostgresStore {
       }
     }, {
       // MEDIDO em producao (2026-07-29, doc de 6.38 MB): um update() no-op leva ~2 s -- o
-      // custo de serializar o documento inteiro sob ISOLATION LEVEL SERIALIZABLE. O backoff
-      // anterior (25 ms base, 3 tentativas) esgotava em ~75 ms, muito antes de a transacao
-      // concorrente terminar: com API e worker escrevendo, 7 de 7 ciclos do worker falharam
-      // com 40001 e a fila parou por completo (0 workers registrados, 4 jobs orfaos).
-      // Os numeros abaixo saem dessa medicao: base 250 ms cresce para 250/500/1000/2000/4000,
-      // cobrindo varias vezes a duracao observada de uma transacao.
+      // Keep retries for deadlocks and compatibility with existing databases/proxies even
+      // though READ COMMITTED + the row lock removes the recurring 40001 contention path.
       attempts: Number(process.env.FENIX_STORE_RETRY_ATTEMPTS || 6),
       baseDelayMs: Number(process.env.FENIX_STORE_RETRY_BASE_MS || 250),
       maxDelayMs: Number(process.env.FENIX_STORE_RETRY_MAX_MS || 8_000),

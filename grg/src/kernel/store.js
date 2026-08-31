@@ -157,6 +157,9 @@ const EMPTY_STATE = () => ({
   apiConnectionState: [],
   apiConnectionEvents: [],
   observabilitySamples: [],
+  orchestrationRequests: [],
+  orchestrationMissions: [],
+  orchestrationEvents: [],
 });
 
 class MemoryStore {

@@ -24,6 +24,7 @@ const { ContextAssembler } = require('../ai/context-assembler');
 const { ModelRouter } = require('../ai/model-router');
 const { VisualRealityEngine } = require('../frontend-reality/visual-reality-engine');
 const { ConnectionBroker } = require('../connections/connection-broker');
+const { resolveAIPlatformUrl } = require('../security/secret-resolver');
 
 class FenixMind extends SystemModule {
   constructor({
@@ -39,7 +40,7 @@ class FenixMind extends SystemModule {
     visualReality = null,
     connectionBroker = null,
     devMemory = null,
-    aiPlatformUrl = 'http://209.50.241.215',
+    aiPlatformUrl = null,
     defaultModel = 'qwen2.5:3b'
   } = {}) {
     super('fenix_mind_control_plane', '5.0.0');
@@ -49,7 +50,7 @@ class FenixMind extends SystemModule {
     this.jobOrchestrator = jobOrchestrator;
     this.realityEnforcer = realityEnforcer;
     this.observer = observer;
-    this.aiPlatformUrl = aiPlatformUrl;
+    this.aiPlatformUrl = aiPlatformUrl || resolveAIPlatformUrl();
     this.defaultModel = defaultModel;
 
     // Advanced Level 10 Engines (passed from core runtime)
@@ -74,7 +75,7 @@ class FenixMind extends SystemModule {
     // Multi-Model Registry & Router
     this.modelRegistry = new Map([
       ['openai', { id: 'openai', name: 'OpenAI GPT-4o / o1', provider: 'openai', roles: ['ORCHESTRATOR', 'REASONING', 'REVIEW'], active: !!process.env.OPENAI_API_KEY }],
-      ['aiplatform-qwen', { id: 'aiplatform-qwen', name: 'Qwen 2.5 3B (AI Platform VPS)', provider: 'aiplatform', endpoint: 'http://209.50.241.215', roles: ['CHAT', 'ORCHESTRATOR', 'RESEARCH'], active: true }],
+      ['aiplatform-qwen', { id: 'aiplatform-qwen', name: 'Qwen 2.5 3B (AI Platform VPS)', provider: 'aiplatform', endpoint: this.aiPlatformUrl, roles: ['CHAT', 'ORCHESTRATOR', 'RESEARCH'], active: true }],
       ['deepseek-coder', { id: 'deepseek-coder', name: 'DeepSeek Coder 6.7B', provider: 'aiplatform', roles: ['CODING', 'DIFF', 'SYNTHESIS'], active: true }],
       ['llama3', { id: 'llama3', name: 'Llama 3 8B (Testing & QA)', provider: 'aiplatform', roles: ['TESTING', 'QA', 'LOGIC'], active: true }],
       ['claude-worker', { id: 'claude-worker', name: 'Claude Model Worker (Compatible API)', provider: 'claude', roles: ['REVIEW', 'DOCS'], active: true }]

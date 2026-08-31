@@ -12,7 +12,7 @@ test('PostgresStore serializes mutations in a transaction and preserves the stor
   const commands = [];
   const client = {
     async query(sql, params) {
-      commands.push(String(sql).trim().split(/\s+/).slice(0, 3).join(' '));
+      commands.push(String(sql).trim().replace(/\s+/g, ' '));
       if (String(sql).includes('SELECT document')) return { rows: [{ document }] };
       if (String(sql).includes('UPDATE')) document = JSON.parse(params[1]);
       return { rows: [] };
@@ -27,9 +27,41 @@ test('PostgresStore serializes mutations in a transaction and preserves the stor
   });
   assert.equal(state.tenants[0].id, 'tenant-a');
   assert.equal(document.tenants[0].id, 'tenant-a');
-  assert.match(commands[0], /^BEGIN/);
+  assert.equal(commands[0], 'BEGIN ISOLATION LEVEL READ COMMITTED');
+  assert.equal(commands.some((command) => command.includes('SERIALIZABLE')), false);
   assert.ok(commands.includes('COMMIT'));
   assert.equal(commands.at(-1), 'RELEASE');
+});
+
+test('PostgresStore queues concurrent writers inside one process', async () => {
+  let document = EMPTY_STATE();
+  let activeTransactions = 0;
+  let maxActiveTransactions = 0;
+  const client = {
+    async query(sql, params) {
+      const command = String(sql).trim();
+      if (command.startsWith('BEGIN')) {
+        activeTransactions += 1;
+        maxActiveTransactions = Math.max(maxActiveTransactions, activeTransactions);
+      }
+      if (command.includes('SELECT document')) {
+        await new Promise((resolve) => setTimeout(resolve, 15));
+        return { rows: [{ document }] };
+      }
+      if (command.includes('UPDATE')) document = JSON.parse(params[1]);
+      if (command === 'COMMIT' || command === 'ROLLBACK') activeTransactions -= 1;
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const store = new PostgresStore({ pool: { connect: async () => client } });
+  await Promise.all([
+    store.update((state) => { state.tenants.push({ id: 'one' }); return state; }),
+    store.update((state) => { state.tenants.push({ id: 'two' }); return state; }),
+    store.update((state) => { state.tenants.push({ id: 'three' }); return state; }),
+  ]);
+  assert.equal(maxActiveTransactions, 1);
+  assert.deepEqual(document.tenants.map((tenant) => tenant.id), ['one', 'two', 'three']);
 });
 
 test('PostgresStore rejects injected schema identifiers', () => {

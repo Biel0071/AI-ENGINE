@@ -28,6 +28,7 @@ const DEFAULT_LIMITS = {
   domainEvents: 1_000,
   executionTimeline: 1_000,
   missionEvents: 1_000,
+  orchestrationEvents: 1_000,
   // Historico operacional: o trend usa apenas as ultimas ~20 amostras por componente.
   // Com 26 componentes, 750 cobre ~28 runs de historico.
   operationalComponentHistory: 750,

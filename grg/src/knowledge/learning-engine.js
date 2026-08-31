@@ -110,7 +110,18 @@ class LearningEngine {
     `;
 
     try {
-      const response = await this.aiRouter.routePrompt(prompt, { priority: 'background' });
+      let response;
+      if (typeof this.aiRouter.invoke === 'function') {
+        const result = await this.aiRouter.invoke(mission.tenantId || 'grg', mission.actorId || 'system', {
+          taskType: 'plan', prompt, format: 'json',
+        });
+        response = result?.text || result?.content || result;
+      } else if (typeof this.aiRouter.routePrompt === 'function') {
+        response = await this.aiRouter.routePrompt(prompt, { priority: 'background' });
+      } else {
+        throw new Error('AI router exposes neither invoke nor routePrompt');
+      }
+      response = String(response || '');
       // Assume the response can be parsed as JSON, fallback if not
       const jsonStr = response.match(/\{[\s\S]*\}/);
       if (jsonStr) {

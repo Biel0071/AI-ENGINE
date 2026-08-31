@@ -11,7 +11,8 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/",
+    "test": "node --test --test-force-exit --test-reporter=dot \"test/*.test.js\"",
+    "test:orchestration": "node --test test/central-orchestrator.test.js test/job-engine.test.js test/safe-development-pipeline.test.js test/aiplatform.test.js test/aiplatform-job-polling.test.js",
     "build:windows-agent": "node scripts/build-windows-agent.js",
     "mcp": "node bin/fenix-mcp.js"
   },

@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 35;
+const CURRENT_SCHEMA_VERSION = 36;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -91,6 +91,9 @@ const COLLECTIONS_BY_VERSION = {
   // valores; agora persiste uma amostra por tick. Append-only com teto de retencao, porque
   // toda escrita no store reserializa o documento inteiro (ver kernel/retention.js).
   35: ['observabilitySamples'],
+  // FENIX-CONTINUOUS-0001 — estado duravel do orquestrador central. Requests e missions
+  // sao estado de dominio; events e a trilha append-only usada para auditoria e retomada.
+  36: ['orchestrationRequests', 'orchestrationMissions', 'orchestrationEvents'],
 };
 
 function normalizeVersion(value) {

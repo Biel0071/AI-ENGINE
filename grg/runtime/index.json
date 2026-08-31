@@ -1367,6 +1367,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\job-orchestrator.js"
     },
     {
+      "name": "OrchestrationRepository",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\orchestration-repository.js"
+    },
+    {
       "name": "Orchestrator",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\orchestrator.js"

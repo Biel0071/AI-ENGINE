@@ -688,6 +688,10 @@ async function createApp(options = {}) {
   app.devPipeline = new SafeDevPipeline({ aiGateway });
   jobs.register('development.analyze', (payload, context) => app.devPipeline.analyze(context.tenantId, context.actorId, payload, context));
   jobs.register('development.execute', (payload, context) => app.devPipeline.execute(context.tenantId, context.actorId, payload, context));
+  const { CentralOrchestrator } = require('./orchestrator/central-orchestrator');
+  app.centralOrchestrator = new CentralOrchestrator({
+    eventBus: bus, store, jobs, devPipeline: app.devPipeline, knowledgeEngine, workspaceRoot,
+  });
 
   return app;
 }

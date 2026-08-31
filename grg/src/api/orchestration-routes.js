@@ -9,10 +9,10 @@ async function handleOrchestrationRoutes(req, res, url, app, sendJson, readJson,
     app.centralOrchestrator = new CentralOrchestrator({
       eventBus: app.eventBus,
       store: app.store,
-      aiRouter: app.aiRouter || app.aiGateway,
-      executionEngine: app.executionEngine,
-      health: app.health,
-      knowledgeEngine: app.knowledgeEngine
+      jobs: app.jobs,
+      devPipeline: app.devPipeline,
+      knowledgeEngine: app.knowledgeEngine,
+      workspaceRoot: app.fileSystemService?.root
     });
   }
 
@@ -23,15 +23,20 @@ async function handleOrchestrationRoutes(req, res, url, app, sendJson, readJson,
     // POST /api/orchestration/requests
     if (req.method === 'POST' && url.pathname === '/api/orchestration/requests') {
       const payload = await readJson(req);
-      const reqState = await orchestrator.ingestRequest(payload);
+      const reqState = await orchestrator.ingestRequest(payload, { tenantId, actorId });
       sendJson(res, 202, reqState);
+      return true;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/orchestration/requests') {
+      sendJson(res, 200, { requests: await orchestrator.listRequests(tenantId) });
       return true;
     }
 
     // GET /api/orchestration/requests/:id
     if (req.method === 'GET' && url.pathname.startsWith('/api/orchestration/requests/')) {
       const id = url.pathname.split('/').pop();
-      const reqState = orchestrator.getRequest(id);
+      const reqState = await orchestrator.getRequest(tenantId, id);
       if (!reqState) { sendJson(res, 404, { error: 'Request not found' }); return true; }
       sendJson(res, 200, reqState);
       return true;
@@ -40,7 +45,7 @@ async function handleOrchestrationRoutes(req, res, url, app, sendJson, readJson,
     // GET /api/orchestration/missions/:id
     if (req.method === 'GET' && url.pathname.startsWith('/api/orchestration/missions/')) {
       const id = url.pathname.split('/').pop();
-      const missionState = orchestrator.getMission(id);
+      const missionState = await orchestrator.getMission(tenantId, id);
       if (!missionState) { sendJson(res, 404, { error: 'Mission not found' }); return true; }
       sendJson(res, 200, missionState);
       return true;
@@ -50,24 +55,22 @@ async function handleOrchestrationRoutes(req, res, url, app, sendJson, readJson,
     if (req.method === 'POST' && url.pathname.match(/^\/api\/orchestration\/missions\/([^/]+)\/result$/)) {
       const id = url.pathname.split('/')[4];
       const payload = await readJson(req);
-      const missionState = await orchestrator.submitResult(id, payload);
+      const missionState = await orchestrator.submitResult(tenantId, id, payload);
       sendJson(res, 200, missionState);
       return true;
     }
 
     // GET /api/orchestration/events
     if (req.method === 'GET' && url.pathname === '/api/orchestration/events') {
-      sendJson(res, 200, { events: orchestrator.getEvents() });
+      sendJson(res, 200, { events: await orchestrator.getEvents(tenantId, url.searchParams.get('requestId')) });
       return true;
     }
 
     // POST /api/orchestration/requests/:id/cancel
     if (req.method === 'POST' && url.pathname.match(/^\/api\/orchestration\/requests\/([^/]+)\/cancel$/)) {
       const id = url.pathname.split('/')[4];
-      const reqState = orchestrator.getRequest(id);
+      const reqState = await orchestrator.cancelRequest(tenantId, id);
       if (!reqState) { sendJson(res, 404, { error: 'Request not found' }); return true; }
-      reqState.status = 'CANCELLED';
-      orchestrator._logEvent('api', 'request.cancelled', id, reqState.missionId, {});
       sendJson(res, 200, reqState);
       return true;
     }

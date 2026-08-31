@@ -61,15 +61,26 @@ function resolveSecret(secretName, env = process.env) {
 }
 
 function resolveAIProviderKey(env = process.env) {
+  // Um `env` injetado representa um ambiente completo (testes, preflight e tenants).
+  // Nao pode herdar silenciosamente a chave da maquina via `.secrets`, pois isso ativa um
+  // provider que o chamador explicitamente nao configurou.
+  if (env !== process.env) {
+    for (const name of ['GRG_AIPLATFORM_KEY', 'AI_PROVIDER_KEY', 'FENIX_AI_KEY']) {
+      if (env[name] && String(env[name]).trim()) return String(env[name]).trim();
+    }
+    return null;
+  }
   return resolveSecret('ai_provider_key', env);
 }
 
 function resolveAIPlatformUrl(env = process.env) {
-  return env.GRG_AIPLATFORM_URL || process.env.GRG_AIPLATFORM_URL || 'http://209.50.241.215';
+  // Medido em 2026-08-28: :80 serve o dashboard estatico e responde 405 a POST /v1/text.
+  // O gateway Fastify real (health, text, chat e jobs) esta exposto em :3000.
+  return env.GRG_AIPLATFORM_URL || 'http://209.50.241.215:3000';
 }
 
 function resolveAIPlatformModel(env = process.env) {
-  return env.GRG_AIPLATFORM_MODEL || process.env.GRG_AIPLATFORM_MODEL || 'qwen2.5:3b';
+  return env.GRG_AIPLATFORM_MODEL || 'qwen2.5:3b';
 }
 
 module.exports = {

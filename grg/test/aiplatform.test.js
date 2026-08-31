@@ -2,6 +2,12 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const { AIPlatformProvider } = require('../src/ai-runtime/aiplatform-provider');
+const { resolveAIPlatformUrl } = require('../src/security/secret-resolver');
+
+test('default AI Platform URL targets the real Fastify gateway instead of the dashboard', () => {
+  assert.equal(resolveAIPlatformUrl({}), 'http://209.50.241.215:3000');
+  assert.equal(resolveAIPlatformUrl({ GRG_AIPLATFORM_URL: 'http://gateway.internal:3000' }), 'http://gateway.internal:3000');
+});
 
 // sobe um mock do AI Platform Enterprise (contrato /v1/health, /v1/chat, /v1/text)
 function mockGateway() {

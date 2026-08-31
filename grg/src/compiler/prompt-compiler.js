@@ -20,6 +20,7 @@ const { RealityEnforcementEngine } = require('../execution/reality-enforcement-e
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { resolveAIPlatformUrl } = require('../security/secret-resolver');
 
 class PromptCompilerEngine extends SystemModule {
   constructor({
@@ -31,7 +32,7 @@ class PromptCompilerEngine extends SystemModule {
     modelRouter = null,
     tokenEconomy = null,
     devMemory = null,
-    aiPlatformUrl = 'http://209.50.241.215',
+    aiPlatformUrl = null,
     defaultModel = 'qwen2.5:3b'
   } = {}) {
     super('prompt_compiler_engine', '3.0.0');
@@ -43,7 +44,7 @@ class PromptCompilerEngine extends SystemModule {
     this.modelRouter = modelRouter;
     this.tokenEconomy = tokenEconomy;
     this.devMemory = devMemory;
-    this.aiPlatformUrl = aiPlatformUrl;
+    this.aiPlatformUrl = aiPlatformUrl || resolveAIPlatformUrl();
     this.defaultModel = defaultModel;
 
     this.realityEnforcer = new RealityEnforcementEngine({ eventBus, workspaceManager });

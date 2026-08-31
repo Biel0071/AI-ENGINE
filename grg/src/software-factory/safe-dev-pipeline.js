@@ -55,7 +55,12 @@ class SafeDevPipeline {
     await context.stage?.('worker.assigned', 15, { artifacts });
 
     try {
-      const project = await collectContext(isolated.path, payload.context || context.job?.context || {});
+      const contextHints = payload.context || context.job?.context || {};
+      const hasExplicitFiles = (Array.isArray(contextHints.sourceFiles) && contextHints.sourceFiles.length > 0)
+        || (Array.isArray(contextHints.allowedPaths) && contextHints.allowedPaths.length > 0);
+      const project = await collectContext(isolated.path, contextHints, hasExplicitFiles
+        ? { contentBudget: 16_000, maxSelected: 8, hintedOnly: true }
+        : {});
       await context.stage?.('plan.created', 25, { artifacts });
       await context.stage?.('ai.started', 30);
       const ai = await this.aiGateway.invoke(tenantId, actorId, {
@@ -126,7 +131,7 @@ async function collectContext(root, hints = {}, options = {}) {
     hintedFiles.push(file);
     if (!files.includes(file)) files.unshift(file);
   }
-  const discovered = options.hintedOnly && hintedFiles.length ? [] : files.filter((file) => /(^|\/)(package\.json|README[^/]*|src\/.*\.(js|ts|jsx|tsx|py|go)|public\/.*\.(html|js|css)|test\/.*|tests\/.*)$/i.test(file));
+  const discovered = options.hintedOnly ? [] : files.filter((file) => /(^|\/)(package\.json|README[^/]*|src\/.*\.(js|ts|jsx|tsx|py|go)|public\/.*\.(html|js|css)|test\/.*|tests\/.*)$/i.test(file));
   const selected = [...new Set([
     ...hintedFiles,
     ...discovered,

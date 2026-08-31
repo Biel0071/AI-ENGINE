@@ -303,6 +303,27 @@ e `grg/`.
 - Validado em 2026-08-28: o terminal seguro resolve CLIs de package managers no Windows
   e as executa via Node, preservando `shell:false`, whitelist e validacao de subcomando;
   uma CLI ausente falha explicitamente e pode ser configurada por `FENIX_<NOME>_CLI`.
+- FENIX-CONTINUOUS-0001: o `CentralOrchestrator` nao possui executor de arquivos paralelo.
+  Ele persiste requests/missions/events no store canonico (schema 36), decompoe a missao em
+  tarefas, delega geracao/aplicacao ao `JobEngine` + `SafeDevPipeline`, exige diff, arquivo
+  alterado e pelo menos um gate real aprovado. Falha aciona rollback da worktree e uma nova
+  tentativa com o erro anterior no contexto; `/health` isoladamente nunca conclui missao.
+- FENIX-CONTINUOUS-0002: a URL padrao da API Platform aponta para o gateway Fastify real em
+  `http://209.50.241.215:3000`; a porta 80 serve apenas o dashboard e respondia 405 aos POSTs.
+  `FenixMind` e `PromptCompilerEngine` reutilizam o `secret-resolver` em vez de repetir o host.
+  A conectividade foi medida (`/v1/health`: ONLINE, Postgres/Redis/Docker e quatro providers
+  online), mas a inferencia permanece DEGRADED enquanto a chave configurada retornar 401
+  `INVALID_API_KEY`; conectividade nao deve ser confundida com credencial valida.
+- FENIX-CONTINUOUS-0003: `grg/node.exe` (binario versionado de 25 MB) foi removido porque
+  sombreava o Node do sistema nos lifecycle scripts do npm e impedia os testes de iniciarem.
+  `npm test` agora descobre explicitamente `test/*.test.js`, termina mesmo quando suites deixam
+  handles abertos e falha honestamente com a lista de regressões; `npm run test:orchestration`
+  e o gate focado do closed loop. A remocao e recuperavel pelo historico Git e o Docker nunca
+  copiava esse binario para a imagem.
+- FENIX-CONTINUOUS-0004: a liveness do container usa `/api/system/boot-status`, que mede o
+  processo/kernel sem depender de inferencia externa. `/health` continua sendo o probe profundo
+  de readiness e valida o provider com geracao real, mas nao pode dirigir reinicio automatico:
+  a latencia do provider excedia o timeout e um daemon legado reiniciava inclusive o PostgreSQL.
 
 Enquanto essas decisoes nao forem fechadas, implementar primeiro o fluxo principal:
 **login -> selecionar projeto -> conversar -> editar codigo -> executar -> visualizar
