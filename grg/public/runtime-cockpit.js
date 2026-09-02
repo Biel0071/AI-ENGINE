@@ -1898,22 +1898,22 @@
     debug.lastHydrateStartedAt = new Date().toISOString();
     const loaders = [
       ['snapshot', () => requestJson('/runtime/snapshot'), 12000],
-      ['projects', () => api('/api/dev/projects'), 5000],
-      ['devJobs', () => api('/api/dev/jobs'), 4500],
-      ['devMissions', () => api('/api/dev/missions'), 4500],
+      ['projects', () => api('/api/fenix/projects'), 5000],
+      ['devJobs', () => api('/api/fenix/jobs'), 4500],
+      ['devMissions', () => api('/api/fenix/missions'), 4500],
       ['jobs', () => api('/api/runtime/jobs'), 3500],
       ['missions', () => api('/api/missions'), 3500],
       ['eventsApi', () => api('/api/events?limit=80'), 3500],
-      ['memory', () => api('/api/memory'), 2200],
-      ['learning', () => api('/api/learning/procedural'), 2200],
+      ['memory', () => api('/api/fenix/memory/search?q=&limit=20'), 2200],
+      ['learning', () => api('/api/memory/search?q=procedural&limit=20'), 2200],
       ['knowledge', () => api('/api/knowledge'), 2200],
       ['skills', () => api('/api/skills'), 2200],
       ['connectors', () => api('/api/connectors'), 2200],
-      ['connections', () => api('/api/dev/connections'), 2200],
+      ['connections', () => api('/api/connectors'), 2200],
       ['repositories', () => api('/api/repositories'), 2200],
-      ['git', () => api('/api/dev/git/status'), 2200],
+      ['git', () => api('/api/project-mirror'), 2200],
       ['agentsPanel', () => api('/api/agents/panel'), 2200],
-      ['swarm', () => api('/api/agents/swarm'), 2200],
+      ['swarm', () => api('/api/agents/panel'), 2200],
       ['router', () => api('/api/ai/router/select'), 2200]
     ];
     const [snapshotKey, snapshotFn, snapshotTimeout] = loaders[0];

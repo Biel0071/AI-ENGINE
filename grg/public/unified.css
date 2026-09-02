@@ -259,6 +259,10 @@ body { background: var(--bg-app); color: var(--text-main); font-family: var(--fo
 .sidebar-nav .nav-item { width: 100%; height: 34px; justify-content: flex-start; gap: 8px; padding: 0 8px; font-size: 10px; font-weight: 700; }
 .sidebar-nav .nav-item i { font-size: 16px; }
 .sidebar-nav .nav-item.active::before { left: -8px; }
+.nav-group { margin-bottom: 10px; }
+.nav-group-label { display: flex; width: 100%; justify-content: space-between; padding: 0 8px 4px; color: var(--text-muted); background: transparent; border: 0; font: inherit; font-size: 9px; letter-spacing: .12em; cursor: pointer; text-align: left; }
+.nav-group-label:hover { color: var(--text-main); }
+.nav-group.is-collapsed .nav-item { display: none; }
 .system-health { display: grid; gap: 4px; padding: 8px; color: var(--text-muted); font-size: 9px; overflow-wrap: anywhere; }
 .workspace-view { width: 100%; height: 100%; overflow: auto; padding: 24px; background: transparent; }
 .workspace-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }

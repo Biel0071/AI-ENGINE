@@ -14,6 +14,9 @@ const MISSION_STEP_CATALOG = Object.freeze({
   orchestrate: { jobType: 'project.orchestrate', agent: 'devops', level: 'RED', avatar: 'DEPLOYING', building: 'port' },
   activate: { jobType: 'operational.activation', agent: 'runtime', level: 'GREEN', avatar: 'RECOVERING', building: 'operations' },
   'daily-intelligence': { jobType: 'operational.daily-intelligence', agent: 'analyst', level: 'GREEN', avatar: 'LEARNING', building: 'academy' },
+  audit: { jobType: 'fenix.readonly.audit', agent: 'architect', level: 'GREEN', avatar: 'SCANNING', building: 'knowledge' },
+  implement: { jobType: 'agent.workspace.execute', agent: 'developer', level: 'YELLOW', avatar: 'BUILDING', building: 'factory' },
+  'agent-implement': { jobType: 'agent.execute', agent: 'developer', level: 'YELLOW', avatar: 'BUILDING', building: 'factory' },
 });
 
 class MissionKernel {
@@ -34,7 +37,7 @@ class MissionKernel {
     if (!title || !objective) throw new ValidationError('mission title and objective are required');
     if (title.length > 200 || objective.length > 4_000) throw new ValidationError('mission title or objective is too large');
     const normalized = normalizeSteps(input.steps, this.jobs); validateDag(normalized);
-    const mission = { id: uuid(), tenantId, scopeId: input.scopeId || null, title, objective, objectiveHash: hash(objective), status: 'PLANNED', priority: Math.max(-10, Math.min(10, Number(input.priority || 0))), policy: { maxTokens: nullableNumber(input.policy?.maxTokens), maxCostUsd: nullableNumber(input.policy?.maxCostUsd), deadline: normalizeDeadline(input.policy?.deadline) }, progress: 0, requestedBy: actorId, createdAt: now(), updatedAt: now() };
+    const mission = { id: uuid(), tenantId, projectId: input.projectId || null, scopeId: input.scopeId || null, title, objective, objectiveHash: hash(objective), status: 'PLANNED', priority: Math.max(-10, Math.min(10, Number(input.priority || 0))), policy: { maxTokens: nullableNumber(input.policy?.maxTokens), maxCostUsd: nullableNumber(input.policy?.maxCostUsd), deadline: normalizeDeadline(input.policy?.deadline) }, progress: 0, requestedBy: actorId, createdAt: now(), updatedAt: now() };
     const steps = normalized.map((item, index) => ({ id: uuid(), tenantId, missionId: mission.id, key: item.key, type: item.type, agent: item.definition.agent, policyLevel: item.definition.level, jobType: item.definition.jobType, avatarState: item.definition.avatar, building: item.definition.building, dependsOn: item.dependsOn, payload: item.payload, payloadHash: hash(item.payload), validation: item.validation, contextRefs: item.contextRefs, status: 'PLANNED', order: index, approvalId: null, approvalConsumedAt: null, jobId: null, metrics: { durationMs: null, attempts: 0, tokens: null, costUsd: null }, createdAt: now(), updatedAt: now() }));
     const refs = normalizeRefs(input.contextRefs || []).map((item) => ({ id: uuid(), tenantId, missionId: mission.id, stepId: null, ...item, createdAt: now() }));
     await this.store.update((state) => { state.missions.push(mission); state.missionSteps.push(...steps); state.missionContextRefs.push(...refs); return state; });
@@ -164,7 +167,7 @@ class MissionKernel {
   }
 
   async #dispatchStep(mission, step) {
-    const job = await this.jobs.submit(mission.tenantId, mission.requestedBy, { type: step.jobType, payload: step.payload, priority: mission.priority });
+    const job = await this.jobs.submit(mission.tenantId, mission.requestedBy, { type: step.jobType, payload: { ...step.payload, missionId: mission.id, projectId: mission.projectId }, missionId: mission.id, projectId: mission.projectId, priority: mission.priority });
     await this.store.update((state) => { const current = state.missionSteps.find((item) => item.id === step.id); current.status = 'DISPATCHED'; current.jobId = job.id; current.dispatchedAt = now(); current.updatedAt = now(); return state; });
     await this.#event(mission, 'mission.step.dispatched', step, { status: 'DISPATCHED', jobId: job.id, jobType: step.jobType, payloadHash: step.payloadHash, contextRefs: step.contextRefs.map((item) => item.ref) }, mission.requestedBy); return job;
   }

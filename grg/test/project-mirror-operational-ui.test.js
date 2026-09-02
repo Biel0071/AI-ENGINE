@@ -21,7 +21,7 @@ test('Project Mirror UI renders discovered live previews and reads real source c
 });
 
 test('screen chat creates a canonical development job with automatic context', () => {
-  assert.match(source, /api\('\/v2\/jobs'/);
+  assert.match(source, /api\('\/api\/v2\/jobs'/);
   assert.match(source, /masterCmdForm/);
   assert.match(source, /window\.runChat\(value\)/);
   assert.match(source, /source:\s*'web'/);

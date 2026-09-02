@@ -1,0 +1,18 @@
+class AgentExecutionRuntime {
+  constructor({ aiGateway, workspaceExecutor, events }) { this.ai = aiGateway; this.workspace = workspaceExecutor; this.events = events; }
+  async execute(tenantId, actorId, input = {}) {
+    const agent = input.agent || {}; const context = input.context || {}; await this.#emit(tenantId, 'agent.selected', input.jobId, { agentId: agent.agentId, provider: agent.provider, model: agent.model });
+    await this.#emit(tenantId, 'agent.context.ready', input.jobId, { projectId: input.projectId, missionId: input.missionId, files: context.relevantFiles || [] });
+    const prompt = [`You are ${agent.name || agent.agentId || 'software agent'}.`, 'Return JSON only with operations, tests, validationPassed and commit.', `Job: ${input.prompt || input.type || ''}`, `Project context: ${JSON.stringify(context)}`].join('\n');
+    const model = await this.ai.invoke(tenantId, actorId, { taskType: 'generate', prompt, provider: agent.provider && agent.provider !== 'configured-runtime' ? agent.provider : null, model: agent.model || null, format: { type: 'json_object' } });
+    await this.#emit(tenantId, 'agent.provider.responded', input.jobId, { provider: model.provider, model: model.model });
+    let plan; try { plan = JSON.parse(model.text); } catch { throw new Error('agent provider did not return the required JSON tool plan'); }
+    const toolCalls = [];
+    for (const operation of (plan.operations || [])) { toolCalls.push({ tool: 'git.workspace.write', operation: operation.operation, path: operation.path || operation.to || null }); await this.#emit(tenantId, 'agent.tool.call', input.jobId, toolCalls[toolCalls.length - 1]); }
+    const result = await this.workspace.execute(tenantId, actorId, { ...plan, projectId: input.projectId, missionId: input.missionId, jobId: input.jobId, agentId: agent.agentId, context });
+    for (const call of toolCalls) await this.#emit(tenantId, 'agent.tool.result', input.jobId, { tool: call.tool, operation: call.operation, path: call.path, status: 'SUCCEEDED' });
+    return { ...result, toolCalls, provider: model.provider, model: model.model, agentResponse: { text: model.text, cached: model.cached === true } };
+  }
+  async #emit(tenantId, type, jobId, data) { if (this.events) await this.events.publish({ tenantId, stream: `agent:${jobId}`, type, source: 'fenix-agent-runtime', subject: jobId, data: { ...data, jobId } }); }
+}
+module.exports = { AgentExecutionRuntime };

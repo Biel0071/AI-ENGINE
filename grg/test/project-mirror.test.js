@@ -7,6 +7,10 @@ const path = require('node:path');
 
 const { scanProject } = require('../src/project-mirror/scanner');
 const { extractScreens } = require('../src/project-mirror/screen-extractor');
+const removeTemp = (dir) => {
+  try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 150 }); }
+  catch (error) { if (error.code !== 'EPERM' && error.code !== 'EBUSY') throw error; }
+};
 
 function mkProject(files) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fenix-mirror-'));
@@ -44,7 +48,7 @@ test('scanner: maps a minimal node project', async () => {
     assert.ok(snap.scannedAt);
     assert.ok(snap.durationMs >= 0);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTemp(dir);
   }
 });
 
@@ -58,7 +62,7 @@ test('scanner: handles missing package.json gracefully', async () => {
     assert.equal(snap.tech.frontend, null);
     assert.equal(snap.tech.backend, null);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTemp(dir);
   }
 });
 
@@ -80,7 +84,7 @@ test('scanner: aggregates workspace packages and avoids generic .get false-posit
     assert.ok(snap.apis.some((api) => api.method === 'POST' && api.path === '/v1/text'));
     assert.ok(snap.apis.every((api) => api.path !== 'MemTotal'));
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTemp(dir);
   }
 });
 
@@ -117,7 +121,7 @@ test('screen-extractor: discovers HTML data-view screens', async () => {
     // Check discoveredBy
     assert.ok(screens.every((s) => s.discoveredBy === 'html-data-view'));
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTemp(dir);
   }
 });
 
@@ -137,7 +141,7 @@ test('screen-extractor: stitches hash-routed screens from a nested workspace das
     assert.ok(screens.every((screen) => screen.file === 'apps/dashboard/public/index.html'));
     assert.ok(screens.every((screen) => screen.sourceFiles.some((source) => source.file === 'apps/dashboard/public/app.js')));
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTemp(dir);
   }
 });
 
@@ -159,7 +163,7 @@ test('screen-extractor: discovers React Router screens', async () => {
     assert.ok(screens.some((s) => s.route === '/dashboard'));
     assert.ok(screens.some((s) => s.route === '/settings'));
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTemp(dir);
   }
 });
 

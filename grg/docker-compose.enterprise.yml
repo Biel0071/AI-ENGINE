@@ -159,6 +159,9 @@ services:
       - ${FENIX_ROOTLESS_DOCKER_SOCKET:?FENIX_ROOTLESS_DOCKER_SOCKET is required}:/run/docker.sock
       - ${FENIX_WORKSPACE_HOST_DIR:-/opt/grg-fenix/workspaces}:/app/workspaces
       - ./public/login.html:/app/public/login.html:ro
+      - ./public/runtime-cockpit.js:/app/public/runtime-cockpit.js:ro
+      - ./public/fenix-visual-ide.js:/app/public/fenix-visual-ide.js:ro
+      - ./public/ide-enhancer.js:/app/public/ide-enhancer.js:ro
       - ./src:/app/src:ro
       
         

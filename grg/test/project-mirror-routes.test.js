@@ -5,6 +5,10 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { handleProjectMirrorRoutes, authorizeProjectPath } = require('../src/api/project-mirror-routes');
+const removeTemp = (dir) => {
+  try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 150 }); }
+  catch (error) { if (error.code !== 'EPERM' && error.code !== 'EBUSY') throw error; }
+};
 
 function project() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fenix-mirror-route-'));
@@ -39,7 +43,7 @@ test('Project Mirror source endpoint returns real project-relative code and line
     const blocked = await request('/api/project-mirror/source?file=..%2Fsecret.txt', root);
     assert.equal(blocked.status, 400);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    removeTemp(root);
   }
 });
 
@@ -60,7 +64,7 @@ test('Project Mirror screen detail returns repository-aware sources and preview 
     assert.ok(result.body.projectId);
     assert.ok(result.body.workspaceId);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    removeTemp(root);
   }
 });
 
@@ -74,6 +78,6 @@ test('Project Mirror preview serves real HTML and rewrites guarded project asset
     assert.match(result.rawBody.toString('utf8'), /\/api\/project-mirror\/asset\?path=/);
     assert.match(result.rawBody.toString('utf8'), /file=public%2Fapp\.js/);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    removeTemp(root);
   }
 });

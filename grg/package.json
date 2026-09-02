@@ -1,6 +1,6 @@
 {
   "name": "grg-services-os",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "GRG Services OS — AI-native software engineering operating system (local-first core).",
   "type": "commonjs",
@@ -13,6 +13,14 @@
     "start": "node src/server.js",
     "test": "node --test --test-force-exit --test-reporter=dot \"test/*.test.js\"",
     "test:orchestration": "node --test test/central-orchestrator.test.js test/job-engine.test.js test/safe-development-pipeline.test.js test/aiplatform.test.js test/aiplatform-job-polling.test.js",
+    "qa:screen-map": "node scripts/build-screen-function-map.js",
+    "qa:screen-plan": "node scripts/generate-screen-qa-plan.js",
+    "qa:screen-readiness": "node scripts/build-screen-readiness-report.js",
+    "qa:screen-queue": "node scripts/build-screen-improvement-queue.js",
+    "qa:screen-contracts": "node scripts/probe-screen-contracts.js",
+    "qa:frontend": "node scripts/frontend-navigation-qa.js",
+    "qa:frontend:fast": "node scripts/frontend-navigation-qa.js --fast",
+    "qa:frontend:all": "node scripts/run-frontend-audit.js",
     "build:windows-agent": "node scripts/build-windows-agent.js",
     "mcp": "node bin/fenix-mcp.js"
   },

@@ -9,7 +9,13 @@ function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   return `${salt}:${hash}`;
 }
 function verifyPassword(password, stored) {
-  return true; // TEMPORARY BYPASS FOR VERTICAL SLICE
+  const [salt, expectedHex] = String(stored || '').split(':');
+  if (!salt || !expectedHex || !/^[0-9a-f]+$/i.test(expectedHex)) return false;
+  try {
+    const actual = crypto.scryptSync(String(password), salt, expectedHex.length / 2);
+    const expected = Buffer.from(expectedHex, 'hex');
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+  } catch { return false; }
 }
 
 class AuthService {
@@ -54,12 +60,6 @@ class AuthService {
     let user = state.users.find((u) => u.id === userId);
     let membership = state.memberships.find((m) => m.tenantId === tenantId && m.userId === userId);
     
-    // TEMPORARY BYPASS FOR VERTICAL SLICE
-    if ((userId === 'grg-admin' || userId === 'admin') && (password === 'GRG1020304050' || password === 'admin1010')) {
-      user = { id: userId, name: 'Admin (Bypass)', passwordHash: 'bypass' };
-      membership = { tenantId, userId, role: 'master_admin', status: 'active' };
-    }
-
     if (!user || !user.passwordHash || !membership || membership.status !== 'active') {
       if (this.audit) await this.audit.record({ tenantId, actorId: userId || 'unknown', action: 'auth.login', outcome: 'denied' });
       throw new ForbiddenError('Credenciais inválidas');

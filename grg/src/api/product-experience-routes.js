@@ -117,6 +117,15 @@ function initEngines(app) {
 
 
   frontendReality = new VisualRealityEngine({ workspaceManager, eventBus, promptCompiler });
+  if (app.jobs && !app.__frontendRealityScanJobRegistered) {
+    app.jobs.register('frontend-reality.scan', async (payload, jobContext) => {
+      await jobContext.stage('DISCOVERY', 10, { projectId: payload.projectId || 'fenix_enterprise' });
+      const result = await frontendReality.scanProject(payload.projectId || 'fenix_enterprise');
+      await jobContext.stage('AUDIT', 90, { totalScreens: result.totalScreens });
+      return { projectId: result.projectId, totalScreens: result.totalScreens, audit: result.audit, scannedAt: result.scannedAt };
+    });
+    app.__frontendRealityScanJobRegistered = true;
+  }
 
 
   jarvisOrchestrator = new AutonomousJobOrchestrator({
@@ -1465,8 +1474,8 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        // mock to pass test
-        const analysis = frontendReality ? await frontendReality.scanProject(payload.projectId) : { componentsDetected: ['Header', 'Sidebar', 'Button'], warning: 'Fallback mock applied' };
+        if (!frontendReality) throw new Error('frontend reality engine unavailable');
+        const analysis = await frontendReality.scanProject(payload.projectId);
         sendJson(res, 200, { success: true, analysis });
       } catch (err) {
         sendError(res, 400, err.message);
@@ -2063,10 +2072,15 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 71. POST /api/v2/frontend-reality/scan (Full Project Screen Discovery)
   if (req.method === 'POST' && url.pathname === '/api/v2/frontend-reality/scan') {
     initEngines(app);
+    if (!/^Bearer\s+\S+$/i.test(String(req.headers.authorization || ''))) {
+      sendError(res, 401, 'not authenticated - login at /GRG-login');
+      return true;
+    }
     const body = await readJsonBody(req);
     try {
-      const result = await frontendReality.scanProject(body.projectId || 'fenix_test_lab');
-      sendJson(res, 200, result);
+      const projectId = body.projectId || 'fenix_enterprise';
+      const job = await app.jobs.submit(context.tenantId || 'grg', context.actorId || 'grg-admin', { type: 'frontend-reality.scan', source: 'api', projectId, payload: { projectId }, riskLevel: 'LOW' });
+      sendJson(res, 202, { jobId: job.id, projectId, status: job.status, mode: 'async' });
     } catch (err) {
       sendError(res, 400, err.message);
     }
@@ -2076,7 +2090,12 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 72. GET /api/v2/frontend-reality/screens (List Discovered Screens)
   if (req.method === 'GET' && url.pathname === '/api/v2/frontend-reality/screens') {
     initEngines(app);
-    const projectId = url.searchParams?.get('projectId') || 'fenix_test_lab';
+    const projectId = url.searchParams?.get('projectId') || 'fenix_enterprise';
+    if (projectId === 'fenix_enterprise' && url.searchParams?.get('mode') === 'shell') {
+      const shell = frontendReality.scanShell(projectId);
+      sendJson(res, 200, shell);
+      return true;
+    }
     const screens = frontendReality.discoveryEngine.getScreens(projectId);
     sendJson(res, 200, { projectId, screens, totalScreens: screens.length });
     return true;
@@ -2085,7 +2104,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 73. GET /api/v2/frontend-reality/navigation-graph (Screen Navigation Graph)
   if (req.method === 'GET' && url.pathname === '/api/v2/frontend-reality/navigation-graph') {
     initEngines(app);
-    const projectId = url.searchParams?.get('projectId') || 'fenix_test_lab';
+    const projectId = url.searchParams?.get('projectId') || 'fenix_enterprise';
     const graph = frontendReality.navigationGraph.getGraph(projectId);
     sendJson(res, 200, graph);
     return true;
@@ -2116,7 +2135,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   if (req.method === 'POST' && url.pathname === '/api/v2/frontend-reality/click-test') {
     initEngines(app);
     const body = await readJsonBody(req);
-    const result = frontendReality.runClickEverythingTest(body.projectId || 'fenix_test_lab');
+    const result = frontendReality.runClickEverythingTest(body.projectId || 'fenix_enterprise');
     sendJson(res, 200, result);
     return true;
   }

@@ -4,6 +4,18 @@
    ============================================================ */
 
 /* City Fullscreen View */
+.runtime-city-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; width: 100%; height: 100%; padding: 20px; box-sizing: border-box; overflow: auto; }
+.city-stage-panel, .city-side-panel { min-width: 0; background: rgba(15,23,42,.82); border: 1px solid rgba(148,163,184,.18); border-radius: 12px; padding: 18px; box-sizing: border-box; }
+.city-stage-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+.city-stage-header h1 { margin: 4px 0 0; font-size: 26px; line-height: 1.1; color: var(--text-bright, #f8fafc); }
+.worker-metrics { display: flex; flex-wrap: wrap; gap: 8px; color: var(--text-muted, #94a3b8); font-size: 11px; }
+.worker-metrics span { display: inline-flex; gap: 5px; padding: 7px 9px; border: 1px solid rgba(148,163,184,.18); border-radius: 7px; background: rgba(2,6,23,.55); }
+.worker-metrics b { color: var(--text-main, #cbd5e1); }
+.city-toolbar, .city-floor-tabs, .city-room-grid, .city-events { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.city-toolbar button, .city-floor-tabs button, .city-room-grid button { border: 1px solid rgba(148,163,184,.24); border-radius: 7px; padding: 7px 10px; color: #cbd5e1; background: rgba(30,41,59,.8); cursor: pointer; }
+.city-toolbar button:hover, .city-floor-tabs button:hover, .city-room-grid button:hover { background: rgba(59,130,246,.32); }
+@media (max-width: 900px) { .runtime-city-grid { grid-template-columns: 1fr; } }
+
 .city-fullscreen-view {
   position: relative;
   width: 100%;

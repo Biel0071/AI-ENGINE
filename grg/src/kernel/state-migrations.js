@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 36;
+const CURRENT_SCHEMA_VERSION = 39;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -94,6 +94,9 @@ const COLLECTIONS_BY_VERSION = {
   // FENIX-CONTINUOUS-0001 — estado duravel do orquestrador central. Requests e missions
   // sao estado de dominio; events e a trilha append-only usada para auditoria e retomada.
   36: ['orchestrationRequests', 'orchestrationMissions', 'orchestrationEvents'],
+  37: ['missionCheckpoints'],
+  38: ['projectKernelStates'],
+  39: ['engineeringMemories', 'memoryReuseEvents'],
 };
 
 function normalizeVersion(value) {

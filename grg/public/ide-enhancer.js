@@ -1,3 +1,6 @@
+// This file loads before unified-app.js. Keep its DOM helper local to avoid
+// depending on a later script and avoid the fatal `$ is not defined` boot error.
+const fenixIdeGet = (id) => document.getElementById(id);
 let monacoEditorInstance = null;
 let xtermInstance = null;
 
@@ -7,7 +10,7 @@ window.openFile = async function(path) {
     const content = data.content || '';
     
     const filename = path.split('/').pop() || path.split('\\').pop() || 'untitled';
-    if ($('currentEditorTitle')) $('currentEditorTitle').innerHTML = `${filename}`;
+    if (fenixIdeGet('currentEditorTitle')) fenixIdeGet('currentEditorTitle').innerHTML = `${filename}`;
     
     if (monacoEditorInstance) {
       let ext = filename.split('.').pop();
@@ -32,13 +35,13 @@ window.openFile = async function(path) {
 
 window.loadFs = async function(path = '') {
   try {
-    if ($('fsList')) $('fsList').innerHTML = '<div class="empty-state"><i class="ph ph-spinner ph-spin"></i><span>Carregando...</span></div>';
+    if (fenixIdeGet('fsList')) fenixIdeGet('fsList').innerHTML = '<div class="empty-state"><i class="ph ph-spinner ph-spin"></i><span>Carregando...</span></div>';
     
     const data = await api(`/dev/fs?path=${encodeURIComponent(path)}`);
     const items = data.items || [];
     
     if (items.length === 0) {
-      if ($('fsList')) $('fsList').innerHTML = '<div class="empty-state"><i class="ph ph-folder-open empty-icon"></i><span>Diretório Vazio</span></div>';
+      if (fenixIdeGet('fsList')) fenixIdeGet('fsList').innerHTML = '<div class="empty-state"><i class="ph ph-folder-open empty-icon"></i><span>Diretório Vazio</span></div>';
       return;
     }
     
@@ -67,8 +70,8 @@ window.loadFs = async function(path = '') {
       }
     });
 
-    if ($('fsList')) {
-      $('fsList').innerHTML = html;
+    if (fenixIdeGet('fsList')) {
+      fenixIdeGet('fsList').innerHTML = html;
       document.querySelectorAll('#fsList .fs-item').forEach(el => {
         el.addEventListener('click', () => {
           document.querySelectorAll('#fsList .fs-item').forEach(e => e.classList.remove('active'));
@@ -77,14 +80,14 @@ window.loadFs = async function(path = '') {
           if (el.dataset.type === 'file') {
             openFile(p);
           } else {
-            if ($('fsPath')) $('fsPath').value = p;
+            if (fenixIdeGet('fsPath')) fenixIdeGet('fsPath').value = p;
             loadFs(p);
           }
         });
       });
     }
   } catch (error) {
-    if ($('fsList')) $('fsList').innerHTML = `<div class="empty-state" style="color:var(--rose)"><i class="ph ph-warning"></i><span>${error.message}</span></div>`;
+    if (fenixIdeGet('fsList')) fenixIdeGet('fsList').innerHTML = `<div class="empty-state" style="color:var(--rose)"><i class="ph ph-warning"></i><span>${error.message}</span></div>`;
   }
 };
 
@@ -110,9 +113,9 @@ window.bubble = function(message, who = 'bot') {
     </div>
   `;
   
-  if ($('chatLog')) {
-    $('chatLog').appendChild(div);
-    $('chatLog').scrollTop = $('chatLog').scrollHeight;
+  if (fenixIdeGet('chatLog')) {
+    fenixIdeGet('chatLog').appendChild(div);
+    fenixIdeGet('chatLog').scrollTop = fenixIdeGet('chatLog').scrollHeight;
   }
 };
 
@@ -122,9 +125,9 @@ window.renderAll = function() {
   if (originalRenderAll) originalRenderAll();
   
   // Update agent list in right panel
-  if ($('liveAgentsList') && window.state && window.state.data && window.state.data.workers) {
+  if (fenixIdeGet('liveAgentsList') && window.state && window.state.data && window.state.data.workers) {
     const workers = window.state.data.workers;
-    $('liveAgentsList').innerHTML = workers.map(w => {
+    fenixIdeGet('liveAgentsList').innerHTML = workers.map(w => {
       const isRunning = w.activeJobs > 0 || w.status === 'RUNNING';
       const statusCls = isRunning ? 'status-running' : 'status-idle';
       const statusTxt = isRunning ? 'RUNNING' : 'IDLE';
@@ -153,7 +156,7 @@ window.addEventListener('load', () => {
       btn.classList.add('active');
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       const viewId = 'view-' + btn.dataset.view;
-      if ($(viewId)) $(viewId).classList.add('active');
+      if (fenixIdeGet(viewId)) fenixIdeGet(viewId).classList.add('active');
     });
   });
 
@@ -167,7 +170,7 @@ window.addEventListener('load', () => {
         if (btn.textContent === 'Visual') {
           document.querySelector('.monaco-container').style.display = 'none';
           document.querySelector('.visual-canvas').style.display = 'flex';
-          $('previewIframe').src = '/app?is_preview=true'; // Fênix Own View
+          fenixIdeGet('previewIframe').src = '/app?is_preview=true'; // Fênix Own View
         } else if (btn.textContent === 'Código') {
           document.querySelector('.monaco-container').style.display = 'block';
           document.querySelector('.visual-canvas').style.display = 'none';
@@ -213,23 +216,23 @@ window.addEventListener('load', () => {
   }
 
   // Terminal Run
-  if ($('terminalBtn')) {
-    const oldBtn = $('terminalBtn');
+  if (fenixIdeGet('terminalBtn')) {
+    const oldBtn = fenixIdeGet('terminalBtn');
     const newBtn = oldBtn.cloneNode(true);
     oldBtn.parentNode.replaceChild(newBtn, oldBtn);
     
     // Bind input Enter key as well
-    if ($('terminalCmd')) {
-      $('terminalCmd').addEventListener('keypress', (e) => {
+    if (fenixIdeGet('terminalCmd')) {
+      fenixIdeGet('terminalCmd').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') newBtn.click();
       });
     }
     
     newBtn.addEventListener('click', async () => {
-      const cmd = $('terminalCmd') ? $('terminalCmd').value : '';
+      const cmd = fenixIdeGet('terminalCmd') ? fenixIdeGet('terminalCmd').value : '';
       if (!cmd) return;
       if (xtermInstance) xtermInstance.writeln(`\r\n\x1b[32m$ ${cmd}\x1b[0m`);
-      $('terminalCmd').value = '';
+      fenixIdeGet('terminalCmd').value = '';
       
       try {
         const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: cmd, sessionId: `ui-${Date.now()}` }) });
@@ -243,13 +246,13 @@ window.addEventListener('load', () => {
     });
   }
   
-  if ($('clearTerminalBtn') && xtermInstance) {
-    $('clearTerminalBtn').addEventListener('click', () => xtermInstance.clear());
+  if (fenixIdeGet('clearTerminalBtn') && xtermInstance) {
+    fenixIdeGet('clearTerminalBtn').addEventListener('click', () => xtermInstance.clear());
   }
 
   setTimeout(() => {
-    if ($('fsPath') && $('fsPath').value) {
-      loadFs($('fsPath').value);
+    if (fenixIdeGet('fsPath') && fenixIdeGet('fsPath').value) {
+      loadFs(fenixIdeGet('fsPath').value);
     }
   }, 500);
 });
@@ -324,7 +327,7 @@ window.addEventListener('load', () => {
 
   async function loadMemory() {
     try {
-      if ($('memoryItems')) $('memoryItems').innerHTML = '<i>Carregando memória...</i>';
+      if (fenixIdeGet('memoryItems')) fenixIdeGet('memoryItems').innerHTML = '<i>Carregando memória...</i>';
       // Mocks if not exists
       const memoryApi = await api('/api/v2/mind/memory/project/fenix_test_lab').catch(() => ({}));
       
@@ -339,7 +342,7 @@ window.addEventListener('load', () => {
       } else {
         html = '<div class="empty-state"><i class="ph ph-brain"></i> Nenhuma memória ativa no RAG.</div>';
       }
-      if ($('memoryItems')) $('memoryItems').innerHTML = html;
+      if (fenixIdeGet('memoryItems')) fenixIdeGet('memoryItems').innerHTML = html;
     } catch(e) {}
   }
 

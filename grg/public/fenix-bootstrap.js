@@ -35,7 +35,7 @@ window.FENIX.api = async function api(path, options = {}, retried = false) {
       const txt = await res.text();
       let err;
       try { err = JSON.parse(txt); } catch (e) { err = { error: txt }; }
-      throw err;
+      throw Object.assign(err, { status: res.status, endpoint: path });
     }
     const text = await res.text();
     if (!text) return null;
@@ -142,3 +142,4 @@ async function bootFenix() {
 }
 
 if (!window.FENIX_BOOTED) bootFenix();
+

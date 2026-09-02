@@ -2,10 +2,11 @@ const { uuid } = require('../kernel/ids');
 const { ValidationError, NotFoundError } = require('../kernel/errors');
 
 class DeployCenterService {
-  constructor({ store, bus, controlPlane }) {
+  constructor({ store, bus, controlPlane, health = null }) {
     this.store = store;
     this.bus = bus;
     this.cp = controlPlane;
+    this.health = health;
   }
 
   async getDeployOverview(tenantId, actorId) {
@@ -14,14 +15,15 @@ class DeployCenterService {
     const activeDeploys = (state.deployments || []).filter((d) => d.tenantId === tenantId);
     const pipelines = state.selfDeployPipelines || [];
 
+    const health = this.health && typeof this.health.check === 'function' ? await this.health.check() : null;
     return {
       tenantId,
       activeDeploymentsCount: activeDeploys.length,
       deployments: activeDeploys,
       recentPipelines: pipelines.slice(-5),
-      containersCount: 8,
-      workersCount: 4,
-      incidentsCount: 0,
+      containersCount: { state: 'unknown', source: 'no-container-probe' },
+      workersCount: { state: 'unknown', source: 'no-worker-probe' },
+      incidentsCount: { state: 'measured', value: health?.ok === false ? 1 : 0, source: 'health-registry' },
       checkedAt: new Date().toISOString(),
     };
   }

@@ -77,7 +77,7 @@ class VisualRealityEngine extends SystemModule {
   /**
    * Scan project and establish complete Frontend Reality Map
    */
-  async scanProject(projectId = 'fenix_test_lab') {
+  async scanProject(projectId = 'fenix_enterprise') {
     let rootPath = null;
     if (this.workspaceManager) {
       const prj = this.workspaceManager.getProject(projectId);
@@ -86,7 +86,7 @@ class VisualRealityEngine extends SystemModule {
 
     if (!rootPath) {
       const path = require('path');
-      rootPath = path.join(__dirname, '..', 'generated', projectId);
+      rootPath = projectId === 'fenix_enterprise' ? path.join(__dirname, '..', '..', 'public') : path.join(__dirname, '..', 'generated', projectId);
     }
 
     const discovery = await this.discoveryEngine.scanProjectScreens(projectId, rootPath);
@@ -119,21 +119,32 @@ class VisualRealityEngine extends SystemModule {
     return realityMap;
   }
 
+  /** Lightweight inventory used by the screen browser; reads only the canonical shell. */
+  scanShell(projectId = 'fenix_enterprise') {
+    const shellPath = require('path').join(__dirname, '..', '..', 'public', 'index.html');
+    if (projectId !== 'fenix_enterprise' || !require('fs').existsSync(shellPath)) return { projectId, screens: [], totalScreens: 0, status: 'NOT_DISCOVERED' };
+    const content = require('fs').readFileSync(shellPath, 'utf8');
+    const screens = this.discoveryEngine._extractScreensFromFile(content, 'public/index.html', shellPath);
+    this.discoveryEngine.screenRegistry.set(projectId, screens);
+    return { projectId, screens, totalScreens: screens.length, status: screens.length ? 'DISCOVERED' : 'NOT_DISCOVERED' };
+  }
+
   /**
    * Visual <-> Code Correlation:
    * Maps an interactive screen element to the exact component file, function and API
    */
-  correlateElement({ screenId = 'screen_dashboard_root', elementLabel = 'Novo Projeto' } = {}) {
+  correlateElement({ screenId = null, elementLabel = '' } = {}) {
+    if (!screenId || !elementLabel) return { screenId, elementLabel, correlationStatus: 'NOT_ENOUGH_EVIDENCE' };
     return {
       elementLabel,
       screenId,
       component: 'Dashboard',
       file: 'src/components/Dashboard.tsx',
       functionHandler: 'handleCreateProject()',
-      apiEndpoint: 'POST /api/v2/jarvis/jobs/submit',
-      backendService: 'AutonomousJobOrchestrator.submitJob()',
-      databaseEntity: 'ProjectRecord',
-      correlationStatus: 'EXACT_MATCH_VERIFIED'
+      apiEndpoint: null,
+      backendService: null,
+      databaseEntity: null,
+      correlationStatus: 'UNRESOLVED_REQUIRES_SCAN'
     };
   }
 
@@ -158,14 +169,15 @@ class VisualRealityEngine extends SystemModule {
     }
 
     const workingCount = results.filter(r => r.status === 'WORKING').length;
-    const totalCount = results.length || 1;
+    const totalCount = results.length;
 
     return {
       projectId,
       totalElementsTested: totalCount,
       workingCount,
       brokenCount: totalCount - workingCount,
-      successRate: `${Math.round((workingCount / totalCount) * 100)}%`,
+      successRate: totalCount ? `${Math.round((workingCount / totalCount) * 100)}%` : null,
+      status: totalCount ? 'COMPLETED' : 'NOT_RUN_NO_ACTIONS',
       elements: results,
       timestamp: new Date().toISOString()
     };

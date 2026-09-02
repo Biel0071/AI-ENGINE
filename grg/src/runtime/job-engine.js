@@ -3,7 +3,7 @@ const { NotFoundError, ValidationError } = require('../kernel/errors');
 const { assertNoSecrets } = require('../eventing/event-store');
 
 const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'DEAD_LETTER', 'ROLLED_BACK']);
-const JOB_SOURCES = new Set(['codex', 'claude', 'antigravity', 'windsurf', 'vscode', 'mcp', 'cli', 'api', 'web', 'system']);
+const JOB_SOURCES = new Set(['codex', 'claude', 'antigravity', 'windsurf', 'vscode', 'mcp', 'cli', 'api', 'web', 'system', 'fenix-chat']);
 const RISK_LEVELS = new Set(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 const now = () => new Date().toISOString();
 const errorInfo = (error) => ({ name: error?.name || 'Error', message: String(error?.message || error).slice(0, 2000) });
@@ -31,12 +31,21 @@ function boundResult(result) {
     limitBytes: MAX_RESULT_BYTES,
     reason: 'job result exceeds the store budget; the handler persists its own record',
     keys: result && typeof result === 'object' && !Array.isArray(result) ? Object.keys(result).slice(0, 20) : undefined,
+    // Preserve stable operational fields needed by the Jobs UI and API consumers.
+    ...(result && typeof result === 'object' && !Array.isArray(result) ? {
+      provider: result.provider,
+      model: result.model,
+      result: result.result,
+      status: result.status,
+      testsPassed: result.testsPassed,
+      toolCalls: Array.isArray(result.toolCalls) ? result.toolCalls.length : undefined,
+    } : {}),
   };
 }
 
 class JobEngine {
-  constructor({ store, controlPlane, events, queue = null, approvals = null, clock = Date }) {
-    this.store = store; this.cp = controlPlane; this.events = events; this.queue = queue; this.approvals = approvals; this.clock = clock;
+  constructor({ store, controlPlane, events, queue = null, approvals = null, clock = Date, agentAssignment = null }) {
+    this.store = store; this.cp = controlPlane; this.events = events; this.queue = queue; this.approvals = approvals; this.clock = clock; this.agentAssignment = agentAssignment;
     this.handlers = new Map();
   }
   register(type, handler) {
@@ -59,10 +68,12 @@ class JobEngine {
     const riskLevel = String(input.riskLevel || 'MEDIUM').toUpperCase();
     if (!RISK_LEVELS.has(riskLevel)) throw new ValidationError(`unsupported risk level: ${riskLevel}`);
     const timestamp = now();
+    const assignment = this.agentAssignment ? await this.agentAssignment.assign({ ...input, tenantId, actorId }) : null;
     const approvalRequired = policy.requireApproval || riskLevel === 'HIGH' || riskLevel === 'CRITICAL';
     const job = {
       id, jobId: id, tenantId, sessionId: input.sessionId || null, source,
       type: input.type, prompt: input.prompt || input.payload?.prompt || null,
+      missionId: input.missionId || input.context?.missionId || payload.missionId || null,
       projectId: input.projectId || input.context?.projectId || payload.projectId || null,
       workspaceId: input.workspaceId || input.context?.workspaceId || payload.workspaceId || null,
       screenId: input.screenId || input.context?.screenId || payload.screenId || null,
@@ -74,8 +85,9 @@ class JobEngine {
       attempts: 0, maxAttempts: Math.min(10, Math.max(1, Number(input.maxAttempts || 3))), limits,
       scheduledFor: input.scheduledFor || timestamp, createdBy: actorId, createdAt: timestamp,
       startedAt: null, completedAt: null, updatedAt: timestamp, workerId: null,
-      heartbeatAt: null, cancelRequestedAt: null, approvalId: null, result: null, artifacts: [], tests: null,
+      heartbeatAt: null, cancelRequestedAt: null, pauseRequestedAt: null, approvalId: null, result: null, artifacts: [], tests: null,
       validation: null, rollback: null, error: null, queue: this.queue ? 'fenix-runtime' : null,
+      agent: assignment,
     };
     if (approvalRequired) {
       if (!this.approvals) throw new ValidationError('job approval engine is not configured');
@@ -141,16 +153,17 @@ class JobEngine {
     let timer;
     try {
       const result = await Promise.race([
-        handler(job.payload, { jobId: job.id, tenantId: job.tenantId, actorId: job.createdBy, job, heartbeat: () => this.heartbeat(job.tenantId, job.id, workerId), isCancelled: () => this.isCancelled(job.tenantId, job.id), stage: (name, progress, patch) => this.stage(job.tenantId, job.id, workerId, name, progress, patch) }),
+        handler(job.payload, { jobId: job.id, tenantId: job.tenantId, actorId: job.createdBy, job, heartbeat: () => this.heartbeat(job.tenantId, job.id, workerId), isCancelled: () => this.isCancelled(job.tenantId, job.id), isPauseRequested: () => this.isPauseRequested(job.tenantId, job.id), checkPauseSignal: async () => { if (await this.isPauseRequested(job.tenantId, job.id)) throw new Error('job pause requested at safe boundary'); }, stage: (name, progress, patch) => this.stage(job.tenantId, job.id, workerId, name, progress, patch) }),
         new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('job execution timed out')), job.limits.timeoutMs); }),
       ]);
       clearTimeout(timer);
-      await this.store.update((state) => { const current = state.runtimeJobs.find((item) => item.id === job.id); current.status = current.cancelRequestedAt ? 'CANCELLED' : 'SUCCEEDED'; current.currentStage = current.status; current.progress = 100; current.result = current.cancelRequestedAt ? null : boundResult(result); current.completedAt = now(); current.updatedAt = now(); return state; });
+      await this.store.update((state) => { const current = state.runtimeJobs.find((item) => item.id === job.id); current.status = current.cancelRequestedAt ? 'CANCELLED' : current.pauseRequestedAt ? 'PAUSED' : 'SUCCEEDED'; current.currentStage = current.status; current.progress = current.status === 'SUCCEEDED' || current.status === 'CANCELLED' ? 100 : current.progress; current.result = current.cancelRequestedAt ? null : boundResult(result); if (current.status !== 'PAUSED') current.completedAt = now(); current.updatedAt = now(); return state; });
     } catch (error) {
       clearTimeout(timer);
       await this.store.update((state) => {
         const current = state.runtimeJobs.find((item) => item.id === job.id); current.error = errorInfo(error); current.updatedAt = now(); current.workerId = null;
         if (current.cancelRequestedAt) current.status = 'CANCELLED';
+        else if (current.pauseRequestedAt) { current.status = 'PAUSED'; current.completedAt = null; }
         else if (current.attempts < current.maxAttempts) { current.status = 'QUEUED'; current.scheduledFor = new Date(this.clock.now() + Math.min(60_000, 1000 * (2 ** (current.attempts - 1)))).toISOString(); }
         else { current.status = 'DEAD_LETTER'; current.completedAt = now(); state.deadLetters.push({ id: uuid(), tenantId: current.tenantId, jobId: current.id, type: current.type, error: current.error, attempts: current.attempts, createdAt: now() }); }
         current.currentStage = current.status;
@@ -167,6 +180,54 @@ class JobEngine {
     let job;
     await this.store.update((state) => { job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId); if (!job) throw new NotFoundError(`job not found: ${jobId}`); if (TERMINAL.has(job.status)) return state; job.cancelRequestedAt = now(); if (job.status === 'QUEUED') { job.status = 'CANCELLED'; job.currentStage = 'CANCELLED'; job.completedAt = now(); } job.updatedAt = now(); return state; });
     await this.#publish(job, 'runtime.job.cancel-requested', actorId); return job;
+  }
+  async pause(tenantId, actorId, jobId) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:execute');
+    let job;
+    await this.store.update((state) => {
+      job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId);
+      if (!job) throw new NotFoundError(`job not found: ${jobId}`);
+      if (['PAUSED', 'PAUSING'].includes(job.status)) return state;
+      if (TERMINAL.has(job.status)) throw new ValidationError(`job cannot pause from ${job.status}`);
+      if (!['QUEUED', 'RUNNING'].includes(job.status)) throw new ValidationError(`job cannot pause from ${job.status}`);
+      job.status = job.status === 'RUNNING' ? 'PAUSING' : 'PAUSED';
+      job.pauseRequestedAt = now();
+      job.currentStage = job.status; job.updatedAt = now();
+      return state;
+    });
+    await this.#publish(job, 'runtime.job.pause-requested', actorId);
+    if (job.status === 'PAUSED') await this.#publish(job, 'runtime.job.paused', actorId);
+    return job;
+  }
+  async resume(tenantId, actorId, jobId) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:execute');
+    let job;
+    await this.store.update((state) => {
+      job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId);
+      if (!job) throw new NotFoundError(`job not found: ${jobId}`);
+      if (job.status === 'QUEUED') return state;
+      if (job.status !== 'PAUSED') throw new ValidationError(`job cannot resume from ${job.status}`);
+      job.status = 'QUEUED'; job.currentStage = 'QUEUED'; job.pauseRequestedAt = null; job.updatedAt = now(); job.scheduledFor = now();
+      return state;
+    });
+    if (job.status === 'QUEUED' && this.queue) await this.#enqueue(job);
+    await this.#publish(job, 'runtime.job.resumed', actorId);
+    return job;
+  }
+  async retry(tenantId, actorId, jobId) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:execute');
+    let job;
+    await this.store.update((state) => {
+      job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId);
+      if (!job) throw new NotFoundError(`job not found: ${jobId}`);
+      if (!['FAILED', 'DEAD_LETTER'].includes(job.status)) throw new ValidationError(`job cannot retry from ${job.status}`);
+      if (job.attempts >= job.maxAttempts) throw new ValidationError('job retry limit exhausted');
+      job.status = 'QUEUED'; job.currentStage = 'QUEUED'; job.pauseRequestedAt = null; job.error = null; job.completedAt = null; job.updatedAt = now(); job.scheduledFor = now();
+      return state;
+    });
+    if (this.queue) await this.#enqueue(job);
+    await this.#publish(job, 'runtime.job.retry-requested', actorId);
+    return job;
   }
   async approve(tenantId, actorId, jobId) {
     await this.cp.authorize(tenantId, actorId, 'runtime:execute');
@@ -272,6 +333,7 @@ class JobEngine {
     return this.events?.eventStore?.readStream(tenantId, `job:${jobId}`) || [];
   }
   async isCancelled(tenantId, jobId) { return !!(await this.getInternal(tenantId, jobId)).cancelRequestedAt; }
+  async isPauseRequested(tenantId, jobId) { return !!(await this.getInternal(tenantId, jobId)).pauseRequestedAt; }
   async #enqueue(job) {
     const delay = Math.max(0, Date.parse(job.scheduledFor) - this.clock.now());
     await this.queue.enqueue('fenix-runtime', job.type, { tenantId: job.tenantId, jobId: job.id }, {

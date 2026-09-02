@@ -2,13 +2,15 @@ const { uuid } = require('../kernel/ids');
 const { ValidationError, NotFoundError } = require('../kernel/errors');
 
 class MasterNodeService {
-  constructor({ store, bus, controlPlane, approvals, sandbox, vpsOps }) {
+  constructor({ store, bus, controlPlane, approvals, sandbox, vpsOps, health = null, executor = null }) {
     this.store = store;
     this.bus = bus;
     this.cp = controlPlane;
     this.approvals = approvals;
     this.sandbox = sandbox;
     this.vpsOps = vpsOps;
+    this.health = health;
+    this.executor = executor;
     this.subsystems = [
       'runtime',
       'mission-kernel',
@@ -27,16 +29,20 @@ class MasterNodeService {
 
   async getMasterStatus(tenantId, actorId) {
     await this.cp.authorize(tenantId, actorId, 'runtime:admin');
+    const report = this.health && typeof this.health.check === 'function' ? await this.health.check() : null;
     const registered = {};
     for (const sys of this.subsystems) {
-      registered[sys] = { status: 'HEALTHY', latencyMs: Math.floor(Math.random() * 8) + 2, uptimePercent: 99.99 };
+      const detail = report?.checks?.[sys];
+      registered[sys] = detail
+        ? { status: detail.ok ? 'HEALTHY' : 'DEGRADED', ...(detail.latencyMs != null ? { latencyMs: detail.latencyMs } : {}), source: 'health-registry' }
+        : { status: 'UNKNOWN', source: 'no-measurement' };
     }
 
     return {
       masterNodeId: 'vps-master-node-01',
       tenantId,
       role: 'MASTER_NODE',
-      status: 'OPERATIONAL',
+      status: report ? (report.ok ? 'OPERATIONAL' : 'DEGRADED') : 'UNKNOWN',
       subsystemsCount: this.subsystems.length,
       subsystems: registered,
       checkedAt: new Date().toISOString(),
@@ -65,9 +71,8 @@ class MasterNodeService {
         { name: 'Canary', status: 'SUCCEEDED' },
         { name: 'Production', status: 'SUCCEEDED' },
       ],
-      status: 'SUCCESSFUL',
-      liveUpdateTriggered: true,
-      deployedAt: new Date().toISOString(),
+      status: this.executor ? 'PLANNED' : 'NOT_IMPLEMENTED',
+      liveUpdateTriggered: false,
       deployedBy: actorId,
     };
 
@@ -75,6 +80,17 @@ class MasterNodeService {
       pipeline.stages[4].status = 'FAILED';
       pipeline.status = 'ROLLED_BACK';
       pipeline.rollbackReason = 'Sandbox integration test failure. Triggered automatic rollback to previous stable commit.';
+    }
+
+    if (this.executor && !input.simulateFailure) {
+      const outcome = await this.executor.run({ tenantId, actorId, version, branch, pipeline });
+      pipeline.status = outcome.ok ? 'SUCCESSFUL' : 'ROLLED_BACK';
+      pipeline.liveUpdateTriggered = outcome.ok;
+      pipeline.executor = outcome.executor || 'injected';
+      pipeline.output = outcome.output || null;
+      if (outcome.ok) pipeline.deployedAt = new Date().toISOString();
+    } else if (!this.executor && !input.simulateFailure) {
+      pipeline.reason = 'no real self-deploy executor is wired; nothing was deployed';
     }
 
     await this.store.update((state) => {

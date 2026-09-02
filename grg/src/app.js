@@ -11,7 +11,12 @@ const { ControlPlane } = require('./control-plane/control-plane');
 const { RepositoryIntelligence } = require('./repo-intel/repository-intelligence');
 const { LocalGitHostAdapter } = require('./repo-intel/ports');
 const { AIGateway } = require('./ai-runtime/ai-gateway');
-const { FileSystemService } = require('./storage/file-system-service');
+  const { FileSystemService } = require('./storage/file-system-service');
+  const { GitReadCapability } = require('./repo-intel/git-read-capability');
+  const { GitWorkspaceWriteCapability } = require('./repo-intel/git-write-capability');
+  const { GitCommitCapability } = require('./repo-intel/git-commit-capability');
+  const { ReadOnlyAuditService } = require('./missions/read-only-audit');
+  const { ProjectKernel } = require('./projects/project-kernel');
 const { ExecutionEngine } = require('./execution/execution-engine');
 const { SoftwareFactory } = require('./software-factory/software-factory');
 const { Deployer } = require('./runtime/deployer');
@@ -21,6 +26,11 @@ const { Orchestrator } = require('./orchestrator/orchestrator');
 const { EvolutionEngine } = require('./evolution/evolution-engine');
 const { DigitalTwinService } = require('./digital-twin/digital-twin');
 const { ChatAgent } = require('./chat/chat-agent');
+const { AgentRegistry } = require('./agents/agent-registry');
+const { AgentJobAssignment } = require('./agents/agent-job-assignment');
+  const { AgentWorkspaceExecutor } = require('./agents/agent-workspace-executor');
+  const { AgentExecutionRuntime } = require('./agents/agent-execution-runtime');
+const { EngineeringMemory } = require('./memory/engineering-memory');
 const { GitHubConnector } = require('./repo-intel/github-connector');
 const { PortfolioService } = require('./repo-intel/portfolio');
 const { loadSecurityConfig } = require('./security/config');
@@ -211,7 +221,10 @@ async function createApp(options = {}) {
   const federation = new KnowledgeFederation({ store, controlPlane, events: fabricEvents });
   const versionEngine = new GlobalVersionEngine({ store, controlPlane, events: fabricEvents, approvals, bus }).attach();
   const aiCity = new AICityProjection({ store, controlPlane, events: fabricEvents, eventStore, bus }).attach();
-  const jobs = new JobEngine({ store, controlPlane, events: fabricEvents, queue: queues, approvals });
+  const agentRegistry = new AgentRegistry();
+  const engineeringMemory = new EngineeringMemory({ store, controlPlane, events: fabricEvents });
+  const agentAssignment = new AgentJobAssignment({ store, registry: agentRegistry, memory: engineeringMemory });
+  const jobs = new JobEngine({ store, controlPlane, events: fabricEvents, queue: queues, approvals, agentAssignment });
   jobs.register('factory.generate', (payload, context) => factory.generate(context.tenantId, context.actorId, payload));
   jobs.register('project.orchestrate', (payload, context) => orchestrator.buildFromPrompt(context.tenantId, context.actorId, payload));
   jobs.register('discovery.scan', (payload, context) => discoveryNetwork.scan(context.tenantId, context.actorId, payload));
@@ -273,6 +286,10 @@ async function createApp(options = {}) {
   jobs.register('operational.activation', (payload, context) => operationalActivation.boot(context.tenantId, context.actorId, payload));
   jobs.register('operational.daily-intelligence', (payload, context) => operationalActivation.dailyIntelligence(context.tenantId, context.actorId, payload));
   const missions = new MissionKernel({ store, controlPlane, hierarchy, jobs, approvals, events: fabricEvents }).attach();
+  const { FullSystemBuilder } = require('./projects/full-system-builder');
+  const fullSystemBuilder = new FullSystemBuilder({ store, controlPlane, missions });
+  const { MissionCheckpointsService } = require('./missions/mission-checkpoints');
+  const missionCheckpoints = new MissionCheckpointsService({ store, events: fabricEvents, controlPlane }).attach();
   const missionPlanner = new MissionPlanner({ store, controlPlane, hierarchy, missions, events: fabricEvents });
 
   const liveBootKernel = new LiveBootKernel({ eventBus: bus, logger });
@@ -297,16 +314,29 @@ async function createApp(options = {}) {
   // Developer District Services
   const workspaceRoot = process.env.FENIX_WORKSPACE_ROOT || path.join(__dirname, '..', '..');
   const fileSystemService = new FileSystemService(workspaceRoot);
+  const gitRead = new GitReadCapability({ workspaceRoot });
+  const gitWorkspaceWrite = new GitWorkspaceWriteCapability({ workspaceRoot });
+  const gitCommit = new GitCommitCapability({ workspaceRoot });
+  jobs.register('git.read', (payload) => gitRead.execute(payload.operation || 'status', payload.args || [], payload.root || '.'));
+  jobs.register('git.workspace.write', (payload) => gitWorkspaceWrite.write(payload));
+  jobs.register('git.commit', (payload) => gitCommit.commit(payload));
+  const agentWorkspaceExecutor = new AgentWorkspaceExecutor({ store, controlPlane, gitWrite: gitWorkspaceWrite, gitRead, gitCommit });
+  jobs.register('agent.workspace.execute', (payload, context) => agentWorkspaceExecutor.execute(context.tenantId, context.actorId, { ...payload, jobId: context.jobId, missionId: context.job?.missionId, agentId: context.job?.agent?.agentId || payload.agentId }));
+  const agentExecutionRuntime = new AgentExecutionRuntime({ aiGateway, workspaceExecutor: agentWorkspaceExecutor, events: fabricEvents });
+  jobs.register('agent.execute', (payload, context) => agentExecutionRuntime.execute(context.tenantId, context.actorId, { ...payload, jobId: context.jobId, missionId: context.job?.missionId, agent: context.job?.agent, context: context.job?.agent?.context || payload.context }));
+  const readOnlyAudit = new ReadOnlyAuditService({ store, gitRead, workspaceRoot });
+  jobs.register('fenix.readonly.audit', (payload, context) => readOnlyAudit.run(context.tenantId, context.actorId, { ...payload, projectId: context.job?.projectId || payload.projectId, missionId: context.job?.missionId || payload.missionId, jobId: context.jobId }));
+  const projectKernel = new ProjectKernel({ store, controlPlane, events: fabricEvents, gitRead });
   const executionEngine = new ExecutionEngine(bus, workspaceRoot);
 
   const app = {
-    store, bus, controlPlane, repoIntel, aiGateway, factory, deployer, product, appFactory,
+    store, bus, controlPlane, repoIntel, gitRead, gitWorkspaceWrite, gitCommit, agentRegistry, agentAssignment, agentWorkspaceExecutor, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
     liveBootKernel, runtimeKernel, aiOrchestrator, aek, digitalTwinEngine, cognitiveMemory, capabilityMarketplace,
-    storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine
+    storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine, gitRead, projectKernel, fullSystemBuilder, agentExecutionRuntime, engineeringMemory
   };
 
   // Phase 4: Startup Recovery
@@ -551,7 +581,7 @@ async function createApp(options = {}) {
   app.externalSearch = new ExternalSearchService({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, searchClient: createResearchSearchClient(app.researchSource) });
 
   app.masterNode = new MasterNodeService({ store, bus, controlPlane, approvals, sandbox, vpsOps: app.vpsOps, health });
-  app.deployCenter = new DeployCenterService({ store, bus, controlPlane, deployer });
+  app.deployCenter = new DeployCenterService({ store, bus, controlPlane, deployer, health });
   app.observabilityCenter = new ObservabilityCenterService({ store, bus, controlPlane, metrics, health, aiGateway });
   // Serie temporal: compoe o center (nao remede nada) e persiste uma amostra por tick do loop
   // `observability`. Sem ela o painel nao tem historico medido para desenhar um sparkline.
@@ -663,6 +693,7 @@ async function createApp(options = {}) {
     store, bus, events: fabricEvents, controlPlane,
     knowledgeGenome: app.knowledgeGenome, capabilityRegistry,
   }).attach();
+  app.missionCheckpoints = missionCheckpoints;
 
   app.organismIdentity = organismIdentity;
   app.chat = new ChatAgent({ app, llm });

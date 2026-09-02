@@ -6,6 +6,16 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-avatar-registry.js"
     },
     {
+      "name": "AgentExecutionRuntime",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-execution-runtime.js"
+    },
+    {
+      "name": "AgentJobAssignment",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-job-assignment.js"
+    },
+    {
       "name": "AgentRegistry",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-registry.js"
@@ -14,6 +24,11 @@
       "name": "AgentSwarm",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-swarm.js"
+    },
+    {
+      "name": "AgentWorkspaceExecutor",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\agents\\agent-workspace-executor.js"
     },
     {
       "name": "AutonomousAgentEcosystem",
@@ -1000,6 +1015,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\development-memory.js"
     },
     {
+      "name": "EngineeringMemory",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\engineering-memory.js"
+    },
+    {
       "name": "KnowledgeGenomeEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\memory\\knowledge-genome.js"
@@ -1076,6 +1096,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-artifacts.js"
     },
     {
+      "name": "MissionCheckpointsService",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-checkpoints.js"
+    },
+    {
       "name": "MissionDNA",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\mission-dna.js"
@@ -1110,6 +1135,11 @@
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\orchestrator\\quality-gate.js",
       "_duplicated": true
+    },
+    {
+      "name": "ReadOnlyAuditService",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\missions\\read-only-audit.js"
     },
     {
       "name": "WorkerBase",
@@ -1437,9 +1467,19 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\product\\white-label.js"
     },
     {
+      "name": "FullSystemBuilder",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\projects\\full-system-builder.js"
+    },
+    {
       "name": "ProjectDiscoveryManager",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\projects\\project-discovery-manager.js"
+    },
+    {
+      "name": "ProjectKernel",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\projects\\project-kernel.js"
     },
     {
       "name": "ArtifactGraph",
@@ -1460,6 +1500,26 @@
       "name": "FunctionInventory",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\function-inventory.js"
+    },
+    {
+      "name": "GitCommitCapability",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\git-commit-capability.js"
+    },
+    {
+      "name": "GitReadCapability",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\git-read-capability.js"
+    },
+    {
+      "name": "GitWorkspaceWriteCapability",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\git-write-capability.js"
+    },
+    {
+      "name": "WorkspaceWriteError",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\repo-intel\\git-write-capability.js"
     },
     {
       "name": "GitHubConnector",

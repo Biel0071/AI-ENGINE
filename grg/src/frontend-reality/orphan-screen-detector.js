@@ -70,13 +70,16 @@ class OrphanScreenDetector {
       }
     }
 
-    const auditPass = orphans.length === 0 && deadButtons.length === 0 && brokenRoutes.length === 0;
+    // An empty project is not proof of a healthy UI. Keep the audit honest and
+    // force onboarding/scan before allowing a PASS result.
+    const auditPass = screens.length > 0 && verifiedScreens.length === screens.length && orphans.length === 0 && deadButtons.length === 0 && brokenRoutes.length === 0;
 
     return {
       projectId,
       auditPass,
       totalScreensAudited: screens.length,
       verifiedCount: verifiedScreens.length,
+      status: screens.length === 0 ? 'NOT_RUN_NO_SCREENS' : (auditPass ? 'PASS' : 'FAIL'),
       orphansCount: orphans.length,
       deadButtonsCount: deadButtons.length,
       brokenRoutesCount: brokenRoutes.length,

@@ -13,11 +13,22 @@
   // ==========================================
   
   let projectSnapshot = null;
+
+  function isServerWorkspacePath(value) {
+    if (!value || typeof value !== 'string') return false;
+    // Never send a client filesystem path (Windows drive/UNC or file URL) to
+    // the Linux FÊNIX API. Server paths must live under the configured mount.
+    return !/^(?:[a-zA-Z]:[\\/]|\\\\|file:)/.test(value);
+  }
+
+  function safeProjectPath(value) {
+    return isServerWorkspacePath(value) ? value : '';
+  }
   let selectedScreen = null;
   let selectedElement = null;
 
   function selectedProjectPath() {
-    return $('projectSwitcher')?.selectedOptions?.[0]?.dataset?.path || projectSnapshot?.path || '';
+    return safeProjectPath($('projectSwitcher')?.selectedOptions?.[0]?.dataset?.path) || safeProjectPath(projectSnapshot?.path);
   }
 
   function mirrorPath(route, projectPath = selectedProjectPath()) {
@@ -33,7 +44,7 @@
   }
 
   async function loadMirrorProjects() {
-    const response = await api('/project-mirror/projects');
+    const response = await api('/api/project-mirror/projects');
     const switcher = $('projectSwitcher');
     if (!switcher) return response.projects || [];
     const previousPath = selectedProjectPath();
@@ -52,8 +63,8 @@
       pmContent.innerHTML = '<div style="padding: 40px; text-align: center;"><i class="ph ph-spinner ph-spin" style="font-size: 32px;"></i><p>Scanning Active Project...</p></div>';
       
       const [snapshot, runtimeStatus] = await Promise.all([
-        api(mirrorPath('/project-mirror')),
-        api('/v2/system/status').catch(() => null),
+        api(mirrorPath('/api/project-mirror')),
+        api('/api/v2/system/status').catch(() => null),
       ]);
       projectSnapshot = snapshot;
       if ($('commandRuntimeState')) $('commandRuntimeState').textContent = runtimeStatus?.api?.ok ? 'ONLINE' : 'UNKNOWN';
@@ -84,7 +95,7 @@
 
   async function selectCommandScreen(screenId) {
     try {
-      const data = await api(mirrorPath(`/project-mirror/screen/${encodeURIComponent(screenId)}`));
+      const data = await api(mirrorPath(`/api/project-mirror/screen/${encodeURIComponent(screenId)}`));
       const screen = data.screen;
       selectedScreen = { ...screen, projectId: data.projectId, workspaceId: data.workspaceId, projectPath: data.projectPath, git: data.git };
       const previewPath = previewUrl(screen, data.projectPath);
@@ -263,7 +274,7 @@
 
   async function renderRuntimeStatus() {
     try {
-      const status = await api('/v2/system/status');
+      const status = await api('/api/v2/system/status');
       const pmContent = $('pmContent');
       
       const renderItem = (name, isOk, extra) => `
@@ -297,11 +308,11 @@
     const pmContent = $('pmContent');
     pmContent.innerHTML = '<div style="padding: 40px; text-align: center;"><i class="ph ph-spinner ph-spin" style="font-size: 32px;"></i></div>';
     try {
-      const data = await api(mirrorPath(`/project-mirror/screen/${encodeURIComponent(name)}`));
+      const data = await api(mirrorPath(`/api/project-mirror/screen/${encodeURIComponent(name)}`));
       const screen = data.screen;
       selectedScreen = { ...screen, projectId: data.projectId, workspaceId: data.workspaceId, projectPath: data.projectPath, git: data.git };
       const source = screen.sourceFiles?.[0] || { file: screen.file, line: screen.sourceLine || 1 };
-      const sourceResponse = await api(`/project-mirror/source?path=${encodeURIComponent(data.projectPath)}&file=${encodeURIComponent(source.file)}&line=${encodeURIComponent(source.line || 1)}`);
+      const sourceResponse = await api(`/api/project-mirror/source?path=${encodeURIComponent(data.projectPath)}&file=${encodeURIComponent(source.file)}&line=${encodeURIComponent(source.line || 1)}`);
       const preview = previewUrl(screen, data.projectPath);
       
       let html = `
@@ -421,7 +432,7 @@
     if (pmScanBtn) {
       pmScanBtn.addEventListener('click', async () => {
         pmScanBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Scanning...';
-        await api('/project-mirror/scan', { method: 'POST', body: JSON.stringify({ projectPath: selectedProjectPath() }) });
+        await api('/api/project-mirror/scan', { method: 'POST', body: JSON.stringify({ projectPath: selectedProjectPath() }) });
         await loadProjectMirror();
         pmScanBtn.innerHTML = '<i class="ph ph-scan"></i> Scan Real';
       });
@@ -514,7 +525,7 @@
         ]
         : undefined;
       // 1. Send Prompt to create a Job
-      const jobRes = await api('/v2/jobs', {
+      const jobRes = await api('/api/v2/jobs', {
         method: 'POST',
         body: JSON.stringify({
           prompt: value,
