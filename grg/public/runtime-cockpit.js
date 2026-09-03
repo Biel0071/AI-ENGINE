@@ -71,6 +71,9 @@
     return window.__fenixCockpitDebug;
   }
   cockpitDebug();
+  // Contrato de estado compartilhado: Command Center, AI City e cockpit devem
+  // renderizar a mesma leitura do runtime, nunca cópias locais concorrentes.
+  window.__FENIX_OPERATIONAL_STATE__ = state;
 
   function api(path, options = {}) {
     return window.FENIX?.api
@@ -309,12 +312,16 @@
   }
 
   function setInitialView() {
+    const hashView = (window.location.hash.slice(1) || 'command').split('?')[0];
+    const targetId = `view-${hashView}`;
+    const hasTarget = document.getElementById(targetId);
+    const chosen = hasTarget ? targetId : 'view-command';
     document.querySelectorAll('.view').forEach((view) => {
-      const active = view.id === 'view-city';
+      const active = view.id === chosen;
       view.classList.toggle('active', active);
       view.style.display = active ? 'flex' : 'none';
     });
-    document.querySelectorAll('button.nav-item').forEach((nav) => nav.classList.toggle('active', nav.dataset.view === 'city'));
+    document.querySelectorAll('button.nav-item').forEach((nav) => nav.classList.toggle('active', `view-${nav.dataset.view}` === chosen));
   }
 
   function switchView(viewId) {
@@ -903,7 +910,9 @@
       projectId: 'fenix_boot_visual',
       projectName: 'FENIX OS',
       status: window.FENIX?.live?.status || 'BOOTING',
-      workers: window.FENIX?.live?.workers || { active: 0, total: 3 },
+      // Sem worker publicado pelo runtime, a capacidade é zero. Não criar um
+      // total visual fictício durante o boot.
+      workers: window.FENIX?.live?.workers || { active: 0, total: 0 },
       totals: {
         floors: floors.length,
         rooms: floors.reduce((sum, floor) => sum + floor.rooms.length, 0),
@@ -1192,7 +1201,7 @@
     const progress = jobs.length ? Math.round((done / jobs.length) * 100) : 0;
     return `<div class="mission-control-panel">
       ${detailsTable({
-        Mission: mission.id || mission.missionId || 'not published',
+        Mission: mission.displayName || mission.name || mission.id || mission.missionId || 'not published',
         Goal: mission.prompt || mission.goal || mission.objective || 'not published',
         Status: mission.status || 'not published',
         Priority: mission.priority || 'not published',
@@ -1897,13 +1906,15 @@
     const debug = cockpitDebug();
     debug.lastHydrateStartedAt = new Date().toISOString();
     const loaders = [
+      ['health', () => requestJson('/health'), 5000],
       ['snapshot', () => requestJson('/runtime/snapshot'), 12000],
       ['projects', () => api('/api/fenix/projects'), 5000],
-      ['devJobs', () => api('/api/fenix/jobs'), 4500],
-      ['devMissions', () => api('/api/fenix/missions'), 4500],
-      ['jobs', () => api('/api/runtime/jobs'), 3500],
-      ['missions', () => api('/api/missions'), 3500],
+      // O Command Center usa o contrato FÊNIX canônico. Uma única leitura de
+      // cada recurso evita a rajada inicial que deixava a cidade vazia/429.
+      ['jobs', () => api(`/api/fenix/jobs?_rt=${Date.now()}`, { cache: 'no-store' }), 3500],
+      ['missions', () => api(`/api/fenix/missions?_rt=${Date.now()}`, { cache: 'no-store' }), 3500],
       ['eventsApi', () => api('/api/events?limit=80'), 3500],
+      ['missionEvents', () => api(`/api/fenix/mission-events?limit=80&_rt=${Date.now()}`, { cache: 'no-store' }), 3500],
       ['memory', () => api('/api/fenix/memory/search?q=&limit=20'), 2200],
       ['learning', () => api('/api/memory/search?q=procedural&limit=20'), 2200],
       ['knowledge', () => api('/api/knowledge'), 2200],
@@ -1942,6 +1953,8 @@
       state.events = state.api.eventsApi.events.concat(state.events).slice(0, 200);
     }
     render();
+    window.__FENIX_OPERATIONAL_STATE__ = state;
+    window.renderCommandCenterPanels?.();
     cockpitDebug().lastHydrateFinishedAt = new Date().toISOString();
     cockpitDebug().lastSnapshotStatus = state.api.snapshot?.status || state.api.snapshot?.error || (state.api.snapshot?.timeout ? 'timeout' : 'none');
   }
@@ -1976,7 +1989,10 @@
     renderShell();
     render();
     hydrate();
-    setInterval(() => { if (!document.hidden) hydrate(); }, 15000);
+    setInterval(() => {
+      const active = document.querySelector('.view.active')?.id;
+      if (!document.hidden && ['view-command', 'view-runtime', 'view-city'].includes(active)) hydrate();
+    }, 15000);
   }
 
   function readInitialSnapshot() {

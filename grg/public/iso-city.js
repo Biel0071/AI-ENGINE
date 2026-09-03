@@ -31,7 +31,16 @@ class IsoCityEngine {
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');
     this.time = 0;
-    
+
+    // T31 — Multi-level navigation
+    this.viewLevel = 'city'; // 'city' | 'building' | 'floor' | 'agent'
+    this.activeDistrict = null;   // district key string
+    this.activeFloor    = null;   // floor index 0-11
+    this.activeAgent    = null;   // agent object
+
+    // T35 — Zoom-to-building animation state
+    this._zoomAnim = { active: false, scale: 0, target: 1 };
+
     this.state = {
       camera: { x: 0, y: 0, zoom: 1.0 },
       targetCamera: { x: 0, y: 0, zoom: 1.0 },
@@ -39,6 +48,7 @@ class IsoCityEngine {
       lastMouse: { x: 0, y: 0 },
       tileSize: 60,
       hoveredAgent: null,
+      hoveredDistrict: null,
       lastTime: performance.now(),
       selectedAgent: null
     };
@@ -50,67 +60,37 @@ class IsoCityEngine {
     };
 
     this.DISTRICTS = {
-      'CENTRAL':    { x: 0,  y: 0,  w: 4, h: 4, color: '#1e293b', label: 'CENTRAL PLAZA' },
-      'MASTER_HQ':  { x: -6, y: -6, w: 3, h: 3, color: '#b91c1c', label: 'MASTER HQ' },
-      'FRONTEND':   { x: 6,  y: -2, w: 3, h: 3, color: '#2563eb', label: 'FRONTEND DISTRICT' },
-      'BACKEND':    { x: 6,  y: 4,  w: 3, h: 3, color: '#16a34a', label: 'BACKEND DISTRICT' },
-      'QA':         { x: -6, y: 4,  w: 3, h: 3, color: '#d97706', label: 'QA LAB' },
-      'DEVOPS':     { x: -8, y: -2, w: 3, h: 3, color: '#7c3aed', label: 'DEVOPS CENTER' },
-      'AI_MODELS':  { x: 0,  y: -8, w: 4, h: 3, color: '#be185d', label: 'AI CORE' },
-      'MEMORY':     { x: 0,  y: 8,  w: 4, h: 3, color: '#0f766e', label: 'MEMORY VAULT' },
-      'KNOWLEDGE':  { x: -4, y: 9,  w: 3, h: 3, color: '#6d28d9', label: 'KNOWLEDGE CENTER' },
-      'MCP':        { x: 8,  y: 1,  w: 3, h: 3, color: '#0284c7', label: 'MCP HUB' }
+      'CENTRAL':    { x: 0,  y: 0,  w: 4, h: 4, color: '#1e293b', label: 'CENTRAL PLAZA',    emoji: '🏛️' },
+      'MASTER_HQ':  { x: -6, y: -6, w: 3, h: 3, color: '#b91c1c', label: 'DEVOPS CENTER',     emoji: '🚀' },
+      'FRONTEND':   { x: 6,  y: -2, w: 3, h: 3, color: '#2563eb', label: 'FRONTEND DISTRICT', emoji: '🎨' },
+      'BACKEND':    { x: 6,  y: 4,  w: 3, h: 3, color: '#16a34a', label: 'BACKEND DISTRICT',  emoji: '⚙️' },
+      'QA':         { x: -6, y: 4,  w: 3, h: 3, color: '#d97706', label: 'QA LAB',            emoji: '🧪' },
+      'DEVOPS':     { x: -8, y: -2, w: 3, h: 3, color: '#7c3aed', label: 'KNOWLEDGE CENTER',  emoji: '📚' },
+      'AI_MODELS':  { x: 0,  y: -8, w: 4, h: 3, color: '#be185d', label: 'AI CORE',           emoji: '🤖' },
+      'MEMORY':     { x: 0,  y: 8,  w: 4, h: 3, color: '#0f766e', label: 'MEMORY VAULT',      emoji: '🧠' },
+      'KNOWLEDGE':  { x: -4, y: 9,  w: 3, h: 3, color: '#6d28d9', label: 'KNOWLEDGE CENTER',  emoji: '📖' },
+      'MCP':        { x: 8,  y: 1,  w: 3, h: 3, color: '#0284c7', label: 'MCP HUB',           emoji: '🔌' }
     };
 
-    this._initSimulatedAgents();
+    // Populate only from the live FÊNIX runtime; never show synthetic agents.
     this.resize();
     window.addEventListener('resize', () => this.resize());
     this.setupEvents();
     
-    // Sync with real API every 3s
-    this._syncInterval = setInterval(() => this.syncRealData(), 3000);
+    // Sync with real API every 3s and on live events
+    this._syncInterval = setInterval(() => {
+      const active = document.querySelector('.view.active')?.id;
+      if (active === 'view-command' || active === 'view-city') this.syncRealData();
+    }, 3000);
+    window.addEventListener('fenix-live', () => this.syncRealData());
+    window.addEventListener('fenix:data', () => this.syncRealData());
     this.syncRealData();
     this.startLoop();
   }
 
   _initSimulatedAgents() {
-    for (const tmpl of AGENT_ROLES) {
-      const dist = this.DISTRICTS[tmpl.district];
-      if (!dist) continue;
-      const agent = {
-        id: tmpl.id,
-        name: tmpl.name,
-        role: tmpl.role,
-        color: tmpl.color,
-        emoji: tmpl.emoji,
-        district: tmpl.district,
-        x: dist.x + (Math.random() - 0.5) * (dist.w - 1),
-        y: dist.y + (Math.random() - 0.5) * (dist.h - 1),
-        tx: dist.x, ty: dist.y,
-        status: Math.random() < 0.6 ? 'WORKING' : 'IDLE',
-        workMsg: WORK_MESSAGES[Math.floor(Math.random() * WORK_MESSAGES.length)],
-        trail: [],
-        // Walk animation
-        walkFrame: 0,
-        walkTimer: 0,
-        // Wander timer
-        wanderTimer: Math.random() * 4,
-        // Speech bubble
-        bubbleTimer: Math.random() * 6,
-        bubble: null,
-        // Real API override
-        isReal: false
-      };
-      this._setNewTarget(agent);
-      this.world.agents.set(tmpl.id, agent);
-    }
-  }
-
-  _setNewTarget(agent) {
-    const dist = this.DISTRICTS[agent.district];
-    if (!dist) return;
-    agent.tx = dist.x + (Math.random() - 0.5) * (dist.w * 0.8);
-    agent.ty = dist.y + (Math.random() - 0.5) * (dist.h * 0.8);
+    // Compatibility hook: old callers must not create fictional runtime state.
+    this.world.agents.clear();
   }
 
   resize() {
@@ -148,11 +128,59 @@ class IsoCityEngine {
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
       const agent = this._hitTestAgent(mx, my);
       this.state.selectedAgent = agent === this.state.selectedAgent ? null : agent;
+      if (this.state.selectedAgent) {
+        window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: this.state.selectedAgent } }));
+      }
     });
     // Double-click to reset camera
     this.canvas.addEventListener('dblclick', () => {
       this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
+      this._updateZoomDisplay();
     });
+
+    // Toolbar Zoom & Filter controls
+    document.getElementById('btnZoomIn')?.addEventListener('click', () => {
+      this.state.targetCamera.zoom = Math.min(2.8, this.state.targetCamera.zoom * 1.25);
+      this._updateZoomDisplay();
+    });
+    document.getElementById('btnZoomOut')?.addEventListener('click', () => {
+      this.state.targetCamera.zoom = Math.max(0.4, this.state.targetCamera.zoom * 0.8);
+      this._updateZoomDisplay();
+    });
+    document.getElementById('btnResetCamera')?.addEventListener('click', () => {
+      this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
+      this._updateZoomDisplay();
+    });
+    document.getElementById('btnFullscreenCity')?.addEventListener('click', () => {
+      const container = document.getElementById('wsCityContainer') || this.canvas;
+      if (!document.fullscreenElement) {
+        container.requestFullscreen?.().catch(() => {});
+      } else {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    });
+  }
+
+  _updateZoomDisplay() {
+    const lbl = document.getElementById('lblZoomLevel');
+    if (lbl) lbl.textContent = `${Math.round(this.state.targetCamera.zoom * 100)}%`;
+  }
+
+  focusAgent(agentId) {
+    if (!agentId) return;
+    const target = this.world.agents.get(agentId) || [...this.world.agents.values()].find(a =>
+      a.id.toLowerCase() === String(agentId).toLowerCase() || a.name.toLowerCase().includes(String(agentId).toLowerCase())
+    );
+    if (target) {
+      this.state.selectedAgent = target;
+      const tw = this.state.tileSize;
+      const th = this.state.tileSize / 2;
+      this.state.targetCamera.x = -(target.x - target.y) * tw;
+      this.state.targetCamera.y = -(target.x + target.y) * th;
+      this.state.targetCamera.zoom = 1.5;
+      this._updateZoomDisplay();
+      window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: target } }));
+    }
   }
 
   _hitTestAgent(mx, my) {
@@ -174,34 +202,53 @@ class IsoCityEngine {
     this.canvas.style.cursor = this.state.hoveredAgent ? 'pointer' : (this.state.isDragging ? 'grabbing' : 'grab');
   }
 
-  syncRealData() {
+  async syncRealData() {
     try {
       let apiAgents = [];
-      if (window.FENIX?.live?.agents?.length) apiAgents = window.FENIX.live.agents;
-      else if (window.state?.api?.agentsPanel?.agents?.length) apiAgents = window.state.api.agentsPanel.agents;
-      else if (window.state?.api?.agents?.agents?.length) apiAgents = window.state.api.agents.agents;
-
-      if (apiAgents.length > 0) {
-        // Overlay real agents on top of simulated ones
-        for (const a of apiAgents) {
-          const id = a.id || a.name;
-          const existingRole = AGENT_ROLES.find(r => r.role === (a.role || '').toLowerCase() || r.id === id);
-          if (existingRole && this.world.agents.has(existingRole.id)) {
-            const agent = this.world.agents.get(existingRole.id);
-            agent.status = a.status || agent.status;
-            agent.isReal = true;
-          }
+      if (window.FENIX?.live?.agents?.length) {
+        apiAgents = window.FENIX.live.agents;
+      } else {
+        const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const res = await fetch('/runtime/snapshot', { headers }).then(r => r.ok ? r.json() : null).catch(() => null);
+        if (res?.payload?.agents?.length) {
+          apiAgents = res.payload.agents;
+          if (window.FENIX?.live) window.FENIX.live.agents = apiAgents;
+        } else if (window.state?.api?.agentsPanel?.agents?.length) {
+          apiAgents = window.state.api.agentsPanel.agents;
+        } else if (window.state?.api?.agents?.agents?.length) {
+          apiAgents = window.state.api.agents.agents;
         }
       }
 
-      // Randomly cycle statuses for simulated agents to keep city alive
-      for (const agent of this.world.agents.values()) {
-        if (!agent.isReal && Math.random() < 0.08) {
-          agent.status = Math.random() < 0.55 ? 'WORKING' : 'IDLE';
-          if (agent.status === 'WORKING') {
-            agent.workMsg = WORK_MESSAGES[Math.floor(Math.random() * WORK_MESSAGES.length)];
-          }
-        }
+      const next = new Map();
+      for (const a of apiAgents) {
+        const id = String(a.id || a.agentId || a.name || '').trim();
+        if (!id) continue;
+        const roleText = String(a.role || a.type || a.name || '').toLowerCase();
+        const template = AGENT_ROLES.find(r => id.toLowerCase() === r.id || roleText.includes(r.role)) || AGENT_ROLES[0];
+        const district = this.DISTRICTS[a.district] ? a.district : (this.DISTRICTS[template.district] ? template.district : 'CENTRAL');
+        const dist = this.DISTRICTS[district] || this.DISTRICTS.CENTRAL;
+        const seed = [...id].reduce((n, ch) => n + ch.charCodeAt(0), 0);
+        const agent = this.world.agents.get(id) || { id, x: dist.x + ((seed % 7) - 3) * 0.12, y: dist.y + ((Math.floor(seed / 7) % 7) - 3) * 0.12, tx: dist.x, ty: dist.y, trail: [], walkFrame: 0, walkTimer: 0, wanderTimer: 0, bubbleTimer: 0, bubble: null };
+        Object.assign(agent, {
+          id,
+          name: a.name || template.name,
+          role: a.role || template.role,
+          color: a.color || template.color,
+          emoji: a.emoji || template.emoji,
+          district,
+          status: String(a.status || 'AVAILABLE').toUpperCase(),
+          workMsg: a.currentJob?.name || a.currentJob?.title || a.activity || (a.status === 'RUNNING' ? 'executando...' : 'idle'),
+          model: a.model || a.modelName || 'Qwen 2.5 3B',
+          isReal: true,
+          currentJob: a.currentJob || null,
+          currentMission: a.currentMission || null
+        });
+        next.set(id, agent);
+      }
+      if (next.size > 0) {
+        this.world.agents = next;
       }
     } catch(e) {}
   }
@@ -248,6 +295,7 @@ class IsoCityEngine {
 
   _updateAgent(agent, delta) {
     const isWorking = agent.status === 'WORKING' || agent.status === 'RUNNING';
+    if (agent.isReal) { agent.tx = agent.x; agent.ty = agent.y; }
 
     // Walk animation
     agent.walkTimer += delta;
@@ -269,20 +317,6 @@ class IsoCityEngine {
       agent.y += (dy / dist) * move;
       agent.trail.push({ x: agent.x, y: agent.y, life: 0.6 });
       if (agent.trail.length > 20) agent.trail.shift();
-    }
-
-    // Wander timer — pick new target periodically
-    agent.wanderTimer -= delta;
-    if (agent.wanderTimer <= 0) {
-      agent.wanderTimer = 3 + Math.random() * 5;
-      this._setNewTarget(agent);
-      // Occasionally visit a different district
-      if (Math.random() < 0.25) {
-        const keys = Object.keys(this.DISTRICTS);
-        const nextKey = keys[Math.floor(Math.random() * keys.length)];
-        agent.district = nextKey;
-        this._setNewTarget(agent);
-      }
     }
 
     // Trail decay
@@ -330,6 +364,9 @@ class IsoCityEngine {
     const districts = Object.values(this.DISTRICTS).sort((a,b) => (a.x+a.y)-(b.x+b.y));
     for (const d of districts) this._drawDistrict(ctx, d, cx, cy, zoom);
 
+    // Avatar central do Fênix (desenhado sobre os distritos mas sob os agentes)
+    this._drawFenixAvatar(ctx, cx, cy, zoom);
+
     // Trails
     for (const agent of this.world.agents.values()) this._drawTrail(ctx, agent, cx, cy, zoom);
 
@@ -351,22 +388,154 @@ class IsoCityEngine {
     g.addColorStop(1, '#020408');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
-    // Ambient glow
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.035)';
+    // Central red ambient glow — pulsa com o Fênix
+    const glowAlpha = 0.04 + 0.025 * Math.sin(this.time * 1.5);
+    ctx.fillStyle = `rgba(239, 68, 68, ${glowAlpha})`;
+    ctx.beginPath();
+    ctx.arc(w*.5, h*.45, Math.min(w,h)*.45, 0, Math.PI*2);
+    ctx.fill();
+    // Ambient blue glow
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.03)';
     ctx.beginPath();
     ctx.arc(w*.5, h*.45, Math.min(w,h)*.38, 0, Math.PI*2);
     ctx.fill();
     // Stars
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     const seed = 42;
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 80; i++) {
       const sx = ((i*137.5 + seed) % w);
-      const sy = ((i*97.3 + seed*2) % (h*0.6));
+      const sy = ((i*97.3 + seed*2) % (h*0.65));
       const blink = 0.3 + 0.7 * Math.abs(Math.sin(this.time*0.5 + i));
-      ctx.globalAlpha = blink * 0.4;
-      ctx.fillRect(sx, sy, 1, 1);
+      ctx.globalAlpha = blink * 0.5;
+      ctx.fillRect(sx, sy, i % 7 === 0 ? 2 : 1, i % 7 === 0 ? 2 : 1);
     }
     ctx.globalAlpha = 1;
+  }
+
+  _drawFenixAvatar(ctx, cx, cy, zoom) {
+    // Avatar central do FÊNIX — personagem pixelado com glow pulsante
+    const avatarX = cx;
+    const avatarY = cy - 10 * zoom;
+    const t = this.time;
+    const pulse = 0.8 + 0.2 * Math.sin(t * 2.5);
+    const outerGlow = 30 + 15 * Math.sin(t * 1.8);
+    const innerGlow = 15 + 8 * Math.sin(t * 2.5);
+
+    // Anel exterior rotativo
+    ctx.save();
+    ctx.translate(avatarX, avatarY);
+    ctx.rotate(t * 0.4);
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const rx = Math.cos(angle) * 28 * zoom;
+      const ry = Math.sin(angle) * 14 * zoom;
+      ctx.fillStyle = `rgba(239,68,68,${0.4 + 0.3 * Math.sin(t * 3 + i)})`;
+      ctx.beginPath();
+      ctx.arc(rx, ry, 3 * zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Anel médio (anti-horário)
+    ctx.save();
+    ctx.translate(avatarX, avatarY);
+    ctx.rotate(-t * 0.7);
+    ctx.strokeStyle = `rgba(239,68,68,${0.25 * pulse})`;
+    ctx.lineWidth = 1.5 * zoom;
+    ctx.setLineDash([4 * zoom, 6 * zoom]);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 20 * zoom, 10 * zoom, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Glow externo
+    const glowGrad = ctx.createRadialGradient(avatarX, avatarY, 0, avatarX, avatarY, outerGlow * zoom);
+    glowGrad.addColorStop(0, `rgba(239,68,68,${0.35 * pulse})`);
+    glowGrad.addColorStop(0.5, `rgba(239,68,68,${0.1 * pulse})`);
+    glowGrad.addColorStop(1, 'rgba(239,68,68,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(avatarX, avatarY, outerGlow * zoom, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Corpo do avatar (pixel-art simplificado)
+    const sz = 12 * zoom;
+    // Torso
+    const torsoGrad = ctx.createLinearGradient(avatarX - sz, avatarY - sz * 1.8, avatarX + sz, avatarY);
+    torsoGrad.addColorStop(0, '#ef4444');
+    torsoGrad.addColorStop(0.4, '#991b1b');
+    torsoGrad.addColorStop(1, '#300');
+    ctx.fillStyle = torsoGrad;
+    ctx.save();
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = innerGlow * zoom;
+    ctx.beginPath();
+    ctx.ellipse(avatarX, avatarY, sz, sz * 0.55, 0, 0, Math.PI, false);
+    ctx.lineTo(avatarX - sz, avatarY - sz * 1.6);
+    ctx.ellipse(avatarX, avatarY - sz * 1.6, sz, sz * 0.55, 0, Math.PI, 0, true);
+    ctx.lineTo(avatarX + sz, avatarY);
+    ctx.fill();
+
+    // Topo do corpo
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.ellipse(avatarX, avatarY - sz * 1.6, sz, sz * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cabeça
+    const headY = avatarY - sz * 1.6 - sz * 1.0;
+    const headR = sz * 0.75;
+    const headGrad = ctx.createRadialGradient(avatarX - headR * 0.3, headY - headR * 0.3, 0, avatarX, headY, headR);
+    headGrad.addColorStop(0, '#f87171');
+    headGrad.addColorStop(0.6, '#b91c1c');
+    headGrad.addColorStop(1, '#020617');
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.arc(avatarX, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = zoom;
+    ctx.stroke();
+
+    // Visor / olhos
+    ctx.fillStyle = '#ef4444';
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 12 * zoom;
+    ctx.fillRect(avatarX - headR * 0.65, headY - headR * 0.15, headR * 1.3, headR * 0.3);
+    ctx.shadowBlur = 0;
+
+    // Capacete - penas do fênix
+    ctx.strokeStyle = `rgba(239,68,68,${0.7 + 0.3 * Math.sin(t * 3)})`;
+    ctx.lineWidth = 2 * zoom;
+    ctx.beginPath();
+    ctx.moveTo(avatarX - headR * 0.5, headY - headR * 0.8);
+    ctx.quadraticCurveTo(avatarX - headR * 0.8, headY - headR * 2.2, avatarX - headR * 0.3, headY - headR * 2.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(avatarX + headR * 0.5, headY - headR * 0.8);
+    ctx.quadraticCurveTo(avatarX + headR * 0.8, headY - headR * 2.2, avatarX + headR * 0.3, headY - headR * 2.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(avatarX, headY - headR);
+    ctx.quadraticCurveTo(avatarX, headY - headR * 2.4, avatarX, headY - headR * 2.8);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Label "FÊNIX OS" abaixo do avatar
+    ctx.save();
+    ctx.font = `bold ${Math.max(10, 11 * zoom)}px 'Inter',sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ef4444';
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 8 * zoom;
+    ctx.fillText('FÊNIX OS', avatarX, avatarY + 24 * zoom);
+    ctx.shadowBlur = 0;
+    ctx.font = `${Math.max(7, 8 * zoom)}px 'JetBrains Mono',monospace`;
+    ctx.fillStyle = 'rgba(239,68,68,0.7)';
+    ctx.fillText('MASTER ORCHESTRATOR', avatarX, avatarY + 34 * zoom);
+    ctx.restore();
   }
 
   _drawGrid(ctx, cx, cy, zoom) {
@@ -427,10 +596,24 @@ class IsoCityEngine {
     const center = this.toScreen(d.x, d.y, dep, cx, cy, zoom);
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10*zoom;
+    // Emoji do distrito
+    if (d.emoji && zoom > 0.6) {
+      ctx.font = `${Math.max(10, 14*zoom)}px 'Inter',sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = 0.9;
+      ctx.fillText(d.emoji, center.x, center.y - 52*zoom);
+      ctx.globalAlpha = 1;
+    }
+    // Nome do distrito
     ctx.font = `700 ${Math.max(9, 11*zoom)}px 'Inter',sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = agentsHere > 0 ? d.color : '#e2e8f0';
+    if (agentsHere > 0) {
+      ctx.shadowColor = d.color;
+      ctx.shadowBlur = 8*zoom;
+    }
     ctx.fillText(d.label, center.x, center.y - 38*zoom);
+    ctx.shadowBlur = 0;
     if (agentsHere > 0) {
       ctx.font = `600 ${Math.max(7,8*zoom)}px 'JetBrains Mono',monospace`;
       ctx.fillStyle = d.color;
@@ -502,6 +685,8 @@ class IsoCityEngine {
     const bodyH = Math.max(14, 20 * zoom);
     const headR = Math.max(4, 6 * zoom);
 
+    const isMaster = agent.id === 'Orchestrator' || String(agent.role || '').toLowerCase().includes('orchestrator');
+
     // Selection ring
     if (isSelected) {
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 2*zoom;
@@ -512,15 +697,35 @@ class IsoCityEngine {
       ctx.setLineDash([]);
     }
 
-    // Shadow
+    // Shadow & Ground Ring
     const shadowSc = this.toScreen(agent.x, agent.y, 0.2, cx, cy, zoom);
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath(); ctx.ellipse(shadowSc.x, shadowSc.y, r, r*0.45, 0, 0, Math.PI*2); ctx.fill();
 
-    // Body — Habbo cylinder
+    if (isMaster) {
+      // Summoning Cyber Ring for Master Orchestrator
+      const pulseRing = 1 + 0.15 * Math.sin(this.time * 3);
+      ctx.save();
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 18 * zoom;
+      ctx.strokeStyle = `rgba(239, 68, 68, ${0.5 + 0.3 * Math.sin(this.time * 2.5)})`;
+      ctx.lineWidth = 2 * zoom;
+      ctx.beginPath();
+      ctx.ellipse(shadowSc.x, shadowSc.y, r * 2.8 * pulseRing, r * 1.4 * pulseRing, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Body — Futuristic armor cylinder
     const grad = ctx.createLinearGradient(sc.x-r, sc.y-bodyH, sc.x+r, sc.y);
-    grad.addColorStop(0, this._adjustColor(agent.color, 30));
-    grad.addColorStop(1, this._adjustColor(agent.color, -30));
+    if (isMaster) {
+      grad.addColorStop(0, '#ef4444');
+      grad.addColorStop(0.5, '#991b1b');
+      grad.addColorStop(1, '#090d16');
+    } else {
+      grad.addColorStop(0, this._adjustColor(agent.color, 30));
+      grad.addColorStop(1, this._adjustColor(agent.color, -30));
+    }
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.ellipse(sc.x, sc.y, r, r*0.5, 0, 0, Math.PI, false);
@@ -529,23 +734,38 @@ class IsoCityEngine {
     ctx.lineTo(sc.x+r, sc.y);
     ctx.fill();
     // Body top
-    ctx.fillStyle = this._adjustColor(agent.color, 20);
+    ctx.fillStyle = isMaster ? '#ef4444' : this._adjustColor(agent.color, 20);
     ctx.beginPath(); ctx.ellipse(sc.x, sc.y-bodyH, r, r*0.5, 0, 0, Math.PI*2); ctx.fill();
 
-    // Head (round)
+    // Head (Futuristic helmet/head)
     const headY = sc.y - bodyH - headR*1.4;
     const hg = ctx.createRadialGradient(sc.x-headR*0.3, headY-headR*0.3, 0, sc.x, headY, headR);
-    hg.addColorStop(0, this._adjustColor(agent.color, 60));
-    hg.addColorStop(1, agent.color);
+    if (isMaster) {
+      hg.addColorStop(0, '#f87171');
+      hg.addColorStop(0.6, '#b91c1c');
+      hg.addColorStop(1, '#020617');
+    } else {
+      hg.addColorStop(0, this._adjustColor(agent.color, 60));
+      hg.addColorStop(1, agent.color);
+    }
     ctx.fillStyle = hg;
     ctx.beginPath(); ctx.arc(sc.x, headY, headR, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = this._adjustColor(agent.color, 40);
+    ctx.strokeStyle = isMaster ? '#ef4444' : this._adjustColor(agent.color, 40);
     ctx.lineWidth = zoom; ctx.stroke();
 
-    // Eyes (2 white dots)
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(sc.x - headR*0.3, headY - headR*0.1, headR*0.18, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(sc.x + headR*0.3, headY - headR*0.1, headR*0.18, 0, Math.PI*2); ctx.fill();
+    // Eyes / Cyber Visor
+    if (isMaster) {
+      ctx.save();
+      ctx.fillStyle = '#ef4444';
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 12 * zoom;
+      ctx.fillRect(sc.x - headR * 0.65, headY - headR * 0.15, headR * 1.3, headR * 0.3);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(sc.x - headR*0.3, headY - headR*0.1, headR*0.18, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sc.x + headR*0.3, headY - headR*0.1, headR*0.18, 0, Math.PI*2); ctx.fill();
+    }
 
     // Work glow
     if (isWorking) {
