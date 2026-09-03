@@ -1323,8 +1323,19 @@
             body: JSON.stringify({ name: proposal.name, objective: proposal.objective, autoApprove: true, steps: [{ type: 'audit' }, { type: 'inspect', dependsOn: [0] }] }),
           });
           const mission = await missionRes.json().catch(() => ({}));
-          const reply = missionRes.ok
-            ? `Autorização recebida. Missão ${proposal.name} criada no Mission Runtime (${mission.id || mission.missionId}) e pronta para acompanhamento.`
+          let started = false;
+          const missionId = mission.id || mission.missionId;
+          if (missionRes.ok && missionId) {
+            const startRes = await fetch(`/api/missions/${encodeURIComponent(missionId)}/start`, {
+              method: 'POST',
+              headers: { ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
+            });
+            started = startRes.ok;
+          }
+          const reply = missionRes.ok && started
+            ? `Autorização recebida. Missão ${proposal.name} criada e iniciada no Mission Runtime (${missionId}). Acompanhe o DAG pelos eventos e jobs.`
+            : missionRes.ok
+              ? `Missão ${proposal.name} foi criada (${missionId}), mas o runtime não confirmou o início. Verifique a Central de Missões.`
             : `Não foi possível criar a missão: ${mission.error || 'o runtime recusou a solicitação'}.`;
           renderChatBubble(histEl, 'fenix', reply, chatTimestamp());
           chatMsgs.push({ role: 'fenix', text: reply, ts: chatTimestamp() });
