@@ -114,9 +114,18 @@ async function handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, 
     const persisted = await app.jobs.workers(tenantId, actorId);
     const queueStatus = app.queues?.workersStatus ? await app.queues.workersStatus('fenix-runtime') : null;
     const connectedIds = new Set((queueStatus?.workers || []).map((worker) => worker.workerId).filter(Boolean));
+    const localCutoff = Date.now() - 30_000;
     const canonical = persisted.map((worker) => ({
       ...worker,
-      status: queueStatus ? (connectedIds.has(worker.workerId) && worker.status === 'ONLINE' ? 'ONLINE' : 'OFFLINE') : worker.status,
+      // The built-in worker consumes the canonical JobEngine directly and is
+      // intentionally not a BullMQ client. Keep its fresh heartbeat ONLINE;
+      // otherwise the Runtime screen falsely reports the live process offline
+      // whenever the optional Redis/BullMQ queue is configured.
+      status: queueStatus
+        ? ((String(worker.workerId || '').startsWith('fenix-local:')
+          && Date.parse(worker.lastSeenAt || worker.lastHeartbeat || '') >= localCutoff)
+          || (connectedIds.has(worker.workerId) && worker.status === 'ONLINE') ? 'ONLINE' : 'OFFLINE')
+        : worker.status,
     }));
     for (const remote of queueStatus?.workers || []) {
       if (!canonical.some((worker) => worker.workerId === remote.workerId)) canonical.push(remote);
