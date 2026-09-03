@@ -224,10 +224,17 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   console.log('[DEBUG ProductRoutes Entry]', req.method, url.pathname);
   if (!url.pathname.startsWith('/api/v2/')) return false;
 
-  try {
-    initEngines(app);
-  } catch (err) {
-    console.error('[ProductExperienceRoutes] initEngines error:', err);
+  // The SSE handshake must not wait for the full product-engine bootstrap.
+  // Fresh processes otherwise miss the client's short connection window.
+  const isEventStream = req.method === 'GET' && url.pathname === '/api/v2/events/stream';
+  if (isEventStream) {
+    eventBus = eventBus || app.bus || app.eventBus || null;
+  } else {
+    try {
+      initEngines(app);
+    } catch (err) {
+      console.error('[ProductExperienceRoutes] initEngines error:', err);
+    }
   }
 
   // 1. POST /api/v2/onboarding/import (M27: Real Project Onboarding)
@@ -490,7 +497,14 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
 
   // 9. GET /api/v2/ai-platform/status (REAL AI Platform Status & Health Check)
   if (req.method === 'GET' && url.pathname === '/api/v2/ai-platform/status') {
-    const summary = providerRegistry ? providerRegistry.getPublicProviderSummary() : [];
+    // O status do cockpit deve refletir o mesmo Gateway que atende o chat. O
+    // registry legado podia apontar para a VPS mesmo quando o runtime local
+    // estava saudável, produzindo o falso OFFLINE na interface.
+    const gatewayProviders = app.aiGateway?.providers || {};
+    const summary = Object.entries(gatewayProviders).map(([name, provider]) => ({
+      id: name.toUpperCase(), name, status: provider ? 'AVAILABLE' : 'UNAVAILABLE',
+      apiKeyConfigured: Boolean(provider?.hasKey), model: provider?.model || null,
+    }));
     const economy = tokenEconomy ? tokenEconomy.getEfficiencyReport() : {};
     const routerOverview = modelRouter ? modelRouter.getRegistryOverview() : {};
     sendJson(res, 200, {
@@ -509,7 +523,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        const { message, contextType, projectId, modelOverride } = payload;
+        const { message, contextType, projectId, modelOverride, history = [] } = payload;
         if (!message) throw new Error('message is required');
 
         const { AIPlatformProvider } = require('../ai-runtime/aiplatform-provider');
@@ -540,10 +554,12 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         const startTs = Date.now();
         const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
         
+        const safeHistory = Array.isArray(history) ? history.slice(-12).filter(item => item && ['user', 'assistant'].includes(item.role) && typeof item.content === 'string').map(item => ({ role: item.role, content: item.content.slice(0, 4000) })) : [];
         const chatRes = await provider.chat({
           model,
           messages: [
             { role: 'system', content: systemPrompt },
+            ...safeHistory,
             { role: 'user', content: message }
           ]
         });
@@ -965,12 +981,16 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*'
     });
+    // Flush the handshake immediately. Node may otherwise buffer the first
+    // small SSE frame until a later write, leaving clients stuck in CONNECTING.
+    if (typeof res.flushHeaders === 'function') res.flushHeaders();
 
     const sendSse = (evtName, data) => {
       res.write(`event: ${evtName}\ndata: ${JSON.stringify(data)}\n\n`);
     };
 
     sendSse('connected', { status: 'CONNECTED', timestamp: new Date().toISOString() });
+    if (typeof res.flush === 'function') res.flush();
 
     const unsubList = [];
     if (eventBus) {
