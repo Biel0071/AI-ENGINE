@@ -623,6 +623,35 @@ async function runChat(message) {
     return;
   }
 
+  // Confirmação de uma missão deve iniciar o Mission Runtime canônico.
+  // O pipeline de desenvolvimento continua disponível como capacidade da
+  // missão, mas não substitui o registro persistido de Mission + DAG + jobs.
+  if (confirmed && classification.requiresConfirmation) {
+    try {
+      const mission = await api('/missions', { method: 'POST', body: JSON.stringify({
+        name: `Missão FÊNIX · ${executionValue.slice(0, 64)}`,
+        objective: executionValue,
+        autoApprove: true,
+        steps: [
+          { type: 'audit', description: 'Analisar contexto e estado atual' },
+          { type: 'plan', description: 'Construir plano executável' },
+          { type: 'implement', description: 'Executar mudanças aprovadas' },
+          { type: 'test', description: 'Validar testes e critérios de aceite' },
+        ],
+      }) });
+      const missionId = mission.id || mission.missionId;
+      if (!missionId) throw new Error('runtime não retornou missionId');
+      const started = await api(`/missions/${encodeURIComponent(missionId)}/start`, { method: 'POST' });
+      const reply = `Missão ${missionId} criada e iniciada. Status: ${started.status || 'QUEUED'}. O progresso será acompanhado pelos eventos e jobs.`;
+      saveChatTurn('assistant', reply); bubble(reply, 'bot');
+      await refreshAll();
+    } catch (error) {
+      const reply = `Não foi possível iniciar a missão: ${error.message}`;
+      saveChatTurn('assistant', reply); bubble(reply, 'bot');
+    }
+    return;
+  }
+
   const isLongTask = executionValue.length > 180 || /(crie uma aplicação|sistema completo|projeto|implemente|refatore|construa|pipeline|build|deploy|job|tarefa longa|horas|dias)/i.test(executionValue);
   const isDevPrompt = (confirmed || classification.category === 'SMALL_TASK' || classification.category === 'LONG_MISSION') && isLongTask && /(crie|adicione|melhore|corrija|analise|refatore|implemente|teste|construa|pipeline|task board|projeto|sistema)/i.test(executionValue);
   if (isDevPrompt && window.executeDevPipeline) {
