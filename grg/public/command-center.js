@@ -1121,15 +1121,17 @@
     const redisEl    = document.getElementById('apiPlatformRedis');
     try {
       const r = await fetch(API_PLATFORM_URL, {
+        headers: { Authorization: 'Bearer ' + (getAuthToken() || '') },
         signal: AbortSignal.timeout(5000)
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
-      if (statusEl) { statusEl.textContent = '● CONECTADO'; statusEl.style.color = '#10b981'; }
-      if (provEl)   provEl.textContent = (d.providers || []).join(' · ') || 'ollama';
+      const connected = d.status === 'CONNECTED' || d.status === 'ONLINE';
+      if (statusEl) { statusEl.textContent = connected ? '● CONECTADO' : '● OFFLINE'; statusEl.style.color = connected ? '#10b981' : '#ef4444'; }
+      if (provEl)   provEl.textContent = (d.providers || []).map((p) => typeof p === 'string' ? p : p.name).filter(Boolean).join(' · ') || 'ollama';
       if (uptimeEl) uptimeEl.textContent = d.uptime ? `${Math.round(d.uptime)}s` : '--s';
-      if (dbEl)     { dbEl.textContent = d.checks?.database ? '✓' : '✗'; dbEl.style.color = d.checks?.database ? '#10b981' : '#ef4444'; }
-      if (redisEl)  { redisEl.textContent = d.checks?.redis ? '✓' : '✗'; redisEl.style.color = d.checks?.redis ? '#10b981' : '#ef4444'; }
+      if (dbEl)     { dbEl.textContent = d.checks?.database === false ? '✗' : '✓'; dbEl.style.color = d.checks?.database === false ? '#ef4444' : '#10b981'; }
+      if (redisEl)  { redisEl.textContent = d.checks?.redis === false ? '✗' : '✓'; redisEl.style.color = d.checks?.redis === false ? '#ef4444' : '#10b981'; }
       // Update topbar model chip
       const modelEl = document.getElementById('activeModel');
       if (modelEl && !modelEl.textContent.startsWith('QWEN')) modelEl.textContent = 'QWEN 2.5 3B';
