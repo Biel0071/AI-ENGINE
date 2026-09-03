@@ -1,4 +1,5 @@
-const token = localStorage.getItem('grg_token');
+const token = window.localStorage?.getItem('grg_token') || null;
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 let accessToken = token;
 
 if (!accessToken) {
@@ -128,8 +129,62 @@ function bubble(message, who = 'bot') {
   const div = document.createElement('div');
   div.className = `bubble ${who}`;
   div.innerHTML = esc(message).replace(/\n/g, '<br>');
-  $('chatLog').appendChild(div);
-  $('chatLog').scrollTop = $('chatLog').scrollHeight;
+  const target = $('chatLog') || document.getElementById('masterCmdForm')?.parentElement;
+  if (!target) return;
+  target.appendChild(div);
+  target.scrollTop = target.scrollHeight;
+  return div;
+}
+
+const CHAT_HISTORY_KEY = 'fenix_chat_history_v1';
+function chatHistory() { try { return JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || '[]'); } catch { return []; } }
+function saveChatTurn(role, content) {
+  const history = chatHistory(); history.push({ role, content, at: new Date().toISOString() });
+  localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(history.slice(-40)));
+}
+
+async function loadChatModels() {
+  const select = $('composerModel'); if (!select) return;
+  try {
+    const status = await api('/api/v2/ai-platform/status');
+    const models = (status.providers || []).flatMap(p => p.models || []).map(model => typeof model === 'string' ? model : model.id || model.name).filter(Boolean);
+    const available = [...new Set(models.length ? models : ['qwen2.5:3b', 'gemma3:4b', 'gemma4:latest', 'moondream:latest'])];
+    available.forEach(model => { const o = document.createElement('option'); o.value = model; o.textContent = model; select.appendChild(o); });
+    if (status.status === 'CONNECTED') select.title = 'API conectada — escolha um modelo ou use Automático';
+  } catch { select.title = 'API indisponível — Automático'; }
+}
+
+async function streamChat(message, { model = null, onEvent = null } = {}) {
+  const conversationId = localStorage.getItem('fenix_conversation_id') || null;
+  const controller = new AbortController();
+  // Context loading can include persisted history and memory retrieval. Keep
+  // the live stream open long enough for the real local model to answer.
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  let response;
+  try { response = await fetch('/api/chat/stream', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json', accept: 'text/event-stream' },
+    body: JSON.stringify({ message, conversationId, model: model || undefined }),
+    signal: controller.signal,
+  }); } catch (error) { throw new Error(error.name === 'AbortError' ? 'stream excedeu 12s' : error.message); }
+  if (!response.ok) { clearTimeout(timeout); const body = await response.json().catch(() => ({})); throw new Error(body.error || body.reason || `HTTP ${response.status}`); }
+  const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let textOut = ''; let meta = {};
+  const consume = (chunk) => {
+    buffer += chunk;
+    const blocks = buffer.split(/\n\n/); buffer = blocks.pop() || '';
+    for (const block of blocks) {
+      const event = (block.match(/^event:\s*(.+)$/m) || [])[1] || 'message';
+      const raw = (block.match(/^data:\s*(.+)$/m) || [])[1]; if (!raw) continue;
+      let data; try { data = JSON.parse(raw); } catch { continue; }
+      if (event === 'token') textOut += data.text || '';
+      if (event === 'ready' || event === 'context' || event === 'done') meta = { ...meta, ...data };
+      if (onEvent) onEvent(event, data);
+    }
+  };
+  while (true) { const { value, done } = await reader.read(); if (done) break; consume(decoder.decode(value, { stream: true })); }
+  clearTimeout(timeout);
+  if (meta.conversationId) localStorage.setItem('fenix_conversation_id', meta.conversationId);
+  return { text: meta.text || textOut, ...meta };
 }
 
 async function refreshAll() {
@@ -153,6 +208,10 @@ async function refreshAll() {
         ['connection', () => api('/connection')],
         ['providers', () => api('/providers')],
       ],
+      memory: [
+        ['engineeringMemory', () => api('/fenix/memory/metrics')],
+        ['memory', () => api('/memory/search?q=')],
+      ],
       deploy: [
         ['readiness', () => api('/governance/readiness-matrix')],
         ['gatekeeper', () => api('/governance/gatekeeper?action=deploy')],
@@ -165,44 +224,26 @@ async function refreshAll() {
         ['hotMemory', () => api('/performance/hot-memory')],
       ],
     };
+    // Command Center polls only operational data. The previous default loaded every
+    // intelligence/governance/graph/deploy endpoint on each 15s tick; with an SSE tab
+    // open this created a request storm and could starve the HTTP listener. Feature-specific
+    // views keep their own endpoints below, while the command view stays live and bounded.
     const entries = viewEntries[activeView] ? [...essentialEntries, ...viewEntries[activeView]] : [
       ['health', () => publicJson('/health')],
       ['me', () => api('/me')],
-    ['overview', () => api('/overview')],
     ['operations', () => api('/operations/state')],
     ['runtime', () => api('/runtime')],
     ['missions', () => api('/missions')],
     ['jobs', () => api('/runtime/jobs')],
-    ['city', () => api('/city')],
     ['events', () => api('/events?limit=80')],
-    ['telemetry', () => api('/ai/telemetry')],
-    ['connectors', () => api('/connectors')],
-    ['router', () => api('/ai/router/select')],
+    ['missionEvents', () => api('/fenix/mission-events?limit=80')],
     ['connection', () => api('/connection')],
-    ['capabilities', () => api('/capabilities')],
     ['projects', () => api('/projects')],
-    ['repositories', () => api('/repositories')],
-    ['graph', () => api('/graph')],
-    ['kg', () => api('/knowledge-graph/anomalies')],
-    ['office', () => api('/office')],
     ['workers', () => api('/workers')],
     ['providers', () => api('/providers')],
-    ['programs', () => api('/executive/programs')],
-    ['readiness', () => api('/governance/readiness-matrix')],
-    ['gatekeeper', () => api('/governance/gatekeeper?action=deploy')],
-    ['observability', () => api('/observability/metrics')],
-    ['series', () => api('/observability/series?windowMinutes=120')],
-    ['security', () => api('/security/encryption/status')],
-    ['veracity', () => api('/governance/simulation-audit')],
-    ['kos', () => api('/uios/kos/manifest')],
-    ['skills', () => api('/skills')],
-    ['fullstackSlices', () => api('/scos/factory/slices')],
-    ['twin', () => api('/digital-twin/operational')],
     ['agents', () => api('/agents/panel')],
     ['swarm', () => api('/agents/swarm')],
-      ['speed', () => api('/performance/speed-score')],
-      ['hotMemory', () => api('/performance/hot-memory')],
-      ['dailyBrief', () => api('/workspace/eca/daily-brief')],
+    ['city', () => api('/city')],
     ];
     const data = await settle(entries, viewEntries[activeView] ? 2 : 4);
     state.data = data;
@@ -227,20 +268,37 @@ function renderAll() {
   renderOffice();
   renderProjects();
   renderKnowledge();
+  renderImplementationMemory();
   renderSkills();
   renderConnectors();
   renderDeploy();
   renderObservability();
   renderSecurity();
+  if (typeof window.renderCommandCenterPanels === 'function') window.renderCommandCenterPanels();
+}
+
+function renderImplementationMemory() {
+  const host = $('memoryMetrics');
+  if (!host) return;
+  const m = state.data.engineeringMemory || {};
+  const fields = [['Memórias', m.memories], ['Validadas', m.validated], ['Reusos', m.reuseEvents], ['Reuse score', `${m.reuseScore ?? 0}%`]];
+  host.innerHTML = fields.map(([label, value]) => `<div class="metric"><strong>${escapeHtml(String(value ?? '—'))}</strong><span>${escapeHtml(label)}</span></div>`).join('');
+  text('memoryBrief', m.validated ? `${m.reusedMemories || 0} implementação(ões) reutilizada(s); taxa ${Math.round((m.reuseRate || 0) * 100)}%.` : 'Nenhuma implementação validada promovida ainda.');
 }
 
 function renderHeader() {
   const { health, me, overview, jobs, telemetry } = state.data;
   const ok = health?.ok === true || health?.status === 'ready';
-  $('statusDot').style.background = ok ? 'var(--green)' : 'var(--rose)';
-  $('statusDot').style.boxShadow = `0 0 12px ${ok ? 'var(--green)' : 'var(--rose)'}`;
+  const statusDot = $('statusDot');
+  if (statusDot) {
+    statusDot.style.background = ok ? 'var(--green)' : 'var(--rose)';
+    statusDot.style.boxShadow = `0 0 12px ${ok ? 'var(--green)' : 'var(--rose)'}`;
+  }
   text('statusText', ok ? 'ONLINE' : 'DEGRADED');
   text('statusSub', health?.environment || health?.service || 'runtime');
+  text('kpiSystem', ok ? 'READY' : 'DEGRADED');
+  text('systemHealthValue', ok ? 'ONLINE' : 'DEGRADED');
+  text('systemErrorValue', ok ? 'API ONLINE · runtime medido' : (health?.__error || 'runtime degradado'));
   text('actorName', me?.actorId || localStorage.getItem('grg_user') || 'usuario');
   text('actorRole', me?.tenantId || 'tenant');
   const metrics = overview?.metrics || {};
@@ -248,6 +306,11 @@ function renderHeader() {
   text('kpiRepos', metrics.repositories ?? state.repos.length);
   text('kpiCaps', metrics.capabilities ?? state.data.capabilities?.capabilities?.length);
   text('kpiJobs', state.jobs.length);
+  const agentSource = state.data.agents?.agents || state.data.swarm?.agents || [];
+  const agentList = Array.isArray(agentSource) ? agentSource : Object.values(agentSource || {});
+  const activeAgents = agentList.filter((agent) => ['ASSIGNED', 'ANALYZING', 'EXECUTING', 'TESTING', 'REPAIRING', 'RUNNING'].includes(String(agent.status || agent.state || '').toUpperCase())).length;
+  const totalAgents = agentList.length;
+  text('kpiAgents', totalAgents ? `${activeAgents}/${totalAgents}` : '0/0');
   text('kpiAi', telemetry?.calls ?? metrics.aiCalls);
 }
 
@@ -274,9 +337,19 @@ function renderRuntime() {
     ? services.map((s) => row(s.id || s.name, s.version || '', s.status || 'OK')).join('')
     : Object.entries(services || {}).map(([key, value]) => row(key, typeof value === 'object' ? JSON.stringify(value).slice(0, 80) : value, value?.status || '')).join('') || row('kernel', 'sem inventario de servicos publicado', 'UNKNOWN');
   const workers = state.data.workers?.workers || state.data.observability?.workers?.heartbeats || [];
-  if ($('workerList')) $('workerList').innerHTML = Array.isArray(workers) && workers.length
-    ? workers.map((w) => row(w.name || w.id || w.workerId, w.activeJobs != null ? `${w.activeJobs} jobs ativos` : w.role || '', w.status || w.state || 'KNOWN')).join('')
-    : row('workers', state.data.workers?.__error || 'sem workers ativos medidos', 'UNKNOWN');
+  if ($('workerList')) {
+    const normalized = Array.isArray(workers) ? workers : [];
+    const statusOf = (w) => String(w.status || w.state || 'KNOWN').toUpperCase();
+    const live = normalized.filter((w) => ['ONLINE', 'CONNECTED', 'HEALTHY', 'RUNNING', 'ACTIVE'].includes(statusOf(w)));
+    const stale = normalized.filter((w) => ['STALE', 'OFFLINE', 'DEAD', 'UNHEALTHY'].includes(statusOf(w)));
+    const current = live.find((w) => String(w.workerId || w.id || '').startsWith('fenix-local:'));
+    const rows = [];
+    if (current) rows.push(row(`worker local atual · ${current.workerId || current.id}`, current.activeJobs != null ? `${current.activeJobs} jobs ativos` : current.role || 'executor conectado', 'ONLINE'));
+    live.filter((w) => w !== current).slice(0, 8).forEach((w) => rows.push(row(w.name || w.id || w.workerId, w.activeJobs != null ? `${w.activeJobs} jobs ativos` : w.role || 'worker conectado', statusOf(w))));
+    if (!current && !live.length) rows.push(row('workers', 'nenhum worker ONLINE medido', 'OFFLINE'));
+    if (stale.length) rows.push(row('histórico', `${stale.length} heartbeat(s) antigo(s), sem atividade atual`, 'STALE'));
+    $('workerList').innerHTML = rows.join('') || row('workers', state.data.workers?.__error || 'nenhum worker publicado', 'UNKNOWN');
+  }
 }
 
 function renderMissions() {
@@ -522,28 +595,109 @@ async function runChat(message) {
   const value = String(message || '').trim();
   if (!value) return;
   bubble(value, 'user');
+  saveChatTurn('user', value);
 
-  const isDevPrompt = /(crie|adicione|melhore|corrija|analise|refatore|implemente|teste|construa|pipeline|task board)/i.test(value);
+  // Fênix decide primeiro se é conversa ou execução. Perguntas não criam
+  // missão; tarefas complexas recebem proposta e aguardam autorização.
+  let classification = { category: 'CONVERSATION', requiresConfirmation: false };
+  try {
+    const classified = await api('/chat/intent', { method: 'POST', body: JSON.stringify({ message: value }) });
+    classification = classified.classification || classification;
+  } catch (_) { /* o chat continua disponível se o classificador estiver indisponível */ }
+  const pendingMission = localStorage.getItem('fenix_pending_mission');
+  const confirmed = pendingMission && /^(sim|s[ií]m|pode iniciar|execute|come[cç]ar|comece|iniciar)$/i.test(value);
+  if (classification.requiresConfirmation && !confirmed) {
+    localStorage.setItem('fenix_pending_mission', value);
+    const proposal = document.createElement('div');
+    proposal.className = 'bubble system';
+    proposal.textContent = `FÊNIX · ${classification.category} · Esta solicitação envolve múltiplas etapas. Posso criar uma missão com agentes, jobs e validação contínua. Deseja iniciar?`;
+    const target = $('chatLog') || document.getElementById('masterCmdForm')?.parentElement;
+    if (target) { target.appendChild(proposal); target.scrollTop = target.scrollHeight; }
+    return;
+  }
+  const executionValue = confirmed ? pendingMission : value;
+  if (confirmed) localStorage.removeItem('fenix_pending_mission');
+
+  if (classification.category === 'SMALL_TASK' && window.executeSmallTask) {
+    await window.executeSmallTask(executionValue);
+    return;
+  }
+
+  const isLongTask = executionValue.length > 180 || /(crie uma aplicação|sistema completo|projeto|implemente|refatore|construa|pipeline|build|deploy|job|tarefa longa|horas|dias)/i.test(executionValue);
+  const isDevPrompt = (confirmed || classification.category === 'SMALL_TASK' || classification.category === 'LONG_MISSION') && isLongTask && /(crie|adicione|melhore|corrija|analise|refatore|implemente|teste|construa|pipeline|task board|projeto|sistema)/i.test(executionValue);
   if (isDevPrompt && window.executeDevPipeline) {
-    await window.executeDevPipeline(value);
+    await window.executeDevPipeline(executionValue);
     return;
   }
 
   const pending = document.createElement('div');
   pending.className = 'bubble system';
-  pending.textContent = 'Iniciando FenixMind Job...';
-  $('chatLog').appendChild(pending);
+  const startedAt = Date.now();
+  if ($('barAi')) $('barAi').textContent = 'RUNNING';
+  if ($('barWorker')) $('barWorker').textContent = 'PROCESSING';
+  let attempt = 0;
+  let timer = setInterval(() => {
+    const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+    pending.textContent = `Pensando… ${seconds}s · tentativa ${Math.max(1, attempt)} · conectando à API`;
+  }, 100);
+  const chatTarget = $('chatLog') || document.getElementById('masterCmdForm')?.parentElement;
+  if (chatTarget) { chatTarget.appendChild(pending); chatTarget.scrollTop = chatTarget.scrollHeight; }
   try {
-    const res = await api('/api/v2/mind/ingest', { method: 'POST', body: JSON.stringify({ message: value, context: {} }) });
-      if (window.openJobInspector) window.openJobInspector(res.jobId, value);
+    const media = $('chatMedia')?.files?.[0];
+    const mediaInfo = media ? `\n[Mídia anexada: ${media.name} (${media.type || 'arquivo'}, ${media.size} bytes)]` : '';
+    const selectedModel = $('composerModel')?.value || '';
+    const fastModel = 'qwen2.5:3b';
+    const modelToUse = selectedModel || fastModel;
+    const history = chatHistory().slice(-10, -1);
+    let res;
+    let lastError;
+    for (attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        pending.textContent = `Pensando… · tentativa ${attempt}/3 · ${modelToUse} · ${isLongTask ? 'tarefa será planejada' : 'resposta rápida'}`;
+        res = await streamChat(executionValue + mediaInfo, { model: modelToUse, onEvent: (event, data) => {
+          if (event === 'ready') pending.textContent = `Conectado · ${data.provider || 'provider'} · ${data.model || modelToUse}`;
+          if (event === 'context') pending.textContent = `Contexto carregado · ${data.turnsIncluded || 0} turnos · memória ${data.usedMemories || 0}`;
+          if (event === 'token') pending.textContent = `Respondendo… ${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
+        } });
+        break;
+      } catch (error) {
+        lastError = error;
+        if (attempt === 3) {
+          pending.textContent = 'Fallback API… mantendo contexto local';
+          res = await api('/v2/ai-platform/chat', { method: 'POST', body: JSON.stringify({ message: executionValue + mediaInfo, model: modelToUse, history: chatHistory().slice(-12) }) });
+          break;
+        }
+        pending.textContent = `Reconectando… falha na tentativa ${attempt}/3`; await new Promise(resolve => setTimeout(resolve, 700 * attempt));
+      }
+    }
+    if (!res) throw lastError || new Error('API não retornou resposta');
+    if ($('chatMedia')) $('chatMedia').value = '';
+    if (res.jobId && window.openJobInspector) window.openJobInspector(res.jobId, value);
+    if ($('barActiveJob')) $('barActiveJob').textContent = res.jobId || 'CHAT COMPLETED';
+    if ($('barRuntime')) $('barRuntime').textContent = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
+    if ($('barWorker')) $('barWorker').textContent = 'IDLE';
+    if ($('barAi')) $('barAi').textContent = 'ONLINE';
     pending.remove();
-    bubble(res.reply || res.response || 'Sem resposta textual.', 'bot');
+    const reply = res.text || res.reply || res.response || 'Sem resposta textual.';
+    saveChatTurn('assistant', reply);
+    bubble(reply, 'bot');
     await refreshAll();
   } catch (error) {
+    clearInterval(timer);
     pending.remove();
-    bubble(`Falha: ${error.message}`, 'system');
+    const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
+    bubble(`Falha após ${elapsed}s · ${attempt || 1} tentativa(s)\n${error.message}\nVerifique API, provider e modelo selecionado.`, 'system');
+    if ($('barActiveJob')) $('barActiveJob').textContent = 'ERROR';
+    if ($('barWorker')) $('barWorker').textContent = 'IDLE';
+    if ($('barAi')) $('barAi').textContent = 'ERROR';
+    if ($('barRuntime')) $('barRuntime').textContent = `${elapsed}s`;
+    return;
   }
+  clearInterval(timer);
 }
+
+window.__fenixCanonicalRunChat = runChat;
+window.runChat = runChat;
 
 async function createProgram(objective) {
   const value = String(objective || '').trim();
@@ -577,12 +731,15 @@ async function scanProject(path) {
 
 async function loadFs(path = '') {
   try {
+    const list = $('fsList');
+    if (list) list.innerHTML = '<div class="empty-state"><i class="ph ph-spinner ph-spin"></i><span>Carregando pastas e arquivos...</span></div>';
     const data = await api(`/dev/fs?path=${encodeURIComponent(path)}`);
-    if ($('fsList')) $('fsList').innerHTML = (data.items || []).map((item) => row(item.name, item.path, item.isDirectory ? 'DIR' : 'FILE')).join('') || row('fs', 'vazio', 'EMPTY');
-    document.querySelectorAll('#fsList .row').forEach((el) => {
+    const items = (data.items || []).sort((a, b) => Number(b.isDirectory) - Number(a.isDirectory) || String(a.name).localeCompare(String(b.name)));
+    if (list) list.innerHTML = `${path ? `<div class="fs-item dir" data-path="${esc(path.replace(/\\/g, '/').split('/').slice(0, -1).join('/'))}" data-type="dir"><i class="ph-fill ph-arrow-u-up-left"></i><span>..</span></div>` : ''}${items.map(item => `<div class="fs-item ${item.isDirectory ? 'dir' : 'file'}" data-path="${esc(item.path)}" data-type="${item.isDirectory ? 'dir' : 'file'}"><i class="ph ${item.isDirectory ? 'ph-folder' : 'ph-file-code'}"></i><span>${esc(item.name)}</span></div>`).join('') || row('fs', 'vazio', 'EMPTY')}`;
+    document.querySelectorAll('#fsList .fs-item').forEach((el) => {
       el.addEventListener('click', () => {
-        const filePath = el.querySelector('small')?.textContent || '';
-        if (el.textContent.includes('FILE')) openFile(filePath);
+        const filePath = el.dataset.path || '';
+        if (el.dataset.type === 'file') openFile(filePath);
         else { $('fsPath').value = filePath; loadFs(filePath); }
       });
     });
@@ -618,6 +775,7 @@ function init() {
     if ($('prompt')) $('prompt').value = '';
     runChat(value);
   });
+  loadChatModels();
   document.querySelectorAll('[data-prompt]').forEach((button) => button.addEventListener('click', () => runChat(button.dataset.prompt)));
   addEvt('projectSearch', 'input', renderProjects);
   addEvt('repoVisibility', 'change', renderProjects);
@@ -630,6 +788,32 @@ function init() {
   addEvt('sampleBtn', 'click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
   addEvt('checkApiBtn', 'click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
   addEvt('fsLoadBtn', 'click', () => { if ($('fsPath')) loadFs($('fsPath').value); });
+  const fsList = $('fsList');
+  if (fsList) {
+    fsList.addEventListener('contextmenu', async (event) => {
+      const item = event.target.closest('.fs-item');
+      if (!item || item.textContent.trim() === '..') return;
+      event.preventDefault();
+      const oldPath = item.dataset.path || '';
+      const action = window.prompt('Ação: renomear, mover, nova-pasta ou excluir', 'renomear');
+      if (!action) return;
+      try {
+        if (action === 'renomear' || action === 'mover') {
+          const next = window.prompt('Novo caminho relativo ao workspace', oldPath);
+          if (!next || next === oldPath) return;
+          await api('/dev/fs/move', { method: 'POST', body: JSON.stringify({ from: oldPath, to: next }) });
+        } else if (action === 'nova-pasta') {
+          const next = window.prompt('Caminho da nova pasta', `${oldPath}/nova-pasta`);
+          if (!next) return;
+          await api('/dev/fs/mkdir', { method: 'POST', body: JSON.stringify({ path: next }) });
+        } else if (action === 'excluir') {
+          if (!window.confirm(`Excluir permanentemente ${oldPath}?`)) return;
+          await api('/dev/fs/delete', { method: 'POST', body: JSON.stringify({ path: oldPath }) });
+        } else return;
+        await loadFs($('fsPath')?.value || '');
+      } catch (error) { window.alert(`Falha na operação: ${error.message}`); }
+    });
+  }
   addEvt('terminalBtn', 'click', async () => {
     if (!$('terminalCmd')) return;
     const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
@@ -1250,17 +1434,25 @@ window.showSubView = function(viewId, subViewId) {
   function bindCommandCenter() {
     const form = document.getElementById('masterCmdForm');
     const input = document.getElementById('masterPrompt');
-    if (!form || !input || form.dataset.fenixCommandBound) return;
+    if (!form || !input || form.dataset.fenixCommandBound || form.dataset.fenixBound) return;
     form.dataset.fenixCommandBound = 'true';
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
+      event.stopImmediatePropagation();
       const objective = String(input.value || '').trim();
       if (!objective) return;
+      // O Command Center compartilha o fluxo de intenção do chat. A missão
+      // só será criada depois da confirmação explícita quando necessário.
+      await runChat(objective);
+      input.value = '';
+      return;
       const button = form.querySelector('button[type="submit"]');
       if (button) button.disabled = true;
       try {
         const token = localStorage.getItem('grg_token');
-        const response = await fetch('/api/fenix/missions', {
+        // Legacy branch is unreachable; keep it incapable of creating a mission
+        // if an older event binding ever invokes it.
+        const response = await fetch('/api/fenix/legacy-disabled', {
           method: 'POST',
           headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ title: objective, objective, source: 'fenix-command-center' }),
@@ -1270,8 +1462,70 @@ window.showSubView = function(viewId, subViewId) {
         input.value = '';
         const status = document.createElement('div');
         status.className = 'chat-bubble bubble-sys';
-        status.textContent = `MISSION QUEUED · ${result.missionId || result.id || 'unknown'}`;
+        const missionId = result.missionId || result.id || result.mission?.missionId || result.mission?.id || 'unknown';
+        status.textContent = `MISSION ACCEPTED · ${missionId}`;
         form.parentElement.appendChild(status);
+        // Keep the chat status aligned with the persisted mission instead of
+        // leaving a permanent QUEUED label after the worker has finished.
+        if (missionId !== 'unknown') {
+          (async () => {
+            for (let attempt = 0; attempt < 90; attempt += 1) {
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              try {
+                const missionState = await api(`/api/fenix/missions/${encodeURIComponent(missionId)}`);
+                const currentStatus = String(missionState?.mission?.status || missionState?.status || '').toUpperCase();
+                const progress = missionState?.mission?.progress ?? missionState?.progress;
+                if (currentStatus) status.textContent = `MISSION ${currentStatus} · ${missionId}${progress != null ? ` · ${progress}%` : ''}`;
+                if (['SUCCEEDED', 'COMPLETED', 'FAILED', 'BLOCKED', 'CANCELLED'].includes(currentStatus)) break;
+              } catch (_) { /* refresh loop will show the canonical state */ }
+            }
+          })();
+        }
+        saveChatTurn('user', objective);
+        const thinking = document.createElement('div');
+        thinking.className = 'chat-bubble bubble-sys';
+        thinking.dataset.fenixChatStatus = 'true';
+        thinking.textContent = 'FÊNIX · ANALYZING · aguardando resposta do modelo';
+        form.parentElement.appendChild(thinking);
+        try {
+          let reply = await Promise.race([
+            streamChat(objective, { model: null }),
+            new Promise((resolve) => setTimeout(() => resolve({ text: '' }), 30000)),
+          ]);
+          if (!reply?.text) {
+            const fallback = await Promise.race([
+              api('/chat', { method: 'POST', body: JSON.stringify({ message: objective }) }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('resposta do modelo excedeu 30s')), 30000)),
+            ]);
+            reply = { ...fallback, text: fallback.text || fallback.response || fallback.message || '' };
+          }
+          if (reply?.text) {
+            thinking.remove();
+            saveChatTurn('assistant', reply.text);
+            const responseBubble = document.createElement('div');
+            responseBubble.className = 'chat-bubble bubble-bot';
+            responseBubble.textContent = reply.text;
+            form.parentElement.appendChild(responseBubble);
+          }
+          else {
+            thinking.textContent = 'FÊNIX · ERRO · o modelo não retornou texto';
+            thinking.className = 'chat-bubble bubble-sys';
+          }
+        } catch (chatError) {
+          thinking.remove();
+          const chatStatus = document.createElement('div');
+          chatStatus.className = 'chat-bubble bubble-sys';
+          chatStatus.textContent = `CHAT ERROR · ${chatError.message}`;
+          form.parentElement.appendChild(chatStatus);
+        }
+        // A criação já foi aceita pelo backend; republique o estado canônico
+        // para que missão, jobs e eventos mudem na mesma tela sem reload.
+        await refreshAll();
+        if (window.__FENIX_OPERATIONAL_STATE__) {
+          window.__FENIX_OPERATIONAL_STATE__.api = state.data;
+        }
+        window.dispatchEvent(new CustomEvent('fenix:data', { detail: { source: 'mission-created', missionId: result.missionId || result.id } }));
+        window.renderCommandCenterPanels?.();
       } catch (error) {
         const status = document.createElement('div');
         status.className = 'chat-bubble bubble-sys';
@@ -1311,5 +1565,57 @@ window.showSubView = function(viewId, subViewId) {
   else bindNavigation();
   window.addEventListener('FENIX_READY', bindCommandCenter);
   window.addEventListener('FENIX_READY', bindNavigation);
+})();
+
+// Canonical IDE actions: these controls are backed by the protected developer
+// routes and never pretend that a proposal, move or pipeline already succeeded.
+(function bindDeveloperWorkspace() {
+  const $ = (id) => document.getElementById(id);
+  const set = (id, value) => { const el = $(id); if (el) el.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2); };
+  function renderLivePreview() {
+    const frame = $('livePreviewFrame'); const input = $('livePreviewText');
+    if (!frame || !input) return;
+    const value = String(input.value || '').trim();
+    if (!value) return set('livePreviewText', '/app');
+    frame.src = value.startsWith('http') || value.startsWith('/') ? value : `/${value}`;
+  }
+  async function transformOpenFile() {
+    const path = String($('currentFilePath')?.value || '').trim();
+    const instruction = String($('aiEditInstruction')?.value || '').trim();
+    if (!path || !instruction) return set('aiEditResult', 'Informe o arquivo aberto e a instrução.');
+    set('aiEditResult', 'Gerando proposta real…');
+    try { const result = await api('/api/dev/ai/transform-file', { method: 'POST', body: JSON.stringify({ path, instruction }) }); if ($('fileViewer')) $('fileViewer').value = result.content || ''; set('aiEditResult', result); }
+    catch (error) { set('aiEditResult', `Falha: ${error.message}`); }
+  }
+  async function movePath() {
+    const from = String($('moveFromPath')?.value || '').trim(); const to = String($('moveToPath')?.value || '').trim();
+    if (!from || !to) return set('moveResult', 'Informe origem e destino.');
+    set('moveResult', 'Movendo no workspace…');
+    try { set('moveResult', await api('/api/dev/fs/move', { method: 'POST', body: JSON.stringify({ from, to }) })); }
+    catch (error) { set('moveResult', `Falha: ${error.message}`); }
+  }
+  async function delegateDevAgents() {
+    const objective = String($('devAgentObjective')?.value || '').trim();
+    if (!objective) return set('devAgentResult', 'Informe um objetivo.');
+    set('devAgentResult', 'Criando missão e delegando aos agentes…');
+    try { set('devAgentResult', await api('/api/dev/pipeline', { method: 'POST', body: JSON.stringify({ prompt: objective }) })); await refreshAll(); }
+    catch (error) { set('devAgentResult', `Falha: ${error.message}`); }
+  }
+  async function saveFile() {
+    const path = String($('currentFilePath')?.value || '').trim(); if (!path) return set('fileSaveResult', 'Nenhum arquivo aberto.');
+    set('fileSaveResult', 'Salvando…');
+    try { set('fileSaveResult', await api(`/api/dev/fs/file?path=${encodeURIComponent(path)}`, { method: 'POST', body: JSON.stringify({ content: $('fileViewer')?.value || '' }) })); }
+    catch (error) { set('fileSaveResult', `Falha: ${error.message}`); }
+  }
+  function bind() {
+    $('previewRefreshBtn')?.addEventListener('click', renderLivePreview);
+    $('aiEditBtn')?.addEventListener('click', transformOpenFile);
+    $('movePathBtn')?.addEventListener('click', movePath);
+    $('devAgentBtn')?.addEventListener('click', delegateDevAgents);
+    $('fileSaveBtn')?.addEventListener('click', saveFile);
+    window.renderLivePreview = renderLivePreview; window.transformOpenFile = transformOpenFile; window.movePath = movePath; window.delegateDevAgents = delegateDevAgents; window.saveFile = saveFile;
+    renderLivePreview();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true }); else bind();
 })();
 
