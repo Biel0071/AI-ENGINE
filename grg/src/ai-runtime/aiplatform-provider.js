@@ -241,6 +241,16 @@ class AIPlatformProvider {
     return Boolean(this.#apiKey && this.#apiKey.length > 0);
   }
 
+  // Fast reachability probe used by /health. It must not enqueue paid/slow inference.
+  async availableFast() {
+    this.lastError = null;
+    if (!this.baseUrl || !this.#apiKey) { this.lastError = 'missing URL or API key'; return false; }
+    try {
+      const payload = await requestGet(this.baseUrl, '/v1/health', this.#apiKey, 1500, 1);
+      return payload?.ok !== false;
+    } catch (error) { this.lastError = String(error.message || error).slice(0, 300); return false; }
+  }
+
   // Resolve a resposta 202+jobId para o texto real, pelo contrato medido. Com waitMs=0 o
   // polling fica desligado e a recusa de assertNotEnqueued volta a valer -- erro alto, nunca
   // texto vazio.
@@ -259,7 +269,7 @@ class AIPlatformProvider {
     this.lastError = null;
     if (!this.baseUrl || !this.#apiKey) { this.lastError = 'missing URL or API key'; return false; }
     try {
-      const res = await request(this.baseUrl, '/v1/text', this.#apiKey, { prompt: 'ok', ...(this.model ? { model: this.model } : {}) }, 20000);
+      const res = await request(this.baseUrl, '/v1/chat', this.#apiKey, { messages: [{ role: 'user', content: 'ok' }], ...(this.model ? { model: this.model } : {}) }, 20000);
       // MEDIDO (2026-07-30): o health do FENIX roda as sondas em paralelo, entao ESTA sonda
       // caia justamente no 202 da fila (`concurrency: 4` no gateway) e reportava
       // "sem provider de LLM" com o gateway gerando texto. Recusar era honesto e incompleto:
@@ -269,12 +279,12 @@ class AIPlatformProvider {
       if (enfileirado && !this.jobWait.waitMs) return false;
       const text = enfileirado
         ? (await waitForJob(this.baseUrl, this.#apiKey, res.jobId, { waitMs: Math.min(this.jobWait.waitMs, 25000), intervalMs: this.jobWait.intervalMs })).text
-        : (res.result ? res.result.text : res.text);
+        : extractText(res);
       // Texto fabricado NAO conta como disponivel: `[Fallback Response] ...` e non-empty, entao
       // sem esta checagem um gateway sem provider nenhum registrava a conexao como ONLINE.
       // assertNotFabricated lanca, o catch abaixo devolve false, e o connection-manager grava
       // OFFLINE com o motivo -- que e a verdade medida.
-      assertNotFabricated(text, { provider: 'aiplatform', endpoint: '/v1/text' });
+      assertNotFabricated(text, { provider: 'aiplatform', endpoint: '/v1/chat' });
       const available = typeof text === 'string' && text.length > 0;
       if (!available) this.lastError = 'inference returned empty text';
       return available;
@@ -299,11 +309,19 @@ class AIPlatformProvider {
 
   // AI Gateway interface
   async complete({ model, prompt }) {
-    const bruto = await request(this.baseUrl, '/v1/text', this.#apiKey, { prompt, ...(model ? { model } : {}) });
+    // Keep the legacy text contract for gateways that implement it, but do not
+    // block the FÊNIX runtime when a deployment exposes only /v1/chat. The
+    // bounded probe makes the fallback deterministic under a broken /v1/text.
+    let bruto;
+    try {
+      bruto = await request(this.baseUrl, '/v1/text', this.#apiKey, { prompt, ...(model ? { model } : {}) }, 1_500, 1);
+    } catch (error) {
+      bruto = await request(this.baseUrl, '/v1/chat', this.#apiKey, { messages: [{ role: 'user', content: prompt }], ...(model ? { model } : {}) });
+    }
     const { text: doJob, job } = await this.#resolve(bruto);
     const res = job ? (job.result || {}) : bruto;
-    const text = doJob !== null ? doJob : (res.result ? (res.result.text || '') : (res.text || ''));
-    assertNotFabricated(text, { provider: 'aiplatform', endpoint: '/v1/text' });
+    const text = doJob !== null ? doJob : extractText(res);
+    assertNotFabricated(text, { provider: 'aiplatform', endpoint: '/v1/chat' });
     const tk = res.tokens || {};
     return { text, model: res.model || model, promptTokens: tk.prompt || Math.ceil(prompt.length / 4), completionTokens: tk.completion || Math.ceil(text.length / 4) };
   }
@@ -318,10 +336,16 @@ class AIPlatformProvider {
     const result = res.result || {};
     const message = result.message;
     const text = doJob !== null ? doJob
-      : (result.text || (typeof message === 'string' ? message : message?.content) || res.text || '');
+      : (result.text || (typeof message === 'string' ? message : message?.content) || extractText(res));
     assertNotFabricated(text, { provider: 'aiplatform', endpoint: '/v1/chat' });
     return { text, raw: res };
   }
+}
+
+function extractText(res = {}) {
+  const result = res.result || {};
+  const message = result.message;
+  return result.text || (typeof message === 'string' ? message : message?.content) || res.text || '';
 }
 
 module.exports = { AIPlatformProvider, waitForJob, textoDoJob, jobWaitConfig, assertNotEnqueued };
