@@ -1,4 +1,4 @@
-﻿const http = require('node:http');
+const http = require('node:http');
 const { Kernel } = require('./core/Kernel');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -15,6 +15,7 @@ const { handleKnowledgeRoutes } = require('./knowledge/knowledge-routes');
 const { handleDeveloperRoutes } = require('./api/developer-routes');
 const { handleProductExperienceRoutes } = require('./api/product-experience-routes');
 const { handleProjectMirrorRoutes } = require('./api/project-mirror-routes');
+const { handleUniversalJobRoutes } = require('./api/universal-job-routes');
 
 const crypto = require('node:crypto');
 
@@ -162,6 +163,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         return sendJson(res, bootHealth.ok ? 200 : 503, bootHealth, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/runtime') {
+        const runtimeContext = await app.security.authenticate(req.headers);
+        if (!runtimeContext) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
+        await app.controlPlane.authorize(runtimeContext.tenantId, runtimeContext.actorId, 'runtime:read');
         const health = await app.health.check();
         return sendJson(res, 200, {
           ok: health.ok,
@@ -198,7 +202,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       }
       
       if (req.method === 'GET' && url.pathname === '/health') {
-        const healthDeadline = Number(env.FENIX_HEALTH_RESPONSE_TIMEOUT_MS || (securityConfig.runtimeEnv === 'production' ? 8_000 : 30_000));
+        const healthDeadline = Number(env.FENIX_HEALTH_RESPONSE_TIMEOUT_MS || 8_000);
         const health = await withHealthDeadline(() => app.health.check(), healthDeadline);
         let bootHealth = { ok: true, status: 'BYPASSED' };
         if (!global.FENIX_KERNEL) {
@@ -226,19 +230,23 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' }); return res.end(await app.metrics.render());
       }
 
-      if (url.pathname.startsWith('/api/workers') || url.pathname.startsWith('/api/providers') || url.pathname.startsWith('/api/jobs') || url.pathname.startsWith('/api/plans') || url.pathname.startsWith('/api/estimates') || url.pathname.startsWith('/api/orchestrator')) {
+      // `/api/workers` é o contrato canônico derivado do JobEngine e precisa
+      // passar pela autenticação abaixo. A rota legada mission-routes exigia
+      // um WorkerRegistry paralelo que não é usado pelo runtime atual.
+      // `/api/jobs` pertence ao contrato universal do JobEngine e é tratado
+      // abaixo após autenticação. A rota legada aqui o interceptava e removia
+      // a apresentação canônica `jobId`, quebrando a visão da fila.
+      if (url.pathname.startsWith('/api/providers') || url.pathname.startsWith('/api/plans') || url.pathname.startsWith('/api/estimates') || url.pathname.startsWith('/api/orchestrator')) {
         const handled = handleMissionRoutes(req, res, url, app, sendJson);
         if (handled) return;
       }
       
-      const knowledgeHandled = handleKnowledgeRoutes(req, res, url, app, sendJson);
-      if (knowledgeHandled) return;
-
-      const developerHandled = await handleDeveloperRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }));
-      if (developerHandled) return;
-
-      const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId: 'grg', actorId: 'grg-admin' });
-      if (productHandled) return;
+      // O contrato universal `/api/v2/jobs` precisa chegar ao handler
+      // autenticado do JobEngine abaixo; a camada de produto possui rotas
+      // históricas com o mesmo prefixo e não pode interceptá-las.
+      if (!url.pathname.startsWith('/api/v2/jobs')) {
+        // Product routes are dispatched after the shared authentication gate below.
+      }
 
       // -- Rotas nativas do server ------------------------------------------------------------
 
@@ -246,15 +254,19 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/login') {
         const b = await readJson(req);
         const sess = await app.auth.login(b.tenantId || 'grg', b.userId || b.user, b.password);
+        // Cookie HttpOnly mantém a sessão no reload do browser; o Bearer
+        // continua sendo retornado para clientes de API e executores.
+        res.setHeader('set-cookie', `fenix_session=${encodeURIComponent(sess.token)}; HttpOnly; SameSite=Lax; Path=/`);
         return sendJson(res, 200, sess);
       }
       if (req.method === 'POST' && url.pathname === '/api/logout') {
         const m = String(req.headers['authorization'] || '').match(/^Bearer\s+(.+)$/i);
         if (m) await app.auth.logoutAsync(m[1]);
+        res.setHeader('set-cookie', 'fenix_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
         return sendJson(res, 200, { ok: true }, requestId);
       }
 
-      if (!url.pathname.startsWith('/api/')) return serveStatic(url.pathname, res);
+      if (!url.pathname.startsWith('/api/') && url.pathname !== '/runtime/snapshot') return serveStatic(url.pathname, res);
 
       const cx = await app.security.authenticate(req.headers);
       // REALITY FIRST + seguranca: acesso a /api SEM sessao autenticada e REJEITADO com 401.
@@ -266,6 +278,59 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // seguranca exigem (rejects unauthenticated api access / rejects dev headers by default).
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
+
+      const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
+      if (productHandled) return;
+
+      const developerHandled = await handleDeveloperRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
+      if (developerHandled) return;
+
+      const knowledgeHandled = handleKnowledgeRoutes(req, res, url, app, sendJson, { tenantId, actorId });
+      if (knowledgeHandled) return;
+
+      // Projection HTTP do estado canônico consumida pelo live-runtime.js.
+      // Não cria outro runtime: apenas lê MissionKernel/JobEngine/store.
+      if (req.method === 'GET' && url.pathname === '/runtime/snapshot') {
+        await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
+        const [health, jobs, missions, agentPanel, state] = await Promise.all([
+          app.health.check(), app.jobs.list(tenantId, actorId), app.missions.list(tenantId, actorId),
+          app.agentEcosystem.panel(tenantId, actorId), app.store.read(),
+        ]);
+        const events = (state.missionEvents || []).filter((event) => event.tenantId === tenantId).slice(-80);
+        const registeredList = app.agentRegistry ? app.agentRegistry.list() : [];
+        const registeredAgents = registeredList.map((agent) => {
+          const activeJob = jobs.find((j) => (j.status === 'RUNNING' || j.status === 'DISPATCHED') && (j.agent?.agentId === agent.id || j.agentId === agent.id || j.agent?.name === agent.name));
+          return {
+            id: agent.id,
+            agentId: agent.id,
+            name: agent.name,
+            domain: agent.domain,
+            role: agent.domain || agent.name,
+            district: agent.domain === 'frontend' ? 'FRONTEND' : agent.domain === 'engineering' ? 'BACKEND' : agent.domain === 'orchestration' ? 'MASTER_HQ' : agent.domain === 'testing' ? 'QA' : agent.domain === 'deployment' ? 'DEVOPS' : 'CENTRAL',
+            status: activeJob ? 'RUNNING' : 'AVAILABLE',
+            currentJob: activeJob ? { id: activeJob.id, name: activeJob.prompt || activeJob.type || activeJob.name, progress: activeJob.progress || 0 } : null,
+            tools: agent.tools || [],
+            permissions: agent.permissions || [],
+            description: agent.description,
+          };
+        });
+        const agents = (agentPanel.agents && agentPanel.agents.length) ? agentPanel.agents : registeredAgents;
+        return sendJson(res, 200, { type: 'runtime.snapshot', payload: {
+          serverTime: new Date().toISOString(), status: health.ok ? 'ONLINE' : 'DEGRADED', health,
+          uptime: Math.floor(process.uptime()), jobs, missions, agents, events,
+          queue: {
+            queued: jobs.filter((job) => job.status === 'QUEUED').length,
+            running: jobs.filter((job) => job.status === 'RUNNING').length,
+            completed: jobs.filter((job) => ['SUCCEEDED', 'COMPLETED'].includes(job.status)).length,
+            failed: jobs.filter((job) => ['FAILED', 'DEAD_LETTER'].includes(job.status)).length,
+          },
+        } }, requestId);
+      }
+
+      const universalJobHandled = await handleUniversalJobRoutes(
+        req, res, url, app, sendJson, readJson, { tenantId, actorId }
+      );
+      if (universalJobHandled) return;
 
       const projectMirrorHandled = await handleProjectMirrorRoutes(
         req, res, url, app, sendJson, readJson, { tenantId, actorId }
@@ -289,23 +354,31 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const body = await readJson(req);
         const mission = await app.missions.create(tenantId, actorId, { ...body, title: body.title || 'FENIX autonomous mission', steps: body.steps || [
           { key: 'discover', type: 'discover' },
-          { key: 'inspect', type: 'inspect', dependsOn: ['discover'] },
-          { key: 'analyze', type: 'analyze', dependsOn: ['inspect'] },
-          { key: 'validate', type: 'validate', dependsOn: ['analyze'], validation: { testsPassed: true, risk: 'low', impactKnown: true } },
+          { key: 'analyze', type: 'analyze', dependsOn: ['discover'] },
+          { key: 'activate', type: 'activate', dependsOn: ['analyze'], payload: { trigger: 'mission' } },
         ] });
         setImmediate(() => app.missions.start(tenantId, actorId, mission.id).catch((error) => logger.error?.({ capability: 'mission-start', missionId: mission.id, error })));
         return sendJson(res, 202, { missionId: mission.id, status: 'QUEUED' }, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/fenix/missions') return sendJson(res, 200, { missions: await app.missions.list(tenantId, actorId) }, requestId);
+      if (req.method === 'GET' && url.pathname === '/api/fenix/mission-events') {
+        await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
+        const state = await app.store.read();
+        const limit = Math.min(200, Math.max(1, Number(url.searchParams.get('limit') || 80)));
+        const events = state.missionEvents.filter((item) => item.tenantId === tenantId).slice(-limit).reverse();
+        return sendJson(res, 200, { events }, requestId);
+      }
       if (req.method === 'GET' && url.pathname === '/api/fenix/providers') { const health = await app.aiGateway.providerHealth(); return sendJson(res, 200, { providers: Object.entries(health).map(([provider, value]) => ({ provider, ...value, configured: true, status: value.ok ? 'READY' : 'UNAVAILABLE' })) }, requestId); }
       const fenixProvider = url.pathname.match(/^\/api\/fenix\/providers\/([^/]+)\/health$/);
       if (req.method === 'GET' && fenixProvider) { const health = await app.aiGateway.providerHealth(); const value = health[fenixProvider[1]]; if (!value) return sendJson(res, 404, { error: 'provider not configured', provider: fenixProvider[1] }, requestId); return sendJson(res, 200, { provider: fenixProvider[1], ...value, configured: true, status: value.ok ? 'READY' : 'UNAVAILABLE' }, requestId); }
       const fenixProviderTest = url.pathname.match(/^\/api\/fenix\/providers\/([^/]+)\/test$/);
       if (req.method === 'POST' && fenixProviderTest) { const body = await readJson(req); const started = Date.now(); try { const result = await app.aiGateway.invoke(tenantId, actorId, { taskType: 'default', prompt: body.prompt || 'Respond with PROVIDER_READY.', provider: fenixProviderTest[1], model: body.model || null }); return sendJson(res, 200, { provider: result.provider, model: result.model, reachable: true, latencyMs: Date.now() - started, status: 'READY' }, requestId); } catch (error) { return sendJson(res, 503, { provider: fenixProviderTest[1], reachable: false, latencyMs: Date.now() - started, status: 'PROVIDER_ERROR', error: String(error.message || error).slice(0, 500) }, requestId); } }
       if (url.pathname === '/api/fenix/memory/search' && req.method === 'GET') return sendJson(res, 200, { memories: await app.engineeringMemory.search(tenantId, actorId, { q: url.searchParams.get('q') || '', limit: url.searchParams.get('limit') || 10 }) }, requestId);
+      if (url.pathname === '/api/fenix/memory/metrics' && req.method === 'GET') return sendJson(res, 200, await app.engineeringMemory.metrics(tenantId, actorId), requestId);
       const fenixMemory = url.pathname.match(/^\/api\/fenix\/memory\/([^/]+)$/);
       if (req.method === 'GET' && fenixMemory) return sendJson(res, 200, await app.engineeringMemory.get(tenantId, actorId, fenixMemory[1]), requestId);
       if (req.method === 'POST' && url.pathname === '/api/fenix/memory/promote') return sendJson(res, 201, await app.engineeringMemory.promote(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/fenix/memory/reuse') { const body = await readJson(req); return sendJson(res, 200, await app.engineeringMemory.reuse(tenantId, actorId, body.memoryId, body.metadata || {}), requestId); }
       if (req.method === 'POST' && url.pathname === '/api/fenix/memory/invalidate') { const body = await readJson(req); return sendJson(res, 200, await app.engineeringMemory.invalidate(tenantId, actorId, body.memoryId, body.reason), requestId); }
       const fenixProjectExperience = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/(experience|knowledge|components|patterns|architectures)$/);
       if (req.method === 'GET' && fenixProjectExperience) { await app.controlPlane.authorize(tenantId, actorId, 'project:read'); const state = await app.store.read(); const kinds = { experience: null, knowledge: null, components: 'component', patterns: 'pattern', architectures: 'architecture' }; const kind = kinds[fenixProjectExperience[2]]; const memories = state.engineeringMemories.filter((item) => item.tenantId === tenantId && item.sourceProjects?.includes(fenixProjectExperience[1]) && (!kind || item.kind === kind)); return sendJson(res, 200, { memories }, requestId); }
@@ -777,6 +850,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         if (!b.message) return sendJson(res, 400, { error: 'message required' });
         return sendJson(res, 200, await app.chat.handle(tenantId, actorId, String(b.message)));
       }
+      if (req.method === 'POST' && url.pathname === '/api/chat/intent') {
+        const b = await readJson(req);
+        if (!b.message) return sendJson(res, 400, { error: 'message required' }, requestId);
+        return sendJson(res, 200, { classification: app.chat.classifyRequest(String(b.message)) }, requestId);
+      }
       // Chat ao vivo (SSE streaming, historico, preferencias de voz, abort). Fica em modulo
       // proprio: uma resposta SSE vive por minutos escrevendo em pedacos, o que nao cabe no
       // padrao sendJson deste roteador.
@@ -844,7 +922,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
   wss.on('connection', (ws) => {
     // Send initial connection event
-    ws.send(JSON.stringify({ type: 'RuntimeConnected', payload: { status: 'ok' } }));
+    // Keep the wire event aligned with the frontend live-runtime contract.
+    ws.send(JSON.stringify({ type: 'runtime.connected', payload: { status: 'ok' } }));
     
     // Subscribe to EventBus and forward to WS
     const unsubscribe = app.bus.on('*', (event) => {
@@ -875,6 +954,42 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     app.runtimeKernel.start().catch((err) => {
       logger.error({ event: 'runtime.kernel.boot.failed', error: err, capability: 'kernel' });
     });
+  }
+
+  // O JobEngine canônico precisa de um consumidor quando o Fênix roda localmente.
+  // O worker legado usa `jobQueue` e não consome `runtimeJobs`, deixando missões
+  // RUNNING com o primeiro job QUEUED. Um único loop leve reutiliza o JobEngine,
+  // que já faz claim, timeout, retry, eventos e projeção no MissionKernel.
+  if (options.localRuntimeWorker !== false && app.jobs?.runBatch) {
+    let ticking = false;
+    const workerId = `fenix-local:${process.pid}`;
+    console.log(JSON.stringify({ event: 'runtime.local-worker.started', workerId }));
+    const runLocalBatch = async () => {
+      if (ticking) return;
+      ticking = true;
+      try {
+        await app.jobs.runBatch(workerId, 2);
+        console.log(JSON.stringify({ event: 'runtime.local-worker.heartbeat', workerId }));
+        if (app.missions?.reconcile) {
+          const state = await app.store?.read?.();
+          const tenants = Array.isArray(state?.tenants) ? state.tenants.filter((tenant) => tenant.status === 'active') : [];
+          for (const tenant of tenants) {
+            const actor = state.memberships?.find((membership) => membership.tenantId === tenant.id && membership.status === 'active')?.userId
+              || state.users?.find((user) => user.tenantId === tenant.id && user.status === 'active')?.id
+              || 'grg-admin';
+            try { await app.missions.reconcile(tenant.id, actor, { autoStart: false, maxConcurrent: 2 }); }
+            catch (error) { logger.error({ event: 'runtime.local-worker.reconcile.failed', error, tenantId: tenant.id }); }
+          }
+        }
+      } catch (error) {
+        logger.error({ event: 'runtime.local-worker.tick.failed', error, workerId });
+      } finally {
+        ticking = false;
+      }
+    };
+    server.localRuntimeWorker = setInterval(runLocalBatch, Number(process.env.FENIX_LOCAL_WORKER_INTERVAL_MS || 1000));
+    server.localRuntimeWorker.unref?.();
+    runLocalBatch();
   }
 
   return server;
