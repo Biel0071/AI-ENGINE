@@ -540,6 +540,21 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/discovery-network/scan') return sendJson(res, 202, await app.discoveryNetwork.scan(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/discovery-network/inventory') return sendJson(res, 200, { resources: await app.discoveryNetwork.inventory(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/knowledge-federation/publish') return sendJson(res, 202, await app.federation.publish(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/knowledge-federation/ingest') {
+        const body = await readJson(req);
+        const sourceUrl = String(body.sourceUrl || body.source?.url || '').trim();
+        const citation = String(body.citation || body.source?.citation || '').trim();
+        if (!sourceUrl || !citation) return sendJson(res, 400, { error: 'sourceUrl and citation are required for cited ingestion' }, requestId);
+        const publication = await app.federation.publish(tenantId, actorId, {
+          ...body,
+          publisherId: body.publisherId || 'research-ingest',
+          topic: body.topic || body.title || 'cited-source',
+          statement: body.statement || body.content,
+          provenance: { ...(body.provenance || {}), type: 'cited-ingestion', reference: sourceUrl, citation, sourceUrl },
+          facts: { ...(body.facts || {}), sourceUrl, citation }
+        });
+        return sendJson(res, 202, { publication, source: { url: sourceUrl, citation } }, requestId);
+      }
       if (req.method === 'GET' && url.pathname === '/api/knowledge-federation/publications') return sendJson(res, 200, { publications: await app.federation.list(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/ai/telemetry') return sendJson(res, 200, await app.aiGateway.telemetry(tenantId, actorId));
       if (req.method === 'GET' && url.pathname === '/api/system/boot-status') return sendJson(res, 200, app.runtimeKernel ? app.runtimeKernel.getState() : { status: 'UNKNOWN' }, requestId);
