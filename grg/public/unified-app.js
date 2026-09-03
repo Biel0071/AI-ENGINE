@@ -827,6 +827,7 @@ function init() {
   const addEvt = (id, event, handler) => { const el = $(id); if (el) el.addEventListener(event, handler); };
 
   addEvt('refreshBtn', 'click', () => refreshAll());
+  addEvt('settingsBtn', 'click', () => refreshAll());
   addEvt('logoutBtn', 'click', async () => {
     await api('/login/logout', { method: 'POST' }).catch(() => {});
     localStorage.removeItem('grg_token');
