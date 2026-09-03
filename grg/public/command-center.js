@@ -1110,8 +1110,8 @@
   requestAnimationFrame(measureCPU);
 
   // === API PLATFORM MONITOR (localhost:3000) ===
-  const API_PLATFORM_URL = 'http://localhost:3000';
-  const API_PLATFORM_KEY = 'ap_2c76a73c5dae496e922a53d5803f2aa4b6cf0c1fd247f6c2';
+  // O browser consulta o proxy do Fênix; credenciais ficam somente no backend.
+  const API_PLATFORM_URL = '/api/v2/ai-platform/status';
 
   async function refreshApiPlatformStatus() {
     const statusEl   = document.getElementById('apiPlatformStatus');
@@ -1120,8 +1120,7 @@
     const dbEl       = document.getElementById('apiPlatformDb');
     const redisEl    = document.getElementById('apiPlatformRedis');
     try {
-      const r = await fetch(`${API_PLATFORM_URL}/v1/health`, {
-        headers: { 'x-api-key': API_PLATFORM_KEY },
+      const r = await fetch(API_PLATFORM_URL, {
         signal: AbortSignal.timeout(5000)
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1146,16 +1145,15 @@
   // to calling the API Platform directly from the browser.
   window.FENIX = window.FENIX || {};
   window.FENIX.apiPlatform = {
-    url: API_PLATFORM_URL,
-    key: API_PLATFORM_KEY,
+    url: '/api/v2/ai-platform/chat',
+    key: null,
     model: 'qwen2.5:3b',
     provider: 'ollama',
     async chat(messages, opts = {}) {
-      const r = await fetch(`${API_PLATFORM_URL}/v1/chat`, {
+      const r = await fetch(this.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': API_PLATFORM_KEY,
         },
         body: JSON.stringify({
           provider: opts.provider || 'ollama',
