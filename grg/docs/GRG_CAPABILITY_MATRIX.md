@@ -6,7 +6,7 @@
 | Intent to mission/DAG | planner, kernel, reconcile | WORKING | persisted multi-step run |
 | Agent routing | registry, swarm, assignments | WORKING | handoff telemetry |
 | Skills | registry and evolution | WORKING | composed skill execution |
-| Governed tools | tool registry, sandbox, filesystem/git adapters | PARTIAL | unified handler schema |
+| Governed tools | tool registry, signed scripts, sandbox, filesystem/git adapters | WORKING | production-safe adapter execution proof |
 | Code execution | isolated worktree + gates | WORKING | browser QA artifact |
 | Events | bus, event store, SSE | WORKING | reconnect/replay test |
 | Validation | quality gates, honest failures, artifacts | WORKING | Definition of Done report |
