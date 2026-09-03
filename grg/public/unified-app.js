@@ -629,14 +629,15 @@ async function runChat(message) {
   if (confirmed && classification.requiresConfirmation) {
     try {
       const mission = await api('/missions', { method: 'POST', body: JSON.stringify({
+        title: `Missão FÊNIX · ${executionValue.slice(0, 64)}`,
         name: `Missão FÊNIX · ${executionValue.slice(0, 64)}`,
         objective: executionValue,
         autoApprove: true,
         steps: [
-          { type: 'audit', description: 'Analisar contexto e estado atual' },
-          { type: 'plan', description: 'Construir plano executável' },
-          { type: 'implement', description: 'Executar mudanças aprovadas' },
-          { type: 'test', description: 'Validar testes e critérios de aceite' },
+          { key: 'audit', type: 'audit', description: 'Analisar contexto e estado atual' },
+          { key: 'inspect', type: 'inspect', description: 'Inspecionar o workspace autorizado', dependsOn: ['audit'] },
+          { key: 'analyze', type: 'analyze', description: 'Construir análise e plano verificável', dependsOn: ['inspect'] },
+          { key: 'browser-qa', type: 'browser-qa', description: 'Validar a experiência no navegador', dependsOn: ['analyze'] },
         ],
       }) });
       const missionId = mission.id || mission.missionId;

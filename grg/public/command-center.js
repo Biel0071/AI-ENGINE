@@ -1320,7 +1320,7 @@
           const missionRes = await fetch('/api/missions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
-            body: JSON.stringify({ name: proposal.name, objective: proposal.objective, autoApprove: true, steps: [{ type: 'audit' }, { type: 'inspect', dependsOn: [0] }] }),
+            body: JSON.stringify({ title: proposal.name, name: proposal.name, objective: proposal.objective, autoApprove: true, steps: [{ key: 'audit', type: 'audit' }, { key: 'inspect', type: 'inspect', dependsOn: ['audit'] }] }),
           });
           const mission = await missionRes.json().catch(() => ({}));
           let started = false;
