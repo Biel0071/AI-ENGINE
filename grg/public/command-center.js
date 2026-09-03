@@ -1225,6 +1225,18 @@
 
   async function fenixChatSend(text) {
     const token = getAuthToken();
+    // Caminho primário autocontido: não depende da ordem de inicialização de
+    // window.FENIX e mantém a credencial no backend.
+    try {
+      const direct = await fetch('/api/v2/ai-platform/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+        body: JSON.stringify({ message: text, modelOverride: 'qwen2.5:3b' }),
+        signal: AbortSignal.timeout(60000),
+      });
+      const data = await direct.json().catch(() => ({}));
+      if (direct.ok && data.text) return data.text;
+    } catch (_) { /* tenta o stream e depois o provider configurado */ }
     // T03: conversa passa pelo stream, que usa AIRouter + Gateway no backend.
     if (token) {
       try {
