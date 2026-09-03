@@ -75,6 +75,18 @@ class MissionKernel {
     const relatorio = { examinadas: ativas.length, orfaosResolvidos: 0, despachados: 0, iniciadas: 0 };
     for (const mission of ativas) {
       const steps = state.missionSteps.filter((item) => item.missionId === mission.id);
+      // Uma queda entre a reserva atômica e jobs.submit() pode deixar uma
+      // reserva órfã. Só recuperamos reservas sem job e antigas o suficiente
+      // para não competir com um submit ainda em andamento.
+      for (const step of steps.filter((item) => item.status === 'DISPATCHING' && !item.jobId)) {
+        if (Date.now() - Date.parse(step.updatedAt || step.createdAt || now()) < 30_000) continue;
+        await this.store.update((next) => {
+          const current = next.missionSteps.find((item) => item.id === step.id && item.status === 'DISPATCHING' && !item.jobId);
+          if (current) { current.status = 'PLANNED'; current.updatedAt = now(); }
+          return next;
+        });
+        relatorio.orfaosResolvidos += 1;
+      }
       // (a) step preso apontando para job em estado terminal: projeta o desfecho do job.
       for (const step of steps.filter((item) => item.status === 'DISPATCHED' && item.jobId)) {
         const job = state.runtimeJobs.find((item) => item.id === step.jobId);
