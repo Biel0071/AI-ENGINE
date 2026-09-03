@@ -72,9 +72,15 @@ class OperationalActivationService {
     // Os eventos seguem um por componente: cada um alimenta cidade, versionamento e twin, e
     // um evento agregado apagaria a granularidade que o painel usa. O que sai do caminho
     // critico e a ESCRITA, nao a trilha.
-    for (const record of records) {
-      await this.#event(tenantId, 'operational.component.checked', `${runId}:${record.componentId}`, { actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } });
-    }
+    // Events are independent after the aggregate sweep is persisted. Publish
+    // them concurrently so a 26-component activation does not serialize 26
+    // full FileStore snapshots and hold the runtime worker for minutes.
+    await Promise.all(records.map((record) => this.#event(
+      tenantId,
+      'operational.component.checked',
+      `${runId}:${record.componentId}`,
+      { actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } },
+    )));
     return records;
   }
 
