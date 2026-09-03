@@ -74,10 +74,14 @@ Intents válidas:
 Personalidade FIXA: técnica, estratégica, direta. Explica antes de executar. Nunca inventa. Sempre informa nível de confiança quando relevante e cita riscos. Pensa em longo prazo. Fala em português, curto (2-5 frases).
 REGRA CRÍTICA: use APENAS os fatos fornecidos no JSON. NÃO invente números, repos, capabilities ou URLs. Se os fatos estão vazios, diga objetivamente o que o operador pode fazer a seguir.
 REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ainda não usei", não "não sei fazer" — nunca diga que não é capaz de algo listado em "capacidades.catalogo". Se uma capacidade está em "sem_execucao_registrada", diga que existe e ainda não foi exercitada.`;
-      const res = await this.llm.chat({ messages: [
+      const request = this.llm.chat({ messages: [
         { role: 'system', content: sys },
         { role: 'user', content: `Mensagem do usuário: "${userText}"\nIntenção: ${intent}\nFatos reais (JSON):\n${JSON.stringify(facts).slice(0, 2500)}\n\nResponda ao usuário com base SÓ nesses fatos.` },
       ], temperature: 0.4 });
+      const res = await Promise.race([
+        request,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('llm response timeout')), 8000)),
+      ]);
       return res.text.trim() || fallbackReply;
     } catch {
       return fallbackReply;
