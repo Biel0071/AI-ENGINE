@@ -65,6 +65,22 @@ test('complete() hits /v1/text and returns tokens', async () => {
   server.close();
 });
 
+test('complete() falls back to /v1/chat when /v1/text is unavailable', async () => {
+  const server = http.createServer((req, res) => {
+    if (req.url === '/v1/text') return;
+    let body = ''; req.on('data', (chunk) => { body += chunk; }); req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ result: { message: { content: `chat fallback: ${payload.messages.at(-1).content}` } } }));
+    });
+  });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${server.address().port}`, apiKey: 'ap_test' });
+  const r = await p.complete({ prompt: 'responda' });
+  assert.equal(r.text, 'chat fallback: responda');
+  await new Promise((resolve) => server.close(resolve));
+});
+
 test('bad key is rejected', async () => {
   const { server, port } = await mockGateway();
   const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${port}`, apiKey: 'wrong' });
