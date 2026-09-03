@@ -1047,5 +1047,23 @@ function serveStatic(pathname, res) {
 function safeToken(header, expected) { const supplied = String(header || '').replace(/^Bearer\s+/i, ''); if (!supplied || !expected) return false; const a = crypto.createHash('sha256').update(supplied).digest(); const b = crypto.createHash('sha256').update(String(expected)).digest(); return crypto.timingSafeEqual(a, b); }
 
 if (require.main === module) start();
-module.exports = { start, safeToken, capabilityFromPath, resolveCanonicalPort };
+async function runAutonomousCycle(app, tenantId, actorId, input = {}) {
+  if (!app?.executiveBrain || !app?.missions) throw new Error('canonical executive runtime is not configured');
+  const objective = String(input.objective || '').trim();
+  if (!objective) throw new Error('objective is required');
+  const program = await app.executiveBrain.createProgram(tenantId, actorId, objective);
+  const approved = await app.executiveBrain.approve(tenantId, actorId, program.id);
+  const startedMissions = [];
+  for (const ref of approved.missions) {
+    if (!ref.missionId) continue;
+    startedMissions.push(await app.missions.start(tenantId, actorId, ref.missionId));
+  }
+  const report = await app.missions.reconcile(tenantId, actorId, { autoStart: true, maxConcurrent: input.maxConcurrent });
+  const state = await app.store.read();
+  const jobs = (state.runtimeJobs || []).filter((job) => job.tenantId === tenantId && startedMissions.some((mission) => mission.id === job.missionId));
+  if (app.fabricEvents?.publish) await app.fabricEvents.publish({ tenantId, stream: `autonomous:${program.id}`, type: 'autonomous.cycle.completed', source: 'executive-brain', subject: program.id, data: { actorId, programId: program.id, startedMissions: startedMissions.length, jobs: jobs.length } });
+  return { ok: true, mode: 'CANONICAL_EXECUTIVE_PROGRAM', program: approved, startedMissions, jobs, report };
+}
+
+module.exports = { start, runAutonomousCycle, safeToken, capabilityFromPath, resolveCanonicalPort };
 
