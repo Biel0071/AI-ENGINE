@@ -13,6 +13,7 @@
   let activeProjectId = 'ai-engine-core';
   let pendingProposal = null;
   let currentConversationId = null;
+  let apiBackoffUntil = 0;
 
   // Helper para obter token autenticado de todas as fontes canônicas
   function getAuthToken() {
@@ -26,6 +27,7 @@
 
   // Helper para chamadas autenticadas à API canônica
   async function apiCall(path, method = 'GET', data = null) {
+    if (Date.now() < apiBackoffUntil) return null;
     const token = getAuthToken();
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -37,6 +39,10 @@
       });
       if (res.status === 401) {
         console.warn('Sessão expirada ou não autenticada para ' + path);
+      }
+      if (res.status === 429) {
+        const retryAfter = Number(res.headers.get('retry-after') || 5);
+        apiBackoffUntil = Date.now() + Math.min(Math.max(retryAfter, 1), 60) * 1000;
       }
       return await res.json();
     } catch (err) {

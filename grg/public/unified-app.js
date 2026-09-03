@@ -19,6 +19,7 @@ window.state = {
   agentStates: {}
 };
 const state = window.state;
+let apiBackoffUntil = 0;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
@@ -51,6 +52,7 @@ async function refreshAccessToken() {
 }
 
 async function api(path, options = {}, retried = false) {
+  if (Date.now() < apiBackoffUntil) throw new Error('API em backoff após limite de requisições');
   const url = path.startsWith('/api') ? path : (path.startsWith('/') ? `/api${path}` : `/api/${path}`);
   const res = await fetch(url, {
     ...options,
@@ -62,6 +64,10 @@ async function api(path, options = {}, retried = false) {
     },
   });
   if (res.status === 401 && !retried && await refreshAccessToken()) return api(path, options, true);
+  if (res.status === 429) {
+    const retryAfter = Number(res.headers.get('retry-after') || 5);
+    apiBackoffUntil = Date.now() + Math.min(Math.max(retryAfter, 1), 60) * 1000;
+  }
   if (res.status === 401) {
     localStorage.removeItem('grg_token');
     location.replace('/GRG-login');
