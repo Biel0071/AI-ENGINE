@@ -514,16 +514,16 @@
 
                       <!-- Detail stats -->
                       <div style="font-size: 9px; line-height: 1.8; color: var(--fenix-text-muted);">
-                        <div>MISSÃO ATUAL: <b id="inspAgentMission" style="color: #fff;">Evolução CRM</b></div>
-                        <div>JOB ATUAL: <b id="inspAgentJob" style="color: var(--fenix-cyan);">JOB-18</b></div>
+                        <div>MISSÃO ATUAL: <b id="inspAgentMission" style="color: #fff;">—</b></div>
+                        <div>JOB ATUAL: <b id="inspAgentJob" style="color: var(--fenix-cyan);">—</b></div>
                         <div>PROGRESSO: 
                           <div class="orch-progress-track" style="height:4px; margin-top:3px; display:inline-block; width:60px; vertical-align:middle;">
-                            <div class="orch-progress-bar" id="inspAgentJobBar" style="width:80%; background:var(--fenix-cyan);"></div>
+                            <div class="orch-progress-bar" id="inspAgentJobBar" style="width:0%; background:var(--fenix-cyan);"></div>
                           </div>
-                          <b id="inspAgentJobPct" style="color:var(--fenix-cyan); margin-left:4px;">80%</b>
+                          <b id="inspAgentJobPct" style="color:var(--fenix-cyan); margin-left:4px;">—</b>
                         </div>
-                        <div>MODELO: <b id="inspAgentModel" style="color: #fff;">Qwen 2.5 3B</b></div>
-                        <div>TEMPO ATIVO: <b id="inspAgentTime" style="color: var(--fenix-green);">01:23:45</b></div>
+                        <div>MODELO: <b id="inspAgentModel" style="color: #fff;">—</b></div>
+                        <div>TEMPO ATIVO: <b id="inspAgentTime" style="color: var(--fenix-green);">—</b></div>
                       </div>
 
                       <div class="orch-inspector-actions" style="margin-top:8px;">
@@ -552,8 +552,8 @@
                     </div>
                     <div class="orch-log-stream" id="orchLiveActivityStream" data-activity-alias="orchLiveActivityList">
                       <div class="orch-log-entry"><span class="orch-log-time">--:--:--</span><span>Kernel inicializado</span></div>
-                      <div class="orch-log-entry green"><span class="orch-log-time">--:--:--</span><span>19 agentes registrados</span></div>
-                      <div class="orch-log-entry cyan"><span class="orch-log-time">--:--:--</span><span>AI City sincronizada</span></div>
+                      <div class="orch-log-entry green"><span class="orch-log-time">--:--:--</span><span>—</span></div>
+                      <div class="orch-log-entry cyan"><span class="orch-log-time">--:--:--</span><span>—</span></div>
                     </div>
                     <!-- Alias element for JS compatibility -->
                     <div id="orchLiveActivityList" style="display:none;"></div>
@@ -733,12 +733,12 @@
             <footer class="orch-footer">
               <div class="orch-health-indicators">
                 <div class="orch-health-node" style="color:#94a3b8; font-weight:800; font-size:10px; margin-right:4px;">SYSTEM HEALTH</div>
-                <div class="orch-health-node" id="shNodeApi"><span style="color:#10b981;">●</span> API: <b style="color:#10b981;">ONLINE</b></div>
-                <div class="orch-health-node" id="shNodeWorker"><span style="color:#10b981;">●</span> WORKER: <b style="color:#10b981;">HEALTHY</b></div>
-                <div class="orch-health-node" id="shNodeRedis"><span style="color:#10b981;">●</span> REDIS: <b style="color:#10b981;">ONLINE</b></div>
-                <div class="orch-health-node" id="shNodePostgres"><span style="color:#10b981;">●</span> POSTGRES: <b style="color:#10b981;">ONLINE</b></div>
-                <div class="orch-health-node" id="shNodeAi"><span style="color:#10b981;">●</span> AI PROVIDERS: <b style="color:#10b981;">ONLINE</b></div>
-                <div class="orch-health-node" id="shNodeEvents"><span style="color:#10b981;">●</span> EVENTS: <b style="color:#10b981;">CONNECTED</b></div>
+                <div class="orch-health-node" id="shNodeApi"><span>●</span> API: <b>—</b></div>
+                <div class="orch-health-node" id="shNodeWorker"><span>●</span> WORKER: <b>—</b></div>
+                <div class="orch-health-node" id="shNodeRedis"><span>●</span> REDIS: <b>—</b></div>
+                <div class="orch-health-node" id="shNodePostgres"><span>●</span> POSTGRES: <b>—</b></div>
+                <div class="orch-health-node" id="shNodeAi"><span>●</span> AI PROVIDERS: <b>—</b></div>
+                <div class="orch-health-node" id="shNodeEvents"><span>●</span> EVENTS: <b>—</b></div>
               </div>
               <div class="orch-footer-meta">
                 <span>MEMÓRIA ATIVA: <b id="footerActiveMemory">124 ITENS</b></span>
