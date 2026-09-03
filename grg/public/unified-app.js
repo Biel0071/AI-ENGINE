@@ -223,6 +223,15 @@ async function refreshAll() {
         ['speed', () => api('/performance/speed-score')],
         ['hotMemory', () => api('/performance/hot-memory')],
       ],
+      office: [
+        ['office', () => api('/office')],
+      ],
+      developer: [
+        ['filesystem', () => api('/dev/fs')],
+      ],
+      security: [
+        ['encryption', () => api('/security/encryption/status')],
+      ],
     };
     // Command Center polls only operational data. The previous default loaded every
     // intelligence/governance/graph/deploy endpoint on each 15s tick; with an SSE tab
@@ -787,6 +796,15 @@ async function openFile(path) {
   }
 }
 
+async function cloneProject(url, directory = '') {
+  const result = await api('/dev/projects/clone', {
+    method: 'POST',
+    body: JSON.stringify({ url, directory: directory || undefined }),
+  });
+  await refreshAll();
+  return result;
+}
+
 function init() {
   document.querySelectorAll('[data-nav], [data-view]').forEach((el) => el.addEventListener('click', () => showView(el.dataset.nav || el.dataset.view)));
   
@@ -811,6 +829,21 @@ function init() {
   addEvt('repoVisibility', 'change', renderProjects);
   addEvt('programForm', 'submit', (event) => { event.preventDefault(); if ($('programObjective')) createProgram($('programObjective').value); });
   addEvt('scanForm', 'submit', (event) => { event.preventDefault(); if ($('scanPath')) scanProject($('scanPath').value); });
+  addEvt('gitCloneForm', 'submit', async (event) => {
+    event.preventDefault();
+    const url = $('gitRepoUrl')?.value.trim();
+    const directory = $('gitRepoDir')?.value.trim();
+    const output = $('gitCloneResult');
+    if (!url) return;
+    if (output) output.textContent = 'Clonando e registrando o projeto no runtime...';
+    try {
+      const result = await cloneProject(url, directory);
+      if (output) output.textContent = JSON.stringify(result, null, 2);
+      await refreshAll();
+    } catch (error) {
+      if (output) output.textContent = `Falha ao clonar: ${error.message}`;
+    }
+  });
   addEvt('skillForm', 'submit', (event) => { event.preventDefault(); if ($('skillObjective')) selectSkills($('skillObjective').value); });
   addEvt('sliceForm', 'submit', (event) => { event.preventDefault(); if ($('slicePrompt')) createFullstackSlice($('slicePrompt').value); });
   addEvt('tickBtn', 'click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
