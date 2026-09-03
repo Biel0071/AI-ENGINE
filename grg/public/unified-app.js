@@ -232,6 +232,11 @@ async function refreshAll() {
       security: [
         ['encryption', () => api('/security/encryption/status')],
       ],
+      mcp: [
+        ['connectors', () => api('/connectors')],
+        ['router', () => api('/ai/router/select')],
+        ['tools', () => api('/execution/tools')],
+      ],
     };
     // Command Center polls only operational data. The previous default loaded every
     // intelligence/governance/graph/deploy endpoint on each 15s tick; with an SSE tab
@@ -555,6 +560,10 @@ function renderConnectors() {
     row('provider escolhido', chosen.provider || chosen.name || 'sem provider', chosen.model || chosen.reason || '', chosen.provider ? 'READY' : 'UNKNOWN'),
     row('API connection', (state.data.connection?.providers || []).length ? `${state.data.connection.providers.length} providers monitorados` : 'sem check executado', (state.data.connection?.providers || [])[0]?.status || ''),
   ].join('');
+  const tools = state.data.tools?.tools || [];
+  if ($('toolList')) $('toolList').innerHTML = tools.length
+    ? tools.map((tool) => row(tool.toolId, `${tool.kind || 'native'} · ${tool.source || 'grg-native'} · ${tool.timeoutMs || 0}ms`, tool.status || 'UNKNOWN')).join('')
+    : row('ferramentas', state.data.tools?.__error || 'nenhuma ferramenta governada registrada', 'EMPTY');
 }
 
 function renderDeploy() {
