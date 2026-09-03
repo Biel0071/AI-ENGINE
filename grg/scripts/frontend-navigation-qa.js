@@ -1,5 +1,6 @@
 /* Real frontend navigation smoke audit.
- * No mocks, no mission submission, no credentials. Read-only browser QA.
+ * No mocks, no mission submission. Read-only browser QA; auth is supplied only
+ * through environment variables and is never persisted by this script.
  * Usage: FENIX_URL=http://host:4400/app node scripts/frontend-navigation-qa.js
  */
 const { chromium } = require('playwright');
@@ -19,6 +20,12 @@ fs.mkdirSync(outDir, { recursive: true });
 (async () => {
   const browser = await chromium.launch({ headless: process.env.HEADLESS !== '0' });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  if (process.env.FENIX_TOKEN) {
+    await page.addInitScript((token) => {
+      localStorage.setItem('grg_token', token);
+      localStorage.setItem('fenix_token', token);
+    }, process.env.FENIX_TOKEN);
+  }
   const consoleErrors = [];
   const failedRequests = [];
   page.on('pageerror', error => consoleErrors.push({ type: 'pageerror', message: error.message }));
@@ -27,6 +34,16 @@ fs.mkdirSync(outDir, { recursive: true });
 
   const result = { url: baseUrl, startedAt: new Date().toISOString(), navigation: [], controls: [], consoleErrors, failedRequests };
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: navigationTimeout });
+  // Some Chromium profiles reject storage writes from an init script when the
+  // initial document is redirected. Re-assert the same ephemeral token after
+  // the origin is available; no token is written to disk by this process.
+  if (process.env.FENIX_TOKEN && new URL(baseUrl).origin === new URL(page.url()).origin) {
+    await page.evaluate((token) => {
+      localStorage.setItem('grg_token', token);
+      localStorage.setItem('fenix_token', token);
+    }, process.env.FENIX_TOKEN);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: navigationTimeout });
+  }
   await page.waitForTimeout(1200);
   // Standalone Chromium has no in-app session. Login is opt-in through env vars;
   // never embed or guess credentials in the QA script.
