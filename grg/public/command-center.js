@@ -894,18 +894,9 @@
       openMissionDetailModal(selectedMissionId);
     });
 
-    // Chat form submit
-    document.getElementById('masterCmdSubmit')?.addEventListener('click', submitChatMessage);
-    document.getElementById('masterCmdForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      submitChatMessage();
-    });
-    document.getElementById('masterPrompt')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        submitChatMessage();
-      }
-    });
+    // O chat é registrado exclusivamente por initFenixChat abaixo. O handler
+    // legado submitChatMessage competia pelo mesmo botão e deixava a UI presa
+    // em PENSANDO mesmo quando o fluxo real já tinha iniciado.
 
     // + Nova Conversa button
     document.getElementById('btnNewConversation')?.addEventListener('click', () => {
