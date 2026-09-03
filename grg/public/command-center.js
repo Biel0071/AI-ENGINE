@@ -1136,6 +1136,17 @@
       const modelEl = document.getElementById('activeModel');
       if (modelEl && !modelEl.textContent.startsWith('QWEN')) modelEl.textContent = 'QWEN 2.5 3B';
     } catch (e) {
+      // O health do próprio Fênix é a fonte final: evita marcar a API offline
+      // por uma falha transitória do endpoint de resumo do cockpit.
+      try {
+        const health = await fetch('/health', { signal: AbortSignal.timeout(3000) }).then((r) => r.json());
+        const connected = health.checks?.['ai-providers']?.ok === true;
+        if (statusEl) { statusEl.textContent = connected ? '● CONECTADO' : '● OFFLINE'; statusEl.style.color = connected ? '#10b981' : '#ef4444'; }
+        if (provEl && connected) provEl.textContent = 'aiplatform · ollama';
+        if (dbEl && health.checks?.['state-store']) dbEl.textContent = '✓';
+        if (redisEl && health.checks?.['redis']) redisEl.textContent = '✓';
+        return;
+      } catch (_) {}
       if (statusEl) { statusEl.textContent = '● OFFLINE'; statusEl.style.color = '#ef4444'; }
     }
   }
