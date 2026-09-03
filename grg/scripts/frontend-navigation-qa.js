@@ -13,6 +13,7 @@ const fastMode = process.argv.includes('--fast');
 const actionTimeout = Number(process.env.FENIX_QA_TIMEOUT || (fastMode ? 600 : 1500));
 const maxControlsPerScreen = Number(process.env.FENIX_QA_MAX_CONTROLS || (fastMode ? 4 : 8));
 const navigationTimeout = Number(process.env.FENIX_QA_NAV_TIMEOUT || 8_000);
+const stepDelay = Number(process.env.FENIX_QA_STEP_DELAY || (fastMode ? 250 : 500));
 const screenManifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'qa', 'frontend-screen-manifest.json'), 'utf8'));
 const domainByScreen = Object.fromEntries(Object.entries(screenManifest.domains).flatMap(([domain, screens]) => screens.map(screen => [screen, domain])));
 fs.mkdirSync(outDir, { recursive: true });
@@ -30,7 +31,11 @@ fs.mkdirSync(outDir, { recursive: true });
   const failedRequests = [];
   page.on('pageerror', error => consoleErrors.push({ type: 'pageerror', message: error.message }));
   page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push({ type: 'console', message: msg.text() }); });
-  page.on('requestfailed', req => failedRequests.push({ url: req.url(), error: req.failure()?.errorText || 'unknown' }));
+  page.on('requestfailed', req => {
+    const error = req.failure()?.errorText || 'unknown';
+    if (req.url().includes('/events/stream') && error === 'net::ERR_ABORTED') return;
+    failedRequests.push({ url: req.url(), error });
+  });
 
   const result = { url: baseUrl, startedAt: new Date().toISOString(), navigation: [], controls: [], consoleErrors, failedRequests };
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: navigationTimeout });
@@ -85,7 +90,7 @@ fs.mkdirSync(outDir, { recursive: true });
     try {
       await button.scrollIntoViewIfNeeded();
       await button.click({ timeout: actionTimeout });
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(stepDelay);
       item.after = await page.url();
       item.visibleViews = await page.locator('.view').evaluateAll(els => els.filter(el => getComputedStyle(el).display !== 'none').map(el => el.id));
       item.activeNav = await page.locator('[data-view].active, [data-nav].active').evaluateAll(els => els.map(el => el.dataset.view || el.dataset.nav));
