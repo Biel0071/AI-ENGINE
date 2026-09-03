@@ -30,8 +30,8 @@ async function handleDeveloperRoutes(req, res, url, app, sendJson, sendError, co
         steps: [
           { key: 'discover', type: 'discover', payload: {} },
           { key: 'analyze', type: 'analyze', payload: {}, dependsOn: ['discover'] },
-          { key: 'generate', type: 'generate', payload: { prompt: objective, name: objective.slice(0, 80) }, dependsOn: ['analyze'] },
-          { key: 'browser-qa', type: 'browser-qa', payload: { projectId: payload.projectId || 'fenix_enterprise' }, dependsOn: ['generate'] },
+          { key: 'implement-test', type: 'dev-execute', payload: { prompt: objective, projectPath: process.cwd(), context: { projectId: payload.projectId || 'fenix_enterprise' } }, dependsOn: ['analyze'] },
+          { key: 'browser-qa', type: 'browser-qa', payload: { projectId: payload.projectId || 'fenix_enterprise' }, dependsOn: ['implement-test'] },
           { key: 'activate', type: 'activate', payload: { trigger: 'dev-pipeline' }, dependsOn: ['browser-qa'] },
         ],
       });

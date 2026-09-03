@@ -11,6 +11,7 @@ const MISSION_STEP_CATALOG = Object.freeze({
   'agent-observe': { jobType: 'agents.cycle', agent: 'telemetry', level: 'GREEN', avatar: 'LEARNING', building: 'operations' },
   validate: { jobType: 'sandbox.execute', agent: 'qa', level: 'YELLOW', avatar: 'PROGRAMMING', building: 'laboratory' },
   generate: { jobType: 'factory.generate', agent: 'developer', level: 'RED', avatar: 'BUILDING', building: 'factory' },
+  'dev-execute': { jobType: 'development.execute', agent: 'developer', level: 'RED', avatar: 'BUILDING', building: 'factory' },
   orchestrate: { jobType: 'project.orchestrate', agent: 'devops', level: 'RED', avatar: 'DEPLOYING', building: 'port' },
   activate: { jobType: 'operational.activation', agent: 'runtime', level: 'GREEN', avatar: 'RECOVERING', building: 'operations' },
   'daily-intelligence': { jobType: 'operational.daily-intelligence', agent: 'analyst', level: 'GREEN', avatar: 'LEARNING', building: 'academy' },
