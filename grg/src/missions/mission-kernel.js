@@ -15,6 +15,7 @@ const MISSION_STEP_CATALOG = Object.freeze({
   activate: { jobType: 'operational.activation', agent: 'runtime', level: 'GREEN', avatar: 'RECOVERING', building: 'operations' },
   'daily-intelligence': { jobType: 'operational.daily-intelligence', agent: 'analyst', level: 'GREEN', avatar: 'LEARNING', building: 'academy' },
   audit: { jobType: 'fenix.readonly.audit', agent: 'architect', level: 'GREEN', avatar: 'SCANNING', building: 'knowledge' },
+  'browser-qa': { jobType: 'frontend-reality.scan', agent: 'qa', level: 'GREEN', avatar: 'SCANNING', building: 'laboratory' },
   implement: { jobType: 'agent.workspace.execute', agent: 'developer', level: 'YELLOW', avatar: 'BUILDING', building: 'factory' },
   'agent-implement': { jobType: 'agent.execute', agent: 'developer', level: 'YELLOW', avatar: 'BUILDING', building: 'factory' },
 });
@@ -37,7 +38,8 @@ class MissionKernel {
     if (!title || !objective) throw new ValidationError('mission title and objective are required');
     if (title.length > 200 || objective.length > 4_000) throw new ValidationError('mission title or objective is too large');
     const normalized = normalizeSteps(input.steps, this.jobs); validateDag(normalized);
-    const mission = { id: uuid(), tenantId, projectId: input.projectId || null, scopeId: input.scopeId || null, title, objective, objectiveHash: hash(objective), status: 'PLANNED', priority: Math.max(-10, Math.min(10, Number(input.priority || 0))), policy: { maxTokens: nullableNumber(input.policy?.maxTokens), maxCostUsd: nullableNumber(input.policy?.maxCostUsd), deadline: normalizeDeadline(input.policy?.deadline) }, progress: 0, requestedBy: actorId, createdAt: now(), updatedAt: now() };
+    const displayName = String(input?.displayName || '').trim() || humanMissionName(title, objective);
+    const mission = { id: uuid(), tenantId, projectId: input.projectId || null, scopeId: input.scopeId || null, title, displayName, objective, objectiveHash: hash(objective), status: 'PLANNED', priority: Math.max(-10, Math.min(10, Number(input.priority || 0))), policy: { maxTokens: nullableNumber(input.policy?.maxTokens), maxCostUsd: nullableNumber(input.policy?.maxCostUsd), deadline: normalizeDeadline(input.policy?.deadline) }, progress: 0, requestedBy: actorId, createdAt: now(), updatedAt: now() };
     const steps = normalized.map((item, index) => ({ id: uuid(), tenantId, missionId: mission.id, key: item.key, type: item.type, agent: item.definition.agent, policyLevel: item.definition.level, jobType: item.definition.jobType, avatarState: item.definition.avatar, building: item.definition.building, dependsOn: item.dependsOn, payload: item.payload, payloadHash: hash(item.payload), validation: item.validation, contextRefs: item.contextRefs, status: 'PLANNED', order: index, approvalId: null, approvalConsumedAt: null, jobId: null, metrics: { durationMs: null, attempts: 0, tokens: null, costUsd: null }, createdAt: now(), updatedAt: now() }));
     const refs = normalizeRefs(input.contextRefs || []).map((item) => ({ id: uuid(), tenantId, missionId: mission.id, stepId: null, ...item, createdAt: now() }));
     await this.store.update((state) => { state.missions.push(mission); state.missionSteps.push(...steps); state.missionContextRefs.push(...refs); return state; });
@@ -149,6 +151,22 @@ class MissionKernel {
   async projectJobEvent(event) {
     const jobId = event.data?.jobId; if (!event.tenantId || !jobId) return null; const state = await this.store.read(); const step = state.missionSteps.find((item) => item.tenantId === event.tenantId && item.jobId === jobId); if (!step) return null; const mission = state.missions.find((item) => item.id === step.missionId); if (!mission) return null;
     const job = await this.jobs.getInternal(event.tenantId, jobId); const status = event.type === 'runtime.job.succeeded' ? 'SUCCEEDED' : event.type === 'runtime.job.cancelled' ? 'CANCELLED' : 'FAILED'; const metrics = { durationMs: job.startedAt && job.completedAt ? Date.parse(job.completedAt) - Date.parse(job.startedAt) : null, attempts: job.attempts, tokens: finiteOrNull(job.result?.metrics?.tokens), costUsd: finiteOrNull(job.result?.metrics?.costUsd) };
+    if (status === 'FAILED' && job.type !== 'mission.repair' && Number(step.repairCount || 0) < 1) {
+      const repair = await this.jobs.submit(event.tenantId, mission.requestedBy, {
+        type: 'mission.repair', missionId: mission.id, projectId: mission.projectId,
+        payload: { failedJobId: job.id, failedStepId: step.id, failedStepKey: step.key, error: job.error || null },
+        priority: mission.priority,
+      });
+      await this.store.update((next) => {
+        const current = next.missionSteps.find((item) => item.id === step.id);
+        current.status = 'DISPATCHED'; current.jobId = repair.id; current.repairCount = Number(current.repairCount || 0) + 1;
+        current.repairJobIds = [...(current.repairJobIds || []), repair.id]; current.metrics = metrics; current.updatedAt = now();
+        const currentMission = next.missions.find((item) => item.id === mission.id); currentMission.updatedAt = now();
+        return next;
+      });
+      await this.#event(mission, 'mission.repair.created', step, { status: 'DISPATCHED', repairJobId: repair.id, failedJobId: job.id, error: job.error || null }, 'fenix-mission-kernel');
+      return this.#step(event.tenantId, mission.id, step.id);
+    }
     await this.store.update((next) => { const current = next.missionSteps.find((item) => item.id === step.id); current.status = status; current.metrics = metrics; current.resultHash = hash(job.result || null); current.updatedAt = now(); const currentMission = next.missions.find((item) => item.id === mission.id); currentMission.progress = progress(next.missionSteps.filter((item) => item.missionId === mission.id)); currentMission.updatedAt = now(); return next; });
     await this.#event(mission, 'mission.step.completed', step, { status, jobId, metrics: eventMetrics(metrics), resultHash: hash(job.result || null), contextRefs: step.contextRefs.map((item) => item.ref) }, 'fenix-runtime');
     if (await this.#enforceBudget(event.tenantId, mission.id)) return this.#step(event.tenantId, mission.id, step.id); if (status === 'SUCCEEDED') await this.#dispatchReady(event.tenantId, mission.id); await this.#finalize(event.tenantId, mission.id); return this.#step(event.tenantId, mission.id, step.id);
@@ -211,6 +229,11 @@ function nullableNumber(value) { if (value == null) return null; const result = 
 function normalizeDeadline(value) { if (value == null) return null; if (!Number.isFinite(Date.parse(value))) throw new ValidationError('mission policy deadline must be an ISO date'); return new Date(value).toISOString(); }
 function finiteOrNull(value) { const result = Number(value); return Number.isFinite(result) ? result : null; }
 function eventMetrics(metrics) { return { durationMs: metrics.durationMs, attempts: metrics.attempts, aiUnits: metrics.tokens, costUsd: metrics.costUsd }; }
+function humanMissionName(title, objective) {
+  const source = /^(mission|job)[\s:_-]*[0-9a-f-]{8,}$/i.test(title) ? objective : title;
+  const words = String(source || 'Missão Fênix').replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim().split(/\s+/).filter(Boolean).slice(0, 5);
+  return words.length ? words.map((word, index) => index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(' ') : 'Missão Fênix';
+}
 function hash(value) { return crypto.createHash('sha256').update(JSON.stringify(value ?? null)).digest('hex'); }
 function now() { return new Date().toISOString(); }
 

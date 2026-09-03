@@ -31,7 +31,8 @@ async function handleDeveloperRoutes(req, res, url, app, sendJson, sendError, co
           { key: 'discover', type: 'discover', payload: {} },
           { key: 'analyze', type: 'analyze', payload: {}, dependsOn: ['discover'] },
           { key: 'generate', type: 'generate', payload: { prompt: objective, name: objective.slice(0, 80) }, dependsOn: ['analyze'] },
-          { key: 'activate', type: 'activate', payload: { trigger: 'dev-pipeline' }, dependsOn: ['generate'] },
+          { key: 'browser-qa', type: 'browser-qa', payload: { projectId: payload.projectId || 'fenix_enterprise' }, dependsOn: ['generate'] },
+          { key: 'activate', type: 'activate', payload: { trigger: 'dev-pipeline' }, dependsOn: ['browser-qa'] },
         ],
       });
       setImmediate(() => app.missions.start(tenantId, actorId, mission.id).catch(() => {}));
