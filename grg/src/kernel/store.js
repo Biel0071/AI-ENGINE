@@ -205,9 +205,23 @@ class MemoryStore {
 class FileStore extends MemoryStore {
   constructor(filePath, options = {}) {
     super(null, options);
+    this.persistQueue = Promise.resolve();
+    this.pendingPersist = null;
+    this.persistRunning = false;
     this.filePath = path.resolve(filePath);
     if (fs.existsSync(this.filePath)) {
-      const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+      let raw;
+      try {
+        raw = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+      } catch (err) {
+        // A crashed/concurrent writer must not prevent the kernel from booting.
+        // Keep the damaged artifact for forensics and start from a valid state;
+        // the next atomic persist will replace it with canonical JSON.
+        const damaged = `${this.filePath}.corrupt-${Date.now()}-${process.pid}`;
+        try { fs.renameSync(this.filePath, damaged); } catch {}
+        console.error(`[FileStore] Invalid state file; quarantined as ${path.basename(damaged)}: ${err.message}`);
+        raw = EMPTY_STATE();
+      }
       const migrated = migrateState(raw);
       this.state = { ...EMPTY_STATE(), ...migrated.state };
       // Poda tambem na carga: um arquivo herdado de antes da retencao pode
@@ -222,20 +236,66 @@ class FileStore extends MemoryStore {
 
   async write(state) {
     const result = await super.write(state);
-    this.persist();
+    await this.persist(result);
     return result;
   }
 
   async update(mutator) {
     const result = await super.update(mutator);
-    this.persist();
+    await this.persist(result);
     return result;
   }
 
-  persist() {
-    const tmp = `${this.filePath}.tmp`;
-    fs.writeFileSync(tmp, `${JSON.stringify(this.state, null, 2)}\n`);
-    fs.renameSync(tmp, this.filePath);
+  // Escritas de missão/evento são frequentes. A versão anterior serializava e
+  // renomeava sincronamente o estado inteiro em cada evento, bloqueando o
+  // event loop e fazendo /health parecer indisponível durante uma missão.
+  // Mantemos snapshots ordenados e atomicidade, mas deixamos I/O fora do loop.
+  persist(snapshot = this.state) {
+    // A state update can emit several events in one worker tick. Persisting a
+    // full multi-megabyte snapshot for every event creates an unbounded queue:
+    // HTTP/health still reads memory, while workers wait behind stale writes.
+    // Keep only the newest snapshot while one atomic write is in flight.
+    this.pendingPersist = clone(snapshot);
+    if (!this.persistRunning) {
+      this.persistRunning = true;
+      this.persistQueue = this.#drainPersist();
+    }
+    return this.persistQueue;
+  }
+
+  async #drainPersist() {
+    try {
+      while (this.pendingPersist !== null) {
+        const snapshot = this.pendingPersist;
+        this.pendingPersist = null;
+        await this.persistAsync(snapshot);
+      }
+    } finally {
+      this.persistRunning = false;
+    }
+  }
+
+  async persistAsync(snapshot) {
+    // Never share a temporary path between test/server processes. Sharing it
+    // allowed concurrent writers to interleave/truncate one another's JSON.
+    const tmp = `${this.filePath}.${process.pid}.${Date.now()}-${Math.random().toString(16).slice(2)}.tmp`;
+    await fs.promises.writeFile(tmp, `${JSON.stringify(snapshot, null, 2)}\n`);
+    // Windows can briefly hold the destination while antivirus/indexing or a
+    // just-finished reader releases it. A single EPERM used to leave the
+    // mission state stuck in RUNNING even though the job had completed.
+    let lastError;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      try {
+        await fs.promises.rename(tmp, this.filePath);
+        return;
+      } catch (err) {
+        lastError = err;
+        if (!['EPERM', 'EBUSY', 'EACCES'].includes(err.code) || attempt === 7) break;
+        await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+      }
+    }
+    try { await fs.promises.unlink(tmp); } catch {}
+    throw lastError;
   }
 }
 
