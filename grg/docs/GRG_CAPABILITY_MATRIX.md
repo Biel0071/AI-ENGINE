@@ -11,7 +11,7 @@
 | Events | bus, event store, SSE | WORKING | reconnect/replay test |
 | Validation | quality gates, honest failures, artifacts | WORKING | Definition of Done report |
 | Memory | engineering memory + cycles | WORKING | retrieval with provenance |
-| Knowledge | graph and project mirror | PARTIAL | source-cited ingestion |
+| Knowledge | graph, project mirror and cited-ingestion contract | WORKING | authenticated source ingestion with projection proof |
 | GitHub import | repo-intel/connectors | PARTIAL | authenticated repository import |
 | MCP | connector/runtime surface | PARTIAL | discover/register/execute contract |
 | Flow canvas | runtime city/IDE visual surfaces | PARTIAL | editable persisted DAG canvas |
