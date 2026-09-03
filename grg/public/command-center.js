@@ -1370,18 +1370,19 @@
         // texto: o ChatAgent classifica, executa ações seguras e propõe uma
         // missão real quando houver alteração ou execução prolongada.
         let routed = null;
+        let classification = null;
         try {
-          const routedRes = await fetch('/api/chat', {
+          const intentRes = await fetch('/api/chat/intent', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
             body: JSON.stringify({ message: text }),
-            signal: AbortSignal.timeout(60000),
+            signal: AbortSignal.timeout(15000),
           });
-          if (routedRes.ok) routed = await routedRes.json();
+          if (intentRes.ok) classification = (await intentRes.json()).classification;
         } catch (_) { /* inferência direta continua sendo um fallback válido */ }
 
-        if (routed?.requiresConfirmation || ['LONG_MISSION', 'CODE_CHANGE'].includes(routed?.category)) {
-          const name = routed.proposal?.name || 'Missão FÊNIX';
+        if (classification?.requiresConfirmation || ['LONG_MISSION', 'CODE_CHANGE'].includes(classification?.category)) {
+          const name = classification.proposal?.name || 'Missão FÊNIX';
           pendingProposal = { name, objective: text };
           const reply = `Solicitação classificada como trabalho governado. Posso criar uma missão auditável para executar: ${name}. Responda "sim" para autorizar.`;
           clearInterval(thinkInterval); thinkEl.remove();
@@ -1391,6 +1392,16 @@
           if (statusBadge) { statusBadge.textContent = 'AGUARDANDO AUTORIZAÇÃO'; statusBadge.className = 'orch-status-pill exec'; }
           return;
         }
+
+        try {
+          const routedRes = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
+            body: JSON.stringify({ message: text }),
+            signal: AbortSignal.timeout(60000),
+          });
+          if (routedRes.ok) routed = await routedRes.json();
+        } catch (_) { /* inferência direta continua sendo um fallback válido */ }
 
         const reply = routed?.reply || routed?.facts?.note || await fenixChatSend(text);
         clearInterval(thinkInterval);
