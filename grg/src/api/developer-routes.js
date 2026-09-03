@@ -12,6 +12,54 @@ async function handleDeveloperRoutes(req, res, url, app, sendJson, sendError, co
   const tenantId = context.tenantId || 'grg';
   const actorId = context.actorId || 'grg-admin';
 
+  // The IDE's long-task entry point is still a developer route, but mission
+  // execution must go through the canonical MissionKernel. Keep this adapter
+  // for the existing frontend contract instead of maintaining a second
+  // pipeline implementation.
+  if (req.method === 'POST' && url.pathname === '/api/dev/pipeline') {
+    if (app.controlPlane) await app.controlPlane.authorize(tenantId, actorId, 'runtime:execute');
+    try {
+      const payload = JSON.parse(await readBody(req) || '{}');
+      const objective = String(payload.prompt || '').trim();
+      if (!objective) throw new Error('prompt is required');
+      const mission = await app.missions.create(tenantId, actorId, {
+        projectId: payload.projectId || null,
+        title: objective.slice(0, 200),
+        objective,
+        source: 'fenix-ide-dev-pipeline',
+        steps: [
+          { key: 'discover', type: 'discover', payload: {} },
+          { key: 'analyze', type: 'analyze', payload: {}, dependsOn: ['discover'] },
+          { key: 'generate', type: 'generate', payload: { prompt: objective, name: objective.slice(0, 80) }, dependsOn: ['analyze'] },
+          { key: 'activate', type: 'activate', payload: { trigger: 'dev-pipeline' }, dependsOn: ['generate'] },
+        ],
+      });
+      setImmediate(() => app.missions.start(tenantId, actorId, mission.id).catch(() => {}));
+      sendJson(res, 202, { mission: { missionId: mission.id, status: 'QUEUED' } });
+    } catch (err) { sendError(res, 400, err.message); }
+    return true;
+  }
+
+  // Tarefa pequena: uma única execução no JobEngine, sem criar missão/DAG.
+  if (req.method === 'POST' && url.pathname === '/api/dev/small-task') {
+    if (app.controlPlane) await app.controlPlane.authorize(tenantId, actorId, 'runtime:execute');
+    try {
+      const payload = JSON.parse(await readBody(req) || '{}');
+      const prompt = String(payload.prompt || '').trim();
+      if (!prompt) throw new Error('prompt is required');
+      const job = await app.jobs.submit(tenantId, actorId, {
+        type: 'development.execute', source: 'web', prompt,
+        projectId: payload.projectId || null,
+        workspace: payload.projectPath || app.workspaceRoot || process.cwd(),
+        maxAttempts: 2, riskLevel: 'MEDIUM',
+        context: payload.context || {},
+        payload: { prompt, projectPath: payload.projectPath || app.workspaceRoot || process.cwd(), context: payload.context || {} },
+      });
+      sendJson(res, 202, { jobId: job.id, status: job.status, missionId: null, jobCount: 1 });
+    } catch (err) { sendError(res, 400, err.message); }
+    return true;
+  }
+
   // POST /api/dev/projects/clone (clone + couple into FENIX ecosystem)
   if (req.method === 'POST' && url.pathname === '/api/dev/projects/clone') {
     if (app.controlPlane) await app.controlPlane.authorize(tenantId, actorId, 'project:write');
@@ -83,6 +131,22 @@ async function handleDeveloperRoutes(req, res, url, app, sendJson, sendError, co
       } catch (err) {
         sendError(res, 400, err.message);
       }
+    }).catch((err) => sendError(res, 400, err.message));
+    return true;
+  }
+
+  if (req.method === 'POST' && (url.pathname === '/api/dev/fs/mkdir' || url.pathname === '/api/dev/fs/delete')) {
+    if (app.controlPlane) await app.controlPlane.authorize(tenantId, actorId, 'project:write');
+    readBody(req).then(async (body) => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const target = String(payload.path || '').trim();
+        if (!target) throw new Error('path is required');
+        if (url.pathname.endsWith('/mkdir')) await fileSystemService.mkdir(target);
+        else await fileSystemService.delete(target);
+        if (eventBus) await eventBus.emit(url.pathname.endsWith('/mkdir') ? 'dev:folderCreated' : 'dev:pathDeleted', { path: target });
+        sendJson(res, 200, { success: true, path: target });
+      } catch (err) { sendError(res, 400, err.message); }
     }).catch((err) => sendError(res, 400, err.message));
     return true;
   }
