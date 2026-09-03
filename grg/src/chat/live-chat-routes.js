@@ -117,7 +117,8 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     const conversation = await conversations.open(tenantId, actorId, { conversationId: body.conversationId || null });
     await conversations.append(tenantId, actorId, conversation.id, { role: 'user', content: message, source });
 
-    if (!llm || typeof llm.stream !== 'function') {
+    const routerAvailable = app.aiRouter && typeof app.aiRouter.route === 'function';
+    if (!routerAvailable && (!llm || typeof llm.stream !== 'function')) {
       // Falha explicita ANTES de abrir o SSE: o cliente recebe um erro HTTP legivel em vez de
       // um stream vazio que pareceria travamento.
       sendJson(res, 503, {
@@ -135,13 +136,15 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     sseSend(res, 'ready', {
       streamId,
       conversationId: conversation.id,
-      model: llm.model || null,
-      provider: llm.name || null,
+      model: routerAvailable ? null : (llm.model || null),
+      provider: routerAvailable ? 'ai-router' : (llm.name || null),
     });
 
     // Cliente desconectou (fechou a aba, perdeu a rede, celular trocou de rede): abortar a
     // geracao. Sem isto o Ollama seguiria gerando para ninguem.
-    req.on('close', () => { if (!controller.signal.aborted) controller.abort(); });
+    // O request POST pode fechar logo após o corpo ser consumido; isso não
+    // significa que o cliente abandonou o SSE. Observe a resposta streaming.
+    res.on('close', () => { if (!res.writableEnded && !controller.signal.aborted) controller.abort(); });
 
     let prompt;
     try {
@@ -162,12 +165,29 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     }
 
     try {
-      const out = await llm.stream({
-        messages: prompt.messages,
-        temperature: Number.isFinite(body.temperature) ? body.temperature : 0.3,
-        signal: controller.signal,
-        onToken: (piece) => sseSend(res, 'token', { text: piece }),
-      });
+      let out;
+      if (routerAvailable) {
+        // O Router decide por evidencia (self-test CONNECTED) e o Gateway executa.
+        // O stream continua SSE; quando o provider escolhido nao oferece streaming,
+        // entregamos a resposta real em um unico token, nunca uma simulacao.
+        const routed = await app.aiRouter.route(tenantId, actorId, {
+          taskType: 'default',
+          prompt: prompt.messages.map((item) => `${item.role}: ${item.content}`).join('\n\n'),
+          temperature: Number.isFinite(body.temperature) ? body.temperature : 0.3,
+          model: body.model || null,
+        });
+        if (!routed.ok) throw new Error(routed.selection?.chosen?.reason || routed.error || 'nenhum provedor de IA conectado');
+        out = { text: routed.result?.text || '', provider: routed.provider, model: routed.result?.model || null, streamed: false, chunks: 1 };
+        sseSend(res, 'provider', { provider: routed.provider, routed: true });
+        sseSend(res, 'token', { text: out.text });
+      } else {
+        out = await llm.stream({
+          messages: prompt.messages,
+          temperature: Number.isFinite(body.temperature) ? body.temperature : 0.3,
+          signal: controller.signal,
+          onToken: (piece) => sseSend(res, 'token', { text: piece }),
+        });
+      }
 
       const saved = await conversations.append(tenantId, actorId, conversation.id, {
         role: 'assistant',
