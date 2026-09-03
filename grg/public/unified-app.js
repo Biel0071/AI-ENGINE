@@ -814,10 +814,31 @@ function init() {
       } catch (error) { window.alert(`Falha na operação: ${error.message}`); }
     });
   }
+  async function pollTerminal(sessionId, command) {
+    const output = $('terminalResult');
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      try {
+        const state = await api(`/dev/terminal/${encodeURIComponent(sessionId)}`);
+        if (output) output.textContent = `$ ${command}\n${state.stdout || ''}${state.stderr || ''}${state.status === 'RUNNING' ? '\n\u2026 executando' : ''}`;
+        if (state.status && state.status !== 'RUNNING' && state.status !== 'QUEUED') return state;
+      } catch (error) {
+        if (output) output.textContent = `Falha ao acompanhar terminal: ${error.message}`;
+        return null;
+      }
+    }
+    if (output) output.textContent += '\nAcompanhamento interrompido por timeout.';
+    return null;
+  }
+  window.pollTerminal = pollTerminal;
   addEvt('terminalBtn', 'click', async () => {
     if (!$('terminalCmd')) return;
-    const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command: $('terminalCmd').value, sessionId: `ui-${Date.now()}` }) });
-    if ($('terminalResult')) $('terminalResult').textContent += `\n$ ${$('terminalCmd').value}\n${out.stdout || out.stderr || 'ok'}`;
+    const command = $('terminalCmd').value.trim();
+    if (!command) return;
+    const sessionId = `ui-${Date.now()}`;
+    const out = await api('/dev/terminal', { method: 'POST', body: JSON.stringify({ command, sessionId }) });
+    if ($('terminalResult')) $('terminalResult').textContent = `$ ${command}\nAceito pelo runtime (${out.status || 'QUEUED'})...`;
+    pollTerminal(sessionId, command);
     $('terminalCmd').value = '';
   });
   
