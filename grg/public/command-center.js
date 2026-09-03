@@ -973,7 +973,13 @@
       const isWorkerOk     = h.boot && h.boot.ok;
       const isStoreOk      = h.checks && h.checks['state-store'] && h.checks['state-store'].ok;
       const isAiOk         = h.checks && h.checks['ai-providers'] && h.checks['ai-providers'].ok;
-      const isEventsOk     = window.FENIX && window.FENIX.live && window.FENIX.live.connected;
+      // live-runtime exposes the authoritative connection state as `status`.
+      // The old `connected` property never existed, which made a healthy
+      // WebSocket appear as EVENTS OFFLINE in the cockpit.
+      const liveOnline = window.FENIX?.live?.status === 'ONLINE';
+      const sseOnline = typeof EventSource !== 'undefined'
+        && window.sseEventSource?.readyState === EventSource.OPEN;
+      const isEventsOk = liveOnline || sseOnline;
 
       function setNode(id, label, ok, altLabel) {
         const el = document.getElementById(id);
