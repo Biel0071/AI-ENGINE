@@ -350,6 +350,16 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/operations/daily-intelligence') return sendJson(res, 201, await app.operationalActivation.dailyIntelligence(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/operations/schedules') return sendJson(res, 201, { schedules: await app.operationalActivation.ensureSchedules(tenantId, actorId, await readJson(req)) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/operations/stability-report') return sendJson(res, 201, await app.operationalActivation.stabilityReport(tenantId, actorId), requestId);
+      // Adaptador do ciclo autônomo para o Mission Runtime canônico. Não cria
+      // progresso artificial: reconcilia jobs órfãos e, somente quando opt-in,
+      // inicia missões planejadas respeitando governança e limites.
+      if (req.method === 'POST' && url.pathname === '/api/autonomous/cycle') {
+        const body = await readJson(req).catch(() => ({}));
+        return sendJson(res, 202, await app.missions.reconcile(tenantId, actorId, {
+          autoStart: body.autoStart === true,
+          maxConcurrent: body.maxConcurrent,
+        }), requestId);
+      }
       if (req.method === 'POST' && url.pathname === '/api/missions/plan') return sendJson(res, 201, await app.missionPlanner.plan(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/missions/plans') return sendJson(res, 200, { plans: await app.missionPlanner.list(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/fenix/missions') {
