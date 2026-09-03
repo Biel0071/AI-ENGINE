@@ -38,7 +38,10 @@ class SecurityPlane {
     const headers = {
       'x-request-id': requestId,
       'x-content-type-options': 'nosniff',
-      'x-frame-options': 'DENY',
+      // The canonical IDE embeds same-origin project previews. SAMEORIGIN keeps
+      // clickjacking protection for external sites while allowing that verified
+      // first-party preview surface to render.
+      'x-frame-options': 'SAMEORIGIN',
       'referrer-policy': 'no-referrer',
       'permissions-policy': 'camera=(), microphone=(), geolocation=()',
       'cache-control': pathname.startsWith('/api/') ? 'no-store' : 'no-cache',
