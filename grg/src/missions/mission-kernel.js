@@ -186,8 +186,25 @@ class MissionKernel {
   }
 
   async #dispatchStep(mission, step) {
-    const job = await this.jobs.submit(mission.tenantId, mission.requestedBy, { type: step.jobType, payload: { ...step.payload, missionId: mission.id, projectId: mission.projectId }, missionId: mission.id, projectId: mission.projectId, priority: mission.priority });
-    await this.store.update((state) => { const current = state.missionSteps.find((item) => item.id === step.id); current.status = 'DISPATCHED'; current.jobId = job.id; current.dispatchedAt = now(); current.updatedAt = now(); return state; });
+    // Reserva antes do submit: start(), reconcile() e a entrega de eventos
+    // podem chamar dispatchReady em paralelo. Sem essa transição atômica os
+    // dois leitores observam PLANNED e criam dois jobs para o mesmo step.
+    let reserved = false;
+    await this.store.update((state) => {
+      const current = state.missionSteps.find((item) => item.id === step.id && item.status === 'PLANNED');
+      if (!current) return state;
+      current.status = 'DISPATCHING'; current.updatedAt = now(); reserved = true;
+      return state;
+    });
+    if (!reserved) return null;
+    let job;
+    try {
+      job = await this.jobs.submit(mission.tenantId, mission.requestedBy, { type: step.jobType, payload: { ...step.payload, missionId: mission.id, projectId: mission.projectId }, missionId: mission.id, projectId: mission.projectId, priority: mission.priority });
+    } catch (error) {
+      await this.store.update((state) => { const current = state.missionSteps.find((item) => item.id === step.id && item.status === 'DISPATCHING'); if (current) { current.status = 'PLANNED'; current.updatedAt = now(); } return state; });
+      throw error;
+    }
+    await this.store.update((state) => { const current = state.missionSteps.find((item) => item.id === step.id && item.status === 'DISPATCHING'); if (current) { current.status = 'DISPATCHED'; current.jobId = job.id; current.dispatchedAt = now(); current.updatedAt = now(); } return state; });
     await this.#event(mission, 'mission.step.dispatched', step, { status: 'DISPATCHED', jobId: job.id, jobType: step.jobType, payloadHash: step.payloadHash, contextRefs: step.contextRefs.map((item) => item.ref) }, mission.requestedBy); return job;
   }
 
