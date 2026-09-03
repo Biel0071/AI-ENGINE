@@ -113,6 +113,66 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
     return { kind: 'help' };
   }
 
+  // Classificação operacional de intenções. Sem fabricação de missões.
+  classifyRequest(text) {
+    const value = String(text || '').trim();
+    const t = value.toLowerCase();
+
+    // 1. PROJECT_CONNECT (URL do GitHub ou comando explícito para conectar/acoplar repositório)
+    const url = (value.match(GITHUB_URL_RE) || [])[0] || null;
+    if (url || /(conectar|conecte|acoplar|acople|importar|importe|vincular|adicione o repo|adicionar repo)\b/.test(t)) {
+      return { category: 'PROJECT_CONNECT', requiresConfirmation: false, intent: 'connect_repo', url };
+    }
+
+    // 2. PROJECT_ANALYSIS (análise estrutural e arquitetural de projeto)
+    if (/(analise meu projeto|analisar meu projeto|analise o projeto|audite meu projeto|diagn[oó]stico do projeto|estrutura do projeto)\b/.test(t)) {
+      return { category: 'PROJECT_ANALYSIS', requiresConfirmation: false, intent: 'twin' };
+    }
+
+    // 3. STATUS (consulta de telemetria e integridade do runtime)
+    if (/^(qual seu status|qual o status|status do sistema|status do runtime|como est[aá] o sistema|sistema est[aá] rodando|overview)\b/.test(t)) {
+      return { category: 'STATUS', requiresConfirmation: false, intent: 'overview' };
+    }
+
+    // 4. REPAIR (recuperação de falhas e reparo de jobs)
+    if (/(repare|corrija o erro|auto repair|consertar falha|repair job)\b/.test(t)) {
+      return { category: 'REPAIR', requiresConfirmation: false, intent: 'repair' };
+    }
+
+    // 5. CONTINUE (continuação autônoma do DAG da missão)
+    if (/^(continue|prossiga|retomar|avance|pr[oó]ximo job|next job)\b/.test(t)) {
+      return { category: 'CONTINUE', requiresConfirmation: false, intent: 'continue' };
+    }
+
+    // 6. INSPECT (inspeção de logs, métricas ou detalhes de agentes e missões)
+    if (/(inspecione|inspecionar|detalhes do agente|detalhes da miss[aã]o|detalhes do job|ver logs|ver diff)\b/.test(t)) {
+      return { category: 'INSPECT', requiresConfirmation: false, intent: 'inspect' };
+    }
+
+    // 7. CONVERSATION (saudações, esclarecimentos, dúvidas sem alterar código ou criar job)
+    const conversation = /^(oi|ol[aá]|bom dia|boa tarde|boa noite|hey|hello)\b/.test(t)
+      || /\b(como funciona|o que voc[eê]|consegue|pode explicar|explique|qual sua capacidade|qual [eé] a data|obrigado|valeu)\b/.test(t)
+      || (/\?$/.test(value) && !/\b(corrija|adicione|implemente|refatore|construa|crie|altere|mude)\b/.test(t));
+    if (conversation) return { category: 'CONVERSATION', requiresConfirmation: false, intent: this.detectIntent(value).kind };
+
+    // 8. SMALL_TASK (tarefa pontual: gera 1 job sem missão pesada)
+    const small = /\b(corrij[ae]|mude|troque|adicione um campo|altere o texto|troque a cor|endpoint simples)\b/.test(t)
+      && !/\b(inteir[oa]|completo|completa|v[aá]rios|toda|todo|sistema|arquitetura)\b/.test(t);
+    if (small) return { category: 'SMALL_TASK', requiresConfirmation: false, intent: this.detectIntent(value).kind };
+
+    // 9. LONG_MISSION (missões amplas que demandam proposta formal e autorização)
+    const large = /\b(sistema completo|projeto completo|integre tudo|refatore o sistema|melhore o command center|reconstrua|evolu[cç][aã]o cont[ií]nua|v[aá]rios jobs|dias|full.?stack)\b/.test(t)
+      || value.length > 180;
+    if (large) return { category: 'LONG_MISSION', requiresConfirmation: true, intent: this.detectIntent(value).kind };
+
+    // 10. CODE_CHANGE (mudança de código explícita que demanda autorização)
+    if (/\b(implemente|crie|construa|refatore|melhore|adicione|corrija|mude|altere|teste)\b/.test(t)) {
+      return { category: 'CODE_CHANGE', requiresConfirmation: true, intent: this.detectIntent(value).kind };
+    }
+
+    return { category: 'CONVERSATION', requiresConfirmation: false, intent: this.detectIntent(value).kind };
+  }
+
   matchRepoId(text) {
     // tenta casar um id de repo conhecido pela substring
     return this._repoHint || null;
@@ -247,7 +307,46 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
         case 'twin': {
           const repos = await this.app.repoIntel.listRepositories(tenantId, actorId);
           const repo = intent.repoId ? repos.find((r) => r.id === intent.repoId) : repos[repos.length - 1];
-          if (!repo) { facts = { note: 'Nenhum repo conectado ainda. Cole uma URL do GitHub para começar.' }; break; }
+          if (!repo) {
+            try {
+              const { scanProject } = require('../project-mirror/scanner');
+              const mirror = await scanProject(this.app.workspaceRoot || process.cwd());
+              action = { type: 'project_analysis', ok: true, projectId: mirror.projectId };
+              facts = {
+                project: mirror.name,
+                path: mirror.path,
+                fileCount: mirror.files.total,
+                apis: mirror.apis.length,
+                tests: mirror.tests.count,
+                git: mirror.git,
+                tech: mirror.tech,
+                dependencies: mirror.dependencies.count,
+                mirror,
+              };
+              await this.app.store.update((s) => {
+                s.projects = s.projects || [];
+                const idx = s.projects.findIndex((p) => p.id === mirror.projectId || p.name === mirror.name);
+                const projObj = {
+                  id: mirror.projectId,
+                  name: mirror.name,
+                  tenantId,
+                  path: mirror.path,
+                  tech: mirror.tech,
+                  files: mirror.files.total,
+                  apis: mirror.apis.length,
+                  tests: mirror.tests.count,
+                  git: mirror.git,
+                  updatedAt: new Date().toISOString(),
+                };
+                if (idx >= 0) s.projects[idx] = { ...s.projects[idx], ...projObj };
+                else s.projects.push(projObj);
+                return s;
+              });
+            } catch (err) {
+              facts = { note: `Nenhum repo conectado ainda (${err.message}). Cole uma URL do GitHub para começar.` };
+            }
+            break;
+          }
           const advice = await this.app.digitalTwin.advise(tenantId, actorId, repo.id);
           const twin = await this.app.digitalTwin.get(tenantId, actorId, repo.id);
           facts = { repo: repo.name, health: advice.health, advice: advice.advice, capabilities: twin.model.capabilities };
@@ -307,6 +406,9 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
     let reply = structured;
     if (this.llm && CONVERSATIONAL.has(intent.kind)) {
       reply = await this.speak(text, intent.kind, facts, structured);
+    }
+    if (intent.kind === 'help' && !/Cole uma URL/i.test(reply)) {
+      reply = `${reply}\n\nCole uma URL do GitHub para eu acoplar e analisar o projeto, ou descreva uma mudança para criar uma missão executável.`;
     }
     // memória progressiva de conversa
     this.history.push({ role: 'user', content: text }, { role: 'assistant', content: reply });
@@ -399,6 +501,17 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
       case 'capabilities':
         return facts.capabilities.length ? `Catálogo (${facts.capabilities.length}): ${facts.capabilities.join(', ')}` : 'Catálogo vazio — acople repos para popular.';
       case 'twin':
+      case 'project_analysis':
+        if (facts.mirror) {
+          return `Análise do Projeto **${facts.project}** concluída com sucesso:\n` +
+            `• Localização: \`${facts.path}\`\n` +
+            `• Tecnologias: Frontend: ${facts.tech?.frontend || 'HTML/JS Vanilla'} · Backend: ${facts.tech?.backend || 'Node.js Core'}\n` +
+            `• Arquivos: ${facts.fileCount} arquivos mapeados (${facts.dependencies} dependências)\n` +
+            `• APIs detectadas: ${facts.apis} rotas/endpoints\n` +
+            `• Testes: ${facts.tests} arquivos de teste\n` +
+            `• Git: branch \`${facts.git?.branch || 'main'}\` (${facts.git?.isClean ? 'limpo' : 'alterações pendentes'})\n` +
+            `• Contexto operacional registrado na memória do Fênix.`;
+        }
         if (facts.note) return facts.note;
         return `Twin de **${facts.repo}** — saúde ${facts.health.score}/100.\n` +
           `Capabilities: ${facts.capabilities.join(', ')}\n` +
