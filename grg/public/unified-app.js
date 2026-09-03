@@ -891,7 +891,9 @@ function init() {
   showView(location.hash.slice(1) || 'command', false);
   bubble('Workspace unico carregado. Eu consolidei comando, runtime, missoes, AI City, office, CRM, deploy, observabilidade e developer em uma tela.');
   refreshAll();
-  setInterval(() => { if (!document.hidden) refreshAll(); }, 15000);
+  // O stream SSE cobre mudanças operacionais; polling de 30s é apenas
+  // reconciliação de dados, evitando tempestade de requests em telas/iframes.
+  setInterval(() => { if (!document.hidden) refreshAll(); }, 30000);
 }
 
 function openCommand() {

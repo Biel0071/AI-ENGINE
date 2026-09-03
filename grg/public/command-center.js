@@ -1023,7 +1023,9 @@
       }
     } catch (e) { /* silently fail */ }
   }
-  setInterval(refreshSystemHealth, 10000);
+  // Health é leitura de rede; eventos SSE já mantêm atividade e missões vivas.
+  // Um intervalo de 20s evita competir com o refresh do shell e com iframes.
+  setInterval(refreshSystemHealth, 20000);
   refreshSystemHealth();
 
   // === INSPECTOR AGENT TIMER ===
