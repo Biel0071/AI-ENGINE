@@ -25,8 +25,10 @@ window.openFile = async function(path) {
       monacoEditorInstance.setValue(content);
       
       // Update UI state
-      document.querySelector('.visual-canvas').style.display = 'none';
-      document.querySelector('.monaco-container').style.display = 'block';
+      const visualCanvas = document.querySelector('.visual-canvas');
+      const monacoContainer = document.querySelector('.monaco-container');
+      if (visualCanvas) visualCanvas.style.display = 'none';
+      if (monacoContainer) monacoContainer.style.display = 'block';
     }
   } catch (error) {
     if (monacoEditorInstance) monacoEditorInstance.setValue(`Erro ao abrir:\n${error.message}`);
@@ -126,7 +128,8 @@ window.renderAll = function() {
   
   // Update agent list in right panel
   if (fenixIdeGet('liveAgentsList') && window.state && window.state.data && window.state.data.workers) {
-    const workers = window.state.data.workers;
+    const rawWorkers = window.state.data.workers;
+    const workers = Array.isArray(rawWorkers) ? rawWorkers : (rawWorkers?.workers || rawWorkers?.items || []);
     fenixIdeGet('liveAgentsList').innerHTML = workers.map(w => {
       const isRunning = w.activeJobs > 0 || w.status === 'RUNNING';
       const statusCls = isRunning ? 'status-running' : 'status-idle';
@@ -309,18 +312,24 @@ window.addEventListener('load', () => {
       pTabs.forEach(b => b.classList.remove('active'));
       t.classList.add('active');
       
-      document.querySelector('.chat-view').style.display = 'none';
+      const chatView = document.querySelector('.chat-view');
+      if (chatView) chatView.style.display = 'none';
       if (document.getElementById('memoryView')) document.getElementById('memoryView').style.display = 'none';
       if (document.getElementById('graphView')) document.getElementById('graphView').style.display = 'none';
+      const historyView = document.getElementById('chatHistoryView');
+      if (historyView) historyView.style.display = 'none';
       
       if (t.textContent === 'CHAT') {
-        document.querySelector('.chat-view').style.display = 'flex';
+        if (chatView) chatView.style.display = 'flex';
       } else if (t.textContent === 'MEMÓRIA') {
         if (document.getElementById('memoryView')) document.getElementById('memoryView').style.display = 'flex';
         loadMemory();
       } else if (t.textContent === 'GRAFOS') {
         if (document.getElementById('graphView')) document.getElementById('graphView').style.display = 'block';
         loadGraph();
+      } else if (t.textContent === 'HISTÓRICO') {
+        if (historyView) historyView.style.display = 'flex';
+        renderChatHistory();
       }
     });
   });
@@ -346,6 +355,26 @@ window.addEventListener('load', () => {
     } catch(e) {}
   }
 
+  function renderChatHistory() {
+    const target = fenixIdeGet('chatHistoryList');
+    if (!target) return;
+    let turns = [];
+    try { turns = JSON.parse(localStorage.getItem('fenix_chat_history_v1') || '[]'); } catch { turns = []; }
+    const groups = [];
+    for (let i = 0; i < turns.length; i += 2) {
+      const user = turns[i]?.role === 'user' ? turns[i] : null;
+      const assistant = turns[i + 1]?.role === 'assistant' ? turns[i + 1] : null;
+      if (user) groups.push({ user, assistant });
+    }
+    target.innerHTML = groups.length ? groups.reverse().map((item, index) => `<button class="history-item" data-history-index="${groups.length - index - 1}"><i class="ph ph-chat-circle"></i><span>${esc(item.user.content.slice(0, 80))}<small>${item.assistant ? esc(item.assistant.content.slice(0, 100)) : 'sem resposta'}</small></span></button>`).join('') : '<div class="empty-state">Nenhuma conversa salva ainda.</div>';
+    target.querySelectorAll('[data-history-index]').forEach((button) => button.addEventListener('click', () => {
+      const item = groups[Number(button.dataset.historyIndex)];
+      if (!item) return;
+      const log = fenixIdeGet('chatLog');
+      if (log) { log.innerHTML = ''; bubble(item.user.content, 'user'); if (item.assistant) bubble(item.assistant.content, 'bot'); }
+    }));
+  }
+
   async function loadGraph() {
     if (!window.vis) return;
     const container = document.getElementById('networkGraph');
@@ -353,19 +382,13 @@ window.addEventListener('load', () => {
     container.dataset.loaded = "true";
     
     try {
-      const gData = await api('/graph').catch(() => ({}));
-      const nodes = new vis.DataSet(gData.nodes || [
-        { id: 1, label: 'FÊNIX Kernel', shape: 'hexagon', color: '#2f81f7' },
-        { id: 2, label: 'React Frontend', shape: 'box', color: '#8957e5' },
-        { id: 3, label: 'Node Backend', shape: 'box', color: '#238636' },
-        { id: 4, label: 'Agents Swarm', shape: 'ellipse', color: '#d29922' }
-      ]);
-      const edges = new vis.DataSet(gData.edges || [
-        { from: 1, to: 2, arrows: 'to' },
-        { from: 1, to: 3, arrows: 'to' },
-        { from: 1, to: 4, arrows: 'to' },
-        { from: 4, to: 2, arrows: 'to' }
-      ]);
+      const gData = await api('/graph');
+      const nodes = new vis.DataSet(Array.isArray(gData.nodes) ? gData.nodes : []);
+      const edges = new vis.DataSet(Array.isArray(gData.edges) ? gData.edges : []);
+      if (!nodes.get().length) {
+        container.innerHTML = '<div class="empty-state">Nenhum nó real publicado pelo Codebase Graph.</div>';
+        return;
+      }
       const data = { nodes, edges };
       const options = {
         nodes: { font: { color: '#ffffff' }, borderWidth: 2 },
