@@ -1025,8 +1025,9 @@
   }
   // Health é leitura de rede; eventos SSE já mantêm atividade e missões vivas.
   // Um intervalo de 20s evita competir com o refresh do shell e com iframes.
-  setInterval(refreshSystemHealth, 20000);
-  refreshSystemHealth();
+  const commandViewActive = () => document.getElementById('view-command')?.classList.contains('active');
+  setInterval(() => { if (commandViewActive()) refreshSystemHealth(); }, 20000);
+  if (commandViewActive()) refreshSystemHealth();
 
   // === INSPECTOR AGENT TIMER ===
   const _inspectorStart = Date.now();
@@ -1113,6 +1114,7 @@
   const API_PLATFORM_URL = '/api/v2/ai-platform/status';
 
   async function refreshApiPlatformStatus() {
+    if (!commandViewActive()) return;
     const statusEl   = document.getElementById('apiPlatformStatus');
     const provEl     = document.getElementById('apiPlatformProviders');
     const uptimeEl   = document.getElementById('apiPlatformUptime');
@@ -1149,8 +1151,8 @@
       if (statusEl) { statusEl.textContent = '● OFFLINE'; statusEl.style.color = '#ef4444'; }
     }
   }
-  setInterval(refreshApiPlatformStatus, 15000);
-  refreshApiPlatformStatus();
+  setInterval(() => { if (commandViewActive()) refreshApiPlatformStatus(); }, 15000);
+  if (commandViewActive()) refreshApiPlatformStatus();
 
   // === API PLATFORM DIRECT CHAT (used when FÊNIX chat sends messages) ===
   // This is a browser-level proxy: when the FÊNIX chat fails (401/network), this falls back
