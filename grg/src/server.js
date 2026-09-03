@@ -279,8 +279,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
 
-      const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
-      if (productHandled) return;
+      if (!url.pathname.startsWith('/api/v2/jobs')) {
+        const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
+        if (productHandled) return;
+      }
 
       const developerHandled = await handleDeveloperRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
       if (developerHandled) return;
