@@ -1313,6 +1313,29 @@
       chatMsgs.push({ role: 'user', text: text, ts: ts });
       saveChatHistory(chatMsgs);
 
+      if (pendingProposal && /^(sim|confirmar|confirmo|pode iniciar|iniciar|ok|bora|start)\b/i.test(text)) {
+        const proposal = pendingProposal;
+        pendingProposal = null;
+        try {
+          const missionRes = await fetch('/api/missions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
+            body: JSON.stringify({ name: proposal.name, objective: proposal.objective, autoApprove: true, steps: [{ type: 'audit' }, { type: 'inspect', dependsOn: [0] }] }),
+          });
+          const mission = await missionRes.json().catch(() => ({}));
+          const reply = missionRes.ok
+            ? `Autorização recebida. Missão ${proposal.name} criada no Mission Runtime (${mission.id || mission.missionId}) e pronta para acompanhamento.`
+            : `Não foi possível criar a missão: ${mission.error || 'o runtime recusou a solicitação'}.`;
+          renderChatBubble(histEl, 'fenix', reply, chatTimestamp());
+          chatMsgs.push({ role: 'fenix', text: reply, ts: chatTimestamp() });
+          saveChatHistory(chatMsgs);
+          window.dispatchEvent(new CustomEvent('fenix-mission-updated'));
+        } catch (error) {
+          renderChatBubble(histEl, 'fenix', `Falha ao criar missão: ${error.message}`, chatTimestamp());
+        }
+        return;
+      }
+
       // T06: Indicador pensando animado
       const thinkEl = document.createElement('div');
       thinkEl.style.cssText = 'display:flex; align-items:center; gap:6px; margin:5px 0; animation:fenixFadeIn 0.2s ease;';
@@ -1331,7 +1354,34 @@
       if (statusBadge) { statusBadge.textContent = 'PENSANDO'; statusBadge.className = 'orch-status-pill exec'; }
 
       try {
-        const reply = await fenixChatSend(text);
+        // O chat visível precisa passar pelo roteador operacional antes da
+        // inferência direta. Assim uma instrução de trabalho não vira apenas
+        // texto: o ChatAgent classifica, executa ações seguras e propõe uma
+        // missão real quando houver alteração ou execução prolongada.
+        let routed = null;
+        try {
+          const routedRes = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
+            body: JSON.stringify({ message: text }),
+            signal: AbortSignal.timeout(60000),
+          });
+          if (routedRes.ok) routed = await routedRes.json();
+        } catch (_) { /* inferência direta continua sendo um fallback válido */ }
+
+        if (routed?.requiresConfirmation || ['LONG_MISSION', 'CODE_CHANGE'].includes(routed?.category)) {
+          const name = routed.proposal?.name || 'Missão FÊNIX';
+          pendingProposal = { name, objective: text };
+          const reply = `Solicitação classificada como trabalho governado. Posso criar uma missão auditável para executar: ${name}. Responda "sim" para autorizar.`;
+          clearInterval(thinkInterval); thinkEl.remove();
+          renderChatBubble(histEl, 'fenix', reply, chatTimestamp());
+          chatMsgs.push({ role: 'fenix', text: reply, ts: chatTimestamp() });
+          saveChatHistory(chatMsgs);
+          if (statusBadge) { statusBadge.textContent = 'AGUARDANDO AUTORIZAÇÃO'; statusBadge.className = 'orch-status-pill exec'; }
+          return;
+        }
+
+        const reply = routed?.reply || routed?.facts?.note || await fenixChatSend(text);
         clearInterval(thinkInterval);
         thinkEl.remove();
 
