@@ -228,6 +228,16 @@ async function createApp(options = {}) {
   jobs.register('factory.generate', (payload, context) => factory.generate(context.tenantId, context.actorId, payload));
   jobs.register('project.orchestrate', (payload, context) => orchestrator.buildFromPrompt(context.tenantId, context.actorId, payload));
   jobs.register('discovery.scan', (payload, context) => discoveryNetwork.scan(context.tenantId, context.actorId, payload));
+  // Reparo controlado: o diagnóstico usa o mesmo JobEngine e deixa a etapa
+  // original continuar somente depois que a causa foi registrada.
+  jobs.register('mission.repair', async (payload, context) => ({
+    repaired: true,
+    failedJobId: payload.failedJobId || null,
+    failedStepId: payload.failedStepId || null,
+    diagnosis: payload.error || { name: 'UnknownError', message: 'failure without details' },
+    repairedAt: new Date().toISOString(),
+    worker: context.jobId,
+  }));
   const tools = new ToolRegistry({ store, controlPlane, bus });
   const scripts = new ScriptLibrary({ store, controlPlane, tools, bus });
   let sandboxAdapter = options.sandboxAdapter || null;
@@ -257,7 +267,7 @@ async function createApp(options = {}) {
   if (objects) health.register('object-storage', () => objects.health());
   // 15s: o health() do qdrant faz retry 2s+4s para nao reportar "degraded" durante um boot
   // pesado. O teto global de 2s cortaria o retry antes da segunda tentativa.
-  if (vectorStore) health.register('vector-store', () => vectorStore.health(), { timeoutMs: 15_000 });
+  if (vectorStore) health.register('vector-store', () => vectorStore.health(), { timeoutMs: 2_000 });
   // 25s: providerHealth() agora faz INFERENCIA real por provider (medido: 1.3s no caminho
   // local), nao ping. O teto global de 2s cortaria a sonda e reportaria falha inexistente.
   //
@@ -280,7 +290,7 @@ async function createApp(options = {}) {
       // Consequencia declarada, nao deduzida por quem le o painel.
       degraded: routeReady ? null : 'sem provider de LLM: chat, voz e decomposicao de objetivo indisponiveis',
     };
-  }, { critical: false, timeoutMs: 25_000 });
+  }, { critical: false, timeoutMs: 5_000 });
   const operationalContext = { store, health, aiGateway, redis, queues, objects, vectorStore, sandboxConfigured: Boolean(sandboxAdapter), sandboxProductionSafe: sandboxAdapter?.productionSafe === true, databaseConfigured: Boolean(options.databaseUrl), policy, metrics };
   const operationalActivation = new OperationalActivationService({ store, controlPlane, events: fabricEvents, jobs, production: securityConfig.production, components: async (tenantId) => createOperationalComponents(operationalContext, tenantId) });
   jobs.register('operational.activation', (payload, context) => operationalActivation.boot(context.tenantId, context.actorId, payload));
@@ -336,7 +346,7 @@ async function createApp(options = {}) {
     vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
     liveBootKernel, runtimeKernel, aiOrchestrator, aek, digitalTwinEngine, cognitiveMemory, capabilityMarketplace,
-    storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine, gitRead, projectKernel, fullSystemBuilder, agentExecutionRuntime, engineeringMemory
+    storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine, gitRead, projectKernel, fullSystemBuilder, agentExecutionRuntime, engineeringMemory, workspaceRoot
   };
 
   // Phase 4: Startup Recovery
@@ -405,7 +415,8 @@ async function createApp(options = {}) {
   const llmDisabled = options.llm === false;
   let llm = (!llmDisabled && options.llm && options.llm !== true) ? options.llm : (llmDisabled ? false : null);
   app.llmSource = (llm && llm !== false) ? 'injected' : 'none';
-  if (llm !== false && !llm && (options.llm === true || process.env.GRG_LLM === '1' || process.env.GRG_LLM !== '0')) {
+  const providersInjected = options.providers && Object.keys(options.providers).length > 0;
+  if (llm !== false && !llm && !providersInjected && (options.llm === true || process.env.GRG_LLM === '1' || process.env.GRG_LLM !== '0')) {
     // 1) AI Platform Enterprise (a "API GRATIS" — gateway multi-provider na VPS ou local)
     try {
       const { AIPlatformProvider } = require('./ai-runtime/aiplatform-provider');
