@@ -814,6 +814,17 @@ function init() {
   addEvt('skillForm', 'submit', (event) => { event.preventDefault(); if ($('skillObjective')) selectSkills($('skillObjective').value); });
   addEvt('sliceForm', 'submit', (event) => { event.preventDefault(); if ($('slicePrompt')) createFullstackSlice($('slicePrompt').value); });
   addEvt('tickBtn', 'click', async () => { await api('/runtime/tick', { method: 'POST' }); await refreshAll(); });
+  addEvt('autonomousCycleBtn', 'click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true; button.textContent = 'Executando ciclo...';
+    try {
+      const report = await api('/autonomous/cycle', { method: 'POST', body: JSON.stringify({ autoStart: true, maxConcurrent: 2 }) });
+      button.textContent = `Ciclo concluído · ${report.despachados || 0} jobs`;
+      await refreshAll();
+    } catch (error) {
+      button.textContent = `Ciclo falhou · ${error.message}`;
+    } finally { setTimeout(() => { button.disabled = false; button.textContent = 'Executar ciclo autônomo'; }, 3500); }
+  });
   addEvt('rebuildCityBtn', 'click', async () => { await api('/city/rebuild', { method: 'POST' }); await refreshAll(); });
   addEvt('sampleBtn', 'click', async () => { await api('/observability/series/sample', { method: 'POST' }); await refreshAll(); });
   addEvt('checkApiBtn', 'click', async () => { await api('/connection/check', { method: 'POST', body: JSON.stringify({ provider: 'aiplatform' }) }); await refreshAll(); });
