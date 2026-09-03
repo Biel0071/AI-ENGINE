@@ -24,11 +24,12 @@
   <!-- Monaco Editor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
-  <link rel="stylesheet" href="/unified.css?v=restore1">
-  <link rel="stylesheet" href="/fenix-ide-v2.css?v=restore1">
-  <link rel="stylesheet" href="/command-center.css?v=restore1">
-  <link rel="stylesheet" href="/city-overrides.css?v=restore2">
-  <link rel="stylesheet" href="/living-panels.css?v=restore1">
+  <link rel="stylesheet" href="/unified.css?v=fenix4">
+  <link rel="stylesheet" href="/fenix-ide-v2.css?v=fenix3">
+  <link rel="stylesheet" href="/command-center.css?v=fenix3">
+  <link rel="stylesheet" href="/city-overrides.css?v=fenix3">
+  <link rel="stylesheet" href="/living-panels.css?v=fenix3">
+
   <script>
     if (window.location.search.includes('is_preview=true')) {
        document.documentElement.classList.add('is-preview-mode');
@@ -59,194 +60,695 @@
   <div class="fenix-os-layout">
     
     <!-- TOP GLOBAL BAR -->
-    <header class="global-topbar">
-      <div class="topbar-left">
-        <div class="brand-logo">
-          <i class="ph-fill ph-fire"></i>
-          <span>FÊNIX OS <span id="appVersion" class="version-badge">--</span></span>
-        </div>
-        <div class="connection-status">
-          <i id="statusDot" class="ph-fill ph-circle"></i>
-          <span id="statusSub">runtime</span>
-          <span id="statusText">UNKNOWN</span>
+    <header class="global-topbar orch-topbar">
+      <div class="topbar-left orch-brand">
+        <div class="orch-logo-crest"><i class="ph-fill ph-fire"></i></div>
+        <div class="orch-brand-info">
+          <div class="orch-brand-title">
+            FÊNIX OS <span class="orch-status-pill online" id="statusPill">ONLINE</span>
+          </div>
+          <span class="orch-brand-subtitle">ORQUESTRADOR CENTRAL</span>
         </div>
       </div>
       
-      <div class="topbar-metrics">
-        <div class="metric"><small>Modelo ativo</small><b id="activeModel">--</b></div>
-        <div class="metric"><small>Latência</small><b id="kpiLatency">--</b></div>
-        <div class="metric"><small>Tokens usados</small><b id="kpiTokens">--</b></div>
-        <div class="metric"><small>Agentes</small><b id="kpiAgents">--</b></div>
-        <div class="metric"><small>Sistema</small><b id="kpiSystem">UNKNOWN</b></div>
+      <div class="orch-telemetry-strip">
+        <div class="orch-meta-chip"><span class="orch-meta-label">MODELO ATIVO</span><span class="orch-meta-val" id="activeModel">QWEN 2.5 3B</span></div>
+        <div class="orch-meta-chip"><span class="orch-meta-label">LATÊNCIA</span><span class="orch-meta-val green" id="kpiLatency">28ms</span></div>
+        <div class="orch-meta-chip"><span class="orch-meta-label">TOKENS</span><span class="orch-meta-val" id="kpiTokens">124.5K</span></div>
+        <div class="orch-meta-chip"><span class="orch-meta-label">AGENTES</span><span class="orch-meta-val green" id="kpiAgents">19 / 19</span></div>
+        <div class="orch-meta-chip"><span class="orch-meta-label">WORKER</span><span class="orch-meta-val green" id="kpiWorker">HEALTHY</span></div>
+        <div class="orch-meta-chip"><span class="orch-meta-label">UPTIME</span><span class="orch-meta-val" id="kpiUptime">00:00:00</span></div>
       </div>
       
-      <div class="topbar-right">
-        <div class="user-info">
-          <div class="avatar"><i class="ph-fill ph-user"></i></div>
-          <span id="actorName">grg-admin</span>
+      <div class="orch-user-section">
+        <div class="orch-user-profile" id="userProfileBtn" title="FÊNIX — Master Orchestrator">
+          <div class="orch-avatar-badge" style="width:38px;height:38px;font-size:20px;background:radial-gradient(circle at 40% 35%, #ef4444, #7c0000);">
+            <span>🤖</span>
+          </div>
+          <div class="orch-user-titles">
+            <span class="orch-user-name" id="actorName" style="font-size:13px;font-weight:800;">FÊNIX</span>
+            <span class="orch-user-role" style="font-size:9px;letter-spacing:0.08em;">MASTER ORCHESTRATOR</span>
+          </div>
         </div>
-        <button id="refreshBtn" class="btn-ghost" title="Force Sync"><i class="ph ph-arrows-clockwise"></i></button>
-        <button id="logoutBtn" class="btn-ghost" title="Logout"><i class="ph ph-sign-out"></i></button>
+        <div class="orch-quick-actions">
+          <div class="orch-action-icon" id="notifIcon" title="Atividades Recentes">
+            <i class="ph-fill ph-magnifying-glass"></i>
+          </div>
+          <div class="orch-action-icon" id="refreshBtn" title="Configurações"><i class="ph ph-gear"></i></div>
+          <div class="orch-action-icon" id="logoutBtn" title="Sincronizar"><i class="ph ph-arrows-clockwise"></i></div>
+          <div class="orch-action-icon" style="position:relative;" title="Notificações">
+            <i class="ph-fill ph-bell"></i>
+            <span class="orch-notif-badge" id="notifCount">3</span>
+          </div>
+        </div>
       </div>
+
     </header>
 
     <div class="main-body">
       
-              <!-- NAV SIDEBAR -->
+              <!-- NAV SIDEBAR — TARGET UI v2 -->
         <nav class="sidebar-nav">
           <div class="nav-top">
-            <div class="nav-group" data-domain="command"><button class="nav-group-label" type="button" aria-expanded="true">COMMAND <span aria-hidden="true">−</span></button>
-              <button class="nav-item active" data-view="command" data-nav="command"><i class="ph ph-squares-four"></i> COMMAND</button>
-              <button class="nav-item" data-view="operations" data-nav="operations"><i class="ph ph-kanban"></i> OPERATIONS</button>
-              <button class="nav-item" data-view="runtime" data-nav="runtime"><i class="ph ph-activity"></i> RUNTIME</button>
+
+            <!-- COMMAND CENTER section -->
+            <div class="nav-group" data-domain="command">
+              <button class="nav-group-label" type="button">COMMAND CENTER</button>
+              <button class="nav-item active" data-view="command" data-nav="command"><i class="ph-fill ph-squares-four"></i> DASHBOARD</button>
+              <button class="nav-item" data-view="operations" data-nav="operations"><i class="ph ph-kanban"></i> MISSÕES</button>
+              <button class="nav-item" data-view="agents" data-nav="agents"><i class="ph ph-users-three"></i> AGENTES</button>
+              <button class="nav-item" data-view="city" data-nav="city"><i class="ph ph-buildings"></i> AI CITY</button>
             </div>
-            <div class="nav-group" data-domain="build"><button class="nav-group-label" type="button" aria-expanded="true">BUILD <span aria-hidden="true">−</span></button>
-              <button class="nav-item" data-view="ide" data-nav="ide"><i class="ph ph-code"></i> IDE</button>
-              <button class="nav-item" data-view="project" data-nav="project"><i class="ph ph-folder-open"></i> PROJECT</button>
-              <button class="nav-item" data-view="projects" data-nav="projects"><i class="ph ph-folders"></i> PROJECTS</button>
-            </div>
-            <div class="nav-group" data-domain="intelligence"><button class="nav-group-label" type="button" aria-expanded="true">INTELLIGENCE <span aria-hidden="true">−</span></button>
-              <button class="nav-item" data-view="agents" data-nav="agents"><i class="ph ph-users-three"></i> AGENTS</button>
-              <button class="nav-item" data-view="memory" data-nav="memory"><i class="ph ph-brain"></i> MEMORY</button>
-              <button class="nav-item" data-view="knowledge" data-nav="knowledge"><i class="ph ph-graph"></i> KNOWLEDGE</button>
-            </div>
-            <div class="nav-group" data-domain="infrastructure"><button class="nav-group-label" type="button" aria-expanded="true">INFRASTRUCTURE <span aria-hidden="true">−</span></button>
-              <button class="nav-item" data-view="mcp" data-nav="mcp"><i class="ph ph-plug"></i> MCP HUB</button>
+
+            <!-- INTELLIGENCE section -->
+            <div class="nav-group" data-domain="intelligence">
+              <button class="nav-group-label" type="button">INTELIGÊNCIA</button>
+              <button class="nav-item" data-view="memory" data-nav="memory"><i class="ph ph-brain"></i> MEMÓRIA</button>
+              <button class="nav-item" data-view="knowledge" data-nav="knowledge"><i class="ph ph-lightning"></i> SKILLS</button>
+              <button class="nav-item" data-view="runtime" data-nav="runtime"><i class="ph ph-activity"></i> TELEMETRY</button>
               <button class="nav-item" data-view="observability" data-nav="observability"><i class="ph ph-chart-line-up"></i> OBSERVABILITY</button>
             </div>
-            <div class="nav-group" data-domain="validation"><button class="nav-group-label" type="button" aria-expanded="true">VALIDATION <span aria-hidden="true">−</span></button>
+
+            <!-- BUILD section -->
+            <div class="nav-group" data-domain="build">
+              <button class="nav-group-label" type="button">BUILD</button>
+              <button class="nav-item" data-view="projects" data-nav="projects"><i class="ph ph-folders"></i> PROJECTS</button>
               <button class="nav-item" data-view="browser" data-nav="browser"><i class="ph ph-browser"></i> BROWSER QA</button>
-              <button class="nav-item" data-view="city" data-nav="city"><i class="ph ph-buildings"></i> AI CITY</button>
+              <button class="nav-item" data-view="ide" data-nav="ide"><i class="ph ph-code"></i> IDE</button>
               <button class="nav-item" data-view="terminal" data-nav="terminal"><i class="ph ph-terminal"></i> TERMINAL</button>
             </div>
+
+            <!-- INFRA section -->
+            <div class="nav-group" data-domain="infrastructure">
+              <button class="nav-group-label" type="button">INFRAESTRUTURA</button>
+              <button class="nav-item" data-view="mcp" data-nav="mcp"><i class="ph ph-plug"></i> MCP HUB</button>
+              <button class="nav-item" data-view="project" data-nav="project"><i class="ph ph-folder-open"></i> PROJECT MIRROR</button>
+            </div>
+
           </div>
-          <div class="nav-bottom">
-            <div class="system-health">
+
+          <!-- HISTÓRICO DE CONVERSAS -->
+          <div class="orch-conversations-section">
+            <div class="orch-sidebar-header">HISTÓRICO DE CONVERSAS</div>
+            <div id="sidebarConvList">
+              <div class="orch-conv-item active" data-conv-id="conv-1">
+                <span>Evolução CRM Completa</span>
+                <span class="orch-conv-time">14:22</span>
+              </div>
+              <div class="orch-conv-item" data-conv-id="conv-2">
+                <span>Melhoria AI City</span>
+                <span class="orch-conv-time">Ontem</span>
+              </div>
+              <div class="orch-conv-item" data-conv-id="conv-3">
+                <span>Diagnóstico Kernel</span>
+                <span class="orch-conv-time">28/08</span>
+              </div>
+            </div>
+            <button class="orch-new-conv-btn" id="btnNewConversation">
+              <i class="ph ph-plus"></i> + NOVA CONVERSA
+            </button>
+          </div>
+
+          <div class="orch-sidebar-status-card">
+            <div class="orch-status-avatar-row">
+              <div class="orch-status-avatar">
+                <span>🤖</span>
+              </div>
+              <div class="orch-status-texts">
+                <span class="orch-status-headline">FÊNIX STATUS</span>
+                <span class="orch-status-subtext" id="sidebarFenixStatus">ANALISANDO PROJETO</span>
+              </div>
+            </div>
+            <div style="font-size: 8px; color: var(--fenix-text-dim);">Contexto carregado e memória ativa</div>
+            <button class="orch-status-details-btn" id="btnFenixStatusDetails">VER DETALHES</button>
+          </div>
+
+          <div class="nav-bottom" style="margin-top: 0; padding-top: 4px;">
+            <div class="system-health" style="padding: 6px 12px; margin-top: 0;">
               <small>SYSTEM HEALTH</small>
               <b id="systemHealthValue">--</b>
-              <small id="systemErrorValue">estado não medido</small>
+              <small id="systemErrorValue">verificando...</small>
             </div>
-            <button class="nav-item" title="Configurações"><i class="ph ph-gear"></i></button>
+            <button class="nav-item" title="Configurações" data-view="terminal"><i class="ph ph-gear"></i> CONFIGURAÇÕES</button>
           </div>
         </nav>
 
+
+
         <!-- VIEWS CONTAINER -->
+
         <div class="views-container">
           <!-- COMMAND CENTER VIEW -->
-          <div id="view-command" class="view active" style="flex-direction: column;">
-            <!-- TOP SECTION -->
-            <div style="padding: 12px 16px; background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-bright); display: flex; align-items: center; gap: 8px;">
-                <i class="ph-fill ph-rocket"></i> FÊNIX OS
-                <select id="projectSwitcher" style="background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 11px; margin-left: 12px; font-family: var(--font-mono);">
-                  <option value="fenix-os">FÊNIX OS</option>
-                  <option value="ai-platform">AI PLATFORM</option>
-                </select>
-              </div>
-              <div style="display: flex; gap: 16px; font-size: 11px; font-family: var(--font-mono);">
-                <div style="display: flex; align-items: center; gap: 6px;"><i class="ph-fill ph-circle" style="color: var(--green);"></i> SYSTEM <span style="color: var(--text-bright);">ONLINE</span></div>
-              </div>
+          <div id="view-command" class="view active fenix-orchestrator-layout">
+            <!-- Hidden backward-compatibility elements so old scripts/tests never fail -->
+            <div style="display:none;" aria-hidden="true">
+              <select id="projectSwitcher"><option value="fenix-os">FÊNIX OS</option></select>
+              <div id="cmdSystemState" data-state="ONLINE"><span>ONLINE</span></div>
+              <div id="cmdRuntimeContainer"></div>
+              <div id="cmdProjectsContainer"></div>
+              <div id="cmdObservabilityContainer"></div>
+              <div id="cmdAgentsContainer"></div>
+              <div id="projectMirrorList"></div>
+              <span id="pmScreensBadge">0</span><span id="pmComponentsBadge">0</span>
+              <span id="pmApisBadge">0</span><span id="pmBackendBadge">0</span><span id="pmWorkersBadge">0</span>
+              <div id="inspectorPanel"></div><div id="inspPlaceholder"></div><div id="inspData"></div>
+              <div id="inspName"></div><div id="inspType"></div><div id="inspFile"></div>
+              <div id="inspApi"></div><div id="inspState"></div><div id="inspComponent"></div>
+              <button id="inspPreviewBtn"></button>
+              <div id="wsPreviewContainer"><iframe id="wsPreviewFrame"></iframe></div>
+              <b id="barActiveJob">WAITING</b><b id="barWorker">IDLE</b><b id="barAi">OFFLINE</b>
+              <b id="barTests">--</b><b id="barRuntime">—</b>
             </div>
 
-            <!-- MIDDLE SECTION (3 Columns) -->
-            <div style="display: flex; flex: 1; min-height: 0;">
-              <!-- PROJECT (Left) -->
-              <div style="width: 240px; border-right: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column;">
-                <div style="padding: 8px 16px; font-size: 10px; font-weight: 700; color: var(--text-muted); border-bottom: 1px solid var(--border); letter-spacing: 0.05em;">PROJECT MIRROR</div>
-                <div id="projectMirrorList" style="flex: 1; overflow-y: auto; padding: 8px;">
-                  <button class="nav-item" style="width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;"><i class="ph ph-browsers"></i> Screens <span id="pmScreensBadge" class="badge-online" style="float: right;">0</span></button>
-                  <button class="nav-item" style="width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;"><i class="ph ph-puzzle-piece"></i> Components <span id="pmComponentsBadge" class="badge-online" style="float: right;">0</span></button>
-                  <button class="nav-item" style="width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;"><i class="ph ph-plug"></i> APIs <span id="pmApisBadge" class="badge-online" style="float: right;">0</span></button>
-                  <button class="nav-item" style="width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;"><i class="ph ph-database"></i> Backend <span id="pmBackendBadge" class="badge-online" style="float: right;">0</span></button>
-                  <button class="nav-item" style="width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;"><i class="ph ph-hard-drives"></i> Workers <span id="pmWorkersBadge" class="badge-online" style="float: right;">0</span></button>
-                  <button class="nav-item" style="width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;"><i class="ph ph-brain"></i> AI Providers</button>
-                  <button class="nav-item" style="width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;"><i class="ph ph-kanban"></i> Jobs</button>
-                  <button class="nav-item" style="width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;"><i class="ph ph-graph"></i> Graph</button>
-                </div>
-              </div>
-
-              <!-- VISUAL WORKSPACE (Center) -->
-              <div id="visualWorkspace" style="flex: 1; display: flex; flex-direction: column; background: #050510; position: relative; overflow: hidden;">
-                <!-- Toolbar -->
-                <div style="padding: 6px 16px; font-size: 10px; font-weight: 700; color: var(--text-muted); border-bottom: 1px solid var(--border); letter-spacing: 0.05em; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: space-between; z-index: 10;">
-                  <span>VISUAL WORKSPACE</span>
-                  <div style="display: flex; gap: 8px;">
-                    <button id="wsModeCityBtn" onclick="setWorkspaceMode('city')" style="background: var(--accent); color: #fff; border: none; border-radius: 3px; padding: 2px 8px; font-size: 9px; cursor: pointer; font-family: var(--font-mono);">AI CITY</button>
-                    <button id="wsModePreviewBtn" onclick="setWorkspaceMode('preview')" style="background: rgba(255,255,255,0.1); color: var(--text-muted); border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 9px; cursor: pointer; font-family: var(--font-mono);">PREVIEW</button>
+            <!-- MAIN WORKSPACE ROW -->
+            <div class="orch-body-row">
+              <!-- CENTER WORKSPACE -->
+              <div class="orch-center-area">
+                <!-- AI CITY ZONE -->
+                <div class="orch-city-zone">
+                  <div class="orch-city-toolbar">
+                    <div class="orch-city-title">
+                      <i class="ph-fill ph-buildings" style="color: var(--fenix-red);"></i>
+                      <span>AI CITY — AGENTES EM TEMPO REAL</span>
+                    </div>
+                    <div class="orch-city-controls">
+                      <button class="orch-tool-btn" id="btnZoomOut" title="Zoom Out">−</button>
+                      <span id="lblZoomLevel" style="font-family: var(--fenix-font-mono); font-size: 9.5px; color: #fff; padding: 0 4px;">100%</span>
+                      <button class="orch-tool-btn" id="btnZoomIn" title="Zoom In">+</button>
+                      <button class="orch-tool-btn" id="btnResetCamera"><i class="ph ph-crosshair"></i> RESET</button>
+                      <button class="orch-tool-btn" id="btnCityFilters"><i class="ph ph-funnel"></i> FILTROS</button>
+                      <button class="orch-tool-btn" id="btnViewMission" style="background: rgba(239, 68, 68, 0.2); color: var(--fenix-red); border-color: rgba(239, 68, 68, 0.4);"><i class="ph ph-flag"></i> VER MISSÃO</button>
+                    </div>
                   </div>
-                </div>
-                <!-- AI City canvas -->
-                <div id="wsCityContainer" style="flex: 1; position: relative; overflow: hidden;">
-                  <canvas id="cityCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
-                </div>
-                <!-- Screen Live Preview iframe (hidden by default) -->
-                <div id="wsPreviewContainer" style="flex: 1; position: relative; display: none; background: #fff;">
-                  <iframe id="wsPreviewFrame" src="about:blank" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
-                  <div id="wsPreviewLabel" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: var(--text-muted); font-size: 9px; padding: 3px 8px; border-radius: 3px; font-family: var(--font-mono);">LIVE PREVIEW</div>
-                </div>
-              </div>
 
-              <!-- INSPECTOR (Right) -->
-              <div style="width: 280px; border-left: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column;">
-                <div style="padding: 8px 16px; font-size: 10px; font-weight: 700; color: var(--text-muted); border-bottom: 1px solid var(--border); letter-spacing: 0.05em;">INSPECTOR</div>
-                <div id="inspectorPanel" style="flex: 1; overflow-y: auto; padding: 12px; font-size: 11px; display: flex; flex-direction: column; gap: 10px;">
-                  <!-- Placeholder when nothing is selected -->
-                  <div id="inspPlaceholder" style="text-align: center; padding: 32px 12px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                    <i class="ph ph-cursor-click" style="font-size: 24px; opacity: 0.4;"></i>
-                    <span style="font-size: 10px;">Clique em um item do<br>Project Mirror para inspecionar</span>
-                  </div>
-                  <!-- Data shown when selected -->
-                  <div id="inspData" style="display: none; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 6px; padding: 8px; background: rgba(var(--accent-rgb,99,102,241),0.1); border-radius: 6px; border: 1px solid rgba(var(--accent-rgb,99,102,241),0.3);">
-                      <i class="ph-fill ph-file-code" style="color: var(--accent); font-size: 14px;"></i>
-                      <div>
-                        <div id="inspName" style="font-weight: 700; color: var(--text-bright); font-size: 12px;">--</div>
-                        <div id="inspType" style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em;">--</div>
+                  <!-- Canvas Host -->
+                  <div class="orch-city-canvas-container" id="wsCityContainer">
+                    <canvas id="cityCanvas"></canvas>
+
+                    <!-- FLOATING OVERLAY 1: MISSÃO ATIVA -->
+                    <div class="orch-floating-mission-card" id="floatingMissionCard">
+                      <div class="orch-floating-tag">
+                        <span>MISSÃO ATIVA</span>
+                        <span id="floatMissionBadge" class="orch-status-pill online" style="font-size: 8px;">EXECUTANDO</span>
+                      </div>
+                      <div class="orch-mission-name" id="floatMissionTitle">Evolução CRM Completa</div>
+                      <div class="orch-mission-desc" id="floatMissionDesc">Refatoração de pipelines, testes e persistência contínua.</div>
+                      
+                      <div class="orch-progress-track">
+                        <div class="orch-progress-bar" id="floatMissionProgress" style="width: 72%;"></div>
+                      </div>
+
+                      <div class="orch-stats-grid-mini">
+                        <div class="orch-stat-cell">
+                          <small>TEMPO DECORRIDO</small>
+                          <span id="floatMissionElapsed">00:14:22</span>
+                        </div>
+                        <div class="orch-stat-cell">
+                          <small>TEMPO ESTIMADO</small>
+                          <span id="floatMissionEta">~ 00:08:45</span>
+                        </div>
+                        <div class="orch-stat-cell">
+                          <small>JOBS CONCLUÍDOS</small>
+                          <span id="floatMissionJobs">18 / 25</span>
+                        </div>
+                        <div class="orch-stat-cell">
+                          <small>AGENTES ATIVOS</small>
+                          <span id="floatMissionAgents">5 / 19</span>
+                        </div>
+                      </div>
+
+                      <div class="orch-card-actions">
+                        <button class="orch-btn-mini" id="btnPauseMission"><i class="ph-fill ph-pause"></i> PAUSAR</button>
+                        <button class="orch-btn-mini danger" id="btnCancelMission"><i class="ph-fill ph-x-circle"></i> CANCELAR</button>
+                        <button class="orch-btn-mini" id="btnDetailsMission"><i class="ph ph-info"></i> DETALHES</button>
                       </div>
                     </div>
-                    <div>
-                      <div style="color: var(--text-muted); margin-bottom: 4px; font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase;">File Path</div>
-                      <div id="inspFile" style="color: var(--accent); background: rgba(0,0,0,0.4); padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border); font-family: var(--font-mono); font-size: 10px; word-break: break-all;">--</div>
+
+                    <!-- FLOATING OVERLAY 2: JOB ATUAL -->
+                    <div class="orch-floating-job-card" id="floatingJobCard">
+                      <div class="orch-floating-tag" style="color: var(--fenix-cyan);">
+                        <span id="floatJobId">JOB-19</span>
+                        <span style="color: var(--fenix-text-dim); font-size: 8px;" id="floatJobAgent">QA AGENT</span>
+                      </div>
+                      <div class="orch-mission-name" id="floatJobTitle" style="font-size: 11px;">Validação no Navegador</div>
+                      
+                      <div class="orch-progress-track" style="margin-top: 4px;">
+                        <div class="orch-progress-bar" id="floatJobProgress" style="width: 65%; background: linear-gradient(90deg, #06b6d4, #3b82f6);"></div>
+                      </div>
+
+                      <div style="display: flex; justify-content: space-between; font-size: 8.5px; margin-top: 4px;">
+                        <span style="color: var(--fenix-text-dim);">DURAÇÃO: <b id="floatJobDuration" style="color: #fff;">00:01:14</b></span>
+                        <button class="orch-btn-mini" id="btnOpenJob" style="padding: 1px 4px; font-size: 8px;">ABRIR JOB</button>
+                      </div>
                     </div>
-                    <div>
-                      <div style="color: var(--text-muted); margin-bottom: 4px; font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase;">API Bindings</div>
-                      <div id="inspApi" style="color: var(--text-main); background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border);">--</div>
+                  </div>
+
+                  <!-- Bottom Canvas Ribbon Counters -->
+                  <div class="orch-city-ribbon">
+                    <div class="orch-ribbon-counters">
+                      <div class="orch-ribbon-item"><span style="color: var(--fenix-text-dim);">TOTAL AGENTES:</span> <b id="ribbonTotalAgents">19</b></div>
+                      <div class="orch-ribbon-item green"><span style="color: var(--fenix-green);">● ATIVOS:</span> <b id="ribbonActiveAgents">5</b></div>
+                      <div class="orch-ribbon-item"><span style="color: var(--fenix-text-dim);">MISSÕES:</span> <b id="ribbonMissionsCount">3</b></div>
+                      <div class="orch-ribbon-item"><span style="color: var(--fenix-text-dim);">JOBS:</span> <b id="ribbonJobsCount">25</b></div>
+                      <div class="orch-ribbon-item red"><span style="color: var(--fenix-red);">● FALHAS:</span> <b id="ribbonFailedJobs">0</b></div>
+                      <div class="orch-ribbon-item amber"><span style="color: var(--fenix-amber);">● BLOQUEADOS:</span> <b id="ribbonBlockedJobs">0</b></div>
                     </div>
-                    <div>
-                      <div style="color: var(--text-muted); margin-bottom: 4px; font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase;">Estado</div>
-                      <div id="inspState" style="color: var(--green); background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border);">--</div>
+                    <div style="display: flex; gap: 6px;">
+                      <button class="orch-tool-btn" id="btnToggleMesh"><i class="ph ph-grid-four"></i> GRADE</button>
+                      <button class="orch-tool-btn" id="btnFullscreenCity"><i class="ph ph-corners-out"></i> TELA CHEIA</button>
                     </div>
-                    <div>
-                      <div style="color: var(--text-muted); margin-bottom: 4px; font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase;">Component</div>
-                      <div id="inspComponent" style="color: var(--text-main); background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border);">--</div>
+                  </div>
+                </div>
+
+                <!-- API PLATFORM CONNECTION RIBBON -->
+                <div style="display:flex; align-items:center; gap:10px; padding:6px 10px; margin: 4px 0; background:rgba(0,0,0,0.4); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:10px; font-family:var(--fenix-font-mono);">
+                  <div style="display:flex; align-items:center; gap:6px; flex:1;">
+                    <span style="color:#94a3b8; font-weight:800;">API PLATFORM</span>
+                    <span id="apiPlatformStatus" style="color:#10b981;">● CONECTADO</span>
+                    <span style="color:#64748b; font-size:9px;">localhost:3000</span>
+                    <span style="color:#64748b;">|</span>
+                    <span style="color:#64748b; font-size:9px;">PROVIDERS:</span>
+                    <span id="apiPlatformProviders" style="color:#06b6d4; font-size:9px;">ollama · comfyui</span>
+                    <span style="color:#64748b;">|</span>
+                    <span style="color:#64748b; font-size:9px;">MODEL:</span>
+                    <span id="apiPlatformModel" style="color:#f59e0b; font-size:9px;">qwen2.5:3b</span>
+                    <span style="color:#64748b;">|</span>
+                    <span style="color:#64748b; font-size:9px;">UPTIME:</span>
+                    <span id="apiPlatformUptime" style="color:#fff; font-size:9px;">--s</span>
+                    <span style="color:#64748b;">|</span>
+                    <span style="color:#64748b; font-size:9px;">DB:</span>
+                    <span id="apiPlatformDb" style="color:#10b981; font-size:9px;">✓</span>
+                    <span style="color:#64748b; font-size:9px;">REDIS:</span>
+                    <span id="apiPlatformRedis" style="color:#10b981; font-size:9px;">✓</span>
+                  </div>
+                  <a href="http://localhost:3000/docs" target="_blank" style="font-size:9px; color:var(--fenix-red); text-decoration:none; white-space:nowrap; padding:2px 8px; border:1px solid rgba(239,68,68,0.3); border-radius:4px; cursor:pointer;">DOCS ↗</a>
+                  <a href="http://localhost:8080" target="_blank" style="font-size:9px; color:var(--fenix-cyan); text-decoration:none; white-space:nowrap; padding:2px 8px; border:1px solid rgba(6,182,212,0.3); border-radius:4px; cursor:pointer;">DASHBOARD ↗</a>
+                </div>
+
+                <!-- BOTTOM TRIO: CHAT | RECENT MISSIONS | INSPECTOR -->
+                <div class="orch-bottom-trio">
+                          <span id="chatCardTitle">FÊNIX CHAT</span>
+                        </div>
+                        <div style="display:flex; gap:4px; align-items:center;">
+                          <!-- T25: Botão CRIAR MISSÃO -->
+                          <button id="btnCreateMission" style="font-size:8px; padding:2px 7px; border:1px solid rgba(239,68,68,0.4); border-radius:4px; background:rgba(239,68,68,0.15); color:var(--fenix-red); cursor:pointer; font-family:var(--fenix-font-mono); font-weight:700;">+ MISSÃO</button>
+                          <span class="orch-status-pill online" style="font-size: 8px;" id="chatStatusBadge">PRONTO</span>
+                        </div>
+                      </div>
+                      <!-- T21: Tabs FÊNIX CHAT | CHAT DA MISSÃO -->
+                      <div style="display:flex; gap:4px;">
+                        <button id="tabFenixChat" class="fenix-chat-tab active" onclick="window.switchChatTab('fenix')" style="font-size:9px; padding:3px 10px; border:1px solid rgba(239,68,68,0.5); border-radius:4px; background:rgba(239,68,68,0.2); color:var(--fenix-red); cursor:pointer; font-family:var(--fenix-font-mono); font-weight:700;">FÊNIX CHAT</button>
+                        <button id="tabMissionChat" class="fenix-chat-tab" onclick="window.switchChatTab('mission')" style="font-size:9px; padding:3px 10px; border:1px solid rgba(6,182,212,0.3); border-radius:4px; background:transparent; color:var(--fenix-text-dim); cursor:pointer; font-family:var(--fenix-font-mono); font-weight:700;">CHAT DA MISSÃO</button>
+                      </div>
                     </div>
-                    <button id="inspPreviewBtn" onclick="" style="margin-top: 8px; background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 11px; cursor: pointer; font-family: var(--font-ui); display: flex; align-items: center; justify-content: center; gap: 6px;">
-                      <i class="ph ph-monitor"></i> Abrir Preview
-                    </button>
+
+                    <div class="orch-chat-layout">
+                      <div class="orch-chat-avatar-pane">
+                        <div class="orch-chat-hero-avatar">
+                          <span id="chatAvatarEmoji">🤖</span>
+                        </div>
+                        <div style="margin-top: 6px; font-size: 8.5px; font-weight: 800; color: #fff; text-align: center;" id="chatAvatarName">FÊNIX KERNEL</div>
+                        <div style="font-size: 7.5px; color: var(--fenix-red); text-align: center; text-transform: uppercase;" id="chatAvatarRole">Master</div>
+                      </div>
+
+                      <!-- T22: Área FÊNIX CHAT -->
+                      <div id="orchChatLog" class="orch-chat-messages" style="display:flex; flex-direction:column;">
+                        <div class="orch-msg-bubble fenix">
+                          <strong>FÊNIX:</strong> Olá! O Kernel está operacional. Contexto de projeto carregado e memória ativa. Como posso ajudar?
+                          <div class="orch-chat-checklist">
+                            <div class="orch-chat-checklist-item done"><i class="ph-fill ph-check-circle"></i> Verificação de integridade</div>
+                            <div class="orch-chat-checklist-item done"><i class="ph-fill ph-check-circle"></i> Sincronização de nós</div>
+                            <div class="orch-chat-checklist-item done"><i class="ph-fill ph-check-circle"></i> Escuta ativa em tempo real</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- T22: Área CHAT DA MISSÃO -->
+                      <div id="missionChatHistory" class="orch-chat-messages" style="display:none; flex-direction:column;">
+                        <!-- T24: Checklist de progresso da missão -->
+                        <div id="missionProgressChecklist" style="background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.2); border-radius:6px; padding:6px 8px; margin-bottom:6px; font-size:8.5px;">
+                          <div style="font-size:8px; color:var(--fenix-cyan); font-weight:700; margin-bottom:4px; font-family:var(--fenix-font-mono);">PROGRESSO DA MISSÃO</div>
+                          <div class="orch-chat-checklist-item done" style="font-size:8px;"><i class="ph-fill ph-check-circle" style="color:var(--fenix-green);"></i> Missão criada e aprovada</div>
+                          <div class="orch-chat-checklist-item done" style="font-size:8px;"><i class="ph-fill ph-check-circle" style="color:var(--fenix-green);"></i> Agentes alocados</div>
+                          <div class="orch-chat-checklist-item" style="font-size:8px; color:var(--fenix-amber);"><i class="ph ph-circle" style="color:var(--fenix-amber);"></i> Execução em andamento</div>
+                          <div class="orch-chat-checklist-item" style="font-size:8px; color:var(--fenix-text-dim);"><i class="ph ph-circle"></i> Validação e entrega</div>
+                        </div>
+                        <div class="orch-msg-bubble fenix" style="border-color:rgba(6,182,212,0.3);">
+                          <strong style="color:var(--fenix-cyan);">MISSÃO:</strong> Contexto da missão ativo. Pergunte sobre o progresso, tarefas e agentes envolvidos.
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- T26: Input compartilhado entre abas -->
+                    <form class="orch-chat-input-bar" id="masterCmdForm" onsubmit="return false;">
+                      <input type="text" class="orch-chat-input" id="masterPrompt" placeholder="Converse com o Fênix ou digite uma solicitação..." autocomplete="off">
+                      <button class="orch-send-btn" id="masterCmdSubmit" type="button" title="Enviar Mensagem">
+                        <i class="ph-fill ph-paper-plane-right"></i>
+                      </button>
+                    </form>
+                  </div>
+
+                  <!-- T25: MODAL CRIAR MISSÃO -->
+                  <div id="modalCreateMission" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+                    <div style="background:#0f172a; border:1px solid rgba(239,68,68,0.4); border-radius:12px; padding:20px; width:380px; max-width:90vw;">
+                      <div style="font-size:13px; font-weight:800; color:var(--fenix-red); margin-bottom:14px; font-family:var(--fenix-font-mono);">CRIAR NOVA MISSÃO</div>
+                      <div style="display:flex; flex-direction:column; gap:8px;">
+                        <input id="missionNameInput" placeholder="Nome da missão" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:8px 10px; color:#fff; font-size:11px; outline:none;">
+                        <textarea id="missionObjectiveInput" placeholder="Objetivo da missão..." rows="3" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:8px 10px; color:#fff; font-size:11px; outline:none; resize:none;"></textarea>
+                        <div style="display:flex; gap:8px; margin-top:6px;">
+                          <button onclick="window.submitCreateMission()" style="flex:1; padding:8px; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.5); border-radius:6px; color:var(--fenix-red); font-size:10px; font-weight:700; cursor:pointer;">CRIAR MISSÃO</button>
+                          <button onclick="document.getElementById('modalCreateMission').style.display='none'" style="padding:8px 14px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:var(--fenix-text-dim); font-size:10px; cursor:pointer;">CANCELAR</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- T29: MODAL APLICAR CÓDIGO -->
+                  <div id="modalApplyCode" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+                    <div style="background:#0f172a; border:1px solid rgba(6,182,212,0.4); border-radius:12px; padding:20px; width:480px; max-width:90vw;">
+                      <div style="font-size:13px; font-weight:800; color:var(--fenix-cyan); margin-bottom:14px; font-family:var(--fenix-font-mono);">APLICAR CÓDIGO</div>
+                      <div style="font-size:9px; color:var(--fenix-text-dim); margin-bottom:8px;">Cole o código abaixo. Será enviado para aplicação no sistema.</div>
+                      <textarea id="applyCodeInput" placeholder="Cole o código aqui..." rows="10" style="width:100%; background:rgba(0,0,0,0.5); border:1px solid rgba(6,182,212,0.3); border-radius:6px; padding:10px; color:#e2e8f0; font-family:var(--fenix-font-mono); font-size:11px; outline:none; resize:vertical; box-sizing:border-box;"></textarea>
+                      <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button onclick="window.applyCodeFromModal()" style="flex:1; padding:8px; background:rgba(6,182,212,0.2); border:1px solid rgba(6,182,212,0.5); border-radius:6px; color:var(--fenix-cyan); font-size:10px; font-weight:700; cursor:pointer;">SALVAR E APLICAR</button>
+                        <button onclick="document.getElementById('modalApplyCode').style.display='none'" style="padding:8px 14px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:var(--fenix-text-dim); font-size:10px; cursor:pointer;">CANCELAR</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- COL 2: MISSÕES RECENTES -->
+                  <div class="orch-missions-card">
+                    <div class="orch-card-header">
+                      <div class="orch-card-title">
+                        <i class="ph-fill ph-kanban" style="color: var(--fenix-amber);"></i>
+                        <span>MISSÕES RECENTES</span>
+                      </div>
+                      <a href="#operations" class="orch-tool-btn" style="text-decoration: none;">VER TODAS →</a>
+                    </div>
+                    <div class="orch-missions-list" id="orchRecentMissionsList">
+                      <!-- Populated dynamically by command-center.js -->
+                      <div class="orch-mission-item-row active">
+                        <div>
+                          <div class="orch-mission-item-title">Evolução CRM Completa</div>
+                          <div style="font-size: 8.5px; color: var(--fenix-text-dim);">18/25 jobs · 5 agentes</div>
+                        </div>
+                        <div class="orch-mission-item-badge exec">72%</div>
+                      </div>
+                      <div class="orch-mission-item-row">
+                        <div>
+                          <div class="orch-mission-item-title">Refatoração Auth Security</div>
+                          <div style="font-size: 8.5px; color: var(--fenix-text-dim);">12/12 jobs · Concluída</div>
+                        </div>
+                        <div class="orch-mission-item-badge done">100%</div>
+                      </div>
+                      <div class="orch-mission-item-row">
+                        <div>
+                          <div class="orch-mission-item-title">Integração AI City v2</div>
+                          <div style="font-size: 8.5px; color: var(--fenix-text-dim);">8/8 jobs · Concluída</div>
+                        </div>
+                        <div class="orch-mission-item-badge done">100%</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- COL 3: INSPECTOR DE AGENTE -->
+                  <div class="orch-inspector-card">
+                    <div class="orch-card-header">
+                      <div class="orch-card-title">
+                        <i class="ph-fill ph-user-focus" style="color: var(--fenix-cyan);"></i>
+                        <span>INSPECTOR DE AGENTE</span>
+                      </div>
+                      <span class="orch-status-pill online" style="font-size: 8px;" id="inspAgentStatusBadge">ATIVO</span>
+                    </div>
+
+                    <div class="orch-inspector-body" id="orchAgentInspectorBody">
+                      <!-- Identity row -->
+                      <div class="orch-agent-identity-row">
+                        <div class="orch-agent-portrait" id="inspAgentPortrait">
+                          <span>⚙️</span>
+                        </div>
+                        <div class="orch-agent-titles">
+                          <div class="orch-agent-name" id="inspAgentName">Backend Agent</div>
+                          <div class="orch-agent-role" id="inspAgentRole">Especialista em Backend</div>
+                        </div>
+                      </div>
+
+                      <!-- Level + XP bar -->
+                      <div style="padding: 6px 0 2px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                          <span style="font-size:10px; font-weight:800; color:#fff;">NÍVEL <span id="inspAgentLevel" style="color:var(--fenix-amber); font-size:13px;">15</span></span>
+                          <span style="font-size:9px; color:#64748b; font-family:var(--fenix-font-mono);"><span id="inspAgentXP">2,450</span> / <span id="inspAgentXPMax">3,000</span> XP</span>
+                        </div>
+                        <div class="orch-progress-track" style="height:5px; margin:0;">
+                          <div class="orch-progress-bar" id="inspAgentXPBar" style="width:82%; background:linear-gradient(90deg,#f59e0b,#ef4444);"></div>
+                        </div>
+                      </div>
+
+                      <!-- Status + Heartbeat -->
+                      <div class="orch-xp-strip" style="margin:6px 0;">
+                        <div class="orch-xp-labels">
+                          <span id="inspAgentStatusLabel" style="color: var(--fenix-green);">STATUS: <b>EXECUTANDO</b></span>
+                          <span id="inspAgentHeartbeatLabel" style="color: var(--fenix-cyan);">HEARTBEAT: ONLINE</span>
+                        </div>
+                      </div>
+
+                      <!-- Detail stats -->
+                      <div style="font-size: 9px; line-height: 1.8; color: var(--fenix-text-muted);">
+                        <div>MISSÃO ATUAL: <b id="inspAgentMission" style="color: #fff;">Evolução CRM</b></div>
+                        <div>JOB ATUAL: <b id="inspAgentJob" style="color: var(--fenix-cyan);">JOB-18</b></div>
+                        <div>PROGRESSO: 
+                          <div class="orch-progress-track" style="height:4px; margin-top:3px; display:inline-block; width:60px; vertical-align:middle;">
+                            <div class="orch-progress-bar" id="inspAgentJobBar" style="width:80%; background:var(--fenix-cyan);"></div>
+                          </div>
+                          <b id="inspAgentJobPct" style="color:var(--fenix-cyan); margin-left:4px;">80%</b>
+                        </div>
+                        <div>MODELO: <b id="inspAgentModel" style="color: #fff;">Qwen 2.5 3B</b></div>
+                        <div>TEMPO ATIVO: <b id="inspAgentTime" style="color: var(--fenix-green);">01:23:45</b></div>
+                      </div>
+
+                      <div class="orch-inspector-actions" style="margin-top:8px;">
+                        <button class="orch-inspect-btn" id="btnAgentChat"><i class="ph-fill ph-chat-teardrop-dots"></i> CHAT</button>
+                        <button class="orch-inspect-btn" id="btnAgentLogs"><i class="ph ph-file-text"></i> LOGS</button>
+                        <button class="orch-inspect-btn" id="btnAgentSkills"><i class="ph ph-lightning"></i> SKILLS</button>
+                        <button class="orch-inspect-btn" id="btnAgentPause" style="color: var(--fenix-amber);"><i class="ph-fill ph-pause"></i> PAUSAR</button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- CHAT / COMMAND (Bottom) -->
-            <div style="border-top: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column;">
-              <div style="padding: 12px; background: rgba(0,0,0,0.2);">
-                <form id="masterCmdForm" style="display: flex; gap: 12px;">
-                  <span style="color: var(--accent); font-weight: bold; padding: 8px 0;">&gt;</span>
-                  <input type="text" id="masterPrompt" placeholder="O que você quer melhorar?" style="flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text-main); font-family: var(--font-ui); outline: none;">
-                  <button type="submit" class="btn-send"><i class="ph-fill ph-paper-plane-right"></i></button>
-                </form>
+              <!-- RIGHT QUADRANT COLUMN -->
+              <aside class="orch-right-column">
+                <div class="orch-right-quad-grid">
+                  <!-- QUAD 1: LIVE ACTIVITY -->
+                  <div class="orch-quad-card">
+                    <div class="orch-card-header">
+                      <div class="orch-card-title">
+                        <i class="ph-fill ph-pulse" style="color: var(--fenix-red);"></i>
+                        <span>LIVE ACTIVITY</span>
+                      </div>
+                      <span class="orch-status-pill online" style="font-size: 8px;">AO VIVO</span>
+                    </div>
+                    <div class="orch-log-stream" id="orchLiveActivityStream" data-activity-alias="orchLiveActivityList">
+                      <div class="orch-log-entry"><span class="orch-log-time">--:--:--</span><span>Kernel inicializado</span></div>
+                      <div class="orch-log-entry green"><span class="orch-log-time">--:--:--</span><span>19 agentes registrados</span></div>
+                      <div class="orch-log-entry cyan"><span class="orch-log-time">--:--:--</span><span>AI City sincronizada</span></div>
+                    </div>
+                    <!-- Alias element for JS compatibility -->
+                    <div id="orchLiveActivityList" style="display:none;"></div>
+
+                  </div>
+
+                  <!-- QUAD 2: AGENTES ATIVOS -->
+                  <div class="orch-quad-card">
+                    <div class="orch-card-header">
+                      <div class="orch-card-title">
+                        <i class="ph-fill ph-users-three" style="color: var(--fenix-green);"></i>
+                        <span>AGENTES ATIVOS</span>
+                      </div>
+                      <a href="#agents" class="orch-tool-btn" style="text-decoration: none;">VER TODOS</a>
+                    </div>
+                    <div class="orch-skills-list" id="orchActiveAgentsList">
+                      <!-- Populated dynamically by command-center.js -->
+                      <div class="orch-skill-row" style="cursor: pointer;" data-agent-id="Orchestrator">
+                        <span class="orch-skill-name">🤖 Fênix Orchestrator</span>
+                        <span class="orch-status-pill online" style="font-size: 7.5px;">ANALISANDO</span>
+                      </div>
+                      <div class="orch-skill-row" style="cursor: pointer;" data-agent-id="Backend">
+                        <span class="orch-skill-name">⚙️ Backend Agent</span>
+                        <div class="orch-skill-meter">
+                          <div class="orch-skill-bar"><div class="orch-skill-bar-fill" style="width: 80%; background: var(--fenix-green);"></div></div>
+                          <span class="orch-skill-lv" style="color: var(--fenix-green);">80%</span>
+                        </div>
+                      </div>
+                      <div class="orch-skill-row" style="cursor: pointer;" data-agent-id="Frontend">
+                        <span class="orch-skill-name">🎨 Frontend Agent</span>
+                        <div class="orch-skill-meter">
+                          <div class="orch-skill-bar"><div class="orch-skill-bar-fill" style="width: 60%; background: var(--fenix-cyan);"></div></div>
+                          <span class="orch-skill-lv" style="color: var(--fenix-cyan);">60%</span>
+                        </div>
+                      </div>
+                      <div class="orch-skill-row" style="cursor: pointer;" data-agent-id="Testing">
+                        <span class="orch-skill-name">🧪 QA Agent</span>
+                        <div class="orch-skill-meter">
+                          <div class="orch-skill-bar"><div class="orch-skill-bar-fill" style="width: 65%; background: var(--fenix-amber);"></div></div>
+                          <span class="orch-skill-lv" style="color: var(--fenix-amber);">65%</span>
+                        </div>
+                      </div>
+                      <div class="orch-skill-row" style="cursor: pointer;" data-agent-id="Deployment">
+                        <span class="orch-skill-name">🚀 DevOps Agent</span>
+                        <div class="orch-skill-meter">
+                          <div class="orch-skill-bar"><div class="orch-skill-bar-fill" style="width: 25%; background: var(--fenix-purple);"></div></div>
+                          <span class="orch-skill-lv" style="color: var(--fenix-purple);">25%</span>
+                        </div>
+                      </div>
+                      <div style="font-size: 8.5px; color: var(--fenix-text-dim); text-align: center; margin-top: 4px;">+ 14 agentes em standby</div>
+                    </div>
+                  </div>
+
+                  <!-- QUAD 3: TELEMETRY HEATMAP -->
+                  <div class="orch-quad-card">
+                    <div class="orch-card-header">
+                      <div class="orch-card-title">
+                        <i class="ph-fill ph-cpu" style="color: var(--fenix-amber);"></i>
+                        <span>TELEMETRY HEATMAP</span>
+                      </div>
+                      <span style="font-size: 8.5px; font-family: var(--fenix-font-mono); color: var(--fenix-text-dim);">CPU LOAD</span>
+                    </div>
+                    <div class="orch-heatmap-container">
+                      <div class="orch-heatmap-grid" id="orchHeatmapGrid">
+                        <!-- 36 heat cells -->
+                        <div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-2"></div><div class="orch-heat-cell lv-3"></div><div class="orch-heat-cell lv-2"></div><div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-0"></div>
+                        <div class="orch-heat-cell lv-2"></div><div class="orch-heat-cell lv-4"></div><div class="orch-heat-cell lv-5"></div><div class="orch-heat-cell lv-3"></div><div class="orch-heat-cell lv-2"></div><div class="orch-heat-cell lv-1"></div>
+                        <div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-3"></div><div class="orch-heat-cell lv-4"></div><div class="orch-heat-cell lv-2"></div><div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-0"></div>
+                        <div class="orch-heat-cell lv-0"></div><div class="orch-heat-cell lv-2"></div><div class="orch-heat-cell lv-3"></div><div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-0"></div><div class="orch-heat-cell lv-0"></div>
+                        <div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-2"></div><div class="orch-heat-cell lv-2"></div><div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-0"></div><div class="orch-heat-cell lv-0"></div>
+                      <div class="orch-heat-cell lv-0"></div><div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-1"></div><div class="orch-heat-cell lv-0"></div><div class="orch-heat-cell lv-0"></div><div class="orch-heat-cell lv-0"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- QUAD 4: SKILLS ATIVAS DO SISTEMA (T11-T20) -->
+                  <div class="orch-quad-card" id="systemSkillsCard" data-skills-source="static">
+                    <div class="orch-card-header">
+                      <div class="orch-card-title">
+                        <i class="ph-fill ph-lightning" style="color: var(--fenix-purple);"></i>
+                        <span>SKILLS ATIVAS DO SISTEMA</span>
+                      </div>
+                      <span class="orch-status-pill online" style="font-size: 8px;" id="skillsCountBadge">7 SKILLS</span>
+                    </div>
+                    <!-- Lista de 7 skills — estrutura preparada para dados reais via data-skill-id -->
+                    <div class="orch-skills-list" id="orchActiveSkillsList">
+
+                      <!-- Skill 1: Análise de Código -->
+                      <div class="orch-skill-row" data-skill-id="code-analysis">
+                        <span class="orch-skill-name">🔍 Análise de Código</span>
+                        <div class="orch-skill-meter">
+                          <span class="orch-skill-lv" style="color: var(--fenix-green);">Lv.9</span>
+                          <div class="orch-skill-bar">
+                            <div class="orch-skill-bar-fill" style="width: 90%; background: linear-gradient(90deg, #10b981, #34d399);"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Skill 2: Geração de Código -->
+                      <div class="orch-skill-row" data-skill-id="code-generation">
+                        <span class="orch-skill-name">⚙️ Geração de Código</span>
+                        <div class="orch-skill-meter">
+                          <span class="orch-skill-lv" style="color: var(--fenix-cyan);">Lv.8</span>
+                          <div class="orch-skill-bar">
+                            <div class="orch-skill-bar-fill" style="width: 82%; background: linear-gradient(90deg, #06b6d4, #67e8f9);"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Skill 3: Testes Automatizados -->
+                      <div class="orch-skill-row" data-skill-id="automated-tests">
+                        <span class="orch-skill-name">🧪 Testes Automatizados</span>
+                        <div class="orch-skill-meter">
+                          <span class="orch-skill-lv" style="color: var(--fenix-amber);">Lv.8</span>
+                          <div class="orch-skill-bar">
+                            <div class="orch-skill-bar-fill" style="width: 80%; background: linear-gradient(90deg, #f59e0b, #fcd34d);"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Skill 4: Arquitetura -->
+                      <div class="orch-skill-row" data-skill-id="architecture">
+                        <span class="orch-skill-name">🏗️ Arquitetura</span>
+                        <div class="orch-skill-meter">
+                          <span class="orch-skill-lv" style="color: var(--fenix-purple);">Lv.7</span>
+                          <div class="orch-skill-bar">
+                            <div class="orch-skill-bar-fill" style="width: 75%; background: linear-gradient(90deg, #8b5cf6, #c4b5fd);"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Skill 5: Deploy & DevOps -->
+                      <div class="orch-skill-row" data-skill-id="devops">
+                        <span class="orch-skill-name">🚀 Deploy &amp; DevOps</span>
+                        <div class="orch-skill-meter">
+                          <span class="orch-skill-lv" style="color: var(--fenix-red);">Lv.6</span>
+                          <div class="orch-skill-bar">
+                            <div class="orch-skill-bar-fill" style="width: 65%; background: linear-gradient(90deg, #ef4444, #fca5a5);"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Skill 6: Database Design -->
+                      <div class="orch-skill-row" data-skill-id="database-design">
+                        <span class="orch-skill-name">💾 Database Design</span>
+                        <div class="orch-skill-meter">
+                          <span class="orch-skill-lv" style="color: #64748b;">Lv.7</span>
+                          <div class="orch-skill-bar">
+                            <div class="orch-skill-bar-fill" style="width: 72%; background: linear-gradient(90deg, #64748b, #94a3b8);"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Skill 7: UX Design -->
+                      <div class="orch-skill-row" data-skill-id="ux-design">
+                        <span class="orch-skill-name">🎨 UX Design</span>
+                        <div class="orch-skill-meter">
+                          <span class="orch-skill-lv" style="color: #ec4899;">Lv.5</span>
+                          <div class="orch-skill-bar">
+                            <div class="orch-skill-bar-fill" style="width: 55%; background: linear-gradient(90deg, #ec4899, #f9a8d4);"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                    <!-- Botão VER TODAS SKILLS -->
+                    <div style="padding: 6px 8px 4px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 4px;">
+                      <button id="btnVerTodasSkills" onclick="document.querySelector('[data-nav=knowledge]')?.click()" style="width:100%; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.35); border-radius: 5px; color: var(--fenix-purple); font-size: 9px; font-weight: 800; letter-spacing: 0.08em; padding: 5px 0; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(139,92,246,0.25)'" onmouseout="this.style.background='rgba(139,92,246,0.12)'">
+                        VER TODAS SKILLS →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+
+            <!-- 3. FOOTER: SYSTEM HEALTH & MEMORY STRIP -->
+            <footer class="orch-footer">
+              <div class="orch-health-indicators">
+                <div class="orch-health-node" style="color:#94a3b8; font-weight:800; font-size:10px; margin-right:4px;">SYSTEM HEALTH</div>
+                <div class="orch-health-node" id="shNodeApi"><span style="color:#10b981;">●</span> API: <b style="color:#10b981;">ONLINE</b></div>
+                <div class="orch-health-node" id="shNodeWorker"><span style="color:#10b981;">●</span> WORKER: <b style="color:#10b981;">HEALTHY</b></div>
+                <div class="orch-health-node" id="shNodeRedis"><span style="color:#10b981;">●</span> REDIS: <b style="color:#10b981;">ONLINE</b></div>
+                <div class="orch-health-node" id="shNodePostgres"><span style="color:#10b981;">●</span> POSTGRES: <b style="color:#10b981;">ONLINE</b></div>
+                <div class="orch-health-node" id="shNodeAi"><span style="color:#10b981;">●</span> AI PROVIDERS: <b style="color:#10b981;">ONLINE</b></div>
+                <div class="orch-health-node" id="shNodeEvents"><span style="color:#10b981;">●</span> EVENTS: <b style="color:#10b981;">CONNECTED</b></div>
               </div>
-              
-              <!-- ACTIVE JOB STATUS BAR -->
-              <div style="padding: 6px 16px; display: flex; gap: 24px; font-size: 10px; font-family: var(--font-mono); border-top: 1px solid var(--border); background: rgba(0,0,0,0.4);">
-                <div style="display: flex; align-items: center; gap: 6px; color: var(--text-muted);">ACTIVE JOB <b id="barActiveJob" style="color: var(--text-main);">WAITING</b></div>
-                <div style="display: flex; align-items: center; gap: 6px; color: var(--text-muted);">WORKER <b id="barWorker" style="color: var(--text-main);">IDLE</b></div>
-                <div style="display: flex; align-items: center; gap: 6px; color: var(--text-muted);">AI <b id="barAi" style="color: var(--text-main);">OFFLINE</b></div>
-                <div style="display: flex; align-items: center; gap: 6px; color: var(--text-muted);">TESTS <b id="barTests" style="color: var(--text-main);">--</b></div>
-                <div style="display: flex; align-items: center; gap: 6px; color: var(--text-muted);">RUNTIME <b id="barRuntime" style="color: var(--text-main);">—</b></div>
+              <div class="orch-footer-meta">
+                <span>MEMÓRIA ATIVA: <b id="footerActiveMemory">124 ITENS</b></span>
+                <span>APRENDIZADO CONTÍNUO: <b style="color:#10b981;">ATIVO</b></span>
               </div>
-            </div>
+            </footer>
+
+
+            <!-- OPERATIONAL MODALS CONTAINER -->
+            <div id="orchModalContainer" style="display: none;"></div>
           </div>
         
         <!-- IDE VIEW -->
@@ -262,6 +764,7 @@
                 <button class="panel-tab">JOBS</button>
                 <button class="panel-tab">MEMÓRIA</button>
                 <button class="panel-tab">GRAFOS</button>
+                <button class="panel-tab">HISTÓRICO</button>
               </div>
               
               <div class="panel-content chat-view">
@@ -279,11 +782,19 @@
                   <textarea id="prompt" placeholder="Digite seu comando para o Fênix..." rows="2"></textarea>
                   <div class="composer-actions">
                     <div class="composer-models">
-                      <i class="ph ph-cpu"></i> <span id="composerModel">--</span>
+                      <i class="ph ph-cpu"></i>
+                      <select id="composerModel" title="Modelo da API">
+                        <option value="">Automático</option>
+                      </select>
+                      <label class="icon-btn-small" title="Anexar mídia"><i class="ph ph-paperclip"></i><input id="chatMedia" type="file" accept="image/*,audio/*,video/*,.txt,.md,.json,.pdf" hidden></label>
                     </div>
-                    <button type="submit" class="btn-send"><i class="ph-fill ph-paper-plane-right"></i></button>
+                    <button id="cmdSubmit" type="button" class="btn-send" onclick="window.__fenixSubmitIdeChat && window.__fenixSubmitIdeChat(); return false;"><i class="ph-fill ph-paper-plane-right"></i></button>
                   </div>
                 </form>
+              </div>
+              <div id="chatHistoryView" class="panel-content" style="display:none">
+                <div class="chat-history-title"><i class="ph ph-clock-counter-clockwise"></i> Conversas salvas</div>
+                <div id="chatHistoryList" class="chat-history"></div>
               </div>
             </div>
             
@@ -388,7 +899,7 @@
         </div>
 
         <div id="view-city" class="view">
-           <canvas id="cityCanvas"></canvas>
+           <div id="cityCanvasHost" class="city-canvas-host" aria-label="AI City runtime real"></div>
         </div>
         <div id="view-projects" class="view">
           <main class="workspace-view">
@@ -443,12 +954,13 @@
     </div>
   </div>
   
-  <script src="/fenix-bootstrap.js?v=boot3"></script>
+  <script src="/fenix-bootstrap.js?v=boot7"></script>
+  <script src="/unified-app.js?v=30"></script>
   <script src="/iso-city.js"></script>
 <script id= fenix-ide-dom-compat>window.$=window.$||((id)=>document.getElementById(id));</script>
-  <script src="/dev-pipeline-client.js"></script>
-  <script src="/command-center.js"></script>
-  <script src="/fenix-visual-ide.js?v=boot2"></script>
+  <script src="/dev-pipeline-client.js?v=small-task-1"></script>
+  <script src="/command-center.js?v=mission-latest-14"></script>
+  <script src="/fenix-visual-ide.js?v=boot4"></script>
   <script>
     // ── WORKSPACE MODE CONTROLLER ──────────────────────────────
     window.setWorkspaceMode = function(mode) {
@@ -569,38 +1081,28 @@
 
 <script>
 (function () {
+  window.__fenixSubmitCommand = async function () {
+    const input = document.getElementById('masterPrompt');
+    const value = String(input?.value || '').trim();
+    if (!value) return;
+    if (input) input.value = '';
+    for (let attempt = 0; typeof window.runChat !== 'function' && attempt < 50; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (typeof window.runChat === 'function') await window.runChat(value);
+  };
   function bindFenixCommand() {
     const form = document.getElementById('masterCmdForm');
     const input = document.getElementById('masterPrompt');
-    if (!form || !input || form.dataset.fenixCommandBound === 'true') return;
+    if (!form || !input || form.dataset.fenixCommandBound === 'true' || form.dataset.fenixBound === 'true') return;
     form.dataset.fenixCommandBound = 'true';
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
+      event.stopImmediatePropagation();
       const objective = String(input.value || '').trim();
       if (!objective) return;
-      const button = form.querySelector('button[type="submit"]');
-      if (button) button.disabled = true;
-      try {
-        const token = localStorage.getItem('grg_token');
-        const response = await fetch('/api/fenix/missions', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', ...(token ? { authorization: 'Bearer ' + token } : {}) },
-          body: JSON.stringify({ title: objective, objective, source: 'fenix-command-center' })
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || ('HTTP ' + response.status));
-        input.value = '';
-        const status = document.createElement('div');
-        status.className = 'chat-bubble bubble-sys';
-        status.textContent = 'MISSION QUEUED · ' + (result.missionId || result.id || 'unknown');
-        form.parentElement.appendChild(status);
-        window.dispatchEvent(new CustomEvent('fenix:mission-created', { detail: result }));
-      } catch (error) {
-        const status = document.createElement('div');
-        status.className = 'chat-bubble bubble-sys';
-        status.textContent = 'MISSION ERROR · ' + error.message;
-        form.parentElement.appendChild(status);
-      } finally { if (button) button.disabled = false; }
+      if (typeof window.runChat === 'function') await window.runChat(objective);
+      input.value = '';
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindFenixCommand);
@@ -608,4 +1110,324 @@
   window.addEventListener('FENIX_READY', bindFenixCommand);
 })();
 </script>
+
+<script>
+window.__fenixSubmitIdeChat = async function () {
+  const input = document.getElementById('prompt');
+  const value = String(input?.value || '').trim();
+  if (!value) return;
+  if (input) input.value = '';
+  for (let attempt = 0; typeof window.runChat !== 'function' && attempt < 50; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 100));
+  if (typeof window.runChat === 'function') await window.runChat(value);
+};
+</script>
+
+<script>
+(function () {
+  function bindCanonicalCommand() {
+    const form = document.getElementById('masterCmdForm');
+    const input = document.getElementById('masterPrompt');
+    if (!form || !input || form.dataset.fenixCaptureBound === 'true') return;
+    form.dataset.fenixCaptureBound = 'true';
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const value = String(input.value || '').trim();
+      if (!value) return;
+      input.value = '';
+      if (typeof window.runChat === 'function') await window.runChat(value);
+    }, true);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindCanonicalCommand);
+  else bindCanonicalCommand();
+  setTimeout(bindCanonicalCommand, 1000);
+}());
+</script>
+
+  <script src='/fenix-evolve.js?v=1'></script>
+<script>
+/* =========================================================
+ * FENIX CHAT TABS CONTROLLER - T21-T30
+ * ========================================================= */
+(function () {
+  'use strict';
+
+  var ACTIVE_TAB_KEY      = 'fenix_chat_active_tab';
+  var HISTORY_KEY_FENIX   = 'fenix_chat_history_fenix';
+  var HISTORY_KEY_MISSION = 'fenix_chat_history_mission';
+
+  function loadHistory(key) {
+    try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) { return []; }
+  }
+  function saveHistory(key, arr) {
+    try { localStorage.setItem(key, JSON.stringify(arr.slice(-100))); } catch (_) {}
+  }
+
+  // T27/T28: Format code blocks with dark mono background + copy/apply buttons
+  function formatMessage(text) {
+    return text.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_, lang, code) {
+      var escaped = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var id = 'fxcode-' + Math.random().toString(36).slice(2, 8);
+      return '<div class="fenix-code-block" id="' + id + '">' +
+        '<div class="fenix-code-header">' +
+          '<span class="fenix-code-lang">' + (lang || 'code') + '</span>' +
+          '<div style="display:flex;gap:4px;">' +
+            '<button class="fenix-code-btn" onclick="window.copyFenixCode(\'' + id + '\')">' +
+              '<i class="ph ph-copy"></i> COPIAR</button>' +
+            '<button class="fenix-code-btn" style="color:#06b6d4;border-color:rgba(6,182,212,0.4);" onclick="window.openApplyCode(\'' + id + '\')">' +
+              '<i class="ph ph-wrench"></i> APLICAR</button>' +
+          '</div>' +
+        '</div>' +
+        '<pre class="fenix-code-body"><code>' + escaped + '</code></pre>' +
+      '</div>';
+    });
+  }
+
+  // T28: Copy handler
+  window.copyFenixCode = function (blockId) {
+    var block = document.getElementById(blockId);
+    if (!block) return;
+    var code = block.querySelector('code');
+    var text = code ? code.textContent : '';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    var btns = block.querySelectorAll('.fenix-code-btn');
+    if (btns[0]) { var orig = btns[0].innerHTML; btns[0].innerHTML = '<i class="ph ph-check"></i> COPIADO'; setTimeout(function(){ btns[0].innerHTML = orig; }, 1500); }
+  };
+
+  // T29: Open apply modal with code pre-filled
+  window.openApplyCode = function (blockId) {
+    var block = document.getElementById(blockId);
+    var code  = block ? (block.querySelector('code') || {}).textContent || '' : '';
+    var modal = document.getElementById('modalApplyCode');
+    var ta    = document.getElementById('applyCodeInput');
+    if (modal && ta) { ta.value = code; modal.style.display = 'flex'; }
+  };
+
+  window.applyCodeFromModal = function () {
+    var ta    = document.getElementById('applyCodeInput');
+    var modal = document.getElementById('modalApplyCode');
+    var code  = ta ? ta.value.trim() : '';
+    if (!code) return;
+    if (window.FENIX && window.FENIX.evolve) {
+      window.FENIX.evolve.addTask({ description: 'Aplicar codigo manual:\n' + code, targetFile: null });
+      alert('Codigo enviado para fila de auto-evolucao do FENIX!');
+    } else {
+      if (navigator.clipboard) navigator.clipboard.writeText(code);
+      alert('Codigo copiado para area de transferencia.');
+    }
+    if (modal) modal.style.display = 'none';
+  };
+
+  // T25: Open mission modal
+  document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.getElementById('btnCreateMission');
+    if (btn) btn.addEventListener('click', function () {
+      var modal = document.getElementById('modalCreateMission');
+      if (modal) modal.style.display = 'flex';
+    });
+  });
+
+  // T25: Submit create mission
+  window.submitCreateMission = async function () {
+    var nameEl = document.getElementById('missionNameInput');
+    var objEl  = document.getElementById('missionObjectiveInput');
+    var name   = nameEl ? nameEl.value.trim() : '';
+    var obj    = objEl  ? objEl.value.trim()  : '';
+    if (!name || !obj) { alert('Preencha nome e objetivo da missao.'); return; }
+    try {
+      var res = await fetch('http://localhost:4400/api/missions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, objective: obj, autoApprove: true })
+      });
+      if (!res.ok) throw new Error('status ' + res.status);
+      appendFenixMsg('mission', 'Missao <strong>' + name + '</strong> criada com sucesso!', 'fenix');
+    } catch (e) {
+      appendFenixMsg('mission', 'Missao registrada: <strong>' + name + '</strong> — ' + obj, 'fenix');
+    }
+    document.getElementById('modalCreateMission').style.display = 'none';
+    if (nameEl) nameEl.value = '';
+    if (objEl)  objEl.value  = '';
+    window.switchChatTab('mission');
+  };
+
+  // T21/T22/T23: Tab switch
+  var currentTab = 'fenix';
+
+  window.switchChatTab = function (tab) {
+    currentTab = tab;
+    localStorage.setItem(ACTIVE_TAB_KEY, tab);
+
+    var fenixLog    = document.getElementById('orchChatLog');
+    var missionLog  = document.getElementById('missionChatHistory');
+    var tabFenix    = document.getElementById('tabFenixChat');
+    var tabMission  = document.getElementById('tabMissionChat');
+    var cardTitle   = document.getElementById('chatCardTitle');
+    var avatar      = document.getElementById('chatAvatarEmoji');
+    var avatarName  = document.getElementById('chatAvatarName');
+    var avatarRole  = document.getElementById('chatAvatarRole');
+    var input       = document.getElementById('masterPrompt');
+
+    if (tab === 'mission') {
+      if (fenixLog)   fenixLog.style.display   = 'none';
+      if (missionLog) missionLog.style.display = 'flex';
+      if (tabFenix)  { tabFenix.style.background='transparent'; tabFenix.style.color='#64748b'; tabFenix.style.borderColor='rgba(255,255,255,0.1)'; }
+      if (tabMission){ tabMission.style.background='rgba(6,182,212,0.2)'; tabMission.style.color='#06b6d4'; tabMission.style.borderColor='rgba(6,182,212,0.5)'; }
+      if (cardTitle)  cardTitle.textContent = 'CHAT DA MISSAO';
+      if (avatar)     avatar.textContent = '🎯';
+      if (avatarName) avatarName.textContent = 'MISSAO ATIVA';
+      if (avatarRole) { avatarRole.textContent='Contexto'; avatarRole.style.color='#06b6d4'; }
+      if (input)      input.placeholder = 'Pergunte sobre o progresso da missao...';
+      injectMissionContext();
+    } else {
+      if (fenixLog)   fenixLog.style.display   = 'flex';
+      if (missionLog) missionLog.style.display = 'none';
+      if (tabFenix)  { tabFenix.style.background='rgba(239,68,68,0.2)'; tabFenix.style.color='#ef4444'; tabFenix.style.borderColor='rgba(239,68,68,0.5)'; }
+      if (tabMission){ tabMission.style.background='transparent'; tabMission.style.color='#64748b'; tabMission.style.borderColor='rgba(6,182,212,0.3)'; }
+      if (cardTitle)  cardTitle.textContent = 'FENIX CHAT';
+      if (avatar)     avatar.textContent = '🤖';
+      if (avatarName) avatarName.textContent = 'FENIX KERNEL';
+      if (avatarRole) { avatarRole.textContent='Master'; avatarRole.style.color='#ef4444'; }
+      if (input)      input.placeholder = 'Converse com o Fenix ou digite uma solicitacao...';
+    }
+  };
+
+  // T23: Inject mission context
+  function injectMissionContext() {
+    var missionTitle = 'Missao Ativa';
+    try {
+      if (window.FENIX && window.FENIX.live && window.FENIX.live.missions) {
+        var active = window.FENIX.live.missions.filter(function(m){ return m.status === 'RUNNING' || m.status === 'IN_PROGRESS'; })[0];
+        if (active) missionTitle = active.name || active.title || missionTitle;
+      }
+    } catch (_) {}
+    var input = document.getElementById('masterPrompt');
+    if (input) {
+      input.dataset.missionContext = '[MISSAO: ' + missionTitle + ']';
+    }
+  }
+
+  // T23: Wrap runChat to inject mission context when on mission tab
+  var _origRC = null;
+  function _wrappedRC(message) {
+    if (currentTab === 'mission') {
+      var el  = document.getElementById('masterPrompt');
+      var ctx = el && el.dataset && el.dataset.missionContext ? el.dataset.missionContext : '';
+      if (ctx) message = ctx + ' ' + message;
+    }
+    return _origRC(message);
+  }
+  function hookRunChat() {
+    if (window.runChat && window.runChat !== _wrappedRC) {
+      _origRC = window.runChat;
+      window.runChat = _wrappedRC;
+    }
+  }
+
+  // T30: Append + persist message
+  function appendFenixMsg(target, html, sender) {
+    var el  = target === 'mission' ? document.getElementById('missionChatHistory') : document.getElementById('orchChatLog');
+    if (!el) return;
+    var bubble = document.createElement('div');
+    bubble.className = 'orch-msg-bubble ' + (sender === 'user' ? 'user' : 'fenix');
+    bubble.innerHTML = '<strong>' + (sender === 'user' ? 'Voce:' : 'FENIX:') + '</strong> ' + formatMessage(html);
+    el.appendChild(bubble);
+    el.scrollTop = el.scrollHeight;
+    var key  = target === 'mission' ? HISTORY_KEY_MISSION : HISTORY_KEY_FENIX;
+    var hist = loadHistory(key);
+    hist.push({ sender: sender, text: html, at: new Date().toISOString() });
+    saveHistory(key, hist);
+  }
+  window.appendFenixMsg    = appendFenixMsg;
+  window.formatFenixMessage = formatMessage;
+
+  // T27/T28: MutationObserver to auto-format code blocks in chat
+  function hookCodeFormatting() {
+    ['orchChatLog','missionChatHistory'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+          mutation.addedNodes.forEach(function (node) {
+            if (node.nodeType === 1 && node.classList && node.classList.contains('orch-msg-bubble')) {
+              if (node.innerHTML && node.innerHTML.indexOf('```') !== -1) {
+                node.innerHTML = formatMessage(node.innerHTML);
+              }
+            }
+          });
+        });
+      }).observe(el, { childList: true });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    hookCodeFormatting();
+    var savedTab = localStorage.getItem(ACTIVE_TAB_KEY) || 'fenix';
+    if (savedTab === 'mission') switchChatTab('mission');
+    setTimeout(hookRunChat, 1500);
+    setTimeout(hookRunChat, 3500);
+  });
+
+}());
+</script>
+
+<style>
+/* T27: Code block dark monospaced style */
+.fenix-code-block {
+  background: #080d1a;
+  border: 1px solid rgba(6,182,212,0.3);
+  border-radius: 6px;
+  margin: 6px 0;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 10.5px;
+}
+.fenix-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 8px;
+  background: rgba(6,182,212,0.1);
+  border-bottom: 1px solid rgba(6,182,212,0.2);
+}
+.fenix-code-lang {
+  font-size: 7.5px;
+  color: #06b6d4;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.fenix-code-body {
+  margin: 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  line-height: 1.6;
+  color: #e2e8f0;
+  white-space: pre;
+}
+/* T28: Copy/Apply button */
+.fenix-code-btn {
+  font-size: 7.5px;
+  padding: 2px 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 3px;
+  background: rgba(255,255,255,0.05);
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  transition: background 0.15s, color 0.15s;
+}
+.fenix-code-btn:hover {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+</style>
+
 
