@@ -21,6 +21,8 @@ fs.mkdirSync(outDir, { recursive: true });
 (async () => {
   const browser = await chromium.launch({ headless: process.env.HEADLESS !== '0' });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  context.setDefaultTimeout(actionTimeout);
+  context.setDefaultNavigationTimeout(navigationTimeout);
   if (process.env.FENIX_TOKEN) {
     await context.addCookies([{ name: 'fenix_session', value: encodeURIComponent(process.env.FENIX_TOKEN), url: new URL(baseUrl).origin, httpOnly: true, sameSite: 'Lax' }]);
   }
@@ -92,7 +94,7 @@ fs.mkdirSync(outDir, { recursive: true });
     const button = page.locator(`[data-view="${view}"], [data-nav="${view}"]`).first();
     const item = { view, domain: domainByScreen[view] || 'unmapped', ok: false, before: await page.url() };
     try {
-      await button.scrollIntoViewIfNeeded();
+      await button.scrollIntoViewIfNeeded({ timeout: actionTimeout });
       try {
         await button.click({ timeout: actionTimeout });
       } catch (error) {
@@ -112,7 +114,7 @@ fs.mkdirSync(outDir, { recursive: true });
       item.visibleViews = await page.locator('.view').evaluateAll(els => els.filter(el => getComputedStyle(el).display !== 'none').map(el => el.id));
       item.activeNav = await page.locator('[data-view].active, [data-nav].active').evaluateAll(els => els.map(el => el.dataset.view || el.dataset.nav));
       item.ok = item.visibleViews.includes(`view-${view}`) || item.activeNav.includes(view);
-      await page.screenshot({ path: path.join(outDir, `${String(view).replace(/[^a-z0-9_-]/gi, '_')}.png`), fullPage: false });
+      await page.screenshot({ path: path.join(outDir, `${String(view).replace(/[^a-z0-9_-]/gi, '_')}.png`), fullPage: false, timeout: actionTimeout });
       const visibleButtons = page.locator(`.view[style*="display: flex"] button:visible, #view-${view} button:visible`);
       const count = Math.min(await visibleButtons.count(), maxControlsPerScreen);
       for (let i = 0; i < count; i++) {
@@ -153,7 +155,8 @@ fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'frontend-navigation-qa.json'), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result.summary, null, 2));
   console.log(`Evidence: ${path.join(outDir, 'frontend-navigation-qa.json')}`);
-  await browser.close();
+  await context.close({ reason: 'frontend navigation QA complete' });
+  await browser.close({ reason: 'frontend navigation QA complete' });
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
 
 function manifestScreens() {
