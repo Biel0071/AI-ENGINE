@@ -1081,11 +1081,11 @@
     refreshRegisteredSkills();
   });
 
-  window.addEventListener('fenix-live', () => {
+  document.addEventListener('fenix-live', () => {
     renderPanels();
     updateAgentInspector(selectedAgentId);
   });
-  window.addEventListener('fenix:data', () => {
+  document.addEventListener('fenix:data', () => {
     renderPanels();
     updateAgentInspector(selectedAgentId);
   });
