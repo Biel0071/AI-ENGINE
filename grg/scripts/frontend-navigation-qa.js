@@ -20,7 +20,11 @@ fs.mkdirSync(outDir, { recursive: true });
 
 (async () => {
   const browser = await chromium.launch({ headless: process.env.HEADLESS !== '0' });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  if (process.env.FENIX_TOKEN) {
+    await context.addCookies([{ name: 'fenix_session', value: encodeURIComponent(process.env.FENIX_TOKEN), url: new URL(baseUrl).origin, httpOnly: true, sameSite: 'Lax' }]);
+  }
+  const page = await context.newPage();
   if (process.env.FENIX_TOKEN) {
     await page.addInitScript((token) => {
       localStorage.setItem('grg_token', token);
