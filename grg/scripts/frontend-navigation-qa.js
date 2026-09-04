@@ -12,7 +12,7 @@ const outDir = path.resolve(process.env.FENIX_QA_OUT || 'qa-results');
 const fastMode = process.argv.includes('--fast');
 const actionTimeout = Number(process.env.FENIX_QA_TIMEOUT || (fastMode ? 2000 : 1500));
 const maxControlsPerScreen = Number(process.env.FENIX_QA_MAX_CONTROLS || (fastMode ? 4 : 8));
-const navigationTimeout = Number(process.env.FENIX_QA_NAV_TIMEOUT || 30_000);
+const navigationTimeout = Number(process.env.FENIX_QA_NAV_TIMEOUT || (fastMode ? 8_000 : 30_000));
 const stepDelay = Number(process.env.FENIX_QA_STEP_DELAY || (fastMode ? 250 : 500));
 const screenManifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'qa', 'frontend-screen-manifest.json'), 'utf8'));
 const domainByScreen = Object.fromEntries(Object.entries(screenManifest.domains).flatMap(([domain, screens]) => screens.map(screen => [screen, domain])));
