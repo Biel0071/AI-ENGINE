@@ -83,6 +83,7 @@ test('M2: AgentRuntime — Execution, Context Sharing, Delegation & Events', asy
   assert.strictEqual(capturedEvents.includes(FENIX_EVENTS.AGENT_SPAWNED), true);
   assert.strictEqual(capturedEvents.includes(FENIX_EVENTS.AGENT_STARTED), true);
   assert.strictEqual(capturedEvents.includes(FENIX_EVENTS.AGENT_FINISHED), true);
+  assert.strictEqual(capturedEvents.includes('agent.handoff'), true);
 
   await runtime.stop();
   await bus.stop();
