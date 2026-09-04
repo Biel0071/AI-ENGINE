@@ -18,14 +18,14 @@ const consoleErrors = [];
 page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
 page.on('pageerror', (error) => consoleErrors.push(error.message));
 
-await page.goto(`${baseURL}/app?qa=playwright#command`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+await page.goto(`${baseURL}${token ? '/app?qa=playwright#command' : '/GRG-login'}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 await page.waitForTimeout(1000);
-if (page.url().includes('GRG-login') && process.env.FENIX_USER && process.env.FENIX_PASSWORD) {
+if ((page.url().includes('GRG-login') || !token) && process.env.FENIX_USER && process.env.FENIX_PASSWORD) {
   await page.fill('#user', process.env.FENIX_USER);
   await page.fill('#pw', process.env.FENIX_PASSWORD);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(/\/app/, { timeout: 15000 });
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1500);
+  if (page.url().includes('GRG-login')) throw new Error('login did not reach application');
 }
 await page.waitForFunction(() => window.FENIX?.ws?.readyState === 1, { timeout: 15000 });
 await page.screenshot({ path: `${outputDir}/command-1440.png`, fullPage: true });
