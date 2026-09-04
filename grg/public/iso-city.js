@@ -56,6 +56,7 @@ class IsoCityEngine {
       bubbles: []
     };
     this.lastCityEvent = null;
+    this.activeHandoff = null;
     this.cityConnectionStatus = window.FENIX?.live?.status || 'CONNECTING';
 
     this.DISTRICTS = {
@@ -86,6 +87,7 @@ class IsoCityEngine {
     window.addEventListener('fenix-city-event', (event) => {
       this.lastCityEvent = event.detail || null;
       this._applyCityEvent(this.lastCityEvent);
+      if (this.lastCityEvent.type === 'agent.handoff') this.activeHandoff = { event: this.lastCityEvent, expiresAt: Date.now() + 8000 };
     });
     window.addEventListener('fenix-city-connection', (event) => {
       this.cityConnectionStatus = event.detail?.status || 'UNKNOWN';
@@ -496,9 +498,30 @@ class IsoCityEngine {
     // Agents sorted by painter's algo
     const sorted = [...this.world.agents.values()].sort((a,b) => (a.x+a.y)-(b.x+b.y));
     for (const agent of sorted) if (this._filterAllowsAgent(agent)) this._drawAgent(ctx, agent, cx, cy, zoom);
+    this._drawHandoff(ctx, cx, cy, zoom);
 
     this._drawHUD(ctx, width, height);
     this._drawMinimap(ctx, width, height);
+  }
+
+  _drawHandoff(ctx, cx, cy, zoom) {
+    const handoff = this.activeHandoff;
+    if (!handoff || handoff.expiresAt <= Date.now()) { this.activeHandoff = null; return; }
+    const payload = handoff.event.payload || {};
+    const fromId = payload.fromAgentId || payload.from || payload.sourceAgentId;
+    const toId = payload.toAgentId || payload.to || payload.targetAgentId;
+    const from = [...this.world.agents.values()].find((agent) => String(agent.id) === String(fromId) || String(agent.name) === String(fromId));
+    const to = [...this.world.agents.values()].find((agent) => String(agent.id) === String(toId) || String(agent.name) === String(toId));
+    if (!from || !to) return;
+    const a = this.toScreen(from.x, from.y, 0.35, cx, cy, zoom);
+    const b = this.toScreen(to.x, to.y, 0.35, cx, cy, zoom);
+    ctx.save();
+    ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 2 * zoom; ctx.setLineDash([6 * zoom, 5 * zoom]);
+    ctx.globalAlpha = Math.max(0.2, (handoff.expiresAt - Date.now()) / 8000);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = '#06b6d4';
+    ctx.beginPath(); ctx.arc((a.x + b.x) / 2, (a.y + b.y) / 2, 4 * zoom, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
 
   _drawCityEventHud(ctx, width) {
