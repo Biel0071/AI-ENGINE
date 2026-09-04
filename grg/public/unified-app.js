@@ -359,7 +359,7 @@ function renderHeader() {
       return `<tr data-agent-id="${escapeHtml(String(id))}" tabindex="0" style="cursor:pointer"><td><strong>${escapeHtml(agent.name || id)}</strong></td><td>${escapeHtml(agent.role || agent.specialization || '—')}</td><td>${escapeHtml(agent.status || agent.state || 'UNKNOWN')}</td><td>${escapeHtml(agent.currentTask || agent.currentJob || 'Aguardando')}</td></tr>`;
     }).join('') : '<tr><td colspan="4">Nenhum agente publicado pelo runtime.</td></tr>';
     agentTable.querySelectorAll('[data-agent-id]').forEach((row) => {
-      row.addEventListener('click', () => { document.querySelector('[data-nav="command"]')?.click(); document.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agentId: row.dataset.agentId } })); });
+      row.addEventListener('click', () => { document.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agentId: row.dataset.agentId } })); });
       row.addEventListener('keydown', (event) => { if (event.key === 'Enter') row.click(); });
     });
   }
