@@ -1281,8 +1281,23 @@
     if (!Array.isArray(tasks) || !tasks.length) return '';
     return `<div class="microtask-panel">
       <b>MICROTASKS</b>
-      ${tasks.map((task) => `<span class="${statusClass(task.status)}">${esc(task.title || task.id)} <small>${esc(task.status || 'QUEUED')}</small></span>`).join('')}
+      ${tasks.map((task) => `<span class="${statusClass(task.status)}"><button type="button" data-open-task="${esc(task.id)}">${esc(task.title || task.id)}</button> <small>${esc(task.status || 'QUEUED')}</small></span>`).join('')}
     </div>`;
+  }
+
+  function taskDetailsHtml(task, job) {
+    return detailsTable({
+      'Task ID': task.id || 'not published',
+      'Title': task.title || task.name || task.id || 'not published',
+      'Status': normalizeStatus(task.status),
+      'Mission': job?.missionId || 'not published',
+      'Job': job?.id || 'not published',
+      'Agent': task.agent || job?.agentId || 'not published',
+      'Skill': task.skill || 'not published',
+      'Tool': task.tool || 'not published',
+      'Dependencies': Array.isArray(task.dependsOn) ? task.dependsOn.join(', ') || 'none' : 'not published',
+      'Output': task.output || task.result || 'not published'
+    });
   }
 
   function openInspector(kind, title, html, options = {}) {
@@ -1313,6 +1328,14 @@
       button.addEventListener('click', () => {
         const job = getJobs().find((item) => item.id === button.dataset.openJob);
         if (job) openInspector('JOB DETAILS', job.id, jobDetailsHtml(job));
+      });
+    });
+    $('runtimeInspectorBody').querySelectorAll('[data-open-task]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const taskId = button.dataset.openTask;
+        const job = getJobs().find((item) => Array.isArray(item.microtasks) && item.microtasks.some((task) => task.id === taskId));
+        const task = job?.microtasks?.find((item) => item.id === taskId);
+        if (task) openInspector('TASK DESK', task.title || task.id, taskDetailsHtml(task, job));
       });
     });
     $('runtimeInspectorBody').querySelectorAll('[data-project-card]').forEach((button) => {
