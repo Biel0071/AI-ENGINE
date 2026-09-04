@@ -279,6 +279,17 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
 
+      // Read-only readiness status must not initialize the legacy product
+      // experience engines. Full probes remain explicit (`boot=true`).
+      if (req.method === 'GET' && url.pathname === '/api/governance/production-readiness' && url.searchParams.get('boot') !== 'true') {
+        return sendJson(res, 200, {
+          status: 'NOT_RUN',
+          message: 'Auditoria de prontidão não executada. Use ?boot=true de forma explícita; probes completos não rodam no caminho operacional.',
+          generatedBy: actorId,
+          generatedAt: new Date().toISOString(),
+        }, requestId);
+      }
+
       if (!url.pathname.startsWith('/api/v2/jobs')) {
         const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
         if (productHandled) return;
