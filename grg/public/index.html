@@ -66,7 +66,7 @@
         <div class="orch-logo-crest"><i class="ph-fill ph-fire"></i></div>
         <div class="orch-brand-info">
           <div class="orch-brand-title">
-            FÊNIX OS <span class="orch-status-pill online" id="statusPill">ONLINE</span>
+            FÊNIX OS <span class="orch-status-pill" id="statusPill">CONECTANDO</span>
           </div>
           <span class="orch-brand-subtitle">ORQUESTRADOR CENTRAL</span>
         </div>
@@ -77,8 +77,8 @@
         <div class="orch-meta-chip"><span class="orch-meta-label">LATÊNCIA</span><span class="orch-meta-val green" id="kpiLatency">28ms</span></div>
         <div class="orch-meta-chip"><span class="orch-meta-label">TOKENS</span><span class="orch-meta-val" id="kpiTokens">—</span></div>
         <div class="orch-meta-chip"><span class="orch-meta-label">AGENTES</span><span class="orch-meta-val green" id="kpiAgents">—</span></div>
-        <div class="orch-meta-chip"><span class="orch-meta-label">WORKER</span><span class="orch-meta-val green" id="kpiWorker">HEALTHY</span></div>
-        <div class="orch-meta-chip"><span class="orch-meta-label">UPTIME</span><span class="orch-meta-val" id="kpiUptime">00:00:00</span></div>
+        <div class="orch-meta-chip"><span class="orch-meta-label">WORKER</span><span class="orch-meta-val" id="kpiWorker">—</span></div>
+        <div class="orch-meta-chip"><span class="orch-meta-label">UPTIME</span><span class="orch-meta-val" id="kpiUptime">—</span></div>
       </div>
       
       <div class="orch-user-section">
@@ -209,7 +209,7 @@
             <!-- Hidden backward-compatibility elements so old scripts/tests never fail -->
             <div style="display:none;" aria-hidden="true">
               <select id="projectSwitcher"><option value="fenix-os">FÊNIX OS</option></select>
-              <div id="cmdSystemState" data-state="ONLINE"><span>ONLINE</span></div>
+              <div id="cmdSystemState" data-state="UNKNOWN"><span>AGUARDANDO SNAPSHOT</span></div>
               <div id="cmdRuntimeContainer"></div>
               <div id="cmdProjectsContainer"></div>
               <div id="cmdObservabilityContainer"></div>
@@ -307,7 +307,7 @@
                       </div>
 
                       <div style="display: flex; justify-content: space-between; font-size: 8.5px; margin-top: 4px;">
-                        <span style="color: var(--fenix-text-dim);">DURAÇÃO: <b id="floatJobDuration" style="color: #fff;">00:01:14</b></span>
+                        <span style="color: var(--fenix-text-dim);">DURAÇÃO: <b id="floatJobDuration" style="color: #fff;">—</b></span>
                         <button class="orch-btn-mini" id="btnOpenJob" style="padding: 1px 4px; font-size: 8px;">ABRIR JOB</button>
                       </div>
                     </div>
@@ -519,7 +519,7 @@
                       <div class="orch-xp-strip" style="margin:6px 0;">
                         <div class="orch-xp-labels">
                           <span id="inspAgentStatusLabel" style="color: var(--fenix-green);">STATUS: <b>EXECUTANDO</b></span>
-                          <span id="inspAgentHeartbeatLabel" style="color: var(--fenix-cyan);">HEARTBEAT: ONLINE</span>
+                          <span id="inspAgentHeartbeatLabel" style="color: var(--fenix-text-dim);">HEARTBEAT: —</span>
                         </div>
                       </div>
 
@@ -563,8 +563,7 @@
                     </div>
                     <div class="orch-log-stream" id="orchLiveActivityStream" data-activity-alias="orchLiveActivityList">
                       <div class="orch-log-entry"><span class="orch-log-time">--:--:--</span><span>Kernel inicializado</span></div>
-                      <div class="orch-log-entry green"><span class="orch-log-time">--:--:--</span><span>—</span></div>
-                      <div class="orch-log-entry cyan"><span class="orch-log-time">--:--:--</span><span>—</span></div>
+                      <div class="orch-log-entry"><span class="orch-log-time">--:--:--</span><span>Aguardando eventos do runtime…</span></div>
                     </div>
                     <!-- Alias element for JS compatibility -->
                     <div id="orchLiveActivityList" style="display:none;"></div>

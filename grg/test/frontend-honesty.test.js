@@ -108,6 +108,16 @@ test('frontend: ações de missão reportam falha sem fingir atualização', () 
   assert.match(command, /Falha ao cancelar missão/);
 });
 
+test('frontend: shell inicial não fabrica saúde, uptime ou heartbeat', () => {
+  const html = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+  assert.match(html, /id="statusPill">CONECTANDO/);
+  assert.match(html, /id="kpiWorker">—/);
+  assert.match(html, /id="kpiUptime">—/);
+  assert.match(html, /id="cmdSystemState" data-state="UNKNOWN"/);
+  assert.match(html, /id="inspAgentHeartbeatLabel"[^>]*>HEARTBEAT: —/);
+  assert.doesNotMatch(html, /id="floatJobDuration"[^>]*>00:01:14/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');
