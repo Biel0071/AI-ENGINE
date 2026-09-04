@@ -51,6 +51,15 @@ class MissionKernel {
   async start(tenantId, actorId, missionId) {
     await this.cp.authorize(tenantId, actorId, 'runtime:execute'); const mission = await this.#mission(tenantId, missionId); await this.#authorizeScope(tenantId, actorId, mission, 'write');
     if (!['PLANNED', 'PAUSED', 'AWAITING_APPROVAL'].includes(mission.status)) throw new ValidationError(`mission cannot start from ${mission.status}`);
+    if (mission.status === 'PAUSED') {
+      const state = await this.store.read();
+      const steps = state.missionSteps.filter((step) => step.tenantId === tenantId && step.missionId === missionId && step.jobId && !TERMINAL.has(step.status));
+      const jobs = await Promise.all(steps.map((step) => this.jobs.getInternal(tenantId, step.jobId)));
+      if (jobs.some((job) => job.status === 'PAUSING')) throw new ValidationError('mission is waiting for jobs to reach a safe pause boundary');
+      for (const job of jobs) {
+        if (job.status === 'PAUSED') await this.jobs.resume(tenantId, actorId, job.id);
+      }
+    }
     await this.store.update((state) => { const current = state.missions.find((item) => item.id === missionId); current.status = 'RUNNING'; current.startedAt ||= now(); current.updatedAt = now(); return state; });
     await this.#event(mission, 'mission.started', null, { status: 'RUNNING' }, actorId); await this.#dispatchReady(tenantId, missionId); return this.get(tenantId, actorId, missionId);
   }

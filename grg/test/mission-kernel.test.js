@@ -34,8 +34,17 @@ test('red mission steps require a separate approval before queue dispatch', asyn
 
 test('pause prevents downstream dispatch and resume continues without losing context', async () => {
   const app = await bootstrap(); const mission = await app.missions.create('grg', 'alice', input()); await app.missions.start('grg', 'alice', mission.id); await app.missions.pause('grg', 'alice', mission.id); await app.jobs.runBatch('worker-1', 5);
-  const paused = await app.missions.get('grg', 'alice', mission.id); assert.equal(paused.status, 'PAUSED'); assert.equal(paused.steps[0].status, 'SUCCEEDED'); assert.equal(paused.steps[1].status, 'PLANNED'); assert.equal(paused.contextRefs.length, 2);
-  const resumed = await app.missions.resume('grg', 'alice', mission.id); assert.equal(resumed.steps[1].status, 'DISPATCHED');
+  const paused = await app.missions.get('grg', 'alice', mission.id); assert.equal(paused.status, 'PAUSED'); assert.equal(paused.steps[0].status, 'DISPATCHED'); assert.equal(paused.steps[1].status, 'PLANNED'); assert.equal(paused.contextRefs.length, 2);
+  assert.equal((await app.jobs.getInternal('grg', paused.steps[0].jobId)).status, 'PAUSED');
+  const resumed = await app.missions.resume('grg', 'alice', mission.id);
+  assert.equal(resumed.steps[0].jobId, paused.steps[0].jobId);
+  assert.equal((await app.jobs.getInternal('grg', resumed.steps[0].jobId)).status, 'QUEUED');
+  await app.jobs.runBatch('worker-1', 5);
+  const progressed = await app.missions.get('grg', 'alice', mission.id);
+  assert.equal(progressed.steps[0].status, 'SUCCEEDED');
+  assert.equal(progressed.steps[1].status, 'DISPATCHED');
+  await app.jobs.runBatch('worker-1', 5);
+  assert.equal((await app.missions.get('grg', 'alice', mission.id)).status, 'SUCCEEDED');
 });
 
 test('cancel stops queued work and leaves an auditable compact summary', async () => {
