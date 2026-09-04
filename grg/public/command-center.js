@@ -1531,6 +1531,13 @@
 
     if (!sendBtn || !inputEl || !histEl) return;
 
+    function withTimeout(promise, ms, message) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+      ]);
+    }
+
     // T05: Carregar histórico persistido
     let chatMsgs = loadChatHistory();
     if (chatMsgs.length > 0) {
@@ -1567,6 +1574,7 @@
       renderChatBubble(histEl, 'user', text, ts);
       chatMsgs.push({ role: 'user', text: text, ts: ts });
       saveChatHistory(chatMsgs);
+      const statusBadge = document.getElementById('chatStatusBadge');
 
       if (pendingProposal && /^(sim|confirmar|confirmo|pode iniciar|iniciar|ok|bora|start)\b/i.test(text)) {
         const proposal = pendingProposal;
@@ -1595,6 +1603,7 @@
           renderChatBubble(histEl, 'fenix', reply, chatTimestamp());
           chatMsgs.push({ role: 'fenix', text: reply, ts: chatTimestamp() });
           saveChatHistory(chatMsgs);
+          if (statusBadge) { statusBadge.textContent = missionRes.ok && started ? 'EXECUTANDO' : 'ERRO'; statusBadge.className = missionRes.ok && started ? 'orch-status-pill exec' : 'orch-status-pill fail'; }
           window.dispatchEvent(new CustomEvent('fenix-mission-updated'));
         } catch (error) {
           renderChatBubble(histEl, 'fenix', `Falha ao criar missão: ${error.message}`, chatTimestamp());
@@ -1616,7 +1625,6 @@
         if (dotEl) { dots = (dots + 1) % 4; dotEl.textContent = 'pensando' + '.'.repeat(dots || 1); }
       }, 400);
 
-      const statusBadge = document.getElementById('chatStatusBadge');
       if (statusBadge) { statusBadge.textContent = 'PENSANDO'; statusBadge.className = 'orch-status-pill exec'; }
 
       try {
@@ -1658,7 +1666,11 @@
           if (routedRes.ok) routed = await routedRes.json();
         } catch (_) { /* inferência direta continua sendo um fallback válido */ }
 
-        const reply = routed?.reply || routed?.facts?.note || await fenixChatSend(text);
+        const reply = routed?.reply || routed?.facts?.note || await withTimeout(
+          fenixChatSend(text),
+          45000,
+          'O provedor de IA não respondeu no tempo limite',
+        );
         clearInterval(thinkInterval);
         thinkEl.remove();
 
