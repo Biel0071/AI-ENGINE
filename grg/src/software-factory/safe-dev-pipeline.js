@@ -154,6 +154,7 @@ function buildPrompt(objective, project, policy) {
     'You are the implementation engine inside FENIX. Produce a minimal, working change.',
     'Return ONLY valid JSON: {"summary":"...","files":[{"path":"relative/path","content":"complete replacement content"}]}.',
     'Never include secrets, .env files, lockfiles, generated artifacts, deletion operations, or paths outside the repository.',
+    'Use only ordinary source/test files from the listed project files. Never output an absolute path and never output any path beginning with .git/ (including hooks).',
     `Objective: ${objective}`,
     `Allowed paths: ${JSON.stringify(policy.allowedPaths?.length ? policy.allowedPaths : ['**'])}`,
     `Blocked paths: ${JSON.stringify([...(policy.blockedPaths || []), ...DEFAULT_BLOCKED])}`,
