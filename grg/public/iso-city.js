@@ -104,10 +104,11 @@ class IsoCityEngine {
     if (!agentId) return;
     const agent = this.world.agents.get(String(agentId));
     if (!agent) return;
-    const active = ['job.started', 'runtime.job.running', 'tool.started'].includes(event.type);
+    const active = ['job.started', 'runtime.job.running', 'tool.started', 'agent.tool.call', 'memory.read', 'memory.write', 'human.required', 'human.approval_required'].includes(event.type);
     const complete = ['job.completed', 'tool.completed'].includes(event.type);
     if (active) {
-      const station = this.DISTRICTS[agent.district] || this.DISTRICTS.CENTRAL;
+      const stationName = event.type.startsWith('memory.') ? 'MEMORY' : event.type.startsWith('human.') || event.type === 'human.required' ? 'CENTRAL' : event.type === 'agent.tool.call' || event.type === 'tool.started' ? 'DEVOPS' : agent.district;
+      const station = this.DISTRICTS[stationName] || this.DISTRICTS.CENTRAL;
       agent.tx = station.x;
       agent.ty = station.y;
       agent.routeActive = true;

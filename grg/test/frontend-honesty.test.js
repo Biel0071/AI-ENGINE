@@ -59,6 +59,8 @@ test('ai city live: atividade e eventos devem ser determinísticos e derivados d
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');
   assert.equal(city.includes('Math.random'), false, 'a cidade live não pode gerar atividade aleatória');
+  assert.match(city, /memory\.read/);
+  assert.match(city, /human\.approval_required/);
   assert.match(adapter, /CITY_EVENT_MAP/);
   assert.match(adapter, /fenix-live/);
   assert.match(adapter, /sourceEventId/);
