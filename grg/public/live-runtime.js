@@ -170,9 +170,39 @@
         break;
 
       case 'mission.created':
+      case 'mission.started':
+      case 'mission.resumed':
+      case 'mission.paused':
+      case 'mission.cancelled':
       case 'mission.completed':
       case 'mission.failed':
-        updateMission(msg.payload, msg.type === 'mission.completed' ? 'COMPLETED' : msg.type === 'mission.failed' ? 'FAILED' : 'ACTIVE');
+      case 'mission.step.dispatched':
+      case 'mission.step.completed':
+      case 'mission.step.approved':
+      case 'mission.step.approval-required': {
+        const statusByEvent = {
+          'mission.created': 'PLANNED',
+          'mission.started': 'RUNNING',
+          'mission.resumed': 'RUNNING',
+          'mission.paused': 'PAUSED',
+          'mission.cancelled': 'CANCELLED',
+          'mission.completed': 'COMPLETED',
+          'mission.failed': 'FAILED',
+          'mission.step.approval-required': 'AWAITING_APPROVAL'
+        };
+        const status = statusByEvent[msg.type] || msg.payload?.missionStatus || null;
+        updateMission(msg.payload, status);
+        break;
+      }
+
+      case 'runtime.job.started':
+      case 'runtime.job.succeeded':
+      case 'runtime.job.failed':
+      case 'runtime.job.cancelled':
+        if (msg.payload?.jobId) {
+          const normalized = msg.type.replace('runtime.', '');
+          updateJob(msg.payload.jobId, { status: normalized === 'job.succeeded' ? 'SUCCEEDED' : normalized === 'job.failed' ? 'FAILED' : normalized === 'job.cancelled' ? 'CANCELLED' : 'RUNNING' });
+        }
         break;
 
       case 'memory.created':
