@@ -294,9 +294,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // Não cria outro runtime: apenas lê MissionKernel/JobEngine/store.
       if (req.method === 'GET' && url.pathname === '/runtime/snapshot') {
         await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
-        const [health, jobs, missions, agentPanel, state] = await Promise.all([
+        const [health, jobs, missions, agentPanel, state, projects] = await Promise.all([
           app.health.check(), app.jobs.list(tenantId, actorId), app.missions.list(tenantId, actorId),
           app.agentEcosystem.panel(tenantId, actorId), app.store.read(),
+          app.projectKernel ? app.projectKernel.list(tenantId, actorId) : [],
         ]);
         const events = (state.missionEvents || []).filter((event) => event.tenantId === tenantId).slice(-80);
         const registeredList = app.agentRegistry ? app.agentRegistry.list() : [];
@@ -319,7 +320,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const agents = (agentPanel.agents && agentPanel.agents.length) ? agentPanel.agents : registeredAgents;
         return sendJson(res, 200, { type: 'runtime.snapshot', payload: {
           serverTime: new Date().toISOString(), status: health.ok ? 'ONLINE' : 'DEGRADED', health,
-          uptime: Math.floor(process.uptime()), jobs, missions, agents, events,
+          uptime: Math.floor(process.uptime()), jobs, missions, agents, projects, events,
           queue: {
             queued: jobs.filter((job) => job.status === 'QUEUED').length,
             running: jobs.filter((job) => job.status === 'RUNNING').length,
