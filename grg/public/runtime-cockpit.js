@@ -1210,9 +1210,10 @@
 
   function missionControlHtml() {
     const missions = getMissions();
-    const mission = missions[0] || {};
+    const publishedTasks = state.api.tasks || [];
+    const mission = missions.find((item) => publishedTasks.some((task) => task.missionId === (item.id || item.missionId))) || missions[0] || {};
     const jobs = mission.id ? getJobs().filter((job) => job.missionId === mission.id) : getJobs().slice(0, 12);
-    const tasks = (state.api.tasks || []).filter((task) => !mission.id || task.missionId === mission.id);
+    const tasks = publishedTasks.filter((task) => !mission.id || task.missionId === mission.id);
     const done = jobs.filter((job) => normalizeStatus(job.status) === 'COMPLETED').length;
     const progress = jobs.length ? Math.round((done / jobs.length) * 100) : 0;
     return `<div class="mission-control-panel">
