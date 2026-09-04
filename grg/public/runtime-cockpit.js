@@ -1974,6 +1974,7 @@
       const snapshot = await withTimeout(snapshotFn(), snapshotTimeout, null);
       if (snapshot?.operationalTwin) {
         state.api[snapshotKey] = snapshot;
+        state.api.tasks = snapshot.tasks || snapshot.payload?.tasks || [];
         render();
       }
     } catch (error) {
@@ -1988,6 +1989,8 @@
       }
       catch (error) { state.api[key] = { error: error.message }; }
     }));
+    const hydratedSnapshot = state.api.snapshot;
+    state.api.tasks = hydratedSnapshot?.tasks || hydratedSnapshot?.payload?.tasks || [];
     if (state.api.snapshot) {
       document.dispatchEvent(new CustomEvent('fenix-live', { detail: { type: 'snapshot', ...state.api.snapshot } }));
     }
@@ -2026,6 +2029,7 @@
     const initialSnapshot = readInitialSnapshot();
     if (initialSnapshot?.operationalTwin) {
       state.api.snapshot = initialSnapshot;
+      state.api.tasks = initialSnapshot.tasks || initialSnapshot.payload?.tasks || [];
       cockpitDebug().lastSnapshotStatus = state.api.snapshot.status || 'INITIAL';
     }
     renderShell();
