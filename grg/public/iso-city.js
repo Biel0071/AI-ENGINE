@@ -90,7 +90,7 @@ class IsoCityEngine {
     window.addEventListener('fenix-city-event', (event) => {
       this.lastCityEvent = event.detail || null;
       this._applyCityEvent(this.lastCityEvent);
-      if (this.lastCityEvent.type === 'agent.handoff') this.activeHandoff = { event: this.lastCityEvent, expiresAt: Date.now() + 8000 };
+      if (this.lastCityEvent?.type === 'agent.handoff') this.activeHandoff = { event: this.lastCityEvent, expiresAt: Date.now() + 8000 };
     });
     window.addEventListener('fenix-city-connection', (event) => {
       this.cityConnectionStatus = event.detail?.status || 'UNKNOWN';
