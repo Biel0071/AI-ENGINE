@@ -740,11 +740,11 @@
 
     const realAg = agents.find(a => (a.id || a.agentId || a.name || '').toLowerCase() === String(agentId || '').toLowerCase()) || {
       id: agentId,
-      name: agentId.includes('Agent') ? agentId : `${agentId} Agent`,
-      role: 'Engenheiro Especialista',
-      status: 'AVAILABLE',
-      district: 'CENTRAL',
-      model: 'Qwen 2.5 3B (Local)'
+      name: 'Nenhum agente publicado',
+      role: null,
+      status: null,
+      district: null,
+      model: null
     };
 
     const activeJob = jobs.find(j => j.agentId === realAg.id && j.status === 'RUNNING');
@@ -760,20 +760,20 @@
     const statusLabel = document.getElementById('inspAgentStatusLabel');
     if (statusLabel) {
       const isRunning = activeJob || realAg.status === 'RUNNING';
-      statusLabel.textContent = `STATUS: ${isRunning ? 'WORKING' : (realAg.status || 'AVAILABLE')}`;
-      statusLabel.style.color = isRunning ? 'var(--fenix-cyan)' : 'var(--fenix-green)';
+      statusLabel.textContent = `STATUS: ${isRunning ? 'WORKING' : (realAg.status || 'NÃO PUBLICADO')}`;
+      statusLabel.style.color = isRunning ? 'var(--fenix-cyan)' : 'var(--fenix-text-dim)';
     }
 
     const hbLabel = document.getElementById('inspAgentHeartbeatLabel');
     if (hbLabel) {
-      hbLabel.textContent = `HEARTBEAT: ${realAg.status === 'OFFLINE' ? 'OFFLINE' : 'ONLINE'}`;
-      hbLabel.style.color = realAg.status === 'OFFLINE' ? 'var(--fenix-red)' : 'var(--fenix-cyan)';
+      hbLabel.textContent = `HEARTBEAT: ${realAg.status ? (realAg.status === 'OFFLINE' ? 'OFFLINE' : 'ONLINE') : 'NÃO PUBLICADO'}`;
+      hbLabel.style.color = realAg.status === 'OFFLINE' ? 'var(--fenix-red)' : 'var(--fenix-text-dim)';
     }
 
     const misEl = document.getElementById('inspAgentMission');
-    if (misEl) misEl.textContent = activeMission ? (activeMission.displayName || activeMission.name) : 'Nenhuma';
+    if (misEl) misEl.textContent = activeMission ? (activeMission.displayName || activeMission.name) : (agents.length ? 'Nenhuma' : 'NÃO PUBLICADO');
     const jobEl = document.getElementById('inspAgentJob');
-    if (jobEl) jobEl.textContent = activeJob ? (activeJob.prompt || activeJob.id) : 'Disponível / Idle';
+    if (jobEl) jobEl.textContent = activeJob ? (activeJob.prompt || activeJob.id) : (agents.length ? 'Disponível / Idle' : 'NÃO PUBLICADO');
     const modEl = document.getElementById('inspAgentModel');
     if (modEl) modEl.textContent = realAg.model || 'Não publicado';
     const distEl = document.getElementById('inspAgentDistrict');
