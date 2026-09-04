@@ -651,7 +651,7 @@
         const jobAgentEl = document.getElementById('floatJobAgent');
         if (jobAgentEl) jobAgentEl.textContent = (activeJob.agent?.name || activeJob.agentId || 'QA AGENT').toUpperCase();
         const jobTitleEl = document.getElementById('floatJobTitle');
-        if (jobTitleEl) jobTitleEl.textContent = activeJob.prompt || activeJob.title || activeJob.type || 'Validação no Navegador';
+        if (jobTitleEl) jobTitleEl.textContent = activeJob.prompt || activeJob.title || activeJob.type || 'Título não publicado';
         const jobProgEl = document.getElementById('floatJobProgress');
         if (jobProgEl) jobProgEl.style.width = `${Number.isFinite(Number(activeJob.progress)) ? Math.min(100, Math.max(0, Number(activeJob.progress))) : 0}%`;
       } else floatJobCard.style.display = 'none';
@@ -697,8 +697,8 @@
       const topAgents = agents.slice(0, 5);
       activeAgentsListEl.innerHTML = (topAgents.length ? topAgents.map(ag => {
         const isSel = ag.id === selectedAgentId;
-        const statusText = String(ag.status || 'AVAILABLE').toUpperCase();
-        const badgeClass = statusText === 'RUNNING' ? 'exec' : 'online';
+        const statusText = String(ag.status || 'NÃO PUBLICADO').toUpperCase();
+        const badgeClass = statusText === 'RUNNING' ? 'exec' : (ag.status ? 'online' : '');
         return `<div class="orch-skill-row" style="cursor:pointer; padding:4px 6px; border-radius:4px; ${isSel ? 'background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4);' : ''}" data-agent-id="${ag.id}">
           <span class="orch-skill-name">${getAgentEmoji(ag.role)} ${esc(ag.name || ag.id)}</span>
           <span class="orch-status-pill ${badgeClass}" style="font-size:7.5px;">${esc(statusText)}</span>
@@ -727,7 +727,7 @@
         return `<div class="orch-mission-item-row ${isSel ? 'active' : ''}" data-mission-id="${m.id}" style="cursor:pointer;">
           <div>
             <div class="orch-mission-item-title">${esc(m.displayName || m.name || 'Missão Fênix')}</div>
-            <div style="font-size: 8.5px; color: var(--fenix-text-dim);">${esc(m.objective?.slice(0, 40) || 'Pipeline')}</div>
+            <div style="font-size: 8.5px; color: var(--fenix-text-dim);">${esc(m.objective?.slice(0, 40) || 'Objetivo não publicado')}</div>
           </div>
           <div class="orch-mission-item-badge ${badgeClass}">${pct == null ? '—' : `${pct}%`}</div>
         </div>`;
