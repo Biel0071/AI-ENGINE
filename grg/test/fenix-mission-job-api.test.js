@@ -12,7 +12,7 @@ const admin = { tenantId: 'fenix-test', userId: 'fenix-test-admin', password: cr
 
 test('FENIX mission/job HTTP contract persists DAG, events, checkpoints and controls', async () => {
   const dataFile = path.join(os.tmpdir(), `fenix-mission-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
-  const server = await start(0, { dataFile, llm: false, bootstrapAdmin: { ...admin, tenantName: 'FENIX Test', name: 'FENIX Test', role: 'master_admin' } });
+  const server = await start(0, { dataFile, llm: false, localRuntimeWorker: false, bootstrapAdmin: { ...admin, tenantName: 'FENIX Test', name: 'FENIX Test', role: 'master_admin' } });
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
     const login = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(admin) }).then((r) => r.json());
@@ -27,11 +27,11 @@ test('FENIX mission/job HTTP contract persists DAG, events, checkpoints and cont
 
     const mission = await fetch(`${base}/api/fenix/missions/${created.missionId}`, { headers }).then((r) => r.json());
     assert.equal(mission.id, created.missionId);
-    assert.deepEqual(mission.steps.map((step) => step.key), ['discover', 'inspect', 'analyze', 'validate']);
-    assert.deepEqual(mission.steps.map((step) => step.dependsOn), [[], ['discover'], ['inspect'], ['analyze']]);
+    assert.deepEqual(mission.steps.map((step) => step.key), ['discover', 'analyze', 'activate']);
+    assert.deepEqual(mission.steps.map((step) => step.dependsOn), [[], ['discover'], ['analyze']]);
 
     const jobs = await fetch(`${base}/api/fenix/missions/${created.missionId}/jobs`, { headers }).then((r) => r.json());
-    assert.equal(jobs.jobs.length, 4);
+    assert.equal(jobs.jobs.length, 3);
     const events = await fetch(`${base}/api/fenix/missions/${created.missionId}/events`, { headers }).then((r) => r.json());
     assert.ok(events.events.some((event) => event.type === 'mission.created'));
     const checkpoints = await fetch(`${base}/api/fenix/missions/${created.missionId}/checkpoints`, { headers }).then((r) => r.json());
@@ -61,8 +61,10 @@ test('FENIX SSE stream sends the connected event from a started server', async (
   const server = await start(0, { dataFile, llm: false, bootstrapAdmin: { ...admin, tenantName: 'FENIX SSE', name: 'FENIX SSE', role: 'master_admin' } });
   try {
     const port = server.address().port;
+    const login = await fetch(`http://127.0.0.1:${port}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(admin) }).then((r) => r.json());
+    assert.ok(login.token);
     const event = await new Promise((resolve, reject) => {
-      const req = http.request(`http://127.0.0.1:${port}/api/v2/events/stream`, { method: 'GET' }, (res) => {
+      const req = http.request(`http://127.0.0.1:${port}/api/v2/events/stream`, { method: 'GET', headers: { authorization: `Bearer ${login.token}` } }, (res) => {
         assert.equal(res.statusCode, 200);
         assert.match(String(res.headers['content-type']), /text\/event-stream/);
         let body = '';
