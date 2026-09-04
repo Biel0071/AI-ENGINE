@@ -981,6 +981,21 @@
       const agent = agents.find((a) => a.id === row.dataset.agent);
       row.addEventListener('click', () => agent && openAgentProfile(agent));
     });
+
+    // The dedicated Agents view is a projection of the same live registry.
+    // Keep it actionable instead of leaving its table empty while AI City has data.
+    const agentTable = $('agentList');
+    if (agentTable) {
+      agentTable.innerHTML = agents.length ? agents.map((agent, index) => {
+        const id = agent.id || agent.agentId || agent.name || `agent-${index}`;
+        return `<tr data-agent-id="${esc(id)}" tabindex="0" style="cursor:pointer"><td><strong>${esc(agent.name || id)}</strong></td><td>${esc(agent.role || '—')}</td><td>${esc(normalizeStatus(agent.status || agent.state))}</td><td>${esc(agent.currentTask || agent.currentJob || 'Aguardando')}</td></tr>`;
+      }).join('') : '<tr><td colspan="4">Nenhum agente publicado pelo runtime.</td></tr>';
+      agentTable.querySelectorAll('[data-agent-id]').forEach((row) => {
+        const agent = agents.find((item) => String(item.id || item.agentId || item.name) === row.dataset.agentId);
+        row.addEventListener('click', () => agent && openAgentProfile(agent));
+        row.addEventListener('keydown', (event) => { if (event.key === 'Enter') agent && openAgentProfile(agent); });
+      });
+    }
   }
 
   function miniAgentHtml(agent, index, options = {}) {
