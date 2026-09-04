@@ -446,6 +446,17 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && missionApproveStep) { const body = await readJson(req); return sendJson(res, 202, await app.missions.approveStep(tenantId, actorId, missionApproveStep[1], missionApproveStep[2], body.approvalId), requestId); }
       const missionGet = url.pathname.match(/^\/api\/missions\/([^/]+)$/);
       if (req.method === 'GET' && missionGet) return sendJson(res, 200, await app.missions.get(tenantId, actorId, missionGet[1]), requestId);
+      const missionGraph = url.pathname.match(/^\/api\/missions\/([^/]+)\/graph$/);
+      if (req.method === 'GET' && missionGraph) {
+        const mission = await app.missions.get(tenantId, actorId, missionGraph[1]);
+        const steps = Array.isArray(mission.steps) ? mission.steps : [];
+        return sendJson(res, 200, {
+          missionId: mission.id,
+          nodes: steps.map((step) => ({ id: step.key, label: step.key, type: step.type, status: step.status || 'PLANNED', jobId: step.jobId || null })),
+          edges: steps.flatMap((step) => (step.dependsOn || []).map((dependency) => ({ from: dependency, to: step.key }))),
+          source: 'persisted:missionSteps'
+        }, requestId);
+      }
       if (req.method === 'GET' && url.pathname === '/api/projects') return sendJson(res, 200, { projects: await app.factory.listProjects(tenantId, actorId) });
       if (req.method === 'GET' && url.pathname === '/api/repositories') return sendJson(res, 200, { repositories: await app.repoIntel.listRepositories(tenantId, actorId) });
       if (req.method === 'GET' && url.pathname === '/api/graph') return sendJson(res, 200, await app.repoIntel.getGraph(tenantId, actorId));
