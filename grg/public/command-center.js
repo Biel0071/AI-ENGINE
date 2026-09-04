@@ -1339,7 +1339,6 @@
   const API_PLATFORM_URL = '/api/v2/ai-platform/status';
 
   async function refreshApiPlatformStatus() {
-    if (!commandViewActive()) return;
     if (Date.now() < apiPlatformBackoffUntil) return;
     const statusEl   = document.getElementById('apiPlatformStatus');
     const provEl     = document.getElementById('apiPlatformProviders');
