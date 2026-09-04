@@ -102,7 +102,11 @@
   function openModal(titleHtml, bodyHtml, footerHtml = '') {
     const container = document.getElementById('orchModalContainer');
     if (!container) return;
-    container.innerHTML = `
+    const current = container.querySelector('.orch-modal-backdrop:last-child');
+    if (current) current.querySelectorAll('[id]').forEach((element) => {
+      element.id = `desk-${Date.now()}-${element.id}`;
+    });
+    const markup = `
       <div class="orch-modal-backdrop" id="orchModalBackdrop">
         <div class="orch-modal">
           <div class="orch-modal-header">
@@ -120,11 +124,19 @@
         </div>
       </div>
     `;
+    container.insertAdjacentHTML('beforeend', markup);
     container.style.display = 'block';
+    container.querySelectorAll('.orch-modal-backdrop').forEach((backdrop) => {
+      backdrop.style.background = 'transparent';
+      backdrop.style.backdropFilter = 'none';
+      backdrop.style.pointerEvents = 'none';
+      const windowEl = backdrop.querySelector('.orch-modal');
+      if (windowEl) windowEl.style.pointerEvents = 'auto';
+    });
 
     document.getElementById('orchModalCloseBtn')?.addEventListener('click', closeModal);
-    const modal = container.querySelector('.orch-modal');
-    const header = container.querySelector('.orch-modal-header');
+    const modal = container.querySelector('.orch-modal-backdrop:last-child .orch-modal');
+    const header = modal?.querySelector('.orch-modal-header');
     if (modal) {
       Object.assign(modal.style, { position: 'relative', resize: 'both', minWidth: '360px', minHeight: '180px' });
       const style = document.createElement('style');
@@ -155,10 +167,12 @@
 
   function closeModal() {
     const container = document.getElementById('orchModalContainer');
-    if (container) {
-      container.style.display = 'none';
-      container.innerHTML = '';
-    }
+    if (!container) return;
+    const event = arguments[0];
+    const backdrop = event?.target?.closest?.('.orch-modal-backdrop');
+    if (backdrop) backdrop.remove();
+    else container.innerHTML = '';
+    if (!container.querySelector('.orch-modal-backdrop')) container.style.display = 'none';
   }
 
   // Modal de Detalhes da Missão
