@@ -1400,6 +1400,10 @@
   }
   setInterval(() => { if (commandViewActive()) refreshApiPlatformStatus(); }, 15000);
   if (commandViewActive()) refreshApiPlatformStatus();
+  // O Command Center pode ser ativado depois que este bundle termina de
+  // carregar; repetir no evento de boot evita deixar o placeholder congelado.
+  document.addEventListener('FENIX_READY', () => refreshApiPlatformStatus(), { once: true });
+  setTimeout(() => refreshApiPlatformStatus(), 1200);
 
   // === API PLATFORM DIRECT CHAT (used when FÊNIX chat sends messages) ===
   // This is a browser-level proxy: when the FÊNIX chat fails (401/network), this falls back
