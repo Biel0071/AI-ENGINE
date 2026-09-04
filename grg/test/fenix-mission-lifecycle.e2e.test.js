@@ -34,7 +34,7 @@ test('mission lifecycle keeps API state, jobs and events consistent', async () =
     }
 
     const terminal = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED']);
-    for (let i = 0; i < 120 && !terminal.has(mission.status); i += 1) {
+    for (let i = 0; i < 120 && (!terminal.has(mission.status) || !mission.events.some((event) => event.type === 'mission.completed')); i += 1) {
       await new Promise((resolve) => setTimeout(resolve, 100));
       mission = await fetch(`${base}/api/fenix/missions/${created.missionId}`, { headers }).then((r) => r.json());
     }
