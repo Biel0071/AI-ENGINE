@@ -303,6 +303,9 @@ class AutonomousJobOrchestrator extends SystemModule {
         id: `${jobId}_t${idx + 1}`,
         name: s.description || s.name || `Microtask ${idx + 1}`,
         agent: s.agent || 'Developer Agent',
+        type: s.type || null,
+        content: s.content,
+        expectedOutput: s.expectedOutput,
         status: 'QUEUED',
         targetFile: s.targetFile || 'src/components/Dashboard.tsx'
       }));
