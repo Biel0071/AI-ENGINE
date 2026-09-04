@@ -52,6 +52,13 @@ class SecurityPlane {
       return { allowed: false, status: 503, requestId, error: 'FENIX kill switch is active' };
     }
 
+    // Static JS/CSS/HTML assets must not consume the API budget. Counting
+    // every bundle request caused the browser to receive JSON 429 responses
+    // with a script/stylesheet MIME type, breaking the entire shell after
+    // navigating through several views.
+    const isApiRequest = pathname.startsWith('/api/') || pathname === '/runtime/snapshot';
+    if (!isApiRequest) return { allowed: true, requestId };
+
     const address = req.socket && req.socket.remoteAddress || 'unknown';
     const isLogin = pathname === '/api/login';
     const limit = isLogin ? this.config.loginRateLimit : this.config.apiRateLimit;

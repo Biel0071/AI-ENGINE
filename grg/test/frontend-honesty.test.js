@@ -101,6 +101,12 @@ test('servidor: shell HTML não pode ser armazenado pelo navegador', () => {
   assert.match(server, /'cache-control': cacheControl/);
 });
 
+test('servidor: assets estáticos não consomem limite da API', () => {
+  const security = require('node:fs').readFileSync(path.join(__dirname, '..', 'src', 'security', 'security-plane.js'), 'utf8');
+  assert.match(security, /const isApiRequest = pathname\.startsWith\('\/api\/'\) \|\| pathname === '\/runtime\/snapshot'/);
+  assert.match(security, /if \(!isApiRequest\) return \{ allowed: true, requestId \}/);
+});
+
 test('frontend: ações de missão reportam falha sem fingir atualização', () => {
   const command = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'command-center.js'), 'utf8');
   assert.match(command, /encodeURIComponent\(selectedMissionId\)/);
