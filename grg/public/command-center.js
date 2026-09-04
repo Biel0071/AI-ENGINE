@@ -591,6 +591,7 @@
         if (payload.agentId) window.fenixCity?.focusAgent(payload.agentId);
         else if (payload.missionId) window.fenixCity?.focusMission(payload.missionId);
         else if (payload.jobId) window.fenixCity?.focusJob(payload.jobId);
+        else if (payload.projectId) window.fenixCity?.focusProject(payload.projectId);
       }));
     }
 
