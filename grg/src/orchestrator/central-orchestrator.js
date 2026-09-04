@@ -291,7 +291,7 @@ function normalizeConstraints(value) {
 function extractSourceHints(request = {}) {
   const candidates = [request.userIntent, ...(request.constraints || [])];
   const found = [];
-  const pattern = /(?:^|[\s`'"(])([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+\.(?:js|cjs|mjs|ts|tsx|jsx|json|css|html|py|go|rs|java|md))(?:$|[\s`'"),:;])/gi;
+  const pattern = /(?:^|[\s`'"(])([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.(?:js|cjs|mjs|ts|tsx|jsx|json|css|html|py|go|rs|java|md))(?:$|[\s`'"),:;])/gi;
   for (const text of candidates) {
     for (const match of String(text || '').matchAll(pattern)) found.push(match[1].replace(/^\.\//, ''));
   }
