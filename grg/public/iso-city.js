@@ -1,7 +1,7 @@
 /**
  * FÊNIX AGENTIC CITY 3.0 — Habbo-style Isometric World
- * Active agents always visible, animated walking, particle work effects
- * Syncs with real FÊNIX API when available
+ * Visualizes only agents and activity reported by the live FÊNIX runtime.
+ * Syncs with the real FÊNIX API and event stream.
  */
 
 const AGENT_ROLES = [
@@ -17,12 +17,6 @@ const AGENT_ROLES = [
   { id: 'observer',   name: 'OBSERVER',   color: '#fb923c', role: 'observability',district:'CENTRAL',   emoji: '👁️' },
   { id: 'security',   name: 'SECURITY',   color: '#f43f5e', role: 'security',    district: 'DEVOPS',    emoji: '🛡️' },
   { id: 'analyst',    name: 'ANALYST',    color: '#a78bfa', role: 'analyst',     district: 'KNOWLEDGE', emoji: '📊' },
-];
-
-const WORK_MESSAGES = [
-  'analyzing...', 'building...', 'testing...', 'deploying...', 
-  'learning...', 'optimizing...', 'scanning...', 'connecting...',
-  'compiling...', 'validating...', 'evolving...', 'syncing...'
 ];
 
 class IsoCityEngine {
@@ -323,31 +317,8 @@ class IsoCityEngine {
     for (const t of agent.trail) t.life -= delta * 2.5;
     agent.trail = agent.trail.filter(t => t.life > 0);
 
-    // Bubble timer
-    agent.bubbleTimer -= delta;
-    if (agent.bubbleTimer <= 0) {
-      agent.bubbleTimer = 4 + Math.random() * 8;
-      if (isWorking) {
-        agent.bubble = { text: agent.workMsg, life: 2.5 };
-      }
-    }
-    if (agent.bubble) {
-      agent.bubble.life -= delta;
-      if (agent.bubble.life <= 0) agent.bubble = null;
-    }
-
-    // Emit work particles
-    if (isWorking && Math.random() < 0.3) {
-      this.world.particles.push({
-        x: agent.x, y: agent.y, z: 0.5,
-        vx: (Math.random() - 0.5) * 1.2,
-        vy: (Math.random() - 0.5) * 1.2,
-        vz: 0.4 + Math.random() * 0.8,
-        color: agent.color,
-        size: 1.5 + Math.random() * 2,
-        life: 1, decay: 1.2
-      });
-    }
+    // A quiet runtime must render quiet. Bubbles and particles are created
+    // only by the real event adapter when an event provides visual metadata.
   }
 
   draw() {
