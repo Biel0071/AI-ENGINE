@@ -100,6 +100,14 @@ test('servidor: shell HTML não pode ser armazenado pelo navegador', () => {
   assert.match(server, /'cache-control': cacheControl/);
 });
 
+test('frontend: ações de missão reportam falha sem fingir atualização', () => {
+  const command = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'command-center.js'), 'utf8');
+  assert.match(command, /encodeURIComponent\(selectedMissionId\)/);
+  assert.match(command, /btn\.disabled = true; btn\.textContent = 'PAUSANDO\.\.\.'/);
+  assert.match(command, /FALHA: \$\{error\.message\}/);
+  assert.match(command, /Falha ao cancelar missão/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');

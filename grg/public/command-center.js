@@ -970,15 +970,23 @@
   function setupActions() {
     document.getElementById('btnPauseMission')?.addEventListener('click', async () => {
       const btn = document.getElementById('btnPauseMission');
-      if (btn) btn.textContent = 'PAUSANDO...';
-      if (selectedMissionId) await apiCall(`/api/fenix/missions/${selectedMissionId}/pause`, 'POST');
-      setTimeout(renderPanels, 400);
+      if (!selectedMissionId) return;
+      if (btn) { btn.disabled = true; btn.textContent = 'PAUSANDO...'; }
+      try {
+        await apiCall(`/api/fenix/missions/${encodeURIComponent(selectedMissionId)}/pause`, 'POST');
+        setTimeout(renderPanels, 400);
+      } catch (error) {
+        if (btn) btn.textContent = `FALHA: ${error.message}`;
+      } finally { if (btn) btn.disabled = false; }
     });
 
     document.getElementById('btnCancelMission')?.addEventListener('click', async () => {
       if (!confirm('Deseja realmente cancelar a missão ativa?')) return;
-      if (selectedMissionId) await apiCall(`/api/fenix/missions/${selectedMissionId}/cancel`, 'POST');
-      setTimeout(renderPanels, 400);
+      if (!selectedMissionId) return;
+      try {
+        await apiCall(`/api/fenix/missions/${encodeURIComponent(selectedMissionId)}/cancel`, 'POST');
+        setTimeout(renderPanels, 400);
+      } catch (error) { window.alert(`Falha ao cancelar missão: ${error.message}`); }
     });
 
     document.getElementById('btnDetailsMission')?.addEventListener('click', () => {
