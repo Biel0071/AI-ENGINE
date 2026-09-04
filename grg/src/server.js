@@ -1010,7 +1010,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   server.on('upgrade', async (request, socket, head) => {
     const upgradeUrl = new URL(request.url || '/', 'http://localhost');
     if (upgradeUrl.pathname !== '/events') return socket.destroy();
-    const context = await app.security.authenticate(request.headers).catch(() => null);
+    // O browser não pode enviar Authorization customizado no construtor de
+    // WebSocket. Valide primeiro o token assinado localmente para concluir o
+    // handshake sem depender de uma leitura persistente lenta; a validação
+    // persistente continua como fallback para tokens externos/rotacionados.
+    const context = (app.auth?.contextFrom(request.headers) || await app.security.authenticate(request.headers).catch(() => null));
     if (!context) return socket.destroy();
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
