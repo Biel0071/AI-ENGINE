@@ -39,7 +39,7 @@
       sourceEventId: detail.id || detail.eventId || detail.seq || null,
       occurredAt: detail.occurredAt || detail.timestamp || new Date().toISOString(),
       subject: detail.subject || detail.agentId || detail.jobId || detail.missionId || null,
-      payload: detail.payload || detail.data || null
+      payload: detail.payload || detail.data || detail
     };
     const events = window.FENIX.city.events;
     if (projection.sourceEventId && events.some((item) => item.sourceEventId === projection.sourceEventId)) return;

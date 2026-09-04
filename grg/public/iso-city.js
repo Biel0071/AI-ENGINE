@@ -84,12 +84,33 @@ class IsoCityEngine {
     window.addEventListener('fenix:data', () => this.syncRealData());
     window.addEventListener('fenix-city-event', (event) => {
       this.lastCityEvent = event.detail || null;
+      this._applyCityEvent(this.lastCityEvent);
     });
     window.addEventListener('fenix-city-connection', (event) => {
       this.cityConnectionStatus = event.detail?.status || 'UNKNOWN';
     });
     this.syncRealData();
     this.startLoop();
+  }
+
+  _applyCityEvent(event) {
+    const payload = event?.payload || {};
+    const agentId = payload.agentId || payload.agent?.id || payload.actorId;
+    if (!agentId) return;
+    const agent = this.world.agents.get(String(agentId));
+    if (!agent) return;
+    const active = ['job.started', 'runtime.job.running', 'tool.started'].includes(event.type);
+    const complete = ['job.completed', 'tool.completed'].includes(event.type);
+    if (active) {
+      const station = this.DISTRICTS[agent.district] || this.DISTRICTS.CENTRAL;
+      agent.tx = station.x;
+      agent.ty = station.y;
+      agent.routeActive = true;
+    } else if (complete && agent.homeX != null) {
+      agent.tx = agent.homeX;
+      agent.ty = agent.homeY;
+      agent.routeActive = true;
+    }
   }
 
   _initSimulatedAgents() {
@@ -259,7 +280,9 @@ class IsoCityEngine {
         const district = this.DISTRICTS[a.district] ? a.district : (this.DISTRICTS[template.district] ? template.district : 'CENTRAL');
         const dist = this.DISTRICTS[district] || this.DISTRICTS.CENTRAL;
         const seed = [...id].reduce((n, ch) => n + ch.charCodeAt(0), 0);
-        const agent = this.world.agents.get(id) || { id, x: dist.x + ((seed % 7) - 3) * 0.12, y: dist.y + ((Math.floor(seed / 7) % 7) - 3) * 0.12, tx: dist.x, ty: dist.y, trail: [], walkFrame: 0, walkTimer: 0, wanderTimer: 0, bubbleTimer: 0, bubble: null };
+        const homeX = dist.x + ((seed % 7) - 3) * 0.12;
+        const homeY = dist.y + ((Math.floor(seed / 7) % 7) - 3) * 0.12;
+        const agent = this.world.agents.get(id) || { id, x: homeX, y: homeY, tx: homeX, ty: homeY, homeX, homeY, routeActive: false, trail: [], walkFrame: 0, walkTimer: 0, wanderTimer: 0, bubbleTimer: 0, bubble: null };
         Object.assign(agent, {
           id,
           name: a.name || template.name,
@@ -350,7 +373,7 @@ class IsoCityEngine {
 
   _updateAgent(agent, delta) {
     const isWorking = agent.status === 'WORKING' || agent.status === 'RUNNING';
-    if (agent.isReal) { agent.tx = agent.x; agent.ty = agent.y; }
+    if (agent.isReal && !agent.routeActive) { agent.tx = agent.x; agent.ty = agent.y; }
 
     // Walk animation
     agent.walkTimer += delta;
@@ -372,6 +395,8 @@ class IsoCityEngine {
       agent.y += (dy / dist) * move;
       agent.trail.push({ x: agent.x, y: agent.y, life: 0.6 });
       if (agent.trail.length > 20) agent.trail.shift();
+    } else if (agent.routeActive) {
+      agent.routeActive = false;
     }
 
     // Trail decay
