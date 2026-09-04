@@ -106,9 +106,30 @@
 
 @media (max-width: 1440px) {
   .fenix-os-layout > .main-body { padding-right: 0; }
+  /* The command view is nested in .views-container. Without an explicit flex
+     basis it shrink-wraps around the contextual rail at laptop widths. */
+  .views-container > .view {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+  .views-container > .view > .orch-body-row { width: 100%; min-width: 0; }
   /* Keep the city wide at laptop/desktop widths. The contextual rail remains
      reachable as an overlay instead of stealing the operating surface width. */
   .fenix-os-layout > .orch-right-column {
+    position: fixed;
+    top: 58px;
+    right: 12px;
+    bottom: 40px;
+    width: min(320px, calc(100vw - 24px));
+    z-index: 30;
+    transform: translateX(calc(100% + 20px));
+    transition: transform .2s ease;
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 14px;
+    box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  }
+  .views-container > .view > .orch-right-column {
     position: fixed;
     top: 58px;
     right: 12px;
@@ -132,6 +153,19 @@
 
 @media (max-width: 1180px) {
   .fenix-os-layout > .main-body { padding-right: 0; }
+  .fenix-orchestrator-layout .orch-body-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fenix-orchestrator-layout .orch-body-row > .orch-center-area {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+  /* Context cards are secondary at laptop/tablet widths. Keeping them as
+     flex siblings steals the operating surface and shrink-wraps AI City.
+     They remain available through Missions/Agents navigation. */
+  .views-container > .orch-missions-card,
+  .views-container > .orch-inspector-card { display: none !important; }
   .fenix-os-layout > .orch-right-column {
     position: fixed;
     top: auto;
@@ -146,6 +180,8 @@
   .orch-right-column { transform: translateX(calc(100% + 20px)); transition: transform .2s ease; }
   .orch-right-column:hover,
   .orch-right-column:focus-within { transform: translateX(0); }
+  .views-container > .view > .orch-right-column:hover,
+  .views-container > .view > .orch-right-column:focus-within { transform: translateX(0); }
   .orch-center-area { padding-right: 12px; }
   .fenix-os-layout > .view,
   body > .view { right: 0; }
