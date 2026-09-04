@@ -1,0 +1,135 @@
+/* FÊNIX premium cockpit layout layer.
+   Keeps the canonical DOM and runtime bindings intact while giving the command
+   workspace a stable, readable hierarchy at desktop, tablet and mobile sizes. */
+
+.fenix-os-layout > .main-body { padding-right: 0; }
+
+/* The rail belongs to the command view's own body row. The legacy shell rule
+   was subtracting it a second time, leaving the canvas only a few hundred px. */
+.views-container > #view-command {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+}
+
+.fenix-os-layout > .orch-right-column {
+  width: 360px;
+}
+
+.orch-center-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.orch-city-zone {
+  height: clamp(330px, 43vh, 500px);
+  min-height: 330px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.2);
+}
+
+.orch-city-toolbar,
+.orch-city-ribbon {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.orch-city-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.orch-bottom-trio {
+  grid-template-columns: minmax(360px, 1.7fr) minmax(220px, .95fr) minmax(220px, .95fr);
+  min-height: 320px;
+  flex: 0 0 320px;
+  padding: 0;
+  background: transparent;
+}
+
+.orch-chat-card,
+.orch-missions-card,
+.orch-inspector-card {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 14px;
+  box-shadow: 0 14px 36px rgba(0,0,0,.18);
+}
+
+.orch-chat-card { min-height: 320px; }
+
+.orch-right-column {
+  padding: 10px;
+  gap: 10px;
+  background: rgba(7,11,22,.98);
+}
+
+.orch-right-quad-grid {
+  padding: 0;
+  gap: 10px;
+}
+
+@media (max-width: 1440px) {
+  .fenix-os-layout > .main-body { padding-right: 0; }
+  .fenix-os-layout > .orch-right-column { width: 320px; }
+  .fenix-os-layout > .view,
+  body > .view { right: 320px; }
+  .orch-bottom-trio {
+    grid-template-columns: minmax(340px, 1.5fr) minmax(205px, .9fr) minmax(205px, .9fr);
+  }
+}
+
+@media (max-width: 1180px) {
+  .fenix-os-layout > .main-body { padding-right: 0; }
+  .fenix-os-layout > .orch-right-column {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: 40px;
+    width: min(430px, calc(100vw - 24px));
+    max-height: min(58vh, 520px);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 14px;
+    box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  }
+  .orch-right-column { transform: translateX(calc(100% + 20px)); transition: transform .2s ease; }
+  .orch-right-column:hover,
+  .orch-right-column:focus-within { transform: translateX(0); }
+  .orch-center-area { padding-right: 12px; }
+  .fenix-os-layout > .view,
+  body > .view { right: 0; }
+}
+
+@media (max-width: 760px) {
+  .orch-city-zone { height: 330px; min-height: 300px; }
+  .orch-city-toolbar { align-items: flex-start; gap: 6px; }
+  .orch-city-controls { gap: 3px; }
+  .orch-city-controls .orch-tool-btn { padding: 4px 6px; font-size: 9px; }
+  .orch-bottom-trio {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 0 0 auto;
+  }
+  .orch-chat-card,
+  .orch-missions-card,
+  .orch-inspector-card { min-height: 280px; }
+  .orch-ribbon-counters { gap: 8px; overflow-x: auto; white-space: nowrap; }
+  .orch-city-ribbon { overflow: hidden; }
+  .orch-telemetry-strip { display: none; }
+}
+
+@media (max-width: 480px) {
+  .orch-center-area { padding: 6px; }
+  .orch-city-zone { border-radius: 10px; }
+  .orch-chat-avatar-pane { width: 58px; padding: 6px; }
+  .orch-chat-hero-avatar { width: 42px; height: 42px; font-size: 20px; }
+  .orch-bottom-trio { gap: 8px; }
+}
