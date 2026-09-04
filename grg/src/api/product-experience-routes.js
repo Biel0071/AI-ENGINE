@@ -1331,13 +1331,17 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       const jobs = (state.runtimeJobs || []).filter((job) => job.tenantId === context.tenantId && (job.agentId === registered.id || job.agent?.agentId === registered.id));
       const activeJob = jobs.find((job) => ['RUNNING', 'DISPATCHED'].includes(job.status));
       const logs = (state.missionEvents || []).filter((event) => event.tenantId === context.tenantId && (event.agentId === registered.id || event.payload?.agentId === registered.id)).slice(-20);
+      const projects = workspaceManager ? workspaceManager.listProjects() : [];
+      const memories = (state.memories || state.memoryEvents || []).filter((item) => item.tenantId === context.tenantId && (item.agentId === registered.id || item.actorId === registered.id || item.scopeId === registered.id));
       sendJson(res, 200, { success: true, agent: {
         id: registered.id, agentId: registered.id, name: registered.name,
         role: registered.domain || registered.name, domain: registered.domain,
         status: activeJob ? 'RUNNING' : 'AVAILABLE', heartbeat: activeJob ? 'ONLINE' : 'IDLE',
         currentJob: activeJob ? { id: activeJob.id, name: activeJob.prompt || activeJob.type || activeJob.name, progress: activeJob.progress || 0 } : null,
         skills: registered.tools || [], permissions: registered.permissions || [], logs,
-        workspace: registered.workspace || null, description: registered.description || null,
+        workspace: registered.workspace || (projects.length ? { available: true, projects } : { available: false, reason: 'Nenhum workspace registrado' }),
+        memory: { available: true, entries: memories.length, recent: memories.slice(-10) },
+        description: registered.description || null,
       } });
       return true;
     }

@@ -358,15 +358,16 @@
           <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">JOB</div><div class="orch-modal-data-val">${esc(currentJob?.name || currentJob?.id || 'Nenhum')}</div></div>
           <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">DISTRITO</div><div class="orch-modal-data-val">${esc(ag?.district || 'Não publicado')}</div></div>
           <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">FERRAMENTA</div><div class="orch-modal-data-val">${esc(ag?.currentTool || currentJob?.tool || 'Não publicada')}</div></div>
-          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">PROJETO</div><div class="orch-modal-data-val">${esc(ag?.associatedProject || ag?.project || 'Não publicado')}</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">PROJETO</div><div class="orch-modal-data-val">${esc(ag?.associatedProject || ag?.project || (ag?.workspace?.projects || [])[0]?.name || 'Nenhum workspace')}</div></div>
           <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">UPTIME</div><div class="orch-modal-data-val">${ag?.uptimeMinutes == null ? 'Não publicado' : `${ag.uptimeMinutes} min`}</div></div>
         </div>
       </div>
       <div class="orch-modal-section"><div class="orch-modal-section-title">Skills registradas</div><div class="orch-modal-data-item">${agentSkills.length ? agentSkills.map(esc).join(' · ') : 'Nenhuma skill publicada.'}</div></div>
       <div class="orch-modal-section"><div class="orch-modal-section-title">Atividade publicada</div><div style="max-height:130px;overflow:auto;font-family:var(--fenix-font-mono);font-size:9px;">${agentLogs.length ? agentLogs.map((log) => `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05);">${esc(log.message || log.action || log.type || log)}</div>`).join('') : 'Nenhum log publicado pelo runtime.'}</div></div>
+      <div class="orch-modal-section"><div class="orch-modal-section-title">Memória operacional</div><div style="font-family:var(--fenix-font-mono);font-size:9px;color:var(--fenix-text-dim);">${ag?.memory?.available ? `${ag.memory.entries} registros publicados pelo runtime.` : 'Memória não publicada pelo runtime.'}</div></div>
       <div class="orch-modal-section">
         <div class="orch-modal-section-title">Workspace autorizado</div>
-        <div style="font-family:var(--fenix-font-mono);font-size:9px;color:var(--fenix-text-dim);">${esc(ag?.workspace || ag?.targetFile || 'Arquivos, Git, terminal e memória não publicados pelo runtime deste agente.')}</div>
+        <div style="font-family:var(--fenix-font-mono);font-size:9px;color:var(--fenix-text-dim);">${ag?.workspace?.available ? esc((ag.workspace.projects || []).map((p) => `${p.name} (${p.rootPath})`).join(' · ') || 'Workspace registrado sem projetos') : esc(ag?.workspace?.reason || ag?.targetFile || 'Workspace não publicado pelo runtime deste agente.')}</div>
       </div>`;
     const footer = `<button class="orch-inspect-btn" id="modalDeskLogs">LOGS</button><button class="orch-inspect-btn" id="modalDeskSkills">SKILLS</button><button class="orch-inspect-btn" id="modalDeskTerminal">TERMINAL</button><button class="orch-inspect-btn" id="modalDeskMemory">MEMÓRIA</button><button class="orch-inspect-btn" id="modalDeskProject">PROJETO</button><button class="orch-inspect-btn" id="modalDeskClose">FECHAR</button>`;
     openModal(title, body, footer);
