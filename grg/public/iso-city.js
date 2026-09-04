@@ -132,6 +132,15 @@ class IsoCityEngine {
         window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: this.state.selectedAgent } }));
       }
     });
+    this.canvas.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      const target = this.state.hoveredAgent || this.state.selectedAgent;
+      if (target) {
+        this.state.selectedAgent = target;
+        window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: target } }));
+      }
+    });
     // Double-click to reset camera
     this.canvas.addEventListener('dblclick', () => {
       this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
