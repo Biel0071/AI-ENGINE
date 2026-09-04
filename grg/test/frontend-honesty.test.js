@@ -62,6 +62,12 @@ test('frontend: heatmap não inicia com telemetria fabricada', () => {
   assert.match(grid, /Aguardando amostras de telemetria/);
 });
 
+test('frontend: uptime do topo vem do runtime, não do relógio local', () => {
+  const command = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'command-center.js'), 'utf8');
+  assert.match(command, /live\.uptime == null \? '—' : formatTime\(live\.uptime\)/);
+  assert.doesNotMatch(command, /const uptimeStart = Date\.now\(\)/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');

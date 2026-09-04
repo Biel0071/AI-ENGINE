@@ -1168,19 +1168,6 @@
     });
   });
 
-  // === UPTIME COUNTER ===
-  const uptimeStart = Date.now();
-  function updateUptime() {
-    const el = document.getElementById('kpiUptime');
-    if (!el) return;
-    const secs = Math.floor((Date.now() - uptimeStart) / 1000);
-    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-    const s = String(secs % 60).padStart(2, '0');
-    el.textContent = `${h}:${m}:${s}`;
-  }
-  setInterval(updateUptime, 1000);
-
   // === SISTEMA DE TELEMETRY REAL — CPU approx via requestAnimationFrame timing ===
   let _rafLast = performance.now();
   let _cpuLoad = 0;
