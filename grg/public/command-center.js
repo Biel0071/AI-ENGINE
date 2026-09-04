@@ -1085,10 +1085,12 @@
   document.addEventListener('fenix-live', () => {
     renderPanels();
     updateAgentInspector(selectedAgentId);
+    refreshSystemHealth();
   });
   document.addEventListener('fenix:data', () => {
     renderPanels();
     updateAgentInspector(selectedAgentId);
+    refreshSystemHealth();
   });
 
   setInterval(renderPanels, 3000);
