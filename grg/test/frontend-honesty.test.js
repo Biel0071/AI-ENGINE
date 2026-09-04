@@ -73,3 +73,16 @@ test('ai city: deep links suportam entidades do snapshot', () => {
   assert.match(city, /focusMission\(mission\)/);
   assert.match(city, /focusJob\(job\)/);
 });
+
+test('ai city: LIST VIEW é acessível e usa as entidades sincronizadas', () => {
+  const html = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+  const command = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'command-center.js'), 'utf8');
+  const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
+  assert.match(html, /id="btnCityListView"[^>]*aria-pressed/);
+  assert.match(html, /id="cityListView"[^>]*aria-label="Lista textual/);
+  assert.match(command, /data-city-action/);
+  assert.match(command, /agents\.map/);
+  assert.match(command, /missions\.map/);
+  assert.match(command, /jobs\.map/);
+  assert.match(city, /fenix-city-list-requested/);
+});
