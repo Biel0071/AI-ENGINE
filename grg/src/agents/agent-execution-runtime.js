@@ -1,8 +1,14 @@
 class AgentExecutionRuntime {
-  constructor({ aiGateway, workspaceExecutor, events }) { this.ai = aiGateway; this.workspace = workspaceExecutor; this.events = events; }
+  constructor({ aiGateway, workspaceExecutor, events, skillRegistry = null }) { this.ai = aiGateway; this.workspace = workspaceExecutor; this.events = events; this.skills = skillRegistry; }
+  setSkillRegistry(skillRegistry) { this.skills = skillRegistry; return this; }
   async execute(tenantId, actorId, input = {}) {
     const agent = input.agent || {}; const context = input.context || {}; await this.#emit(tenantId, 'agent.selected', input.jobId, { agentId: agent.agentId, provider: agent.provider, model: agent.model });
     await this.#emit(tenantId, 'agent.context.ready', input.jobId, { projectId: input.projectId, missionId: input.missionId, files: context.relevantFiles || [] });
+    let skillContext = null;
+    if (this.skills) {
+      skillContext = await this.skills.contextForAgent(tenantId, actorId, agent, { objective: input.prompt || input.type || agent.role, prompt: input.prompt, maxTokens: input.maxSkillTokens || 900 });
+      for (const skill of skillContext.selectedSkills) await this.#emit(tenantId, 'skill.started', input.jobId, { skillId: skill.id, skillName: skill.name, source: skill.source });
+    }
     const prompt = [`You are ${agent.name || agent.agentId || 'software agent'}.`, 'Return JSON only with operations, tests, validationPassed and commit.', `Job: ${input.prompt || input.type || ''}`, `Project context: ${JSON.stringify(context)}`].join('\n');
     const model = await this.ai.invoke(tenantId, actorId, { taskType: 'generate', prompt, provider: agent.provider && agent.provider !== 'configured-runtime' ? agent.provider : null, model: agent.model || null, format: { type: 'json_object' } });
     await this.#emit(tenantId, 'agent.provider.responded', input.jobId, { provider: model.provider, model: model.model });
@@ -14,11 +20,13 @@ class AgentExecutionRuntime {
     }));
     for (const call of toolCalls) await this.#emit(tenantId, 'agent.tool.call', input.jobId, call);
     try {
-      const result = await this.workspace.execute(tenantId, actorId, { ...plan, projectId: input.projectId, missionId: input.missionId, jobId: input.jobId, agentId: agent.agentId, context });
+      const result = await this.workspace.execute(tenantId, actorId, { ...plan, projectId: input.projectId, missionId: input.missionId, jobId: input.jobId, agentId: agent.agentId, context: { ...context, skillContext } });
+      if (skillContext) for (const skill of skillContext.selectedSkills) await this.#emit(tenantId, 'skill.completed', input.jobId, { skillId: skill.id, skillName: skill.name });
       for (const call of toolCalls) await this.#emit(tenantId, 'agent.tool.result', input.jobId, { ...call, status: 'SUCCEEDED' });
       return { ...result, toolCalls, provider: model.provider, model: model.model, agentResponse: { text: model.text, cached: model.cached === true } };
     } catch (error) {
       for (const call of toolCalls) await this.#emit(tenantId, 'agent.tool.result', input.jobId, { ...call, status: 'FAILED', error: String(error.message || error).slice(0, 500) });
+      if (skillContext) for (const skill of skillContext.selectedSkills) await this.#emit(tenantId, 'skill.failed', input.jobId, { skillId: skill.id, skillName: skill.name, error: String(error.message || error).slice(0, 500) });
       await this.#emit(tenantId, 'agent.execution.failed', input.jobId, { error: String(error.message || error).slice(0, 500) });
       throw error;
     }

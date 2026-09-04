@@ -543,6 +543,7 @@ async function createApp(options = {}) {
     env: runtimeEnv,
     extraPaths: options.skillPaths || [],
   });
+  app.agentExecutionRuntime.setSkillRegistry(app.skillRegistry);
   app.agentSwarm = new AgentSwarm({ store, bus, controlPlane, fabricEvents, skillRegistry: app.skillRegistry });
   app.vpsOps = new VpsOperationsService({ store, bus, controlPlane, approvals });
   app.githubOps = new GitHubOperationsService({ store, bus, controlPlane, repoIntel, digitalTwin, github });
