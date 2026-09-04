@@ -817,6 +817,7 @@
           if (window.fenixCity?.focusAgent) window.fenixCity.focusAgent(aid);
           updateAgentInspector(aid);
           renderPanels();
+          openAgentDeskModal(aid);
         });
       });
     }
