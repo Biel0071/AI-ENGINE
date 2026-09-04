@@ -21,7 +21,7 @@ class AgentWorkspaceExecutor {
     await this.store.update((next) => { next.missionCheckpoints.push(checkpoint); return next; });
     if (this.tools) {
       await this.tools.registerNative(tenantId, { toolId: 'filesystem.write', version: '1.0.0', capabilities: ['filesystem:write'], permissions: ['runtime:execute'], inputSchema: { type: 'object', required: ['operation'] }, timeoutMs: 120_000 }, (operation) => { const normalizedOperation = operation.operation === 'write' ? (fs.existsSync(path.resolve(root, operation.path)) ? 'update' : 'create') : operation.operation; return write.write({ ...operation, operation: normalizedOperation, root: '.', expectedBranch: project.branch || undefined, expectedHead: head, requireClean: operation.requireClean === true }); });
-      await this.tools.registerNative(tenantId, { toolId: 'test.run', version: '1.0.0', capabilities: ['test:run'], permissions: ['runtime:execute'], inputSchema: { type: 'object', required: ['command'] }, timeoutMs: 120_000 }, async ({ command }) => { const normalized = String(command).trim(); if (![...TEST_COMMANDS].some((allowed) => normalized === allowed || normalized.startsWith(`${allowed} `))) throw new Error(`test command is not allowlisted: ${normalized}`); const [executable, ...args] = normalized.split(/\s+/); return run(executable, args, { cwd: root, timeout: 120_000, windowsHide: true }); });
+      await this.tools.registerNative(tenantId, { toolId: 'test.run', version: '1.0.0', capabilities: ['test:run'], permissions: ['runtime:execute'], inputSchema: { type: 'object', required: ['command'] }, timeoutMs: 120_000 }, async ({ command }) => { const normalized = String(command).trim(); if (!isAllowedTestCommand(normalized)) throw new Error(`test command is not allowlisted: ${normalized}`); const [executable, ...args] = normalized.split(/\s+/); return run(executable, args, { cwd: root, timeout: 120_000, windowsHide: true }); });
     }
     const changed = []; const operations = Array.isArray(input.operations) ? input.operations : [];
     for (const operation of operations) { const result = this.tools ? await this.tools.execute(tenantId, actorId, operation.tool || 'filesystem.write', operation, { jobId: input.jobId, missionId: input.missionId, projectId: project.id }) : await write.write({ ...operation, root: '.', expectedBranch: project.branch || undefined, expectedHead: head, requireClean: operation.requireClean === true }); const value = result.result || result; changed.push(value.path || value.to || value.from); }
@@ -30,7 +30,7 @@ class AgentWorkspaceExecutor {
     for (const command of (Array.isArray(input.tests) ? input.tests : [])) {
       const normalized = String(command).trim();
       if (this.tools) { const result = await this.tools.execute(tenantId, actorId, 'test.run', { command: normalized }, { jobId: input.jobId, missionId: input.missionId, projectId: project.id }); tests.push({ command: normalized, passed: true, stdout: result.result?.stdout || '', stderr: result.result?.stderr || '' }); continue; }
-      if (![...TEST_COMMANDS].some((allowed) => normalized === allowed || normalized.startsWith(`${allowed} `))) throw new Error(`test command is not allowlisted: ${normalized}`);
+      if (!isAllowedTestCommand(normalized)) throw new Error(`test command is not allowlisted: ${normalized}`);
       const [executable, ...args] = normalized.split(/\s+/); try { const result = await run(executable, args, { cwd: root, timeout: 120_000, windowsHide: true }); tests.push({ command: normalized, passed: true, stdout: result.stdout || '', stderr: result.stderr || '' }); } catch (error) { testsPassed = false; tests.push({ command: normalized, passed: false, error: String(error.message).slice(0, 2000) }); }
     }
     let commit = null;
@@ -41,3 +41,8 @@ class AgentWorkspaceExecutor {
   }
 }
 module.exports = { AgentWorkspaceExecutor };
+
+function isAllowedTestCommand(command) {
+  if ([...TEST_COMMANDS].some((allowed) => command === allowed || command.startsWith(`${allowed} `))) return true;
+  return /^node\s+(?:[A-Za-z0-9._-]+\/)*[A-Za-z0-9._-]+\.test\.js$/.test(command);
+}
