@@ -612,87 +612,11 @@
                         <i class="ph-fill ph-lightning" style="color: var(--fenix-purple);"></i>
                         <span>SKILLS ATIVAS DO SISTEMA</span>
                       </div>
-                      <span class="orch-status-pill online" style="font-size: 8px;" id="skillsCountBadge">7 SKILLS</span>
+                      <span class="orch-status-pill" style="font-size: 8px;" id="skillsCountBadge">—</span>
                     </div>
-                    <!-- Lista de 7 skills — estrutura preparada para dados reais via data-skill-id -->
+                    <!-- Populated by runtime when registered skills are published -->
                     <div class="orch-skills-list" id="orchActiveSkillsList">
-
-                      <!-- Skill 1: Análise de Código -->
-                      <div class="orch-skill-row" data-skill-id="code-analysis">
-                        <span class="orch-skill-name">🔍 Análise de Código</span>
-                        <div class="orch-skill-meter">
-                          <span class="orch-skill-lv" style="color: var(--fenix-green);">Lv.9</span>
-                          <div class="orch-skill-bar">
-                            <div class="orch-skill-bar-fill" style="width: 90%; background: linear-gradient(90deg, #10b981, #34d399);"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Skill 2: Geração de Código -->
-                      <div class="orch-skill-row" data-skill-id="code-generation">
-                        <span class="orch-skill-name">⚙️ Geração de Código</span>
-                        <div class="orch-skill-meter">
-                          <span class="orch-skill-lv" style="color: var(--fenix-cyan);">Lv.8</span>
-                          <div class="orch-skill-bar">
-                            <div class="orch-skill-bar-fill" style="width: 82%; background: linear-gradient(90deg, #06b6d4, #67e8f9);"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Skill 3: Testes Automatizados -->
-                      <div class="orch-skill-row" data-skill-id="automated-tests">
-                        <span class="orch-skill-name">🧪 Testes Automatizados</span>
-                        <div class="orch-skill-meter">
-                          <span class="orch-skill-lv" style="color: var(--fenix-amber);">Lv.8</span>
-                          <div class="orch-skill-bar">
-                            <div class="orch-skill-bar-fill" style="width: 80%; background: linear-gradient(90deg, #f59e0b, #fcd34d);"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Skill 4: Arquitetura -->
-                      <div class="orch-skill-row" data-skill-id="architecture">
-                        <span class="orch-skill-name">🏗️ Arquitetura</span>
-                        <div class="orch-skill-meter">
-                          <span class="orch-skill-lv" style="color: var(--fenix-purple);">Lv.7</span>
-                          <div class="orch-skill-bar">
-                            <div class="orch-skill-bar-fill" style="width: 75%; background: linear-gradient(90deg, #8b5cf6, #c4b5fd);"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Skill 5: Deploy & DevOps -->
-                      <div class="orch-skill-row" data-skill-id="devops">
-                        <span class="orch-skill-name">🚀 Deploy &amp; DevOps</span>
-                        <div class="orch-skill-meter">
-                          <span class="orch-skill-lv" style="color: var(--fenix-red);">Lv.6</span>
-                          <div class="orch-skill-bar">
-                            <div class="orch-skill-bar-fill" style="width: 65%; background: linear-gradient(90deg, #ef4444, #fca5a5);"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Skill 6: Database Design -->
-                      <div class="orch-skill-row" data-skill-id="database-design">
-                        <span class="orch-skill-name">💾 Database Design</span>
-                        <div class="orch-skill-meter">
-                          <span class="orch-skill-lv" style="color: #64748b;">Lv.7</span>
-                          <div class="orch-skill-bar">
-                            <div class="orch-skill-bar-fill" style="width: 72%; background: linear-gradient(90deg, #64748b, #94a3b8);"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Skill 7: UX Design -->
-                      <div class="orch-skill-row" data-skill-id="ux-design">
-                        <span class="orch-skill-name">🎨 UX Design</span>
-                        <div class="orch-skill-meter">
-                          <span class="orch-skill-lv" style="color: #ec4899;">Lv.5</span>
-                          <div class="orch-skill-bar">
-                            <div class="orch-skill-bar-fill" style="width: 55%; background: linear-gradient(90deg, #ec4899, #f9a8d4);"></div>
-                          </div>
-                        </div>
-                      </div>
+                      <div style="font-size: 8.5px; color: var(--fenix-text-dim); padding: 8px;">Skills não publicadas pelo runtime.</div>
 
                     </div>
                     <!-- Botão VER TODAS SKILLS -->
@@ -718,7 +642,7 @@
               </div>
               <div class="orch-footer-meta">
                 <span>MEMÓRIA ATIVA: <b id="footerActiveMemory">NÃO PUBLICADO</b></span>
-                <span>APRENDIZADO CONTÍNUO: <b style="color:#10b981;">ATIVO</b></span>
+                <span>APRENDIZADO CONTÍNUO: <b style="color:#94a3b8;">NÃO PUBLICADO</b></span>
               </div>
             </footer>
 
