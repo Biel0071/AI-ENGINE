@@ -371,14 +371,17 @@ class IsoCityEngine {
   async syncRealData() {
     try {
       let apiAgents = [];
-      if (window.FENIX?.live?.agents?.length) {
+      let authoritativeAgents = false;
+      if (Array.isArray(window.FENIX?.live?.agents)) {
         apiAgents = window.FENIX.live.agents;
+        authoritativeAgents = true;
       } else {
         const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
         const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
         const res = await fetch('/runtime/snapshot', { headers }).then(r => r.ok ? r.json() : null).catch(() => null);
-        if (res?.payload?.agents?.length) {
+        if (Array.isArray(res?.payload?.agents)) {
           apiAgents = res.payload.agents;
+          authoritativeAgents = true;
           if (window.FENIX?.live) window.FENIX.live.agents = apiAgents;
         } else if (window.state?.api?.agentsPanel?.agents?.length) {
           apiAgents = window.state.api.agentsPanel.agents;
@@ -418,7 +421,7 @@ class IsoCityEngine {
         });
         next.set(id, agent);
       }
-      if (next.size > 0) {
+      if (authoritativeAgents) {
         this.world.agents = next;
       }
     } catch(e) {}
