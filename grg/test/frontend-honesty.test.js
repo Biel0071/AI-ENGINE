@@ -55,6 +55,13 @@ test('frontend: o painel principal consome API de verdade', () => {
   assert.equal(app.classification, 'honest');
 });
 
+test('frontend: heatmap não inicia com telemetria fabricada', () => {
+  const html = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+  const grid = html.match(/id="orchHeatmapGrid"[\s\S]*?<\/div>/)?.[0] || '';
+  assert.doesNotMatch(grid, /orch-heat-cell\s+lv-/);
+  assert.match(grid, /Aguardando amostras de telemetria/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');
