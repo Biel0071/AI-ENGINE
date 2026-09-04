@@ -89,7 +89,7 @@ class IsoCityEngine {
     window.addEventListener('fenix-city-connection', (event) => {
       this.cityConnectionStatus = event.detail?.status || 'UNKNOWN';
     });
-    this.syncRealData();
+    this.syncRealData().then(() => this._applyDeepLink()).catch(() => {});
     this.startLoop();
   }
 
@@ -231,6 +231,38 @@ class IsoCityEngine {
       this._updateZoomDisplay();
       window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: target } }));
     }
+  }
+
+  focusMission(missionId) {
+    if (!missionId) return;
+    const agent = [...this.world.agents.values()].find((candidate) => {
+      const mission = candidate.currentMission;
+      return String(candidate.missionId || mission?.id || mission?.missionId || '') === String(missionId);
+    });
+    if (!agent) return;
+    this.state.selectedAgent = agent;
+    this.state.followMissionId = String(missionId);
+    this.state.followAgentId = null;
+    window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent } }));
+  }
+
+  focusJob(jobId) {
+    if (!jobId) return;
+    const agent = [...this.world.agents.values()].find((candidate) => {
+      const job = candidate.currentJob;
+      return String(job?.id || job?.jobId || candidate.jobId || '') === String(jobId);
+    });
+    if (agent) this.focusAgent(agent.id);
+  }
+
+  _applyDeepLink() {
+    const query = new URLSearchParams(`${location.search || ''}&${location.hash.includes('?') ? location.hash.split('?')[1] : ''}`);
+    const agent = query.get('agent');
+    const mission = query.get('mission');
+    const job = query.get('job');
+    if (agent) this.focusAgent(agent);
+    else if (mission) this.focusMission(mission);
+    else if (job) this.focusJob(job);
   }
 
   _hitTestAgent(mx, my) {
