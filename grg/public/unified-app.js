@@ -1015,7 +1015,8 @@ function init() {
   refreshAll();
   // O stream SSE cobre mudanças operacionais; polling de 30s é apenas
   // reconciliação de dados, evitando tempestade de requests em telas/iframes.
-  setInterval(() => { if (!document.hidden) refreshAll(); }, 30000);
+  setInterval(() => { if (!document.hidden && String(location.hash.slice(1) || 'command').split('?')[0] === 'operations') refreshAll(); }, 5000);
+  setInterval(() => { if (!document.hidden && String(location.hash.slice(1) || 'command').split('?')[0] !== 'operations') refreshAll(); }, 30000);
 }
 
 function openCommand() {
