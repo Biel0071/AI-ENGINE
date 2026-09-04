@@ -104,7 +104,10 @@ class IsoCityEngine {
     const agentId = payload.agentId || payload.agent?.id || payload.actorId;
     if (!agentId) return;
     const agent = this.world.agents.get(String(agentId));
-    if (!agent) return;
+    if (!agent) {
+      if (event.type === 'agent.created' || event.type === 'agent.online') this.syncRealData();
+      return;
+    }
     if (event.type === 'agent.offline') {
       agent.status = 'OFFLINE';
       agent.routeActive = false;
