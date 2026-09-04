@@ -4,9 +4,11 @@ let accessToken = token;
 const readCache = new Map();
 const READ_CACHE_TTL_MS = 2500;
 
-if (!accessToken) {
-  location.replace('/GRG-login');
-}
+// A valid HttpOnly `fenix_session` cookie may exist even when the bearer token
+// is absent from localStorage (for example after a server restart or a hard
+// reload).  Let the first authenticated API request validate that session;
+// redirecting here made the shell disappear before the canonical bootstrap
+// could recover it.
 
 const $ = (id) => document.getElementById(id);
 window.state = {
