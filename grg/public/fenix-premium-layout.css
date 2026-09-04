@@ -183,6 +183,16 @@
     min-height: 0;
     flex: 0 0 auto;
   }
+  .fenix-orchestrator-layout .orch-bottom-trio {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+  .fenix-orchestrator-layout .orch-bottom-trio > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
   .orch-chat-card,
   .orch-missions-card,
   .orch-inspector-card { min-height: 280px; }
