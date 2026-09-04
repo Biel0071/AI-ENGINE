@@ -404,7 +404,7 @@ class IsoCityEngine {
           emoji: a.emoji || template.emoji,
           district,
           status: a.status ? String(a.status).toUpperCase() : 'NÃO PUBLICADO',
-          workMsg: a.currentJob?.name || a.currentJob?.title || a.activity || (a.status ? 'atividade publicada' : 'atividade não publicada'),
+          workMsg: a.currentJob?.name || a.currentJob?.title || a.activity || 'atividade não publicada',
           model: a.model || a.modelName || 'Não publicado',
           isReal: true,
           currentJob: a.currentJob || null,
