@@ -1149,7 +1149,7 @@
     updateAgentInspector(selectedAgentId);
     refreshSystemHealth();
   });
-  document.addEventListener('fenix-agent-selected', (event) => {
+  window.addEventListener('fenix-agent-selected', (event) => {
     const agentId = event.detail?.agentId;
     if (agentId) openAgentDeskModal(agentId);
   });
