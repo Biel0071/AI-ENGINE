@@ -26,6 +26,24 @@
            window.__FENIX_TOKEN__ || null;
   }
 
+  async function refreshRegisteredSkills() {
+    const listEl = document.getElementById('orchActiveSkillsList');
+    if (!listEl) return;
+    const result = await apiCall('/api/skills');
+    const skills = Array.isArray(result) ? result : (result?.skills || result?.items || []);
+    const badge = document.getElementById('skillsCountBadge');
+    if (badge) badge.textContent = skills.length ? `${skills.length} SKILLS` : '—';
+    if (!skills.length) {
+      listEl.innerHTML = '<div style="font-size:8.5px;color:var(--fenix-text-dim);padding:8px;">Skills não publicadas pelo runtime.</div>';
+      return;
+    }
+    listEl.innerHTML = skills.slice(0, 7).map((skill) => {
+      const name = skill.name || skill.id || 'Skill sem nome publicado';
+      const level = skill.level ?? skill.version ?? null;
+      return `<div class="orch-skill-row" data-skill-id="${esc(skill.id || name)}"><span class="orch-skill-name">${esc(name)}</span><span class="orch-skill-lv">${esc(level == null ? '—' : `Lv.${level}`)}</span></div>`;
+    }).join('');
+  }
+
   // Helper para chamadas autenticadas à API canônica
   async function apiCall(path, method = 'GET', data = null) {
     if (Date.now() < apiBackoffUntil) return null;
@@ -995,6 +1013,7 @@
     setupActions();
     updateAgentInspector(selectedAgentId);
     renderPanels();
+    refreshRegisteredSkills();
   });
 
   window.addEventListener('fenix-live', () => {
@@ -1007,6 +1026,7 @@
   });
 
   setInterval(renderPanels, 3000);
+  setInterval(refreshRegisteredSkills, 10000);
   // === SYSTEM HEALTH BAR (REAL DATA) ===
   async function refreshSystemHealth() {
     try {
