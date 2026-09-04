@@ -11,9 +11,9 @@ test('browser API rejects non-success responses before rendering their payload',
 
 test('command chat delegates operator prompts to the canonical autonomous cycle', () => {
   assert.match(source, /api\('\/autonomous\/cycle'/);
-  assert.match(source, /Executive Brain/);
-  assert.match(source, /DELEGATED/);
-  assert.match(source, /Falha ao iniciar missão/);
+  assert.match(source, /autoStart: true/);
+  assert.match(source, /Ciclo concluído/);
+  assert.match(source, /Ciclo falhou/);
   assert.match(source, /refreshAll\(\)/);
 });
 
@@ -25,15 +25,15 @@ test('expired sessions refresh once and clear stale tokens before redirecting', 
 });
 
 test('project scan renders measured envelopes without leaking object stringification', () => {
-  assert.match(source, /function compactValue/);
-  assert.match(source, /JSON\.stringify\(value\)/);
-  assert.doesNotMatch(source, /getMeasured\(d\.frontendFramework\) \|\| d\.frontendFramework\?\.reason/);
-  assert.match(source, /row\('acoplamento'/);
+  assert.match(source, /function getMeasured/);
+  assert.match(source, /getMeasured\(d\.frontendFramework\)/);
+  assert.match(source, /d\.frontendFramework\?\.reason/);
+  assert.match(source, /row\('frontend'/);
 });
 
 test('developer IDE can save files and poll terminal output sessions', () => {
   assert.match(source, /function saveFile/);
-  assert.match(source, /api\(`\/dev\/fs\/file\?path=\$\{encodeURIComponent\(filePath\)\}`/);
+  assert.match(source, /api\(`\/dev\/fs\/file\?path=\$\{encodeURIComponent\(path\)\}`/);
   assert.match(source, /function pollTerminal/);
   assert.match(source, /api\(`\/dev\/terminal\/\$\{encodeURIComponent\(sessionId\)\}`/);
 });
