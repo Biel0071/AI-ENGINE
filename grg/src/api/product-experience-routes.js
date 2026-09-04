@@ -1001,6 +1001,10 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     };
 
     sendSse('connected', { status: 'CONNECTED', timestamp: new Date().toISOString() });
+    // Some Node/browser combinations buffer very small SSE frames even after
+    // flushHeaders/flush. Padding the handshake forces the initial connection
+    // event onto the wire without changing the event contract.
+    res.write(`: ${' '.repeat(2048)}\n\n`);
     if (typeof res.flush === 'function') res.flush();
 
     const unsubList = [];
