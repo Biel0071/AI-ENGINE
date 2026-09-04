@@ -700,8 +700,15 @@
     // terminal mission is shown only after the operator explicitly selects it;
     // otherwise the overlay represents the current runtime, or stays hidden.
     const selectedMission = missions.find(m => String(m.id) === String(selectedMissionId));
-    const activeMission = selectedMission ||
-                          missions.find(m => ['RUNNING', 'IN_PROGRESS', 'PAUSED', 'AWAITING_APPROVAL'].includes(String(m.status || '').toUpperCase()));
+    const selectedStatus = String(selectedMission?.status || '').toUpperCase();
+    const selectedHasLiveJob = selectedMission && jobs.some(j => j.missionId === selectedMission.id && ['QUEUED', 'STARTING', 'RUNNING', 'PAUSED'].includes(String(j.status || '').toUpperCase()));
+    // A previous auto-selected approval request must not mask a newer real
+    // mission after a refresh. Preserve an explicitly live selection, then
+    // project the newest runtime record (including a terminal result).
+    const activeMission = (selectedMission && ['RUNNING', 'IN_PROGRESS', 'PAUSED'].includes(selectedStatus) && selectedHasLiveJob)
+      ? selectedMission
+      : [...missions].sort((a, b) => Date.parse(b.updatedAt || b.completedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.completedAt || a.createdAt || 0))[0]
+        || missions.find(m => ['RUNNING', 'IN_PROGRESS', 'PAUSED', 'AWAITING_APPROVAL'].includes(String(m.status || '').toUpperCase()));
 
     const floatMissionCard = document.getElementById('floatingMissionCard');
     if (floatMissionCard) {
