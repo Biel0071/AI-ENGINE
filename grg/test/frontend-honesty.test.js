@@ -94,6 +94,12 @@ test('frontend: inspector seleciona agente publicado após snapshot tardio', () 
   assert.match(command, /selectedAgentId = agents\[0\]\.id \|\| agents\[0\]\.agentId \|\| agents\[0\]\.name/);
 });
 
+test('servidor: shell HTML não pode ser armazenado pelo navegador', () => {
+  const server = require('node:fs').readFileSync(path.join(__dirname, '..', 'src', 'server.js'), 'utf8');
+  assert.match(server, /const cacheControl = file\.endsWith\('\.html'\) \? 'no-store, max-age=0' : 'no-cache'/);
+  assert.match(server, /'cache-control': cacheControl/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');
