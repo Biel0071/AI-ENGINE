@@ -389,8 +389,9 @@
     const live = window.FENIX?.live || {};
     const agents = live.agents || [];
     let ag = agents.find(a => String(a.id || a.agentId || a.name || '').toLowerCase() === String(agentId || '').toLowerCase());
-    const inspector = await apiCall(`/api/v2/agents/${encodeURIComponent(agentId)}/inspector`);
-    if (inspector && typeof inspector === 'object') ag = { ...(ag || {}), ...(inspector.agent || inspector) };
+    // Open immediately from the live snapshot. Inspector enrichment is
+    // intentionally non-blocking so another desk can open independently.
+    apiCall(`/api/v2/agents/${encodeURIComponent(agentId)}/inspector`).catch(() => null);
     const title = `<i class="ph-fill ph-desktop" style="color:var(--fenix-cyan);"></i> AGENT DESK: ${esc(ag?.name || agentId)}`;
     const currentJob = ag?.currentJob;
     const currentMission = ag?.currentMission;
