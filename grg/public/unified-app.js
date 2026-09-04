@@ -1,6 +1,8 @@
 const token = window.localStorage?.getItem('grg_token') || null;
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 let accessToken = token;
+const readCache = new Map();
+const READ_CACHE_TTL_MS = 2500;
 
 if (!accessToken) {
   location.replace('/GRG-login');
@@ -54,6 +56,12 @@ async function refreshAccessToken() {
 async function api(path, options = {}, retried = false) {
   if (Date.now() < apiBackoffUntil) throw new Error('API em backoff após limite de requisições');
   const url = path.startsWith('/api') ? path : (path.startsWith('/') ? `/api${path}` : `/api/${path}`);
+  const cacheKey = `${accessToken || 'anonymous'}:${url}`;
+  const method = String(options.method || 'GET').toUpperCase();
+  if (method === 'GET') {
+    const cached = readCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.body;
+  }
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -75,14 +83,19 @@ async function api(path, options = {}, retried = false) {
   }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  if (method === 'GET') readCache.set(cacheKey, { body, expiresAt: Date.now() + READ_CACHE_TTL_MS });
   return body;
 }
 
 async function publicJson(path) {
+  const cacheKey = `${accessToken || 'anonymous'}:public:${path}`;
+  const cached = readCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.body;
   const headers = accessToken ? { authorization: `Bearer ${accessToken}`, Accept: 'application/json' } : {};
   const res = await fetch(path, { headers });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  readCache.set(cacheKey, { body, expiresAt: Date.now() + READ_CACHE_TTL_MS });
   return body;
 }
 
