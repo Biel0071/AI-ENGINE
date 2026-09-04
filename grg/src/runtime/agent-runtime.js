@@ -155,6 +155,21 @@ class AgentRuntime extends SystemModule {
       initialContext: { delegatedBy: callerAgentId, parentTask: caller?.task }
     });
 
+    // O handoff é um fato operacional: só é publicado depois que o agente
+    // destino foi criado com sucesso, para que a cidade nunca anime uma
+    // transferência que não existe no runtime.
+    if (this.eventBus) {
+      await this.eventBus.emit('agent.handoff', {
+        fromAgentId: callerAgentId,
+        toAgentId: subAgentId,
+        toRole: targetRole,
+        task: subTask,
+        projectId: caller?.projectId || 'default',
+        status: 'DISPATCHED',
+        occurredAt: new Date().toISOString(),
+      });
+    }
+
     return this.executeAgent(subAgentId);
   }
 
