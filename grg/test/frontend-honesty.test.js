@@ -68,6 +68,12 @@ test('frontend: uptime do topo vem do runtime, não do relógio local', () => {
   assert.doesNotMatch(command, /const uptimeStart = Date\.now\(\)/);
 });
 
+test('frontend: rail operacional continua acessível em touch', () => {
+  const css = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-premium-layout.css'), 'utf8');
+  assert.match(css, /@media \(max-width: 1180px\) and \(hover: none\)/);
+  assert.match(css, /\.orch-right-column \{ transform: translateX\(0\); \}/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');

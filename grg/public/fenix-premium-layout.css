@@ -135,6 +135,12 @@
   body > .view { right: 0; }
 }
 
+/* Touch screens have no hover gesture; keep the operational rail reachable
+   instead of translating it permanently outside the viewport. */
+@media (max-width: 1180px) and (hover: none) {
+  .orch-right-column { transform: translateX(0); }
+}
+
 @media (max-width: 760px) {
   .orch-city-zone { height: 330px; min-height: 300px; }
   .orch-city-toolbar { align-items: flex-start; gap: 6px; }
