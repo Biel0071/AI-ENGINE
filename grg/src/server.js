@@ -1052,7 +1052,8 @@ function serveStatic(pathname, res) {
   const file = path.resolve(PUBLIC, rel);
   if (!file.startsWith(PUBLIC) || !fs.existsSync(file)) { res.writeHead(404); return res.end('not found'); }
   const type = file.endsWith('.html') ? 'text/html' : file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'application/octet-stream';
-  res.writeHead(200, { 'content-type': `${type}; charset=utf-8` });
+  const cacheControl = file.endsWith('.html') ? 'no-store, max-age=0' : 'no-cache';
+  res.writeHead(200, { 'content-type': `${type}; charset=utf-8`, 'cache-control': cacheControl });
   res.end(fs.readFileSync(file));
 }
 
