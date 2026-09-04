@@ -28,7 +28,6 @@ if ((page.url().includes('GRG-login') || !token) && process.env.FENIX_USER && pr
   if (page.url().includes('GRG-login')) throw new Error('login did not reach application');
 }
 await page.waitForFunction(() => window.FENIX?.ws?.readyState === 1, { timeout: 15000 });
-await page.screenshot({ path: `${outputDir}/command-1440.png`, fullPage: true });
 for (const view of ['agents', 'operations', 'ide', 'memory', 'mcp', 'runtime', 'command']) {
   await page.locator(`[data-nav="${view}"]`).first().click();
   await page.waitForTimeout(350);
@@ -65,6 +64,10 @@ if (publishedAgents > 0) {
   const renderedAgents = await page.locator('#orchActiveAgentsList [data-agent-id]').count();
   if (renderedAgents === 0) throw new Error('snapshot has agents but Command Center rendered none');
 }
+await page.locator('[data-nav="command"]').first().click();
+await page.locator('#view-command').waitFor({ state: 'visible' });
+if (publishedAgents > 0) await page.locator('#orchActiveAgentsList [data-agent-id]').first().waitFor({ state: 'visible' });
+await page.screenshot({ path: `${outputDir}/command-1440.png`, fullPage: true });
 if (consoleErrors.length) throw new Error(`browser errors: ${consoleErrors.join(' | ')}`);
 console.log(JSON.stringify({ ok: true, views: 7, snapshotStatus: snapshot.status, publishedAgents, screenshot: `${outputDir}/command-1440.png` }));
 await browser.close();
