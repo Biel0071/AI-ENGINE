@@ -1029,6 +1029,28 @@ window.__fenixSubmitIdeChat = async function () {
 </script>
 
   <script src='/fenix-evolve.js?v=1'></script>
+  <script id="fenix-platform-ribbon-sync">
+    // Última camada de sincronização do ribbon: usa o endpoint real depois
+    // que todos os bundles terminaram de inicializar.
+    (async function syncPlatformRibbon() {
+      try {
+        const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
+        const response = await fetch('/api/v2/ai-platform/status?bootstrap=' + Date.now(), {
+          cache: 'no-store', credentials: 'same-origin',
+          headers: token ? { Authorization: 'Bearer ' + token } : {}
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        const connected = data.status === 'CONNECTED' || data.status === 'ONLINE';
+        const status = document.getElementById('apiPlatformStatus');
+        const providers = document.getElementById('apiPlatformProviders');
+        const model = document.getElementById('apiPlatformModel');
+        if (status) { status.textContent = connected ? '● CONECTADO' : '● OFFLINE'; status.style.color = connected ? '#10b981' : '#ef4444'; }
+        if (providers) providers.textContent = (data.providers || []).map(p => typeof p === 'string' ? p : p.name).filter(Boolean).join(' · ') || 'Não publicado';
+        if (model) model.textContent = data.model || (data.providers || []).find(p => p && p.model)?.model || 'Não publicado';
+      } catch (_) {}
+    })();
+  </script>
 <script>
 /* =========================================================
  * FENIX CHAT TABS CONTROLLER - T21-T30
