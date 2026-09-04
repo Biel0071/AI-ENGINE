@@ -1,4 +1,5 @@
 const { execFile } = require('node:child_process');
+const fs = require('node:fs');
 const { promisify } = require('node:util');
 const path = require('node:path');
 const { uuid } = require('../kernel/ids');
@@ -19,7 +20,7 @@ class AgentWorkspaceExecutor {
     const checkpoint = { id: uuid(), missionId: input.missionId || null, jobId: input.jobId || null, type: 'AGENT_PRE_WRITE', status: 'VALID', createdAt: new Date().toISOString(), branch: project.branch || null, headCommit: head, workspaceState: { workspace: root }, metadata: { projectId: project.id, agentId: input.agentId || null } };
     await this.store.update((next) => { next.missionCheckpoints.push(checkpoint); return next; });
     if (this.tools) {
-      await this.tools.registerNative(tenantId, { toolId: 'filesystem.write', version: '1.0.0', capabilities: ['filesystem:write'], permissions: ['runtime:execute'], inputSchema: { type: 'object', required: ['operation'] }, timeoutMs: 120_000 }, (operation) => write.write({ ...operation, root: '.', expectedBranch: project.branch || undefined, expectedHead: head, requireClean: operation.requireClean === true }));
+      await this.tools.registerNative(tenantId, { toolId: 'filesystem.write', version: '1.0.0', capabilities: ['filesystem:write'], permissions: ['runtime:execute'], inputSchema: { type: 'object', required: ['operation'] }, timeoutMs: 120_000 }, (operation) => { const normalizedOperation = operation.operation === 'write' ? (fs.existsSync(path.resolve(root, operation.path)) ? 'update' : 'create') : operation.operation; return write.write({ ...operation, operation: normalizedOperation, root: '.', expectedBranch: project.branch || undefined, expectedHead: head, requireClean: operation.requireClean === true }); });
       await this.tools.registerNative(tenantId, { toolId: 'test.run', version: '1.0.0', capabilities: ['test:run'], permissions: ['runtime:execute'], inputSchema: { type: 'object', required: ['command'] }, timeoutMs: 120_000 }, async ({ command }) => { const normalized = String(command).trim(); if (![...TEST_COMMANDS].some((allowed) => normalized === allowed || normalized.startsWith(`${allowed} `))) throw new Error(`test command is not allowlisted: ${normalized}`); const [executable, ...args] = normalized.split(/\s+/); return run(executable, args, { cwd: root, timeout: 120_000, windowsHide: true }); });
     }
     const changed = []; const operations = Array.isArray(input.operations) ? input.operations : [];
