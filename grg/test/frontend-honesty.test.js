@@ -107,6 +107,13 @@ test('servidor: assets estáticos não consomem limite da API', () => {
   assert.match(security, /if \(!isApiRequest\) return \{ allowed: true, requestId \}/);
 });
 
+test('servidor: WebSocket live exige a mesma autenticação do runtime', () => {
+  const server = require('node:fs').readFileSync(path.join(__dirname, '..', 'src', 'server.js'), 'utf8');
+  assert.match(server, /const upgradeUrl = new URL\(request\.url \|\| '\/'/);
+  assert.match(server, /const context = await app\.security\.authenticate\(request\.headers\)/);
+  assert.match(server, /if \(!context\) return socket\.destroy\(\)/);
+});
+
 test('frontend: ações de missão reportam falha sem fingir atualização', () => {
   const command = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'command-center.js'), 'utf8');
   assert.match(command, /encodeURIComponent\(selectedMissionId\)/);

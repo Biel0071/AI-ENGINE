@@ -949,14 +949,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   server.app = app;
 
   const wss = new WebSocketServer({ noServer: true });
-  server.on('upgrade', (request, socket, head) => {
-    if (request.url === '/events') {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
-      });
-    } else {
-      socket.destroy();
-    }
+  server.on('upgrade', async (request, socket, head) => {
+    const upgradeUrl = new URL(request.url || '/', 'http://localhost');
+    if (upgradeUrl.pathname !== '/events') return socket.destroy();
+    const context = await app.security.authenticate(request.headers).catch(() => null);
+    if (!context) return socket.destroy();
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
   });
 
   wss.on('connection', (ws) => {
