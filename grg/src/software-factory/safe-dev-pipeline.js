@@ -69,7 +69,7 @@ class SafeDevPipeline {
         format: 'json',
       });
       await context.stage?.('ai.completed', 45);
-      const plan = parsePlan(ai.text);
+      const plan = normalizePlanPaths(parsePlan(ai.text), sourcePath);
       const changed = await applyPlan(isolated.path, plan, policy);
       if (!changed.length) throw new Error('AI plan produced no safe file changes');
       await context.stage?.('files.changed', 60, { artifacts: [...artifacts, ...changed.map((file) => ({ type: 'file', path: file }))] });
@@ -221,11 +221,23 @@ function parsePlan(text) {
   if (!Array.isArray(plan.files) || plan.files.length > 40) throw new ValidationError('AI implementation plan requires at most 40 files');
   for (const file of plan.files) {
     const candidate = String(file?.path || '').replace(/\\/g, '/');
-    if (!candidate || path.isAbsolute(candidate) || candidate.split('/').includes('..') || candidate.split('/').includes('.git')) {
+    if (!candidate || candidate.split('/').includes('..') || candidate.split('/').includes('.git')) {
       throw new ValidationError(`AI implementation plan contains an unsafe relative path: ${candidate}`);
     }
   }
   return plan;
+}
+
+function normalizePlanPaths(plan, sourcePath) {
+  const sourceRoot = path.resolve(sourcePath);
+  return { ...plan, files: plan.files.map((file) => {
+    const candidate = String(file.path || '').replace(/\\/g, '/');
+    if (!path.isAbsolute(candidate)) return file;
+    const absolute = path.resolve(candidate);
+    const relative = path.relative(sourceRoot, absolute).replace(/\\/g, '/');
+    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new ValidationError(`AI implementation plan absolute path is outside repository: ${candidate}`);
+    return { ...file, path: relative };
+  }) };
 }
 
 async function applyPlan(root, plan, policy) {
