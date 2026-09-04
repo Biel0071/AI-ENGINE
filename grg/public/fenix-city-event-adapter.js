@@ -3,11 +3,18 @@
   'use strict';
   const CITY_EVENT_MAP = Object.freeze({
     'agent.created': { visualState: 'IDLE', location: 'department' },
+    'agent.online': { visualState: 'IDLE', location: 'department' },
+    'agent.offline': { visualState: 'OFFLINE', location: 'department' },
     'agent.status.changed': { visualState: 'status', location: 'department' },
+    'mission.started': { visualState: 'WORKING', location: 'command-center' },
+    'mission.completed': { visualState: 'COMPLETED', location: 'command-center' },
+    'mission.failed': { visualState: 'ERROR', location: 'command-center' },
     'job.started': { visualState: 'WORKING', location: 'execution' },
     'runtime.job.running': { visualState: 'WORKING', location: 'execution' },
     'job.completed': { visualState: 'COMPLETED', location: 'execution' },
     'job.failed': { visualState: 'ERROR', location: 'execution' },
+    'tool.started': { visualState: 'WORKING', location: 'tool-station' },
+    'tool.completed': { visualState: 'COMPLETED', location: 'tool-station' },
     'agent.handoff': { visualState: 'HANDOFF', location: 'communication' },
     'memory.read': { visualState: 'MEMORY', location: 'memory' },
     'memory.write': { visualState: 'MEMORY', location: 'memory' },
