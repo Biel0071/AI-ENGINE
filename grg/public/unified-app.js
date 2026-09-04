@@ -425,7 +425,7 @@ function renderMissions() {
         state.data.missionGraph = await api(`/missions/${encodeURIComponent(item.dataset.missionId)}/graph`);
         if (graph) graph.textContent = JSON.stringify({ source: state.data.missionGraph.source, nodes: state.data.missionGraph.nodes, edges: state.data.missionGraph.edges }, null, 2);
       } catch (error) { if (graph) graph.textContent = `Falha ao carregar DAG: ${error.message}`; }
-      document.dispatchEvent(new CustomEvent('fenix-mission-selected', { detail: { missionId: item.dataset.missionId } }));
+      window.dispatchEvent(new CustomEvent('fenix-mission-selected', { detail: { missionId: item.dataset.missionId } }));
     });
   });
   
@@ -438,7 +438,7 @@ function renderMissions() {
         <div style="color:var(--text-muted); font-size:11px;">${esc(j.objective || j.name || 'Tarefa em andamento...')}</div>
       </div>`).join('')
     : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">├ö├àÔûÆ</span>Sem Jobs ativos</div>';
-  document.querySelectorAll('#jobList [data-job-id]').forEach((item) => item.addEventListener('click', () => document.dispatchEvent(new CustomEvent('fenix-job-selected', { detail: { jobId: item.dataset.jobId } }))));
+  document.querySelectorAll('#jobList [data-job-id]').forEach((item) => item.addEventListener('click', () => window.dispatchEvent(new CustomEvent('fenix-job-selected', { detail: { jobId: item.dataset.jobId } }))));
 
   if ($('missionGraph')) {
     const graph = state.data.missionGraph;
