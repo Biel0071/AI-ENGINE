@@ -214,6 +214,19 @@
    real runtime map receives the visual priority; contextual panels remain
    available below and in the operational rail without competing with it. */
 @media (min-width: 761px) {
+  .fenix-orchestrator-layout {
+    overflow-y: auto;
+  }
+
+  .fenix-orchestrator-layout .orch-body-row {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .fenix-orchestrator-layout .orch-center-area {
+    overflow: visible;
+  }
+
   .fenix-orchestrator-layout .orch-city-zone {
     height: clamp(520px, calc(100vh - 260px), 760px);
     min-height: 520px;
