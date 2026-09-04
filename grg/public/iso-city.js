@@ -44,6 +44,7 @@ class IsoCityEngine {
       hoveredAgent: null,
       hoveredDistrict: null,
       followAgentId: null,
+      followMissionId: null,
       lastTime: performance.now(),
       selectedAgent: null
     };
@@ -149,6 +150,7 @@ class IsoCityEngine {
     document.getElementById('btnResetCamera')?.addEventListener('click', () => {
       this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
       this.state.followAgentId = null;
+      this.state.followMissionId = null;
       this._updateZoomDisplay();
     });
     document.getElementById('btnFollowAgent')?.addEventListener('click', () => {
@@ -157,6 +159,13 @@ class IsoCityEngine {
       this.state.followAgentId = this.state.followAgentId === selected.id ? null : selected.id;
       const button = document.getElementById('btnFollowAgent');
       if (button) button.classList.toggle('active', Boolean(this.state.followAgentId));
+    });
+    document.getElementById('btnFollowMission')?.addEventListener('click', () => {
+      const missionId = this.state.selectedAgent?.currentMission?.id || this.state.selectedAgent?.currentMission?.missionId;
+      if (!missionId) return;
+      this.state.followAgentId = null;
+      this.state.followMissionId = this.state.followMissionId === missionId ? null : missionId;
+      document.getElementById('btnFollowMission')?.classList.toggle('active', Boolean(this.state.followMissionId));
     });
     document.getElementById('btnFullscreenCity')?.addEventListener('click', () => {
       const container = document.getElementById('wsCityContainer') || this.canvas;
@@ -280,6 +289,22 @@ class IsoCityEngine {
 
   update(delta) {
     const followed = this.state.followAgentId && this.world.agents.get(this.state.followAgentId);
+    const missionAgents = this.state.followMissionId
+      ? [...this.world.agents.values()].filter((agent) => {
+        const mission = agent.currentMission;
+        return mission && String(mission.id || mission.missionId) === String(this.state.followMissionId);
+      })
+      : [];
+    if (!followed && missionAgents.length) {
+      const center = missionAgents.reduce((sum, agent) => ({ x: sum.x + agent.x, y: sum.y + agent.y }), { x: 0, y: 0 });
+      center.x /= missionAgents.length;
+      center.y /= missionAgents.length;
+      const tw = this.state.tileSize;
+      const th = this.state.tileSize / 2;
+      this.state.targetCamera.x = -(center.x - center.y) * tw;
+      this.state.targetCamera.y = -(center.x + center.y) * th;
+      this.state.targetCamera.zoom = Math.max(this.state.targetCamera.zoom, 1.2);
+    }
     if (followed) {
       const tw = this.state.tileSize;
       const th = this.state.tileSize / 2;
