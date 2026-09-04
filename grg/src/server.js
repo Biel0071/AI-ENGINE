@@ -333,13 +333,30 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           };
         });
         const agents = (agentPanel.agents && agentPanel.agents.length) ? agentPanel.agents : registeredAgents;
-        const tasks = jobs.flatMap((job) => (Array.isArray(job.microtasks) ? job.microtasks : []).map((task) => ({
+        const jobTasks = jobs.flatMap((job) => (Array.isArray(job.microtasks) ? job.microtasks : []).map((task) => ({
           ...task,
           id: task.id || `${job.id}:task`,
           missionId: task.missionId || job.missionId || null,
           jobId: task.jobId || job.id,
           agentId: task.agentId || job.agentId || job.agent?.agentId || null,
         })));
+        const missionTasks = (state.missionSteps || []).filter((step) => step.tenantId === tenantId).map((step) => ({
+          id: step.id,
+          title: step.key || step.type,
+          type: step.type,
+          status: step.status,
+          missionId: step.missionId,
+          jobId: step.jobId,
+          agentId: step.agent,
+          skill: step.jobType,
+          tool: step.jobType,
+          dependsOn: step.dependsOn || [],
+          input: step.payload || null,
+          output: step.result || null,
+          createdAt: step.createdAt,
+          updatedAt: step.updatedAt,
+        }));
+        const tasks = [...missionTasks, ...jobTasks];
         return sendJson(res, 200, { type: 'runtime.snapshot', payload: {
           serverTime: new Date().toISOString(), status: health.ok ? 'ONLINE' : 'DEGRADED', health,
           uptime: Math.floor(process.uptime()), jobs, tasks, missions, agents, projects, events,
