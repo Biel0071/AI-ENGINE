@@ -235,6 +235,8 @@ class AIPlatformProvider {
     this.model = model || resolveAIPlatformModel(env);
     this.models = this.model ? [this.model] : [];
     this.jobWait = jobWaitConfig(env);
+    this.requestTimeoutMs = Math.max(1000, Number(env.FENIX_AI_REQUEST_TIMEOUT_MS || 15000));
+    this.requestMaxRetries = Math.max(1, Number(env.FENIX_AI_REQUEST_MAX_RETRIES || 1));
   }
 
   get hasKey() {
@@ -330,7 +332,7 @@ class AIPlatformProvider {
   async chat({ model, messages, format = null, temperature = 0.3 }) {
     const payload = { messages, ...(model ? { model } : {}), temperature };
     if (format === 'json') payload.format = 'json';
-    const bruto = await request(this.baseUrl, '/v1/chat', this.#apiKey, payload);
+    const bruto = await request(this.baseUrl, '/v1/chat', this.#apiKey, payload, this.requestTimeoutMs, this.requestMaxRetries);
     const { text: doJob, job } = await this.#resolve(bruto);
     const res = job ? (job.result || {}) : bruto;
     const result = res.result || {};
