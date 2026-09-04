@@ -62,6 +62,9 @@ test('ai city live: atividade e eventos devem ser determinísticos e derivados d
   assert.match(adapter, /CITY_EVENT_MAP/);
   assert.match(adapter, /fenix-live/);
   assert.match(adapter, /sourceEventId/);
+  assert.match(adapter, /'job.created'/);
+  assert.match(adapter, /'human.approval_required'/);
+  assert.match(adapter, /'agent.tool.call'/);
 });
 
 test('runtime: reconexão sincroniza snapshot antes de voltar ao vivo', () => {

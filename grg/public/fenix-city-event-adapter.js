@@ -9,16 +9,20 @@
     'mission.started': { visualState: 'WORKING', location: 'command-center' },
     'mission.completed': { visualState: 'COMPLETED', location: 'command-center' },
     'mission.failed': { visualState: 'ERROR', location: 'command-center' },
+    'job.created': { visualState: 'QUEUED', location: 'command-center' },
+    'job.queued': { visualState: 'QUEUED', location: 'command-center' },
     'job.started': { visualState: 'WORKING', location: 'execution' },
     'runtime.job.running': { visualState: 'WORKING', location: 'execution' },
     'job.completed': { visualState: 'COMPLETED', location: 'execution' },
     'job.failed': { visualState: 'ERROR', location: 'execution' },
     'tool.started': { visualState: 'WORKING', location: 'tool-station' },
     'tool.completed': { visualState: 'COMPLETED', location: 'tool-station' },
+    'agent.tool.call': { visualState: 'WORKING', location: 'tool-station' },
     'agent.handoff': { visualState: 'HANDOFF', location: 'communication' },
     'memory.read': { visualState: 'MEMORY', location: 'memory' },
     'memory.write': { visualState: 'MEMORY', location: 'memory' },
-    'human.required': { visualState: 'WAITING', location: 'approval' }
+    'human.required': { visualState: 'WAITING', location: 'approval' },
+    'human.approval_required': { visualState: 'WAITING', location: 'approval' }
   });
 
   window.FENIX = window.FENIX || {};
