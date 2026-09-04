@@ -170,7 +170,7 @@ class IsoCityEngine {
       if (button) button.classList.toggle('active', Boolean(this.state.followAgentId));
     });
     document.getElementById('btnFollowMission')?.addEventListener('click', () => {
-      const missionId = this.state.selectedAgent?.currentMission?.id || this.state.selectedAgent?.currentMission?.missionId;
+      const missionId = this.state.selectedAgent?.missionId || this.state.selectedAgent?.currentMission?.id || this.state.selectedAgent?.currentMission?.missionId;
       if (!missionId) return;
       this.state.followAgentId = null;
       this.state.followMissionId = this.state.followMissionId === missionId ? null : missionId;
@@ -268,7 +268,8 @@ class IsoCityEngine {
           model: a.model || a.modelName || 'Qwen 2.5 3B',
           isReal: true,
           currentJob: a.currentJob || null,
-          currentMission: a.currentMission || null
+          currentMission: a.currentMission || null,
+          missionId: a.missionId || a.currentMission?.id || a.currentMission?.missionId || null
         });
         next.set(id, agent);
       }
@@ -301,7 +302,8 @@ class IsoCityEngine {
     const missionAgents = this.state.followMissionId
       ? [...this.world.agents.values()].filter((agent) => {
         const mission = agent.currentMission;
-        return mission && String(mission.id || mission.missionId) === String(this.state.followMissionId);
+        const missionId = agent.missionId || mission?.id || mission?.missionId;
+        return missionId && String(missionId) === String(this.state.followMissionId);
       })
       : [];
     if (!followed && missionAgents.length) {
