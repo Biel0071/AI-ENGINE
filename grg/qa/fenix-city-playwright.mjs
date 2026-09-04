@@ -60,6 +60,11 @@ const snapshot = await page.evaluate(async () => {
 if (snapshot.status !== 200) throw new Error(`runtime snapshot returned HTTP ${snapshot.status}`);
 if (!snapshot.body?.payload) throw new Error('runtime snapshot has no payload');
 const publishedAgents = Array.isArray(snapshot.body.payload.agents) ? snapshot.body.payload.agents.length : 0;
+const persistedTasks = Array.isArray(snapshot.body.payload.tasks) ? snapshot.body.payload.tasks : [];
+if (persistedTasks.length) {
+  const malformedTask = persistedTasks.find((task) => !task.id || !task.status || (!task.missionId && !task.jobId));
+  if (malformedTask) throw new Error('runtime snapshot contains a malformed persisted task');
+}
 if (publishedAgents > 0) {
   const renderedAgents = await page.locator('#orchActiveAgentsList [data-agent-id]').count();
   if (renderedAgents === 0) throw new Error('snapshot has agents but Command Center rendered none');
@@ -86,5 +91,5 @@ if (publishedAgents > 0) {
 await page.screenshot({ path: `${outputDir}/command-1440.png`, fullPage: true });
 const unexpectedConsoleErrors = consoleErrors.filter((message) => !/ERR_NETWORK_CHANGED/.test(message));
 if (unexpectedConsoleErrors.length) throw new Error(`browser errors: ${unexpectedConsoleErrors.join(' | ')}`);
-console.log(JSON.stringify({ ok: true, views: 7, snapshotStatus: snapshot.status, publishedAgents, screenshot: `${outputDir}/command-1440.png` }));
+console.log(JSON.stringify({ ok: true, views: 7, snapshotStatus: snapshot.status, publishedAgents, persistedTasks: persistedTasks.length, screenshot: `${outputDir}/command-1440.png` }));
 await browser.close();
