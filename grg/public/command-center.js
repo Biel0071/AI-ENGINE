@@ -14,6 +14,7 @@
   let pendingProposal = null;
   let currentConversationId = null;
   let apiBackoffUntil = 0;
+  let apiPlatformBackoffUntil = 0;
 
   // Helper para obter token autenticado de todas as fontes canônicas
   function getAuthToken() {
@@ -1121,6 +1122,7 @@
 
   async function refreshApiPlatformStatus() {
     if (!commandViewActive()) return;
+    if (Date.now() < apiPlatformBackoffUntil) return;
     const statusEl   = document.getElementById('apiPlatformStatus');
     const provEl     = document.getElementById('apiPlatformProviders');
     const uptimeEl   = document.getElementById('apiPlatformUptime');
@@ -1131,6 +1133,11 @@
         headers: { Authorization: 'Bearer ' + (getAuthToken() || '') },
         signal: AbortSignal.timeout(5000)
       });
+      if (r.status === 429) {
+        const retryAfter = Number(r.headers.get('retry-after') || 10);
+        apiPlatformBackoffUntil = Date.now() + Math.min(Math.max(retryAfter, 5), 60) * 1000;
+        return;
+      }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
       const connected = d.status === 'CONNECTED' || d.status === 'ONLINE';
@@ -1146,7 +1153,11 @@
       // O health do próprio Fênix é a fonte final: evita marcar a API offline
       // por uma falha transitória do endpoint de resumo do cockpit.
       try {
-        const health = await fetch('/health', { signal: AbortSignal.timeout(3000) }).then((r) => r.json());
+        const token = getAuthToken();
+        const health = await fetch('/health', {
+          headers: token ? { Authorization: 'Bearer ' + token } : {},
+          signal: AbortSignal.timeout(3000)
+        }).then((r) => r.json());
         const connected = health.checks?.['ai-providers']?.ok === true;
         if (statusEl) { statusEl.textContent = connected ? '● CONECTADO' : '● OFFLINE'; statusEl.style.color = connected ? '#10b981' : '#ef4444'; }
         if (provEl && connected) provEl.textContent = 'aiplatform · ollama';
