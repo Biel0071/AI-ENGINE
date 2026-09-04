@@ -368,11 +368,14 @@
         <div class="orch-modal-section-title">Workspace autorizado</div>
         <div style="font-family:var(--fenix-font-mono);font-size:9px;color:var(--fenix-text-dim);">${esc(ag?.workspace || ag?.targetFile || 'Arquivos, Git, terminal e memória não publicados pelo runtime deste agente.')}</div>
       </div>`;
-    const footer = `<button class="orch-inspect-btn" id="modalDeskLogs">LOGS</button><button class="orch-inspect-btn" id="modalDeskSkills">SKILLS</button><button class="orch-inspect-btn" id="modalDeskClose">FECHAR</button>`;
+    const footer = `<button class="orch-inspect-btn" id="modalDeskLogs">LOGS</button><button class="orch-inspect-btn" id="modalDeskSkills">SKILLS</button><button class="orch-inspect-btn" id="modalDeskTerminal">TERMINAL</button><button class="orch-inspect-btn" id="modalDeskMemory">MEMÓRIA</button><button class="orch-inspect-btn" id="modalDeskProject">PROJETO</button><button class="orch-inspect-btn" id="modalDeskClose">FECHAR</button>`;
     openModal(title, body, footer);
     document.getElementById('modalDeskClose')?.addEventListener('click', closeModal);
     document.getElementById('modalDeskLogs')?.addEventListener('click', () => openAgentLogsModal(agentId));
     document.getElementById('modalDeskSkills')?.addEventListener('click', () => openAgentSkillsModal(agentId));
+    document.getElementById('modalDeskTerminal')?.addEventListener('click', () => { closeModal(); document.querySelector('[data-nav="terminal"]')?.click(); });
+    document.getElementById('modalDeskMemory')?.addEventListener('click', () => { closeModal(); document.querySelector('[data-nav="memory"]')?.click(); });
+    document.getElementById('modalDeskProject')?.addEventListener('click', () => { closeModal(); document.querySelector('[data-nav="mirror"]')?.click(); });
   }
 
   function openAgentLogsModal(agentId) {
