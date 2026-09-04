@@ -142,6 +142,34 @@
 }
 
 @media (max-width: 760px) {
+  .fenix-os-layout { min-width: 0; overflow-x: hidden; }
+  .orch-topbar { min-width: 0; padding: 0 8px; }
+  .orch-brand { min-width: 0; gap: 7px; }
+  .orch-brand-info { min-width: 0; }
+  .orch-brand-subtitle,
+  .orch-telemetry-strip,
+  .orch-user-titles,
+  .orch-quick-actions { display: none; }
+  .orch-user-section { margin-left: auto; }
+  .main-body { flex-direction: column; min-height: 0; overflow: auto; }
+  .sidebar-nav {
+    width: 100%; height: auto; max-height: 116px; flex: 0 0 auto;
+    flex-direction: row; align-items: stretch; overflow-x: auto; overflow-y: hidden;
+    border-right: 0; border-bottom: 1px solid rgba(255,255,255,.08); padding: 4px;
+  }
+  .sidebar-nav .nav-top { display: flex; flex: 1; gap: 3px; min-width: max-content; }
+  .sidebar-nav .nav-group { display: contents; }
+  .sidebar-nav .nav-group-label,
+  .sidebar-nav .nav-bottom { display: none; }
+  .sidebar-nav .nav-item { width: auto; min-width: 76px; height: 42px; padding: 0 8px; justify-content: center; flex-direction: column; gap: 2px; font-size: 8px; }
+  .sidebar-nav .nav-item i { font-size: 15px; }
+  .views-container { min-height: 0; width: 100%; overflow: visible; }
+  .orch-body-row { display: flex; flex-direction: column; min-width: 0; }
+  .orch-body-row > * { width: 100%; max-width: 100%; }
+  .fenix-os-layout > .view,
+  body > .view { left: 0; right: 0; top: auto; bottom: auto; position: static; width: 100%; min-height: 0; }
+  .fenix-os-layout > .view.active,
+  body > .view.active { display: flex; }
   .orch-city-zone { height: 330px; min-height: 300px; }
   .orch-city-toolbar { align-items: flex-start; gap: 6px; }
   .orch-city-controls { gap: 3px; }
