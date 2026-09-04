@@ -2,7 +2,9 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 
 const baseURL = process.env.FENIX_QA_URL || 'http://127.0.0.1:4400';
-const token = process.env.FENIX_QA_TOKEN || (fs.existsSync('.session_token') ? fs.readFileSync('.session_token', 'utf8').trim() : '');
+// Explicit credentials intentionally bypass the local token cache so a stale
+// session cannot mask the real login/reconnect path.
+const token = process.env.FENIX_QA_TOKEN || (!process.env.FENIX_USER && fs.existsSync('.session_token') ? fs.readFileSync('.session_token', 'utf8').trim() : '');
 const outputDir = 'qa-results/playwright';
 fs.mkdirSync(outputDir, { recursive: true });
 
@@ -16,9 +18,16 @@ const consoleErrors = [];
 page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
 page.on('pageerror', (error) => consoleErrors.push(error.message));
 
-await page.goto(`${baseURL}/app?qa=playwright#command`, { waitUntil: 'domcontentloaded', timeout: 10000 });
+await page.goto(`${baseURL}/app?qa=playwright#command`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 await page.waitForTimeout(1000);
-await page.waitForFunction(() => window.FENIX?.ws?.readyState === 1, { timeout: 8000 });
+if (page.url().includes('GRG-login') && process.env.FENIX_USER && process.env.FENIX_PASSWORD) {
+  await page.fill('#user', process.env.FENIX_USER);
+  await page.fill('#pw', process.env.FENIX_PASSWORD);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL(/\/app/, { timeout: 15000 });
+  await page.waitForTimeout(500);
+}
+await page.waitForFunction(() => window.FENIX?.ws?.readyState === 1, { timeout: 15000 });
 await page.screenshot({ path: `${outputDir}/command-1440.png`, fullPage: true });
 for (const view of ['agents', 'operations', 'ide', 'memory', 'mcp', 'runtime', 'command']) {
   await page.locator(`[data-nav="${view}"]`).first().click();
