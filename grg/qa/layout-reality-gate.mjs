@@ -17,6 +17,7 @@ for (const [width, height] of viewports) {
   for (const view of views) {
     const button = page.locator(`[data-nav="${view}"], [data-view="${view}"]`).first();
     if (await button.count()) await button.click({ timeout: 5000 }).catch(() => {});
+    await page.waitForFunction((viewName) => document.querySelector(`#view-${viewName}.active`), view, { timeout: 5000 }).catch(() => {});
     await page.waitForTimeout(120);
     const measurement = await page.evaluate(({ width: viewportWidth, height: viewportHeight, viewName }) => {
       const active = document.querySelector('.view.active') || document.querySelector(`#view-${viewName}`);
