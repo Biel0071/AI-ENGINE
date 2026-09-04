@@ -73,6 +73,10 @@
       dot.style.color = 'var(--yellow, #facc15)';
       txt.style.color = 'var(--yellow, #facc15)';
       txt.textContent = 'RECONNECTING...';
+    } else if (status === 'SYNCING') {
+      dot.style.color = 'var(--cyan, #22d3ee)';
+      txt.style.color = 'var(--cyan, #22d3ee)';
+      txt.textContent = 'SYNCING...';
     } else if (status === 'OFFLINE') {
       dot.style.color = 'var(--rose, #f43f5e)';
       txt.style.color = 'var(--rose, #f43f5e)';
