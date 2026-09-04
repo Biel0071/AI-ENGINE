@@ -49,6 +49,16 @@ async function handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, 
     return true;
   }
 
+  // Controles operacionais do JobEngine canônico. O roteador legado não
+  // intercepta /api/v2/jobs, portanto esses comandos pertencem aqui.
+  const controlMatch = url.pathname.match(/^\/api\/v2\/jobs\/([^/]+)\/(pause|resume|cancel|retry)$/);
+  if (req.method === 'POST' && controlMatch) {
+    const [, jobId, action] = controlMatch;
+    const job = await app.jobs[action](tenantId, actorId, jobId);
+    sendJson(res, 202, { jobId, status: job.status, job: presentJob(job) });
+    return true;
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/v2/jobs/run-batch') {
     await app.controlPlane.authorize(tenantId, actorId, 'runtime:execute');
     const body = await readJson(req);
