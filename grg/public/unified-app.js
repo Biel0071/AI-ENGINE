@@ -79,7 +79,8 @@ async function api(path, options = {}, retried = false) {
 }
 
 async function publicJson(path) {
-  const res = await fetch(path);
+  const headers = accessToken ? { authorization: `Bearer ${accessToken}`, Accept: 'application/json' } : {};
+  const res = await fetch(path, { headers });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
   return body;
