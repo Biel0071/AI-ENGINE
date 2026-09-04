@@ -492,9 +492,13 @@ class AutonomousJobOrchestrator extends SystemModule {
         this.executeJob(job).catch(err => {
           console.error(`[Worker Error on ${job.id}]:`, err.message);
           job.status = 'FAILED';
+          job.completedAt = new Date().toISOString();
+          job.microtasks.filter(task => task.status === 'RUNNING').forEach(task => { task.status = 'FAILED'; task.error = err.message; });
           job.errors.push(err.message);
+          job.result = { success: false, error: err.message };
           this.runningWorkers.delete(job.id);
           this.dailyMetrics.jobsFailed += 1;
+          if (this.eventBus) this.eventBus.emit('job.failed', { jobId: job.id, error: err.message }).catch(() => {});
         });
       }
     }
@@ -539,9 +543,24 @@ class AutonomousJobOrchestrator extends SystemModule {
           message: `[${task.name}] Iniciando ação no arquivo ${task.targetFile}`
         });
 
+        // Deterministic operational tools run through the canonical executor.
+        // They do not need an LLM and must produce a real workspace/result.
+        if (this.realExecutor && task.type === 'WRITE') {
+          const content = task.content || `console.log(${JSON.stringify(task.expectedOutput || 'FENIX runtime proof')});\n`;
+          this.realExecutor.writeFile(job.projectId, task.targetFile, content);
+          task.tool = 'filesystem.write';
+          task.output = { file: task.targetFile, bytes: Buffer.byteLength(content, 'utf8') };
+        }
+        if (this.realExecutor && task.type === 'TEST') {
+          const testResult = this.realExecutor.runFileTest(job.projectId, task.targetFile);
+          task.tool = 'test.run';
+          task.output = testResult;
+          if (!testResult.success) throw new Error(`Test failed: ${testResult.stderr || 'non-zero exit code'}`);
+        }
+
         // REAL AI Call via ModelRouter (Master Agentic Loop)
         let aiCall = null;
-        if (this.modelRouter && !job.isMockTest) {
+        if (this.modelRouter && !job.isMockTest && !['WRITE', 'TEST'].includes(task.type)) {
           const startTime = Date.now();
           try {
             const contextPayload = {
@@ -602,7 +621,20 @@ class AutonomousJobOrchestrator extends SystemModule {
 
             // If it's a file modification task, update DevelopmentMemory
             if (this.devMemory && task.targetFile) {
-              await this.devMemory.recordEvent(job.projectId, 'FILE_MODIFIED', { file: task.targetFile, agent: task.agent });
+              // DevelopmentMemory's canonical API is record(); keep the
+              // learning event compact and compatible with older callers.
+              if (typeof this.devMemory.recordEvent === 'function') {
+                await this.devMemory.recordEvent(job.projectId, 'FILE_MODIFIED', { file: task.targetFile, agent: task.agent });
+              } else if (typeof this.devMemory.record === 'function') {
+                this.devMemory.record({
+                  category: 'INTEGRATION',
+                  projectId: job.projectId,
+                  title: 'Arquivo modificado por job',
+                  description: `Arquivo ${task.targetFile} atualizado pelo agente ${task.agent || 'runtime'}.`,
+                  filesAffected: [task.targetFile],
+                  source: 'autonomous_job_orchestrator'
+                });
+              }
             }
           } catch (err) {
             console.error(`[Real Execution Failed for ${task.name}]:`, err.message);
@@ -621,32 +653,23 @@ class AutonomousJobOrchestrator extends SystemModule {
               }
             }
 
-            // Fallback for demo stability
-            aiCall = { provider: 'AI Platform', model: 'qwen2.5:3b', purpose: task.name, latencyMs: 120, tokens: 150, timestamp: new Date().toISOString() };
+            // Never report a failed real execution as a successful synthetic AI call.
+            throw err;
           }
-        } else {
-          // Simulate AI Call record on agent for tests
-          aiCall = {
-            provider: 'AI Platform',
-            model: 'qwen2.5:3b',
-            purpose: task.name,
-            latencyMs: 120 + Math.floor(Math.random() * 80),
-            tokens: 180 + Math.floor(Math.random() * 120),
-            timestamp: new Date().toISOString()
-          };
-          await new Promise(r => setTimeout(r, 120));
+        } else if (!['WRITE', 'TEST'].includes(task.type)) {
+          throw new Error('No real model provider available for this task');
         }
 
-        job.modelCalls.push(aiCall);
-        this.aiCallsLog.unshift({ ...aiCall, jobId: job.id });
-        if (this.aiCallsLog.length > 50) this.aiCallsLog.pop();
-
-        this.dailyMetrics.aiRequests += 1;
-        this.dailyMetrics.tokensUsed += aiCall.tokens;
-        this.dailyMetrics.estimatedCostBrl += (aiCall.tokens * 0.00001);
-
+        if (aiCall) {
+          job.modelCalls.push(aiCall);
+          this.aiCallsLog.unshift({ ...aiCall, jobId: job.id });
+          if (this.aiCallsLog.length > 50) this.aiCallsLog.pop();
+          this.dailyMetrics.aiRequests += 1;
+          this.dailyMetrics.tokensUsed += aiCall.tokens;
+          this.dailyMetrics.estimatedCostBrl += (aiCall.tokens * 0.00001);
+          await this.eventBus?.emit('ai.request.completed', { jobId: job.id, model: aiCall.model, tokens: aiCall.tokens });
+        }
         if (this.eventBus) {
-          await this.eventBus.emit('ai.request.completed', { jobId: job.id, model: aiCall.model, tokens: aiCall.tokens });
           await this.eventBus.emit('agent.file.modified', { agent: task.agent, file: task.targetFile });
         }
 

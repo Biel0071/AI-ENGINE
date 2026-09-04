@@ -66,6 +66,18 @@ class RealWorldExecutor {
     return true;
   }
 
+  writeFile(projectId, relPath, content) {
+    return this.applyFilePatch(projectId, relPath, content);
+  }
+
+  runFileTest(projectId, relPath) {
+    const normalized = relPath.replace(/\\/g, '/');
+    if (!/^[\w./-]+\.test\.js$/.test(normalized)) {
+      throw new Error('test.run requires a workspace-relative *.test.js file');
+    }
+    return this.executeTerminal(projectId, `node ${normalized}`);
+  }
+
   readFile(projectId, relPath) {
     const cwd = this.resolveWorkspace(projectId);
     const fullPath = path.join(cwd, relPath);
