@@ -1134,6 +1134,10 @@
     updateAgentInspector(selectedAgentId);
     refreshSystemHealth();
   });
+  document.addEventListener('fenix-agent-selected', (event) => {
+    const agentId = event.detail?.agentId;
+    if (agentId) openAgentDeskModal(agentId);
+  });
 
   setInterval(renderPanels, 3000);
   setInterval(refreshRegisteredSkills, 10000);
