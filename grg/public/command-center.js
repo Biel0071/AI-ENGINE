@@ -433,7 +433,7 @@
         title: 'Evolução Command Center',
         createdAt: new Date().toISOString(),
         messages: [
-          { sender: 'fenix', text: 'Kernel inicializado com 19 agentes reais. Como posso auxiliar nas operações hoje?' }
+          { sender: 'fenix', text: 'Kernel inicializado. Como posso auxiliar nas operações hoje?' }
         ]
       }];
       saveStoredConversations(convs);
@@ -534,12 +534,12 @@
 
     // 1. TOPBAR TELEMETRY
     const activeModelEl = document.getElementById('activeModel');
-    if (activeModelEl) activeModelEl.textContent = live.operationalTwin?.model || 'QWEN 2.5 3B';
+    if (activeModelEl) activeModelEl.textContent = live.operationalTwin?.model || data.overview?.model || 'Não publicado';
 
     const kpiLatencyEl = document.getElementById('kpiLatency');
     if (kpiLatencyEl) {
-      const lat = live.wsLatencyMs ?? 28;
-      kpiLatencyEl.textContent = `${lat}ms`;
+      const lat = live.wsLatencyMs ?? data.overview?.metrics?.latencyMs;
+      kpiLatencyEl.textContent = lat == null ? '—' : `${lat}ms`;
     }
 
     const kpiTokensEl = document.getElementById('kpiTokens');
@@ -563,7 +563,7 @@
     }
 
     const kpiUptimeEl = document.getElementById('kpiUptime');
-    if (kpiUptimeEl) kpiUptimeEl.textContent = formatTime(live.uptime || Math.floor(performance.now() / 1000));
+    if (kpiUptimeEl) kpiUptimeEl.textContent = live.uptime == null ? '—' : formatTime(live.uptime);
 
     // 2. SIDEBAR STATUS CARD
     const sidebarStatusEl = document.getElementById('sidebarFenixStatus');
@@ -616,7 +616,7 @@
         floatJobCard.style.display = 'block';
         floatJobCard.style.cursor = 'pointer';
         const jobIdEl = document.getElementById('floatJobId');
-        if (jobIdEl) jobIdEl.textContent = activeJob.id ? (activeJob.id.length > 8 ? `JOB-${activeJob.id.slice(0,6)}` : activeJob.id) : 'JOB-19';
+        if (jobIdEl) jobIdEl.textContent = activeJob.id ? (activeJob.id.length > 8 ? `JOB-${activeJob.id.slice(0,6)}` : activeJob.id) : 'JOB —';
         const jobAgentEl = document.getElementById('floatJobAgent');
         if (jobAgentEl) jobAgentEl.textContent = (activeJob.agent?.name || activeJob.agentId || 'QA AGENT').toUpperCase();
         const jobTitleEl = document.getElementById('floatJobTitle');
@@ -691,14 +691,14 @@
     if (recentMissionsListEl && missions.length) {
       recentMissionsListEl.innerHTML = missions.slice(0, 6).map(m => {
         const isSel = m.id === selectedMissionId;
-        const pct = m.progress ?? (m.status === 'SUCCEEDED' || m.status === 'COMPLETED' ? 100 : 72);
+        const pct = m.progress ?? (m.status === 'SUCCEEDED' || m.status === 'COMPLETED' ? 100 : null);
         const badgeClass = pct === 100 ? 'done' : (m.status === 'FAILED' ? 'fail' : 'exec');
         return `<div class="orch-mission-item-row ${isSel ? 'active' : ''}" data-mission-id="${m.id}" style="cursor:pointer;">
           <div>
             <div class="orch-mission-item-title">${esc(m.displayName || m.name || 'Missão Fênix')}</div>
             <div style="font-size: 8.5px; color: var(--fenix-text-dim);">${esc(m.objective?.slice(0, 40) || 'Pipeline')}</div>
           </div>
-          <div class="orch-mission-item-badge ${badgeClass}">${pct}%</div>
+          <div class="orch-mission-item-badge ${badgeClass}">${pct == null ? '—' : `${pct}%`}</div>
         </div>`;
       }).join('');
 
@@ -713,7 +713,7 @@
 
     // 6. FOOTER
     const memEl = document.getElementById('footerActiveMemory');
-    if (memEl) memEl.textContent = `${data.overview?.metrics?.memories ?? 124} ITENS`;
+    if (memEl) memEl.textContent = data.overview?.metrics?.memories == null ? 'NÃO PUBLICADO' : `${data.overview.metrics.memories} ITENS`;
   }
 
   // ==========================================
@@ -1156,13 +1156,13 @@
       const d = await r.json();
       const connected = d.status === 'CONNECTED' || d.status === 'ONLINE';
       if (statusEl) { statusEl.textContent = connected ? '● CONECTADO' : '● OFFLINE'; statusEl.style.color = connected ? '#10b981' : '#ef4444'; }
-      if (provEl)   provEl.textContent = (d.providers || []).map((p) => typeof p === 'string' ? p : p.name).filter(Boolean).join(' · ') || 'ollama';
-      if (uptimeEl) uptimeEl.textContent = d.uptime ? `${Math.round(d.uptime)}s` : '--s';
-      if (dbEl)     { dbEl.textContent = d.checks?.database === false ? '✗' : '✓'; dbEl.style.color = d.checks?.database === false ? '#ef4444' : '#10b981'; }
-      if (redisEl)  { redisEl.textContent = d.checks?.redis === false ? '✗' : '✓'; redisEl.style.color = d.checks?.redis === false ? '#ef4444' : '#10b981'; }
+      if (provEl)   provEl.textContent = (d.providers || []).map((p) => typeof p === 'string' ? p : p.name).filter(Boolean).join(' · ') || 'Não publicado';
+      if (uptimeEl) uptimeEl.textContent = d.uptime == null ? '—' : `${Math.round(d.uptime)}s`;
+      if (dbEl)     { dbEl.textContent = d.checks?.database == null ? '—' : (d.checks.database ? '✓' : '✗'); dbEl.style.color = d.checks?.database == null ? '#94a3b8' : (d.checks.database ? '#10b981' : '#ef4444'); }
+      if (redisEl)  { redisEl.textContent = d.checks?.redis == null ? '—' : (d.checks.redis ? '✓' : '✗'); redisEl.style.color = d.checks?.redis == null ? '#94a3b8' : (d.checks.redis ? '#10b981' : '#ef4444'); }
       // Update topbar model chip
       const modelEl = document.getElementById('activeModel');
-      if (modelEl && !modelEl.textContent.startsWith('QWEN')) modelEl.textContent = 'QWEN 2.5 3B';
+      if (modelEl && d.model) modelEl.textContent = d.model;
     } catch (e) {
       // O health do próprio Fênix é a fonte final: evita marcar a API offline
       // por uma falha transitória do endpoint de resumo do cockpit.
