@@ -30,9 +30,9 @@ class AIGateway {
     return { text: res.text, provider: res.provider, model: res.model };
   }
 
-  cacheKey(tenantId, taskType, prompt) {
+  cacheKey(tenantId, taskType, prompt, format = null, provider = null, model = null) {
     const route = JSON.stringify(this.route(taskType));
-    return crypto.createHash('sha256').update(`${tenantId}|${taskType}|${route}|${prompt}`).digest('hex');
+    return crypto.createHash('sha256').update(`${tenantId}|${taskType}|${route}|${format || ''}|${provider || ''}|${model || ''}|${prompt}`).digest('hex');
   }
 
   route(taskType) { return this.routes[taskType] || this.routes.default; }
@@ -119,7 +119,7 @@ class AIGateway {
     if (this.rateLimiter) await this.rateLimiter.consume(tenantId, 'ai.invoke');
 
     const override = provider ? { provider, model } : null;
-    const key = this.cacheKey(tenantId, taskType, prompt);
+    const key = this.cacheKey(tenantId, taskType, prompt, format, provider, model);
     const cached = (await this.store.read()).aiCache.find((item) => item.key === key && (!item.expiresAt || item.expiresAt > now()));
     if (cached) {
       await this.record(tenantId, actorId, { taskType, provider: cached.provider, model: cached.model, promptTokens: 0, completionTokens: 0, cached: true, latencyMs: 0 });
@@ -250,7 +250,15 @@ class AIGateway {
   async providerHealth() {
     const health = {};
     await Promise.all(Object.entries(this.providers).map(async ([name, provider]) => {
-      try { const ok = typeof provider.available === 'function' ? await provider.available() : true; health[name] = { ok, ...(ok || !provider.lastError ? {} : { error: provider.lastError }), circuit: this.breaker(name).snapshot() }; }
+      try {
+        // Health must be a cheap connectivity check. Model inference belongs to chat/jobs;
+        // otherwise a slow provider can make /health time out and falsely take the runtime down.
+        const check = typeof provider.availableFast === 'function'
+          ? provider.availableFast()
+          : (typeof provider.available === 'function' ? provider.available() : true);
+        const ok = await Promise.race([Promise.resolve(check), new Promise((resolve) => setTimeout(() => resolve(false), 2_000))]);
+        health[name] = { ok, ...(ok || !provider.lastError ? {} : { error: provider.lastError }), circuit: this.breaker(name).snapshot() };
+      }
       catch (error) { health[name] = { ok: false, error: error.name, circuit: this.breaker(name).snapshot() }; }
     }));
     return health;
