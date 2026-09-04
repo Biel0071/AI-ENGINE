@@ -13,12 +13,17 @@ const { STATE_MACHINE } = require('../kernel/states');
 const { FENIX_EVENTS, EVENT_PRIORITY } = require('../core/contracts/event-types');
 const path = require('path');
 const fs = require('fs');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
+const exec = promisify(execFile);
 
 const PERMISSION_MATRIX = {
   // SAFE (Auto-executable without prompt)
   OPEN_BROWSER: 'SAFE',
   NAVIGATE_URL: 'SAFE',
   INSPECT_DOM: 'SAFE',
+  CLICK: 'SAFE',
+  TYPE: 'SAFE',
   READ_CONSOLE_LOGS: 'SAFE',
   CAPTURE_SCREENSHOT: 'SAFE',
   INSPECT_WORKSPACE: 'SAFE',
@@ -48,6 +53,8 @@ class ComputerControlAgent extends SystemModule {
     this.workspaceManager = workspaceManager;
     this.auditLog = [];
     this.status = STATE_MACHINE.BOOT;
+    this.browser = null;
+    this.pages = new Map();
   }
 
   async start() {
@@ -59,6 +66,9 @@ class ComputerControlAgent extends SystemModule {
 
   async stop() {
     this.status = STATE_MACHINE.SHUTDOWN;
+    if (this.browser) await this.browser.close().catch(() => {});
+    this.browser = null;
+    this.pages.clear();
   }
 
   /**
@@ -98,49 +108,32 @@ class ComputerControlAgent extends SystemModule {
     switch (actionType) {
       case 'OPEN_BROWSER':
       case 'NAVIGATE_URL':
-        result = {
-          url: params.url || 'http://localhost:4400',
-          title: 'FÊNIX OS v2.1.0 — Dashboard',
-          statusCode: 200,
-          domLoaded: true,
-          viewport: { width: 1920, height: 1080 }
-        };
+        result = await this.navigate(params.url || 'http://localhost:4400', params);
         break;
 
       case 'INSPECT_DOM':
-        result = {
-          selector: params.selector || '#root',
-          nodeCount: 48,
-          innerText: 'FÊNIX OS Control Center — Active',
-          attributes: { id: 'root', class: 'dark' }
-        };
+        result = await this.inspectDom(params);
+        break;
+
+      case 'CLICK':
+        result = await this.click(params);
+        break;
+
+      case 'TYPE':
+        result = await this.type(params);
         break;
 
       case 'READ_CONSOLE_LOGS':
-        result = {
-          errors: 0,
-          warnings: 0,
-          logs: ['[Fênix Runtime] WebSocket Connected: ws://127.0.0.1:4400', '[Observer] Live file watcher active']
-        };
+        result = await this.readConsoleLogs(params);
         break;
 
       case 'CAPTURE_SCREENSHOT':
-        result = {
-          screenshotId: `shot_${Date.now()}`,
-          format: 'png',
-          dimensions: { width: 1920, height: 1080 },
-          capturedAt: new Date().toISOString()
-        };
+        result = await this.captureScreenshot(params);
         break;
 
       case 'RUN_SHELL_COMMAND':
       case 'RUN_TESTS':
-        result = {
-          command: params.command || 'npm test',
-          exitCode: 0,
-          stdout: 'PASS: 6/6 test suites passed with 100% success.',
-          durationMs: 142
-        };
+        result = await this.runCommand(params.command || 'npm test', params);
         break;
 
       default:
@@ -169,6 +162,42 @@ class ComputerControlAgent extends SystemModule {
       result
     };
   }
+
+  async _page(url = null) {
+    if (!this.browser) { const { chromium } = require('playwright'); this.browser = await chromium.launch({ headless: true }); }
+    const key = url || '__active__';
+    let page = this.pages.get(key);
+    if (!page || page.isClosed()) {
+      page = await this.browser.newPage();
+      page.__fenixConsole = [];
+      page.on('console', msg => page.__fenixConsole.push({ type: msg.type(), text: msg.text(), timestamp: new Date().toISOString() }));
+      page.on('pageerror', error => page.__fenixConsole.push({ type: 'error', text: error.message, timestamp: new Date().toISOString() }));
+      this.pages.set(key, page);
+    }
+    if (url && page.url() !== url) await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    return page;
+  }
+
+  async navigate(url, params = {}) {
+    const page = await this._page();
+    const response = await page.goto(String(url), { waitUntil: params.waitUntil || 'domcontentloaded', timeout: 30_000 });
+    return { url: page.url(), title: await page.title(), statusCode: response?.status() ?? null, domLoaded: true, viewport: await page.evaluate(() => ({ width: innerWidth, height: innerHeight })) };
+  }
+
+  async inspectDom(params = {}) {
+    const page = await this._page(params.url || null); const selector = params.selector || 'body';
+    return page.locator(selector).first().evaluate((el) => ({ selector: el.id ? `#${el.id}` : el.tagName.toLowerCase(), nodeCount: document.querySelectorAll(el.tagName).length, innerText: (el.innerText || '').slice(0, 2000), attributes: Object.fromEntries([...el.attributes].map((a) => [a.name, a.value])) }));
+  }
+
+  async click(params = {}) { const page = await this._page(params.url || null); const selector = String(params.selector || 'button'); await page.locator(selector).first().click({ timeout: params.timeoutMs || 10_000 }); return { selector, url: page.url(), clicked: true }; }
+
+  async type(params = {}) { const page = await this._page(params.url || null); const selector = String(params.selector || 'input'); await page.locator(selector).first().fill(String(params.text ?? '')); return { selector, url: page.url(), typed: true }; }
+
+  async readConsoleLogs(params = {}) { const page = await this._page(params.url || null); const logs = page.__fenixConsole || []; return { errors: logs.filter((entry) => entry.type === 'error').length, warnings: logs.filter((entry) => entry.type === 'warning').length, logs: logs.slice(-100) }; }
+
+  async captureScreenshot(params = {}) { const page = await this._page(params.url || null); const file = params.path || require('node:path').join(require('node:os').tmpdir(), `fenix-browser-${Date.now()}.png`); await page.screenshot({ path: file, fullPage: params.fullPage === true }); const size = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight })); return { path: file, format: 'png', dimensions: size, capturedAt: new Date().toISOString() }; }
+
+  async runCommand(command, params = {}) { const started = Date.now(); const [file, ...args] = String(command).trim().split(/\s+/); const result = await exec(file, args, { cwd: params.cwd || process.cwd(), timeout: params.timeoutMs || 120_000, windowsHide: true }); return { command, exitCode: 0, stdout: result.stdout || '', stderr: result.stderr || '', durationMs: Date.now() - started }; }
 
   recordAudit(entry) {
     this.auditLog.unshift({
