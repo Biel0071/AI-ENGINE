@@ -126,13 +126,16 @@
     `;
     container.insertAdjacentHTML('beforeend', markup);
     container.style.display = 'block';
-    container.querySelectorAll('.orch-modal-backdrop').forEach((backdrop) => {
+    container.querySelectorAll('.orch-modal-backdrop').forEach((backdrop, index) => {
       backdrop.style.background = 'transparent';
       backdrop.style.backdropFilter = 'none';
       backdrop.style.pointerEvents = 'none';
+      backdrop.style.zIndex = String(10000 + index);
       const windowEl = backdrop.querySelector('.orch-modal');
-      if (windowEl) windowEl.style.pointerEvents = 'auto';
+      if (windowEl) { windowEl.style.pointerEvents = 'auto'; windowEl.style.zIndex = '1'; }
     });
+    const activeBackdrop = container.querySelector('.orch-modal-backdrop:last-child');
+    if (activeBackdrop) activeBackdrop.style.zIndex = '11000';
 
     document.getElementById('orchModalCloseBtn')?.addEventListener('click', closeModal);
     const modal = container.querySelector('.orch-modal-backdrop:last-child .orch-modal');

@@ -72,6 +72,21 @@ if (publishedAgents > 0) {
 await page.locator('[data-nav="command"]').first().click();
 await page.locator('#view-command').waitFor({ state: 'visible' });
 if (publishedAgents > 0) await page.locator('#orchActiveAgentsList [data-agent-id]').first().waitFor({ state: 'visible' });
+if (persistedTasks.length > 0) {
+  const missionCard = page.locator('#floatingMissionCard');
+  if (await missionCard.count() && await missionCard.isVisible()) {
+    await missionCard.click();
+    const missionDesk = page.locator('.orch-modal').last();
+    await missionDesk.waitFor({ state: 'visible' });
+    const taskButtons = missionDesk.locator('[data-task-id]');
+    await taskButtons.first().waitFor({ state: 'visible', timeout: 12000 });
+    await taskButtons.first().click();
+    const taskDesk = page.locator('.orch-modal').last();
+    await taskDesk.waitFor({ state: 'visible' });
+    if (!(await taskDesk.innerText()).includes('TASK DESK')) throw new Error('persisted task did not open canonical Task Desk');
+    await taskDesk.locator('#modalTaskBtnClose').click();
+  }
+}
 if (publishedAgents > 0) {
   const agentRows = page.locator('#orchActiveAgentsList [data-agent-id]');
   await agentRows.first().click();
