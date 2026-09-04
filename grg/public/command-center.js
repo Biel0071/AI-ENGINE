@@ -185,7 +185,21 @@
   }
 
   // Modal de Detalhes da Missão
-  function openMissionDetailModal(missionId) {
+  function openTaskDetailModal(task, mission) {
+    const title = `<i class="ph-fill ph-list-checks" style="color:var(--fenix-cyan);"></i> TASK DESK: ${esc(task.key || task.type || task.id)}`;
+    const body = `<div class="orch-modal-section"><div class="orch-modal-section-title">Task persistida no MissionKernel</div><div class="orch-modal-grid">
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">TASK ID</div><div class="orch-modal-data-val">${esc(task.id)}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">STATUS</div><div class="orch-modal-data-val">${esc(task.status)}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MISSION</div><div class="orch-modal-data-val">${esc(mission.id)}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">JOB</div><div class="orch-modal-data-val">${esc(task.jobId || 'Não publicado')}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">AGENTE</div><div class="orch-modal-data-val">${esc(task.agent || 'Não publicado')}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">SKILL / TOOL</div><div class="orch-modal-data-val">${esc(task.jobType || 'Não publicado')}</div></div>
+    </div></div><div class="orch-modal-section"><div class="orch-modal-section-title">Dependências e entrada</div><div class="orch-modal-data-item">${esc(JSON.stringify({ dependsOn: task.dependsOn || [], payload: task.payload || {} }))}</div></div>`;
+    openModal(title, body, '<button class="orch-inspect-btn" id="modalTaskBtnClose">FECHAR</button>');
+    document.getElementById('modalTaskBtnClose')?.addEventListener('click', closeModal);
+  }
+
+  async function openMissionDetailModal(missionId) {
     const live = window.FENIX?.live || {};
     const missions = live.missions || [];
     const jobs = live.jobs || [];
@@ -198,6 +212,8 @@
     };
 
     const missionJobs = jobs.filter(j => j.missionId === mission.id);
+    const persisted = mission.id ? await apiCall(`/api/missions/${encodeURIComponent(mission.id)}`) : null;
+    const missionTasks = Array.isArray(persisted?.steps) ? persisted.steps : [];
     const title = `<i class="ph-fill ph-flag-checkered" style="color:var(--fenix-red);"></i> MISSION DETAIL: ${esc(mission.name || mission.displayName || mission.id)}`;
     const body = `
       <div class="orch-modal-section">
@@ -221,6 +237,9 @@
           </div>
         </div>
       </div>
+      <div class="orch-modal-section"><div class="orch-modal-section-title">Tasks persistidas no DAG</div><div style="max-height:160px;overflow:auto;border:1px solid var(--fenix-border);padding:6px;">
+        ${missionTasks.length ? missionTasks.map((task) => `<button class="orch-inspect-btn" data-task-id="${esc(task.id)}" style="display:flex;width:100%;justify-content:space-between;margin:3px 0;"><span>${esc(task.key || task.type)}</span><span>${esc(task.status)}</span></button>`).join('') : '<div style="font-size:10px;color:var(--fenix-text-dim);">Nenhuma Task publicada.</div>'}
+      </div></div>
       <div class="orch-modal-section">
         <div class="orch-modal-section-title">Objetivo da Missão</div>
         <div class="orch-modal-data-item">
@@ -247,6 +266,10 @@
     `;
 
     openModal(title, body, footer);
+    document.querySelectorAll('[data-task-id]').forEach((button) => button.addEventListener('click', () => {
+      const task = missionTasks.find((item) => item.id === button.dataset.taskId);
+      if (task) openTaskDetailModal(task, mission);
+    }));
     document.getElementById('modalBtnClose')?.addEventListener('click', closeModal);
     document.getElementById('modalBtnPauseMission')?.addEventListener('click', async () => {
       await apiCall(`/api/fenix/missions/${mission.id}/pause`, 'POST');
