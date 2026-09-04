@@ -28,7 +28,11 @@
     'memory.read': { visualState: 'MEMORY', location: 'memory' },
     'memory.write': { visualState: 'MEMORY', location: 'memory' },
     'human.required': { visualState: 'WAITING', location: 'approval' },
-    'human.approval_required': { visualState: 'WAITING', location: 'approval' }
+    'human.approval_required': { visualState: 'WAITING', location: 'approval' },
+    'project.created': { visualState: 'ONLINE', location: 'command-center' },
+    'project.health.changed': { visualState: 'status', location: 'command-center' },
+    'connector.state.changed': { visualState: 'status', location: 'mcp' },
+    'runtime.heartbeat': { visualState: 'ONLINE', location: 'command-center' }
   });
 
   window.FENIX = window.FENIX || {};
