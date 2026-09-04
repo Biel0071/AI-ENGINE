@@ -258,6 +258,11 @@ function normalizeGates(requested, project, changed) {
 }
 
 function normalizeGate(gate, index) {
+  if (typeof gate === 'string') {
+    const parts = gate.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) throw new ValidationError(`invalid gate at index ${index}`);
+    gate = { name: `gate-${index + 1}`, command: parts.shift(), args: parts };
+  }
   if (!gate || typeof gate !== 'object' || typeof gate.command !== 'string' || !Array.isArray(gate.args)) throw new ValidationError(`invalid gate at index ${index}`);
   const executable = path.basename(gate.command).toLowerCase();
   if (!['node', 'node.exe', 'npm', 'npm.cmd', 'npx', 'npx.cmd'].includes(executable)) throw new ValidationError(`gate executable is not allowed: ${gate.command}`);
