@@ -1016,31 +1016,31 @@ init();
     window.addEventListener('resize', resize);
     resize();
 
-    const stars = Array.from({ length: 60 }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      size: Math.random() * 1.5 + 0.5,
-      twinkleSpeed: Math.random() * 0.03 + 0.01,
-      phase: Math.random() * Math.PI * 2
+    const deterministicUnit = (index, salt = 0) => ((index * 37 + salt * 17) % 101) / 100;
+    const stars = Array.from({ length: 60 }, (_, i) => ({
+      x: deterministicUnit(i, 1), y: deterministicUnit(i, 2),
+      size: deterministicUnit(i, 3) * 1.5 + 0.5,
+      twinkleSpeed: deterministicUnit(i, 4) * 0.03 + 0.01,
+      phase: deterministicUnit(i, 5) * Math.PI * 2
     }));
 
     const traffic = Array.from({ length: 16 }, (_, i) => ({
       axis: i % 2 === 0 ? 'X' : 'Y',
-      pos: (Math.random() - 0.5) * 800,
+      pos: (deterministicUnit(i, 6) - 0.5) * 800,
       lane: (i % 4 - 1.5) * 140,
-      speed: (Math.random() * 1.2 + 0.8) * (i % 2 === 0 ? 1 : -1),
+      speed: (deterministicUnit(i, 7) * 1.2 + 0.8) * (i % 2 === 0 ? 1 : -1),
       color: i % 3 === 0 ? '#38bdf8' : (i % 3 === 1 ? '#f59e0b' : '#a78bfa'),
-      tailLength: 25 + Math.random() * 20
+      tailLength: 25 + deterministicUnit(i, 8) * 20
     }));
 
     const agents = []; // REPLACED BY REAL AGENTS STATE
 
-    const embers = Array.from({ length: 25 }, () => ({
-      x: (Math.random() - 0.5) * 60,
-      y: (Math.random() - 0.5) * 40,
-      vy: Math.random() * 1.2 + 0.6,
-      alpha: Math.random() * 0.8 + 0.2,
-      size: Math.random() * 2.5 + 1.2
+    const embers = Array.from({ length: 25 }, (_, i) => ({
+      x: (deterministicUnit(i, 9) - 0.5) * 60,
+      y: (deterministicUnit(i, 10) - 0.5) * 40,
+      vy: deterministicUnit(i, 11) * 1.2 + 0.6,
+      alpha: deterministicUnit(i, 12) * 0.8 + 0.2,
+      size: deterministicUnit(i, 13) * 2.5 + 1.2
     }));
 
     let tick = 0;
@@ -1060,11 +1060,11 @@ init();
             if (!va) {
                va = {
                  key,
-                 x: (Math.random() - 0.5) * 400,
-                 y: (Math.random() - 0.5) * 300,
-                 targetX: (Math.random() - 0.5) * 400,
-                 targetY: (Math.random() - 0.5) * 300,
-                 speed: 0.0008 + Math.random() * 0.0006,
+                 x: (deterministicUnit(i, 14) - 0.5) * 400,
+                 y: (deterministicUnit(i, 15) - 0.5) * 300,
+                 targetX: 0,
+                 targetY: 0,
+                 speed: 0.0008,
                  avatar: 'Ôö£ÔûæÔö╝┬®Ôö¼├▒├ö├ç├┤',
                  role: ra.role || key,
                  fullName: key,
@@ -1334,8 +1334,10 @@ init();
       ag.y += (ag.targetY - ag.y) * ag.speed * 8;
 
       if (Math.hypot(ag.targetX - ag.x, ag.targetY - ag.y) < 0.03) {
-        ag.targetX = (Math.random() - 0.5) * 500;
-        ag.targetY = (Math.random() - 0.5) * 350;
+        // No random wandering in live mode. Destination changes must come
+        // from a runtime event, not from the renderer.
+        ag.targetX = ag.x;
+        ag.targetY = ag.y;
       }
 
       const screenX = ag.x;

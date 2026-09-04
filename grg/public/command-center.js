@@ -1091,16 +1091,8 @@
 
   // === HEATMAP LIVE ANIMATION ===
   function animateHeatmap() {
-    const cells = document.querySelectorAll('#orchHeatmapGrid .orch-heat-cell');
-    if (!cells.length) return;
-    cells.forEach(cell => {
-      if (Math.random() < 0.12) {
-        const lvl = Math.floor(Math.random() * 6);
-        cell.className = `orch-heat-cell lv-${lvl}`;
-      }
-    });
+    // Heatmap levels are telemetry values; never animate them locally.
   }
-  setInterval(animateHeatmap, 2000);
 
   // === SIDEBAR ACTIVE STATE on nav click ===
   document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
