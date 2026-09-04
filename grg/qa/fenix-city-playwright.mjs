@@ -4,7 +4,16 @@ import fs from 'node:fs';
 const baseURL = process.env.FENIX_QA_URL || 'http://127.0.0.1:4400';
 // Explicit credentials intentionally bypass the local token cache so a stale
 // session cannot mask the real login/reconnect path.
-const token = process.env.FENIX_QA_TOKEN || (!process.env.FENIX_USER && fs.existsSync('.session_token') ? fs.readFileSync('.session_token', 'utf8').trim() : '');
+let token = process.env.FENIX_QA_TOKEN || (!process.env.FENIX_USER && fs.existsSync('.session_token') ? fs.readFileSync('.session_token', 'utf8').trim() : '');
+if (!token && process.env.FENIX_USER && process.env.FENIX_PASSWORD) {
+  const login = await fetch(`${baseURL}/api/login`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ tenantId: 'grg', userId: process.env.FENIX_USER, password: process.env.FENIX_PASSWORD }),
+  });
+  const payload = await login.json();
+  if (!login.ok || !payload.token) throw new Error(`API login failed: ${payload.error || login.status}`);
+  token = payload.token;
+}
 const outputDir = 'qa-results/playwright';
 fs.mkdirSync(outputDir, { recursive: true });
 
@@ -20,7 +29,7 @@ page.on('pageerror', (error) => consoleErrors.push(error.message));
 
 await page.goto(`${baseURL}${token ? '/app?qa=playwright#command' : '/GRG-login'}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 await page.waitForTimeout(1000);
-if ((page.url().includes('GRG-login') || !token) && process.env.FENIX_USER && process.env.FENIX_PASSWORD) {
+if (!token && page.url().includes('GRG-login') && process.env.FENIX_USER && process.env.FENIX_PASSWORD) {
   await page.fill('#user', process.env.FENIX_USER);
   await page.fill('#pw', process.env.FENIX_PASSWORD);
   await page.locator('button[type="submit"]').click();
