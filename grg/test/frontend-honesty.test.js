@@ -116,6 +116,7 @@ test('frontend: shell inicial não fabrica saúde, uptime ou heartbeat', () => {
   assert.match(html, /id="cmdSystemState" data-state="UNKNOWN"/);
   assert.match(html, /id="inspAgentHeartbeatLabel"[^>]*>HEARTBEAT: —/);
   assert.doesNotMatch(html, /id="floatJobDuration"[^>]*>00:01:14/);
+  assert.doesNotMatch(html, /Refatoração Auth Security|Integração AI City v2/);
 });
 
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
