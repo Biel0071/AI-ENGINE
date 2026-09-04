@@ -1318,6 +1318,29 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/agents\/[^\/]+\/inspector$/)) {
     const parts = url.pathname.split('/');
     const agentName = decodeURIComponent(parts[4]);
+    // The city inspector must read the canonical runtime registry. The legacy
+    // product-experience orchestrator may still exist for compatibility, but
+    // it is not allowed to publish a second agent state to the UI.
+    if (app?.agentRegistry) {
+      const registered = app.agentRegistry.get(agentName) || app.agentRegistry.list().find((item) => item.name === agentName);
+      if (!registered) {
+        sendError(res, 404, `Agente "${agentName}" não encontrado`);
+        return true;
+      }
+      const state = await app.store.read();
+      const jobs = (state.runtimeJobs || []).filter((job) => job.tenantId === context.tenantId && (job.agentId === registered.id || job.agent?.agentId === registered.id));
+      const activeJob = jobs.find((job) => ['RUNNING', 'DISPATCHED'].includes(job.status));
+      const logs = (state.missionEvents || []).filter((event) => event.tenantId === context.tenantId && (event.agentId === registered.id || event.payload?.agentId === registered.id)).slice(-20);
+      sendJson(res, 200, { success: true, agent: {
+        id: registered.id, agentId: registered.id, name: registered.name,
+        role: registered.domain || registered.name, domain: registered.domain,
+        status: activeJob ? 'RUNNING' : 'AVAILABLE', heartbeat: activeJob ? 'ONLINE' : 'IDLE',
+        currentJob: activeJob ? { id: activeJob.id, name: activeJob.prompt || activeJob.type || activeJob.name, progress: activeJob.progress || 0 } : null,
+        skills: registered.tools || [], permissions: registered.permissions || [], logs,
+        workspace: registered.workspace || null, description: registered.description || null,
+      } });
+      return true;
+    }
     if (!jarvisOrchestrator) {
       sendError(res, 503, 'JARVIS Orchestrator not initialized');
       return true;
