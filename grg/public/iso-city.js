@@ -913,6 +913,9 @@ class IsoCityEngine {
   }
 
   _drawAgent(ctx, agent, cx, cy, zoom) {
+    const isOffline = String(agent.status || '').toUpperCase() === 'OFFLINE';
+    ctx.save();
+    if (isOffline) ctx.globalAlpha = 0.42;
     const isSelected = this.state.selectedAgent === agent;
     const isHovered  = this.state.hoveredAgent === agent;
     const isWorking  = ['WORKING','RUNNING','TESTING','QUEUED'].includes((agent.status||'').toUpperCase());
@@ -1028,7 +1031,7 @@ class IsoCityEngine {
     }
 
     // Name tag (hover / selected / working)
-    if (isHovered || isSelected || isWorking) {
+    if (isHovered || isSelected || isWorking || isOffline) {
       ctx.save();
       ctx.font = `700 ${Math.max(9,10*zoom)}px 'Inter',sans-serif`;
       ctx.textAlign = 'center';
@@ -1069,6 +1072,7 @@ class IsoCityEngine {
       ctx.fillText(bText, sc.x, by + bh*0.68);
       ctx.restore();
     }
+    ctx.restore();
   }
 
   _drawHUD(ctx, w, h) {
