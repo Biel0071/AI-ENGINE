@@ -18,6 +18,7 @@ page.on('pageerror', (error) => consoleErrors.push(error.message));
 
 await page.goto(`${baseURL}/app?qa=playwright#command`, { waitUntil: 'domcontentloaded', timeout: 10000 });
 await page.waitForTimeout(1000);
+await page.waitForFunction(() => window.FENIX?.ws?.readyState === 1, { timeout: 8000 });
 await page.screenshot({ path: `${outputDir}/command-1440.png`, fullPage: true });
 for (const view of ['agents', 'operations', 'ide', 'memory', 'mcp', 'runtime', 'command']) {
   await page.locator(`[data-nav="${view}"]`).first().click();
