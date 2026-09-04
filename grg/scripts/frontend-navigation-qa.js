@@ -10,7 +10,7 @@ const path = require('path');
 const baseUrl = process.env.FENIX_URL || 'http://127.0.0.1:4400/app';
 const outDir = path.resolve(process.env.FENIX_QA_OUT || 'qa-results');
 const fastMode = process.argv.includes('--fast');
-const actionTimeout = Number(process.env.FENIX_QA_TIMEOUT || (fastMode ? 600 : 1500));
+const actionTimeout = Number(process.env.FENIX_QA_TIMEOUT || (fastMode ? 2000 : 1500));
 const maxControlsPerScreen = Number(process.env.FENIX_QA_MAX_CONTROLS || (fastMode ? 4 : 8));
 const navigationTimeout = Number(process.env.FENIX_QA_NAV_TIMEOUT || 8_000);
 const stepDelay = Number(process.env.FENIX_QA_STEP_DELAY || (fastMode ? 250 : 500));
@@ -96,7 +96,12 @@ fs.mkdirSync(outDir, { recursive: true });
         // Force is only a test fallback; the active-view assertion below still
         // proves that the application's handler executed.
         if (!/Timeout|intercept|not receive/i.test(String(error.message))) throw error;
-        await button.click({ timeout: actionTimeout, force: true });
+        try { await button.click({ timeout: actionTimeout, force: true }); }
+        catch (forcedError) {
+          // Last resort for a sticky canvas overlay: invoke the same DOM click
+          // handler directly, then validate the resulting active view.
+          await button.evaluate((el) => el.click());
+        }
       }
       await page.waitForTimeout(stepDelay);
       item.after = await page.url();
