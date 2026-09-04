@@ -107,6 +107,7 @@ async function bootFenix() {
     const scripts = [
   '/runtime-cockpit.js?v=17',
       '/live-runtime.js?v=12',
+      '/unified-app.js',
       '/ide-enhancer.js?v=5',
       '/cockpit-app.js?v=3',
       '/visual-inspector.js?v=3',
