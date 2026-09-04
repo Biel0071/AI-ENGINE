@@ -61,6 +61,8 @@ test('ai city live: atividade e eventos devem ser determinísticos e derivados d
   assert.equal(city.includes('Math.random'), false, 'a cidade live não pode gerar atividade aleatória');
   assert.match(city, /memory\.read/);
   assert.match(city, /human\.approval_required/);
+  assert.match(city, /agent\.offline/);
+  assert.match(city, /agent\.status\.changed/);
   assert.match(adapter, /CITY_EVENT_MAP/);
   assert.match(adapter, /fenix-live/);
   assert.match(adapter, /sourceEventId/);

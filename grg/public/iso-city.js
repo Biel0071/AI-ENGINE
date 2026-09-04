@@ -104,6 +104,14 @@ class IsoCityEngine {
     if (!agentId) return;
     const agent = this.world.agents.get(String(agentId));
     if (!agent) return;
+    if (event.type === 'agent.offline') {
+      agent.status = 'OFFLINE';
+      agent.routeActive = false;
+      return;
+    }
+    if (event.type === 'agent.online' || event.type === 'agent.status.changed') {
+      if (payload.status) agent.status = String(payload.status).toUpperCase();
+    }
     const active = ['job.started', 'runtime.job.running', 'tool.started', 'agent.tool.call', 'memory.read', 'memory.write', 'human.required', 'human.approval_required'].includes(event.type);
     const complete = ['job.completed', 'tool.completed'].includes(event.type);
     if (active) {
