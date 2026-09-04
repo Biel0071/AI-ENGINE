@@ -686,7 +686,28 @@ async function createApp(options = {}) {
     simulationAudit: app.simulationAudit, observabilityCenter: app.observabilityCenter, aiGateway,
   });
   app.analyzers = new ProjectAnalyzersService({ store, bus, controlPlane });
-  app.testingSmokeE2e = new TestingSmokeE2eService({ store, bus, controlPlane, observabilityCenter: app.observabilityCenter, baseUrl: options.smokeBaseUrl });
+  const realE2eRunner = options.e2eRunner || {
+    async run({ suiteName }) {
+      const { execFile } = require('node:child_process');
+      const { promisify } = require('node:util');
+      const exec = promisify(execFile);
+      const path = require('node:path');
+      const script = path.resolve(__dirname, '..', 'qa', 'fenix-city-playwright.mjs');
+      const { stdout } = await exec(process.execPath, [script], {
+        cwd: path.resolve(__dirname, '..'),
+        timeout: 120_000,
+        windowsHide: true,
+        maxBuffer: 2_000_000,
+        env: { ...process.env, FENIX_QA_URL: options.smokeBaseUrl || `http://127.0.0.1:${process.env.PORT || 4400}` },
+      });
+      let outcome;
+      try { outcome = JSON.parse(String(stdout).trim().split(/\r?\n/).pop()); }
+      catch { throw new Error(`Playwright runner returned invalid output for ${suiteName || 'default suite'}`); }
+      if (outcome?.ok !== true) throw new Error('Playwright runner did not report a successful suite');
+      return { ...outcome, suiteName, executedBy: 'qa/fenix-city-playwright.mjs' };
+    },
+  };
+  app.testingSmokeE2e = new TestingSmokeE2eService({ store, bus, controlPlane, observabilityCenter: app.observabilityCenter, e2eRunner: realE2eRunner, baseUrl: options.smokeBaseUrl });
   // OneDeploy honesto: sem `deployExecutor` real injetado, o pipeline declara NOT_EXECUTED em
   // vez de fingir 12 estagios completos. scanProject le o filesystem de verdade.
   app.oneDeploy = new OneDeployOrchestrator({
