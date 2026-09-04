@@ -110,7 +110,8 @@ async function bootFenix() {
       '/ide-enhancer.js?v=5',
       '/cockpit-app.js?v=3',
       '/visual-inspector.js?v=3',
-      '/jobs-app.js?v=3'
+      '/jobs-app.js?v=3',
+      '/fenix-command-bridge.js?v=2'
     ];
 
     for (const src of scripts) {
