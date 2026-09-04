@@ -573,6 +573,13 @@
     const events = live.events?.length ? live.events : (data.events?.events || state.events || []);
     const health = live.operationalTwin?.health || data.health || {};
 
+    // O primeiro render pode ocorrer antes do snapshot live. Assim que agentes
+    // reais chegam, seleciona um deles para não deixar o inspector preso no
+    // placeholder inicial; cliques posteriores continuam controlando a seleção.
+    if (agents.length && !agents.some((agent) => String(agent.id || agent.agentId || agent.name) === String(selectedAgentId))) {
+      selectedAgentId = agents[0].id || agents[0].agentId || agents[0].name;
+    }
+
     const cityList = document.getElementById('cityListView');
     if (cityList && !cityList.hidden) {
       const entity = (label, value, action, id) => `<button type="button" data-city-action="${action}" data-city-id="${esc(id || '')}" style="display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(148,163,184,.14);padding:7px;color:#cbd5e1;cursor:pointer;"><strong>${esc(label)}</strong> <span style="color:#94a3b8;">${esc(value)}</span></button>`;

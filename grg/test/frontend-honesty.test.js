@@ -88,6 +88,12 @@ test('frontend: ribbon da API Platform aguarda o status real', () => {
   assert.match(html, /id="apiPlatformModel"[^>]*>Não publicado/);
 });
 
+test('frontend: inspector seleciona agente publicado após snapshot tardio', () => {
+  const command = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'command-center.js'), 'utf8');
+  assert.match(command, /if \(agents\.length && !agents\.some\(\(agent\)/);
+  assert.match(command, /selectedAgentId = agents\[0\]\.id \|\| agents\[0\]\.agentId \|\| agents\[0\]\.name/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');
