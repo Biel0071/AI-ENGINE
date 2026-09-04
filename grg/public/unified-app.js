@@ -378,8 +378,19 @@ function renderRuntime() {
 
 function renderMissions() {
   if ($('missionList')) $('missionList').innerHTML = state.missions.length
-    ? state.missions.map((m) => row(m.id || 'mission', m.objective || m.name || '', m.status || 'ACTIVE')).join('')
+    ? state.missions.map((m) => row(m.id || 'mission', m.objective || m.name || '', m.status || 'ACTIVE').replace('<tr>', `<tr data-mission-id="${esc(m.id || '')}" style="cursor:pointer" title="Carregar DAG persistido">`)).join('')
     : row('missoes', 'sem historico', 'EMPTY');
+
+  document.querySelectorAll('#missionList [data-mission-id]').forEach((item) => {
+    item.addEventListener('click', async () => {
+      const graph = $('missionGraph');
+      if (graph) graph.textContent = 'Carregando DAG persistido...';
+      try {
+        state.data.missionGraph = await api(`/missions/${encodeURIComponent(item.dataset.missionId)}/graph`);
+        if (graph) graph.textContent = JSON.stringify({ source: state.data.missionGraph.source, nodes: state.data.missionGraph.nodes, edges: state.data.missionGraph.edges }, null, 2);
+      } catch (error) { if (graph) graph.textContent = `Falha ao carregar DAG: ${error.message}`; }
+    });
+  });
   
   if ($('jobList')) $('jobList').innerHTML = state.jobs.length
     ? state.jobs.map((j) => `<div style="padding:12px; border-bottom:1px solid var(--border); margin-bottom:8px; background:var(--bg-base); border-radius:6px;">
