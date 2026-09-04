@@ -142,6 +142,12 @@
       const style = document.createElement('style');
       style.textContent = '.orch-modal-window-actions{display:flex;align-items:center;gap:4px}.orch-modal-window-btn{background:transparent;border:0;color:var(--fenix-text-dim);cursor:pointer;padding:4px 7px;border-radius:4px}.orch-modal-window-btn:hover{color:#fff;background:rgba(255,255,255,.1)}.orch-modal.is-minimized{height:48px!important;min-height:0;resize:none}.orch-modal.is-minimized>:not(.orch-modal-header){display:none}.orch-modal.is-maximized{position:fixed;inset:12px;width:auto;max-width:none;max-height:none;height:auto}';
       modal.appendChild(style);
+      modal.addEventListener('pointerdown', () => {
+        const backdrops = [...container.querySelectorAll('.orch-modal-backdrop')];
+        backdrops.forEach((item, index) => { item.style.zIndex = String(10000 + index); });
+        const backdrop = modal.closest('.orch-modal-backdrop');
+        if (backdrop) backdrop.style.zIndex = '11000';
+      });
     }
     document.getElementById('orchModalMinBtn')?.addEventListener('click', () => modal?.classList.toggle('is-minimized'));
     document.getElementById('orchModalMaxBtn')?.addEventListener('click', (event) => {
@@ -171,7 +177,10 @@
     const event = arguments[0];
     const backdrop = event?.target?.closest?.('.orch-modal-backdrop');
     if (backdrop) backdrop.remove();
-    else container.innerHTML = '';
+    else {
+      const windows = container.querySelectorAll('.orch-modal-backdrop');
+      windows[windows.length - 1]?.remove();
+    }
     if (!container.querySelector('.orch-modal-backdrop')) container.style.display = 'none';
   }
 
