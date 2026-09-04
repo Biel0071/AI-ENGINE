@@ -43,6 +43,7 @@ class IsoCityEngine {
       tileSize: 60,
       hoveredAgent: null,
       hoveredDistrict: null,
+      followAgentId: null,
       lastTime: performance.now(),
       selectedAgent: null
     };
@@ -147,7 +148,15 @@ class IsoCityEngine {
     });
     document.getElementById('btnResetCamera')?.addEventListener('click', () => {
       this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
+      this.state.followAgentId = null;
       this._updateZoomDisplay();
+    });
+    document.getElementById('btnFollowAgent')?.addEventListener('click', () => {
+      const selected = this.state.selectedAgent;
+      if (!selected) return;
+      this.state.followAgentId = this.state.followAgentId === selected.id ? null : selected.id;
+      const button = document.getElementById('btnFollowAgent');
+      if (button) button.classList.toggle('active', Boolean(this.state.followAgentId));
     });
     document.getElementById('btnFullscreenCity')?.addEventListener('click', () => {
       const container = document.getElementById('wsCityContainer') || this.canvas;
@@ -270,6 +279,14 @@ class IsoCityEngine {
   }
 
   update(delta) {
+    const followed = this.state.followAgentId && this.world.agents.get(this.state.followAgentId);
+    if (followed) {
+      const tw = this.state.tileSize;
+      const th = this.state.tileSize / 2;
+      this.state.targetCamera.x = -(followed.x - followed.y) * tw;
+      this.state.targetCamera.y = -(followed.x + followed.y) * th;
+      this.state.targetCamera.zoom = Math.max(this.state.targetCamera.zoom, 1.35);
+    }
     // Smooth camera
     const lerp = (a, b, t) => a + (b - a) * t;
     const s = 1 - Math.pow(0.01, delta * 5);
