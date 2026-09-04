@@ -214,6 +214,16 @@ class IsoCityEngine {
         document.exitFullscreen?.().catch(() => {});
       }
     });
+    document.getElementById('btnCityListView')?.addEventListener('click', () => {
+      const list = document.getElementById('cityListView');
+      const canvas = this.canvas;
+      if (!list) return;
+      const open = list.hidden;
+      list.hidden = !open;
+      canvas.hidden = open;
+      document.getElementById('btnCityListView')?.setAttribute('aria-pressed', String(open));
+      if (open) window.dispatchEvent(new CustomEvent('fenix-city-list-requested'));
+    });
   }
 
   _hitTestHandoff(mx, my) {

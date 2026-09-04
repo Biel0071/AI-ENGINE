@@ -569,6 +569,18 @@
     const events = live.events?.length ? live.events : (data.events?.events || state.events || []);
     const health = live.operationalTwin?.health || data.health || {};
 
+    const cityList = document.getElementById('cityListView');
+    if (cityList && !cityList.hidden) {
+      const entity = (label, value, action, id) => `<button type="button" data-city-action="${action}" data-city-id="${esc(id || '')}" style="display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(148,163,184,.14);padding:7px;color:#cbd5e1;cursor:pointer;"><strong>${esc(label)}</strong> <span style="color:#94a3b8;">${esc(value)}</span></button>`;
+      cityList.innerHTML = `<div style="font-weight:800;letter-spacing:.08em;margin-bottom:6px;">AI CITY · LIST VIEW</div>${agents.map(a => entity('AGENT', `${a.name || a.id} · ${a.status || 'NÃO PUBLICADO'}`, 'agent', a.id || a.name)).join('')}${missions.map(m => entity('MISSION', `${m.name || m.id} · ${m.status || 'NÃO PUBLICADO'}`, 'mission', m.id)).join('')}${jobs.map(j => entity('JOB', `${j.id || '—'} · ${j.status || 'NÃO PUBLICADO'}`, 'job', j.id)).join('') || '<div>Nenhuma entidade operacional publicada.</div>'}`;
+      cityList.querySelectorAll('[data-city-action]').forEach((button) => button.addEventListener('click', () => {
+        const id = button.dataset.cityId;
+        if (button.dataset.cityAction === 'agent') window.fenixCity?.focusAgent(id);
+        if (button.dataset.cityAction === 'mission') window.fenixCity?.focusMission(id);
+        if (button.dataset.cityAction === 'job') window.fenixCity?.focusJob(id);
+      }));
+    }
+
     // 1. TOPBAR TELEMETRY
     const activeModelEl = document.getElementById('activeModel');
     if (activeModelEl) activeModelEl.textContent = live.operationalTwin?.model || data.overview?.model || 'Não publicado';
