@@ -817,7 +817,12 @@
           if (window.fenixCity?.focusAgent) window.fenixCity.focusAgent(aid);
           updateAgentInspector(aid);
           renderPanels();
-          openAgentDeskModal(aid);
+          // City focus normally emits `fenix-agent-selected` and opens the
+          // desk. Keep a deferred fallback for agents selected from the rail,
+          // without creating a duplicate desk when the event already fired.
+          setTimeout(() => {
+            if (!document.querySelector('.orch-modal')) openAgentDeskModal(aid);
+          }, 0);
         });
       });
     }
