@@ -319,10 +319,12 @@
   }
 
   // Modal de Logs do Agente
-  function openAgentDeskModal(agentId) {
+  async function openAgentDeskModal(agentId) {
     const live = window.FENIX?.live || {};
     const agents = live.agents || [];
-    const ag = agents.find(a => String(a.id || a.agentId || a.name || '').toLowerCase() === String(agentId || '').toLowerCase());
+    let ag = agents.find(a => String(a.id || a.agentId || a.name || '').toLowerCase() === String(agentId || '').toLowerCase());
+    const inspector = await apiCall(`/api/v2/agents/${encodeURIComponent(agentId)}/inspector`);
+    if (inspector && typeof inspector === 'object') ag = { ...(ag || {}), ...(inspector.agent || inspector) };
     const title = `<i class="ph-fill ph-desktop" style="color:var(--fenix-cyan);"></i> AGENT DESK: ${esc(ag?.name || agentId)}`;
     const currentJob = ag?.currentJob;
     const currentMission = ag?.currentMission;
