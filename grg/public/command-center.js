@@ -249,20 +249,7 @@
 
   // Modal de Inspeção de Projeto (Project Inspector)
   function openProjectInspectorModal(mirrorData) {
-    const mirror = mirrorData || {
-      name: 'ai-engine-core',
-      path: 'c:/projetos/ai-engine-core',
-      files: { total: 420 },
-      tech: { frontend: 'HTML5/ES6 Vanilla', backend: 'Node.js Core Microkernel' },
-      apis: [
-        { method: 'GET', path: '/health' },
-        { method: 'GET', path: '/runtime/snapshot' },
-        { method: 'POST', path: '/api/chat' },
-        { method: 'POST', path: '/api/missions' }
-      ],
-      git: { branch: 'main', isClean: true },
-      tests: { count: 45 }
-    };
+    const mirror = mirrorData && typeof mirrorData === 'object' ? mirrorData : {};
 
     const title = `<i class="ph-fill ph-folders" style="color:var(--fenix-purple);"></i> PROJECT INSPECTOR: ${esc(mirror.name)}`;
     const apisList = (mirror.apis || []).slice(0, 15).map(a => `
@@ -294,11 +281,11 @@
           </div>
           <div class="orch-modal-data-item">
             <div class="orch-modal-data-lbl">Git Branch</div>
-            <div class="orch-modal-data-val">${esc(mirror.git?.branch || 'main')} (${mirror.git?.isClean ? 'Limpo' : 'Modificado'})</div>
+            <div class="orch-modal-data-val">${esc(mirror.git?.branch || 'Não publicado')} (${mirror.git ? (mirror.git.isClean ? 'Limpo' : 'Modificado') : 'Não publicado'})</div>
           </div>
           <div class="orch-modal-data-item">
             <div class="orch-modal-data-lbl">Total de Arquivos / Testes</div>
-            <div class="orch-modal-data-val">${mirror.files?.total || mirror.fileCount || 0} arquivos · ${mirror.tests?.count || 45} testes</div>
+            <div class="orch-modal-data-val">${mirror.files?.total ?? mirror.fileCount ?? 'Não publicado'} arquivos · ${mirror.tests?.count ?? 'Não publicado'} testes</div>
           </div>
         </div>
       </div>

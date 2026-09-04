@@ -223,7 +223,7 @@ class IsoCityEngine {
     const menu = document.createElement('div');
     menu.className = 'fenix-city-filter-menu';
     menu.setAttribute('role', 'menu');
-    ['ALL', 'AGENTS', 'JOBS', 'ERRORS', 'HANDOFFS', 'MEMORY', 'SYSTEM'].forEach((filter) => {
+    ['ALL', 'AGENTS', 'MISSIONS', 'JOBS', 'TOOLS', 'ERRORS', 'HANDOFFS', 'MEMORY', 'SYSTEM'].forEach((filter) => {
       const button = document.createElement('button');
       button.type = 'button'; button.textContent = filter;
       button.setAttribute('aria-pressed', String(this.state.cityFilter === filter));
@@ -237,7 +237,9 @@ class IsoCityEngine {
     const filter = this.state.cityFilter;
     if (filter === 'ALL' || filter === 'AGENTS') return true;
     if (filter === 'ERRORS') return ['ERROR', 'FAILED', 'BLOCKED'].includes(String(agent.status || '').toUpperCase());
+    if (filter === 'MISSIONS') return Boolean(agent.currentMission || agent.missionId);
     if (filter === 'JOBS') return Boolean(agent.currentJob || agent.jobId);
+    if (filter === 'TOOLS') return Boolean(agent.currentTool || agent.currentJob?.tool);
     if (filter === 'MEMORY') return String(agent.district || '').toUpperCase().includes('MEMORY');
     if (filter === 'SYSTEM') return ['DEVOPS', 'MCP', 'AI_MODELS', 'CENTRAL'].includes(String(agent.district || '').toUpperCase());
     return filter === 'HANDOFFS' && String(agent.status || '').toUpperCase() === 'HANDOFF';
