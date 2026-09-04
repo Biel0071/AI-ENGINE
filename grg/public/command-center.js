@@ -659,8 +659,18 @@
         const colorClass = e.type?.includes('failed') || e.type?.includes('error') ? 'red' :
                            (e.type?.includes('completed') || e.type?.includes('succeeded') ? 'green' :
                            (e.type?.includes('started') || e.type?.includes('dispatched') ? 'cyan' : ''));
-        return `<div class="orch-log-entry ${colorClass}"><span class="orch-log-time">${esc(time)}</span><span>${esc(summary)}</span></div>`;
+        return `<button type="button" class="orch-log-entry ${colorClass}" data-event-index="${recentEvents.indexOf(e)}"><span class="orch-log-time">${esc(time)}</span><span>${esc(summary)}</span></button>`;
       }).join('');
+      liveActivityList.querySelectorAll('[data-event-index]').forEach((row) => {
+        row.addEventListener('click', () => {
+          const event = recentEvents[Number(row.dataset.eventIndex)];
+          const payload = event?.payload || {};
+          const city = window.fenixCity;
+          if (payload.agentId && city?.focusAgent) city.focusAgent(payload.agentId);
+          else if (payload.jobId && city?.focusJob) city.focusJob(payload.jobId);
+          else if (payload.missionId && city?.focusMission) city.focusMission(payload.missionId);
+        });
+      });
     }
 
     // RIGHT QUAD: AGENTES ATIVOS
