@@ -85,7 +85,8 @@
     }
   }
 
-  function applySnapshot(data) {
+  function applySnapshot(raw) {
+    const data = raw?.payload || raw || {};
     const live = window.FENIX.live;
     if (data.uptime != null) live.uptime = data.uptime;
     if (data.workers) live.workers = data.workers;
@@ -97,7 +98,9 @@
     if (data.projects) live.projects = data.projects;
     if (data.operationalTwin) live.operationalTwin = data.operationalTwin;
     if (data.lastSeq) live.lastSeq = data.lastSeq;
+    if (data.events) live.events = data.events;
     emit('snapshot', data);
+    if (live.status === 'SYNCING') updateStatus('ONLINE');
     updateQueueMetrics();
   }
 
@@ -224,10 +227,19 @@
     if (jobsEl) jobsEl.textContent = `${q.queued || 0} queued`;
   }
 
+  function getLiveToken() {
+    return localStorage.getItem('fenix_token') ||
+           localStorage.getItem('grg_token') ||
+           sessionStorage.getItem('fenix_token') ||
+           sessionStorage.getItem('grg_token') ||
+           (document.cookie.match(/fenix_session=([^;]+)/) || [])[1] ||
+           window.__FENIX_TOKEN__ || '';
+  }
+
   function requestSnapshot() {
-    fetch('/runtime/snapshot', {
-      headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('grg_token') || '') }
-    })
+    const token = getLiveToken();
+    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    fetch('/runtime/snapshot', { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) applySnapshot(data); })
       .catch(() => {});
@@ -261,7 +273,7 @@
 
     ws.onopen = () => {
       reconnectAttempts = 0;
-      updateStatus('ONLINE');
+      updateStatus('SYNCING');
       window.FENIX.live.connectedAt = new Date().toISOString();
       window.FENIX.ws = ws;
 

@@ -64,6 +64,13 @@ test('ai city live: atividade e eventos devem ser determinísticos e derivados d
   assert.match(adapter, /sourceEventId/);
 });
 
+test('runtime: reconexão sincroniza snapshot antes de voltar ao vivo', () => {
+  const runtime = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'live-runtime.js'), 'utf8');
+  assert.match(runtime, /updateStatus\('SYNCING'\)/);
+  assert.match(runtime, /live\.status === 'SYNCING'\) updateStatus\('ONLINE'\)/);
+  assert.match(runtime, /requestSnapshot\(\)/);
+});
+
 test('ai city: deep links suportam entidades do snapshot', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   assert.match(city, /query\.get\('agent'\)/);
