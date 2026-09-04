@@ -15,9 +15,9 @@ const assert = require('assert');
 
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 
-function get(endpoint) {
+function request(method, endpoint, headers = {}) {
   return new Promise((resolve, reject) => {
-    http.get('http://127.0.0.1:4400' + endpoint, res => {
+    const req = http.request('http://127.0.0.1:4400' + endpoint, { method, headers }, res => {
       let d = '';
       res.on('data', c => d += c);
       res.on('end', () => {
@@ -27,8 +27,40 @@ function get(endpoint) {
           resolve({ status: res.statusCode, raw: d });
         }
       });
-    }).on('error', reject);
+    });
+    req.on('error', reject);
+    req.end();
   });
+}
+
+async function get(endpoint, headers) {
+  return request('GET', endpoint, headers);
+}
+
+async function authenticate() {
+  const userId = process.env.FENIX_BOOTSTRAP_ADMIN_USER;
+  const password = process.env.FENIX_BOOTSTRAP_ADMIN_PASSWORD;
+  assert.ok(userId && password, 'Architecture guard requires bootstrap admin credentials');
+  const login = await new Promise((resolve, reject) => {
+    const body = JSON.stringify({ tenantId: 'grg', userId, password });
+    const req = http.request('http://127.0.0.1:4400/api/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) },
+    }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, data: JSON.parse(d) }); }
+        catch { resolve({ status: res.statusCode, data: {} }); }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+  assert.strictEqual(login.status, 200, 'Architecture guard login must succeed');
+  assert.ok(login.data.token, 'Architecture guard login must return a token');
+  return { authorization: `Bearer ${login.data.token}` };
 }
 
 async function runArchitectureGuard() {
@@ -86,7 +118,8 @@ async function runArchitectureGuard() {
 
   // 4. Zero Mocks — Real Telemetry & Runtime Verification
   console.log('\n[4/5] Testing Runtime Zero-Mock Contract...');
-  const cityState = await get('/api/v2/city/state');
+  const auth = await authenticate();
+  const cityState = await get('/api/v2/city/state', auth);
   assert.strictEqual(cityState.status, 200, 'City state endpoint must return 200');
   assert.ok(Array.isArray(cityState.data.projects), 'Projects must be an array of projects');
   assert.ok(typeof cityState.data.summary.totalProjects === 'number', 'totalProjects must be a number');
@@ -97,7 +130,7 @@ async function runArchitectureGuard() {
 
   // 5. Daily Operations & Human Governance Verification
   console.log('\n[5/5] Testing 24/7 Daily Operations Source of Truth...');
-  const dailyOps = await get('/api/v2/jarvis/daily-operations');
+  const dailyOps = await get('/api/v2/jarvis/daily-operations', auth);
   assert.strictEqual(dailyOps.status, 200, 'Daily operations endpoint must return 200');
   assert.strictEqual(dailyOps.data.engineState, 'ONLINE', 'Engine state must be ONLINE');
   console.log('   ✅ Daily Operations Engine State:', dailyOps.data.engineState);
