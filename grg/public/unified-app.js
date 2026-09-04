@@ -188,7 +188,7 @@ async function streamChat(message, { model = null, onEvent = null } = {}) {
     headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json', accept: 'text/event-stream' },
     body: JSON.stringify({ message, conversationId, model: model || undefined }),
     signal: controller.signal,
-  }); } catch (error) { throw new Error(error.name === 'AbortError' ? 'stream excedeu 12s' : error.message); }
+  }); } catch (error) { clearTimeout(timeout); throw new Error(error.name === 'AbortError' ? 'stream excedeu 30s' : error.message); }
   if (!response.ok) { clearTimeout(timeout); const body = await response.json().catch(() => ({})); throw new Error(body.error || body.reason || `HTTP ${response.status}`); }
   const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let textOut = ''; let meta = {};
   const consume = (chunk) => {
@@ -203,8 +203,11 @@ async function streamChat(message, { model = null, onEvent = null } = {}) {
       if (onEvent) onEvent(event, data);
     }
   };
-  while (true) { const { value, done } = await reader.read(); if (done) break; consume(decoder.decode(value, { stream: true })); }
-  clearTimeout(timeout);
+  try {
+    while (true) { const { value, done } = await reader.read(); if (done) break; consume(decoder.decode(value, { stream: true })); }
+  } catch (error) {
+    throw new Error(error.name === 'AbortError' ? 'stream excedeu 30s' : error.message);
+  } finally { clearTimeout(timeout); }
   if (meta.conversationId) localStorage.setItem('fenix_conversation_id', meta.conversationId);
   return { text: meta.text || textOut, ...meta };
 }
