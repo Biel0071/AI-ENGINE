@@ -1324,7 +1324,29 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     if (app?.agentRegistry) {
       const registered = app.agentRegistry.get(agentName) || app.agentRegistry.list().find((item) => item.name === agentName);
       if (!registered) {
-        sendError(res, 404, `Agente "${agentName}" não encontrado`);
+        // The live-states endpoint is the source used by the cockpit rail.
+        // Some published runtime agents intentionally have display names that
+        // are not keys in the domain registry (for example Architect Agent).
+        // Resolve those exact published records instead of returning a false
+        // 404 or inventing a second agent.
+        const liveAgents = jarvisOrchestrator?.getAgentStates?.().agents || [];
+        const liveAgent = liveAgents.find((item) => String(item.name || '').toLowerCase() === agentName.toLowerCase());
+        if (!liveAgent) {
+          sendError(res, 404, `Agente "${agentName}" não encontrado`);
+          return true;
+        }
+        const state = await app.store.read();
+        const liveJobs = (state.runtimeJobs || []).filter((job) => job.tenantId === context.tenantId && (job.agentId === liveAgent.id || job.agent?.agentId === liveAgent.id));
+        const projects = workspaceManager ? workspaceManager.listProjects() : [];
+        sendJson(res, 200, { success: true, agent: {
+          ...liveAgent,
+          id: liveAgent.id || liveAgent.name,
+          agentId: liveAgent.id || liveAgent.name,
+          heartbeat: liveAgent.status === 'OFFLINE' ? 'OFFLINE' : 'ONLINE',
+          currentJob: liveAgent.currentJob || liveJobs.find((job) => ['RUNNING', 'DISPATCHED'].includes(job.status)) || null,
+          workspace: projects.length ? { available: true, projects } : { available: false, reason: 'Nenhum workspace registrado' },
+          memory: { available: true, entries: 0, recent: [] },
+        } });
         return true;
       }
       const state = await app.store.read();
