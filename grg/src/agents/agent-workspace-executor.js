@@ -29,7 +29,7 @@ class AgentWorkspaceExecutor {
     const tests = []; let testsPassed = true;
     for (const command of (Array.isArray(input.tests) ? input.tests : [])) {
       const normalized = String(command).trim();
-      if (this.tools) { const result = await this.tools.execute(tenantId, actorId, 'test.run', { command: normalized }, { jobId: input.jobId, missionId: input.missionId, projectId: project.id }); tests.push({ command: normalized, passed: true, stdout: result.result?.stdout || '', stderr: result.result?.stderr || '' }); continue; }
+      if (this.tools) { const result = await this.tools.execute(tenantId, actorId, 'test.run', { command: normalized }, { jobId: input.jobId, missionId: input.missionId, projectId: project.id }); const passed = result.status === 'SUCCEEDED'; testsPassed = testsPassed && passed; tests.push({ command: normalized, passed, stdout: result.result?.stdout || '', stderr: result.result?.stderr || '' }); continue; }
       if (!isAllowedTestCommand(normalized)) throw new Error(`test command is not allowlisted: ${normalized}`);
       const [executable, ...args] = normalized.split(/\s+/); try { const result = await run(executable, args, { cwd: root, timeout: 120_000, windowsHide: true }); tests.push({ command: normalized, passed: true, stdout: result.stdout || '', stderr: result.stderr || '' }); } catch (error) { testsPassed = false; tests.push({ command: normalized, passed: false, error: String(error.message).slice(0, 2000) }); }
     }

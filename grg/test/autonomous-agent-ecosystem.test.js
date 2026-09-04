@@ -1,12 +1,19 @@
-const { test } = require('node:test');
+const { test, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const { createApp } = require('../src/app');
 const { ForbiddenError } = require('../src/kernel/errors');
 
 const evidence = [{ reference: 'inspection:run-1' }];
+const activeApps = new Set();
+
+afterEach(async () => {
+  await Promise.all([...activeApps].map((app) => app.close()));
+  activeApps.clear();
+});
 
 async function bootstrap() {
   const app = await createApp();
+  activeApps.add(app);
   await app.controlPlane.createTenant({ id: 'grg', name: 'GRG' }, 'alice');
   await app.controlPlane.addMember('grg', 'alice', { userId: 'bob', role: 'admin' });
   const masterEntity = await app.hierarchy.ensureMaster('grg', 'alice');
