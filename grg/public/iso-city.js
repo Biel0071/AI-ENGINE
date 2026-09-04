@@ -54,6 +54,7 @@ class IsoCityEngine {
       agents: new Map(),
       missions: [],
       jobs: [],
+      projects: [],
       particles: [],
       bubbles: []
     };
@@ -227,6 +228,8 @@ class IsoCityEngine {
       if (mission) return this.focusMission(mission.id);
       const job = this.world.jobs?.find?.((item) => `${item.id} ${item.title || item.type}`.toLowerCase().includes(query));
       if (job) return this.focusJob(job.id);
+      const project = this.world.projects?.find?.((item) => `${item.id} ${item.name || item.projectName}`.toLowerCase().includes(query));
+      if (project) return this.focusProject(project.id || project.projectId);
       this.canvas.setAttribute('aria-label', `AI City: nenhuma entidade encontrada para ${query}`);
     });
     document.getElementById('btnFullscreenCity')?.addEventListener('click', () => {
@@ -347,6 +350,13 @@ class IsoCityEngine {
     else if (jobId) window.dispatchEvent(new CustomEvent('fenix-job-selected', { detail: { jobId: String(jobId) } }));
   }
 
+  focusProject(projectId) {
+    if (!projectId) return;
+    this.state.targetCamera = { x: 0, y: 0, zoom: 1.25 };
+    this._updateZoomDisplay();
+    window.dispatchEvent(new CustomEvent('fenix-project-selected', { detail: { projectId: String(projectId) } }));
+  }
+
   _applyDeepLink() {
     const query = new URLSearchParams(`${location.search || ''}&${location.hash.includes('?') ? location.hash.split('?')[1] : ''}`);
     const agent = query.get('agent');
@@ -401,6 +411,7 @@ class IsoCityEngine {
       const next = new Map();
       this.world.missions = window.FENIX?.live?.missions || window.state?.missions || [];
       this.world.jobs = window.FENIX?.live?.jobs || window.state?.jobs || [];
+      this.world.projects = window.FENIX?.live?.projects || window.state?.projects || [];
       for (const a of apiAgents) {
         const id = String(a.id || a.agentId || a.name || '').trim();
         if (!id) continue;

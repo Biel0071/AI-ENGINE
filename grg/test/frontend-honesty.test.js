@@ -99,6 +99,7 @@ test('ai city: LIST VIEW é acessível e usa as entidades sincronizadas', () => 
   assert.match(html, /id="cityListView"[^>]*aria-label="Lista textual/);
   assert.match(command, /data-city-action/);
   assert.match(command, /agents\.map/);
+  assert.match(command, /projects\.map/);
   assert.match(command, /missions\.map/);
   assert.match(command, /jobs\.map/);
   assert.match(command, /eventRows/);

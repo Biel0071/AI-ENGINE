@@ -568,6 +568,7 @@
 
     const missions = live.missions?.length ? live.missions : (data.missions?.missions || state.missions || []);
     const jobs = live.jobs?.length ? live.jobs : (data.jobs?.jobs || state.jobs || []);
+    const projects = live.projects?.length ? live.projects : (data.projects?.projects || state.projects || []);
     const agents = live.agents?.length ? live.agents : (data.agents?.agents || []);
     const events = live.events?.length ? live.events : (data.events?.events || state.events || []);
     const health = live.operationalTwin?.health || data.health || {};
@@ -576,12 +577,13 @@
     if (cityList && !cityList.hidden) {
       const entity = (label, value, action, id) => `<button type="button" data-city-action="${action}" data-city-id="${esc(id || '')}" style="display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(148,163,184,.14);padding:7px;color:#cbd5e1;cursor:pointer;"><strong>${esc(label)}</strong> <span style="color:#94a3b8;">${esc(value)}</span></button>`;
       const eventRows = events.slice(0, 10).map((event, index) => `<div style="padding:7px;border-bottom:1px solid rgba(148,163,184,.14);"><strong>EVENT</strong> <span style="color:#94a3b8;">${esc(event.type || 'evento não publicado')}</span><button type="button" data-event-index="${index}" style="float:right;background:none;border:0;color:#67e8f9;cursor:pointer;">FOCAR</button></div>`).join('');
-      cityList.innerHTML = `<div style="font-weight:800;letter-spacing:.08em;margin-bottom:6px;">AI CITY · LIST VIEW</div>${agents.map(a => entity('AGENT', `${a.name || a.id} · ${a.status || 'NÃO PUBLICADO'}`, 'agent', a.id || a.name)).join('')}${missions.map(m => entity('MISSION', `${m.name || m.id} · ${m.status || 'NÃO PUBLICADO'}`, 'mission', m.id)).join('')}${jobs.map(j => entity('JOB', `${j.id || '—'} · ${j.status || 'NÃO PUBLICADO'}`, 'job', j.id)).join('')}${eventRows || '<div>Nenhuma entidade operacional publicada.</div>'}`;
+      cityList.innerHTML = `<div style="font-weight:800;letter-spacing:.08em;margin-bottom:6px;">AI CITY · LIST VIEW</div>${projects.map(p => entity('PROJECT', `${p.name || p.projectName || p.id} · ${p.status || 'NÃO PUBLICADO'}`, 'project', p.id || p.projectId)).join('')}${agents.map(a => entity('AGENT', `${a.name || a.id} · ${a.status || 'NÃO PUBLICADO'}`, 'agent', a.id || a.name)).join('')}${missions.map(m => entity('MISSION', `${m.name || m.id} · ${m.status || 'NÃO PUBLICADO'}`, 'mission', m.id)).join('')}${jobs.map(j => entity('JOB', `${j.id || '—'} · ${j.status || 'NÃO PUBLICADO'}`, 'job', j.id)).join('')}${eventRows || '<div>Nenhuma entidade operacional publicada.</div>'}`;
       cityList.querySelectorAll('[data-city-action]').forEach((button) => button.addEventListener('click', () => {
         const id = button.dataset.cityId;
         if (button.dataset.cityAction === 'agent') window.fenixCity?.focusAgent(id);
         if (button.dataset.cityAction === 'mission') window.fenixCity?.focusMission(id);
         if (button.dataset.cityAction === 'job') window.fenixCity?.focusJob(id);
+        if (button.dataset.cityAction === 'project') window.fenixCity?.focusProject(id);
       }));
       cityList.querySelectorAll('[data-event-index]').forEach((button) => button.addEventListener('click', () => {
         const event = events[Number(button.dataset.eventIndex)];
@@ -839,6 +841,7 @@
   window.addEventListener('fenix-handoff-selected', (e) => openHandoffInspector(e.detail));
   window.addEventListener('fenix-mission-selected', (e) => openMissionDetailModal(e.detail?.missionId));
   window.addEventListener('fenix-job-selected', (e) => openJobDetailModal(e.detail?.jobId));
+  window.addEventListener('fenix-project-selected', (e) => { document.querySelector('[data-nav="mirror"]')?.click(); });
 
   // ==========================================
   // CHAT WORKFLOW & INTENT ROUTING (Rule 7, 8, 28)
