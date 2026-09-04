@@ -16,6 +16,14 @@ node --test test/
 node src/server.js
 ```
 
+Para uma verificação operacional reproduzível, com o servidor já iniciado e uma sessão local
+disponível em `.session_token`, execute `npm run qa:playwright`. O smoke test navega pelas views
+canônicas, valida o snapshot do runtime e gera evidência em `qa-results/playwright/`.
+
+Em desenvolvimento, o shell HTML é servido sem cache e os assets com `no-cache`; após atualizar
+`src/server.js` ou `src/security/security-plane.js`, reinicie o processo com `npm start` para
+carregar a versão nova no listener local.
+
 O runtime universal para IDEs usa `POST /api/v2/jobs`, BullMQ, worker persistente, worktree isolado e gates reais. CLI e MCP são apenas adaptadores desse contrato. Consulte [`docs/UNIVERSAL_ORCHESTRATOR.md`](docs/UNIVERSAL_ORCHESTRATOR.md).
 
 ## Planos implementados (todos com testes)
