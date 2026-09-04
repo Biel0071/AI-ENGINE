@@ -575,12 +575,20 @@
     const cityList = document.getElementById('cityListView');
     if (cityList && !cityList.hidden) {
       const entity = (label, value, action, id) => `<button type="button" data-city-action="${action}" data-city-id="${esc(id || '')}" style="display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(148,163,184,.14);padding:7px;color:#cbd5e1;cursor:pointer;"><strong>${esc(label)}</strong> <span style="color:#94a3b8;">${esc(value)}</span></button>`;
-      cityList.innerHTML = `<div style="font-weight:800;letter-spacing:.08em;margin-bottom:6px;">AI CITY · LIST VIEW</div>${agents.map(a => entity('AGENT', `${a.name || a.id} · ${a.status || 'NÃO PUBLICADO'}`, 'agent', a.id || a.name)).join('')}${missions.map(m => entity('MISSION', `${m.name || m.id} · ${m.status || 'NÃO PUBLICADO'}`, 'mission', m.id)).join('')}${jobs.map(j => entity('JOB', `${j.id || '—'} · ${j.status || 'NÃO PUBLICADO'}`, 'job', j.id)).join('') || '<div>Nenhuma entidade operacional publicada.</div>'}`;
+      const eventRows = events.slice(0, 10).map((event, index) => `<div style="padding:7px;border-bottom:1px solid rgba(148,163,184,.14);"><strong>EVENT</strong> <span style="color:#94a3b8;">${esc(event.type || 'evento não publicado')}</span><button type="button" data-event-index="${index}" style="float:right;background:none;border:0;color:#67e8f9;cursor:pointer;">FOCAR</button></div>`).join('');
+      cityList.innerHTML = `<div style="font-weight:800;letter-spacing:.08em;margin-bottom:6px;">AI CITY · LIST VIEW</div>${agents.map(a => entity('AGENT', `${a.name || a.id} · ${a.status || 'NÃO PUBLICADO'}`, 'agent', a.id || a.name)).join('')}${missions.map(m => entity('MISSION', `${m.name || m.id} · ${m.status || 'NÃO PUBLICADO'}`, 'mission', m.id)).join('')}${jobs.map(j => entity('JOB', `${j.id || '—'} · ${j.status || 'NÃO PUBLICADO'}`, 'job', j.id)).join('')}${eventRows || '<div>Nenhuma entidade operacional publicada.</div>'}`;
       cityList.querySelectorAll('[data-city-action]').forEach((button) => button.addEventListener('click', () => {
         const id = button.dataset.cityId;
         if (button.dataset.cityAction === 'agent') window.fenixCity?.focusAgent(id);
         if (button.dataset.cityAction === 'mission') window.fenixCity?.focusMission(id);
         if (button.dataset.cityAction === 'job') window.fenixCity?.focusJob(id);
+      }));
+      cityList.querySelectorAll('[data-event-index]').forEach((button) => button.addEventListener('click', () => {
+        const event = events[Number(button.dataset.eventIndex)];
+        const payload = event?.payload || {};
+        if (payload.agentId) window.fenixCity?.focusAgent(payload.agentId);
+        else if (payload.missionId) window.fenixCity?.focusMission(payload.missionId);
+        else if (payload.jobId) window.fenixCity?.focusJob(payload.jobId);
       }));
     }
 

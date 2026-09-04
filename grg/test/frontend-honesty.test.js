@@ -84,5 +84,7 @@ test('ai city: LIST VIEW é acessível e usa as entidades sincronizadas', () => 
   assert.match(command, /agents\.map/);
   assert.match(command, /missions\.map/);
   assert.match(command, /jobs\.map/);
+  assert.match(command, /eventRows/);
+  assert.match(command, /data-event-index/);
   assert.match(city, /fenix-city-list-requested/);
 });
