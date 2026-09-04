@@ -276,16 +276,19 @@
   function requestSnapshot() {
     const token = getLiveToken();
     const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-    fetch('/runtime/snapshot', { headers })
-      .then(r => {
-        if (!r.ok) {
-          updateStatus(r.status === 401 ? 'AUTH_REQUIRED' : 'RECONNECTING');
-          return null;
-        }
-        return r.json();
-      })
-      .then(data => { if (data) applySnapshot(data); })
-      .catch(() => updateStatus('RECONNECTING'));
+    const attempt = (remaining) => fetch('/runtime/snapshot', { headers }).then(async r => {
+      if (r.status === 429 && remaining > 0) {
+        const delay = Math.min(Number(r.headers.get('retry-after') || 1), 5) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return attempt(remaining - 1);
+      }
+      if (!r.ok) {
+        updateStatus(r.status === 401 ? 'AUTH_REQUIRED' : 'RECONNECTING');
+        return null;
+      }
+      return r.json();
+    }).then(data => { if (data) applySnapshot(data); }).catch(() => updateStatus('RECONNECTING'));
+    return attempt(3);
   }
 
   function startPing() {
