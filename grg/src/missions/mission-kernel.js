@@ -142,7 +142,21 @@ class MissionKernel {
     return relatorio;
   }
 
-  async pause(tenantId, actorId, missionId) { await this.cp.authorize(tenantId, actorId, 'runtime:execute'); const mission = await this.#mission(tenantId, missionId); await this.#authorizeScope(tenantId, actorId, mission, 'write'); if (!['RUNNING', 'AWAITING_APPROVAL'].includes(mission.status)) throw new ValidationError(`mission cannot pause from ${mission.status}`); await this.#setMissionStatus(missionId, 'PAUSED'); await this.#event(mission, 'mission.paused', null, { status: 'PAUSED' }, actorId); return this.get(tenantId, actorId, missionId); }
+  async pause(tenantId, actorId, missionId) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:execute');
+    const mission = await this.#mission(tenantId, missionId);
+    await this.#authorizeScope(tenantId, actorId, mission, 'write');
+    if (!['RUNNING', 'AWAITING_APPROVAL'].includes(mission.status)) throw new ValidationError(`mission cannot pause from ${mission.status}`);
+    const state = await this.store.read();
+    const activeSteps = state.missionSteps.filter((item) => item.tenantId === tenantId && item.missionId === missionId && item.jobId && !TERMINAL.has(item.status));
+    for (const step of activeSteps) {
+      const job = await this.jobs.getInternal(tenantId, step.jobId);
+      if (['QUEUED', 'RUNNING'].includes(job.status)) await this.jobs.pause(tenantId, actorId, job.id);
+    }
+    await this.#setMissionStatus(missionId, 'PAUSED');
+    await this.#event(mission, 'mission.paused', null, { status: 'PAUSED', pausedJobCount: activeSteps.length }, actorId);
+    return this.get(tenantId, actorId, missionId);
+  }
   async resume(tenantId, actorId, missionId) { return this.start(tenantId, actorId, missionId); }
 
   async cancel(tenantId, actorId, missionId) {
