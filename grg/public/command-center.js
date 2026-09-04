@@ -1234,6 +1234,8 @@
       // Update topbar model chip
       const modelEl = document.getElementById('activeModel');
       if (modelEl && d.model) modelEl.textContent = d.model;
+      const platformModelEl = document.getElementById('apiPlatformModel');
+      if (platformModelEl) platformModelEl.textContent = d.model || (d.providers || []).find((p) => p?.model)?.model || 'Não publicado';
     } catch (e) {
       // O health do próprio Fênix é a fonte final: evita marcar a API offline
       // por uma falha transitória do endpoint de resumo do cockpit.

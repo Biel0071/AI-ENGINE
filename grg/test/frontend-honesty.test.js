@@ -81,6 +81,13 @@ test('frontend: pause do agente usa o job real ou informa ausência', () => {
   assert.match(command, /SEM JOB PUBLICADO/);
 });
 
+test('frontend: ribbon da API Platform aguarda o status real', () => {
+  const html = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+  assert.match(html, /id="apiPlatformStatus"[^>]*>● NÃO PUBLICADO/);
+  assert.match(html, /id="apiPlatformProviders"[^>]*>Não publicado/);
+  assert.match(html, /id="apiPlatformModel"[^>]*>Não publicado/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');
