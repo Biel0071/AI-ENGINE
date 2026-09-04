@@ -319,7 +319,10 @@ class IsoCityEngine {
       const mission = candidate.currentMission;
       return String(candidate.missionId || mission?.id || mission?.missionId || '') === String(missionId);
     });
-    if (!agent) return;
+    if (!agent) {
+      window.dispatchEvent(new CustomEvent('fenix-mission-selected', { detail: { missionId: String(missionId) } }));
+      return;
+    }
     this.state.selectedAgent = agent;
     this.state.followMissionId = String(missionId);
     this.state.followAgentId = null;
@@ -333,6 +336,7 @@ class IsoCityEngine {
       return String(job?.id || job?.jobId || candidate.jobId || '') === String(jobId);
     });
     if (agent) this.focusAgent(agent.id);
+    else if (jobId) window.dispatchEvent(new CustomEvent('fenix-job-selected', { detail: { jobId: String(jobId) } }));
   }
 
   _applyDeepLink() {

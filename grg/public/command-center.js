@@ -837,6 +837,8 @@
     }
   });
   window.addEventListener('fenix-handoff-selected', (e) => openHandoffInspector(e.detail));
+  window.addEventListener('fenix-mission-selected', (e) => openMissionDetailModal(e.detail?.missionId));
+  window.addEventListener('fenix-job-selected', (e) => openJobDetailModal(e.detail?.jobId));
 
   // ==========================================
   // CHAT WORKFLOW & INTENT ROUTING (Rule 7, 8, 28)

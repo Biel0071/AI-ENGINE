@@ -84,6 +84,8 @@ test('ai city: deep links suportam entidades do snapshot', () => {
   assert.match(city, /focusAgent\(agent\)/);
   assert.match(city, /focusMission\(mission\)/);
   assert.match(city, /focusJob\(job\)/);
+  assert.match(city, /fenix-mission-selected/);
+  assert.match(city, /fenix-job-selected/);
 });
 
 test('ai city: LIST VIEW é acessível e usa as entidades sincronizadas', () => {
