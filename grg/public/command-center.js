@@ -319,6 +319,36 @@
   }
 
   // Modal de Logs do Agente
+  function openAgentDeskModal(agentId) {
+    const live = window.FENIX?.live || {};
+    const agents = live.agents || [];
+    const ag = agents.find(a => String(a.id || a.agentId || a.name || '').toLowerCase() === String(agentId || '').toLowerCase());
+    const title = `<i class="ph-fill ph-desktop" style="color:var(--fenix-cyan);"></i> AGENT DESK: ${esc(ag?.name || agentId)}`;
+    const currentJob = ag?.currentJob;
+    const currentMission = ag?.currentMission;
+    const body = `
+      <div class="orch-modal-section">
+        <div class="orch-modal-section-title">Identidade operacional</div>
+        <div class="orch-modal-data-grid">
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">STATUS</div><div class="orch-modal-data-val">${esc(ag?.status || 'Não publicado')}</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MODELO</div><div class="orch-modal-data-val">${esc(ag?.model || ag?.modelName || 'Não publicado')}</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MISSÃO</div><div class="orch-modal-data-val">${esc(currentMission?.name || currentMission?.id || 'Nenhuma')}</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">JOB</div><div class="orch-modal-data-val">${esc(currentJob?.name || currentJob?.id || 'Nenhum')}</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">DISTRITO</div><div class="orch-modal-data-val">${esc(ag?.district || 'Não publicado')}</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">FERRAMENTA</div><div class="orch-modal-data-val">${esc(ag?.currentTool || currentJob?.tool || 'Não publicada')}</div></div>
+        </div>
+      </div>
+      <div class="orch-modal-section">
+        <div class="orch-modal-section-title">Workspace autorizado</div>
+        <div style="font-family:var(--fenix-font-mono);font-size:9px;color:var(--fenix-text-dim);">Arquivos, Git, terminal e memória são exibidos quando publicados pelo runtime deste agente.</div>
+      </div>`;
+    const footer = `<button class="orch-inspect-btn" id="modalDeskLogs">LOGS</button><button class="orch-inspect-btn" id="modalDeskSkills">SKILLS</button><button class="orch-inspect-btn" id="modalDeskClose">FECHAR</button>`;
+    openModal(title, body, footer);
+    document.getElementById('modalDeskClose')?.addEventListener('click', closeModal);
+    document.getElementById('modalDeskLogs')?.addEventListener('click', () => openAgentLogsModal(agentId));
+    document.getElementById('modalDeskSkills')?.addEventListener('click', () => openAgentSkillsModal(agentId));
+  }
+
   function openAgentLogsModal(agentId) {
     const live = window.FENIX?.live || {};
     const events = live.events || [];
@@ -355,8 +385,8 @@
     const ag = agents.find(a => (a.id || a.agentId || a.name || '').toLowerCase() === String(agentId || '').toLowerCase()) || {
       id: agentId,
       name: agentId,
-      tools: ['AST Reader', 'Code Generator', 'Test Runner', 'Git Sync'],
-      permissions: ['workspace:read', 'workspace:write', 'test:exec']
+      tools: [],
+      permissions: []
     };
 
     const title = `<i class="ph-fill ph-lightning" style="color:var(--fenix-amber);"></i> AGENT SKILLS: ${esc(ag.name || ag.id)}`;
@@ -364,7 +394,7 @@
       <div class="orch-modal-section">
         <div class="orch-modal-section-title">Ferramentas e Capacidades</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
-          ${(ag.tools || ['AST Reader', 'Code Generator', 'Test Runner', 'Git Sync']).map(t => `
+          ${(ag.tools || []).map(t => `
             <span class="orch-status-pill online" style="font-size:9px;">${esc(t)}</span>
           `).join('')}
         </div>
@@ -372,10 +402,11 @@
       <div class="orch-modal-section">
         <div class="orch-modal-section-title">Permissões Governadas</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          ${(ag.permissions || ['workspace:read', 'workspace:write']).map(p => `
+          ${(ag.permissions || []).map(p => `
             <span class="orch-status-pill done" style="font-size:8.5px;">${esc(p)}</span>
           `).join('')}
         </div>
+        ${!(ag.tools || []).length ? '<div style="color:var(--fenix-text-dim);font-size:9px;">Nenhuma ferramenta publicada para este agente.</div>' : ''}
       </div>
     `;
 
@@ -752,6 +783,7 @@
       selectedAgentId = e.detail.agent.id || e.detail.agent.name;
       updateAgentInspector(selectedAgentId);
       renderPanels();
+      openAgentDeskModal(selectedAgentId);
     }
   });
 
