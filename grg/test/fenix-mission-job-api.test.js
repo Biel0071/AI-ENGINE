@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
+const WebSocket = require('ws');
 const { start } = require('../src/server');
 const { createApp } = require('../src/app');
 
@@ -75,6 +76,43 @@ test('FENIX SSE stream sends the connected event from a started server', async (
     });
     assert.match(event, /data: \{"status":"CONNECTED"/);
   } finally { await new Promise((resolve) => server.close(resolve)); try { fs.unlinkSync(dataFile); } catch {} }
+});
+
+test('FENIX WebSocket stream authenticates and forwards a real runtime event', async () => {
+  const dataFile = path.join(os.tmpdir(), `fenix-ws-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
+  const server = await start(0, { dataFile, llm: false, localRuntimeWorker: false, bootstrapAdmin: { ...admin, tenantName: 'FENIX WS', name: 'FENIX WS', role: 'master_admin' } });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  let ws;
+  try {
+    const login = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(admin) }).then((r) => r.json());
+    assert.ok(login.token);
+    const messages = [];
+    ws = new WebSocket(`ws://127.0.0.1:${server.address().port}/events`, { headers: { authorization: `Bearer ${login.token}` } });
+    const connectedPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('WebSocket connected event timeout')), 3000);
+      ws.on('message', (raw) => { const item = JSON.parse(raw.toString()); messages.push(item); if (item.type === 'runtime.connected') { clearTimeout(timer); resolve(item); } });
+    });
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('WebSocket connection timeout')), 3000);
+      ws.once('open', () => { clearTimeout(timer); resolve(); });
+      ws.once('error', reject);
+    });
+    const connected = await connectedPromise;
+    assert.equal(connected.payload.status, 'ok');
+    const eventPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('WebSocket runtime event timeout')), 3000);
+      ws.on('message', (raw) => { const item = JSON.parse(raw.toString()); messages.push(item); if (item.type === 'test.runtime.event') { clearTimeout(timer); resolve(item); } });
+    });
+    await server.app.bus.emit('test.runtime.event', { agentId: 'Developer', source: 'contract-test' });
+    const event = await eventPromise;
+    assert.equal(event.payload.type, 'test.runtime.event');
+    assert.equal(event.payload.payload.agentId, 'Developer');
+    assert.ok(messages.length >= 2);
+  } finally {
+    if (ws && ws.readyState !== WebSocket.CLOSED) ws.terminate();
+    await new Promise((resolve) => server.close(resolve));
+    try { fs.unlinkSync(dataFile); } catch {}
+  }
 });
 
 test('FENIX Project Kernel links a real mission and stale recovery requeues the same job', async () => {
