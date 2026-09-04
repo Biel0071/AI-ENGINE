@@ -16,6 +16,7 @@ const { handleDeveloperRoutes } = require('./api/developer-routes');
 const { handleProductExperienceRoutes } = require('./api/product-experience-routes');
 const { handleProjectMirrorRoutes } = require('./api/project-mirror-routes');
 const { handleUniversalJobRoutes } = require('./api/universal-job-routes');
+const { handleOrchestrationRoutes } = require('./api/orchestration-routes');
 
 const crypto = require('node:crypto');
 
@@ -278,6 +279,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // seguranca exigem (rejects unauthenticated api access / rejects dev headers by default).
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
+
+      const orchestrationHandled = await handleOrchestrationRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId });
+      if (orchestrationHandled) return;
 
       // Read-only readiness status must not initialize the legacy product
       // experience engines. Full probes remain explicit (`boot=true`).

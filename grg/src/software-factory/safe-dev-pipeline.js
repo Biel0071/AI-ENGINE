@@ -217,6 +217,12 @@ function parsePlan(text) {
   let plan;
   try { plan = JSON.parse(raw); } catch { throw new ValidationError('AI implementation response is not valid JSON'); }
   if (!Array.isArray(plan.files) || plan.files.length > 40) throw new ValidationError('AI implementation plan requires at most 40 files');
+  for (const file of plan.files) {
+    const candidate = String(file?.path || '').replace(/\\/g, '/');
+    if (!candidate || path.isAbsolute(candidate) || candidate.split('/').includes('..') || candidate.split('/').includes('.git')) {
+      throw new ValidationError(`AI implementation plan contains an unsafe relative path: ${candidate}`);
+    }
+  }
   return plan;
 }
 
