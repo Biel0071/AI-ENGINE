@@ -23,18 +23,20 @@ for (const [width, height] of viewports) {
       const nodes = [...(active || document).querySelectorAll('*')].filter((node) => {
         const style = getComputedStyle(node); return style.display !== 'none' && style.visibility !== 'hidden';
       });
-      const outside = [], invalid = [];
+      const outside = [], belowViewport = [], invalid = [];
       for (const node of nodes) {
         const rect = node.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) continue;
         const id = node.id || node.className?.toString?.().split(' ').slice(0, 2).join('.') || node.tagName;
-        if (rect.left < -2 || rect.top < -2 || rect.right > width + 2 || rect.bottom > height + 2) outside.push({ id, rect: { left: Math.round(rect.left), top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom) } });
+        const item = { id, rect: { left: Math.round(rect.left), top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom) } };
+        if (rect.left < -2 || rect.right > viewportWidth + 2 || rect.top < -2) outside.push(item);
+        else if (rect.bottom > viewportHeight + 2) belowViewport.push(item);
         if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) invalid.push(id);
       }
       const structural = ['.sidebar-nav', '.global-topbar', '.views-container', '.orch-center-area', '.orch-right-column'].map((selector) => {
         const node = document.querySelector(selector); if (!node) return null; const rect = node.getBoundingClientRect(); return { selector, rect: { left: Math.round(rect.left), top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom), width: Math.round(rect.width), height: Math.round(rect.height) } };
       }).filter(Boolean);
-      return { view: viewName, viewport: { width, height }, scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth, horizontalOverflow: document.documentElement.scrollWidth > width + 2, outside: outside.slice(0, 30), outsideCount: outside.length, invalid, structural };
+      return { view: viewName, viewport: { width: viewportWidth, height: viewportHeight }, scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth, horizontalOverflow: document.documentElement.scrollWidth > viewportWidth + 2, outside: outside.slice(0, 30), outsideCount: outside.length, belowViewportCount: belowViewport.length, belowViewport: belowViewport.slice(0, 10), invalid, structural };
     }, { width, height, viewName: view });
     out.results.push(measurement);
   }
