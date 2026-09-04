@@ -487,7 +487,15 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       const cancelJob = url.pathname.match(/^\/api\/runtime\/jobs\/([^/]+)\/cancel$/);
       if (req.method === 'POST' && cancelJob) return sendJson(res, 202, await app.jobs.cancel(tenantId, actorId, cancelJob[1]), requestId);
       if (req.method === 'POST' && url.pathname === '/api/runtime/schedules') return sendJson(res, 201, await app.jobs.schedule(tenantId, actorId, await readJson(req)), requestId);
-      if (req.method === 'POST' && url.pathname === '/api/runtime/tick') return sendJson(res, 202, { jobs: await app.jobs.tick(tenantId, actorId) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/runtime/tick') {
+        // Manual ticks must not hold the browser request open while a scheduled
+        // handler or worker is running. The JobEngine remains canonical; this
+        // route only acknowledges the request and the next snapshot publishes
+        // the resulting jobs/statuses.
+        app.jobs.tick(tenantId, actorId)
+          .catch((error) => logger.error({ event: 'runtime.manual-tick.failed', error: error.message, requestId }));
+        return sendJson(res, 202, { accepted: true, requestId }, requestId);
+      }
       if (req.method === 'POST' && url.pathname === '/api/runtime/work') { const body = await readJson(req); await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin'); return sendJson(res, 200, { jobs: await app.jobs.runBatch(body.workerId || actorId, body.limit || 5) }, requestId); }
       if (req.method === 'POST' && url.pathname === '/api/execution/tools') return sendJson(res, 201, await app.tools.register(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/execution/tools') return sendJson(res, 200, { tools: await app.tools.list(tenantId, actorId) }, requestId);
