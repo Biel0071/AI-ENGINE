@@ -1394,7 +1394,8 @@
         if (redisEl && health.checks?.redis) redisEl.textContent = health.checks.redis.ok ? '✓' : '✗';
         return;
       } catch (_) {}
-      if (statusEl) { statusEl.textContent = '● OFFLINE'; statusEl.style.color = '#ef4444'; }
+      // Preserve the last authoritative health result on transient summary/auth
+      // failures; a failed poll is not proof that the platform is offline.
     }
   }
   setInterval(() => { if (commandViewActive()) refreshApiPlatformStatus(); }, 15000);
