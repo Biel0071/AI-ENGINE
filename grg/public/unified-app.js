@@ -273,6 +273,10 @@ async function refreshAll() {
     state.events = data.events?.events || [];
     state.jobs = data.jobs?.jobs || [];
     state.missions = data.missions?.missions || [];
+    if (activeView === 'operations' && state.missions[0]?.id) {
+      try { state.data.missionGraph = await api(`/missions/${encodeURIComponent(state.missions[0].id)}/graph`); }
+      catch (error) { state.data.missionGraph = { error: error.message }; }
+    }
     renderAll();
   } finally {
     state.refreshing = false;
@@ -386,6 +390,13 @@ function renderMissions() {
         <div style="color:var(--text-muted); font-size:11px;">${esc(j.objective || j.name || 'Tarefa em andamento...')}</div>
       </div>`).join('')
     : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">├ö├àÔûÆ</span>Sem Jobs ativos</div>';
+
+  if ($('missionGraph')) {
+    const graph = state.data.missionGraph;
+    $('missionGraph').textContent = graph
+      ? JSON.stringify({ source: graph.source, nodes: graph.nodes, edges: graph.edges }, null, 2)
+      : 'Selecione uma missão para visualizar o grafo.';
+  }
 
   const programs = state.data.programs?.programs || [];
   if ($('programList')) $('programList').innerHTML = programs.length
