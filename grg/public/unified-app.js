@@ -413,8 +413,12 @@ function renderRuntime() {
 }
 
 function renderMissions() {
-  const visibleMissions = state.missions.slice(-20).reverse();
-  const visibleJobs = state.jobs.slice(-20).reverse();
+  const liveMissions = Array.isArray(window.FENIX?.live?.missions) ? window.FENIX.live.missions : [];
+  const liveJobs = Array.isArray(window.FENIX?.live?.jobs) ? window.FENIX.live.jobs : [];
+  const missions = [...new Map([...state.missions, ...liveMissions].map((item) => [item.id || item.missionId, item])).values()].filter(Boolean);
+  const jobs = [...new Map([...state.jobs, ...liveJobs].map((item) => [item.id || item.jobId, item])).values()].filter(Boolean);
+  const visibleMissions = missions.slice(-20).reverse();
+  const visibleJobs = jobs.slice(-20).reverse();
   if ($('missionList')) $('missionList').innerHTML = state.missions.length
     ? visibleMissions.map((m) => row(m.id || 'mission', m.objective || m.name || '', m.status || 'ACTIVE').replace('<tr>', `<tr data-mission-id="${esc(m.id || '')}" style="cursor:pointer" title="Carregar DAG persistido">`)).join('')
     : row('missoes', 'sem historico', 'EMPTY');
