@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "domains": {
+    "command": ["command", "operations", "runtime"],
+    "build": ["ide", "project", "projects"],
+    "intelligence": ["agents", "memory", "knowledge"],
+    "infrastructure": ["mcp", "observability"],
+    "validation": ["browser", "city", "terminal"]
+  },
+  "screens": {
+    "command": {"purpose":"prompt e entrada de missões","readEndpoints":["/api/fenix/missions","/api/fenix/jobs"]},
+    "city": {"purpose":"runtime visual, workers e métricas","readEndpoints":["/api/v2/city/state"]},
+    "agents": {"purpose":"agentes e subagentes","readEndpoints":["/api/agents/panel","/api/agents/swarm","/api/v2/agents/live-states"]},
+    "ide": {"purpose":"chat, código, preview e edição visual","readEndpoints":["/api/dev/fs","/api/project-mirror","/api/v2/vision/inspect-element"]},
+    "operations": {"purpose":"missões, jobs e controle operacional","readEndpoints":["/api/fenix/missions","/api/fenix/jobs","/api/v2/jarvis/jobs"]},
+    "runtime": {"purpose":"health, serviços e workers","readEndpoints":["/health","/api/v2/city/state"]},
+    "project": {"purpose":"Project Mirror e arquitetura do projeto","readEndpoints":["/api/project-mirror","/api/v2/projects"]},
+    "projects": {"purpose":"projetos acoplados e grafo","readEndpoints":["/api/v2/projects","/api/project-mirror/projects"]},
+      "memory": {"purpose":"memória de engenharia e visual","readEndpoints":["/api/fenix/memory/search","/api/v2/memory/development"]},
+    "knowledge": {"purpose":"conhecimento e grafo","readEndpoints":["/api/knowledge-federation/publications"]},
+    "mcp": {"purpose":"conectores e providers","readEndpoints":["/api/connectors","/api/fenix/providers"]},
+    "browser": {"purpose":"QA visual e auditoria de interação","readEndpoints":["/api/v2/frontend-reality/screens","/api/v2/frontend-reality/audit"]},
+    "observability": {"purpose":"métricas, séries e evidências","readEndpoints":["/api/observability/metrics","/api/observability/series"]},
+    "terminal": {"purpose":"filesystem, terminal isolado e preview","readEndpoints":["/api/dev/fs","/api/dev/terminal"]}
+  },
+  "acceptance": {"oneVisibleView":true,"hashMatchesView":true,"noFatalConsoleError":true,"noMockData":true}
+}
