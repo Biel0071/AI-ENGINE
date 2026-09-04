@@ -52,6 +52,7 @@ class IsoCityEngine {
       particles: [],
       bubbles: []
     };
+    this.lastCityEvent = null;
 
     this.DISTRICTS = {
       'CENTRAL':    { x: 0,  y: 0,  w: 4, h: 4, color: '#1e293b', label: 'CENTRAL PLAZA',    emoji: '🏛️' },
@@ -78,6 +79,9 @@ class IsoCityEngine {
     }, 3000);
     window.addEventListener('fenix-live', () => this.syncRealData());
     window.addEventListener('fenix:data', () => this.syncRealData());
+    window.addEventListener('fenix-city-event', (event) => {
+      this.lastCityEvent = event.detail || null;
+    });
     this.syncRealData();
     this.startLoop();
   }
@@ -331,6 +335,7 @@ class IsoCityEngine {
 
     this._drawBackdrop(ctx, width, height);
     this._drawGrid(ctx, cx, cy, zoom);
+    this._drawCityEventHud(ctx, width);
 
     const districts = Object.values(this.DISTRICTS).sort((a,b) => (a.x+a.y)-(b.x+b.y));
     for (const d of districts) this._drawDistrict(ctx, d, cx, cy, zoom);
@@ -350,6 +355,27 @@ class IsoCityEngine {
 
     this._drawHUD(ctx, width, height);
     this._drawMinimap(ctx, width, height);
+  }
+
+  _drawCityEventHud(ctx, width) {
+    const event = this.lastCityEvent;
+    if (!event) return;
+    const age = Date.now() - Date.parse(event.occurredAt || '');
+    if (!Number.isFinite(age) || age > 8000) return;
+    const alpha = Math.max(0, 1 - age / 8000);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = 'rgba(3,7,18,.88)';
+    ctx.strokeStyle = event.visual?.visualState === 'ERROR' ? '#ef4444' : '#06b6d4';
+    ctx.lineWidth = 1;
+    const text = `EVENT  ${String(event.type).toUpperCase()}`;
+    const x = width - Math.min(260, width - 24);
+    ctx.fillRect(x, 12, Math.min(248, width - 24), 28);
+    ctx.strokeRect(x, 12, Math.min(248, width - 24), 28);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '700 10px monospace';
+    ctx.fillText(text.slice(0, 34), x + 10, 30);
+    ctx.restore();
   }
 
   _drawBackdrop(ctx, w, h) {
