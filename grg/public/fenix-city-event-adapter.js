@@ -27,7 +27,12 @@
   document.addEventListener('fenix-live', (event) => {
     const detail = event.detail || {};
     const type = String(detail.type || detail.event || detail.name || '').toLowerCase();
-    if (!type || type === 'snapshot' || type === 'status' || !CITY_EVENT_MAP[type]) return;
+    if (type === 'status' && detail.status) {
+      window.FENIX.city.connectionStatus = String(detail.status).toUpperCase();
+      document.dispatchEvent(new CustomEvent('fenix-city-connection', { detail: { status: window.FENIX.city.connectionStatus } }));
+      return;
+    }
+    if (!type || type === 'snapshot' || !CITY_EVENT_MAP[type]) return;
     const projection = {
       type,
       visual: CITY_EVENT_MAP[type],

@@ -55,6 +55,7 @@ class IsoCityEngine {
       bubbles: []
     };
     this.lastCityEvent = null;
+    this.cityConnectionStatus = window.FENIX?.live?.status || 'CONNECTING';
 
     this.DISTRICTS = {
       'CENTRAL':    { x: 0,  y: 0,  w: 4, h: 4, color: '#1e293b', label: 'CENTRAL PLAZA',    emoji: '🏛️' },
@@ -83,6 +84,9 @@ class IsoCityEngine {
     window.addEventListener('fenix:data', () => this.syncRealData());
     window.addEventListener('fenix-city-event', (event) => {
       this.lastCityEvent = event.detail || null;
+    });
+    window.addEventListener('fenix-city-connection', (event) => {
+      this.cityConnectionStatus = event.detail?.status || 'UNKNOWN';
     });
     this.syncRealData();
     this.startLoop();
@@ -411,6 +415,19 @@ class IsoCityEngine {
   }
 
   _drawCityEventHud(ctx, width) {
+    const connection = this.cityConnectionStatus;
+    if (connection && connection !== 'ONLINE') {
+      ctx.save();
+      ctx.fillStyle = 'rgba(3,7,18,.9)';
+      ctx.strokeStyle = connection === 'OFFLINE' ? '#ef4444' : '#f59e0b';
+      ctx.lineWidth = 1;
+      ctx.fillRect(12, 12, 132, 24);
+      ctx.strokeRect(12, 12, 132, 24);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '700 9px monospace';
+      ctx.fillText(`WS  ${connection}`, 22, 28);
+      ctx.restore();
+    }
     const event = this.lastCityEvent;
     if (!event) return;
     const age = Date.now() - Date.parse(event.occurredAt || '');
