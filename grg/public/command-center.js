@@ -1232,7 +1232,18 @@
     const uptimeEl   = document.getElementById('apiPlatformUptime');
     const dbEl       = document.getElementById('apiPlatformDb');
     const redisEl    = document.getElementById('apiPlatformRedis');
+    const applyHealthBaseline = (health) => {
+      const connected = health?.status === 'ready' && health.checks?.['ai-providers']?.ok === true;
+      if (statusEl) { statusEl.textContent = connected ? '● CONECTADO' : '● OFFLINE'; statusEl.style.color = connected ? '#10b981' : '#ef4444'; }
+      if (provEl && connected) provEl.textContent = Object.keys(health.checks?.['ai-providers']?.providers || {}).join(' · ') || 'providers ativos';
+      if (dbEl && health.checks?.['state-store']) dbEl.textContent = health.checks['state-store'].ok ? '✓' : '✗';
+      return connected;
+    };
     try {
+      // Health is intentionally public and is the authoritative baseline while
+      // the richer authenticated platform summary is unavailable or expired.
+      const health = await fetch('/health', { signal: AbortSignal.timeout(3000) }).then((r) => r.ok ? r.json() : null);
+      applyHealthBaseline(health);
       const r = await fetch(API_PLATFORM_URL, {
         headers: { Authorization: 'Bearer ' + (getAuthToken() || '') },
         signal: AbortSignal.timeout(5000)
@@ -1264,11 +1275,8 @@
           headers: token ? { Authorization: 'Bearer ' + token } : {},
           signal: AbortSignal.timeout(3000)
         }).then((r) => r.json());
-        const connected = health.checks?.['ai-providers']?.ok === true;
-        if (statusEl) { statusEl.textContent = connected ? '● CONECTADO' : '● OFFLINE'; statusEl.style.color = connected ? '#10b981' : '#ef4444'; }
-        if (provEl && connected) provEl.textContent = 'aiplatform · ollama';
-        if (dbEl && health.checks?.['state-store']) dbEl.textContent = '✓';
-        if (redisEl && health.checks?.['redis']) redisEl.textContent = '✓';
+        const connected = applyHealthBaseline(health);
+        if (redisEl && health.checks?.redis) redisEl.textContent = health.checks.redis.ok ? '✓' : '✗';
         return;
       } catch (_) {}
       if (statusEl) { statusEl.textContent = '● OFFLINE'; statusEl.style.color = '#ef4444'; }
