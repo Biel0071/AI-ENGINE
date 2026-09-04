@@ -423,7 +423,7 @@ function renderMissions() {
   const jobs = [...new Map([...state.jobs, ...liveJobs].map((item) => [item.id || item.jobId, item])).values()].filter(Boolean);
   const visibleMissions = missions.slice(-20).reverse();
   const visibleJobs = jobs.slice(-20).reverse();
-  if ($('missionList')) $('missionList').innerHTML = state.missions.length
+  if ($('missionList')) $('missionList').innerHTML = missions.length
     ? visibleMissions.map((m) => row(m.id || 'mission', m.objective || m.name || '', m.status || 'ACTIVE').replace('<tr>', `<tr data-mission-id="${esc(m.id || '')}" style="cursor:pointer" title="Carregar DAG persistido">`)).join('')
     : row('missoes', 'sem historico', 'EMPTY');
 
@@ -439,13 +439,13 @@ function renderMissions() {
     });
   });
   
-  if ($('jobList')) $('jobList').innerHTML = state.jobs.length
+  if ($('jobList')) $('jobList').innerHTML = jobs.length
     ? visibleJobs.map((j) => `<div data-job-id="${esc(j.id || '')}" tabindex="0" style="padding:12px; border-bottom:1px solid var(--border); margin-bottom:8px; background:var(--bg-base); border-radius:6px; cursor:pointer">
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
           <strong style="color:var(--text-main);">${esc(j.id || 'job')}</strong>
           <span class="badge ${j.status === 'COMPLETED' ? 'green' : (j.status==='FAILED'?'rose':'warn')}">${esc(j.status || 'RUNNING')}</span>
         </div>
-        <div style="color:var(--text-muted); font-size:11px;">${esc(j.objective || j.name || 'Tarefa em andamento...')}</div>
+        <div style="color:var(--text-muted); font-size:11px;">${esc(j.objective || j.name || j.type || j.currentStage || j.status || 'Job sem descrição publicada')}</div>
       </div>`).join('')
     : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon" style="font-size: 16px;">├ö├àÔûÆ</span>Sem Jobs ativos</div>';
   document.querySelectorAll('#jobList [data-job-id]').forEach((item) => item.addEventListener('click', () => window.dispatchEvent(new CustomEvent('fenix-job-selected', { detail: { jobId: item.dataset.jobId } }))));
