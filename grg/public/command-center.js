@@ -1138,6 +1138,10 @@
     const agentId = event.detail?.agentId;
     if (agentId) openAgentDeskModal(agentId);
   });
+  document.addEventListener('click', (event) => {
+    const row = event.target.closest?.('#agentList tr[data-agent-id]');
+    if (row) openAgentDeskModal(row.dataset.agentId);
+  }, true);
 
   setInterval(renderPanels, 3000);
   setInterval(refreshRegisteredSkills, 10000);
