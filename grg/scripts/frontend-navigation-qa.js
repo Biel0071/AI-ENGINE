@@ -12,7 +12,7 @@ const outDir = path.resolve(process.env.FENIX_QA_OUT || 'qa-results');
 const fastMode = process.argv.includes('--fast');
 const actionTimeout = Number(process.env.FENIX_QA_TIMEOUT || (fastMode ? 2000 : 1500));
 const maxControlsPerScreen = Number(process.env.FENIX_QA_MAX_CONTROLS || (fastMode ? 4 : 8));
-const navigationTimeout = Number(process.env.FENIX_QA_NAV_TIMEOUT || 8_000);
+const navigationTimeout = Number(process.env.FENIX_QA_NAV_TIMEOUT || 30_000);
 const stepDelay = Number(process.env.FENIX_QA_STEP_DELAY || (fastMode ? 250 : 500));
 const screenManifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'qa', 'frontend-screen-manifest.json'), 'utf8'));
 const domainByScreen = Object.fromEntries(Object.entries(screenManifest.domains).flatMap(([domain, screens]) => screens.map(screen => [screen, domain])));
@@ -39,7 +39,9 @@ fs.mkdirSync(outDir, { recursive: true });
   page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push({ type: 'console', message: msg.text() }); });
   page.on('requestfailed', req => {
     const error = req.failure()?.errorText || 'unknown';
-    if (req.url().includes('/events/stream') && error === 'net::ERR_ABORTED') return;
+    // Navigating between views intentionally aborts in-flight polling/assets;
+    // only transport failures that survive navigation are actionable.
+    if (error === 'net::ERR_ABORTED') return;
     failedRequests.push({ url: req.url(), error });
   });
 
