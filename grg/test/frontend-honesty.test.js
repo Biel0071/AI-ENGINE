@@ -63,3 +63,13 @@ test('ai city live: atividade e eventos devem ser determinísticos e derivados d
   assert.match(adapter, /fenix-live/);
   assert.match(adapter, /sourceEventId/);
 });
+
+test('ai city: deep links suportam entidades do snapshot', () => {
+  const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
+  assert.match(city, /query\.get\('agent'\)/);
+  assert.match(city, /query\.get\('mission'\)/);
+  assert.match(city, /query\.get\('job'\)/);
+  assert.match(city, /focusAgent\(agent\)/);
+  assert.match(city, /focusMission\(mission\)/);
+  assert.match(city, /focusJob\(job\)/);
+});
