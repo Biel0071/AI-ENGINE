@@ -841,6 +841,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // V10: relatorio de prontidao. `?boot=false` usa o ultimo estado gravado em vez de
       // rodar os 26 probes; `?write=true` grava PRODUCTION_READINESS_REPORT.md.
       if (req.method === 'GET' && url.pathname === '/api/governance/production-readiness') {
+        if (url.searchParams.get('boot') !== 'true') {
+          return sendJson(res, 200, {
+            status: 'NOT_RUN',
+            message: 'Auditoria de prontidão não executada. Use ?boot=true de forma explícita; probes completos não rodam no caminho operacional.',
+            generatedBy: actorId,
+            generatedAt: new Date().toISOString(),
+          }, requestId);
+        }
         return sendJson(res, 200, await app.productionReadiness.generate(tenantId, actorId, {
           // A leitura do relatório não deve iniciar uma ativação pesada por
           // acidente. `boot=true` é opt-in explícito; o padrão usa o último
