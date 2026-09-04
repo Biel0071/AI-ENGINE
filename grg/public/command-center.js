@@ -45,18 +45,23 @@
   }
 
   // Helper para chamadas autenticadas à API canônica
-  async function apiCall(path, method = 'GET', data = null) {
+  async function apiCall(path, method = 'GET', data = null, retried = false) {
     if (Date.now() < apiBackoffUntil) return null;
-    const token = getAuthToken();
+    const token = retried ? null : getAuthToken();
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
     try {
       const res = await fetch(path, {
         method,
+        credentials: 'same-origin',
         headers,
         body: data ? JSON.stringify(data) : undefined
       });
       if (res.status === 401) {
+        // A stale bearer token can survive a server restart while the
+        // HttpOnly session cookie remains valid. Retry once without the stale
+        // header so the canonical cookie session can recover the shell.
+        if (!retried && token) return apiCall(path, method, data, true);
         console.warn('Sessão expirada ou não autenticada para ' + path);
       }
       if (res.status === 429) {
