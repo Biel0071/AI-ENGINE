@@ -1212,6 +1212,7 @@
     const missions = getMissions();
     const mission = missions[0] || {};
     const jobs = mission.id ? getJobs().filter((job) => job.missionId === mission.id) : getJobs().slice(0, 12);
+    const tasks = (state.api.tasks || []).filter((task) => !mission.id || task.missionId === mission.id);
     const done = jobs.filter((job) => normalizeStatus(job.status) === 'COMPLETED').length;
     const progress = jobs.length ? Math.round((done / jobs.length) * 100) : 0;
     return `<div class="mission-control-panel">
@@ -1229,6 +1230,7 @@
         Memory: jobs.some((job) => job.memory || job.ragContext) ? 'published' : 'not published'
       })}
       <div class="mission-dag">${jobs.map((job) => `<button type="button" data-open-job="${esc(job.id)}"><b>${esc(job.type || 'JOB')}</b><small>${esc(normalizeStatus(job.status))}</small></button>`).join('') || '<span class="city-empty-line">No mission jobs published.</span>'}</div>
+      <div class="microtask-panel"><b>TASKS PERSISTIDAS</b>${tasks.slice(0, 12).map((task) => `<span class="${statusClass(task.status)}"><button type="button" data-open-task="${esc(task.id)}">${esc(task.title || task.type || task.id)}</button><small>${esc(normalizeStatus(task.status))}</small></span>`).join('') || '<small>No persisted mission tasks published.</small>'}</div>
     </div>`;
   }
 
@@ -1334,8 +1336,9 @@
       button.addEventListener('click', () => {
         const taskId = button.dataset.openTask;
         const job = getJobs().find((item) => Array.isArray(item.microtasks) && item.microtasks.some((task) => task.id === taskId));
-        const task = job?.microtasks?.find((item) => item.id === taskId);
-        if (task) openInspector('TASK DESK', task.title || task.id, taskDetailsHtml(task, job));
+        const task = job?.microtasks?.find((item) => item.id === taskId) || (state.api.tasks || []).find((item) => item.id === taskId);
+        const taskJob = job || getJobs().find((item) => item.id === task?.jobId);
+        if (task) openInspector('TASK DESK', task.title || task.id, taskDetailsHtml(task, taskJob));
       });
     });
     $('runtimeInspectorBody').querySelectorAll('[data-project-card]').forEach((button) => {
