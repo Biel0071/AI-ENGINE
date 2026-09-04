@@ -106,9 +106,25 @@
 
 @media (max-width: 1440px) {
   .fenix-os-layout > .main-body { padding-right: 0; }
-  .fenix-os-layout > .orch-right-column { width: 320px; }
+  /* Keep the city wide at laptop/desktop widths. The contextual rail remains
+     reachable as an overlay instead of stealing the operating surface width. */
+  .fenix-os-layout > .orch-right-column {
+    position: fixed;
+    top: 58px;
+    right: 12px;
+    bottom: 40px;
+    width: min(320px, calc(100vw - 24px));
+    z-index: 30;
+    transform: translateX(calc(100% + 20px));
+    transition: transform .2s ease;
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 14px;
+    box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  }
+  .fenix-os-layout > .orch-right-column:hover,
+  .fenix-os-layout > .orch-right-column:focus-within { transform: translateX(0); }
   .fenix-os-layout > .view,
-  body > .view { right: 320px; }
+  body > .view { right: 0; }
   .orch-bottom-trio {
     grid-template-columns: minmax(340px, 1.5fr) minmax(205px, .9fr) minmax(205px, .9fr);
   }
