@@ -15,15 +15,12 @@ window.FENIX = window.FENIX || {
 
 window.FENIX.api = async function api(path, options = {}, retried = false) {
   const token = localStorage.getItem('grg_token');
-  if (!token) {
-    console.error('[FENIX] Nenhuma identidade. Abortando:', path);
-    if (path !== '/api/login') { location.href = '/GRG-login'; }
-    return Promise.reject(new Error("No token"));
-  }
-  const headers = { 'Authorization': `Bearer ${token}` };
+  // A sessão pode estar no cookie HttpOnly após reload. Não redirecionar
+  // prematuramente só porque o Bearer não está no localStorage.
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
   if (!(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
   try {
-    const res = await fetch(path, { ...options, headers: { ...headers, ...options.headers } });
+    const res = await fetch(path, { ...options, credentials: 'same-origin', headers: { ...headers, ...options.headers } });
     if (res.status === 401 && !retried) {
       const success = await attemptRefresh();
       if (success) return window.FENIX.api(path, options, true);
@@ -71,8 +68,14 @@ async function bootFenix() {
   window.FENIX_BOOTING = true;
   try {
     console.log('[FENIX] BOOT: Verificando backend...');
-    const status = await window.FENIX.api('/api/v2/ai-platform/status').catch(() => null)
-      || await window.FENIX.api('/overview').catch(() => null);
+    // /health is intentionally public and is the authoritative liveness
+    // signal. Do not label a healthy backend OFFLINE merely because the UI
+    // session has no bearer token for protected overview routes.
+    const publicHealth = await fetch('/health', { headers: { Accept: 'application/json' } })
+      .then((r) => r.ok ? r.json() : null).catch(() => null);
+    const status = (publicHealth?.ok || publicHealth?.status === 'ready') ? publicHealth
+      : await window.FENIX.api('/api/v2/ai-platform/status').catch(() => null)
+        || await window.FENIX.api('/overview').catch(() => null);
     if (status) {
       window.FENIX.state.status = 'ONLINE';
       console.log('[FENIX] BOOT: API ONLINE');
@@ -102,9 +105,8 @@ async function bootFenix() {
 
     // Load sequence: live-runtime PRIMEIRO (WS), depois UI
     const scripts = [
-      '/runtime-cockpit.js?v=12',
-      '/unified-app.js?v=11',
-      '/live-runtime.js?v=11',
+  '/runtime-cockpit.js?v=17',
+      '/live-runtime.js?v=12',
       '/ide-enhancer.js?v=5',
       '/cockpit-app.js?v=3',
       '/visual-inspector.js?v=3',
