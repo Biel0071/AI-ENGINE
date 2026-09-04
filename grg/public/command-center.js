@@ -1157,20 +1157,6 @@
   setInterval(() => { if (commandViewActive()) refreshSystemHealth(); }, 20000);
   if (commandViewActive()) refreshSystemHealth();
 
-  // === INSPECTOR AGENT TIMER ===
-  const _inspectorStart = Date.now();
-  function updateInspectorTimer() {
-    const el = document.getElementById('inspAgentTime');
-    if (!el) return;
-    const secs = Math.floor((Date.now() - _inspectorStart) / 1000);
-    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-    const s = String(secs % 60).padStart(2, '0');
-    el.textContent = `${h}:${m}:${s}`;
-  }
-  setInterval(updateInspectorTimer, 1000);
-
-
   // === LIVE ACTIVITY BRIDGE: mirror orchLiveActivityList → orchLiveActivityStream ===
   // command-center.js writes to orchLiveActivityList; we mirror to the visible stream element
   function syncActivityStream() {
