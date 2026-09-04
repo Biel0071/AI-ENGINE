@@ -36,6 +36,11 @@ const snapshot = await page.evaluate(async () => {
 });
 if (snapshot.status !== 200) throw new Error(`runtime snapshot returned HTTP ${snapshot.status}`);
 if (!snapshot.body?.payload) throw new Error('runtime snapshot has no payload');
+const publishedAgents = Array.isArray(snapshot.body.payload.agents) ? snapshot.body.payload.agents.length : 0;
+if (publishedAgents > 0) {
+  const renderedAgents = await page.locator('#orchActiveAgentsList [data-agent-id]').count();
+  if (renderedAgents === 0) throw new Error('snapshot has agents but Command Center rendered none');
+}
 if (consoleErrors.length) throw new Error(`browser errors: ${consoleErrors.join(' | ')}`);
-console.log(JSON.stringify({ ok: true, views: 7, snapshotStatus: snapshot.status, screenshot: `${outputDir}/command-1440.png` }));
+console.log(JSON.stringify({ ok: true, views: 7, snapshotStatus: snapshot.status, publishedAgents, screenshot: `${outputDir}/command-1440.png` }));
 await browser.close();
