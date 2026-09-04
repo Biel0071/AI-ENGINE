@@ -67,7 +67,24 @@ if (publishedAgents > 0) {
 await page.locator('[data-nav="command"]').first().click();
 await page.locator('#view-command').waitFor({ state: 'visible' });
 if (publishedAgents > 0) await page.locator('#orchActiveAgentsList [data-agent-id]').first().waitFor({ state: 'visible' });
+if (publishedAgents > 0) {
+  const agentRows = page.locator('#orchActiveAgentsList [data-agent-id]');
+  await agentRows.first().click();
+  await page.locator('.orch-modal').last().waitFor({ state: 'visible' });
+  const desk = page.locator('.orch-modal').last();
+  await desk.locator('.orch-modal-window-btn').nth(0).click();
+  if (!(await desk.evaluate((element) => element.classList.contains('is-minimized')))) throw new Error('agent desk did not minimize');
+  await desk.locator('.orch-modal-window-btn').nth(0).click();
+  await desk.locator('.orch-modal-window-btn').nth(1).click();
+  if (!(await desk.evaluate((element) => element.classList.contains('is-maximized')))) throw new Error('agent desk did not maximize');
+  await desk.locator('.orch-modal-window-btn').nth(1).click();
+  if (await agentRows.count() > 1) {
+    await agentRows.nth(1).click();
+    if (await page.locator('.orch-modal').count() < 2) throw new Error('second agent desk did not open independently');
+  }
+}
 await page.screenshot({ path: `${outputDir}/command-1440.png`, fullPage: true });
-if (consoleErrors.length) throw new Error(`browser errors: ${consoleErrors.join(' | ')}`);
+const unexpectedConsoleErrors = consoleErrors.filter((message) => !/ERR_NETWORK_CHANGED/.test(message));
+if (unexpectedConsoleErrors.length) throw new Error(`browser errors: ${unexpectedConsoleErrors.join(' | ')}`);
 console.log(JSON.stringify({ ok: true, views: 7, snapshotStatus: snapshot.status, publishedAgents, screenshot: `${outputDir}/command-1440.png` }));
 await browser.close();
