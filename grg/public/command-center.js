@@ -107,7 +107,11 @@
         <div class="orch-modal">
           <div class="orch-modal-header">
             <div class="orch-modal-title">${titleHtml}</div>
-            <button class="orch-modal-close" id="orchModalCloseBtn">&times;</button>
+            <div class="orch-modal-window-actions">
+              <button class="orch-modal-window-btn" id="orchModalMinBtn" title="Minimizar">−</button>
+              <button class="orch-modal-window-btn" id="orchModalMaxBtn" title="Maximizar">□</button>
+              <button class="orch-modal-close" id="orchModalCloseBtn">&times;</button>
+            </div>
           </div>
           <div class="orch-modal-body">
             ${bodyHtml}
@@ -119,6 +123,31 @@
     container.style.display = 'block';
 
     document.getElementById('orchModalCloseBtn')?.addEventListener('click', closeModal);
+    const modal = container.querySelector('.orch-modal');
+    const header = container.querySelector('.orch-modal-header');
+    if (modal) {
+      Object.assign(modal.style, { position: 'relative', resize: 'both', minWidth: '360px', minHeight: '180px' });
+      const style = document.createElement('style');
+      style.textContent = '.orch-modal-window-actions{display:flex;align-items:center;gap:4px}.orch-modal-window-btn{background:transparent;border:0;color:var(--fenix-text-dim);cursor:pointer;padding:4px 7px;border-radius:4px}.orch-modal-window-btn:hover{color:#fff;background:rgba(255,255,255,.1)}.orch-modal.is-minimized{height:48px!important;min-height:0;resize:none}.orch-modal.is-minimized>:not(.orch-modal-header){display:none}.orch-modal.is-maximized{position:fixed;inset:12px;width:auto;max-width:none;max-height:none;height:auto}';
+      modal.appendChild(style);
+    }
+    document.getElementById('orchModalMinBtn')?.addEventListener('click', () => modal?.classList.toggle('is-minimized'));
+    document.getElementById('orchModalMaxBtn')?.addEventListener('click', (event) => {
+      modal?.classList.toggle('is-maximized');
+      event.currentTarget.textContent = modal?.classList.contains('is-maximized') ? '❐' : '□';
+    });
+    let drag = null;
+    header?.addEventListener('pointerdown', (event) => {
+      if (event.target.closest('button') || modal?.classList.contains('is-maximized')) return;
+      const rect = modal.getBoundingClientRect(); drag = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
+      header.setPointerCapture(event.pointerId);
+    });
+    header?.addEventListener('pointermove', (event) => {
+      if (!drag || !modal) return;
+      modal.style.left = `${Math.max(8, drag.left + event.clientX - drag.x)}px`;
+      modal.style.top = `${Math.max(8, drag.top + event.clientY - drag.y)}px`;
+    });
+    header?.addEventListener('pointerup', () => { drag = null; });
     document.getElementById('orchModalBackdrop')?.addEventListener('click', (e) => {
       if (e.target.id === 'orchModalBackdrop') closeModal();
     });
