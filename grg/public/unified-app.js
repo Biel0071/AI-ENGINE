@@ -66,10 +66,11 @@ async function api(path, options = {}, retried = false) {
   }
   const res = await fetch(url, {
     ...options,
+    credentials: 'same-origin',
     headers: {
-      authorization: `Bearer ${accessToken}`,
       'Accept': 'application/json',
       'Content-Type': 'application/json',
+      ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
       ...(options.headers || {})
     },
   });
