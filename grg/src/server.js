@@ -842,7 +842,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // rodar os 26 probes; `?write=true` grava PRODUCTION_READINESS_REPORT.md.
       if (req.method === 'GET' && url.pathname === '/api/governance/production-readiness') {
         return sendJson(res, 200, await app.productionReadiness.generate(tenantId, actorId, {
-          boot: url.searchParams.get('boot') !== 'false',
+          // A leitura do relatório não deve iniciar uma ativação pesada por
+          // acidente. `boot=true` é opt-in explícito; o padrão usa o último
+          // estado medido e mantém o runtime operacional responsivo.
+          boot: url.searchParams.get('boot') === 'true',
           write: url.searchParams.get('write') === 'true',
         }), requestId);
       }
