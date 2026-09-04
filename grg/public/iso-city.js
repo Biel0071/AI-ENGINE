@@ -52,6 +52,8 @@ class IsoCityEngine {
 
     this.world = {
       agents: new Map(),
+      missions: [],
+      jobs: [],
       particles: [],
       bubbles: []
     };
@@ -206,6 +208,18 @@ class IsoCityEngine {
       document.getElementById('btnFollowMission')?.classList.toggle('active', Boolean(this.state.followMissionId));
     });
     document.getElementById('btnCityFilters')?.addEventListener('click', () => this.toggleFilterMenu());
+    document.getElementById('citySearchInput')?.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      const query = String(event.currentTarget.value || '').trim().toLowerCase();
+      if (!query) return;
+      const agent = [...this.world.agents.values()].find((item) => `${item.id} ${item.name}`.toLowerCase().includes(query));
+      if (agent) return this.focusAgent(agent.id);
+      const mission = this.world.missions?.find?.((item) => `${item.id} ${item.name || item.title}`.toLowerCase().includes(query));
+      if (mission) return this.focusMission(mission.id);
+      const job = this.world.jobs?.find?.((item) => `${item.id} ${item.title || item.type}`.toLowerCase().includes(query));
+      if (job) return this.focusJob(job.id);
+      this.canvas.setAttribute('aria-label', `AI City: nenhuma entidade encontrada para ${query}`);
+    });
     document.getElementById('btnFullscreenCity')?.addEventListener('click', () => {
       const container = document.getElementById('wsCityContainer') || this.canvas;
       if (!document.fullscreenElement) {
@@ -369,6 +383,8 @@ class IsoCityEngine {
       }
 
       const next = new Map();
+      this.world.missions = window.FENIX?.live?.missions || window.state?.missions || [];
+      this.world.jobs = window.FENIX?.live?.jobs || window.state?.jobs || [];
       for (const a of apiAgents) {
         const id = String(a.id || a.agentId || a.name || '').trim();
         if (!id) continue;
@@ -387,9 +403,9 @@ class IsoCityEngine {
           color: a.color || template.color,
           emoji: a.emoji || template.emoji,
           district,
-          status: String(a.status || 'AVAILABLE').toUpperCase(),
-          workMsg: a.currentJob?.name || a.currentJob?.title || a.activity || (a.status === 'RUNNING' ? 'executando...' : 'idle'),
-          model: a.model || a.modelName || 'Qwen 2.5 3B',
+          status: a.status ? String(a.status).toUpperCase() : 'NÃO PUBLICADO',
+          workMsg: a.currentJob?.name || a.currentJob?.title || a.activity || (a.status ? 'atividade publicada' : 'atividade não publicada'),
+          model: a.model || a.modelName || 'Não publicado',
           isReal: true,
           currentJob: a.currentJob || null,
           currentMission: a.currentMission || null,
