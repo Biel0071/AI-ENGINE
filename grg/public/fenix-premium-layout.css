@@ -215,8 +215,8 @@
    available below and in the operational rail without competing with it. */
 @media (min-width: 761px) {
   .fenix-orchestrator-layout .orch-city-zone {
-    height: clamp(460px, 58vh, 760px);
-    min-height: 460px;
+    height: clamp(520px, calc(100vh - 260px), 760px);
+    min-height: 520px;
   }
 
   .fenix-orchestrator-layout .orch-bottom-trio {
