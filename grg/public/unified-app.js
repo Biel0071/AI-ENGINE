@@ -254,6 +254,12 @@ async function refreshAll() {
       security: [
         ['encryption', () => api('/security/encryption/status')],
       ],
+      operations: [
+        ['operations', () => api('/operations/state')],
+        ['missions', () => api('/missions')],
+        ['jobs', () => api('/runtime/jobs')],
+        ['jarvisQueue', () => api('/v2/jarvis/jobs/queue')],
+      ],
       mcp: [
         ['connectors', () => api('/connectors')],
         ['router', () => api('/ai/router/select')],
@@ -287,7 +293,10 @@ async function refreshAll() {
     state.repos = data.repositories?.repositories || [];
     state.office = data.office?.office || [];
     state.events = data.events?.events || [];
-    state.jobs = data.jobs?.jobs || [];
+    const runtimeJobs = data.jobs?.jobs || [];
+    const jarvisJobs = ['running', 'waiting', 'completed', 'failed', 'cancelled']
+      .flatMap((key) => Array.isArray(data.jarvisQueue?.[key]) ? data.jarvisQueue[key] : []);
+    state.jobs = [...new Map([...runtimeJobs, ...jarvisJobs].map((job) => [job.id, job])).values()];
     state.missions = data.missions?.missions || [];
     if (activeView === 'operations' && state.missions[0]?.id) {
       try { state.data.missionGraph = await api(`/missions/${encodeURIComponent(state.missions[0].id)}/graph`); }
