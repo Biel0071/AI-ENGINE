@@ -66,6 +66,7 @@ class SafeDevPipeline {
       const ai = await this.aiGateway.invoke(tenantId, actorId, {
         taskType: 'generate',
         prompt: buildPrompt(prompt, project, policy),
+        format: 'json',
       });
       await context.stage?.('ai.completed', 45);
       const plan = parsePlan(ai.text);
