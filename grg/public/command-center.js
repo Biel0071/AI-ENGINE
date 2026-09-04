@@ -652,9 +652,12 @@
     }
 
     // 3. FLOATING OVERLAYS (AI CITY)
-    const activeMission = missions.find(m => m.id === selectedMissionId) ||
-                          missions.find(m => m.status === 'RUNNING' || m.status === 'IN_PROGRESS') ||
-                          missions[0];
+    // Never present an arbitrary historical/failed mission as active. A
+    // terminal mission is shown only after the operator explicitly selects it;
+    // otherwise the overlay represents the current runtime, or stays hidden.
+    const selectedMission = missions.find(m => String(m.id) === String(selectedMissionId));
+    const activeMission = selectedMission ||
+                          missions.find(m => ['RUNNING', 'IN_PROGRESS', 'PAUSED', 'AWAITING_APPROVAL'].includes(String(m.status || '').toUpperCase()));
 
     const floatMissionCard = document.getElementById('floatingMissionCard');
     if (floatMissionCard) {
@@ -662,6 +665,9 @@
         floatMissionCard.style.display = 'block';
         floatMissionCard.style.cursor = 'pointer';
         selectedMissionId = activeMission.id;
+        const labelEl = document.getElementById('floatMissionLabel');
+        const terminal = ['SUCCEEDED', 'COMPLETED', 'FAILED', 'CANCELLED', 'BLOCKED'].includes(String(activeMission.status || '').toUpperCase());
+        if (labelEl) labelEl.textContent = terminal ? 'MISSÃO SELECIONADA' : 'MISSÃO ATIVA';
         const titleEl = document.getElementById('floatMissionTitle');
         if (titleEl) titleEl.textContent = activeMission.displayName || activeMission.name || 'Missão sem nome publicado';
         const descEl = document.getElementById('floatMissionDesc');
@@ -682,6 +688,8 @@
         if (agentsEl) agentsEl.textContent = `${activeAgentsCount} / ${totalAgents}`;
         const etaEl = document.getElementById('floatMissionEta');
         if (etaEl) etaEl.textContent = activeMission.eta ? activeMission.eta : 'estimativa indisponível';
+        document.getElementById('btnPauseMission')?.style.setProperty('display', terminal ? 'none' : '');
+        document.getElementById('btnCancelMission')?.style.setProperty('display', terminal ? 'none' : '');
       } else floatMissionCard.style.display = 'none';
     }
 
