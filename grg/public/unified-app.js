@@ -1015,7 +1015,17 @@ function init() {
   refreshAll();
   // O stream SSE cobre mudanças operacionais; polling de 30s é apenas
   // reconciliação de dados, evitando tempestade de requests em telas/iframes.
-  setInterval(() => { if (!document.hidden && String(location.hash.slice(1) || 'command').split('?')[0] === 'operations') refreshAll(); }, 5000);
+  setInterval(async () => {
+    if (document.hidden || String(location.hash.slice(1) || 'command').split('?')[0] !== 'operations') return;
+    try {
+      const response = await fetch('/api/v2/jarvis/jobs/queue', { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (!response.ok) return;
+      const queue = await response.json();
+      const jobs = ['running', 'waiting', 'completed', 'failed', 'cancelled'].flatMap((key) => Array.isArray(queue[key]) ? queue[key] : []);
+      state.jobs = [...new Map([...state.jobs, ...jobs].map((job) => [job.id, job])).values()];
+      renderMissions();
+    } catch {}
+  }, 5000);
   setInterval(() => { if (!document.hidden && String(location.hash.slice(1) || 'command').split('?')[0] !== 'operations') refreshAll(); }, 30000);
 }
 
