@@ -191,14 +191,12 @@
   function openJobDetailModal(jobId) {
     const live = window.FENIX?.live || {};
     const jobs = live.jobs || [];
-    const job = jobs.find(j => j.id === jobId) || jobs[0] || {
-      id: jobId || 'JOB-ACTIVE',
-      type: 'validation.browser',
-      agentId: 'Testing',
-      status: 'RUNNING',
-      progress: 65,
-      prompt: 'Validação E2E no Chromium'
-    };
+    const job = jobs.find(j => j.id === jobId) || jobs[0];
+    if (!job) {
+      openModal('JOB DETAIL', '<div class="orch-modal-section">Nenhum job publicado pelo runtime.</div>', '<button class="orch-inspect-btn" id="modalJobBtnClose">FECHAR</button>');
+      document.getElementById('modalJobBtnClose')?.addEventListener('click', closeModal);
+      return;
+    }
 
     const title = `<i class="ph-fill ph-gear" style="color:var(--fenix-cyan);"></i> JOB DETAIL: ${esc(job.id)}`;
     const body = `
@@ -245,6 +243,21 @@
 
     openModal(title, body, footer);
     document.getElementById('modalJobBtnClose')?.addEventListener('click', closeModal);
+  }
+
+  function openHandoffInspector(event) {
+    const payload = event?.payload || {};
+    const value = (key, fallback = 'Não publicado') => esc(payload[key] || event?.[key] || fallback);
+    const body = `<div class="orch-modal-section"><div class="orch-modal-section-title">Transferência operacional</div><div class="orch-modal-grid">
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">FROM</div><div class="orch-modal-data-val">${value('fromAgentId', payload.from || payload.sourceAgentId)}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">TO</div><div class="orch-modal-data-val">${value('toAgentId', payload.to || payload.targetAgentId)}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MISSION</div><div class="orch-modal-data-val">${value('missionId')}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">JOB</div><div class="orch-modal-data-val">${value('jobId')}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">STATUS</div><div class="orch-modal-data-val">${value('status', 'EVENTO RECEBIDO')}</div></div>
+      <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">TIMESTAMP</div><div class="orch-modal-data-val">${esc(event?.occurredAt || event?.at || 'Não publicado')}</div></div>
+    </div></div><div class="orch-modal-section"><div class="orch-modal-section-title">Mensagem</div><div class="orch-modal-data-item">${value('message', payload.summary || payload.message)}</div></div>`;
+    openModal('<i class="ph-fill ph-arrows-left-right" style="color:var(--fenix-cyan);"></i> HANDOFF INSPECTOR', body, '<button class="orch-inspect-btn" id="modalHandoffClose">FECHAR</button>');
+    document.getElementById('modalHandoffClose')?.addEventListener('click', closeModal);
   }
 
   // Modal de Inspeção de Projeto (Project Inspector)
@@ -762,9 +775,9 @@
     const jobEl = document.getElementById('inspAgentJob');
     if (jobEl) jobEl.textContent = activeJob ? (activeJob.prompt || activeJob.id) : 'Disponível / Idle';
     const modEl = document.getElementById('inspAgentModel');
-    if (modEl) modEl.textContent = realAg.model || 'Qwen 2.5 3B (Local)';
+    if (modEl) modEl.textContent = realAg.model || 'Não publicado';
     const distEl = document.getElementById('inspAgentDistrict');
-    if (distEl) distEl.textContent = realAg.district || 'CENTRAL';
+    if (distEl) distEl.textContent = realAg.district || 'Não publicado';
   }
 
   // Listen for agent clicks in AI City canvas
@@ -776,6 +789,7 @@
       openAgentDeskModal(selectedAgentId);
     }
   });
+  window.addEventListener('fenix-handoff-selected', (e) => openHandoffInspector(e.detail));
 
   // ==========================================
   // CHAT WORKFLOW & INTENT ROUTING (Rule 7, 8, 28)

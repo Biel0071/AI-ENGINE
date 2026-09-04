@@ -154,6 +154,7 @@ class IsoCityEngine {
     this.canvas.addEventListener('click', e => {
       const rect = this.canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      if (this._hitTestHandoff(mx, my)) return;
       const agent = this._hitTestAgent(mx, my);
       this.state.selectedAgent = agent === this.state.selectedAgent ? null : agent;
       if (this.state.selectedAgent) {
@@ -213,6 +214,26 @@ class IsoCityEngine {
         document.exitFullscreen?.().catch(() => {});
       }
     });
+  }
+
+  _hitTestHandoff(mx, my) {
+    const handoff = this.activeHandoff;
+    if (!handoff || handoff.expiresAt <= Date.now()) return false;
+    const payload = handoff.event.payload || {};
+    const fromId = payload.fromAgentId || payload.from || payload.sourceAgentId;
+    const toId = payload.toAgentId || payload.to || payload.targetAgentId;
+    const from = [...this.world.agents.values()].find((agent) => String(agent.id) === String(fromId) || String(agent.name) === String(fromId));
+    const to = [...this.world.agents.values()].find((agent) => String(agent.id) === String(toId) || String(agent.name) === String(toId));
+    if (!from || !to) return false;
+    const rect = this.canvas.getBoundingClientRect();
+    const a = this.toScreen(from.x, from.y, 0.35, rect.width / 2, rect.height / 2, this.state.camera.zoom);
+    const b = this.toScreen(to.x, to.y, 0.35, rect.width / 2, rect.height / 2, this.state.camera.zoom);
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const t = Math.max(0, Math.min(1, ((mx - a.x) * dx + (my - a.y) * dy) / (dx * dx + dy * dy || 1)));
+    const px = a.x + t * dx, py = a.y + t * dy;
+    if (Math.hypot(mx - px, my - py) > 14) return false;
+    window.dispatchEvent(new CustomEvent('fenix-handoff-selected', { detail: handoff.event }));
+    return true;
   }
 
   toggleFilterMenu() {
