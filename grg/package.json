@@ -10,7 +10,7 @@
   },
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node --env-file=.env src/server.js",
     "test": "node --test --test-force-exit --test-reporter=dot \"test/*.test.js\"",
     "test:orchestration": "node --test test/central-orchestrator.test.js test/job-engine.test.js test/safe-development-pipeline.test.js test/aiplatform.test.js test/aiplatform-job-polling.test.js",
     "qa:screen-map": "node scripts/build-screen-function-map.js",
@@ -21,6 +21,7 @@
     "qa:frontend": "node scripts/frontend-navigation-qa.js",
     "qa:frontend:fast": "node scripts/frontend-navigation-qa.js --fast",
     "qa:frontend:all": "node scripts/run-frontend-audit.js",
+    "qa:playwright": "node qa/fenix-city-playwright.mjs",
     "build:windows-agent": "node scripts/build-windows-agent.js",
     "mcp": "node bin/fenix-mcp.js"
   },
