@@ -1108,9 +1108,11 @@
       // The old `connected` property never existed, which made a healthy
       // WebSocket appear as EVENTS OFFLINE in the cockpit.
       const liveOnline = window.FENIX?.live?.status === 'ONLINE';
+      const wsOpen = window.FENIX?.ws?.readyState === 1;
+      const recentHeartbeat = Boolean(window.FENIX?.live?.lastHeartbeatAt);
       const sseOnline = typeof EventSource !== 'undefined'
         && window.sseEventSource?.readyState === EventSource.OPEN;
-      const isEventsOk = liveOnline || sseOnline;
+      const isEventsOk = liveOnline || wsOpen || sseOnline || recentHeartbeat;
 
       function setNode(id, label, ok, altLabel) {
         const el = document.getElementById(id);
