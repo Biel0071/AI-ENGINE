@@ -362,9 +362,11 @@ class IsoCityEngine {
     const agent = query.get('agent');
     const mission = query.get('mission');
     const job = query.get('job');
+    const project = query.get('project');
     if (agent) this.focusAgent(agent);
     else if (mission) this.focusMission(mission);
     else if (job) this.focusJob(job);
+    else if (project) this.focusProject(project);
   }
 
   _hitTestAgent(mx, my) {

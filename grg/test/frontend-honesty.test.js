@@ -83,6 +83,7 @@ test('ai city: deep links suportam entidades do snapshot', () => {
   assert.match(city, /query\.get\('agent'\)/);
   assert.match(city, /query\.get\('mission'\)/);
   assert.match(city, /query\.get\('job'\)/);
+  assert.match(city, /query\.get\('project'\)/);
   assert.match(city, /focusAgent\(agent\)/);
   assert.match(city, /focusMission\(mission\)/);
   assert.match(city, /focusJob\(job\)/);
