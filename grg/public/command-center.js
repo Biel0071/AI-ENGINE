@@ -1358,13 +1358,15 @@
       // the richer authenticated platform summary is unavailable or expired.
       const health = await fetch('/health', { signal: AbortSignal.timeout(3000) }).then((r) => r.ok ? r.json() : null);
       applyHealthBaseline(health);
-      const r = await fetch(API_PLATFORM_URL, {
+      const r = await fetch(`${API_PLATFORM_URL}?ts=${Date.now()}`, {
         headers: { Authorization: 'Bearer ' + (getAuthToken() || '') },
+        credentials: 'same-origin',
+        cache: 'no-store',
         signal: AbortSignal.timeout(5000)
       });
       if (r.status === 429) {
         const retryAfter = Number(r.headers.get('retry-after') || 10);
-        apiPlatformBackoffUntil = Date.now() + Math.min(Math.max(retryAfter, 5), 60) * 1000;
+        apiPlatformBackoffUntil = Date.now() + Math.min(Math.max(retryAfter, 2), 15) * 1000;
         return;
       }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
