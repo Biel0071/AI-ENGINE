@@ -312,12 +312,26 @@
       ` : ''}
     `;
 
+    const status = String(job.status || '').toUpperCase();
+    const terminal = ['SUCCEEDED', 'COMPLETED', 'FAILED', 'CANCELLED', 'DEAD_LETTER'].includes(status);
     const footer = `
+      ${status === 'PAUSED' ? '<button class="orch-inspect-btn" id="modalJobResume">RETOMAR</button>' : ''}
+      ${['QUEUED', 'RUNNING', 'STARTING'].includes(status) ? '<button class="orch-inspect-btn" id="modalJobPause">PAUSAR</button>' : ''}
+      ${['QUEUED', 'RUNNING', 'STARTING', 'PAUSED'].includes(status) ? '<button class="orch-inspect-btn" id="modalJobCancel" style="color:var(--fenix-red);">PARAR</button>' : ''}
+      ${status === 'FAILED' || status === 'DEAD_LETTER' ? '<button class="orch-inspect-btn" id="modalJobRetry">RETRY</button>' : ''}
       <button class="orch-inspect-btn" id="modalJobBtnClose">FECHAR</button>
     `;
 
     openModal(title, body, footer);
     document.getElementById('modalJobBtnClose')?.addEventListener('click', closeModal);
+    const action = async (name) => {
+      const response = await apiCall(`/api/fenix/jobs/${encodeURIComponent(job.id)}/${name}`, 'POST');
+      if (response) { closeModal(); renderPanels(); }
+    };
+    document.getElementById('modalJobPause')?.addEventListener('click', () => action('pause'));
+    document.getElementById('modalJobResume')?.addEventListener('click', () => action('resume'));
+    document.getElementById('modalJobCancel')?.addEventListener('click', () => action('cancel'));
+    document.getElementById('modalJobRetry')?.addEventListener('click', () => action('retry'));
   }
 
   function openHandoffInspector(event) {
