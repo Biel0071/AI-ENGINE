@@ -25,6 +25,14 @@ for (const view of ['agents', 'operations', 'ide', 'memory', 'mcp', 'runtime', '
   await page.waitForTimeout(350);
   await page.locator(`#view-${view}`).waitFor({ state: 'visible' });
 }
+// Exercise the real recovery path: close the live socket from the page,
+// observe reconnecting, then require a fresh authenticated connection without
+// reloading the document.
+await page.evaluate(() => window.FENIX?.ws?.close());
+await page.waitForFunction(() => ['RECONNECTING', 'CONNECTING', 'SYNCING'].includes(window.FENIX?.live?.status), { timeout: 3000 }).catch(() => {});
+await page.waitForFunction(() => window.FENIX?.ws?.readyState === 1, { timeout: 12000 });
+const reconnectStatus = await page.evaluate(() => window.FENIX?.live?.status || 'UNKNOWN');
+if (reconnectStatus !== 'ONLINE') throw new Error(`reconnect did not return ONLINE: ${reconnectStatus}`);
 const snapshot = await page.evaluate(async () => {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const response = await fetch('/runtime/snapshot', { headers: { Authorization: `Bearer ${localStorage.getItem('grg_token') || ''}` } });
