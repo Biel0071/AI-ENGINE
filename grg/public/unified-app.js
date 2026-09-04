@@ -256,7 +256,7 @@ async function refreshAll() {
       ],
       operations: [
         ['operations', () => api('/operations/state')],
-        ['missions', () => api('/missions')],
+        ['missions', () => api('/fenix/missions')],
         ['jobs', () => api('/runtime/jobs')],
         ['jarvisQueue', () => api('/v2/jarvis/jobs/queue')],
       ],
