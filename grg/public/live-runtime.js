@@ -104,7 +104,9 @@
     if (data.lastSeq) live.lastSeq = data.lastSeq;
     if (data.events) live.events = data.events;
     emit('snapshot', data);
-    if (['CONNECTING', 'SYNCING', 'RECONNECTING'].includes(live.status)) updateStatus('ONLINE');
+    // HTTP snapshot recupera os dados, mas não prova que o canal realtime está
+    // conectado. Só o handshake WebSocket pode promover o estado para ONLINE.
+    if (['CONNECTING', 'SYNCING', 'RECONNECTING'].includes(live.status)) updateStatus(ws && ws.readyState === WebSocket.OPEN ? 'ONLINE' : 'SYNCING');
     updateQueueMetrics();
   }
 
