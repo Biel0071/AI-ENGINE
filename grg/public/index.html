@@ -1032,7 +1032,7 @@ window.__fenixSubmitIdeChat = async function () {
   <script id="fenix-platform-ribbon-sync">
     // Última camada de sincronização do ribbon: usa o endpoint real depois
     // que todos os bundles terminaram de inicializar.
-    (async function syncPlatformRibbon() {
+    async function syncPlatformRibbon() {
       try {
         const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
         const response = await fetch('/api/v2/ai-platform/status?bootstrap=' + Date.now(), {
@@ -1049,7 +1049,9 @@ window.__fenixSubmitIdeChat = async function () {
         if (providers) providers.textContent = (data.providers || []).map(p => typeof p === 'string' ? p : p.name).filter(Boolean).join(' · ') || 'Não publicado';
         if (model) model.textContent = data.model || (data.providers || []).find(p => p && p.model)?.model || 'Não publicado';
       } catch (_) {}
-    })();
+    }
+    syncPlatformRibbon();
+    setInterval(syncPlatformRibbon, 5000);
   </script>
 <script>
 /* =========================================================
