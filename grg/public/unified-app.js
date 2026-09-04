@@ -413,8 +413,10 @@ function renderRuntime() {
 }
 
 function renderMissions() {
+  const visibleMissions = state.missions.slice(-20).reverse();
+  const visibleJobs = state.jobs.slice(-20).reverse();
   if ($('missionList')) $('missionList').innerHTML = state.missions.length
-    ? state.missions.map((m) => row(m.id || 'mission', m.objective || m.name || '', m.status || 'ACTIVE').replace('<tr>', `<tr data-mission-id="${esc(m.id || '')}" style="cursor:pointer" title="Carregar DAG persistido">`)).join('')
+    ? visibleMissions.map((m) => row(m.id || 'mission', m.objective || m.name || '', m.status || 'ACTIVE').replace('<tr>', `<tr data-mission-id="${esc(m.id || '')}" style="cursor:pointer" title="Carregar DAG persistido">`)).join('')
     : row('missoes', 'sem historico', 'EMPTY');
 
   document.querySelectorAll('#missionList [data-mission-id]').forEach((item) => {
@@ -430,7 +432,7 @@ function renderMissions() {
   });
   
   if ($('jobList')) $('jobList').innerHTML = state.jobs.length
-    ? state.jobs.map((j) => `<div data-job-id="${esc(j.id || '')}" tabindex="0" style="padding:12px; border-bottom:1px solid var(--border); margin-bottom:8px; background:var(--bg-base); border-radius:6px; cursor:pointer">
+    ? visibleJobs.map((j) => `<div data-job-id="${esc(j.id || '')}" tabindex="0" style="padding:12px; border-bottom:1px solid var(--border); margin-bottom:8px; background:var(--bg-base); border-radius:6px; cursor:pointer">
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
           <strong style="color:var(--text-main);">${esc(j.id || 'job')}</strong>
           <span class="badge ${j.status === 'COMPLETED' ? 'green' : (j.status==='FAILED'?'rose':'warn')}">${esc(j.status || 'RUNNING')}</span>
