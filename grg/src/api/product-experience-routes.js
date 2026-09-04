@@ -16,6 +16,17 @@ const { AgentRuntime } = require('../runtime/agent-runtime');
 const { AgentRegistry } = require('../agents/agent-registry');
 const { FENIX_AGENTS } = require('../agents/agent-definitions');
 const { AutonomousJobOrchestrator } = require('../orchestrator/autonomous-job-orchestrator');
+
+async function canonicalJobAction(app, tenantId, actorId, jobId, action) {
+  if (!app?.jobs?.getInternal || typeof app.jobs[action] !== 'function') return { found: false };
+  try {
+    await app.jobs.getInternal(tenantId, jobId);
+  } catch (error) {
+    if (/job not found/i.test(String(error?.message || error))) return { found: false };
+    throw error;
+  }
+  return { found: true, job: await app.jobs[action](tenantId, actorId, jobId) };
+}
 const { PromptCompilerEngine } = require('../compiler/prompt-compiler');
 const { FenixMind } = require('../mind/fenix-mind');
 const { AlexaVoiceGateway } = require('../voice/alexa-voice-gateway');
@@ -1384,6 +1395,8 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jobs\/[^\/]+\/pause$/)) {
     const parts = url.pathname.split('/');
     const jobId = parts[4];
+    const canonical = await canonicalJobAction(app, context.tenantId, context.actorId, jobId, 'pause');
+    if (canonical.found) { sendJson(res, 202, { jobId, status: canonical.job.status, job: canonical.job }); return true; }
     if (!jarvisOrchestrator) {
       sendError(res, 503, 'JARVIS Orchestrator not initialized');
       return true;
@@ -1401,6 +1414,8 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jobs\/[^\/]+\/resume$/)) {
     const parts = url.pathname.split('/');
     const jobId = parts[4];
+    const canonical = await canonicalJobAction(app, context.tenantId, context.actorId, jobId, 'resume');
+    if (canonical.found) { sendJson(res, 202, { jobId, status: canonical.job.status, job: canonical.job }); return true; }
     if (!jarvisOrchestrator) {
       sendError(res, 503, 'JARVIS Orchestrator not initialized');
       return true;
@@ -1418,6 +1433,8 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   if (req.method === 'POST' && url.pathname.match(/^\/api\/v2\/jobs\/[^\/]+\/cancel$/)) {
     const parts = url.pathname.split('/');
     const jobId = parts[4];
+    const canonical = await canonicalJobAction(app, context.tenantId, context.actorId, jobId, 'cancel');
+    if (canonical.found) { sendJson(res, 202, { jobId, status: canonical.job.status, job: canonical.job }); return true; }
     if (!jarvisOrchestrator) {
       sendError(res, 503, 'JARVIS Orchestrator not initialized');
       return true;
