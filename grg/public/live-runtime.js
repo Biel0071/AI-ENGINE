@@ -240,9 +240,15 @@
     const token = getLiveToken();
     const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
     fetch('/runtime/snapshot', { headers })
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (!r.ok) {
+          updateStatus(r.status === 401 ? 'AUTH_REQUIRED' : 'RECONNECTING');
+          return null;
+        }
+        return r.json();
+      })
       .then(data => { if (data) applySnapshot(data); })
-      .catch(() => {});
+      .catch(() => updateStatus('RECONNECTING'));
   }
 
   function startPing() {

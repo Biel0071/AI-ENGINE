@@ -80,6 +80,8 @@ test('runtime: reconexão sincroniza snapshot antes de voltar ao vivo', () => {
   assert.match(runtime, /updateStatus\('SYNCING'\)/);
   assert.match(runtime, /live\.status === 'SYNCING'\) updateStatus\('ONLINE'\)/);
   assert.match(runtime, /requestSnapshot\(\)/);
+  assert.match(runtime, /r\.status === 401 \? 'AUTH_REQUIRED' : 'RECONNECTING'/);
+  assert.match(runtime, /catch\(\(\) => updateStatus\('RECONNECTING'\)\)/);
 });
 
 test('ai city: deep links suportam entidades do snapshot', () => {
