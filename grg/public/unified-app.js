@@ -1003,6 +1003,13 @@ function init() {
   addEvt('cmdInput', 'input', renderCommandPalette);
   window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'command', false));
   window.addEventListener('hashchange', () => refreshAll());
+  document.addEventListener('fenix-live', (event) => {
+    const type = event.detail?.type || '';
+    if (type === 'event' || type === 'snapshot' || type === 'status') {
+      renderMissions();
+      renderHeader();
+    }
+  });
   showView(location.hash.slice(1) || 'command', false);
   bubble('Workspace unico carregado. Eu consolidei comando, runtime, missoes, AI City, office, CRM, deploy, observabilidade e developer em uma tela.');
   refreshAll();
