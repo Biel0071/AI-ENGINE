@@ -232,7 +232,10 @@
            localStorage.getItem('grg_token') ||
            sessionStorage.getItem('fenix_token') ||
            sessionStorage.getItem('grg_token') ||
-           (document.cookie.match(/fenix_session=([^;]+)/) || [])[1] ||
+           (() => {
+             const raw = (document.cookie.match(/fenix_session=([^;]+)/) || [])[1] || '';
+             try { return decodeURIComponent(raw); } catch { return raw; }
+           })() ||
            window.__FENIX_TOKEN__ || '';
   }
 
