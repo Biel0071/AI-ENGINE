@@ -74,6 +74,13 @@ test('frontend: rail operacional continua acessível em touch', () => {
   assert.match(css, /\.orch-right-column \{ transform: translateX\(0\); \}/);
 });
 
+test('frontend: pause do agente usa o job real ou informa ausência', () => {
+  const command = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'command-center.js'), 'utf8');
+  assert.match(command, /currentJobId \|\| agent\?\.currentJob\?\.id/);
+  assert.match(command, /\/api\/v2\/jobs\/\$\{encodeURIComponent\(jobId\)\}\/\$\{resume \? 'resume' : 'pause'\}/);
+  assert.match(command, /SEM JOB PUBLICADO/);
+});
+
 test('ai city live: atividade e eventos devem ser determinísticos e derivados do runtime', () => {
   const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'iso-city.js'), 'utf8');
   const adapter = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-city-event-adapter.js'), 'utf8');

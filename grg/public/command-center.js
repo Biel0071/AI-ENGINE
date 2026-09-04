@@ -1030,9 +1030,24 @@
       openAgentSkillsModal(selectedAgentId);
     });
 
-    document.getElementById('btnAgentPause')?.addEventListener('click', () => {
+    document.getElementById('btnAgentPause')?.addEventListener('click', async () => {
       const btn = document.getElementById('btnAgentPause');
-      if (btn) btn.textContent = btn.textContent.includes('PAUSAR') ? 'RETOMAR' : 'PAUSAR';
+      const agent = (window.FENIX?.live?.agents || []).find((item) => String(item.id || item.agentId || item.name) === String(selectedAgentId));
+      const jobId = agent?.currentJobId || agent?.currentJob?.id;
+      if (!jobId) {
+        if (btn) btn.textContent = 'SEM JOB PUBLICADO';
+        setTimeout(() => { if (btn) btn.textContent = 'PAUSAR'; }, 2500);
+        return;
+      }
+      const resume = btn?.dataset.paused === 'true';
+      if (btn) { btn.disabled = true; btn.textContent = resume ? 'RETOMANDO…' : 'PAUSANDO…'; }
+      try {
+        await apiCall(`/api/v2/jobs/${encodeURIComponent(jobId)}/${resume ? 'resume' : 'pause'}`, 'POST');
+        if (btn) { btn.dataset.paused = resume ? 'false' : 'true'; btn.textContent = resume ? 'PAUSAR' : 'RETOMAR'; }
+        window.dispatchEvent(new CustomEvent('fenix-runtime-refresh'));
+      } catch (error) {
+        if (btn) btn.textContent = `FALHA: ${error.message}`;
+      } finally { if (btn) btn.disabled = false; }
     });
   }
 
