@@ -6,7 +6,7 @@
 @media (max-width: 1600px) and (min-width: 981px) {
   .fenix-os-layout > .main-body { padding-right: 330px; }
   .fenix-os-layout > .orch-right-column { width: 330px; }
-  .orch-right-column { position: fixed; top: 52px; right: 0; bottom: 28px; width: 330px; z-index: 30; transform: none; }
+  .fenix-os-layout > .orch-right-column { position: fixed; top: 52px; right: 0; bottom: 28px; width: 330px; z-index: 30; transform: none !important; }
   body:has(> .view.active#view-command) .orch-right-column { position: fixed; top: 52px; right: 0; bottom: 28px; width: 330px; z-index: 30; }
   .fenix-os-layout > .view, body > .view { right: 330px; }
 }
