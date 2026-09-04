@@ -100,7 +100,7 @@
     if (data.lastSeq) live.lastSeq = data.lastSeq;
     if (data.events) live.events = data.events;
     emit('snapshot', data);
-    if (live.status === 'SYNCING') updateStatus('ONLINE');
+    if (['CONNECTING', 'SYNCING', 'RECONNECTING'].includes(live.status)) updateStatus('ONLINE');
     updateQueueMetrics();
   }
 
@@ -269,6 +269,10 @@
   function connect() {
     if (ws && ws.readyState === WebSocket.OPEN) return;
     intentionallyClosed = false;
+
+    // O snapshot HTTP é a fonte inicial de verdade e não pode depender do
+    // handshake WebSocket: proxies/reconnects podem atrasar ou rejeitar o WS.
+    requestSnapshot();
 
     try {
       ws = new WebSocket(wsUrl());
