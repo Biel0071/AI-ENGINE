@@ -1529,26 +1529,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   if (window.initCityCanvas) window.initCityCanvas();
   
-  if (!window.sseEventSource) {
-    window.sseEventSource = new EventSource('/api/v2/events/stream');
-    window.sseEventSource.onmessage = (e) => {
-      try {
-        const payload = JSON.parse(e.data);
-        const ev = payload.data;
-        if (!ev) return;
-        
-        // Append to job inspector if it's open
-        const body = document.getElementById('jobInspectorBody');
-        if (body && document.getElementById('jobInspectorModal').style.display === 'block') {
-           const div = document.createElement('div');
-           div.style.padding = '8px'; div.style.background = '#222'; div.style.borderRadius = '4px'; div.style.fontSize = '12px'; div.style.fontFamily = 'monospace'; div.style.color = '#ccc';
-           div.textContent = '[' + ev.type + '] ' + (ev.details?.step || ev.details?.action || ev.details?.message || ev.details?.provider || '');
-           body.appendChild(div);
-           body.scrollTop = body.scrollHeight;
-        }
-      } catch (err) {}
-    };
-  }
+  // Realtime is provided by live-runtime.js through the authenticated
+  // WebSocket `/events`. The old EventSource here could not send Bearer
+  // headers and caused duplicate unauthenticated 401 requests.
 });
 
 
