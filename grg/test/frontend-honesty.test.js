@@ -69,6 +69,8 @@ test('ai city live: atividade e eventos devem ser determinísticos e derivados d
   assert.match(adapter, /'job.created'/);
   assert.match(adapter, /'human.approval_required'/);
   assert.match(adapter, /'agent.tool.call'/);
+  assert.match(adapter, /'job.retrying'/);
+  assert.match(adapter, /'runtime.job.repairing'/);
 });
 
 test('runtime: reconexão sincroniza snapshot antes de voltar ao vivo', () => {
