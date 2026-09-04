@@ -18,10 +18,10 @@
 
   // Helper para obter token autenticado de todas as fontes canônicas
   function getAuthToken() {
-    return localStorage.getItem('fenix_token') ||
-           localStorage.getItem('grg_token') ||
+    return localStorage.getItem('grg_token') ||
+           localStorage.getItem('fenix_token') ||
+           sessionStorage.getItem('grg_token') ||
            sessionStorage.getItem('fenix_token') ||
-           sessionStorage.getItem('grg_refresh_token') ||
            (document.cookie.match(/fenix_session=([^;]+)/) || [])[1] ||
            window.__FENIX_TOKEN__ || null;
   }
