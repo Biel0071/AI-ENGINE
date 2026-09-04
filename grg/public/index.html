@@ -158,7 +158,7 @@
             <div class="orch-sidebar-header">HISTÓRICO DE CONVERSAS</div>
             <div id="sidebarConvList">
               <div class="orch-conv-item active" data-conv-id="conv-1">
-                <span>Evolução CRM Completa</span>
+                <span>Carregando conversa…</span>
                 <span class="orch-conv-time">14:22</span>
               </div>
               <div class="orch-conv-item" data-conv-id="conv-2">
@@ -254,22 +254,22 @@
                     <canvas id="cityCanvas" tabindex="0" role="img" aria-label="AI City: visualização do runtime FÊNIX. Use a lista de agentes, missões e atividade para navegação textual."></canvas>
 
                     <!-- FLOATING OVERLAY 1: MISSÃO ATIVA -->
-                    <div class="orch-floating-mission-card" id="floatingMissionCard">
+                    <div class="orch-floating-mission-card" id="floatingMissionCard" style="display:none;">
                       <div class="orch-floating-tag">
                         <span>MISSÃO ATIVA</span>
                         <span id="floatMissionBadge" class="orch-status-pill online" style="font-size: 8px;">EXECUTANDO</span>
                       </div>
-                      <div class="orch-mission-name" id="floatMissionTitle">Evolução CRM Completa</div>
-                      <div class="orch-mission-desc" id="floatMissionDesc">Refatoração de pipelines, testes e persistência contínua.</div>
+                      <div class="orch-mission-name" id="floatMissionTitle">Aguardando missão real</div>
+                      <div class="orch-mission-desc" id="floatMissionDesc">Nenhuma missão publicada no snapshot.</div>
                       
                       <div class="orch-progress-track">
-                        <div class="orch-progress-bar" id="floatMissionProgress" style="width: 72%;"></div>
+                        <div class="orch-progress-bar" id="floatMissionProgress" style="width: 0%;"></div>
                       </div>
 
                       <div class="orch-stats-grid-mini">
                         <div class="orch-stat-cell">
                           <small>TEMPO DECORRIDO</small>
-                          <span id="floatMissionElapsed">00:14:22</span>
+                          <span id="floatMissionElapsed">—</span>
                         </div>
                         <div class="orch-stat-cell">
                           <small>TEMPO ESTIMADO</small>
@@ -277,11 +277,11 @@
                         </div>
                         <div class="orch-stat-cell">
                           <small>JOBS CONCLUÍDOS</small>
-                          <span id="floatMissionJobs">18 / 25</span>
+                          <span id="floatMissionJobs">—</span>
                         </div>
                         <div class="orch-stat-cell">
                           <small>AGENTES ATIVOS</small>
-                          <span id="floatMissionAgents">5 / 19</span>
+                        <span id="floatMissionAgents">—</span>
                         </div>
                       </div>
 
@@ -293,15 +293,15 @@
                     </div>
 
                     <!-- FLOATING OVERLAY 2: JOB ATUAL -->
-                    <div class="orch-floating-job-card" id="floatingJobCard">
+                    <div class="orch-floating-job-card" id="floatingJobCard" style="display:none;">
                       <div class="orch-floating-tag" style="color: var(--fenix-cyan);">
-                        <span id="floatJobId">JOB-19</span>
+                        <span id="floatJobId">Aguardando job</span>
                         <span style="color: var(--fenix-text-dim); font-size: 8px;" id="floatJobAgent">QA AGENT</span>
                       </div>
-                      <div class="orch-mission-name" id="floatJobTitle" style="font-size: 11px;">Validação no Navegador</div>
+                      <div class="orch-mission-name" id="floatJobTitle" style="font-size: 11px;">Nenhum job em execução</div>
                       
                       <div class="orch-progress-track" style="margin-top: 4px;">
-                        <div class="orch-progress-bar" id="floatJobProgress" style="width: 65%; background: linear-gradient(90deg, #06b6d4, #3b82f6);"></div>
+                        <div class="orch-progress-bar" id="floatJobProgress" style="width: 0%; background: linear-gradient(90deg, #06b6d4, #3b82f6);"></div>
                       </div>
 
                       <div style="display: flex; justify-content: space-between; font-size: 8.5px; margin-top: 4px;">
@@ -457,10 +457,10 @@
                       <!-- Populated dynamically by command-center.js -->
                       <div class="orch-mission-item-row active">
                         <div>
-                          <div class="orch-mission-item-title">Evolução CRM Completa</div>
-                          <div style="font-size: 8.5px; color: var(--fenix-text-dim);">18/25 jobs · 5 agentes</div>
+                          <div class="orch-mission-item-title">Aguardando missões reais…</div>
+                          <div style="font-size: 8.5px; color: var(--fenix-text-dim);">Snapshot ainda não carregado</div>
                         </div>
-                        <div class="orch-mission-item-badge exec">72%</div>
+                        <div class="orch-mission-item-badge">—</div>
                       </div>
                       <div class="orch-mission-item-row">
                         <div>
@@ -496,8 +496,8 @@
                           <span>⚙️</span>
                         </div>
                         <div class="orch-agent-titles">
-                          <div class="orch-agent-name" id="inspAgentName">Backend Agent</div>
-                          <div class="orch-agent-role" id="inspAgentRole">Especialista em Backend</div>
+                          <div class="orch-agent-name" id="inspAgentName">Aguardando agente</div>
+                          <div class="orch-agent-role" id="inspAgentRole">Nenhum agente selecionado</div>
                         </div>
                       </div>
 
