@@ -1,2 +1,11 @@
 /* Runtime desks must be genuinely resizable in both dimensions. */
 .orch-modal { width: 680px; max-width: calc(100vw - 40px); }
+
+/* Keep the command-center rail reachable on standard 1440px displays while
+   preserving the full desktop composition on wide monitors. */
+@media (max-width: 1600px) and (min-width: 981px) {
+  .fenix-os-layout > .main-body { padding-right: 330px; }
+  .fenix-os-layout > .orch-right-column { width: 330px; }
+  body:has(> .view.active#view-command) .orch-right-column { position: fixed; top: 52px; right: 0; bottom: 28px; width: 330px; z-index: 30; }
+  .fenix-os-layout > .view, body > .view { right: 330px; }
+}
