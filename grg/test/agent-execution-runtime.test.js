@@ -1,14 +1,27 @@
-const { test } = require('node:test');
+const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createApp } = require('../src/app');
+const { AgentExecutionRuntime } = require('../src/agents/agent-execution-runtime');
 
-test('Agent Runtime calls the configured provider and passes its tool plan to the workspace executor', async () => {
-  let calls = 0;
-  const app = await createApp({ dataFile: null, providers: { model: { complete: async ({ prompt }) => { calls += 1; assert.match(prompt, /Project context/); return { text: JSON.stringify({ operations: [], tests: [], runTests: false, validationPassed: true, policyAllows: false, commit: false }), model: 'model-1', promptTokens: 12, completionTokens: 10 }; } } }, routes: { default: { provider: 'model', model: 'model-1' }, generate: { provider: 'model', model: 'model-1' }, plan: { provider: 'model', model: 'model-1' } } });
-  await app.controlPlane.createTenant({ id: 'agent-runtime', name: 'Agent Runtime' }, 'operator');
-  const project = await app.projectKernel.create('agent-runtime', 'operator', { id: 'runtime-project', name: 'Runtime Project', workspace: process.cwd() });
-  const job = await app.jobs.submit('agent-runtime', 'operator', { type: 'agent.execute', source: 'api', projectId: project.id, prompt: 'Inspect and improve calculator', requiredCapabilities: ['backend'], payload: { projectId: project.id, prompt: 'Inspect and improve calculator' } });
-  const [done] = await app.jobs.runBatch('agent-runtime-worker', 1);
-  assert.equal(done.status, 'SUCCEEDED'); assert.equal(calls, 1); assert.equal(done.result.provider, 'model'); assert.equal(done.result.model, 'model-1'); assert.equal(done.result.result, 'VALIDATED_NO_COMMIT');
-  await app.close();
+test('agent runtime emits tool success only after the real workspace executor succeeds', async () => {
+  const events = [];
+  const runtime = new AgentExecutionRuntime({
+    aiGateway: { invoke: async () => ({ provider: 'test', model: 'test', text: JSON.stringify({ operations: [{ tool: 'filesystem.write', operation: 'write', path: 'proof.js' }] }) }) },
+    workspaceExecutor: { execute: async () => ({ status: 'SUCCEEDED', artifact: 'proof.js' }) },
+    events: { publish: async (event) => events.push(event) },
+  });
+  const result = await runtime.execute('tenant', 'actor', { jobId: 'job-1', projectId: 'project-1', agent: { agentId: 'agent-1', name: 'Test Agent' } });
+  assert.equal(result.toolCalls[0].tool, 'filesystem.write');
+  assert.equal(events.find((event) => event.type === 'agent.tool.result').data.status, 'SUCCEEDED');
+});
+
+test('agent runtime emits a failed tool result and propagates executor errors', async () => {
+  const events = [];
+  const runtime = new AgentExecutionRuntime({
+    aiGateway: { invoke: async () => ({ provider: 'test', model: 'test', text: JSON.stringify({ operations: [{ tool: 'terminal.execute', operation: 'run', path: null }] }) }) },
+    workspaceExecutor: { execute: async () => { throw new Error('executor unavailable'); } },
+    events: { publish: async (event) => events.push(event) },
+  });
+  await assert.rejects(() => runtime.execute('tenant', 'actor', { jobId: 'job-2', projectId: 'project-1', agent: { agentId: 'agent-1' } }), /executor unavailable/);
+  assert.equal(events.find((event) => event.type === 'agent.tool.result').data.status, 'FAILED');
+  assert.ok(events.some((event) => event.type === 'agent.execution.failed'));
 });
