@@ -5,6 +5,7 @@ const { assertNoSecrets } = require('../eventing/event-store');
 const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'DEAD_LETTER', 'ROLLED_BACK']);
 const JOB_SOURCES = new Set(['codex', 'claude', 'antigravity', 'windsurf', 'vscode', 'mcp', 'cli', 'api', 'web', 'system', 'fenix-chat']);
 const RISK_LEVELS = new Set(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+const QUEUE_ENQUEUE_TIMEOUT_MS = Number(process.env.FENIX_QUEUE_ENQUEUE_TIMEOUT_MS || 5_000);
 const now = () => new Date().toISOString();
 const errorInfo = (error) => ({ name: error?.name || 'Error', message: String(error?.message || error).slice(0, 2000) });
 
@@ -128,6 +129,27 @@ class JobEngine {
     if (!workerId) throw new ValidationError('workerId is required');
     const claimed = [];
     await this.store.update((state) => {
+      // Um processo pode morrer depois do claim e antes do resultado. Sem esta
+      // recuperação, o job fica RUNNING para sempre e o DAG nunca volta a liberar
+      // o próximo passo. O heartbeat é a fonte de verdade: jobs sem heartbeat
+      // recente são devolvidos à fila de forma idempotente.
+      const nowMs = this.clock.now();
+      for (const stale of state.runtimeJobs.filter((item) => item.status === 'RUNNING' && item.heartbeatAt)) {
+        const ageMs = nowMs - Date.parse(stale.heartbeatAt);
+        const timeoutMs = Number(stale.limits?.timeoutMs || 300_000);
+        const owner = state.workerHeartbeats.find((worker) => worker.workerId === stale.workerId);
+        const ownerAgeMs = owner?.lastSeenAt ? nowMs - Date.parse(owner.lastSeenAt) : Infinity;
+        const orphanedAfterRestart = stale.workerId && stale.workerId !== workerId
+          && (!Number.isFinite(ownerAgeMs) || ownerAgeMs > 30_000);
+        if (Number.isFinite(ageMs) && (ageMs > Math.max(timeoutMs, 30_000) || orphanedAfterRestart)) {
+          stale.status = 'QUEUED';
+          stale.currentStage = 'QUEUED';
+          stale.workerId = null;
+          stale.updatedAt = now();
+          stale.error = errorInfo(new Error('worker heartbeat expired; job recovered by scheduler'));
+          stale.scheduledFor = new Date(nowMs).toISOString();
+        }
+      }
       const due = state.runtimeJobs.filter((item) => item.status === 'QUEUED' && Date.parse(item.scheduledFor) <= this.clock.now()).sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt)).slice(0, Math.min(50, Number(limit)));
       for (const job of due) { this.#claim(job, workerId); claimed.push(structuredClone(job)); }
       upsertHeartbeat(state, workerId, claimed.length); return state;
@@ -336,9 +358,17 @@ class JobEngine {
   async isPauseRequested(tenantId, jobId) { return !!(await this.getInternal(tenantId, jobId)).pauseRequestedAt; }
   async #enqueue(job) {
     const delay = Math.max(0, Date.parse(job.scheduledFor) - this.clock.now());
-    await this.queue.enqueue('fenix-runtime', job.type, { tenantId: job.tenantId, jobId: job.id }, {
+    const enqueue = this.queue.enqueue('fenix-runtime', job.type, { tenantId: job.tenantId, jobId: job.id }, {
       idempotencyKey: `${job.id}:${job.attempts}`, attempts: 5, backoff: { type: 'exponential', delay: 500 }, delay,
     });
+    const completed = await Promise.race([
+      enqueue.then(() => true),
+      new Promise((resolve) => setTimeout(() => resolve(false), QUEUE_ENQUEUE_TIMEOUT_MS)),
+    ]);
+    if (!completed && this.events) {
+      await this.events.publish({ tenantId: job.tenantId, stream: `job:${job.id}`, type: 'runtime.queue.enqueue-timeout', source: 'fenix-runtime', subject: job.id, data: { jobId: job.id, timeoutMs: QUEUE_ENQUEUE_TIMEOUT_MS, status: job.status }, idempotencyKey: `runtime.queue.enqueue-timeout:${job.id}:${job.attempts}` });
+    }
+    return completed;
   }
   async #publish(job, type, actorId) { if (!this.events) return; await this.events.publish({ tenantId: job.tenantId, stream: `job:${job.id}`, type, source: 'fenix-runtime', subject: job.id, data: { actorId, jobId: job.id, jobType: job.type, status: job.status, attempts: job.attempts, limits: job.limits }, idempotencyKey: `${type}:${job.id}:${job.attempts}` }); }
 }
