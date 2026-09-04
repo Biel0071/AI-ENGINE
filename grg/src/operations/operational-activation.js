@@ -18,10 +18,16 @@ class OperationalActivationService {
     await this.store.update((state) => { state.operationalActivationRuns.push(run); return state; });
     await this.#event(tenantId, 'operational.activation.started', run.id, { actorId, trigger: run.trigger, status: run.status });
     const definitions = await this.components(tenantId);
-    // Sondagem sequencial (uma checagem por vez, como antes: um probe pode ser caro e
-    // paralelizar 26 mudaria o comportamento medido), e UMA escrita para o lote todo.
+    // As probes são independentes. Executá-las em lotes pequenos mantém o limite
+    // de pressão sobre o host, mas evita que 26 timeouts de 5s bloqueiem o worker
+    // por mais de dois minutos. A persistência continua sendo UMA escrita para o
+    // lote todo e cada probe conserva seu próprio timeout/evidência.
     const probes = [];
-    for (const definition of definitions) probes.push(await this.#probe(tenantId, definition));
+    const batchSize = 4;
+    for (let offset = 0; offset < definitions.length; offset += batchSize) {
+      const batch = definitions.slice(offset, offset + batchSize);
+      probes.push(...await Promise.all(batch.map((definition) => this.#probe(tenantId, definition))));
+    }
     const results = await this.#persistSweep(tenantId, actorId, run.id, probes);
     const blockers = results.filter((item) => item.critical && item.status !== 'ACTIVE');
     const status = blockers.length ? 'DEGRADED' : 'READY';
