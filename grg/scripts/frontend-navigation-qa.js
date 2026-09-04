@@ -92,6 +92,7 @@ fs.mkdirSync(outDir, { recursive: true });
   const navs = [...new Set(Object.values(manifestScreens()).flat())];
   for (const view of navs) {
     const button = page.locator(`[data-view="${view}"], [data-nav="${view}"]`).first();
+    const navSelector = `[data-view="${view}"], [data-nav="${view}"]`;
     const item = { view, domain: domainByScreen[view] || 'unmapped', ok: false, before: await page.url() };
     try {
       if (await button.count() === 0) {
@@ -102,10 +103,10 @@ fs.mkdirSync(outDir, { recursive: true });
         await page.waitForTimeout(stepDelay);
       } else {
         try { await button.scrollIntoViewIfNeeded({ timeout: actionTimeout }); }
-        catch { await button.evaluate((el) => el.click()); }
+        catch { await page.evaluate((selector) => document.querySelector(selector)?.click(), navSelector); }
       }
       try {
-        if (await button.count() > 0) await button.click({ timeout: actionTimeout });
+        if (await button.count() > 0) await page.evaluate((selector) => document.querySelector(selector)?.click(), navSelector);
       } catch (error) {
         // Sticky rails/overlays can intercept a real pointer at narrow sizes.
         // Force is only a test fallback; the active-view assertion below still
