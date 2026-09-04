@@ -27,6 +27,7 @@ class OperationalActivationService {
     for (let offset = 0; offset < definitions.length; offset += batchSize) {
       const batch = definitions.slice(offset, offset + batchSize);
       probes.push(...await Promise.all(batch.map((definition) => this.#probe(tenantId, definition))));
+      if (typeof input.heartbeat === 'function') await input.heartbeat();
     }
     const results = await this.#persistSweep(tenantId, actorId, run.id, probes);
     const blockers = results.filter((item) => item.critical && item.status !== 'ACTIVE');

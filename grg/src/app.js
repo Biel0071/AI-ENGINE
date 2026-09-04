@@ -293,7 +293,7 @@ async function createApp(options = {}) {
   }, { critical: false, timeoutMs: 5_000 });
   const operationalContext = { store, health, aiGateway, redis, queues, objects, vectorStore, sandboxConfigured: Boolean(sandboxAdapter), sandboxProductionSafe: sandboxAdapter?.productionSafe === true, databaseConfigured: Boolean(options.databaseUrl), policy, metrics };
   const operationalActivation = new OperationalActivationService({ store, controlPlane, events: fabricEvents, jobs, production: securityConfig.production, components: async (tenantId) => createOperationalComponents(operationalContext, tenantId) });
-  jobs.register('operational.activation', (payload, context) => operationalActivation.boot(context.tenantId, context.actorId, payload));
+  jobs.register('operational.activation', (payload, context) => operationalActivation.boot(context.tenantId, context.actorId, { ...payload, heartbeat: context.heartbeat }));
   jobs.register('operational.daily-intelligence', (payload, context) => operationalActivation.dailyIntelligence(context.tenantId, context.actorId, payload));
   const missions = new MissionKernel({ store, controlPlane, hierarchy, jobs, approvals, events: fabricEvents }).attach();
   const { FullSystemBuilder } = require('./projects/full-system-builder');
