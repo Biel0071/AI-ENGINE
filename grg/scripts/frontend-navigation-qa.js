@@ -165,9 +165,16 @@ fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'frontend-navigation-qa.json'), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result.summary, null, 2));
   console.log(`Evidence: ${path.join(outDir, 'frontend-navigation-qa.json')}`);
-  await context.close({ reason: 'frontend navigation QA complete' });
-  await browser.close({ reason: 'frontend navigation QA complete' });
+  // SSE/WebSocket clients can keep Chromium teardown alive after the report is
+  // already persisted. Bound cleanup so QA returns a deterministic exit code.
+  await closeBounded(() => context.close({ reason: 'frontend navigation QA complete' }));
+  await closeBounded(() => browser.close({ reason: 'frontend navigation QA complete' }));
+  process.exitCode = 0;
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
+
+async function closeBounded(close, timeoutMs = 1500) {
+  await Promise.race([close(), new Promise(resolve => setTimeout(resolve, timeoutMs))]);
+}
 
 function manifestScreens() {
   const file = path.join(__dirname, '..', 'qa', 'frontend-screen-manifest.json');
