@@ -45,6 +45,7 @@ class IsoCityEngine {
       hoveredDistrict: null,
       followAgentId: null,
       followMissionId: null,
+      cityFilter: 'ALL',
       lastTime: performance.now(),
       selectedAgent: null
     };
@@ -201,6 +202,7 @@ class IsoCityEngine {
       this.state.followMissionId = this.state.followMissionId === missionId ? null : missionId;
       document.getElementById('btnFollowMission')?.classList.toggle('active', Boolean(this.state.followMissionId));
     });
+    document.getElementById('btnCityFilters')?.addEventListener('click', () => this.toggleFilterMenu());
     document.getElementById('btnFullscreenCity')?.addEventListener('click', () => {
       const container = document.getElementById('wsCityContainer') || this.canvas;
       if (!document.fullscreenElement) {
@@ -209,6 +211,34 @@ class IsoCityEngine {
         document.exitFullscreen?.().catch(() => {});
       }
     });
+  }
+
+  toggleFilterMenu() {
+    const host = document.getElementById('wsCityContainer');
+    if (!host) return;
+    const existing = host.querySelector('.fenix-city-filter-menu');
+    if (existing) { existing.remove(); return; }
+    const menu = document.createElement('div');
+    menu.className = 'fenix-city-filter-menu';
+    menu.setAttribute('role', 'menu');
+    ['ALL', 'AGENTS', 'JOBS', 'ERRORS', 'HANDOFFS', 'MEMORY', 'SYSTEM'].forEach((filter) => {
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = filter;
+      button.setAttribute('aria-pressed', String(this.state.cityFilter === filter));
+      button.addEventListener('click', () => { this.state.cityFilter = filter; menu.remove(); });
+      menu.appendChild(button);
+    });
+    host.appendChild(menu);
+  }
+
+  _filterAllowsAgent(agent) {
+    const filter = this.state.cityFilter;
+    if (filter === 'ALL' || filter === 'AGENTS') return true;
+    if (filter === 'ERRORS') return ['ERROR', 'FAILED', 'BLOCKED'].includes(String(agent.status || '').toUpperCase());
+    if (filter === 'JOBS') return Boolean(agent.currentJob || agent.jobId);
+    if (filter === 'MEMORY') return String(agent.district || '').toUpperCase().includes('MEMORY');
+    if (filter === 'SYSTEM') return ['DEVOPS', 'MCP', 'AI_MODELS', 'CENTRAL'].includes(String(agent.district || '').toUpperCase());
+    return filter === 'HANDOFFS' && String(agent.status || '').toUpperCase() === 'HANDOFF';
   }
 
   _updateZoomDisplay() {
@@ -465,7 +495,7 @@ class IsoCityEngine {
 
     // Agents sorted by painter's algo
     const sorted = [...this.world.agents.values()].sort((a,b) => (a.x+a.y)-(b.x+b.y));
-    for (const agent of sorted) this._drawAgent(ctx, agent, cx, cy, zoom);
+    for (const agent of sorted) if (this._filterAllowsAgent(agent)) this._drawAgent(ctx, agent, cx, cy, zoom);
 
     this._drawHUD(ctx, width, height);
     this._drawMinimap(ctx, width, height);
