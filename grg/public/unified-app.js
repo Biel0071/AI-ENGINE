@@ -694,10 +694,17 @@ async function runChat(message) {
     const classified = await api('/chat/intent', { method: 'POST', body: JSON.stringify({ message: value }) });
     classification = classified.classification || classification;
   } catch (_) { /* o chat continua disponível se o classificador estiver indisponível */ }
-  const pendingMission = localStorage.getItem('fenix_pending_mission');
+  const pendingRaw = localStorage.getItem('fenix_pending_mission');
+  let pendingMission = pendingRaw;
+  let pendingClassification = null;
+  try {
+    const pending = JSON.parse(pendingRaw || 'null');
+    if (pending?.objective) { pendingMission = pending.objective; pendingClassification = pending.classification || null; }
+  } catch (_) { /* compatibilidade com pendências salvas pela versão anterior */ }
   const confirmed = pendingMission && /^(sim|s[ií]m|pode iniciar|execute|come[cç]ar|comece|iniciar)$/i.test(value);
+  if (confirmed && pendingClassification) classification = pendingClassification;
   if (classification.requiresConfirmation && !confirmed) {
-    localStorage.setItem('fenix_pending_mission', value);
+    localStorage.setItem('fenix_pending_mission', JSON.stringify({ objective: value, classification }));
     const proposal = document.createElement('div');
     proposal.className = 'bubble system';
     proposal.textContent = `FÊNIX · ${classification.category} · Esta solicitação envolve múltiplas etapas. Posso criar uma missão com agentes, jobs e validação contínua. Deseja iniciar?`;
