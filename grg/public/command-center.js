@@ -561,7 +561,7 @@
       kpiTokensEl.textContent = tokens > 1000 ? `${(tokens / 1000).toFixed(1)}K` : tokens;
     }
 
-    const totalAgents = Math.max(19, agents.length);
+    const totalAgents = agents.length;
     const activeAgentsList = agents.filter(a => ['RUNNING', 'WORKING', 'BUSY', 'ACTIVE'].includes(String(a.status || '').toUpperCase()));
     const activeAgentsCount = Math.max(activeAgentsList.length, jobs.filter(j => j.status === 'RUNNING').length);
 
@@ -600,11 +600,11 @@
         floatMissionCard.style.cursor = 'pointer';
         selectedMissionId = activeMission.id;
         const titleEl = document.getElementById('floatMissionTitle');
-        if (titleEl) titleEl.textContent = activeMission.displayName || activeMission.name || 'Evolução Contínua';
+        if (titleEl) titleEl.textContent = activeMission.displayName || activeMission.name || 'Missão sem nome publicado';
         const descEl = document.getElementById('floatMissionDesc');
         if (descEl) descEl.textContent = activeMission.objective || activeMission.description || 'Refatoração e validação contínua.';
         const progressEl = document.getElementById('floatMissionProgress');
-        const pct = Math.min(100, Math.max(0, activeMission.progress ?? 72));
+        const pct = Number.isFinite(Number(activeMission.progress)) ? Math.min(100, Math.max(0, Number(activeMission.progress))) : 0;
         if (progressEl) progressEl.style.width = `${pct}%`;
         const badgeEl = document.getElementById('floatMissionBadge');
         if (badgeEl) {
@@ -614,15 +614,15 @@
         const jobsEl = document.getElementById('floatMissionJobs');
         const mJobs = jobs.filter(j => j.missionId === activeMission.id);
         const mDone = mJobs.filter(j => ['SUCCEEDED', 'COMPLETED'].includes(j.status)).length;
-        if (jobsEl) jobsEl.textContent = mJobs.length ? `${mDone} / ${mJobs.length}` : '18 / 25';
+        if (jobsEl) jobsEl.textContent = `${mDone} / ${mJobs.length}`;
         const agentsEl = document.getElementById('floatMissionAgents');
         if (agentsEl) agentsEl.textContent = `${activeAgentsCount} / ${totalAgents}`;
         const etaEl = document.getElementById('floatMissionEta');
         if (etaEl) etaEl.textContent = activeMission.eta ? activeMission.eta : 'estimativa indisponível';
-      }
+      } else floatMissionCard.style.display = 'none';
     }
 
-    const activeJob = jobs.find(j => j.status === 'RUNNING') || jobs[0];
+    const activeJob = jobs.find(j => j.status === 'RUNNING') || null;
     const floatJobCard = document.getElementById('floatingJobCard');
     if (floatJobCard) {
       if (activeJob) {
@@ -635,8 +635,8 @@
         const jobTitleEl = document.getElementById('floatJobTitle');
         if (jobTitleEl) jobTitleEl.textContent = activeJob.prompt || activeJob.title || activeJob.type || 'Validação no Navegador';
         const jobProgEl = document.getElementById('floatJobProgress');
-        if (jobProgEl) jobProgEl.style.width = `${activeJob.progress || 65}%`;
-      }
+        if (jobProgEl) jobProgEl.style.width = `${Number.isFinite(Number(activeJob.progress)) ? Math.min(100, Math.max(0, Number(activeJob.progress))) : 0}%`;
+      } else floatJobCard.style.display = 'none';
     }
 
     // Ribbon counters
@@ -645,18 +645,15 @@
     const rActAg = document.getElementById('ribbonActiveAgents');
     if (rActAg) rActAg.textContent = activeAgentsCount;
     const rMiss = document.getElementById('ribbonMissionsCount');
-    if (rMiss) rMiss.textContent = missions.length || 1;
+    if (rMiss) rMiss.textContent = missions.length;
     const rJobs = document.getElementById('ribbonJobsCount');
-    if (rJobs) rJobs.textContent = jobs.length || 1;
+    if (rJobs) rJobs.textContent = jobs.length;
 
     // 4. RIGHT QUAD: LIVE ACTIVITY
     const liveActivityList = document.getElementById('orchLiveActivityList');
     if (liveActivityList) {
       const recentEvents = events.slice(0, 7);
-      liveActivityList.innerHTML = (recentEvents.length ? recentEvents : [
-        { type: 'runtime.heartbeat', payload: { summary: 'Runtime heartbeat ativo e saudável' }, at: new Date().toISOString() },
-        { type: 'agent.ready', payload: { summary: '19 agentes especializados sincronizados' }, at: new Date().toISOString() },
-      ]).map(e => {
+      liveActivityList.innerHTML = (recentEvents.length ? recentEvents : [{ type: 'empty', payload: { summary: 'Nenhum evento operacional recebido.' }, at: null }]).map(e => {
         const time = new Date(e.at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const summary = e.payload?.summary || e.payload?.message || `${e.type} processado`;
         const colorClass = e.type?.includes('failed') || e.type?.includes('error') ? 'red' :
@@ -669,14 +666,8 @@
     // RIGHT QUAD: AGENTES ATIVOS
     const activeAgentsListEl = document.getElementById('orchActiveAgentsList');
     if (activeAgentsListEl) {
-      const topAgents = agents.length ? agents.slice(0, 5) : [
-        { id: 'Orchestrator', name: 'Fênix Orchestrator', role: 'Master Orchestrator', status: 'AVAILABLE' },
-        { id: 'Backend', name: 'Backend Agent', role: 'Engineering', status: 'AVAILABLE' },
-        { id: 'Frontend', name: 'Frontend Agent', role: 'Frontend', status: 'AVAILABLE' },
-        { id: 'Testing', name: 'QA Agent', role: 'Testing & QA', status: 'AVAILABLE' },
-        { id: 'Deployment', name: 'DevOps Agent', role: 'DevOps', status: 'AVAILABLE' },
-      ];
-      activeAgentsListEl.innerHTML = topAgents.map(ag => {
+      const topAgents = agents.slice(0, 5);
+      activeAgentsListEl.innerHTML = (topAgents.length ? topAgents.map(ag => {
         const isSel = ag.id === selectedAgentId;
         const statusText = String(ag.status || 'AVAILABLE').toUpperCase();
         const badgeClass = statusText === 'RUNNING' ? 'exec' : 'online';
@@ -684,7 +675,7 @@
           <span class="orch-skill-name">${getAgentEmoji(ag.role)} ${esc(ag.name || ag.id)}</span>
           <span class="orch-status-pill ${badgeClass}" style="font-size:7.5px;">${esc(statusText)}</span>
         </div>`;
-      }).join('') + `<div style="font-size:8.5px; color:var(--fenix-text-dim); text-align:center; margin-top:4px;">+ ${Math.max(0, totalAgents - 5)} agentes no catálogo</div>`;
+      }).join('') : '<div style="font-size:8.5px;color:var(--fenix-text-dim);padding:8px;">Nenhum agente publicado no runtime.</div>') + (topAgents.length > 5 ? `<div style="font-size:8.5px; color:var(--fenix-text-dim); text-align:center; margin-top:4px;">+ ${totalAgents - 5} agentes no catálogo</div>` : '');
 
       // Attach click to focus agent
       activeAgentsListEl.querySelectorAll('[data-agent-id]').forEach(el => {
