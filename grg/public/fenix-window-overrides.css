@@ -1,0 +1,2 @@
+/* Runtime desks must be genuinely resizable in both dimensions. */
+.orch-modal { width: 680px; max-width: calc(100vw - 40px); }
