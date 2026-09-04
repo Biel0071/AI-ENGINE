@@ -346,6 +346,10 @@
         if (msg.type === 'runtime.connected') {
           // Server ack
           if (msg.payload?.lastSeq) window.FENIX.live.lastSeq = msg.payload.lastSeq;
+          // O handshake confirma o canal realtime independentemente do tempo
+          // de leitura do snapshot HTTP. Não deixar SYNCING preso aguardando
+          // uma segunda fonte de dados.
+          updateStatus('ONLINE');
         } else if (msg.type === 'runtime.snapshot') {
           applySnapshot(msg.payload || msg);
         } else {
