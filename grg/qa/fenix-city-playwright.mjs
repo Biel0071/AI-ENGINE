@@ -8,7 +8,8 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-await context.addInitScript((value) => localStorage.setItem('grg_token', value), token);
+await context.addCookies([{ name: 'fenix_session', value: encodeURIComponent(token), url: baseURL, httpOnly: true, sameSite: 'Lax' }]);
+await context.addInitScript((value) => { localStorage.setItem('grg_token', value); localStorage.setItem('fenix_token', value); }, token);
 const page = await context.newPage();
 page.setDefaultTimeout(8000);
 const consoleErrors = [];
