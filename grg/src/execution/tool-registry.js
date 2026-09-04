@@ -6,7 +6,34 @@ const SAFE_COMMAND = /^(?:\/[a-zA-Z0-9._-]+)+$|^[a-zA-Z0-9._-]+$/;
 const PINNED_IMAGE = /^[a-z0-9./_-]+@sha256:[a-f0-9]{64}$/;
 
 class ToolRegistry {
-  constructor({ store, controlPlane, bus }) { this.store = store; this.cp = controlPlane; this.bus = bus; }
+  constructor({ store, controlPlane, bus }) { this.store = store; this.cp = controlPlane; this.bus = bus; this.executors = new Map(); }
+  async registerNative(tenantId, input, executor) {
+    if (!input?.toolId || typeof executor !== 'function') throw new ValidationError('native tool requires toolId and executor');
+    const tool = normalizeToolDescriptor({ ...input, id: uuid(), tenantId, kind: 'native', source: input.source || 'grg-native', status: 'HEALTHY', createdAt: now() });
+    await this.store.update((state) => {
+      const existing = state.toolDefinitions.find((item) => item.tenantId === tenantId && item.toolId === tool.toolId && item.status !== 'RETIRED');
+      if (!existing) state.toolDefinitions.push(tool);
+      return state;
+    });
+    this.executors.set(`${tenantId}:${tool.toolId}`, executor);
+    return tool;
+  }
+  async execute(tenantId, actorId, toolId, input = {}, context = {}) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:execute');
+    const tool = await this.getInternal(tenantId, toolId);
+    const executor = this.executors.get(`${tenantId}:${toolId}`);
+    if (!executor) throw new ValidationError(`tool executor unavailable: ${toolId}`);
+    const startedAt = now();
+    await this.bus?.emit('execution.tool.started', { tenantId, actorId, toolId, startedAt, jobId: context.jobId || null });
+    try {
+      const result = await Promise.race([Promise.resolve(executor(input, context)), timeout(tool.timeoutMs)]);
+      await this.bus?.emit('execution.tool.completed', { tenantId, actorId, toolId, startedAt, completedAt: now(), jobId: context.jobId || null });
+      return { toolId, status: 'SUCCEEDED', result };
+    } catch (error) {
+      await this.bus?.emit('execution.tool.failed', { tenantId, actorId, toolId, startedAt, failedAt: now(), jobId: context.jobId || null, error: String(error.message || error).slice(0, 500) });
+      throw error;
+    }
+  }
   async register(tenantId, actorId, input) {
     await this.cp.authorize(tenantId, actorId, 'runtime:admin');
     const id = String(input?.id || ''); const command = String(input?.command || ''); const image = String(input?.image || '');
@@ -30,4 +57,5 @@ function normalizeToolDescriptor(input = {}) {
   return { ...input, kind: input.kind || (input.mcpServerId ? 'mcp' : 'native'), inputSchema, timeoutMs, retryPolicy, audit: input.audit !== false, source: input.source || (input.mcpServerId ? `mcp:${input.mcpServerId}` : 'grg-native') };
 }
 function now() { return new Date().toISOString(); }
+function timeout(ms) { return new Promise((_, reject) => setTimeout(() => reject(new Error(`tool timeout after ${ms}ms`)), ms)); }
 module.exports = { ToolRegistry, SAFE_ID, SAFE_COMMAND, PINNED_IMAGE, normalizeToolDescriptor };
