@@ -378,6 +378,45 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
+  // 2b-proxy. GET /api/v2/proxy/vps-docs (Reverse proxy to VPS Swagger/Docs, stripping X-Frame-Options)
+  if (req.method === 'GET' && (url.pathname === '/api/v2/proxy/vps-docs' || url.pathname.startsWith('/api/v2/proxy/vps-docs/'))) {
+    try {
+      const subPath = url.pathname.replace(/^\/api\/v2\/proxy\/vps-docs/, '') || '/';
+      const targetUrl = `http://209.50.241.22:3001/docs${subPath}${url.search}`;
+      const vpsRes = await fetch(targetUrl, {
+        headers: { 'User-Agent': 'Fenix-Preview-Proxy' },
+        signal: AbortSignal.timeout(10000)
+      });
+      res.statusCode = vpsRes.status;
+      for (const [k, v] of vpsRes.headers.entries()) {
+        const lk = k.toLowerCase();
+        if (!['x-frame-options', 'content-security-policy', 'cross-origin-opener-policy', 'cross-origin-resource-policy'].includes(lk)) {
+          res.setHeader(k, v);
+        }
+      }
+      res.setHeader('X-Frame-Options', 'ALLOWALL');
+      const buf = Buffer.from(await vpsRes.arrayBuffer());
+      res.end(buf);
+      return true;
+    } catch (e) {
+      sendError(res, 502, `VPS Docs Proxy Error: ${e.message}`);
+      return true;
+    }
+  }
+
+  // 2c-proxy. GET /api/v2/proxy/vps-health (Reverse proxy to VPS Health)
+  if (req.method === 'GET' && url.pathname === '/api/v2/proxy/vps-health') {
+    try {
+      const vpsRes = await fetch('http://209.50.241.22:3001/health', { signal: AbortSignal.timeout(10000) });
+      const data = await vpsRes.json();
+      sendJson(res, 200, data);
+      return true;
+    } catch (e) {
+      sendError(res, 502, `VPS Health Proxy Error: ${e.message}`);
+      return true;
+    }
+  }
+
   // 2b. GET /api/v2/project-mirror/:id (Fenix OS - Phase 2)
   const pmMatch = url.pathname.match(/^\/api\/v2\/project-mirror\/([^/]+)$/);
   if (req.method === 'GET' && pmMatch) {
@@ -404,7 +443,13 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       try {
         if (!fs.existsSync(dir)) return [];
         return fs.readdirSync(dir)
-          .filter(f => fs.statSync(path.join(dir, f)).isFile() && (!ext || f.endsWith(ext)))
+          .filter(f => {
+            try {
+              return fs.statSync(path.join(dir, f)).isFile() && (!ext || f.endsWith(ext));
+            } catch {
+              return false;
+            }
+          })
           .map(f => ({ name: f, path: path.join(dir, f) }));
       } catch (e) {
         return [];
@@ -769,27 +814,39 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     }
 
     const fs = require('fs');
+    const IGNORE_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.data', 'backups', '.cache', 'logs', '.next', '.turbo']);
+
     function scanDir(dir, relPath = '') {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      return entries
-        .filter(e => !['node_modules', '.git', 'dist', 'build', '.data'].includes(e.name))
-        .map(e => {
-          const itemRel = path.join(relPath, e.name).replace(/\\/g, '/');
-          if (e.isDirectory()) {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        return entries
+          .filter(e => !IGNORE_DIRS.has(e.name))
+          .map(e => {
+            const itemRel = path.join(relPath, e.name).replace(/\\/g, '/');
+            if (e.isDirectory()) {
+              return {
+                name: e.name,
+                path: itemRel,
+                type: 'directory',
+                children: scanDir(path.join(dir, e.name), itemRel)
+              };
+            }
+            let size = 0;
+            try {
+              size = fs.statSync(path.join(dir, e.name)).size;
+            } catch (statErr) {
+              size = 0;
+            }
             return {
               name: e.name,
               path: itemRel,
-              type: 'directory',
-              children: scanDir(path.join(dir, e.name), itemRel)
+              type: 'file',
+              size
             };
-          }
-          return {
-            name: e.name,
-            path: itemRel,
-            type: 'file',
-            size: fs.statSync(path.join(dir, e.name)).size
-          };
-        });
+          });
+      } catch (dirErr) {
+        return [];
+      }
     }
 
     const tree = scanDir(ws.rootPath);
