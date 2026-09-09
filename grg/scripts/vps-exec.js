@@ -1,4 +1,5 @@
-﻿const { Client } = require('ssh2');
+const { Client } = require('ssh2');
+const fs = require('fs');
 
 function runRemote(cmd) {
   return new Promise((resolve, reject) => {
@@ -23,7 +24,8 @@ function runRemote(cmd) {
       host: '209.50.241.22',
       port: 22,
       username: 'root',
-      password: 'S53yi4RYq8j4DCGp',
+      privateKey: fs.existsSync('C:/Users/Dell/.ssh/grg_fenix_vps') ? fs.readFileSync('C:/Users/Dell/.ssh/grg_fenix_vps') : undefined,
+      password: process.env.VPS_SSH_PASSWORD || undefined,
       readyTimeout: 15000
     });
   });

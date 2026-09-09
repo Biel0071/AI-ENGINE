@@ -21,7 +21,8 @@ function runRemoteNode(code) {
       host: '209.50.241.22',
       port: 22,
       username: 'root',
-      password: process.env.VPS_SSH_PASSWORD || '',
+      privateKey: fs.existsSync('C:/Users/Dell/.ssh/grg_fenix_vps') ? fs.readFileSync('C:/Users/Dell/.ssh/grg_fenix_vps') : undefined,
+      password: process.env.VPS_SSH_PASSWORD || undefined,
       readyTimeout: 15000
     });
   });
