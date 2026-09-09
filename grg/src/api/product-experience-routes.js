@@ -97,6 +97,41 @@ function initEngines(app) {
   workspaceManager = new MultiProjectWorkspaceManager({ eventBus });
   workspaceManager.start();
 
+  // Register 3 Canonical Projects for Fênix V7 Autonomous Runtime
+  const canonicalProjects = [
+    {
+      projectId: 'fenix-os',
+      name: 'Fênix OS AI Engine',
+      rootPath: process.env.FENIX_PATH || (process.platform === 'win32' ? path.resolve(__dirname, '../../../') : '/opt/fenix-os'),
+      stack: ['Node.js', 'PixiJS', 'WebGL', 'SQLite', 'WebSockets'],
+      repository: 'https://github.com/Biel0071/AI-ENGINE.git',
+      branch: 'main-1.0.0'
+    },
+    {
+      projectId: 'api-platform',
+      name: 'API Platform Enterprise',
+      rootPath: process.env.API_PLATFORM_PATH || (process.platform === 'win32' ? path.resolve(__dirname, '../../../projects/API-PLATAFORM') : '/root/api-gratis'),
+      stack: ['Node.js', 'NestJS', 'PostgreSQL', 'Redis', 'Docker'],
+      repository: 'https://github.com/Biel0071/api-gratis.git',
+      branch: 'main'
+    },
+    {
+      projectId: 'zapai-crm',
+      name: 'ZapAI CRM & Automation',
+      rootPath: process.env.ZAPAI_PATH || (process.platform === 'win32' ? path.resolve(__dirname, '../../../projects/zapai') : '/opt/zapai'),
+      stack: ['Node.js', 'Express', 'Vue.js', 'MongoDB', 'WhatsApp-API'],
+      repository: 'https://github.com/Biel0071/zapai.git',
+      branch: 'main'
+    }
+  ];
+  for (const cp of canonicalProjects) {
+    try {
+      if (!workspaceManager.getProject(cp.projectId)) {
+        workspaceManager.registerProject(cp);
+      }
+    } catch (e) {}
+  }
+
   reverseEngine = new ReverseEngineeringEngine({ eventBus });
   visualMapper = new VisualCodeBidirectionalMapper();
   githubEngine = new GitHubEngine({ eventBus });

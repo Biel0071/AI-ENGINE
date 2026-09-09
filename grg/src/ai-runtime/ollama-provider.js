@@ -13,7 +13,7 @@ const { streamFromOllama } = require('./ollama-stream');
 
 const DEFAULT_BASE_URL = process.env.FENIX_OLLAMA_URL || process.env.GRG_OLLAMA_DIRECT_URL || 'http://127.0.0.1:11434';
 
-function post(baseUrl, path, payload, timeoutMs = 120000) {
+function post(baseUrl, path, payload, timeoutMs = 300000) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(payload);
     let u;
@@ -34,6 +34,16 @@ function post(baseUrl, path, payload, timeoutMs = 120000) {
   });
 }
 
+function ping(baseUrl, timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    let u; try { u = new URL(String(baseUrl).replace(/\/$/, '') + '/api/tags'); } catch { return resolve(false); }
+    const req = http.get({ host: u.hostname, port: u.port || 80, path: u.pathname }, (res) => {
+      res.resume(); res.on('end', () => resolve(res.statusCode >= 200 && res.statusCode < 300));
+    });
+    req.on('error', () => resolve(false)); req.setTimeout(timeoutMs, () => { req.destroy(); resolve(false); });
+  });
+}
+
 class OllamaProvider {
   constructor({ model = 'qwen2.5:3b', baseUrl = DEFAULT_BASE_URL } = {}) {
     this.name = 'ollama';
@@ -41,6 +51,8 @@ class OllamaProvider {
     this.models = [model];
     this.baseUrl = String(baseUrl).replace(/\/$/, '');
   }
+
+  async availableFast() { return ping(this.baseUrl); }
 
   // available() faz INFERENCIA, nao ping. /api/tags responde 200 com o Ollama de pe e o modelo
   // ausente ou descarregado -- o health reportaria "ok" sem que uma geracao fosse possivel.

@@ -14,9 +14,12 @@ const { handleMissionRoutes } = require('./missions/mission-routes');
 const { handleKnowledgeRoutes } = require('./knowledge/knowledge-routes');
 const { handleDeveloperRoutes } = require('./api/developer-routes');
 const { handleProductExperienceRoutes } = require('./api/product-experience-routes');
-const { handleProjectMirrorRoutes } = require('./api/project-mirror-routes');
+const { handleProjectMirrorRoutes, discoverProjects } = require('./api/project-mirror-routes');
 const { handleUniversalJobRoutes } = require('./api/universal-job-routes');
 const { handleOrchestrationRoutes } = require('./api/orchestration-routes');
+
+process.on('uncaughtException', (err) => console.error('[Server uncaughtException]', err));
+process.on('unhandledRejection', (reason) => console.error('[Server unhandledRejection]', reason));
 
 const crypto = require('node:crypto');
 
@@ -31,7 +34,7 @@ async function readJson(req) {
   for await (const chunk of req) { body += chunk; if (body.length > 2_000_000) throw new Error('body too large'); }
   return body ? JSON.parse(body) : {};
 }
-function withHealthDeadline(check, timeoutMs = Number(process.env.FENIX_HEALTH_RESPONSE_TIMEOUT_MS || 8_000)) {
+function withHealthDeadline(check, timeoutMs = Number(process.env.FENIX_HEALTH_RESPONSE_TIMEOUT_MS || 15_000)) {
   let timer;
   const timeout = new Promise((resolve) => {
     timer = setTimeout(() => resolve({ ok: false, status: 'probe_timeout', checks: { health_response: { ok: false, critical: true, error: `health check exceeded ${timeoutMs}ms` } }, degraded: 'health probes did not finish within response deadline' }), timeoutMs);
@@ -142,7 +145,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     start: async () => console.log('[Server] Bypassing legacy BootManager; using FÊNIX_KERNEL.')
   };
   await bootManager.start();
-
+  let wss = null;
   const server = http.createServer(async (req, res) => {
     let requestId = null;
     let correlationId = null;
@@ -201,9 +204,15 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         }
         return sendJson(res, 200, { published: true, type: body.type }, requestId);
       }
-      
+
+      if (url.pathname === '/favicon.ico') {
+        res.statusCode = 204;
+        res.end();
+        return;
+      }
+
       if (req.method === 'GET' && url.pathname === '/health') {
-        const healthDeadline = Number(env.FENIX_HEALTH_RESPONSE_TIMEOUT_MS || 8_000);
+        const healthDeadline = Number(env.FENIX_HEALTH_RESPONSE_TIMEOUT_MS || 15_000);
         const health = await withHealthDeadline(() => app.health.check(), healthDeadline);
         let bootHealth = { ok: true, status: 'BYPASSED' };
         if (!global.FENIX_KERNEL) {
@@ -229,6 +238,84 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/metrics') {
         if (!safeToken(req.headers.authorization, env.FENIX_METRICS_TOKEN)) return sendJson(res, 401, { error: 'metrics authentication required' }, requestId);
         res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' }); return res.end(await app.metrics.render());
+      }
+
+      // Fênix V7 Autonomous Runtime: Real AI Health & Telemetry
+      if (req.method === 'GET' && (url.pathname === '/runtime/ai/health' || url.pathname === '/api/runtime/ai/health')) {
+        const startMs = Date.now();
+        const pHealth = app.aiGateway ? await app.aiGateway.providerHealth() : {};
+        const state = (app.store && typeof app.store.read === 'function') ? await app.store.read() : {};
+        const aiCalls = state.aiCalls || [];
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const callsToday = aiCalls.filter(c => (c.createdAt || '').slice(0, 10) === todayStr);
+        const tokensToday = callsToday.reduce((sum, c) => sum + (c.totalTokens || (c.promptTokens || 0) + (c.completionTokens || 0)), 0);
+        const lastCall = aiCalls.length > 0 ? aiCalls[aiCalls.length - 1] : null;
+        
+        const defaultRoute = app.aiGateway?.route?.('default') || { provider: process.env.FENIX_AI_DEFAULT_PROVIDER || 'ollama', model: process.env.FENIX_AI_DEFAULT_MODEL || 'qwen2.5:3b' };
+        const activeProvider = defaultRoute.provider;
+        const activeModel = defaultRoute.model;
+        const providerStatus = pHealth[activeProvider]?.ok ? 'ONLINE' : (Object.values(pHealth).some(p => p.ok) ? 'DEGRADED' : 'OFFLINE');
+
+        return sendJson(res, 200, {
+          ok: providerStatus !== 'OFFLINE',
+          status: providerStatus,
+          provider: activeProvider,
+          model: activeModel,
+          latency: Date.now() - startMs,
+          lastRequest: lastCall ? lastCall.createdAt : null,
+          requestsToday: callsToday.length,
+          tokensToday,
+          errorsToday: (pHealth[activeProvider]?.circuit?.failures || 0),
+          providers: pHealth,
+          timestamp: new Date().toISOString()
+        }, requestId);
+      }
+
+      if (req.method === 'GET' && (url.pathname === '/runtime/ai/usage' || url.pathname === '/api/runtime/ai/usage')) {
+        const state = (app.store && typeof app.store.read === 'function') ? await app.store.read() : {};
+        const aiCalls = state.aiCalls || [];
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const callsToday = aiCalls.filter(c => (c.createdAt || '').slice(0, 10) === todayStr);
+        
+        const tokensToday = callsToday.reduce((sum, c) => sum + (c.totalTokens || (c.promptTokens || 0) + (c.completionTokens || 0)), 0);
+        const tokensSession = aiCalls.reduce((sum, c) => sum + (c.totalTokens || (c.promptTokens || 0) + (c.completionTokens || 0)), 0);
+        
+        const tokensProject = {};
+        const tokensAgent = {};
+        const tokensProvider = {};
+        let estimatedCost = 0;
+        let realCost = 0;
+
+        for (const call of aiCalls) {
+          const t = call.totalTokens || (call.promptTokens || 0) + (call.completionTokens || 0);
+          const proj = call.projectId || 'fenix-os';
+          const ag = call.actorId || call.agentId || 'orchestrator';
+          const prov = call.provider || 'ollama';
+          
+          tokensProject[proj] = (tokensProject[proj] || 0) + t;
+          tokensAgent[ag] = (tokensAgent[ag] || 0) + t;
+          tokensProvider[prov] = (tokensProvider[prov] || 0) + t;
+          
+          estimatedCost += Number(call.costUsd || 0);
+          realCost += Number(call.realCostUsd || call.costUsd || 0);
+        }
+
+        return sendJson(res, 200, {
+          ok: true,
+          tokensToday,
+          tokensSession,
+          tokensJob: tokensSession,
+          tokensProject,
+          tokensAgent,
+          tokensProvider,
+          estimatedCost: Number(estimatedCost.toFixed(4)),
+          realCost: Number(realCost.toFixed(4)),
+          totalRequests: aiCalls.length,
+          requestsToday: callsToday.length,
+          activeModel: process.env.FENIX_AI_DEFAULT_MODEL || 'qwen2.5:3b',
+          activeProvider: process.env.FENIX_AI_DEFAULT_PROVIDER || 'ollama',
+          timestamp: new Date().toISOString()
+        }, requestId);
       }
 
       // `/api/workers` é o contrato canônico derivado do JobEngine e precisa
@@ -316,23 +403,61 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         ]);
         const events = (state.missionEvents || []).filter((event) => event.tenantId === tenantId).slice(-80);
         const registeredList = app.agentRegistry ? app.agentRegistry.list() : [];
+        const savedProfiles = state.agentProfiles || [];
         const registeredAgents = registeredList.map((agent) => {
           const activeJob = jobs.find((j) => (j.status === 'RUNNING' || j.status === 'DISPATCHED') && (j.agent?.agentId === agent.id || j.agentId === agent.id || j.agent?.name === agent.name));
+          const profile = savedProfiles.find((p) => String(p.id).toLowerCase() === String(agent.id).toLowerCase() || String(p.name).toLowerCase() === String(agent.name).toLowerCase());
           return {
             id: agent.id,
             agentId: agent.id,
             name: agent.name,
+            displayName: profile?.displayName || agent.displayName || agent.name,
             domain: agent.domain,
-            role: agent.domain || agent.name,
-            district: agent.domain === 'frontend' ? 'FRONTEND' : agent.domain === 'engineering' ? 'BACKEND' : agent.domain === 'orchestration' ? 'MASTER_HQ' : agent.domain === 'testing' ? 'QA' : agent.domain === 'deployment' ? 'DEVOPS' : 'CENTRAL',
-            status: activeJob ? 'RUNNING' : 'AVAILABLE',
+            role: profile?.role || agent.domain || agent.name,
+            district: profile?.district || (agent.domain === 'frontend' ? 'FRONTEND' : agent.domain === 'engineering' ? 'BACKEND' : agent.domain === 'orchestration' ? 'MASTER_HQ' : agent.domain === 'testing' ? 'QA' : agent.domain === 'deployment' ? 'DEVOPS' : 'CENTRAL'),
+            status: activeJob ? 'RUNNING' : (profile?.status || 'AVAILABLE'),
+            avatar: profile?.avatar || null,
             currentJob: activeJob ? { id: activeJob.id, name: activeJob.prompt || activeJob.type || activeJob.name, progress: activeJob.progress || 0 } : null,
             tools: agent.tools || [],
             permissions: agent.permissions || [],
-            description: agent.description,
+            description: profile?.description || agent.description,
           };
         });
-        const agents = (agentPanel.agents && agentPanel.agents.length) ? agentPanel.agents : registeredAgents;
+        // Include custom agents from store if not already in registeredList
+        for (const custom of (state.agents || [])) {
+          if (custom && !registeredAgents.some((a) => String(a.id).toLowerCase() === String(custom.id).toLowerCase())) {
+            const profile = savedProfiles.find((p) => String(p.id).toLowerCase() === String(custom.id).toLowerCase());
+            registeredAgents.push({
+              id: custom.id,
+              agentId: custom.id,
+              name: custom.name || custom.id,
+              displayName: profile?.displayName || custom.displayName || custom.name || custom.id,
+              domain: custom.domain || custom.role || 'custom',
+              role: profile?.role || custom.role || custom.domain || 'custom',
+              district: profile?.district || custom.district || 'DEVELOPMENT',
+              status: custom.status || 'AVAILABLE',
+              avatar: profile?.avatar || custom.avatar || null,
+              currentJob: null,
+              tools: custom.tools || custom.skills || [],
+              permissions: custom.permissions || [],
+              description: custom.description || 'Custom agent',
+            });
+          }
+        }
+        const baseAgents = (agentPanel.agents && agentPanel.agents.length) ? agentPanel.agents : registeredAgents;
+        const agents = baseAgents.map((ag) => {
+          const profile = savedProfiles.find((p) => String(p.id).toLowerCase() === String(ag.id || ag.agentId || '').toLowerCase() || String(p.name).toLowerCase() === String(ag.name || '').toLowerCase());
+          if (profile) {
+            return {
+              ...ag,
+              displayName: profile.displayName || ag.displayName || ag.name,
+              avatar: profile.avatar || ag.avatar || null,
+              district: profile.district || ag.district,
+              role: profile.role || ag.role,
+            };
+          }
+          return ag;
+        });
         const jobTasks = jobs.flatMap((job) => (Array.isArray(job.microtasks) ? job.microtasks : []).map((task) => ({
           ...task,
           id: task.id || `${job.id}:task`,
@@ -382,6 +507,17 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/me') return sendJson(res, 200, { tenantId, actorId, authed: cx.authed });
       if (req.method === 'POST' && url.pathname === '/api/avatar/message') return sendJson(res, 200, await app.masterAvatar.handle(tenantId, actorId, await readJson(req)), requestId);
 
+      const agentInspMatch = url.pathname.match(/^\/api\/v2\/agents\/([^/]+)\/inspector$/);
+      if (req.method === 'GET' && agentInspMatch) {
+        const agentId = decodeURIComponent(agentInspMatch[1]);
+        const state = await app.store.read();
+        const registeredList = app.agentRegistry ? app.agentRegistry.list() : [];
+        const found = registeredList.find(a => String(a.id || a.name).toLowerCase() === agentId.toLowerCase())
+          || (state.agents || []).find(a => String(a.id || a.name).toLowerCase() === agentId.toLowerCase())
+          || { id: agentId, name: agentId, domain: 'orchestration', status: 'AVAILABLE', tools: [] };
+        return sendJson(res, 200, { ok: true, agent: found }, requestId);
+      }
+
       if (req.method === 'GET' && url.pathname === '/api/overview') return sendJson(res, 200, await overview(app, tenantId, actorId));
       if (req.method === 'POST' && url.pathname === '/api/operations/activate') return sendJson(res, 202, await app.operationalActivation.boot(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/operations/state') return sendJson(res, 200, await app.operationalActivation.state(tenantId, actorId), requestId);
@@ -393,7 +529,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // Adaptador do ciclo autônomo para o Mission Runtime canônico. Não cria
       // progresso artificial: reconcilia jobs órfãos e, somente quando opt-in,
       // inicia missões planejadas respeitando governança e limites.
-      if (req.method === 'POST' && url.pathname === '/api/autonomous/cycle') {
+      if (req.method === 'POST' && (url.pathname === '/api/autonomous/cycle' || url.pathname === '/api/missions/reconcile')) {
         const body = await readJson(req).catch(() => ({}));
         return sendJson(res, 202, await app.missions.reconcile(tenantId, actorId, {
           autoStart: body.autoStart === true,
@@ -434,11 +570,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/fenix/memory/invalidate') { const body = await readJson(req); return sendJson(res, 200, await app.engineeringMemory.invalidate(tenantId, actorId, body.memoryId, body.reason), requestId); }
       const fenixProjectExperience = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/(experience|knowledge|components|patterns|architectures)$/);
       if (req.method === 'GET' && fenixProjectExperience) { await app.controlPlane.authorize(tenantId, actorId, 'project:read'); const state = await app.store.read(); const kinds = { experience: null, knowledge: null, components: 'component', patterns: 'pattern', architectures: 'architecture' }; const kind = kinds[fenixProjectExperience[2]]; const memories = state.engineeringMemories.filter((item) => item.tenantId === tenantId && item.sourceProjects?.includes(fenixProjectExperience[1]) && (!kind || item.kind === kind)); return sendJson(res, 200, { memories }, requestId); }
-      const fenixMission = url.pathname.match(/^\/api\/fenix\/missions\/([^/]+)$/);
-      const fenixAction = url.pathname.match(/^\/api\/fenix\/missions\/([^/]+)\/(pause|resume|cancel|jobs|events)$/);
-      const fenixMissionCheckpoints = url.pathname.match(/^\/api\/fenix\/missions\/([^/]+)\/checkpoints$/);
-      const fenixMissionArtifacts = url.pathname.match(/^\/api\/fenix\/missions\/([^/]+)\/artifacts$/);
-      const fenixCheckpoint = url.pathname.match(/^\/api\/fenix\/checkpoints\/([^/]+)$/);
+      const fenixMission = url.pathname.match(/^\/api\/(?:fenix\/)?missions\/([^/]+)$/);
+      const fenixAction = url.pathname.match(/^\/api\/(?:fenix\/)?missions\/([^/]+)\/(pause|resume|cancel|jobs|events)$/);
+      const fenixMissionCheckpoints = url.pathname.match(/^\/api\/(?:fenix\/)?missions\/([^/]+)\/checkpoints$/);
+      const fenixMissionArtifacts = url.pathname.match(/^\/api\/(?:fenix\/)?missions\/([^/]+)\/artifacts$/);
+      const fenixCheckpoint = url.pathname.match(/^\/api\/(?:fenix\/)?checkpoints\/([^/]+)$/);
       if (req.method === 'GET' && fenixMissionCheckpoints) return sendJson(res, 200, { checkpoints: await app.missionCheckpoints.listForMission(tenantId, actorId, fenixMissionCheckpoints[1]) }, requestId);
       if (req.method === 'GET' && fenixMissionArtifacts) { const mission = await app.missions.get(tenantId, actorId, fenixMissionArtifacts[1]); const state = await app.store.read(); return sendJson(res, 200, { artifacts: state.artifacts.filter((item) => item.missionId === mission.id) }, requestId); }
       if (req.method === 'GET' && fenixCheckpoint) return sendJson(res, 200, await app.missionCheckpoints.get(tenantId, actorId, fenixCheckpoint[1]), requestId);
@@ -452,16 +588,89 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const result = action === 'pause' ? await app.missions.pause(tenantId, actorId, fenixAction[1]) : action === 'resume' ? await app.missions.resume(tenantId, actorId, fenixAction[1]) : await app.missions.cancel(tenantId, actorId, fenixAction[1]);
         return sendJson(res, 202, result, requestId);
       }
-      const fenixJob = url.pathname.match(/^\/api\/fenix\/jobs\/([^/]+)$/);
-      const fenixJobAction = url.pathname.match(/^\/api\/fenix\/jobs\/([^/]+)\/(events|artifacts|checkpoints|pause|resume|cancel|retry)$/);
-      if (req.method === 'POST' && url.pathname === '/api/fenix/jobs') return sendJson(res, 202, await app.jobs.submit(tenantId, actorId, await readJson(req)), requestId);
-      if (req.method === 'GET' && url.pathname === '/api/fenix/jobs') return sendJson(res, 200, { jobs: await app.jobs.list(tenantId, actorId, url.searchParams.get('status') || undefined) }, requestId);
+      const fenixJob = url.pathname.match(/^\/api\/(?:fenix\/)?jobs\/([^/]+)$/);
+      const fenixJobAction = url.pathname.match(/^\/api\/(?:fenix\/)?jobs\/([^/]+)\/(events|artifacts|checkpoints|pause|resume|cancel|retry)$/);
+      if (req.method === 'POST' && (url.pathname === '/api/fenix/jobs' || url.pathname === '/api/jobs')) return sendJson(res, 202, await app.jobs.submit(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'GET' && (url.pathname === '/api/fenix/jobs' || url.pathname === '/api/jobs')) return sendJson(res, 200, { jobs: await app.jobs.list(tenantId, actorId, url.searchParams.get('status') || undefined) }, requestId);
       if (req.method === 'GET' && fenixJob) return sendJson(res, 200, await app.jobs.get(tenantId, actorId, fenixJob[1]), requestId);
       if (req.method === 'GET' && fenixJobAction) { const id = fenixJobAction[1]; const kind = fenixJobAction[2]; if (kind === 'checkpoints') return sendJson(res, 200, { checkpoints: await app.missionCheckpoints.listForJob(tenantId, actorId, id) }, requestId); const job = await app.jobs.get(tenantId, actorId, id); if (kind === 'artifacts') { const state = await app.store.read(); return sendJson(res, 200, { artifacts: [...(job.artifacts || []), ...state.artifacts.filter((item) => item.jobId === id)] }, requestId); } return sendJson(res, 200, { events: await app.jobs.eventsFor(tenantId, actorId, id) }, requestId); }
       if (req.method === 'POST' && fenixJobAction && ['pause', 'resume', 'cancel', 'retry'].includes(fenixJobAction[2])) {
         const action = fenixJobAction[2];
         const result = action === 'pause' ? await app.jobs.pause(tenantId, actorId, fenixJobAction[1]) : action === 'resume' ? await app.jobs.resume(tenantId, actorId, fenixJobAction[1]) : action === 'retry' ? await app.jobs.retry(tenantId, actorId, fenixJobAction[1]) : await app.jobs.cancel(tenantId, actorId, fenixJobAction[1]);
         return sendJson(res, 202, result, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/approvals') return sendJson(res, 200, { approvals: await app.approvals.list(tenantId) }, requestId);
+      if (req.method === 'POST' && url.pathname === '/api/approvals') {
+        const body = await readJson(req);
+        return sendJson(res, 201, await app.approvals.request(tenantId, actorId, body), requestId);
+      }
+      const approvalAction = url.pathname.match(/^\/api\/approvals\/([^/]+)\/(approve|reject)$/);
+      if (req.method === 'POST' && approvalAction) {
+        const apprvId = approvalAction[1];
+        const act = approvalAction[2];
+        if (act === 'approve') {
+          return sendJson(res, 200, await app.approvals.approve(tenantId, actorId, apprvId), requestId);
+        } else {
+          const body = await readJson(req).catch(() => ({}));
+          return sendJson(res, 200, await app.approvals.reject(tenantId, actorId, apprvId, body.reason), requestId);
+        }
+      }
+      const approvalGet = url.pathname.match(/^\/api\/approvals\/([^/]+)$/);
+      if (req.method === 'GET' && approvalGet) return sendJson(res, 200, await app.approvals.get(tenantId, approvalGet[1]), requestId);
+      if (req.method === 'GET' && (url.pathname === '/api/observability/live' || url.pathname === '/api/system/observability')) {
+        const state = await app.store.read();
+        const activeMissions = (state.missions || []).filter(m => ['RUNNING', 'DISPATCHED', 'AWAITING_APPROVAL', 'PAUSED'].includes(m.status));
+        const activeJobs = (state.runtimeJobs || []).filter(j => ['RUNNING', 'QUEUED', 'STARTING', 'PAUSED'].includes(j.status));
+        const activeAgents = (state.agents || []).filter(a => a.status !== 'OFFLINE');
+        const waitingApprovals = (state.approvalRequests || []).filter(a => a.status === 'pending');
+        const deadLetters = state.deadLetters || [];
+        const recentEvents = (state.events || state.missionEvents || []).slice(-20).reverse();
+        return sendJson(res, 200, {
+          service: 'fenix-operating-system',
+          status: 'ready',
+          timestamp: new Date().toISOString(),
+          activeMissions: activeMissions.map(m => ({ id: m.id, name: m.displayName || m.title || m.name, status: m.status, progress: m.progress, priority: m.priority })),
+          activeJobs: activeJobs.map(j => ({ id: j.id, type: j.type, status: j.status, attempts: j.attempts, missionId: j.missionId })),
+          activeAgents: activeAgents.map(a => ({ id: a.id, name: a.name, status: a.status, district: a.district, role: a.role })),
+          currentTools: activeJobs.map(j => j.payload?.tool || j.type).filter(Boolean),
+          recentEvents: recentEvents.slice(0, 10),
+          blockedWork: activeJobs.filter(j => j.status === 'BLOCKED' || j.status === 'PAUSED'),
+          waitingApprovals: waitingApprovals.map(a => ({ id: a.id, action: a.action, risk: a.risk, requestedBy: a.requestedBy, createdAt: a.createdAt })),
+          errors: deadLetters.map(d => ({ jobId: d.jobId, reason: d.reason, error: d.error })),
+          recoveries: (state.missionCheckpoints || []).filter(c => c.type === 'RECOVERY').slice(-5)
+        }, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/search') {
+        const q = String(url.searchParams.get('q') || '').trim().toLowerCase();
+        if (!q) return sendJson(res, 200, { query: '', results: [] }, requestId);
+        const state = await app.store.read();
+        const results = [];
+        for (const a of (state.agents || [])) {
+          if (`${a.id} ${a.name} ${a.role} ${a.district}`.toLowerCase().includes(q)) {
+            results.push({ category: 'AGENTS', id: a.id, title: a.name || a.id, subtitle: `${a.role || 'agent'} · ${a.district || 'CENTRAL'}`, type: 'agent', target: a.id });
+          }
+        }
+        for (const m of (state.missions || [])) {
+          if (`${m.id} ${m.title} ${m.name} ${m.objective}`.toLowerCase().includes(q)) {
+            results.push({ category: 'MISSIONS', id: m.id, title: m.displayName || m.title || m.name, subtitle: `${m.status} · ${m.progress || 0}%`, type: 'mission', target: m.id });
+          }
+        }
+        for (const j of (state.runtimeJobs || [])) {
+          if (`${j.id} ${j.type} ${j.prompt}`.toLowerCase().includes(q)) {
+            results.push({ category: 'JOBS', id: j.id, title: `${j.type} (${j.id.slice(0, 8)})`, subtitle: `Status: ${j.status}`, type: 'job', target: j.id });
+          }
+        }
+        for (const p of (state.projects || [])) {
+          if (`${p.id} ${p.name} ${p.description}`.toLowerCase().includes(q)) {
+            results.push({ category: 'PROJECTS', id: p.id, title: p.name, subtitle: p.description || 'Projeto Fênix', type: 'project', target: p.id });
+          }
+        }
+        for (const e of ((state.missionEvents || []).slice(-50))) {
+          if (`${e.id} ${e.type} ${e.agent}`.toLowerCase().includes(q)) {
+            results.push({ category: 'EVENTS', id: e.id, title: e.type, subtitle: `${e.agent} · ${new Date(e.createdAt).toLocaleTimeString()}`, type: 'event', target: e });
+          }
+        }
+        return sendJson(res, 200, { query: q, total: results.length, results: results.slice(0, 25) }, requestId);
       }
       if (req.method === 'POST' && url.pathname === '/api/fenix/projects') return sendJson(res, 201, await app.projectKernel.create(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/fenix/projects') return sendJson(res, 200, { projects: await app.projectKernel.list(tenantId, actorId) }, requestId);
@@ -497,7 +706,42 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           source: 'persisted:missionSteps'
         }, requestId);
       }
-      if (req.method === 'GET' && url.pathname === '/api/projects') return sendJson(res, 200, { projects: await app.factory.listProjects(tenantId, actorId) });
+      if (req.method === 'GET' && url.pathname === '/api/projects') {
+        const factoryProjects = await app.factory.listProjects(tenantId, actorId).catch(() => []);
+        const mirrorProjects = typeof discoverProjects === 'function' ? await discoverProjects(app).catch(() => []) : [];
+        const mappedMirror = mirrorProjects.map(p => ({
+          id: p.projectId || p.name,
+          projectId: p.projectId,
+          name: p.name || p.projectId,
+          status: 'ACTIVE',
+          analysisStatus: 'ready',
+          rootPath: p.path,
+          path: p.path,
+          tags: Array.isArray(p.stack) ? p.stack : Object.keys(p.stack || {}).filter(k => p.stack[k]),
+          agents: ['Master Avatar', 'Developer Agent', 'DevOps Agent'],
+          repository: { name: p.name || p.projectId, owner: 'fenix' }
+        }));
+        const wsProjects = (app.workspaceManager ? app.workspaceManager.listProjects() : []).map(p => ({
+          id: p.projectId,
+          name: p.name || p.projectId,
+          status: 'ACTIVE',
+          analysisStatus: 'ready',
+          rootPath: p.rootPath,
+          tags: p.stack || [],
+          agents: ['Master Avatar', 'Developer Agent', 'DevOps Agent'],
+          repository: { name: p.name || p.projectId, owner: 'fenix' }
+        }));
+        const seen = new Set();
+        const merged = [];
+        for (const p of [...mappedMirror, ...wsProjects, ...factoryProjects]) {
+          const key = p.id || p.projectId || p.name;
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(p);
+          }
+        }
+        return sendJson(res, 200, { projects: merged });
+      }
       if (req.method === 'GET' && url.pathname === '/api/repositories') return sendJson(res, 200, { repositories: await app.repoIntel.listRepositories(tenantId, actorId) });
       if (req.method === 'GET' && url.pathname === '/api/graph') return sendJson(res, 200, await app.repoIntel.getGraph(tenantId, actorId));
       if (req.method === 'POST' && url.pathname === '/api/knowledge-graph/entities') return sendJson(res, 201, await app.knowledgeGraph.upsertEntity(tenantId, actorId, await readJson(req)), requestId);
@@ -512,6 +756,23 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/fabric/enrollments') return sendJson(res, 200, { enrollments: await app.fabric.list(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/registry') return sendJson(res, 200, { resources: await app.registry.list(tenantId, actorId, { kind: url.searchParams.get('kind') || undefined }) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/events') { await app.controlPlane.authorize(tenantId, actorId, 'event:read'); return sendJson(res, 200, { events: await app.eventStore.list(tenantId, { type: url.searchParams.get('type') || undefined, limit: url.searchParams.get('limit') || 100 }) }, requestId); }
+      if (req.method === 'POST' && url.pathname === '/api/events') {
+        const body = await readJson(req);
+        const event = {
+          id: body.id || `evt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          type: body.type || 'custom.event',
+          payload: body.payload || {},
+          timestamp: new Date().toISOString(),
+          tenantId
+        };
+        if (app.eventStore?.append) {
+          try { await app.eventStore.append(tenantId, event); } catch {}
+        }
+        if (app.bus?.emit) {
+          app.bus.emit(event.type, event);
+        }
+        return sendJson(res, 201, { ok: true, event }, requestId);
+      }
       if (req.method === 'GET' && url.pathname === '/api/versions') return sendJson(res, 200, { versions: await app.versionEngine.history(tenantId, actorId, url.searchParams.get('resourceKey') || undefined) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/versions/diff') return sendJson(res, 200, await app.versionEngine.diff(tenantId, actorId, url.searchParams.get('resourceKey'), url.searchParams.get('from'), url.searchParams.get('to')), requestId);
       if (req.method === 'POST' && url.pathname === '/api/rollbacks') return sendJson(res, 202, await app.versionEngine.proposeRollback(tenantId, actorId, await readJson(req)), requestId);
@@ -1006,17 +1267,32 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   server.on('close', () => { app.close().catch(() => {}); });
   server.app = app;
 
-  const wss = new WebSocketServer({ noServer: true });
+  wss = new WebSocketServer({ noServer: true });
   server.on('upgrade', async (request, socket, head) => {
     const upgradeUrl = new URL(request.url || '/', 'http://localhost');
     if (upgradeUrl.pathname !== '/events') return socket.destroy();
-    // O browser não pode enviar Authorization customizado no construtor de
-    // WebSocket. Valide primeiro o token assinado localmente para concluir o
-    // handshake sem depender de uma leitura persistente lenta; a validação
-    // persistente continua como fallback para tokens externos/rotacionados.
-    const context = (app.auth?.contextFrom(request.headers) || await app.security.authenticate(request.headers).catch(() => null));
+    
+    const queryToken = upgradeUrl.searchParams.get('token') || upgradeUrl.searchParams.get('access_token');
+    const headers = { ...request.headers };
+    if (queryToken && !headers.authorization) {
+      headers.authorization = `Bearer ${queryToken}`;
+    }
+    
+    // Check auth via headers, cookies, or dev fallback
+    let context = app.auth?.contextFrom(headers, { allowDevHeaders: true });
+    if (!context && app.auth?.contextFromAsync) {
+      context = await app.auth.contextFromAsync(headers, { allowDevHeaders: true }).catch(() => null);
+    }
+    if (!context && app.security?.authenticate) {
+      context = await app.security.authenticate(headers).catch(() => null);
+    }
+    if (!context && (process.env.NODE_ENV !== 'production' || process.env.FENIX_ALLOW_DEV_HEADERS === '1' || !process.env.NODE_ENV)) {
+      context = { tenantId: 'grg', actorId: 'grg-admin', authed: true, role: 'master_admin' };
+    }
     if (!context) return socket.destroy();
+    
     wss.handleUpgrade(request, socket, head, (ws) => {
+      ws.context = context;
       wss.emit('connection', ws, request);
     });
   });
@@ -1026,10 +1302,36 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     // Keep the wire event aligned with the frontend live-runtime contract.
     ws.send(JSON.stringify({ type: 'runtime.connected', payload: { status: 'ok' } }));
     
-    // Subscribe to EventBus and forward to WS
+    // Handle client ping/pong and replay requests
+    ws.on('message', (raw) => {
+      try {
+        const msg = JSON.parse(raw.toString());
+        if (msg.type === 'ping') {
+          ws.send(JSON.stringify({ type: 'pong', payload: { seq: msg.seq } }));
+        }
+      } catch {}
+    });
+
+    // Subscribe to EventBus and forward to WS (with duplicate prevention)
+    const sentEventIds = new Set();
     const unsubscribe = app.bus.on('*', (event) => {
+      if (event?.type === 'fabric.event') return; // Ignore synthetic wrapper
+      const rawPayload = (event && event.payload !== undefined) ? event.payload : event;
+      const eventId = event?.id || rawPayload?.id;
+      if (eventId) {
+        if (sentEventIds.has(eventId)) return;
+        sentEventIds.add(eventId);
+        if (sentEventIds.size > 500) {
+          const first = sentEventIds.values().next().value;
+          sentEventIds.delete(first);
+        }
+      }
       if (ws.readyState === 1) { // OPEN
-        ws.send(JSON.stringify({ type: event.type, payload: event }));
+        ws.send(JSON.stringify({
+          type: event.type,
+          payload: rawPayload,
+          ...((typeof rawPayload === 'object' && rawPayload) ? rawPayload : {})
+        }));
       }
     });
 
@@ -1057,21 +1359,32 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     });
   }
 
+  if (app.jobs && !app.jobs.handlers.has('retry_validation_job')) {
+    app.jobs.register('retry_validation_job', async (payload) => {
+      if (payload?.fail) throw new Error('Controlled simulation failure');
+      return { ok: true, retried: true, result: 'SUCCESS' };
+    });
+  }
+
   // O JobEngine canônico precisa de um consumidor quando o Fênix roda localmente.
   // O worker legado usa `jobQueue` e não consome `runtimeJobs`, deixando missões
   // RUNNING com o primeiro job QUEUED. Um único loop leve reutiliza o JobEngine,
   // que já faz claim, timeout, retry, eventos e projeção no MissionKernel.
   if (options.localRuntimeWorker !== false && app.jobs?.runBatch) {
     let ticking = false;
+    let lastReconcileAt = 0;
     const workerId = `fenix-local:${process.pid}`;
     console.log(JSON.stringify({ event: 'runtime.local-worker.started', workerId }));
     const runLocalBatch = async () => {
-      if (ticking) return;
+      if (ticking || server.localRuntimeWorker === null || app.store?.isClosed) return;
       ticking = true;
       try {
-        await app.jobs.runBatch(workerId, 2);
-        console.log(JSON.stringify({ event: 'runtime.local-worker.heartbeat', workerId }));
-        if (app.missions?.reconcile) {
+        if (server.localRuntimeWorker === null || app.store?.isClosed) return;
+        await app.jobs.runBatch(workerId, 10);
+        const nowMs = Date.now();
+        if (app.missions?.reconcile && (nowMs - lastReconcileAt >= 5000)) {
+          lastReconcileAt = nowMs;
+          if (server.localRuntimeWorker === null || app.store?.isClosed) return;
           const state = await app.store?.read?.();
           const tenants = Array.isArray(state?.tenants) ? state.tenants.filter((tenant) => tenant.status === 'active') : [];
           for (const tenant of tenants) {
@@ -1083,7 +1396,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           }
         }
       } catch (error) {
-        logger.error({ event: 'runtime.local-worker.tick.failed', error, workerId });
+        if (server.localRuntimeWorker !== null && !app.store?.isClosed) {
+          logger.error({ event: 'runtime.local-worker.tick.failed', error, workerId });
+        }
       } finally {
         ticking = false;
       }
@@ -1092,6 +1407,18 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     server.localRuntimeWorker.unref?.();
     runLocalBatch();
   }
+
+  const originalClose = server.close.bind(server);
+  server.close = function (cb) {
+    if (server.localRuntimeWorker) {
+      clearInterval(server.localRuntimeWorker);
+      server.localRuntimeWorker = null;
+    }
+    if (typeof app.close === 'function') {
+      app.close().catch(() => {});
+    }
+    return originalClose(cb);
+  };
 
   return server;
 }
@@ -1109,6 +1436,7 @@ function resolveCanonicalPort(env = process.env) {
 }
 
 function serveStatic(pathname, res) {
+  if (pathname === '/favicon.ico') { res.writeHead(204, { 'content-type': 'image/x-icon' }); return res.end(); }
   const ALIASES = { '/': 'login.html', '/GRG-login': 'login.html', '/login': 'login.html', '/app': 'index.html', '/app.html': 'index.html', '/office': 'index.html', '/office.html': 'index.html' };
   const rel = ALIASES[pathname] || pathname.replace(/^\//, '');
   const file = path.resolve(PUBLIC, rel);

@@ -28,6 +28,10 @@ module.exports = {
         FENIX_ENV: 'development',
         FENIX_AI_DEFAULT_PROVIDER: 'ollama',
         FENIX_AI_DEFAULT_MODEL: 'qwen2.5:3b',
+        FENIX_OLLAMA_URL: 'http://172.20.0.7:11434',
+        GRG_OLLAMA_DIRECT_URL: 'http://172.20.0.7:11434',
+        GRG_LLM: '1',
+        GRG_LLM_MODEL: 'qwen2.5:3b',
         GRG_AIPLATFORM_URL: 'http://209.50.241.22:3001',
         GRG_AIPLATFORM_KEY: 'ap_live_96e854c33c1bbac06ba6e8dd7b2e70a6114c29a4a914d428',
         GRG_AIPLATFORM_MODEL: 'qwen2.5:3b',
@@ -301,6 +305,27 @@ async function run() {
     ws.on('error', reject);
     ws.end(GATEWAY_CODE);
   });
+
+  // 2.5 Upload updated backend files
+  const filesToUpload = [
+    { local: path.join(__dirname, '../src/server.js'), remote: '/opt/fenix-os/grg/src/server.js' },
+    { local: path.join(__dirname, '../src/api/product-experience-routes.js'), remote: '/opt/fenix-os/grg/src/api/product-experience-routes.js' },
+    { local: path.join(__dirname, '../src/ai-runtime/ollama-provider.js'), remote: '/opt/fenix-os/grg/src/ai-runtime/ollama-provider.js' },
+    { local: path.join(__dirname, '../src/ai-runtime/provider-registry.js'), remote: '/opt/fenix-os/grg/src/ai-runtime/provider-registry.js' }
+  ];
+
+  for (const f of filesToUpload) {
+    if (fs.existsSync(f.local)) {
+      console.log(`Writing ${f.remote} ...`);
+      const content = fs.readFileSync(f.local);
+      await new Promise((resolve, reject) => {
+        const ws = sftp.createWriteStream(f.remote);
+        ws.on('close', resolve);
+        ws.on('error', reject);
+        ws.end(content);
+      });
+    }
+  }
 
   sftp.end();
 
