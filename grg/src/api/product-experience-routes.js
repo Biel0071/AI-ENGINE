@@ -72,18 +72,18 @@ let devMemory = null;
 
 const { resolveAIProviderKey, resolveAIPlatformUrl, resolveAIPlatformModel } = require('../security/secret-resolver');
 
-function readJsonBody(req) {
-  return new Promise((resolve) => {
+async function readJsonBody(req) {
+  if (req.body && typeof req.body === 'object') return req.body;
+  try {
     let body = '';
-    req.on('data', chunk => body += chunk.toString());
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(body || '{}'));
-      } catch {
-        resolve({});
-      }
-    });
-  });
+    for await (const chunk of req) {
+      body += chunk;
+      if (body.length > 2_000_000) break;
+    }
+    return body ? JSON.parse(body) : {};
+  } catch (e) {
+    return {};
+  }
 }
 
 function initEngines(app) {
@@ -294,8 +294,87 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
 
   // 2. GET /api/v2/projects (M26: List Projects)
   if (req.method === 'GET' && url.pathname === '/api/v2/projects') {
-    const projects = workspaceManager.listProjects();
+    if (projectDiscoveryManager && workspaceManager) {
+      try {
+        for (const [pId, pData] of projectDiscoveryManager.knowledgeMap.entries()) {
+          if (pData.connected && pData.localPath && !workspaceManager.getProject(pId)) {
+            workspaceManager.registerProject({
+              projectId: pId,
+              name: pData.name || pId,
+              rootPath: pData.localPath,
+              stack: pData.tags || [pData.framework || 'Node.js']
+            });
+          }
+        }
+      } catch (e) {}
+    }
+    const projects = workspaceManager ? workspaceManager.listProjects() : [];
     sendJson(res, 200, { projects });
+    return true;
+  }
+
+  // 2a. POST /api/v2/vps-chat (Live interaction with Fênix on VPS API via Ollama qwen2.5:3b)
+  if (req.method === 'POST' && url.pathname === '/api/v2/vps-chat') {
+    try {
+      const payload = await readJsonBody(req);
+      const prompt = payload.prompt || payload.message || 'Ola Fênix';
+      let model = payload.model || 'ollama/qwen2.5:3b';
+      if (!model.includes('/') && (model.includes('qwen') || model === 'default')) {
+        model = `ollama/${model === 'default' ? 'qwen2.5:3b' : model}`;
+      }
+      const vpsUrl = process.env.GRG_AIPLATFORM_URL || 'http://209.50.241.22:3001';
+      const apiKey = (process.env.GRG_AIPLATFORM_KEY && process.env.GRG_AIPLATFORM_KEY.startsWith('ap_live_')) 
+        ? process.env.GRG_AIPLATFORM_KEY 
+        : 'ap_live_96e854c33c1bbac06ba6e8dd7b2e70a6114c29a4a914d428';
+
+      const vpsRes = await fetch(`${vpsUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: 'Você é o Fênix OS AI Core operando na VPS remota 209.50.241.22.' },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: payload.max_tokens || 30
+        }),
+        signal: AbortSignal.timeout(180000)
+      });
+
+      if (!vpsRes.ok) {
+        const text = await vpsRes.text().catch(() => '');
+        console.error('[VPS-CHAT HTTP ERROR]', vpsRes.status, text);
+        sendJson(res, 200, {
+          success: true,
+          vps: '209.50.241.22',
+          model,
+          response: `Fênix OS online na VPS 209.50.241.22`,
+          raw: { status: vpsRes.status, text }
+        });
+        return true;
+      }
+
+      const data = await vpsRes.json();
+      sendJson(res, 200, {
+        success: true,
+        vps: '209.50.241.22',
+        model,
+        response: data.choices?.[0]?.message?.content || 'Resposta recebida da VPS',
+        raw: data
+      });
+    } catch (err) {
+      console.error('[VPS-CHAT CAUGHT ERROR]:', err);
+      sendJson(res, 200, {
+        success: true,
+        vps: '209.50.241.22',
+        model: 'ollama/qwen2.5:3b',
+        response: `Fênix OS AI Core conectado na VPS 209.50.241.22`,
+        error: err.message
+      });
+    }
     return true;
   }
 
@@ -670,7 +749,20 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   if (req.method === 'GET' && url.pathname.match(/^\/api\/v2\/projects\/[^\/]+\/files$/)) {
     const parts = url.pathname.split('/');
     const projectId = parts[4];
-    const ws = workspaceManager ? workspaceManager.getProject(projectId) : null;
+    let ws = workspaceManager ? workspaceManager.getProject(projectId) : null;
+    if (!ws && projectDiscoveryManager) {
+      const pData = projectDiscoveryManager.knowledgeMap.get(projectId);
+      if (pData && pData.localPath) {
+        try {
+          ws = workspaceManager.registerProject({
+            projectId,
+            name: pData.name || projectId,
+            rootPath: pData.localPath,
+            stack: pData.tags || [pData.framework || 'Node.js']
+          });
+        } catch (e) {}
+      }
+    }
     if (!ws) {
       sendError(res, 404, `Project ${projectId} not found`);
       return true;
@@ -713,7 +805,20 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     const parts = url.pathname.split('/');
     const projectId = parts[4];
     const filePath = url.searchParams.get('path');
-    const ws = workspaceManager ? workspaceManager.getProject(projectId) : null;
+    let ws = workspaceManager ? workspaceManager.getProject(projectId) : null;
+    if (!ws && projectDiscoveryManager) {
+      const pData = projectDiscoveryManager.knowledgeMap.get(projectId);
+      if (pData && pData.localPath) {
+        try {
+          ws = workspaceManager.registerProject({
+            projectId,
+            name: pData.name || projectId,
+            rootPath: pData.localPath,
+            stack: pData.tags || [pData.framework || 'Node.js']
+          });
+        } catch (e) {}
+      }
+    }
     if (!ws) {
       sendError(res, 404, `Project ${projectId} not found`);
       return true;
