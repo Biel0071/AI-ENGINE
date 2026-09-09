@@ -488,7 +488,8 @@
     // ── WebSocket for real-time events ──
     connectWebSocket() {
       try {
-        const wsUrl = `ws://${window.location.host}`;
+        const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProto}//${window.location.host}/events`;
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
