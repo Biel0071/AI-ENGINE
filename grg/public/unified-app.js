@@ -119,15 +119,16 @@ async function settle(entries, concurrency = 5) {
 }
 
 function row(title, detail = '', status = '') {
-  let badgeCls = '';
-  if (/ok|ready|active|online|connected|succeeded|completed/i.test(status)) badgeCls = 'badge green';
-  else if (/fail|error|degraded|missing|offline|blocked|denied/i.test(status)) badgeCls = 'badge rose';
-  else if (status) badgeCls = 'badge warn';
+  const badgeHtml = status
+    ? (typeof window.StatusBadge?.render === 'function'
+        ? window.StatusBadge.render(status)
+        : `<span class="badge ${/ok|ready|active|online|connected|succeeded|completed/i.test(status) ? 'green' : (/fail|error|degraded|missing|offline|blocked|denied/i.test(status) ? 'rose' : 'warn')}">${esc(status)}</span>`)
+    : '--';
   
   return `<tr>
     <td><b>${esc(title)}</b></td>
     <td><small>${esc(detail)}</small></td>
-    <td>${status ? `<span class="${badgeCls}">${esc(status)}</span>` : '--'}</td>
+    <td>${badgeHtml}</td>
   </tr>`;
 }
 
@@ -146,6 +147,9 @@ function showView(name, push = true) {
   const label = document.querySelector(`[data-nav="${name}"], [data-view="${name}"]`)?.textContent?.replace(/^[A-Z]{2}/, '').trim() || name;
   text('viewTitle', label);
   if (push) history.replaceState(null, '', `#${name}`);
+  if (window.syncCityPlacement) {
+    window.syncCityPlacement(name);
+  }
 }
 
 function bubble(message, who = 'bot') {
@@ -691,6 +695,34 @@ async function runChat(message) {
   bubble(value, 'user');
   saveChatTurn('user', value);
 
+  const explicitMission = /^(?:criar|nova)\s+miss[ãa]o\s*(?:para|de)?\s*(.*)/i.exec(value);
+  if (explicitMission) {
+    const objective = explicitMission[1] || value;
+    try {
+      const mission = await api('/missions', { method: 'POST', body: JSON.stringify({
+        title: `Missão FÊNIX · ${objective.slice(0, 64)}`,
+        name: `Missão FÊNIX · ${objective.slice(0, 64)}`,
+        objective: objective,
+        autoApprove: true,
+        steps: [
+          { key: 'audit', type: 'audit', description: 'Analisar contexto e estado atual' },
+          { key: 'inspect', type: 'inspect', description: 'Inspecionar o workspace autorizado', dependsOn: ['audit'] },
+          { key: 'analyze', type: 'analyze', description: 'Construir análise e plano verificável', dependsOn: ['inspect'] },
+          { key: 'browser-qa', type: 'browser-qa', description: 'Validar a experiência no navegador', dependsOn: ['analyze'] },
+        ],
+      }) });
+      const missionId = mission.id || mission.missionId;
+      if (!missionId) throw new Error('runtime não retornou missionId');
+      const started = await api(`/missions/${encodeURIComponent(missionId)}/start`, { method: 'POST' });
+      const reply = `Missão ${missionId} criada e iniciada. Status: ${started.status || 'QUEUED'}. O progresso será acompanhado pelos eventos e jobs.`;
+      saveChatTurn('assistant', reply); bubble(reply, 'bot');
+    } catch (error) {
+      const reply = `Não foi possível iniciar a missão: ${error.message}`;
+      saveChatTurn('assistant', reply); bubble(reply, 'bot');
+    }
+    return;
+  }
+
   // Fênix decide primeiro se é conversa ou execução. Perguntas não criam
   // missão; tarefas complexas recebem proposta e aguardam autorização.
   let classification = { category: 'CONVERSATION', requiresConfirmation: false };
@@ -903,8 +935,12 @@ function init() {
   // Helpers for safe binding
   const addEvt = (id, event, handler) => { const el = $(id); if (el) el.addEventListener(event, handler); };
 
-  addEvt('refreshBtn', 'click', () => refreshAll());
-  addEvt('settingsBtn', 'click', () => refreshAll());
+  addEvt('cmdPaletteBtn', 'click', () => openCommand());
+  addEvt('refreshBtn', 'click', () => {
+    refreshAll();
+    if (typeof window.showToast === 'function') window.showToast('Estado sincronizado com o cluster', 'success');
+  });
+  addEvt('settingsBtn', 'click', () => showView('browser'));
   addEvt('logoutBtn', 'click', async () => {
     await api('/login/logout', { method: 'POST' }).catch(() => {});
     localStorage.removeItem('grg_token');
@@ -1012,61 +1048,160 @@ function init() {
   addEvt('cmdBtn', 'click', openCommand);
   addEvt('closeCmdBtn', 'click', () => { if ($('cmdDialog')) $('cmdDialog').close(); });
   addEvt('cmdInput', 'input', renderCommandPalette);
+  
+  // Global Ctrl + K / Cmd + K shortcut
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      openCommand();
+    }
+  });
+
+  const cmdInputEl = $('cmdInput');
+  if (cmdInputEl && !cmdInputEl.dataset.cmdNavBound) {
+    cmdInputEl.dataset.cmdNavBound = 'true';
+    cmdInputEl.addEventListener('keydown', (e) => {
+      const rows = $('cmdResults')?.querySelectorAll('.row');
+      if (!rows || !rows.length) return;
+      const activeIdx = [...rows].findIndex(r => r.classList.contains('active'));
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = activeIdx < rows.length - 1 ? activeIdx + 1 : 0;
+        rows.forEach((r, i) => r.classList.toggle('active', i === next));
+        rows[next]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = activeIdx > 0 ? activeIdx - 1 : rows.length - 1;
+        rows.forEach((r, i) => r.classList.toggle('active', i === prev));
+        rows[prev]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const sel = activeIdx >= 0 ? rows[activeIdx] : rows[0];
+        sel?.click();
+      } else if (e.key === 'Escape') {
+        $('cmdDialog')?.close();
+      }
+    });
+  }
+
   window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'command', false));
   window.addEventListener('hashchange', () => refreshAll());
   document.addEventListener('fenix-live', (event) => {
     const type = event.detail?.type || '';
-    if (type === 'event' || type === 'snapshot' || type === 'status') {
-      renderMissions();
-      renderHeader();
+    if (window.FENIX?.live) {
+      if (window.FENIX.live.jobs) {
+        state.jobs = [...new Map([...state.jobs, ...window.FENIX.live.jobs].map((job) => [job.id || job.jobId, job])).values()];
+      }
+      if (window.FENIX.live.missions) {
+        state.missions = [...new Map([...state.missions, ...window.FENIX.live.missions].map((m) => [m.id || m.missionId, m])).values()];
+      }
+      if (window.FENIX.live.events) {
+        state.events = window.FENIX.live.events;
+      }
+      if (window.FENIX.live.agents) {
+        if (!state.data) state.data = {};
+        state.data.agents = { agents: window.FENIX.live.agents };
+      }
     }
+    renderMissions();
+    renderHeader();
+    renderCity();
   });
   showView(location.hash.slice(1) || 'command', false);
   bubble('Workspace unico carregado. Eu consolidei comando, runtime, missoes, AI City, office, CRM, deploy, observabilidade e developer em uma tela.');
   refreshAll();
-  // O stream SSE cobre mudanças operacionais; polling de 30s é apenas
-  // reconciliação de dados, evitando tempestade de requests em telas/iframes.
-  setInterval(async () => {
-    if (document.hidden || String(location.hash.slice(1) || 'command').split('?')[0] !== 'operations') return;
-    try {
-      const response = await fetch('/api/v2/jarvis/jobs/queue', { headers: { Authorization: `Bearer ${accessToken}` } });
-      if (!response.ok) return;
-      const queue = await response.json();
-      const jobs = ['running', 'waiting', 'completed', 'failed', 'cancelled'].flatMap((key) => Array.isArray(queue[key]) ? queue[key] : []);
-      state.jobs = [...new Map([...state.jobs, ...jobs].map((job) => [job.id, job])).values()];
-      renderMissions();
-    } catch {}
-  }, 5000);
-  setInterval(() => { if (!document.hidden && String(location.hash.slice(1) || 'command').split('?')[0] !== 'operations') refreshAll(); }, 30000);
 }
 
 function openCommand() {
+  const dlg = $('cmdDialog');
+  if (!dlg) return;
   renderCommandPalette();
-  $('cmdDialog').showModal();
-  $('cmdInput').focus();
+  if (typeof dlg.showModal === 'function') {
+    try { dlg.showModal(); } catch { dlg.style.display = 'block'; }
+  } else {
+    dlg.style.display = 'block';
+  }
+  setTimeout(() => $('cmdInput')?.focus(), 50);
 }
 
 function renderCommandPalette() {
-  const q = ($('cmdInput').value || '').toLowerCase();
-  const commands = [
-    ['command', 'Abrir comando'],
-    ['runtime', 'Abrir runtime'],
-    ['missions', 'Abrir missoes'],
-    ['city', 'Abrir AI City'],
-    ['office', 'Abrir office'],
-    ['projects', 'Abrir projetos CRM'],
-    ['skills', 'Abrir skills e agentes'],
-    ['connectors', 'Abrir conectores e API'],
-    ['deploy', 'Abrir deploy'],
-    ['observability', 'Abrir observabilidade'],
-    ['security', 'Abrir seguranca'],
-    ['developer', 'Abrir developer district'],
-  ].filter(([, label]) => label.toLowerCase().includes(q));
-  if ($('cmdResults')) $('cmdResults').innerHTML = commands.map(([target, label]) => row(label, `#${target}`, 'NAV')).join('');
-  document.querySelectorAll('#cmdResults .row').forEach((el, i) => {
+  const q = ($('cmdInput')?.value || '').toLowerCase().trim();
+  const viewsList = [
+    ['command', 'Overview — Central Command Dashboard', 'COMMAND'],
+    ['city', 'AI City — 3D Cyberpunk Isometric City', 'COMMAND'],
+    ['agents', 'Catálogo de Agentes & Swarm', 'COMMAND'],
+    ['operations', 'Tarefas & Missões Operacionais (DAGs)', 'COMMAND'],
+    ['projects', 'Projetos Registrados & Workspace', 'BUILD'],
+    ['ide', 'Visual IDE & Workflows', 'BUILD'],
+    ['terminal', 'Terminal & Automações Governança', 'BUILD'],
+    ['memory', 'Memória do Sistema & RAG de Engenharia', 'INTELLIGENCE'],
+    ['knowledge', 'Base de Conhecimento & Skills', 'INTELLIGENCE'],
+    ['mcp', 'MCP Hub & Provedores de Modelos', 'INTELLIGENCE'],
+    ['runtime', 'Telemetria do Cluster & Health', 'OBSERVABILITY'],
+    ['observability', 'Observabilidade, Séries & Logs', 'OBSERVABILITY'],
+    ['project', 'Project Mirror & Infraestrutura', 'SYSTEM'],
+    ['browser', 'Browser QA & Runtime de Validação', 'SYSTEM']
+  ];
+
+  const live = window.FENIX?.live || {};
+  const liveAgents = (live.agents || []).map(a => {
+    const role = (a.role || 'agent').toUpperCase();
+    const name = a.name || `${role} (${(a.id || '').slice(0, 8)})`;
+    return [`agent:${a.id}`, `Inspecionar Agente: ${name}`, 'AGENTE'];
+  });
+
+  const liveTasks = (live.tasks || []).slice(0, 15).map(t => {
+    const title = t.name || t.type || t.prompt || t.id;
+    return [`task:${t.id}`, `Tarefa: ${title}`, 'TAREFA'];
+  });
+
+  const actions = [
+    ['action:refresh', 'Sincronizar barramento e estado do cluster (Refresh All)', 'COMANDO'],
+    ['action:chat', 'Focar prompt do Command Center', 'COMANDO'],
+    ['cmd:city', 'Navegar para a AI City', 'COMANDO'],
+    ['cmd:agents', 'Abrir catálogo completo de agentes', 'COMANDO'],
+    ['cmd:operations', 'Visualizar tarefas em execução e pendentes', 'COMANDO'],
+    ['cmd:memory', 'Abrir explorador de memória de engenharia', 'COMANDO'],
+    ['cmd:runtime', 'Ver telemetria do cluster e latência', 'COMANDO']
+  ];
+
+  const allItems = [...viewsList, ...liveAgents, ...liveTasks, ...actions];
+  const filtered = allItems.filter(([, label, badge]) => 
+    !q || label.toLowerCase().includes(q) || badge.toLowerCase().includes(q)
+  );
+
+  const container = $('cmdResults');
+  if (!container) return;
+  container.innerHTML = filtered.map(([target, label, badge], idx) => `
+    <div class="row ${idx === 0 ? 'active' : ''}" data-target="${esc(target)}">
+      <span>${esc(label)}</span>
+      <small>${esc(badge)}</small>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.row').forEach(el => {
     el.addEventListener('click', () => {
-      showView(commands[i][0]);
-      $('cmdDialog').close();
+      const target = el.dataset.target;
+      const dlg = $('cmdDialog');
+      if (dlg) {
+        if (typeof dlg.close === 'function') dlg.close();
+        else dlg.style.display = 'none';
+      }
+      if (target.startsWith('agent:')) {
+        const aid = target.slice(6);
+        if (typeof openAgentDeskModal === 'function') openAgentDeskModal(aid);
+      } else if (target.startsWith('task:')) {
+        showView('operations');
+      } else if (target === 'action:refresh') {
+        refreshAll();
+      } else if (target === 'action:chat') {
+        showView('command');
+        $('masterPrompt')?.focus();
+      } else if (target.startsWith('cmd:')) {
+        showView(target.slice(4));
+      } else {
+        showView(target);
+      }
     });
   });
 }
@@ -1134,10 +1269,10 @@ init();
                  key,
                  x: (deterministicUnit(i, 14) - 0.5) * 400,
                  y: (deterministicUnit(i, 15) - 0.5) * 300,
-                 targetX: 0,
-                 targetY: 0,
+                 targetX: (deterministicUnit(i, 14) - 0.5) * 400,
+                 targetY: (deterministicUnit(i, 15) - 0.5) * 300,
                  speed: 0.0008,
-                 avatar: 'Ôö£ÔûæÔö╝┬®Ôö¼├▒├ö├ç├┤',
+                 avatar: '🤖',
                  role: ra.role || key,
                  fullName: key,
                  color: '#38bdf8',
@@ -1149,6 +1284,18 @@ init();
          window._visualAgents = newVisuals;
          return newVisuals;
       }
+      
+      document.addEventListener('fenix-live', (event) => {
+        const type = event.detail?.type;
+        if (!window._visualAgents || !type) return;
+        if (['mission.created', 'agent.assigned', 'job.started', 'job.completed'].includes(type) || type.startsWith('mission.') || type.startsWith('job.')) {
+          window._visualAgents.forEach((va) => {
+            va.targetX = (Math.random() - 0.5) * 400;
+            va.targetY = (Math.random() - 0.5) * 300;
+          });
+        }
+      });
+
       function render() {
       tick++;
       ctx.clearRect(0, 0, width, height);

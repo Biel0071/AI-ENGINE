@@ -1110,7 +1110,9 @@
       }
 
       setTimeout(() => {
-        if (window.fenixVisualIDE && filePath) {
+        if (typeof window.openFile === 'function' && filePath) {
+          window.openFile(filePath);
+        } else if (window.fenixVisualIDE && filePath) {
           window.fenixVisualIDE.openFile?.(filePath);
         }
       }, 200);
@@ -1127,9 +1129,28 @@
 
       const isAiPlatform = /API Platform|Research/i.test(projectName);
       const isZapAI = /ZapAI/i.test(projectName);
-      const previewSrc = isAiPlatform 
-        ? 'http://209.50.241.22:3001/docs/' 
-        : (isZapAI ? '/app?preview=true&project=zapai' : '/app?preview=true');
+      let previewSrc = isAiPlatform 
+        ? 'http://209.50.241.22:8081/' 
+        : (isZapAI ? 'http://209.50.241.22/' : '/app?preview=true');
+
+      let tabsHtml = '';
+      if (isAiPlatform) {
+        tabsHtml = `
+          <button id="btnAiDash" style="padding:4px 8px;background:#0369a1;color:#fff;border:1px solid #38bdf8;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">⚡ Enterprise Dashboard (8081)</button>
+          <button id="btnAiDocs" style="padding:4px 8px;background:#0f172a;color:#94a3b8;border:1px solid rgba(255,255,255,0.2);border-radius:4px;cursor:pointer;font-size:11px;">📖 Swagger API Docs</button>
+          <button id="btnAiHealth" style="padding:4px 8px;background:#0f172a;color:#94a3b8;border:1px solid rgba(255,255,255,0.2);border-radius:4px;cursor:pointer;font-size:11px;">🩺 Engine Health</button>
+        `;
+      } else if (isZapAI) {
+        tabsHtml = `
+          <button id="btnZaiLive" style="padding:4px 8px;background:#059669;color:#fff;border:1px solid #10b981;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">💬 ZAI WhatsApp Live (80)</button>
+          <button id="btnZaiLocal" style="padding:4px 8px;background:#0f172a;color:#94a3b8;border:1px solid rgba(255,255,255,0.2);border-radius:4px;cursor:pointer;font-size:11px;">📱 Local Sandbox</button>
+        `;
+      } else {
+        tabsHtml = `
+          <button id="btnFenixApp" style="padding:4px 8px;background:#6366f1;color:#fff;border:1px solid #818cf8;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">🏙️ Fênix OS Digital Twin</button>
+          <button id="btnFenixCmd" style="padding:4px 8px;background:#0f172a;color:#94a3b8;border:1px solid rgba(255,255,255,0.2);border-radius:4px;cursor:pointer;font-size:11px;">📊 Command Center</button>
+        `;
+      }
 
       modal.innerHTML = `
         <div class="fenix-app-preview-head">
@@ -1138,6 +1159,7 @@
             <span style="font-weight:700;color:#fff;font-size:13px;">${projectName} — LIVE APPLICATION PREVIEW</span>
             <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#059669;color:#fff;font-weight:700;">LIVE</span>
             <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3b82f6;color:#fff;font-weight:600;">VPS: 209.50.241.22</span>
+            <div style="display:flex;gap:4px;margin-left:8px;">${tabsHtml}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <button id="btnVpDesktop" style="padding:4px 10px;background:#1e293b;border:1px solid #38bdf8;color:#fff;border-radius:4px;cursor:pointer;font-size:11px;">🖥️ Desktop (1280px)</button>
@@ -1149,7 +1171,7 @@
         </div>
         <div class="fenix-app-preview-stage" style="display:flex;position:relative;">
           <div class="fenix-app-viewport" id="fenixAppViewport" style="flex:1;">
-            <iframe id="previewIframe" src="${previewSrc}"></iframe>
+            <iframe id="previewIframe" src="${previewSrc}" style="width:100%;height:100%;border:none;"></iframe>
           </div>
           <div id="vpsChatDrawer" style="width:340px;background:#090d16;border-left:1px solid rgba(56,189,248,0.25);display:flex;flex-direction:column;padding:12px;">
             <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;margin-bottom:8px;">
@@ -1170,6 +1192,23 @@
       `;
 
       modal.style.display = 'flex';
+
+      const iframe = modal.querySelector('#previewIframe');
+      const btnAiDash = modal.querySelector('#btnAiDash');
+      const btnAiDocs = modal.querySelector('#btnAiDocs');
+      const btnAiHealth = modal.querySelector('#btnAiHealth');
+      const btnZaiLive = modal.querySelector('#btnZaiLive');
+      const btnZaiLocal = modal.querySelector('#btnZaiLocal');
+      const btnFenixApp = modal.querySelector('#btnFenixApp');
+      const btnFenixCmd = modal.querySelector('#btnFenixCmd');
+
+      if (btnAiDash) btnAiDash.onclick = () => { iframe.src = 'http://209.50.241.22:8081/'; };
+      if (btnAiDocs) btnAiDocs.onclick = () => { iframe.src = '/api/v2/proxy/vps-docs/'; };
+      if (btnAiHealth) btnAiHealth.onclick = () => { iframe.src = '/api/v2/proxy/vps-health'; };
+      if (btnZaiLive) btnZaiLive.onclick = () => { iframe.src = 'http://209.50.241.22/'; };
+      if (btnZaiLocal) btnZaiLocal.onclick = () => { iframe.src = '/app?preview=true&project=zapai'; };
+      if (btnFenixApp) btnFenixApp.onclick = () => { iframe.src = '/app?preview=true'; };
+      if (btnFenixCmd) btnFenixCmd.onclick = () => { iframe.src = '/'; };
 
       const vp = modal.querySelector('#fenixAppViewport');
       const bD = modal.querySelector('#btnVpDesktop');

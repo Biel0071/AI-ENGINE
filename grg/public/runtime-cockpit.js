@@ -202,6 +202,11 @@
   function renderShell() {
     const city = $('view-city');
     if (!city || city.dataset.runtimeCockpit === '1') return;
+    // World First: If canonical IsoCityEngine is active, keep living 2.5D game canvas intact
+    if (document.getElementById('cityCanvas') || window.fenixCity || typeof IsoCityEngine !== 'undefined') {
+      city.dataset.runtimeCockpit = '1';
+      return;
+    }
     city.dataset.runtimeCockpit = '1';
     city.className = 'view active runtime-city-view';
     city.style.cssText = '';

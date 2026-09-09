@@ -68,7 +68,10 @@
           <div class="orch-brand-title">
             FÊNIX OS <span class="orch-status-pill" id="statusPill">CONECTANDO</span>
           </div>
-          <span class="orch-brand-subtitle">ORQUESTRADOR CENTRAL</span>
+          <div class="orch-brand-subrow">
+            <span class="orch-brand-subtitle">ORQUESTRADOR CENTRAL</span>
+            <span class="orch-env-badge" id="envBadge">LOCAL / KERNEL</span>
+          </div>
         </div>
       </div>
       
@@ -77,30 +80,34 @@
         <div class="orch-meta-chip"><span class="orch-meta-label">LATÊNCIA</span><span class="orch-meta-val green" id="kpiLatency">28ms</span></div>
         <div class="orch-meta-chip"><span class="orch-meta-label">TOKENS</span><span class="orch-meta-val" id="kpiTokens">—</span></div>
         <div class="orch-meta-chip"><span class="orch-meta-label">AGENTES</span><span class="orch-meta-val green" id="kpiAgents">—</span></div>
+        <div class="orch-meta-chip"><span class="orch-meta-label">TAREFAS</span><span class="orch-meta-val" id="kpiTasks">—</span></div>
         <div class="orch-meta-chip"><span class="orch-meta-label">WORKER</span><span class="orch-meta-val" id="kpiWorker">—</span></div>
         <div class="orch-meta-chip"><span class="orch-meta-label">UPTIME</span><span class="orch-meta-val" id="kpiUptime">—</span></div>
       </div>
       
       <div class="orch-user-section">
+        <button class="orch-cmd-trigger-btn" id="cmdPaletteBtn" type="button" title="Abrir Command Palette (Ctrl + K)">
+          <i class="ph-bold ph-magnifying-glass"></i>
+          <span>Buscar comandos...</span>
+          <kbd>Ctrl K</kbd>
+        </button>
         <div class="orch-user-profile" id="userProfileBtn" title="FÊNIX — Master Orchestrator">
-          <div class="orch-avatar-badge" style="width:38px;height:38px;font-size:20px;background:radial-gradient(circle at 40% 35%, #ef4444, #7c0000);">
+          <div class="orch-avatar-badge" style="width:34px;height:34px;font-size:18px;background:radial-gradient(circle at 40% 35%, #ef4444, #7c0000);">
             <span>🤖</span>
           </div>
           <div class="orch-user-titles">
-            <span class="orch-user-name" id="actorName" style="font-size:13px;font-weight:800;">FÊNIX</span>
+            <span class="orch-user-name" id="actorName" style="font-size:12px;font-weight:800;">FÊNIX</span>
             <span class="orch-user-role" style="font-size:9px;letter-spacing:0.08em;">MASTER ORCHESTRATOR</span>
           </div>
         </div>
         <div class="orch-quick-actions">
-          <div class="orch-action-icon" id="notifIcon" title="Atividades Recentes">
-            <i class="ph-fill ph-magnifying-glass"></i>
-          </div>
-          <div class="orch-action-icon" id="refreshBtn" title="Configurações"><i class="ph ph-gear"></i></div>
-          <div class="orch-action-icon" id="logoutBtn" title="Sincronizar"><i class="ph ph-arrows-clockwise"></i></div>
-          <div class="orch-action-icon" style="position:relative;" title="Notificações">
+          <div class="orch-action-icon" id="refreshBtn" title="Sincronizar / Atualizar"><i class="ph ph-arrows-clockwise"></i></div>
+          <div class="orch-action-icon" id="settingsBtn" title="Configurações do Sistema"><i class="ph ph-gear"></i></div>
+          <div class="orch-action-icon" id="notifIcon" style="position:relative;" title="Notificações">
             <i class="ph-fill ph-bell"></i>
             <span class="orch-notif-badge" id="notifCount">3</span>
           </div>
+          <div class="orch-action-icon" id="logoutBtn" title="Encerrar Sessão"><i class="ph ph-sign-out"></i></div>
         </div>
       </div>
 
@@ -108,47 +115,63 @@
 
     <div class="main-body">
       
-              <!-- NAV SIDEBAR — TARGET UI v2 -->
-        <nav class="sidebar-nav">
+        <!-- NAV SIDEBAR — CANONICAL DOMAINS -->
+        <nav class="sidebar-nav" id="mainSidebarNav">
+          <div class="sidebar-collapse-bar">
+            <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" title="Recolher / Expandir Menu">
+              <i class="ph-bold ph-caret-double-left"></i>
+            </button>
+          </div>
           <div class="nav-top">
 
-            <!-- COMMAND CENTER section -->
+            <!-- COMMAND section -->
             <div class="nav-group" data-domain="command">
-              <button class="nav-group-label" type="button">COMMAND CENTER</button>
-              <button class="nav-item active" data-view="command" data-nav="command"><i class="ph-fill ph-squares-four"></i> DASHBOARD</button>
-              <button class="nav-item" data-view="operations" data-nav="operations"><i class="ph ph-kanban"></i> MISSÕES</button>
-              <button class="nav-item" data-view="agents" data-nav="agents"><i class="ph ph-users-three"></i> AGENTES</button>
+              <div class="nav-group-header">
+                <button class="nav-group-label" type="button">COMMAND</button>
+                <span class="nav-group-badge" id="badgeNavCommand">LIVE</span>
+              </div>
+              <button class="nav-item active" data-view="command" data-nav="command" title="Overview & Central Command"><i class="ph-fill ph-squares-four"></i> <span>OVERVIEW</span></button>
+              <button class="nav-item" data-view="city" data-nav="city" title="AI City — 3D Isometric Agentic City"><i class="ph ph-buildings"></i> <span>AI CITY</span></button>
+              <button class="nav-item" data-view="agents" data-nav="agents" title="Catálogo de Agentes & Swarm"><i class="ph ph-users-three"></i> <span>AGENTES</span> <span class="nav-counter" id="navCounterAgents">19</span></button>
+              <button class="nav-item" data-view="operations" data-nav="operations" title="Tarefas e Missões Operacionais"><i class="ph ph-kanban"></i> <span>TAREFAS</span></button>
             </div>
 
             <!-- BUILD section -->
             <div class="nav-group" data-domain="build">
-              <button class="nav-group-label" type="button">BUILD</button>
-              <button class="nav-item" data-view="projects" data-nav="projects"><i class="ph ph-folders"></i> PROJECTS</button>
-              <button class="nav-item" data-view="ide" data-nav="ide"><i class="ph ph-code"></i> IDE</button>
+              <div class="nav-group-header">
+                <button class="nav-group-label" type="button">BUILD</button>
+              </div>
+              <button class="nav-item" data-view="projects" data-nav="projects" title="Projetos Registrados"><i class="ph ph-folders"></i> <span>PROJECTS</span></button>
+              <button class="nav-item" data-view="ide" data-nav="ide" title="Visual IDE & Workflows"><i class="ph ph-code"></i> <span>WORKFLOWS / IDE</span></button>
+              <button class="nav-item" data-view="terminal" data-nav="terminal" title="Terminal & Automações"><i class="ph ph-terminal"></i> <span>AUTOMAÇÕES</span></button>
             </div>
 
             <!-- INTELLIGENCE section -->
             <div class="nav-group" data-domain="intelligence">
-              <button class="nav-group-label" type="button">INTELIGÊNCIA</button>
-              <button class="nav-item" data-view="memory" data-nav="memory"><i class="ph ph-brain"></i> MEMÓRIA</button>
-              <button class="nav-item" data-view="knowledge" data-nav="knowledge"><i class="ph ph-lightning"></i> SKILLS</button>
-              <button class="nav-item" data-view="runtime" data-nav="runtime"><i class="ph ph-activity"></i> TELEMETRY</button>
-              <button class="nav-item" data-view="observability" data-nav="observability"><i class="ph ph-chart-line-up"></i> OBSERVABILITY</button>
+              <div class="nav-group-header">
+                <button class="nav-group-label" type="button">INTELLIGENCE</button>
+              </div>
+              <button class="nav-item" data-view="memory" data-nav="memory" title="Memória de Engenharia"><i class="ph ph-brain"></i> <span>MEMÓRIA</span></button>
+              <button class="nav-item" data-view="knowledge" data-nav="knowledge" title="Skills & Conhecimento"><i class="ph ph-lightning"></i> <span>SKILLS</span></button>
+              <button class="nav-item" data-view="mcp" data-nav="mcp" title="MCP Hub & Provedores de Modelos"><i class="ph ph-plug"></i> <span>PROVIDERS / MCP</span></button>
             </div>
 
-            <!-- INFRA section -->
+            <!-- INFRASTRUCTURE section -->
             <div class="nav-group" data-domain="infrastructure">
-              <button class="nav-group-label" type="button">INFRAESTRUTURA</button>
-              <button class="nav-item" data-view="mcp" data-nav="mcp"><i class="ph ph-plug"></i> MCP HUB</button>
-              <button class="nav-item" data-view="project" data-nav="project"><i class="ph ph-folder-open"></i> PROJECT MIRROR</button>
+              <div class="nav-group-header">
+                <button class="nav-group-label" type="button">OBSERVABILITY / INFRA</button>
+              </div>
+              <button class="nav-item" data-view="runtime" data-nav="runtime" title="Telemetria & Health"><i class="ph ph-activity"></i> <span>TELEMETRY</span></button>
+              <button class="nav-item" data-view="observability" data-nav="observability" title="Eventos, Séries & Logs"><i class="ph ph-chart-line-up"></i> <span>EVENTS & LOGS</span></button>
             </div>
 
             <!-- VALIDATION section -->
             <div class="nav-group" data-domain="validation">
-              <button class="nav-group-label" type="button">VALIDAÇÃO</button>
-              <button class="nav-item" data-view="city" data-nav="city"><i class="ph ph-buildings"></i> AI CITY</button>
-              <button class="nav-item" data-view="browser" data-nav="browser"><i class="ph ph-browser"></i> BROWSER QA</button>
-              <button class="nav-item" data-view="terminal" data-nav="terminal"><i class="ph ph-terminal"></i> TERMINAL</button>
+              <div class="nav-group-header">
+                <button class="nav-group-label" type="button">SYSTEM / VALIDATION</button>
+              </div>
+              <button class="nav-item" data-view="project" data-nav="project" title="Infraestrutura & Project Mirror"><i class="ph ph-folder-open"></i> <span>INFRAESTRUTURA</span></button>
+              <button class="nav-item" data-view="browser" data-nav="browser" title="Browser QA & Validações"><i class="ph ph-browser"></i> <span>RUNTIME & QA</span></button>
             </div>
 
           </div>
@@ -241,11 +264,14 @@
                       <button class="orch-tool-btn" id="btnZoomOut" title="Zoom Out">−</button>
                       <span id="lblZoomLevel" style="font-family: var(--fenix-font-mono); font-size: 9.5px; color: #fff; padding: 0 4px;">100%</span>
                       <button class="orch-tool-btn" id="btnZoomIn" title="Zoom In">+</button>
+                      <button class="orch-tool-btn" id="btnFitCity" title="Ajustar cidade inteira (Fit City)"><i class="ph ph-arrows-in"></i> FIT CITY</button>
                       <button class="orch-tool-btn" id="btnResetCamera"><i class="ph ph-crosshair"></i> RESET</button>
+                      <button class="orch-tool-btn" id="btnCenterAgent" title="Centralizar agente"><i class="ph ph-user-focus"></i> CENTER AGENT</button>
+                      <button class="orch-tool-btn" id="btnCenterMission" title="Centralizar missão"><i class="ph ph-target"></i> CENTER MISSION</button>
                       <button class="orch-tool-btn" id="btnFollowAgent"><i class="ph ph-eye"></i> SEGUIR AGENTE</button>
                       <button class="orch-tool-btn" id="btnFollowMission"><i class="ph ph-flag"></i> SEGUIR MISSÃO</button>
-                      <button class="orch-tool-btn" id="btnCityFilters"><i class="ph ph-funnel"></i> FILTROS</button>
-                      <input id="citySearchInput" type="search" aria-label="Buscar agente, missão ou job" placeholder="Buscar entidade…" style="min-width:150px;background:rgba(15,23,42,.8);border:1px solid var(--fenix-border);border-radius:4px;color:#e2e8f0;padding:4px 7px;font-size:9px;">
+                      <button class="orch-tool-btn" id="btnToggleCityAudio" title="Ativar/Desativar efeitos sonoros"><i class="ph ph-speaker-slash"></i> SOM</button>
+                      <button class="orch-tool-btn" id="btnTogglePhotoMode" title="Alternar Modo Jogo / Ocultar HUD (Art Director Gate)"><i class="ph ph-game-controller"></i> MODO JOGO</button>
                       <button class="orch-tool-btn" id="btnViewMission" style="background: rgba(239, 68, 68, 0.2); color: var(--fenix-red); border-color: rgba(239, 68, 68, 0.4);"><i class="ph ph-flag"></i> VER MISSÃO</button>
                     </div>
                   </div>
@@ -358,17 +384,19 @@
 
                 <!-- BOTTOM TRIO: CHAT | RECENT MISSIONS | INSPECTOR -->
                 <div class="orch-bottom-trio">
-                          <span id="chatCardTitle">FÊNIX CHAT</span>
-                        </div>
-                        <div style="display:flex; gap:4px; align-items:center;">
-                          <!-- T25: Botão CRIAR MISSÃO -->
-                          <button id="btnCreateMission" style="font-size:8px; padding:2px 7px; border:1px solid rgba(239,68,68,0.4); border-radius:4px; background:rgba(239,68,68,0.15); color:var(--fenix-red); cursor:pointer; font-family:var(--fenix-font-mono); font-weight:700;">+ MISSÃO</button>
-                          <span class="orch-status-pill online" style="font-size: 8px;" id="chatStatusBadge">PRONTO</span>
-                        </div>
+                  <!-- COL 1: FÊNIX COMMAND -->
+                  <div class="orch-card orch-chat-card" id="orchChatCard">
+                    <div class="orch-card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <i class="ph-fill ph-terminal-window" style="color:var(--fenix-red);"></i>
+                        <span id="chatCardTitle" style="font-weight:700; color:var(--fenix-red); font-family:var(--fenix-font-mono);">FÊNIX COMMAND</span>
                       </div>
-                      <!-- T21: Tabs FÊNIX CHAT | CHAT DA MISSÃO -->
+                      <div style="display:flex; gap:6px; align-items:center;">
+                        <button id="btnCreateMission" style="font-size:8px; padding:2px 7px; border:1px solid rgba(239,68,68,0.4); border-radius:4px; background:rgba(239,68,68,0.15); color:var(--fenix-red); cursor:pointer; font-family:var(--fenix-font-mono); font-weight:700;">+ MISSÃO</button>
+                        <span class="orch-status-pill online" style="font-size: 8px;" id="chatStatusBadge">PRONTO</span>
+                      </div>
                       <div style="display:flex; gap:4px;">
-                        <button id="tabFenixChat" class="fenix-chat-tab active" onclick="window.switchChatTab('fenix')" style="font-size:9px; padding:3px 10px; border:1px solid rgba(239,68,68,0.5); border-radius:4px; background:rgba(239,68,68,0.2); color:var(--fenix-red); cursor:pointer; font-family:var(--fenix-font-mono); font-weight:700;">FÊNIX CHAT</button>
+                        <button id="tabFenixChat" class="fenix-chat-tab active" onclick="window.switchChatTab('fenix')" style="font-size:9px; padding:3px 10px; border:1px solid rgba(239,68,68,0.5); border-radius:4px; background:rgba(239,68,68,0.2); color:var(--fenix-red); cursor:pointer; font-family:var(--fenix-font-mono); font-weight:700;">FÊNIX COMMAND</button>
                         <button id="tabMissionChat" class="fenix-chat-tab" onclick="window.switchChatTab('mission')" style="font-size:9px; padding:3px 10px; border:1px solid rgba(6,182,212,0.3); border-radius:4px; background:transparent; color:var(--fenix-text-dim); cursor:pointer; font-family:var(--fenix-font-mono); font-weight:700;">CHAT DA MISSÃO</button>
                       </div>
                     </div>
@@ -610,6 +638,7 @@
                   </div>
                 </div>
               </aside>
+            </div>
 
             <!-- 3. FOOTER: SYSTEM HEALTH & MEMORY STRIP -->
             <footer class="orch-footer">
@@ -834,12 +863,29 @@
         
       </div>
       
+      <!-- FÊNIX CITY V4 UI Overlays -->
+      <div id="cityBreadcrumb" class="city-breadcrumb" style="display:none">
+        <span class="breadcrumb-home" onclick="window.fenixCity && window.fenixCity.navigateToLevel && window.fenixCity.navigateToLevel('city')">🏙️ City</span>
+      </div>
+      <div id="cityTooltip" class="city-tooltip" style="display:none"></div>
+      <div id="cityContextMenu" class="city-context-menu" style="display:none"></div>
+      <div id="cityInspector" class="city-inspector-panel" style="display:none"></div>
+      <div id="cityFloorSelector" class="city-floor-selector" style="display:none"></div>
     </div>
   </div>
   
   <script src="/fenix-bootstrap.js?v=boot7"></script>
   <script src="/fenix-city-event-adapter.js?v=2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+  <script src="/fenix-pixel-engine.js?v=1"></script>
   <script src="/iso-city.js?v=2"></script>
+  <script src="/pixi-game-art-pipeline.js?v=1"></script>
+  <script src="/pixi-city-renderer.js?v=2"></script>
+  <script src="/pixi-character-system.js?v=1"></script>
+  <script src="/pixi-interaction-engine.js?v=1"></script>
+  <script src="/pixi-semantic-zoom.js?v=1"></script>
+  <script src="/pixi-building-interior.js?v=1"></script>
+  <script src="/city-integration.js?v=2"></script>
 <script id= fenix-ide-dom-compat>window.$=window.$||((id)=>document.getElementById(id));</script>
   <script src="/dev-pipeline-client.js?v=small-task-1"></script>
   <link rel="stylesheet" href="/fenix-window-overrides.css?v=resize-5">
@@ -898,26 +944,37 @@
       }
     };
 
-    // ── NAV VIEW SWITCH (keeps city in wsCityContainer) ──────
+    // ── CANONICAL CITY CANVAS PLACEMENT (Command vs Fullscreen City) ──
+    window.syncCityPlacement = function(forcedView) {
+      const view = forcedView || (location.hash ? location.hash.slice(1) : 'command');
+      const canvas = document.getElementById('cityCanvas');
+      if (canvas) {
+        if (view === 'city') {
+          const cityView = document.getElementById('view-city');
+          if (cityView && !cityView.contains(canvas)) {
+            cityView.appendChild(canvas);
+          }
+        } else if (view === 'command') {
+          const wsCityContainer = document.getElementById('wsCityContainer');
+          if (wsCityContainer && !wsCityContainer.contains(canvas)) {
+            wsCityContainer.appendChild(canvas);
+          }
+        }
+      }
+      if (window.fenixCity) {
+        if (typeof window.fenixCity.reparent === 'function') {
+          const target = view === 'city' ? document.getElementById('view-city') : document.getElementById('wsCityContainer');
+          if (target) window.fenixCity.reparent(target);
+        }
+        setTimeout(() => { if (window.fenixCity.resize) window.fenixCity.resize(); }, 50);
+      }
+    };
+
+    // ── NAV VIEW SWITCH ──────
     document.querySelectorAll('.nav-item').forEach(btn => {
       btn.addEventListener('click', () => {
         const view = btn.dataset.view;
-        // Move iso-city canvas to city view if needed
-        if (view === 'city') {
-          const canvas = document.getElementById('cityCanvas');
-          const cityView = document.getElementById('view-city');
-          if (canvas && cityView && !cityView.contains(canvas)) {
-            cityView.appendChild(canvas);
-          }
-          if (window.fenixCity) setTimeout(() => window.fenixCity.resize(), 100);
-        } else if (view === 'command') {
-          const canvas = document.getElementById('cityCanvas');
-          const wsCityContainer = document.getElementById('wsCityContainer');
-          if (canvas && wsCityContainer && !wsCityContainer.contains(canvas)) {
-            wsCityContainer.appendChild(canvas);
-          }
-          if (window.fenixCity) setTimeout(() => window.fenixCity.resize(), 100);
-        }
+        window.syncCityPlacement(view);
         const ideLayout = document.querySelector('.ide-split-layout');
         if (ideLayout) {
           if (view === 'ide') {
@@ -928,21 +985,39 @@
       });
     });
 
-    // ── INIT: ensure city canvas is in wsCityContainer on load ─
-    window.addEventListener('load', () => {
-      const canvas = document.getElementById('cityCanvas');
-      const wsCityContainer = document.getElementById('wsCityContainer');
-      if (canvas && wsCityContainer && !wsCityContainer.contains(canvas)) {
-        wsCityContainer.appendChild(canvas);
-      }
-      // Initialize iso-city if not yet done
-      if (!window.fenixCity && canvas) {
-        if (typeof IsoCityEngine !== 'undefined') {
+    window.addEventListener('hashchange', () => window.syncCityPlacement());
+
+    // ── INIT: ensure city canvas is placed according to initial URL hash ─
+    function bootFenixCityV4() {
+      if (window._fenixCityBooted) return;
+      window._fenixCityBooted = true;
+
+      window.syncCityPlacement();
+      // V4: Prefer PixiJS renderer, fallback to Canvas
+      if (!window.fenixCity) {
+        const container = document.getElementById('wsCityContainer') || document.getElementById('view-city');
+        if (container && typeof PixiCityRenderer !== 'undefined' && typeof PIXI !== 'undefined') {
+          window.fenixCity = new PixiCityRenderer(container);
+        } else if (typeof IsoCityEngine !== 'undefined' && document.getElementById('cityCanvas')) {
           window.fenixCity = new IsoCityEngine('cityCanvas');
         }
       }
-      setTimeout(() => { if (window.fenixCity) window.fenixCity.resize(); }, 200);
-    });
+      setTimeout(() => { if (window.fenixCity && window.fenixCity.resize) window.fenixCity.resize(); }, 150);
+
+      // V4: Wire CityIntegration (agents, interaction, zoom, interior) after renderer
+      setTimeout(() => {
+        if (window.fenixCity && typeof CityIntegration !== 'undefined' && !window.fenixCityIntegration) {
+          window.fenixCityIntegration = new CityIntegration(window.fenixCity);
+        }
+      }, 300);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(bootFenixCityV4, 100), { once: true });
+    } else {
+      setTimeout(bootFenixCityV4, 100);
+    }
+    window.addEventListener('load', bootFenixCityV4);
   </script>
 
 
@@ -1338,4 +1413,21 @@ window.__fenixSubmitIdeChat = async function () {
 }
 </style>
 
-
+  <!-- COMMAND PALETTE MODAL (CTRL + K) -->
+  <dialog id="cmdDialog" class="command-dialog">
+    <div class="command-palette-head">
+      <div class="command-palette-input-wrap">
+        <i class="ph ph-magnifying-glass" style="color:var(--fenix-cyan); font-size:16px;"></i>
+        <input id="cmdInput" placeholder="Digite para navegar ou comandar (Ctrl+K)..." autocomplete="off">
+      </div>
+      <button id="closeCmdBtn" class="command-palette-close" type="button" aria-label="Fechar">&times;</button>
+    </div>
+    <div id="cmdResults" class="command-palette-results"></div>
+    <div class="command-palette-footer">
+      <span><kbd>↑</kbd> <kbd>↓</kbd> navegar</span>
+      <span><kbd>↵</kbd> selecionar</span>
+      <span><kbd>ESC</kbd> fechar</span>
+    </div>
+  </dialog>
+</body>
+</html>

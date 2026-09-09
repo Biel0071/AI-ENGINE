@@ -9,22 +9,23 @@
   'use strict';
 
   // ── Zoom Levels ──
+  // ── 15 Cinematic Semantic Zoom Levels (Rule #16 & #17) ──
   const ZOOM_LEVELS = [
-    { id: 'world',       label: '🌍 World',       zoom: 0.3,  minZoom: 0.1,  maxZoom: 0.45 },
-    { id: 'city',        label: '🏙️ City',        zoom: 0.5,  minZoom: 0.45, maxZoom: 0.75 },
-    { id: 'district',    label: '🏘️ District',    zoom: 1.0,  minZoom: 0.75, maxZoom: 1.3 },
-    { id: 'building',    label: '🏢 Building',    zoom: 1.5,  minZoom: 1.3,  maxZoom: 1.8 },
-    { id: 'floor',       label: '📐 Floor',       zoom: 2.0,  minZoom: 1.8,  maxZoom: 2.3 },
-    { id: 'room',        label: '🚪 Room',        zoom: 2.5,  minZoom: 2.3,  maxZoom: 2.8 },
-    { id: 'station',     label: '🖥️ Station',     zoom: 3.0,  minZoom: 2.8,  maxZoom: 3.3 },
-    { id: 'agent',       label: '🤖 Agent',       zoom: 3.5,  minZoom: 3.3,  maxZoom: 3.8 },
-    { id: 'mission',     label: '📋 Mission',     zoom: 4.0,  minZoom: 3.8,  maxZoom: 4.5 },
-    { id: 'application', label: '📱 Application', zoom: 5.0,  minZoom: 4.5,  maxZoom: 5.5 },
-    { id: 'screen',      label: '🖼️ Screen',      zoom: 6.0,  minZoom: 5.5,  maxZoom: 6.5 },
-    { id: 'component',   label: '🧩 Component',   zoom: 7.0,  minZoom: 6.5,  maxZoom: 7.5 },
-    { id: 'file',        label: '📄 File',        zoom: 8.0,  minZoom: 7.5,  maxZoom: 8.5 },
-    { id: 'code',        label: '💻 Code',        zoom: 9.0,  minZoom: 8.5,  maxZoom: 9.5 },
-    { id: 'execution',   label: '⚡ Execution',   zoom: 10.0, minZoom: 9.5,  maxZoom: 12.0 }
+    { id: 'world',             label: '🌍 World',             zoom: 0.3,  minZoom: 0.1,  maxZoom: 0.45 },
+    { id: 'city',              label: '🏙️ City',              zoom: 0.5,  minZoom: 0.45, maxZoom: 0.75 },
+    { id: 'district',          label: '🏘️ District',          zoom: 1.0,  minZoom: 0.75, maxZoom: 1.25 },
+    { id: 'street',            label: '🛣️ Street',            zoom: 1.3,  minZoom: 1.25, maxZoom: 1.55 },
+    { id: 'building',          label: '🏢 Building',          zoom: 1.7,  minZoom: 1.55, maxZoom: 1.95 },
+    { id: 'building-entrance', label: '🏛️ Entrance',          zoom: 2.1,  minZoom: 1.95, maxZoom: 2.35 },
+    { id: 'floor',             label: '📐 Floor',             zoom: 2.5,  minZoom: 2.35, maxZoom: 2.8 },
+    { id: 'room',              label: '🚪 Room',              zoom: 3.0,  minZoom: 2.8,  maxZoom: 3.3 },
+    { id: 'station',           label: '🖥️ Station',           zoom: 3.5,  minZoom: 3.3,  maxZoom: 3.8 },
+    { id: 'agent',             label: '🤖 Agent',             zoom: 4.0,  minZoom: 3.8,  maxZoom: 4.5 },
+    { id: 'mission',           label: '📋 Mission',           zoom: 5.0,  minZoom: 4.5,  maxZoom: 5.5 },
+    { id: 'application',       label: '📱 Application',       zoom: 6.0,  minZoom: 5.5,  maxZoom: 6.5 },
+    { id: 'screen',            label: '🖼️ Screen',            zoom: 7.0,  minZoom: 6.5,  maxZoom: 7.5 },
+    { id: 'component',         label: '🧩 Component',         zoom: 8.0,  minZoom: 7.5,  maxZoom: 8.5 },
+    { id: 'code',              label: '💻 Code',              zoom: 9.0,  minZoom: 8.5,  maxZoom: 11.0 }
   ];
 
   // ── Navigation Entry ──

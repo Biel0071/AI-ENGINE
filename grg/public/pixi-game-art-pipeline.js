@@ -1541,6 +1541,72 @@
     };
   }
 
+  // ============================================================================
+  // 8. SIGN KIT (Urban Signage, Marquees & Wayfinding - Rule #30)
+  // ============================================================================
+  const SignKit = {
+    drawWayfindingPost(ctx, w, h) {
+      const cx = w / 2;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(cx - 1, h - 18, 2, 16);
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(cx - 8, h - 22, 16, 5);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 6, h - 20, 12, 1);
+    },
+    drawIlluminatedMarquee(ctx, w, h, text = 'FENIX') {
+      const cx = w / 2;
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(cx - 24, h - 14, 48, 12);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx - 24, h - 14, 48, 12);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(cx - 18, h - 9, 36, 2);
+    }
+  };
+
+  // ============================================================================
+  // 9. INTERIOR KIT (Workstations, Servers, Monitors, Plants - Rule #30)
+  // ============================================================================
+  const InteriorKit = {
+    drawWorkstation(ctx, w, h, isActive = true) {
+      const cx = w / 2;
+      // Desk surface
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(cx - 12, h - 12, 24, 8);
+      // Desk legs
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(cx - 11, h - 4, 2, 4);
+      ctx.fillRect(cx + 9, h - 4, 2, 4);
+      // Monitor bezel
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(cx - 6, h - 20, 12, 8);
+      // Monitor display
+      ctx.fillStyle = isActive ? '#0284c7' : '#334155';
+      ctx.fillRect(cx - 5, h - 19, 10, 6);
+      if (isActive) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(cx - 4, h - 17, 8, 1);
+        ctx.fillRect(cx - 4, h - 15, 5, 1);
+      }
+    },
+    drawServerMonolith(ctx, w, h, blink = true) {
+      const cx = w / 2;
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(cx - 8, h - 28, 16, 26);
+      ctx.strokeStyle = '#1e293b';
+      ctx.strokeRect(cx - 8, h - 28, 16, 26);
+      // LED strips
+      ctx.fillStyle = blink ? '#10b981' : '#059669';
+      for (let y = h - 24; y < h - 4; y += 4) {
+        ctx.fillRect(cx - 5, y, 2, 2);
+        ctx.fillStyle = (y % 8 === 0) ? '#38bdf8' : '#10b981';
+        ctx.fillRect(cx + 3, y, 2, 2);
+      }
+    }
+  };
+
   // Compatibility Aliases for PixiCityRenderer and external callers
   BuildingKit.drawFenixHQ = function(ctx, w, h) { return BuildingKit.drawFenixHQLandmark(ctx, w, h); };
   BuildingKit.drawDevLoft = function(ctx, w, h) { return BuildingKit.drawDevLoftWarehouse(ctx, w, h); };
@@ -1557,14 +1623,17 @@
   StreetFurnitureKit.drawBicycleRack = function(ctx, w, h) { return StreetFurnitureKit.drawBikeRack(ctx, w, h); };
   StreetFurnitureKit.drawBistroTable = function(ctx, w, h) { return StreetFurnitureKit.drawCafeBistroTable(ctx, w, h); };
 
-  // Export to window
+  // Export to window — Full Rule #30 Reusable Asset Kit Suite
   window.TerrainKit = TerrainKit;
   window.StreetKit = StreetKit;
   window.VegetationKit = VegetationKit;
   window.LightingKit = LightingKit;
   window.StreetFurnitureKit = StreetFurnitureKit;
+  window.FurnitureKit = StreetFurnitureKit;
   window.BuildingKit = BuildingKit;
   window.CharacterKit = CharacterKit;
+  window.SignKit = SignKit;
+  window.InteriorKit = InteriorKit;
   window.evaluateCityVisualScore = evaluateCityVisualScore;
   window.CITY_VISUAL_SCORE = 100;
 
