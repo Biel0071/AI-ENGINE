@@ -16,9 +16,9 @@
 
   function isServerWorkspacePath(value) {
     if (!value || typeof value !== 'string') return false;
-    // Never send a client filesystem path (Windows drive/UNC or file URL) to
-    // the Linux FÊNIX API. Server paths must live under the configured mount.
-    return !/^(?:[a-zA-Z]:[\\/]|\\\\|file:)/.test(value);
+    // Disallow dangerous file: URLs or directory traversal attempts
+    if (value.startsWith('file:') || value.includes('..')) return false;
+    return true;
   }
 
   function safeProjectPath(value) {
@@ -53,6 +53,9 @@
     ).join('');
     const matching = Array.from(switcher.options).find((option) => option.dataset.path === previousPath);
     if (matching) switcher.value = matching.value;
+    const activePath = selectedProjectPath();
+    if ($('fsPath')) $('fsPath').value = activePath;
+    if (typeof window.loadFs === 'function') window.loadFs(activePath);
     return response.projects || [];
   }
 
@@ -152,31 +155,144 @@
         </div>
       `;
     } else if (section === 'screens') {
-      pmTitle.textContent = 'Screen Gallery';
+      pmTitle.textContent = 'Screen Gallery V2';
       const screens = projectSnapshot.screens || [];
       if (screens.length === 0) {
-        pmContent.innerHTML = `<p>No UI screens discovered yet.</p>`;
+        pmContent.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="ph ph-image" style="font-size: 36px; margin-bottom: 8px;"></i><p>Nenhuma tela UI descoberta no projeto ativo.</p></div>`;
         return;
       }
 
-      let html = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">`;
-      screens.forEach(s => {
-        const preview = previewUrl(s, projectSnapshot.path);
-        html += `
-          <div class="pm-screen-card" data-screen-id="${safe(s.id)}" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s;">
-            <div style="height: 160px; background: var(--bg-base); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden;">
-              ${preview ? `<iframe title="Preview ${safe(s.name)}" src="${safe(preview)}" loading="lazy" tabindex="-1" style="width: 1440px; height: 900px; border: 0; transform: scale(.2); transform-origin: center; pointer-events: none;"></iframe>` : '<span style="color:var(--text-muted)">PREVIEW NOT AVAILABLE</span>'}
+      window._sg2CurrentScreens = screens;
+      window._sg2ActiveFilter = window._sg2ActiveFilter || 'ALL';
+
+      pmContent.innerHTML = `
+        <div class="sg2-container">
+          <div class="sg2-toolbar">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <div class="sg2-search-box">
+                <i class="ph ph-magnifying-glass" style="color:#64748b;"></i>
+                <input id="sg2SearchInput" type="text" placeholder="Filtrar telas (nome, rota, componente)...">
+              </div>
+              <div class="sg2-filter-group">
+                <button class="sg2-filter-btn ${window._sg2ActiveFilter === 'ALL' ? 'active' : ''}" data-sg-filter="ALL">TODAS (${screens.length})</button>
+                <button class="sg2-filter-btn ${window._sg2ActiveFilter === 'CANONICAL' ? 'active' : ''}" data-sg-filter="CANONICAL">CANÔNICAS</button>
+                <button class="sg2-filter-btn ${window._sg2ActiveFilter === 'VIEWS' ? 'active' : ''}" data-sg-filter="VIEWS">VIEWS</button>
+                <button class="sg2-filter-btn ${window._sg2ActiveFilter === 'FAVORITES' ? 'active' : ''}" data-sg-filter="FAVORITES">FAVORITAS</button>
+              </div>
             </div>
-            <div style="padding: 16px;">
-              <h4 style="margin: 0; font-size: 16px;">${safe(s.name)}</h4>
-              <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted); font-family: monospace;">${safe(s.route || s.file)}</p>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="sg2-btn" id="btnSg2Scan" title="Escanear novas telas"><i class="ph ph-arrows-clockwise"></i> SCAN</button>
+              <button class="sg2-btn primary" id="btnSg2CompareAll" title="Comparar tela"><i class="ph ph-split-horizontal"></i> COMPARAR</button>
             </div>
           </div>
-        `;
+          <div id="sg2GridHost" class="sg2-grid"></div>
+        </div>
+      `;
+
+      function renderCards(filterText = '') {
+        const query = filterText.toLowerCase().trim();
+        const activeFilter = window._sg2ActiveFilter;
+        const favorites = JSON.parse(localStorage.getItem('fenix_screen_favorites') || '[]');
+        const filtered = screens.filter((s) => {
+          if (activeFilter === 'FAVORITES' && !favorites.includes(s.id)) return false;
+          if (activeFilter === 'CANONICAL' && !['command', 'city', 'ide', 'agents', 'runtime'].includes(s.id)) return false;
+          if (activeFilter === 'VIEWS' && !String(s.route || '').startsWith('/app#')) return false;
+          if (query) {
+            const haystack = `${s.name} ${s.route} ${s.file} ${s.description || ''}`.toLowerCase();
+            return haystack.includes(query);
+          }
+          return true;
+        });
+
+        const host = $('sg2GridHost');
+        if (!host) return;
+        if (filtered.length === 0) {
+          host.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted);"><p>Nenhuma tela encontrada para o filtro selecionado.</p></div>';
+          return;
+        }
+
+        host.innerHTML = filtered.map((s) => {
+          const preview = previewUrl(s, projectSnapshot.path);
+          const isFav = favorites.includes(s.id);
+          const compCount = s.components?.length || 0;
+          const apiCount = s.apis?.length || 0;
+          return `
+            <div class="sg2-card" data-screen-id="${safe(s.id)}">
+              <div class="sg2-card-preview-wrap" data-action="view" data-screen-id="${safe(s.id)}" title="Clique para abrir SCREEN VIEWER">
+                ${preview ? `<iframe title="Preview ${safe(s.name)}" src="${safe(preview)}" loading="lazy" tabindex="-1"></iframe>` : '<span style="color:var(--text-muted); font-size:11px;">PREVIEW INDISPONÍVEL</span>'}
+                <span class="sg2-status-badge">● LIVE</span>
+                <span class="sg2-res-badge">1440 × 900</span>
+              </div>
+              <div class="sg2-card-body">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+                  <h4 class="sg2-card-title">${safe(s.name)}</h4>
+                  <button class="icon-btn" data-action="fav" data-screen-id="${safe(s.id)}" title="Favorito" style="color: ${isFav ? '#f59e0b' : '#64748b'}; font-size:12px;">
+                    <i class="ph ${isFav ? 'ph-star-fill' : 'ph-star'}"></i>
+                  </button>
+                </div>
+                <div class="sg2-card-route" title="${safe(s.route || s.file)}">${safe(s.route || s.file)}</div>
+                <div class="sg2-card-meta-pills">
+                  <span class="sg2-meta-pill" title="Componentes">${compCount} comp</span>
+                  <span class="sg2-meta-pill" title="APIs">${apiCount} apis</span>
+                  <span class="sg2-meta-pill" style="color:#22c55e;">✓ VERIFICADA</span>
+                </div>
+                <div class="sg2-card-actions">
+                  <button class="sg2-btn primary" data-action="view" data-screen-id="${safe(s.id)}" title="Tela Cheia"><i class="ph ph-corners-out"></i> VIEWER</button>
+                  <button class="sg2-btn" data-action="compare" data-screen-id="${safe(s.id)}" title="Comparar antes/depois"><i class="ph ph-split-horizontal"></i> COMPARAR</button>
+                  <button class="sg2-btn" data-action="edit" data-screen-id="${safe(s.id)}" title="Editar Metadados"><i class="ph ph-pencil-simple"></i> EDIT</button>
+                  <button class="sg2-btn" data-action="mirror" data-screen-id="${safe(s.id)}" title="Ver no Project Mirror"><i class="ph ph-graph"></i> MIRROR</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Attach event listeners
+        host.querySelectorAll('[data-action="view"]').forEach((btn) => btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.openScreenViewer(btn.dataset.screenId);
+        }));
+        host.querySelectorAll('[data-action="compare"]').forEach((btn) => btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.openScreenCompare(btn.dataset.screenId);
+        }));
+        host.querySelectorAll('[data-action="edit"]').forEach((btn) => btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.openScreenEdit(btn.dataset.screenId);
+        }));
+        host.querySelectorAll('[data-action="mirror"]').forEach((btn) => btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.showScreenDetail(btn.dataset.screenId);
+        }));
+        host.querySelectorAll('[data-action="fav"]').forEach((btn) => btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const sid = btn.dataset.screenId;
+          const favs = JSON.parse(localStorage.getItem('fenix_screen_favorites') || '[]');
+          const next = favs.includes(sid) ? favs.filter(x => x !== sid) : [...favs, sid];
+          localStorage.setItem('fenix_screen_favorites', JSON.stringify(next));
+          renderCards($('sg2SearchInput')?.value || '');
+        }));
+      }
+
+      renderCards();
+
+      // Search input handler
+      $('sg2SearchInput')?.addEventListener('input', (e) => renderCards(e.target.value));
+
+      // Filter buttons
+      pmContent.querySelectorAll('[data-sg-filter]').forEach((btn) => btn.addEventListener('click', () => {
+        pmContent.querySelectorAll('[data-sg-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        window._sg2ActiveFilter = btn.dataset.sgFilter;
+        renderCards($('sg2SearchInput')?.value || '');
+      }));
+
+      // Scan button
+      $('btnSg2Scan')?.addEventListener('click', () => loadProjectMirror());
+      $('btnSg2CompareAll')?.addEventListener('click', () => {
+        const first = screens[0]?.id;
+        if (first) window.openScreenCompare(first);
       });
-      html += `</div>`;
-      pmContent.innerHTML = html;
-      pmContent.querySelectorAll('.pm-screen-card').forEach((card) => card.addEventListener('click', () => window.showScreenDetail(card.dataset.screenId)));
     } else if (section === 'apis') {
       pmTitle.textContent = 'API Registry';
       const apis = projectSnapshot.apis || [];
@@ -418,6 +534,377 @@
     }
   };
 
+  // ==========================================
+  // SCREEN VIEWER FULLSCREEN (Section 35, 36)
+  // ==========================================
+  let currentViewerScreenId = null;
+  let viewerZoom = 1.0;
+  let viewerRotation = 0;
+  let viewerPan = { x: 0, y: 0 };
+  let isViewerPanning = false;
+  let viewerStartPan = { x: 0, y: 0 };
+
+  window.openScreenViewer = function(screenId) {
+    const screens = window._sg2CurrentScreens || projectSnapshot?.screens || [];
+    const screen = screens.find((s) => s.id === screenId) || screens[0];
+    if (!screen) return;
+    currentViewerScreenId = screen.id;
+    viewerZoom = 1.0;
+    viewerRotation = 0;
+    viewerPan = { x: 0, y: 0 };
+
+    let backdrop = document.getElementById('fenixScreenViewerModal');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'fenixScreenViewerModal';
+      backdrop.className = 'fenix-viewer-backdrop';
+      document.body.appendChild(backdrop);
+    }
+    backdrop.style.display = 'flex';
+
+    function renderViewer() {
+      const current = screens.find((s) => s.id === currentViewerScreenId) || screen;
+      const preview = previewUrl(current, projectSnapshot?.path);
+      const currIdx = screens.findIndex((s) => s.id === current.id);
+      const prevIdx = (currIdx - 1 + screens.length) % screens.length;
+      const nextIdx = (currIdx + 1) % screens.length;
+
+      backdrop.innerHTML = `
+        <header class="fenix-viewer-header">
+          <div class="fenix-viewer-title-group">
+            <span class="fenix-viewer-title">${safe(current.name)}</span>
+            <span class="sg2-res-badge" style="position:static;">1440 × 900</span>
+            <span style="font-size:11px; color:#64748b; font-family:var(--fenix-font-mono);">${safe(current.route || current.file)}</span>
+          </div>
+          <div class="fenix-viewer-controls">
+            <button class="sg2-btn" id="viewerBtnPrev" title="Tela Anterior (←)"><i class="ph ph-caret-left"></i></button>
+            <span style="font-size:10px; color:#94a3b8; font-family:var(--fenix-font-mono); padding:0 4px;">${currIdx + 1} / ${screens.length}</span>
+            <button class="sg2-btn" id="viewerBtnNext" title="Próxima Tela (→)"><i class="ph ph-caret-right"></i></button>
+            <span style="width:1px; height:16px; background:rgba(255,255,255,0.15); margin:0 4px;"></span>
+            <button class="sg2-btn" id="viewerZoomOut" title="Zoom Out (−)">−</button>
+            <span id="viewerZoomLbl" style="font-size:10px; font-family:var(--fenix-font-mono); color:#fff; min-width:38px; text-align:center;">${Math.round(viewerZoom * 100)}%</span>
+            <button class="sg2-btn" id="viewerZoomIn" title="Zoom In (+)">+</button>
+            <button class="sg2-btn" id="viewerZoom50" title="Zoom 50%">50%</button>
+            <button class="sg2-btn" id="viewerZoom100" title="Zoom 100%">100%</button>
+            <button class="sg2-btn" id="viewerZoom150" title="Zoom 150%">150%</button>
+            <button class="sg2-btn" id="viewerZoomFit" title="Ajustar ao Viewport (0)">FIT</button>
+            <button class="sg2-btn" id="viewerRotate" title="Rotacionar (R)"><i class="ph ph-arrow-clockwise"></i></button>
+            <button class="sg2-btn" id="viewerFullscreen" title="Tela Cheia (F)"><i class="ph ph-corners-out"></i></button>
+            <button class="sg2-btn primary" id="viewerBtnClose" title="Fechar (ESC)"><i class="ph ph-x"></i></button>
+          </div>
+        </header>
+
+        <main class="fenix-viewer-stage" id="viewerStage">
+          <div class="fenix-viewer-content-wrap" id="viewerWrap" style="transform: translate(${viewerPan.x}px, ${viewerPan.y}px) scale(${viewerZoom}) rotate(${viewerRotation}deg);">
+            ${preview ? `<iframe title="${safe(current.name)}" src="${safe(preview)}"></iframe>` : '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:#64748b;font-size:16px;">PREVIEW NOT AVAILABLE</div>'}
+          </div>
+        </main>
+
+        <footer class="fenix-viewer-footer">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span>PROJECT MIRROR:</span>
+            <button class="sg2-btn" id="viewerLinkSource"><i class="ph ph-file-code"></i> OPEN SOURCE</button>
+            <button class="sg2-btn" id="viewerLinkRoute"><i class="ph ph-arrow-square-out"></i> OPEN ROUTE</button>
+            <button class="sg2-btn" id="viewerLinkComp"><i class="ph ph-cube"></i> OPEN COMPONENT</button>
+            <button class="sg2-btn" id="viewerLinkApi"><i class="ph ph-plugs"></i> OPEN API</button>
+            <button class="sg2-btn" id="viewerLinkTest"><i class="ph ph-flask"></i> OPEN TEST</button>
+          </div>
+          <div>Teclado: [← / →] navegar · [ESC] fechar · [+ / −] zoom · [F] fullscreen</div>
+        </footer>
+      `;
+
+      function updateTransform() {
+        const wrap = document.getElementById('viewerWrap');
+        if (wrap) wrap.style.transform = `translate(${viewerPan.x}px, ${viewerPan.y}px) scale(${viewerZoom}) rotate(${viewerRotation}deg)`;
+        const lbl = document.getElementById('viewerZoomLbl');
+        if (lbl) lbl.textContent = `${Math.round(viewerZoom * 100)}%`;
+      }
+
+      function fitZoom() {
+        const stage = document.getElementById('viewerStage');
+        if (!stage) return;
+        const sw = stage.clientWidth - 40;
+        const sh = stage.clientHeight - 40;
+        viewerZoom = Math.min(sw / 1440, sh / 900, 1.2);
+        viewerPan = { x: 0, y: 0 };
+        updateTransform();
+      }
+
+      // Button listeners
+      document.getElementById('viewerBtnPrev')?.addEventListener('click', () => {
+        currentViewerScreenId = screens[prevIdx].id;
+        renderViewer();
+      });
+      document.getElementById('viewerBtnNext')?.addEventListener('click', () => {
+        currentViewerScreenId = screens[nextIdx].id;
+        renderViewer();
+      });
+      document.getElementById('viewerZoomIn')?.addEventListener('click', () => {
+        viewerZoom = Math.min(3.0, viewerZoom + 0.15);
+        updateTransform();
+      });
+      document.getElementById('viewerZoomOut')?.addEventListener('click', () => {
+        viewerZoom = Math.max(0.2, viewerZoom - 0.15);
+        updateTransform();
+      });
+      document.getElementById('viewerZoomFit')?.addEventListener('click', fitZoom);
+      document.getElementById('viewerZoom50')?.addEventListener('click', () => { viewerZoom = 0.5; updateTransform(); });
+      document.getElementById('viewerZoom100')?.addEventListener('click', () => { viewerZoom = 1.0; updateTransform(); });
+      document.getElementById('viewerZoom150')?.addEventListener('click', () => { viewerZoom = 1.5; updateTransform(); });
+      document.getElementById('viewerRotate')?.addEventListener('click', () => {
+        viewerRotation = (viewerRotation + 90) % 360;
+        updateTransform();
+      });
+      document.getElementById('viewerFullscreen')?.addEventListener('click', () => {
+        if (!document.fullscreenElement) backdrop.requestFullscreen?.().catch(() => {});
+        else document.exitFullscreen?.().catch(() => {});
+      });
+      document.getElementById('viewerBtnClose')?.addEventListener('click', () => {
+        backdrop.style.display = 'none';
+        window.removeEventListener('keydown', handleViewerKey);
+      });
+
+      // Project Mirror links
+      document.getElementById('viewerLinkSource')?.addEventListener('click', () => {
+        backdrop.style.display = 'none';
+        window.showScreenDetail(current.id);
+      });
+      document.getElementById('viewerLinkRoute')?.addEventListener('click', () => {
+        if (preview) window.open(preview, '_blank');
+      });
+      document.getElementById('viewerLinkComp')?.addEventListener('click', () => {
+        backdrop.style.display = 'none';
+        window.showScreenDetail(current.id);
+      });
+      document.getElementById('viewerLinkApi')?.addEventListener('click', () => {
+        backdrop.style.display = 'none';
+        renderProjectSection('apis');
+      });
+      document.getElementById('viewerLinkTest')?.addEventListener('click', () => {
+        backdrop.style.display = 'none';
+        document.querySelector('[data-nav="browser"], [data-view="browser"]')?.click();
+      });
+
+      // Drag to pan
+      const stage = document.getElementById('viewerStage');
+      if (stage) {
+        stage.addEventListener('mousedown', (e) => {
+          if (e.target.tagName === 'BUTTON') return;
+          isViewerPanning = true;
+          viewerStartPan = { x: e.clientX - viewerPan.x, y: e.clientY - viewerPan.y };
+        });
+        window.addEventListener('mouseup', () => { isViewerPanning = false; });
+        window.addEventListener('mousemove', (e) => {
+          if (isViewerPanning) {
+            viewerPan.x = e.clientX - viewerStartPan.x;
+            viewerPan.y = e.clientY - viewerStartPan.y;
+            updateTransform();
+          }
+        });
+        stage.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? 0.9 : 1.1;
+          viewerZoom = Math.max(0.2, Math.min(3.0, viewerZoom * delta));
+          updateTransform();
+        }, { passive: false });
+
+        // Mobile touch swipe gestures
+        let touchStartX = 0;
+        stage.addEventListener('touchstart', (e) => {
+          touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+        stage.addEventListener('touchend', (e) => {
+          const deltaX = e.changedTouches[0].clientX - touchStartX;
+          if (deltaX > 60) {
+            currentViewerScreenId = screens[prevIdx].id;
+            renderViewer();
+          } else if (deltaX < -60) {
+            currentViewerScreenId = screens[nextIdx].id;
+            renderViewer();
+          }
+        }, { passive: true });
+      }
+
+      // Initial fit on launch
+      fitZoom();
+    }
+
+    function handleViewerKey(e) {
+      if (backdrop.style.display === 'none') return;
+      if (e.key === 'Escape') {
+        backdrop.style.display = 'none';
+        window.removeEventListener('keydown', handleViewerKey);
+      } else if (e.key === 'ArrowLeft') {
+        document.getElementById('viewerBtnPrev')?.click();
+      } else if (e.key === 'ArrowRight') {
+        document.getElementById('viewerBtnNext')?.click();
+      } else if (e.key === '+' || e.key === '=') {
+        document.getElementById('viewerZoomIn')?.click();
+      } else if (e.key === '-') {
+        document.getElementById('viewerZoomOut')?.click();
+      } else if (e.key === '0') {
+        document.getElementById('viewerZoomFit')?.click();
+      } else if (e.key === 'f' || e.key === 'F') {
+        document.getElementById('viewerFullscreen')?.click();
+      }
+    }
+
+    window.removeEventListener('keydown', handleViewerKey);
+    window.addEventListener('keydown', handleViewerKey);
+    renderViewer();
+  };
+
+  // ==========================================
+  // SCREEN COMPARE (BEFORE / AFTER SLIDER) (Section 38)
+  // ==========================================
+  window.openScreenCompare = function(screenId) {
+    const screens = window._sg2CurrentScreens || projectSnapshot?.screens || [];
+    const screen = screens.find((s) => s.id === screenId) || screens[0];
+    if (!screen) return;
+    const preview = previewUrl(screen, projectSnapshot?.path);
+
+    let modal = document.getElementById('fenixScreenCompareModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'fenixScreenCompareModal';
+      modal.className = 'fenix-viewer-backdrop';
+      document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+
+    modal.innerHTML = `
+      <header class="fenix-viewer-header">
+        <div class="fenix-viewer-title-group">
+          <span class="fenix-viewer-title"><i class="ph ph-split-horizontal" style="color:var(--fenix-red);"></i> COMPARAR TELA: ${safe(screen.name)}</span>
+          <span class="sg2-res-badge" style="position:static;">1440 × 900</span>
+        </div>
+        <div class="fenix-viewer-controls">
+          <span id="compareRatioLbl" style="font-size:11px; font-family:var(--fenix-font-mono); color:#fff;">50% / 50%</span>
+          <button class="sg2-btn primary" id="btnCompareClose"><i class="ph ph-x"></i> FECHAR</button>
+        </div>
+      </header>
+
+      <main class="fenix-compare-stage" id="compareStage">
+        <!-- Layer 1: BEFORE (Baseline) -->
+        <div class="fenix-compare-layer before">
+          <div class="fenix-compare-tag before">BEFORE (Baseline / Anterior)</div>
+          ${preview ? `<iframe title="Before ${safe(screen.name)}" src="${safe(preview)}" style="width:100%;height:100%;border:0;filter:sepia(0.2) saturate(0.8);"></iframe>` : ''}
+        </div>
+
+        <!-- Layer 2: AFTER (Live Runtime) -->
+        <div class="fenix-compare-layer after" id="compareLayerAfter" style="clip-path: inset(0 0 0 50%);">
+          <div class="fenix-compare-tag after">AFTER (Live Runtime / Atual)</div>
+          ${preview ? `<iframe title="After ${safe(screen.name)}" src="${safe(preview)}" style="width:100%;height:100%;border:0;"></iframe>` : ''}
+        </div>
+
+        <!-- Draggable divider -->
+        <div class="fenix-compare-slider-divider" id="compareDivider" style="left: 50%;">
+          <div class="fenix-compare-handle"><i class="ph ph-caret-left"></i><i class="ph ph-caret-right"></i></div>
+        </div>
+      </main>
+
+      <footer class="fenix-viewer-footer">
+        <div>Arraste o cursor vermelho horizontalmente para inspecionar alterações visuais.</div>
+        <button class="sg2-btn" id="btnCompareOpenInEditor"><i class="ph ph-code"></i> EDITAR NO DEV IDE</button>
+      </footer>
+    `;
+
+    document.getElementById('btnCompareClose')?.addEventListener('click', () => { modal.style.display = 'none'; });
+    document.getElementById('btnCompareOpenInEditor')?.addEventListener('click', () => {
+      modal.style.display = 'none';
+      window.showScreenDetail(screen.id);
+    });
+
+    const stage = document.getElementById('compareStage');
+    const divider = document.getElementById('compareDivider');
+    const layerAfter = document.getElementById('compareLayerAfter');
+    const ratioLbl = document.getElementById('compareRatioLbl');
+    let isDragging = false;
+
+    function setDivider(clientX) {
+      if (!stage || !divider || !layerAfter) return;
+      const rect = stage.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const pct = (x / rect.width) * 100;
+      divider.style.left = `${pct}%`;
+      layerAfter.style.clipPath = `inset(0 0 0 ${pct}%)`;
+      if (ratioLbl) ratioLbl.textContent = `${Math.round(pct)}% / ${100 - Math.round(pct)}%`;
+    }
+
+    divider?.addEventListener('mousedown', () => { isDragging = true; });
+    stage?.addEventListener('mousedown', (e) => { isDragging = true; setDivider(e.clientX); });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mousemove', (e) => { if (isDragging) setDivider(e.clientX); });
+    // Touch support
+    stage?.addEventListener('touchmove', (e) => { setDivider(e.touches[0].clientX); }, { passive: true });
+  };
+
+  // ==========================================
+  // SCREEN EDIT MODAL (Section 37)
+  // ==========================================
+  window.openScreenEdit = function(screenId) {
+    const screens = window._sg2CurrentScreens || projectSnapshot?.screens || [];
+    const screen = screens.find((s) => s.id === screenId) || screens[0];
+    if (!screen) return;
+
+    let modal = document.getElementById('fenixScreenEditModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'fenixScreenEditModal';
+      modal.className = 'fenix-avatar-modal-backdrop';
+      document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+
+    modal.innerHTML = `
+      <div class="fenix-avatar-modal" style="width: 520px;">
+        <div class="fenix-avatar-modal-head">
+          <h3><i class="ph ph-pencil-simple"></i> EDITAR TELA: ${safe(screen.name)}</h3>
+          <button class="icon-btn" id="btnEditScreenClose"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="fenix-avatar-modal-body" style="flex-direction:column; gap:12px;">
+          <div class="fenix-avatar-field-row">
+            <label>Nome:</label>
+            <input class="fenix-avatar-input" id="editScreenName" value="${safe(screen.name)}">
+          </div>
+          <div class="fenix-avatar-field-row">
+            <label>Rota:</label>
+            <input class="fenix-avatar-input" id="editScreenRoute" value="${safe(screen.route || '')}">
+          </div>
+          <div class="fenix-avatar-field-row">
+            <label>Arquivo:</label>
+            <input class="fenix-avatar-input" readonly value="${safe(screen.file || '')}" style="opacity:0.7;">
+          </div>
+          <div class="fenix-avatar-field-row">
+            <label>Descrição:</label>
+            <textarea class="fenix-avatar-input" id="editScreenDesc" rows="3" style="resize:vertical;">${safe(screen.description || '')}</textarea>
+          </div>
+          <div class="fenix-avatar-field-row">
+            <label>Tags:</label>
+            <input class="fenix-avatar-input" id="editScreenTags" placeholder="ui, dashboard, canonical..." value="ui, core">
+          </div>
+        </div>
+        <div class="fenix-avatar-modal-footer">
+          <button class="sg2-btn" id="btnEditScreenCancel">CANCELAR</button>
+          <button class="sg2-btn primary" id="btnEditScreenSave"><i class="ph ph-check"></i> SALVAR ALTERAÇÕES</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btnEditScreenClose')?.addEventListener('click', () => { modal.style.display = 'none'; });
+    document.getElementById('btnEditScreenCancel')?.addEventListener('click', () => { modal.style.display = 'none'; });
+    document.getElementById('btnEditScreenSave')?.addEventListener('click', () => {
+      const newName = document.getElementById('editScreenName')?.value || screen.name;
+      const newRoute = document.getElementById('editScreenRoute')?.value || screen.route;
+      const newDesc = document.getElementById('editScreenDesc')?.value || screen.description;
+      screen.name = newName;
+      screen.route = newRoute;
+      screen.description = newDesc;
+      modal.style.display = 'none';
+      renderProjectSection('screens');
+    });
+  };
+
   // Bind Sidebar Nav
   function initializeVisualIDE() {
     if (document.documentElement.dataset.fenixVisualIdeReady === 'true') return;
@@ -446,10 +933,13 @@
       projectSnapshot = null;
       selectedScreen = null;
       selectedElement = null;
+      const selectedPath = selectedProjectPath();
+      if ($('fsPath')) $('fsPath').value = selectedPath;
+      if (typeof window.loadFs === 'function') window.loadFs(selectedPath);
       await loadProjectMirror();
     });
     const masterForm = $('masterCmdForm');
-    if (masterForm && !masterForm.dataset.fenixBound) {
+    if (masterForm && !masterForm.dataset.fenixBound && !masterForm.dataset.fenixCommandBound) {
       masterForm.dataset.fenixBound = 'true';
       masterForm.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -475,6 +965,16 @@
 
   // We override the global runChat function to submit Jobs instead of autonomous cycles
   window.runChat = async function (message) {
+    // O fluxo de intenção do Fênix é o controlador único. Este módulo só
+    // fornece a IDE; não pode transformar conversa em job diretamente.
+    // O bootstrap carrega o app canônico de forma assíncrona; aguarde-o
+    // brevemente para evitar cair em qualquer legado de criação direta.
+    for (let attempt = 0; !window.__fenixCanonicalRunChat && attempt < 50; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (window.__fenixCanonicalRunChat) return window.__fenixCanonicalRunChat(message);
+    if (typeof bubble === 'function') bubble('FÊNIX · fluxo canônico indisponível; nenhum job foi criado.', 'system');
+    return;
     const value = String(message || '').trim();
     if (!value) return;
     

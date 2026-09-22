@@ -328,3 +328,63 @@ e `grg/`.
 Enquanto essas decisoes nao forem fechadas, implementar primeiro o fluxo principal:
 **login -> selecionar projeto -> conversar -> editar codigo -> executar -> visualizar
 preview -> validar resultado**.
+
+## V2 Evolution Rules (2026-09-04)
+
+Decisoes tomadas durante a sessao de planejamento FENIX OS V2. Todas as regras abaixo
+prevalecem sobre qualquer instrucao anterior que as contradiga.
+
+### Rule: No Rewrites
+Nunca recriar o frontend, backend, AI City ou runtime do zero.
+Sempre evoluir os arquivos canonicos existentes. Antes de qualquer mudanca grande,
+perguntar: posso corrigir? posso extrair? posso adaptar? posso reutilizar?
+
+### Rule: No Mocks in Production Paths
+Caminhos de codigo em producao nunca devem conter: setTimeout simulando progresso,
+agentes falsos, dados demo, missoes falsas, progresso inventado, eventos WebSocket falsos.
+Usos legitimcos de setTimeout (debounce, polling, timeouts reais) sao preservados.
+
+### Rule: No Card Factory
+Nao resolver problemas de UI adicionando mais cards. Usar: workspaces, drawers,
+inspectors, timelines, tables, overlays, command surfaces.
+
+### Rule: Single Source of Truth
+A City, Agent Desk, Mission Workspace e todos os paineis do frontend consomem
+FENIX Runtime State vindo do backend. Nenhum componente mantem estado independente.
+O frontend nao executa logica paralela.
+
+### Rule: Ollama Local-First
+Provider de LLM e Ollama (local). Sem chamadas a APIs cloud a menos que explicitamente
+configurado. SQLite para persistencia local, Postgres quando disponivel.
+
+### Rule: UI Language
+PT-BR para labels e textos de interface. EN para codigo, variaveis, nomes de API
+e paths de rotas.
+
+### Rule: Vanilla JS Frontend
+O frontend permanece vanilla JS. Sem migracao para React, Vue, Svelte ou qualquer
+framework. Evoluir os arquivos monoliticos existentes incrementalmente.
+
+### Rule: Prove Before Claiming
+Nunca dizer "implementado" sem provar execucao.
+Nunca dizer "funcionando" sem rodar.
+Nunca dizer "validado" sem um teste.
+Validacao Playwright e obrigatoria apos mudancas de UI.
+
+### Rule: City = Runtime Truth
+A AI City reflete estado real do runtime. Movimento de agentes e dirigido por eventos
+reais (agent.online, job.started, tool.started, job.completed, agent.handoff).
+Nunca animar a City apenas para "parecer viva".
+
+### Rule: Attack Priority
+Ao evoluir: Runtime > Execucao > Eventos > WebSocket > City sync > UI polish.
+Nao comecar por mudancas visuais. Provar o ciclo end-to-end primeiro:
+Command -> Mission -> Agent -> Job -> Real Execution -> Event -> City -> Result.
+
+### Rule: Strict Single Frontend Shell Enforcement
+O único arquivo `index.html` permitido em todo o repositório é `grg/public/index.html`.
+Qualquer outro arquivo `index.html` contendo painéis de aplicação (`view-*`), `unified-app.js` ou `fenix-operational-os.js` fora de `grg/public/` é terminantemente proibido.
+O teste `architecture-guard.test.js` escaneia a árvore inteira dinamicamente e falha imediatamente o build se detectar qualquer shell rogue.
+Todo deploy (`deploy.bat`) e execução local consomem exclusivamente `grg/public/`.
+NUNCA criar cópias paralelas de frontend em `scratch/`, raiz ou outros subdiretórios.
+

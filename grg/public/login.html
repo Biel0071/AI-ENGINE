@@ -31,7 +31,7 @@
     </div>
     <form id="f">
       <label>Usuário</label>
-      <input id="user" placeholder="admin1010" autocomplete="username" required />
+      <input id="user" placeholder="grg-admin" autocomplete="username" required />
       <label>Senha</label>
       <div style="position:relative">
         <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" required style="padding-right:40px;" />
@@ -86,7 +86,7 @@
     }
     if (new URLSearchParams(location.search).get('code')) {
       finishOidc().catch(error => showLoginError(error.message));
-    } else {
+    } else if (!new URLSearchParams(location.search).has('force')) {
       continueExistingSession().catch(() => { localStorage.removeItem('grg_token'); sessionStorage.removeItem('grg_refresh_token'); });
     }
     oidcConfig.then(config => { if (config.enabled && window.crypto && crypto.subtle) { document.querySelectorAll('label,input').forEach(element => { element.style.display='none'; if (element.matches('input')) element.disabled=true; }); document.getElementById('loginButton').textContent='Entrar com identidade GRG'; } });

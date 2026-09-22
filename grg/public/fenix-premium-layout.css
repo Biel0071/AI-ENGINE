@@ -105,47 +105,27 @@
 }
 
 @media (max-width: 1440px) {
-  .fenix-os-layout > .main-body { padding-right: 0; }
-  .views-container > .orch-missions-card,
-  .views-container > .orch-inspector-card { display: none !important; }
-  /* The command view is nested in .views-container. Without an explicit flex
-     basis it shrink-wraps around the contextual rail at laptop widths. */
+  .fenix-os-layout > .main-body { padding-right: 0 !important; }
   .views-container > .view {
     flex: 1 1 auto;
     min-width: 0;
     width: 100%;
   }
-  .views-container > .view > .orch-body-row { width: 100%; min-width: 0; }
-  /* Keep the city wide at laptop/desktop widths. The contextual rail remains
-     reachable as an overlay instead of stealing the operating surface width. */
-  .fenix-os-layout > .orch-right-column {
-    position: fixed;
-    top: 58px;
-    right: 12px;
-    bottom: 40px;
-    width: min(320px, calc(100vw - 24px));
-    z-index: 30;
-    transform: translateX(calc(100% + 20px));
-    transition: transform .2s ease;
-    border: 1px solid rgba(239,68,68,.3);
-    border-radius: 14px;
-    box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  .views-container > .view > .orch-body-row {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
   }
-  .views-container > .view > .orch-right-column {
-    position: fixed;
-    top: 58px;
-    right: 12px;
-    bottom: 40px;
-    width: min(320px, calc(100vw - 24px));
-    z-index: 30;
-    transform: translateX(calc(100% + 20px));
-    transition: transform .2s ease;
-    border: 1px solid rgba(239,68,68,.3);
-    border-radius: 14px;
-    box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  .orch-right-column {
+    width: 360px;
+    flex: 0 0 360px;
+    position: static !important;
+    transform: none !important;
+    height: 100% !important;
+    max-height: 100% !important;
   }
-  .fenix-os-layout > .orch-right-column:hover,
-  .fenix-os-layout > .orch-right-column:focus-within { transform: translateX(0); }
   .fenix-os-layout > .view,
   body > .view { right: 0; }
   .orch-bottom-trio {
@@ -267,28 +247,493 @@
 /* AI City is the operating surface, not a dashboard card. On desktop the
    real runtime map receives the visual priority; contextual panels remain
    available below and in the operational rail without competing with it. */
+.views-container > .view:not(.active),
+.fenix-orchestrator-layout:not(.active) {
+  display: none !important;
+}
+
+.views-container > .view.active {
+  display: flex !important;
+  flex: 1 1 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
 @media (min-width: 761px) {
-  .fenix-orchestrator-layout {
-    overflow-y: auto;
+  .fenix-orchestrator-layout.active {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
   }
 
   .fenix-orchestrator-layout .orch-body-row {
-    flex: 0 0 auto;
-    overflow: visible;
+    display: flex !important;
+    flex-direction: row !important;
+    flex: 1 1 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
   }
 
   .fenix-orchestrator-layout .orch-center-area {
-    overflow: visible;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-gutter: stable;
   }
 
   .fenix-orchestrator-layout .orch-city-zone {
-    height: clamp(520px, calc(100vh - 260px), 760px);
-    min-height: 520px;
+    height: clamp(340px, 45vh, 520px) !important;
+    min-height: 320px !important;
+    flex: 0 0 auto !important;
   }
 
   .fenix-orchestrator-layout .orch-bottom-trio {
-    min-height: 250px;
-    flex-basis: 250px;
-    grid-template-columns: minmax(420px, 1.8fr) minmax(230px, .9fr) minmax(230px, .9fr);
+    min-height: 280px !important;
+    flex: 0 0 auto !important;
+    grid-template-columns: minmax(360px, 1.6fr) minmax(220px, 1fr) minmax(220px, 1fr) !important;
   }
+
+  .orch-right-column {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 380px !important;
+    flex: 0 0 380px !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: static !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+  }
+}
+
+#view-city {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+#cityCanvas,
+canvas#cityCanvas,
+.city-canvas-host canvas {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+#view-city #cityCanvas,
+#view-city > #cityCanvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.city-side-panel {
+  display: grid;
+  grid-template-rows: 1fr 1fr 1.2fr;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.city-side-panel section {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+
+.city-list {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  min-height: 0;
+}
+
+.city-list.compact { gap: 6px; }
+
+.city-row, .job-dag-row, .event-row {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 6px 8px !important;
+  align-items: center !important;
+  text-align: left !important;
+  border: 1px solid var(--fenix-border, rgba(255,255,255,0.08)) !important;
+  border-radius: 8px !important;
+  background: rgba(15,23,42,0.6) !important;
+  color: var(--text-main, #cbd5e1) !important;
+  padding: 8px 10px !important;
+  cursor: pointer !important;
+  overflow: hidden !important;
+}
+
+.job-dag-row { grid-template-columns: 28px minmax(0, 1fr) auto !important; }
+.event-row { grid-template-columns: 58px minmax(0, 1fr) !important; }
+
+.city-row:hover, .job-dag-row:hover, .event-row:hover {
+  border-color: rgba(6,182,212,0.4) !important;
+  background: rgba(15,23,42,0.9) !important;
+}
+
+.city-row b, .job-dag-row b, .event-row span {
+  color: var(--text-bright, #f8fafc) !important;
+  font-size: 11.5px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.city-row small, .job-dag-row small, .event-row small {
+  color: var(--text-muted, #94a3b8) !important;
+  font-size: 10px !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+  display: block !important;
+  max-width: 100% !important;
+}
+
+.event-row time {
+  color: var(--text-muted, #94a3b8) !important;
+  font-family: var(--fenix-font-mono, monospace) !important;
+  font-size: 10px !important;
+  white-space: nowrap !important;
+}
+
+/* Linear / Raycast Style Toasts */
+#fenixToastContainer {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: 400px;
+  width: calc(100% - 48px);
+}
+
+.fenix-toast {
+  pointer-events: auto;
+  background: rgba(13, 18, 29, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  font-size: 12px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fenix-toast-info { border-left: 3px solid #38bdf8; }
+.fenix-toast-success { border-left: 3px solid #10b981; }
+.fenix-toast-error { border-left: 3px solid #ef4444; }
+.fenix-toast-warning { border-left: 3px solid #f59e0b; }
+
+/* Linear Master Category Pills */
+.fp-cat-pill {
+  transition: all 0.15s ease;
+}
+.fp-cat-pill:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Inspector Drawer Tabs */
+.fenix-dr-tab {
+  transition: all 0.15s ease;
+}
+.fenix-dr-tab:hover {
+  color: #f8fafc !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ==========================================================================
+   SPATIAL UX: CONTEXTUAL CHAT BESIDE CHARACTER & SPATIAL INSPECTOR
+   ========================================================================== */
+.fenix-spatial-chat-card {
+  position: absolute;
+  z-index: 50;
+  width: 320px;
+  max-width: 90vw;
+  background: rgba(12, 20, 32, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 229, 160, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 24px rgba(0, 229, 160, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-family: var(--fenix-font-sans, 'Inter', sans-serif);
+}
+
+.fenix-spatial-chat-card::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 36px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(12, 20, 32, 0.94);
+}
+
+.spatial-chat-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.spatial-chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spatial-chat-body {
+  padding: 12px 14px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.spatial-chat-bubble {
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 90%;
+  word-break: break-word;
+}
+.spatial-chat-bubble.agent {
+  background: rgba(17, 27, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  align-self: flex-start;
+  color: #e2e8f0;
+}
+.spatial-chat-bubble.user {
+  background: linear-gradient(135deg, rgba(0, 229, 160, 0.25) 0%, rgba(34, 184, 255, 0.2) 100%);
+  border: 1px solid rgba(0, 229, 160, 0.4);
+  align-self: flex-end;
+  color: #f8fafc;
+}
+
+.spatial-chat-footer {
+  padding: 8px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  gap: 6px;
+  background: rgba(7, 11, 18, 0.7);
+}
+.spatial-chat-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #f8fafc;
+  outline: none;
+  font-family: inherit;
+}
+.spatial-chat-input:focus {
+  border-color: var(--fenix-primary, #00E5A0);
+  background: rgba(255, 255, 255, 0.08);
+}
+.spatial-chat-send {
+  background: var(--fenix-primary, #00E5A0);
+  border: none;
+  color: #070B12;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.spatial-chat-send:hover {
+  background: #22B8FF;
+  color: #070B12;
+}
+
+/* Spatial Lateral Inspector Drawer inside City */
+.fenix-spatial-drawer {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  max-width: 92vw;
+  background: rgba(12, 20, 32, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid rgba(0, 229, 160, 0.3);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.8);
+  z-index: 45;
+  display: none;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.fenix-spatial-drawer.open {
+  display: flex !important;
+  transform: translateX(0);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FÊNIX OS — PREMIUM PRO WORKSPACE & SUBVIEW GRIDS
+   ══════════════════════════════════════════════════════════════════ */
+.workspace-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px 28px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  gap: 16px;
+}
+
+.workspace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.workspace-header h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 2px 0 0;
+  letter-spacing: -0.02em;
+}
+
+.workspace-header small {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--fenix-primary, #00E5A0);
+  text-transform: uppercase;
+}
+
+.workspace-grid {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.workspace-grid.two-columns {
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+}
+
+.workspace-grid.three-columns {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.workspace-card {
+  background: rgba(12, 20, 32, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-sizing: border-box;
+  min-width: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.workspace-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.workspace-card h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.workspace-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.workspace-card table th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.workspace-card table td {
+  padding: 10px;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.workspace-card table tr:last-child td {
+  border-bottom: none;
 }

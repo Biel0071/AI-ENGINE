@@ -45,7 +45,9 @@
 
   function wsUrl() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${location.host}/events`;
+    const token = typeof getLiveToken === 'function' ? getLiveToken() : '';
+    const query = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${proto}//${location.host}/events${query}`;
   }
 
   function emit(type, detail) {
@@ -101,6 +103,8 @@
     if (data.missions) live.missions = data.missions;
     if (data.projects) live.projects = data.projects;
     if (data.operationalTwin) live.operationalTwin = data.operationalTwin;
+    if (data.agentRuntime) live.agentRuntime = data.agentRuntime;
+    if (data.capacity) live.capacity = data.capacity;
     if (data.lastSeq) live.lastSeq = data.lastSeq;
     if (data.events) live.events = data.events;
     emit('snapshot', data);
@@ -317,7 +321,14 @@
     requestSnapshot();
 
     try {
-      ws = new WebSocket(wsUrl());
+      // Use global WebSocket singleton to avoid duplicate connections
+      if (window.__FENIX_WS__ && window.__FENIX_WS__.readyState <= 1) {
+        ws = window.__FENIX_WS__;
+        console.log('[LiveRuntime] Reusing existing WebSocket singleton');
+      } else {
+        ws = new WebSocket(wsUrl());
+        window.__FENIX_WS__ = ws;
+      }
     } catch (e) {
       scheduleReconnect();
       return;

@@ -25,7 +25,7 @@ window.FENIX.api = async function api(path, options = {}, retried = false) {
       const success = await attemptRefresh();
       if (success) return window.FENIX.api(path, options, true);
       localStorage.removeItem('grg_token');
-      location.href = '/GRG-login';
+      if (location.pathname !== '/' && !location.pathname.includes('login') && !location.pathname.includes('index')) { location.href = '/GRG-login'; }
       return Promise.reject(new Error("Unauthorized"));
     }
     if (!res.ok) {
@@ -105,9 +105,8 @@ async function bootFenix() {
 
     // Load sequence: live-runtime PRIMEIRO (WS), depois UI
     const scripts = [
-  '/runtime-cockpit.js?v=17',
+      '/runtime-cockpit.js?v=17',
       '/live-runtime.js?v=12',
-      '/unified-app.js?v=command-confirmation-2',
       '/ide-enhancer.js?v=5',
       '/cockpit-app.js?v=3',
       '/visual-inspector.js?v=3',
@@ -146,4 +145,3 @@ async function bootFenix() {
 }
 
 if (!window.FENIX_BOOTED) bootFenix();
-

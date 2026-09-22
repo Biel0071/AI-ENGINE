@@ -15,9 +15,23 @@ const assert = require('assert');
 
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 
+let spawnedServer = null;
+let targetBaseUrl = 'http://127.0.0.1:4400';
+
+function probeExistingServer(url) {
+  return new Promise((resolve) => {
+    const req = http.request(url + '/api/v2/system-reconstruction/health', { method: 'GET', timeout: 800 }, (res) => {
+      resolve(true);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.end();
+  });
+}
+
 function request(method, endpoint, headers = {}) {
   return new Promise((resolve, reject) => {
-    const req = http.request('http://127.0.0.1:4400' + endpoint, { method, headers }, res => {
+    const req = http.request(targetBaseUrl + endpoint, { method, headers }, res => {
       let d = '';
       res.on('data', c => d += c);
       res.on('end', () => {
@@ -38,12 +52,12 @@ async function get(endpoint, headers) {
 }
 
 async function authenticate() {
-  const userId = process.env.FENIX_BOOTSTRAP_ADMIN_USER;
-  const password = process.env.FENIX_BOOTSTRAP_ADMIN_PASSWORD;
-  assert.ok(userId && password, 'Architecture guard requires bootstrap admin credentials');
+  const userId = process.env.FENIX_BOOTSTRAP_ADMIN_USER || 'architecture-guard-admin';
+  const password = process.env.FENIX_BOOTSTRAP_ADMIN_PASSWORD || 'architecture-guard-secret';
+  const tenantId = process.env.FENIX_BOOTSTRAP_TENANT_ID || 'grg';
   const login = await new Promise((resolve, reject) => {
-    const body = JSON.stringify({ tenantId: 'grg', userId, password });
-    const req = http.request('http://127.0.0.1:4400/api/login', {
+    const body = JSON.stringify({ tenantId, userId, password });
+    const req = http.request(targetBaseUrl + '/api/login', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) },
     }, res => {
@@ -58,7 +72,7 @@ async function authenticate() {
     req.write(body);
     req.end();
   });
-  assert.strictEqual(login.status, 200, 'Architecture guard login must succeed');
+  assert.strictEqual(login.status, 200, `Architecture guard login must succeed (status: ${login.status})`);
   assert.ok(login.data.token, 'Architecture guard login must return a token');
   return { authorization: `Bearer ${login.data.token}` };
 }
@@ -79,18 +93,46 @@ async function runArchitectureGuard() {
   assert.ok(fs.existsSync(officialCss), 'Official unified.css must exist at grg/public/unified.css');
   console.log('   ✅ Official Shell Found:', officialHtml);
 
-  // 2. Enforce No Rogue / Duplicate Frontends
-  console.log('\n[2/5] Checking For Rogue / Duplicate Frontends...');
-  const prohibitedPaths = [
-    path.join(ROOT_DIR, 'grg', 'apps', 'ai-city', 'index.html'),
-    path.join(ROOT_DIR, 'platform', 'public', 'index.html'),
-    path.join(ROOT_DIR, 'crm', 'frontend', 'dist', 'index.html')
-  ];
+  // 2. Enforce No Rogue / Duplicate Frontends across entire repository
+  console.log('\n[2/5] Checking For Rogue / Duplicate Frontends (Dynamic Recursive Scan)...');
+  const projectRoot = path.resolve(ROOT_DIR, '..');
+  const canonicalShell = path.resolve(ROOT_DIR, 'grg', 'public', 'index.html');
+  const rogueFound = [];
 
-  for (const p of prohibitedPaths) {
-    assert.ok(!fs.existsSync(p), `Duplicate frontend must not exist at ${p} (must be in archive)`);
+  function scanForRogueShells(dir) {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        const name = entry.name.toLowerCase();
+        if (name === 'node_modules' || name === '.git' || name === 'archive' || name === 'qa' || name === 'qa-results' || name === '.system_generated' || name === '.gemini' || name === '.claude') {
+          continue;
+        }
+        scanForRogueShells(fullPath);
+      } else if (entry.isFile() && entry.name.toLowerCase() === 'index.html') {
+        const resolved = path.resolve(fullPath);
+        if (resolved === canonicalShell) continue;
+        try {
+          const content = fs.readFileSync(resolved, 'utf8');
+          const isFullShell = (content.match(/id=["']view-[a-z0-9_-]+["']/g) || []).length >= 5 ||
+                              content.includes('unified-app.js') ||
+                              content.includes('fenix-operational-os.js');
+          if (isFullShell) {
+            rogueFound.push(resolved);
+          }
+        } catch (_) {}
+      }
+    }
   }
-  console.log('   ✅ All legacy frontends successfully isolated in /archive/');
+
+  scanForRogueShells(projectRoot);
+  assert.strictEqual(rogueFound.length, 0, `Rogue frontend shell(s) detected outside canonical source: ${rogueFound.join(', ')}`);
+  console.log('   ✅ No rogue frontends detected across entire project tree.');
 
   // 3. Single Shell & Integrated Views Verification
   console.log('\n[3/5] Inspecting Official Shell Integrated Views...');
@@ -108,36 +150,61 @@ async function runArchitectureGuard() {
     'view-mcp',
     'view-browser',
     'view-observability',
-    'view-terminal'
+    'view-terminal',
+    'view-flowgraph'
   ];
 
   for (const viewId of requiredViews) {
     assert.ok(htmlContent.includes(viewId), `Official shell must contain view: ${viewId}`);
   }
-  console.log('   ✅ All 13 canonical views are natively integrated in the Single Shell.');
+  console.log('   ✅ All 14 canonical views are natively integrated in the Single Shell.');
 
   // 4. Zero Mocks — Real Telemetry & Runtime Verification
   console.log('\n[4/5] Testing Runtime Zero-Mock Contract...');
-  const auth = await authenticate();
-  const cityState = await get('/api/v2/city/state', auth);
-  assert.strictEqual(cityState.status, 200, 'City state endpoint must return 200');
-  assert.ok(Array.isArray(cityState.data.projects), 'Projects must be an array of projects');
-  assert.ok(typeof cityState.data.summary.totalProjects === 'number', 'totalProjects must be a number');
-  assert.ok(cityState.data.summary.ramUsage.includes('MB'), 'RAM usage must be real MB');
-  assert.ok(typeof cityState.data.summary.cpuUserSeconds === 'number', 'CPU user time must be a measured number');
-  assert.strictEqual(cityState.data.buildings.energy.loadPercent, null, 'unmeasured energy cannot use a plausible fallback');
-  console.log('   ✅ Live Runtime Metrics Verified: RAM', cityState.data.summary.ramUsage, '| CPU user seconds', cityState.data.summary.cpuUserSeconds);
+  try {
+    const isRunning = await probeExistingServer(targetBaseUrl);
+    if (!isRunning) {
+      console.log('   ℹ Local port 4400 not running — spawning ephemeral server for contract verification...');
+      const { start } = require('../src/server');
+      process.env.FENIX_BOOTSTRAP_TENANT_ID = process.env.FENIX_BOOTSTRAP_TENANT_ID || 'grg';
+      process.env.FENIX_BOOTSTRAP_ADMIN_USER = process.env.FENIX_BOOTSTRAP_ADMIN_USER || 'architecture-guard-admin';
+      process.env.FENIX_BOOTSTRAP_ADMIN_PASSWORD = process.env.FENIX_BOOTSTRAP_ADMIN_PASSWORD || 'architecture-guard-secret';
+      process.env.NODE_ENV = 'test';
+      process.env.GRG_LLM = '0';
+      spawnedServer = await start(0, { operationalActivation: false });
+      targetBaseUrl = `http://127.0.0.1:${spawnedServer.address().port}`;
+      console.log(`   ✅ Ephemeral server listening on ${targetBaseUrl}`);
+    }
 
-  // 5. Daily Operations & Human Governance Verification
-  console.log('\n[5/5] Testing 24/7 Daily Operations Source of Truth...');
-  const dailyOps = await get('/api/v2/jarvis/daily-operations', auth);
-  assert.strictEqual(dailyOps.status, 200, 'Daily operations endpoint must return 200');
-  assert.strictEqual(dailyOps.data.engineState, 'ONLINE', 'Engine state must be ONLINE');
-  console.log('   ✅ Daily Operations Engine State:', dailyOps.data.engineState);
+    const auth = await authenticate();
+    const cityState = await get('/api/v2/city/state', auth);
+    assert.strictEqual(cityState.status, 200, 'City state endpoint must return 200');
+    assert.ok(Array.isArray(cityState.data.projects), 'Projects must be an array of projects');
+    assert.ok(typeof cityState.data.summary.totalProjects === 'number', 'totalProjects must be a number');
+    assert.ok(cityState.data.summary.ramUsage.includes('MB'), 'RAM usage must be real MB');
+    assert.ok(typeof cityState.data.summary.cpuUserSeconds === 'number', 'CPU user time must be a measured number');
+    assert.strictEqual(cityState.data.buildings.energy.loadPercent, null, 'unmeasured energy cannot use a plausible fallback');
+    console.log('   ✅ Live Runtime Metrics Verified: RAM', cityState.data.summary.ramUsage, '| CPU user seconds', cityState.data.summary.cpuUserSeconds);
+
+    // 5. Daily Operations & Human Governance Verification
+    console.log('\n[5/5] Testing 24/7 Daily Operations Source of Truth...');
+    const dailyOps = await get('/api/v2/jarvis/daily-operations', auth);
+    assert.strictEqual(dailyOps.status, 200, 'Daily operations endpoint must return 200');
+    assert.strictEqual(dailyOps.data.engineState, 'ONLINE', 'Engine state must be ONLINE');
+    console.log('   ✅ Daily Operations Engine State:', dailyOps.data.engineState);
+  } finally {
+    if (spawnedServer) {
+      await new Promise(r => spawnedServer.close(r));
+      if (global.FENIX_KERNEL?.storage?.disconnectAll) {
+        await global.FENIX_KERNEL.storage.disconnectAll();
+      }
+    }
+  }
 
   console.log('\n================================================================');
   console.log('🎉 ARCHITECTURE GUARD PASSED: 100% COMPLIANT WITH SINGLE TRUTH');
   console.log('================================================================');
+  process.exit(0);
 }
 
 runArchitectureGuard().catch(err => {

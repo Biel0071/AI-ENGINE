@@ -48,7 +48,7 @@ test('UNIFIED FRONTEND SUITE: Full E2E Navigation, Auth, Assets, and Live Operat
   assert.equal(appRes.status, 200, '/app serves index.html');
   const appHtml = await appRes.text();
   assert.match(appHtml, /FENIX OS \| Unified Workspace/, 'HTML title matches');
-  assert.match(appHtml, /<script src="\/unified-app\.js"><\/script>/, 'Unified controller linked');
+  assert.match(appHtml, /<script src="\/unified-app\.js(\?[^"]*)?"><\/script>/, 'Unified controller linked');
 
   // 4. Verify all referenced CSS and Assets
   const assets = [

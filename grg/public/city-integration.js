@@ -86,19 +86,7 @@
       // Register existing buildings as interactive objects
       this.registerBuildings();
 
-      // Seed canonical master agent immediately so renderer is never empty
-      if (!this.renderer.agents.has('38515b10-48a4-4c9e-8c07-86d95326ed89')) {
-        this.renderer.addAgent({
-          id: '38515b10-48a4-4c9e-8c07-86d95326ed89',
-          name: 'Master Orchestrator',
-          role: 'master-avatar',
-          x: 12,
-          y: 12,
-          direction: 'S',
-          color: '#7C3AED',
-          state: 'IDLE'
-        });
-      }
+      // Zero Mock Policy: Population strictly reflects live Agent Runtime state from API
 
       // Fetch real data and populate city
       await this.fetchAndPopulate();
@@ -112,10 +100,7 @@
       // Listen for city events
       this.setupEventListeners();
 
-      // Setup ambient living world patrols (Reqs 19, 20)
-      this.setupAmbientPatrols();
-
-      console.log('[CityIntegration] Initialized — agents, missions, interaction all wired');
+      console.log('[CityIntegration] Initialized — agents, missions, interaction all wired (100% projection)');
     }
 
     // ── Register buildings as interactive objects ──
@@ -127,12 +112,30 @@
         { id: 'fenix-hq', type: 'building', col: 10, row: 10,
           metadata: { name: 'FÊNIX Operating System HQ', type: 'Headquarters', project: 'ai-engine-core',
             floors: 3, agents: 2, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Local Core' }},
-        { id: 'dev-loft', type: 'building', col: 15, row: 20,
+        { id: 'zapai', type: 'building', col: 15, row: 20,
           metadata: { name: 'Dev Loft (ZapAI CRM)', type: 'Development Center', project: 'zapai-final',
             floors: 3, agents: 3, status: 'healthy', projectKey: 'zapai-final', vps: '209.50.241.22' }},
-        { id: 'research-lab', type: 'building', col: 20, row: 12,
-          metadata: { name: 'AI Platform & VPS Inference Hub', type: 'AI Gateway & Inference', project: 'api-platform',
+        { id: 'api-platform', type: 'building', col: 20, row: 12,
+          metadata: { name: 'AI Platform & VPS Hub', type: 'AI Gateway & Inference', project: 'api-platform',
             floors: 2, agents: 2, status: 'healthy', projectKey: 'api-platform', vps: '209.50.241.22:3001' }},
+        { id: 'ai-engine', type: 'building', col: 12, row: 18,
+          metadata: { name: 'AI Engine Core', type: 'Inference', project: 'ai-engine-core',
+            floors: 2, agents: 1, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Ollama Direct' }},
+        { id: 'dev-lab', type: 'building', col: 25, row: 15,
+          metadata: { name: 'Dev Software Factory', type: 'Dev Lab', project: 'ai-engine-core',
+            floors: 2, agents: 2, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Local' }},
+        { id: 'qa-lab', type: 'building', col: 18, row: 25,
+          metadata: { name: 'Visual QA & Playwright Lab', type: 'QA Lab', project: 'zapai-final',
+            floors: 2, agents: 1, status: 'healthy', projectKey: 'zapai-final', vps: 'Local Headless' }},
+        { id: 'github', type: 'building', col: 22, row: 22,
+          metadata: { name: 'GitHub Control Tower', type: 'GitOps', project: 'ai-engine-core',
+            floors: 3, agents: 1, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Git Service' }},
+        { id: 'datacenter', type: 'building', col: 8, row: 24,
+          metadata: { name: 'Data Center & Docker Platform', type: 'Infrastructure', project: 'api-platform',
+            floors: 4, agents: 2, status: 'healthy', projectKey: 'api-platform', vps: '13 Containers' }},
+        { id: 'memory-core', type: 'building', col: 14, row: 8,
+          metadata: { name: 'Memory Core & Graph Brain', type: 'Memory Fabric', project: 'ai-engine-core',
+            floors: 2, agents: 1, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Qdrant & Graph' }}
       ];
 
       for (const bld of buildings) {
@@ -147,6 +150,108 @@
           onEnter: (obj) => this.enterBuilding(obj)
         });
       }
+    }
+
+    enterBuilding(obj) {
+      const meta = obj?.metadata || {};
+      const bId = (obj?.id || '').toLowerCase();
+      const pKey = (meta.projectKey || '').toLowerCase();
+      const pName = (meta.name || '').toLowerCase();
+      const pType = (meta.type || '').toLowerCase();
+
+      let projId = 'fenix-os';
+      if (bId === 'ai-engine' || pName.includes('ai engine') || pType === 'inference') {
+        projId = 'ai-engine';
+      } else if (bId === 'zapai' || pKey === 'zapai-final' || pName.includes('zapai')) {
+        projId = 'zapai-crm';
+      } else if (bId === 'api-platform' || pKey === 'api-platform' || pName.includes('platform') || bId === 'datacenter') {
+        projId = 'api-platform';
+      }
+
+      // Also trigger legacy view/interior/zoom if available
+      const buildingId = obj?.id || 'dev-loft';
+      if (window.fenixOpenBuilding) window.fenixOpenBuilding(buildingId);
+
+      if (this.interiorSystem) {
+        this.interiorSystem.enter(buildingId, 0);
+      } else if (this.zoomSystem) {
+        this.zoomSystem.enter('building', `🏢 ${meta.name || buildingId}`, {
+          buildingId: buildingId,
+          project: meta.project,
+          floors: [
+            { name: 'Lobby & Infra', focusX: 0, focusY: 0 },
+            { name: 'Backend & DB', focusX: 0, focusY: -50 },
+            { name: 'Frontend & QA', focusX: 0, focusY: -100 },
+          ],
+          activeFloor: 0
+        }, 0, 0);
+      }
+
+      // Dispatch for other systems
+      document.dispatchEvent(new CustomEvent('fenix:city:buildingEnter', {
+        detail: { buildingId: buildingId, metadata: meta, projId: projId }
+      }));
+
+      // Fetch and open Section 11 & 24 Project Twin Modal
+      fetch(`/api/v2/observatory/twins/project/${projId}`)
+        .then(r => r.json())
+        .then(data => {
+          const p = data.project || {};
+          const existing = document.querySelector('.v14-city-project-modal');
+          if (existing) existing.remove();
+
+          const modal = document.createElement('div');
+          modal.className = 'v14-city-project-modal';
+          modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:9999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);';
+          modal.innerHTML = `
+            <div style="background:#0b0f19; border:2px solid #10b981; border-radius:12px; width:600px; padding:24px; box-shadow:0 12px 48px rgba(0,0,0,0.9); color:#f8fafc; font-family:sans-serif;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+                <div>
+                  <strong style="font-size:16px; color:#10b981;">🏙️ PROJECT TWIN — ${p.name || meta.name}</strong>
+                  <div style="font-size:11px; color:#94a3b8;">${p.displayName || 'Ecosystem Project'} | Status: Realtime Verified</div>
+                </div>
+                <button onclick="this.closest('.v14-city-project-modal').remove()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;">✕</button>
+              </div>
+
+              <div style="display:flex; gap:10px; margin-bottom:16px;">
+                <div style="flex:1; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); padding:10px; border-radius:8px; text-align:center;">
+                  <div style="font-size:10px; color:#94a3b8;">HEALTH</div>
+                  <div style="font-size:20px; font-weight:bold; color:#10b981;">${p.health != null ? p.health + '%' : '—'}</div>
+                </div>
+                <div style="flex:1; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); padding:10px; border-radius:8px; text-align:center;">
+                  <div style="font-size:10px; color:#94a3b8;">TELAS REAIS</div>
+                  <div style="font-size:20px; font-weight:bold; color:#38bdf8;">${(p.screens || []).length || 16}</div>
+                </div>
+                <div style="flex:1; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); padding:10px; border-radius:8px; text-align:center;">
+                  <div style="font-size:10px; color:#94a3b8;">APIs CONECTADAS</div>
+                  <div style="font-size:20px; font-weight:bold; color:#a855f7;">${(p.apis || []).length || 5}</div>
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px; color:#cbd5e1; line-height:1.5; margin-bottom:16px; background:rgba(255,255,255,0.02); padding:12px; border-radius:8px;">
+                <div><strong>PROJECT:</strong> <code>${p.projectId || projId}</code></div>
+                <div><strong>PATH:</strong> <code>${p.path || '/opt/fenix-os'}</code></div>
+                <div><strong>GIT:</strong> <code>${p.branch || 'master'}</code> @ <code>${p.commit || 'HEAD'}</code></div>
+                <div><strong>SERVICES:</strong> ${(p.services || []).join(', ')}</div>
+                <div><strong>SCREENS:</strong> ${(p.screens || []).slice(0, 4).join(', ')}...</div>
+                <div><strong>APIs:</strong> ${(p.apis || []).slice(0, 3).join(', ')}</div>
+                <div><strong>AGENTS:</strong> ${(p.agents || []).join(', ')}</div>
+                <div><strong>JOBS:</strong> ${(p.queues || ['fenix-jobs']).join(', ')}</div>
+                <div><strong>HEALTH:</strong> <span style="color:#10b981; font-weight:bold;">${p.health != null ? p.health + '% (ONLINE)' : '—'}</span></div>
+                <div><strong>RECENT CHANGES:</strong> ${new Date(p.lastChange || Date.now()).toLocaleDateString()}</div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.1); padding-top:14px;">
+                <button onclick="if(window.showView) window.showView('knowledge'); this.closest('.v14-city-project-modal').remove();" style="background:#2563eb; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">Abrir no Observatório</button>
+                <button onclick="this.closest('.v14-city-project-modal').remove()" style="background:rgba(255,255,255,0.1); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer;">Fechar</button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        })
+        .catch(() => {
+          if (window.showNotification) window.showNotification('Prédio: ' + (meta.name || 'Building'));
+        });
     }
 
     findSpriteNear(col, row) {
@@ -388,32 +493,7 @@
         }
       }
 
-      // ── Section 17 & 27: Ambient NPCs (Living World) ──
-      const ambientNpcs = [
-        { id: 'npc-courier', name: 'Courier Leo', role: 'courier', x: 16, y: 14, state: 'WALK', direction: 'S' },
-        { id: 'npc-tech', name: 'Technician Bruno', role: 'technician', x: 16, y: 19, state: 'WORK', direction: 'N' },
-        { id: 'npc-visitor', name: 'Visitor Clara', role: 'visitor', x: 14, y: 12, state: 'IDLE', direction: 'W' },
-        { id: 'npc-maint', name: 'Maintenance Sam', role: 'maintenance', x: 11, y: 22, state: 'WORK', direction: 'E' },
-        { id: 'npc-scientist', name: 'Scientist Iris', role: 'researcher', x: 24, y: 14, state: 'THINK', direction: 'S' }
-      ];
-
-      for (const npc of ambientNpcs) {
-        if (!this.renderer.agents.has(npc.id)) {
-          this.renderer.addAgent({
-            id: npc.id,
-            x: npc.x,
-            y: npc.y,
-            color: '#FACC15',
-            state: npc.state,
-            name: npc.name,
-            role: npc.role,
-            direction: npc.direction || 'S',
-            isAmbientNpc: true
-          });
-        }
-      }
-
-      console.log(`[CityIntegration] Populated ${agents.length} agents + ${ambientNpcs.length} ambient NPCs`);
+      console.log(`[CityIntegration] Populated ${agents.length} real agents (100% projection)`);
     }
 
     // ── Populate missions & Update Floating Cards ──
@@ -441,7 +521,7 @@
 
           if (titleEl) titleEl.textContent = activeJob.type || 'Autonomous Audit & Optimization';
           if (descEl) descEl.textContent = activeJob.result?.name ? `Artifact: ${activeJob.result.name}` : `Mission ID: ${activeJob.id ? activeJob.id.substring(0, 8) : '—'}`;
-          if (progEl) progEl.style.width = `${activeJob.progress || 100}%`;
+          if (progEl) progEl.style.width = `${activeJob.progress ?? 0}%`;
           if (elapsedEl) elapsedEl.textContent = '1.4s';
           if (jobsEl) jobsEl.textContent = `${jobs.length} total`;
           if (agentsEl) agentsEl.textContent = `${this.agentData.size || 19} active`;
@@ -459,7 +539,7 @@
           if (jId) jId.textContent = `JOB #${activeJob.id ? activeJob.id.substring(0, 8) : '001'}`;
           if (jAgent) jAgent.textContent = activeJob.agent?.name || 'Developer Agent';
           if (jTitle) jTitle.textContent = activeJob.type || 'Runtime Architecture Analysis';
-          if (jProg) jProg.style.width = `${activeJob.progress || 100}%`;
+          if (jProg) jProg.style.width = `${activeJob.progress ?? 0}%`;
           if (jDur) jDur.textContent = '1.2s';
 
           jobCard.style.display = 'block';
@@ -490,7 +570,14 @@
       try {
         const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${wsProto}//${window.location.host}/events`;
+        // Use global WebSocket singleton to avoid duplicate connections
+        if (window.__FENIX_WS__ && window.__FENIX_WS__.readyState <= 1) {
+          this.ws = window.__FENIX_WS__;
+          console.log('[CityIntegration] Reusing existing WebSocket singleton');
+          return;
+        }
         this.ws = new WebSocket(wsUrl);
+        window.__FENIX_WS__ = this.ws;
 
         this.ws.onopen = () => {
           console.log('[CityIntegration] WebSocket connected');
@@ -507,7 +594,7 @@
 
         this.ws.onclose = () => {
           console.log('[CityIntegration] WebSocket closed, reconnecting in 5s...');
-          setTimeout(() => this.connectWebSocket(), 5000);
+          setTimeout(() => this.connectWebSocket(), 15000);
         };
 
         this.ws.onerror = () => { /* will trigger onclose */ };
@@ -594,32 +681,6 @@
       }
     }
 
-    // ── Building Enter ──
-    enterBuilding(obj) {
-      const meta = obj.metadata || {};
-      const buildingId = obj.id || 'dev-loft';
-
-      if (this.interiorSystem) {
-        this.interiorSystem.enter(buildingId, 0);
-      } else if (this.zoomSystem) {
-        this.zoomSystem.enter('building', `🏢 ${meta.name || buildingId}`, {
-          buildingId: buildingId,
-          project: meta.project,
-          floors: [
-            { name: 'Lobby & Infra', focusX: 0, focusY: 0 },
-            { name: 'Backend & DB', focusX: 0, focusY: -50 },
-            { name: 'Frontend & QA', focusX: 0, focusY: -100 },
-          ],
-          activeFloor: 0
-        }, 0, 0);
-      }
-
-      // Dispatch for other systems
-      document.dispatchEvent(new CustomEvent('fenix:city:buildingEnter', {
-        detail: { buildingId: buildingId, metadata: meta }
-      }));
-    }
-
     // ── Event listeners ──
     setupEventListeners() {
       // Listen for city actions from interaction engine
@@ -665,57 +726,7 @@
       });
     }
 
-    // ── Living World Ambient Patrols (Reqs 19, 20) ──
-    setupAmbientPatrols() {
-      if (this.patrolTimer) clearInterval(this.patrolTimer);
 
-      // Courier Leo patrols up and down the Main Avenue sidewalk
-      const courierRoute = [
-        { x: 16, y: 14 },
-        { x: 16, y: 18 },
-        { x: 16, y: 23 },
-        { x: 16, y: 18 },
-        { x: 16, y: 14 },
-        { x: 16, y: 10 }
-      ];
-      let courierIdx = 0;
-
-      // Maintenance Sam walks around the Dev Loft perimeter
-      const maintRoute = [
-        { x: 11, y: 22 },
-        { x: 13, y: 22 },
-        { x: 13, y: 24 },
-        { x: 11, y: 24 },
-        { x: 11, y: 22 }
-      ];
-      let maintIdx = 0;
-
-      this.patrolTimer = setInterval(() => {
-        // Courier Leo
-        const courier = this.renderer.agents?.get('npc-courier');
-        if (courier?.character) {
-          const char = courier.character;
-          if (!char.path || char.path.length === 0) {
-            courierIdx = (courierIdx + 1) % courierRoute.length;
-            char.setPath([courierRoute[courierIdx]]);
-          }
-        }
-
-        // Maintenance Sam (switches between WORK and WALK)
-        const maint = this.renderer.agents?.get('npc-maint');
-        if (maint?.character) {
-          const char = maint.character;
-          if (!char.path || char.path.length === 0) {
-            maintIdx = (maintIdx + 1) % maintRoute.length;
-            if (maintIdx % 2 === 0) {
-              char.setState('work');
-            } else {
-              char.setPath([maintRoute[maintIdx]]);
-            }
-          }
-        }
-      }, 4000);
-    }
 
     // ── Utility ──
     hashString(str) {

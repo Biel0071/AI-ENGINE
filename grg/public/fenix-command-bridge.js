@@ -8,30 +8,8 @@
       event.preventDefault();
       const objective = String(input.value || '').trim();
       if (!objective) return;
-      const button = form.querySelector('button[type="submit"]');
-      if (button) button.disabled = true;
-      try {
-        const token = localStorage.getItem('grg_token');
-        const response = await fetch('/api/fenix/missions', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ title: objective, objective, source: 'fenix-command-center' }),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
-        input.value = '';
-        const status = document.createElement('div');
-        status.className = 'chat-bubble bubble-sys';
-        status.textContent = `MISSION QUEUED · ${result.missionId || result.id || 'unknown'}`;
-        form.parentElement.appendChild(status);
-      } catch (error) {
-        const status = document.createElement('div');
-        status.className = 'chat-bubble bubble-sys';
-        status.textContent = `MISSION ERROR · ${error.message}`;
-        form.parentElement.appendChild(status);
-      } finally {
-        if (button) button.disabled = false;
-      }
+      input.value = '';
+      if (typeof window.runChat === 'function') await window.runChat(objective);
     });
   }
   function bindNavigation() {
