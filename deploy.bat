@@ -41,7 +41,7 @@ scp -i %KEY% %SRC%/task-creator.js %HOST%:/opt/fenix-os/grg/public/task-creator.
 scp -i %KEY% %SRC%/connections-panel.js %HOST%:/opt/fenix-os/public/connections-panel.js
 scp -i %KEY% %SRC%/connections-panel.js %HOST%:/opt/fenix-os/grg/public/connections-panel.js
 
-echo [3/8] Deploying AI City & Pixel Engine (Pixi 8 Pipeline)...
+echo [3/8] Deploying AI City ^& Pixel Engine (Pixi 8 Pipeline)...
 scp -i %KEY% %SRC%/iso-city.js %HOST%:/opt/fenix-os/public/iso-city.js
 scp -i %KEY% %SRC%/iso-city.js %HOST%:/opt/fenix-os/grg/public/iso-city.js
 scp -i %KEY% %SRC%/fenix-city-event-adapter.js %HOST%:/opt/fenix-os/public/fenix-city-event-adapter.js
@@ -63,7 +63,7 @@ scp -i %KEY% %SRC%/pixi-semantic-zoom.js %HOST%:/opt/fenix-os/grg/public/pixi-se
 scp -i %KEY% %SRC%/pixi-building-interior.js %HOST%:/opt/fenix-os/public/pixi-building-interior.js
 scp -i %KEY% %SRC%/pixi-building-interior.js %HOST%:/opt/fenix-os/grg/public/pixi-building-interior.js
 
-echo [4/8] Deploying IDE, Flow Graph & Specialized Modules...
+echo [4/8] Deploying IDE, Flow Graph ^& Specialized Modules...
 scp -i %KEY% %SRC%/fenix-flow-graph.js %HOST%:/opt/fenix-os/public/fenix-flow-graph.js
 scp -i %KEY% %SRC%/fenix-flow-graph.js %HOST%:/opt/fenix-os/grg/public/fenix-flow-graph.js
 scp -i %KEY% %SRC%/fenix-visual-ide.js %HOST%:/opt/fenix-os/public/fenix-visual-ide.js
@@ -91,7 +91,7 @@ scp -i %KEY% %SRC%/system-analysis.js %HOST%:/opt/fenix-os/grg/public/system-ana
 scp -i %KEY% %SRC%/visual-inspector.js %HOST%:/opt/fenix-os/public/visual-inspector.js
 scp -i %KEY% %SRC%/visual-inspector.js %HOST%:/opt/fenix-os/grg/public/visual-inspector.js
 
-echo [5/8] Deploying Design System & Complete Stylesheets...
+echo [5/8] Deploying Design System ^& Complete Stylesheets...
 scp -i %KEY% %SRC%/unified.css %HOST%:/opt/fenix-os/public/unified.css
 scp -i %KEY% %SRC%/unified.css %HOST%:/opt/fenix-os/grg/public/unified.css
 scp -i %KEY% %SRC%/command-center.css %HOST%:/opt/fenix-os/public/command-center.css
