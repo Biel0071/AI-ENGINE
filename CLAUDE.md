@@ -1,48 +1,47 @@
-# CLAUDE.md — FÊNIX COGNITIVE ENGINEERING CIVILIZATION (CEC) MASTER DIRECTIVE
+# CLAUDE.md — FÊNIX OS INSTRUCTIONS FOR CLAUDE CODE
 
-> **LEITURA OBRIGATORIA:** a fonte unica da verdade operacional deste repositorio e
-> [`AGENTS.md`](./AGENTS.md). Em qualquer conflito entre este arquivo, outros docs,
-> memorias ou branches, `AGENTS.md` prevalece. Este documento mantem apenas contexto
-> historico e principios complementares.
-
-> **CONTRATO SUPREMO DA CIVILIZAÇÃO DIGITAL FÊNIX CEC**
-> Toda e qualquer operação neste repositório é estritamente regida pela [Constituição FÊNIX CEC](file:///c:/projetos/ai-engine-core/ai-engine/docs/CONSTITUICAO_FENIX_CEC.md), pelo [CCMAP em 16 Fases](file:///c:/projetos/ai-engine-core/ai-engine/docs/FENIX_CCMAP_ACTIVATION_PLAN.md) e pelo [Synchronization Kernel](file:///c:/projetos/ai-engine-core/ai-engine/docs/SYNCHRONIZATION_KERNEL.md).
-> O código é uma representação transiente e um efeito colateral do Conhecimento Acumulado e dos Genomas Digitais Reutilizáveis.
+> **CONTRATO OPERACIONAL IMUTÁVEL PARA O CLAUDE**
+> Ao atuar no projeto `ai-engine`, você deve obrigatoriamente respeitar a fonte única da verdade e as 5 Regras de Ouro. É proibido inventar arquivos paralelos de frontend ou adicionar mocks.
 
 ---
 
-## ⚡ REGRA Nº 1: PIPELINE DO FÊNIX COGNITIVE COMPILER
-
-Nenhuma funcionalidade ou alteração será criada isoladamente. Toda solicitação passa pelo pipeline compilatório e auto-sincronizado:
-`Intenção Estruturada ──► Pesquisa ──► Conhecimento ──► Arquitetura ──► Blueprint ──► Capability Graph ──► Digital Genome ──► Design ──► UX ──► Banco ──► Backend ──► Frontend ──► Mobile ──► Testes ──► Deploy ──► Synchronization Kernel ──► Produto Vivo`
-
----
-
-## 🛡️ POLÍTICA DE AUTONOMIA EM 5 NÍVEIS (`AUTONOMY_LEVELS_POLICY.json`)
-
-- **Nível 0 – Observação**: Monitoramento 24/7 e síntese diária (`DAILY_SYNTHESIS.md`).
-- **Nível 1 – Sugestão**: Compilação de blueprints e propostas no Cockpit UI.
-- **Nível 2 – Sandbox**: Refatoração autônoma SOMENTE no `Shadow Runtime` isolado.
-- **Nível 3 – Desenvolvimento**: Aplicação em branches de dev e Pull Requests automáticos.
-- **Nível 4 – Produção Assistida**: Promoção para produção ESTRITAMENTE após aprovação humana explícita no Cockpit UI.
+## 1. Localização Canônica do Frontend (Single Source of Truth)
+- O **ÚNICO** frontend oficial do sistema é:
+  `grg/public/index.html` (com scripts associados em `grg/public/`).
+- Servidor local: `grg/src/server.js` (porta 4400).
+- Produção VPS (`209.50.241.22`): porta 4410 (backend) e webroots `/opt/fenix-os/public/` + `/opt/fenix-os/grg/public/` (PM2 #17 `fenix-frontend`).
+- **NUNCA** crie cópias de `index.html` em `scratch/`, na raiz ou em pastas avulsas.
+- Versões aposentadas pertencem a `archive/retired-frontends/`.
 
 ---
 
-## 📁 PROTOCOLO DE INGESTÃO EM 20 ETAPAS
+## 2. As 5 Regras de Ouro
 
-1. Inventário ──► 2. AST ──► 3. Dependências ──► 4. Arquitetura ──► 5. Banco ──► 6. APIs ──► 7. Docker ──► 8. CI/CD ──► 9. Frontend ──► 10. Backend ──► 11. Segurança ──► 12. Performance ──► 13. Observabilidade ──► 14. Testes ──► 15. Documentação ──► 16. Knowledge Graph ──► 17. Digital Twin ──► 18. Engineering DNA Score ──► 19. Backlog Inteligente ──► 20. Capability Matching.
+1. **Regra I — Fonte Canônica Única Inviolável**: Modificações de frontend são feitas exclusivamente em `grg/public/`. O teste `architecture-guard.test.js` escaneia o repositório e bloqueia qualquer shell concorrente.
+2. **Regra II — Zero-Mock & Honestidade de Telemetria**: Proibido colocar valores fictícios estáticos ("100%", "4 ATIVOS", "95%") no HTML. Slots iniciais devem exibir `—`. Telemetria deve vir exclusivamente das APIs reais.
+3. **Regra III — NUNCA Recriar, SEMPRE Evoluir**: O frontend é Vanilla JS puro com 14 views unificadas. Preserve rigorosamente os IDs de teste (`#orchHeatmapGrid`, `#fenixMemoryErrorNotice`, `#fenixMemoryOperationalContainer`, `.fenix-mem-tab-btn`, `#cityCanvas`).
+4. **Regra IV — Prova Obrigatória Antes de Concluir**:
+   Validação obrigatória: `CÓDIGO -> SINTAXE (node -c) -> EXECUÇÃO -> TESTES PASSANDO -> DOM VERIFICADO -> ENDPOINTS 200`.
+   Rode os testes antes de concluir:
+   - `node grg/test/architecture-guard.test.js`
+   - `node grg/test/frontend-honesty.test.js`
+   - `node grg/test/frontend-runtime-safety.test.js`
+5. **Regra V — Deploy Canônico e Paridade Dual**:
+   Deploy remoto na VPS somente via `deploy.bat`. Garantir 100% de paridade entre `/opt/fenix-os/public/` e `/opt/fenix-os/grg/public/`.
 
 ---
 
-## Comandos da Plataforma
-
+## 3. Comandos Úteis
 ```bash
-# Servidor Control Plane v2 (dashboard em http://127.0.0.1:4310)
-cd platform && node src/index-v2.js
+# Teste de guarda arquitetural
+node grg/test/architecture-guard.test.js
 
-# Testes da suíte do platform (13 testes)
-cd platform && node --test test/*.test.js
+# Teste de honestidade de frontend
+node grg/test/frontend-honesty.test.js
 
-# Testes da suíte do motor grg (259 testes)
-cd grg && node --test test/*.test.js
+# Teste de integridade de runtime
+node grg/test/frontend-runtime-safety.test.js
+
+# Checagem de sintaxe
+node -c <arquivo.js>
 ```

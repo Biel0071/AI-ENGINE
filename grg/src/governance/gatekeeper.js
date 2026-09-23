@@ -125,6 +125,70 @@ class Gatekeeper {
       blockers.push({ source: 'objective', code: 'MATRIX_FAILED', detail: `could not build the readiness matrix: ${error.message}` });
     }
 
+    // 5. Integridade do Frontend & Fonte Canônica Única (Single Source of Truth).
+    // Proíbe frontends paralelos / rogue shells fora de archive/ e exige a existência
+    // do shell oficial canônico em grg/public/index.html.
+    try {
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const canonicalShell = path.resolve(this.srcDir, '..', 'public', 'index.html');
+      const projectRoot = path.resolve(this.srcDir, '..', '..');
+
+      if (!fs.existsSync(canonicalShell)) {
+        blockers.push({
+          source: 'architecture-guard',
+          code: 'CANONICAL_SHELL_MISSING',
+          detail: 'Official index.html not found at grg/public/index.html',
+        });
+      } else {
+        evidence.push({ kind: 'canonical-frontend', file: canonicalShell, status: 'EXISTS' });
+      }
+
+      const rogueFound = [];
+      const scanDir = (dir) => {
+        let entries;
+        try {
+          entries = fs.readdirSync(dir, { withFileTypes: true });
+        } catch (_) {
+          return;
+        }
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            const name = entry.name.toLowerCase();
+            if (name === 'node_modules' || name === '.git' || name === 'archive' || name === 'qa' || name === 'qa-results' || name === '.system_generated' || name === '.gemini' || name === '.claude') {
+              continue;
+            }
+            scanDir(fullPath);
+          } else if (entry.isFile() && entry.name.toLowerCase() === 'index.html') {
+            const resolved = path.resolve(fullPath);
+            if (resolved === canonicalShell) continue;
+            try {
+              const content = fs.readFileSync(resolved, 'utf8');
+              const isFullShell = (content.match(/id=["']view-[a-z0-9_-]+["']/g) || []).length >= 5 ||
+                                  content.includes('unified-app.js') ||
+                                  content.includes('fenix-operational-os.js');
+              if (isFullShell) {
+                rogueFound.push(resolved);
+              }
+            } catch (_) {}
+          }
+        }
+      };
+
+      scanDir(projectRoot);
+      if (rogueFound.length > 0) {
+        blockers.push({
+          source: 'architecture-guard',
+          code: 'ROGUE_FRONTEND_DETECTED',
+          detail: `${rogueFound.length} rogue frontend shell(s) detected: ${rogueFound.join(', ')}`,
+          files: rogueFound,
+        });
+      }
+    } catch (error) {
+      blockers.push({ source: 'architecture-guard', code: 'SCAN_FAILED', detail: `could not scan for rogue frontends: ${error.message}` });
+    }
+
     return { blockers, warnings, evidence };
   }
 
@@ -202,6 +266,8 @@ function remediationFor(blockers) {
       steps.set(`objective:${blocker.objectiveId}`, `Objective '${blocker.objectiveId}' needs: ${(blocker.objectiveBlockers || []).slice(0, 3).join('; ') || 'implementation and a test that exercises it'}.`);
     } else if (blocker.source === 'readiness') {
       steps.set('readiness', 'Run POST /api/operations/activate and resolve every critical component that does not report ACTIVE.');
+    } else if (blocker.source === 'architecture-guard') {
+      steps.set('architecture-guard', 'Move any rogue index.html files into ai-engine/archive/retired-frontends/ and verify that ai-engine/grg/public/index.html is the sole canonical shell; node ai-engine/grg/test/architecture-guard.test.js must pass.');
     }
   }
   return [...steps.values()];

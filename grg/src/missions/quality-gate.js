@@ -51,6 +51,52 @@ class QualityGate {
       checks.realityFirst = false;
     }
 
+    // Strict Anti-Regression & Single Source of Truth Gate:
+    // If the mission created or referenced rogue frontend files outside canonical path,
+    // immediately fail architecture and realityFirst checks.
+    try {
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const projectRoot = path.resolve(__dirname, '..', '..', '..');
+      const canonicalShell = path.resolve(__dirname, '..', 'public', 'index.html');
+      
+      if (!fs.existsSync(canonicalShell)) {
+        checks.architecture = false;
+        checks.realityFirst = false;
+        mission.rejectionReason = 'CANONICAL_FRONTEND_SHELL_MISSING';
+      }
+
+      const scanDir = (dir) => {
+        let entries;
+        try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return false; }
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            const name = entry.name.toLowerCase();
+            if (name === 'node_modules' || name === '.git' || name === 'archive' || name === 'qa' || name === 'qa-results' || name === '.system_generated' || name === '.gemini' || name === '.claude') continue;
+            if (scanDir(fullPath)) return true;
+          } else if (entry.isFile() && entry.name.toLowerCase() === 'index.html') {
+            const resolved = path.resolve(fullPath);
+            if (resolved === canonicalShell) continue;
+            try {
+              const content = fs.readFileSync(resolved, 'utf8');
+              const isFullShell = (content.match(/id=["']view-[a-z0-9_-]+["']/g) || []).length >= 5 ||
+                                  content.includes('unified-app.js') ||
+                                  content.includes('fenix-operational-os.js');
+              if (isFullShell) return true;
+            } catch (_) {}
+          }
+        }
+        return false;
+      };
+
+      if (scanDir(projectRoot)) {
+        checks.architecture = false;
+        checks.realityFirst = false;
+        mission.rejectionReason = 'ROGUE_FRONTEND_SHELL_DETECTED';
+      }
+    } catch (_) {}
+
     const allPassed = Object.values(checks).every(v => v === true);
 
     if (allPassed) {

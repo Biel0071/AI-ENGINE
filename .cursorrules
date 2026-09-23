@@ -1,0 +1,29 @@
+# .cursorrules — FÊNIX OS AI CODING RULES (CURSOR / COPILOT / WINDSURF)
+
+# 1. ARCHITECTURE & FRONTEND SINGLE SOURCE OF TRUTH
+- Canonical frontend shell: ONLY `grg/public/index.html`.
+- NEVER create parallel HTML files or frontends in `scratch/`, project root, or random subfolders.
+- Historical versions MUST stay inside `archive/retired-frontends/`.
+- Automated test `architecture-guard.test.js` actively scans the workspace and breaks if any rogue `index.html` is found.
+
+# 2. ZERO-MOCK TELEMETRY CONTRACT
+- DO NOT hardcode mock metrics or status numbers ("100%", "4 ATIVOS", "95%") in HTML.
+- Unfilled dynamic slots must use the honest placeholder `—`.
+- All metrics rendered must come from live backend endpoints.
+- Automated test `frontend-honesty.test.js` checks 19 honesty invariants.
+
+# 3. EVOLUTION OVER REWRITING (NUNCA RECRIAR, SEMPRE EVOLUIR)
+- Do NOT rewrite frontend modules or convert to React/Vue/Svelte.
+- Extend existing modular Vanilla JS files in `grg/public/` (`unified-app.js`, `command-center.js`, `iso-city.js`, `unified.css`).
+- Preserve mandatory DOM IDs: `#orchHeatmapGrid`, `#fenixMemoryErrorNotice`, `#fenixMemoryOperationalContainer`, `.fenix-mem-tab-btn`, `#cityCanvas`.
+
+# 4. VERIFICATION WORKFLOW
+- Syntax check all modified JS files: `node -c <file>`
+- Run tests:
+  - `node grg/test/architecture-guard.test.js`
+  - `node grg/test/frontend-honesty.test.js`
+  - `node grg/test/frontend-runtime-safety.test.js`
+
+# 5. DEPLOYMENT PROTOCOL
+- Deploy to VPS (`209.50.241.22`) strictly via `deploy.bat`.
+- Ensure dual webroot parity (`/opt/fenix-os/public/` and `/opt/fenix-os/grg/public/`).

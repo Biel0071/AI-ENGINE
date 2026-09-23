@@ -381,10 +381,44 @@ Ao evoluir: Runtime > Execucao > Eventos > WebSocket > City sync > UI polish.
 Nao comecar por mudancas visuais. Provar o ciclo end-to-end primeiro:
 Command -> Mission -> Agent -> Job -> Real Execution -> Event -> City -> Result.
 
-### Rule: Strict Single Frontend Shell Enforcement
-O único arquivo `index.html` permitido em todo o repositório é `grg/public/index.html`.
-Qualquer outro arquivo `index.html` contendo painéis de aplicação (`view-*`), `unified-app.js` ou `fenix-operational-os.js` fora de `grg/public/` é terminantemente proibido.
-O teste `architecture-guard.test.js` escaneia a árvore inteira dinamicamente e falha imediatamente o build se detectar qualquer shell rogue.
-Todo deploy (`deploy.bat`) e execução local consomem exclusivamente `grg/public/`.
-NUNCA criar cópias paralelas de frontend em `scratch/`, raiz ou outros subdiretórios.
+### As 5 Regras de Ouro Anti-Regressão e Governança Universal
 
+As 5 regras abaixo são mandatórias e invioláveis para qualquer desenvolvedor, agente de IA (Antigravity, Claude, Gemini, Cursor, Copilot) ou motor de auto-evolução autônomo (Fênix Self-Evolution Engine):
+
+#### 1. Regra I — Fonte Canônica Única Inviolável (Single Source of Truth)
+- O **ÚNICO** frontend oficial, executável e editável de todo o sistema reside exclusivamente em:
+  `grg/public/index.html` (e módulos complementares em `grg/public/`).
+- **PROIBIDO**: Criar cópias paralelas de `index.html` em `scratch/`, na raiz do projeto, ou em subdiretórios temporários/experimentais.
+- **ISOLAMENTO HISTÓRICO**: Qualquer frontend aposentado ou legado deve obrigatoriamente residir em `archive/retired-frontends/`.
+- **ENFORCEMENT**: O teste `architecture-guard.test.js` e o `Gatekeeper` (`grg/src/governance/gatekeeper.js`) realizam varredura recursiva dinâmica em toda a árvore e bloqueiam qualquer execução ou deploy se detectarem shells paralelas fora do archive.
+
+#### 2. Regra II — Zero-Mock & Honestidade de Telemetria (Veracity Contract)
+- O HTML estático NUNCA deve conter métricas, scores, contagens ou percentuais inventados (ex.: "100%", "4 ATIVOS", "95%").
+- Todo slot inicial de dado dinâmico deve exibir o marcador honesto de ausência (`—`) até ser carregado por API real.
+- Código de backend deve retornar estruturas do contrato `measured(val, source)` ou `unknown(reason)`. É expressamente proibido simular progresso com timeouts artificiais para mascarar ausência de backend real.
+- **ENFORCEMENT**: O teste `frontend-honesty.test.js` valida 19 invariantes e falha se qualquer mock for introduzido.
+
+#### 3. Regra III — NUNCA Recriar, SEMPRE Evoluir (Evolution Over Re-creation)
+- O frontend é Vanilla JS modular de alto desempenho (14 views integradas). NUNCA substituir por frameworks (React, Vue, Next, Svelte) nem criar um novo shell.
+- Preservação estrita de contratos de DOM exigidos por testes (`#orchHeatmapGrid`, `#fenixMemoryErrorNotice`, `#fenixMemoryOperationalContainer`, `.fenix-mem-tab-btn`, `#cityCanvas`).
+- Antes de criar qualquer elemento novo, pesquise o que já existe em `grg/public/` e evolua-o.
+
+#### 4. Regra IV — Prova Obrigatória Antes de Concluir (Prove Before Claiming)
+- Nenhuma tarefa pode ser alegada como concluída sem evidência factual:
+  `CÓDIGO -> SINTAXE (node -c) -> EXECUÇÃO -> TESTES PASSANDO -> DOM VERIFICADO -> ENDPOINTS 200`.
+- Bateria de testes obrigatória antes de qualquer entrega ou deploy:
+  1. `node grg/test/architecture-guard.test.js` (5/5 verificações)
+  2. `node grg/test/frontend-honesty.test.js` (19/19 testes)
+  3. `node grg/test/frontend-runtime-safety.test.js` (5/5 testes)
+  4. `node grg/test/e2e-smoke.test.js` (1/1 teste full E2E)
+- Se a interface visual sofrer degradação (elementos sobrepostos, desalinhamento, quebra de hierarquia), a tarefa NÃO é considerada concluída.
+
+#### 5. Regra V — Deploy Canônico e Paridade Dual de Webroot
+- O deploy remoto na VPS (`root@209.50.241.22`) é realizado estritamente pelo script `deploy.bat`.
+- Paridade dual de 100% obrigatória entre `/opt/fenix-os/public/` e `/opt/fenix-os/grg/public/`.
+- Após o deploy, validar PM2 #16 (`fenix-backend`) e PM2 #17 (`fenix-frontend`) como `online` e HTTP 200 nas portas 4410 e 3000.
+
+---
+
+### Governança da Auto-Evolução do Fênix OS
+Qualquer missão ou ciclo autônomo gerado pelo próprio Fênix OS (`AutonomousEvolutionKernel`, `MissionRegistry`, `QualityGate`) está submetido aos mesmos invariantes. Qualquer tentativa de criar frontend paralelo ou injetar mocks resultará em falha imediata da missão (`mission.failedValidation = true`).
