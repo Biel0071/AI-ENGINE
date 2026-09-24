@@ -47,11 +47,17 @@
     state.projectId = id; state.path = null; state.hash = null;
     localStorage.setItem('fenix_ide_project', id);
     const project = state.projects.find((item) => item.id === id);
-    document.getElementById('fenixIdeProjectMeta').textContent = project ? `${project.workspace} · ${project.branch || 'branch detectada pelo Git'}` : '';
+    document.getElementById('fenixIdeProjectMeta').textContent = project ? `${project.workspace} · consultando Git…` : '';
     document.getElementById('fenixIdeLivePath').textContent = 'Selecione um arquivo';
     document.getElementById('fenixIdeLiveCode').value = '';
     document.getElementById('fenixIdeLiveSave').disabled = true;
-    await loadTree();
+    const [gitState] = await Promise.all([
+      json(endpoint('/git')).catch(() => null),
+      loadTree(),
+    ]);
+    document.getElementById('fenixIdeProjectMeta').textContent = project
+      ? `${project.workspace} · ${gitState?.branch || 'branch indisponível'} · ${gitState?.head ? gitState.head.slice(0, 12) : 'versão indisponível'}`
+      : '';
   }
   function appendNodes(parent, nodes) {
     for (const item of nodes) {
