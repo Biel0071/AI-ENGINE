@@ -721,7 +721,7 @@ async function runChat(message) {
   // missão; tarefas complexas recebem proposta e aguardam autorização.
   let classification = { category: 'CONVERSATION', requiresConfirmation: false };
   try {
-    const classified = await api('/chat/intent', { method: 'POST', body: JSON.stringify({ message: value }) });
+    const classified = await api('/chat/intent', { method: 'POST', body: JSON.stringify({ message: value }), signal: AbortSignal.timeout(6000) });
     classification = classified.classification || classification;
   } catch (_) { /* o chat continua disponível se o classificador estiver indisponível */ }
   const pendingRaw = localStorage.getItem('fenix_pending_mission');
@@ -804,12 +804,13 @@ async function runChat(message) {
     const mediaInfo = media ? `\n[Mídia anexada: ${media.name} (${media.type || 'arquivo'}, ${media.size} bytes)]` : '';
     const selectedModel = $('composerModel')?.value || '';
     const modelToUse = selectedModel || null;
-    const history = chatHistory().slice(-10, -1);
     let res;
     let lastError;
-    for (attempt = 1; attempt <= 3; attempt += 1) {
+    // A job submission has no idempotency key. Retrying after a lost SSE
+    // response could enqueue the same task more than once.
+    for (attempt = 1; attempt <= 1; attempt += 1) {
       try {
-        pending.textContent = `Pensando… · tentativa ${attempt}/3 · ${modelToUse} · ${isLongTask ? 'tarefa será planejada' : 'resposta rápida'}`;
+        pending.textContent = `Enviando à API Platform… · ${modelToUse || 'modelo automático'}`;
         res = await streamChat(executionValue + mediaInfo, { model: modelToUse, onEvent: (event, data) => {
           if (event === 'ready') pending.textContent = `Conectado · ${data.provider || 'provider'} · ${data.model || modelToUse}`;
           if (event === 'context') pending.textContent = `Contexto carregado · ${data.turnsIncluded || 0} turnos · memória ${data.usedMemories || 0}`;
@@ -818,12 +819,6 @@ async function runChat(message) {
         break;
       } catch (error) {
         lastError = error;
-        if (attempt === 3) {
-          pending.textContent = 'Fallback API… mantendo contexto local';
-          res = await api('/v2/ai-platform/chat', { method: 'POST', body: JSON.stringify({ message: executionValue + mediaInfo, model: modelToUse, history: chatHistory().slice(-12) }) });
-          break;
-        }
-        pending.textContent = `Reconectando… falha na tentativa ${attempt}/3`; await new Promise(resolve => setTimeout(resolve, 700 * attempt));
       }
     }
     if (!res) throw lastError || new Error('API não retornou resposta');

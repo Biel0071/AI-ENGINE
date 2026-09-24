@@ -195,9 +195,9 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
           headers: { authorization: `Bearer ${platformKey}`, 'content-type': 'application/json' },
           body: JSON.stringify({
             prompt: prompt.messages.map((item) => `${item.role}: ${item.content}`).join('\n\n'),
-            model: body.model || undefined,
+            model: body.model || process.env.FENIX_FAST_MODEL || 'qwen2.5:0.5b',
             temperature: Number.isFinite(body.temperature) ? body.temperature : 0.3,
-            maxTokens: 256,
+            maxTokens: 48,
             // The VPS model is slower than the browser timeout. Keep chat responsive
             // and let the platform worker select capacity/provider for the job.
             execution: 'async',
