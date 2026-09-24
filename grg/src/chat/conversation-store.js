@@ -117,7 +117,7 @@ class ConversationStore {
   // Monta o prompt real enviado ao modelo: system + resumo (se houver) + contexto relevante
   // recuperado + as ultimas N trocas. Devolve tambem o que foi usado, para o painel poder
   // mostrar de onde veio o contexto em vez de o usuario ter que confiar.
-  async buildPrompt(tenantId, actorId, conversationId, userText, { system = null } = {}) {
+  async buildPrompt(tenantId, actorId, conversationId, userText, { system = null, skipMemory = false } = {}) {
     const [state, turns] = await Promise.all([
       this.store.read(),
       this.history(tenantId, conversationId, { limit: SUMMARY_TRIGGER_TURNS * 2 }),
@@ -129,7 +129,7 @@ class ConversationStore {
     // duplicar essa combinacao aqui daria pontuacao diferente do resto do sistema.
     const recentContents = new Set(turns.slice(-MAX_TURNS_IN_PROMPT).map((t) => t.content));
     let relevant = [];
-    if (this.memory && userText) {
+    if (this.memory && userText && !skipMemory) {
       try {
         const found = await this.memory.query(tenantId, actorId, String(userText), { kind: 'episodic', tags: ['chat'], limit: RELEVANT_MEMORY_LIMIT * 3 });
         relevant = (found?.results || [])

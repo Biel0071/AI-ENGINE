@@ -21,7 +21,6 @@ const { resolveAIProviderKey, resolveAIPlatformUrl } = require('../security/secr
 // O botao "interromper" do cliente e um POST separado -- sem este registro ele so pararia a UI
 // enquanto o servidor seguiria gerando (gastando CPU do Ollama ate o fim).
 const liveStreams = new Map();
-const platformJobs = new Map();
 
 function sseOpen(res) {
   res.writeHead(200, {
@@ -68,7 +67,8 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
   // Keep the platform key on the server. The browser only receives job IDs and results.
   if (req.method === 'GET' && /^\/api\/chat\/jobs\/[^/]+$/.test(url.pathname)) {
     const id = decodeURIComponent(url.pathname.split('/')[4]);
-    const owner = platformJobs.get(id);
+    const state = await app.store.read();
+    const owner = (state.platformChatJobs || []).find((job) => job.id === id);
     if (!owner || owner.tenantId !== tenantId || owner.actorId !== actorId) {
       sendJson(res, 404, { error: 'job not found' }, requestId); return true;
     }
@@ -171,6 +171,7 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     try {
       prompt = await conversations.buildPrompt(tenantId, actorId, conversation.id, message, {
         system: body.system || 'Voce e o FENIX, o sistema operacional cognitivo do dono. Responda em portugues, direto e curto. Nunca invente numeros nem afirme que algo esta feito sem prova.',
+        skipMemory: Boolean(resolveAIProviderKey()),
       });
       sseSend(res, 'context', {
         turnsIncluded: prompt.turnsIncluded,
@@ -208,7 +209,12 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
         if (upstream.status === 202) {
           const jobId = result.jobId;
           if (!jobId) throw new Error('API Platform accepted work without a job ID');
-          platformJobs.set(jobId, { tenantId, actorId });
+          await app.store.update((state) => {
+            state.platformChatJobs = state.platformChatJobs || [];
+            state.platformChatJobs.push({ id: jobId, tenantId, actorId, conversationId: conversation.id, createdAt: new Date().toISOString() });
+            state.platformChatJobs = state.platformChatJobs.slice(-500);
+            return state;
+          });
           const queuedText = `Tarefa enviada à API Platform. Job ${jobId} em ${result.status || 'waiting'}.`;
           const saved = await conversations.append(tenantId, actorId, conversation.id, {
             role: 'assistant', content: queuedText, source, model: null,
