@@ -172,6 +172,7 @@ function normalizeGitUrl(value) {
   let parsed;
   try { parsed = new URL(url); } catch { throw new Error('repository url must be a valid HTTPS URL'); }
   if (parsed.protocol !== 'https:') throw new Error('repository url must use https');
+  if (parsed.username || parsed.password) throw new Error('repository URL must not contain credentials');
   if (!/^(github\.com|gitlab\.com|bitbucket\.org)$/i.test(parsed.hostname)) throw new Error('only GitHub, GitLab and Bitbucket HTTPS repositories are allowed');
   parsed.hash = '';
   parsed.search = '';

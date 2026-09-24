@@ -68,6 +68,25 @@ function sshEnvironment(tenantId, projectId) {
 }
 
 async function handleProjectGitRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId }) {
+  if (url.pathname === '/api/fenix/projects/clone' && req.method === 'POST') {
+    await app.controlPlane.authorize(tenantId, actorId, 'project:write');
+    const body = await readJson(req);
+    const repository = String(body?.repository || '').trim();
+    const name = String(body?.name || '').trim();
+    if (!repository || !name || name.length > 100) { sendJson(res, 400, { error: 'Informe URL HTTPS e nome do projeto' }); return true; }
+    if (!app.fileSystemService) { sendJson(res, 503, { error: 'Serviço de workspace indisponível' }); return true; }
+    try {
+      const cloned = await app.fileSystemService.cloneRepository({ url: repository, directory: `github/${crypto.randomUUID()}`, branch: body.branch || null });
+      const branch = await git(cloned.path, ['branch', '--show-current']);
+      const head = await git(cloned.path, ['rev-parse', 'HEAD']);
+      const project = await app.projectKernel.create(tenantId, actorId, { name, repository: cloned.url, workspace: cloned.path, branch, baseCommit: head, currentCommit: head });
+      await app.audit.record({ tenantId, actorId, action: 'project.git.cloned', resource: { projectId: project.id, repository: cloned.url, head } });
+      sendJson(res, 201, { project });
+    } catch (error) {
+      sendJson(res, 400, { error: safeRemote(String(error.stderr || error.message || 'Falha ao clonar repositório')).slice(0, 300) });
+    }
+    return true;
+  }
   const match = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/git(?:\/(diff|commit|push|connection|verify|deploy))?$/);
   if (!match) return false;
   const [, projectId, action] = match;

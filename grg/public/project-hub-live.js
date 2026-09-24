@@ -23,11 +23,21 @@
     view.innerHTML = `<section class="fenix-live-projects">
       <header class="flp-header"><div><span class="flp-eyebrow">PROJECT KERNEL · CATÁLOGO AUTENTICADO</span><h1>Projetos em evolução</h1><p>Workspaces, jobs e artefatos medidos no runtime do Fênix.</p></div><button type="button" id="flpRefresh" class="flp-button flp-button-soft">↻ Atualizar</button></header>
       <div class="flp-status-row"><span id="flpMeasured" role="status">Carregando projetos…</span><span id="flpSource">Fonte: Project Kernel / JobEngine</span></div>
+      <form id="flpClone" class="flp-clone"><label>Adicionar projeto GitHub <input name="name" required maxlength="100" placeholder="Nome do projeto"></label><label>URL HTTPS <input name="repository" required type="url" placeholder="https://github.com/usuario/repositorio.git"></label><button type="submit" class="flp-button flp-button-primary">Clonar e registrar</button><span id="flpCloneStatus" role="status"></span></form>
       <div class="flp-metrics"><div><span>Projetos registrados</span><strong id="flpTotal">—</strong></div><div><span>Workspaces vinculados</span><strong id="flpWorkspaces">—</strong></div><div><span>Jobs em execução</span><strong id="flpRunning">—</strong></div><div><span>Jobs com falha</span><strong id="flpFailed">—</strong></div></div>
       <div class="flp-body"><aside class="flp-sidebar"><label for="flpSearch">Encontrar projeto</label><input id="flpSearch" type="search" placeholder="Nome, ID ou workspace" autocomplete="off"><div id="flpCards" class="flp-cards"></div></aside><main id="flpDetail" class="flp-detail" aria-live="polite"></main></div>
     </section>`;
     $('flpRefresh').addEventListener('click', () => load(true));
     $('flpSearch').addEventListener('input', (event) => { state.query = event.target.value.trim().toLowerCase(); renderCards(); });
+    $('flpClone').addEventListener('submit', async (event) => {
+      event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button'); const status = $('flpCloneStatus');
+      const fields = Object.fromEntries(new FormData(form)); button.disabled = true; status.textContent = 'Clonando repositório…';
+      try {
+        const result = await json('/api/fenix/projects/clone', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields), signal: AbortSignal.timeout(200000) });
+        await load(true); selectProject(result.project.id); form.reset(); status.textContent = `Projeto ${result.project.name} registrado.`;
+      } catch (error) { status.textContent = error.message; }
+      finally { button.disabled = false; }
+    });
   }
   function renderMetrics() {
     const details = [...state.details.values()];

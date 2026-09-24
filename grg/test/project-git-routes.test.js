@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { handleProjectGitRoutes } = require('../src/api/project-git-routes');
+const { FileSystemService } = require('../src/storage/file-system-service');
 
 test('Project Kernel Git shows changes, commits selected files and pushes the branch', async (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'fenix-project-git-'));
@@ -69,4 +70,11 @@ test('Project Kernel Git shows changes, commits selected files and pushes the br
     if (previousKeyDir === undefined) delete process.env.FENIX_GIT_KEYS_DIR;
     else process.env.FENIX_GIT_KEYS_DIR = previousKeyDir;
   }
+  app.fileSystemService = { cloneRepository: async () => ({ path: repo, url: 'https://github.com/example/fenix-test.git' }) };
+  app.projectKernel.create = async (_tenant, _actor, input) => ({ id: 'cloned', ...input });
+  const cloned = await call('POST', '/api/fenix/projects/clone', { name: 'Cloned project', repository: 'https://github.com/example/fenix-test.git' });
+  assert.equal(cloned.status, 201);
+  assert.equal(cloned.data.project.workspace, repo);
+  const service = new FileSystemService(temp);
+  await assert.rejects(() => service.cloneRepository({ url: 'https://user:secret@github.com/example/fenix-test.git' }), /must not contain credentials/);
 });

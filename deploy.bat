@@ -184,11 +184,15 @@ exit /b %ERRORLEVEL%
 echo Deploying Project Kernel Git routes and UI...
 ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/server.js /opt/fenix-os/grg/src/server.js.before-project-git-20260924"
 if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/storage/file-system-service.js /opt/fenix-os/grg/src/storage/file-system-service.js.before-clone-guard-20260924"
+if errorlevel 1 exit /b 1
 scp -i %KEY% grg/src/api/project-git-routes.js %HOST%:/opt/fenix-os/grg/src/api/project-git-routes.js
 if errorlevel 1 exit /b 1
 scp -i %KEY% grg/src/projects/project-deploy.js %HOST%:/opt/fenix-os/grg/src/projects/project-deploy.js
 if errorlevel 1 exit /b 1
 scp -i %KEY% grg/deploy-project-git-patch.js %HOST%:/tmp/fenix-project-git-patch.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/patch-clone-credentials.js %HOST%:/tmp/fenix-clone-credentials-patch.js
 if errorlevel 1 exit /b 1
 for %%F in (project-hub-live.js project-hub-live.css) do (
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
@@ -196,7 +200,7 @@ for %%F in (project-hub-live.js project-hub-live.css) do (
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
   if errorlevel 1 exit /b 1
 )
-ssh -i %KEY% %HOST% "node /tmp/fenix-project-git-patch.js /opt/fenix-os/grg/src/server.js && node --check /opt/fenix-os/grg/src/server.js && node --check /opt/fenix-os/grg/src/api/project-git-routes.js && node --check /opt/fenix-os/grg/src/projects/project-deploy.js && pm2 reload 16 && pm2 reload 17 && (for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+ssh -i %KEY% %HOST% "node /tmp/fenix-project-git-patch.js /opt/fenix-os/grg/src/server.js && node /tmp/fenix-clone-credentials-patch.js /opt/fenix-os/grg/src/storage/file-system-service.js && node --check /opt/fenix-os/grg/src/server.js && node --check /opt/fenix-os/grg/src/api/project-git-routes.js && node --check /opt/fenix-os/grg/src/projects/project-deploy.js && pm2 reload 16 && pm2 reload 17 && (for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
 exit /b %ERRORLEVEL%
 
 :API_SECRET_DEPLOY
