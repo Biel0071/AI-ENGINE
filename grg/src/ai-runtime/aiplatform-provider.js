@@ -318,7 +318,7 @@ class AIPlatformProvider {
     try {
       bruto = await request(this.baseUrl, '/v1/text', this.#apiKey, { prompt, ...(model ? { model } : {}) }, 1_500, 1);
     } catch (error) {
-      bruto = await request(this.baseUrl, '/v1/chat', this.#apiKey, { messages: [{ role: 'user', content: prompt }], ...(model ? { model } : {}) });
+      bruto = await request(this.baseUrl, '/v1/chat', this.#apiKey, { messages: [{ role: 'user', content: prompt }], ...(model ? { model } : {}) }, this.requestTimeoutMs, this.requestMaxRetries);
     }
     const { text: doJob, job } = await this.#resolve(bruto);
     const res = job ? (job.result || {}) : bruto;

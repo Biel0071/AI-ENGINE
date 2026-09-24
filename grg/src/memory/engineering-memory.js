@@ -15,6 +15,28 @@ class EngineeringMemory {
   }
   async search(tenantId, actorId, query = {}) { await this.cp.authorize(tenantId, actorId, 'runtime:read'); const text = String(query.q || query.intent || '').toLowerCase(); const terms = text.split(/[^a-z0-9]+/).filter((term) => term.length > 2); const state = await this.store.read(); return state.engineeringMemories.filter((item) => item.tenantId === tenantId && !['INVALIDATED', 'DEPRECATED'].includes(item.status)).map((item) => ({ item, score: terms.reduce((score, term) => score + (JSON.stringify(item).toLowerCase().includes(term) ? 1 : 0), 0) })).filter((entry) => !terms.length || entry.score > 0).sort((a, b) => b.score - a.score || b.item.confidence - a.item.confidence).slice(0, Math.min(50, Number(query.limit || 10))).map((entry) => ({ ...entry.item, relevance: entry.score })); }
   async get(tenantId, actorId, memoryId) { await this.cp.authorize(tenantId, actorId, 'runtime:read'); const state = await this.store.read(); const item = state.engineeringMemories.find((entry) => entry.tenantId === tenantId && entry.id === memoryId); if (!item) throw new Error('memory not found'); return item; }
+  async reuse(tenantId, actorId, memoryId, metadata = {}) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:execute');
+    let found;
+    const event = { id: uuid(), tenantId, memoryId, type: 'reuse', metadata, createdAt: new Date().toISOString() };
+    await this.store.update((state) => {
+      found = state.engineeringMemories.find((item) => item.tenantId === tenantId && item.id === memoryId && !['INVALIDATED', 'DEPRECATED'].includes(item.status));
+      if (!found) throw new Error('active engineering memory not found');
+      found.usageCount = (found.usageCount || 0) + 1;
+      (state.memoryReuseEvents ||= []).push(event);
+      return state;
+    });
+    return { memory: found, event };
+  }
+  async metrics(tenantId, actorId) {
+    await this.cp.authorize(tenantId, actorId, 'runtime:read');
+    const state = await this.store.read();
+    const memories = state.engineeringMemories.filter((item) => item.tenantId === tenantId && !['INVALIDATED', 'DEPRECATED'].includes(item.status));
+    const events = (state.memoryReuseEvents || []).filter((item) => item.tenantId === tenantId && item.type === 'reuse');
+    const validated = memories.filter((item) => ['VALIDATED', 'PROVEN'].includes(item.status));
+    const score = validated.length ? Math.round(Math.min(1, validated.reduce((sum, item) => sum + (item.usageCount > 0 ? 1 : 0), 0) / validated.length) * 100) : 0;
+    return { memories: memories.length, validated: validated.length, reuseEvents: events.length, reusedMemories: validated.filter((item) => item.usageCount > 0).length, reuseScore: score, reuseRate: validated.length ? events.length / validated.length : 0 };
+  }
   async invalidate(tenantId, actorId, memoryId, reason = null) { await this.cp.authorize(tenantId, actorId, 'runtime:admin'); let found; await this.store.update((state) => { found = state.engineeringMemories.find((item) => item.tenantId === tenantId && item.id === memoryId); if (!found) throw new Error('memory not found'); found.status = 'INVALIDATED'; found.confidence = 0; found.invalidatedAt = new Date().toISOString(); found.invalidationReason = reason || 'manual invalidation'; return state; }); return found; }
   async feedback(tenantId, actorId, memoryId, success, metadata = {}) { await this.cp.authorize(tenantId, actorId, 'runtime:execute'); let found; const event = { id: uuid(), tenantId, memoryId, success: Boolean(success), metadata, createdAt: new Date().toISOString() }; await this.store.update((state) => { found = state.engineeringMemories.find((item) => item.tenantId === tenantId && item.id === memoryId); if (!found) throw new Error('memory not found'); found.usageCount += 1; if (success) { found.successCount += 1; found.confidence = Math.min(1, found.confidence + 0.03); } else { found.failureCount += 1; found.confidence = Math.max(0, found.confidence - 0.1); if (found.failureCount >= 3 && found.confidence < 0.2) found.status = 'INVALIDATED'; } (state.memoryReuseEvents ||= []).push(event); return state; }); return { memory: found, event }; }
 }

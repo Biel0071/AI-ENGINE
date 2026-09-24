@@ -680,7 +680,7 @@
 /* Consolidated operational views. Extends the existing controller and API contracts. */
 (function () {
   'use strict';
-  const labels = { flowgraph:'Flow Graph', command:'Início', city:'AI City', agents:'Agentes', operations:'Tarefas e Missões', ide:'IDE', projects:'Projetos', terminal:'Terminal e Desenvolvimento', memory:'Memória', knowledge:'Conhecimento e Skills', mcp:'Provedores e MCP', runtime:'Runtime', observability:'Observabilidade', project:'Project Mirror', browser:'QA Visual' };
+  const labels = { flowgraph:'Flow Graph', command:'Command Center', city:'AI City', agents:'Agentes', operations:'Tarefas e Missões', ide:'IDE', projects:'Projetos', terminal:'Terminal e Desenvolvimento', memory:'Memória', knowledge:'Conhecimento e Skills', mcp:'Provedores e MCP', marketplace:'Marketplace', runtime:'Runtime', observability:'Observabilidade', project:'Project Mirror', browser:'QA Visual' };
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const byId = id => document.getElementById(id);
   const resources = window.__FENIX_STATE__.resources = {};

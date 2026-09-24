@@ -35,7 +35,7 @@ class MissionKernel {
   async create(tenantId, actorId, input) {
     await this.cp.authorize(tenantId, actorId, 'runtime:execute');
     if (input?.scopeId && this.hierarchy) await this.hierarchy.authorizeScope(tenantId, actorId, input.scopeId, 'write');
-    const title = String(input?.title || '').trim(); const objective = String(input?.objective || '').trim();
+    const title = String(input?.title || input?.name || '').trim(); const objective = String(input?.objective || input?.description || '').trim();
     if (!title || !objective) throw new ValidationError('mission title and objective are required');
     if (title.length > 200 || objective.length > 4_000) throw new ValidationError('mission title or objective is too large');
     const normalized = normalizeSteps(input.steps, this.jobs); validateDag(normalized);
@@ -50,14 +50,14 @@ class MissionKernel {
 
   async start(tenantId, actorId, missionId) {
     await this.cp.authorize(tenantId, actorId, 'runtime:execute'); const mission = await this.#mission(tenantId, missionId); await this.#authorizeScope(tenantId, actorId, mission, 'write');
+    if (mission.status === 'RUNNING' || TERMINAL.has(mission.status)) return this.get(tenantId, actorId, missionId);
     if (!['PLANNED', 'PAUSED', 'AWAITING_APPROVAL'].includes(mission.status)) throw new ValidationError(`mission cannot start from ${mission.status}`);
     if (mission.status === 'PAUSED') {
       const state = await this.store.read();
       const steps = state.missionSteps.filter((step) => step.tenantId === tenantId && step.missionId === missionId && step.jobId && !TERMINAL.has(step.status));
       const jobs = await Promise.all(steps.map((step) => this.jobs.getInternal(tenantId, step.jobId)));
-      if (jobs.some((job) => job.status === 'PAUSING')) throw new ValidationError('mission is waiting for jobs to reach a safe pause boundary');
       for (const job of jobs) {
-        if (job.status === 'PAUSED') await this.jobs.resume(tenantId, actorId, job.id);
+        if (job.status === 'PAUSED' || job.status === 'PAUSING') await this.jobs.resume(tenantId, actorId, job.id);
       }
     }
     await this.store.update((state) => { const current = state.missions.find((item) => item.id === missionId); current.status = 'RUNNING'; current.startedAt ||= now(); current.updatedAt = now(); return state; });
@@ -88,7 +88,7 @@ class MissionKernel {
       // reserva órfã. Só recuperamos reservas sem job e antigas o suficiente
       // para não competir com um submit ainda em andamento.
       for (const step of steps.filter((item) => item.status === 'DISPATCHING' && !item.jobId)) {
-        if (Date.now() - Date.parse(step.updatedAt || step.createdAt || now()) < 30_000) continue;
+        if (Date.now() - Date.parse(step.updatedAt || step.createdAt || now()) < 5000) continue;
         await this.store.update((next) => {
           const current = next.missionSteps.find((item) => item.id === step.id && item.status === 'DISPATCHING' && !item.jobId);
           if (current) { current.status = 'PLANNED'; current.updatedAt = now(); }
@@ -155,7 +155,8 @@ class MissionKernel {
     await this.cp.authorize(tenantId, actorId, 'runtime:execute');
     const mission = await this.#mission(tenantId, missionId);
     await this.#authorizeScope(tenantId, actorId, mission, 'write');
-    if (!['RUNNING', 'AWAITING_APPROVAL'].includes(mission.status)) throw new ValidationError(`mission cannot pause from ${mission.status}`);
+    if (mission.status === 'PAUSED' || TERMINAL.has(mission.status)) return this.get(tenantId, actorId, missionId);
+    if (!['RUNNING', 'AWAITING_APPROVAL', 'PLANNED'].includes(mission.status)) throw new ValidationError(`mission cannot pause from ${mission.status}`);
     const state = await this.store.read();
     const activeSteps = state.missionSteps.filter((item) => item.tenantId === tenantId && item.missionId === missionId && item.jobId && !TERMINAL.has(item.status));
     for (const step of activeSteps) {
@@ -240,7 +241,16 @@ class MissionKernel {
       throw error;
     }
     await this.store.update((state) => { const current = state.missionSteps.find((item) => item.id === step.id && item.status === 'DISPATCHING'); if (current) { current.status = 'DISPATCHED'; current.jobId = job.id; current.dispatchedAt = now(); current.updatedAt = now(); } return state; });
-    await this.#event(mission, 'mission.step.dispatched', step, { status: 'DISPATCHED', jobId: job.id, jobType: step.jobType, payloadHash: step.payloadHash, contextRefs: step.contextRefs.map((item) => item.ref) }, mission.requestedBy); return job;
+    await this.#event(mission, 'mission.step.dispatched', step, { status: 'DISPATCHED', jobId: job.id, jobType: step.jobType, payloadHash: step.payloadHash, contextRefs: step.contextRefs.map((item) => item.ref) }, mission.requestedBy);
+    const latestJob = await this.jobs.getInternal(mission.tenantId, job.id).catch(() => null);
+    if (latestJob && ['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED'].includes(latestJob.status)) {
+      await this.projectJobEvent({
+        tenantId: mission.tenantId,
+        type: latestJob.status === 'SUCCEEDED' ? 'runtime.job.succeeded' : latestJob.status === 'CANCELLED' ? 'runtime.job.cancelled' : 'runtime.job.failed',
+        data: { jobId: job.id }
+      });
+    }
+    return job;
   }
 
   async #finalize(tenantId, missionId) {
@@ -272,7 +282,7 @@ class MissionKernel {
   async #event(mission, type, step, data, actorId) { assertNoSecrets(data); const record = { id: uuid(), tenantId: mission.tenantId, missionId: mission.id, stepId: step?.id || null, stepKey: step?.key || null, agent: step?.agent || 'mission-kernel', type, status: data.status || null, contextRefs: data.contextRefs || [], confidence: data.confidence ?? null, metrics: data.metrics || null, payloadHash: hash(data), actorId, createdAt: now() }; await this.store.update((state) => { state.missionEvents.push(record); return state; }); if (this.events) await this.events.publish({ tenantId: mission.tenantId, stream: `mission:${mission.id}`, type, source: 'fenix-mission-kernel', subject: step?.id || mission.id, data: { actorId, missionId: mission.id, stepId: step?.id || null, stepKey: step?.key || null, agent: record.agent, status: record.status, contextRefs: record.contextRefs, confidence: record.confidence, metrics: record.metrics, payloadHash: record.payloadHash, city: { district: 'missions', building: step?.building || 'mission-control' } }, idempotencyKey: `${type}:${record.id}` }); return record; }
 }
 
-function normalizeSteps(input, jobs) { if (!Array.isArray(input) || !input.length || input.length > 50) throw new ValidationError('mission requires between 1 and 50 steps'); const keys = new Set(); return input.map((step) => { const key = String(step?.key || '').trim(); if (!/^[a-z][a-z0-9._-]{1,79}$/.test(key) || keys.has(key)) throw new ValidationError(`invalid or duplicate mission step key: ${key}`); if (step.jobType || step.agent) throw new ValidationError('mission jobType and agent are assigned only by the governed catalog'); keys.add(key); const definition = MISSION_STEP_CATALOG[step.type]; if (!definition) throw new ValidationError(`mission step type is not governed: ${step.type}`); if (!jobs.handlers.has(definition.jobType)) throw new ValidationError(`mission job handler is unavailable: ${definition.jobType}`); const payload = step.payload || {}; if (Buffer.byteLength(JSON.stringify(payload)) > 100_000) throw new ValidationError('mission step payload is too large'); assertNoSecrets(payload); const validation = step.validation || {}; assertNoSecrets(validation); if (definition.level === 'YELLOW' && !(validation.testsPassed === true && validation.risk === 'low' && validation.impactKnown === true)) throw new ValidationError(`yellow mission step ${key} requires passing tests, low risk and known impact`); return { key, type: step.type, definition, dependsOn: [...new Set((step.dependsOn || []).map(String))], payload, validation, contextRefs: normalizeRefs(step.contextRefs || []) }; }); }
+function normalizeSteps(input, jobs) { if (!Array.isArray(input) || !input.length || input.length > 50) throw new ValidationError('mission requires between 1 and 50 steps'); const generatedKeys = input.map((step, idx) => String(step?.key || (step?.type ? `${step.type}_${idx + 1}` : `step_${idx + 1}`)).trim()); const keys = new Set(); return input.map((step, index) => { const key = generatedKeys[index]; if (!/^[a-z][a-z0-9._-]{1,79}$/.test(key) || keys.has(key)) throw new ValidationError(`invalid or duplicate mission step key: ${key}`); if (step.jobType || step.agent) throw new ValidationError('mission jobType and agent are assigned only by the governed catalog'); keys.add(key); const definition = MISSION_STEP_CATALOG[step.type]; if (!definition) throw new ValidationError(`mission step type is not governed: ${step.type}`); if (!jobs.handlers.has(definition.jobType)) throw new ValidationError(`mission job handler is unavailable: ${definition.jobType}`); const payload = step.payload || {}; if (Buffer.byteLength(JSON.stringify(payload)) > 100_000) throw new ValidationError('mission step payload is too large'); assertNoSecrets(payload); const validation = step.validation || {}; assertNoSecrets(validation); if (definition.level === 'YELLOW' && !(validation.testsPassed === true && validation.risk === 'low' && validation.impactKnown === true)) throw new ValidationError(`yellow mission step ${key} requires passing tests, low risk and known impact`); const dependsOn = [...new Set((step.dependsOn || []).map((dep) => typeof dep === 'number' && generatedKeys[dep] ? generatedKeys[dep] : String(dep)))]; return { key, type: step.type, definition, dependsOn, payload, validation, contextRefs: normalizeRefs(step.contextRefs || []) }; }); }
 function validateDag(steps) { const keys = new Set(steps.map((item) => item.key)); for (const step of steps) for (const dependency of step.dependsOn) if (!keys.has(dependency) || dependency === step.key) throw new ValidationError(`invalid dependency ${dependency} for ${step.key}`); const visiting = new Set(); const visited = new Set(); const byKey = new Map(steps.map((item) => [item.key, item])); const visit = (key) => { if (visiting.has(key)) throw new ValidationError('mission steps must form an acyclic graph'); if (visited.has(key)) return; visiting.add(key); for (const dependency of byKey.get(key).dependsOn) visit(dependency); visiting.delete(key); visited.add(key); }; for (const step of steps) visit(step.key); }
 function normalizeRefs(input) { if (!Array.isArray(input) || input.length > 100) throw new ValidationError('contextRefs must be an array with at most 100 items'); return input.map((item) => { const type = String(item?.type || '').toUpperCase(); const ref = String(item?.ref || '').trim(); if (!['KG', 'MEMORY', 'TWIN', 'ARTIFACT', 'EVENT', 'HASH'].includes(type) || !/^[A-Za-z0-9:._/@-]{3,256}$/.test(ref)) throw new ValidationError('invalid structured context reference'); return { type, ref, hash: item.hash ? String(item.hash).slice(0, 128) : null }; }); }
 function approvalResource(mission, step) { return { missionId: mission.id, stepId: step.id, stepType: step.type, jobType: step.jobType, payloadHash: step.payloadHash }; }

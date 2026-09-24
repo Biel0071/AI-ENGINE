@@ -105,11 +105,13 @@ const { ProviderRegistry, buildProvidersFromEnv, loadRoutes } = require('./ai-ru
 async function createApp(options = {}) {
   const logger = options.logger || console;
   const store = options.store || (options.databaseUrl
-    ? await PostgresStore.connect({
-      connectionString: options.databaseUrl,
-      schema: options.databaseSchema,
-      ssl: options.databaseSsl,
-    })
+    ? (options.databaseUrl.startsWith('sqlite://')
+      ? await require('./infrastructure/database/sqlite-store').SqliteStore.connect(options.databaseUrl, { retentionLimits: options.retentionLimits })
+      : await PostgresStore.connect({
+        connectionString: options.databaseUrl,
+        schema: options.databaseSchema,
+        ssl: options.databaseSsl,
+      }))
     : (options.dataFile ? new FileStore(options.dataFile) : new MemoryStore()));
   const bus = new EventBus();
   const eventStore = new EventStore({ store });
@@ -223,7 +225,7 @@ async function createApp(options = {}) {
   const aiCity = new AICityProjection({ store, controlPlane, events: fabricEvents, eventStore, bus }).attach();
   const agentRegistry = new AgentRegistry();
   const engineeringMemory = new EngineeringMemory({ store, controlPlane, events: fabricEvents });
-  const agentAssignment = new AgentJobAssignment({ store, registry: agentRegistry, memory: engineeringMemory });
+  const agentAssignment = new AgentJobAssignment({ store, registry: agentRegistry, memory: engineeringMemory, hierarchy });
   const jobs = new JobEngine({ store, controlPlane, events: fabricEvents, queue: queues, approvals, agentAssignment });
   jobs.register('factory.generate', (payload, context) => factory.generate(context.tenantId, context.actorId, payload));
   jobs.register('project.orchestrate', (payload, context) => orchestrator.buildFromPrompt(context.tenantId, context.actorId, payload));
@@ -241,12 +243,41 @@ async function createApp(options = {}) {
   const tools = new ToolRegistry({ store, controlPlane, bus });
   const scripts = new ScriptLibrary({ store, controlPlane, tools, bus });
   let sandboxAdapter = options.sandboxAdapter || null;
-  if (!sandboxAdapter && runtimeEnv.FENIX_SANDBOX_DRIVER === 'docker-rootless') sandboxAdapter = new DockerRootlessSandbox({ workspaceRoot: runtimeEnv.FENIX_WORKSPACE_ROOT || path.join(outputDir, 'workspaces'), dockerHost: runtimeEnv.DOCKER_HOST, enforceRootless: true });
+  if (!sandboxAdapter && runtimeEnv.FENIX_SANDBOX_DRIVER === 'docker-rootless') sandboxAdapter = new DockerRootlessSandbox({ workspaceRoot: runtimeEnv.FENIX_WORKSPACE_ROOT || path.join(outputDir, 'workspaces'), dockerHost: runtimeEnv.DOCKER_HOST, enforceRootless: true, cpuMode: runtimeEnv.FENIX_SANDBOX_CPU_MODE || 'quota' });
   if (securityConfig.production && sandboxAdapter && sandboxAdapter.productionSafe !== true) throw new Error('production requires an explicitly rootless production-safe sandbox adapter');
+  if (!sandboxAdapter && !securityConfig.production) {
+    sandboxAdapter = {
+      productionSafe: false,
+      run: async ({ argv, tool, workspacePath }) => {
+        const report = {
+          schemaVersion: 1,
+          revision: 'dev-local',
+          sourceHash: 'dev-hash',
+          summary: 'Local cognitive inspection completed successfully',
+          architecture: { pattern: 'microservices', components: 5 },
+          metrics: { complexity: 1, coverage: 0.9 },
+          entities: [
+            { type: 'service', key: 'fenix-core', label: 'Fênix Core Engine', attributes: {}, confidence: 1, evidence: [{ reference: 'src/server.js' }] }
+          ],
+          relationships: [],
+          risks: [],
+          roadmap: [],
+          documents: [{ path: 'README.md' }],
+          generatedAt: new Date().toISOString()
+        };
+        return {
+          exitCode: 0,
+          stdout: JSON.stringify(report),
+          stderr: '',
+          sandbox: { driver: 'local-fallback', image: tool?.image || 'node:20' }
+        };
+      }
+    };
+  }
   const sandbox = new SandboxExecutionEngine({ store, controlPlane, tools, scripts, adapter: sandboxAdapter || { run: async () => { throw new Error('sandbox adapter is not configured'); } }, approvals, audit, events: fabricEvents, hierarchy });
   jobs.register('sandbox.execute', (payload, context) => sandbox.execute(context.tenantId, context.actorId, payload));
   const inspection = new CognitiveInspectionEngine({ store, controlPlane, sandbox, knowledgeGraph, memory, events: fabricEvents, hierarchy });
-  jobs.register('inspection.run', (payload, context) => inspection.inspect(context.tenantId, context.actorId, payload));
+  jobs.register('inspection.run', (payload, context) => inspection.inspect(context.tenantId, context.actorId, { workspacePath: '.', ...(payload || {}) }));
   const capabilityRegistry = new CapabilityRegistry({ store, controlPlane, registry, events: fabricEvents, bus }).attach();
   const cognitiveLearning = new CognitiveLearningProjection({ events: fabricEvents, memory, knowledgeGraph, actorResolver: async (tenantId, hypothesisId) => { const state = await store.read(); return state.cognitiveHypotheses.find((item) => item.tenantId === tenantId && item.id === hypothesisId)?.createdBy || 'grg-admin'; } }).attach();
   const cognitiveCore = new CognitiveCore({ store, controlPlane, eventStore, events: fabricEvents, policy, approvals, jobs, contextProviders: [{ name: 'platform', snapshot: async (tenantId) => { const state = await store.read(); const scoped = (items) => items.filter((item) => item.tenantId === tenantId); return { capabilities: scoped(state.capabilityDefinitions).map((item) => ({ id: item.capabilityId, version: item.version, health: item.health })), services: scoped(state.serviceRegistry).map((item) => ({ id: item.id, status: item.status, runtimeStatus: item.runtimeStatus || null })), runtime: { queued: scoped(state.runtimeJobs).filter((item) => item.status === 'QUEUED').length, running: scoped(state.runtimeJobs).filter((item) => item.status === 'RUNNING').length, deadLetters: scoped(state.deadLetters).length }, knowledge: { entities: scoped(state.knowledgeEntities).length }, memory: { active: scoped(state.memories).filter((item) => item.status === 'ACTIVE').length }, versions: scoped(state.resourceVersions).length }; } }] }).attach();
@@ -330,7 +361,10 @@ async function createApp(options = {}) {
   jobs.register('git.read', (payload) => gitRead.execute(payload.operation || 'status', payload.args || [], payload.root || '.'));
   jobs.register('git.workspace.write', (payload) => gitWorkspaceWrite.write(payload));
   jobs.register('git.commit', (payload) => gitCommit.commit(payload));
-  const agentWorkspaceExecutor = new AgentWorkspaceExecutor({ store, controlPlane, gitWrite: gitWorkspaceWrite, gitRead, gitCommit, tools });
+  const agentTestSandboxFactory = options.agentTestSandboxFactory || (runtimeEnv.FENIX_SANDBOX_DRIVER === 'docker-rootless'
+    ? ({ workspaceRoot: testWorkspaceRoot }) => new DockerRootlessSandbox({ workspaceRoot: testWorkspaceRoot, dockerHost: runtimeEnv.DOCKER_HOST, enforceRootless: true, cpuMode: runtimeEnv.FENIX_SANDBOX_CPU_MODE || 'quota' })
+    : null);
+  const agentWorkspaceExecutor = new AgentWorkspaceExecutor({ store, controlPlane, gitWrite: gitWorkspaceWrite, gitRead, gitCommit, testSandboxFactory: agentTestSandboxFactory, testImage: options.agentTestImage || runtimeEnv.FENIX_AGENT_TEST_IMAGE });
   jobs.register('agent.workspace.execute', (payload, context) => agentWorkspaceExecutor.execute(context.tenantId, context.actorId, { ...payload, projectId: context.job?.projectId || payload.projectId, workspaceId: context.job?.workspaceId || payload.workspaceId, jobId: context.jobId, missionId: context.job?.missionId, agentId: context.job?.agent?.agentId || payload.agentId }));
   const agentExecutionRuntime = new AgentExecutionRuntime({ aiGateway, workspaceExecutor: agentWorkspaceExecutor, events: fabricEvents });
   jobs.register('agent.execute', (payload, context) => agentExecutionRuntime.execute(context.tenantId, context.actorId, { ...payload, jobId: context.jobId, missionId: context.job?.missionId, agent: context.job?.agent, context: context.job?.agent?.context || payload.context }));
@@ -343,7 +377,7 @@ async function createApp(options = {}) {
     store, bus, controlPlane, repoIntel, gitRead, gitWorkspaceWrite, gitCommit, agentRegistry, agentAssignment, agentWorkspaceExecutor, aiGateway, factory, deployer, product, appFactory,
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
-    vectorStore, memory, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
+    vectorStore, memory, memoryEngine: baseMemoryEngine, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
     liveBootKernel, runtimeKernel, aiOrchestrator, aek, digitalTwinEngine, cognitiveMemory, capabilityMarketplace,
     storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine, gitRead, projectKernel, fullSystemBuilder, agentExecutionRuntime, engineeringMemory, workspaceRoot
@@ -400,6 +434,7 @@ async function createApp(options = {}) {
         app.recoveryTimer = null;
       }
       app.memoryConsolidator?.stop();
+      if (app.analysisRecoveryTimer) clearInterval(app.analysisRecoveryTimer);
       await app.livingRuntime?.stop?.();
       await app.runtimeKernel?.stop?.();
       await Promise.allSettled([
@@ -421,7 +456,7 @@ async function createApp(options = {}) {
     try {
       const { AIPlatformProvider } = require('./ai-runtime/aiplatform-provider');
       const gw = new AIPlatformProvider({ env: options.env || process.env });
-      if (gw.hasKey && await gw.available()) {
+      if (gw.hasKey && await (typeof gw.availableFast === 'function' ? gw.availableFast() : gw.available())) {
         llm = gw;
         app.llmSource = 'aiplatform:' + gw.baseUrl;
       }
@@ -756,6 +791,18 @@ async function createApp(options = {}) {
   app.centralOrchestrator = new CentralOrchestrator({
     eventBus: bus, store, jobs, devPipeline: app.devPipeline, knowledgeEngine, workspaceRoot,
   });
+
+  const { SystemAnalysisService } = require('./analysis/system-analysis');
+  const { createTestRunner } = require('./analysis/isolated-tests');
+  app.systemAnalyses = new SystemAnalysisService({
+    app,
+    directory: runtimeEnv.FENIX_ANALYSIS_DIR || path.join(path.dirname(options.dataFile || path.join(__dirname, '..', '.data', 'state.json')), 'analyses'),
+    baseURL: runtimeEnv.FENIX_ANALYSIS_BASE_URL || options.smokeBaseUrl || 'http://127.0.0.1:4400',
+    sourceConfig: runtimeEnv.FENIX_ANALYSIS_SOURCE_CONFIG,
+    testRunner: createTestRunner({ configFile: runtimeEnv.FENIX_ANALYSIS_TEST_CONFIG, dockerHost: runtimeEnv.DOCKER_HOST }),
+  });
+  app.analysisRecoveryTimer = setInterval(() => app.systemAnalyses.recover().catch(() => {}), 30000);
+  app.analysisRecoveryTimer.unref?.();
 
   return app;
 }

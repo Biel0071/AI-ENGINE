@@ -2703,4 +2703,28 @@ body {
   opacity: 1 !important;
   transform: scale(1.15) !important;
 }
-
+.fenix-agent-creator {
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(56, 189, 248, .25);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, .96), rgba(12, 28, 44, .88));
+}
+.fenix-agent-creator-heading h3 { margin: 0 0 4px; color: #f8fafc; font-size: 15px; }
+.fenix-agent-creator-heading p { margin: 0 0 14px; color: #94a3b8; font-size: 12px; }
+.fenix-agent-creator-fields, .fenix-agent-creator-team { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+.fenix-agent-creator-team { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(148, 163, 184, .15); }
+.fenix-agent-creator label { display: flex; flex: 1 1 170px; flex-direction: column; gap: 5px; color: #94a3b8; font-size: 11px; font-weight: 700; }
+.fenix-agent-creator input, .fenix-agent-creator select { width: 100%; min-height: 36px; padding: 7px 10px; border: 1px solid #334155; border-radius: 7px; background: #0b1523; color: #e2e8f0; font: inherit; }
+.fenix-agent-creator input:focus, .fenix-agent-creator select:focus { outline: 2px solid #22d3ee; outline-offset: 1px; }
+.fenix-agent-creator button { min-height: 36px; }
+#fenixAgentCreatorStatus { min-height: 16px; margin: 9px 0 0; color: #94a3b8; font-size: 12px; }
+.cp-agent-card[data-agent-id] { cursor: pointer; }
+.cp-agent-card[data-agent-id] .cp-status-badge { position: static; align-self: flex-end; margin-bottom: -5px; }
+.cp-agent-card[data-agent-id] .cp-status-dot.available { background: #38bdf8; box-shadow: 0 0 7px rgba(56, 189, 248, .7); }
+.cp-agent-card[data-agent-id] .cp-avatar-box { display: grid; place-items: center; color: #38bdf8; font-size: 25px; }
+.cp-agent-card[data-agent-id] .cp-agent-id { margin-top: 14px; color: #64748b; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; }
+#fenixAgentsListView { overflow-x: auto; padding: 8px 20px 20px; }
+.fenix-agent-list-table { width: 100%; border-collapse: collapse; border: 1px solid #243449; border-radius: 10px; background: #101a29; color: #dbeafe; text-align: left; }
+.fenix-agent-list-table th, .fenix-agent-list-table td { padding: 11px 14px; border-bottom: 1px solid #243449; font-size: 12px; }
+.fenix-agent-list-table th { color: #67e8f9; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }

@@ -90,7 +90,16 @@ class ConnectorRuntime {
     if (this.cp) await this.cp.authorize(tenantId, actorId, 'runtime:read');
     const out = [];
     for (const id of this.connectors.keys()) {
-      out.push(await this.status(tenantId, actorId, id));
+      // Um conector indisponível não pode derrubar o inventário inteiro nem
+      // transformar a saúde do sistema em uma resposta 500. Cada item conserva
+      // seu estado honesto e a evidência do erro fica isolada no próprio conector.
+      try { out.push(await this.status(tenantId, actorId, id)); }
+      catch (error) {
+        out.push(this.#report(id, CONNECTOR_STATES.DEGRADED, {
+          authenticated: false,
+          error: String(error.message || error).slice(0, 300),
+        }));
+      }
     }
     return { connectors: out, total: measured(out.length, 'runtime:registered connectors') };
   }

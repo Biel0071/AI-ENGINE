@@ -49,14 +49,14 @@
     async function continueExistingSession() {
       const token = localStorage.getItem('grg_token'); if (!token) return false;
       const current = await fetch('/api/me', { headers:{ authorization:`Bearer ${token}` } });
-      if (current.ok) { location.replace('/app#command'); return true; }
+      if (current.ok) { location.replace('/app' + (sessionStorage.getItem('fenix_return_route') || '#command')); return true; }
       const refreshToken = sessionStorage.getItem('grg_refresh_token');
       if (refreshToken) {
         const config = await oidcConfig;
         const body = new URLSearchParams({ grant_type:'refresh_token', client_id:config.clientId, refresh_token:refreshToken });
         const response = await fetch(config.tokenEndpoint, { method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body });
         const tokens = await response.json();
-        if (response.ok && tokens.access_token) { storeTokens(tokens); location.replace('/app#command'); return true; }
+        if (response.ok && tokens.access_token) { storeTokens(tokens); location.replace('/app' + (sessionStorage.getItem('fenix_return_route') || '#command')); return true; }
       }
       localStorage.removeItem('grg_token'); localStorage.removeItem('grg_user'); sessionStorage.removeItem('grg_refresh_token');
       return false;
@@ -82,7 +82,7 @@
       const body = new URLSearchParams({ grant_type:'authorization_code', client_id:config.clientId, code:query.get('code'), redirect_uri:config.redirectUri, code_verifier:verifier });
       const response = await fetch(config.tokenEndpoint, { method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body }); const tokens = await response.json();
       if (!response.ok || !tokens.access_token) throw new Error(tokens.error_description || 'Falha OIDC');
-      storeTokens(tokens); sessionStorage.removeItem('oidc_state'); sessionStorage.removeItem('oidc_verifier'); location.replace('/app#command'); return true;
+      storeTokens(tokens); sessionStorage.removeItem('oidc_state'); sessionStorage.removeItem('oidc_verifier'); location.replace('/app' + (sessionStorage.getItem('fenix_return_route') || '#command')); return true;
     }
     if (new URLSearchParams(location.search).get('code')) {
       finishOidc().catch(error => showLoginError(error.message));
@@ -103,7 +103,9 @@
         if (!r.ok) { err.textContent = data.error || 'Falha no login'; return; }
         localStorage.setItem('grg_token', data.token);
         localStorage.setItem('grg_user', data.name || userId);
-        location.href = '/app#command';
+        const returnRoute = sessionStorage.getItem('fenix_return_route') || '#command';
+        sessionStorage.removeItem('fenix_return_route');
+        location.href = returnRoute === '#command' ? '/app#command' : '/app' + returnRoute;
       } catch (ex) { err.textContent = 'Erro de conexão'; }
     });
 

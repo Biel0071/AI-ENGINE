@@ -81,7 +81,10 @@ async function api(path, options = {}, retried = false) {
   }
   if (res.status === 401) {
     localStorage.removeItem('grg_token');
-    location.replace('/GRG-login');
+    if (location.pathname !== '/GRG-login') {
+      try { sessionStorage.setItem('fenix_return_route', location.hash || '#command'); } catch {}
+      location.replace('/GRG-login');
+    }
     throw new Error('sessao expirada');
   }
   const body = await res.json().catch(() => ({}));
@@ -137,19 +140,8 @@ function metric(label, value) {
 }
 
 function showView(name, push = true) {
-  name = String(name || 'command').split('?')[0] || 'command';
-  document.querySelectorAll('.view').forEach((el) => {
-    const active = el.id === `view-${name}`;
-    el.classList.toggle('active', active);
-    el.style.display = active ? 'flex' : 'none';
-  });
-  document.querySelectorAll('[data-nav], [data-view]').forEach((el) => el.classList.toggle('active', (el.dataset.nav || el.dataset.view) === name));
-  const label = document.querySelector(`[data-nav="${name}"], [data-view="${name}"]`)?.textContent?.replace(/^[A-Z]{2}/, '').trim() || name;
-  text('viewTitle', label);
-  if (push) history.replaceState(null, '', `#${name}`);
-  if (window.syncCityPlacement) {
-    window.syncCityPlacement(name);
-  }
+  // The shell owns routing. Legacy callers use this compatibility delegate.
+  if (typeof window.showView === 'function') window.showView(name, push);
 }
 
 function bubble(message, who = 'bot') {
@@ -930,7 +922,7 @@ async function cloneProject(url, directory = '') {
 }
 
 function init() {
-  document.querySelectorAll('[data-nav], [data-view]').forEach((el) => el.addEventListener('click', () => showView(el.dataset.nav || el.dataset.view)));
+  // Sidebar buttons already call the shell router; do not register a second router.
   
   // Helpers for safe binding
   const addEvt = (id, event, handler) => { const el = $(id); if (el) el.addEventListener(event, handler); };
@@ -1084,7 +1076,6 @@ function init() {
     });
   }
 
-  window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'command', false));
   window.addEventListener('hashchange', () => refreshAll());
   document.addEventListener('fenix-live', (event) => {
     const type = event.detail?.type || '';
@@ -1107,7 +1098,7 @@ function init() {
     renderHeader();
     renderCity();
   });
-  showView(location.hash.slice(1) || 'command', false);
+  if (typeof window.restoreRouteOnLoad === 'function') window.restoreRouteOnLoad();
   bubble('Workspace unico carregado. Eu consolidei comando, runtime, missoes, AI City, office, CRM, deploy, observabilidade e developer em uma tela.');
   refreshAll();
 }
@@ -1733,7 +1724,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('jobInspectorCloseBtn')?.addEventListener('click', () => {
     document.getElementById('jobInspectorModal').style.display = 'none';
   });
-  if (window.initCityCanvas) window.initCityCanvas();
   
   // Realtime is provided by live-runtime.js through the authenticated
   // WebSocket `/events`. The old EventSource here could not send Bearer

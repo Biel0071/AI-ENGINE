@@ -39,215 +39,101 @@
     }
   }
 
-  // 2. LIVE BACKEND TELEMETRY SYNCHRONIZER
+  // Command Center reads the same canonical runtime contracts as the other views.
+  let commandSyncInFlight = false;
   async function syncLiveTargetTelemetry() {
+    if (commandSyncInFlight) return;
+    commandSyncInFlight = true;
+    const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = String(value); };
+    const read = async (path) => {
+      const response = await fetch(path, { signal: AbortSignal.timeout(8000) });
+      if (!response.ok) throw new Error(path + ': HTTP ' + response.status);
+      return response.json();
+    };
     try {
-      // 1. Agents Telemetry
-      const agentsRes = await fetch('/api/v2/living-city/agents').catch(() => null);
-      if (agentsRes && agentsRes.ok) {
-        const data = await agentsRes.json();
-        const agentsList = Array.isArray(data.agents) ? data.agents : (data.agents && typeof data.agents === 'object' ? Object.values(data.agents) : []);
-        const total = agentsList.length || 15;
-        const online = agentsList.filter(a => a.status === 'READY' || a.status === 'ONLINE' || a.status === 'BUSY').length || total;
-
-        // Command Center KPI and Stat Pills
-        const kpiAgents = document.getElementById('fenixKpiAgentsLive');
-        if (kpiAgents) kpiAgents.textContent = `${total} / 15`;
-
-        const pillAgents = document.getElementById('fenixStatPillAgents');
-        if (pillAgents) pillAgents.textContent = String(total);
-
-        const pillAgentsOnline = document.getElementById('fenixStatPillAgentsOnline');
-        if (pillAgentsOnline) pillAgentsOnline.textContent = `${online} Online`;
-
-        const subAgents = document.getElementById('fenixCmdAgentsCountSub');
-        if (subAgents) subAgents.textContent = String(total);
-
-        // AI City bottom status
-        const cityOnline = document.getElementById('cityOnlineCount');
-        if (cityOnline) cityOnline.textContent = `${online} ONLINE`;
-
-        // Legacy compatibility
-        const legKpiAgents = document.getElementById('fenixKpiAgents');
-        if (legKpiAgents) legKpiAgents.textContent = `${online} ONLINE`;
+      const [agentsResult, projectsResult, jobsResult, missionsResult, bootResult] = await Promise.allSettled([
+        read('/api/agents/panel'), read('/api/v2/projects'), read('/api/v2/jobs'),
+        read('/api/missions'), read('/api/system/boot-status')
+      ]);
+      if (agentsResult.status === 'fulfilled' && Array.isArray(agentsResult.value.agents)) {
+        const agents = agentsResult.value.agents;
+        const active = agents.filter((agent) => ['ACTIVE', 'ONLINE', 'READY', 'BUSY', 'WORKING'].includes(String(agent.status || '').toUpperCase())).length;
+        set('fenixKpiAgentsLive', active + ' / ' + agents.length);
+        set('fenixKpiAgentsSub', agents.length ? 'Agentes registrados no runtime' : 'Nenhum agente registrado');
+        set('fenixStatPillAgents', agents.length);
+        set('fenixStatPillAgentsOnline', active + ' ativos');
+        set('fenixCmdAgentsCountSub', agents.length);
+        set('fenixKpiAgents', active + ' ATIVOS');
+        set('cityOnlineCount', agents.length + ' REGISTRADOS');
       }
-
-      // 2. Projects Telemetry
-      const projRes = await fetch('/api/v2/mirror/projects').catch(() => null);
-      if (projRes && projRes.ok) {
-        const pData = await projRes.json();
-        const pList = Array.isArray(pData.projects) ? pData.projects : (pData.projects && typeof pData.projects === 'object' ? Object.values(pData.projects) : []);
-        const pCount = pList.length || 4;
-
-        const pillProjects = document.getElementById('fenixStatPillProjects');
-        if (pillProjects) pillProjects.textContent = String(pCount);
-
-        const subProjects = document.getElementById('fenixCmdProjectsCountSub');
-        if (subProjects) subProjects.textContent = String(pCount);
-
-        const legKpiProj = document.getElementById('fenixKpiProjects');
-        if (legKpiProj) legKpiProj.textContent = `${pCount} ATIVOS`;
+      if (projectsResult.status === 'fulfilled' && Array.isArray(projectsResult.value.projects)) {
+        const count = projectsResult.value.projects.length;
+        set('fenixStatPillProjects', count);
+        set('fenixCmdProjectsCountSub', count);
+        set('fenixKpiProjects', count + ' PROJETOS');
+        set('cityProjectsCount', count + ' PROJETOS');
       }
-
-      // 3. Runtime Full Status (Jobs & Health)
-      const rtRes = await fetch('/api/v2/runtime/full-status').catch(() => null);
-      if (rtRes && rtRes.ok) {
-        const rtData = await rtRes.json();
-        const status = (rtData.status || 'HEALTHY').toUpperCase();
-
-        const pillHealth = document.getElementById('fenixStatPillHealth');
-        if (pillHealth) pillHealth.textContent = status === 'HEALTHY' ? '100%' : '98%';
-
-        const legKpiHealth = document.getElementById('fenixKpiHealth');
-        if (legKpiHealth) legKpiHealth.textContent = `${status} HEALTHY`;
+      if (jobsResult.status === 'fulfilled' && Array.isArray(jobsResult.value.jobs)) {
+        const jobs = jobsResult.value.jobs;
+        const running = jobs.filter((job) => ['RUNNING', 'ACTIVE', 'DISPATCHED'].includes(String(job.status || '').toUpperCase()));
+        const failed = jobs.filter((job) => ['FAILED', 'ERROR'].includes(String(job.status || '').toUpperCase()));
+        const waiting = jobs.filter((job) => ['WAITING', 'QUEUED', 'PENDING'].includes(String(job.status || '').toUpperCase()));
+        set('fenixKpiTasksLive', running.length);
+        set('fenixKpiTasksSub', jobs.length + ' jobs registrados');
+        set('fenixKpiJobs', running.length + ' JOBS');
+        set('fenixKpiErrors', failed.length + ' FALHAS');
+        set('fenixStatPillErrors', failed.length);
+        set('fenixKpiQueue', waiting.length + ' WAITING');
+        const activity = document.getElementById('fenixLiveActivityList');
+        if (activity) {
+          activity.replaceChildren();
+          for (const job of jobs.slice(0, 4)) {
+            const row = document.createElement('div');
+            row.className = 'fenix-activity-item';
+            row.textContent = (job.title || job.type || job.id || 'Job') + ' · ' + (job.status || 'UNKNOWN');
+            activity.appendChild(row);
+          }
+          if (!jobs.length) activity.textContent = 'Nenhum job registrado.';
+        }
       }
-
-      // 4. Reality Score & Knowledge Base
-      const scoreRes = await fetch('/api/v2/reality/score').catch(() => null);
-      if (scoreRes && scoreRes.ok) {
-        const sData = await scoreRes.json();
-        const score = sData.score ?? 0;
-
-        const kpiKnow = document.getElementById('fenixKpiKnowledgeLive');
-        if (kpiKnow) kpiKnow.textContent = `${score}%`;
-
-        const legKpiScore = document.getElementById('fenixKpiScore');
-        if (legKpiScore) legKpiScore.textContent = `${score}% AUDITABLE`;
+      if (missionsResult.status === 'fulfilled' && Array.isArray(missionsResult.value.missions)) {
+        const missions = missionsResult.value.missions;
+        set('fenixKpiMissions', missions.length + ' MISSÕES');
+        set('cityMissionsCount', missions.length + ' MISSÕES');
+        const current = missions.find((mission) => ['RUNNING', 'ACTIVE'].includes(String(mission.status || '').toUpperCase())) || missions[0];
+        if (current) {
+          set('fenixHeroMissionTitle', current.title || current.name || current.id || 'Missão');
+          set('fenixHeroMissionDesc', current.objective || current.description || current.status || 'Missão registrada');
+          const progress = Number.isFinite(current.progress) ? Math.min(100, Math.max(0, current.progress)) : null;
+          set('fenixHeroMissionPct', progress === null ? '—' : progress + '%');
+          const bar = document.getElementById('fenixHeroMissionBar');
+          if (bar) bar.style.width = progress === null ? '0' : progress + '%';
+          set('fenixHeroMissionElapsed', current.status || '—');
+          const hero = document.getElementById('fenixHeroMissionTitle');
+          if (hero) hero.dataset.missionId = current.id || '';
+        } else {
+          set('fenixHeroMissionTitle', 'Aguardando missões');
+          set('fenixHeroMissionDesc', 'As missões registradas aparecem aqui quando o runtime as publicar.');
+          set('fenixHeroMissionPct', '—');
+          set('fenixHeroMissionElapsed', '—');
+          const bar = document.getElementById('fenixHeroMissionBar');
+          if (bar) bar.style.width = '0';
+        }
       }
-
-      // 5. Missions Count
-      const misRes = await fetch('/api/v2/fenix/intelligence/missions').catch(() => null);
-      if (misRes && misRes.ok) {
-        const mData = await misRes.json();
-        const mList = Array.isArray(mData.missions) ? mData.missions : (mData.missions && typeof mData.missions === 'object' ? Object.values(mData.missions) : []);
-        const mCount = mList.length || 4;
-
-        const cityMis = document.getElementById('cityMissionsCount');
-        if (cityMis) cityMis.textContent = `${mCount} MISSÕES`;
-
-        const legMissions = document.getElementById('fenixKpiMissions');
-        if (legMissions) legMissions.textContent = `${mCount} REAL`;
+      if (bootResult.status === 'fulfilled') {
+        const status = bootResult.value.status || 'UNKNOWN';
+        set('fenixStatPillHealth', status);
+        set('fenixKpiHealth', status);
       }
-    } catch (err) {
-      console.warn('[FENIX V11] Telemetry sync error:', err.message);
+    } finally {
+      commandSyncInFlight = false;
     }
   }
 
-  // 3. SINGLE SOURCE OF TRUTH: AI CITY FLEET INITIALIZATION
+  // The canonical IsoCityEngine owns the fleet and only accepts runtime snapshots.
   function ensureCityFleet() {
-    const canonicalList = [
-      ['agent-orchestrator', { id: 'agent-orchestrator', name: 'Orquestrador Fênix', role: 'ORCHESTRATOR', district: 'command-center', status: 'ONLINE', x: -6.5, y: -5.5, homeX: -6.5, homeY: -5.5, facing: 'SE' }],
-      ['agent-planner',      { id: 'agent-planner', name: 'Planejador de Missões', role: 'PLANNER', district: 'command-center', status: 'ONLINE', x: -3.0, y: -5.5, homeX: -3.0, homeY: -5.5, facing: 'SW' }],
-      ['agent-architect',    { id: 'agent-architect', name: 'Arquiteto de Sistemas', role: 'ARCHITECT', district: 'dev-district', status: 'ONLINE', x: -6.5, y: 1.0, homeX: -6.5, homeY: 1.0, facing: 'SE' }],
-      ['agent-developer',    { id: 'agent-developer', name: 'Engenheiro Fullstack', role: 'DEVELOPER', district: 'dev-district', status: 'ONLINE', x: -2.2, y: 1.0, homeX: -2.2, homeY: 1.0, facing: 'NE' }],
-      ['agent-backend',      { id: 'agent-backend', name: 'Engenheiro Backend', role: 'BACKEND', district: 'dev-district', status: 'ONLINE', x: 2.2, y: 1.0, homeX: 2.2, homeY: 1.0, facing: 'NE' }],
-      ['agent-frontend',     { id: 'agent-frontend', name: 'Engenheiro Frontend', role: 'FRONTEND', district: 'creative-district', status: 'ONLINE', x: 6.5, y: 1.0, homeX: 6.5, homeY: 1.0, facing: 'NW' }],
-      ['agent-database',     { id: 'agent-database', name: 'Arquiteto de Dados', role: 'DATABASE', district: 'data-center', status: 'ONLINE', x: -6.5, y: 4.5, homeX: -6.5, homeY: 4.5, facing: 'NW' }],
-      ['agent-memory',       { id: 'agent-memory', name: 'Engenheiro de Memória & Conhecimento', role: 'MEMORY', district: 'data-center', status: 'ONLINE', x: -2.2, y: 4.5, homeX: -2.2, homeY: 4.5, facing: 'NW' }],
-      ['agent-security',     { id: 'agent-security', name: 'Auditor de Segurança', role: 'SECURITY', district: 'data-center', status: 'ONLINE', x: 2.2, y: 4.5, homeX: 2.2, homeY: 4.5, facing: 'NW' }],
-      ['agent-qa',           { id: 'agent-qa', name: 'Engenheiro de Qualidade & QA', role: 'QA', district: 'dev-district', status: 'ONLINE', x: 6.5, y: 4.5, homeX: 6.5, homeY: 4.5, facing: 'NE' }],
-      ['agent-devops',       { id: 'agent-devops', name: 'Engenheiro DevOps', role: 'DEVOPS', district: 'observatory', status: 'ONLINE', x: -5.0, y: 11.0, homeX: -5.0, homeY: 11.0, facing: 'SW' }],
-      ['agent-observability',{ id: 'agent-observability', name: 'Engenheiro de Observabilidade', role: 'OBSERVABILITY', district: 'observatory', status: 'ONLINE', x: -8.0, y: 11.0, homeX: -8.0, homeY: 11.0, facing: 'SE' }],
-      ['agent-research',     { id: 'agent-research', name: 'Pesquisador de Conhecimento', role: 'RESEARCH', district: 'ai-district', status: 'ONLINE', x: 3.5, y: 11.0, homeX: 3.5, homeY: 11.0, facing: 'SW' }],
-      ['agent-browser',      { id: 'agent-browser', name: 'Agente Navegador & DOM', role: 'BROWSER', district: 'dev-district', status: 'ONLINE', x: 6.5, y: 11.0, homeX: 6.5, homeY: 11.0, facing: 'NE' }],
-      ['agent-github',       { id: 'agent-github', name: 'Engenheiro de Integração Git', role: 'GITHUB', district: 'project-district', status: 'ONLINE', x: 8.5, y: 11.0, homeX: 8.5, homeY: 11.0, facing: 'SE' }]
-    ];
-    const defaultAgentsMap = new Map(canonicalList);
-
-    if (typeof IsoCityEngine !== 'undefined' && document.getElementById('cityCanvas')) {
-      if (!window.fenixCity || !(window.fenixCity instanceof IsoCityEngine)) {
-        window.fenixCity = new IsoCityEngine('cityCanvas');
-      }
-    }
-
-    if (!window.fenixCity || !window.fenixCity.world) {
-      window.fenixCity = {
-        world: { agents: defaultAgentsMap },
-        syncRealData: async function() {
-          try {
-            const res = await fetch('/api/v2/living-city/agents');
-            if (res.ok) {
-              const data = await res.json();
-              const list = Array.isArray(data.agents) ? data.agents : (data.agents && typeof data.agents === 'object' ? Object.values(data.agents) : []);
-              if (list.length > 0) {
-                const nextMap = new Map();
-                for (const [id, defaultObj] of defaultAgentsMap.entries()) {
-                  const live = list.find(a => a && (a.id === id || a.name === defaultObj.name));
-                  nextMap.set(id, live ? Object.assign({}, defaultObj, live, {
-                    x: (live.x !== undefined && typeof live.x === 'number') ? live.x : defaultObj.x,
-                    y: (live.y !== undefined && typeof live.y === 'number') ? live.y : defaultObj.y,
-                    homeX: defaultObj.homeX,
-                    homeY: defaultObj.homeY,
-                    facing: defaultObj.facing,
-                    status: 'ONLINE'
-                  }) : defaultObj);
-                }
-                window.fenixCity.world.agents = nextMap;
-              }
-            }
-            const onlineEl = document.getElementById('cityOnlineCount');
-            if (onlineEl) onlineEl.textContent = '15 ONLINE';
-            const workEl = document.getElementById('cityWorkingCount');
-            if (workEl) workEl.textContent = '0 TRABALHANDO';
-            const missEl = document.getElementById('cityMissionsCount');
-            if (missEl) missEl.textContent = '37 MISSÕES';
-            const projEl = document.getElementById('cityProjectsCount');
-            if (projEl) projEl.textContent = '4 PROJETOS';
-          } catch(e) {}
-          return true;
-        }
-      };
-
-      window.loadCityView = async function() {
-        await window.fenixCity.syncRealData();
-        return true;
-      };
-    } else {
-      // If fenixCity was already instantiated, ensure its agent map has valid coordinates for all canonical agents
-      const existingMap = window.fenixCity.world.agents;
-      if (existingMap && existingMap instanceof Map) {
-        const canonicalKeys = new Set(defaultAgentsMap.keys());
-        for (const k of existingMap.keys()) {
-          if (!canonicalKeys.has(k)) existingMap.delete(k);
-        }
-        for (const [k, v] of defaultAgentsMap.entries()) {
-          const cur = existingMap.get(k);
-          if (!cur) {
-            existingMap.set(k, Object.assign({}, v));
-          } else {
-            if (typeof cur.x !== 'number' || isNaN(cur.x)) cur.x = v.x;
-            if (typeof cur.y !== 'number' || isNaN(cur.y)) cur.y = v.y;
-            if (typeof cur.homeX !== 'number' || isNaN(cur.homeX)) cur.homeX = v.homeX;
-            if (typeof cur.homeY !== 'number' || isNaN(cur.homeY)) cur.homeY = v.homeY;
-          }
-        }
-      }
-      const origSync = window.fenixCity.syncRealData;
-      window.fenixCity.syncRealData = async function() {
-        if (typeof origSync === 'function') {
-          try { await origSync.call(window.fenixCity); } catch (e) {}
-        }
-        if (window.fenixCity?.world?.agents instanceof Map) {
-          const canonicalKeys = new Set(defaultAgentsMap.keys());
-          for (const k of window.fenixCity.world.agents.keys()) {
-            if (!canonicalKeys.has(k)) window.fenixCity.world.agents.delete(k);
-          }
-          for (const [k, v] of defaultAgentsMap.entries()) {
-            const cur = window.fenixCity.world.agents.get(k);
-            if (!cur) {
-              window.fenixCity.world.agents.set(k, Object.assign({}, v));
-            } else {
-              if (typeof cur.x !== 'number' || isNaN(cur.x)) cur.x = v.x;
-              if (typeof cur.y !== 'number' || isNaN(cur.y)) cur.y = v.y;
-              if (typeof cur.homeX !== 'number' || isNaN(cur.homeX)) cur.homeX = v.homeX;
-              if (typeof cur.homeY !== 'number' || isNaN(cur.homeY)) cur.homeY = v.homeY;
-            }
-          }
-        }
-        const onlineEl = document.getElementById('cityOnlineCount');
-        if (onlineEl) onlineEl.textContent = '15 ONLINE';
-        return true;
-      };
+    if (!window.fenixCity && typeof IsoCityEngine !== "undefined" && document.getElementById("cityCanvas")) {
+      window.fenixCity = new IsoCityEngine("cityCanvas");
     }
   }
 
@@ -404,6 +290,12 @@
     if (window.event && window.event.target) window.event.target.classList.add('active');
 
     if (tabKey === 'network') window.showView('flowgraph');
+    const grid = document.getElementById('fenix-agents-grid');
+    const list = document.getElementById('fenixAgentsListView');
+    if (grid) grid.style.display = tabKey === 'list' ? 'none' : 'grid';
+    if (list) list.style.display = tabKey === 'list' ? 'block' : 'none';
+    if (tabKey === 'specs' && window.fenixLoadAgents) window.fenixLoadAgents('cognitive');
+    if (tabKey === 'grid' && window.fenixLoadAgents) window.fenixLoadAgents();
   };
 
   // 7. IDE Code & Tab Switching
@@ -599,10 +491,11 @@ module.exports = authRouter;`
 
   // 11. Command Center Track Active Mission
   window.fenixTrackActiveMission = function () {
-    if (typeof window.fenixInspectMission === 'function') {
-      window.fenixInspectMission('mission-01');
+    const missionId = document.getElementById('fenixHeroMissionTitle')?.dataset.missionId;
+    if (missionId && typeof window.fenixInspectMission === 'function') {
+      window.fenixInspectMission(missionId);
     } else {
-      window.showView('projects');
+      window.showView('operations');
     }
   };
 
@@ -671,73 +564,93 @@ module.exports = authRouter;`
     }
   };
 
-  window.fenixLoadAgents = async function() {
+  window.fenixLoadAgents = async function(filter = null) {
+    const grid = document.getElementById('fenix-agents-grid');
+    if (!grid) return;
+    const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
     try {
-      const res = await fetch('/api/v2/agents');
-      if (!res.ok) throw new Error('Falha ao carregar agentes');
-      const data = await res.json();
-      
-      const grid = document.getElementById('fenix-agents-grid');
-      if (!grid) return;
-      
-      if (!data.agents || data.agents.length === 0) {
-        grid.innerHTML = '<div class="fenix-empty-state">0 agentes disponíveis</div>';
-        return;
-      }
-      
-      grid.innerHTML = data.agents.map((a, idx) => {
-        const isOnline = a.status === 'ONLINE' || a.status === 'READY';
-        const eff = a.metrics?.efficiency ?? 0;
-        const qual = (a.metrics?.qualityScore || 9.5) * 10;
-        
-        return `
-        <div class="cp-agent-card" style="animation-delay: ${idx * 0.05}s" onclick="if(window.fenixInspectAgent) window.fenixInspectAgent('${a.id}')">
-          <div class="cp-status-badge">
-            <div class="cp-status-dot ${isOnline ? 'online' : 'offline'}"></div>
-            ${isOnline ? 'ONLINE' : a.status}
-          </div>
-          <div class="cp-card-header">
-            <div class="cp-avatar-box">
-              <img src="${a.avatarUrl || 'https://via.placeholder.com/48'}" alt="${a.name}">
-            </div>
-            <div class="cp-header-info">
-              <h3 class="cp-agent-name">${a.name}</h3>
-              <div class="cp-agent-role">${a.role}</div>
-            </div>
-          </div>
-          
-          <div class="cp-metrics-section">
-            <div class="cp-metric-row">
-              <div class="cp-metric-label">Efficiency</div>
-              <div class="cp-metric-bar-bg"><div class="cp-metric-bar-fill" style="width: ${eff}%"></div></div>
-              <div class="cp-metric-val">${eff}%</div>
-            </div>
-            <div class="cp-metric-row">
-              <div class="cp-metric-label">Quality</div>
-              <div class="cp-metric-bar-bg"><div class="cp-metric-bar-fill" style="width: ${qual}%"></div></div>
-              <div class="cp-metric-val">${(qual/10).toFixed(1)}</div>
-            </div>
-          </div>
-          
-          <div class="cp-tags-row">
-            ${(a.tags || []).map(t => `<span class="cp-tag">${t}</span>`).join('')}
-            ${(a.personality || []).map(p => `<span class="cp-trait">${p}</span>`).join('')}
-          </div>
-        </div>
-        `;
-      }).join('');
-      
-      // Update capacity widget if exists (Test AF)
-      const activeEl = document.getElementById('capValActive');
-      const capacityEl = document.getElementById('capValCapacity');
-      if (activeEl && capacityEl) {
-        const activeCount = data.agents.filter(a => a.status === 'ONLINE' || a.status === 'READY' || a.status === 'BUSY').length;
-        activeEl.textContent = activeCount;
-        capacityEl.textContent = data.agents.length;
-      }
+      const [agentsResponse, stateResponse] = await Promise.all([fetch('/api/v2/living-city/agents'), fetch('/api/v2/living-city/state')]);
+      if (!agentsResponse.ok || !stateResponse.ok) throw new Error(`HTTP ${agentsResponse.status}/${stateResponse.status}`);
+      const [data, city] = await Promise.all([agentsResponse.json(), stateResponse.json()]);
+      const agents = Array.isArray(data.agents) ? data.agents : [];
+      const metrics = city.metrics || {};
+      const set = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = String(value); };
+      set('fenixAgentRegisteredCount', agents.length);
+      set('fenixAgentWorkingCount', metrics.workingAgents ?? agents.filter((agent) => agent.status === 'WORKING').length);
+      set('fenixAgentAvailableCount', agents.filter((agent) => agent.status === 'AVAILABLE').length);
+      set('fenixAgentProjectsCount', metrics.projectsCount ?? '—');
+      set('fenixAgentFailedJobsCount', metrics.failedJobs ?? '—');
+      const overviewTab = document.querySelector('#view-agents .fenix-pill-tab');
+      if (overviewTab) overviewTab.textContent = `Visão (${agents.length})`;
+      const visibleAgents = filter === 'cognitive' ? agents.filter((agent) => agent.kind === 'cognitive') : agents;
+      grid.innerHTML = visibleAgents.length ? visibleAgents.map((agent) => `
+        <article class="cp-agent-card" data-agent-id="${escape(agent.id)}">
+          <div class="cp-status-badge"><div class="cp-status-dot ${agent.status === 'WORKING' ? 'online' : agent.status === 'AVAILABLE' ? 'available' : 'offline'}"></div>${escape(agent.status === 'WORKING' ? 'EM EXECUÇÃO' : agent.status === 'AVAILABLE' ? 'SEM TAREFA' : agent.status)}</div>
+          <div class="cp-card-header"><div class="cp-avatar-box" aria-hidden="true"><i class="ph-bold ph-robot"></i></div><div class="cp-header-info"><h3 class="cp-agent-name">${escape(agent.name)}</h3><div class="cp-agent-role">${escape(agent.role)}</div></div></div>
+          <div class="cp-tags-row"><span class="cp-tag">${agent.kind === 'cognitive' ? 'EQUIPE COGNITIVA' : 'CATÁLOGO'}</span>${agent.currentJob ? `<span class="cp-trait">Job ${escape(agent.currentJob.name)}</span>` : ''}</div>
+          <div class="cp-agent-id">${escape(agent.id)}</div>
+        </article>`).join('') : '<div class="fenix-empty-state">Nenhum agente registrado neste tenant.</div>';
+      grid.querySelectorAll('[data-agent-id]').forEach((card) => card.addEventListener('click', () => window.fenixInspectAgent?.(card.dataset.agentId)));
+      const list = document.getElementById('fenixAgentsListView');
+      if (list) list.innerHTML = `<table class="fenix-agent-list-table"><thead><tr><th>Agente</th><th>Especialidade</th><th>Estado</th><th>Tipo</th></tr></thead><tbody>${agents.map((agent) => `<tr><td>${escape(agent.name)}</td><td>${escape(agent.role)}</td><td>${escape(agent.status)}</td><td>${agent.kind === 'cognitive' ? 'Equipe cognitiva' : 'Catálogo'}</td></tr>`).join('')}</tbody></table>`;
+      await window.fenixLoadAgentScopes();
     } catch (e) {
-      console.error('[FENIX V12] Erro ao carregar swarm:', e);
+      grid.textContent = `Não foi possível carregar os agentes: ${e.message}`;
+      console.error('[FENIX] Falha ao carregar agentes:', e);
     }
+  };
+
+  window.fenixLoadAgentScopes = async function(selectedId = null) {
+    const select = document.getElementById('fenixAgentEntity');
+    if (!select) return;
+    try {
+      const response = await fetch('/api/cognitive/entities');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const entities = (data.entities || []).filter((entity) => ['COMPANY', 'PROJECT'].includes(entity.type));
+      select.replaceChildren();
+      if (!entities.length) select.add(new Option('Crie uma equipe cognitiva abaixo', ''));
+      for (const entity of entities) select.add(new Option(`${entity.name} · ${entity.type === 'PROJECT' ? 'projeto' : 'equipe'}`, entity.id));
+      if (selectedId) select.value = selectedId;
+      select.disabled = !entities.length;
+    } catch (error) {
+      select.replaceChildren(new Option(`Equipes indisponíveis: ${error.message}`, ''));
+      select.disabled = true;
+    }
+  };
+
+  const agentCreatorStatus = (message) => { const target = document.getElementById('fenixAgentCreatorStatus'); if (target) target.textContent = message; };
+  window.fenixCreateAgentTeam = async function() {
+    const input = document.getElementById('fenixAgentTeamName');
+    const name = input?.value.trim();
+    if (!name) return agentCreatorStatus('Informe o nome da equipe.');
+    try {
+      agentCreatorStatus('Criando equipe…');
+      const response = await fetch('/api/cognitive/entities', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'company', name, seedAgents: false }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || `HTTP ${response.status}`);
+      input.value = '';
+      await window.fenixLoadAgentScopes(data.id);
+      agentCreatorStatus(`Equipe ${data.name} criada. Agora adicione um agente.`);
+    } catch (error) { agentCreatorStatus(`Falha ao criar equipe: ${error.message}`); }
+  };
+
+  window.fenixCreateAgent = async function() {
+    const entityId = document.getElementById('fenixAgentEntity')?.value;
+    const nameInput = document.getElementById('fenixAgentName');
+    const roleInput = document.getElementById('fenixAgentRole');
+    const name = nameInput?.value.trim(); const role = roleInput?.value.trim();
+    if (!entityId || !name || !role) return agentCreatorStatus('Escolha uma equipe e informe nome e especialidade.');
+    try {
+      agentCreatorStatus('Criando agente…');
+      const response = await fetch(`/api/cognitive/entities/${encodeURIComponent(entityId)}/agents`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, role }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || `HTTP ${response.status}`);
+      nameInput.value = ''; roleInput.value = '';
+      await window.fenixLoadAgents();
+      await window.fenixCity?.syncRealData?.();
+      agentCreatorStatus(`Agente ${data.name} criado e registrado na Cidade.`);
+    } catch (error) { agentCreatorStatus(`Falha ao criar agente: ${error.message}`); }
   };
 
   // Memory Dynamic Sync & Resilient 500 Failure Handler
@@ -950,7 +863,7 @@ module.exports = authRouter;`
     ensureCityFleet();
     syncLiveTargetTelemetry();
     setInterval(updateLiveClock, 30000);
-    setInterval(syncLiveTargetTelemetry, 10000);
+    setInterval(syncLiveTargetTelemetry, 30000);
   
     if (typeof window.fenixLoadAgents === 'function') {
       window.fenixLoadAgents();
@@ -995,9 +908,8 @@ window.fenixUpdateCityHUD = async function() {
     const data = await res.json();
     const agents = Array.isArray(data) ? data : (data.agents || []);
     
-    const countOnline = agents.filter(a => a.status === 'ONLINE' || a.status === 'READY' || a.status === 'BUSY').length;
     const countEl = document.getElementById('cityOnlineCount');
-    if (countEl) countEl.textContent = `${countOnline || 15} ONLINE`;
+    if (countEl) countEl.textContent = `${agents.length} REGISTRADOS`;
 
     const clockEl = document.getElementById('fenixLiveCityClock');
     if (clockEl) {
@@ -1049,11 +961,11 @@ window.fenixToggleDayNight = function() {
     if (isDay) {
       icon.className = 'ph-bold ph-sun';
       icon.style.color = '#F59E0B';
-      text.textContent = 'Dia Claro 28°C';
+      text.textContent = 'Modo dia';
     } else {
       icon.className = 'ph-bold ph-moon';
       icon.style.color = '#FBBF24';
-      text.textContent = 'Noite Limpa 22°C';
+      text.textContent = 'Modo noite';
     }
   }
 };

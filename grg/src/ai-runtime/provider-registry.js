@@ -76,10 +76,13 @@ function loadRoutes(env = process.env, options = {}) {
     return routes;
   }
   if (options.production && (!env.FENIX_AI_DEFAULT_PROVIDER || env.FENIX_AI_DEFAULT_PROVIDER === 'echo')) throw new Error('production requires an explicit non-echo FENIX_AI_DEFAULT_PROVIDER');
+  const localFallback = env.FENIX_ENABLE_OLLAMA === '1'
+    ? { provider: 'ollama', model: env.GRG_LLM_MODEL || 'qwen2.5:3b' }
+    : null;
   return {
-    default: { provider: env.FENIX_AI_DEFAULT_PROVIDER || 'echo', model: env.FENIX_AI_DEFAULT_MODEL || 'echo-small' },
-    plan: { provider: env.FENIX_AI_PLAN_PROVIDER || env.FENIX_AI_DEFAULT_PROVIDER || 'echo', model: env.FENIX_AI_PLAN_MODEL || 'echo-large' },
-    generate: { provider: env.FENIX_AI_GENERATE_PROVIDER || env.FENIX_AI_DEFAULT_PROVIDER || 'echo', model: env.FENIX_AI_GENERATE_MODEL || 'echo-large' },
+    default: { provider: env.FENIX_AI_DEFAULT_PROVIDER || 'echo', model: env.FENIX_AI_DEFAULT_MODEL || 'echo-small', ...(localFallback ? { fallback: [localFallback] } : {}) },
+    plan: { provider: env.FENIX_AI_PLAN_PROVIDER || env.FENIX_AI_DEFAULT_PROVIDER || 'echo', model: env.FENIX_AI_PLAN_MODEL || env.FENIX_AI_DEFAULT_MODEL || 'echo-large', ...(localFallback ? { fallback: [localFallback] } : {}) },
+    generate: { provider: env.FENIX_AI_GENERATE_PROVIDER || env.FENIX_AI_DEFAULT_PROVIDER || 'echo', model: env.FENIX_AI_GENERATE_MODEL || env.FENIX_AI_DEFAULT_MODEL || 'echo-large', ...(localFallback ? { fallback: [localFallback] } : {}) },
   };
 }
 

@@ -6,7 +6,7 @@ const { StorageProvider } = require('../../storage-provider');
 class SQLiteDriver extends StorageProvider {
   constructor(options = {}) {
     super({ name: 'SQLite', type: 'relational' });
-    this.dbPath = options.dbPath || path.join(process.cwd(), '.data', 'fenix.db');
+    this.dbPath = options.dbPath || path.join(process.cwd(), '.data', 'knowledge.db');
     this.db = null;
   }
 
@@ -23,18 +23,25 @@ class SQLiteDriver extends StorageProvider {
           return reject(err);
         }
         this.isConnected = true;
-        this._initTables().then(resolve).catch(reject);
+        this.db.run('PRAGMA journal_mode = WAL;', (pragmaError) => {
+          if (pragmaError) return reject(pragmaError);
+          this.db.run('PRAGMA busy_timeout = 5000;', (timeoutError) => {
+            if (timeoutError) return reject(timeoutError);
+            this._initTables().then(resolve).catch(reject);
+          });
+        });
       });
     });
   }
 
   async _initTables() {
     const initSql = `
-      CREATE TABLE IF NOT EXISTS kv_store (
-        id TEXT PRIMARY KEY,
-        collection TEXT,
-        data TEXT,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      CREATE TABLE IF NOT EXISTS fenix_knowledge_kv (
+        id TEXT NOT NULL,
+        collection TEXT NOT NULL,
+        data TEXT NOT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id, collection)
       );
     `;
     return new Promise((resolve, reject) => {
@@ -59,9 +66,9 @@ class SQLiteDriver extends StorageProvider {
   async set(key, value, collection = 'default') {
     const dataStr = typeof value === 'object' ? JSON.stringify(value) : value;
     const sql = `
-      INSERT INTO kv_store (id, collection, data, updated_at) 
+      INSERT INTO fenix_knowledge_kv (id, collection, data, updated_at) 
       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(id) DO UPDATE SET data=excluded.data, updated_at=CURRENT_TIMESTAMP
+      ON CONFLICT(id, collection) DO UPDATE SET data=excluded.data, updated_at=CURRENT_TIMESTAMP
     `;
     
     return new Promise((resolve, reject) => {
@@ -72,10 +79,10 @@ class SQLiteDriver extends StorageProvider {
     });
   }
 
-  async get(key) {
-    const sql = `SELECT data FROM kv_store WHERE id = ?`;
+  async get(key, collection = 'default') {
+    const sql = `SELECT data FROM fenix_knowledge_kv WHERE id = ? AND collection = ?`;
     return new Promise((resolve, reject) => {
-      this.db.get(sql, [key], (err, row) => {
+      this.db.get(sql, [key, collection], (err, row) => {
         if (err) return reject(err);
         if (!row) return resolve(null);
         try {
@@ -87,10 +94,10 @@ class SQLiteDriver extends StorageProvider {
     });
   }
 
-  async delete(key) {
-    const sql = `DELETE FROM kv_store WHERE id = ?`;
+  async delete(key, collection = 'default') {
+    const sql = `DELETE FROM fenix_knowledge_kv WHERE id = ? AND collection = ?`;
     return new Promise((resolve, reject) => {
-      this.db.run(sql, [key], function (err) {
+      this.db.run(sql, [key, collection], function (err) {
         if (err) reject(err);
         else resolve(this.changes > 0);
       });
@@ -98,8 +105,7 @@ class SQLiteDriver extends StorageProvider {
   }
 
   async find(query, collection = 'default') {
-    // Basic prefix or all fetch for this generic KV fallback
-    const sql = `SELECT id, data FROM kv_store WHERE collection = ?`;
+    const sql = `SELECT id, data FROM fenix_knowledge_kv WHERE collection = ?`;
     return new Promise((resolve, reject) => {
       this.db.all(sql, [collection], (err, rows) => {
         if (err) return reject(err);

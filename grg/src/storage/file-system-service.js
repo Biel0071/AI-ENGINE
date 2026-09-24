@@ -14,12 +14,43 @@ class FileSystemService {
   }
 
   _resolveAndValidatePath(targetPath) {
-    const resolvedPath = path.resolve(this.workspaceRoot, targetPath || '.');
-    const relative = path.relative(this.workspaceRoot, resolvedPath);
-    if (relative.startsWith('..') || path.isAbsolute(relative)) {
-      throw new Error(`Security Violation: Path traversal detected. Access outside workspace root is forbidden.`);
+    if (!targetPath || targetPath === '.') {
+      return this.workspaceRoot;
     }
-    return resolvedPath;
+    const candidate = path.isAbsolute(targetPath) ? path.resolve(targetPath) : path.resolve(this.workspaceRoot, targetPath);
+
+    // Primary workspace root check
+    const relPrimary = path.relative(this.workspaceRoot, candidate);
+    if ((!relPrimary.startsWith('..') && !path.isAbsolute(relPrimary)) || this.workspaceRoot.toLowerCase() === candidate.toLowerCase()) {
+      return candidate;
+    }
+
+    // Additional authorized project roots
+    const authorizedRoots = [
+      'C:\\projetos\\ZAPAI-FINAL',
+      'C:\\projetos\\ai-engine-core',
+      'C:\\projetos\\ai-engine-core\\ai-engine\\projects\\API-PLATAFORM'
+    ].map(r => path.resolve(r));
+
+    try {
+      const kFile = path.join(__dirname, '..', '..', 'memory', 'projects-knowledge-map.json');
+      const fsSync = require('node:fs');
+      if (fsSync.existsSync(kFile)) {
+        const kData = JSON.parse(fsSync.readFileSync(kFile, 'utf8'));
+        Object.values(kData).forEach(p => { if (p.localPath) authorizedRoots.push(path.resolve(p.localPath)); });
+      }
+    } catch (e) {}
+
+    const isAuthorized = authorizedRoots.some(root => {
+      const rel = path.relative(root, candidate);
+      return (!rel.startsWith('..') && !path.isAbsolute(rel)) || root.toLowerCase() === candidate.toLowerCase();
+    });
+
+    if (isAuthorized) {
+      return candidate;
+    }
+
+    throw new Error(`Security Violation: Path traversal detected. Access outside workspace root is forbidden.`);
   }
 
   async exists(targetPath) {

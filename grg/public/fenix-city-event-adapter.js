@@ -43,6 +43,12 @@
     'job.started': { visualState: 'WORKING', location: 'execution' },
     'job.step': { visualState: 'WORKING', location: 'execution' },
     'runtime.job.running': { visualState: 'WORKING', location: 'execution' },
+    'runtime.job.queued': { visualState: 'QUEUED', location: 'command-center' },
+    'runtime.job.started': { visualState: 'WORKING', location: 'execution' },
+    'runtime.job.succeeded': { visualState: 'COMPLETED', location: 'execution' },
+    'runtime.job.failed': { visualState: 'ERROR', location: 'execution' },
+    'runtime.job.dead_letter': { visualState: 'ERROR', location: 'execution' },
+    'runtime.job.cancelled': { visualState: 'CANCELLED', location: 'execution' },
     'job.completed': { visualState: 'COMPLETED', location: 'execution' },
     'job.failed': { visualState: 'ERROR', location: 'execution' },
     'job.retrying': { visualState: 'RECOVERING', location: 'execution' },
@@ -105,16 +111,17 @@
     }
 
     // Dynamic location override from payload
-    var effectiveLoc = (detail.payload && (detail.payload.location || detail.payload.destination)) || detail.location || detail.destination || visual.location;
+    var payload = detail.payload && detail.payload.data ? detail.payload.data : (detail.payload || detail.data || detail);
+    var effectiveLoc = (payload.location || payload.destination) || detail.location || detail.destination || visual.location;
     var effectiveVisual = Object.assign({}, visual, { location: effectiveLoc });
 
     const projection = {
       type,
       visual: effectiveVisual,
-      sourceEventId: detail.id || detail.eventId || detail.seq || null,
-      occurredAt: detail.occurredAt || detail.timestamp || new Date().toISOString(),
-      subject: detail.agentName || detail.agentId || detail.subject || detail.jobId || detail.missionId || null,
-      payload: detail.payload || detail.data || detail
+      sourceEventId: detail.payload?.id || detail.id || detail.eventId || detail.seq || null,
+      occurredAt: detail.payload?.occurredAt || detail.occurredAt || detail.timestamp || new Date().toISOString(),
+      subject: payload.agentName || payload.agentId || payload.subject || payload.jobId || payload.missionId || null,
+      payload: payload
     };
     const events = window.FENIX.city.events;
     if (projection.sourceEventId && events.some((item) => item.sourceEventId === projection.sourceEventId)) return;
@@ -122,7 +129,6 @@
     if (events.length > 100) events.splice(0, events.length - 100);
     window.FENIX.city.lastEvent = projection;
     document.dispatchEvent(new CustomEvent('fenix-city-event', { detail: projection, bubbles: true }));
-    window.dispatchEvent(new CustomEvent('fenix-city-event', { detail: projection, bubbles: true }));
   });
 }());
 
@@ -169,7 +175,6 @@
             data: ev.data || ev
           };
           document.dispatchEvent(new CustomEvent('fenix-live', { detail: detail, bubbles: true }));
-          window.dispatchEvent(new CustomEvent('fenix-live', { detail: detail, bubbles: true }));
         } catch(err) {}
       });
     } catch(e) {

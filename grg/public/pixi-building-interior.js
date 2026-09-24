@@ -1176,11 +1176,11 @@
           <div id="vpsChatDrawer" style="width:340px;background:#090d16;border-left:1px solid rgba(56,189,248,0.25);display:flex;flex-direction:column;padding:12px;">
             <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;margin-bottom:8px;">
               <span style="font-size:12px;font-weight:700;color:#38bdf8;">⚡ Fênix AI Core @ VPS</span>
-              <span style="font-size:10px;background:#15803d;color:#fff;padding:2px 6px;border-radius:10px;">qwen2.5:3b</span>
+              <span id="vpsChatStatus" style="font-size:10px;background:#334155;color:#fff;padding:2px 6px;border-radius:10px;">Verificando API…</span>
             </div>
             <div id="vpsChatMessages" style="flex:1;overflow-y:auto;font-size:12px;color:#cbd5e1;display:flex;flex-direction:column;gap:8px;padding-right:4px;">
               <div style="background:rgba(255,255,255,0.05);padding:8px;border-radius:6px;border-left:3px solid #38bdf8;">
-                <b>Fênix:</b> Olá! Estou online e respondendo na VPS (209.50.241.22:3001) com o modelo <b>qwen2.5:3b</b>. Como posso auxiliar nos projetos da cidade?
+                <b>Fênix:</b> Envie uma mensagem para consultar a API Platform. A conexão será verificada em cada requisição.
               </div>
             </div>
             <div style="display:flex;gap:6px;margin-top:8px;">
@@ -1219,6 +1219,23 @@
       const chatInput = modal.querySelector('#vpsChatInput');
       const chatSend = modal.querySelector('#vpsChatSendBtn');
       const chatMsgs = modal.querySelector('#vpsChatMessages');
+      const chatStatus = modal.querySelector('#vpsChatStatus');
+
+      fetch('/api/v2/proxy/vps-health', { signal: AbortSignal.timeout(10000) })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((health) => {
+          const available = Object.entries(health.providers || {})
+            .filter(([name, provider]) => name !== 'mission-engine' && provider && provider.online === true)
+            .map(([name]) => name);
+          chatStatus.textContent = health.status === 'ONLINE'
+            ? `API online · ${available.length ? available.join(', ') : 'IA indisponível'}`
+            : 'API indisponível';
+          chatStatus.style.background = health.status === 'ONLINE' && available.length ? '#166534' : '#92400e';
+        })
+        .catch(() => { chatStatus.textContent = 'API indisponível'; chatStatus.style.background = '#7f1d1d'; });
 
       btnToggle.onclick = () => {
         drawer.style.display = (drawer.style.display === 'none') ? 'flex' : 'none';
@@ -1231,7 +1248,7 @@
 
         const userMsg = document.createElement('div');
         userMsg.style.cssText = 'background:rgba(56,189,248,0.15);padding:8px;border-radius:6px;border-right:3px solid #38bdf8;align-self:flex-end;max-width:90%;';
-        userMsg.innerHTML = `<b>Você:</b> ${text}`;
+        userMsg.textContent = `Você: ${text}`;
         chatMsgs.appendChild(userMsg);
 
         const typingMsg = document.createElement('div');
@@ -1244,14 +1261,17 @@
           const res = await fetch('/api/v2/vps-chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: text, model: 'qwen2.5:3b' })
+            body: JSON.stringify({ prompt: text })
           });
           const data = await res.json();
+          if (!res.ok || !data.success || !data.response) {
+            throw new Error(data.error || data.message || `HTTP ${res.status}`);
+          }
           typingMsg.remove();
 
           const botMsg = document.createElement('div');
           botMsg.style.cssText = 'background:rgba(255,255,255,0.05);padding:8px;border-radius:6px;border-left:3px solid #10b981;';
-          botMsg.innerHTML = `<b>Fênix (VPS):</b> ${data.response || 'Resposta recebida'}`;
+          botMsg.textContent = `Fênix (VPS): ${data.response}`;
           chatMsgs.appendChild(botMsg);
           chatMsgs.scrollTop = chatMsgs.scrollHeight;
         } catch (e) {

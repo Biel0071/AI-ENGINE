@@ -1,5 +1,6 @@
 const { uuid } = require('../kernel/ids');
 const { NotFoundError, ValidationError } = require('../kernel/errors');
+const { GitReadCapability } = require('../repo-intel/git-read-capability');
 
 const MATURITY = ['IDEA', 'SPECIFIED', 'ARCHITECTED', 'SCAFFOLDED', 'FUNCTIONAL', 'INTEGRATED', 'TESTED', 'PRODUCTION_READY'];
 
@@ -15,17 +16,76 @@ class ProjectKernel {
   }
   async state(tenantId, actorId, projectId) {
     await this.cp.authorize(tenantId, actorId, 'project:read');
-    const data = await this.store.read(); const project = data.projects.find((item) => item.tenantId === tenantId && item.id === projectId); if (!project) throw new NotFoundError(`project not found: ${projectId}`);
-    const jobs = data.runtimeJobs.filter((item) => item.tenantId === tenantId && item.projectId === projectId); const missions = data.missions.filter((item) => item.tenantId === tenantId && item.projectId === projectId); const artifacts = data.artifacts.filter((item) => item.tenantId === tenantId && item.projectId === projectId);
-    const derived = { ...project, progress: { totalJobs: jobs.length, completed: jobs.filter((j) => j.status === 'SUCCEEDED').length, running: jobs.filter((j) => j.status === 'RUNNING').length, queued: jobs.filter((j) => ['QUEUED', 'AWAITING_APPROVAL'].includes(j.status)).length, failed: jobs.filter((j) => ['FAILED', 'DEAD_LETTER'].includes(j.status)).length, blocked: jobs.filter((j) => j.status === 'BLOCKED').length }, missions: missions.map((m) => ({ id: m.id, status: m.status, progress: m.progress })), artifacts: artifacts.map((a) => ({ id: a.id, type: a.type, name: a.name, createdAt: a.createdAt })), kernelState: data.projectKernelStates.find((item) => item.projectId === projectId) || null };
+    const data = await this.store.read();
+    let project = data.projects.find((item) => item.tenantId === tenantId && item.id === projectId);
+    if (!project) {
+      const { getProjectById } = require('./project-registry');
+      const regProj = getProjectById(projectId);
+      if (regProj) {
+        project = {
+          id: regProj.id || regProj.projectId,
+          tenantId,
+          name: regProj.name,
+          workspace: regProj.localPath || regProj.workspace,
+          branch: regProj.branch || 'main',
+          lifecycle: 'EVOLUTION',
+          maturity: 'FUNCTIONAL',
+          status: regProj.status || 'ONLINE',
+        };
+      }
+    }
+    if (!project) throw new NotFoundError(`project not found: ${projectId}`);
+    const jobs = data.runtimeJobs.filter((item) => item.tenantId === tenantId && item.projectId === projectId);
+    const missions = data.missions.filter((item) => item.tenantId === tenantId && item.projectId === projectId);
+    const artifacts = data.artifacts.filter((item) => item.tenantId === tenantId && item.projectId === projectId);
+    const derived = {
+      ...project,
+      progress: {
+        totalJobs: jobs.length,
+        completed: jobs.filter((j) => j.status === 'SUCCEEDED').length,
+        running: jobs.filter((j) => j.status === 'RUNNING').length,
+        queued: jobs.filter((j) => ['QUEUED', 'AWAITING_APPROVAL'].includes(j.status)).length,
+        failed: jobs.filter((j) => ['FAILED', 'DEAD_LETTER'].includes(j.status)).length,
+        blocked: jobs.filter((j) => j.status === 'BLOCKED').length,
+      },
+      missions: missions.map((m) => ({ id: m.id, status: m.status, progress: m.progress })),
+      artifacts: artifacts.map((a) => ({ id: a.id, type: a.type, name: a.name, createdAt: a.createdAt })),
+      kernelState: data.projectKernelStates.find((item) => item.projectId === projectId) || null,
+    };
     return derived;
   }
-  async list(tenantId, actorId) { await this.cp.authorize(tenantId, actorId, 'project:read'); const state = await this.store.read(); return state.projects.filter((item) => item.tenantId === tenantId); }
+  async list(tenantId, actorId) {
+    await this.cp.authorize(tenantId, actorId, 'project:read');
+    const state = await this.store.read();
+    const stored = state.projects.filter((item) => item.tenantId === tenantId);
+    if (stored.length > 0) return stored;
+    try {
+      const { getAllProjects } = require('./project-registry');
+      const reg = await getAllProjects();
+      return reg.map((p) => ({
+        id: p.id || p.projectId,
+        tenantId,
+        name: p.name,
+        displayName: p.displayName,
+        repository: p.repository,
+        workspace: p.localPath || p.vpsPath || p.workspace,
+        branch: p.branch || 'main',
+        lifecycle: 'EVOLUTION',
+        maturity: 'FUNCTIONAL',
+        status: p.status || 'ONLINE',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+    } catch (_) {
+      return [];
+    }
+  }
   async analyze(tenantId, actorId, projectId) {
     await this.cp.authorize(tenantId, actorId, 'project:read');
     const data = await this.store.read(); const project = data.projects.find((item) => item.tenantId === tenantId && item.id === projectId); if (!project) throw new NotFoundError(`project not found: ${projectId}`);
-    if (!project.workspace || !this.gitRead) throw new ValidationError('project workspace and Git READ capability are required for analysis');
-    const [status, branches, log, head] = await Promise.all([this.gitRead.execute('status', [], project.workspace), this.gitRead.execute('branches', [], project.workspace), this.gitRead.execute('log', [], project.workspace), this.gitRead.execute('rev-parse', [], project.workspace)]);
+    if (!project.workspace) throw new ValidationError('project workspace is required for analysis');
+    const read = new GitReadCapability({ workspaceRoot: project.workspace });
+    const [status, branches, log, head] = await Promise.all([read.execute('status'), read.execute('branches'), read.execute('log'), read.execute('rev-parse')]);
     const lines = [`# Project State: ${project.name}`, '', `Generated: ${new Date().toISOString()}`, `Lifecycle: ${project.lifecycle}`, `Branch: ${project.branch || 'detected from Git'}`, `HEAD: ${head.stdout.trim()}`, '', '## Working tree', '```text', status.stdout, '```', '', '## Branches', '```text', branches.stdout, '```', '', '## Recent history', '```text', log.stdout, '```', '', '## Evolution rule', '- Preserve working modules; create jobs only for measured gaps.', '- This analysis is read-only; no files or refs were modified.'].join('\n');
     const artifact = { id: uuid(), tenantId, projectId, type: 'FENIX_PROJECT_STATE', name: 'PROJECT_STATE.md', content: lines, createdBy: actorId, createdAt: new Date().toISOString() };
     await this.store.update((state) => { state.artifacts.push(artifact); const current = state.projects.find((item) => item.id === projectId); current.currentCommit = head.stdout.trim(); current.baseCommit ||= head.stdout.trim(); current.architecture = { source: 'git-read-analysis', branch: branches.stdout.trim().split(/\r?\n/).filter(Boolean).length, recentCommits: log.stdout.trim().split(/\r?\n/).filter(Boolean).length }; current.updatedAt = new Date().toISOString(); return state; });

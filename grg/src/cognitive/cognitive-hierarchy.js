@@ -57,13 +57,38 @@ class CognitiveHierarchy {
       state.cognitiveEntities.push(created);
       state.cognitiveWorkspaces.push(workspaceRecord(created, actorId));
       state.cognitiveAccessGrants.push(grantRecord(tenantId, actorId, created.id, actorId, true));
-      if (TEAM_ENTITY_TYPES.has(type)) {
+      if (TEAM_ENTITY_TYPES.has(type) && input.seedAgents !== false) {
         for (const role of PROJECT_AGENT_ROLES) state.cognitiveAgents.push(agentRecord(created, role, actorId));
       }
       return state;
     });
     await this.bus.emit('cognitive.entity.created', { tenantId, actorId, entityId: created.id, type: created.type, parentId: created.parentId });
     return created;
+  }
+
+  async createAgent(tenantId, actorId, input = {}) {
+    await this.cp.authorize(tenantId, actorId, 'member:manage');
+    const entityId = String(input.entityId || '');
+    const entity = await this.getInternal(tenantId, entityId);
+    await this.authorizeScope(tenantId, actorId, entityId, 'coordinate');
+    if (!TEAM_ENTITY_TYPES.has(entity.type)) throw new ValidationError('agents require a company or project scope');
+    const name = String(input.name || '').trim();
+    const role = slugify(String(input.role || name));
+    const description = String(input.description || '').trim();
+    if (!name || name.length > 80 || !role || role.length > 80 || description.length > 500) throw new ValidationError('agent name, role or description is invalid');
+    const agent = agentRecord(entity, role, actorId, {
+      name, description, dynamic: true, executionAllowed: true,
+    });
+    agent.identity = `${entity.identity}/agent/${role}-${agent.id.slice(0, 8)}`;
+    await this.store.update((state) => { state.cognitiveAgents.push(agent); return state; });
+    await this.bus.emit('cognitive.agent.created', { tenantId, actorId, entityId, agentId: agent.id, role });
+    return agent;
+  }
+
+  async listAgents(tenantId, actorId, entityId) {
+    await this.authorizeScope(tenantId, actorId, entityId, 'read');
+    const state = await this.store.read();
+    return state.cognitiveAgents.filter((item) => item.tenantId === tenantId && item.entityId === entityId && item.status === 'ACTIVE');
   }
 
   async get(tenantId, actorId, entityId) {

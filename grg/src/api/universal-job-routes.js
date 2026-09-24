@@ -113,10 +113,25 @@ async function handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, 
     return true;
   }
 
-  if (req.method === 'GET' && (url.pathname === '/api/jobs' || url.pathname === '/api/v2/jobs')) {
+  if (req.method === 'GET' && ['/api/jobs', '/api/v2/jobs', '/api/v2/queue', '/api/v2/public/queue'].includes(url.pathname)) {
     const persisted = await app.jobs.list(tenantId, actorId, url.searchParams.get('status') || undefined);
     const bullmq = app.queues?.status ? await app.queues.status('fenix-runtime') : null;
-    sendJson(res, 200, { jobs: persisted.map(presentJob), bullmq });
+    const count = (...statuses) => persisted.filter(job => statuses.includes(String(job.status).toUpperCase())).length;
+    sendJson(res, 200, {
+      ok: true,
+      source: 'JobEngine',
+      jobs: persisted.map(presentJob),
+      bullmq,
+      queue: {
+        total: persisted.length,
+        completed: count('COMPLETED', 'SUCCEEDED'),
+        running: count('RUNNING'),
+        waiting: count('QUEUED', 'WAITING', 'READY', 'RETRYING'),
+        failed: count('FAILED', 'DEAD_LETTER'),
+        cancelled: count('CANCELLED'),
+        paused: count('PAUSED')
+      }
+    });
     return true;
   }
 

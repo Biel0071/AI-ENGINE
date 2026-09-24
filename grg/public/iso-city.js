@@ -925,6 +925,16 @@ class IsoCityEngine {
       selectedAgent: null,
       photoMode: false
     };
+    this.rotationQuarter = 0;
+    try {
+      const saved = JSON.parse(localStorage.getItem('fenix_city_camera') || 'null');
+      if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) && Number.isFinite(saved.zoom) && saved.zoom >= 0.4 && saved.zoom <= 2.85) {
+        this.state.camera = { x: saved.x, y: saved.y, zoom: saved.zoom };
+        this.state.targetCamera = { ...this.state.camera };
+        this.rotationQuarter = (Number(saved.rotationQuarter) || 0) & 3;
+      }
+    } catch (_) {}
+    window.addEventListener('pagehide', () => this.saveCamera(), { once: true });
 
     this.world = {
       agents: new Map(),
@@ -1035,12 +1045,12 @@ class IsoCityEngine {
       else if (toolName.includes('mcp')) targetDistrictKey = 'MCP';
       else if (toolName.includes('deploy') || toolName.includes('docker')) targetDistrictKey = 'DEVOPS';
       else targetDistrictKey = agent.district || 'DEVELOPMENT';
-    } else if (et === 'job.started' || et === 'runtime.job.running' || et === 'mission.step.dispatched') {
+    } else if (et === 'job.started' || et === 'runtime.job.started' || et === 'runtime.job.running' || et === 'mission.step.dispatched') {
       targetDistrictKey = agent.district || 'BACKEND';
     }
 
-    const complete = ['job.completed', 'tool.completed', 'mission.step.completed', 'agent.task.completed'].includes(event.type);
-    const failed = ['job.failed', 'agent.failed', 'agent.error'].includes(event.type);
+    const complete = ['job.completed', 'runtime.job.succeeded', 'tool.completed', 'mission.step.completed', 'agent.task.completed'].includes(event.type);
+    const failed = ['job.failed', 'runtime.job.failed', 'runtime.job.dead_letter', 'agent.failed', 'agent.error'].includes(event.type);
 
     if (failed) {
       agent.status = 'ERROR';
@@ -1236,8 +1246,9 @@ class IsoCityEngine {
         const tw = this.state.tileSize;
         const th = tw / 2;
         this.state.followAgentId = null;
-        this.state.targetCamera.x = -(wx - wy) * tw;
-        this.state.targetCamera.y = -(wx + wy) * th;
+        const cameraPoint = this.toScreen(wx, wy, 0, 0, 0, 1);
+        this.state.targetCamera.x = -cameraPoint.x;
+        this.state.targetCamera.y = -cameraPoint.y;
         return;
       }
       if (this._hitTestHandoff(mx, my)) return;
@@ -1249,8 +1260,9 @@ class IsoCityEngine {
         const rect = this.canvas.getBoundingClientRect();
         // Golden-third framing: places agent at ~38% screen width (offset -12% from center, leaving contextual space on right)
         const goldenOffsetX = Math.round(rect.width * 0.12);
-        this.state.targetCamera.x = -Math.round((agent.x - agent.y) * tw * z) - goldenOffsetX;
-        this.state.targetCamera.y = -Math.round((agent.x + agent.y) * th * z);
+        const cameraPoint = this.toScreen(agent.x, agent.y, 0, 0, 0, z);
+        this.state.targetCamera.x = -Math.round(cameraPoint.x) - goldenOffsetX;
+        this.state.targetCamera.y = -Math.round(cameraPoint.y);
         this.state.targetCamera.zoom = z;
         this._updateZoomDisplay();
 
@@ -1259,15 +1271,9 @@ class IsoCityEngine {
         const sc = this.toScreen(agent.x, agent.y, 0.22, cx, cy, z);
 
         window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: this.state.selectedAgent, agentId: this.state.selectedAgent.id } }));
-        if (typeof window.openSpatialAgentChat === 'function') {
-          window.openSpatialAgentChat(agent, sc);
-        }
-        if (typeof window.openSpatialAgentDrawer === 'function') {
-          window.openSpatialAgentDrawer(agent);
-        }
-        if (typeof window.fenixInspectAgent === 'function') {
-          window.fenixInspectAgent(this.state.selectedAgent.id);
-        }
+        this.saveCamera();
+        window.showView?.('agents');
+        setTimeout(() => window.fenixInspectAgent?.(agent.id), 80);
         return;
       }
       const distHit = this._hitTestDistrict(mx, my);
@@ -1278,9 +1284,14 @@ class IsoCityEngine {
         this.state.targetCamera.zoom = Math.max(this.state.targetCamera.zoom, 1.95);
         this._updateZoomDisplay();
         window.dispatchEvent(new CustomEvent('fenix-district-selected', { detail: distHit }));
-        if (typeof window.fenixInspectBuilding === 'function') {
-          window.fenixInspectBuilding(distHit);
-        }
+        this.saveCamera();
+        const destination = {
+          'command-center': 'command', 'project-district': 'projects',
+          'ai-district': 'mcp', 'creative-district': 'ide',
+          'dev-district': 'ide', 'data-center': 'memory',
+          'observatory': 'observability', 'browser-district': 'browser'
+        }[distHit.key] || 'operations';
+        window.showView?.(destination);
         return;
       }
       this.state.selectedAgent = null;
@@ -1489,8 +1500,9 @@ class IsoCityEngine {
       const z = 2.4;
       const rect = this.canvas.getBoundingClientRect();
       const goldenOffsetX = Math.round((rect.width ?? 1200) * 0.12);
-      this.state.targetCamera.x = -Math.round((target.x - target.y) * tw * z) - goldenOffsetX;
-      this.state.targetCamera.y = -Math.round((target.x + target.y) * th * z);
+      const cameraPoint = this.toScreen(target.x, target.y, 0, 0, 0, z);
+      this.state.targetCamera.x = -Math.round(cameraPoint.x) - goldenOffsetX;
+      this.state.targetCamera.y = -Math.round(cameraPoint.y);
       this.state.targetCamera.zoom = z;
       this._updateZoomDisplay();
       window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: target, agentId: target.id } }));
@@ -1948,12 +1960,12 @@ class IsoCityEngine {
       if (window.FENIX?.live) window.FENIX.live.agents = apiAgents;
 
       // Update HUD online/working/errors counters
-      const onlineCount = [...this.world.agents.values()].filter(a => a.status !== 'OFFLINE').length;
+      const registeredCount = this.world.agents.size;
       const workingCount = [...this.world.agents.values()].filter(a => ['WORKING', 'RUNNING', 'CODING', 'TESTING', 'DEPLOYING'].includes(a.status)).length;
       const errorCount = [...this.world.agents.values()].filter(a => ['ERROR', 'FAILED', 'BLOCKED'].includes(a.status)).length;
 
       const elOnline = document.getElementById('cityOnlineCount');
-      if (elOnline) elOnline.textContent = '● ' + onlineCount + ' ONLINE';
+      if (elOnline) elOnline.textContent = registeredCount + ' REGISTRADOS';
       const elWorking = document.getElementById('cityWorkingCount');
       if (elWorking) elWorking.textContent = '⚡ ' + workingCount + ' EM OPERAÇÃO';
       const elErrors = document.getElementById('cityErrorsCount');
@@ -1982,9 +1994,30 @@ class IsoCityEngine {
   
 
   toScreen(x, y, z, cx, cy, zoom) {
+    const rotated = this.rotatePoint(x, y);
     const tw = this.state.tileSize * zoom;
     const th = (this.state.tileSize / 2) * zoom;
-    return { x: cx + (x - y) * tw, y: cy + (x + y) * th - z * tw };
+    return { x: cx + (rotated.x - rotated.y) * tw, y: cy + (rotated.x + rotated.y) * th - z * tw };
+  }
+
+  rotatePoint(x, y) {
+    switch (this.rotationQuarter) {
+      case 1: return { x: -y, y: x };
+      case 2: return { x: -x, y: -y };
+      case 3: return { x: y, y: -x };
+      default: return { x, y };
+    }
+  }
+
+  saveCamera() {
+    try { localStorage.setItem('fenix_city_camera', JSON.stringify({ ...this.state.targetCamera, rotationQuarter: this.rotationQuarter })); } catch (_) {}
+  }
+
+  rotateCamera() {
+    this.rotationQuarter = (this.rotationQuarter + 1) & 3;
+    this.saveCamera();
+    const button = document.getElementById('btnRotateCity');
+    if (button) button.setAttribute('aria-label', `Girar cidade · orientação ${this.rotationQuarter + 1} de 4`);
   }
 
   startLoop() {
@@ -2030,8 +2063,9 @@ class IsoCityEngine {
       center.y /= missionAgents.length;
       const tw = this.state.tileSize;
       const th = this.state.tileSize / 2;
-      this.state.targetCamera.x = -(center.x - center.y) * tw;
-      this.state.targetCamera.y = -(center.x + center.y) * th;
+      const cameraPoint = this.toScreen(center.x, center.y, 0, 0, 0, 1);
+      this.state.targetCamera.x = -cameraPoint.x;
+      this.state.targetCamera.y = -cameraPoint.y;
       this.state.targetCamera.zoom = Math.max(this.state.targetCamera.zoom, 1.2);
     }
     if (followed) {
@@ -2040,8 +2074,9 @@ class IsoCityEngine {
       const z = Math.max(this.state.targetCamera.zoom, 1.35);
       const rect = this.canvas.getBoundingClientRect();
       const goldenOffsetX = Math.round(rect.width * 0.12);
-      this.state.targetCamera.x = -Math.round((followed.x - followed.y) * tw * z) - goldenOffsetX;
-      this.state.targetCamera.y = -Math.round((followed.x + followed.y) * th * z);
+      const cameraPoint = this.toScreen(followed.x, followed.y, 0, 0, 0, z);
+      this.state.targetCamera.x = -Math.round(cameraPoint.x) - goldenOffsetX;
+      this.state.targetCamera.y = -Math.round(cameraPoint.y);
       this.state.targetCamera.zoom = z;
     }
     // Smooth camera
@@ -3344,7 +3379,7 @@ class IsoCityEngine {
     const headY = sc.y - 36 * zoom;
     const tagY = headY - 6 * zoom;
 
-    if (!this.state.photoMode && (isHovered || isSelected || isWorking || isOffline || zoom >= 0.8)) {
+    if (!this.state.photoMode && (isHovered || isSelected || isWorking || zoom >= 1.8)) {
       ctx.save();
       const displayName = agent.displayName || agent.name;
       ctx.font = `700 ${Math.max(9, 10.5 * zoom)}px 'Inter',sans-serif`;
@@ -3378,11 +3413,11 @@ class IsoCityEngine {
     }
 
     // Speech bubble
-    if (!this.state.photoMode && agent.bubble && agent.bubble.life > 0) {
+    if (!this.state.photoMode && agent.bubble && agent.bubble.life > 0 && (isHovered || isSelected || zoom >= 2.1)) {
       const bAlpha = Math.min(1, agent.bubble.life);
       ctx.save();
       ctx.globalAlpha = bAlpha;
-      const bText = agent.bubble.text;
+      const bText = String(agent.bubble.text || '').slice(0, 28);
       ctx.font = `600 ${Math.max(8, 9.5 * zoom)}px 'Inter',sans-serif`;
       ctx.textAlign = 'center';
       const bw = ctx.measureText(bText).width + 16;
@@ -3409,11 +3444,11 @@ class IsoCityEngine {
     }
 
     // Thought bubble (Munder Difflin Living Office)
-    if (!this.state.photoMode && agent.thoughtBubble && agent.thoughtBubble.life > 0) {
+    if (!this.state.photoMode && agent.thoughtBubble && agent.thoughtBubble.life > 0 && (isHovered || isSelected || zoom >= 2.1)) {
       const tAlpha = Math.min(1, agent.thoughtBubble.life);
       ctx.save();
       ctx.globalAlpha = tAlpha;
-      const tText = agent.thoughtBubble.text;
+      const tText = String(agent.thoughtBubble.text || '').slice(0, 28);
       ctx.font = `600 ${Math.max(8, 9 * zoom)}px 'Inter',sans-serif`;
       ctx.textAlign = 'center';
       const tw = ctx.measureText(tText).width + 18;
@@ -3689,8 +3724,9 @@ class IsoCityEngine {
         } else if (action === 'focus-district') {
           const tw = this.state.tileSize;
           const th = this.state.tileSize / 2;
-          this.state.targetCamera.x = -(d.x - d.y) * tw;
-          this.state.targetCamera.y = -(d.x + d.y) * th;
+          const cameraPoint = this.toScreen(d.x, d.y, 0, 0, 0, 1);
+          this.state.targetCamera.x = -cameraPoint.x;
+          this.state.targetCamera.y = -cameraPoint.y;
           this.state.targetCamera.zoom = 1.35;
           this._updateZoomDisplay();
         } else if (action === 'filter-district') {
@@ -4663,8 +4699,9 @@ class IsoCityEngine {
       const th = tw / 2;
       this.state.followAgentId = null;
       this.state.selectedAgent = null;
-      this.state.targetCamera.x = -(d.x - d.y) * tw;
-      this.state.targetCamera.y = -(d.x + d.y) * th;
+      const cameraPoint = this.toScreen(d.x, d.y, 0, 0, 0, 1);
+      this.state.targetCamera.x = -cameraPoint.x;
+      this.state.targetCamera.y = -cameraPoint.y;
       this.state.targetCamera.zoom = 1.15;
       this._updateZoomDisplay();
     }
@@ -4685,10 +4722,10 @@ class IsoCityEngine {
     const text = document.getElementById('fenixCityWeatherText');
     if (this.isNight) {
       if (icon) { icon.className = 'ph-bold ph-moon'; icon.style.color = '#FBBF24'; }
-      if (text) text.textContent = 'Noite Limpa 22°C';
+      if (text) text.textContent = 'Modo noite';
     } else {
       if (icon) { icon.className = 'ph-bold ph-sun'; icon.style.color = '#F59E0B'; }
-      if (text) text.textContent = 'Dia Ensolarado 26°C';
+      if (text) text.textContent = 'Modo dia';
     }
   }
 
@@ -4737,8 +4774,9 @@ class IsoCityEngine {
       const rect = this.canvas.getBoundingClientRect();
       // Golden-third framing: places agent at ~38% screen width (offset -12% from center, leaving contextual space on right)
       const goldenOffsetX = Math.round(rect.width * 0.12);
-      this.state.targetCamera.x = -Math.round((target.x - target.y) * tw * z) - goldenOffsetX;
-      this.state.targetCamera.y = -Math.round((target.x + target.y) * th * z);
+      const cameraPoint = this.toScreen(target.x, target.y, 0, 0, 0, z);
+      this.state.targetCamera.x = -Math.round(cameraPoint.x) - goldenOffsetX;
+      this.state.targetCamera.y = -Math.round(cameraPoint.y);
       this.state.targetCamera.zoom = z;
       this._updateZoomDisplay();
       window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: target, agentId: target.id } }));

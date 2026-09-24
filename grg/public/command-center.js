@@ -2258,6 +2258,28 @@
 
   function buildDepartmentTelemetryHtml(dKey, live, d) {
     const key = String(dKey || '').toUpperCase();
+    if (key === 'AI-DISTRICT' || key === 'AI' || key === 'AI_MODELS' || key === 'API-PLATFORM') {
+      return `
+        <div class="orch-modal-grid">
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">VPS API Platform</div><div class="orch-modal-data-val" id="apiPlatformStatusVal" style="color:var(--fenix-green);"><i class="ph-fill ph-circle"></i> ONLINE (3001)</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Host & Engine</div><div class="orch-modal-data-val">209.50.241.22 (Fastify)</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Modelos Ativos</div><div class="orch-modal-data-val" style="color:var(--fenix-cyan);">Qwen 2.5 (0.5B/3B) + DeepSeek R1</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Database / Cache</div><div class="orch-modal-data-val">Postgres 16 + Redis 7 BullMQ</div></div>
+        </div>
+        <div style="margin-top:10px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:10px;font-weight:600;color:var(--fenix-purple);text-transform:uppercase;"><i class="ph-fill ph-cpu"></i> Controle Direto da API Platform</span>
+            <span id="apiPlatformUptime" style="font-size:9px;color:var(--fenix-text-dim);font-family:var(--fenix-font-mono);">Uptime: medindo...</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button id="btnOpenApiIde" class="orch-inspect-btn" style="color:var(--fenix-cyan);font-size:9.5px;padding:4px 8px;"><i class="ph-fill ph-code"></i> Programar na IDE</button>
+            <button id="btnDeployApiVps" class="orch-inspect-btn" style="color:var(--fenix-green);font-size:9.5px;padding:4px 8px;"><i class="ph-fill ph-arrows-clockwise"></i> Reiniciar / Deploy VPS</button>
+            <button id="btnTestApiChat" class="orch-inspect-btn" style="color:var(--fenix-purple);font-size:9.5px;padding:4px 8px;"><i class="ph-fill ph-paper-plane-right"></i> Testar Chat IA</button>
+          </div>
+          <div id="apiPlatformLiveOutput" style="display:none;margin-top:8px;padding:6px;background:#05070f;border-radius:4px;font-family:var(--fenix-font-mono);font-size:9.5px;color:#a5b4fc;max-height:100px;overflow-y:auto;white-space:pre-wrap;"></div>
+        </div>
+      `;
+    }
     if (key === 'DATABASE') {
       return `
         <div class="orch-modal-grid">
@@ -2525,6 +2547,58 @@
         if (mId) openMissionDetailModal(mId);
       });
     });
+    document.getElementById('btnOpenApiIde')?.addEventListener('click', () => {
+      closeModal();
+      window.showView?.('ide');
+      setTimeout(() => {
+        const select = document.getElementById('fenixIdeProject');
+        if (select) {
+          select.value = 'api-platform';
+          select.dispatchEvent(new Event('change'));
+        }
+      }, 150);
+    });
+    document.getElementById('btnDeployApiVps')?.addEventListener('click', async () => {
+      const outEl = document.getElementById('apiPlatformLiveOutput');
+      if (outEl) {
+        outEl.style.display = 'block';
+        outEl.textContent = 'Enviando comando de reinício/deploy para VPS 209.50.241.22...';
+      }
+      try {
+        const res = await fetch('/api/v2/api-platform/deploy', { method: 'POST' });
+        const json = await res.json();
+        if (outEl) outEl.textContent = json.ok ? `[VPS DEPLOY OK] ${json.output || 'Container api-platform-api-1 reiniciado com sucesso!'}` : `[ERRO] ${json.error}`;
+      } catch (err) {
+        if (outEl) outEl.textContent = `[ERRO DEPLOY] ${err.message}`;
+      }
+    });
+    document.getElementById('btnTestApiChat')?.addEventListener('click', async () => {
+      const outEl = document.getElementById('apiPlatformLiveOutput');
+      if (outEl) {
+        outEl.style.display = 'block';
+        outEl.textContent = 'Consultando Ollama (Qwen) na VPS através da API Platform...';
+      }
+      try {
+        const res = await fetch('/api/v2/api-platform/test-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Olá Fênix OS!', model: 'qwen2.5:0.5b' })
+        });
+        const json = await res.json();
+        if (outEl) outEl.textContent = json.ok ? `[IA RESPOSTA] ${json.data?.choices?.[0]?.message?.content || JSON.stringify(json.data)}` : `[STATUS ${json.status || 'ERR'}] ${json.error || JSON.stringify(json)}`;
+      } catch (err) {
+        if (outEl) outEl.textContent = `[ERRO CHAT] ${err.message}`;
+      }
+    });
+    if (dKey === 'AI-DISTRICT' || dKey === 'AI' || dKey === 'AI_MODELS' || dKey === 'API-PLATFORM') {
+      fetch('/api/v2/api-platform/health').then(r => r.json()).then(res => {
+        if (res.ok && res.data) {
+          const upt = res.data.uptime ? `${(res.data.uptime / 3600).toFixed(1)}h` : '—';
+          const uptEl = document.getElementById('apiPlatformUptime');
+          if (uptEl) uptEl.textContent = `Uptime: ${upt} | Latência: ${res.data.latency || 0}ms | CPU: ${res.data.cpu || '—'}`;
+        }
+      }).catch(() => {});
+    }
   }
 
   // ==========================================

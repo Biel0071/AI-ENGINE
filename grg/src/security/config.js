@@ -39,8 +39,8 @@ function loadSecurityConfig(env = process.env) {
     allowDevHeaders,
     killSwitch,
     sessionTtlMs: positiveInt(env.FENIX_SESSION_TTL_MS, 12 * 60 * 60 * 1000, 'FENIX_SESSION_TTL_MS'),
-    loginRateLimit: positiveInt(env.FENIX_LOGIN_RATE_LIMIT, 10, 'FENIX_LOGIN_RATE_LIMIT'),
-    apiRateLimit: positiveInt(env.FENIX_API_RATE_LIMIT, 300, 'FENIX_API_RATE_LIMIT'),
+    loginRateLimit: positiveInt(env.FENIX_LOGIN_RATE_LIMIT, production ? 10 : 100, 'FENIX_LOGIN_RATE_LIMIT'),
+    apiRateLimit: positiveInt(env.FENIX_API_RATE_LIMIT, production ? 300 : 3000, 'FENIX_API_RATE_LIMIT'),
     rateWindowMs: positiveInt(env.FENIX_RATE_WINDOW_MS, 60_000, 'FENIX_RATE_WINDOW_MS'),
     bootstrapAdmin: bootstrapUser ? {
       tenantId: String(env.FENIX_BOOTSTRAP_TENANT_ID || 'grg'),

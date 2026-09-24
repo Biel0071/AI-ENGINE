@@ -34,6 +34,15 @@ class AuthService {
     return this;
   }
 
+  async createAnalysisSession(tenantId, userId, analysisId) {
+    const membership = await this.cp.getMembership(tenantId, userId);
+    const token = `analysis_${crypto.randomBytes(32).toString('hex')}`;
+    const session = { id: uuid(), tokenHash: hashToken(token), userId, tenantId, role: membership.role,
+      analysisId, readOnly: true, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(), revokedAt: null };
+    await this.store.update(s => { s.sessions.push(session); return s; });
+    return token;
+  }
+
   // Cria (ou garante) um usuário admin com senha. Idempotente.
   async ensureUser(tenantId, userId, password, role = 'admin', name = null) {
     if (!String(password || '')) throw new ValidationError('password is required');
@@ -76,8 +85,11 @@ class AuthService {
     };
     this.sessions.set(token, { ...session, exp: Date.parse(session.expiresAt) });
     await this.store.update((s) => { s.sessions.push(session); return s; });
-    await this.bus.emit('auth.login', { tenantId, userId });
-    if (this.audit) await this.audit.record({ tenantId, actorId: userId, action: 'auth.login', resource: { sessionId: session.id } });
+    // Login não deve ficar bloqueado pela fila de auditoria/eventos durante
+    // picos de escrita do worker. A sessão já foi persistida acima; os sinais
+    // auxiliares seguem em segundo plano e não podem impedir a resposta.
+    this.bus.emit('auth.login', { tenantId, userId }).catch(() => {});
+    if (this.audit) this.audit.record({ tenantId, actorId: userId, action: 'auth.login', resource: { sessionId: session.id } }).catch(() => {});
     return { token, userId, tenantId, role: membership.role, name: user.name };
   }
 
@@ -147,10 +159,11 @@ class AuthService {
 
   async contextFromAsync(headers, { allowDevHeaders = false } = {}) {
     const auth = String(headers['authorization'] || '');
-    const match = auth.match(/^Bearer\s+(.+)$/i);
+    const cookieToken = String(headers.cookie || '').match(/(?:^|;\s*)fenix_session=([^;]+)/i)?.[1] || '';
+    const match = auth.match(/^Bearer\s+(.+)$/i) || (cookieToken ? [null, decodeURIComponent(cookieToken)] : null);
     if (match) {
       const session = await this.verifyPersistent(match[1]);
-      if (session) return { tenantId: session.tenantId, actorId: session.userId, authed: true, sessionId: session.id };
+      if (session) return { tenantId: session.tenantId, actorId: session.userId, authed: true, sessionId: session.id, readOnly: session.readOnly === true, analysisId: session.analysisId };
       if (this.externalVerifier) { try { const identity = await this.externalVerifier.verify(match[1]); if (identity?.tenantId && identity?.userId) return { tenantId: identity.tenantId, actorId: identity.userId, authed: true, sessionId: null, external: true }; } catch { return null; } }
     }
     if (allowDevHeaders) {

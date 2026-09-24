@@ -51,12 +51,15 @@ class ProviderRegistry {
         let isHealthy = false;
         
         if (id === 'QWEN') {
-          // Ollama style health check
-          const res = await fetch(provider.endpoint + '/api/tags', { signal: AbortSignal.timeout(5000) });
+          // AI Platform gateway contract (the endpoint is not a raw Ollama host).
+          const res = await fetch(provider.endpoint + '/v1/health', {
+            headers: provider.key ? { 'x-api-key': provider.key, authorization: 'Bearer ' + provider.key } : {},
+            signal: AbortSignal.timeout(5000)
+          });
           isHealthy = res.ok;
           if (isHealthy) {
-             const data = await res.json();
-             provider.discoveredModels = data.models ? data.models.map(m => m.name) : provider.models;
+             const data = await res.json().catch(() => ({}));
+             provider.discoveredModels = data.models || data.providers || provider.models;
           }
         } else if (id === 'OPENAI') {
           // OpenAI health check

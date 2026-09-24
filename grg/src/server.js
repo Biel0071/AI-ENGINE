@@ -17,6 +17,10 @@ const { handleProductExperienceRoutes } = require('./api/product-experience-rout
 const { handleProjectMirrorRoutes, discoverProjects } = require('./api/project-mirror-routes');
 const { handleUniversalJobRoutes } = require('./api/universal-job-routes');
 const { handleOrchestrationRoutes } = require('./api/orchestration-routes');
+const { handleUniversalSystemRoutes } = require('./api/universal-system-routes');
+const { handleLivingCityRoutes } = require('./api/living-city-routes');
+const { handleProjectWorkspaceRoutes } = require('./api/project-workspace-routes');
+const { handleProjectGitRoutes } = require('./api/project-git-routes');
 
 process.on('uncaughtException', (err) => console.error('[Server uncaughtException]', err));
 process.on('unhandledRejection', (reason) => console.error('[Server unhandledRejection]', reason));
@@ -26,8 +30,10 @@ const crypto = require('node:crypto');
 const PUBLIC = path.join(__dirname, '..', 'public');
 
 function sendJson(res, code, payload, requestId = null) {
+  if (res.headersSent) return true;
   res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(requestId ? { ...payload, requestId } : payload));
+  return true;
 }
 async function readJson(req) {
   let body = '';
@@ -60,7 +66,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     llm: options.llm !== undefined ? options.llm : env.GRG_LLM !== '0',
     securityConfig,
     env,
-    databaseUrl: infrastructure.databaseUrl,
+    databaseUrl: options.databaseUrl !== undefined
+      ? options.databaseUrl
+      : (options.dataFile && !env.DATABASE_URL ? null : infrastructure.databaseUrl),
     databaseSchema: infrastructure.databaseSchema,
     redisUrl: infrastructure.redisUrl,
     queueRedisUrl: infrastructure.queueRedisUrl,
@@ -161,6 +169,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       correlationId = /^[A-Za-z0-9._:-]{1,128}$/.test(requestedCorrelation) ? requestedCorrelation : requestId;
       res.setHeader('x-correlation-id', correlationId);
       if (!gate.allowed) return sendJson(res, gate.status, { error: gate.error }, requestId);
+
+      // Capture credentials are never usable for writes, terminals or arbitrary file reads.
+      const analysisCredential = /analysis_[a-f0-9]{64}/.test(String(req.headers.authorization || '') + String(req.headers.cookie || ''));
+      if (analysisCredential) {
+        const identity = await app.security.authenticate(req.headers);
+        if (!identity?.readOnly || !['GET', 'HEAD'].includes(req.method) || /(?:logout|terminal|\/source|\/asset|\/fs|\/exec|\/download|system-analyses)/i.test(url.pathname)) return sendJson(res, 403, { error: 'Sessão de captura permite somente navegação de leitura.' }, requestId);
+      }
       
       if (req.method === 'GET' && url.pathname === '/api/system/boot-status') {
         const bootHealth = await app.health.check();
@@ -366,6 +381,21 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // seguranca exigem (rejects unauthenticated api access / rejects dev headers by default).
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
+
+      if (await require('./api/system-analysis-routes').handleSystemAnalysisRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      // Universal routes use the same authenticated identity and domain runtime
+      // as every other API. Never fabricate an administrator context here.
+      if (await handleLivingCityRoutes(req, res, url, app, sendJson, { tenantId, actorId })) return;
+      if (await handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+      if (await handleProjectGitRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      if (url.pathname.startsWith('/api/v2/')) {
+        const universalHandled = await handleUniversalSystemRoutes(
+          req, res, url, sendJson, readJson, { tenantId, actorId }, app
+        );
+        if (universalHandled || res.headersSent) return;
+      }
 
       const orchestrationHandled = await handleOrchestrationRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId });
       if (orchestrationHandled) return;
@@ -834,6 +864,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/cognitive/entities') return sendJson(res, 200, await app.hierarchy.list(tenantId, actorId, { type: url.searchParams.get('type') || undefined }), requestId);
       const cognitiveWorkspace = url.pathname.match(/^\/api\/cognitive\/entities\/([^/]+)\/workspace$/);
       if (req.method === 'GET' && cognitiveWorkspace) return sendJson(res, 200, await app.hierarchy.workspace(tenantId, actorId, cognitiveWorkspace[1]), requestId);
+      const cognitiveAgents = url.pathname.match(/^\/api\/cognitive\/entities\/([^/]+)\/agents$/);
+      if (req.method === 'GET' && cognitiveAgents) return sendJson(res, 200, { agents: await app.hierarchy.listAgents(tenantId, actorId, cognitiveAgents[1]) }, requestId);
+      if (req.method === 'POST' && cognitiveAgents) return sendJson(res, 201, await app.hierarchy.createAgent(tenantId, actorId, { ...(await readJson(req)), entityId: cognitiveAgents[1] }), requestId);
       if (req.method === 'POST' && url.pathname === '/api/cognitive/access-grants') return sendJson(res, 201, await app.hierarchy.grant(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/cognitive/knowledge-sharing-policies') return sendJson(res, 201, await app.hierarchy.createSharingPolicy(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/digital-twin/operational') return sendJson(res, 200, { twin: await app.digitalTwin.operational(tenantId, actorId) }, requestId);
@@ -1266,6 +1299,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   });
   server.on('close', () => { app.close().catch(() => {}); });
   server.app = app;
+  if (!env.FENIX_ANALYSIS_BASE_URL && !options.smokeBaseUrl) app.systemAnalyses.baseURL = `http://127.0.0.1:${server.address().port}`;
+  app.systemAnalyses.recover().catch(error => logger.error({ event: 'system-analysis.recovery.failed', error }));
 
   wss = new WebSocketServer({ noServer: true });
   server.on('upgrade', async (request, socket, head) => {
@@ -1278,18 +1313,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       headers.authorization = `Bearer ${queryToken}`;
     }
     
-    // Check auth via headers, cookies, or dev fallback
-    let context = app.auth?.contextFrom(headers, { allowDevHeaders: true });
-    if (!context && app.auth?.contextFromAsync) {
-      context = await app.auth.contextFromAsync(headers, { allowDevHeaders: true }).catch(() => null);
-    }
-    if (!context && app.security?.authenticate) {
-      context = await app.security.authenticate(headers).catch(() => null);
-    }
-    if (!context && (process.env.NODE_ENV !== 'production' || process.env.FENIX_ALLOW_DEV_HEADERS === '1' || !process.env.NODE_ENV)) {
-      context = { tenantId: 'grg', actorId: 'grg-admin', authed: true, role: 'master_admin' };
-    }
+    request.headers = headers;
+    const context = await app.security.authenticate(request.headers).catch(() => null);
     if (!context) return socket.destroy();
+    if (context.readOnly) return socket.destroy();
     
     wss.handleUpgrade(request, socket, head, (ws) => {
       ws.context = context;

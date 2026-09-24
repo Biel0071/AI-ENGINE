@@ -8,6 +8,13 @@ rem =========================================================================
 set KEY=C:/Users/Dell/.ssh/grg_fenix_vps
 set SRC=c:/projetos/ai-engine-core/ai-engine/grg/public
 set HOST=root@209.50.241.22
+if /I "%~1"=="city" goto CITY_DEPLOY
+if /I "%~1"=="ide" goto IDE_DEPLOY
+if /I "%~1"=="projects" goto PROJECTS_DEPLOY
+if /I "%~1"=="workspace" goto WORKSPACE_DEPLOY
+if /I "%~1"=="project-git" goto PROJECT_GIT_DEPLOY
+if /I "%~1"=="api-secret" goto API_SECRET_DEPLOY
+if /I "%~1"=="project-deploy-module" goto PROJECT_DEPLOY_MODULE
 
 echo [1/8] Deploying HTML shells...
 scp -i %KEY% %SRC%/index.html %HOST%:/opt/fenix-os/public/index.html
@@ -90,6 +97,18 @@ scp -i %KEY% %SRC%/system-analysis.js %HOST%:/opt/fenix-os/public/system-analysi
 scp -i %KEY% %SRC%/system-analysis.js %HOST%:/opt/fenix-os/grg/public/system-analysis.js
 scp -i %KEY% %SRC%/visual-inspector.js %HOST%:/opt/fenix-os/public/visual-inspector.js
 scp -i %KEY% %SRC%/visual-inspector.js %HOST%:/opt/fenix-os/grg/public/visual-inspector.js
+scp -i %KEY% %SRC%/marketplace-live.js %HOST%:/opt/fenix-os/public/marketplace-live.js
+scp -i %KEY% %SRC%/marketplace-live.js %HOST%:/opt/fenix-os/grg/public/marketplace-live.js
+scp -i %KEY% %SRC%/marketplace-live.css %HOST%:/opt/fenix-os/public/marketplace-live.css
+scp -i %KEY% %SRC%/marketplace-live.css %HOST%:/opt/fenix-os/grg/public/marketplace-live.css
+scp -i %KEY% %SRC%/project-hub-live.js %HOST%:/opt/fenix-os/public/project-hub-live.js
+scp -i %KEY% %SRC%/project-hub-live.js %HOST%:/opt/fenix-os/grg/public/project-hub-live.js
+scp -i %KEY% %SRC%/project-hub-live.css %HOST%:/opt/fenix-os/public/project-hub-live.css
+scp -i %KEY% %SRC%/project-hub-live.css %HOST%:/opt/fenix-os/grg/public/project-hub-live.css
+scp -i %KEY% %SRC%/project-ide-live.js %HOST%:/opt/fenix-os/public/project-ide-live.js
+scp -i %KEY% %SRC%/project-ide-live.js %HOST%:/opt/fenix-os/grg/public/project-ide-live.js
+scp -i %KEY% %SRC%/project-ide-live.css %HOST%:/opt/fenix-os/public/project-ide-live.css
+scp -i %KEY% %SRC%/project-ide-live.css %HOST%:/opt/fenix-os/grg/public/project-ide-live.css
 
 echo [5/8] Deploying Design System ^& Complete Stylesheets...
 scp -i %KEY% %SRC%/unified.css %HOST%:/opt/fenix-os/public/unified.css
@@ -146,3 +165,93 @@ ssh -i %KEY% %HOST% "curl -s -o /dev/null -w '%%{http_code}' http://127.0.0.1:30
 echo =========================================================================
 echo Deploy complete from canonical source: %SRC%
 echo =========================================================================
+exit /b 0
+
+:CITY_DEPLOY
+echo Deploying canonical City frontend to both webroots...
+for %%F in (index.html city-integration.js fenix-city-event-adapter.js fenix-v11-interactions.js fenix-v11-phase6.css iso-city.js live-runtime.js unified-app.js) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+ssh -i %KEY% %HOST% "pm2 reload 17"
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "(for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:3000/ && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:3000/ && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+exit /b %ERRORLEVEL%
+
+:PROJECT_GIT_DEPLOY
+echo Deploying Project Kernel Git routes and UI...
+ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/server.js /opt/fenix-os/grg/src/server.js.before-project-git-20260924"
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/api/project-git-routes.js %HOST%:/opt/fenix-os/grg/src/api/project-git-routes.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/projects/project-deploy.js %HOST%:/opt/fenix-os/grg/src/projects/project-deploy.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/deploy-project-git-patch.js %HOST%:/tmp/fenix-project-git-patch.js
+if errorlevel 1 exit /b 1
+for %%F in (project-hub-live.js project-hub-live.css) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+ssh -i %KEY% %HOST% "node /tmp/fenix-project-git-patch.js /opt/fenix-os/grg/src/server.js && node --check /opt/fenix-os/grg/src/server.js && node --check /opt/fenix-os/grg/src/api/project-git-routes.js && node --check /opt/fenix-os/grg/src/projects/project-deploy.js && pm2 reload 16 && pm2 reload 17 && (for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+exit /b %ERRORLEVEL%
+
+:API_SECRET_DEPLOY
+echo Deploying API Platform secret resolver fix...
+ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/api/universal-system-routes.js /opt/fenix-os/grg/src/api/universal-system-routes.js.before-secret-fix-20260924"
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/api/universal-system-routes.js %HOST%:/opt/fenix-os/grg/src/api/universal-system-routes.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "node --check /opt/fenix-os/grg/src/api/universal-system-routes.js && pm2 reload 16 && (for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health"
+exit /b %ERRORLEVEL%
+
+:PROJECT_DEPLOY_MODULE
+echo Deploying Project Kernel deployment verifier...
+scp -i %KEY% grg/src/projects/project-deploy.js %HOST%:/opt/fenix-os/grg/src/projects/project-deploy.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "node --check /opt/fenix-os/grg/src/projects/project-deploy.js && pm2 reload 16 && (for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health"
+exit /b %ERRORLEVEL%
+
+:IDE_DEPLOY
+echo Deploying canonical Project Kernel IDE to both webroots...
+for %%F in (index.html project-ide-live.js project-ide-live.css) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+ssh -i %KEY% %HOST% "pm2 reload 17"
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "curl -fsS -o /dev/null http://127.0.0.1:3000/ && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+exit /b %ERRORLEVEL%
+
+:PROJECTS_DEPLOY
+echo Deploying live Project Kernel hub to both webroots...
+for %%F in (index.html project-hub-live.js project-hub-live.css project-ide-live.js) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+ssh -i %KEY% %HOST% "pm2 reload 17"
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "curl -fsS -o /dev/null http://127.0.0.1:3000/ && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+exit /b %ERRORLEVEL%
+
+:WORKSPACE_DEPLOY
+echo Deploying authenticated workspace and Marketplace to both webroots...
+for %%F in (index.html login.html unified-app.js fenix-core-controller.js iso-city.js marketplace-live.js marketplace-live.css) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/frontend-gateway.js /opt/fenix-os/frontend-gateway.js.before-workspace"
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/gateway/frontend-gateway.js %HOST%:/opt/fenix-os/frontend-gateway.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "node --check /opt/fenix-os/frontend-gateway.js && pm2 reload 17 && (for i in 1 2 3 4 5 6 7 8 9 10; do curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+exit /b %ERRORLEVEL%

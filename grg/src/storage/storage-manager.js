@@ -42,10 +42,19 @@ class StorageManager {
         this.stats.relationalProvider = 'in-memory';
       }
     } else {
-      console.log('[StorageManager] No DATABASE_URL. Using InMemory driver.');
-      this.drivers.relational = new InMemoryDriver();
-      await this.drivers.relational.connect();
-      this.stats.relationalProvider = 'in-memory';
+      const sqlitePath = process.env.FENIX_KNOWLEDGE_SQLITE_PATH;
+      if (sqlitePath) {
+        const { SQLiteDriver } = require('./drivers/local/sqlite-driver');
+        this.drivers.relational = new SQLiteDriver({ dbPath: sqlitePath });
+        await this.drivers.relational.connect();
+        this.stats.relationalProvider = 'sqlite';
+        console.log('[StorageManager] SQLite knowledge store connected.');
+      } else {
+        console.log('[StorageManager] No DATABASE_URL or FENIX_KNOWLEDGE_SQLITE_PATH. Using InMemory driver.');
+        this.drivers.relational = new InMemoryDriver();
+        await this.drivers.relational.connect();
+        this.stats.relationalProvider = 'in-memory';
+      }
     }
 
     // ─── 2. Cache (Redis) ─────────────────────────────────────────────────────

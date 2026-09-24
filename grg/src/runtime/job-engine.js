@@ -39,6 +39,14 @@ function boundResult(result) {
       result: result.result,
       status: result.status,
       testsPassed: result.testsPassed,
+      run: result.run?.id ? { id: result.run.id, status: result.run.status } : undefined,
+      readiness: result.readiness?.id ? { id: result.readiness.id, status: result.readiness.status } : undefined,
+      scan: result.scan?.id ? { id: result.scan.id, status: result.scan.status, resourceCount: result.scan.resourceCount } : undefined,
+      changes: Number.isInteger(result.changes) ? result.changes : undefined,
+      metrics: result.metrics ? {
+        tokens: Number.isFinite(result.metrics.tokens) ? result.metrics.tokens : null,
+        costUsd: Number.isFinite(result.metrics.costUsd) ? result.metrics.costUsd : null,
+      } : undefined,
       toolCalls: Array.isArray(result.toolCalls) ? result.toolCalls.length : undefined,
     } : {}),
   };
@@ -154,7 +162,10 @@ class JobEngine {
       for (const job of due) { this.#claim(job, workerId); claimed.push(structuredClone(job)); }
       upsertHeartbeat(state, workerId, claimed.length); return state;
     });
-    return Promise.all(claimed.map((job) => this.#execute(job, workerId)));
+    return Promise.all(claimed.map(async (job) => {
+      await this.#publish(job, 'runtime.job.started', workerId).catch((error) => console.error('[JobEngine] failed to publish job start:', error));
+      return this.#execute(job, workerId);
+    }));
   }
   async run(tenantId, jobId, workerId) {
     if (!workerId) throw new ValidationError('workerId is required');
@@ -164,7 +175,9 @@ class JobEngine {
       if (!job || job.status !== 'QUEUED' || Date.parse(job.scheduledFor) > this.clock.now()) return state;
       this.#claim(job, workerId); claimed = structuredClone(job); upsertHeartbeat(state, workerId, 1); return state;
     });
-    return claimed ? this.#execute(claimed, workerId) : null;
+    if (!claimed) return null;
+    await this.#publish(claimed, 'runtime.job.started', workerId).catch((error) => console.error('[JobEngine] failed to publish job start:', error));
+    return this.#execute(claimed, workerId);
   }
   #claim(job, workerId) {
     job.status = 'RUNNING'; job.currentStage = 'RUNNING'; job.workerId = workerId; job.attempts += 1;
@@ -228,6 +241,8 @@ class JobEngine {
       job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId);
       if (!job) throw new NotFoundError(`job not found: ${jobId}`);
       if (job.status === 'QUEUED') return state;
+      if (job.status === 'RUNNING') { job.pauseRequestedAt = null; return state; }
+      if (job.status === 'PAUSING') { job.status = 'RUNNING'; job.currentStage = 'RUNNING'; job.pauseRequestedAt = null; job.updatedAt = now(); return state; }
       if (job.status !== 'PAUSED') throw new ValidationError(`job cannot resume from ${job.status}`);
       job.status = 'QUEUED'; job.currentStage = 'QUEUED'; job.pauseRequestedAt = null; job.updatedAt = now(); job.scheduledFor = now();
       return state;
@@ -242,8 +257,10 @@ class JobEngine {
     await this.store.update((state) => {
       job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId);
       if (!job) throw new NotFoundError(`job not found: ${jobId}`);
-      if (!['FAILED', 'DEAD_LETTER'].includes(job.status)) throw new ValidationError(`job cannot retry from ${job.status}`);
-      if (job.attempts >= job.maxAttempts) throw new ValidationError('job retry limit exhausted');
+      if (job.status === 'QUEUED') return state;
+      if (job.attempts >= job.maxAttempts) {
+        job.maxAttempts = job.attempts + 1;
+      }
       job.status = 'QUEUED'; job.currentStage = 'QUEUED'; job.pauseRequestedAt = null; job.error = null; job.completedAt = null; job.updatedAt = now(); job.scheduledFor = now();
       return state;
     });
@@ -370,7 +387,7 @@ class JobEngine {
     }
     return completed;
   }
-  async #publish(job, type, actorId) { if (!this.events) return; await this.events.publish({ tenantId: job.tenantId, stream: `job:${job.id}`, type, source: 'fenix-runtime', subject: job.id, data: { actorId, jobId: job.id, jobType: job.type, status: job.status, attempts: job.attempts, limits: job.limits }, idempotencyKey: `${type}:${job.id}:${job.attempts}` }); }
+  async #publish(job, type, actorId) { if (!this.events) return; await this.events.publish({ tenantId: job.tenantId, stream: `job:${job.id}`, type, source: 'fenix-runtime', subject: job.id, data: { actorId, jobId: job.id, jobType: job.type, status: job.status, attempts: job.attempts, limits: job.limits, agentId: job.agent?.agentId || null, projectId: job.projectId || null, missionId: job.missionId || null }, idempotencyKey: `${type}:${job.id}:${job.attempts}` }); }
 }
 
 function normalizeLimits(input = {}) { const limits = { timeoutMs: Number(input.timeoutMs || 300_000), memoryMb: Number(input.memoryMb || 512), cpuUnits: Number(input.cpuUnits || 1000) }; if (limits.timeoutMs < 100 || limits.timeoutMs > 86_400_000 || limits.memoryMb < 16 || limits.memoryMb > 65_536 || limits.cpuUnits < 10 || limits.cpuUnits > 64_000) throw new ValidationError('invalid job resource limits'); return limits; }

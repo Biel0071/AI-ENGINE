@@ -35,6 +35,7 @@ const EMPTY_STATE = () => ({
   designSystems: [],
   buildTargets: [],
   artifacts: [],
+  systemAnalyses: [],
   marketplaceInstalls: [],
   subscriptions: [],
   invoices: [],

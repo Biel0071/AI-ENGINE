@@ -26,7 +26,7 @@ class ApprovalEngine {
     const decision = this.policy.evaluate(input.action);
     await this.cp.authorize(tenantId, actorId, decision.permission);
     const request = {
-      id: uuid(), tenantId, requestedBy: actorId,
+      id: uuid(), tenantId, requestedBy: input.requestedBy || actorId,
       action: input.action,
       resource: stable(input.resource || null),
       resourceKey: resourceKey(input.resource),

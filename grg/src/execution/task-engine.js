@@ -154,7 +154,7 @@ class TaskEngine extends SystemModule {
 
         result = await this.agentRuntime.executeAgent(agentInstanceId);
       } else {
-        result = { success: true, message: 'Direct task execution completed' };
+        throw new Error('Task has no assigned agent execution adapter');
       }
 
       task.result = result;

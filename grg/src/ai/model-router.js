@@ -61,15 +61,16 @@ class ModelRouter {
         let tokens = 0;
 
         if (provider.id === 'QWEN') {
-          const res = await fetch(provider.endpoint + '/api/generate', {
+          const providerTimeoutMs = Math.max(1000, Number(process.env.GRG_MODEL_REQUEST_TIMEOUT_MS || 120000));
+          const res = await fetch(provider.endpoint + '/v1/text', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: modelId, prompt: payloadStr, stream: false }),
-            signal: AbortSignal.timeout(15000)
+            headers: { 'Content-Type': 'application/json', 'x-api-key': provider.key, authorization: 'Bearer ' + provider.key },
+            body: JSON.stringify({ model: modelId, prompt: payloadStr }),
+            signal: AbortSignal.timeout(providerTimeoutMs)
           });
           if (!res.ok) throw new Error('Qwen HTTP ' + res.status);
           const data = await res.json();
-          reply = data.response;
+          reply = data.result?.text || data.text || data.response || '';
           tokens = data.eval_count || 150;
         } else if (provider.id === 'OPENAI') {
           const res = await fetch(provider.endpoint + '/chat/completions', {

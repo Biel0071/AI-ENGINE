@@ -205,11 +205,14 @@
       case 'runtime.job.succeeded':
       case 'runtime.job.failed':
       case 'runtime.job.cancelled':
-        if (msg.payload?.jobId) {
+      case 'runtime.job.dead_letter': {
+        const jobData = msg.payload?.data || msg.payload || {};
+        if (jobData.jobId) {
           const normalized = msg.type.replace('runtime.', '');
-          updateJob(msg.payload.jobId, { status: normalized === 'job.succeeded' ? 'SUCCEEDED' : normalized === 'job.failed' ? 'FAILED' : normalized === 'job.cancelled' ? 'CANCELLED' : 'RUNNING' });
+          updateJob(jobData.jobId, { status: normalized === 'job.succeeded' ? 'SUCCEEDED' : normalized === 'job.failed' || normalized === 'job.dead_letter' ? 'FAILED' : normalized === 'job.cancelled' ? 'CANCELLED' : 'RUNNING' });
         }
         break;
+      }
 
       case 'memory.created':
       case 'visual.capture':

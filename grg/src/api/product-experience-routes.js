@@ -348,67 +348,28 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     return true;
   }
 
-  // 2a. POST /api/v2/vps-chat (Live interaction with Fênix on VPS API via Ollama qwen2.5:3b)
+  // 2a. POST /api/v2/vps-chat through the canonical API Platform provider.
   if (req.method === 'POST' && url.pathname === '/api/v2/vps-chat') {
     try {
       const payload = await readJsonBody(req);
-      const prompt = payload.prompt || payload.message || 'Ola Fênix';
-      let model = payload.model || 'ollama/qwen2.5:3b';
-      if (!model.includes('/') && (model.includes('qwen') || model === 'default')) {
-        model = `ollama/${model === 'default' ? 'qwen2.5:3b' : model}`;
-      }
-      const vpsUrl = process.env.GRG_AIPLATFORM_URL || 'http://209.50.241.22:3001';
-      const apiKey = (process.env.GRG_AIPLATFORM_KEY && process.env.GRG_AIPLATFORM_KEY.startsWith('ap_live_')) 
-        ? process.env.GRG_AIPLATFORM_KEY 
-        : 'ap_live_96e854c33c1bbac06ba6e8dd7b2e70a6114c29a4a914d428';
-
-      const vpsRes = await fetch(`${vpsUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: 'Você é o Fênix OS AI Core operando na VPS remota 209.50.241.22.' },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: payload.max_tokens || 30
-        }),
-        signal: AbortSignal.timeout(180000)
-      });
-
-      if (!vpsRes.ok) {
-        const text = await vpsRes.text().catch(() => '');
-        console.error('[VPS-CHAT HTTP ERROR]', vpsRes.status, text);
-        sendJson(res, 200, {
-          success: true,
-          vps: '209.50.241.22',
-          model,
-          response: `Fênix OS online na VPS 209.50.241.22`,
-          raw: { status: vpsRes.status, text }
-        });
-        return true;
-      }
-
-      const data = await vpsRes.json();
+      const prompt = String(payload.prompt || payload.message || '').trim();
+      if (!prompt) { sendError(res, 400, 'Informe uma mensagem.'); return true; }
+      const apiKey = resolveAIProviderKey();
+      if (!apiKey) { sendError(res, 503, 'API Platform sem credencial configurada.'); return true; }
+      const { AIPlatformProvider } = require('../ai-runtime/aiplatform-provider');
+      const model = String(payload.model || resolveAIPlatformModel()).trim();
+      const provider = new AIPlatformProvider({ baseUrl: resolveAIPlatformUrl(), apiKey, model });
+      const result = await provider.chat({ model, messages: [{ role: 'user', content: prompt }] });
+      const response = result.text;
+      if (!response) { sendError(res, 502, 'API Platform não retornou texto.'); return true; }
       sendJson(res, 200, {
         success: true,
-        vps: '209.50.241.22',
         model,
-        response: data.choices?.[0]?.message?.content || 'Resposta recebida da VPS',
-        raw: data
+        response
       });
     } catch (err) {
-      console.error('[VPS-CHAT CAUGHT ERROR]:', err);
-      sendJson(res, 200, {
-        success: true,
-        vps: '209.50.241.22',
-        model: 'ollama/qwen2.5:3b',
-        response: `Fênix OS AI Core conectado na VPS 209.50.241.22`,
-        error: err.message
-      });
+      console.error('[VPS-CHAT ERROR]', err?.name || 'Error');
+      sendError(res, 502, 'API Platform indisponível ou resposta inválida.');
     }
     return true;
   }
@@ -417,7 +378,7 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   if (req.method === 'GET' && (url.pathname === '/api/v2/proxy/vps-docs' || url.pathname.startsWith('/api/v2/proxy/vps-docs/'))) {
     try {
       const subPath = url.pathname.replace(/^\/api\/v2\/proxy\/vps-docs/, '') || '/';
-      const targetUrl = `http://209.50.241.22:3001/docs${subPath}${url.search}`;
+      const targetUrl = `${resolveAIPlatformUrl().replace(/\/$/, '')}/docs${subPath}${url.search}`;
       const vpsRes = await fetch(targetUrl, {
         headers: { 'User-Agent': 'Fenix-Preview-Proxy' },
         signal: AbortSignal.timeout(10000)
@@ -442,9 +403,9 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
   // 2c-proxy. GET /api/v2/proxy/vps-health (Reverse proxy to VPS Health)
   if (req.method === 'GET' && url.pathname === '/api/v2/proxy/vps-health') {
     try {
-      const vpsRes = await fetch('http://209.50.241.22:3001/health', { signal: AbortSignal.timeout(10000) });
+      const vpsRes = await fetch(`${resolveAIPlatformUrl().replace(/\/$/, '')}/health`, { signal: AbortSignal.timeout(10000) });
       const data = await vpsRes.json();
-      sendJson(res, 200, data);
+      sendJson(res, vpsRes.status, data);
       return true;
     } catch (e) {
       sendError(res, 502, `VPS Health Proxy Error: ${e.message}`);
@@ -593,41 +554,25 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
 
   // 6. POST /api/v2/agents/orchestrate (M30: Agent Workspace)
   if (req.method === 'POST' && url.pathname === '/api/v2/agents/orchestrate') {
-    let body = '';
-    req.on('data', chunk => body += chunk.toString());
-    req.on('end', async () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const { projectId, prompt } = payload;
-        if (!prompt) throw new Error('prompt is required');
-
-        const instanceId = await agentRuntime.spawnAgent(FENIX_AGENTS.ORCHESTRATOR, {
-          projectId: projectId || 'default',
-          runFn: async ({ agentId, delegate, logDiscovery }) => {
-            logDiscovery(`Orchestrator received prompt: "${prompt}"`);
-            const feResult = await delegate(FENIX_AGENTS.FRONTEND, {
-              objective: prompt,
-              action: 'GENERATE_OR_OPTIMIZE_UI'
-            });
-            const testResult = await delegate(FENIX_AGENTS.TESTING, {
-              objective: 'Verify UI responsiveness and tests',
-              action: 'RUN_QA'
-            });
-            return {
-              orchestrationPlan: ['Orchestrator -> Frontend Agent', 'Frontend Agent -> Testing Agent'],
-              feResult,
-              testResult,
-              status: 'COMPLETED'
-            };
-          }
-        });
-
-        const execution = await agentRuntime.executeAgent(instanceId);
-        sendJson(res, 200, { success: true, execution });
-      } catch (err) {
-        sendError(res, 400, err.message);
-      }
-    });
+    try {
+      const payload = await readJsonBody(req);
+      const { projectId, prompt } = payload;
+      if (!String(projectId || '').trim()) throw new Error('projectId is required');
+      if (!String(prompt || '').trim()) throw new Error('prompt is required');
+      const project = await app.projectKernel.state(context.tenantId, context.actorId, projectId);
+      if (!project.workspace) throw new Error('project requires a registered Git workspace');
+      const job = await app.jobs.submit(context.tenantId, context.actorId, {
+        type: 'agent.execute', source: 'api', projectId,
+        prompt: String(prompt).trim(),
+        requiredCapabilities: payload.requiredCapabilities || [],
+        riskLevel: payload.riskLevel || 'MEDIUM',
+        policy: payload.policy || {},
+        payload: { projectId, prompt: String(prompt).trim() }
+      });
+      sendJson(res, 202, { jobId: job.id, status: job.status, agent: job.agent?.agentId || null });
+    } catch (err) {
+      sendError(res, 400, err.message);
+    }
     return true;
   }
 
@@ -696,14 +641,54 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         const { message, contextType, projectId, modelOverride, history = [] } = payload;
         if (!message) throw new Error('message is required');
 
+        const { classify } = require('../routing/conversation-router');
+        const { globalJobQueueManager } = require('../execution/job-queue-manager');
+        const { enhance } = require('../execution/prompt-enhancer');
+        const classification = classify(message);
+
+        const startTs = Date.now();
+        const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        const model = modelOverride || resolveAIPlatformModel();
+
+        if (classification.lane === 'JOB_LANE') {
+          const enhanced = enhance(message, classification);
+          const jobTitle = classification.classification === 'ANALYSIS' ? 'Analisar ' + enhanced.projectName : (message.length > 40 ? message.slice(0, 37) + '...' : message);
+          const newJob = globalJobQueueManager.createJob({
+            title: jobTitle,
+            type: classification.classification.toLowerCase(),
+            projectId: classification.targetProject,
+            agentId: 'fenix-agent-1',
+            model: model,
+            requiresConfirmation: classification.requires_confirmation,
+            rawPrompt: message,
+            enhancedPrompt: enhanced.formattedPrompt,
+            objective: enhanced.objective,
+            scope: enhanced.scope
+          });
+          const replyText = classification.requires_confirmation
+            ? `Preparei a tarefa:\n\n**${jobTitle}**\n\n• Modelo: ${model}\n• Estimativa: ~${classification.estimated_tokens} tokens (~${classification.estimated_time}s)\n• Status: PENDING_CONFIRMATION\n\nDeseja colocar na fila de execução?`
+            : `Entendi. Preparei a tarefa de ${jobTitle} e coloquei na fila (Job #${newJob.id}). Você pode continuar conversando normalmente enquanto a tarefa executa em background.`;
+          return sendJson(res, 200, {
+            success: true,
+            requestId,
+            provider: 'aiplatform',
+            model,
+            text: replyText,
+            job: newJob,
+            lane: 'JOB_LANE',
+            latencyMs: Date.now() - startTs,
+            tokens: { prompt: 80, completion: 40, total: 120 },
+            timestamp: new Date().toISOString()
+          });
+        }
+
         const { AIPlatformProvider } = require('../ai-runtime/aiplatform-provider');
         const baseUrl = resolveAIPlatformUrl();
         const apiKey = resolveAIProviderKey();
-        const model = modelOverride || resolveAIPlatformModel();
 
         const provider = new AIPlatformProvider({ baseUrl, apiKey, model });
         
-        let systemPrompt = 'VocÃª Ã© o FÃŠNIX OS AI Assistant operando diretamente na VPS com inteligÃªncia real de engenharia de software.';
+        let systemPrompt = 'Você é o FÊNIX OS AI Assistant operando diretamente na VPS com inteligência real de engenharia de software.';
         
         // Context enrichment
         if (contextType === 'fenix_architecture') {
@@ -720,9 +705,6 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
             `- MÃ³dulos: ${latestDna.projectDna.modules.join(', ')}\n` +
             `- NÃ³s no Grafo: ${ws.artifactGraph.nodes.size}`;
         }
-
-        const startTs = Date.now();
-        const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
         
         const safeHistory = Array.isArray(history) ? history.slice(-12).filter(item => item && ['user', 'assistant'].includes(item.role) && typeof item.content === 'string').map(item => ({ role: item.role, content: item.content.slice(0, 4000) })) : [];
         const chatRes = await provider.chat({

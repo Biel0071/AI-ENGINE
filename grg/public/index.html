@@ -55,7 +55,8 @@
         return data;
       })
       .catch(function() {
-        // If auth check fails, assume authenticated (cookie-based)
+        // A failed check never grants access.
+        window.__FENIX_STATE__.auth.authenticated = false;
         window.__FENIX_STATE__.auth.checkedAt = new Date().toISOString();
         return window.__FENIX_STATE__.auth;
       });
@@ -1409,9 +1410,6 @@
           </div>
 
           <div class="v10-sidebar-menu" id="v10SidebarMenu">
-            <button class="nav-item v10-nav-btn" data-view="command" data-nav="command" title="Início" onclick="window.showView('command')">
-              <i class="ph-bold ph-house"></i> <span>Início</span>
-            </button>
             <button class="nav-item active v10-nav-btn" data-view="command" data-nav="command" title="Command Center" onclick="window.showView('command')">
               <i class="ph-bold ph-squares-four"></i> <span>Command Center</span>
             </button>
@@ -1448,7 +1446,7 @@
             <button class="nav-item v10-nav-btn" data-view="mcp" data-nav="mcp" title="MCP" onclick="window.showView('mcp')">
               <i class="ph-bold ph-cpu"></i> <span>MCP</span>
             </button>
-            <button class="nav-item v10-nav-btn" data-view="mcp" data-nav="marketplace" title="Marketplace" onclick="window.showView('mcp')">
+            <button class="nav-item v10-nav-btn" data-view="marketplace" data-nav="marketplace" title="Marketplace" onclick="window.showView('marketplace')">
               <i class="ph-bold ph-storefront"></i> <span>Marketplace</span>
             </button>
           </div>
@@ -1500,22 +1498,22 @@
               <!-- Test-mandated Operational Elements (Preserved cleanly for regression verification) -->
               <div id="fenixCommandOperationalContainer" class="fenix-cmd-op-container">
                 <span class="v10-welcome-title">Central de Operações Fênix</span>
-                <span class="v10-welcome-sub">Estação de Comando Autônomo • 15 Agentes Especialistas • Ciclo DAG de 7 Fases • 0 Mocks</span>
-                <div class="v12-reality-badge-btn">Reality Score: 100% Auditável</div>
+                <span class="v10-welcome-sub">Estação de Comando Autônomo • Estado medido no runtime</span>
+                <div class="v12-reality-badge-btn">Reality Score: —</div>
                 <select id="fenixCmdProjectSelect"><option value="fenix-os">fenix-os</option></select>
                 <div class="fenix-fast-actions-dock">
                   <button>Criar Missão</button><button>Inspecionar Sistema</button><button>Abrir Workspace Hub</button>
-                  <button>Esquadrão (15 Agentes)</button><button>AI Living City</button><button>Executar Visual QA</button><button>Terminal Host</button>
+                  <button>Esquadrão</button><button>AI Living City</button><button>Executar Visual QA</button><button>Terminal Host</button>
                 </div>
                 <div class="fenix-cmd-top-kpis">
-                  <div class="fenix-kpi-chip" onclick="window.showView('runtime')"><small>SYSTEM HEALTH</small><strong id="fenixKpiHealth">100% HEALTHY</strong></div>
-                  <div class="fenix-kpi-chip"><small>REALITY SCORE</small><strong id="fenixKpiScore">100% AUDITABLE</strong></div>
-                  <div class="fenix-kpi-chip" onclick="window.showView('agents')"><small>ACTIVE FLEET</small><strong id="fenixKpiAgents">15 ONLINE</strong></div>
-                  <div class="fenix-kpi-chip" onclick="window.showView('operations')"><small>RUNNING JOBS</small><strong id="fenixKpiJobs">0 JOBS</strong></div>
-                  <div class="fenix-kpi-chip" onclick="window.showView('operations')"><small>MISSIONS</small><strong id="fenixKpiMissions">0 REAL</strong></div>
+                  <div class="fenix-kpi-chip" onclick="window.showView('runtime')"><small>SYSTEM HEALTH</small><strong id="fenixKpiHealth">—</strong></div>
+                  <div class="fenix-kpi-chip"><small>REALITY SCORE</small><strong id="fenixKpiScore">—</strong></div>
+                  <div class="fenix-kpi-chip" onclick="window.showView('agents')"><small>ACTIVE FLEET</small><strong id="fenixKpiAgents">—</strong></div>
+                  <div class="fenix-kpi-chip" onclick="window.showView('operations')"><small>RUNNING JOBS</small><strong id="fenixKpiJobs">—</strong></div>
+                  <div class="fenix-kpi-chip" onclick="window.showView('operations')"><small>MISSIONS</small><strong id="fenixKpiMissions">—</strong></div>
                   <div class="fenix-kpi-chip" onclick="window.showView('projects')"><small>PROJECTS</small><strong id="fenixKpiProjects">—</strong></div>
-                  <div class="fenix-kpi-chip" onclick="window.showView('observability')"><small>ERRORS</small><strong id="fenixKpiErrors">0 FALHAS</strong></div>
-                  <div class="fenix-kpi-chip" onclick="window.showView('operations')"><small>QUEUE</small><strong id="fenixKpiQueue">0 WAITING</strong></div>
+                  <div class="fenix-kpi-chip" onclick="window.showView('observability')"><small>ERRORS</small><strong id="fenixKpiErrors">—</strong></div>
+                  <div class="fenix-kpi-chip" onclick="window.showView('operations')"><small>QUEUE</small><strong id="fenixKpiQueue">—</strong></div>
                 </div>
                 <div class="fenix-operational-cycle-bar">
                   <div class="cycle-step active">1 COMMAND</div><div class="cycle-step">2 UNDERSTAND</div><div class="cycle-step">3 INVESTIGATE</div><div class="cycle-step">4 PLAN</div><div class="cycle-step">5 EXECUTE</div><div class="cycle-step">6 VERIFY</div><div class="cycle-step">7 LEARN</div>
@@ -1530,12 +1528,12 @@
                 <div class="fenix-cmd-header-left">
                   <span class="fenix-cmd-category-label">COMMAND CENTER</span>
                   <h1 class="fenix-cmd-title" id="fenixGreetingTitle">Boa noite, GRG.</h1>
-                  <p class="fenix-cmd-subtitle"><span id="fenixCmdAgentsCountSub">15</span> agentes trabalhando em <span id="fenixCmdProjectsCountSub">4</span> projetos &bull; Sistema 100% operacional</p>
+                  <p class="fenix-cmd-subtitle"><span id="fenixCmdAgentsCountSub">—</span> agentes registrados em <span id="fenixCmdProjectsCountSub">—</span> projetos &bull; Estado atualizado pelo runtime</p>
                 </div>
                 <div class="fenix-cmd-header-pills">
-                  <div class="fenix-stat-pill pill-green" onclick="window.showView('agents')" style="cursor:pointer;"><i class="ph-bold ph-robot"></i> <span><strong id="fenixStatPillAgents">15</strong> Agentes / <span id="fenixStatPillAgentsOnline">15 Online</span></span></div>
-                  <div class="fenix-stat-pill pill-amber" onclick="window.showView('projects')" style="cursor:pointer;"><i class="ph-bold ph-folder"></i> <span><strong id="fenixStatPillProjects">4</strong> Projetos / Ativos</span></div>
-                  <div class="fenix-stat-pill pill-red" onclick="window.showView('observability')" style="cursor:pointer;"><i class="ph-bold ph-warning-circle"></i> <span><strong id="fenixStatPillErrors">0</strong> Erros</span></div>
+                  <div class="fenix-stat-pill pill-green" onclick="window.showView('agents')" style="cursor:pointer;"><i class="ph-bold ph-robot"></i> <span><strong id="fenixStatPillAgents">—</strong> Agentes / <span id="fenixStatPillAgentsOnline">— Online</span></span></div>
+                  <div class="fenix-stat-pill pill-amber" onclick="window.showView('projects')" style="cursor:pointer;"><i class="ph-bold ph-folder"></i> <span><strong id="fenixStatPillProjects">—</strong> Projetos</span></div>
+                  <div class="fenix-stat-pill pill-red" onclick="window.showView('observability')" style="cursor:pointer;"><i class="ph-bold ph-warning-circle"></i> <span><strong id="fenixStatPillErrors">—</strong> Erros</span></div>
                   <div class="fenix-stat-pill pill-teal" onclick="window.showView('runtime')" style="cursor:pointer;"><i class="ph-bold ph-heartbeat"></i> <span><strong id="fenixStatPillHealth">—</strong> Saúde</span></div>
                 </div>
               </div>
@@ -1544,16 +1542,16 @@
               <div class="fenix-hero-mission-card">
                 <div class="fenix-hero-mission-left">
                   <div class="fenix-hero-tag">
-                    <i class="ph-fill ph-lightning"></i> MISSÃO EM EXECUÇÃO
+                    <i class="ph-fill ph-lightning"></i> MISSÃO DO RUNTIME
                   </div>
-                  <h2 class="fenix-hero-title" id="fenixHeroMissionTitle">Build Authentication System</h2>
-                  <p class="fenix-hero-desc" id="fenixHeroMissionDesc">Implementar sistema de autenticação completo com JWT, refresh tokens e controle de acesso.</p>
+                  <h2 class="fenix-hero-title" id="fenixHeroMissionTitle">Aguardando missões</h2>
+                  <p class="fenix-hero-desc" id="fenixHeroMissionDesc">As missões registradas aparecem aqui quando o runtime as publicar.</p>
                   <div class="fenix-hero-progress-row">
                     <div class="fenix-progress-bar-wrap">
-                      <div class="fenix-progress-bar-fill" id="fenixHeroMissionBar" style="width: 68%;"></div>
+                      <div class="fenix-progress-bar-fill" id="fenixHeroMissionBar" style="width: 0;"></div>
                     </div>
-                    <span class="fenix-hero-pct" id="fenixHeroMissionPct">68%</span>
-                    <span class="fenix-hero-elapsed" id="fenixHeroMissionElapsed">Tempo decorrido 2h 34m</span>
+                    <span class="fenix-hero-pct" id="fenixHeroMissionPct">—</span>
+                    <span class="fenix-hero-elapsed" id="fenixHeroMissionElapsed">—</span>
                     <button class="fenix-hero-btn" onclick="window.fenixTrackActiveMission()">Acompanhar &rarr;</button>
                   </div>
                 </div>
@@ -1568,32 +1566,32 @@
                   <div class="fenix-kpi-icon-wrap teal"><i class="ph-bold ph-robot"></i></div>
                   <div class="fenix-kpi-content">
                     <span class="fenix-kpi-title">Agentes Ativos</span>
-                    <span class="fenix-kpi-val" id="fenixKpiAgentsLive">15 / 15</span>
-                    <span class="fenix-kpi-sub" id="fenixKpiAgentsSub" style="color: var(--fenix-green);">&bull; 100% Operacional</span>
+                    <span class="fenix-kpi-val" id="fenixKpiAgentsLive">—</span>
+                    <span class="fenix-kpi-sub" id="fenixKpiAgentsSub" style="color: var(--fenix-green);">Aguardando agentes</span>
                   </div>
                 </div>
                 <div class="fenix-kpi-card" onclick="window.showView('operations')" style="cursor:pointer;">
                   <div class="fenix-kpi-icon-wrap blue"><i class="ph-bold ph-check-square"></i></div>
                   <div class="fenix-kpi-content">
                     <span class="fenix-kpi-title">Tarefas em Andamento</span>
-                    <span class="fenix-kpi-val" id="fenixKpiTasksLive">23</span>
-                    <span class="fenix-kpi-sub" id="fenixKpiTasksSub">12 concluídas hoje</span>
+                    <span class="fenix-kpi-val" id="fenixKpiTasksLive">—</span>
+                    <span class="fenix-kpi-sub" id="fenixKpiTasksSub">Aguardando jobs</span>
                   </div>
                 </div>
                 <div class="fenix-kpi-card" onclick="window.showView('memory')" style="cursor:pointer;">
                   <div class="fenix-kpi-icon-wrap purple"><i class="ph-bold ph-brain"></i></div>
                   <div class="fenix-kpi-content">
                     <span class="fenix-kpi-title">Memória Viva</span>
-                    <span class="fenix-kpi-val" id="fenixKpiMemoryLive">1.3K</span>
-                    <span class="fenix-kpi-sub" id="fenixKpiMemorySub" style="color: var(--fenix-purple);">+156 hoje</span>
+                    <span class="fenix-kpi-val" id="fenixKpiMemoryLive">—</span>
+                    <span class="fenix-kpi-sub" id="fenixKpiMemorySub" style="color: var(--fenix-purple);">Sem medição disponível</span>
                   </div>
                 </div>
                 <div class="fenix-kpi-card" onclick="window.showView('knowledge')" style="cursor:pointer;">
                   <div class="fenix-kpi-icon-wrap amber"><i class="ph-bold ph-shield-check"></i></div>
                   <div class="fenix-kpi-content">
                     <span class="fenix-kpi-title">Knowledge Base</span>
-                    <span class="fenix-kpi-val" id="fenixKpiKnowledgeLive">98%</span>
-                    <span class="fenix-kpi-sub" id="fenixKpiKnowledgeSub">sincronizada</span>
+                    <span class="fenix-kpi-val" id="fenixKpiKnowledgeLive">—</span>
+                    <span class="fenix-kpi-sub" id="fenixKpiKnowledgeSub">Sem medição disponível</span>
                   </div>
                 </div>
               </div>
@@ -1601,7 +1599,7 @@
               <!-- Real Intelligence Mission Trigger Dock (Sleek Obsidian Design) -->
               <div class="fenix-cmd-prompt-dock" style="margin-top: 14px; background: rgba(10, 16, 26, 0.85); border: 1px solid rgba(0, 229, 160, 0.22); border-radius: 10px; padding: 10px 16px; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(8px);">
                 <i class="ph-bold ph-sparkle" style="color: var(--fenix-green); font-size: 18px;"></i>
-                <input id="fenixCmdIntentInput" placeholder="Comando autônomo (ex: melhorar login do projeto fenix-os, auditar segurança...)" value="melhorar login do projeto fenix-os" style="flex: 1; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 7px 12px; color: #F8FAFC; font-size: 12px; outline: none;" />
+                <input id="fenixCmdIntentInput" placeholder="Comando autônomo (ex: melhorar login do projeto fenix-os, auditar segurança...)" value="" style="flex: 1; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 7px 12px; color: #F8FAFC; font-size: 12px; outline: none;" />
                 <button id="fenixBtnAnalyze" class="fenix-subnav-btn" style="padding: 6px 14px; font-size: 11.5px;" onclick="window.fenixTriggerAction('ANALYZE')">Analisar</button>
                 <button id="fenixBtnPlan" class="fenix-subnav-btn" style="padding: 6px 14px; font-size: 11.5px;" onclick="window.fenixTriggerAction('PLAN')">Criar Missão</button>
                 <button id="fenixBtnExecute" class="fenix-hero-btn" style="padding: 6px 16px; font-size: 11.5px;" onclick="window.fenixTriggerAction('EXECUTE')">Executar</button>
@@ -1616,48 +1614,7 @@
                     <span class="fenix-activity-panel-title"><i class="ph-bold ph-activity"></i> Atividade em Tempo Real</span>
                     <span class="v10-pulse-dot"></span>
                   </div>
-                  <div class="fenix-activity-list" id="fenixLiveActivityList">
-                    <div class="fenix-activity-item" onclick="window.fenixInspectAgent('agent-devops')" style="cursor:pointer;">
-                      <div class="fenix-activity-left">
-                        <img class="fenix-activity-avatar" src="/assets/agent-devops.png" alt="DevOps-Agent" />
-                        <div>
-                          <div class="fenix-activity-agent">DevOps-Agent</div>
-                          <div class="fenix-activity-action">Executando deploy no ambiente de staging</div>
-                        </div>
-                      </div>
-                      <span class="fenix-activity-time">2m atrás</span>
-                    </div>
-                    <div class="fenix-activity-item" onclick="window.fenixInspectAgent('agent-frontend')" style="cursor:pointer;">
-                      <div class="fenix-activity-left">
-                        <img class="fenix-activity-avatar" src="/assets/agent-frontend.png" alt="Frontend-Agent" />
-                        <div>
-                          <div class="fenix-activity-agent">Frontend-Agent</div>
-                          <div class="fenix-activity-action">Atualizou componente de autenticação</div>
-                        </div>
-                      </div>
-                      <span class="fenix-activity-time">3m atrás</span>
-                    </div>
-                    <div class="fenix-activity-item" onclick="window.fenixInspectAgent('agent-browser')" style="cursor:pointer;">
-                      <div class="fenix-activity-left">
-                        <img class="fenix-activity-avatar" src="/assets/agent-qa.png" alt="QA-Agent" />
-                        <div>
-                          <div class="fenix-activity-agent">QA-Agent</div>
-                          <div class="fenix-activity-action">Iniciando testes automatizados</div>
-                        </div>
-                      </div>
-                      <span class="fenix-activity-time">5m atrás</span>
-                    </div>
-                    <div class="fenix-activity-item" onclick="window.fenixInspectAgent('agent-architect')" style="cursor:pointer;">
-                      <div class="fenix-activity-left">
-                        <img class="fenix-activity-avatar" src="/assets/agent-architect.png" alt="Architect-Agent" />
-                        <div>
-                          <div class="fenix-activity-agent">Architect-Agent</div>
-                          <div class="fenix-activity-action">Analisando arquitetura do sistema</div>
-                        </div>
-                      </div>
-                      <span class="fenix-activity-time">7m atrás</span>
-                    </div>
-                  </div>
+                  <div class="fenix-activity-list" id="fenixLiveActivityList"><div class="fenix-activity-item">Aguardando eventos reais do runtime.</div></div>
                 </div>
 
                 <!-- Right Column: Decisões Recentes (AI) -->
@@ -1666,36 +1623,7 @@
                     <span class="fenix-activity-panel-title"><i class="ph-bold ph-sparkle"></i> Decisões Recentes (AI)</span>
                     <span style="font-size: 11px; color: var(--fenix-text-muted);">Autonomia Nível 4</span>
                   </div>
-                  <div class="fenix-activity-list" id="fenixLiveDecisionsList">
-                    <div class="fenix-activity-item">
-                      <div>
-                        <div class="fenix-activity-agent">Otimizou estratégia de cache</div>
-                        <div class="fenix-activity-action"><span class="fenix-decision-badge green">+40% performance</span></div>
-                      </div>
-                      <span class="fenix-activity-time">12m atrás</span>
-                    </div>
-                    <div class="fenix-activity-item">
-                      <div>
-                        <div class="fenix-activity-agent">Redirecionou recursos de 2 agentes</div>
-                        <div class="fenix-activity-action"><span class="fenix-decision-badge cyan">Maior eficiência</span></div>
-                      </div>
-                      <span class="fenix-activity-time">28m atrás</span>
-                    </div>
-                    <div class="fenix-activity-item">
-                      <div>
-                        <div class="fenix-activity-agent">Identificou padrão na memória</div>
-                        <div class="fenix-activity-action"><span class="fenix-decision-badge purple">Novo insight disponível</span></div>
-                      </div>
-                      <span class="fenix-activity-time">1h atrás</span>
-                    </div>
-                    <div class="fenix-activity-item">
-                      <div>
-                        <div class="fenix-activity-agent">Sugeriu refatoração no módulo auth</div>
-                        <div class="fenix-activity-action"><span class="fenix-decision-badge green">-60% linhas de código</span></div>
-                      </div>
-                      <span class="fenix-activity-time">2h atrás</span>
-                    </div>
-                  </div>
+                  <div class="fenix-activity-list" id="fenixLiveDecisionsList"><div class="fenix-activity-item">Sem decisões registradas no runtime.</div></div>
                 </div>
               </div>
             </div>
@@ -2073,7 +2001,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
               <div class="fenix-city-weather-hud" id="fenixCityWeatherHud" style="display:flex; align-items:center; gap:6px; background:rgba(2,6,23,0.85); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:4px 10px; font-size:11.5px; color:#94A3B8;">
-                <i id="fenixCityWeatherIcon" class="ph-bold ph-moon" style="color:#FBBF24;"></i> <span id="fenixCityWeatherText">Noite Limpa 22°C</span> &bull; <span class="fenix-live-clock" id="fenixLiveCityClock">--:--</span>
+                <i id="fenixCityWeatherIcon" class="ph-bold ph-moon" style="color:#FBBF24;"></i> <span id="fenixCityWeatherText">Modo noite</span> &bull; <span class="fenix-live-clock" id="fenixLiveCityClock">--:--</span>
                 <button class="fenix-hud-btn" onclick="window.fenixToggleDayNight?.()" title="Alternar Dia/Noite" style="background:transparent; border:none; color:#38BDF8; cursor:pointer; padding:2px 4px; font-size:12px; margin-left:4px;"><i class="ph-bold ph-sun-dim"></i></button>
               </div>
             </div>
@@ -2092,13 +2020,14 @@
               <button onclick="window.fenixCityZoom?.('in')" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; width:26px; height:26px; cursor:pointer; font-weight:bold;">+</button>
               <span id="fenixCityZoomLevel" style="font-family:var(--fenix-font-mono); font-size:11px; color:#E2E8F0; min-width:36px; text-align:center;">1.35x</span>
               <button onclick="window.fenixCityZoom?.('out')" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; width:26px; height:26px; cursor:pointer; font-weight:bold;">-</button>
+              <button id="btnRotateCity" type="button" onclick="window.fenixCity?.rotateCamera?.()" aria-label="Girar cidade" title="Girar cidade 90 graus" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.35); color:#9de9ff; border-radius:4px; width:28px; height:26px; cursor:pointer;">⟳</button>
               <button id="btnResetCamera" onclick="window.fenixCity?.resetCamera?.()" title="Resetar Câmera" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px; width:26px; height:26px; cursor:pointer;"><i class="ph-bold ph-arrows-out-cardinal"></i></button>
             </div>
           </div>
 
           <div class="fenix-city-bottom-bar" style="position:relative; z-index:10;">
             <div>
-              <span class="active-tag">&bull; AI CITY ISOMÉTRICA ONLINE</span> &bull; <span id="cityOnlineCount">15 ONLINE</span> &bull; 8 DISTRITOS &bull; <span id="cityMissionsCount">—</span>
+              <span class="active-tag">&bull; AI CITY ISOMÉTRICA</span> &bull; <span id="cityOnlineCount">—</span> &bull; 8 DISTRITOS &bull; <span id="cityMissionsCount">—</span>
               <span id="cityWorkingCount" style="display:none;">0 TRABALHANDO</span>
               <span id="cityProjectsCount" style="display:none;">—</span>
             </div>
@@ -2106,599 +2035,77 @@
           </div>
         </div>
 
-<div id="view-projects" class="view fenix-projects-view">
-          <!-- Hidden backward-compatibility elements so old tests pass without error -->
-          <div style="display:none;" aria-hidden="true">
-            <span id="fpWsOrgName">GRG AI Systems</span>
-            <span id="fpBadgeAll">4</span>
-            <span id="fpBadgeStarred">2</span>
-            <span id="fpBadgeOwned">4</span>
-            <input id="projectSearch" value="" />
-            <div id="projectsList"></div>
-          </div>
-
-          <!-- TARGET PROJECT HUB (100% VISIBLE MOCKUP STANDARD) -->
-          <div class="fenix-projects-hub-container" id="fenixProjectsHubTarget">
-            <!-- Header with Pill Subnav -->
-            <div class="fenix-module-header" style="background:transparent; padding:0; border:none; margin-bottom:18px;">
-              <div class="fenix-module-title-area">
-                <div class="fenix-module-title">FÊNIX OS <span>&gt;</span> PROJETOS</div>
-                <div class="fenix-pill-tabs">
-                  <button class="fenix-pill-tab active" onclick="window.fenixSelectProjectSubnav('all')">Todos os Projetos (4)</button>
-                  <button class="fenix-pill-tab" onclick="window.fenixSelectProjectSubnav('in_progress')">Em Andamento (4)</button>
-                  <button class="fenix-pill-tab" onclick="window.fenixSelectProjectSubnav('completed')">Concluídos (0)</button>
-                  <button class="fenix-pill-tab" onclick="window.fenixSelectProjectSubnav('templates')">Templates</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Active Hero Project Card -->
-            <div class="fenix-proj-hero-card">
-              <div style="flex: 1;">
-                <div class="fenix-proj-tag">
-                  <span class="v10-pulse-dot"></span> EM ANDAMENTO
-                </div>
-                <h2 class="fenix-proj-title">Fênix Authentication</h2>
-                <p class="fenix-proj-desc">Sistema de autenticação completo com JWT, refresh tokens e controle de acesso baseado em papéis (RBAC).</p>
-                <div class="fenix-proj-progress-row">
-                  <div class="fenix-progress-bar-wrap" style="width: 240px;">
-                    <div class="fenix-progress-bar-fill" style="width: 68%;"></div>
-                  </div>
-                  <span style="font-size: 13px; font-weight: 800; color: var(--fenix-green);">68%</span>
-                </div>
-                <div class="fenix-proj-meta-row">
-                  <span class="fenix-proj-meta-item"><i class="ph-bold ph-users" style="color:var(--fenix-green);"></i> 5 agentes</span>
-                  <span class="fenix-proj-meta-item"><i class="ph-bold ph-check-square" style="color:var(--fenix-cyan);"></i> 23 tarefas</span>
-                  <span class="fenix-proj-meta-item"><i class="ph-bold ph-calendar-blank"></i> Criado há 3 dias</span>
-                </div>
-              </div>
-              <div class="fenix-proj-actions">
-                <button class="fenix-hero-btn" onclick="window.showView('ide')">Abrir no IDE &rarr;</button>
-                <button class="fenix-subnav-btn" style="padding:6px 14px; font-size:11.5px;" onclick="window.openProjectWorkspace('fenix-os')">Abrir Workspace &rarr;</button>
-              </div>
-            </div>
-
-            <!-- Lower Two-Column Section -->
-            <div class="fenix-proj-lower-grid">
-              <!-- Left: Arquivos Recentes -->
-              <div class="fenix-proj-panel">
-                <div class="fenix-proj-panel-header">
-                  <span class="fenix-proj-panel-title"><i class="ph-bold ph-clock-counter-clockwise" style="color:var(--fenix-cyan);"></i> Arquivos Recentes</span>
-                  <span style="font-size:11px; color:var(--fenix-text-muted);">5 arquivos modificados</span>
-                </div>
-                <div class="fenix-recent-files-list">
-                  <div class="fenix-recent-file-item" onclick="window.fenixSelectIdeFile('auth.js'); window.showView('ide');">
-                    <div class="fenix-recent-file-left">
-                      <div class="fenix-recent-file-icon js"><i class="ph-bold ph-file-js"></i></div>
-                      <div>
-                        <div class="fenix-recent-file-name">auth.js</div>
-                        <div class="fenix-recent-file-meta">JavaScript &bull; 14.2 KB</div>
-                      </div>
-                    </div>
-                    <span class="fenix-recent-file-time">12m atrás</span>
-                  </div>
-                  <div class="fenix-recent-file-item" onclick="window.fenixSelectIdeFile('login.tsx'); window.showView('ide');">
-                    <div class="fenix-recent-file-left">
-                      <div class="fenix-recent-file-icon tsx"><i class="ph-bold ph-file-code"></i></div>
-                      <div>
-                        <div class="fenix-recent-file-name">login.tsx</div>
-                        <div class="fenix-recent-file-meta">React Component &bull; 8.6 KB</div>
-                      </div>
-                    </div>
-                    <span class="fenix-recent-file-time">28m atrás</span>
-                  </div>
-                  <div class="fenix-recent-file-item" onclick="window.fenixSelectIdeFile('auth.ts'); window.showView('ide');">
-                    <div class="fenix-recent-file-left">
-                      <div class="fenix-recent-file-icon ts"><i class="ph-bold ph-file-ts"></i></div>
-                      <div>
-                        <div class="fenix-recent-file-name">jwt.service.ts</div>
-                        <div class="fenix-recent-file-meta">TypeScript Service &bull; 11.4 KB</div>
-                      </div>
-                    </div>
-                    <span class="fenix-recent-file-time">1h atrás</span>
-                  </div>
-                  <div class="fenix-recent-file-item" onclick="window.fenixSelectIdeFile('middleware.ts'); window.showView('ide');">
-                    <div class="fenix-recent-file-left">
-                      <div class="fenix-recent-file-icon ts"><i class="ph-bold ph-shield-check"></i></div>
-                      <div>
-                        <div class="fenix-recent-file-name">middleware.ts</div>
-                        <div class="fenix-recent-file-meta">Auth Guard &bull; 4.1 KB</div>
-                      </div>
-                    </div>
-                    <span class="fenix-recent-file-time">2h atrás</span>
-                  </div>
-                  <div class="fenix-recent-file-item" onclick="window.fenixSelectIdeFile('auth.ts'); window.showView('ide');">
-                    <div class="fenix-recent-file-left">
-                      <div class="fenix-recent-file-icon ts"><i class="ph-bold ph-brackets-curly"></i></div>
-                      <div>
-                        <div class="fenix-recent-file-name">types.d.ts</div>
-                        <div class="fenix-recent-file-meta">Type Definitions &bull; 3.2 KB</div>
-                      </div>
-                    </div>
-                    <span class="fenix-recent-file-time">3h atrás</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right: Arquitetura do Projeto -->
-              <div class="fenix-proj-panel">
-                <div class="fenix-proj-panel-header">
-                  <span class="fenix-proj-panel-title"><i class="ph-bold ph-git-fork" style="color:var(--fenix-green);"></i> Arquitetura do Projeto</span>
-                  <span style="font-size:11px; color:var(--fenix-green);"><span class="v10-pulse-dot"></span> Pipeline Ativo</span>
-                </div>
-                <div class="fenix-arch-dag-container">
-                  <div class="fenix-arch-dag-node active" onclick="window.fenixInspectAgent('agent-developer')" style="cursor:pointer;">
-                    <i class="ph-bold ph-shield-chevron" style="color:var(--fenix-cyan);"></i>
-                    <span class="node-title">Auth Controller</span>
-                    <span class="node-sub">HTTP Router</span>
-                    <span class="node-status cyan">ONLINE</span>
-                  </div>
-                  <div class="fenix-arch-dag-arrow">&rarr;</div>
-                  <div class="fenix-arch-dag-node active" onclick="window.fenixInspectAgent('agent-developer')" style="cursor:pointer;">
-                    <i class="ph-bold ph-key" style="color:var(--fenix-green);"></i>
-                    <span class="node-title">JWT Service</span>
-                    <span class="node-sub">Token Signer</span>
-                    <span class="node-status green">ACTIVE</span>
-                  </div>
-                  <div class="fenix-arch-dag-arrow">&rarr;</div>
-                  <div class="fenix-arch-dag-node" onclick="window.fenixInspectAgent('agent-database')" style="cursor:pointer;">
-                    <i class="ph-bold ph-database" style="color:var(--fenix-blue);"></i>
-                    <span class="node-title">User Model</span>
-                    <span class="node-sub">PostgreSQL</span>
-                    <span class="node-status blue">READY</span>
-                  </div>
-                  <div class="fenix-arch-dag-arrow">&rarr;</div>
-                  <div class="fenix-arch-dag-node" onclick="window.fenixInspectAgent('agent-database')" style="cursor:pointer;">
-                    <i class="ph-bold ph-hard-drive" style="color:var(--fenix-purple);"></i>
-                    <span class="node-title">Redis Cache</span>
-                    <span class="node-sub">Session Store</span>
-                    <span class="node-status purple">SYNCED</span>
-                  </div>
-                </div>
-                <div style="margin-top:14px; font-size:11px; color:var(--fenix-text-secondary); line-height:1.5; display:flex; justify-content:space-between; align-items:center;">
-                  <span>Pipeline autenticado com persistência em banco e invalidação de tokens no Redis.</span>
-                  <button class="fenix-hero-btn" style="padding: 5px 12px; font-size: 11px;" onclick="window.openProjectWorkspace('fenix-os')">Abrir Workspace &rarr;</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Cleanly decoupled sibling Workspace (Preserves all 15 tabs for engineering deep dive) -->
-          <div id="fp-workspace" class="fp-workspace" style="display:none;">
-            <!-- Header -->
-            <header class="fp-ws-header">
-              <button class="fp-btn fp-btn-ghost" id="fpWsBack" onclick="window.closeProjectWorkspace()">← Projetos</button>
-              <div class="fp-ws-project-selector" style="display:flex; align-items:center; gap:8px;">
-                <div id="fp-ws-title" class="fp-ws-project-name">Carregando Projeto...</div>
-                <select id="fpProjectSwitcherSelect" class="fp-select" style="background:#1e293b; color:#38bdf8; border:1px solid rgba(56,189,248,0.3); border-radius:6px; font-size:12px; font-weight:600; padding:4px 8px; cursor:pointer;" onchange="window.openProjectWorkspace(this.value)">
-                  <option value="fenix-os">🏛️ Fênix OS</option>
-                  <option value="zapai-crm">📱 ZapAI CRM</option>
-                  <option value="api-platform">🤖 API Platform</option>
-                </select>
-              </div>
-
-              <div class="fp-ws-nav-actions">
-                <button class="fp-btn" style="background:#0284c7; color:#fff;" id="fpWsReadBtn" onclick="window.runProjectReader()">📖 Read Project</button>
-                <button class="fp-btn fp-btn-ghost" id="fpWsBrowserBtn" onclick="window.runProjectBrowserQA()">🎭 Browser QA</button>
-                <button class="fp-btn" style="background:#8b5cf6; color:#fff;" id="fpWsMissionBtn" onclick="window.openCreateMissionModal()">🚀 Create Mission</button>
-                <button class="fp-btn fp-btn-ghost" id="fpWsChatBtn" onclick="window.toggleProjectChatDrawer()">💬 AI Chat</button>
-              </div>
-            </header>
-
-            <!-- Multi-Step Scan Progress Bar -->
-            <div class="fp-scan-progress-box" id="fpScanProgressBox">
-              <div class="fp-progress-meta">
-                <span class="fp-progress-step-text" id="fpProgressStepText">
-                  <span class="fp-spinner" style="width:14px; height:14px; border-width:2px;"></span>
-                  Stage 1/10: Verifying project & filesystem access...
-                </span>
-                <span class="fp-progress-percentage" id="fpProgressPercentage">10%</span>
-              </div>
-              <div class="fp-progress-track">
-                <div class="fp-progress-bar-fill" id="fpProgressBarFill"></div>
-              </div>
-              <div class="fp-progress-chips" id="fpProgressChips">
-                <span>📁 Arquivos: <b id="fpStatProgFiles">—</b></span> ·
-                <span>📑 Telas: <b id="fpStatProgScreens">—</b></span> ·
-                <span>🧩 Componentes: <b id="fpStatProgComps">—</b></span> ·
-                <span>⚡ APIs: <b id="fpStatProgApis">—</b></span> ·
-                <span>🔬 Health: <b id="fpStatProgHealth">—</b></span>
-              </div>
-            </div>
-
-            <!-- Master Category Pills (4 Categories) -->
-            <div class="fp-master-categories" style="display:flex; gap:8px; padding:10px 20px 4px; background:#080b12; border-bottom:1px solid rgba(255,255,255,0.05); align-items:center;">
-              <span style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; margin-right:4px;">Categorias:</span>
-              <button type="button" class="fp-cat-pill active" onclick="window.filterFpCategory('all', this)" style="background:rgba(255,255,255,0.08); color:#f8fafc; border:1px solid rgba(255,255,255,0.12); padding:4px 10px; border-radius:14px; font-size:11px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="ph ph-circles-four"></i> Todas (15)</button>
-              <button type="button" class="fp-cat-pill" onclick="window.filterFpCategory('code', this)" style="background:transparent; color:#94a3b8; border:1px solid rgba(255,255,255,0.06); padding:4px 10px; border-radius:14px; font-size:11px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="ph ph-code"></i> Código & Estrutura</button>
-              <button type="button" class="fp-cat-pill" onclick="window.filterFpCategory('qa', this)" style="background:transparent; color:#94a3b8; border:1px solid rgba(255,255,255,0.06); padding:4px 10px; border-radius:14px; font-size:11px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="ph ph-flask"></i> Qualidade & QA</button>
-              <button type="button" class="fp-cat-pill" onclick="window.filterFpCategory('ops', this)" style="background:transparent; color:#94a3b8; border:1px solid rgba(255,255,255,0.06); padding:4px 10px; border-radius:14px; font-size:11px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="ph ph-cpu"></i> Operações & Execução</button>
-              <button type="button" class="fp-cat-pill" onclick="window.filterFpCategory('intel', this)" style="background:transparent; color:#94a3b8; border:1px solid rgba(255,255,255,0.06); padding:4px 10px; border-radius:14px; font-size:11px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="ph ph-brain"></i> Inteligência & Twin</button>
-            </div>
-
-            <!-- Workspace Tabs (15 Sub-views with Phosphor Icons) -->
-            <div id="fpWorkspaceTabsBar" style="background:#090d1a; padding:6px 20px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; gap:6px; overflow-x:auto;">
-              <button class="fp-ws-tab active" data-tab="overview" data-cat="code" onclick="window.activateFpTab('overview')"><i class="ph ph-squares-four"></i> Overview</button>
-              <button class="fp-ws-tab" data-tab="files" data-cat="code" onclick="window.activateFpTab('files')"><i class="ph ph-folder"></i> Files</button>
-              <button class="fp-ws-tab" data-tab="screens" data-cat="code" onclick="window.activateFpTab('screens')"><i class="ph ph-browsers"></i> Screens</button>
-              <button class="fp-ws-tab" data-tab="components" data-cat="code" onclick="window.activateFpTab('components')"><i class="ph ph-cube"></i> Components</button>
-              <button class="fp-ws-tab" data-tab="apis" data-cat="code" onclick="window.activateFpTab('apis')"><i class="ph ph-plugs"></i> APIs</button>
-              <button class="fp-ws-tab" data-tab="runtime" data-cat="ops" onclick="window.activateFpTab('runtime')"><i class="ph ph-cpu"></i> Runtime</button>
-              <button class="fp-ws-tab" data-tab="git" data-cat="code" onclick="window.activateFpTab('git')"><i class="ph ph-git-branch"></i> Git</button>
-              <button class="fp-ws-tab" data-tab="tests" data-cat="qa" onclick="window.activateFpTab('tests')"><i class="ph ph-flask"></i> Tests</button>
-              <button class="fp-ws-tab" data-tab="qa" data-cat="qa" onclick="window.activateFpTab('qa')"><i class="ph ph-eye"></i> Visual QA</button>
-              <button class="fp-ws-tab" data-tab="agents" data-cat="ops" onclick="window.activateFpTab('agents')"><i class="ph ph-robot"></i> Agents</button>
-              <button class="fp-ws-tab" data-tab="jobs" data-cat="ops" onclick="window.activateFpTab('jobs')"><i class="ph ph-stack"></i> Jobs</button>
-              <button class="fp-ws-tab" data-tab="memory" data-cat="intel" onclick="window.activateFpTab('memory')"><i class="ph ph-brain"></i> Memory</button>
-              <button class="fp-ws-tab" data-tab="twin" data-cat="intel" onclick="window.activateFpTab('twin')"><i class="ph ph-dna"></i> System Twin</button>
-              <button class="fp-ws-tab" data-tab="preview" data-cat="qa" onclick="window.activateFpTab('preview')"><i class="ph ph-globe"></i> Preview</button>
-              <button class="fp-ws-tab" data-tab="system-map" data-cat="intel" onclick="window.activateFpTab('system-map')"><i class="ph ph-map-trifold"></i> Map</button>
-            </div>
-            <script>
-              window.filterFpCategory = function(cat, btn) {
-                document.querySelectorAll('.fp-cat-pill').forEach(p => {
-                  p.classList.remove('active');
-                  p.style.background = 'transparent';
-                  p.style.color = '#94a3b8';
-                  p.style.borderColor = 'rgba(255,255,255,0.06)';
-                });
-                if (btn) {
-                  btn.classList.add('active');
-                  btn.style.background = 'rgba(255,255,255,0.08)';
-                  btn.style.color = '#f8fafc';
-                  btn.style.borderColor = 'rgba(255,255,255,0.12)';
-                }
-                document.querySelectorAll('.fp-ws-tab').forEach(t => {
-                  if (cat === 'all' || t.dataset.cat === cat) {
-                    t.style.display = 'inline-flex';
-                  } else {
-                    t.style.display = 'none';
-                  }
-                });
-              };
-            </script>
-
-            <!-- Workspace Body -->
-            <div class="fp-ws-body">
-              <!-- 1. OVERVIEW TAB -->
-              <div id="fp-tab-overview" class="fp-ws-panel fp-overview-grid" style="display:grid;">
-                <div class="fp-overview-left">
-                  <!-- Metrics Strip -->
-                  <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;">
-                    <div class="fp-info-card" style="text-align:center;">
-                      <div style="font-size:22px; font-weight:800; color:#38bdf8;" id="fpOvTotalFiles">12,371</div>
-                      <div style="font-size:10px; color:#64748b; font-weight:700; text-transform:uppercase; margin-top:2px;">Files Indexados</div>
-                    </div>
-                    <div class="fp-info-card" style="text-align:center;">
-                      <div style="font-size:22px; font-weight:800; color:#10b981;" id="fpOvScreens">21</div>
-                      <div style="font-size:10px; color:#64748b; font-weight:700; text-transform:uppercase; margin-top:2px;">Screens Descobertas</div>
-                    </div>
-                    <div class="fp-info-card" style="text-align:center;">
-                      <div style="font-size:22px; font-weight:800; color:#a855f7;" id="fpOvComponents">60</div>
-                      <div style="font-size:10px; color:#64748b; font-weight:700; text-transform:uppercase; margin-top:2px;">Componentes Mapeados</div>
-                    </div>
-                    <div class="fp-info-card" style="text-align:center;">
-                      <div style="font-size:22px; font-weight:800; color:#f59e0b;" id="fpOvApis">37</div>
-                      <div style="font-size:10px; color:#64748b; font-weight:700; text-transform:uppercase; margin-top:2px;">APIs Ativas</div>
-                    </div>
-                  </div>
-
-                  <!-- Living System Intelligence -->
-                  <div class="fp-info-card">
-                    <h3 class="fp-card-sec-title">🧠 Living Intelligence Diagnosis</h3>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:12px;">
-                      <div>
-                        <div style="color:#10b981; font-weight:700; margin-bottom:4px;">● WHAT CHANGED (Recent Changes)</div>
-                        <div id="fpOvWhatChanged" style="color:#cbd5e1; line-height:1.5;">Leitura recente registrada.</div>
-                      </div>
-                      <div>
-                        <div style="color:#f59e0b; font-weight:700; margin-bottom:4px;">● WHAT IS BROKEN / ATTENTION</div>
-                        <div id="fpOvWhatBroken" style="color:#cbd5e1; line-height:1.5;">Nenhum bloqueio crítico detectado.</div>
-                      </div>
-                    </div>
-                    <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
-                      <div style="color:#38bdf8; font-weight:700; margin-bottom:4px;">💡 NEXT PRIORITY</div>
-                      <div id="fpOvNextPriority" style="color:#e2e8f0; font-size:12px;">Executar inspeção visual completa das telas principais.</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="fp-overview-right">
-                  <!-- Health Score Breakdown -->
-                  <div class="fp-info-card">
-                    <h3 class="fp-card-sec-title">🎯 Project Health Score</h3>
-                    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:14px;">
-                      <span style="font-size:36px; font-weight:900; color:#10b981;" id="fpOvHealthBig">95%</span>
-                      <span style="color:#64748b; font-size:12px;">Baseado em dados factuais</span>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:8px; font-size:11px;">
-                      <div style="display:flex; justify-content:space-between;"><span>Runtime Uptime:</span> <b style="color:#10b981;">—</b></div>
-                      <div style="display:flex; justify-content:space-between;"><span>Codebase Integrity:</span> <b style="color:#38bdf8;">—</b></div>
-                      <div style="display:flex; justify-content:space-between;"><span>Git Clean State:</span> <b style="color:#f59e0b;">—</b></div>
-                      <div style="display:flex; justify-content:space-between;"><span>API Coverage:</span> <b style="color:#10b981;">—</b></div>
-                    </div>
-                  </div>
-
-                  <!-- Quick Action Box -->
-                  <div class="fp-info-card" style="display:flex; flex-direction:column; gap:10px;">
-                    <h3 class="fp-card-sec-title">⚡ Ações Rápidas</h3>
-                    <button class="fp-btn fp-btn-primary" onclick="window.runProjectReader()">📖 Executar Read Project</button>
-                    <button class="fp-btn" onclick="window.runProjectBrowserQA()">🎭 Capturar Browser Screenshot</button>
-                    <button class="fp-btn" onclick="window.openCreateMissionModal()">🚀 Criar Missão no Orquestrador</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 2. FILES TAB -->
-              <div id="fp-tab-files" class="fp-ws-panel fp-ide-layout" style="display:none;">
-                <div class="fp-file-tree" id="fpFileTree">
-                  <div class="fp-tree-loading">Carregando árvore...</div>
-                </div>
-                <div class="fp-editor-panel">
-                  <div class="fp-editor-topbar" id="fpEditorTopbar">
-                    <span class="fp-editor-filepath" id="fpCurrentFile">Selecione um arquivo</span>
-                    <button class="fp-btn fp-btn-primary" id="fpSaveBtn" style="display:none;">💾 Salvar</button>
-                  </div>
-                  <textarea id="fpCodeEditor" class="fp-code-editor" spellcheck="false" placeholder="Selecione um arquivo na árvore à esquerda para editar..."></textarea>
-                  <div class="fp-editor-status" id="fpEditorStatus"></div>
-                </div>
-              </div>
-
-              <!-- 3. SCREENS TAB -->
-              <div id="fp-tab-screens" class="fp-ws-panel" style="display:none; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0;">📑 Discovered Screens & UI Routes</h3>
-                  <button class="fp-btn" onclick="window.refreshDiscoveredScreens()">↻ Atualizar Telas</button>
-                </div>
-                <div id="fpDiscoveredScreensGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:16px;"></div>
-              </div>
-
-              <!-- 4. COMPONENTS TAB -->
-              <div id="fp-tab-components" class="fp-ws-panel" style="display:none; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0;">🧩 Component Hierarchy & Graph</h3>
-                  <button class="fp-btn" onclick="window.refreshDiscoveredComponents()">↻ Atualizar Componentes</button>
-                </div>
-                <div id="fpDiscoveredComponentsList" style="display:flex; flex-direction:column; gap:8px;"></div>
-              </div>
-
-              <!-- 5. APIS TAB -->
-              <div id="fp-tab-apis" class="fp-ws-panel" style="display:none; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0;">⚡ Mapped APIs & Live Tester</h3>
-                  <button class="fp-btn" onclick="window.refreshDiscoveredApis()">↻ Atualizar APIs</button>
-                </div>
-                <div id="fpApiList" class="fp-api-list"></div>
-              </div>
-
-              <!-- 6. RUNTIME TAB -->
-              <div id="fp-tab-runtime" class="fp-ws-panel" style="display:none; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0;">⚙️ Process Telemetry & Runtime Telemetry</h3>
-                  <button class="fp-btn" onclick="window.refreshProjectRuntime()">↻ Sincronizar</button>
-                </div>
-                <div id="fpRuntimeInfo" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px;"></div>
-              </div>
-
-              <!-- 7. GIT TAB -->
-              <div id="fp-tab-git" class="fp-ws-panel" style="display:none; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0;">🔀 Git Repository & History</h3>
-                  <button class="fp-btn" onclick="window.refreshProjectGit()">↻ Atualizar Git</button>
-                </div>
-                <div id="fpGitInfo"></div>
-                <div style="margin-top:16px;" id="fpGitCommitList"></div>
-              </div>
-
-              <!-- 8. TESTS TAB -->
-              <div id="fp-tab-tests" class="fp-ws-panel" style="display:none; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0;">🧪 Discovered Test Suites & Validation</h3>
-                  <button class="fp-btn" onclick="window.runProjectTests()">▶ Executar Testes</button>
-                </div>
-                <div id="fpTestsList"></div>
-              </div>
-
-              <!-- 9. VISUAL QA TAB -->
-              <div id="fp-tab-qa" class="fp-ws-panel" style="display:none; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0;">🔬 Visual QA & Screenshot Gallery</h3>
-                  <button class="fp-btn fp-btn-primary" onclick="window.runProjectBrowserQA()">▶ Capturar Screenshot</button>
-                </div>
-                <div id="fpVisualQaContainer"></div>
-              </div>
-
-              <!-- 10. AGENTS TAB -->
-              <div id="fp-tab-agents" class="fp-ws-panel" style="display:none; padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0 0 16px;">🤖 Autonomous Agents Assigned</h3>
-                <div id="fpProjectAgentsList"></div>
-              </div>
-
-              <!-- 11. JOBS TAB -->
-              <div id="fp-tab-jobs" class="fp-ws-panel" style="display:none; padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0 0 16px;">📋 Execution Jobs & Task History</h3>
-                <div id="fpProjectJobsList"></div>
-              </div>
-
-              <!-- 12. MEMORY TAB -->
-              <div id="fp-tab-memory" class="fp-ws-panel" style="display:none; padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0 0 16px;">🧠 Living Memory Events & Audit Trail</h3>
-                <div id="fpProjectMemoryList"></div>
-              </div>
-
-              <!-- 13. SYSTEM TWIN TAB -->
-              <div id="fp-tab-twin" class="fp-ws-panel" style="display:none; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0;">🧬 Canonical Project Digital Twin</h3>
-                  <button class="fp-btn" onclick="window.copySystemTwinJson()">📋 Copiar JSON</button>
-                </div>
-                <pre id="fpSystemTwinJson" style="background:#050811; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:16px; color:#38bdf8; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:550px; overflow:auto;"></pre>
-              </div>
-
-              <!-- PREVIEW TAB -->
-              <div id="fp-tab-preview" class="fp-ws-panel" style="display:none;">
-                <div class="fp-preview-bar">
-                  <input id="fpPreviewUrl" class="fp-search" style="flex:1;" />
-                  <button class="fp-btn fp-btn-primary" id="fpPreviewGo">▶ Abrir</button>
-                </div>
-                <iframe id="fpPreviewFrame" class="fp-preview-frame" src="about:blank" title="Preview"></iframe>
-              </div>
-
-              <!-- SYSTEM MAP TAB -->
-              <div id="fp-tab-system-map" class="fp-ws-panel" style="display:none; padding:16px;">
-                <div id="v11SystemMapCanvas" style="width:100%; height:550px; background:#050810; border:1px solid rgba(255,255,255,0.08); border-radius:10px;"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 4. SCREEN INSPECTOR MODAL -->
-          <div id="fpScreenInspectorModal" class="fp-modal-backdrop" onclick="if(event.target===this) window.closeScreenInspector()">
-            <div class="fp-modal-container">
-              <div class="fp-modal-header">
-                <div>
-                  <span style="font-size:10px; font-weight:800; color:#38bdf8; letter-spacing:0.1em; text-transform:uppercase;">SCREEN INSPECTOR</span>
-                  <h2 style="font-size:16px; font-weight:700; color:#f8fafc; margin:2px 0 0;" id="fpInspectorTitle">Detalhes da Tela</h2>
-                </div>
-                <button class="fp-modal-close-btn" onclick="window.closeScreenInspector()">✕</button>
-              </div>
-              <div style="padding:20px; display:flex; flex-direction:column; gap:16px;" id="fpInspectorBody"></div>
-            </div>
-          </div>
-
-          <!-- 5. CREATE MISSION MODAL -->
-          <div id="fpCreateMissionModal" class="fp-modal-backdrop" onclick="if(event.target===this) window.closeCreateMissionModal()">
-            <div class="fp-modal-container" style="max-width:600px;">
-              <div class="fp-modal-header">
-                <div>
-                  <span style="font-size:10px; font-weight:800; color:#a855f7; letter-spacing:0.1em; text-transform:uppercase;">FÊNIX CENTRAL ORCHESTRATOR</span>
-                  <h2 style="font-size:16px; font-weight:700; color:#f8fafc; margin:2px 0 0;">Criar Missão Operacional</h2>
-                </div>
-                <button class="fp-modal-close-btn" onclick="window.closeCreateMissionModal()">✕</button>
-              </div>
-              <div style="padding:20px; display:flex; flex-direction:column; gap:14px;">
-                <div>
-                  <label style="font-size:11px; font-weight:700; color:#94a3b8; display:block; margin-bottom:4px;">Título da Missão</label>
-                  <input id="fpMissionTitleInput" class="fp-search-input-large" placeholder="Ex: Otimizar renderização do chat em ZapAI CRM" />
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:700; color:#94a3b8; display:block; margin-bottom:4px;">Objetivo Operacional Verificável</label>
-                  <textarea id="fpMissionObjInput" class="fp-search-input-large" rows="3" style="resize:vertical;" placeholder="Ex: Auditar rotas, capturar screenshot via browser, checar latência de APIs e evoluir para Level 5."></textarea>
-                </div>
-                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
-                  <button class="fp-btn fp-btn-ghost" onclick="window.closeCreateMissionModal()">Cancelar</button>
-                  <button class="fp-btn" style="background:#8b5cf6; color:#fff;" onclick="window.submitProjectMission()">🚀 Enviar ao Orquestrador</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 6. ADD PROJECT MODAL -->
-          <div id="fpAddProjectModal" class="fp-modal-backdrop" onclick="if(event.target===this) window.closeAddProjectModal()">
-            <div class="fp-modal-container" style="max-width:600px;">
-              <div class="fp-modal-header">
-                <div>
-                  <span style="font-size:10px; font-weight:800; color:#38bdf8; letter-spacing:0.1em; text-transform:uppercase;">PROJECT REGISTRY</span>
-                  <h2 style="font-size:16px; font-weight:700; color:#f8fafc; margin:2px 0 0;">Adicionar Novo Projeto</h2>
-                </div>
-                <button class="fp-modal-close-btn" onclick="window.closeAddProjectModal()">✕</button>
-              </div>
-              <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
-                <div>
-                  <label style="font-size:11px; font-weight:700; color:#94a3b8; display:block; margin-bottom:4px;">Nome do Projeto</label>
-                  <input id="fpNewProjName" class="fp-search-input-large" placeholder="Ex: ZapAI Mobile, CRM V2..." />
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:700; color:#94a3b8; display:block; margin-bottom:4px;">Diretório VPS (Caminho Real)</label>
-                  <div style="display:flex; gap:8px;">
-                    <input id="fpNewProjPath" class="fp-search-input-large" placeholder="/opt/zapai, /opt/my-app..." />
-                    <button class="fp-btn" onclick="window.validateNewProjectPath()">Validar</button>
-                  </div>
-                  <span id="fpPathValidationResult" style="font-size:11px; margin-top:4px; display:block;"></span>
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:700; color:#94a3b8; display:block; margin-bottom:4px;">Repositório Git (Opcional)</label>
-                  <input id="fpNewProjRepo" class="fp-search-input-large" placeholder="https://github.com/..." />
-                </div>
-                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
-                  <button class="fp-btn fp-btn-ghost" onclick="window.closeAddProjectModal()">Cancelar</button>
-                  <button class="fp-btn fp-btn-primary" onclick="window.submitRegisterProject()">Cadastrar Projeto</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 7. PROJECT AI CHAT DRAWER -->
-          <div id="fpProjectChatDrawer" class="fp-chat-drawer">
-            <div class="fp-chat-header">
-              <div>
-                <span style="font-size:9px; font-weight:800; color:#38bdf8; letter-spacing:0.12em; text-transform:uppercase;">AI PROJECT AGENT</span>
-                <h3 style="font-size:14px; font-weight:700; color:#f8fafc; margin:2px 0 0;" id="fpChatProjectName">Chat do Projeto</h3>
-              </div>
-              <button class="fp-modal-close-btn" onclick="window.toggleProjectChatDrawer()">✕</button>
-            </div>
-            <div class="fp-chat-messages" id="fpChatMessages">
-              <div class="fp-chat-bubble bot">
-                Olá! Sou o assistente de engenharia deste projeto. Conheço a estrutura de arquivos, telas, componentes, rotas de API e métricas de runtime. Como posso ajudar?
-              </div>
-            </div>
-            <div class="fp-chat-input-row">
-              <input id="fpChatInput" class="fp-search-input-large" placeholder="Pergunte sobre arquitetura, bugs, telas..." onkeydown="if(event.key==='Enter') window.sendProjectChatMessage()" />
-              <button class="fp-btn fp-btn-primary" onclick="window.sendProjectChatMessage()">Enviar</button>
-            </div>
-          </div>
-        </div>
+<div id="view-projects" class="view fenix-projects-view" aria-label="Projetos do Project Kernel"></div>
 
 <div id="view-agents" class="view fenix-agents-view-container">
           <div class="fenix-module-header" style="background:transparent; padding:0; border:none; margin-bottom:14px;">
             <div class="fenix-module-title-area">
               <div class="fenix-module-title">FÊNIX OS <span>&gt;</span> AGENTES</div>
               <div class="fenix-pill-tabs">
-                <button class="fenix-pill-tab active" onclick="window.fenixSelectAgentsSubnav('grid')">Visão (15)</button>
+                <button class="fenix-pill-tab active" onclick="window.fenixSelectAgentsSubnav('grid')">Visão (—)</button>
                 <button class="fenix-pill-tab" onclick="window.fenixSelectAgentsSubnav('list')">Lista</button>
                 <button class="fenix-pill-tab" onclick="window.fenixSelectAgentsSubnav('network')">Rede</button>
                 <button class="fenix-pill-tab" onclick="window.fenixSelectAgentsSubnav('specs')">Especializações</button>
               </div>
             </div>
             <div style="display:flex; gap:10px; align-items:center;">
-              <button class="fenix-subnav-btn" onclick="window.renderAgentsTable && window.renderAgentsTable()"><i class="ph-bold ph-arrows-clockwise"></i> Sincronizar</button>
+              <button class="fenix-subnav-btn" onclick="window.fenixLoadAgents && window.fenixLoadAgents()"><i class="ph-bold ph-arrows-clockwise"></i> Sincronizar</button>
               <button class="fenix-hero-btn" onclick="window.showView('city')" style="padding:6px 14px; font-size:12px;"><i class="ph-bold ph-buildings"></i> Ver na AI City</button>
             </div>
           </div>
 
-          <!-- Real Agent Capacity & Elastic Swarm Widget (Satisfies Test AF & System Monitoring) -->
+          <!-- Measured agent and job counts from the authenticated City projection. -->
           <div class="v10-card fenix-agent-capacity-strip" id="fenixAgentCapacityWidget" style="margin-bottom: 16px; background: rgba(13, 22, 38, 0.85); border: 1px solid rgba(0, 229, 160, 0.22); border-radius: 10px; padding: 12px 18px; backdrop-filter: blur(12px);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h3 class="v10-card-title" style="font-size:13px; font-weight:700; color:#FFFFFF; display:flex; align-items:center; gap:8px; margin:0;">
                 <i class="ph-fill ph-users-three" style="color:var(--fenix-cyan, #22D3EE);"></i>
-                Capacidade Real &amp; Enxame Elástico
+                Agentes e tarefas reais
               </h3>
-              <span class="v10-live-pill" style="font-size:11px; padding:3px 10px; background:rgba(0,229,160,0.12); color:#00E5A0; border:1px solid rgba(0,229,160,0.3); border-radius:12px; font-weight:700;"><span class="v10-pulse-dot"></span> <span id="capValCapacity">15 / 15</span></span>
+              <span class="v10-live-pill" style="font-size:11px; padding:3px 10px; background:rgba(0,229,160,0.12); color:#00E5A0; border:1px solid rgba(0,229,160,0.3); border-radius:12px; font-weight:700;"><span id="fenixAgentRegisteredCount">—</span> registrados</span>
             </div>
             <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
               <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:8px 12px; text-align:center;">
-                <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:600;">Ativos</div>
-                <div id="capValActive" style="font-size:18px; font-weight:800; color:#00E5A0; margin-top:2px;">15</div>
+                <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:600;">Em execução</div>
+                <div id="fenixAgentWorkingCount" style="font-size:18px; font-weight:800; color:#00E5A0; margin-top:2px;">—</div>
               </div>
               <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:8px 12px; text-align:center;">
-                <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:600;">Standby</div>
-                <div style="font-size:18px; font-weight:800; color:#38BDF8; margin-top:2px;">0</div>
+                <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:600;">Disponíveis</div>
+                <div id="fenixAgentAvailableCount" style="font-size:18px; font-weight:800; color:#38BDF8; margin-top:2px;">—</div>
               </div>
               <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:8px 12px; text-align:center;">
-                <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:600;">Capacidade Máxima</div>
-                <div style="font-size:18px; font-weight:800; color:#F8FAFC; margin-top:2px;">20</div>
+                <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:600;">Projetos</div>
+                <div id="fenixAgentProjectsCount" style="font-size:18px; font-weight:800; color:#F8FAFC; margin-top:2px;">—</div>
               </div>
               <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:8px 12px; text-align:center;">
-                <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:600;">Eficiência Média</div>
-                <div style="font-size:18px; font-weight:800; color:#A78BFA; margin-top:2px;">98.4%</div>
+                <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:600;">Jobs com falha</div>
+                <div id="fenixAgentFailedJobsCount" style="font-size:18px; font-weight:800; color:#A78BFA; margin-top:2px;">—</div>
               </div>
             </div>
           </div>
 
-          <!-- Dynamic 15 Agents Grid (Elite V11 Card Design) -->
+          <section class="v10-card fenix-agent-creator" aria-labelledby="fenixAgentCreatorTitle">
+            <div class="fenix-agent-creator-heading">
+              <div><h3 id="fenixAgentCreatorTitle">Criar agente especializado</h3><p>Vincule o agente a uma equipe cognitiva. As tarefas atribuídas ficam no histórico do projeto e aparecem na Cidade.</p></div>
+            </div>
+            <div class="fenix-agent-creator-fields">
+              <label>Equipe ou projeto<select id="fenixAgentEntity"><option value="">Carregando equipes…</option></select></label>
+              <label>Nome do agente<input id="fenixAgentName" maxlength="80" placeholder="Ex.: Investigador de API"></label>
+              <label>Especialidade<input id="fenixAgentRole" maxlength="80" placeholder="Ex.: análise de API"></label>
+              <button type="button" class="fenix-hero-btn" onclick="window.fenixCreateAgent()">Criar agente</button>
+            </div>
+            <div class="fenix-agent-creator-team">
+              <label>Nova equipe cognitiva<input id="fenixAgentTeamName" maxlength="80" placeholder="Nome da equipe"></label>
+              <button type="button" class="fenix-subnav-btn" onclick="window.fenixCreateAgentTeam()">Criar equipe</button>
+            </div>
+            <p id="fenixAgentCreatorStatus" role="status" aria-live="polite"></p>
+          </section>
+
+          <!-- Agent cards from the authenticated City projection. -->
           <div id="fenix-agents-grid" class="fenix-agents-grid"></div>
+          <div id="fenixAgentsListView" style="display:none;"></div>
 
           <!-- Dynamic Agents Mount & Error Trap (Preserved for Sabotage Test B & Live Table Switching) -->
-          <div id="fenixAgentsLiveTrap" style="margin-top:10px;">
+          <div id="fenixAgentsLiveTrap" style="display:none; margin-top:10px;">
             <div id="agentCardsGrid"></div>
             <table id="agentList" style="display:none; width:100%; border-collapse:collapse;"></table>
           </div>
@@ -3388,6 +2795,14 @@
                 </table>
               </article>
             </section>
+          </main>
+        </div>
+
+        <div id="view-marketplace" class="view" aria-label="Marketplace de capacidades">
+          <main class="workspace-view">
+            <header class="workspace-header"><div><small>CAPACIDADES REAIS</small><h1>Marketplace</h1><p>Skills e conectores registrados neste runtime.</p></div><button type="button" id="marketplaceRefreshBtn">Atualizar catálogo</button></header>
+            <div id="marketplaceStatus" role="status">Carregando catálogo…</div>
+            <section id="marketplaceCatalog" class="workspace-grid three-columns" aria-live="polite"></section>
           </main>
         </div>
 
@@ -4453,6 +3868,7 @@ window.__fenixSubmitIdeChat = async function () {
     'memory': { group: 'INTELLIGENCE', name: 'Memória' },
     'knowledge': { group: 'INTELLIGENCE', name: 'Skills' },
     'mcp': { group: 'INTELLIGENCE', name: 'Providers & MCP' },
+    'marketplace': { group: 'INTELLIGENCE', name: 'Marketplace' },
     'runtime': { group: 'OBSERVABILITY', name: 'Monitoramento' },
     'observability': { group: 'OBSERVABILITY', name: 'Eventos & Logs' },
     'project': { group: 'OBSERVABILITY', name: 'Infraestrutura' },
@@ -4506,6 +3922,7 @@ window.__fenixSubmitIdeChat = async function () {
     if (!viewId) viewId = 'command';
     viewId = String(viewId).replace(/^#\/?/, '').split('?')[0].split('/')[0] || 'command';
     if (ROUTE_ALIASES[viewId]) viewId = ROUTE_ALIASES[viewId];
+    if (window.__fenixState.currentRoute === 'city' && viewId !== 'city') window.fenixCity?.saveCamera?.();
 
     const targetEl = document.getElementById('view-' + viewId);
     if (!targetEl) {
@@ -4587,6 +4004,8 @@ window.__fenixSubmitIdeChat = async function () {
         if (typeof window.loadKnowledgeView === 'function') window.loadKnowledgeView();
       } else if (viewId === 'mcp') {
         if (typeof window.loadMcpView === 'function') window.loadMcpView();
+      } else if (viewId === 'marketplace') {
+        if (typeof window.loadMarketplaceView === 'function') window.loadMarketplaceView();
       } else if (viewId === 'runtime') {
         if (typeof window.loadRuntimeView === 'function') window.loadRuntimeView();
       } else if (viewId === 'observability') {
@@ -5109,11 +4528,11 @@ window.__fenixSubmitIdeChat = async function () {
       ]);
 
       const agents = agentsRes.agents || [];
-      const onlineCount = agents.filter(a => a.status === 'ONLINE' || a.state === 'IDLE' || a.state === 'WORKING' || a.health === 'healthy').length || agents.length;
+      const registeredCount = agents.length;
       const workingCount = agents.filter(a => a.status === 'WORKING' || a.state === 'WORKING' || a.currentTask).length;
 
       const elOnline = document.getElementById('cityOnlineCount');
-      if (elOnline) elOnline.textContent = '● ' + onlineCount + ' ONLINE';
+      if (elOnline) elOnline.textContent = registeredCount + ' REGISTRADOS';
 
       const elWorking = document.getElementById('cityWorkingCount');
       if (elWorking) elWorking.textContent = '⚡ ' + workingCount + ' EM OPERAÇÃO';
@@ -6327,6 +5746,12 @@ window.__fenixSubmitIdeChat = async function () {
 <link rel="stylesheet" href="/fenix-flow-graph.css?v=1.0">
 <link rel="stylesheet" href="/fenix-window-overrides.css?v=evolution-20260917">
 <script src="/fenix-v11-interactions.js?v=8"></script>
+<link rel="stylesheet" href="/project-ide-live.css?v=1">
+<script src="/project-ide-live.js?v=1"></script>
+<link rel="stylesheet" href="/project-hub-live.css?v=1">
+<link rel="stylesheet" href="/marketplace-live.css?v=1">
+<script src="/project-hub-live.js?v=1"></script>
+<script src="/marketplace-live.js?v=1"></script>
 
     <footer class="fenix-presentation-footer">
       <div style="display:flex; align-items:center; gap:8px;">

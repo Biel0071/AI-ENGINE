@@ -76,7 +76,7 @@ class AgentRuntime extends SystemModule {
       lastHeartbeat: Date.now(),
       retries: 0,
       maxRetries: 3,
-      runFn: runFn || spec.run || (async () => ({ success: true, message: 'Default execution completed' }))
+      runFn: runFn || spec.run || null
     };
 
     this.activeAgents.set(instanceId, instance);
@@ -99,6 +99,16 @@ class AgentRuntime extends SystemModule {
   async executeAgent(instanceId) {
     const agent = this.activeAgents.get(instanceId);
     if (!agent) throw new Error(`Agent ${instanceId} not found in runtime`);
+    if (typeof agent.runFn !== 'function') {
+      const error = new Error(`Agent ${agent.role} has no execution adapter`);
+      error.code = 'AGENT_EXECUTOR_UNAVAILABLE';
+      agent.status = STATE_MACHINE.ERROR;
+      agent.error = error.message;
+      if (this.eventBus) {
+        await this.eventBus.emit(FENIX_EVENTS.AGENT_FAILED, { agentId: instanceId, role: agent.role, error: error.message }, EVENT_PRIORITY.HIGH);
+      }
+      throw error;
+    }
 
     agent.status = STATE_MACHINE.ONLINE;
     agent.lastHeartbeat = Date.now();
@@ -135,7 +145,7 @@ class AgentRuntime extends SystemModule {
         await this.eventBus.emit(FENIX_EVENTS.AGENT_FAILED, { agentId: instanceId, role: agent.role, error: err.message }, EVENT_PRIORITY.HIGH);
       }
 
-      if (agent.retries < agent.maxRetries) {
+      if (err.code !== 'AGENT_EXECUTOR_UNAVAILABLE' && agent.retries < agent.maxRetries) {
         agent.retries += 1;
         return this.executeAgent(instanceId);
       }

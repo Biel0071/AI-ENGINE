@@ -50,8 +50,10 @@
       this.agentData = new Map();
       this.missionData = new Map();
       this.projectData = [];
+      this.agentsLoaded = false;
+      this.jobsLoaded = false;
       this.pollTimer = null;
-      this.ws = null;
+      this.liveListener = null;
       this.token = null;
 
       this.init();
@@ -94,7 +96,7 @@
       // Start polling for updates
       this.startPolling();
 
-      // Connect to WebSocket for real-time events
+      // Consume the authenticated live runtime channel already owned by live-runtime.js.
       this.connectWebSocket();
 
       // Listen for city events
@@ -111,31 +113,31 @@
       const buildings = [
         { id: 'fenix-hq', type: 'building', col: 10, row: 10,
           metadata: { name: 'FÊNIX Operating System HQ', type: 'Headquarters', project: 'ai-engine-core',
-            floors: 3, agents: 2, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Local Core' }},
+            floors: 3, projectKey: 'ai-engine-core', vps: 'Local Core' }},
         { id: 'zapai', type: 'building', col: 15, row: 20,
           metadata: { name: 'Dev Loft (ZapAI CRM)', type: 'Development Center', project: 'zapai-final',
-            floors: 3, agents: 3, status: 'healthy', projectKey: 'zapai-final', vps: '209.50.241.22' }},
+            floors: 3, projectKey: 'zapai-final', vps: '209.50.241.22' }},
         { id: 'api-platform', type: 'building', col: 20, row: 12,
           metadata: { name: 'AI Platform & VPS Hub', type: 'AI Gateway & Inference', project: 'api-platform',
-            floors: 2, agents: 2, status: 'healthy', projectKey: 'api-platform', vps: '209.50.241.22:3001' }},
+            floors: 2, projectKey: 'api-platform', vps: '209.50.241.22:3001' }},
         { id: 'ai-engine', type: 'building', col: 12, row: 18,
           metadata: { name: 'AI Engine Core', type: 'Inference', project: 'ai-engine-core',
-            floors: 2, agents: 1, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Ollama Direct' }},
+            floors: 2, projectKey: 'ai-engine-core', vps: 'Ollama Direct' }},
         { id: 'dev-lab', type: 'building', col: 25, row: 15,
           metadata: { name: 'Dev Software Factory', type: 'Dev Lab', project: 'ai-engine-core',
-            floors: 2, agents: 2, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Local' }},
+            floors: 2, projectKey: 'ai-engine-core', vps: 'Local' }},
         { id: 'qa-lab', type: 'building', col: 18, row: 25,
           metadata: { name: 'Visual QA & Playwright Lab', type: 'QA Lab', project: 'zapai-final',
-            floors: 2, agents: 1, status: 'healthy', projectKey: 'zapai-final', vps: 'Local Headless' }},
+            floors: 2, projectKey: 'zapai-final', vps: 'Local Headless' }},
         { id: 'github', type: 'building', col: 22, row: 22,
           metadata: { name: 'GitHub Control Tower', type: 'GitOps', project: 'ai-engine-core',
-            floors: 3, agents: 1, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Git Service' }},
+            floors: 3, projectKey: 'ai-engine-core', vps: 'Git Service' }},
         { id: 'datacenter', type: 'building', col: 8, row: 24,
           metadata: { name: 'Data Center & Docker Platform', type: 'Infrastructure', project: 'api-platform',
-            floors: 4, agents: 2, status: 'healthy', projectKey: 'api-platform', vps: '13 Containers' }},
+            floors: 4, projectKey: 'api-platform', vps: 'Docker' }},
         { id: 'memory-core', type: 'building', col: 14, row: 8,
           metadata: { name: 'Memory Core & Graph Brain', type: 'Memory Fabric', project: 'ai-engine-core',
-            floors: 2, agents: 1, status: 'healthy', projectKey: 'ai-engine-core', vps: 'Qdrant & Graph' }}
+            floors: 2, projectKey: 'ai-engine-core', vps: 'Qdrant & Graph' }}
       ];
 
       for (const bld of buildings) {
@@ -208,7 +210,7 @@
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
                 <div>
                   <strong style="font-size:16px; color:#10b981;">🏙️ PROJECT TWIN — ${p.name || meta.name}</strong>
-                  <div style="font-size:11px; color:#94a3b8;">${p.displayName || 'Ecosystem Project'} | Status: Realtime Verified</div>
+                  <div style="font-size:11px; color:#94a3b8;">${p.displayName || 'Projeto'} | Status: ${p.status || 'indisponível'}</div>
                 </div>
                 <button onclick="this.closest('.v14-city-project-modal').remove()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;">✕</button>
               </div>
@@ -220,25 +222,25 @@
                 </div>
                 <div style="flex:1; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); padding:10px; border-radius:8px; text-align:center;">
                   <div style="font-size:10px; color:#94a3b8;">TELAS REAIS</div>
-                  <div style="font-size:20px; font-weight:bold; color:#38bdf8;">${(p.screens || []).length || 16}</div>
+                  <div style="font-size:20px; font-weight:bold; color:#38bdf8;">${Array.isArray(p.screens) ? p.screens.length : '—'}</div>
                 </div>
                 <div style="flex:1; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); padding:10px; border-radius:8px; text-align:center;">
                   <div style="font-size:10px; color:#94a3b8;">APIs CONECTADAS</div>
-                  <div style="font-size:20px; font-weight:bold; color:#a855f7;">${(p.apis || []).length || 5}</div>
+                  <div style="font-size:20px; font-weight:bold; color:#a855f7;">${Array.isArray(p.apis) ? p.apis.length : '—'}</div>
                 </div>
               </div>
 
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px; color:#cbd5e1; line-height:1.5; margin-bottom:16px; background:rgba(255,255,255,0.02); padding:12px; border-radius:8px;">
                 <div><strong>PROJECT:</strong> <code>${p.projectId || projId}</code></div>
-                <div><strong>PATH:</strong> <code>${p.path || '/opt/fenix-os'}</code></div>
-                <div><strong>GIT:</strong> <code>${p.branch || 'master'}</code> @ <code>${p.commit || 'HEAD'}</code></div>
+                <div><strong>PATH:</strong> <code>${p.path || '—'}</code></div>
+                <div><strong>GIT:</strong> <code>${p.branch || '—'}</code> @ <code>${p.commit || '—'}</code></div>
                 <div><strong>SERVICES:</strong> ${(p.services || []).join(', ')}</div>
                 <div><strong>SCREENS:</strong> ${(p.screens || []).slice(0, 4).join(', ')}...</div>
                 <div><strong>APIs:</strong> ${(p.apis || []).slice(0, 3).join(', ')}</div>
                 <div><strong>AGENTS:</strong> ${(p.agents || []).join(', ')}</div>
-                <div><strong>JOBS:</strong> ${(p.queues || ['fenix-jobs']).join(', ')}</div>
-                <div><strong>HEALTH:</strong> <span style="color:#10b981; font-weight:bold;">${p.health != null ? p.health + '% (ONLINE)' : '—'}</span></div>
-                <div><strong>RECENT CHANGES:</strong> ${new Date(p.lastChange || Date.now()).toLocaleDateString()}</div>
+                <div><strong>JOBS:</strong> ${(p.queues || []).join(', ') || '—'}</div>
+                <div><strong>HEALTH:</strong> <span style="color:#10b981; font-weight:bold;">${p.health != null ? p.health + '%' : '—'}</span></div>
+                <div><strong>RECENT CHANGES:</strong> ${p.lastChange ? new Date(p.lastChange).toLocaleDateString() : '—'}</div>
               </div>
 
               <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.1); padding-top:14px;">
@@ -278,12 +280,16 @@
 
       try {
         // Fetch agents
-        const agentsRes = await fetch(`${API_BASE}/api/agents/panel`, { headers });
+        const agentsRes = await fetch(`${API_BASE}/api/v2/living-city/agents`, { headers });
         if (agentsRes.ok) {
           const agents = await agentsRes.json();
           this.populateAgents(Array.isArray(agents) ? agents : (agents.agents || []));
+          this.agentsLoaded = true;
+        } else {
+          this.agentsLoaded = false;
+          this.populateAgents([]);
         }
-      } catch (e) { console.warn('[CityIntegration] agents fetch:', e.message); }
+      } catch (e) { this.agentsLoaded = false; this.populateAgents([]); console.warn('[CityIntegration] agents fetch:', e.message); }
 
       try {
         // Fetch missions/jobs (try /api/v2/jobs first)
@@ -294,8 +300,12 @@
         if (jobsRes.ok) {
           const jobs = await jobsRes.json();
           this.populateMissions(Array.isArray(jobs) ? jobs : (jobs.jobs || []));
+          this.jobsLoaded = true;
+        } else {
+          this.jobsLoaded = false;
+          this.populateMissions([]);
         }
-      } catch (e) { console.warn('[CityIntegration] jobs fetch:', e.message); }
+      } catch (e) { this.jobsLoaded = false; this.populateMissions([]); console.warn('[CityIntegration] jobs fetch:', e.message); }
 
       try {
         // Fetch projects
@@ -306,6 +316,14 @@
         if (projRes.ok) {
           const projects = await projRes.json();
           this.projectData = Array.isArray(projects) ? projects : (projects.projects || []);
+          for (const object of this.interaction?.objects?.values() || []) {
+            if (object.type !== 'building') continue;
+            const key = String(object.metadata?.projectKey || '').toLowerCase();
+            const project = this.projectData.find((item) =>
+              [item.id, item.projectId, item.slug].some((value) => String(value || '').toLowerCase() === key));
+            if (project) object.metadata.status = project.status || project.health?.status || null;
+            else delete object.metadata.status;
+          }
         }
       } catch (e) { console.warn('[CityIntegration] projects fetch:', e.message); }
 
@@ -315,6 +333,14 @@
 
     // ── Populate agents as characters ──
     populateAgents(agents) {
+      const liveIds = new Set(agents.map((agent) => agent.id || agent.agentId).filter(Boolean));
+      for (const id of this.agentData.keys()) {
+        if (!liveIds.has(id)) {
+          this.interaction?.unregisterObject(id);
+          this.renderer.removeAgent?.(id);
+          this.agentData.delete(id);
+        }
+      }
       const roleDistrictMap = {
         'developer': 'development',
         'backend': 'development',
@@ -481,11 +507,11 @@
               metadata: {
                 name: friendlyName,
                 role: role,
-                status: agent.status || 'AVAILABLE',
-                model: agent.model || 'Gemini 2.5 Flash',
-                provider: agent.provider || 'ai-gateway',
-                task: agent.currentTask || agent.lastAction || 'Active in District',
-                tokens: agent.totalTokens || 0,
+                status: agent.status || 'UNKNOWN',
+                model: agent.model || '—',
+                provider: agent.provider || '—',
+                task: agent.currentTask || agent.lastAction || '—',
+                tokens: agent.totalTokens ?? null,
                 district: district
               }
             });
@@ -498,6 +524,7 @@
 
     // ── Populate missions & Update Floating Cards ──
     populateMissions(jobs) {
+      this.missionData.clear();
       for (const job of jobs) {
         const id = job.id || job.jobId || job.missionId;
         if (!id) continue;
@@ -519,12 +546,12 @@
           const jobsEl = document.getElementById('floatMissionJobs');
           const agentsEl = document.getElementById('floatMissionAgents');
 
-          if (titleEl) titleEl.textContent = activeJob.type || 'Autonomous Audit & Optimization';
+          if (titleEl) titleEl.textContent = activeJob.title || activeJob.type || 'Missão sem título';
           if (descEl) descEl.textContent = activeJob.result?.name ? `Artifact: ${activeJob.result.name}` : `Mission ID: ${activeJob.id ? activeJob.id.substring(0, 8) : '—'}`;
           if (progEl) progEl.style.width = `${activeJob.progress ?? 0}%`;
-          if (elapsedEl) elapsedEl.textContent = '1.4s';
+          if (elapsedEl) elapsedEl.textContent = Number.isFinite(activeJob.durationMs) ? `${(activeJob.durationMs / 1000).toFixed(1)}s` : '—';
           if (jobsEl) jobsEl.textContent = `${jobs.length} total`;
-          if (agentsEl) agentsEl.textContent = `${this.agentData.size || 19} active`;
+          if (agentsEl) agentsEl.textContent = this.agentsLoaded ? `${this.agentData.size} agentes` : '—';
 
           missionCard.style.display = 'block';
         }
@@ -536,14 +563,19 @@
           const jProg = document.getElementById('floatJobProgress');
           const jDur = document.getElementById('floatJobDuration');
 
-          if (jId) jId.textContent = `JOB #${activeJob.id ? activeJob.id.substring(0, 8) : '001'}`;
-          if (jAgent) jAgent.textContent = activeJob.agent?.name || 'Developer Agent';
-          if (jTitle) jTitle.textContent = activeJob.type || 'Runtime Architecture Analysis';
+          if (jId) jId.textContent = `JOB #${activeJob.id ? activeJob.id.substring(0, 8) : '—'}`;
+          if (jAgent) jAgent.textContent = activeJob.agent?.name || activeJob.agentId || '—';
+          if (jTitle) jTitle.textContent = activeJob.title || activeJob.type || '—';
           if (jProg) jProg.style.width = `${activeJob.progress ?? 0}%`;
-          if (jDur) jDur.textContent = '1.2s';
+          if (jDur) jDur.textContent = Number.isFinite(activeJob.durationMs) ? `${(activeJob.durationMs / 1000).toFixed(1)}s` : '—';
 
           jobCard.style.display = 'block';
         }
+      } else {
+        const missionCard = document.getElementById('floatingMissionCard');
+        const jobCard = document.getElementById('floatingJobCard');
+        if (missionCard) missionCard.style.display = 'none';
+        if (jobCard) jobCard.style.display = 'none';
       }
     }
 
@@ -556,51 +588,21 @@
       const failedJobs = document.getElementById('ribbonFailedJobs');
       const blockedJobs = document.getElementById('ribbonBlockedJobs');
 
-      const count = this.agentData.size || 19;
-      if (totalAgents) totalAgents.textContent = count;
-      if (activeAgents) activeAgents.textContent = count;
-      if (missionsCount) missionsCount.textContent = this.missionData.size || 30;
-      if (jobsCount) jobsCount.textContent = this.missionData.size || 30;
-      if (failedJobs) failedJobs.textContent = '0';
-      if (blockedJobs) blockedJobs.textContent = '0';
+      const agents = [...this.agentData.values()];
+      const jobs = [...this.missionData.values()];
+      if (totalAgents) totalAgents.textContent = this.agentsLoaded ? String(agents.length) : '—';
+      if (activeAgents) activeAgents.textContent = this.agentsLoaded ? String(agents.filter((agent) => ['WORKING', 'BUSY', 'RUNNING', 'ACTIVE'].includes(String(agent.status || '').toUpperCase())).length) : '—';
+      if (missionsCount) missionsCount.textContent = this.jobsLoaded ? String(jobs.filter((job) => job.missionId || job.type === 'mission').length) : '—';
+      if (jobsCount) jobsCount.textContent = this.jobsLoaded ? String(jobs.length) : '—';
+      if (failedJobs) failedJobs.textContent = this.jobsLoaded ? String(jobs.filter((job) => ['FAILED', 'ERROR'].includes(String(job.status || '').toUpperCase())).length) : '—';
+      if (blockedJobs) blockedJobs.textContent = this.jobsLoaded ? String(jobs.filter((job) => ['BLOCKED', 'WAITING_APPROVAL'].includes(String(job.status || '').toUpperCase())).length) : '—';
     }
 
-    // ── WebSocket for real-time events ──
+    // ── Authenticated live runtime events ──
     connectWebSocket() {
-      try {
-        const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProto}//${window.location.host}/events`;
-        // Use global WebSocket singleton to avoid duplicate connections
-        if (window.__FENIX_WS__ && window.__FENIX_WS__.readyState <= 1) {
-          this.ws = window.__FENIX_WS__;
-          console.log('[CityIntegration] Reusing existing WebSocket singleton');
-          return;
-        }
-        this.ws = new WebSocket(wsUrl);
-        window.__FENIX_WS__ = this.ws;
-
-        this.ws.onopen = () => {
-          console.log('[CityIntegration] WebSocket connected');
-          // Subscribe to city events
-          this.ws.send(JSON.stringify({ type: 'subscribe', channels: ['city', 'agents', 'missions'] }));
-        };
-
-        this.ws.onmessage = (evt) => {
-          try {
-            const data = JSON.parse(evt.data);
-            this.handleRealtimeEvent(data);
-          } catch (e) { /* non-JSON message */ }
-        };
-
-        this.ws.onclose = () => {
-          console.log('[CityIntegration] WebSocket closed, reconnecting in 5s...');
-          setTimeout(() => this.connectWebSocket(), 15000);
-        };
-
-        this.ws.onerror = () => { /* will trigger onclose */ };
-      } catch (e) {
-        console.warn('[CityIntegration] WebSocket:', e.message);
-      }
+      if (this.liveListener) return;
+      this.liveListener = (event) => this.handleRealtimeEvent(event.detail || {});
+      document.addEventListener('fenix-live', this.liveListener);
     }
 
     // ── Handle real-time events ──
@@ -609,7 +611,7 @@
 
       if (event.startsWith('agent.')) {
         this.handleAgentEvent(data);
-      } else if (event.startsWith('mission.') || event.startsWith('job.')) {
+      } else if (event.startsWith('mission.') || event.startsWith('job.') || event.startsWith('runtime.job.')) {
         this.handleMissionEvent(data);
       } else if (event === 'heartbeat' || event === 'pong') {
         // ignore heartbeats
@@ -617,10 +619,11 @@
     }
 
     handleAgentEvent(data) {
-      const agentId = data.agentId || data.payload?.agentId;
+      const payload = data.payload?.data || data.payload || data;
+      const agentId = payload.agentId || data.agentId;
       if (!agentId) return;
 
-      const event = data.event || '';
+      const event = data.event || data.type || '';
 
       // Update agent visual state
       let newState = null;
@@ -659,12 +662,14 @@
     }
 
     handleMissionEvent(data) {
-      const missionId = data.missionId || data.jobId || data.payload?.missionId;
+      const payload = data.payload?.data || data.payload || data;
+      const missionId = payload.missionId || payload.jobId || data.missionId || data.jobId;
       if (!missionId) return;
 
       // Update mission data
       const existing = this.missionData.get(missionId) || {};
-      this.missionData.set(missionId, { ...existing, ...data.payload, lastEvent: data.event });
+      this.missionData.set(missionId, { ...existing, ...payload, id: missionId, lastEvent: data.event || data.type });
+      this.updateCityRibbon();
     }
 
     // ── Polling for updates ──
@@ -744,7 +749,7 @@
         clearInterval(this.patrolTimer);
         this.patrolTimer = null;
       }
-      if (this.ws) this.ws.close();
+      if (this.liveListener) document.removeEventListener('fenix-live', this.liveListener);
       if (this.interaction) this.interaction.destroy();
       if (this.zoomSystem) this.zoomSystem.destroy();
     }

@@ -149,7 +149,7 @@ class AutonomousAgentEcosystem {
   }
 
   async #dispatch(task, actorId) {
-    const job = await this.jobs.submit(task.tenantId, actorId, { type: task.jobType, payload: task.payload });
+    const job = await this.jobs.submit(task.tenantId, actorId, { type: task.jobType, payload: task.payload, agentId: task.agentId });
     await this.store.update((state) => { const current = state.agentTasks.find((item) => item.id === task.id); current.status = 'DISPATCHED'; current.jobId = job.id; current.updatedAt = now(); return state; });
     await this.#event(task.tenantId, 'agent.task.dispatched', task.id, { actorId, agentId: task.agentId, jobId: job.id, jobType: task.jobType, policyLevel: task.policyLevel });
     return this.#task(task.tenantId, task.id);

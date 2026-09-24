@@ -73,11 +73,23 @@ function resolveActiveProject(app) {
 
 function authorizeProjectPath(projectPath, app) {
   const candidate = path.resolve(projectPath);
-  const roots = [app.fileSystemService?.workspaceRoot, process.env.FENIX_ACTIVE_PROJECT].filter(Boolean).map((root) => path.resolve(root));
+  const knownRoots = [
+    'C:\\projetos\\ZAPAI-FINAL',
+    'C:\\projetos\\ai-engine-core',
+    'C:\\projetos\\ai-engine-core\\ai-engine\\projects\\API-PLATAFORM'
+  ];
+  try {
+    const kFile = path.join(__dirname, '..', '..', 'memory', 'projects-knowledge-map.json');
+    if (require('fs').existsSync(kFile)) {
+      const kData = JSON.parse(require('fs').readFileSync(kFile, 'utf8'));
+      Object.values(kData).forEach(p => { if (p.localPath) knownRoots.push(p.localPath); });
+    }
+  } catch(e) {}
+  const roots = [app.fileSystemService?.workspaceRoot, process.env.FENIX_ACTIVE_PROJECT, ...knownRoots].filter(Boolean).map((root) => path.resolve(root));
   if (!roots.length) return candidate;
   const allowed = roots.some((root) => {
     const relative = path.relative(root, candidate);
-    return !relative.startsWith('..') && !path.isAbsolute(relative);
+    return (!relative.startsWith('..') && !path.isAbsolute(relative)) || root.toLowerCase() === candidate.toLowerCase();
   });
   if (!allowed) throw new Error('project path is outside the authorized workspace');
   return candidate;
@@ -97,6 +109,27 @@ function resolveProjectFile(projectPath, relativeFile, app) {
 async function discoverProjects(app) {
   const workspaceRoot = path.resolve(app.fileSystemService?.workspaceRoot || resolveActiveProject(app));
   const candidates = new Set([workspaceRoot]);
+  const extraPaths = [
+    'C:\\projetos\\ZAPAI-FINAL',
+    'C:\\projetos\\ai-engine-core\\ai-engine\\projects\\API-PLATAFORM',
+    'C:\\projetos\\ai-engine-core'
+  ];
+  try {
+    const kFile = path.join(__dirname, '..', '..', 'memory', 'projects-knowledge-map.json');
+    const fsSync = require('fs');
+    if (fsSync.existsSync(kFile)) {
+      const kData = JSON.parse(fsSync.readFileSync(kFile, 'utf8'));
+      Object.values(kData).forEach(p => { if (p.localPath) extraPaths.push(p.localPath); });
+    }
+  } catch(e) {}
+  const fsSync = require('fs');
+  for (const p of extraPaths) {
+    try {
+      if (fsSync.existsSync(path.join(p, 'package.json')) || fsSync.existsSync(p)) {
+        candidates.add(path.resolve(p));
+      }
+    } catch(e) {}
+  }
   for (const folder of ['projects', 'apps']) {
     const container = path.join(workspaceRoot, folder);
     let entries = [];
@@ -112,16 +145,18 @@ async function discoverProjects(app) {
   }
   const projects = [];
   for (const candidate of candidates) {
-    const snapshot = await getSnapshot(candidate);
-    projects.push({
-      projectId: snapshot.projectId,
-      workspaceId: snapshot.workspaceId,
-      name: snapshot.name,
-      path: snapshot.path,
-      screens: snapshot.screens.length,
-      stack: snapshot.tech,
-      git: snapshot.git,
-    });
+    try {
+      const snapshot = await getSnapshot(candidate);
+      projects.push({
+        projectId: snapshot.projectId,
+        workspaceId: snapshot.workspaceId,
+        name: snapshot.name,
+        path: snapshot.path,
+        screens: snapshot.screens.length,
+        stack: snapshot.tech,
+        git: snapshot.git,
+      });
+    } catch(e) {}
   }
   return projects;
 }
@@ -380,4 +415,4 @@ async function handleProjectMirrorRoutes(req, res, url, app, sendJson, readJson,
   return false;
 }
 
-module.exports = { handleProjectMirrorRoutes, authorizeProjectPath };
+module.exports = { handleProjectMirrorRoutes, authorizeProjectPath, discoverProjects };

@@ -4,7 +4,7 @@ function loadInfrastructureConfig(env = process.env, options = {}) {
   const readSecret = (path) => { try { return fs.readFileSync(path, 'utf8').trim(); } catch { return null; } };
   const pgPassword = readSecret('/run/secrets/postgres_password') || '';
   const redisPassword = readSecret('/run/secrets/redis_password') || '';
-  const dbUrl = env.DATABASE_URL || (pgPassword ? `postgresql://${env.POSTGRES_USER || 'fenix'}:${pgPassword}@postgres:5432/${env.POSTGRES_DB || 'fenix'}?schema=${env.FENIX_DATABASE_SCHEMA || 'fenix'}` : null);
+  const dbUrl = env.DATABASE_URL || (pgPassword ? `postgresql://${env.POSTGRES_USER || 'fenix'}:${pgPassword}@postgres:5432/${env.POSTGRES_DB || 'fenix'}?schema=${env.FENIX_DATABASE_SCHEMA || 'fenix'}` : 'sqlite://./.data/fenix.db');
   const rdUrl = env.REDIS_URL || (redisPassword ? `redis://default:${redisPassword}@redis:6379` : null);
 
   const config = {

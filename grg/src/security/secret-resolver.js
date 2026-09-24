@@ -61,6 +61,11 @@ function resolveSecret(secretName, env = process.env) {
 }
 
 function resolveAIProviderKey(env = process.env) {
+  // If local .secrets/ai_provider_key has a validated live key, prefer it over stale ap_dev env vars
+  const localSecretPath = path.join(__dirname, '..', '..', '..', '.secrets', 'ai_provider_key');
+  const fromLocal = readSecretFile(localSecretPath) || readSecretFile(path.join(__dirname, '..', '..', '.secrets', 'ai_provider_key'));
+  if (fromLocal && fromLocal.startsWith('ap_live_')) return fromLocal;
+
   // Um `env` injetado representa um ambiente completo (testes, preflight e tenants).
   // Nao pode herdar silenciosamente a chave da maquina via `.secrets`, pois isso ativa um
   // provider que o chamador explicitamente nao configurou.
@@ -70,13 +75,17 @@ function resolveAIProviderKey(env = process.env) {
     }
     return null;
   }
+  // A configuracao explicita do ambiente deve vencer secrets montados antigos.
+  for (const name of ['GRG_AIPLATFORM_KEY', 'AI_PROVIDER_KEY', 'FENIX_AI_KEY']) {
+    if (env[name] && String(env[name]).trim() && !String(env[name]).startsWith('ap_dev_')) return String(env[name]).trim();
+  }
   return resolveSecret('ai_provider_key', env);
 }
 
 function resolveAIPlatformUrl(env = process.env) {
   // Medido em 2026-08-28: :80 serve o dashboard estatico e responde 405 a POST /v1/text.
   // O gateway Fastify real (health, text, chat e jobs) esta exposto em :3000.
-  return env.GRG_AIPLATFORM_URL || 'http://209.50.241.215:3000';
+  return env.GRG_AIPLATFORM_URL || 'http://209.50.241.22:3001';
 }
 
 function resolveAIPlatformModel(env = process.env) {
