@@ -837,7 +837,7 @@ async function runChat(message) {
       const statusBubble = bubble(`Job ${jobId}: aguardando execução na API Platform…`, 'system');
       const poll = async () => {
         try {
-          const job = await api(`/chat/jobs/${encodeURIComponent(jobId)}`);
+          const job = await api(`/chat/jobs/${encodeURIComponent(jobId)}?t=${Date.now()}`);
           const resultText = job.result?.result?.text || job.result?.text || job.result?.response;
           const statusText = job.status === 'completed' && resultText ? `Job ${jobId} concluído:\n${resultText}` :
             job.status === 'failed' ? `Job ${jobId} falhou: ${job.error || 'erro não informado'}` :
