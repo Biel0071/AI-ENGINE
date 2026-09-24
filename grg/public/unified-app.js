@@ -187,7 +187,7 @@ async function streamChat(message, { model = null, onEvent = null } = {}) {
     signal: controller.signal,
   }); } catch (error) { clearTimeout(timeout); throw new Error(error.name === 'AbortError' ? 'stream excedeu 30s' : error.message); }
   if (!response.ok) { clearTimeout(timeout); const body = await response.json().catch(() => ({})); throw new Error(body.error || body.reason || `HTTP ${response.status}`); }
-  const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let textOut = ''; let meta = {};
+  const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let textOut = ''; let meta = {}; let streamError = null;
   const consume = (chunk) => {
     buffer += chunk;
     const blocks = buffer.split(/\n\n/); buffer = blocks.pop() || '';
@@ -196,6 +196,7 @@ async function streamChat(message, { model = null, onEvent = null } = {}) {
       const raw = (block.match(/^data:\s*(.+)$/m) || [])[1]; if (!raw) continue;
       let data; try { data = JSON.parse(raw); } catch { continue; }
       if (event === 'token') textOut += data.text || '';
+      if (event === 'error') streamError = data.message || 'Falha no canal de IA';
       if (event === 'ready' || event === 'context' || event === 'done') meta = { ...meta, ...data };
       if (onEvent) onEvent(event, data);
     }
@@ -205,6 +206,7 @@ async function streamChat(message, { model = null, onEvent = null } = {}) {
   } catch (error) {
     throw new Error(error.name === 'AbortError' ? 'stream excedeu 30s' : error.message);
   } finally { clearTimeout(timeout); }
+  if (streamError) throw new Error(streamError);
   if (meta.conversationId) localStorage.setItem('fenix_conversation_id', meta.conversationId);
   return { text: meta.text || textOut, ...meta };
 }
@@ -801,8 +803,7 @@ async function runChat(message) {
     const media = $('chatMedia')?.files?.[0];
     const mediaInfo = media ? `\n[Mídia anexada: ${media.name} (${media.type || 'arquivo'}, ${media.size} bytes)]` : '';
     const selectedModel = $('composerModel')?.value || '';
-    const fastModel = 'qwen2.5:3b';
-    const modelToUse = selectedModel || fastModel;
+    const modelToUse = selectedModel || null;
     const history = chatHistory().slice(-10, -1);
     let res;
     let lastError;
@@ -836,6 +837,25 @@ async function runChat(message) {
     const reply = res.text || res.reply || res.response || 'Sem resposta textual.';
     saveChatTurn('assistant', reply);
     bubble(reply, 'bot');
+    if (res.jobId) {
+      const jobId = res.jobId;
+      const statusBubble = bubble(`Job ${jobId}: aguardando execução na API Platform…`, 'system');
+      const poll = async () => {
+        try {
+          const job = await api(`/chat/jobs/${encodeURIComponent(jobId)}`);
+          const resultText = job.result?.result?.text || job.result?.text || job.result?.response;
+          const statusText = job.status === 'completed' && resultText ? `Job ${jobId} concluído:\n${resultText}` :
+            job.status === 'failed' ? `Job ${jobId} falhou: ${job.error || 'erro não informado'}` :
+            `Job ${jobId}: ${job.status || 'aguardando'}${job.queue?.estimatedWaitMs ? ` · espera estimada ${Math.ceil(job.queue.estimatedWaitMs / 1000)}s` : ''}`;
+          if (statusBubble && statusBubble.textContent !== undefined) statusBubble.textContent = statusText;
+          if (job.status === 'waiting' || job.status === 'active') setTimeout(poll, 3000);
+          if (job.status === 'completed' && resultText) saveChatTurn('assistant', resultText);
+        } catch (error) {
+          if (statusBubble && statusBubble.textContent !== undefined) statusBubble.textContent = `Job ${jobId}: consulta indisponível (${error.message})`;
+        }
+      };
+      setTimeout(poll, 1000);
+    }
     await refreshAll();
   } catch (error) {
     clearInterval(timer);

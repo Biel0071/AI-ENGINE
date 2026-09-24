@@ -15,11 +15,13 @@
 // upgrade de protocolo. WebSocket resolveria o mesmo problema com mais infraestrutura.
 
 const crypto = require('node:crypto');
+const { resolveAIProviderKey, resolveAIPlatformUrl } = require('../security/secret-resolver');
 
 // Streams vivos por id, para o abort poder alcancar um stream iniciado por OUTRA requisicao.
 // O botao "interromper" do cliente e um POST separado -- sem este registro ele so pararia a UI
 // enquanto o servidor seguiria gerando (gastando CPU do Ollama ate o fim).
 const liveStreams = new Map();
+const platformJobs = new Map();
 
 function sseOpen(res) {
   res.writeHead(200, {
@@ -62,6 +64,25 @@ function pickProvider(app) {
 async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson, sendJson, requestId }) {
   const conversations = app.conversations;
   if (!conversations) return false;
+
+  // Keep the platform key on the server. The browser only receives job IDs and results.
+  if (req.method === 'GET' && /^\/api\/chat\/jobs\/[^/]+$/.test(url.pathname)) {
+    const id = decodeURIComponent(url.pathname.split('/')[4]);
+    const owner = platformJobs.get(id);
+    if (!owner || owner.tenantId !== tenantId || owner.actorId !== actorId) {
+      sendJson(res, 404, { error: 'job not found' }, requestId); return true;
+    }
+    const key = resolveAIProviderKey();
+    if (!key) { sendJson(res, 503, { error: 'API Platform key unavailable' }, requestId); return true; }
+    try {
+      const upstream = await fetch(`${resolveAIPlatformUrl()}/v1/jobs/${encodeURIComponent(id)}`, {
+        headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10000),
+      });
+      const job = await upstream.json();
+      sendJson(res, upstream.status, job, requestId);
+    } catch (error) { sendJson(res, 502, { error: `API Platform job lookup failed: ${error.message}` }, requestId); }
+    return true;
+  }
 
   // --- historico e conversas -------------------------------------------------------------
   if (req.method === 'GET' && url.pathname === '/api/chat/conversations') {
@@ -166,7 +187,43 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
 
     try {
       let out;
-      if (routerAvailable) {
+      const platformKey = resolveAIProviderKey();
+      if (platformKey && body.model !== 'local') {
+        const upstream = await fetch(`${resolveAIPlatformUrl()}/v1/text`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${platformKey}`, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            prompt: prompt.messages.map((item) => `${item.role}: ${item.content}`).join('\n\n'),
+            model: body.model || undefined,
+            temperature: Number.isFinite(body.temperature) ? body.temperature : 0.3,
+            maxTokens: 256,
+            // The VPS model is slower than the browser timeout. Keep chat responsive
+            // and let the platform worker select capacity/provider for the job.
+            execution: 'async',
+          }),
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(25000)]),
+        });
+        const result = await upstream.json();
+        if (!upstream.ok) throw new Error(result.error?.message || result.error || `API Platform HTTP ${upstream.status}`);
+        if (upstream.status === 202) {
+          const jobId = result.jobId;
+          if (!jobId) throw new Error('API Platform accepted work without a job ID');
+          platformJobs.set(jobId, { tenantId, actorId });
+          const queuedText = `Tarefa enviada à API Platform. Job ${jobId} em ${result.status || 'waiting'}.`;
+          const saved = await conversations.append(tenantId, actorId, conversation.id, {
+            role: 'assistant', content: queuedText, source, model: null,
+          });
+          sseSend(res, 'job', { jobId, status: result.status || 'waiting', queue: result.queue || null });
+          sseSend(res, 'done', { streamId, messageId: saved.id, conversationId: conversation.id,
+            text: queuedText, jobId, jobStatus: result.status || 'waiting', provider: 'api-platform', streamed: false });
+          return true;
+        }
+        const answer = result.result?.text || result.text || result.response || result.content;
+        if (typeof answer !== 'string' || !answer.trim()) throw new Error('API Platform returned no answer');
+        out = { text: answer, provider: result.provider || 'api-platform', model: result.model || null, streamed: false, chunks: 1 };
+        sseSend(res, 'provider', { provider: out.provider, routed: true });
+        sseSend(res, 'token', { text: out.text });
+      } else if (routerAvailable) {
         // O Router decide por evidencia (self-test CONNECTED) e o Gateway executa.
         // O stream continua SSE; quando o provider escolhido nao oferece streaming,
         // entregamos a resposta real em um unico token, nunca uma simulacao.
