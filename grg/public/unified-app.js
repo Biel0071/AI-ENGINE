@@ -828,7 +828,7 @@ async function runChat(message) {
     }
     if (!res) throw lastError || new Error('API não retornou resposta');
     if ($('chatMedia')) $('chatMedia').value = '';
-    if (res.jobId && window.openJobInspector) window.openJobInspector(res.jobId, value);
+    if (res.jobId && document.getElementById('jobInspectorModal') && window.openJobInspector) window.openJobInspector(res.jobId, value);
     if ($('barActiveJob')) $('barActiveJob').textContent = res.jobId || 'CHAT COMPLETED';
     if ($('barRuntime')) $('barRuntime').textContent = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
     if ($('barWorker')) $('barWorker').textContent = 'IDLE';
@@ -1734,10 +1734,15 @@ init();
 
 
 window.openJobInspector = function(jobId, promptText) {
-  document.getElementById('jobInspectorModal').style.display = 'block';
-  document.getElementById('inspectorJobId').textContent = jobId;
-  document.getElementById('inspectorJobTitle').textContent = promptText || 'Real-time Autonomous Job';
-  document.getElementById('jobInspectorBody').innerHTML = '<div style="color:#888;">Aguardando eventos fÔö£├óÔö¼┬ísicos do AgentRuntime...</div>';
+  const modal = document.getElementById('jobInspectorModal');
+  if (!modal) return;
+  modal.style.display = 'block';
+  const id = document.getElementById('inspectorJobId');
+  const title = document.getElementById('inspectorJobTitle');
+  const body = document.getElementById('jobInspectorBody');
+  if (id) id.textContent = jobId;
+  if (title) title.textContent = promptText || 'Job';
+  if (body) body.textContent = 'Aguardando eventos do AgentRuntime...';
 };
 
 document.addEventListener('DOMContentLoaded', () => {
