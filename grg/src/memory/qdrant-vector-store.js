@@ -53,7 +53,7 @@ class QdrantVectorStore {
     if (options.projectId) must.push({ key: 'projectId', match: { value: options.projectId } });
     if (options.orgId) must.push({ key: 'orgId', match: { value: options.orgId } });
     const data = await this.request(`/collections/${encodeURIComponent(this.collection)}/points/query`, {
-      method: 'POST', body: JSON.stringify({ query: vector, filter: { must }, limit: Number(options.limit || 20), with_payload: true }),
+      method: 'POST', signal: AbortSignal.timeout(4000), body: JSON.stringify({ query: vector, filter: { must }, limit: Number(options.limit || 20), with_payload: true }),
     });
     const points = data.result?.points || data.result || [];
     return points.map((point) => ({ id: point.payload?.memoryId || point.id, score: point.score || 0 }));
