@@ -865,7 +865,7 @@ module.exports = authRouter;`
   };
 
   // 14. Initial Boot & Periodic Sync
-  document.addEventListener('DOMContentLoaded', () => {
+  const bootV11Interactions = () => {
     updateLiveClock();
     ensureCityFleet();
     syncLiveTargetTelemetry();
@@ -875,7 +875,9 @@ module.exports = authRouter;`
     if (typeof window.fenixLoadAgents === 'function') {
       window.fenixLoadAgents();
     }
-  });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootV11Interactions, { once: true });
+  else bootV11Interactions();
 
   // Run immediately as well
   updateLiveClock();
