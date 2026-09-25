@@ -3913,7 +3913,8 @@ window.__fenixSubmitIdeChat = async function () {
     if (!viewId) viewId = 'command';
     viewId = String(viewId).replace(/^#\/?/, '').split('?')[0].split('/')[0] || 'command';
     if (ROUTE_ALIASES[viewId]) viewId = ROUTE_ALIASES[viewId];
-    if (window.__fenixState.currentRoute === 'city' && viewId !== 'city') window.fenixCity?.saveCamera?.();
+    const cameFromCity = window.__fenixState.currentRoute === 'city' && viewId !== 'city';
+    if (cameFromCity) window.fenixCity?.saveCamera?.();
 
     const targetEl = document.getElementById('view-' + viewId);
     if (!targetEl) {
@@ -3964,6 +3965,7 @@ window.__fenixSubmitIdeChat = async function () {
 
     window.updateBreadcrumbs(viewId);
     window.__fenixState.currentRoute = viewId;
+    window.fenixUpdateCityReturn?.(viewId, cameFromCity);
 
     // Trigger Dedicated Real Data Loaders
     const dispatchLoader = () => {
@@ -5749,6 +5751,8 @@ window.__fenixSubmitIdeChat = async function () {
 <script src="/operations-live.js?v=1"></script>
 <link rel="stylesheet" href="/city-brief.css?v=1">
 <script src="/city-brief.js?v=1"></script>
+<link rel="stylesheet" href="/city-return.css?v=1">
+<script src="/city-return.js?v=1"></script>
 
     <footer class="fenix-presentation-footer">
       <div style="display:flex; align-items:center; gap:8px;">
