@@ -582,15 +582,19 @@ module.exports = authRouter;`
       if (measuredAt) measuredAt.textContent = `Atualizado às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date())}`;
       const visibleAgents = filter === 'cognitive' ? agents.filter((agent) => agent.kind === 'cognitive') : agents;
       grid.innerHTML = visibleAgents.length ? visibleAgents.map((agent) => `
-        <article class="cp-agent-card" data-agent-id="${escape(agent.id)}">
+        <article class="cp-agent-card" data-agent-id="${escape(agent.id)}" data-agent-status="${escape(agent.status)}" role="button" tabindex="0" aria-label="Inspecionar ${escape(agent.name)}">
           <div class="cp-status-badge"><div class="cp-status-dot ${agent.status === 'WORKING' ? 'online' : agent.status === 'AVAILABLE' ? 'available' : 'offline'}"></div>${escape(agent.status === 'WORKING' ? 'EM EXECUÇÃO' : agent.status === 'AVAILABLE' ? 'SEM TAREFA' : agent.status)}</div>
           <div class="cp-card-header"><div class="cp-avatar-box" aria-hidden="true"><i class="ph-bold ph-robot"></i></div><div class="cp-header-info"><h3 class="cp-agent-name">${escape(agent.name)}</h3><div class="cp-agent-role">${escape(agent.role)}</div></div></div>
           <div class="cp-tags-row"><span class="cp-tag">${agent.kind === 'cognitive' ? 'EQUIPE COGNITIVA' : 'CATÁLOGO'}</span>${agent.currentJob ? `<span class="cp-trait">Job ${escape(agent.currentJob.name)}</span>` : ''}</div>
           <div class="cp-agent-id">${escape(agent.id)}</div>
         </article>`).join('') : '<div class="fenix-empty-state">Nenhum agente registrado neste tenant.</div>';
-      grid.querySelectorAll('[data-agent-id]').forEach((card) => card.addEventListener('click', () => window.fenixInspectAgent?.(card.dataset.agentId)));
+      grid.querySelectorAll('[data-agent-id]').forEach((card) => {
+        card.addEventListener('click', () => window.fenixInspectAgent?.(card.dataset.agentId));
+        card.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); card.click(); } });
+      });
       const list = document.getElementById('fenixAgentsListView');
-      if (list) list.innerHTML = `<table class="fenix-agent-list-table"><thead><tr><th>Agente</th><th>Especialidade</th><th>Estado</th><th>Tipo</th></tr></thead><tbody>${agents.map((agent) => `<tr><td>${escape(agent.name)}</td><td>${escape(agent.role)}</td><td>${escape(agent.status)}</td><td>${agent.kind === 'cognitive' ? 'Equipe cognitiva' : 'Catálogo'}</td></tr>`).join('')}</tbody></table>`;
+      if (list) list.innerHTML = `<table class="fenix-agent-list-table"><thead><tr><th>Agente</th><th>Especialidade</th><th>Estado</th><th>Tipo</th></tr></thead><tbody>${agents.map((agent) => `<tr data-agent-status="${escape(agent.status)}"><td>${escape(agent.name)}</td><td>${escape(agent.role)}</td><td>${escape(agent.status)}</td><td>${agent.kind === 'cognitive' ? 'Equipe cognitiva' : 'Catálogo'}</td></tr>`).join('')}</tbody></table>`;
+      window.fenixFilterAgentCards?.();
       window.fenixLoadAgentScopes?.();
     } catch (e) {
       if (loadStatus) loadStatus.textContent = 'Falha na sincronização';
@@ -598,6 +602,19 @@ module.exports = authRouter;`
       console.error('[FENIX] Falha ao carregar agentes:', e);
     }
   };
+
+  window.fenixFilterAgentCards = function() {
+    const query = document.getElementById('fenixAgentSearch')?.value.trim().toLocaleLowerCase('pt-BR') || '';
+    const status = document.getElementById('fenixAgentStatusFilter')?.value || 'all';
+    const matches = (element) => (!query || element.textContent.toLocaleLowerCase('pt-BR').includes(query)) && (status === 'all' || (status === 'other' ? !['WORKING', 'AVAILABLE'].includes(element.dataset.agentStatus) : element.dataset.agentStatus === status));
+    const cards = [...document.querySelectorAll('#fenix-agents-grid .cp-agent-card[data-agent-id]')];
+    cards.forEach((card) => { card.hidden = !matches(card); });
+    document.querySelectorAll('#fenixAgentsListView tbody tr').forEach((row) => { row.hidden = !matches(row); });
+    const count = document.getElementById('fenixAgentVisibleCount');
+    if (count) count.textContent = `${cards.filter((card) => !card.hidden).length} de ${cards.length} visíveis`;
+  };
+  document.getElementById('fenixAgentSearch')?.addEventListener('input', window.fenixFilterAgentCards);
+  document.getElementById('fenixAgentStatusFilter')?.addEventListener('change', window.fenixFilterAgentCards);
 
   document.getElementById('fenixAgentCreateToggle')?.addEventListener('click', (event) => {
     const panel = document.getElementById('fenixAgentCreatorPanel');

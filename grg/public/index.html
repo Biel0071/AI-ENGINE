@@ -156,7 +156,7 @@
   <link rel="stylesheet" href="/fenix-design-system.css?v=2">
   <link rel="stylesheet" href="/fenix-flow-graph.css?v=2">
   <link rel="stylesheet" href="/fenix-v11-evolution.css?v=8">
-    <link rel="stylesheet" href="/fenix-v11-phase6.css?v=9">
+    <link rel="stylesheet" href="/fenix-v11-phase6.css?v=10">
   
 
   <script>
@@ -2085,6 +2085,7 @@
           </div>
 
           <div class="fenix-agent-fleet-heading"><div><h3>Agentes registrados</h3><p id="fenixAgentLoadStatus" role="status" aria-live="polite">Aguardando sincronização…</p></div><span id="fenixAgentMeasuredAt">—</span></div>
+          <div class="fenix-agent-toolbar"><label class="fenix-agent-search"><i class="ph-bold ph-magnifying-glass" aria-hidden="true"></i><span class="sr-only">Buscar agente</span><input id="fenixAgentSearch" type="search" placeholder="Buscar por nome, função ou ID" autocomplete="off"></label><label class="fenix-agent-filter"><span class="sr-only">Filtrar agentes por estado</span><select id="fenixAgentStatusFilter"><option value="all">Todos os estados</option><option value="WORKING">Em execução</option><option value="AVAILABLE">Disponíveis</option><option value="other">Outros estados</option></select></label><span id="fenixAgentVisibleCount" aria-live="polite"></span></div>
           <!-- Agent cards from the authenticated City projection. -->
           <div id="fenix-agents-grid" class="fenix-agents-grid"></div>
           <div id="fenixAgentsListView" style="display:none;"></div>
@@ -5750,7 +5751,7 @@ window.__fenixSubmitIdeChat = async function () {
 <script src="/fenix-flow-graph.js?v=1.0"></script>
 <link rel="stylesheet" href="/fenix-flow-graph.css?v=1.0">
 <link rel="stylesheet" href="/fenix-window-overrides.css?v=evolution-20260917">
-<script src="/fenix-v11-interactions.js?v=12"></script>
+<script src="/fenix-v11-interactions.js?v=13"></script>
 <link rel="stylesheet" href="/project-ide-live.css?v=1">
 <script src="/project-ide-live.js?v=1"></script>
 <link rel="stylesheet" href="/project-hub-live.css?v=1">

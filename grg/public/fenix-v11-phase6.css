@@ -2718,6 +2718,15 @@ body {
 #view-agents .fenix-agent-fleet-heading { display:flex; justify-content:space-between; align-items:end; gap:16px; margin:18px 0 13px; }
 #view-agents .fenix-agent-fleet-heading h3 { margin:0 0 4px; color:#f8fafc; font-size:17px; letter-spacing:-.02em; }
 #view-agents .fenix-agent-fleet-heading p,#fenixAgentMeasuredAt { margin:0; color:#8ea5ba; font-size:11px; }
+#view-agents .fenix-agent-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 4px; }
+#view-agents .fenix-agent-search { display:flex; align-items:center; gap:9px; flex:1 1 260px; max-width:430px; min-height:40px; padding:0 13px; border:1px solid #2c4356; border-radius:9px; background:#111e2e; color:#79a8be; }
+#view-agents .fenix-agent-search:focus-within { border-color:#67e8f9; box-shadow:0 0 0 2px rgba(103,232,249,.14); }
+#view-agents .fenix-agent-search input { width:100%; border:0; outline:0; background:transparent; color:#f0f9ff; font:inherit; font-size:12px; }
+#view-agents .fenix-agent-search input::placeholder { color:#7992a5; }
+#view-agents .fenix-agent-filter select { min-height:40px; padding:0 12px; border:1px solid #2c4356; border-radius:9px; background:#111e2e; color:#d7eaf3; font:inherit; font-size:12px; }
+#fenixAgentVisibleCount { margin-left:auto; color:#88a8b8; font-size:11px; }
+#view-agents .cp-agent-card[hidden],#fenixAgentsListView tr[hidden] { display:none !important; }
+#view-agents .cp-agent-card:focus-visible { outline:2px solid #67e8f9; outline-offset:2px; }
 #view-agents .fenix-agent-creator[hidden] { display:none !important; }
 #view-agents .fenix-agent-creator { margin-top:20px; }
 #view-agents .fenix-agent-loading { grid-column:1/-1; min-height:200px; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; border:1px dashed rgba(103,232,249,.26); border-radius:16px; background:rgba(12,26,44,.68); color:#9fb3c8; text-align:center; font-size:12px; }
@@ -2725,6 +2734,10 @@ body {
 #view-agents .fenix-agent-loading-icon { display:grid; place-items:center; width:52px; height:52px; margin-bottom:8px; border-radius:15px; background:rgba(34,211,238,.12); color:#67e8f9; font-size:25px; }
 #view-agents .fenix-agent-load-error > i { color:#fbbf24; font-size:28px; }
 #view-agents .cp-agent-card[data-agent-id] { border-radius:15px; background:linear-gradient(155deg,rgba(21,41,61,.98),rgba(11,21,36,.96)); box-shadow:0 12px 28px rgba(0,0,0,.16); transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+#view-agents .cp-agent-card[data-agent-id] .cp-agent-name { color:#f8fbff; text-shadow:none; }
+#view-agents .cp-agent-card[data-agent-id] .cp-agent-role { color:#77e8dc; }
+#view-agents .cp-agent-card[data-agent-id] .cp-agent-id { color:#8aa5b8; }
+#view-agents .cp-agent-card[data-agent-id] .cp-status-badge { color:#c8dfeb; }
 #view-agents .cp-agent-card[data-agent-id]:hover { transform:translateY(-3px); border-color:rgba(103,232,249,.6); box-shadow:0 18px 34px rgba(0,0,0,.25); }
 @media(max-width:700px) { #view-agents .fenix-agent-intro { align-items:start; flex-direction:column; padding:20px; } #view-agents .fenix-agent-capacity-strip > div:last-child { grid-template-columns:repeat(2,1fr) !important; } }
 .fenix-agent-creator-heading h3 { margin: 0 0 4px; color: #f8fafc; font-size: 15px; }
