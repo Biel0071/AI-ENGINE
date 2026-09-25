@@ -66,7 +66,7 @@
       top.append(node('strong', '', job.title || job.objective || job.type || job.id), node('span', `flo-badge flo-${String(job.status || '').toLowerCase()}`, job.status || 'UNKNOWN'));
       card.append(top, node('p', '', `${job.projectId || 'Projeto não informado'} · ${job.agentName || job.agentId || 'Agente não informado'}`));
       card.append(node('small', '', `${job.id} · ${job.createdAt ? new Date(job.createdAt).toLocaleString('pt-BR') : 'Data indisponível'}`));
-      if (job.error || job.lastError) { const failure = job.error || job.lastError; card.append(node('p', 'flo-job-error', typeof failure === 'string' ? failure : JSON.stringify(failure))); }
+      if (job.error || job.lastError) { const failure = job.error || job.lastError; card.append(node('p', 'flo-job-error', typeof failure === 'string' ? failure : failure.message || failure.error || JSON.stringify(failure))); }
       if (job.projectId) { const open = node('button', 'flo-card-action', 'Abrir projeto ↗'); open.type = 'button'; open.addEventListener('click', () => window.openProjectWorkspace?.(job.projectId) || window.showView?.('projects')); card.append(open); }
       content.append(card);
     }
