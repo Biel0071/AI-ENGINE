@@ -2710,6 +2710,23 @@ body {
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(15, 23, 42, .96), rgba(12, 28, 44, .88));
 }
+#view-agents .fenix-agent-intro { display:flex; align-items:end; justify-content:space-between; gap:24px; margin:8px 0 22px; padding:26px 28px; border:1px solid rgba(56,189,248,.24); border-radius:18px; background:radial-gradient(circle at 84% 20%,rgba(34,211,238,.16),transparent 38%),linear-gradient(120deg,#102236,#0b1423 72%); box-shadow:0 20px 50px rgba(0,0,0,.2); }
+#view-agents .fenix-agent-eyebrow { color:#67e8f9; font-size:10px; font-weight:800; letter-spacing:.18em; }
+#view-agents .fenix-agent-intro h2 { margin:8px 0 5px; color:#fff; font-size:clamp(25px,3vw,38px); line-height:1.1; letter-spacing:-.04em; }
+#view-agents .fenix-agent-intro p { max-width:580px; margin:0; color:#a9b9cb; font-size:13px; line-height:1.55; }
+#view-agents .fenix-agent-intro button { flex:none; padding:11px 17px; }
+#view-agents .fenix-agent-fleet-heading { display:flex; justify-content:space-between; align-items:end; gap:16px; margin:18px 0 13px; }
+#view-agents .fenix-agent-fleet-heading h3 { margin:0 0 4px; color:#f8fafc; font-size:17px; letter-spacing:-.02em; }
+#view-agents .fenix-agent-fleet-heading p,#fenixAgentMeasuredAt { margin:0; color:#8ea5ba; font-size:11px; }
+#view-agents .fenix-agent-creator[hidden] { display:none !important; }
+#view-agents .fenix-agent-creator { margin-top:20px; }
+#view-agents .fenix-agent-loading { min-height:200px; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; border:1px dashed rgba(103,232,249,.26); border-radius:16px; background:rgba(12,26,44,.68); color:#9fb3c8; text-align:center; font-size:12px; }
+#view-agents .fenix-agent-loading strong { color:#e8f5ff; font-size:16px; }
+#view-agents .fenix-agent-loading-icon { display:grid; place-items:center; width:52px; height:52px; margin-bottom:8px; border-radius:15px; background:rgba(34,211,238,.12); color:#67e8f9; font-size:25px; }
+#view-agents .fenix-agent-load-error > i { color:#fbbf24; font-size:28px; }
+#view-agents .cp-agent-card[data-agent-id] { border-radius:15px; background:linear-gradient(155deg,rgba(21,41,61,.98),rgba(11,21,36,.96)); box-shadow:0 12px 28px rgba(0,0,0,.16); transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+#view-agents .cp-agent-card[data-agent-id]:hover { transform:translateY(-3px); border-color:rgba(103,232,249,.6); box-shadow:0 18px 34px rgba(0,0,0,.25); }
+@media(max-width:700px) { #view-agents .fenix-agent-intro { align-items:start; flex-direction:column; padding:20px; } #view-agents .fenix-agent-capacity-strip > div:last-child { grid-template-columns:repeat(2,1fr) !important; } }
 .fenix-agent-creator-heading h3 { margin: 0 0 4px; color: #f8fafc; font-size: 15px; }
 .fenix-agent-creator-heading p { margin: 0 0 14px; color: #94a3b8; font-size: 12px; }
 .fenix-agent-creator-fields, .fenix-agent-creator-team { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }

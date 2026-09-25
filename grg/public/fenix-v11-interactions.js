@@ -560,12 +560,16 @@ module.exports = authRouter;`
     const grid = document.getElementById('fenix-agents-grid');
     if (!grid) return;
     const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+    const loadStatus = document.getElementById('fenixAgentLoadStatus');
+    const measuredAt = document.getElementById('fenixAgentMeasuredAt');
+    if (loadStatus) loadStatus.textContent = 'Sincronizando agentes…';
+    if (!grid.querySelector('[data-agent-id]')) grid.innerHTML = '<div class="fenix-agent-loading"><span class="fenix-agent-loading-icon"><i class="ph-bold ph-robot"></i></span><strong>Conectando à frota</strong><span>Consultando agentes registrados no runtime.</span></div>';
     try {
-      const [agentsResponse, stateResponse] = await Promise.all([fetch('/api/v2/living-city/agents'), fetch('/api/v2/living-city/state')]);
-      if (!agentsResponse.ok || !stateResponse.ok) throw new Error(`HTTP ${agentsResponse.status}/${stateResponse.status}`);
-      const [data, city] = await Promise.all([agentsResponse.json(), stateResponse.json()]);
+      const [agentsResponse, stateResult] = await Promise.all([fetch('/api/v2/living-city/agents', { signal: AbortSignal.timeout(15000) }), fetch('/api/v2/living-city/state', { signal: AbortSignal.timeout(15000) }).then(async (response) => response.ok ? response.json() : null).catch(() => null)]);
+      if (!agentsResponse.ok) throw new Error(`HTTP ${agentsResponse.status}`);
+      const data = await agentsResponse.json();
       const agents = Array.isArray(data.agents) ? data.agents : [];
-      const metrics = city.metrics || {};
+      const metrics = stateResult?.metrics || {};
       const set = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = String(value); };
       set('fenixAgentRegisteredCount', agents.length);
       set('fenixAgentWorkingCount', metrics.workingAgents ?? agents.filter((agent) => agent.status === 'WORKING').length);
@@ -574,6 +578,8 @@ module.exports = authRouter;`
       set('fenixAgentFailedJobsCount', metrics.failedJobs ?? '—');
       const overviewTab = document.querySelector('#view-agents .fenix-pill-tab');
       if (overviewTab) overviewTab.textContent = `Visão (${agents.length})`;
+      if (loadStatus) loadStatus.textContent = `${agents.length} agente${agents.length === 1 ? '' : 's'} sincronizado${agents.length === 1 ? '' : 's'}${stateResult ? '' : ' · métricas da Cidade indisponíveis'}`;
+      if (measuredAt) measuredAt.textContent = `Atualizado às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date())}`;
       const visibleAgents = filter === 'cognitive' ? agents.filter((agent) => agent.kind === 'cognitive') : agents;
       grid.innerHTML = visibleAgents.length ? visibleAgents.map((agent) => `
         <article class="cp-agent-card" data-agent-id="${escape(agent.id)}">
@@ -585,12 +591,21 @@ module.exports = authRouter;`
       grid.querySelectorAll('[data-agent-id]').forEach((card) => card.addEventListener('click', () => window.fenixInspectAgent?.(card.dataset.agentId)));
       const list = document.getElementById('fenixAgentsListView');
       if (list) list.innerHTML = `<table class="fenix-agent-list-table"><thead><tr><th>Agente</th><th>Especialidade</th><th>Estado</th><th>Tipo</th></tr></thead><tbody>${agents.map((agent) => `<tr><td>${escape(agent.name)}</td><td>${escape(agent.role)}</td><td>${escape(agent.status)}</td><td>${agent.kind === 'cognitive' ? 'Equipe cognitiva' : 'Catálogo'}</td></tr>`).join('')}</tbody></table>`;
-      await window.fenixLoadAgentScopes();
+      window.fenixLoadAgentScopes?.();
     } catch (e) {
-      grid.textContent = `Não foi possível carregar os agentes: ${e.message}`;
+      if (loadStatus) loadStatus.textContent = 'Falha na sincronização';
+      if (!grid.querySelector('[data-agent-id]')) grid.innerHTML = `<div class="fenix-agent-loading fenix-agent-load-error"><i class="ph-bold ph-warning-circle"></i><strong>Agentes indisponíveis</strong><span>${escape(e.message)}</span><button type="button" class="fenix-subnav-btn" onclick="window.fenixLoadAgents()">Tentar novamente</button></div>`;
       console.error('[FENIX] Falha ao carregar agentes:', e);
     }
   };
+
+  document.getElementById('fenixAgentCreateToggle')?.addEventListener('click', (event) => {
+    const panel = document.getElementById('fenixAgentCreatorPanel');
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    event.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
+    if (!panel.hidden) { window.fenixLoadAgentScopes?.(); panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  });
 
   window.fenixLoadAgentScopes = async function(selectedId = null) {
     const select = document.getElementById('fenixAgentEntity');
