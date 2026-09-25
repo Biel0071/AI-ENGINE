@@ -3965,6 +3965,8 @@ window.__fenixSubmitIdeChat = async function () {
 
     window.updateBreadcrumbs(viewId);
     window.__fenixState.currentRoute = viewId;
+    if (cameFromCity) sessionStorage.setItem('fenix_city_return_available', 'true');
+    else if (viewId === 'city') sessionStorage.removeItem('fenix_city_return_available');
     window.fenixUpdateCityReturn?.(viewId, cameFromCity);
 
     // Trigger Dedicated Real Data Loaders
