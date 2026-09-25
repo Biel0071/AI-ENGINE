@@ -48,7 +48,9 @@
     }
   }
   function renderQueue(content) {
-    const q = state.snapshot?.queue;
+    const jobs = state.snapshot?.jobs || [];
+    const count = (...values) => jobs.filter((job) => values.includes(String(job.status || '').toUpperCase())).length;
+    const q = state.snapshot?.queue || (state.snapshot ? { total: jobs.length, running: count('RUNNING'), waiting: count('QUEUED', 'WAITING', 'READY', 'RETRYING'), completed: count('COMPLETED', 'SUCCEEDED'), failed: count('FAILED', 'DEAD_LETTER'), cancelled: count('CANCELLED') } : null);
     if (!q) { content.append(node('p', 'flo-empty', 'Estado da fila indisponível.')); return; }
     const grid = node('div', 'flo-grid');
     for (const [label, key] of [['Total', 'total'], ['Executando', 'running'], ['Aguardando', 'waiting'], ['Concluídos', 'completed'], ['Falhas', 'failed'], ['Cancelados', 'cancelled']]) grid.append(fact(label, q[key] ?? '—'));
