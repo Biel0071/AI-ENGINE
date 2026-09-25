@@ -229,55 +229,34 @@
     // Populate secondary tabs
     const tel = document.getElementById('fenixDrawerTabTelemetry');
     if (tel) {
-      tel.innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
-          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:10px;">
-            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Status de Canal</div>
-            <div style="font-size:14px; font-weight:700; color:#10b981; margin-top:2px;">ONLINE • ATIVO</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:10px;">
-            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Latência / Heartbeat</div>
-            <div style="font-size:14px; font-weight:700; color:#38bdf8; margin-top:2px;">12ms • PING OK</div>
-          </div>
-        </div>
-        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:12px;">
-          <h4 style="margin:0 0 8px; font-size:11px; color:#94a3b8; text-transform:uppercase;">Histórico de Sinais Operacionais</h4>
-          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#cbd5e1; line-height:1.6;">
-            <div>[${new Date().toLocaleTimeString()}] telemetry.heartbeat -> 200 OK</div>
-            <div>[${new Date().toLocaleTimeString()}] runtime.lease_check -> valid</div>
-            <div>[${new Date().toLocaleTimeString()}] capacity.reconcile -> 0 ghosts</div>
-          </div>
-        </div>
-      `;
+      tel.innerHTML = '<h4>Telemetria informada pelo runtime</h4>';
+      const measured = rawEntity?.telemetry || rawEntity?.metrics || null;
+      if (measured) {
+        const pre = document.createElement('pre');
+        pre.textContent = JSON.stringify(measured, (key, value) => /token|password|secret|credential|api.?key|private.?key/i.test(key) ? '[redacted]' : value, 2);
+        tel.appendChild(pre);
+      } else {
+        const message = document.createElement('p'); message.textContent = 'Nenhuma telemetria detalhada foi retornada para este item.'; tel.appendChild(message);
+      }
     }
 
     const js = document.getElementById('fenixDrawerTabJson');
     if (js) {
-      const jsonStr = rawEntity ? JSON.stringify(rawEntity, null, 2) : JSON.stringify({ title, badge, timestamp: new Date().toISOString() }, null, 2);
-      js.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="font-size:10px; color:#64748b; text-transform:uppercase;">Raw JSON Payload</span>
-          <button type="button" onclick="navigator.clipboard.writeText(this.nextElementSibling.innerText); window.FenixToast && window.FenixToast.show('JSON copiado para a área de transferência!', 'success');" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:#cbd5e1; padding:3px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Copiar</button>
-        </div>
-        <pre style="background:#080b12; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:12px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#38bdf8; overflow:auto; max-height:420px; white-space:pre-wrap;">${jsonStr}</pre>
-      `;
+      js.innerHTML = '<h4>Dados de origem</h4>';
+      if (rawEntity) {
+        const pre = document.createElement('pre');
+        pre.textContent = JSON.stringify(rawEntity, (key, value) => /token|password|secret|credential|api.?key|private.?key/i.test(key) ? '[redacted]' : value, 2);
+        js.appendChild(pre);
+        const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = 'Copiar JSON';
+        copy.addEventListener('click', () => navigator.clipboard.writeText(pre.textContent)); js.appendChild(copy);
+      } else {
+        const message = document.createElement('p'); message.textContent = 'Payload não disponibilizado por esta consulta.'; js.appendChild(message);
+      }
     }
 
     const act = document.getElementById('fenixDrawerTabActions');
     if (act) {
-      act.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <button type="button" onclick="window.FenixToast && window.FenixToast.show('Ping enviado com sucesso (12ms)', 'success');" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; text-align:left; display:flex; align-items:center; gap:8px;">
-            <i class="ph ph-broadcast"></i> Testar Conexão / Ping
-          </button>
-          <button type="button" onclick="window.FenixToast && window.FenixToast.show('Sincronização forçada concluída', 'success');" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#10b981; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; text-align:left; display:flex; align-items:center; gap:8px;">
-            <i class="ph ph-arrows-clockwise"></i> Forçar Sincronização no Redis
-          </button>
-          <button type="button" onclick="window.FenixToast && window.FenixToast.show('Relatório de integridade exportado', 'info');" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:#cbd5e1; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; text-align:left; display:flex; align-items:center; gap:8px;">
-            <i class="ph ph-file-text"></i> Exportar Diagnóstico
-          </button>
-        </div>
-      `;
+      act.innerHTML = '<p>As ações disponíveis para este item aparecem no rodapé do inspetor.</p>';
     }
 
     drawer.classList.add('open');
@@ -401,7 +380,7 @@
         `}
       `;
 
-      window.fenixOpenInspector(identity, 'AGENT INSPECTOR', body, footer);
+      window.fenixOpenInspector(identity, 'AGENT INSPECTOR', body, footer, agent);
     } catch (err) {
       window.fenixOpenInspector(
         `Agente: ${agentId}`,
