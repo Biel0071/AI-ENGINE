@@ -565,7 +565,7 @@ module.exports = authRouter;`
     if (loadStatus) loadStatus.textContent = 'Sincronizando agentes…';
     if (!grid.querySelector('[data-agent-id]')) grid.innerHTML = '<div class="fenix-agent-loading"><span class="fenix-agent-loading-icon"><i class="ph-bold ph-robot"></i></span><strong>Conectando à frota</strong><span>Consultando agentes registrados no runtime.</span></div>';
     try {
-      const [agentsResponse, stateResult] = await Promise.all([fetch('/api/v2/living-city/agents', { signal: AbortSignal.timeout(15000) }), fetch('/api/v2/living-city/state', { signal: AbortSignal.timeout(15000) }).then(async (response) => response.ok ? response.json() : null).catch(() => null)]);
+      const [agentsResponse, stateResult] = await Promise.all([fetch('/api/v2/living-city/agents', { signal: AbortSignal.timeout(30000) }), fetch('/api/v2/living-city/state', { signal: AbortSignal.timeout(10000) }).then(async (response) => response.ok ? response.json() : null).catch(() => null)]);
       if (!agentsResponse.ok) throw new Error(`HTTP ${agentsResponse.status}`);
       const data = await agentsResponse.json();
       const agents = Array.isArray(data.agents) ? data.agents : [];
