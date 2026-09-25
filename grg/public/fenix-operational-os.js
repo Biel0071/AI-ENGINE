@@ -3877,14 +3877,21 @@
 
   // Hook into showView
   const prevShowView = window.showView;
-  window.showView = function (route, push = true) {
-    if (typeof prevShowView === 'function') prevShowView(route, push);
+  const onViewChanged = (route) => {
     window.fenixCloseInspector();
     if (route === 'terminal' || route === 'view-terminal') {
       setTimeout(() => window.initFenixXTerm && window.initFenixXTerm(), 100);
     }
     setTimeout(() => wireInteractiveEnhancements(route), 80);
   };
+  if (window.__fenixCanonicalRouter) {
+    window.addEventListener('fenix:viewchanged', (event) => onViewChanged(event.detail?.viewId));
+  } else {
+    window.showView = function (route, push = true) {
+      if (typeof prevShowView === 'function') prevShowView(route, push);
+      onViewChanged(route);
+    };
+  }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => wireInteractiveEnhancements());
@@ -3893,4 +3900,3 @@
   }
 
 })();
-
