@@ -2720,7 +2720,7 @@ body {
 #view-agents .fenix-agent-fleet-heading p,#fenixAgentMeasuredAt { margin:0; color:#8ea5ba; font-size:11px; }
 #view-agents .fenix-agent-creator[hidden] { display:none !important; }
 #view-agents .fenix-agent-creator { margin-top:20px; }
-#view-agents .fenix-agent-loading { min-height:200px; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; border:1px dashed rgba(103,232,249,.26); border-radius:16px; background:rgba(12,26,44,.68); color:#9fb3c8; text-align:center; font-size:12px; }
+#view-agents .fenix-agent-loading { grid-column:1/-1; min-height:200px; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; border:1px dashed rgba(103,232,249,.26); border-radius:16px; background:rgba(12,26,44,.68); color:#9fb3c8; text-align:center; font-size:12px; }
 #view-agents .fenix-agent-loading strong { color:#e8f5ff; font-size:16px; }
 #view-agents .fenix-agent-loading-icon { display:grid; place-items:center; width:52px; height:52px; margin-bottom:8px; border-radius:15px; background:rgba(34,211,238,.12); color:#67e8f9; font-size:25px; }
 #view-agents .fenix-agent-load-error > i { color:#fbbf24; font-size:28px; }
@@ -2745,3 +2745,4 @@ body {
 .fenix-agent-list-table { width: 100%; border-collapse: collapse; border: 1px solid #243449; border-radius: 10px; background: #101a29; color: #dbeafe; text-align: left; }
 .fenix-agent-list-table th, .fenix-agent-list-table td { padding: 11px 14px; border-bottom: 1px solid #243449; font-size: 12px; }
 .fenix-agent-list-table th { color: #67e8f9; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+
