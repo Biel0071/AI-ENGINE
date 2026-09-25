@@ -6,7 +6,7 @@
   function display(label, state, detail) {
     for (const element of [top, footer]) {
       element.dataset.health = state;
-      const text = [...element.childNodes].find((node) => node.nodeType === Node.TEXT_NODE) || element.querySelector('span:last-child');
+      const text = element === top ? element.querySelector('span:last-child') : [...element.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
       if (text) text.textContent = label;
       element.title = detail || label;
     }
