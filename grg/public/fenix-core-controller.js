@@ -954,7 +954,7 @@
     loaders.knowledge = function(){ if(typeof window.loadKnowledgeView==='function') window.loadKnowledgeView(); };
     loaders.terminal = function(){ if(typeof window.loadTerminalView==='function') window.loadTerminalView(); };
     const original=window.showView;
-    window.showView=function(route,push=true){
+    if (!window.__fenixCanonicalRouter) window.showView=function(route,push=true){
       route=String(route||'command').replace(/^#\/?/,'').split(/[/?]/)[0];if(!labels[route])route='command';
       if(typeof original==='function')original(route,push);
       document.querySelectorAll('.view').forEach(v=>{const active=v.id==='view-'+route;v.classList.toggle('active',active);v.style.setProperty('display',active?(route==='command'?'grid':'flex'):'none','important');});
@@ -965,6 +965,16 @@
       if(byId('v10BcView'))byId('v10BcView').textContent=labels[route];
       if(loaders[route])loaders[route]();
     };
+    else window.addEventListener('fenix:viewchanged',event=>{
+      const route=event.detail?.viewId;
+      document.body.dataset.view=route;
+      document.body.classList.remove('menu-open');
+      byId('view-'+route)?.scrollTo(0,0);
+      document.querySelectorAll('#v10SidebarMenu [data-view]').forEach(button=>{
+        const active=button.dataset.view===route;button.classList.toggle('active',active);
+        if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+      });
+    });
     document.addEventListener('click',event=>{
       const nav=event.target.closest('#v10SidebarMenu [data-view]');
       if(nav){event.preventDefault();event.stopImmediatePropagation();window.showView(nav.dataset.view);return;}
@@ -974,7 +984,7 @@
     },true);
     document.addEventListener('input',e=>{if(e.target.matches('[data-job-search]'))renderJobs();});
     document.addEventListener('change',e=>{if(e.target.matches('[data-job-status]'))renderJobs();});
-    window.addEventListener('popstate',()=>window.showView(location.hash.slice(1),false));
+    if (!window.__fenixCanonicalRouter) window.addEventListener('popstate',()=>window.showView(location.hash.slice(1),false));
     const rail=document.querySelector('#view-command .orch-right-column');
     if(rail){const details=document.createElement('details');details.className='evolution-context';details.open=innerWidth>1250;details.innerHTML='<summary>Assistente e estado do sistema</summary>';rail.before(details);details.append(rail);}
     document.querySelectorAll('#view-memory h1').forEach(e=>e.textContent='Memória');

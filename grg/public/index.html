@@ -123,7 +123,7 @@
   };
 })();
 </script>
-  <script src="/fenix-core-controller.js?v=evolution-20260917"></script>
+  <script src="/fenix-core-controller.js?v=canonical-20260925"></script>
   <meta charset="UTF-8">
   <title>FENIX OS | Unified Workspace — Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4017,7 +4017,9 @@ window.__fenixSubmitIdeChat = async function () {
     };
 
     setTimeout(dispatchLoader, 20);
+    window.dispatchEvent(new CustomEvent('fenix:viewchanged', { detail: { viewId, pushHistory } }));
   };
+  window.__fenixCanonicalRouter = true;
 
   window.navigateTo = function(route, param) {
     window.showView(route, true);
