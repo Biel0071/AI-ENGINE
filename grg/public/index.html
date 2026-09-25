@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+  // Preserve navigation made while the large application bundle is still loading.
+  document.addEventListener('click', (event) => {
+    if (window.__fenixCanonicalRouter) return;
+    const item = event.target.closest?.('.nav-item[data-view]');
+    const view = item?.dataset.view;
+    if (!view || !document.getElementById(`view-${view}`)) return;
+    window.__fenixPendingEarlyView = view;
+    if (location.hash !== `#${view}`) history.pushState(null, '', `#${view}`);
+  }, true);
+</script>
 
 <!-- FENIX CENTRAL STATE — injected by stabilization v2 -->
 <script>
@@ -4076,7 +4087,7 @@ window.__fenixSubmitIdeChat = async function () {
   window.restoreRouteOnLoad = function() {
     const raw = (window.location.hash || '').replace(/^#\/?/, '').split('?')[0];
     const parts = raw.split('/');
-    let target = parts[0];
+    let target = window.__fenixPendingEarlyView || parts[0];
     let sub = parts[1];
     if (ROUTE_ALIASES[target]) target = ROUTE_ALIASES[target];
 
@@ -4090,6 +4101,7 @@ window.__fenixSubmitIdeChat = async function () {
     }
 
     if (!target) target = 'command';
+    window.__fenixPendingEarlyView = null;
     window.showView(target, false);
     if (target === 'projects' && sub && typeof window.openProjectWorkspace === 'function') {
       setTimeout(() => window.openProjectWorkspace(sub), 150);
