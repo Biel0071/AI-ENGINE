@@ -3986,6 +3986,7 @@ window.__fenixSubmitIdeChat = async function () {
           if (typeof window.updateV9CityStatus === 'function') window.updateV9CityStatus();
           if (typeof window.syncCityPlacement === 'function') window.syncCityPlacement('city');
         }
+        if (typeof window.refreshCityBrief === 'function') window.refreshCityBrief();
       } else if (viewId === 'agents') {
         if (typeof window.loadAgentsTable === 'function') window.loadAgentsTable();
         else if (typeof window.renderAgentsTable === 'function') window.renderAgentsTable();
@@ -5755,6 +5756,8 @@ window.__fenixSubmitIdeChat = async function () {
 <script src="/marketplace-live.js?v=1"></script>
 <link rel="stylesheet" href="/operations-live.css?v=1">
 <script src="/operations-live.js?v=1"></script>
+<link rel="stylesheet" href="/city-brief.css?v=1">
+<script src="/city-brief.js?v=1"></script>
 
     <footer class="fenix-presentation-footer">
       <div style="display:flex; align-items:center; gap:8px;">
