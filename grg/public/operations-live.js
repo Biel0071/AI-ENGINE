@@ -50,7 +50,7 @@
       ['Em execução', state.snapshot ? count('RUNNING') : '—', 'active'],
       ['Na fila', state.snapshot ? count('QUEUED', 'WAITING', 'READY', 'RETRYING') : '—', 'waiting'],
       ['Falhas registradas', state.snapshot ? count('FAILED', 'DEAD_LETTER') : '—', 'failed'],
-      ['Workers reportados', state.workers ? (state.workers.workers || []).length : '—', 'workers'],
+      ['Workers ativos', state.workers ? (state.workers.workers || []).filter((worker) => ['ONLINE', 'ACTIVE', 'RUNNING', 'IDLE', 'READY', 'AVAILABLE'].includes(String(worker.status || '').toUpperCase())).length : '—', 'workers'],
     ];
     for (const [label, value, kind] of metrics) { const item = fact(label, value); item.dataset.kind = kind; overview.append(item); }
   }
@@ -85,10 +85,17 @@
   function renderWorkers(content) {
     const workers = state.workers?.workers || [];
     if (!workers.length) { content.append(node('p', 'flo-empty', 'Nenhum worker reportado pelo runtime.')); return; }
-    for (const worker of workers) {
+    const active = (worker) => ['ONLINE', 'ACTIVE', 'RUNNING', 'IDLE', 'READY', 'AVAILABLE'].includes(String(worker.status || '').toUpperCase());
+    const activeCount = workers.filter(active).length;
+    const summary = node('p', 'flo-worker-summary', `${activeCount} ativo(s) · ${workers.length - activeCount} sem atividade confirmada`);
+    if (!activeCount) summary.dataset.warning = 'true';
+    content.append(summary);
+    for (const worker of workers.slice().sort((a, b) => Number(active(b)) - Number(active(a)))) {
       const card = node('article', 'flo-card');
-      const top = node('div', 'flo-card-head'); top.append(node('strong', '', worker.name || worker.workerId || worker.id), node('span', 'flo-badge', worker.status || 'UNKNOWN'));
-      card.append(top, node('p', '', `Último sinal: ${worker.lastSeenAt || worker.lastHeartbeat || 'indisponível'}`)); content.append(card);
+      const workerStatus = String(worker.status || 'UNKNOWN').toUpperCase();
+      const top = node('div', 'flo-card-head'); top.append(node('strong', '', worker.name || worker.workerId || worker.id), node('span', `flo-badge flo-${workerStatus.toLowerCase()}`, workerStatus));
+      const lastSeen = worker.lastSeenAt || worker.lastHeartbeat;
+      card.append(top, node('p', '', `Último sinal: ${lastSeen && !Number.isNaN(Date.parse(lastSeen)) ? new Date(lastSeen).toLocaleString('pt-BR') : 'indisponível'}`)); content.append(card);
     }
   }
   function renderEvents(content) {
