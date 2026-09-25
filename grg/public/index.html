@@ -3039,7 +3039,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <script src="/fenix-city-event-adapter.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
   <script src="/fenix-pixel-engine.js?v=1"></script>
-  <script src="/iso-city.js?v=2"></script>
+  <script src="/iso-city.js?v=3"></script>
   <script src="/pixi-game-art-pipeline.js?v=1"></script>
   <script src="/pixi-city-renderer.js?v=2"></script>
   <script src="/pixi-character-system.js?v=1"></script>
@@ -3260,15 +3260,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const modal = document.getElementById('buildingInspectorModal');
       if (modal) modal.style.display = 'none';
     };
-
-    window.addEventListener('fenix-agent-selected', (e) => {
-      const id = e.detail?.agent?.id || e.detail?.agentId;
-      if (id) window.fenixOpenAgent(id);
-    });
-    window.addEventListener('fenix-district-selected', (e) => {
-      const id = e.detail?.key || e.detail?.district?.id;
-      if (id) window.fenixOpenBuilding(id);
-    });
 
     (function initCityEventStream() {
       let evtSource = null;

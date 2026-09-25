@@ -1254,6 +1254,7 @@ class IsoCityEngine {
       if (this._hitTestHandoff(mx, my)) return;
       const agent = this._hitTestAgent(mx, my);
       if (agent) {
+        this.state.selectedAgent = agent;
         const tw = this.state.tileSize;
         const th = tw / 2;
         const z = 2.4;
