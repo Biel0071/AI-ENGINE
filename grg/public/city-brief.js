@@ -2,7 +2,7 @@
   const view = document.getElementById('view-city');
   const area = view?.querySelector('.fenix-city-canvas-area');
   if (!area || area.querySelector('.fenix-city-brief')) return;
-  const state = { projects: [], jobs: [], error: null, updatedAt: null, busy: false, collapsed: localStorage.getItem('fenix_city_brief_collapsed') === 'true' };
+  const state = { projects: [], jobs: [], projectsMeasured: false, jobsMeasured: false, error: null, updatedAt: null, busy: false, collapsed: localStorage.getItem('fenix_city_brief_collapsed') === 'true' };
   const el = (tag, className, label) => { const result = document.createElement(tag); if (className) result.className = className; if (label !== undefined) result.textContent = String(label); return result; };
   const panel = el('aside', 'fenix-city-brief'); panel.setAttribute('aria-label', 'Painel ao vivo da Cidade');
   const header = el('header', 'fcb-head');
@@ -22,11 +22,11 @@
     const stats = el('div', 'fcb-stats');
     const running = state.jobs.filter((job) => String(job.status).toUpperCase() === 'RUNNING').length;
     const failed = state.jobs.filter((job) => ['FAILED', 'DEAD_LETTER'].includes(String(job.status).toUpperCase())).length;
-    for (const [value, label] of [[state.projects.length, 'projetos'], [running, 'executando'], [failed, 'falhas']]) { const box = el('div', 'fcb-stat'); box.append(el('strong', '', value), el('span', '', label)); stats.append(box); }
+    for (const [value, label] of [[state.projectsMeasured ? state.projects.length : '—', 'projetos'], [state.jobsMeasured ? running : '—', 'executando'], [state.jobsMeasured ? failed : '—', 'falhas']]) { const box = el('div', 'fcb-stat'); box.append(el('strong', '', value), el('span', '', label)); stats.append(box); }
     body.append(stats);
     body.append(sectionHeading('Projetos', 'Ver todos ↗', () => window.showView?.('projects')));
     const projects = el('div', 'fcb-projects');
-    if (!state.projects.length) projects.append(el('p', 'fcb-empty', 'Nenhum projeto disponível.'));
+    if (!state.projects.length) projects.append(el('p', 'fcb-empty', state.projectsMeasured ? 'Nenhum projeto registrado.' : 'Projetos indisponíveis nesta leitura.'));
     for (const project of state.projects.slice(0, 4)) {
       const button = el('button', 'fcb-project'); button.type = 'button';
       const icon = el('span', 'fcb-project-icon', (project.name || '?').trim().slice(0, 1).toUpperCase());
@@ -38,7 +38,7 @@
     body.append(projects);
     body.append(sectionHeading('Atividade recente', 'Operações ↗', () => window.showView?.('operations')));
     const activity = el('div', 'fcb-activity');
-    if (!state.jobs.length) activity.append(el('p', 'fcb-empty', 'Nenhuma execução registrada.'));
+    if (!state.jobs.length) activity.append(el('p', 'fcb-empty', state.jobsMeasured ? 'Nenhuma execução registrada.' : 'Atividade indisponível nesta leitura.'));
     for (const job of state.jobs.slice().reverse().slice(0, 3)) {
       const item = el('button', 'fcb-job'); item.type = 'button';
       const dot = el('i', `fcb-dot fcb-${String(job.status || '').toLowerCase()}`);
@@ -50,8 +50,8 @@
   async function refresh() {
     if (state.busy) return; state.busy = true; render();
     const results = await Promise.allSettled([getJson('/api/fenix/projects'), getJson('/api/v2/jobs')]);
-    if (results[0].status === 'fulfilled') state.projects = results[0].value.projects || [];
-    if (results[1].status === 'fulfilled') state.jobs = results[1].value.jobs || [];
+    if (results[0].status === 'fulfilled') { state.projects = results[0].value.projects || []; state.projectsMeasured = true; }
+    if (results[1].status === 'fulfilled') { state.jobs = results[1].value.jobs || []; state.jobsMeasured = true; }
     state.error = results.filter((result) => result.status === 'rejected').map((result) => result.reason.message).join(' · ') || null;
     state.updatedAt = new Date().toISOString(); state.busy = false; render();
   }
