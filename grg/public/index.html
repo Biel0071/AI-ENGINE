@@ -3990,7 +3990,8 @@ window.__fenixSubmitIdeChat = async function () {
         if (typeof window.loadAgentsTable === 'function') window.loadAgentsTable();
         else if (typeof window.renderAgentsTable === 'function') window.renderAgentsTable();
       } else if (viewId === 'operations') {
-        if (typeof window.renderOperationsView === 'function') window.renderOperationsView();
+        if (typeof window.loadLiveOperations === 'function') window.loadLiveOperations();
+        else if (typeof window.renderOperationsView === 'function') window.renderOperationsView();
         else if (typeof window.loadOperationsView === 'function') window.loadOperationsView();
       } else if (viewId === 'ide') {
         if (typeof window.loadIdeView === 'function') window.loadIdeView();

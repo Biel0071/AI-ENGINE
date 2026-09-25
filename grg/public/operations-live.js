@@ -94,6 +94,7 @@
     state.error = failures.length ? failures.join(' · ') : null;
     state.measuredAt = new Date().toISOString(); render();
   }
+  window.loadLiveOperations = load;
   window.renderOperationsView = load;
   window.fenixSelectOpsTab = (tab) => { state.tab = tab === 'logs' ? 'logs' : tab; render(); };
   if (document.getElementById('view-operations')?.classList.contains('active')) load();
