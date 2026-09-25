@@ -14,4 +14,15 @@
     button.hidden = viewId === 'city' || sessionStorage.getItem(key) !== 'true';
   };
   window.fenixUpdateCityReturn(location.hash.replace(/^#/, '').split('?')[0]);
+  const city = document.getElementById('view-city');
+  if (city) {
+    let wasActive = city.classList.contains('active');
+    new MutationObserver(() => {
+      const isActive = city.classList.contains('active');
+      if (wasActive && !isActive) sessionStorage.setItem(key, 'true');
+      if (isActive) sessionStorage.removeItem(key);
+      button.hidden = isActive || sessionStorage.getItem(key) !== 'true';
+      wasActive = isActive;
+    }).observe(city, { attributes: true, attributeFilter: ['class'] });
+  }
 })();
