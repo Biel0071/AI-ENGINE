@@ -1,7 +1,9 @@
-async function livingCityState(app, tenantId, actorId) {
+async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = {}) {
   await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
   const [state, jobs, missions, projects] = await Promise.all([
-    app.store.read(), app.jobs.list(tenantId, actorId), app.missions.list(tenantId, actorId), app.projectKernel.list(tenantId, actorId),
+    app.store.read(), app.jobs.list(tenantId, actorId),
+    agentsOnly ? Promise.resolve([]) : app.missions.list(tenantId, actorId),
+    agentsOnly ? Promise.resolve([]) : app.projectKernel.list(tenantId, actorId),
   ]);
   const profiles = state.agentProfiles || [];
   const catalog = [
@@ -50,7 +52,7 @@ async function livingCityState(app, tenantId, actorId) {
 
 async function handleLivingCityRoutes(req, res, url, app, sendJson, identity) {
   if (req.method !== 'GET' || !['/api/v2/living-city/agents', '/api/v2/living-city/state'].includes(url.pathname)) return false;
-  const data = await livingCityState(app, identity.tenantId, identity.actorId);
+  const data = await livingCityState(app, identity.tenantId, identity.actorId, { agentsOnly: url.pathname.endsWith('/agents') });
   sendJson(res, 200, url.pathname.endsWith('/agents') ? { source: data.source, measuredAt: data.measuredAt, count: data.agents.length, agents: data.agents } : data);
   return true;
 }
