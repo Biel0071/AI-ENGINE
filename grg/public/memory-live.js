@@ -111,7 +111,15 @@
       const results = Array.isArray(data.results) ? data.results : [];
       target.replaceChildren();
       if (!results.length) { target.append(make('p', 'fml-empty', 'Nenhuma memória encontrada para esta busca.')); return; }
-      for (const item of results) { const card = make('article', 'fml-memory-result'); card.append(make('strong', '', item.title || item.summary || item.key || item.id || 'Memória'), make('p', '', item.content || item.text || item.value || 'Conteúdo não disponível nesta resposta.')); target.append(card); }
+      target.append(make('p', 'fml-memory-count', `${results.length} resultado(s)${Number.isFinite(data.totalCandidates) ? ` · ${data.totalCandidates} candidatos examinados` : ''}`));
+      for (const item of results) {
+        const memory = item.memory || item;
+        const card = make('article', 'fml-memory-result');
+        card.append(make('strong', '', memory.title || memory.summary || memory.key || memory.id || 'Memória'));
+        card.append(make('small', '', `${memory.kind || 'tipo não informado'} · ${memory.createdAt && !Number.isNaN(Date.parse(memory.createdAt)) ? new Date(memory.createdAt).toLocaleString('pt-BR') : 'data não informada'}`));
+        card.append(make('p', '', memory.content || memory.text || (memory.value == null ? 'Conteúdo não disponível nesta resposta.' : typeof memory.value === 'object' ? JSON.stringify(memory.value) : memory.value)));
+        target.append(card);
+      }
     } catch (error) { target.textContent = `Busca indisponível: ${error.message}`; }
   }
   const install = () => {
