@@ -3853,8 +3853,10 @@
 
   // Hook into showView
   const prevShowView = window.showView;
+  let lastView = document.querySelector('.view.active')?.id?.replace(/^view-/, '') || null;
   const onViewChanged = (route) => {
-    window.fenixCloseInspector();
+    if (route !== lastView) window.fenixCloseInspector();
+    lastView = route;
     if (route === 'terminal' || route === 'view-terminal') {
       setTimeout(() => window.initFenixXTerm && window.initFenixXTerm(), 100);
     }
