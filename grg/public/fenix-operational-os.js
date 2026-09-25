@@ -313,34 +313,37 @@
     );
 
     try {
-      let rawList = ctx.cachedAgents;
-      if (!rawList || rawList.length === 0) {
-        const res = await fetch('/api/v2/living-city/agents');
-        const data = res.ok ? await res.json() : { agents: [] };
+      let rawList = Array.isArray(ctx.cachedAgents) ? ctx.cachedAgents : [];
+      let agent = rawList.find(a => a.id === agentId || a.name === agentId);
+      if (!agent) agent = window.fenixCity?.world?.agents?.get(agentId) || [...(window.fenixCity?.world?.agents?.values() || [])].find(a => a.name === agentId);
+      if (!agent) {
+        const res = await fetch('/api/v2/living-city/agents', { signal: AbortSignal.timeout(12000) });
+        if (!res.ok) throw new Error(`HTTP ${res.status} ao consultar agentes`);
+        const data = await res.json();
         rawList = Array.isArray(data.agents) ? data.agents : (data.agents && typeof data.agents === 'object' ? Object.values(data.agents) : []);
         ctx.cachedAgents = rawList;
+        agent = rawList.find(a => a.id === agentId || a.name === agentId);
       }
-      const agent = rawList.find(a => a.id === agentId || a.name === agentId) || {
-        id: agentId, name: agentId, status: 'IDLE', role: 'Agente Operacional'
-      };
+      if (!agent) throw new Error('Agente não encontrado no runtime.');
 
       const identity = agent.name || agent.id;
-      const role = agent.role || 'Especialista Operacional';
-      const status = agent.status || 'ONLINE';
-      const model = agent.model || 'ollama/qwen2.5:3b';
-      const provider = agent.provider || 'Ollama Local Fastify';
-      const projectId = agent.projectId || ctx.projectId || 'fenix-os';
-      const currentMission = agent.currentMission || agent.mission || (agent.activeMissions ? `Missão #${agent.activeMissions}` : 'Nenhuma missão ativa (Standby)');
+      const role = agent.role || 'Não informado';
+      const status = agent.status || agent.state || 'NÃO MEDIDO';
+      const model = agent.model || 'Não informado';
+      const provider = agent.provider || 'Não informado';
+      const projectId = agent.projectId || null;
+      const currentMission = agent.currentMission || agent.mission || (agent.activeMissions ? `Missão #${agent.activeMissions}` : 'Nenhuma missão informada');
       const currentMissionId = agent.missionId || null;
-      const currentJob = agent.currentJob || (agent.activeJobs ? `Job #${agent.activeJobs}` : 'Nenhum job em execução');
+      const currentJob = agent.currentJob || (agent.activeJobs ? `Job #${agent.activeJobs}` : 'Nenhum job informado');
       const currentJobId = agent.jobId || null;
-      const lastAction = agent.lastAction || agent.lastCommand || 'Verificação de integridade e heartbeat do canal';
-      const lastEvent = agent.lastEvent || agent.lastActivity || agent.updatedAt || 'system.heartbeat';
-      const successRate = agent.successRate != null ? `${agent.successRate}%` : '98.5%';
-      const district = agent.district || agent.location || 'Command Tower';
+      const lastAction = agent.lastAction || agent.lastCommand || 'Não informada';
+      const lastEvent = agent.lastEvent || agent.lastActivity || agent.updatedAt || 'Não informado';
+      const successRate = agent.successRate != null ? `${agent.successRate}%` : 'Não medida';
+      const district = agent.district || agent.location || 'Não informado';
       const capabilities = Array.isArray(agent.capabilities) && agent.capabilities.length
         ? agent.capabilities
-        : ['Análise de Código', 'Execução de Comandos', 'Auditoria Visual Playwright', 'Orquestração de DAG'];
+        : [];
+      const recentRuns = Array.isArray(agent.recentRuns) ? agent.recentRuns : [];
 
       // Check real capabilities
       const hasExecuteTick = capabilities.some(c => String(c).toLowerCase().includes('exec') || String(c).toLowerCase().includes('tick'));
@@ -357,9 +360,9 @@
           </div>
           <div class="fenix-insp-grid" style="margin-top:14px;">
             <div><small>ID Canônico</small><p><code>${esc(agent.id)}</code></p></div>
-            <div><small>Status Operacional</small><p><span class="evolution-badge ${status === 'WORKING' ? 'badge-working' : 'badge-online'}">● ${esc(status)}</span></p></div>
-            <div><small>Projeto Vinculado</small><p style="color:#38bdf8; font-weight:700;">${esc(projectId)}</p></div>
-            <div><small>Taxa de Sucesso</small><p style="color:#10b981; font-weight:700;">${esc(successRate)}</p></div>
+            <div><small>Status Operacional</small><p><span class="evolution-badge ${status === 'WORKING' ? 'badge-working' : status === 'ONLINE' ? 'badge-online' : ''}">● ${esc(status)}</span></p></div>
+            <div><small>Projeto Vinculado</small><p style="color:#38bdf8; font-weight:700;">${esc(projectId || 'Não informado')}</p></div>
+            <div><small>Taxa de Sucesso</small><p style="color:${agent.successRate != null ? '#10b981' : '#94a3b8'}; font-weight:700;">${esc(successRate)}</p></div>
             <div style="grid-column:1/-1;"><small>Current Mission</small><p style="font-size:12px; color:#f8fafc; margin:2px 0;">${esc(currentMission)}</p></div>
             <div style="grid-column:1/-1;"><small>Current Job</small><p style="font-size:12px; color:#10b981; font-weight:600; margin:2px 0;">${esc(currentJob)}</p></div>
             <div style="grid-column:1/-1;"><small>Última Ação Executada</small><p style="font-size:11px; color:#94a3b8; margin:2px 0;">${esc(lastAction)}</p></div>
@@ -370,31 +373,25 @@
         <div class="fenix-insp-section">
           <h5>Capacidades Reais do Agente</h5>
           <ul class="fenix-insp-list">
-            ${capabilities.map(c => `
+            ${capabilities.length ? capabilities.map(c => `
               <li style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
                 <span>🔹 ${esc(c)}</span>
                 <span class="evolution-badge" style="font-size:9px; background:rgba(16,185,129,0.1); color:#10b981;">DISPONÍVEL</span>
               </li>
-            `).join('')}
+            `).join('') : '<li>O runtime não declarou capacidades para este agente.</li>'}
           </ul>
         </div>
 
         <div class="fenix-insp-section">
           <h5>Recent Runs (Execuções Recentes)</h5>
-          <div style="font-size:11px; color:#94a3b8; background:#0b1120; padding:10px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-              <span style="color:#38bdf8; font-weight:600;">Run #run_core_health</span>
-              <span style="color:#10b981; font-weight:700;">PASSED</span>
-            </div>
-            <div style="font-size:10px; color:#64748b;">Duração: 140ms • Tokens: 120 • Saída validada sem regressão</div>
-          </div>
+          ${recentRuns.length ? recentRuns.slice(0, 5).map(run => `<div style="font-size:11px; color:#94a3b8; background:#0b1120; padding:10px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); margin-bottom:6px;">${esc(run.title || run.id || 'Execução')} · ${esc(run.status || 'NÃO MEDIDO')}</div>`).join('') : '<p style="font-size:11px; color:#94a3b8;">Nenhuma execução recente informada pelo runtime.</p>'}
         </div>
       `;
 
       const footer = `
         ${currentMissionId ? `<button class="fenix-action-btn primary" onclick="window.fenixInspectMission('${esc(currentMissionId)}')">🎯 Ver Missão</button>` : ''}
         ${currentJobId ? `<button class="fenix-action-btn" onclick="window.fenixInspectJob({ id: '${esc(currentJobId)}' })">📋 Ver Job</button>` : ''}
-        <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('projects', { projectId: '${esc(projectId)}' })">📁 Ver Projeto</button>
+        ${projectId ? `<button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('projects', { projectId: '${esc(projectId)}' })">📁 Ver Projeto</button>` : ''}
         <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('observability', { source: '${esc(agent.id)}' })">📡 Ver Eventos</button>
         <button class="fenix-action-btn" onclick="window.fenixOpenFlowGraph ? window.fenixOpenFlowGraph({ context: 'AGENT', entityId: '${esc(agent.id)}' }) : null" style="background:rgba(16,185,129,0.15); border-color:#10b981; color:#34d399;">🧬 Ver no Grafo</button>
         ${hasExecuteTick ? `
