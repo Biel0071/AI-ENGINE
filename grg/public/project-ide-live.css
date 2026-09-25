@@ -16,3 +16,5 @@
 .fenix-live-ide-file:hover,.fenix-live-ide-file:focus-visible{color:#fff;background:#17334b;outline:none}
 #fenixIdeLivePath{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#fenixIdeLiveCode{display:block;flex:1;width:100%;min-height:0;resize:none;box-sizing:border-box;padding:24px 28px;color:#dbe8f4;background:#08121f;border:0;outline:none;font:13px/1.65 'JetBrains Mono',ui-monospace,monospace;tab-size:2}
 @media(max-width:800px){.fenix-live-ide-header{align-items:start;flex-direction:column;padding:20px}.fenix-live-ide-controls{flex-wrap:wrap}.fenix-live-ide-meta{padding:10px 20px;flex-direction:column;gap:5px}.fenix-live-ide-body{grid-template-columns:180px minmax(0,1fr)}}
+
+.fenix-live-ide-save-actions{display:flex;align-items:center;gap:12px;min-width:0}#fenixIdeDirtyState{color:#829cb3;font:600 10px ui-monospace,monospace;white-space:nowrap}#fenixIdeDirtyState[data-dirty=true]{color:#ffd48b}#fenixIdeLiveSave:not(:disabled){box-shadow:0 0 0 1px rgba(67,209,177,.22),0 8px 20px rgba(0,0,0,.2)}@media(max-width:600px){.fenix-live-ide-save-actions{gap:6px}#fenixIdeDirtyState{font-size:9px}}
