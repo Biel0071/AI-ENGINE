@@ -513,19 +513,7 @@ module.exports = authRouter;`
 
   // 13. Navigation Sync & Active State Highlighting
   const origShowView = window.showView;
-  window.showView = function (viewId, pushHistory) {
-    if (origShowView) {
-      origShowView(viewId, pushHistory);
-    }
-
-    // Sync sidebar buttons active class
-    document.querySelectorAll('.v10-nav-btn, .nav-item').forEach(btn => {
-      const target = btn.getAttribute('data-view') || btn.getAttribute('data-nav') || '';
-      const isCmdOrInicio = (viewId === 'command' && (target === 'command' || target === 'inicio'));
-      const matches = isCmdOrInicio || target === viewId;
-      btn.classList.toggle('active', matches);
-    });
-
+  const onViewChanged = (viewId) => {
     // Sub-view specifics
     if (viewId === 'city' && window.fenixUpdateCityHUD) { window.fenixUpdateCityHUD(); }
     if (viewId === 'command') {
@@ -537,9 +525,6 @@ module.exports = authRouter;`
     } else if (viewId === 'flowgraph') {
       const mesh = document.getElementById('fenixFlowGraphDynamicMesh');
       if (mesh) mesh.style.display = 'block';
-      if (window.FenixFlowGraph && typeof window.FenixFlowGraph.mountView === 'function') {
-        window.FenixFlowGraph.mountView('fenixFlowGraphDynamicMesh', { context: 'GLOBAL' });
-      }
     } else if (viewId === 'agents') {
       if (typeof window.fenixLoadAgents === 'function') {
         window.fenixLoadAgents();
@@ -556,13 +541,20 @@ module.exports = authRouter;`
       if (window.fenixCity && typeof window.fenixCity.resize === 'function') {
         setTimeout(() => window.fenixCity.resize(), 50);
       }
-      if (window.loadCityView) window.loadCityView();
     } else if (viewId === 'ide') {
       if (typeof window.fenixInitIdeWorkspace === 'function') {
         window.fenixInitIdeWorkspace();
       }
     }
   };
+  if (window.__fenixCanonicalRouter) {
+    window.addEventListener('fenix:viewchanged', (event) => onViewChanged(event.detail?.viewId));
+  } else {
+    window.showView = function (viewId, pushHistory) {
+      if (origShowView) origShowView(viewId, pushHistory);
+      onViewChanged(viewId);
+    };
+  }
 
   window.fenixLoadAgents = async function(filter = null) {
     const grid = document.getElementById('fenix-agents-grid');
