@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const state = { projects: [], details: new Map(), git: new Map(), connections: new Map(), deployments: new Map(), deployTimer: null, selected: null, query: '', loading: null, error: null, measuredAt: null };
+  const state = { projects: [], details: new Map(), git: new Map(), connections: new Map(), deployments: new Map(), deployTimer: null, selected: null, requestedProjectId: null, query: '', loading: null, error: null, measuredAt: null };
   const $ = (id) => document.getElementById(id);
   const text = (value, fallback = '—') => value == null || value === '' ? fallback : String(value);
   const date = (value) => value ? new Date(value).toLocaleString('pt-BR') : '—';
@@ -21,13 +21,14 @@
     if (!view || view.dataset.liveProjects === 'true') return;
     view.dataset.liveProjects = 'true';
     view.innerHTML = `<section class="fenix-live-projects">
-      <header class="flp-header"><div><span class="flp-eyebrow">PROJECT KERNEL · CATÁLOGO AUTENTICADO</span><h1>Projetos em evolução</h1><p>Workspaces, jobs e artefatos medidos no runtime do Fênix.</p></div><button type="button" id="flpRefresh" class="flp-button flp-button-soft">↻ Atualizar</button></header>
+      <header class="flp-header"><div><span class="flp-eyebrow">PROJECT KERNEL · CATÁLOGO AUTENTICADO</span><h1>Projetos em evolução</h1><p>Workspaces, jobs e artefatos medidos no runtime do Fênix.</p></div><div class="flp-header-actions"><button type="button" id="flpCloneToggle" class="flp-button flp-button-primary" aria-expanded="false" aria-controls="flpClone">+ Adicionar projeto GitHub</button><button type="button" id="flpRefresh" class="flp-button flp-button-soft">↻ Atualizar</button></div></header>
       <div class="flp-status-row"><span id="flpMeasured" role="status">Carregando projetos…</span><span id="flpSource">Fonte: Project Kernel / JobEngine</span></div>
-      <form id="flpClone" class="flp-clone"><label>Adicionar projeto GitHub <input name="name" required maxlength="100" placeholder="Nome do projeto"></label><label>URL HTTPS <input name="repository" required type="url" placeholder="https://github.com/usuario/repositorio.git"></label><button type="submit" class="flp-button flp-button-primary">Clonar e registrar</button><span id="flpCloneStatus" role="status"></span></form>
+      <form id="flpClone" class="flp-clone" hidden><label>Nome do projeto <input name="name" required maxlength="100" placeholder="Nome do projeto"></label><label>URL HTTPS <input name="repository" required type="url" placeholder="https://github.com/usuario/repositorio.git"></label><button type="submit" class="flp-button flp-button-primary">Clonar e registrar</button><span id="flpCloneStatus" role="status"></span></form>
       <div class="flp-metrics"><div><span>Projetos registrados</span><strong id="flpTotal">—</strong></div><div><span>Workspaces vinculados</span><strong id="flpWorkspaces">—</strong></div><div><span>Jobs em execução</span><strong id="flpRunning">—</strong></div><div><span>Jobs com falha</span><strong id="flpFailed">—</strong></div></div>
       <div class="flp-body"><aside class="flp-sidebar"><label for="flpSearch">Encontrar projeto</label><input id="flpSearch" type="search" placeholder="Nome, ID ou workspace" autocomplete="off"><div id="flpCards" class="flp-cards"></div></aside><main id="flpDetail" class="flp-detail" aria-live="polite"></main></div>
     </section>`;
     $('flpRefresh').addEventListener('click', () => load(true));
+    $('flpCloneToggle').addEventListener('click', (event) => { const form = $('flpClone'); form.hidden = !form.hidden; event.currentTarget.setAttribute('aria-expanded', String(!form.hidden)); if (!form.hidden) form.querySelector('input')?.focus(); });
     $('flpSearch').addEventListener('input', (event) => { state.query = event.target.value.trim().toLowerCase(); renderCards(); });
     $('flpClone').addEventListener('submit', async (event) => {
       event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button'); const status = $('flpCloneStatus');
@@ -220,8 +221,9 @@
         const data = await json('/api/fenix/projects');
         state.projects = data.projects || [];
         state.measuredAt = new Date().toISOString();
-        const preferred = state.projects.find((item) => item.id === state.selected) || state.projects.find((item) => item.id === localStorage.getItem('fenix_project_hub_selected')) || state.projects.find((item) => item.id === 'api-platform-live') || state.projects[0];
+        const preferred = state.projects.find((item) => item.id === state.requestedProjectId) || state.projects.find((item) => item.id === state.selected) || state.projects.find((item) => item.id === localStorage.getItem('fenix_project_hub_selected')) || state.projects.find((item) => item.id === 'api-platform-live') || state.projects[0];
         state.selected = preferred?.id || null;
+        state.requestedProjectId = null;
         if (state.selected) loadGit(state.selected);
         renderMetrics(); renderCards(); renderDetail();
         const details = await Promise.allSettled(state.projects.map((project) => json(`/api/fenix/projects/${encodeURIComponent(project.id)}/state`, { signal: AbortSignal.timeout(60000) })));
@@ -234,8 +236,9 @@
   window.loadRegistryProjects = load;
   window.openProjectWorkspace = async (projectId) => {
     window.showView?.('projects');
-    await load();
     const alias = projectId === 'api-platform' ? 'api-platform-live' : projectId;
     if (state.projects.some((project) => project.id === alias)) selectProject(alias);
+    else state.requestedProjectId = alias;
+    await load();
   };
 })();
