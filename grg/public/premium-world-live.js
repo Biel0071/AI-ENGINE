@@ -67,6 +67,7 @@
       button.append(node('span', 'fwl-agent-avatar', (agent.name || agent.id || '?').slice(0, 1).toUpperCase()), node('strong', '', agent.name || agent.id), node('small', '', state === 'WORKING' ? 'Em execução' : state === 'AVAILABLE' ? 'Disponível' : state));
       button.addEventListener('click', () => {
         if (window.fenixCity?.focusAgent) window.fenixCity.focusAgent(agent.id);
+        if (typeof window.fenixInspectAgent === 'function') window.fenixInspectAgent(agent.id);
         else window.openAgentInspector?.(agent.id);
       });
       agents.append(button);
