@@ -83,8 +83,7 @@
     if (!force && world.measuredAt && Date.now() - new Date(world.measuredAt).getTime() < 15000) return world.snapshot;
     world.loading = true;
     try {
-      const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token');
-      const response = await fetch('/api/v2/living-city/state', { credentials: 'same-origin', headers: token ? { Authorization: `Bearer ${token}` } : {}, signal: AbortSignal.timeout(12000) });
+      const response = await fetch('/api/v2/living-city/state', { credentials: 'same-origin', signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       if (!Array.isArray(data.projects) || !Array.isArray(data.agents)) throw new Error('Resposta incompleta');

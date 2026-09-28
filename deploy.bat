@@ -9,6 +9,7 @@ set KEY=C:/Users/Dell/.ssh/grg_fenix_vps
 set SRC=c:/projetos/ai-engine-core/ai-engine/grg/public
 set HOST=root@209.50.241.22
 if /I "%~1"=="city" goto CITY_DEPLOY
+if /I "%~1"=="world-hotfix" goto WORLD_HOTFIX
 if /I "%~1"=="ide" goto IDE_DEPLOY
 if /I "%~1"=="projects" goto PROJECTS_DEPLOY
 if /I "%~1"=="workspace" goto WORKSPACE_DEPLOY
@@ -181,7 +182,17 @@ scp -i %KEY% grg/src/api/living-city-routes.js %HOST%:/opt/fenix-os/grg/src/api/
 if errorlevel 1 exit /b 1
 ssh -i %KEY% %HOST% "node --check /opt/fenix-os/grg/src/api/living-city-routes.js && pm2 reload 16 && pm2 reload 17"
 if errorlevel 1 exit /b 1
-ssh -i %KEY% %HOST% "(for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/app && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/app && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+ssh -i %KEY% %HOST% "(for i in $(seq 1 90); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/app && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/app && diff -qr --exclude='*.bak*' --exclude='*.before-*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+exit /b %ERRORLEVEL%
+
+:WORLD_HOTFIX
+for %%F in (premium-world-live.js) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+ssh -i %KEY% %HOST% "curl -fsS -o /dev/null http://127.0.0.1:3000/premium-world-live.js && cmp /opt/fenix-os/public/premium-world-live.js /opt/fenix-os/grg/public/premium-world-live.js"
 exit /b %ERRORLEVEL%
 
 :PROJECT_GIT_DEPLOY
