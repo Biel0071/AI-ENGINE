@@ -267,7 +267,6 @@ function initEngines(app) {
 }
 
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
-  console.log('[DEBUG ProductRoutes Entry]', req.method, url.pathname);
   if (!url.pathname.startsWith('/api/v2/')) return false;
 
   // The SSE handshake must not wait for the full product-engine bootstrap.

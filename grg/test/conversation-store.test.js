@@ -39,6 +39,21 @@ test('mensagem interrompida tambem e gravada (o usuario viu aquele texto)', asyn
   await app.close?.();
 });
 
+test('conversa de agente preserva contexto e isola o historico por usuario', async () => {
+  const app = await tenantApp();
+  const conversation = await app.conversations.open('grg', 'grg-admin', { agentId: 'developer', projectId: 'fenix-os' });
+  await app.conversations.append('grg', 'grg-admin', conversation.id, { role: 'user', content: 'verificar projeto' });
+  const [row] = await app.conversations.list('grg', { actorId: 'grg-admin' });
+  assert.equal(row.agentId, 'developer');
+  assert.equal(row.projectId, 'fenix-os');
+  assert.equal((await app.conversations.list('grg', { actorId: 'other-user' })).length, 0);
+  assert.equal((await app.conversations.history('grg', conversation.id, { actorId: 'other-user' })).length, 0);
+  await assert.rejects(app.conversations.open('grg', 'other-user', { conversationId: conversation.id }), /another user/);
+  const prompt = await app.conversations.buildPrompt('grg', 'grg-admin', conversation.id, 'verificar projeto');
+  assert.equal(prompt.messages.filter(message => message.role === 'user' && message.content === 'verificar projeto').length, 1);
+  await app.close?.();
+});
+
 test('conversa retomada mantem o contexto: o prompt carrega o historico real', async () => {
   const app = await tenantApp();
   const conversation = await app.conversations.open('grg', 'grg-admin', {});

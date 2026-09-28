@@ -16,11 +16,27 @@
 
 const crypto = require('node:crypto');
 const { resolveAIProviderKey, resolveAIPlatformUrl } = require('../security/secret-resolver');
+const { NotFoundError } = require('../kernel/errors');
 
 // Streams vivos por id, para o abort poder alcancar um stream iniciado por OUTRA requisicao.
 // O botao "interromper" do cliente e um POST separado -- sem este registro ele so pararia a UI
 // enquanto o servidor seguiria gerando (gastando CPU do Ollama ate o fim).
 const liveStreams = new Map();
+
+async function validateConversationScope(app, tenantId, agentId, projectId) {
+  if (!agentId && !projectId) return { agent: null, project: null };
+  const state = await app.store.read();
+  const project = projectId ? (state.projects || []).find((item) => item.id === projectId && item.tenantId === tenantId) : null;
+  if (projectId && !project) throw new NotFoundError('project not found for conversation');
+  const knownAgents = [
+    ...(app.agentRegistry?.list() || []),
+    ...(state.agents || []).filter((agent) => agent.tenantId === tenantId),
+    ...(state.cognitiveAgents || []).filter((agent) => agent.tenantId === tenantId),
+  ];
+  const agent = agentId ? knownAgents.find((item) => String(item.id || item.agentId).toLowerCase() === String(agentId).toLowerCase()) : null;
+  if (agentId && !agent) throw new NotFoundError('agent not found for conversation');
+  return { agent, project };
+}
 
 function sseOpen(res) {
   res.writeHead(200, {
@@ -86,17 +102,18 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
 
   // --- historico e conversas -------------------------------------------------------------
   if (req.method === 'GET' && url.pathname === '/api/chat/conversations') {
-    sendJson(res, 200, { conversations: await conversations.list(tenantId) }, requestId);
+    sendJson(res, 200, { conversations: await conversations.list(tenantId, { actorId }) }, requestId);
     return true;
   }
   if (req.method === 'GET' && /^\/api\/chat\/conversations\/[^/]+$/.test(url.pathname)) {
     const id = decodeURIComponent(url.pathname.split('/')[4]);
-    sendJson(res, 200, { conversationId: id, messages: await conversations.history(tenantId, id) }, requestId);
+    sendJson(res, 200, { conversationId: id, messages: await conversations.history(tenantId, id, { actorId }) }, requestId);
     return true;
   }
   if (req.method === 'POST' && url.pathname === '/api/chat/conversations') {
     const body = await readJson(req);
-    sendJson(res, 201, await conversations.open(tenantId, actorId, { title: body.title || null }), requestId);
+    await validateConversationScope(app, tenantId, body.agentId, body.projectId);
+    sendJson(res, 201, await conversations.open(tenantId, actorId, { title: body.title || null, agentId: body.agentId || null, projectId: body.projectId || null }), requestId);
     return true;
   }
 
@@ -130,12 +147,14 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     const body = await readJson(req);
     const message = String(body.message || '').trim();
     if (!message) { sendJson(res, 400, { error: 'message required' }, requestId); return true; }
+    let scope = await validateConversationScope(app, tenantId, body.agentId, body.projectId);
 
     const source = body.source === 'voice' ? 'voice' : 'text';
     const streamId = `stream_${crypto.randomUUID()}`;
     const { llm, reason } = pickProvider(app);
 
-    const conversation = await conversations.open(tenantId, actorId, { conversationId: body.conversationId || null });
+    const conversation = await conversations.open(tenantId, actorId, { conversationId: body.conversationId || null, agentId: body.agentId || null, projectId: body.projectId || null });
+    if ((!scope.agent && conversation.agentId) || (!scope.project && conversation.projectId)) scope = await validateConversationScope(app, tenantId, conversation.agentId, conversation.projectId);
     await conversations.append(tenantId, actorId, conversation.id, { role: 'user', content: message, source });
 
     const routerAvailable = app.aiRouter && typeof app.aiRouter.route === 'function';
@@ -170,7 +189,7 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     let prompt;
     try {
       prompt = await conversations.buildPrompt(tenantId, actorId, conversation.id, message, {
-        system: body.system || 'Voce e o FENIX, o sistema operacional cognitivo do dono. Responda em portugues, direto e curto. Nunca invente numeros nem afirme que algo esta feito sem prova.',
+        system: `Voce e o FENIX, o sistema operacional cognitivo do dono. Responda em portugues, direto e curto. Nunca invente numeros nem afirme que algo esta feito sem prova.${scope.agent ? ` Esta conversa esta associada ao agente ${scope.agent.name || scope.agent.id}, funcao ${scope.agent.role || scope.agent.domain || 'agente'}.` : ''}${scope.project ? ` Projeto selecionado: ${scope.project.name || scope.project.id}.` : ''} Conversar nao equivale a executar trabalho; uma tarefa so existe quando um job e criado e confirmado.`,
         skipMemory: Boolean(resolveAIProviderKey()),
       });
       sseSend(res, 'context', {
@@ -197,10 +216,10 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
             prompt: prompt.messages.map((item) => `${item.role}: ${item.content}`).join('\n\n'),
             model: body.model || process.env.FENIX_FAST_MODEL || 'qwen2.5:0.5b',
             temperature: Number.isFinite(body.temperature) ? body.temperature : 0.3,
-            maxTokens: 48,
-            // The VPS model is slower than the browser timeout. Keep chat responsive
-            // and let the platform worker select capacity/provider for the job.
-            execution: 'async',
+            maxTokens: 256,
+            // Answer in the synchronous lane when capacity is free; the API
+            // queues the same request and returns 202 when that lane is busy.
+            execution: 'auto',
           }),
           signal: AbortSignal.any([controller.signal, AbortSignal.timeout(25000)]),
         });
@@ -211,7 +230,7 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
           if (!jobId) throw new Error('API Platform accepted work without a job ID');
           await app.store.update((state) => {
             state.platformChatJobs = state.platformChatJobs || [];
-            state.platformChatJobs.push({ id: jobId, tenantId, actorId, conversationId: conversation.id, createdAt: new Date().toISOString() });
+            state.platformChatJobs.push({ id: jobId, tenantId, actorId, conversationId: conversation.id, agentId: conversation.agentId || null, projectId: conversation.projectId || null, createdAt: new Date().toISOString() });
             state.platformChatJobs = state.platformChatJobs.slice(-500);
             return state;
           });

@@ -3055,16 +3055,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <script src="/fenix-bootstrap.js?v=boot7"></script>
   <script id="fenix-script--live-runtime-js" src="/live-runtime.js?v=12"></script>
   <script src="/fenix-city-event-adapter.js?v=2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
-  <script src="/fenix-pixel-engine.js?v=1"></script>
-  <script src="/iso-city.js?v=5"></script>
-  <script src="/pixi-game-art-pipeline.js?v=1"></script>
-  <script src="/pixi-city-renderer.js?v=2"></script>
-  <script src="/pixi-character-system.js?v=1"></script>
-  <script src="/pixi-interaction-engine.js?v=1"></script>
-  <script src="/pixi-semantic-zoom.js?v=1"></script>
-  <script src="/pixi-building-interior.js?v=1"></script>
-  <script src="/city-integration.js?v=2"></script>
+  <script>window.FENIX_WORLD_3D = true;</script>
 <script id= fenix-ide-dom-compat>window.$=window.$||((id)=>document.getElementById(id));</script>
   <script src="/dev-pipeline-client.js?v=small-task-1"></script>
   
@@ -3151,7 +3142,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window._fenixCityBooted = true;
 
       window.syncCityPlacement();
-      if (!window.fenixCity && typeof IsoCityEngine !== 'undefined' && document.getElementById('cityCanvas')) {
+      if (!window.FENIX_WORLD_3D && !window.fenixCity && typeof IsoCityEngine !== 'undefined' && document.getElementById('cityCanvas')) {
         window.fenixCity = new IsoCityEngine('cityCanvas');
         window.fenixSetCameraMode = (mode) => window.fenixCity?.setCameraMode(mode);
         window.fenixPanToDistrict = (dist) => window.fenixCity?.panToDistrict(dist);
@@ -4532,7 +4523,7 @@ window.__fenixSubmitIdeChat = async function () {
     if (typeof window.syncCityPlacement === 'function') {
       window.syncCityPlacement('city');
     }
-    if (!window.fenixCity && typeof IsoCityEngine !== 'undefined' && document.getElementById('cityCanvas')) {
+    if (!window.FENIX_WORLD_3D && !window.fenixCity && typeof IsoCityEngine !== 'undefined' && document.getElementById('cityCanvas')) {
       window.fenixCity = new IsoCityEngine('cityCanvas');
       window.fenixSetCameraMode = (mode) => window.fenixCity?.setCameraMode(mode);
       window.fenixPanToDistrict = (dist) => window.fenixCity?.panToDistrict(dist);
@@ -5776,6 +5767,11 @@ window.__fenixSubmitIdeChat = async function () {
 <script src="/city-brief.js?v=3"></script>
 <link rel="stylesheet" href="/premium-world.css?v=2">
 <script src="/premium-world-live.js?v=6"></script>
+<script src="/vendor/three.min.js?v=1522"></script>
+<link rel="stylesheet" href="/fenix-world-3d.css?v=3">
+<script src="/fenix-world-3d.js?v=3"></script>
+<script src="/fenix-city-workflow.js?v=1"></script>
+<script src="/fenix-world-ui.js?v=3"></script>
 <link rel="stylesheet" href="/memory-live.css?v=2">
 <script src="/memory-live.js?v=2"></script>
 <link rel="stylesheet" href="/inspector-measured.css?v=1">

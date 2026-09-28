@@ -4862,6 +4862,7 @@ class IsoCityEngine {
 window.IsoCityEngine = IsoCityEngine;
 
 function bootIsoCity() {
+  if (window.FENIX_WORLD_3D) return;
   if (document.getElementById('cityCanvas')) {
     if (!window.fenixCity || !(window.fenixCity instanceof IsoCityEngine)) {
       window.fenixCity = new IsoCityEngine('cityCanvas');

@@ -154,6 +154,16 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   };
   await bootManager.start();
   let wss = null;
+  const healthCache = { value: null, at: 0, pending: null };
+  function readHealth() {
+    if (healthCache.value && Date.now() - healthCache.at < 15_000) return Promise.resolve(healthCache.value);
+    if (!healthCache.pending) {
+      healthCache.pending = Promise.resolve().then(() => app.health.check())
+        .then((value) => { healthCache.value = value; healthCache.at = Date.now(); return value; })
+        .finally(() => { healthCache.pending = null; });
+    }
+    return healthCache.pending;
+  }
   const server = http.createServer(async (req, res) => {
     let requestId = null;
     let correlationId = null;
@@ -178,14 +188,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       }
       
       if (req.method === 'GET' && url.pathname === '/api/system/boot-status') {
-        const bootHealth = await app.health.check();
+        const bootHealth = await readHealth();
         return sendJson(res, bootHealth.ok ? 200 : 503, bootHealth, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/runtime') {
         const runtimeContext = await app.security.authenticate(req.headers);
         if (!runtimeContext) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
         await app.controlPlane.authorize(runtimeContext.tenantId, runtimeContext.actorId, 'runtime:read');
-        const health = await app.health.check();
+        const health = await readHealth();
         return sendJson(res, 200, {
           ok: health.ok,
           status: global.FENIX_KERNEL ? 'KERNEL_ACTIVE' : health.status,
@@ -228,10 +238,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       if (req.method === 'GET' && url.pathname === '/health') {
         const healthDeadline = Number(env.FENIX_HEALTH_RESPONSE_TIMEOUT_MS || 15_000);
-        const health = await withHealthDeadline(() => app.health.check(), healthDeadline);
+        const health = await withHealthDeadline(readHealth, healthDeadline);
         let bootHealth = { ok: true, status: 'BYPASSED' };
         if (!global.FENIX_KERNEL) {
-          bootHealth = await app.health.check();
+          bootHealth = await readHealth();
         } else {
           bootHealth = { ok: true, status: 'KERNEL_ACTIVE' };
         }

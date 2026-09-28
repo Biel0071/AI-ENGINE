@@ -9,6 +9,7 @@ set KEY=C:/Users/Dell/.ssh/grg_fenix_vps
 set SRC=c:/projetos/ai-engine-core/ai-engine/grg/public
 set HOST=root@209.50.241.22
 if /I "%~1"=="city" goto CITY_DEPLOY
+if /I "%~1"=="world3d" goto WORLD3D_DEPLOY
 if /I "%~1"=="world-hotfix" goto WORLD_HOTFIX
 if /I "%~1"=="ide" goto IDE_DEPLOY
 if /I "%~1"=="projects" goto PROJECTS_DEPLOY
@@ -170,12 +171,18 @@ exit /b 0
 
 :CITY_DEPLOY
 echo Deploying canonical City frontend to both webroots...
-for %%F in (index.html city-integration.js fenix-city-event-adapter.js fenix-v11-interactions.js fenix-v11-phase6.css fenix-operational-os.js iso-city.js live-runtime.js unified-app.js city-brief.js city-brief.css premium-world-live.js premium-world.css) do (
+ssh -i %KEY% %HOST% "mkdir -p /opt/fenix-os/public/vendor /opt/fenix-os/grg/public/vendor"
+if errorlevel 1 exit /b 1
+for %%F in (index.html city-integration.js fenix-city-event-adapter.js fenix-v11-interactions.js fenix-v11-phase6.css fenix-operational-os.js iso-city.js live-runtime.js unified-app.js city-brief.js city-brief.css premium-world-live.js premium-world.css fenix-world-3d.js fenix-world-3d.css fenix-world-ui.js) do (
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
   if errorlevel 1 exit /b 1
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
   if errorlevel 1 exit /b 1
 )
+scp -i %KEY% %SRC%/vendor/three.min.js %HOST%:/opt/fenix-os/public/vendor/three.min.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% %SRC%/vendor/three.min.js %HOST%:/opt/fenix-os/grg/public/vendor/three.min.js
+if errorlevel 1 exit /b 1
 ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/api/living-city-routes.js /opt/fenix-os/grg/src/api/living-city-routes.js.before-premium-world"
 if errorlevel 1 exit /b 1
 scp -i %KEY% grg/src/api/living-city-routes.js %HOST%:/opt/fenix-os/grg/src/api/living-city-routes.js
@@ -186,13 +193,36 @@ ssh -i %KEY% %HOST% "(for i in $(seq 1 90); do curl -fsS -o /dev/null http://127
 exit /b %ERRORLEVEL%
 
 :WORLD_HOTFIX
-for %%F in (index.html premium-world-live.js premium-world.css iso-city.js fenix-operational-os.js) do (
+ssh -i %KEY% %HOST% "mkdir -p /opt/fenix-os/public/vendor /opt/fenix-os/grg/public/vendor"
+if errorlevel 1 exit /b 1
+for %%F in (index.html premium-world-live.js premium-world.css iso-city.js fenix-operational-os.js fenix-world-3d.js fenix-world-3d.css fenix-world-ui.js) do (
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
   if errorlevel 1 exit /b 1
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
   if errorlevel 1 exit /b 1
 )
+scp -i %KEY% %SRC%/vendor/three.min.js %HOST%:/opt/fenix-os/public/vendor/three.min.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% %SRC%/vendor/three.min.js %HOST%:/opt/fenix-os/grg/public/vendor/three.min.js
+if errorlevel 1 exit /b 1
 ssh -i %KEY% %HOST% "curl -fsS -o /dev/null http://127.0.0.1:3000/premium-world-live.js && cmp /opt/fenix-os/public/premium-world-live.js /opt/fenix-os/grg/public/premium-world-live.js"
+exit /b %ERRORLEVEL%
+
+:WORLD3D_DEPLOY
+echo Deploying 3D City renderer to both webroots...
+ssh -i %KEY% %HOST% "mkdir -p /opt/fenix-os/public/vendor /opt/fenix-os/grg/public/vendor"
+if errorlevel 1 exit /b 1
+for %%F in (index.html fenix-world-3d.js fenix-world-3d.css fenix-world-ui.js fenix-city-workflow.js) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+scp -i %KEY% %SRC%/vendor/three.min.js %HOST%:/opt/fenix-os/public/vendor/three.min.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% %SRC%/vendor/three.min.js %HOST%:/opt/fenix-os/grg/public/vendor/three.min.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "curl -fsS -o /dev/null http://127.0.0.1:3000/fenix-world-3d.js && curl -fsS -o /dev/null http://127.0.0.1:3000/vendor/three.min.js && cmp /opt/fenix-os/public/index.html /opt/fenix-os/grg/public/index.html"
 exit /b %ERRORLEVEL%
 
 :PROJECT_GIT_DEPLOY

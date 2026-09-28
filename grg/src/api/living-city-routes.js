@@ -1,9 +1,12 @@
+const os = require('node:os');
+
 async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = {}) {
   await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
-  const [state, jobs, missions, projects] = await Promise.all([
+  const [state, jobs, missions, projects, workers] = await Promise.all([
     app.store.read(), app.jobs.list(tenantId, actorId),
     agentsOnly ? Promise.resolve([]) : app.missions.list(tenantId, actorId),
     agentsOnly ? Promise.resolve([]) : app.projectKernel.list(tenantId, actorId),
+    agentsOnly ? Promise.resolve([]) : app.jobs.workers(tenantId, actorId),
   ]);
   const profiles = state.agentProfiles || [];
   const catalog = [
@@ -46,6 +49,13 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
       progress: Number.isFinite(Number(job.progress)) ? Number(job.progress) : null,
       createdAt: job.createdAt || null,
     })),
+    machines: agentsOnly ? [] : [{
+      id: `runtime:${os.hostname()}`, name: 'Nó Fênix', kind: 'runtime', status: 'ONLINE',
+      hostname: os.hostname(), uptimeSeconds: Math.round(os.uptime()),
+      memoryTotalBytes: os.totalmem(), memoryFreeBytes: os.freemem(),
+      cpuLoad1m: os.loadavg()[0], measuredAt: new Date().toISOString(),
+    }],
+    workers: workers.map((worker) => ({ id: worker.workerId, status: worker.status, currentJob: worker.currentJob, processed: worker.processed, failed: worker.failed, lastHeartbeat: worker.lastHeartbeat })),
     metrics: {
       registeredAgents: agents.length,
       workingAgents: agents.filter((agent) => agent.status === 'WORKING').length,

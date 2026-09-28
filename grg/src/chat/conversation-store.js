@@ -28,15 +28,22 @@ class ConversationStore {
     this.events = events;
   }
 
-  async open(tenantId, actorId, { title = null, conversationId = null } = {}) {
+  async open(tenantId, actorId, { title = null, conversationId = null, agentId = null, projectId = null } = {}) {
     const id = conversationId || `conv_${crypto.randomUUID()}`;
     let created = null;
     await this.store.update((state) => {
       state.conversations = state.conversations || [];
       const existing = state.conversations.find((c) => c.id === id && c.tenantId === tenantId);
-      if (existing) { created = existing; return state; }
+      if (existing) {
+        if (existing.actorId !== actorId) throw new Error('conversation belongs to another user');
+        if (agentId && existing.agentId && existing.agentId !== agentId) throw new Error('conversation belongs to another agent');
+        if (projectId && existing.projectId && existing.projectId !== projectId) throw new Error('conversation belongs to another project');
+        if (agentId && !existing.agentId) existing.agentId = agentId;
+        if (projectId && !existing.projectId) existing.projectId = projectId;
+        created = existing; return state;
+      }
       created = {
-        id, tenantId, actorId,
+        id, tenantId, actorId, agentId, projectId,
         title: title || null,
         summary: null,
         summarizedThrough: 0,
@@ -65,11 +72,13 @@ class ConversationStore {
       interrupted: Boolean(interrupted),
       createdAt: nowIso(),
     };
+    let conversationContext = null;
     await this.store.update((state) => {
       state.messages = state.messages || [];
       state.messages.push(message);
       const conversation = (state.conversations || []).find((c) => c.id === conversationId && c.tenantId === tenantId);
       if (conversation) {
+        conversationContext = { agentId: conversation.agentId || null, projectId: conversation.projectId || null };
         conversation.updatedAt = message.createdAt;
         if (!conversation.title && role === 'user' && message.content) {
           conversation.title = message.content.slice(0, 80);
@@ -90,26 +99,26 @@ class ConversationStore {
           classification: 'internal',
           title: `${role}: ${message.content.slice(0, 60)}`,
           content: message.content,
-          tags: ['chat', message.source],
-          provenance: { type: 'chat', reference: `${conversationId}/${message.id}` },
+          tags: ['chat', message.source, ...(conversationContext?.agentId ? [`agent:${conversationContext.agentId}`] : []), ...(conversationContext?.projectId ? [`project:${conversationContext.projectId}`] : [])],
+          provenance: { type: 'chat', reference: `${conversationId}/${message.id}`, agentId: conversationContext?.agentId || null, projectId: conversationContext?.projectId || null },
         });
       } catch { /* indice degradado, conversa intacta */ }
     }
     return message;
   }
 
-  async history(tenantId, conversationId, { limit = 200 } = {}) {
+  async history(tenantId, conversationId, { limit = 200, actorId = null } = {}) {
     const state = await this.store.read();
     return (state.messages || [])
-      .filter((m) => m.tenantId === tenantId && m.conversationId === conversationId)
+      .filter((m) => m.tenantId === tenantId && m.conversationId === conversationId && (!actorId || m.actorId === actorId))
       .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
       .slice(-limit);
   }
 
-  async list(tenantId, { limit = 50 } = {}) {
+  async list(tenantId, { limit = 50, actorId = null } = {}) {
     const state = await this.store.read();
     return (state.conversations || [])
-      .filter((c) => c.tenantId === tenantId)
+      .filter((c) => c.tenantId === tenantId && (!actorId || c.actorId === actorId))
       .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
       .slice(0, limit);
   }
@@ -157,7 +166,7 @@ class ConversationStore {
         messages.push({ role: turn.role, content: turn.content });
       }
     }
-    if (userText) messages.push({ role: 'user', content: String(userText) });
+    if (userText && !(turns.at(-1)?.role === 'user' && turns.at(-1)?.content === String(userText))) messages.push({ role: 'user', content: String(userText) });
 
     return {
       messages,

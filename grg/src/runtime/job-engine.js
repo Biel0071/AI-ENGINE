@@ -53,8 +53,8 @@ function boundResult(result) {
 }
 
 class JobEngine {
-  constructor({ store, controlPlane, events, queue = null, approvals = null, clock = Date, agentAssignment = null }) {
-    this.store = store; this.cp = controlPlane; this.events = events; this.queue = queue; this.approvals = approvals; this.clock = clock; this.agentAssignment = agentAssignment;
+  constructor({ store, controlPlane, events, queue = null, approvals = null, clock = Date, agentAssignment = null, memory = null }) {
+    this.store = store; this.cp = controlPlane; this.events = events; this.queue = queue; this.approvals = approvals; this.clock = clock; this.agentAssignment = agentAssignment; this.memory = memory;
     this.handlers = new Map();
   }
   register(type, handler) {
@@ -208,6 +208,21 @@ class JobEngine {
     const current = await this.getInternal(job.tenantId, job.id);
     if (current.status === 'QUEUED' && this.queue) await this.#enqueue(current);
     await this.#publish(current, `runtime.job.${current.status.toLowerCase()}`, workerId);
+    if (this.memory && TERMINAL.has(current.status)) {
+      try {
+        const outcome = current.status === 'SUCCEEDED'
+          ? JSON.stringify(current.result || {}).slice(0, 1800)
+          : String(current.error?.message || current.status).slice(0, 1800);
+        await this.memory.remember(current.tenantId, current.createdBy, {
+          kind: 'episodic', classification: 'internal', projectId: current.projectId || undefined,
+          title: `Job ${current.id}: ${current.status}`,
+          content: `Pedido: ${String(current.prompt || current.type).slice(0, 800)}\nEstado: ${current.status}\nResultado: ${outcome}`,
+          stableKey: `runtime-job:${current.id}:${current.status}`,
+          tags: ['runtime-job', current.status.toLowerCase(), ...(current.projectId ? [`project:${current.projectId}`] : []), ...(current.agent?.agentId ? [`agent:${current.agent.agentId}`] : [])],
+          provenance: { type: 'runtime-job', reference: `job:${current.id}`, projectId: current.projectId || null, agentId: current.agent?.agentId || null, conversationId: current.context?.conversationId || null },
+        });
+      } catch (error) { console.error('[JobEngine] outcome memory unavailable:', error.message); }
+    }
     return current;
   }
   async cancel(tenantId, actorId, jobId) {
