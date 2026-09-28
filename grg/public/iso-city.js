@@ -1253,6 +1253,13 @@ class IsoCityEngine {
         return;
       }
       if (this._hitTestHandoff(mx, my)) return;
+      const projectLot = this._hitTestProjectLot(mx, my);
+      if (projectLot) {
+        this.saveCamera();
+        if (typeof window.openProjectWorkspace === 'function') window.openProjectWorkspace(projectLot.id);
+        else window.showView?.('projects');
+        return;
+      }
       const agent = this._hitTestAgent(mx, my);
       if (agent) {
         this.state.selectedAgent = agent;
@@ -1878,6 +1885,7 @@ class IsoCityEngine {
         const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
         const sdata = sharedWorld?.snapshot || await fetch('/api/v2/living-city/state', { headers, signal: AbortSignal.timeout(12000) }).then(r => r.ok ? r.json() : null);
         if (sdata) {
+          if (Array.isArray(sdata.projects)) this.world.projects = sdata.projects;
           if (sdata.metrics) {
             this.cityMetrics = sdata.metrics;
             const elMem = document.getElementById('cityMemoriesCount');
@@ -2310,6 +2318,7 @@ class IsoCityEngine {
     }
 
     // Dynamic handoff dispatch & flying message envelopes
+    this._drawProjectLots(ctx, cx, cy, zoom);
     this._drawHandoff(ctx, cx, cy, zoom);
     this._drawEnvelopes(ctx, cx, cy, zoom);
 
@@ -2319,6 +2328,49 @@ class IsoCityEngine {
       this._drawHUD(ctx, width, height);
       this._drawMinimap(ctx, width, height);
     }
+  }
+
+  _projectLotPosition(index) {
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    return { x: -7 + col * 2.6 - row * 0.5, y: -3 + row * 2.6 };
+  }
+
+  _drawProjectLots(ctx, cx, cy, zoom) {
+    const list = this.world.projects || [];
+    this._projectLotHits = [];
+    if (!list.length) return;
+    const colors = ['#33dec0', '#4cb9ff', '#ac88ff', '#ffbb65'];
+    for (let index = 0; index < Math.min(list.length, 24); index++) {
+      const project = list[index];
+      const position = this._projectLotPosition(index);
+      const base = this.toScreen(position.x, position.y, 0, cx, cy, zoom);
+      const ready = Boolean(project.workspace);
+      const color = colors[index % colors.length];
+      const height = ready ? 1.2 + (index % 3) * 0.28 : 0.48;
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = (ready ? 14 : 5) * zoom;
+      this._drawBlock(ctx, position.x, position.y, 0.05, height, color, cx, cy, zoom, 0.52, 0.52);
+      ctx.shadowBlur = 0;
+      const cap = this.toScreen(position.x, position.y, height + 0.1, cx, cy, zoom);
+      ctx.fillStyle = '#ecfffb';
+      ctx.font = `800 ${Math.max(8, 9 * zoom)}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      const label = String(project.name || project.id || 'Projeto');
+      ctx.fillText(label.length > 19 ? label.slice(0, 18) + '…' : label, cap.x, cap.y - 8 * zoom);
+      if (!ready) {
+        ctx.fillStyle = '#ffd082';
+        ctx.font = `700 ${Math.max(7, 8 * zoom)}px Inter, sans-serif`;
+        ctx.fillText('PREPARANDO WORKSPACE', cap.x, base.y + 16 * zoom);
+      }
+      ctx.restore();
+      this._projectLotHits.push({ id: project.id, x: base.x, y: base.y - height * this.state.tileSize * zoom, width: 45 * zoom, height: (height * this.state.tileSize + 20) * zoom });
+    }
+  }
+
+  _hitTestProjectLot(x, y) {
+    return (this._projectLotHits || []).find(lot => Math.abs(x - lot.x) <= lot.width && y >= lot.y - 22 && y <= lot.y + lot.height) || null;
   }
 
   _drawLivingPixelWorld(ctx, cx, cy, zoom, width, height) {
