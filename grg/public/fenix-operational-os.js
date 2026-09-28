@@ -268,7 +268,7 @@
   window.fenixInspectAgent = async function (agentId) {
     if (!agentId) return;
     const activeView = document.querySelector('.view.active')?.id;
-    if (activeView === 'view-city') {
+    if (activeView === 'view-city' && !Array.isArray(window.FENIX?.cityWorld?.snapshot?.agents)) {
       let agent = null;
       if (window.fenixCity && window.fenixCity.world) {
         agent = window.fenixCity.world.agents.get(agentId) ||
@@ -3588,10 +3588,11 @@
     const body = document.getElementById('spatialDrawerBody');
     if (!body) return;
 
-    const agent = window.__currentSpatialAgent || { id: 'agent-orchestrator', name: 'Orquestrador', role: 'Orquestração', district: 'Command Center' };
-    const status = String(agent.status || 'ONLINE').toUpperCase();
+    const agent = window.__currentSpatialAgent;
+    if (!agent) { body.textContent = 'Agente indisponível nesta leitura.'; return; }
+    const status = String(agent.status || 'NÃO MEDIDO').toUpperCase();
     const statusClass = (status === 'WORKING' || status === 'RUNNING') ? 'status-running' : (status === 'ONLINE' || status === 'READY' ? 'status-online' : 'status-idle');
-    const capabilities = Array.isArray(agent.capabilities) && agent.capabilities.length ? agent.capabilities : ['Análise de Código', 'Execução de Comandos', 'Orquestração DAG', 'Auditoria Visual'];
+    const capabilities = Array.isArray(agent.capabilities) ? agent.capabilities : [];
 
     if (tabName === 'profile') {
       const capPills = capabilities.map(c => `<span style="background:rgba(0,229,160,0.1); border:1px solid rgba(0,229,160,0.25); color:#00E5A0; font-size:10px; padding:3px 8px; border-radius:4px; font-weight:600;">${esc(c)}</span>`).join('');
@@ -3614,22 +3615,22 @@
             </div>
             <div style="padding:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
               <small style="color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Modelo Cognitivo</small>
-              <p style="margin:4px 0 0; font-weight:600; color:#A855F7; font-family:monospace; font-size:11px;">${esc(agent.model || 'qwen2.5:3b')}</p>
+              <p style="margin:4px 0 0; font-weight:600; color:#A855F7; font-family:monospace; font-size:11px;">${esc(agent.model || 'Não medido')}</p>
             </div>
             <div style="padding:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
               <small style="color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Taxa de Sucesso</small>
-              <p style="margin:4px 0 0; font-weight:700; color:#00E5A0;">${esc(agent.successRate || '99.2%')}</p>
+              <p style="margin:4px 0 0; font-weight:700; color:#00E5A0;">${agent.successRate != null ? esc(agent.successRate + '%') : 'Não medida'}</p>
             </div>
             <div style="padding:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
               <small style="color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Heartbeat</small>
-              <p style="margin:4px 0 0; font-weight:600; color:#22B8FF; font-size:11px;">Ativo (Lease OK)</p>
+              <p style="margin:4px 0 0; font-weight:600; color:#22B8FF; font-size:11px;">${esc(agent.lastHeartbeatAt || 'Não medido')}</p>
             </div>
           </div>
 
           <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); padding:12px; border-radius:8px;">
             <small style="color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:8px;">Capacidades Verificadas</small>
             <div style="display:flex; flex-wrap:wrap; gap:6px;">
-              ${capPills}
+              ${capPills || 'Nenhuma capacidade informada.'}
             </div>
           </div>
 
