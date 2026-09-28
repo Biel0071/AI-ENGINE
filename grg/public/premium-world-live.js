@@ -25,6 +25,8 @@
 
   function render() {
     const data = world.snapshot;
+    const districtCount = document.getElementById('cityDistrictCount');
+    if (districtCount) districtCount.textContent = window.fenixCity?.DISTRICTS ? `${Object.keys(window.fenixCity.DISTRICTS).length} DISTRITOS` : '— DISTRITOS';
     const liveStatus = window.FENIX?.live?.status;
     const time = world.measuredAt ? new Date(world.measuredAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null;
     status.dataset.state = world.error ? 'error' : liveStatus === 'ONLINE' ? 'online' : data ? 'snapshot' : 'loading';

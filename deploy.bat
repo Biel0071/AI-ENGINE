@@ -186,7 +186,7 @@ ssh -i %KEY% %HOST% "(for i in $(seq 1 90); do curl -fsS -o /dev/null http://127
 exit /b %ERRORLEVEL%
 
 :WORLD_HOTFIX
-for %%F in (index.html premium-world-live.js fenix-operational-os.js) do (
+for %%F in (index.html premium-world-live.js premium-world.css iso-city.js fenix-operational-os.js) do (
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
   if errorlevel 1 exit /b 1
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F

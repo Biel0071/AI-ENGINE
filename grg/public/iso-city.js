@@ -1832,10 +1832,11 @@ class IsoCityEngine {
       let fetchedSuccessfully = false;
       let authoritativeAgents = false;
       const sharedWorld = window.FENIX?.cityWorld;
-      if (Array.isArray(sharedWorld?.snapshot?.agents) && !sharedWorld.error) {
+      if (Array.isArray(sharedWorld?.snapshot?.agents)) {
         apiAgents = sharedWorld.snapshot.agents;
         fetchedSuccessfully = true;
         authoritativeAgents = true;
+        this.world.projects = Array.isArray(sharedWorld.snapshot.projects) ? sharedWorld.snapshot.projects : [];
       }
       try {
         if (!fetchedSuccessfully) {
