@@ -40,6 +40,10 @@
       projects.append(node('p', 'fwl-empty', world.error ? 'Não foi possível carregar os projetos. Tente atualizar.' : 'Carregando territórios…'));
       return;
     }
+    const onlineCount = document.getElementById('cityOnlineCount');
+    if (onlineCount) onlineCount.textContent = `${data.metrics?.registeredAgents ?? data.agents.length} REGISTRADOS`;
+    const missionCount = document.getElementById('cityMissionsCount');
+    if (missionCount && data.metrics?.activeMissions != null) missionCount.textContent = `${data.metrics.activeMissions} MISSÕES`;
     const list = Array.isArray(data.projects) ? data.projects : [];
     if (!list.length) projects.append(node('p', 'fwl-empty', 'Nenhum projeto registrado no Project Kernel.'));
     for (const project of list.slice(0, 6)) {
