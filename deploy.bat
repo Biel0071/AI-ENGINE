@@ -169,15 +169,19 @@ exit /b 0
 
 :CITY_DEPLOY
 echo Deploying canonical City frontend to both webroots...
-for %%F in (index.html city-integration.js fenix-city-event-adapter.js fenix-v11-interactions.js fenix-v11-phase6.css iso-city.js live-runtime.js unified-app.js) do (
+for %%F in (index.html city-integration.js fenix-city-event-adapter.js fenix-v11-interactions.js fenix-v11-phase6.css fenix-operational-os.js iso-city.js live-runtime.js unified-app.js city-brief.js city-brief.css premium-world-live.js premium-world.css) do (
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
   if errorlevel 1 exit /b 1
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
   if errorlevel 1 exit /b 1
 )
-ssh -i %KEY% %HOST% "pm2 reload 17"
+ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/api/living-city-routes.js /opt/fenix-os/grg/src/api/living-city-routes.js.before-premium-world"
 if errorlevel 1 exit /b 1
-ssh -i %KEY% %HOST% "(for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:3000/ && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:3000/ && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+scp -i %KEY% grg/src/api/living-city-routes.js %HOST%:/opt/fenix-os/grg/src/api/living-city-routes.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "node --check /opt/fenix-os/grg/src/api/living-city-routes.js && pm2 reload 16 && pm2 reload 17"
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "(for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/app && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/app && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
 exit /b %ERRORLEVEL%
 
 :PROJECT_GIT_DEPLOY

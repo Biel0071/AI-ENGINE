@@ -7,7 +7,7 @@
   const panel = el('aside', 'fenix-city-brief'); panel.setAttribute('aria-label', 'Painel ao vivo da Cidade');
   const header = el('header', 'fcb-head');
   const title = el('div'); title.append(el('span', 'fcb-eyebrow', 'AO VIVO · PROJECT KERNEL'), el('h2', '', 'Pulso da Cidade'));
-  const refreshButton = el('button', 'fcb-refresh', '↻'); refreshButton.type = 'button'; refreshButton.setAttribute('aria-label', 'Atualizar dados da Cidade'); refreshButton.title = 'Atualizar dados da Cidade'; refreshButton.addEventListener('click', () => refresh());
+  const refreshButton = el('button', 'fcb-refresh', '↻'); refreshButton.type = 'button'; refreshButton.setAttribute('aria-label', 'Atualizar dados da Cidade'); refreshButton.title = 'Atualizar dados da Cidade'; refreshButton.addEventListener('click', () => refresh(true));
   const collapse = el('button', 'fcb-collapse', '−'); collapse.type = 'button'; collapse.setAttribute('aria-label', 'Recolher painel da Cidade');
   collapse.addEventListener('click', () => { state.collapsed = !state.collapsed; localStorage.setItem('fenix_city_brief_collapsed', String(state.collapsed)); render(); });
   const actions = el('div', 'fcb-actions'); actions.append(refreshButton, collapse); header.append(title, actions);
@@ -33,7 +33,10 @@
       const icon = el('span', 'fcb-project-icon', (project.name || '?').trim().slice(0, 1).toUpperCase());
       const labels = el('span', 'fcb-project-label'); labels.append(el('strong', '', project.name || project.id), el('small', '', project.workspace ? 'Workspace conectado' : 'Sem workspace'));
       button.append(icon, labels, el('span', 'fcb-project-arrow', '↗'));
-      button.addEventListener('click', () => window.openProjectWorkspace?.(project.id) || window.showView?.('projects'));
+      button.addEventListener('click', () => {
+        if (typeof window.openProjectWorkspace === 'function') window.openProjectWorkspace(project.id);
+        else window.showView?.('projects');
+      });
       projects.append(button);
     }
     body.append(projects);
@@ -48,14 +51,31 @@
     }
     body.append(activity);
   }
-  async function refresh() {
+  async function refresh(force = false) {
     if (state.busy) return; state.busy = true; render();
+    if (window.FENIX?.cityWorld) {
+      const data = await window.FENIX.cityWorld.refresh(force);
+      if (data) applyWorld(data);
+      state.error = window.FENIX.cityWorld.error;
+      state.busy = false; render();
+      return;
+    }
     const results = await Promise.allSettled([getJson('/api/fenix/projects'), getJson('/api/v2/jobs')]);
     if (results[0].status === 'fulfilled') { state.projects = results[0].value.projects || []; state.projectsMeasured = true; }
     if (results[1].status === 'fulfilled') { state.jobs = results[1].value.jobs || []; state.jobsMeasured = true; }
     state.error = results.map((result, index) => result.status === 'rejected' ? `${index === 0 ? 'Projetos' : 'Atividade'} indisponíveis` : null).filter(Boolean).join(' · ') || null;
     state.updatedAt = new Date().toISOString(); state.busy = false; render();
   }
+  function applyWorld(data) {
+    state.projects = data.projects || [];
+    state.jobs = data.recentJobs || [];
+    state.projectsMeasured = Array.isArray(data.projects);
+    state.jobsMeasured = Array.isArray(data.recentJobs);
+    state.updatedAt = data.measuredAt || new Date().toISOString();
+    state.error = null;
+    render();
+  }
+  window.addEventListener('fenix:city-world', (event) => applyWorld(event.detail));
   window.refreshCityBrief = refresh;
   render();
   if (view.classList.contains('active')) refresh();

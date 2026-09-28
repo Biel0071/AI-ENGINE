@@ -973,6 +973,7 @@ class IsoCityEngine {
     }, 3000);
     window.addEventListener('fenix-live', () => this.syncRealData());
     window.addEventListener('fenix:data', () => this.syncRealData());
+    window.addEventListener('fenix:city-world', () => this.syncRealData());
     window.addEventListener('fenix-city-event', (event) => {
       this.lastCityEvent = event.detail || null;
       this._applyCityEvent(this.lastCityEvent);
@@ -1830,7 +1831,14 @@ class IsoCityEngine {
       let apiAgents = [];
       let fetchedSuccessfully = false;
       let authoritativeAgents = false;
+      const sharedWorld = window.FENIX?.cityWorld;
+      if (Array.isArray(sharedWorld?.snapshot?.agents) && !sharedWorld.error) {
+        apiAgents = sharedWorld.snapshot.agents;
+        fetchedSuccessfully = true;
+        authoritativeAgents = true;
+      }
       try {
+        if (!fetchedSuccessfully) {
         const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
         const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
         const res = await fetch('/api/v2/living-city/agents', { headers });
@@ -1842,9 +1850,10 @@ class IsoCityEngine {
             authoritativeAgents = true;
           }
         }
+        }
       } catch (e) {}
 
-      if (!fetchedSuccessfully && Array.isArray(window.FENIX?.live?.agents)) {
+      if (!fetchedSuccessfully && window.FENIX?.live?.snapshotMeasured && Array.isArray(window.FENIX.live.agents)) {
         apiAgents = window.FENIX.live.agents;
         fetchedSuccessfully = true;
         authoritativeAgents = true;
@@ -1866,9 +1875,8 @@ class IsoCityEngine {
       try {
         const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
         const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-        const sres = await fetch('/api/v2/living-city/state', { headers });
-        if (sres.ok) {
-          const sdata = await sres.json();
+        const sdata = sharedWorld?.snapshot || await fetch('/api/v2/living-city/state', { headers, signal: AbortSignal.timeout(12000) }).then(r => r.ok ? r.json() : null);
+        if (sdata) {
           if (sdata.metrics) {
             this.cityMetrics = sdata.metrics;
             const elMem = document.getElementById('cityMemoriesCount');
@@ -1957,8 +1965,10 @@ class IsoCityEngine {
         next.set(id, agent);
       }
 
-      this.world.agents = next;
-      if (window.FENIX?.live) window.FENIX.live.agents = apiAgents;
+      if (fetchedSuccessfully) {
+        this.world.agents = next;
+        if (window.FENIX?.live) window.FENIX.live.agents = apiAgents;
+      }
 
       // Update HUD online/working/errors counters
       const registeredCount = this.world.agents.size;
@@ -1966,7 +1976,7 @@ class IsoCityEngine {
       const errorCount = [...this.world.agents.values()].filter(a => ['ERROR', 'FAILED', 'BLOCKED'].includes(a.status)).length;
 
       const elOnline = document.getElementById('cityOnlineCount');
-      if (elOnline) elOnline.textContent = registeredCount + ' REGISTRADOS';
+      if (elOnline) elOnline.textContent = fetchedSuccessfully ? registeredCount + ' REGISTRADOS' : 'AGENTES INDISPONÍVEIS';
       const elWorking = document.getElementById('cityWorkingCount');
       if (elWorking) elWorking.textContent = '⚡ ' + workingCount + ' EM OPERAÇÃO';
       const elErrors = document.getElementById('cityErrorsCount');

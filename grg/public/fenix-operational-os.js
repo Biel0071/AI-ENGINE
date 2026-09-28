@@ -292,7 +292,9 @@
     );
 
     try {
-      let rawList = Array.isArray(ctx.cachedAgents) ? ctx.cachedAgents : [];
+      let rawList = Array.isArray(window.FENIX?.cityWorld?.snapshot?.agents)
+        ? window.FENIX.cityWorld.snapshot.agents
+        : (Array.isArray(ctx.cachedAgents) ? ctx.cachedAgents : []);
       let agent = rawList.find(a => a.id === agentId || a.name === agentId);
       if (!agent) agent = window.fenixCity?.world?.agents?.get(agentId) || [...(window.fenixCity?.world?.agents?.values() || [])].find(a => a.name === agentId);
       if (!agent) {

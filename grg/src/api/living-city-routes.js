@@ -39,6 +39,13 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
   return {
     source: 'JobEngine/ProjectKernel', measuredAt: new Date().toISOString(), agents,
     projects: projects.map((project) => ({ id: project.id, name: project.name, workspace: project.workspace || null })),
+    recentJobs: agentsOnly ? [] : jobs.slice(-20).reverse().map((job) => ({
+      id: job.id, title: job.title || job.objective || job.prompt || job.type || 'Job',
+      type: job.type || null, status: job.status, projectId: job.projectId || null,
+      agentId: job.agent?.agentId || job.agentId || null,
+      progress: Number.isFinite(Number(job.progress)) ? Number(job.progress) : null,
+      createdAt: job.createdAt || null,
+    })),
     metrics: {
       registeredAgents: agents.length,
       workingAgents: agents.filter((agent) => agent.status === 'WORKING').length,
