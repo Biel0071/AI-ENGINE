@@ -3,7 +3,9 @@
   let loadPromise = null;
   const endpoint = (suffix = '') => `/api/fenix/projects/${encodeURIComponent(state.projectId)}${suffix}`;
   async function json(url, options = {}) {
-    const response = await fetch(url, { signal: AbortSignal.timeout(30000), ...options });
+    const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
+    const response = await fetch(url, { signal: AbortSignal.timeout(30000), credentials: 'same-origin', ...options,
+      headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...options.headers } });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
     return data;
@@ -99,18 +101,19 @@
     } catch (error) { if (generation === state.generation) { tree.textContent = 'Não foi possível carregar a árvore.'; status(error.message, true); } }
   }
   async function openFile(filePath) {
-    if (!mayDiscardChanges()) return;
+    if (!mayDiscardChanges()) return false;
     const generation = state.generation, token = ++state.openToken;
     status(`Abrindo ${filePath}…`);
     try {
       const data = await json(`${endpoint('/file')}?path=${encodeURIComponent(filePath)}`);
-      if (generation !== state.generation || token !== state.openToken) return;
+      if (generation !== state.generation || token !== state.openToken) return false;
       state.path = data.path; state.hash = data.hash;
       document.getElementById('fenixIdeLivePath').textContent = data.path;
       document.getElementById('fenixIdeLiveCode').value = data.content;
       state.savedContent = data.content; updateDirty();
       status(`${data.size} bytes · pronto para edição`);
-    } catch (error) { if (generation === state.generation && token === state.openToken) status(`Falha ao abrir: ${error.message}`, true); }
+      return true;
+    } catch (error) { if (generation === state.generation && token === state.openToken) status(`Falha ao abrir: ${error.message}`, true); return false; }
   }
   async function saveFile() {
     if (!state.projectId || !state.path || !state.hash) return;
@@ -139,14 +142,16 @@
     loadPromise = loadProjects().finally(() => { loadPromise = null; });
     return loadPromise;
   };
-  window.fenixSelectIdeFile = (filePath) => { if (state.projectId) openFile(filePath); else window.loadIdeView(); };
+  window.fenixSelectIdeFile = async (filePath) => { if (!state.projectId) await window.loadIdeView(); return state.projectId ? openFile(filePath) : false; };
   window.fenixSelectIdeProject = async (projectId) => {
     state.requestedProjectId = projectId;
     await window.loadIdeView();
     state.requestedProjectId = null;
-    if (state.projects.some((project) => project.id === projectId) && state.projectId !== projectId) {
+    if (!state.projects.some((project) => project.id === projectId)) throw new Error('Projeto sem workspace registrado na IDE');
+    if (state.projectId !== projectId) {
       document.getElementById('fenixIdeProject').value = projectId;
-      await selectProject(projectId);
+      if (!await selectProject(projectId)) throw new Error('Troca de projeto cancelada');
     }
+    return true;
   };
 })();

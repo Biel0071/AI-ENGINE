@@ -425,6 +425,6 @@
   document.getElementById('btnRotateCity')?.addEventListener('click', event => { event.stopImmediatePropagation(); state.azimuth+=Math.PI/2; saveState(); }, true);
   document.getElementById('btnResetCamera')?.addEventListener('click', event => { event.stopImmediatePropagation(); state.azimuth=-.71; select('world'); }, true);
   const listToggle=document.getElementById('btnCityListView'); listToggle?.addEventListener('click',()=>listToggle.setAttribute('aria-pressed',String(state.fallback)));
-  if (saved.selected) { state.selected=saved.selected; state.level=saved.level; setTimeout(()=>focusSelection(false),800); }
+  if (saved.selected) { state.selected=saved.selected; state.level=saved.level; if (state.snapshot) focusSelection(false); }
   requestAnimationFrame(frame);
 })();

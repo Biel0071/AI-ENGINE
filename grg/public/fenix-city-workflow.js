@@ -67,8 +67,8 @@
     } catch (error) { answer.textContent = `Falha: ${error.message}`; }
     finally { submit.disabled = false; state.busy = false; log.scrollTop = log.scrollHeight; }
   }
-  async function openChat(agentId, projectId = null) {
-    hide(); Object.assign(state, { mode: 'chat', agentId, projectId, conversationId: null, jobId: null });
+  async function openChat(agentId, projectId = null, conversationId = null) {
+    hide(); Object.assign(state, { mode: 'chat', agentId, projectId, conversationId, jobId: null });
     const agent = window.FENIX?.cityWorld?.snapshot?.agents?.find(item => item.id === agentId);
     header(`Conversar com ${agent?.name || agentId}`, projectId ? `AGENTE · ${projectId}` : 'AGENTE · CANAL RÁPIDO');
     const log = el('div', 'fcw-chat-log'); panel.append(log);
@@ -82,7 +82,7 @@
     try {
       const list = await request('/api/chat/conversations');
       if (state.mode !== 'chat' || state.agentId !== agentId) return;
-      const match = (list.conversations || []).find(item => item.agentId === agentId && (item.projectId || null) === projectId);
+      const match = (list.conversations || []).find(item => conversationId ? item.id === conversationId : item.agentId === agentId && (item.projectId || null) === projectId);
       if (match) {
         state.conversationId = match.id;
         const history = await request(`/api/chat/conversations/${encodeURIComponent(match.id)}`);
@@ -115,15 +115,15 @@
     label.append(select);
     const description = el('label', '', 'Objetivo da tarefa');
     const prompt = el('textarea', ''); prompt.placeholder = 'Descreva o resultado esperado e como validar…'; prompt.rows = 5; prompt.required = true; prompt.minLength = 12; prompt.maxLength = 8000; description.append(prompt);
-    const note = el('p', 'fcw-note', 'A execução entra na fila do Fênix. Alterações de arquivos exigem testes; commit e publicação não são automáticos.');
-    const submit = el('button', 'fcw-primary', 'Colocar na fila'); submit.type = 'submit';
+    const note = el('p', 'fcw-note', 'Tarefas que podem alterar código aguardam aprovação antes da fila. O agente deve validar alterações com testes; commit e publicação não são automáticos.');
+    const submit = el('button', 'fcw-primary', 'Registrar tarefa para aprovação'); submit.type = 'submit';
     form.append(label, description, note, submit); panel.append(form);
     form.addEventListener('submit', async event => {
       event.preventDefault(); if (state.busy) return;
       if (!select.value) return status('Selecione um projeto registrado.', true);
       state.busy = true; submit.disabled = true; status('Registrando job persistente…');
       try {
-        const job = await request('/api/v2/jobs', { method: 'POST', body: JSON.stringify({ type: 'agent.execute', source: 'web', agentId, projectId: select.value, prompt: prompt.value.trim(), payload: { prompt: prompt.value.trim(), projectId: select.value, agentId, conversationId: state.conversationId || null }, context: { projectId: select.value, agentId, conversationId: state.conversationId || null }, riskLevel: 'MEDIUM' }) });
+        const job = await request('/api/v2/jobs', { method: 'POST', body: JSON.stringify({ type: 'agent.execute', source: 'web', agentId, projectId: select.value, prompt: prompt.value.trim(), payload: { prompt: prompt.value.trim(), projectId: select.value, agentId, conversationId: state.conversationId || null }, context: { projectId: select.value, agentId, conversationId: state.conversationId || null }, riskLevel: 'HIGH' }) });
         state.projectId = select.value; openJob(job.jobId);
       } catch (error) { status(`Tarefa não registrada: ${error.message}`, true); }
       finally { state.busy = false; submit.disabled = false; }
@@ -140,15 +140,20 @@
         if (state.mode !== 'job' || state.jobId !== jobId) return;
         state.lastJobStatus = job.status;
         details.replaceChildren();
-        for (const [key, value] of [['Estado', job.status], ['Etapa', job.currentStage || job.populationStatus], ['Progresso', job.progress == null ? '—' : `${job.progress}%`], ['Projeto', job.projectId || state.projectId], ['Agente', job.agent?.name || job.agentId || state.agentId], ['Tentativas', job.attempts], ['Resultado', job.result?.text || job.result?.result || job.result || job.error?.message || job.error || '—']]) {
+        const changedFiles = Array.isArray(job.result?.filesChanged) ? job.result.filesChanged.filter(file => typeof file === 'string') : [];
+        const result = job.error?.message || job.error || job.result?.text || job.result?.result || (job.result?.truncated ? 'Resultado resumido; consulte os artefatos.' : job.result ? 'Resultado registrado.' : '—');
+        for (const [key, value] of [['Estado', job.status], ['Etapa', job.currentStage || job.populationStatus], ['Progresso', job.progress == null ? '—' : `${job.progress}%`], ['Projeto', job.projectId || state.projectId], ['Agente', job.agent?.name || job.agentId || state.agentId], ['Branch', job.branch], ['Tentativas', job.attempts], ['Arquivos alterados', changedFiles.length], ['Testes', job.result?.testsPassed === true ? 'Passaram' : job.result?.testsPassed === false ? 'Falharam' : '—'], ['Resultado', result]]) {
           const row = el('div', 'fcw-job-row'); row.append(el('span', '', key), el('strong', '', value ?? '—')); details.append(row);
         }
         actions.replaceChildren();
         const button = (label, run) => { const node = el('button', 'fcw-secondary', label); node.type = 'button'; node.addEventListener('click', run); actions.append(node); };
         if (job.projectId || state.projectId) button('Abrir na IDE', () => openIde(job.projectId || state.projectId));
+        if ((job.projectId || state.projectId) && changedFiles.length) button(`Abrir ${changedFiles[0]}`, () => openIde(job.projectId || state.projectId, changedFiles[0]));
         if (job.agent?.agentId || state.agentId) button('Ver agente', () => { hide(); window.fenixWorld3D?.select('agent', job.agent?.agentId || state.agentId); });
+        const conversationId = job.context?.conversationId || job.payload?.conversationId;
+        if (conversationId && (job.agent?.agentId || job.agentId || state.agentId)) button('Abrir conversa', () => openChat(job.agent?.agentId || job.agentId || state.agentId, job.projectId || state.projectId, conversationId));
         if (provider === 'local' && ['DEAD_LETTER', 'FAILED'].includes(job.status)) button('Tentar novamente', async () => { try { await request(`/api/v2/jobs/${encodeURIComponent(jobId)}/retry`, { method: 'POST' }); update(); } catch (error) { status(error.message, true); } });
-        if (provider === 'local' && job.status === 'AWAITING_APPROVAL') button('Ver aprovação', () => window.showView?.('operations'));
+        if (provider === 'local' && job.status === 'AWAITING_APPROVAL') button('Aprovar execução', async () => { try { await request(`/api/v2/jobs/${encodeURIComponent(jobId)}/approve`, { method: 'POST' }); update(); } catch (error) { status(`Aprovação não realizada: ${error.message}`, true); } });
         if (['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED', 'completed', 'failed', 'cancelled'].includes(job.status)) { clearInterval(state.poll); state.poll = null; }
         status(`Atualizado ${new Date().toLocaleTimeString('pt-BR')}`);
       } catch (error) { status(`Falha ao consultar job: ${error.message}`, true); }
@@ -156,12 +161,13 @@
     await update();
     if (state.mode === 'job' && !state.poll && !['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED', 'completed', 'failed', 'cancelled'].includes(state.lastJobStatus)) state.poll = setInterval(update, 5000);
   }
-  async function openIde(projectId) {
+  async function openIde(projectId, filePath = null) {
     if (!projectId) return status('Projeto não associado à atividade.', true);
     try {
       window.showView?.('ide');
       if (typeof window.fenixSelectIdeProject === 'function') await window.fenixSelectIdeProject(projectId);
       else throw new Error('IDE do projeto indisponível');
+      if (filePath && typeof window.fenixSelectIdeFile === 'function' && !await window.fenixSelectIdeFile(filePath)) throw new Error(`Arquivo não pôde ser aberto: ${filePath}`);
       hide();
     } catch (error) { status(`Não foi possível abrir a IDE: ${error.message}`, true); }
   }
