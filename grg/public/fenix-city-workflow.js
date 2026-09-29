@@ -87,7 +87,15 @@
         state.conversationId = match.id;
         const history = await request(`/api/chat/conversations/${encodeURIComponent(match.id)}`);
         if (state.mode !== 'chat' || state.agentId !== agentId) return;
-        for (const message of history.messages || []) appendMessage(log, message.role, message.content);
+        for (const message of history.messages || []) {
+          appendMessage(log, message.role, message.content);
+          const queuedJob = message.role === 'assistant' && String(message.content || '').match(/^Tarefa enviada à API Platform\. Job ([A-Za-z0-9_-]+)\b/);
+          if (queuedJob) {
+            const follow = el('button', 'fcw-secondary', `Acompanhar job ${queuedJob[1].slice(0, 10)}`);
+            follow.type = 'button'; follow.addEventListener('click', () => openJob(queuedJob[1], 'platform'));
+            log.append(follow);
+          }
+        }
       } else {
         const created = await request('/api/chat/conversations', { method: 'POST', body: JSON.stringify({ agentId, projectId, title: `Conversa com ${agent?.name || agentId}` }) });
         state.conversationId = created.id;
