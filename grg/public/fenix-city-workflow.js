@@ -35,7 +35,7 @@
     log.append(item); log.scrollTop = log.scrollHeight; return item;
   }
   async function stream(message, log, submit) {
-    submit.disabled = true; state.busy = true;
+    submit.disabled = true; state.busy = true; state.jobId = null;
     appendMessage(log, 'user', message);
     const answer = appendMessage(log, 'assistant', 'Conectando ao canal rápido…');
     try {
@@ -61,7 +61,7 @@
       if (state.jobId) {
         const queuedId = state.jobId;
         const follow = el('button', 'fcw-secondary', 'Acompanhar job');
-        follow.type = 'button'; follow.addEventListener('click', () => openJob(queuedId));
+        follow.type = 'button'; follow.addEventListener('click', () => openJob(queuedId, 'platform'));
         log.append(follow);
       }
     } catch (error) { answer.textContent = `Falha: ${error.message}`; }
@@ -121,32 +121,32 @@
       finally { state.busy = false; submit.disabled = false; }
     });
   }
-  async function openJob(jobId) {
+  async function openJob(jobId, provider = 'local') {
     hide(); state.mode = 'job'; state.jobId = jobId; state.lastJobStatus = null;
-    header(`Job ${jobId.slice(0, 12)}`, 'EXECUÇÃO · JOB ENGINE');
+    header(`Job ${jobId.slice(0, 12)}`, provider === 'platform' ? 'CANAL RÁPIDO · API PLATFORM' : 'EXECUÇÃO · JOB ENGINE');
     const details = el('div', 'fcw-job-details'); panel.append(details);
     const actions = el('div', 'fcw-job-actions'); panel.append(actions);
     async function update() {
       try {
-        const job = await request(`/api/v2/jobs/${encodeURIComponent(jobId)}`);
+        const job = await request(provider === 'platform' ? `/api/chat/jobs/${encodeURIComponent(jobId)}` : `/api/v2/jobs/${encodeURIComponent(jobId)}`);
         if (state.mode !== 'job' || state.jobId !== jobId) return;
         state.lastJobStatus = job.status;
         details.replaceChildren();
-        for (const [key, value] of [['Estado', job.status], ['Etapa', job.currentStage], ['Progresso', job.progress == null ? '—' : `${job.progress}%`], ['Projeto', job.projectId], ['Agente', job.agent?.name || job.agentId], ['Tentativas', job.attempts], ['Resultado', job.result?.result || job.error?.message || '—']]) {
+        for (const [key, value] of [['Estado', job.status], ['Etapa', job.currentStage || job.populationStatus], ['Progresso', job.progress == null ? '—' : `${job.progress}%`], ['Projeto', job.projectId || state.projectId], ['Agente', job.agent?.name || job.agentId || state.agentId], ['Tentativas', job.attempts], ['Resultado', job.result?.text || job.result?.result || job.result || job.error?.message || job.error || '—']]) {
           const row = el('div', 'fcw-job-row'); row.append(el('span', '', key), el('strong', '', value ?? '—')); details.append(row);
         }
         actions.replaceChildren();
         const button = (label, run) => { const node = el('button', 'fcw-secondary', label); node.type = 'button'; node.addEventListener('click', run); actions.append(node); };
-        if (job.projectId) button('Abrir na IDE', () => openIde(job.projectId));
-        if (job.agent?.agentId) button('Ver agente', () => { hide(); window.fenixWorld3D?.select('agent', job.agent.agentId); });
-        if (['DEAD_LETTER', 'FAILED'].includes(job.status)) button('Tentar novamente', async () => { try { await request(`/api/v2/jobs/${encodeURIComponent(jobId)}/retry`, { method: 'POST' }); update(); } catch (error) { status(error.message, true); } });
-        if (job.status === 'AWAITING_APPROVAL') button('Ver aprovação', () => window.showView?.('operations'));
-        if (['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED'].includes(job.status)) { clearInterval(state.poll); state.poll = null; }
+        if (job.projectId || state.projectId) button('Abrir na IDE', () => openIde(job.projectId || state.projectId));
+        if (job.agent?.agentId || state.agentId) button('Ver agente', () => { hide(); window.fenixWorld3D?.select('agent', job.agent?.agentId || state.agentId); });
+        if (provider === 'local' && ['DEAD_LETTER', 'FAILED'].includes(job.status)) button('Tentar novamente', async () => { try { await request(`/api/v2/jobs/${encodeURIComponent(jobId)}/retry`, { method: 'POST' }); update(); } catch (error) { status(error.message, true); } });
+        if (provider === 'local' && job.status === 'AWAITING_APPROVAL') button('Ver aprovação', () => window.showView?.('operations'));
+        if (['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED', 'completed', 'failed', 'cancelled'].includes(job.status)) { clearInterval(state.poll); state.poll = null; }
         status(`Atualizado ${new Date().toLocaleTimeString('pt-BR')}`);
       } catch (error) { status(`Falha ao consultar job: ${error.message}`, true); }
     }
     await update();
-    if (state.mode === 'job' && !state.poll && !['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED'].includes(state.lastJobStatus)) state.poll = setInterval(update, 5000);
+    if (state.mode === 'job' && !state.poll && !['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED', 'completed', 'failed', 'cancelled'].includes(state.lastJobStatus)) state.poll = setInterval(update, 5000);
   }
   async function openIde(projectId) {
     if (!projectId) return status('Projeto não associado à atividade.', true);
