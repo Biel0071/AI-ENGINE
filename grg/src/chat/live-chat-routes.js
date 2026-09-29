@@ -208,22 +208,30 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     try {
       let out;
       const platformKey = resolveAIProviderKey();
+      sseSend(res, 'routing', { provider: platformKey && body.model !== 'local' ? 'api-platform' : (llm?.name || 'local'), mode: platformKey && body.model !== 'local' ? 'auto' : 'stream' });
       if (platformKey && body.model !== 'local') {
-        const upstream = await fetch(`${resolveAIPlatformUrl()}/v1/text`, {
+        const requestBody = {
+          prompt: prompt.messages.map((item) => `${item.role}: ${item.content}`).join('\n\n'),
+          model: body.model || process.env.FENIX_FAST_MODEL || 'qwen2.5:0.5b',
+          temperature: Number.isFinite(body.temperature) ? body.temperature : 0.3,
+          maxTokens: 256,
+        };
+        const platformRequest = (execution) => fetch(`${resolveAIPlatformUrl()}/v1/text`, {
           method: 'POST',
           headers: { authorization: `Bearer ${platformKey}`, 'content-type': 'application/json' },
-          body: JSON.stringify({
-            prompt: prompt.messages.map((item) => `${item.role}: ${item.content}`).join('\n\n'),
-            model: body.model || process.env.FENIX_FAST_MODEL || 'qwen2.5:0.5b',
-            temperature: Number.isFinite(body.temperature) ? body.temperature : 0.3,
-            maxTokens: 256,
-            // Answer in the synchronous lane when capacity is free; the API
-            // queues the same request and returns 202 when that lane is busy.
-            execution: 'auto',
-          }),
+          body: JSON.stringify({ ...requestBody, execution }),
           signal: AbortSignal.any([controller.signal, AbortSignal.timeout(25000)]),
         });
-        const result = await upstream.json();
+        let upstream = await platformRequest('auto');
+        let result = await upstream.json();
+        sseSend(res, 'routing', { provider: 'api-platform', mode: 'auto-result', httpStatus: upstream.status });
+        if ([429, 502, 503, 504].includes(upstream.status) && !controller.signal.aborted) {
+          // The fast lane can saturate while the durable queue still accepts work.
+          // Only retry after a rejected response, so one request creates one job.
+          upstream = await platformRequest('async');
+          result = await upstream.json();
+          sseSend(res, 'routing', { provider: 'api-platform', mode: 'queue', reason: 'fast-lane-busy' });
+        }
         if (!upstream.ok) throw new Error(result.error?.message || result.error || `API Platform HTTP ${upstream.status}`);
         if (upstream.status === 202) {
           const jobId = result.jobId;
