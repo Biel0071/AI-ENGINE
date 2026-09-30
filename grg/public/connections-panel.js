@@ -84,6 +84,25 @@ window.refreshConnectionsState = async function() {
         }
       });
     }
+
+    // Refresh live GitHub account
+    const ghRes = await window.FENIX.api('/api/fenix/github/account').catch(() => null);
+    const ghConn = window.ConnectionsState.connections.find(c => c.id === 'github');
+    if (ghConn) {
+      if (ghRes && ghRes.connected) {
+        ghConn.status = 'online';
+        const total = (ghRes.public_repos || 0) + (ghRes.total_private_repos || 0);
+        ghConn.desc = `@${ghRes.login} · ${total} repos · Rate limit ${ghRes.rateLimit?.remaining ?? '—'}/${ghRes.rateLimit?.limit ?? '—'}`;
+        ghConn.data.user = ghRes.login;
+        ghConn.data.repos = total;
+        ghConn.data.rateLimit = ghRes.rateLimit;
+        ghConn.data.scopes = ghRes.scopes;
+      } else {
+        ghConn.status = 'offline';
+        ghConn.desc = 'Token de conta GitHub não conectado. Clique para conectar PAT.';
+      }
+      ghConn.lastSync = new Date();
+    }
   } catch (e) {
     console.warn('[Connections] Refresh warning:', e);
   }
@@ -120,6 +139,11 @@ window.renderConnectionsList = function() {
           <button class="conn-btn" onclick="window.toggleConnectionDetails('${conn.id}')">
             <i class="ph ph-code"></i> Detalhes
           </button>
+          ${conn.id === 'github' ? `
+            <button class="conn-btn" onclick="window.openGitHubConnectModal ? window.openGitHubConnectModal() : window.showView?.('projects')" style="border-color:#38bdf8; color:#38bdf8;">
+              <i class="ph ph-gear"></i> Conta / Token
+            </button>
+          ` : ''}
         </div>
 
         <div class="conn-data" id="conn-data-${conn.id}">
@@ -141,8 +165,17 @@ window.pingConnection = async function(connId) {
 
   const startTime = Date.now();
   try {
-    const res = await window.FENIX.api('/dev/connections');
-    const target = (res.connections || []).find(c => c.id === connId);
+    let target = null;
+    if (connId === 'github') {
+      const gh = await window.FENIX.api('/api/fenix/github/account');
+      target = {
+        status: gh && gh.connected ? 'online' : 'offline',
+        desc: gh && gh.connected ? `@${gh.login} · Rate limit ${gh.rateLimit?.remaining ?? '—'}` : 'Token não conectado'
+      };
+    } else {
+      const res = await window.FENIX.api('/dev/connections');
+      target = (res.connections || []).find(c => c.id === connId);
+    }
     const latency = Date.now() - startTime;
     
     const local = window.ConnectionsState.connections.find(c => c.id === connId);
@@ -200,6 +233,15 @@ window.pullConnectionData = async function(connId) {
         conn.data.lastPull = new Date().toLocaleTimeString();
       }
       if (window.showToast) window.showToast(`Kernel: Métricas atualizadas!`, 'success');
+    } else if (connId === 'github') {
+      const ghRepos = await window.FENIX.api('/api/fenix/github/repos').catch(() => null);
+      const conn = window.ConnectionsState.connections.find(c => c.id === 'github');
+      if (conn && ghRepos) {
+        conn.data.reposCount = ghRepos.repos?.length || 0;
+        conn.data.activatedCount = (ghRepos.repos || []).filter(r => r.isActivated).length;
+        conn.data.lastPull = new Date().toLocaleTimeString();
+      }
+      if (window.showToast) window.showToast(`GitHub: ${ghRepos?.repos?.length || 0} repositórios sincronizados!`, 'success');
     }
     window.renderConnectionsList();
   } catch (err) {

@@ -37,6 +37,7 @@ function resolveSecret(secretName, env = process.env) {
   // 3. Check direct environment variable mappings
   const envMappings = {
     ai_provider_key: ['GRG_AIPLATFORM_KEY', 'AI_PROVIDER_KEY', 'FENIX_AI_KEY'],
+    github_token: ['GITHUB_TOKEN', 'GH_TOKEN', 'FENIX_GITHUB_TOKEN'],
     postgres_password: ['POSTGRES_PASSWORD', 'PGPASSWORD'],
     redis_password: ['REDIS_PASSWORD'],
     metrics_token: ['FENIX_METRICS_TOKEN', 'METRICS_TOKEN'],
@@ -57,15 +58,34 @@ function resolveSecret(secretName, env = process.env) {
   const fromLocalSecret = readSecretFile(localSecretPath);
   if (fromLocalSecret) return fromLocalSecret;
 
+  const rootSecretPath = path.join(__dirname, '..', '..', '..', '.secrets', secretName);
+  const fromRootSecret = readSecretFile(rootSecretPath);
+  if (fromRootSecret) return fromRootSecret;
+
   return null;
 }
 
-function resolveAIProviderKey(env = process.env) {
-  // If local .secrets/ai_provider_key has a validated live key, prefer it over stale ap_dev env vars
-  const localSecretPath = path.join(__dirname, '..', '..', '..', '.secrets', 'ai_provider_key');
-  const fromLocal = readSecretFile(localSecretPath) || readSecretFile(path.join(__dirname, '..', '..', '.secrets', 'ai_provider_key'));
-  if (fromLocal && fromLocal.startsWith('ap_live_')) return fromLocal;
+function storeSecret(secretName, value) {
+  const localSecretPath = path.join(__dirname, '..', '..', '.secrets', secretName);
+  const dir = path.dirname(localSecretPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(localSecretPath, String(value || '').trim(), { encoding: 'utf8', mode: 0o600 });
+  return true;
+}
 
+function deleteSecret(secretName) {
+  const localSecretPath = path.join(__dirname, '..', '..', '.secrets', secretName);
+  if (fs.existsSync(localSecretPath)) {
+    try { fs.unlinkSync(localSecretPath); } catch {}
+  }
+  const rootSecretPath = path.join(__dirname, '..', '..', '..', '.secrets', secretName);
+  if (fs.existsSync(rootSecretPath)) {
+    try { fs.unlinkSync(rootSecretPath); } catch {}
+  }
+  return true;
+}
+
+function resolveAIProviderKey(env = process.env) {
   // Um `env` injetado representa um ambiente completo (testes, preflight e tenants).
   // Nao pode herdar silenciosamente a chave da maquina via `.secrets`, pois isso ativa um
   // provider que o chamador explicitamente nao configurou.
@@ -75,6 +95,12 @@ function resolveAIProviderKey(env = process.env) {
     }
     return null;
   }
+
+  // If local .secrets/ai_provider_key has a validated live key, prefer it over stale ap_dev env vars
+  const localSecretPath = path.join(__dirname, '..', '..', '..', '.secrets', 'ai_provider_key');
+  const fromLocal = readSecretFile(localSecretPath) || readSecretFile(path.join(__dirname, '..', '..', '.secrets', 'ai_provider_key'));
+  if (fromLocal && fromLocal.startsWith('ap_live_')) return fromLocal;
+
   // A configuracao explicita do ambiente deve vencer secrets montados antigos.
   for (const name of ['GRG_AIPLATFORM_KEY', 'AI_PROVIDER_KEY', 'FENIX_AI_KEY']) {
     if (env[name] && String(env[name]).trim() && !String(env[name]).startsWith('ap_dev_')) return String(env[name]).trim();
@@ -94,6 +120,8 @@ function resolveAIPlatformModel(env = process.env) {
 
 module.exports = {
   resolveSecret,
+  storeSecret,
+  deleteSecret,
   resolveAIProviderKey,
   resolveAIPlatformUrl,
   resolveAIPlatformModel

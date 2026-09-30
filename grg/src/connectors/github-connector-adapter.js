@@ -98,9 +98,12 @@ class GitHubConnectorAdapter {
   // Limites conhecidos da API do GitHub. Declarados como referência; o valor observado de
   // rate limit exigiria ler o header X-RateLimit, que o GitHubConnector ainda não expõe.
   limits() {
+    const remaining = this.github?.lastRateLimit?.remaining;
     return {
       declared: { requestsPerHourAuthenticated: 5000, requestsPerHourAnonymous: 60 },
-      observed: unknown('rate-limit headers are not captured yet', 'read X-RateLimit-Remaining in GitHubConnector to observe the live limit'),
+      observed: Number.isFinite(remaining)
+        ? measured(remaining, 'GitHubConnector.lastRateLimit.remaining')
+        : unknown('rate-limit headers are not captured yet', 'read X-RateLimit-Remaining in GitHubConnector to observe the live limit'),
     };
   }
 

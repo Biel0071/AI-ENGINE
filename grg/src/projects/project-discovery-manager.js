@@ -310,7 +310,15 @@ class ProjectDiscoveryManager {
    * 2. GITHUB REPOSITORY DISCOVERY & INTEGRATION
    * =========================================================================
    */
-  async getGitHubRepositories(token = process.env.GITHUB_TOKEN) {
+  async getGitHubRepositories(token = null) {
+    if (!token) {
+      try {
+        const { resolveSecret } = require('../security/secret-resolver');
+        token = resolveSecret('github_token') || process.env.GITHUB_TOKEN;
+      } catch {
+        token = process.env.GITHUB_TOKEN;
+      }
+    }
     if (!token) {
       return {
         configured: false,
