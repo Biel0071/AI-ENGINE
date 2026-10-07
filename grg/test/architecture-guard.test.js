@@ -82,16 +82,19 @@ async function runArchitectureGuard() {
   console.log('FÊNIX ARCHITECTURE GUARD: SINGLE SOURCE OF TRUTH VERIFICATION');
   console.log('================================================================\n');
 
-  // 1. Official Entrypoint Existence
-  console.log('[1/5] Verifying Official Frontend Entrypoint...');
+  // 1. Official Entrypoint Existence & Canonical Contract
+  console.log('[1/5] Verifying Official Frontend Entrypoint & Canonical Contract...');
   const officialHtml = path.join(ROOT_DIR, 'grg', 'public', 'index.html');
   const officialJs = path.join(ROOT_DIR, 'grg', 'public', 'unified-app.js');
   const officialCss = path.join(ROOT_DIR, 'grg', 'public', 'unified.css');
+  const canonicalContract = path.join(ROOT_DIR, 'grg', 'docs', 'CANONICAL_FRONTEND_CONTRACT.md');
 
   assert.ok(fs.existsSync(officialHtml), 'Official index.html must exist at grg/public/index.html');
   assert.ok(fs.existsSync(officialJs), 'Official unified-app.js must exist at grg/public/unified-app.js');
   assert.ok(fs.existsSync(officialCss), 'Official unified.css must exist at grg/public/unified.css');
+  assert.ok(fs.existsSync(canonicalContract), 'CANONICAL_FRONTEND_CONTRACT.md must exist in grg/docs/');
   console.log('   ✅ Official Shell Found:', officialHtml);
+  console.log('   ✅ Canonical Frontend Contract Found:', canonicalContract);
 
   // 2. Enforce No Rogue / Duplicate Frontends across entire repository
   console.log('\n[2/5] Checking For Rogue / Duplicate Frontends (Dynamic Recursive Scan)...');
@@ -114,18 +117,24 @@ async function runArchitectureGuard() {
           continue;
         }
         scanForRogueShells(fullPath);
-      } else if (entry.isFile() && entry.name.toLowerCase() === 'index.html') {
+      } else if (entry.isFile()) {
+        const lowerName = entry.name.toLowerCase();
         const resolved = path.resolve(fullPath);
         if (resolved === canonicalShell) continue;
-        try {
-          const content = fs.readFileSync(resolved, 'utf8');
-          const isFullShell = (content.match(/id=["']view-[a-z0-9_-]+["']/g) || []).length >= 5 ||
-                              content.includes('unified-app.js') ||
-                              content.includes('fenix-operational-os.js');
-          if (isFullShell) {
-            rogueFound.push(resolved);
-          }
-        } catch (_) {}
+
+        if (lowerName === 'index.html' || (lowerName.includes('dashboard') && lowerName.endsWith('.html'))) {
+          try {
+            const content = fs.readFileSync(resolved, 'utf8');
+            const isFullShell = (content.match(/id=["']view-[a-z0-9_-]+["']/g) || []).length >= 5 ||
+                                content.includes('unified-app.js') ||
+                                content.includes('fenix-operational-os.js') ||
+                                content.includes('cdn.tailwindcss.com') ||
+                                lowerName.includes('world_runtime_dashboard');
+            if (isFullShell) {
+              rogueFound.push(resolved);
+            }
+          } catch (_) {}
+        }
       }
     }
   }

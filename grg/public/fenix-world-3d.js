@@ -1041,6 +1041,24 @@
         if (Array.isArray(data.workstations)) {
           this.workstationsData = data.workstations;
         }
+
+        // 4. Sync Dynamic Buildings from WorldStateEngine (Hot Mutation & Persistence)
+        if (this.scene && data.buildings && typeof data.buildings === 'object') {
+          const bldList = Array.isArray(data.buildings) ? data.buildings : Object.values(data.buildings);
+          const staticBldIds = new Set([
+            'bld-deposito-mais', 'bld-deposito-wms', 'deposito-mais', 'logistics', 'bld-logistics',
+            'bld-api-platform', 'api-platform', 'bld-fenix-hq', 'command-center',
+            'bld-dev-loft', 'dev-district', 'bld-ai-nexus', 'ai-district'
+          ]);
+          for (const b of bldList) {
+            if (!b || !b.id) continue;
+            const isStatic = staticBldIds.has(b.id);
+            const isAlreadyDynamic = this.dynamicBuildings && this.dynamicBuildings.has(b.id);
+            if (!isStatic && !isAlreadyDynamic) {
+              this.spawnDynamicBuilding(b);
+            }
+          }
+        }
       } catch (err) {
         // Degraded mode silently preserves previous frame state
       }

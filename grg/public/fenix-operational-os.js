@@ -50,21 +50,22 @@
   // Auto-authentication helper
   async function ensureAuthToken(force = false) {
     let token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
-    if (!token || token === 'null' || token.length < 10) {
-      token = 'fa675da49d2dc4f0b7b6644a63976a5b7d17e14c7adbca19d7c619b13c7c9ece';
+    if (!token || token === 'null' || token.length < 10 || force) {
       try {
-        localStorage.setItem('grg_token', token);
-        localStorage.setItem('fenix_token', token);
-      } catch (e) {}
-    }
-    if (force) {
-      try {
-        const res = await fetch('/api/login', {
+        let res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenantId: 'grg', userId: 'grg-admin', password: 'admin123' }),
-          signal: AbortSignal.timeout(2000)
+          body: JSON.stringify({ tenantId: 'grg', userId: 'grg-admin', password: 'grg-admin' }),
+          signal: AbortSignal.timeout(4000)
         });
+        if (!res.ok) {
+          res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenantId: 'grg', userId: 'grg-admin', password: 'admin' }),
+            signal: AbortSignal.timeout(4000)
+          });
+        }
         if (res.ok) {
           const data = await res.json();
           const fresh = data.token || data.access_token;
@@ -82,9 +83,9 @@
   ensureAuthToken();
 
   // Safe fetch helper with timeout and auth headers
-  async function safeFetchJson(url, options = {}, timeoutMs = 8000) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  async function safeFetchJson(url, options = {}, timeoutMs = 15000) {
+    let ctrl = new AbortController();
+    let timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
       const headers = { Accept: 'application/json', ...(options.headers || {}) };
       const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
@@ -92,6 +93,9 @@
       let res = await fetch(url, { credentials: 'same-origin', ...options, headers, signal: ctrl.signal });
       if (res.status === 401) {
         const freshToken = await ensureAuthToken(true);
+        clearTimeout(timer);
+        ctrl = new AbortController();
+        timer = setTimeout(() => ctrl.abort(), timeoutMs);
         if (freshToken) {
           headers.Authorization = 'Bearer ' + freshToken;
           res = await fetch(url, { credentials: 'same-origin', ...options, headers, signal: ctrl.signal });
@@ -298,9 +302,9 @@
       let agent = rawList.find(a => a.id === agentId || a.name === agentId);
       if (!agent) agent = window.fenixCity?.world?.agents?.get(agentId) || [...(window.fenixCity?.world?.agents?.values() || [])].find(a => a.name === agentId);
       if (!agent) {
-        const res = await fetch('/api/v2/living-city/agents', { signal: AbortSignal.timeout(12000) });
-        if (!res.ok) throw new Error(`HTTP ${res.status} ao consultar agentes`);
-        const data = await res.json();
+        const fetchRes = await safeFetchJson('/api/v2/living-city/agents', {}, 12000);
+        if (!fetchRes.ok) throw new Error(`HTTP ${fetchRes.status || 500} ao consultar agentes`);
+        const data = fetchRes.data || {};
         rawList = Array.isArray(data.agents) ? data.agents : (data.agents && typeof data.agents === 'object' ? Object.values(data.agents) : []);
         ctx.cachedAgents = rawList;
         agent = rawList.find(a => a.id === agentId || a.name === agentId);
@@ -2318,39 +2322,39 @@
       <div class="fenix-cmd-top-kpis">
         <div class="fenix-kpi-chip" onclick="window.fenixNavigateWithContext('runtime')">
           <small>SYSTEM HEALTH</small>
-          <strong id="fenixKpiHealth" style="color:#10b981;">100% HEALTHY</strong>
+          <strong id="fenixKpiHealth" style="color:#10b981;">—</strong>
         </div>
         <div class="fenix-kpi-chip" onclick="window.showRealityDashboard ? window.showRealityDashboard() : window.fenixNavigateWithContext('observability')">
           <small>REALITY SCORE</small>
-          <strong id="fenixKpiScore" style="color:#38bdf8;">100% AUDITABLE</strong>
+          <strong id="fenixKpiScore" style="color:#38bdf8;">—</strong>
         </div>
         <div class="fenix-kpi-chip" onclick="window.fenixNavigateWithContext('agents')">
           <small>ACTIVE FLEET</small>
-          <strong id="fenixKpiAgents">15 ONLINE</strong>
+          <strong id="fenixKpiAgents">—</strong>
         </div>
         <div class="fenix-kpi-chip" onclick="window.fenixNavigateWithContext('operations')">
           <small>RUNNING JOBS</small>
-          <strong id="fenixKpiJobs">0 JOBS</strong>
+          <strong id="fenixKpiJobs">—</strong>
         </div>
         <div class="fenix-kpi-chip" onclick="window.fenixNavigateWithContext('operations')">
           <small>MISSIONS</small>
-          <strong id="fenixKpiMissions">0 REAL</strong>
+          <strong id="fenixKpiMissions">—</strong>
         </div>
         <div class="fenix-kpi-chip" onclick="window.fenixNavigateWithContext('projects')">
           <small>PROJECTS</small>
-          <strong id="fenixKpiProjects">4 ATIVOS</strong>
+          <strong id="fenixKpiProjects">—</strong>
         </div>
         <div class="fenix-kpi-chip" onclick="window.fenixNavigateWithContext('observability')">
           <small>ERRORS</small>
-          <strong id="fenixKpiErrors" style="color:#10b981;">0 FALHAS</strong>
+          <strong id="fenixKpiErrors" style="color:#10b981;">—</strong>
         </div>
         <div class="fenix-kpi-chip" onclick="window.fenixNavigateWithContext('operations')">
           <small>QUEUE</small>
-          <strong id="fenixKpiQueue">0 WAITING</strong>
+          <strong id="fenixKpiQueue">—</strong>
         </div>
         <div class="fenix-kpi-chip" onclick="window.fenixNavigateWithContext('runtime')">
           <small>AI CONNECTORS</small>
-          <strong id="fenixKpiAiStatus" style="color:#a855f7;">AI READY</strong>
+          <strong id="fenixKpiAiStatus" style="color:#a855f7;">—</strong>
         </div>
       </div>
 
@@ -2473,6 +2477,15 @@
     }
   };
 
+  // Quick Command Setter for Cockpit
+  window.fenixSetQuickCommand = function (cmd) {
+    const input = document.getElementById('fenixCmdIntentInput');
+    if (input) {
+      input.value = cmd;
+      input.focus();
+    }
+  };
+
   // Trigger Action from Command Center Prompt
   window.fenixTriggerAction = async function (mode) {
     const input = document.getElementById('fenixCmdIntentInput');
@@ -2481,6 +2494,81 @@
     if (!proposalArea) return;
 
     proposalArea.style.display = 'block';
+
+    // Check if this is a Living World spatial directive
+    const isWorldDirective = /^(crie|criar|adicionar|mover|construir|mudar|alternar|spawn|create|move|set|teleport|build)\s+(um\s+)?(prédio|predio|building|agente|agent|laboratório|laboratorio|lab|tempo|horário|horario|noite|dia|weather|time|station)/i.test(intent) ||
+      /media\s*lab/i.test(intent) ||
+      /(spawn|mover|criar).*(agente|predio|prédio|building)/i.test(intent);
+
+    if (isWorldDirective) {
+      proposalArea.innerHTML = window.fenixRenderState('LOADING', `Executando diretiva espacial no WorldStateEngine...`);
+      try {
+        const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('/api/v2/living-city/command', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ prompt: intent, intent, actor: 'operator' })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+
+        const results = Array.isArray(data.results) ? data.results : [];
+        const resultsSummary = results.map(r => `
+          <li style="margin-bottom:4px;">
+            <span style="color:#10b981; font-weight:700;">✓</span> 
+            <strong>${esc(r.command?.type || 'COMANDO')}:</strong> 
+            ${esc(r.description || JSON.stringify(r.command?.payload || {}))}
+          </li>
+        `).join('') || '<li>Comando processado com sucesso pelo WorldCommandEngine.</li>';
+
+        proposalArea.innerHTML = `
+          <div class="fenix-mission-proposal-card" style="border-color:rgba(56,189,248,0.4);">
+            <div class="proposal-header">
+              <span class="proposal-badge" style="background:#0284c7; color:#fff;">LIVING WORLD MUTATION</span>
+              <h4>Mutação Espacial do Mundo 3D</h4>
+            </div>
+
+            <div class="proposal-grid">
+              <div><small>DIRETIVA DO OPERADOR</small><p style="color:#38bdf8; font-weight:700;">${esc(intent)}</p></div>
+              <div><small>SUBSISTEMA</small><p style="color:#10b981; font-weight:700;">WorldStateEngine</p></div>
+              <div><small>COMANDOS EXECUTADOS</small><p>${data.count || results.length}</p></div>
+              <div><small>HORÁRIO DO MUNDO</small><p><code>${esc(data.worldState?.worldTime || 'Real-time')}</code></p></div>
+              <div style="grid-column:1/-1;"><small>RESULTADOS DA MUTAÇÃO</small>
+                <ul style="margin:4px 0 0; padding-left:18px; font-size:12px; color:#e2e8f0; line-height:1.5;">
+                  ${resultsSummary}
+                </ul>
+              </div>
+            </div>
+
+            <div style="margin-top:16px; display:flex; gap:10px; justify-content:space-between; align-items:center;">
+              <button class="fenix-btn" onclick="document.getElementById('fenixCmdProposalArea').style.display='none'">Fechar</button>
+              <button class="fenix-btn primary" onclick="if(window.fenixSwitchNav) window.fenixSwitchNav('city'); else document.querySelector('[data-view=\\'view-city\\']')?.click();" style="display:inline-flex; align-items:center; gap:6px;">
+                <i class="ph-bold ph-globe"></i> Ver no Mundo 3D (Spatial View)
+              </button>
+            </div>
+          </div>
+        `;
+
+        // Notify subsystems
+        window.dispatchEvent(new CustomEvent('fenix:world-command', { detail: data }));
+        if (typeof window.syncLiveTargetTelemetry === 'function') {
+          window.syncLiveTargetTelemetry();
+        }
+        if (window.fenixWorld3D && typeof window.fenixWorld3D.syncRealData === 'function') {
+          window.fenixWorld3D.syncRealData();
+        }
+        return;
+      } catch (err) {
+        proposalArea.innerHTML = window.fenixRenderState('ERROR', 'Falha ao executar diretiva no WorldStateEngine.', err.message);
+        return;
+      }
+    }
+
     proposalArea.innerHTML = window.fenixRenderState('LOADING', `Processando ação [${mode}] no kernel de inteligência...`);
 
     // Highlight cycle step
@@ -2979,10 +3067,15 @@
     if (sampleBtn && !sampleBtn.__fenixBound) {
       sampleBtn.__fenixBound = true;
       sampleBtn.onclick = async () => {
-        sampleBtn.textContent = 'Coletando...';
-        await window.loadObservabilityView();
-        sampleBtn.textContent = 'Amostra Coletada!';
-        setTimeout(() => { sampleBtn.textContent = 'Coletar amostra'; }, 1500);
+        sampleBtn.textContent = 'Coletando telemetria…';
+        try {
+          await safeFetchJson('/api/v2/reality/summary');
+          await window.loadObservabilityView();
+          sampleBtn.textContent = 'Telemetria Atualizada!';
+        } catch (_) {
+          sampleBtn.textContent = 'Falha na coleta';
+        }
+        setTimeout(() => { sampleBtn.textContent = 'Coletar amostra'; }, 2000);
       };
     }
 
@@ -2998,19 +3091,21 @@
       const ht = (realityRes.ok && realityRes.data && realityRes.data.hostTelemetry) ? realityRes.data.hostTelemetry : {};
       const pm2 = (rtStatusRes.ok && rtStatusRes.data && rtStatusRes.data.services && rtStatusRes.data.services.fenixOS) ? (rtStatusRes.data.services.fenixOS.pm2 || {}) : {};
 
-      const cpuVal = ht.cpu?.percent !== undefined ? ht.cpu.percent + '%' : (pm2.cpu !== undefined ? (typeof pm2.cpu === 'number' ? pm2.cpu.toFixed(1) : pm2.cpu) + '%' : '1.2%');
-      const ramVal = ht.memory?.usedPercent !== undefined ? ht.memory.usedPercent + '%' : (pm2.memory ? Math.round(pm2.memory / 1024 / 1024 / 81.92) + '%' : '24%');
+      const cpuVal = ht.cpu?.percent !== undefined ? ht.cpu.percent + '%' : (pm2.cpu !== undefined ? (typeof pm2.cpu === 'number' ? pm2.cpu.toFixed(1) : pm2.cpu) + '%' : '—');
+      const ramVal = ht.memory?.usedPercent !== undefined ? ht.memory.usedPercent + '%' : (pm2.memory ? Math.round(pm2.memory / 1024 / 1024 / 81.92) + '%' : '—');
+      const eventDisplay = eventsRes.ok ? String(events.length) : '—';
+      const streamDisplay = eventsRes.ok ? String(streams.length) : '—';
 
       if (obsMetrics) {
         obsMetrics.innerHTML = `
           <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
             <div style="font-size:11px; color:var(--fenix-muted,#94a3b8);">EVENTBUS EVENTOS</div>
-            <div style="font-size:26px; font-weight:700; color:var(--fenix-cyan,#38bdf8);">${events.length || 24}</div>
-            <small style="color:#10b981;">● Fluxo SSE Ativo</small>
+            <div style="font-size:26px; font-weight:700; color:var(--fenix-cyan,#38bdf8);">${eventDisplay}</div>
+            <small style="color:${eventsRes.ok ? '#10b981' : '#f87171'};">● ${eventsRes.ok ? 'Fluxo SSE Ativo' : 'Indisponível'}</small>
           </div>
           <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
             <div style="font-size:11px; color:var(--fenix-muted,#94a3b8);">STREAMS ÚNICOS</div>
-            <div style="font-size:26px; font-weight:700; color:#a78bfa;">${streams.length || 7}</div>
+            <div style="font-size:26px; font-weight:700; color:#a78bfa;">${streamDisplay}</div>
             <small style="color:var(--fenix-muted,#94a3b8);">Jobs & Heartbeats</small>
           </div>
           <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
@@ -3169,7 +3264,18 @@
     } else if (activeView === 'terminal') {
       if (typeof window.loadTerminalView === 'function') window.loadTerminalView();
     } else if (activeView === 'agents') {
+      if (typeof window.fenixLoadAgents === 'function') window.fenixLoadAgents();
       if (typeof window.loadAgentsTable === 'function') window.loadAgentsTable();
+      if (typeof window.renderAgentsTable === 'function') window.renderAgentsTable();
+    } else if (activeView === 'operations') {
+      if (typeof window.loadLiveOperations === 'function') window.loadLiveOperations();
+      if (typeof window.renderOperationsView === 'function') window.renderOperationsView();
+    } else if (activeView === 'ide') {
+      if (typeof window.loadIdeView === 'function') window.loadIdeView();
+      if (typeof window.fenixInitIdeWorkspace === 'function') window.fenixInitIdeWorkspace();
+    } else if (activeView === 'city') {
+      if (typeof window.loadCityView === 'function') window.loadCityView();
+      if (typeof window.refreshCityBrief === 'function') window.refreshCityBrief();
     } else if (activeView === 'projects') {
       if (typeof window.loadRegistryProjects === 'function') window.loadRegistryProjects();
     } else if (activeView === 'flowgraph') {
@@ -3418,6 +3524,10 @@
   window.openSpatialAgentChat = function (agent, screenPos) {
     if (!agent) return;
     window.__currentSpatialAgent = agent;
+    window.closeSpatialChat?.();
+    if (typeof window.fenixShowWorldAgentInspector === 'function') {
+      return window.fenixShowWorldAgentInspector(agent);
+    }
     const chatEl = document.getElementById('fenixSpatialAgentChat');
     if (!chatEl) return;
 
@@ -3451,14 +3561,12 @@
       `;
     }
 
-    if (screenPos) {
-      const parent = chatEl.parentElement || document.getElementById('view-city');
-      const pRect = parent ? parent.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
-      const left = Math.max(10, Math.min(pRect.width - 340, screenPos.x + 35));
-      const top = Math.max(10, Math.min(pRect.height - 240, screenPos.y - 140));
-      chatEl.style.left = left + 'px';
-      chatEl.style.top = top + 'px';
-    }
+    const parent = chatEl.parentElement || document.getElementById('view-city');
+    const pRect = parent ? parent.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
+    const left = screenPos ? Math.max(20, Math.min(pRect.width - 370, screenPos.x + 35)) : 30;
+    const top = screenPos ? Math.max(70, Math.min(pRect.height - 300, screenPos.y - 140)) : 100;
+    chatEl.style.left = left + 'px';
+    chatEl.style.top = top + 'px';
     chatEl.style.display = 'flex';
   };
 
