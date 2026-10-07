@@ -410,6 +410,11 @@ async function createApp(options = {}) {
   app.pluginSkills = new PluginSkillsEcosystem({ store, bus, controlPlane, approvals });
   app.cognitiveEncryption = new CognitiveEncryptionService({ store, bus, controlPlane });
   app.npcCity = new NpcCityEngine({ store, bus, controlPlane, agentSwarm: app.agentSwarm, digitalTwin });
+  // City Live Bridge — Digital Twin VIVO. Projeta eventos reais (mission.*, runtime.job.*,
+  // swarm.*) no estado dos NPCs. Aditivo: não substitui o NpcCityEngine nem a
+  // AICityProjection; alimenta /api/city/npc/list e o inspector /api/city/npc/:id/inspect.
+  const { CityLiveBridge } = require('./ai-city/city-live-bridge');
+  app.cityLiveBridge = new CityLiveBridge({ store, bus, controlPlane, fabricEvents, agentSwarm: app.agentSwarm }).attach();
   app.companyDailyAnalysis = new CompanyDailyAnalysisService({ store, bus, controlPlane, digitalTwin, knowledgeGenome: app.knowledgeGenome, masterNode: app.masterNode, agentSwarm: app.agentSwarm });
 
   // OMEGA Attachments

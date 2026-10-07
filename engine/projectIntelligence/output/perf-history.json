@@ -1,0 +1,18 @@
+[
+  {
+    "at": "2026-10-07T16:40:13.725Z",
+    "DISCOVERY_TIME": 36,
+    "INDEX_TIME_INCREMENTAL": 330,
+    "MEMORY_LOOKUP_TIME": 0,
+    "TOTAL_UNDERSTAND_TASK": 366,
+    "cacheHitRate": 0.9929
+  },
+  {
+    "at": "2026-10-07T16:42:04.825Z",
+    "DISCOVERY_TIME": 58,
+    "INDEX_TIME_INCREMENTAL": 367,
+    "MEMORY_LOOKUP_TIME": 0,
+    "TOTAL_UNDERSTAND_TASK": 425,
+    "cacheHitRate": 0.994
+  }
+]

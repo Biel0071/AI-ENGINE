@@ -1,14 +1,2 @@
-node_modules
-.env
-.env.production
-dist
-build
-*.log
-generated/
-engine/memory/*-runtime.json
-engine/memory/knowledge-fallback.json
-engine/memory/*-history.json
-engine/memory/design-*-memory.json
-.tmp-*.cjs
-crm/backend/crm/sessions/
-**/sessions/
+# Engine generated output
+engine/projectIntelligence/output/

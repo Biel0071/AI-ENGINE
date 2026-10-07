@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 32;
+const CURRENT_SCHEMA_VERSION = 33;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -70,6 +70,11 @@ const COLLECTIONS_BY_VERSION = {
   // estrategico. Estado (refs de missao), estado derivado do estado das missoes. O Brain
   // decompoe um objetivo em N missoes via mission-planner e as agrupa aqui.
   32: ['programs'],
+  // AI City Live Bridge — estado vivo dos NPCs derivado de eventos reais (mission.*,
+  // runtime.job.*, memory.recorded, ai.cache_hit). É projeção derivada, não fonte de
+  // verdade: pode ser reconstruída a partir do AgentSwarm + missões. Vazio significa
+  // "nenhum evento observado ainda", nunca dados inventados.
+  33: ['cityNpcStates'],
 };
 
 function normalizeVersion(value) {
