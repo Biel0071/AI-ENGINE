@@ -16,7 +16,9 @@ if /I "%~1"=="projects" goto PROJECTS_DEPLOY
 if /I "%~1"=="workspace" goto WORKSPACE_DEPLOY
 if /I "%~1"=="project-git" goto PROJECT_GIT_DEPLOY
 if /I "%~1"=="api-secret" goto API_SECRET_DEPLOY
-if /I "%~1"=="project-deploy-module" goto PROJECT_DEPLOY_MODULE
+if /I "%~1"=="unreal" goto UNREAL_DEPLOY
+if /I "%~1"=="intent" goto INTENT_DEPLOY
+if /I "%~1"=="reality" goto REALITY_DEPLOY
 
 echo [1/8] Deploying HTML shells...
 scp -i %KEY% %SRC%/index.html %HOST%:/opt/fenix-os/public/index.html
@@ -29,6 +31,10 @@ scp -i %KEY% %SRC%/preview.html %HOST%:/opt/fenix-os/grg/public/preview.html
 echo [2/8] Deploying core app and controllers...
 scp -i %KEY% %SRC%/unified-app.js %HOST%:/opt/fenix-os/public/unified-app.js
 scp -i %KEY% %SRC%/unified-app.js %HOST%:/opt/fenix-os/grg/public/unified-app.js
+scp -i %KEY% %SRC%/fenix-request-guard.js %HOST%:/opt/fenix-os/public/fenix-request-guard.js
+scp -i %KEY% %SRC%/fenix-request-guard.js %HOST%:/opt/fenix-os/grg/public/fenix-request-guard.js
+scp -i %KEY% %SRC%/global-selection-store.js %HOST%:/opt/fenix-os/public/global-selection-store.js
+scp -i %KEY% %SRC%/global-selection-store.js %HOST%:/opt/fenix-os/grg/public/global-selection-store.js
 scp -i %KEY% %SRC%/command-center.js %HOST%:/opt/fenix-os/public/command-center.js
 scp -i %KEY% %SRC%/command-center.js %HOST%:/opt/fenix-os/grg/public/command-center.js
 scp -i %KEY% %SRC%/fenix-operational-os.js %HOST%:/opt/fenix-os/public/fenix-operational-os.js
@@ -53,6 +59,8 @@ scp -i %KEY% %SRC%/connections-panel.js %HOST%:/opt/fenix-os/grg/public/connecti
 echo [3/8] Deploying AI City ^& Pixel Engine (Pixi 8 Pipeline)...
 scp -i %KEY% %SRC%/iso-city.js %HOST%:/opt/fenix-os/public/iso-city.js
 scp -i %KEY% %SRC%/iso-city.js %HOST%:/opt/fenix-os/grg/public/iso-city.js
+scp -i %KEY% %SRC%/office-live.js %HOST%:/opt/fenix-os/public/office-live.js
+scp -i %KEY% %SRC%/office-live.js %HOST%:/opt/fenix-os/grg/public/office-live.js
 scp -i %KEY% %SRC%/fenix-city-event-adapter.js %HOST%:/opt/fenix-os/public/fenix-city-event-adapter.js
 scp -i %KEY% %SRC%/fenix-city-event-adapter.js %HOST%:/opt/fenix-os/grg/public/fenix-city-event-adapter.js
 scp -i %KEY% %SRC%/fenix-pixel-engine.js %HOST%:/opt/fenix-os/public/fenix-pixel-engine.js
@@ -71,6 +79,8 @@ scp -i %KEY% %SRC%/pixi-semantic-zoom.js %HOST%:/opt/fenix-os/public/pixi-semant
 scp -i %KEY% %SRC%/pixi-semantic-zoom.js %HOST%:/opt/fenix-os/grg/public/pixi-semantic-zoom.js
 scp -i %KEY% %SRC%/pixi-building-interior.js %HOST%:/opt/fenix-os/public/pixi-building-interior.js
 scp -i %KEY% %SRC%/pixi-building-interior.js %HOST%:/opt/fenix-os/grg/public/pixi-building-interior.js
+scp -i %KEY% %SRC%/city-reality-engine.js %HOST%:/opt/fenix-os/public/city-reality-engine.js
+scp -i %KEY% %SRC%/city-reality-engine.js %HOST%:/opt/fenix-os/grg/public/city-reality-engine.js
 
 echo [4/8] Deploying IDE, Flow Graph ^& Specialized Modules...
 scp -i %KEY% %SRC%/fenix-flow-graph.js %HOST%:/opt/fenix-os/public/fenix-flow-graph.js
@@ -79,6 +89,8 @@ scp -i %KEY% %SRC%/fenix-visual-ide.js %HOST%:/opt/fenix-os/public/fenix-visual-
 scp -i %KEY% %SRC%/fenix-visual-ide.js %HOST%:/opt/fenix-os/grg/public/fenix-visual-ide.js
 scp -i %KEY% %SRC%/fenix-v11-interactions.js %HOST%:/opt/fenix-os/public/fenix-v11-interactions.js
 scp -i %KEY% %SRC%/fenix-v11-interactions.js %HOST%:/opt/fenix-os/grg/public/fenix-v11-interactions.js
+scp -i %KEY% %SRC%/fenix-mascot-sidebar.js %HOST%:/opt/fenix-os/public/fenix-mascot-sidebar.js
+scp -i %KEY% %SRC%/fenix-mascot-sidebar.js %HOST%:/opt/fenix-os/grg/public/fenix-mascot-sidebar.js
 scp -i %KEY% %SRC%/observatory-client.js %HOST%:/opt/fenix-os/public/observatory-client.js
 scp -i %KEY% %SRC%/observatory-client.js %HOST%:/opt/fenix-os/grg/public/observatory-client.js
 scp -i %KEY% %SRC%/project-hub-controller.js %HOST%:/opt/fenix-os/public/project-hub-controller.js
@@ -111,6 +123,14 @@ scp -i %KEY% %SRC%/project-ide-live.js %HOST%:/opt/fenix-os/public/project-ide-l
 scp -i %KEY% %SRC%/project-ide-live.js %HOST%:/opt/fenix-os/grg/public/project-ide-live.js
 scp -i %KEY% %SRC%/project-ide-live.css %HOST%:/opt/fenix-os/public/project-ide-live.css
 scp -i %KEY% %SRC%/project-ide-live.css %HOST%:/opt/fenix-os/grg/public/project-ide-live.css
+scp -i %KEY% %SRC%/unreal-world-live.js %HOST%:/opt/fenix-os/public/unreal-world-live.js
+scp -i %KEY% %SRC%/unreal-world-live.js %HOST%:/opt/fenix-os/grg/public/unreal-world-live.js
+scp -i %KEY% %SRC%/fenix-world-3d.js %HOST%:/opt/fenix-os/public/fenix-world-3d.js
+scp -i %KEY% %SRC%/fenix-world-3d.js %HOST%:/opt/fenix-os/grg/public/fenix-world-3d.js
+scp -i %KEY% %SRC%/fenix-world-3d.css %HOST%:/opt/fenix-os/public/fenix-world-3d.css
+scp -i %KEY% %SRC%/fenix-world-3d.css %HOST%:/opt/fenix-os/grg/public/fenix-world-3d.css
+scp -i %KEY% %SRC%/fenix-world-ui.js %HOST%:/opt/fenix-os/public/fenix-world-ui.js
+scp -i %KEY% %SRC%/fenix-world-ui.js %HOST%:/opt/fenix-os/grg/public/fenix-world-ui.js
 
 echo [5/8] Deploying Design System ^& Complete Stylesheets...
 scp -i %KEY% %SRC%/unified.css %HOST%:/opt/fenix-os/public/unified.css
@@ -137,6 +157,8 @@ scp -i %KEY% %SRC%/fenix-v10.css %HOST%:/opt/fenix-os/public/fenix-v10.css
 scp -i %KEY% %SRC%/fenix-v10.css %HOST%:/opt/fenix-os/grg/public/fenix-v10.css
 scp -i %KEY% %SRC%/fenix-v15.css %HOST%:/opt/fenix-os/public/fenix-v15.css
 scp -i %KEY% %SRC%/fenix-v15.css %HOST%:/opt/fenix-os/grg/public/fenix-v15.css
+scp -i %KEY% %SRC%/unreal-world.css %HOST%:/opt/fenix-os/public/unreal-world.css
+scp -i %KEY% %SRC%/unreal-world.css %HOST%:/opt/fenix-os/grg/public/unreal-world.css
 scp -i %KEY% %SRC%/fenix-window-overrides.css %HOST%:/opt/fenix-os/public/fenix-window-overrides.css
 scp -i %KEY% %SRC%/fenix-window-overrides.css %HOST%:/opt/fenix-os/grg/public/fenix-window-overrides.css
 scp -i %KEY% %SRC%/design-system.css %HOST%:/opt/fenix-os/public/design-system.css
@@ -151,6 +173,10 @@ scp -i %KEY% %SRC%/layout-patch.css %HOST%:/opt/fenix-os/public/layout-patch.css
 scp -i %KEY% %SRC%/layout-patch.css %HOST%:/opt/fenix-os/grg/public/layout-patch.css
 scp -i %KEY% %SRC%/level30.css %HOST%:/opt/fenix-os/public/level30.css
 scp -i %KEY% %SRC%/level30.css %HOST%:/opt/fenix-os/grg/public/level30.css
+scp -i %KEY% %SRC%/fenix-mascot-sidebar.css %HOST%:/opt/fenix-os/public/fenix-mascot-sidebar.css
+scp -i %KEY% %SRC%/fenix-mascot-sidebar.css %HOST%:/opt/fenix-os/grg/public/fenix-mascot-sidebar.css
+scp -i %KEY% %SRC%/city-reality.css %HOST%:/opt/fenix-os/public/city-reality.css
+scp -i %KEY% %SRC%/city-reality.css %HOST%:/opt/fenix-os/grg/public/city-reality.css
 
 echo [6/8] Deploying static assets and icons...
 scp -r -i %KEY% %SRC%/assets/ %HOST%:/opt/fenix-os/public/
@@ -158,11 +184,13 @@ scp -r -i %KEY% %SRC%/assets/ %HOST%:/opt/fenix-os/grg/public/
 scp -i %KEY% %SRC%/favicon.ico %HOST%:/opt/fenix-os/public/favicon.ico
 scp -i %KEY% %SRC%/favicon.ico %HOST%:/opt/fenix-os/grg/public/favicon.ico
 
-echo [7/8] Reloading frontend gateway service (PM2 #17)...
-ssh -i %KEY% %HOST% "pm2 reload 17"
+echo [7/8] Deploying runtime configs and reloading services (fenix-backend + fenix-frontend)...
+scp -i %KEY% c:/projetos/ai-engine-core/ai-engine/grg/ecosystem.config.js %HOST%:/opt/fenix-os/grg/ecosystem.config.js
+scp -i %KEY% c:/projetos/ai-engine-core/ai-engine/grg/ecosystem.config.js %HOST%:/opt/fenix-os/ecosystem.config.js
+ssh -i %KEY% %HOST% "pm2 reload fenix-backend && pm2 reload fenix-frontend"
 
-echo [8/8] Verifying health and HTTP response...
-ssh -i %KEY% %HOST% "curl -s -o /dev/null -w '%%{http_code}' http://127.0.0.1:3000/"
+echo [8/8] Verifying backend and frontend health on VPS...
+ssh -i %KEY% %HOST% "curl -fsS http://127.0.0.1:4410/health && echo '' && curl -s -o /dev/null -w '%%{http_code}' http://127.0.0.1:3000/app"
 
 echo =========================================================================
 echo Deploy complete from canonical source: %SRC%
@@ -173,7 +201,7 @@ exit /b 0
 echo Deploying canonical City frontend to both webroots...
 ssh -i %KEY% %HOST% "mkdir -p /opt/fenix-os/public/vendor /opt/fenix-os/grg/public/vendor"
 if errorlevel 1 exit /b 1
-for %%F in (index.html city-integration.js fenix-city-event-adapter.js fenix-v11-interactions.js fenix-v11-phase6.css fenix-operational-os.js iso-city.js live-runtime.js unified-app.js city-brief.js city-brief.css premium-world-live.js premium-world.css fenix-world-3d.js fenix-world-3d.css fenix-world-ui.js) do (
+for %%F in (index.html city-integration.js fenix-city-event-adapter.js fenix-v11-interactions.js fenix-v11-phase6.css fenix-operational-os.js iso-city.js office-live.js live-runtime.js unified-app.js city-brief.js city-brief.css premium-world-live.js premium-world.css fenix-world-3d.js fenix-world-3d.css fenix-world-ui.js) do (
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
   if errorlevel 1 exit /b 1
   scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
@@ -183,11 +211,14 @@ scp -i %KEY% %SRC%/vendor/three.min.js %HOST%:/opt/fenix-os/public/vendor/three.
 if errorlevel 1 exit /b 1
 scp -i %KEY% %SRC%/vendor/three.min.js %HOST%:/opt/fenix-os/grg/public/vendor/three.min.js
 if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "mkdir -p /opt/fenix-os/grg/src/world-model"
+scp -i %KEY% grg/src/world-model/* %HOST%:/opt/fenix-os/grg/src/world-model/
+scp -i %KEY% grg/src/server.js %HOST%:/opt/fenix-os/grg/src/server.js
 ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/api/living-city-routes.js /opt/fenix-os/grg/src/api/living-city-routes.js.before-premium-world"
 if errorlevel 1 exit /b 1
 scp -i %KEY% grg/src/api/living-city-routes.js %HOST%:/opt/fenix-os/grg/src/api/living-city-routes.js
 if errorlevel 1 exit /b 1
-ssh -i %KEY% %HOST% "node --check /opt/fenix-os/grg/src/api/living-city-routes.js && pm2 reload 16 && pm2 reload 17"
+ssh -i %KEY% %HOST% "node --check /opt/fenix-os/grg/src/api/living-city-routes.js && node --check /opt/fenix-os/grg/src/server.js && pm2 reload fenix-backend && pm2 reload fenix-frontend"
 if errorlevel 1 exit /b 1
 ssh -i %KEY% %HOST% "(for i in $(seq 1 90); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/app && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:4410/health && curl -fsS -o /dev/null http://127.0.0.1:3000/app && diff -qr --exclude='*.bak*' --exclude='*.before-*' /opt/fenix-os/public /opt/fenix-os/grg/public"
 exit /b %ERRORLEVEL%
@@ -304,3 +335,53 @@ scp -i %KEY% grg/gateway/frontend-gateway.js %HOST%:/opt/fenix-os/frontend-gatew
 if errorlevel 1 exit /b 1
 ssh -i %KEY% %HOST% "node --check /opt/fenix-os/frontend-gateway.js && pm2 reload 17 && (for i in 1 2 3 4 5 6 7 8 9 10; do curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && break; sleep 1; done) && curl -fsS -o /dev/null http://127.0.0.1:3000/GRG-login && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
 exit /b %ERRORLEVEL%
+
+:UNREAL_DEPLOY
+echo Deploying canonical Unreal Living World (HTML, JS, CSS, Routes, Server) to both webroots...
+for %%F in (index.html unreal-world-live.js unreal-world.css) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+scp -i %KEY% grg/src/api/unreal-world-routes.js %HOST%:/opt/fenix-os/grg/src/api/unreal-world-routes.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/server.js /opt/fenix-os/grg/src/server.js.before-unreal"
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/server.js %HOST%:/opt/fenix-os/grg/src/server.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "node --check /opt/fenix-os/grg/src/api/unreal-world-routes.js && node --check /opt/fenix-os/grg/src/server.js && pm2 reload 16 && pm2 reload 17 && (for i in $(seq 1 45); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && break; sleep 1; done) && diff -qr --exclude='*.bak*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+exit /b %ERRORLEVEL%
+
+:INTENT_DEPLOY
+echo Deploying canonical Intent Engine 2.0 via atomic package...
+tar -czf intent-deploy.tar.gz grg/src/intent grg/src/missions/intent-engine.js grg/src/orchestrator/intent-engine.js grg/src/api/intent-routes.js grg/src/server.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% intent-deploy.tar.gz %HOST%:/tmp/intent-deploy.tar.gz
+if errorlevel 1 exit /b 1
+del intent-deploy.tar.gz
+ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/server.js /opt/fenix-os/grg/src/server.js.before-intent && tar -xzf /tmp/intent-deploy.tar.gz -C /opt/fenix-os/ && rm -f /tmp/intent-deploy.tar.gz && node --check /opt/fenix-os/grg/src/intent/self-model.js && node --check /opt/fenix-os/grg/src/intent/intent-compiler.js && node --check /opt/fenix-os/grg/src/intent/intent-engine.js && node --check /opt/fenix-os/grg/src/api/intent-routes.js && node --check /opt/fenix-os/grg/src/server.js && pm2 reload 16 && (for i in $(seq 1 45); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && break; sleep 1; done) && curl -fsS http://127.0.0.1:4410/health"
+exit /b %ERRORLEVEL%
+
+:REALITY_DEPLOY
+echo Deploying City Reality Engine (HTML, JS, CSS, Routes) to VPS dual webroots...
+for %%F in (index.html city-reality-engine.js iso-city.js fenix-pixel-engine.js pixi-building-interior.js) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+for %%F in (city-reality.css) do (
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/public/%%F
+  if errorlevel 1 exit /b 1
+  scp -i %KEY% %SRC%/%%F %HOST%:/opt/fenix-os/grg/public/%%F
+  if errorlevel 1 exit /b 1
+)
+ssh -i %KEY% %HOST% "cp -p /opt/fenix-os/grg/src/api/living-city-routes.js /opt/fenix-os/grg/src/api/living-city-routes.js.before-reality && cp -p /opt/fenix-os/grg/src/api/company-brain-routes.js /opt/fenix-os/grg/src/api/company-brain-routes.js.before-reality"
+scp -i %KEY% grg/src/api/living-city-routes.js %HOST%:/opt/fenix-os/grg/src/api/living-city-routes.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/api/company-brain-routes.js %HOST%:/opt/fenix-os/grg/src/api/company-brain-routes.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "node --check /opt/fenix-os/grg/src/api/living-city-routes.js && node --check /opt/fenix-os/grg/src/api/company-brain-routes.js && pm2 reload fenix-backend && pm2 reload fenix-frontend && (for i in $(seq 1 45); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && break; sleep 1; done) && curl -fsS http://127.0.0.1:4410/health && diff -qr --exclude='*.bak*' --exclude='*.before-*' /opt/fenix-os/public /opt/fenix-os/grg/public"
+exit /b %ERRORLEVEL%
+

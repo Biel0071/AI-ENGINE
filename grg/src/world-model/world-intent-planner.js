@@ -135,10 +135,18 @@ class WorldIntentPlanner {
       else if (text.includes('financeiro') || text.includes('finance')) district = 'finance-district';
       else if (text.includes('comando') || text.includes('governança')) district = 'command-center';
 
-      // Pick an open coordinate offset based on existing buildings count
-      const bldCount = Object.keys(this.stateEngine.buildings || {}).length;
-      const xOffset = -30.0 + ((bldCount % 4) * 16.0);
-      const zOffset = 18.0 + (Math.floor(bldCount / 4) * 18.0);
+      // Pick an open coordinate offset avoiding collision with existing buildings
+      const existingBlds = Object.values(this.stateEngine.buildings || {});
+      const occupiedPlots = existingBlds.map(b => b.coordinates || { x: b.x || 0, z: b.z || 0 });
+      let slotIdx = Math.max(1, existingBlds.length);
+      let xOffset = -26.0 + ((slotIdx % 4) * 22.0);
+      let zOffset = 22.0 + (Math.floor(slotIdx / 4) * 22.0);
+      
+      while (occupiedPlots.some(p => Math.hypot((p.x || 0) - xOffset, (p.z || 0) - zOffset) < 18.0)) {
+        slotIdx++;
+        xOffset = -26.0 + ((slotIdx % 4) * 22.0);
+        zOffset = 22.0 + (Math.floor(slotIdx / 4) * 22.0);
+      }
 
       return [{
         type: 'CREATE_BUILDING',

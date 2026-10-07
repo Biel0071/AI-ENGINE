@@ -1017,7 +1017,23 @@
                 existing.thoughtBubble.setText(bubbleText, emoji);
               }
             } else {
-              this.agents.set(id, a);
+              // Universal 3D Avatar Spawning for ALL active agents in the system
+              let coords = a.coordinates;
+              if (!coords || (coords.x === undefined && coords.z === undefined)) {
+                const idx = this.agents ? this.agents.size : 0;
+                const angle = (idx / 12) * Math.PI * 2;
+                const radius = 6.0 + ((idx % 3) * 4.5);
+                coords = {
+                  x: Math.cos(angle) * radius,
+                  y: 0.8,
+                  z: Math.sin(angle) * radius
+                };
+              }
+              this.spawnDynamicAgent({
+                ...a,
+                id,
+                coordinates: coords
+              });
             }
           }
           const camila = this.agents.get('agent-camila');
@@ -3909,6 +3925,8 @@
         if (typeof window.fenixShowWorldAgentInspector === 'function') {
           window.fenixShowWorldAgentInspector(liveAgent);
         }
+      } else if (data.type === 'building') {
+        this.selectBuilding(data.id || data.buildingId);
       }
     }
 
@@ -4038,6 +4056,15 @@
     }
 
     focusBuilding(buildingId) {
+      if (!buildingId) return;
+      if (this.dynamicBuildings && this.dynamicBuildings.has(buildingId)) {
+        const dyn = this.dynamicBuildings.get(buildingId);
+        const pos = dyn.group ? dyn.group.position : (dyn.position || null);
+        if (pos) {
+          this.focusEntity(new T.Vector3(pos.x, 2.0, pos.z), 26);
+          return;
+        }
+      }
       if (buildingId === 'bld-deposito-mais' || buildingId === 'deposito-mais' || buildingId === 'logistics' || buildingId === 'bld-logistics') {
         this.focusEntity(new T.Vector3(26, 0, -10), 38);
       } else if (buildingId === 'bld-api-platform' || buildingId === 'api-platform') {
@@ -4049,6 +4076,31 @@
         this.focusEntity(new T.Vector3(-44, 0, 14), 42);
       } else if (buildingId === 'bld-ai-nexus' || buildingId === 'ai-district') {
         this.focusEntity(new T.Vector3(-22, 0, -18), 42);
+      } else {
+        const mesh = this.interactiveMeshes.find(m => m.userData?.id === buildingId || m.userData?.buildingId === buildingId);
+        if (mesh) {
+          const wPos = new T.Vector3();
+          mesh.getWorldPosition(wPos);
+          this.focusEntity(wPos, 28);
+        }
+      }
+    }
+
+    selectBuilding(buildingId) {
+      if (!buildingId) return;
+      this.focusBuilding(buildingId);
+      if (typeof window.fenixShowBuildingDetails === 'function') {
+        let bld = this.dynamicBuildings?.get(buildingId);
+        window.fenixShowBuildingDetails(bld || { id: buildingId, name: buildingId });
+      }
+    }
+
+    selectAgent(agentId) {
+      if (!agentId) return;
+      this.focusAgent(agentId);
+      const ag = this.agents.get(agentId) || { id: agentId, name: agentId };
+      if (typeof window.fenixShowWorldAgentInspector === 'function') {
+        window.fenixShowWorldAgentInspector(ag);
       }
     }
 
@@ -4089,6 +4141,12 @@
     }
 
     focusAgent(agentId) {
+      if (!agentId) return;
+      const ag = this.agents.get(agentId);
+      if (ag && ag.mesh) {
+        this.focusEntity(ag.mesh.position, 10);
+        return;
+      }
       if (agentId === 'agent-camila' || (agentId && agentId.includes('camila'))) {
         if (this.camilaGroup) this.focusEntity(this.camilaGroup.position, 8);
       } else if (agentId === 'agent-andre' || (agentId && agentId.includes('andre'))) {
@@ -4462,32 +4520,48 @@
       beacon.position.set(width / 4, roofY + 5.2, depth / 4);
       bldGroup.add(mast, beacon);
 
-      // Billboard Neon Name Badge
+      // Structural mounting truss for billboard anchored on roof
+      const poleGeo = new T.CylinderGeometry(0.08, 0.08, 2.4, 8);
+      const poleMat = this.materials.truckChrome || wallMat;
+      const poleL = new T.Mesh(poleGeo, poleMat);
+      poleL.position.set(-2.5, roofY + 1.2, 0);
+      const poleR = new T.Mesh(poleGeo, poleMat);
+      poleR.position.set(2.5, roofY + 1.2, 0);
+      bldGroup.add(poleL, poleR);
+
+      // High-resolution Canvas with Auto-scaling Typography
       const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 128;
+      canvas.width = 1024;
+      canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
       if (typeof ctx.roundRect === 'function') {
-        ctx.roundRect(0, 0, 512, 128, 20);
+        ctx.roundRect(8, 8, 1008, 240, 32);
       } else {
-        ctx.rect(0, 0, 512, 128);
+        ctx.rect(8, 8, 1008, 240);
       }
       ctx.fill();
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 8;
       ctx.strokeStyle = color;
       ctx.stroke();
-      ctx.font = 'bold 44px sans-serif';
+
+      const textToRender = `${icon} ${name.toUpperCase()}`;
+      let fontSize = 56;
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      while (ctx.measureText(textToRender).width > 920 && fontSize > 26) {
+        fontSize -= 3;
+        ctx.font = `bold ${fontSize}px sans-serif`;
+      }
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${icon} ${name.toUpperCase()}`, 256, 64);
+      ctx.fillText(textToRender, 512, 128);
 
       const signTex = new T.CanvasTexture(canvas);
       const signMat = new T.SpriteMaterial({ map: signTex, transparent: true });
       const signSprite = new T.Sprite(signMat);
-      signSprite.scale.set(7.5, 1.875, 1);
-      signSprite.position.set(0, roofY + 4.2, 0);
+      signSprite.scale.set(8.5, 2.125, 1);
+      signSprite.position.set(0, roofY + 2.4, 0);
       bldGroup.add(signSprite);
 
       // Interactive hit mesh for clicks

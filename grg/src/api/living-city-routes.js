@@ -68,6 +68,22 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
       kind: (state.cognitiveAgents || []).some((item) => item.id === id && item.tenantId === tenantId) ? 'cognitive' : 'registered',
     };
   });
+
+  // Synchronize all discovered agents into WorldStateEngine so their lifecycle & chat are immediately accessible
+  for (const a of agents) {
+    const aid = String(a.id || a.agentId).toLowerCase();
+    if (!worldEngine.agents[aid]) {
+      worldEngine.agents[aid] = {
+        ...a,
+        id: a.id || a.agentId,
+        agentId: a.id || a.agentId,
+        memory: a.memory || []
+      };
+    } else {
+      Object.assign(worldEngine.agents[aid], a);
+    }
+  }
+
   const activeMissions = missions.filter((mission) => ['RUNNING', 'QUEUED', 'PAUSED', 'AWAITING_APPROVAL'].includes(String(mission.status).toUpperCase())).length;
   const hostMachine = {
     id: `runtime:${os.hostname()}`, name: 'Nó Fênix', kind: 'runtime', status: 'ONLINE',
