@@ -14,7 +14,10 @@
     "start": "node server.js",
     "analyze:project": "node engine/runAnalysis.js",
     "analyze:crm": "node scripts/analyze-crm.js",
-    "test:engine": "node --test engine/tests/*.test.js"
+    "test:engine": "node --test engine/tests/*.test.js",
+    "project:intelligence:build": "node engine/projectIntelligence/build.js",
+    "project:intelligence:audit": "node engine/projectIntelligence/audit.js --record",
+    "project:intelligence:query": "node engine/projectIntelligence/query.js"
   },
   "dependencies": {
     "axios": "^1.13.0",

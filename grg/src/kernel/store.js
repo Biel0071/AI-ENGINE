@@ -151,6 +151,7 @@ const EMPTY_STATE = () => ({
   connectorEvents: [],
   aiRouterDecisions: [],
   programs: [],
+  cityNpcStates: [],
 });
 
 class MemoryStore {

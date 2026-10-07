@@ -405,8 +405,23 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/security/encryption/status') return sendJson(res, 200, await app.cognitiveEncryption.getEncryptionStatus(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/security/encryption/tokenize') { const b = await readJson(req); return sendJson(res, 200, await app.cognitiveEncryption.tokenizeAndEncrypt(tenantId, actorId, b.plaintext), requestId); }
 
-      if (req.method === 'GET' && url.pathname === '/api/city/npc/list') return sendJson(res, 200, await app.npcCity.listNpcAgents(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/city/npc/list') return sendJson(res, 200, await app.cityLiveBridge.listNpcs(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/city/npc/chat') { const b = await readJson(req); return sendJson(res, 200, await app.npcCity.chatWithNpc(tenantId, actorId, b.npcId, b.message), requestId); }
+      // Inspector real do NPC: identidade (AgentSwarm) + estado vivo (eventos) + tarefa
+      // (MissionKernel) + memória (MemoryEngine). Ausências aparecem como UNKNOWN.
+      const npcInspectMatch = url.pathname.match(/^\/api\/city\/npc\/([^/]+)\/inspect$/);
+      if (req.method === 'GET' && npcInspectMatch) return sendJson(res, 200, await app.cityLiveBridge.inspectNpc(tenantId, actorId, decodeURIComponent(npcInspectMatch[1])), requestId);
+      // SSE único para eventos vivos da cidade (`city.live`): o frontend reage sem
+      // polling adicional; o refresh periódico continua como fallback passivo.
+      if (req.method === 'GET' && url.pathname === '/api/city/live-stream') {
+        res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
+        res.write(`data: ${JSON.stringify({ source: 'connected', at: new Date().toISOString() })}\n\n`);
+        const onLive = (payload) => { try { res.write(`data: ${JSON.stringify(payload)}\n\n`); } catch { /* conexão encerrada */ } };
+        const off = app.bus.on('city.live', onLive);
+        const keepalive = setInterval(() => { try { res.write(': ping\n\n'); } catch { /* encerrada */ } }, 25000);
+        req.on('close', () => { clearInterval(keepalive); try { if (typeof off === 'function') off(); } catch { /* já removido */ } });
+        return;
+      }
 
       if (req.method === 'GET' && url.pathname === '/api/company/daily-analysis') return sendJson(res, 200, await app.companyDailyAnalysis.getDailyReport(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/company/calendar') return sendJson(res, 200, await app.companyDailyAnalysis.getOperationalCalendar(tenantId, actorId), requestId);
