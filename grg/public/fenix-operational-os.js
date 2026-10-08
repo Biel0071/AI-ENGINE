@@ -2758,129 +2758,50 @@
       target.appendChild(srvGrid);
     }
 
-    function render(data, eco) {
-      const nowStr = new Date().toLocaleTimeString('pt-BR');
-      const srvs = [
-        { name: 'HOST', status: 'ONLINE', version: 'Linux AlmaLinux 9', uptime: '21D', health: '100%', lastCheck: nowStr, source: 'Kernel OS /proc' },
-        { name: 'FASTIFY SERVICES', status: data?.services?.fenixOS?.status === 'ONLINE' ? 'ONLINE' : (data?.services?.engine || 'ONLINE'), version: '0.1.0', uptime: '101m', health: 'HEALTHY', lastCheck: nowStr, source: ':4410 fastify' },
-        { name: 'PM2 DAEMON', status: 'ONLINE', version: '5.4.3', uptime: '21D', health: 'HEALTHY', lastCheck: nowStr, source: 'pm2 RPC' },
-        { name: 'DOCKER ENGINE', status: 'ONLINE', version: '27.5.1', uptime: '21D', health: 'HEALTHY', lastCheck: nowStr, source: 'dockerd socket' },
-        { name: 'REDIS SERVER', status: 'ONLINE', version: '7.2.7', uptime: '21D', health: 'PONG', lastCheck: nowStr, source: ':6379' },
-        { name: 'POSTGRESQL', status: 'ONLINE', version: '16.8', uptime: '21D', health: 'READY', lastCheck: nowStr, source: ':5432' },
-        { name: 'OLLAMA INFERENCE', status: 'ONLINE', version: '0.5.11', uptime: '21D', health: 'READY', lastCheck: nowStr, source: ':11434 (qwen2.5:3b)' },
-        { name: 'AI GATEWAY', status: 'ONLINE', version: '1.25.3', uptime: '21D', health: 'PROXY ACTIVE', lastCheck: nowStr, source: ':3001 openresty/gateway' },
-        { name: 'QDRANT VECTOR', status: 'OFFLINE', version: '—', uptime: '—', health: 'UNREACHABLE', lastCheck: nowStr, source: ':6333' },
-        { name: 'MINIO S3', status: 'OFFLINE', version: '—', uptime: '—', health: 'DISABLED BY OPERATOR', lastCheck: nowStr, source: ':9000' }
-      ];
-
-      const supervisors = eco?.orchestration?.supervisors || [];
-      const capacity = eco?.capacity || { maxCapacity: 8, current: 0, desired: 0, reason: 'Autoscaler active' };
-      const agentRuntime = eco?.agentRuntime || { registered: 0, active: 0, ready: 0, capacity: 8, redisPersistence: 'CONNECTED' };
-
+    const format = (value) => value == null || value === '' ? 'Indisponível' : esc(value);
+    const render = (data, error) => {
+      const services = data?.services && typeof data.services === 'object' ? data.services : {};
+      const infrastructure = data?.infrastructure && typeof data.infrastructure === 'object' ? data.infrastructure : {};
+      const rows = [...Object.entries(services), ...Object.entries(infrastructure)];
+      const runtime = data?.runtime || {};
+      const queue = runtime.queue || {};
+      const agents = runtime.agents || {};
+      const memory = runtime.memory || {};
+      const statusColor = (status) => ['ONLINE', 'HEALTHY', 'CONNECTED'].includes(String(status || '').toUpperCase()) ? '#10b981' : (['OFFLINE', 'FAILED', 'DEGRADED'].includes(String(status || '').toUpperCase()) ? '#f87171' : '#94a3b8');
+      const metric = (label, value) => `
+        <div style="min-width:130px; padding:12px 14px; border:1px solid rgba(148,163,184,.16); border-radius:10px; background:rgba(15,23,42,.72);">
+          <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:.08em;">${label}</div>
+          <div style="margin-top:6px; color:#e2e8f0; font-size:18px; font-weight:700;">${format(value)}</div>
+        </div>`;
       srvGrid.innerHTML = `
-        <div style="grid-column:1/-1; margin-top:20px;">
-          <h4 style="color:#f8fafc; font-size:14px; margin:0 0 12px; display:flex; align-items:center; gap:8px;">
-            <span>🖥️</span> Matriz Operacional de Serviços & Dependências (10 Serviços Canônicos)
-          </h4>
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:12px;">
-            ${srvs.map(s => {
-              const isOnline = s.status === 'ONLINE';
-              const color = isOnline ? '#10b981' : '#ef4444';
-              return `
-                <div class="fenix-srv-card" style="background:#0f172a; border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px 14px;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <h5 style="margin:0; color:#f8fafc; font-size:12px;">${esc(s.name)}</h5>
-                    <span class="evolution-badge" style="background:${color}15; color:${color}; font-size:9px;">● ${esc(s.status)}</span>
-                  </div>
-                  <div style="font-size:11px; color:#94a3b8;">Versão: <code>${esc(s.version)}</code></div>
-                  <div style="font-size:11px; color:#94a3b8;">Uptime: <strong>${esc(s.uptime)}</strong> • Saúde: <strong style="color:${color};">${esc(s.health)}</strong></div>
-                  <div style="font-size:10px; color:#38bdf8; margin-top:2px;">Última Checagem: <strong>${esc(s.lastCheck)}</strong></div>
-                  <div style="font-size:10px; color:#64748b; margin-top:3px;">Fonte: ${esc(s.source)}</div>
-                </div>
-              `;
+        <section style="grid-column:1/-1; margin-top:20px; padding:20px; border:1px solid rgba(45,212,191,.2); border-radius:16px; background:linear-gradient(145deg,rgba(10,18,32,.98),rgba(8,24,34,.94));">
+          <header style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+            <div><div style="font-size:11px; color:#5eead4; letter-spacing:.12em;">FÊNIX / TELEMETRIA</div><h3 style="margin:4px 0 0; color:#f8fafc; font-size:18px;">Runtime e capacidade</h3></div>
+            <div style="color:${data ? '#5eead4' : '#fbbf24'}; font-size:12px;">${data ? `Atualizado ${format(data.timestamp)}` : `Sem leitura${error ? ` · ${format(error)}` : ''}`}</div>
+          </header>
+          <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+            ${metric('Jobs na fila', queue.total)}${metric('Em execução', queue.running)}${metric('Aguardando', queue.queued)}${metric('Agentes registrados', agents.total)}${metric('Agentes trabalhando', agents.working)}${metric('Memórias ativas', memory.entries)}
+          </div>
+          ${rows.length ? `<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px;">
+            ${rows.map(([name, service]) => {
+              const status = typeof service === 'object' && service ? service.status : service;
+              const details = typeof service === 'object' && service ? [service.endpoint, service.adapter && `adaptador ${service.adapter}`, service.latency != null && `${service.latency}ms`, service.pid != null && `PID ${service.pid}`, service.error].filter(Boolean).join(' · ') : '';
+              const color = statusColor(status);
+              return `<article class="fenix-srv-card" style="padding:13px 14px; border:1px solid rgba(148,163,184,.15); border-radius:11px; background:rgba(15,23,42,.72);">
+                <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;"><strong style="color:#e2e8f0; font-size:12px;">${esc(name)}</strong><span style="color:${color}; font-size:10px; font-weight:700;">● ${format(status)}</span></div>
+                <div style="margin-top:7px; color:#94a3b8; font-size:10px; overflow-wrap:anywhere;">${details ? esc(details) : 'Detalhes não fornecidos pela API'}</div>
+              </article>`;
             }).join('')}
-          </div>
+          </div>` : `<div style="padding:18px; border:1px dashed rgba(148,163,184,.25); border-radius:10px; color:#94a3b8;">${data ? 'A API não publicou serviços para monitorar.' : 'Telemetria indisponível; os estados do runtime não foram verificados.'}</div>`}
+          <footer style="margin-top:14px; color:#64748b; font-size:10px;">Fonte: GET /api/v2/runtime/full-status · Limites de concorrência não publicados pela API aparecem como indisponíveis.</footer>
+          ${!data ? '<button type="button" onclick="window.fenixRenderRuntimeServices()" style="margin-top:12px; padding:7px 12px; border:1px solid rgba(45,212,191,.35); border-radius:8px; background:#0f766e33; color:#99f6e4; cursor:pointer;">Tentar novamente</button>' : ''}
+        </section>`;
+    };
 
-          <!-- Capacity Planner & Autonomous Runtime -->
-          <div style="margin-top:20px; background:#0f172a; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px 16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-              <div>
-                <h4 style="color:#f8fafc; font-size:13px; margin:0; display:flex; align-items:center; gap:8px;">
-                  <span>⚖️</span> Capacity Planner & Autoscaler Swarm (Redis-Backed)
-                </h4>
-                <div style="font-size:11px; color:#94a3b8; margin-top:3px;">${esc(capacity.reason || 'Autoscaler balanced')}</div>
-              </div>
-              <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <div style="background:rgba(255,255,255,0.04); padding:4px 10px; border-radius:6px; font-size:11px; color:#cbd5e1;">
-                  Capacidade Máxima: <strong style="color:#38bdf8;">${esc(capacity.maxCapacity || 8)}</strong>
-                </div>
-                <div style="background:rgba(255,255,255,0.04); padding:4px 10px; border-radius:6px; font-size:11px; color:#cbd5e1;">
-                  Ativos/Desejados: <strong style="color:#10b981;">${esc(capacity.current || 0)}</strong> / <strong>${esc(capacity.desired || 0)}</strong>
-                </div>
-                <div style="background:rgba(255,255,255,0.04); padding:4px 10px; border-radius:6px; font-size:11px; color:#cbd5e1;">
-                  Redis State: <strong style="color:#10b981;">${esc(agentRuntime.redisPersistence || 'CONNECTED')}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 11 Specialized Supervisors Swarm Grid -->
-          <div style="margin-top:20px;">
-            <h4 style="color:#f8fafc; font-size:14px; margin:0 0 12px; display:flex; align-items:center; gap:8px;">
-              <span>🤖</span> Swarm de Supervisores Especializados (${supervisors.length || 11} Supervisores)
-            </h4>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
-              ${(supervisors.length ? supervisors : [
-                { id: 'supervisor-orchestration', name: 'Orchestration Supervisor (JARVIS Master)', role: 'ORCHESTRATOR', status: 'STANDBY_READY', description: 'Master coordinator of missions, step DAGs, capacity allocation and cross-domain convergence.' },
-                { id: 'supervisor-frontend', name: 'Frontend Supervisor', role: 'FRONTEND', status: 'STANDBY_READY', description: 'Supervises UI/UX design, screen registry, components, styles and client state.' },
-                { id: 'supervisor-backend', name: 'Backend Supervisor', role: 'BACKEND', status: 'STANDBY_READY', description: 'Supervises Node.js servers, Fastify/Express routes, microservices and data pipelines.' },
-                { id: 'supervisor-qa', name: 'QA & Adversarial Testing Supervisor', role: 'QA', status: 'STANDBY_READY', description: 'Supervises automated testing, Playwright verification, regression test suites and quality gates.' },
-                { id: 'supervisor-devops', name: 'DevOps & Runtime Supervisor', role: 'DEVOPS', status: 'STANDBY_READY', description: 'Supervises PM2 cluster, host Linux kernel, port health, Docker and continuous deployment.' },
-                { id: 'supervisor-security', name: 'Security & Governance Supervisor', role: 'SECURITY', status: 'STANDBY_READY', description: 'Supervises zero-trust policies, credential leak prevention, risk analysis and mutation gates.' },
-                { id: 'supervisor-research', name: 'Research & Codebase Discovery Supervisor', role: 'RESEARCH', status: 'STANDBY_READY', description: 'Supervises static code analysis, dependency exploration, documentation and pattern discovery.' },
-                { id: 'supervisor-browser', name: 'Browser Automation Supervisor', role: 'BROWSER', status: 'STANDBY_READY', description: 'Supervises real headless browser sessions, DOM inspections, interactive flows and screenshots.' },
-                { id: 'supervisor-github', name: 'GitHub & Version Control Supervisor', role: 'GITHUB', status: 'STANDBY_READY', description: 'Supervises Git repositories, branches, commits and PRs.' },
-                { id: 'supervisor-memory', name: 'Memory & Knowledge Supervisor', role: 'MEMORY', status: 'STANDBY_READY', description: 'Supervises episodic memories, semantic knowledge graphs, pattern library and learning loops.' },
-                { id: 'supervisor-observability', name: 'Observability & Telemetry Supervisor', role: 'OBSERVABILITY', status: 'STANDBY_READY', description: 'Supervises live events stream, time series telemetry, audit trails and anomaly detection.' }
-              ]).map(sup => `
-                <div class="fenix-supervisor-card" style="background:#0f172a; border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px 14px; display:flex; flex-direction:column; justify-content:space-between;">
-                  <div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                      <h5 style="margin:0; color:#f8fafc; font-size:12px; font-weight:600;">${esc(sup.name)}</h5>
-                      <span class="evolution-badge" style="background:rgba(56,189,248,0.12); color:#38bdf8; font-size:9px;">${esc(sup.role)}</span>
-                    </div>
-                    <p style="font-size:11px; color:#94a3b8; margin:0 0 8px; line-height:1.4;">${esc(sup.description || '')}</p>
-                  </div>
-                  <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#64748b; border-top:1px solid rgba(255,255,255,0.04); padding-top:6px; margin-top:4px;">
-                    <span style="color:#10b981; font-weight:500;">● ${esc(sup.status || 'STANDBY_READY')}</span>
-                    <span>ID: <code>${esc(sup.id)}</code></span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    if (!srvGrid.dataset.rendered) {
-      render(null, null);
-      srvGrid.dataset.rendered = 'true';
-    }
-
-    try {
-      const [resStatus, resEco] = await Promise.all([
-        safeFetchJson('/api/v2/runtime/full-status', {}, 4000).catch(() => ({ ok: false })),
-        safeFetchJson('/api/v2/autonomous/ecosystem-status', {}, 4000).catch(() => ({ ok: false }))
-      ]);
-      const data = resStatus.ok ? resStatus.data : null;
-      const eco = resEco.ok ? resEco.data : null;
-      render(data, eco);
-    } catch (e) {
-      console.warn('fenixRenderRuntimeServices error:', e.message);
-    }
+    srvGrid.innerHTML = '<div style="grid-column:1/-1; padding:20px; color:#94a3b8;">Carregando telemetria do runtime…</div>';
+    const response = await safeFetchJson('/api/v2/runtime/full-status', {}, 4000).catch((error) => ({ ok: false, error: error.message }));
+    render(response.ok ? response.data : null, response.error || response.statusText || (response.status ? `HTTP ${response.status}` : null));
   };
-
   // ═══════════════════════════════════════════════════════════════════════════
   // 13. KNOWLEDGE RELATIONSHIPS EXPLORER & KNOWLEDGE TABS (Section 12)
   // ═══════════════════════════════════════════════════════════════════════════

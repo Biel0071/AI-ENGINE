@@ -6573,22 +6573,25 @@ window.__fenixSubmitIdeChat = async function () {
     if (pmTitle) pmTitle.textContent = 'Infraestrutura & Topologia de Execução Real';
 
     try {
-      const [reality, runtimeStatus] = await Promise.all([
-        fetch('/api/v2/reality/summary').then(r => r.json()).catch(() => ({})),
-        fetch('/api/v2/runtime/full-status').then(r => r.json()).catch(() => ({}))
+      const [realityResponse, runtimeResponse] = await Promise.all([
+        fetch('/api/v2/reality/summary').then(async response => ({ ok: response.ok, status: response.status, data: response.ok ? await response.json() : null })).catch(error => ({ ok: false, error: error.message })),
+        fetch('/api/v2/runtime/full-status').then(async response => ({ ok: response.ok, status: response.status, data: response.ok ? await response.json() : null })).catch(error => ({ ok: false, error: error.message }))
       ]);
 
-      const containers = reality.dockerContainers || [];
-      const pm2 = reality.pm2Processes || [];
-      const ht = reality.hostTelemetry || {};
+      const reality = realityResponse.data || {};
+      const runtimeStatus = runtimeResponse.data || {};
+      const containers = realityResponse.ok && reality.sourceStatus?.docker === 'MEASURED' && Array.isArray(reality.dockerContainers) ? reality.dockerContainers : null;
+      const pm2 = realityResponse.ok && reality.sourceStatus?.pm2 === 'MEASURED' && Array.isArray(reality.pm2Processes) ? reality.pm2Processes : null;
+      const ht = realityResponse.ok ? reality.hostTelemetry || {} : {};
       const services = runtimeStatus.services || {};
-      const overall = runtimeStatus.overall || 'OPERATIONAL';
+      const overall = runtimeResponse.ok ? runtimeStatus.overall || 'UNKNOWN' : 'UNAVAILABLE';
+      const safeText = value => String(value ?? 'Indisponível').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 
-      const cpuPercent = ht.cpu?.percent !== undefined ? ht.cpu.percent + '%' : '--';
-      const ramUsed = ht.memory?.usedMb !== undefined ? ht.memory.usedMb : '--';
-      const ramTotal = ht.memory?.totalMb !== undefined ? ht.memory.totalMb : '--';
-      const diskPercent = ht.disk?.usedPercent !== undefined ? ht.disk.usedPercent + '%' : '--';
-      const osRelease = ht.system?.release || 'Linux 5.14';
+      const cpuPercent = ht.cpu?.percent != null ? ht.cpu.percent + '%' : 'Indisponível';
+      const ramUsed = ht.memory?.usedMb != null ? ht.memory.usedMb : 'Indisponível';
+      const ramTotal = ht.memory?.totalMb != null ? ht.memory.totalMb : 'Indisponível';
+      const diskPercent = ht.disk?.usedPercent != null ? ht.disk.usedPercent + '%' : 'Indisponível';
+      const osRelease = ht.system?.release || 'Indisponível';
 
       const serviceEntries = Object.entries(services);
 
@@ -6598,18 +6601,18 @@ window.__fenixSubmitIdeChat = async function () {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px;">
               <div style="font-size:11px; color:var(--fenix-muted);">DOCKER CONTAINERS</div>
-              <div style="font-size:28px; font-weight:800; color:#38bdf8;">${containers.length}</div>
-              <small style="color:#10b981;">● Contêineres Detectados</small>
+              <div style="font-size:28px; font-weight:800; color:#38bdf8;">${containers === null ? '—' : containers.length}</div>
+              <small style="color:${containers === null ? '#94a3b8' : '#10b981'};">${containers === null ? 'Inventário indisponível' : '● Contêineres detectados'}</small>
             </div>
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px;">
               <div style="font-size:11px; color:var(--fenix-muted);">PROCESSOS PM2</div>
-              <div style="font-size:28px; font-weight:800; color:#a78bfa;">${pm2.length}</div>
-              <small style="color:#10b981;">● Daemons & Backends Ativos</small>
+              <div style="font-size:28px; font-weight:800; color:#a78bfa;">${pm2 === null ? '—' : pm2.length}</div>
+              <small style="color:${pm2 === null ? '#94a3b8' : '#10b981'};">${pm2 === null ? 'Inventário indisponível' : '● Processos detectados'}</small>
             </div>
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px;">
               <div style="font-size:11px; color:var(--fenix-muted);">STATUS DO RUNTIME</div>
-              <div style="font-size:24px; font-weight:800; color:${overall === 'HEALTHY' ? '#10b981' : '#f59e0b'};">${overall}</div>
-              <small style="color:#cbd5e1;">${serviceEntries.length} serviços monitorados</small>
+              <div style="font-size:24px; font-weight:800; color:${['HEALTHY', 'ONLINE'].includes(overall) ? '#10b981' : '#f59e0b'};">${safeText(overall)}</div>
+              <small style="color:#cbd5e1;">${runtimeResponse.ok ? `${serviceEntries.length} serviços publicados` : 'Runtime indisponível'}</small>
             </div>
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px;">
               <div style="font-size:11px; color:var(--fenix-muted);">HOST TELEMETRY</div>
@@ -6634,14 +6637,14 @@ window.__fenixSubmitIdeChat = async function () {
               </thead>
               <tbody>
                 ${serviceEntries.map(([name, s]) => {
-                  const status = typeof s === 'object' ? (s.status || (s.healthy ? 'ONLINE' : 'DEGRADED')) : String(s);
+                  const status = typeof s === 'object' ? (s.status || (s.healthy ? 'ONLINE' : 'DEGRADED')) : String(s ?? 'UNAVAILABLE');
                   const isOnline = status === 'ONLINE' || status === 'HEALTHY' || status === 'CONNECTED';
                   const latency = (typeof s === 'object' && s.latencyMs !== undefined) ? s.latencyMs + 'ms' : (typeof s === 'object' && s.error ? s.error : '--');
                   return `
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-                      <td style="padding:10px 14px; font-weight:bold; color:#f8fafc;">${name}</td>
-                      <td style="padding:10px 14px;"><span style="color:${isOnline ? '#10b981' : '#f87171'}; background:rgba(${isOnline ? '16,185,129' : '248,113,113'},0.12); padding:2px 8px; border-radius:4px; font-weight:700;">● ${status}</span></td>
-                      <td style="padding:10px 14px; color:#cbd5e1; font-family:monospace;">${latency}</td>
+                      <td style="padding:10px 14px; font-weight:bold; color:#f8fafc;">${safeText(name)}</td>
+                      <td style="padding:10px 14px;"><span style="color:${isOnline ? '#10b981' : '#f87171'}; background:rgba(${isOnline ? '16,185,129' : '248,113,113'},0.12); padding:2px 8px; border-radius:4px; font-weight:700;">● ${safeText(status)}</span></td>
+                      <td style="padding:10px 14px; color:#cbd5e1; font-family:monospace;">${safeText(latency)}</td>
                     </tr>
                   `;
                 }).join('')}
@@ -6665,14 +6668,14 @@ window.__fenixSubmitIdeChat = async function () {
                 </tr>
               </thead>
               <tbody>
-                ${containers.length > 0 ? containers.map(c => `
+                ${containers === null ? '<tr><td colspan="4" style="padding:14px; color:#fbbf24; text-align:center;">Inventário Docker indisponível; a API não confirmou uma leitura.</td></tr>' : containers.length > 0 ? containers.map(c => `
                   <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-                    <td style="padding:10px 14px; font-weight:bold; color:#f8fafc;">${c.name}</td>
-                    <td style="padding:10px 14px; color:#10b981;"><span style="background:rgba(16,185,129,0.15); padding:2px 8px; border-radius:4px;">● ${c.status}</span></td>
-                    <td style="padding:10px 14px; font-family:monospace; color:#38bdf8;">${c.ports || 'Internal'}</td>
-                    <td style="padding:10px 14px; color:#94a3b8; font-size:11px;">${c.image || '--'}</td>
+                    <td style="padding:10px 14px; font-weight:bold; color:#f8fafc;">${safeText(c.name)}</td>
+                    <td style="padding:10px 14px; color:${c.status === 'ONLINE' || c.status === 'HEALTHY' ? '#10b981' : '#f87171'};"><span style="background:rgba(16,185,129,0.15); padding:2px 8px; border-radius:4px;">● ${safeText(c.status)}</span></td>
+                    <td style="padding:10px 14px; font-family:monospace; color:#38bdf8;">${safeText(c.ports || 'Sem portas publicadas')}</td>
+                    <td style="padding:10px 14px; color:#94a3b8; font-size:11px;">${safeText(c.image)}</td>
                   </tr>
-                `).join('') : '<tr><td colspan="4" style="padding:14px; color:#94a3b8; text-align:center;">Nenhum contêiner retornado pela API</td></tr>'}
+                `).join('') : '<tr><td colspan="4" style="padding:14px; color:#94a3b8; text-align:center;">Leitura medida: nenhum contêiner ativo.</td></tr>'}
               </tbody>
             </table>
           </div>
@@ -6693,15 +6696,15 @@ window.__fenixSubmitIdeChat = async function () {
                 </tr>
               </thead>
               <tbody>
-                ${pm2.length > 0 ? pm2.map(p => `
+                ${pm2 === null ? '<tr><td colspan="5" style="padding:14px; color:#fbbf24; text-align:center;">Inventário PM2 indisponível; a API não confirmou uma leitura.</td></tr>' : pm2.length > 0 ? pm2.map(p => `
                   <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-                    <td style="padding:10px 14px; font-weight:bold; color:#f8fafc;">${p.name}</td>
-                    <td style="padding:10px 14px; font-family:monospace; color:#38bdf8;">${p.pid}</td>
-                    <td style="padding:10px 14px; color:#10b981;"><span style="background:rgba(16,185,129,0.15); padding:2px 8px; border-radius:4px;">● ${p.status}</span></td>
-                    <td style="padding:10px 14px; color:#cbd5e1;">${p.memoryMb} MB</td>
-                    <td style="padding:10px 14px; color:#94a3b8;">${Math.round((p.uptimeSeconds || 0) / 3600)}h</td>
+                    <td style="padding:10px 14px; font-weight:bold; color:#f8fafc;">${safeText(p.name)}</td>
+                    <td style="padding:10px 14px; font-family:monospace; color:#38bdf8;">${safeText(p.pid)}</td>
+                    <td style="padding:10px 14px; color:${p.status === 'ONLINE' ? '#10b981' : '#f87171'};"><span style="background:rgba(16,185,129,0.15); padding:2px 8px; border-radius:4px;">● ${safeText(p.status)}</span></td>
+                    <td style="padding:10px 14px; color:#cbd5e1;">${safeText(p.memoryMb)} MB</td>
+                    <td style="padding:10px 14px; color:#94a3b8;">${p.uptimeSeconds == null ? 'Indisponível' : `${Math.round(p.uptimeSeconds / 3600)}h`}</td>
                   </tr>
-                `).join('') : '<tr><td colspan="5" style="padding:14px; color:#94a3b8; text-align:center;">Nenhum processo retornado pela API</td></tr>'}
+                `).join('') : '<tr><td colspan="5" style="padding:14px; color:#94a3b8; text-align:center;">Leitura medida: nenhum processo PM2 ativo.</td></tr>'}
               </tbody>
             </table>
           </div>

@@ -1718,26 +1718,30 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
 
   if (method === 'POST' && pathname === '/api/v2/terminal/exec') {
     await app.controlPlane.authorize(identity.tenantId, identity.actorId, 'runtime:admin');
+    const { resolveProjectWorkingDirectory } = require('./project-working-directory');
     const body = await readJson(req);
-    const { command, cwd } = body || {};
+    const { command, cwd, projectId } = body || {};
     if (typeof command !== 'string' || !command.trim() || Buffer.byteLength(command) > 4096 || command.includes('\0')) {
       return sendJson(res, 400, { ok: false, error: 'command must be text up to 4096 bytes' });
     }
-    const project = getProjectById('fenix-os');
-    const projectRoot = project?.vpsPath || project?.productionPath;
-    let targetCwd;
-    try {
-      const root = fs.realpathSync(projectRoot);
-      targetCwd = fs.realpathSync(cwd || path.join(root, 'grg', 'src'));
-      const relative = path.relative(root, targetCwd);
-      if (relative.startsWith('..') || path.isAbsolute(relative) || !fs.statSync(targetCwd).isDirectory()) return sendJson(res, 403, { ok: false, error: 'cwd is outside the Fênix project' });
-    } catch(err) {
-      return sendJson(res, 400, { ok: false, error: 'cwd is unavailable' });
+    const project = getProjectById(projectId || 'fenix-os') || getProjectById('fenix-os');
+    const candidates = [
+      project?.localPath,
+      project?.vpsPath,
+      project?.productionPath,
+      project?.workspace
+    ].filter(Boolean);
+    let projectRoot = null;
+    for (const cand of candidates) {
+      if (resolveProjectWorkingDirectory(cand)) { projectRoot = cand; break; }
     }
+    if (!projectRoot) return sendJson(res, 503, { ok: false, error: 'Project workspace is unavailable' });
+    const targetCwd = resolveProjectWorkingDirectory(projectRoot, cwd);
+    if (!targetCwd) return sendJson(res, 403, { ok: false, error: 'cwd must be an existing directory inside the selected project workspace' });
     const commandHash = crypto.createHash('sha256').update(command).digest('hex');
     const audit = await app.audit.record({ tenantId: identity.tenantId, actorId: identity.actorId, action: 'runtime.host_command.started', resource: { cwd: targetCwd, commandHash } });
     try {
-      const stdout = execSync(command, { cwd: targetCwd, timeout: 10000, maxBuffer: 256 * 1024, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const stdout = execSync(command, { cwd: targetCwd, timeout: 30000, maxBuffer: 512 * 1024, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
       await app.audit.record({ tenantId: identity.tenantId, actorId: identity.actorId, action: 'runtime.host_command.completed', resource: { auditId: audit.id, commandHash, code: 0 } });
       return sendJson(res, 200, { ok: true, command, cwd: targetCwd, stdout, stderr: '', code: 0, auditId: audit.id });
     } catch(err) {
