@@ -196,3 +196,11 @@ Todos os itens são `NOT RUN / BLOCKED`; a interação manual com o navegador n�
 | R — Queda de conexão | NOT RUN / BLOCKED | Sem simulação visual |
 | S — Reconectar | NOT RUN / BLOCKED | Sem simulação visual |
 | T — Coerência do mundo | NOT RUN / BLOCKED | Sem captura após reconexão |
+
+## Atualização de observabilidade — 2026-10-08
+
+- A API autenticada do observatório agora lê projetos do `ProjectKernel`, missões do `MissionKernel` e contagens de jobs/agentes do estado persistido filtrado por tenant.
+- O Reality Score permanece `NOT_EVALUATED` com valor nulo até existir auditoria real. Telas são lidas do shell publicado e marcadas `UNVERIFIED`; auditorias, linhagem, inspeção visual e rastreamento sem fonte retornam indisponível em vez de zero ou sucesso.
+- Git, absorção, eventos de missão e swarm deixaram de ser interceptados por respostas estáticas; consultas de autoconhecimento usam a memória real com escopo de tenant. O botão de auditoria não declara sucesso nem gera snapshot inexistente.
+- Testes focados mais recentes: 86 passaram, 0 falharam, incluindo contrato de rota, autenticação HTTP, dados por tenant, indisponibilidade honesta e regressões do fluxo de missão/job/memória.
+- O navegador público ainda não foi validado interativamente e o deploy na VPS continua bloqueado pela divergência do bundle, falha do provedor e limite de disco/RAM já registrados. Esta alteração local ainda não prova operação 24/7.

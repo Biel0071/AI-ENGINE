@@ -21,6 +21,7 @@ const { handleUniversalSystemRoutes } = require('./api/universal-system-routes')
 const { handleLivingCityRoutes } = require('./api/living-city-routes');
 const { handleProjectWorkspaceRoutes } = require('./api/project-workspace-routes');
 const { handleProjectGitRoutes } = require('./api/project-git-routes');
+const { handleObservatoryRoutes } = require('./api/observatory-routes');
 
 process.on('uncaughtException', (err) => console.error('[Server uncaughtException]', err));
 process.on('unhandledRejection', (reason) => console.error('[Server unhandledRejection]', reason));
@@ -391,6 +392,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // seguranca exigem (rejects unauthenticated api access / rejects dev headers by default).
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
+      if (await handleObservatoryRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
 
       if (await require('./api/system-analysis-routes').handleSystemAnalysisRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
 
