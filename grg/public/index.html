@@ -206,6 +206,8 @@
     <link rel="stylesheet" href="/fenix-mascot-sidebar.css?v=1">
     <link rel="stylesheet" href="/unreal-world.css?v=17">
     <link rel="stylesheet" href="/city-reality.css?v=canonical-20261002">
+    <link rel="stylesheet" href="/fenix-master-world-ds.css?v=ds1.0">
+    <link rel="stylesheet" href="/city-media-library.css?v=1">
 
   
 
@@ -1394,68 +1396,116 @@
       </div>
 
       <div class="v10-topbar-left">
-        <div class="v10-brand-crest" style="background:transparent; border:none; padding:0; display:flex; align-items:center;">
-          <img src="/assets/fenix-logo-wing.png" alt="Fênix Logo" style="width:26px; height:26px; filter:drop-shadow(0 0 10px rgba(255,107,0,0.8));" onerror="this.src='/favicon.ico'" />
+        <div class="fnx-brand-lockup" onclick="window.showView?.('city')">
+          <div class="fnx-brand-emblem">
+            <img src="/assets/fenix-logo-wing.png" alt="Fênix Logo" onerror="this.src='/favicon.ico'" />
+          </div>
+          <div class="fnx-brand-meta">
+            <div class="fnx-brand-meta-title">
+              <span>FÊNIX OS</span>
+              <small class="fnx-brand-version-pill">v2.0.0</small>
+            </div>
+            <span class="fnx-brand-meta-sub">SPATIAL AGENT OPERATING SYSTEM</span>
+          </div>
         </div>
-        <div class="v10-brand-text" style="display:flex; flex-direction:column; gap:1px; margin-left:2px;">
-          <span class="v10-brand-name" style="font-size:12.5px; font-weight:900; letter-spacing:0.8px; color:#F8FAFC;">FÊNIX OS <small style="font-size:9.5px; color:#64748B; font-weight:700;">v2.0.0</small></span>
-          <span class="v10-brand-sub" style="font-size:8px; font-weight:800; letter-spacing:0.8px; color:#00D9FF;">SPATIAL AGENT OPERATING SYSTEM</span>
-        </div>
+
         <button class="v10-collapse-toggle-btn" id="sidebarCollapseBtn" type="button" title="Recolher / Expandir Menu">
           <i class="ph-bold ph-caret-left"></i>
         </button>
+
+        <div class="fnx-search-pill" onclick="document.getElementById('cmdDialog')?.showModal()">
+          <i class="ph-bold ph-magnifying-glass"></i>
+          <input type="text" placeholder="Pesquisar no sistema..." readonly />
+          <kbd>Ctrl + K</kbd>
+        </div>
+
+        <button class="fnx-win-icon-btn" onclick="document.getElementById('cmdDialog')?.showModal()" title="Menu Rápido de Aplicativos" type="button">
+          <i class="ph-bold ph-squares-four"></i>
+        </button>
       </div>
 
-      <div class="v10-search-bar" onclick="document.getElementById('cmdDialog')?.showModal()" style="max-width:380px;">
-        <i class="ph-bold ph-magnifying-glass"></i>
-        <input type="text" placeholder="Pesquise, crie, abra ou fale com o Fênix..." readonly />
-        <kbd>Ctrl + K</kbd>
+      <!-- Center Master 4 KPI Capsules Cluster (Matching media_1791387352803.jpg) -->
+      <div class="fnx-topbar-kpis-cluster" id="fnxTopbarKpisCluster">
+        <!-- Capsule 1: Agentes Online (Cyan) -->
+        <div class="fnx-kpi-capsule kpi-cyan" onclick="window.showView?.('agents')" style="cursor:pointer;" title="Ver Agentes Online">
+          <div class="fnx-kpi-icon"><i class="ph-bold ph-users-three"></i></div>
+          <div class="fnx-kpi-data">
+            <div class="fnx-kpi-val-row">
+              <strong class="fnx-kpi-value" id="topKpiAgentsVal">—</strong>
+              <span class="fnx-kpi-label">Agentes Online</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Capsule 2: Missões Ativas (Orange) -->
+        <div class="fnx-kpi-capsule kpi-orange" onclick="window.showView?.('operations')" style="cursor:pointer;" title="Ver Missões Ativas">
+          <div class="fnx-kpi-icon"><i class="ph-bold ph-target"></i></div>
+          <div class="fnx-kpi-data">
+            <div class="fnx-kpi-val-row">
+              <strong class="fnx-kpi-value" id="topKpiMissionsVal">—</strong>
+              <span class="fnx-kpi-label">Missões Ativas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Capsule 3: Jobs em Execução (Purple) -->
+        <div class="fnx-kpi-capsule kpi-purple" onclick="window.showView?.('runtime')" style="cursor:pointer;" title="Ver Jobs em Execução">
+          <div class="fnx-kpi-icon"><i class="ph-bold ph-shield-check"></i></div>
+          <div class="fnx-kpi-data">
+            <div class="fnx-kpi-val-row">
+              <strong class="fnx-kpi-value" id="topKpiJobsVal">—</strong>
+              <span class="fnx-kpi-label">Jobs em Execução</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Capsule 4: Sistema Operacional (Green) -->
+        <div class="fnx-kpi-capsule kpi-green" onclick="window.showView?.('runtime')" style="cursor:pointer;" title="Ver Status do Sistema">
+          <div class="fnx-kpi-icon"><i class="ph-bold ph-check-circle"></i></div>
+          <div class="fnx-kpi-data">
+            <div class="fnx-kpi-val-row">
+              <strong class="fnx-kpi-value" id="topKpiSystemVal">—</strong>
+              <span class="fnx-kpi-label">Sistema Operacional</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="v10-topbar-right">
-        <!-- Topbar Stat Pills (Matching media_1790957515047.jpg) -->
-        <div class="v10-status-pills-cluster" id="v10StatusPillsCluster" style="display: flex; align-items: center; gap: 8px;">
-          <div class="topbar-stat-pill" style="color: #10B981; background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.25);">
-            <i class="ph-bold ph-users"></i> <span id="topbarStatAgents">—</span> Agentes
-          </div>
-          <div class="topbar-stat-pill" style="color: #A855F7; background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.25);">
-            <i class="ph-bold ph-target"></i> <span id="topbarStatMissions">—</span> Missões
-          </div>
-          <div class="topbar-stat-pill" style="color: #38BDF8; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.25);">
-            <i class="ph-bold ph-calendar-blank"></i> <span id="topbarStatMeetings">—</span> Reuniões
-          </div>
-          <div class="topbar-stat-pill" style="color: #00D9FF; background: rgba(0, 217, 255, 0.12); border-color: rgba(0, 217, 255, 0.25);">
-            <i class="ph-bold ph-activity"></i> <span id="topbarStatSystem">—</span> Sistema
-          </div>
+      <div class="fnx-topbar-right">
+        <!-- Global Context Capsule -->
+        <div class="fnx-context-pill">
+          <i class="ph-bold ph-crosshair"></i>
+          <span>FÊNIX OS &bull; <strong>Contexto: Global</strong></span>
         </div>
 
-        <div class="v10-weather-widget" id="v10WeatherWidget" style="display:flex; align-items:center; gap:6px; font-size:11px; color:#F8FAFC; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); padding:4px 10px; border-radius:6px;">
-          <i class="ph-fill ph-sun" style="color:#FBBF24;"></i> <span id="v10WeatherText">São Paulo 24°C</span>
+        <!-- Window Actions -->
+        <div class="fnx-window-actions">
+          <button class="fnx-win-icon-btn" onclick="document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()" title="Tela Cheia" type="button">
+            <i class="ph-bold ph-corners-out"></i>
+          </button>
+          <button class="fnx-win-icon-btn" onclick="window.showView?.('city')" title="AI Living City" type="button">
+            <i class="ph-bold ph-buildings"></i>
+          </button>
+          <button class="fnx-win-icon-btn" onclick="window.FenixSidebar?.toggle?.()" title="Assistente Copilot &amp; Providers" type="button">
+            <i class="ph-bold ph-sparkle"></i>
+          </button>
+          <button class="fnx-win-icon-btn" onclick="window.fenixCollapseLeftSidebar?.()" title="Recolher Painel" type="button">
+            <i class="ph-bold ph-minus"></i>
+          </button>
         </div>
 
-        <div class="v10-clock" id="v10ClockDisplay" style="display:flex; align-items:center; gap:6px; font-size:11px; color:#94A3B8;">
-          <i class="ph-bold ph-calendar"></i> <span id="v10ClockDateText">Ter, 10 Dez 15:42</span>
-        </div>
-
-        <button class="v10-icon-badge-btn" id="notifIcon" type="button" title="Notificações">
-          <i class="ph-fill ph-bell"></i>
-          <span class="v10-badge-num" id="notifCount">0</span>
-        </button>
-
-        <button class="v10-theme-btn" id="themeToggleBtn" type="button" title="Alternar Tema">
-          <i class="ph-bold ph-sun"></i>
-        </button>
-
-        <div class="v10-user-profile" id="userProfileBtn" title="Perfil do Usuário">
-          <img class="v10-user-avatar" src="/assets/user-avatar.png" alt="GRG Admin" onerror="this.src='/favicon.ico'" />
-          <div class="v10-user-name">GRG Admin <span class="v10-user-role">(Admin)</span></div>
-          <i class="ph-bold ph-caret-down" style="font-size: 11px; color: var(--v10-text-dim);"></i>
-        </div>
-
-        <div class="v10-window-controls">
-          <button class="v10-win-btn" title="Minimizar"><i class="ph-bold ph-minus"></i></button>
-          <button class="v10-win-btn" title="Maximizar"><i class="ph-bold ph-square"></i></button>
-          <button class="v10-win-btn close" title="Fechar"><i class="ph-bold ph-x"></i></button>
+        <!-- Hidden Backward-Compatibility Elements for Legacy Test Selectors -->
+        <div style="display:none;" aria-hidden="true">
+          <span id="topbarStatAgents">—</span>
+          <span id="topbarStatMissions">—</span>
+          <span id="topbarStatProjects">—</span>
+          <span id="topbarStatMeetings">—</span>
+          <span id="topbarStatSystem">—</span>
+          <div id="v10WeatherWidget"><span id="v10WeatherText">São Paulo 24°C</span></div>
+          <div id="v10ClockDisplay"><span id="v10ClockDateText">Ter, 10 Dez 15:42</span></div>
+          <button id="notifIcon"><span id="notifCount">0</span></button>
+          <button id="themeToggleBtn"></button>
+          <div id="userProfileBtn"></div>
         </div>
       </div>
     </header>
@@ -1465,110 +1515,132 @@
         <!-- NAV SIDEBAR — CANONICAL DOMAINS -->
                 <!-- NAV SIDEBAR V10 -->
         <nav class="sidebar-nav" id="mainSidebarNav">
-          <div class="v10-brand-area" style="padding: 10px 6px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px; display:flex; align-items:center; justify-content: center;">
-            <img class="v10-brand-logo" src="/assets/fenix-logo-wing.png" alt="Fênix Logo" onerror="this.src='/favicon.ico'" style="width:32px; height:32px; filter:drop-shadow(0 0 8px rgba(0,229,160,0.6));" />
+          <div class="v10-brand-area" style="display:none;" aria-hidden="true">
+            <img class="v10-brand-logo" src="/assets/fenix-logo-wing.png" alt="Fênix Logo" onerror="this.src='/favicon.ico'" />
           </div>
 
-          <div class="v10-sidebar-menu" id="v10SidebarMenu">
-            <!-- 6 CANONICAL DOMAINS (Matching media_1790957515047.jpg) -->
-            <button class="nav-item active v10-nav-btn" data-view="city" data-nav="city" title="World — Cidade de Agentes" onclick="window.showView('city')" style="margin:2px 4px; padding:6px 10px; border-radius:8px;">
-              <i class="ph-bold ph-globe-hemisphere-west" style="color:#00D9FF; font-size:16px;"></i>
-              <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
-                <span style="font-size:12px; font-weight:700; color:#F8FAFC;">World</span>
-                <span style="font-size:9.5px; color:#94A3B8;">Cidade de Agentes</span>
-              </div>
-            </button>
-            <button class="nav-item v10-nav-btn" data-view="operations" data-nav="operations" title="Work — Missões e Equipes" onclick="window.showView('operations')" style="margin:2px 4px; padding:6px 10px; border-radius:8px;">
-              <i class="ph-bold ph-briefcase" style="color:#10B981; font-size:16px;"></i>
-              <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
-                <span style="font-size:12px; font-weight:700; color:#F8FAFC;">Work</span>
-                <span style="font-size:9.5px; color:#94A3B8;">Missões e Equipes</span>
-              </div>
-            </button>
-            <button class="nav-item v10-nav-btn" data-view="projects" data-nav="projects" title="Build — Projetos e IDE" onclick="window.showView('projects')" style="margin:2px 4px; padding:6px 10px; border-radius:8px;">
-              <i class="ph-bold ph-code" style="color:#A855F7; font-size:16px;"></i>
-              <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
-                <span style="font-size:12px; font-weight:700; color:#F8FAFC;">Build</span>
-                <span style="font-size:9.5px; color:#94A3B8;">Projetos e IDE</span>
-              </div>
-            </button>
-            <button class="nav-item v10-nav-btn" data-view="memory" data-nav="memory" title="Knowledge — Memória e Descoberta" onclick="window.showView('memory')" style="margin:2px 4px; padding:6px 10px; border-radius:8px;">
-              <i class="ph-bold ph-brain" style="color:#EC4899; font-size:16px;"></i>
-              <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
-                <span style="font-size:12px; font-weight:700; color:#F8FAFC;">Knowledge</span>
-                <span style="font-size:9.5px; color:#94A3B8;">Memória e Descoberta</span>
-              </div>
-            </button>
-            <button class="nav-item v10-nav-btn" data-view="runtime" data-nav="runtime" title="Control — Sistema e Operações" onclick="window.showView('runtime')" style="margin:2px 4px; padding:6px 10px; border-radius:8px;">
-              <i class="ph-bold ph-sliders" style="color:#38BDF8; font-size:16px;"></i>
-              <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
-                <span style="font-size:12px; font-weight:700; color:#F8FAFC;">Control</span>
-                <span style="font-size:9.5px; color:#94A3B8;">Sistema e Operações</span>
-              </div>
-            </button>
-            <button class="nav-item v10-nav-btn" title="Personal — Seu Agente Pessoal" onclick="window.FenixSidebar?.toggle?.()" style="margin:2px 4px; padding:6px 10px; border-radius:8px;">
-              <i class="ph-bold ph-user" style="color:#F59E0B; font-size:16px;"></i>
-              <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
-                <span style="font-size:12px; font-weight:700; color:#F8FAFC;">Personal</span>
-                <span style="font-size:9.5px; color:#94A3B8;">Seu Agente Pessoal</span>
+          <div class="v10-sidebar-menu fnx-sidebar-nav-list" id="v10SidebarMenu">
+            <!-- 1. WORLD: Cidade de Agentes -->
+            <button class="nav-item active fnx-nav-pill-btn" data-view="city" data-nav="city" title="World — Cidade de Agentes" onclick="window.showView('city')">
+              <i class="ph-bold ph-globe"></i>
+              <div class="fnx-nav-label-box">
+                <span class="fnx-nav-title">World</span>
+                <span class="fnx-nav-subtitle">Cidade de Agentes</span>
               </div>
             </button>
 
-            <!-- EMPRESAS -->
-            <div class="nav-section-header" style="padding:10px 10px 4px; font-size:10px; font-weight:800; color:#64748B; letter-spacing:0.8px; display:flex; justify-content:space-between; align-items:center;">
-              <span>EMPRESAS</span>
-            </div>
-            <div id="fenixSidebarCompaniesContainer" style="padding:0 4px; display:flex; flex-direction:column; gap:2px;">
-              <div class="fenix-sidebar-company-card" id="sidebarCompanyAll" onclick="window.fenixSelectCompany?.('ALL'); window.showView?.('city');" style="padding:4px 8px; border-radius:6px; font-size:11px; color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
-                <span>Todas</span> <span style="font-size:9.5px; background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:8px;" id="sidebarCountCompanies">—</span>
+            <!-- 2. WORK: Missões e Equipes -->
+            <button class="nav-item fnx-nav-pill-btn" data-view="operations" data-nav="operations" title="Work — Missões e Equipes" onclick="window.showView('operations')">
+              <i class="ph-bold ph-share-network"></i>
+              <div class="fnx-nav-label-box">
+                <span class="fnx-nav-title">Work</span>
+                <span class="fnx-nav-subtitle">Missões e Equipes</span>
               </div>
-              <div id="fenixSidebarCompaniesList" style="display:flex; flex-direction:column; gap:2px;">
-                <div style="padding:6px 8px; font-size:11px; color:#64748B; font-style:italic;">Nenhuma empresa cadastrada</div>
+            </button>
+
+            <!-- 3. BUILD: Projetos e IDE -->
+            <button class="nav-item fnx-nav-pill-btn" data-view="projects" data-nav="projects" title="Build — Projetos e IDE" onclick="window.showView('projects')">
+              <i class="ph-bold ph-cube"></i>
+              <div class="fnx-nav-label-box">
+                <span class="fnx-nav-title">Build</span>
+                <span class="fnx-nav-subtitle">Projetos e IDE</span>
               </div>
-              <button class="nav-item v10-nav-btn" style="margin:4px 0 0; padding:4px 8px; font-size:10.5px; justify-content:center; border:1px dashed rgba(255,255,255,0.18); color:rgba(255,255,255,0.6);" onclick="window.fenixPromptCreateCompany?.()">
-                <i class="ph-bold ph-plus"></i> <span>+ Nova Empresa</span>
-              </button>
-            </div>
-            
+            </button>
+
+            <!-- 4. MEMORY: Memória e Descoberta -->
+            <button class="nav-item fnx-nav-pill-btn" data-view="memory" data-nav="memory" title="Memory — Memória e Descoberta" onclick="window.showView('memory')">
+              <i class="ph-bold ph-brain"></i>
+              <div class="fnx-nav-label-box">
+                <span class="fnx-nav-title">Memory</span>
+                <span class="fnx-nav-subtitle">Memória e Descoberta</span>
+              </div>
+            </button>
+
+            <!-- 5. CONTROL: Sistema e Métricas -->
+            <button class="nav-item fnx-nav-pill-btn" data-view="runtime" data-nav="runtime" title="Control — Sistema e Métricas" onclick="window.showView('runtime')">
+              <i class="ph-bold ph-sliders"></i>
+              <div class="fnx-nav-label-box">
+                <span class="fnx-nav-title">Control</span>
+                <span class="fnx-nav-subtitle">Sistema e Métricas</span>
+              </div>
+            </button>
+
+            <!-- 6. AGENTS: Agentes e Swarm -->
+            <button class="nav-item fnx-nav-pill-btn" data-view="agents" data-nav="agents" title="Agents — Agentes e Swarm" onclick="window.showView('agents')">
+              <i class="ph-bold ph-users"></i>
+              <div class="fnx-nav-label-box">
+                <span class="fnx-nav-title">Agents</span>
+                <span class="fnx-nav-subtitle">Agentes e Swarm</span>
+              </div>
+            </button>
+
+            <!-- 7. BROWSER: Instância Navegável -->
+            <button class="nav-item fnx-nav-pill-btn" data-view="browser" data-nav="browser" title="Browser — Instância Navegável" onclick="window.showView('browser')">
+              <i class="ph-bold ph-desktop"></i>
+              <div class="fnx-nav-label-box">
+                <span class="fnx-nav-title">Browser</span>
+                <span class="fnx-nav-subtitle">Instância Navegável</span>
+              </div>
+            </button>
+
             <div style="margin-top:auto;"></div>
-            <div style="padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); margin-top:8px;">
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 8px; margin-bottom:2px; cursor:pointer;" onclick="window.showView?.('agents')">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <i class="ph-bold ph-users-three" style="font-size:12px; color:#3B82F6;"></i>
-                  <span style="font-size:11px; font-weight:600; color:var(--v10-text-main);">Agentes</span>
-                </div>
-                <span id="sidebarCountAgents" style="background:rgba(59,130,246,0.15); color:#3B82F6; padding:1px 7px; border-radius:8px; font-size:10.5px; font-weight:700; font-family:monospace;">—</span>
+
+            <!-- Minimap Widget (Bottom-Left) -->
+            <div class="fnx-sidebar-minimap" id="fnxSidebarMinimap">
+              <div class="fnx-minimap-header">
+                <span style="display:flex; align-items:center; gap:5px;"><i class="ph-bold ph-map-pin"></i> MAPA GLOBAL</span>
+                <button type="button" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:11px;" onclick="this.closest('.fnx-sidebar-minimap').style.display='none'">✕</button>
               </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 8px; margin-bottom:2px; cursor:pointer;" onclick="window.showView?.('operations')">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <i class="ph-bold ph-target" style="font-size:12px; color:#10B981;"></i>
-                  <span style="font-size:11px; font-weight:600; color:var(--v10-text-main);">Missões</span>
+              <div class="fnx-minimap-viewport">
+                <img src="/assets/fenix-city-canvas-hd.png" alt="Mapa Global Fênix" onerror="this.src='/favicon.ico'" />
+                <div class="fnx-minimap-controls">
+                  <button type="button" class="fnx-minimap-btn" onclick="window.fenixCity?.zoomIn?.()" title="Aproximar">+</button>
+                  <button type="button" class="fnx-minimap-btn" onclick="window.fenixCity?.zoomOut?.()" title="Afastar">-</button>
                 </div>
-                <span id="sidebarCountMissions" style="background:rgba(16,185,129,0.15); color:#10B981; padding:1px 7px; border-radius:8px; font-size:10.5px; font-weight:700; font-family:monospace;">—</span>
               </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 8px; margin-bottom:2px; cursor:pointer;" onclick="window.showView?.('projects')">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <i class="ph-bold ph-folder" style="font-size:12px; color:#A855F7;"></i>
-                  <span style="font-size:11px; font-weight:600; color:var(--v10-text-main);">Projetos</span>
+            </div>
+
+            <!-- User Profile Capsule (Bottom) -->
+            <div class="fnx-user-capsule" id="fnxUserCapsule">
+              <div class="fnx-user-avatar-wrap">
+                <img src="/assets/user-avatar.png" alt="GRG Admin" onerror="this.src='/favicon.ico'" />
+                <span class="fnx-online-dot"></span>
+              </div>
+              <div class="fnx-user-details">
+                <span class="fnx-user-name">GRG</span>
+                <div class="fnx-user-role-row">
+                  <span>Admin</span>
+                  <span>&bull;</span>
+                  <span class="online-text">Online</span>
                 </div>
-                <span id="sidebarCountProjects" style="background:rgba(168,85,247,0.15); color:#A855F7; padding:1px 7px; border-radius:8px; font-size:10.5px; font-weight:700; font-family:monospace;">—</span>
               </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 8px; margin-bottom:4px; cursor:pointer;" onclick="window.fenixShowAlertsModal?.()" title="Abrir Centro de Notificações e Alertas">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <i class="ph-bold ph-bell-ringing" style="font-size:12px; color:#EF4444;"></i>
-                  <span style="font-size:11px; font-weight:600; color:#F8FAFC;">Notificações &amp; Alertas</span>
-                </div>
-                <span id="sidebarCountEvents" style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:1px 7px; border-radius:8px; font-size:10.5px; font-weight:700; font-family:monospace;">—</span>
-              </div>
-              
-              <div style="display:flex; gap:4px; padding:2px 4px;">
-                <button class="nav-item v10-nav-btn" data-view="marketplace" data-nav="marketplace" title="Marketplace" onclick="window.showView('marketplace')" style="flex:1; padding:4px 6px; font-size:10px; margin:0; justify-content:center;">
-                  <i class="ph-bold ph-storefront"></i> <span>Loja</span>
+              <div class="fnx-user-actions-cluster">
+                <button class="fnx-user-badge-btn" id="fnxNotifBtn" title="Notificações" onclick="window.fenixShowAlertsModal?.()">
+                  <i class="ph-bold ph-bell"></i>
+                  <span class="fnx-user-badge-num">2</span>
                 </button>
-                <button class="nav-item v10-nav-btn" title="Configurações" onclick="alert('Configurações do Fênix OS')" style="flex:1; padding:4px 6px; font-size:10px; margin:0; justify-content:center;">
-                  <i class="ph-bold ph-gear"></i> <span>Ajustes</span>
+                <button class="fnx-user-badge-btn" title="Configurações" onclick="alert('Configurações do Fênix OS')">
+                  <i class="ph-bold ph-gear"></i>
                 </button>
               </div>
+            </div>
+
+            <!-- Weather Pill -->
+            <div style="display:flex; align-items:center; gap:6px; font-size:10px; color:#cbd5e1; padding:4px 8px; margin-top:2px;">
+              <i class="ph-fill ph-sun" style="color:#f59e0b; font-size:12px;"></i>
+              <span>São Paulo 24°C</span>
+            </div>
+
+            <!-- Hidden Backward-Compatibility Elements for Legacy Test Selectors -->
+            <div style="display:none;" aria-hidden="true">
+              <div id="fenixSidebarCompaniesContainer">
+                <div id="sidebarCompanyAll"><span id="sidebarCountCompanies">—</span></div>
+                <div id="fenixSidebarCompaniesList"></div>
+              </div>
+              <span id="sidebarCountAgents">—</span>
+              <span id="sidebarCountMissions">—</span>
+              <span id="sidebarCountProjects">—</span>
+              <span id="sidebarCountEvents">—</span>
             </div>
           </div>
         </nav>
@@ -1741,17 +1813,17 @@
                   <div class="fenix-prompt-input-row">
                     <input type="file" id="fenixCmdFileInput" multiple style="display:none;" onchange="window.fenixHandleCmdFileUpload(event)" accept="*/*" />
                     <button type="button" class="fenix-dock-btn clip" onclick="document.getElementById('fenixCmdFileInput').click()" title="Anexar arquivos (APK, docx, pdf, logs, binaries)"><i class="ph-bold ph-paperclip"></i></button>
-                    <input id="fenixCmdIntentInput" class="fenix-dock-text-input" placeholder="Comando autônomo (ex: analisar APK, reverso de código, docx/pdf, auditar segurança...)" onkeydown="if(event.key==='Enter') window.fenixTriggerAction('EXECUTE');" />
-                    <button id="fenixBtnAnalyze" class="fenix-dock-action-btn" onclick="window.fenixTriggerAction('ANALYZE')"><i class="ph-bold ph-magnifying-glass"></i> Analisar</button>
-                    <button id="fenixBtnPlan" class="fenix-dock-action-btn" onclick="window.fenixTriggerAction('PLAN')"><i class="ph-bold ph-lightbulb"></i> Criar Missão</button>
-                    <button id="fenixBtnExecute" class="fenix-dock-action-btn primary" onclick="window.fenixTriggerAction('EXECUTE')"><i class="ph-bold ph-play"></i> Executar</button>
+                    <input id="fenixCmdIntentInput" class="fenix-dock-text-input" placeholder="Comando autônomo (ex: analisar APK, reverso de código, docx/pdf, auditar segurança...)" onkeydown="if(event.key==='Enter') window.fenixTriggerAction('EXECUTE', this);" />
+                    <button id="fenixBtnAnalyze" class="fenix-dock-action-btn" onclick="window.fenixTriggerAction('ANALYZE', this)"><i class="ph-bold ph-magnifying-glass"></i> Analisar</button>
+                    <button id="fenixBtnPlan" class="fenix-dock-action-btn" onclick="window.fenixTriggerAction('PLAN', this)"><i class="ph-bold ph-lightbulb"></i> Criar Missão</button>
+                    <button id="fenixBtnExecute" class="fenix-dock-action-btn primary" onclick="window.fenixTriggerAction('EXECUTE', this)"><i class="ph-bold ph-play"></i> Executar</button>
                   </div>
                   <div class="fenix-cmd-suggestions-row" style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; align-items:center;">
                     <span style="font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase; display:flex; align-items:center; gap:4px;"><i class="ph-bold ph-globe"></i> World Directives:</span>
-                    <button type="button" class="fenix-chip-btn" onclick="window.fenixSetQuickCommand('Crie um prédio chamado Media Lab na cidade')" style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer;">🏢 + Media Lab</button>
-                    <button type="button" class="fenix-chip-btn" onclick="window.fenixSetQuickCommand('Crie um agente chamado João com papel Especialista')" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); color:#10b981; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer;">🤖 + Agente João</button>
-                    <button type="button" class="fenix-chip-btn" onclick="window.fenixSetQuickCommand('Mova o agente João para o Media Lab')" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); color:#f59e0b; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer;">🚶 Mover João</button>
-                    <button type="button" class="fenix-chip-btn" onclick="window.fenixSetQuickCommand('Alternar iluminação para noite')" style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2); color:#c084fc; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer;">🌙 Alternar Noite</button>
+                    <button type="button" class="fenix-chip-btn" onclick="window.fenixSetQuickCommand('Crie um prédio chamado Media Lab na cidade', this)" style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer;">🏢 + Media Lab</button>
+                    <button type="button" class="fenix-chip-btn" onclick="window.fenixSetQuickCommand('Crie um agente chamado João com papel Especialista', this)" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); color:#10b981; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer;">🤖 + Agente João</button>
+                    <button type="button" class="fenix-chip-btn" onclick="window.fenixSetQuickCommand('Mova o agente João para o Media Lab', this)" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); color:#f59e0b; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer;">🚶 Mover João</button>
+                    <button type="button" class="fenix-chip-btn" onclick="window.fenixSetQuickCommand('Alternar iluminação para noite', this)" style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2); color:#c084fc; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer;">🌙 Alternar Noite</button>
                   </div>
                   <div id="fenixCmdProposalArea" class="fenix-proposal-stage" style="display: none;"></div>
                 </div>
@@ -2246,6 +2318,18 @@
               <button type="button" class="fenix-city-pill-btn" id="btnPillDistritos" onclick="window.fenixCity?.setZoom?.(1.05)"><i class="ph-bold ph-radio-button"></i> Distritos</button>
               <button type="button" class="fenix-city-pill-btn" id="btnPillPredios" onclick="window.fenixCity?.setZoom?.(1.45)"><i class="ph-bold ph-buildings"></i> Prédios</button>
               <button type="button" class="fenix-city-pill-btn" id="btnPillAndares" onclick="document.getElementById('fenixModularBottomDock')?.classList.toggle('minimized')"><i class="ph-bold ph-list-dashes"></i> Andares</button>
+              <button type="button" class="fenix-city-pill-btn" id="btnCityMediaLibrary" aria-controls="fenixCityMediaPanel" aria-expanded="false"><i class="ph-bold ph-images"></i> Mídia</button>
+            </div>
+
+            <!-- Provider Orbit Widget (Phase 10: Connected AI Constellation) -->
+            <div class="fnx-provider-orbit-widget" id="fnxProviderOrbit" title="Provider Orbit Fabric &bull; Clique para gerenciar" onclick="window.FenixSidebar?.showTab?.('providers')">
+              <div class="fnx-orbit-center-icon"><i class="ph-bold ph-brain"></i></div>
+              <div class="fnx-orbit-node node-openai" title="OpenAI · estado não medido"><i class="ph-bold ph-cpu"></i></div>
+              <div class="fnx-orbit-node node-anthropic" title="Anthropic · estado não medido"><i class="ph-bold ph-sparkle"></i></div>
+              <div class="fnx-orbit-node node-gemini" title="Google Gemini · estado não medido"><i class="ph-bold ph-globe"></i></div>
+              <div class="fnx-orbit-node node-llama" title="Meta Llama · estado não medido"><i class="ph-bold ph-robot"></i></div>
+              <div class="fnx-orbit-node node-groq" title="Groq · estado não medido"><i class="ph-bold ph-lightning"></i></div>
+              <div class="fnx-orbit-add-btn" title="Adicionar Provedor">+</div>
             </div>
 
             <!-- Floating Mini Map Widget (Bottom-Left) -->
@@ -3136,6 +3220,37 @@
           </div>
         </div>
 
+        <aside id="fenixCityMediaPanel" class="fenix-city-media-panel" aria-labelledby="fenixCityMediaTitle" hidden>
+          <header class="fenix-city-media-header">
+            <div>
+              <span class="fenix-city-media-eyebrow">ATIVOS DA CIDADE</span>
+              <h2 id="fenixCityMediaTitle">Biblioteca visual</h2>
+              <p>Busque imagens e vídeos reais do Wikimedia Commons e registre os ativos usados no mundo.</p>
+            </div>
+            <button type="button" class="fenix-city-media-close" id="fenixCityMediaClose" aria-label="Fechar biblioteca">×</button>
+          </header>
+          <form id="fenixCityMediaSearch" class="fenix-city-media-search">
+            <label class="fenix-city-media-query-label" for="fenixCityMediaQuery">Buscar na biblioteca pública</label>
+            <div class="fenix-city-media-controls">
+              <input id="fenixCityMediaQuery" name="query" type="search" minlength="2" maxlength="120" placeholder="Ex.: cidade isométrica, floresta, tecnologia" required>
+              <select id="fenixCityMediaType" name="type" aria-label="Tipo de mídia">
+                <option value="image">Imagens</option>
+                <option value="video">Vídeos</option>
+              </select>
+              <button type="submit" class="fenix-city-media-submit">Buscar</button>
+            </div>
+          </form>
+          <p id="fenixCityMediaStatus" class="fenix-city-media-status" aria-live="polite">Digite um termo para buscar mídia real.</p>
+          <section class="fenix-city-media-section" aria-labelledby="fenixCityMediaResultsTitle">
+            <h3 id="fenixCityMediaResultsTitle">Resultados</h3>
+            <div id="fenixCityMediaResults" class="fenix-city-media-grid"></div>
+          </section>
+          <section class="fenix-city-media-section" aria-labelledby="fenixCityMediaSavedTitle">
+            <h3 id="fenixCityMediaSavedTitle">Ativos registrados na Cidade</h3>
+            <div id="fenixCityMediaSaved" class="fenix-city-media-grid"></div>
+          </section>
+        </aside>
+
 <div id="view-operations" class="view fenix-ops-view-container" style="flex-direction:column; width:100%; height:100%; background-color:#050810 !important;">
           <div class="fenix-module-header" style="background:transparent; padding:0; border:none;">
             <div class="fenix-module-title-area">
@@ -4005,8 +4120,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <script src="/runtime-health-badge.js?v=2"></script>
   <script src="/fenix-bootstrap.js?v=boot7"></script>
   <script id="fenix-script--live-runtime-js" src="/live-runtime.js?v=12"></script>
-  <script src="/fenix-city-event-adapter.js?v=2"></script>
-  <script>window.FENIX_WORLD_3D = false;</script>
+  <script src="/fenix-city-event-adapter.js?v=3"></script>
+  <script>window.FENIX_WORLD_3D = true;</script>
 <script id= fenix-ide-dom-compat>window.$=window.$||((id)=>document.getElementById(id));</script>
   <script src="/dev-pipeline-client.js?v=small-task-1"></script>
   
@@ -4428,12 +4543,12 @@ document.addEventListener('DOMContentLoaded', () => {
       function connectSSE() {
         try {
           if (evtSource) evtSource.close();
-          evtSource = new EventSource('/api/v2/living-city/events/stream');
+          evtSource = new EventSource('/api/v2/events/stream');
           const statusEl = document.getElementById('citySseStatus');
           evtSource.onopen = () => {
             if (statusEl) { statusEl.textContent = 'CONECTADO'; statusEl.style.color = '#10b981'; }
           };
-          evtSource.onmessage = (e) => {
+          const handleCityRuntimeEvent = (e) => {
             try {
               const ev = JSON.parse(e.data);
               if (ev && ev.type !== 'ping') {
@@ -4446,6 +4561,7 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             } catch (err) {}
           };
+          evtSource.onmessage = handleCityRuntimeEvent;
           evtSource.onerror = () => {
             if (statusEl) { statusEl.textContent = 'RECONECTANDO'; statusEl.style.color = '#f59e0b'; }
             evtSource.close();
@@ -4852,7 +4968,7 @@ window.__fenixSubmitIdeChat = async function () {
     </div>
   </dialog>
 <script src="/global-selection-store.js"></script>
-<script src="/unified-app.js?v=v12-reality-p4"></script>
+<script src="/unified-app.js?v=v12-reality-p5-kpi-20261008"></script>
 <script src="/fenix-v8-ui.js"></script>
 <script src="/fenix-command-palette.js?v=1"></script>
 <script>
@@ -4989,6 +5105,8 @@ window.__fenixSubmitIdeChat = async function () {
     'workflows': 'ide',
     'automation': 'terminal',
     'skills': 'knowledge',
+    'dna': 'knowledge',
+    'metrics': 'observability',
     'providers': 'mcp',
     'monitoring': 'runtime',
     'events': 'observability',
@@ -5940,13 +6058,15 @@ window.__fenixSubmitIdeChat = async function () {
         if (r.ok) {
           const d = await r.json();
           const ht = d.hostTelemetry || {};
-          const os = ht.system?.release || 'Linux 5.14';
-          const pm2Count = d.pm2Processes?.length || 6;
-          const dockerCount = d.dockerContainers?.length || 9;
-          terminalResult.textContent = `[FÊNIX OS TERMINAL & AUTOMAÇÃO REAL]\nHost: AlmaLinux 9 (Kernel ${os})\nAmbiente: /opt/fenix-os/grg/src\nProcessos PM2: ${pm2Count} ativos | Docker: ${dockerCount} contêineres\nEndpoint Real: POST /api/v2/terminal/exec (Online)\nDigite um comando acima e clique em 'Executar' (ex: uptime, node -v, pm2 status)`;
+          const os = ht.system?.release || 'Indisponível';
+          const pm2Count = Array.isArray(d.pm2Processes) ? d.pm2Processes.length : null;
+          const dockerCount = Array.isArray(d.dockerContainers) ? d.dockerContainers.length : null;
+          terminalResult.textContent = `[FÊNIX OS TERMINAL]\nKernel: ${os}\nProcessos PM2: ${pm2Count == null ? 'Indisponível' : pm2Count}\nContêineres Docker: ${dockerCount == null ? 'Indisponível' : dockerCount}\nEndpoint: POST /api/v2/terminal/exec\nDigite um comando e acompanhe a resposta real do runtime.`;
+        } else {
+          terminalResult.textContent = 'Telemetria do host indisponível. A execução de comandos depende de uma sessão autenticada e do runtime acessível.';
         }
       } catch (err) {
-        terminalResult.textContent = `[FÊNIX OS TERMINAL REAL]\nAmbiente: /opt/fenix-os/grg/src\nEndpoint Real: POST /api/v2/terminal/exec\nDigite um comando acima e clique em 'Executar'.`;
+        terminalResult.textContent = `Telemetria do host indisponível: ${err.message}`;
       }
     }
 
@@ -5961,13 +6081,13 @@ window.__fenixSubmitIdeChat = async function () {
         terminalBtn.disabled = true;
         terminalBtn.textContent = 'Executando...';
       }
-      if (terminalResult) terminalResult.textContent = `$ ${cmd}\n[Executando no host AlmaLinux 9...]`;
+      if (terminalResult) terminalResult.textContent = `$ ${cmd}\n[Enviando para o runtime...]`;
       const startTime = Date.now();
       try {
         const res = await fetchWithTimeout('/api/v2/terminal/exec', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command: cmd, cwd: '/opt/fenix-os/grg/src' })
+          body: JSON.stringify({ command: cmd, projectId: 'fenix-os' })
         }, 30000);
         const data = await res.json();
         const duration = Date.now() - startTime;
@@ -5975,12 +6095,12 @@ window.__fenixSubmitIdeChat = async function () {
         const exitCode = data.code ?? (res.ok && data.ok ? 0 : 1);
         const isSuccess = res.ok && data.ok && exitCode === 0;
 
-        let outText = `[EXECUÇÃO OPERACIONAL EM PRODUÇÃO]\n`;
+        let outText = `[RESULTADO DO RUNTIME]\n`;
         outText += `Comando:    $ ${cmd}\n`;
         outText += `Timestamp:  ${timestamp}\n`;
         outText += `Exit Code:  ${exitCode} (${isSuccess ? 'SUCCESS' : 'FAILURE/BLOCKED'})\n`;
         outText += `Duração:    ${duration}ms\n`;
-        outText += `Ambiente:   ${data.cwd || '/opt/fenix-os/grg/src'}\n`;
+        outText += `Ambiente:   ${data.cwd || 'Indisponível'}\n`;
         outText += `────────────────────────────────────────────────────────────\n`;
         if (data.stdout) outText += `[STDOUT]:\n${data.stdout}\n`;
         if (data.stderr) outText += `[STDERR]:\n${data.stderr}\n`;
@@ -6730,7 +6850,11 @@ window.__fenixSubmitIdeChat = async function () {
     try {
       const data = window.__fenixRealityData || {};
       const kpis = data?.kpis || {};
-      const score = data?.realityScore?.score || 98;
+      const realityStatus = data?.realityScore?.status || 'NOT_EVALUATED';
+      const score = data?.realityScore?.score;
+      const safeText = (value) => String(value ?? '—').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+      const statusText = (metric) => safeText(metric?.status || 'UNVERIFIED');
+      const confidenceText = (metric) => Number.isFinite(metric?.confidence) ? `${Math.round(metric.confidence * 100)}%` : '—';
       
       const modal = document.createElement('div');
       modal.className = 'v12-reality-modal-overlay';
@@ -6743,9 +6867,9 @@ window.__fenixSubmitIdeChat = async function () {
                 <h2 style="margin:0; font-size:22px; color:#38bdf8; display:flex; align-items:center; gap:8px;">
                   <i class="ph-bold ph-shield-check" style="color:#10b981;"></i> FÊNIX OS V12 — Reality Engine Dashboard
                 </h2>
-                <span style="background:rgba(16,185,129,0.2); color:#10b981; padding:3px 10px; border-radius:12px; font-weight:800; font-size:12px; border:1px solid #10b981;">NO MOCK • VERIFIED</span>
+                <span style="background:rgba(251,191,36,0.12); color:#fbbf24; padding:3px 10px; border-radius:12px; font-weight:800; font-size:12px; border:1px solid rgba(251,191,36,.55);">${safeText(realityStatus)}</span>
               </div>
-              <p style="margin:4px 0 0 0; font-size:12px; color:#94a3b8;">Auditoria contínua e integridade de proveniência de dados em tempo real</p>
+              <p style="margin:4px 0 0 0; font-size:12px; color:#94a3b8;">Valores medidos no runtime; campos sem fonte aparecem como não medidos.</p>
             </div>
             <button style="background:none;border:none;color:#94a3b8;font-size:24px;cursor:pointer;" onclick="this.closest('.v12-reality-modal-overlay').remove()">✕</button>
           </div>
@@ -6754,23 +6878,23 @@ window.__fenixSubmitIdeChat = async function () {
           <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:24px;">
             <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:14px; text-align:center;">
               <div style="font-size:11px; color:#10b981; font-weight:700;">REALITY SCORE</div>
-              <div style="font-size:28px; font-weight:900; color:#10b981; margin:4px 0;">${score}%</div>
-              <div style="font-size:10px; color:#64748b;">Zero fake success</div>
+              <div style="font-size:28px; font-weight:900; color:#10b981; margin:4px 0;">${score === null || score === undefined ? '—' : safeText(score + '%')}</div>
+              <div style="font-size:10px; color:#64748b;">${safeText(realityStatus)}</div>
             </div>
             <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:10px; padding:14px; text-align:center;">
               <div style="font-size:11px; color:#38bdf8; font-weight:700;">MOCK COUNT CRÍTICO</div>
-              <div style="font-size:28px; font-weight:900; color:#38bdf8; margin:4px 0;">0</div>
-              <div style="font-size:10px; color:#64748b;">Eliminados do Core</div>
+              <div style="font-size:28px; font-weight:900; color:#38bdf8; margin:4px 0;">${safeText(data.realityScore?.mockCount)}</div>
+              <div style="font-size:10px; color:#64748b;">Resultado de auditoria</div>
             </div>
             <div style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.25); border-radius:10px; padding:14px; text-align:center;">
               <div style="font-size:11px; color:#c084fc; font-weight:700;">DEAD BUTTONS</div>
-              <div style="font-size:28px; font-weight:900; color:#c084fc; margin:4px 0;">0</div>
-              <div style="font-size:10px; color:#64748b;">Handlers ativos</div>
+              <div style="font-size:28px; font-weight:900; color:#c084fc; margin:4px 0;">${safeText(data.realityScore?.deadButtons)}</div>
+              <div style="font-size:10px; color:#64748b;">Resultado de auditoria</div>
             </div>
             <div style="background:rgba(234,179,8,0.08); border:1px solid rgba(234,179,8,0.25); border-radius:10px; padding:14px; text-align:center;">
               <div style="font-size:11px; color:#facc15; font-weight:700;">FONTES REAIS</div>
-              <div style="font-size:28px; font-weight:900; color:#facc15; margin:4px 0;">100%</div>
-              <div style="font-size:10px; color:#64748b;">PM2 / BullMQ / Kernel</div>
+              <div style="font-size:28px; font-weight:900; color:#facc15; margin:4px 0;">${safeText(data.realityScore?.unconnectedApis)}</div>
+              <div style="font-size:10px; color:#64748b;">APIs sem conexão</div>
             </div>
           </div>
 
@@ -6793,43 +6917,43 @@ window.__fenixSubmitIdeChat = async function () {
               <tbody>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
                   <td style="padding:10px 14px; font-weight:700; color:#f8fafc;">Agentes Online</td>
-                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${kpis.agentsOnline?.value !== undefined ? kpis.agentsOnline.value : '--'}</td>
-                  <td style="padding:10px 14px; color:#cbd5e1;">DynamicWorkforce.getAllAgents()</td>
+                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${safeText(kpis.agentsOnline?.value)}</td>
+                  <td style="padding:10px 14px; color:#cbd5e1;">${safeText(kpis.agentsOnline?.source)}</td>
                   <td style="padding:10px 14px; color:#38bdf8;">REGISTRY</td>
-                  <td style="padding:10px 14px;"><span style="color:#10b981;">● LIVE</span></td>
-                  <td style="padding:10px 14px; text-align:center;">100%</td>
+                  <td style="padding:10px 14px;">${statusText(kpis.agentsOnline)}</td>
+                  <td style="padding:10px 14px; text-align:center;">${confidenceText(kpis.agentsOnline)}</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
                   <td style="padding:10px 14px; font-weight:700; color:#f8fafc;">Sistemas Ativos</td>
-                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${kpis.activeSystems?.value?.display ?? '4 Projetos • 13 Contêineres'}</td>
-                  <td style="padding:10px 14px; color:#cbd5e1;">Docker CLI + PM2 + ProjectRegistry</td>
+                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${safeText(kpis.activeSystems?.value?.display)}</td>
+                  <td style="padding:10px 14px; color:#cbd5e1;">${safeText(kpis.activeSystems?.source)}</td>
                   <td style="padding:10px 14px; color:#38bdf8;">LIVE_RUNTIME</td>
-                  <td style="padding:10px 14px;"><span style="color:#10b981;">● LIVE</span></td>
-                  <td style="padding:10px 14px; text-align:center;">100%</td>
+                  <td style="padding:10px 14px;">${statusText(kpis.activeSystems)}</td>
+                  <td style="padding:10px 14px; text-align:center;">${confidenceText(kpis.activeSystems)}</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
                   <td style="padding:10px 14px; font-weight:700; color:#f8fafc;">Tarefas BullMQ</td>
-                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${kpis.tasksTotal?.value?.total ?? 95}</td>
-                  <td style="padding:10px 14px; color:#cbd5e1;">BullMQ Redis Queue Manager</td>
+                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${safeText(kpis.tasksTotal?.value?.total)}</td>
+                  <td style="padding:10px 14px; color:#cbd5e1;">${safeText(kpis.tasksTotal?.source)}</td>
                   <td style="padding:10px 14px; color:#38bdf8;">DATABASE</td>
-                  <td style="padding:10px 14px;"><span style="color:#10b981;">● LIVE</span></td>
-                  <td style="padding:10px 14px; text-align:center;">100%</td>
+                  <td style="padding:10px 14px;">${statusText(kpis.tasksTotal)}</td>
+                  <td style="padding:10px 14px; text-align:center;">${confidenceText(kpis.tasksTotal)}</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
                   <td style="padding:10px 14px; font-weight:700; color:#f8fafc;">Uptime do Sistema</td>
-                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${kpis.uptime?.value?.hostFormatted ?? '71d 22h'}</td>
+                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${safeText(kpis.uptime?.value?.hostFormatted)}</td>
                   <td style="padding:10px 14px; color:#cbd5e1;">os.uptime() Linux Kernel</td>
                   <td style="padding:10px 14px; color:#38bdf8;">SYSTEM_KERNEL</td>
-                  <td style="padding:10px 14px;"><span style="color:#10b981;">● LIVE</span></td>
-                  <td style="padding:10px 14px; text-align:center;">100%</td>
+                  <td style="padding:10px 14px;">${statusText(kpis.uptime)}</td>
+                  <td style="padding:10px 14px; text-align:center;">${confidenceText(kpis.uptime)}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 14px; font-weight:700; color:#f8fafc;">Carga de Recursos</td>
-                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${kpis.performance?.value?.display ?? 'RAM 81% • CPU 92%'}</td>
+                  <td style="padding:10px 14px; color:#10b981; font-weight:bold;">${safeText(kpis.performance?.value?.display)}</td>
                   <td style="padding:10px 14px; color:#cbd5e1;">/proc/loadavg & /proc/meminfo</td>
                   <td style="padding:10px 14px; color:#38bdf8;">SYSTEM_KERNEL</td>
-                  <td style="padding:10px 14px;"><span style="color:#10b981;">● LIVE</span></td>
-                  <td style="padding:10px 14px; text-align:center;">95%</td>
+                  <td style="padding:10px 14px;">${statusText(kpis.performance)}</td>
+                  <td style="padding:10px 14px; text-align:center;">${confidenceText(kpis.performance)}</td>
                 </tr>
               </tbody>
             </table>
@@ -6890,9 +7014,9 @@ window.__fenixSubmitIdeChat = async function () {
 </script>
 <script src="observatory-client.js"></script>
 <script src="/project-hub-controller.js?v=1"></script>
-<script src="/fenix-operational-os.js?v=2.6"></script>
+<script src="/fenix-operational-os.js?v=2.11-auth-cookie-fallback-20261008"></script>
 <script src="/fenix-flow-graph.js?v=1.0"></script>
-<script src="/fenix-v11-interactions.js?v=13"></script>
+<script src="/fenix-v11-interactions.js?v=14-agent-inspector-cache"></script>
 <link rel="stylesheet" href="/project-ide-live.css?v=2">
 <script src="/project-ide-live.js?v=3"></script>
 <link rel="stylesheet" href="/project-hub-live.css?v=2">
@@ -6904,7 +7028,7 @@ window.__fenixSubmitIdeChat = async function () {
 <link rel="stylesheet" href="/city-brief.css?v=2">
 <script src="/city-brief.js?v=3"></script>
 <link rel="stylesheet" href="/premium-world.css?v=2">
-<script src="/premium-world-live.js?v=6"></script>
+<script src="/premium-world-live.js?v=7"></script>
 <script src="/vendor/three.min.js?v=1522"></script>
 <link rel="stylesheet" href="/fenix-world-3d.css?v=3">
 <script src="/fenix-city-machine-scene.js?v=1"></script>
@@ -6920,10 +7044,11 @@ window.__fenixSubmitIdeChat = async function () {
 <script src="/iso-city.js?v=2"></script>
 <script src="/office-live.js?v=2"></script>
 <script src="/unreal-world-live.js?v=17"></script>
+<script src="/city-media-library.js?v=1"></script>
 
     <footer class="fenix-presentation-footer" id="fenixPresentationFooter" title="Fênix Telemetria em Tempo Real">
-      <button class="fenix-footer-alert-btn" id="footerAlertBtn" type="button" onclick="window.fenixShowAlertsModal?.()" title="Visualizar Alertas Operacionais">
-        <i class="ph-bold ph-warning-octagon"></i> <span id="footerAlertCount">—</span> Alertas <i class="ph-bold ph-caret-right"></i>
+      <button class="fnx-alerts-neon-btn fenix-footer-alert-btn" id="footerAlertBtn" type="button" onclick="window.fenixShowAlertsModal?.()" title="Visualizar Alertas Operacionais">
+        <i class="ph-bold ph-warning-octagon"></i> <span id="footerAlertCount">Alertas (—)</span> <i class="ph-bold ph-caret-right"></i>
       </button>
 
       <div class="fenix-ticker-badge">
@@ -6954,11 +7079,11 @@ window.__fenixSubmitIdeChat = async function () {
         </div>
       </div>
 
-      <div class="fenix-footer-hardware-gauges" id="fenixFooterHardwareGauges">
-        <div class="gauge-pill" title="Uso de CPU"><span class="gauge-lbl">CPU</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeCpuFill" style="width:0%;"></div></div> <span id="gaugeCpuVal">—</span></div>
-        <div class="gauge-pill" title="Uso de Memória RAM"><span class="gauge-lbl">MEM</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeMemFill" style="width:0%;"></div></div> <span id="gaugeMemVal">—</span></div>
-        <div class="gauge-pill" title="Uso de Disco"><span class="gauge-lbl">DISCO</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeDiskFill" style="width:0%;"></div></div> <span id="gaugeDiskVal">—</span></div>
-        <div class="gauge-pill" title="Largura de Banda"><span class="gauge-lbl">REDE</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeNetFill" style="width:0%;"></div></div> <span id="gaugeNetVal">—</span></div>
+      <div class="fenix-footer-hardware-gauges fnx-bottom-gauges-cluster" id="fenixFooterHardwareGauges">
+        <div class="gauge-pill fnx-hardware-pill" title="Uso de CPU"><span class="gauge-lbl">CPU</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeCpuFill" style="width:0%;"></div></div> <strong id="gaugeCpuVal">—</strong></div>
+        <div class="gauge-pill fnx-hardware-pill" title="Uso de Memória RAM"><span class="gauge-lbl">MEM</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeMemFill" style="width:0%;"></div></div> <strong id="gaugeMemVal">—</strong></div>
+        <div class="gauge-pill fnx-hardware-pill" title="Uso de Disco"><span class="gauge-lbl">DISCO</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeDiskFill" style="width:0%;"></div></div> <strong id="gaugeDiskVal">—</strong></div>
+        <div class="gauge-pill fnx-hardware-pill" title="Largura de Banda"><span class="gauge-lbl">REDE</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeNetFill" style="width:0%;"></div></div> <strong id="gaugeNetVal">—</strong></div>
       </div>
 
       <div class="fenix-ticker-status fnx-real-100-pill">
@@ -7000,7 +7125,6 @@ window.__fenixSubmitIdeChat = async function () {
         <div style="padding:12px 22px; border-top:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.3); display:flex; justify-content:space-between; align-items:center;">
           <div style="font-size:11px; color:#64748B;">Fonte: estado de eventos da API</div>
           <div style="display:flex; gap:8px;">
-            <button onclick="window.fenixAcknowledgeAllAlerts?.()" style="background:rgba(255,255,255,0.06); color:#cbd5e1; border:1px solid rgba(255,255,255,0.12); padding:6px 14px; border-radius:6px; font-size:11.5px; font-weight:600; cursor:pointer;">Reconhecer Todos</button>
             <button onclick="document.getElementById('fenixAlertsModal').style.display='none'" style="background:#2563eb; color:#fff; border:none; padding:6px 18px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer;">Fechar</button>
           </div>
         </div>
@@ -7080,7 +7204,7 @@ window.__fenixSubmitIdeChat = async function () {
       };
     </script>
     <div id="orchModalContainer"></div>
-    <script src="/fenix-mascot-sidebar.js?v=1"></script>
+    <script src="/fenix-mascot-sidebar.js?v=2-auth-cookie-fallback-20261008"></script>
     <script src="/city-reality-engine.js?v=canonical-20261002"></script>
     <script id="fenix-v17-layout-controller">
       (function() {

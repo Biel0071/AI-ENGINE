@@ -6,7 +6,6 @@
 
 var { getAllProjects } = require('../projects/project-registry');
 var { execSync } = require('node:child_process');
-var { globalJobQueueManager } = require('../execution/job-queue-manager');
 var { resolveAIPlatformUrl } = require('../security/secret-resolver');
 
 async function checkService(url, timeout) {
@@ -23,7 +22,7 @@ async function checkService(url, timeout) {
 
 function getPM2Status(name) {
   try {
-    var out = execSync('pm2 jlist 2>/dev/null', { timeout: 3000 }).toString();
+    var out = execSync('pm2 jlist', { timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
     var list = JSON.parse(out);
     var proc = list.find(function(p) { return p.name === name; });
     if (!proc) return { status: 'NOT_FOUND' };
@@ -55,7 +54,7 @@ async function getFullStatus(app, tenantId) {
   var ollama = results[1];
   var projects = results[2];
 
-  var queueStats = globalJobQueueManager.getQueueStatus();
+  var queueStats = { source: 'JobEngine', status: 'NOT_MEASURED', total: null, pendingConfirmation: null, queued: null, running: null, waiting: null, completed: null, failed: null, cancelled: null, paused: null, isPaused: null };
   var agentStats = { total: null, idle: null, working: null };
   var memoryStats = { entries: null };
 
@@ -63,6 +62,24 @@ async function getFullStatus(app, tenantId) {
     if (app && app.store) {
       var state = await app.store.read();
       var scoped = function(items) { return (Array.isArray(items) ? items : []).filter(function(item) { return !tenantId || item.tenantId === tenantId; }); };
+      if (Array.isArray(state.runtimeJobs)) {
+        var jobs = scoped(state.runtimeJobs);
+        var count = function(statuses) { return jobs.filter(function(job) { return statuses.includes(String(job.status || '').toUpperCase()); }).length; };
+        queueStats = {
+          source: 'JobEngine',
+          status: 'MEASURED',
+          total: jobs.length,
+          pendingConfirmation: count(['AWAITING_APPROVAL', 'PENDING_CONFIRMATION', 'PENDING_APPROVAL']),
+          queued: count(['QUEUED', 'WAITING', 'READY', 'RETRYING']),
+          running: count(['RUNNING', 'IN_PROGRESS']),
+          waiting: count(['PAUSED', 'AWAITING_APPROVAL', 'PENDING_CONFIRMATION', 'PENDING_APPROVAL']),
+          completed: count(['COMPLETED', 'SUCCEEDED']),
+          failed: count(['FAILED', 'DEAD_LETTER']),
+          cancelled: count(['CANCELLED']),
+          paused: count(['PAUSED']),
+          isPaused: null,
+        };
+      }
       var agents = scoped(state.cognitiveAgents);
       agentStats.total = agents.length;
       agentStats.working = agents.filter(function(agent) { return ['WORKING', 'BUSY', 'RUNNING'].includes(String(agent.status || '').toUpperCase()); }).length;

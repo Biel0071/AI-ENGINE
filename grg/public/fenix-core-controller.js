@@ -435,6 +435,7 @@
           if (rawAgentCount === undefined && STATE.agents && STATE.agents.count !== undefined) rawAgentCount = STATE.agents.count;
           if (rawAgentCount === undefined && window.__fenixRealityData?.kpis?.agentsOnline?.value !== undefined) rawAgentCount = window.__fenixRealityData.kpis.agentsOnline.value;
           if (rawAgentCount === undefined && window.__fenixRealityData?.dynamicWorkforce?.count !== undefined) rawAgentCount = window.__fenixRealityData.dynamicWorkforce.count;
+          if (rawAgentCount === undefined && window.fenixCity?.agents instanceof Map) rawAgentCount = window.fenixCity.agents.size;
           if (rawAgentCount === undefined && Array.isArray(window.fenixCity?.agents)) rawAgentCount = window.fenixCity.agents.length;
           
           let agentsVal;
@@ -623,6 +624,11 @@
   // =========================================================================
   const originalShowView = window.showView;
   window.showView = function(viewName) {
+    const prev = STATE.navigation.currentView;
+    if (prev && window.FenixRequestGuard?.cancelViewRequests) {
+      window.FenixRequestGuard.cancelViewRequests(`view-${prev}`);
+    }
+
     if (typeof originalShowView === 'function') {
       originalShowView(viewName);
     } else {
@@ -637,8 +643,16 @@
       }
     }
 
-    STATE.navigation.previousView = STATE.navigation.currentView;
+    STATE.navigation.previousView = prev;
     STATE.navigation.currentView = viewName;
+
+    // Disparar evento de mudança de view para sincronizar WebGL render loop (Requirement 7)
+    window.dispatchEvent(new CustomEvent('fenix-view-changed', { detail: { viewName, previousView: prev } }));
+
+    // Disparar carga real específica da view selecionada (Lazy Hydration - Requirement 6)
+    if (typeof window.hydrateFenixDomain === 'function') {
+      window.hydrateFenixDomain(viewName);
+    }
 
     // Disparar carga real específica da view selecionada
     if (viewName === 'command' || viewName === 'dashboard') {
@@ -653,6 +667,17 @@
         window.loadRegistryProjects();
       } else if (typeof window.renderProjects === 'function') {
         window.renderProjects();
+      }
+    } else if (viewName === 'city' || viewName === 'world') {
+      const is2d = document.body.classList.contains('fenix-mode-2d');
+      if (typeof window.fenixSetCityMode === 'function') {
+        window.fenixSetCityMode(is2d ? 'world' : 'world3d');
+      } else {
+        document.body.classList.toggle('fenix-mode-3d', !is2d);
+      }
+      if (!is2d && window.fenixWorld3D) {
+        window.fenixWorld3D.resize?.();
+        window.fenixWorld3D._resumeAnimationLoop?.();
       }
     }
   };
@@ -681,16 +706,21 @@
 (function () {
   'use strict';
   const labels = { flowgraph:'Flow Graph', command:'Command Center', city:'AI City', agents:'Agentes', operations:'Tarefas e Missões', ide:'IDE', projects:'Projetos', terminal:'Terminal e Desenvolvimento', memory:'Memória', knowledge:'Conhecimento e Skills', mcp:'Provedores e MCP', marketplace:'Marketplace', runtime:'Runtime', observability:'Observabilidade', project:'Project Mirror', browser:'QA Visual' };
+  const routeAliases = { dna: 'knowledge', metrics: 'observability' };
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const byId = id => document.getElementById(id);
   const resources = window.__FENIX_STATE__.resources = {};
   const inflight = new Map();
+  function getAuthHeaders(extra = {}) {
+    const headers = { Accept: 'application/json', ...extra };
+    const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token') || sessionStorage.getItem('grg_token');
+    if (token && token !== 'null') headers.Authorization = 'Bearer ' + token;
+    return headers;
+  }
   async function read(url) {
     if (inflight.has(url)) return inflight.get(url);
     const task = (async()=>{
-      const headers = {Accept:'application/json'};
-      const token = localStorage.getItem('grg_token');
-      if (token && token !== 'null') headers.Authorization = 'Bearer '+token;
+      const headers = getAuthHeaders();
       const response = await fetch(url,{credentials:'same-origin',headers,signal:AbortSignal.timeout(6000)});
       if (!response.ok) {const error=new Error(response.status===404?'Capacidade ainda não implementada':`Falha de comunicação (HTTP ${response.status})`);error.status=response.status;throw error;}
       const data=await response.json();
@@ -720,134 +750,76 @@
       }
     }),
     runtime:()=>load('runtime',['healthList','runtimeServices','workerList'],async()=>{
-      let data=null;
-      try {
-        const res = await fetch('/api/v2/agent-runtime/status', { credentials:'same-origin', signal:AbortSignal.timeout(2000) });
-        if(res.ok) data = await res.json();
-      } catch(_) {}
-      const ar = data?.metrics || {};
-      const workers = [
-        ['Supervisor Swarm', `${ar.ready||15} Agentes Prontos / Capacidade ${ar.capacity||20}`, ar.redisPersistence||'ONLINE'],
-        ['Capacity Planner', ar.scalerReason||'Escalonamento dinâmico ativo', 'ONLINE'],
-        ['Redis Worker Queue', `Fila: ${ar.queueDepth||0} pendentes`, 'ONLINE']
-      ];
-      put('workerList',rows(workers));
-      put('healthList',rows([
-        ['fenix-backend', 'Fastify Kernel :4410 · AlmaLinux 9', 'ONLINE'],
-        ['fenix-frontend', 'Single Shell Gateway :3000', 'ONLINE'],
-        ['bullmq-redis', 'Queue Manager :6379', 'ONLINE'],
-        ['postgresql', 'State Store :5432', 'ONLINE'],
-        ['docker-daemon', 'Container Runtime /var/run/docker.sock', 'ONLINE']
-      ]));
-      put('runtimeServices',rows([
-        ['Fênix AI Engine', 'Porta 4410 · Latência ~12 ms', 'ONLINE'],
-        ['Living City Engine', '2.5D Isometric Engine · SSE Active', 'ONLINE'],
-        ['Agent Swarm Scaler', 'Capacity Planner v2.3 · Redis Bound', 'ONLINE'],
-        ['Memory Neural Graph', 'Level 0-6 Reborn Knowledge Store', 'ONLINE'],
-        ['MCP Tool Registry', 'Governed Capabilities Plane', 'ONLINE']
-      ]));
       const full = await read('/api/v2/runtime/full-status');
-      if (full && full.services) {
-        put('healthList',rows(Object.entries(full.infrastructure||{}).map(([k,v])=>[k,v.container||v.error||'Infraestrutura',v.status])));
-        put('runtimeServices',rows(Object.entries(full.services||{}).map(([k,v])=>[k,v.error||`${v.port?'Porta '+v.port+' · ':''}${v.latency!=null?v.latency+' ms':'Latência não medida'}`,v.status||v.pm2?.status||'Não medido'])));
-      }
+      const services = Object.entries(full.services || {}).map(([name, service]) => [
+        name,
+        service.error || `${service.endpoint || (service.port ? 'Porta ' + service.port : '')}${service.latency != null ? ' · ' + service.latency + ' ms' : ''}` || 'Sem detalhes de medição',
+        service.status || service.pm2?.status || 'Não medido',
+      ]);
+      const infrastructure = Object.entries(full.infrastructure || {}).map(([name, service]) => [
+        name,
+        service.error || service.adapter || service.container || 'Sem detalhes de medição',
+        service.status || 'Não medido',
+      ]);
+      const queue = full.runtime?.queue || {};
+      const agents = full.runtime?.agents || {};
+      put('healthList',rows(services));
+      put('runtimeServices',rows(infrastructure));
+      put('workerList',rows([
+        ['Agentes registrados', agents.total ?? 'Não medido', 'Fonte: estado persistido'],
+        ['Agentes em execução', agents.working ?? 'Não medido', 'Fonte: estado persistido'],
+        ['Agentes prontos', agents.idle ?? 'Não medido', 'Fonte: estado persistido'],
+        ['Fila local', `${queue.queued ?? '—'} na fila · ${queue.running ?? '—'} em execução · fonte ${queue.source || 'não informada'}`, queue.status === 'MEASURED' ? (queue.isPaused == null ? 'Medida · pausa não exposta' : queue.isPaused ? 'PAUSADA' : 'ATIVA') : queue.status || 'Não medida'],
+      ]));
+      if (!full.services && !full.infrastructure && !full.runtime) throw new Error('A API não retornou medições de runtime.');
     }),
     mcp:()=>load('mcp',['connectorList','routerState','toolList'],async()=>{
       const safeGet = async (url) => {
         try {
-          const res = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(2000) });
-          if (res.ok) return await res.json();
-        } catch (_) {}
-        return null;
+          const res = await fetch(url, { credentials: 'same-origin', headers: getAuthHeaders(), signal: AbortSignal.timeout(2000) });
+          if (!res.ok) return { unavailable: `HTTP ${res.status}` };
+          return await res.json();
+        } catch (error) { return { unavailable: error.message }; }
       };
-      
-      const connItems=[
-        ['GitHub Connector','/opt/fenix-os/grg/src · Master branch','CONFIGURED'],
-        ['Docker Engine','/var/run/docker.sock · Container Engine','ONLINE'],
-        ['BullMQ Redis','Port :6379 · Queue fenix-jobs','ONLINE'],
-        ['PostgreSQL','Port :5432 · Schema fenix','ONLINE'],
-        ['Qdrant Vector DB','Port :6333 · Graph Brain embeddings','ONLINE']
-      ];
-      put('connectorList',rows(connItems));
 
-      const [b, c] = await Promise.all([
-        safeGet('/api/v2/ai-platform/status'),
-        safeGet('/api/capabilities')
+      const [connectors, providers, capabilities] = await Promise.all([
+        safeGet('/api/connectors'),
+        safeGet('/api/v2/providers'),
+        safeGet('/api/capabilities'),
       ]);
-
-      let modelRows=[];
-      if(b){
-        const providers=Array.isArray(b.providers)?b.providers:[];
-        if(providers.length>0){
-          modelRows=providers.map(p=>[
-            p.name||p.id,
-            `${p.model||'Default'} · ${p.id==='OLLAMA'?'Primary Local Mesh':'Cloud Fallback Mesh'}`,
-            p.status==='AVAILABLE'?'ONLINE':(p.status||'READY')
-          ]);
-        }
-        if(b.economy){
-          modelRows.push([
-            'Token Economy Gateway',
-            `Cache Hits: ${b.economy.cacheHits||88} · Tokens Economizados: ${(b.economy.tokensSaved ?? 0).toLocaleString('pt-BR')}`,
-            'ACTIVE'
-          ]);
-        }
-      }
-      if(modelRows.length===0){
-        modelRows=[
-          ['Local Ollama LLM','qwen2.5:3b (fast-local) · Primary Local Mesh','ONLINE'],
-          ['Code Generation Engine','codellama:7b · Fallback Mesh','READY'],
-          ['Autonomous Reasoning Gateway','Fênix Multi-Agent Swarm · Direct Router','ACTIVE']
-        ];
-      }
-      put('routerState',rows(modelRows));
-
-      let toolItems=[];
-      if(c && Array.isArray(c.capabilities) && c.capabilities.length > 0){
-        toolItems=c.capabilities.map(x=>[
-          x.name||x.id,
-          x.description||x.type||'Ferramenta Governada',
-          x.status||'REGISTRADA'
-        ]);
-      } else {
-        toolItems=[
-          ['bash-execution','Execução segura de comandos em container/host','REGISTRADA'],
-          ['file-system','Leitura, escrita e diff de artefatos do repositório','REGISTRADA'],
-          ['git-operations','Branch, commit, merge e push governado','REGISTRADA'],
-          ['browser-eval','Validação visual Playwright e captura de tela','REGISTRADA'],
-          ['memory-vector','Busca semântica e armazenamento em Qdrant','REGISTRADA'],
-          ['bullmq-scheduler','Orquestração de filas e jobs em background','REGISTRADA']
-        ];
-      }
-      put('toolList',rows(toolItems));
+      const connectorRows = Array.isArray(connectors.connectors) ? connectors.connectors.map((item) => [item.name || item.connectorId || item.id, item.evidence?.error || item.evidence?.selfTest?.source || 'Estado derivado de autenticação e autoteste', item.state?.value || item.state || 'Não medido']) : [];
+      const providerRows = Array.isArray(providers.providers) ? providers.providers.map((item) => [item.name || item.id, Array.isArray(item.models) ? item.models.join(', ') : 'Modelo não informado', item.status || 'Não medido']) : [];
+      const capabilityRows = Array.isArray(capabilities.capabilities) ? capabilities.capabilities.map((item) => [item.name || item.capabilityId || item.id, item.description || item.type || 'Descrição não informada', item.health || item.state || 'Registrada']) : [];
+      const unavailableRow = (message) => `<tr><td colspan="3">${empty(message)}</td></tr>`;
+      put('connectorList', connectors.unavailable ? unavailableRow(`Conectores indisponíveis: ${connectors.unavailable}`) : rows(connectorRows));
+      put('routerState', providers.unavailable ? unavailableRow(`Provedores indisponíveis: ${providers.unavailable}`) : rows(providerRows));
+      put('toolList', capabilities.unavailable ? unavailableRow(`Capacidades indisponíveis: ${capabilities.unavailable}`) : rows(capabilityRows));
     }),
     observability:()=>load('observability',['observabilityMetrics','seriesGrid'],async()=>{
       const safeGet = async (url) => {
         try {
-          const res = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(1500) });
+          const res = await fetch(url, { credentials: 'same-origin', headers: getAuthHeaders(), signal: AbortSignal.timeout(2000) });
           if (res.ok) return await res.json();
         } catch (_) {}
         return null;
       };
-      const [eventsRes, summaryRes] = await Promise.all([
-        safeGet('/api/events?limit=60'),
-        safeGet('/api/v2/reality/summary')
-      ]);
+      const eventsRes = await safeGet('/api/events?limit=60');
       let events = (eventsRes && Array.isArray(eventsRes.events)) ? eventsRes.events : [];
-      if (events.length === 0 && Array.isArray(window.__cityEventsHistory) && window.__cityEventsHistory.length > 0) {
+      const apiAvailable = Array.isArray(eventsRes?.events);
+      if (!apiAvailable && Array.isArray(window.__cityEventsHistory) && window.__cityEventsHistory.length > 0) {
         events = window.__cityEventsHistory;
       }
-      if (events.length === 0 && window.__FENIX_STATE__?.events?.length > 0) {
-        events = window.__FENIX_STATE__.events;
+      if (!apiAvailable && !events.length && Array.isArray(window.__FENIX_STATE__?.events?.recent)) {
+        events = window.__FENIX_STATE__.events.recent;
       }
-      const uniqueStreams=new Set(events.map(e=>e.stream||e.type||'system')).size || 7;
-      const totalEvents = events.length || 24;
+      const uniqueStreams=new Set(events.map(e=>e.stream||e.type).filter(Boolean)).size;
+      const totalEvents = events.length;
       put('observabilityMetrics',metrics([
         ['Total Eventos',totalEvents],
         ['Canais Únicos',uniqueStreams],
-        ['Throughput',`${Math.min(60,totalEvents)} ev/min`],
-        ['Estado','STREAM ATIVO']
-      ])+stamp('/api/v2/reality/summary'));
+        ['Throughput','Não medido'],
+        ['Estado',apiAvailable?'API disponível':events.length?'Dados locais em cache':'API indisponível']
+      ])+stamp(eventsRes ? '/api/events?limit=60' : '/estado local em cache'));
       put('seriesGrid',events.slice().reverse().map(e=>{
         const typeStr=escape(e.type||e.event||e.stream||'Evento');
         const timeStr=escape(e.timestamp||e.occurredAt||'Agora');
@@ -859,83 +831,38 @@
           </summary>
           <pre style="background:#030712; padding:10px; border-radius:6px; margin-top:8px; font-size:11px; color:#cbd5e1; overflow-x:auto;">${escape(JSON.stringify(e.payload||e.data||e,null,2))}</pre>
         </details>`;
-      }).join('')||empty('Nenhum evento registrado no momento.'));
+      }).join('')||empty(apiAvailable?'Nenhum evento foi registrado pela API.':'A API de eventos está indisponível e não há eventos em cache.'));
     }),
     browser:()=>load('browser',['qaSummary','qaGallery'],async()=>{
-      let data=null;
-      try {
-        const res=await fetch('/api/v2/visual-qa/dashboard',{credentials:'same-origin',headers:{Accept:'application/json'},signal:AbortSignal.timeout(2000)});
-        if(res.ok) data=await res.json();
-      } catch(_) {}
+      const data=await read('/api/v2/visual-qa/dashboard');
       const results=data?list(data,'results'):[];
       const summary=data?.summary||{};
-      const totalScreens=summary.total||14;
-      const passedScreens=summary.passed!=null?summary.passed:totalScreens;
-      const failedScreens=summary.failed||0;
+      const totalScreens=summary.total ?? results.length;
+      const passedScreens=summary.passed ?? '—';
+      const failedScreens=summary.failed ?? '—';
+      const status=summary.status || (summary.passed == null ? 'NÃO EXECUTADO' : 'RELATÓRIO');
       put('qaSummary',`
         <div style="display:flex; gap:16px; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px 20px; flex-wrap:wrap;">
           <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">TOTAL TELAS:</span> <strong style="color:#f8fafc; font-size:18px; margin-left:6px;">${totalScreens}</strong></div>
           <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">PASSOU:</span> <strong style="color:#10b981; font-size:18px; margin-left:6px;">${passedScreens}</strong></div>
-          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">FALHOU:</span> <strong style="color:#10b981; font-size:18px; margin-left:6px;">${failedScreens}</strong></div>
-          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">SCORE:</span> <strong style="color:#38bdf8; font-size:18px; margin-left:6px;">100% PASS</strong></div>
-          <div style="margin-left:auto;"><span class="evolution-badge" style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-size:11px; font-weight:800; padding:4px 14px; border-radius:12px;">● ZERO COLISÕES CERTIFICADO</span></div>
+          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">FALHOU:</span> <strong style="color:#f8fafc; font-size:18px; margin-left:6px;">${failedScreens}</strong></div>
+          <div style="margin-left:auto;"><span class="evolution-badge">${escape(status)}</span></div>
         </div>
       `);
-      const canonicalScreens=[
-        { id: 'command', name: 'Command Center', icon: '🏛️' },
-        { id: 'city', name: 'AI Living City', icon: '🏙️' },
-        { id: 'projects', name: 'Projects Hub & Mirror', icon: '📁' },
-        { id: 'agents', name: 'Agents Workforce', icon: '🤖' },
-        { id: 'operations', name: 'Operations & Jobs', icon: '⚡' },
-        { id: 'memory', name: 'Memory Fabric Reborn', icon: '🧬' },
-        { id: 'knowledge', name: 'Living Observatory', icon: '🔭' },
-        { id: 'ide', name: 'Visual IDE & Code Mapper', icon: '💻' },
-        { id: 'runtime', name: 'Runtime Cockpit', icon: '⚙️' },
-        { id: 'mcp', name: 'MCP Hub & Providers', icon: '🔌' },
-        { id: 'browser', name: 'Browser QA Dashboard', icon: '🧪' },
-        { id: 'observability', name: 'Observability & Events', icon: '👁️' },
-        { id: 'terminal', name: 'Developer Terminal', icon: '⌨️' },
-        { id: 'flowgraph', name: 'Flow Graph Topology', icon: '🕸️' }
-      ];
-      put('qaGallery', canonicalScreens.map(s=>`
+      put('qaGallery', results.map((result)=>`
         <div class="qa-card" style="background:#0f172a; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; text-align:left;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <strong style="font-size:13px; color:#f8fafc; display:flex; align-items:center; gap:6px;"><span>${s.icon}</span> ${s.name}</strong>
-            <span style="font-size:10px; font-weight:800; color:#10b981; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25); padding:2px 8px; border-radius:4px;">● PASSED</span>
+            <strong style="font-size:13px; color:#f8fafc; display:flex; align-items:center; gap:6px;">${escape(result.screen||result.name||'Captura')}</strong>
+            <span class="evolution-badge">${escape(result.status||'Não medido')}</span>
           </div>
-          <div style="font-size:11px; color:#64748b; margin-bottom:12px; font-family:monospace;">view-${s.id} · 0 erros</div>
-          <button onclick="window.showView('${s.id}')" style="width:100%; background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); padding:8px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">Inspecionar Tela →</button>
+          <div style="font-size:11px; color:#64748b; margin-bottom:12px; font-family:monospace;">${escape(result.timestamp||'Data não informada')}${result.diffPercent!=null?` · diferença ${escape(result.diffPercent)}`:''}</div>
+          ${typeof result.path==='string'&&result.path.startsWith('/')&&!result.path.startsWith('//')?`<a href="${escape(result.path)}" target="_blank" rel="noopener">Abrir captura</a>`:''}
         </div>
-      `).join(''));
+      `).join('')||empty(summary.status==='NOT_RUN'?'Nenhuma captura ou execução de QA foi registrada.':'O relatório não contém capturas.'));
     }),
-    operations:()=>load('operations',[],async()=>{
-      put('missionList',rows([
-        ['System Self-Improvement Loop', 'mission-self-improve-01', 'COMPLETED'],
-        ['Agent Capacity Auto-Tuning', 'mission-autoscale-02', 'ACTIVE'],
-        ['Visual QA Regression Certification', 'mission-qa-14screen', 'ONLINE']
-      ]));
-      put('jobList',`<div class="evolution-toolbar"><input aria-label="Buscar tarefas" placeholder="Buscar por tarefa, projeto ou agente" data-job-search><select aria-label="Filtrar status" data-job-status><option value="">Todos os estados</option><option>completed</option><option>active</option><option>waiting</option></select></div><div id="evolutionJobs"><details class="evolution-row"><summary><span>Auditoria Visual de 14 Telas</span><span class="evolution-badge">completed</span></summary><p>Projeto: fenix-v10 · Agente: QA Visual Tester</p><pre>{\n  "status": "success",\n  "screensCertified": 14\n}</pre></details></div>`);
-      try{
-        let missions=[];
-        const mRes=await fetch('/api/v2/fenix/intelligence/missions',{credentials:'same-origin',headers:{Accept:'application/json'},signal:AbortSignal.timeout(2500)});
-        if(mRes.ok){
-          const mData=await mRes.json();
-          missions=mData.missions||[];
-        }
-        if(missions.length>0){
-          put('missionList',rows(missions.slice(0, 30).map(m=>[m.intent||m.objective||m.name||m.id,m.missionId||m.id,m.status||'STANDBY_READY'])));
-        }
-      }catch(_){}
-      try{
-        const data=await read('/api/v2/jobs');
-        const jobs=list(data,'jobs');
-        if(jobs.length>0){
-          window.__FENIX_STATE__.jobs.list=jobs;
-          put('jobList',`<div class="evolution-toolbar"><input aria-label="Buscar tarefas" placeholder="Buscar por tarefa, projeto ou agente" data-job-search><select aria-label="Filtrar status" data-job-status><option value="">Todos os estados</option>${[...new Set(jobs.map(j=>j.status).filter(Boolean))].map(s=>`<option>${escape(s)}</option>`).join('')}</select></div><div id="evolutionJobs"></div>`);
-          renderJobs();
-        }
-      }catch(_){}
-    })
+    operations:()=>typeof window.loadLiveOperations==='function'
+      ? window.loadLiveOperations()
+      : load('operations',['view-operations'],async()=>{throw new Error('O painel de operações não está conectado ao JobEngine.');})
   };
   function renderJobs(){
     const query=document.querySelector('[data-job-search]')?.value.toLowerCase()||'';
@@ -955,7 +882,7 @@
     loaders.terminal = function(){ if(typeof window.loadTerminalView==='function') window.loadTerminalView(); };
     const original=window.showView;
     if (!window.__fenixCanonicalRouter) window.showView=function(route,push=true){
-      route=String(route||'command').replace(/^#\/?/,'').split(/[/?]/)[0];if(!labels[route])route='command';
+      route=String(route||'command').replace(/^#\/?/,'').split(/[/?]/)[0];route=routeAliases[route]||route;if(!labels[route])route='command';
       if(typeof original==='function')original(route,push);
       document.querySelectorAll('.view').forEach(v=>{const active=v.id==='view-'+route;v.classList.toggle('active',active);v.style.setProperty('display',active?(route==='command'?'grid':'flex'):'none','important');});
       document.body.dataset.view=route;document.body.classList.remove('menu-open');
@@ -1010,7 +937,9 @@
         dialog.innerHTML=`<header><div><small>${kind==='agent'?'AGENTE':'EDIFÍCIO'} · RUNTIME</small><h2 id="evolutionInspectorTitle">${escape(entity.name||id)}</h2></div><button data-close-inspector aria-label="Fechar inspeção">Fechar</button></header><p><span class="evolution-badge">${escape(entity.state||entity.health||entity.status||'Não medido')}</span> ${escape(entity.location||entity.district||'')}</p><p>${escape(entity.currentGoal||entity.description||'Nenhuma atividade atual informada.')}</p><h3>Trabalho associado</h3>${related.slice(0,8).map(j=>`<details class="evolution-row"><summary>${escape(j.title||j.objective||j.id)} · ${escape(j.status)}</summary><pre>${escape(JSON.stringify(j.result||j.output||j,null,2))}</pre></details>`).join('')||empty('Nenhuma tarefa associada foi retornada pelo runtime.')}<h3>Criar ou melhorar</h3><label>Objetivo<textarea id="evolutionObjective" placeholder="Descreva o resultado que deseja neste contexto"></textarea></label><p class="evolution-meta">O comando será preparado no workspace para revisão e envio pelo pipeline existente.</p><footer><button data-context-command>Preparar comando</button>${projectId?'<button data-open-workspace>Abrir projeto</button>':''}<button data-open-tasks>Ver tarefas</button></footer>${stamp(url)}`;
       }catch(e){dialog.innerHTML=`<h2 id="evolutionInspectorTitle">Contexto indisponível</h2>${empty(e.message,true)}<button data-close-inspector>Fechar</button>`;}
     }
-    window.fenixOpenAgent=id=>inspect('agent',id);window.fenixOpenBuilding=id=>inspect('building',id);window.inspectAgentDetail=window.fenixOpenAgent;
+    if (!window.fenixOpenAgent) window.fenixOpenAgent=id=>inspect('agent',id);
+    if (!window.fenixOpenBuilding) window.fenixOpenBuilding=id=>inspect('building',id);
+    window.inspectAgentDetail=window.fenixOpenAgent;
     document.addEventListener('fenix:city:select',e=>{const d=e.detail||{};const object=d.object||d; if(object.type==='agent')inspect('agent',object.id);else if(object.type==='building')inspect('building',object.id);});
     dialog.addEventListener('click',e=>{
       if(e.target.closest('[data-close-inspector]'))dialog.close();

@@ -85,9 +85,9 @@ Não houve benchmark contínuo nesta execução. Na verificação anterior da VP
 
 Evidência de 2026-10-08: `/health` da API Fênix e `/v1/models` da API Platform responderam HTTP 200; o chat do provedor falhou (HTTP 500), a credencial configurada recebeu HTTP 401 e Ollama excedeu o timeout. Após o push desta consolidação, a checagem pública encontrou `/GRG-login` e `/health` em HTTP 200, `/api/health` em HTTP 401 e a porta direta `:4410/api/health` inacessível a partir deste ambiente. Isso não confirma que a versão nova esteja rodando. O bundle remoto diverge do local; nenhum deploy ou reinício controlado foi feito.
 
-## Testes E2E — BLOCKED
+## Testes E2E — PARTIAL
 
-Não foi possível executar o percurso autenticado no navegador: a automação de interface recusou a interação durante as tentativas anteriores. Testes HTTP e de integração local não substituem a aceitação visual pelo navegador.
+A automação Playwright autenticada em runtime local passou pelos aliases de navegação, QA Visual sem execução, conectores/MCP, abertura de Operações, seleção de projeto e contexto compartilhado na IDE, leitura e gravação real de arquivo. O salvamento retornou `Salvo com sucesso · memória v1`; como o runtime local estava sem banco, Redis e Qdrant, esse teste não prova persistência durável após reinício. O percurso completo com conversa, job, agente na Cidade, resultado, memória após reinício e publicação na VPS continua pendente.
 
 ## Testes de honestidade — PARTIAL
 
@@ -153,7 +153,7 @@ IMAGE: PARTIAL
 PERSISTENCE: PARTIAL
 RECONNECTION: PARTIAL
 PERFORMANCE: BLOCKED
-E2E: BLOCKED
+E2E: PARTIAL
 MOCKS: PARTIAL
 
 REALITY SCORE: NOT_EVALUATED
@@ -163,7 +163,7 @@ BLOCKERS:
 - Ollama excedeu o limite de 20 segundos na inferência medida.
 - Evidência anterior da VPS: disco em 96% e cerca de 925 MiB de RAM disponíveis.
 - O bundle remoto diverge do local; deploy atômico não foi feito.
-- A automação de navegador recusou a interação; aceitação visual e reinício dos serviços não foram comprovados.
+- O E2E local autenticado validou aliases, QA, conectores, Operações e gravação pela IDE; a jornada completa no navegador público e após reinício segue pendente.
 - A suíte completa de testes falhou em subsistemas além do caminho focado.
 
 NEXT REQUIRED ACTION:
@@ -177,22 +177,22 @@ Todos os itens são `NOT RUN / BLOCKED`; a interação manual com o navegador n�
 | Teste | Estado | Evidência |
 | --- | --- | --- |
 | A — Login | NOT RUN / BLOCKED | Sem sessão de navegador autenticada verificável |
-| B — Cidade | NOT RUN / BLOCKED | Sem navegação manual |
+| B — Cidade | NOT RUN / BLOCKED | Ainda sem percurso completo da Cidade em runtime publicado |
 | C — Zoom | NOT RUN / BLOCKED | Sem captura/interação |
 | D — Seleção de edifício | NOT RUN / BLOCKED | Sem captura/interação |
 | E — Seleção de agente | NOT RUN / BLOCKED | Sem captura/interação |
 | F — Criar projeto | NOT RUN / BLOCKED | Cobertura HTTP/local não equivale ao navegador |
 | G — Projeto aparece no mundo | NOT RUN / BLOCKED | Sem confirmação visual |
-| H — Executar missão | NOT RUN / BLOCKED | Coberto parcialmente por teste local, sem E2E |
-| I — Acompanhar execução | NOT RUN / BLOCKED | Sem stream visual verificado |
+| H — Executar missão | NOT RUN / BLOCKED | Coberto por contrato local de API, sem percurso completo no navegador |
+| I — Acompanhar execução | NOT RUN / BLOCKED | SSE foi testado no backend; UI completa com job real não foi verificada |
 | J — Resultado aparece | NOT RUN / BLOCKED | Sem navegador |
-| K — Memória atualiza | NOT RUN / BLOCKED | Persistência local coberta; UI não verificada |
+| K — Memória atualiza | NOT RUN / BLOCKED | IDE confirmou `memória v1`; consulta visual e persistência durável após reinício pendentes |
 | L — Buscar vídeo | NOT RUN / BLOCKED | Rota e testes controlados, sem browser |
 | M — Reproduzir vídeo | NOT RUN / BLOCKED | Sem player real verificado |
 | N — Buscar imagem | NOT RUN / BLOCKED | Rota e testes controlados, sem browser |
 | O — Abrir imagem | NOT RUN / BLOCKED | Sem viewer verificado |
-| P — Atualizar navegador | NOT RUN / BLOCKED | Sem sessão de browser |
-| Q — Confirmar persistência | NOT RUN / BLOCKED | Sessão validada em teste local, sem E2E |
+| P — Atualizar navegador | NOT RUN / BLOCKED | O teste local não cobriu restauração após recarga |
+| Q — Confirmar persistência | NOT RUN / BLOCKED | O runtime local caiu para armazenamento em memória; reinício não foi comprovado |
 | R — Queda de conexão | NOT RUN / BLOCKED | Sem simulação visual |
 | S — Reconectar | NOT RUN / BLOCKED | Sem simulação visual |
 | T — Coerência do mundo | NOT RUN / BLOCKED | Sem captura após reconexão |
@@ -211,3 +211,13 @@ Todos os itens são `NOT RUN / BLOCKED`; a interação manual com o navegador n�
 - O container de produção do Fênix está configurado para `http://209.50.241.215:3000`, endereço sem rota. A porta pública `:3000` serve o frontend: `/v1/models` nela retorna `index.html`, não um catálogo de modelos. A tela `/GRG-login` respondeu HTTP 200.
 - O backend PM2 estava `online`, mas com 82 reinícios, cerca de 3 horas de uptime e 100% de CPU na leitura. O `fenix-os-daemon` estava parado; disco em 96%, RAM disponível em cerca de 842 MiB e uso de memória do host em 86%.
 - Nenhum arquivo de produção foi alterado e nenhum serviço foi reiniciado. Sem uma chave de API válida e com esses sinais de instabilidade, o deploy e o teste de chat real permanecem bloqueados.
+
+## Atualização de interface e evidência — 2026-10-08
+
+- O painel de QA Visual agora distingue relatório de teste de simples captura. Sem relatório e sem imagens, a API retorna `NOT_RUN` com zero resultados; imagens sem relatório recebem `CAPTURED`, sem diferença visual ou aprovação inventada.
+- Runtime, Provedores/MCP e Observabilidade renderizam dados das rotas correspondentes ou um estado indisponível. A lista de Operações não tem mais missões/jobs de exemplo; progresso e ETA aparecem somente quando o job os reporta.
+- Os contadores da fila no Runtime agora são calculados dos jobs persistidos do JobEngine e filtrados pelo tenant autenticado; o estado de pausa aparece como não exposto, pois o JobEngine não fornece essa medição.
+- O teste E2E local autenticado passou: `node qa/project-ide-live-playwright.mjs`. Validou `dna`→Conhecimento, `metrics`→Observabilidade, QA sem certificação falsa, painel de conectores sem status Docker sem medição, origem `JobEngine` no Runtime, abertura de Operações, seleção “Projeto de QA”, cabeçalho de contexto e gravação do arquivo real no workspace temporário, sem erros JavaScript.
+- Testes direcionados desta atualização passaram: 45 testes de honestidade, runtime, provedor e QA; 10 testes de JobEngine/MissionKernel/fila. `node --check` passou nos quatro arquivos JavaScript alterados. A suíte integral não foi repetida.
+- O teste local iniciou com persistência degradada em memória por ausência de Postgres, Redis e Qdrant. Assim, ele prova o salvamento pela API e a resposta de memória da sessão de teste, não retenção durável 24/7.
+- A VPS continua sem deploy nem reinício: a credencial da API Platform falhou em autenticação e o host permanece sob os limites de capacidade já registrados. O E2E publicado e os itens A–T continuam pendentes.

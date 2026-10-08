@@ -7,6 +7,35 @@ const path = require('node:path');
 const os = require('node:os');
 
 const { resolveProjectWorkingDirectory } = require('../src/api/project-working-directory');
+const { getFullStatus } = require('../src/api/runtime-full-status');
+
+test('runtime full status derives queue counters from tenant-scoped persisted JobEngine jobs', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ ok: true, status: 200 });
+  try {
+    const full = await getFullStatus({
+      store: { read: async () => ({
+        runtimeJobs: [
+          { id: 'queued-a', tenantId: 'tenant-a', status: 'QUEUED' },
+          { id: 'running-a', tenantId: 'tenant-a', status: 'RUNNING' },
+          { id: 'failed-a', tenantId: 'tenant-a', status: 'DEAD_LETTER' },
+          { id: 'other-tenant', tenantId: 'tenant-b', status: 'RUNNING' },
+          { id: 'unscoped', status: 'QUEUED' },
+        ],
+        deadLetters: [], cognitiveAgents: [], memories: [],
+      }) },
+    }, 'tenant-a');
+
+    assert.equal(full.runtime.queue.source, 'JobEngine');
+    assert.equal(full.runtime.queue.total, 3);
+    assert.equal(full.runtime.queue.queued, 1);
+    assert.equal(full.runtime.queue.running, 1);
+    assert.equal(full.runtime.queue.failed, 1);
+    assert.equal(full.runtime.queue.isPaused, null);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
 
 test('terminal cwd defaults to project root and rejects paths outside it', (t) => {
   const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'fenix-terminal-root-'));
