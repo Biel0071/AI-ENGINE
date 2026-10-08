@@ -126,7 +126,7 @@ Os testes focados verificam indisponibilidade real do provedor, ausência de res
 
 ## Commits
 
-Commit publicado: `aa832834` (`fix(runtime): report measured telemetry and scope terminal cwd`) enviado para `origin/fenix/operational-os-20260924`. Ele contém os painéis de telemetria sem valores inventados, o limite de diretório do terminal e os testes focados. As demais alterações locais descritas neste relatório não foram incluídas nesse commit: o workspace contém centenas de modificações rastreadas e milhares de arquivos não rastreados, incluindo segredo local e backups, então não foi seguro publicar o conjunto inteiro sem separar e revisar cada mudança.
+Commits seletivos enviados para `origin/fenix/operational-os-20260924`: `aa832834` (telemetria e limite do terminal), `84c3d571` (evidência de rollout) e `15b7a5ab` (observabilidade baseada em runtime e dados de tenant). As demais alterações locais descritas neste relatório não foram incluídas: o workspace contém centenas de modificações rastreadas e milhares de arquivos não rastreados, incluindo segredo local e backups, então não foi seguro publicar o conjunto inteiro sem separar e revisar cada mudança.
 
 ## Deploy
 
