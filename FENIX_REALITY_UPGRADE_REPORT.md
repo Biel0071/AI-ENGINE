@@ -204,3 +204,10 @@ Todos os itens são `NOT RUN / BLOCKED`; a interação manual com o navegador n�
 - Git, absorção, eventos de missão e swarm deixaram de ser interceptados por respostas estáticas; consultas de autoconhecimento usam a memória real com escopo de tenant. O botão de auditoria não declara sucesso nem gera snapshot inexistente.
 - Testes focados mais recentes: 86 passaram, 0 falharam, incluindo contrato de rota, autenticação HTTP, dados por tenant, indisponibilidade honesta e regressões do fluxo de missão/job/memória.
 - O navegador público ainda não foi validado interativamente e o deploy na VPS continua bloqueado pela divergência do bundle, falha do provedor e limite de disco/RAM já registrados. Esta alteração local ainda não prova operação 24/7.
+
+## Verificação SSH somente leitura — 2026-10-08
+
+- A API Platform está publicada em `209.50.241.22:3001`; `/health` respondeu `ONLINE`, mas `/v1/models` retornou `INVALID_API_KEY` tanto com a chave configurada no container Fênix quanto com a chave local disponível. Os valores das chaves não foram exibidos nem incluídos no Git.
+- O container de produção do Fênix está configurado para `http://209.50.241.215:3000`, endereço sem rota. A porta pública `:3000` serve o frontend: `/v1/models` nela retorna `index.html`, não um catálogo de modelos. A tela `/GRG-login` respondeu HTTP 200.
+- O backend PM2 estava `online`, mas com 82 reinícios, cerca de 3 horas de uptime e 100% de CPU na leitura. O `fenix-os-daemon` estava parado; disco em 96%, RAM disponível em cerca de 842 MiB e uso de memória do host em 86%.
+- Nenhum arquivo de produção foi alterado e nenhum serviço foi reiniciado. Sem uma chave de API válida e com esses sinais de instabilidade, o deploy e o teste de chat real permanecem bloqueados.
