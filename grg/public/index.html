@@ -4338,7 +4338,7 @@ document.addEventListener('DOMContentLoaded', () => {
             '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">',
             '  <div style="background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">',
             '    <div style="color:#94a3b8; font-size:10px;">STATUS OPERACIONAL</div>',
-            '    <div style="font-weight:700; color:' + (b.health === 'DEGRADED' ? '#f59e0b' : '#10b981') + '; font-size:13px; margin-top:2px;">' + (b.health || 'HEALTHY') + '</div>',
+            '    <div style="font-weight:700; color:' + (b.health === 'DEGRADED' ? '#f59e0b' : (b.health === 'HEALTHY' || b.health === 'ONLINE' ? '#10b981' : '#94a3b8')) + '; font-size:13px; margin-top:2px;">' + (b.health || 'UNAVAILABLE') + '</div>',
             '  </div>',
             '  <div style="background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">',
             '    <div style="color:#94a3b8; font-size:10px;">SUBSISTEMA CONECTADO</div>',
@@ -6904,9 +6904,11 @@ window.__fenixSubmitIdeChat = async function () {
 <script src="/premium-world-live.js?v=6"></script>
 <script src="/vendor/three.min.js?v=1522"></script>
 <link rel="stylesheet" href="/fenix-world-3d.css?v=3">
-<script src="/fenix-world-3d.js?v=5"></script>
+<script src="/fenix-city-machine-scene.js?v=1"></script>
+<script src="/fenix-world-3d.js?v=7"></script>
 <script src="/fenix-city-workflow.js?v=4"></script>
-<script src="/fenix-world-ui.js?v=4"></script>
+<script src="/fenix-city-runtime-world.js?v=1"></script>
+<script src="/fenix-world-ui.js?v=5"></script>
 <link rel="stylesheet" href="/memory-live.css?v=2">
 <script src="/memory-live.js?v=2"></script>
 <link rel="stylesheet" href="/inspector-measured.css?v=1">
@@ -6956,9 +6958,9 @@ window.__fenixSubmitIdeChat = async function () {
         <div class="gauge-pill" title="Largura de Banda"><span class="gauge-lbl">REDE</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeNetFill" style="width:0%;"></div></div> <span id="gaugeNetVal">—</span></div>
       </div>
 
-      <div class="fenix-ticker-status">
-        <span class="fenix-ticker-live-dot"></span>
-        <span class="fenix-footer-right">100% REAL</span>
+      <div class="fenix-ticker-status fnx-real-100-pill">
+        <i class="ph-bold ph-check"></i>
+        <span class="fenix-footer-right">TELEMETRIA</span>
       </div>
     </footer>
 
@@ -6971,8 +6973,8 @@ window.__fenixSubmitIdeChat = async function () {
               <i class="ph-bold ph-warning-octagon" style="color:#ef4444; font-size:18px;"></i>
             </div>
             <div>
-              <h2 style="margin:0; font-size:15px; font-weight:700; color:#F8FAFC; letter-spacing:0.3px;">CENTRO OPERACIONAL DE NOTIFICAÇÕES &amp; ALERTAS</h2>
-              <div style="font-size:11px; color:#94A3B8;">Eventos de Telemetria, Microsserviços e Notificações de Missão em Tempo Real</div>
+              <h2 style="margin:0; font-size:15px; font-weight:700; color:#F8FAFC; letter-spacing:0.3px;">EVENTOS DO SISTEMA</h2>
+              <div style="font-size:11px; color:#94A3B8;">Eventos persistidos recebidos pela API do Fênix</div>
             </div>
           </div>
           <button onclick="document.getElementById('fenixAlertsModal').style.display='none'" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:20px; padding:4px;"><i class="ph-bold ph-x"></i></button>
@@ -6980,88 +6982,20 @@ window.__fenixSubmitIdeChat = async function () {
 
         <!-- Filter Tabs -->
         <div style="display:flex; gap:8px; padding:12px 22px; background:rgba(0,0,0,0.25); border-bottom:1px solid rgba(255,255,255,0.05);">
-          <button class="fenix-alert-filter-btn active" data-filter="all" onclick="window.fenixFilterAlerts('all')" style="background:rgba(255,255,255,0.08); color:#f8fafc; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:5px 12px; font-size:11px; font-weight:700; cursor:pointer;">Todos (5)</button>
-          <button class="fenix-alert-filter-btn" data-filter="critical" onclick="window.fenixFilterAlerts('critical')" style="background:transparent; color:#f87171; border:1px solid rgba(239,68,68,0.2); border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">🔴 Críticos (1)</button>
-          <button class="fenix-alert-filter-btn" data-filter="warning" onclick="window.fenixFilterAlerts('warning')" style="background:transparent; color:#fde047; border:1px solid rgba(234,179,8,0.2); border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">🟡 Avisos (2)</button>
-          <button class="fenix-alert-filter-btn" data-filter="info" onclick="window.fenixFilterAlerts('info')" style="background:transparent; color:#38bdf8; border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">🟢 Info (2)</button>
+          <button class="fenix-alert-filter-btn active" data-filter="all" onclick="window.fenixFilterAlerts('all')" style="background:rgba(255,255,255,0.08); color:#f8fafc; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:5px 12px; font-size:11px; font-weight:700; cursor:pointer;">Todos (<span id="fenixAlertAllCount">—</span>)</button>
+          <button class="fenix-alert-filter-btn" data-filter="critical" onclick="window.fenixFilterAlerts('critical')" style="background:transparent; color:#f87171; border:1px solid rgba(239,68,68,0.2); border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">🔴 Críticos (<span id="fenixAlertCriticalCount">—</span>)</button>
+          <button class="fenix-alert-filter-btn" data-filter="warning" onclick="window.fenixFilterAlerts('warning')" style="background:transparent; color:#fde047; border:1px solid rgba(234,179,8,0.2); border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">🟡 Avisos (<span id="fenixAlertWarningCount">—</span>)</button>
+          <button class="fenix-alert-filter-btn" data-filter="info" onclick="window.fenixFilterAlerts('info')" style="background:transparent; color:#38bdf8; border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">🟢 Info (<span id="fenixAlertInfoCount">—</span>)</button>
         </div>
 
         <!-- Alerts List Container -->
         <div id="fenixAlertsModalList" style="flex:1; overflow-y:auto; padding:16px 22px; display:flex; flex-direction:column; gap:10px;">
-          <!-- Real Alert 1: Critical -->
-          <div class="fenix-alert-row" data-severity="critical" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:14px;">
-            <div style="font-size:20px; color:#ef4444;"><i class="ph-bold ph-shield-warning"></i></div>
-            <div style="flex:1;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="background:#ef4444; color:#fff; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:4px; text-transform:uppercase;">CRITICAL</span>
-                <strong style="color:#f8fafc; font-size:12px;">Data Center · Qdrant / Redis Latency Check</strong>
-                <span style="font-size:10px; color:#94a3b8; font-family:monospace; margin-left:auto;">15:40:12</span>
-              </div>
-              <div style="font-size:11.5px; color:#cbd5e1; margin-top:4px;">Pico de latência de sincronização no cluster vetorial da VPS. Supervisor acionou reconexão preventiva.</div>
-            </div>
-            <button onclick="document.getElementById('fenixAlertsModal').style.display='none'; window.showView('runtime');" style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer;">Inspecionar</button>
-          </div>
-
-          <!-- Real Alert 2: Warning -->
-          <div class="fenix-alert-row" data-severity="warning" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:14px;">
-            <div style="font-size:20px; color:#f59e0b;"><i class="ph-bold ph-hourglass-high"></i></div>
-            <div style="flex:1;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="background:#f59e0b; color:#1e1b4b; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:4px; text-transform:uppercase;">WARNING</span>
-                <strong style="color:#f8fafc; font-size:12px;">Agent Worker · Fila de Tarefas BullMQ</strong>
-                <span style="font-size:10px; color:#94a3b8; font-family:monospace; margin-left:auto;">15:38:05</span>
-              </div>
-              <div style="font-size:11.5px; color:#cbd5e1; margin-top:4px;">Taxa de ocupação de workers em 85% para a missão Depósito Mais WMS. Agendado balanceamento automático.</div>
-            </div>
-            <button onclick="document.getElementById('fenixAlertsModal').style.display='none'; window.showView('operations');" style="background:rgba(245,158,11,0.2); color:#fde047; border:1px solid rgba(245,158,11,0.4); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer;">Ver Fila</button>
-          </div>
-
-          <!-- Real Alert 3: Warning -->
-          <div class="fenix-alert-row" data-severity="warning" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:14px;">
-            <div style="font-size:20px; color:#f59e0b;"><i class="ph-bold ph-shield-check"></i></div>
-            <div style="flex:1;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="background:#f59e0b; color:#1e1b4b; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:4px; text-transform:uppercase;">WARNING</span>
-                <strong style="color:#f8fafc; font-size:12px;">Security Bastion · Sandbox Sentinel</strong>
-                <span style="font-size:10px; color:#94a3b8; font-family:monospace; margin-left:auto;">15:35:40</span>
-              </div>
-              <div style="font-size:11.5px; color:#cbd5e1; margin-top:4px;">Security Agent solicitou autorização para elevar permissões de build em sandbox isolada.</div>
-            </div>
-            <button onclick="document.getElementById('fenixAlertsModal').style.display='none'; window.showView('agents');" style="background:rgba(245,158,11,0.2); color:#fde047; border:1px solid rgba(245,158,11,0.4); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer;">Ver Agente</button>
-          </div>
-
-          <!-- Real Alert 4: Info -->
-          <div class="fenix-alert-row" data-severity="info" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.2); border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:14px;">
-            <div style="font-size:20px; color:#38bdf8;"><i class="ph-bold ph-rocket-launch"></i></div>
-            <div style="flex:1;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="background:#0284c7; color:#fff; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:4px; text-transform:uppercase;">INFO</span>
-                <strong style="color:#f8fafc; font-size:12px;">Deploy Pipeline · Sincronização VPS Concluída</strong>
-                <span style="font-size:10px; color:#94a3b8; font-family:monospace; margin-left:auto;">15:28:00</span>
-              </div>
-              <div style="font-size:11.5px; color:#cbd5e1; margin-top:4px;">Paridade dual absoluta de 100% verificada entre /opt/fenix-os/public e /opt/fenix-os/grg/public.</div>
-            </div>
-            <button onclick="document.getElementById('fenixAlertsModal').style.display='none'; window.showView('runtime');" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer;">Auditar</button>
-          </div>
-
-          <!-- Real Alert 5: Info -->
-          <div class="fenix-alert-row" data-severity="info" style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:14px;">
-            <div style="font-size:20px; color:#10b981;"><i class="ph-bold ph-check-circle"></i></div>
-            <div style="flex:1;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="background:#10b981; color:#fff; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:4px; text-transform:uppercase;">SUCCESS</span>
-                <strong style="color:#f8fafc; font-size:12px;">Backend Agent · Missão #42 Concluída</strong>
-                <span style="font-size:10px; color:#94a3b8; font-family:monospace; margin-left:auto;">15:24:18</span>
-              </div>
-              <div style="font-size:11.5px; color:#cbd5e1; margin-top:4px;">Testes canônicos aprovados (4/4 suítes, zero-mock compliance, endpoints 200).</div>
-            </div>
-            <button onclick="document.getElementById('fenixAlertsModal').style.display='none'; window.showView('memory');" style="background:rgba(16,185,129,0.15); color:#6ee7b7; border:1px solid rgba(16,185,129,0.3); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer;">Ver Memória</button>
-          </div>
+          <div class="fenix-alert-empty">Carregando eventos da API…</div>
         </div>
 
         <!-- Footer -->
         <div style="padding:12px 22px; border-top:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.3); display:flex; justify-content:space-between; align-items:center;">
-          <div style="font-size:11px; color:#64748B;">Auditado via Event Bus &amp; Telemetria VPS (:3000 / :4410)</div>
+          <div style="font-size:11px; color:#64748B;">Fonte: estado de eventos da API</div>
           <div style="display:flex; gap:8px;">
             <button onclick="window.fenixAcknowledgeAllAlerts?.()" style="background:rgba(255,255,255,0.06); color:#cbd5e1; border:1px solid rgba(255,255,255,0.12); padding:6px 14px; border-radius:6px; font-size:11.5px; font-weight:600; cursor:pointer;">Reconhecer Todos</button>
             <button onclick="document.getElementById('fenixAlertsModal').style.display='none'" style="background:#2563eb; color:#fff; border:none; padding:6px 18px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer;">Fechar</button>

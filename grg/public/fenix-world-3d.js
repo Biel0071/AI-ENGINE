@@ -493,47 +493,16 @@
         ctx.fillRect(8, 28, 240, 105);
         ctx.fillStyle = '#94a3b8';
         ctx.font = '10px monospace';
-        ctx.fillText('RPS / Throughput (Avg 12.4k)', 14, 42);
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let px = 14; px < 240; px += 18) {
-          const ny = 65 + Math.sin(px * 0.1) * 20 + Math.random() * 8;
-          if (px === 14) ctx.moveTo(px, ny); else ctx.lineTo(px, ny);
-        }
-        ctx.stroke();
-
-        ctx.fillStyle = '#181b1f';
-        ctx.fillRect(256, 28, 248, 105);
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillText('Latency P99 / P95 / P50 (ms)', 264, 42);
-        [['#00d9ff', 65], ['#f59e0b', 85], ['#10b981', 110]].forEach(([col, base]) => {
-          ctx.strokeStyle = col;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          for (let px = 264; px < 496; px += 20) {
-            const ny = base + (Math.random() - 0.5) * 12;
-            if (px === 264) ctx.moveTo(px, ny); else ctx.lineTo(px, ny);
-          }
-          ctx.stroke();
-        });
-
-        ctx.fillStyle = '#181b1f';
-        ctx.fillRect(8, 140, 496, 105);
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillText('ACTIVE GATEWAY WORKERS (16 NODES)', 14, 156);
-        for (let i = 0; i < 16; i++) {
-          const gx = 14 + (i % 8) * 60;
-          const gy = 168 + Math.floor(i / 8) * 36;
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(gx, gy, 52, 28);
-          ctx.fillStyle = '#22c55e';
-          ctx.fillRect(gx + 4, gy + 4, 8, 8);
-          ctx.fillStyle = '#f8fafc';
-          ctx.font = '9px monospace';
-          ctx.fillText(`gw-${i + 1}`, gx + 16, gy + 12);
-          ctx.fillStyle = '#38bdf8';
-          ctx.fillText(`${(2.8 + (i * 0.1)).toFixed(1)}ms`, gx + 6, gy + 24);
+        for (const panel of panels) {
+          ctx.fillStyle = '#181b1f';
+          ctx.fillRect(panel.x, panel.y, panel.w, panel.h);
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(panel.title, panel.x + 8, panel.y + 16);
+          ctx.fillStyle = '#667587';
+          ctx.fillText('UNAVAILABLE', panel.x + 8, panel.y + 38);
+          ctx.strokeStyle = '#263543';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(panel.x + 8, panel.y + 48, panel.w - 16, panel.h - 58);
         }
       });
     }
@@ -582,7 +551,7 @@
             ctx.fillRect(24 + d * 48, by + 4, 42, bladeH - 8);
             ctx.fillStyle = '#334155';
             ctx.fillRect(26 + d * 48, by + bladeH - 10, 38, 4);
-            ctx.fillStyle = Math.random() > 0.3 ? '#22c55e' : '#00d9ff';
+            ctx.fillStyle = '#38bdf8';
             ctx.fillRect(26 + d * 48, by + 6, 4, 3);
           }
           ctx.fillStyle = '#22c55e';
@@ -2922,14 +2891,7 @@
         detailParts: detailParts
       };
 
-      const bubbleText = id === 'agent-ai-core' ? 'Neural Core: RAG Ativo' :
-        id === 'agent-api-ops' ? 'Fastify: Gateway 200 OK' :
-        id === 'agent-integration' ? 'API: Sincronismo BullMQ' :
-        id === 'agent-infra' ? 'SRE: Uptime 99.99%' :
-        id === 'agent-monitor' ? 'Prometheus: 0 Alertas' :
-        id === 'agent-security' ? 'Zero-Trust: Audit OK' :
-        id === 'agent-support' ? 'Atendimento: Fila Zerada' :
-        `${role}`;
+      const bubbleText = String(role || 'Agente');
       const bubbleColor = id === 'agent-ai-core' ? '#c084fc' :
         id === 'agent-security' ? '#ef4444' :
         id === 'agent-infra' ? '#22c55e' : '#38bdf8';

@@ -2354,7 +2354,7 @@
       <div class="orch-modal-grid">
         <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Distrito</div><div class="orch-modal-data-val">${esc(key)}</div></div>
         <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Arquitetura</div><div class="orch-modal-data-val" style="color:var(--fenix-cyan);">${esc(d?.architecture || 'Canonical Spire')}</div></div>
-        <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Status Operacional</div><div class="orch-modal-data-val" style="color:var(--fenix-green);">ACTIVE & HEALTHY</div></div>
+        <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Status Operacional</div><div class="orch-modal-data-val">${esc(d?.health || live.health?.status || live.health || 'UNAVAILABLE')}</div></div>
         <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Fênix OS Link</div><div class="orch-modal-data-val">Governed Runtime</div></div>
       </div>
     `;

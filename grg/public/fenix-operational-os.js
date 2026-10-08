@@ -1072,7 +1072,7 @@
               <span class="evolution-badge" style="background:rgba(249,115,22,0.2); color:#f97316; font-weight:800; border:1px solid rgba(249,115,22,0.4);">
                 🧬 LIVING PROJECT DNA
               </span>
-              <span class="evolution-badge badge-online">● ${dna.currentState?.health || 'HEALTHY'}</span>
+              <span class="evolution-badge">● ${dna.currentState?.health || 'UNAVAILABLE'}</span>
             </div>
             <h4 style="margin:0 0 4px; font-size:15px; color:#f8fafc;">${esc(dna.identity)}</h4>
             <p style="margin:0 0 10px; font-size:12px; color:#94a3b8; line-height:1.4;">${esc(dna.purpose)}</p>
@@ -2451,26 +2451,27 @@
 
       if (healthRes.ok && healthRes.data) {
         const el = document.getElementById('fenixKpiHealth');
-        if (el) el.textContent = (healthRes.data.status || 'HEALTHY').toUpperCase();
+        if (el) el.textContent = String(healthRes.data.status || 'UNAVAILABLE').toUpperCase();
       }
       if (scoreRes.ok && scoreRes.data) {
         const el = document.getElementById('fenixKpiScore');
-        if (el) el.textContent = `${scoreRes.data.score ?? 0}% AUDITABLE`;
+        const score = scoreRes.data.score;
+        if (el) el.textContent = score == null || !Number.isFinite(Number(score)) ? 'UNAVAILABLE' : `${score}% AUDITABLE`;
       }
       if (agentsRes.ok && agentsRes.data) {
         const el = document.getElementById('fenixKpiAgents');
-        const count = agentsRes.data.count ?? (Array.isArray(agentsRes.data.agents) ? agentsRes.data.agents.length : 0);
-        if (el) el.textContent = `${count} ONLINE`;
+        const count = agentsRes.data.count ?? (Array.isArray(agentsRes.data.agents) ? agentsRes.data.agents.length : null);
+        if (el) el.textContent = count == null ? 'UNAVAILABLE' : `${count} REGISTERED`;
       }
       if (missionsRes.ok && missionsRes.data) {
         const el = document.getElementById('fenixKpiMissions');
-        const count = missionsRes.data.count ?? (Array.isArray(missionsRes.data.missions) ? missionsRes.data.missions.length : 0);
-        if (el) el.textContent = `${count} REAL`;
+        const count = missionsRes.data.count ?? (Array.isArray(missionsRes.data.missions) ? missionsRes.data.missions.length : null);
+        if (el) el.textContent = count == null ? 'UNAVAILABLE' : `${count} REGISTERED`;
       }
       if (projectsRes.ok && projectsRes.data) {
         const el = document.getElementById('fenixKpiProjects');
-        const count = projectsRes.data.count ?? (Array.isArray(projectsRes.data.projects) ? projectsRes.data.projects.length : 0);
-        if (el) el.textContent = `${count} ATIVOS`;
+        const count = projectsRes.data.count ?? (Array.isArray(projectsRes.data.projects) ? projectsRes.data.projects.length : null);
+        if (el) el.textContent = count == null ? 'UNAVAILABLE' : `${count} REGISTERED`;
       }
     } catch (e) {
       console.warn('[FenixOS] Telemetry sync error:', e.message);

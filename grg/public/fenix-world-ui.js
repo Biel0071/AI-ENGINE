@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  const initialize = () => {
   const area = document.querySelector('#view-city .fenix-city-canvas-area');
   const engine = window.fenixWorld3D;
   if (!area || !engine) return;
@@ -9,7 +10,7 @@
   const identity=make('div','fw3-identity'); identity.append(make('span','fw3-eyebrow','FÊNIX OS · MUNDO OPERACIONAL'),make('strong','','Cidade viva'),make('span','fw3-sync','Conectando…'));
   const nav=make('div','fw3-nav');
   const back=make('button','fw3-back','← Voltar ao mundo'); back.type='button'; back.hidden=true; back.addEventListener('click',()=>engine.back());
-  const list=make('button','fw3-list','Lista'); list.type='button'; list.addEventListener('click',()=>window.fenixToggleCityList?.());
+  const list=make('button','fw3-list','Projetos'); list.type='button'; list.addEventListener('click',()=>window.showView?.('projects'));
   const refresh=make('button','fw3-refresh','↻'); refresh.type='button'; refresh.setAttribute('aria-label','Atualizar dados do mundo'); refresh.addEventListener('click',()=>engine.refresh());
   nav.append(back,list,refresh); top.append(identity,nav); chrome.append(top);
   const pulse=make('div','fw3-pulse'); chrome.append(pulse);
@@ -72,16 +73,32 @@
       action(actions,'Abrir IDE ↗',()=>window.fenixCityWorkflow?.openIde(selected.id));
       action(actions,'Ver jobs',()=>window.showView?.('operations'));
       for (const job of jobs.slice(0, 3)) action(actions,`${job.status || '—'} · ${String(job.title || job.id).slice(0, 34)}`,()=>window.fenixCityWorkflow?.openJob(job.id));
+    } else if (selected.kind==='building') {
+      const buildings=data?.buildings || {};
+      const building=Array.isArray(buildings)?buildings.find(item=>item.id===selected.id):buildings[selected.id];
+      const agents=(data?.agents||[]).filter(agent=>agent.buildingId===selected.id);
+      context.append(make('h2','',building?.name || selected.id),make('p','',building?.function || building?.description || 'Espaço registrado no estado do mundo Fênix.'));
+      row(context,'Estado',building?.status || '—'); row(context,'Agentes associados',agents.length);
+      row(context,'Andares',building?.floors ?? '—');
+      action(actions,'Entrar no espaço',()=>engine.enterBuilding(selected.id),true);
+      action(actions,'Ver operações',()=>window.showView?.('operations'));
     } else if (selected.kind==='machine') {
       const machine=data?.machines?.find(item=>item.id===selected.id);
       const workers=(data?.workers||[]);
-      context.append(make('h2','',machine?.name || selected.id),make('p','','Máquina conectada ao runtime Fênix.'));
-      row(context,'Estado',machine?.status || '—'); row(context,'Host',machine?.hostname || '—');
-      row(context,'Memória livre',Number.isFinite(machine?.memoryFreeBytes)?`${(machine.memoryFreeBytes/1073741824).toFixed(1)} GB`:'—');
-      row(context,'Workers',workers.filter(item=>item.status==='ONLINE').length);
-      for (const worker of workers.slice(0,4)) row(context,worker.id,worker.currentJob?`Job ${worker.currentJob.slice(0,8)}`:worker.status);
+      context.append(make('h2','',machine?.name || selected.id),make('p','',machine?.kind==='worker'?'Processo acompanhado pelo heartbeat do JobEngine.':'Máquina conectada ao runtime Fênix.'));
+      row(context,'Estado',machine?.status || '—');
+      if (machine?.kind==='worker') {
+        row(context,'Último heartbeat',machine.lastHeartbeat ? new Date(machine.lastHeartbeat).toLocaleString('pt-BR') : '—');
+        row(context,'Jobs concluídos',machine.processed ?? '—'); row(context,'Falhas',machine.failed ?? '—');
+        row(context,'Job atual',machine.currentJob || 'Nenhum');
+      } else {
+        row(context,'Host',machine?.hostname || '—');
+        row(context,'Memória livre',Number.isFinite(machine?.memoryFreeBytes)?`${(machine.memoryFreeBytes/1073741824).toFixed(1)} GB`:'—');
+        row(context,'Workers ativos',workers.filter(item=>item.status==='ONLINE').length);
+      }
       action(actions,'Ver operações',()=>window.showView?.('operations'),true);
-      if (workers.find(item=>item.currentJob)) action(actions,'Acompanhar job',()=>window.fenixCityWorkflow?.openJob(workers.find(item=>item.currentJob).currentJob));
+      const currentJob=machine?.currentJob || (machine?.kind==='runtime' ? workers.find(item=>item.currentJob)?.currentJob : null);
+      if (currentJob) action(actions,'Acompanhar job',()=>window.fenixCityWorkflow?.openJob(currentJob));
     } else {
       const agent=data?.agents?.find(item=>item.id===selected.id);
       context.append(make('h2','',agent?.name||selected.id),make('p','',agent?.role||'Função não informada'));
@@ -101,4 +118,7 @@
   document.addEventListener('fenix-live',event=>{ if (event.detail?.type==='status') render(); });
   setInterval(()=>{ if (document.getElementById('view-city')?.classList.contains('active')) render(); },30000);
   render();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
+  else initialize();
 })();

@@ -89,7 +89,10 @@
     if (!force && world.measuredAt && Date.now() - new Date(world.measuredAt).getTime() < 15000) return world.snapshot;
     world.loading = true;
     try {
-      const response = await fetch('/api/v2/living-city/state', { credentials: 'same-origin', signal: AbortSignal.timeout(20000) });
+      const token = window.fenixGetAuthToken?.() || localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || sessionStorage.getItem('fenix_token') || sessionStorage.getItem('grg_token') || '';
+      const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      const fetchFn = window.fenixAuthedFetch || window.fenixFetch || fetch;
+      const response = await fetchFn('/api/v2/living-city/state', { credentials: 'same-origin', headers, signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       if (!Array.isArray(data.projects) || !Array.isArray(data.agents)) throw new Error('Resposta incompleta');
