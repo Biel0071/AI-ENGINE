@@ -773,7 +773,25 @@
       ]));
       if (!full.services && !full.infrastructure && !full.runtime) throw new Error('A API não retornou medições de runtime.');
     }),
-    mcp:()=>load('mcp',['connectorList','routerState','toolList'],async()=>{
+    mcp:()=>{
+      const refreshButton=byId('checkApiBtn');
+      if(refreshButton&&!refreshButton.dataset.fenixMcpRefreshBound){
+        refreshButton.dataset.fenixMcpRefreshBound='true';
+        refreshButton.addEventListener('click',async()=>{
+          refreshButton.disabled=true;
+          refreshButton.textContent='Consultando API…';
+          try{
+            await loaders.mcp();
+            refreshButton.textContent='Consulta concluída';
+          }catch(error){
+            refreshButton.textContent='Falha na consulta';
+            throw error;
+          }finally{
+            refreshButton.disabled=false;
+          }
+        });
+      }
+      return load('mcp',['connectorList','routerState','toolList'],async()=>{
       const safeGet = async (url) => {
         try {
           const res = await fetch(url, { credentials: 'same-origin', headers: getAuthHeaders(), signal: AbortSignal.timeout(2000) });
@@ -794,8 +812,27 @@
       put('connectorList', connectors.unavailable ? unavailableRow(`Conectores indisponíveis: ${connectors.unavailable}`) : rows(connectorRows));
       put('routerState', providers.unavailable ? unavailableRow(`Provedores indisponíveis: ${providers.unavailable}`) : rows(providerRows));
       put('toolList', capabilities.unavailable ? unavailableRow(`Capacidades indisponíveis: ${capabilities.unavailable}`) : rows(capabilityRows));
-    }),
-    observability:()=>load('observability',['observabilityMetrics','seriesGrid'],async()=>{
+      });
+    },
+    observability:()=>{
+      const refreshButton=byId('sampleBtn');
+      if(refreshButton&&!refreshButton.dataset.fenixObservabilityRefreshBound){
+        refreshButton.dataset.fenixObservabilityRefreshBound='true';
+        refreshButton.addEventListener('click',async()=>{
+          refreshButton.disabled=true;
+          refreshButton.textContent='Consultando eventos…';
+          try{
+            await loaders.observability();
+            refreshButton.textContent='Consulta concluída';
+          }catch(error){
+            refreshButton.textContent='Falha na consulta';
+            throw error;
+          }finally{
+            refreshButton.disabled=false;
+          }
+        });
+      }
+      return load('observability',['observabilityMetrics','seriesGrid'],async()=>{
       const safeGet = async (url) => {
         try {
           const res = await fetch(url, { credentials: 'same-origin', headers: getAuthHeaders(), signal: AbortSignal.timeout(2000) });
@@ -832,7 +869,8 @@
           <pre style="background:#030712; padding:10px; border-radius:6px; margin-top:8px; font-size:11px; color:#cbd5e1; overflow-x:auto;">${escape(JSON.stringify(e.payload||e.data||e,null,2))}</pre>
         </details>`;
       }).join('')||empty(apiAvailable?'Nenhum evento foi registrado pela API.':'A API de eventos está indisponível e não há eventos em cache.'));
-    }),
+      });
+    },
     browser:()=>load('browser',['qaSummary','qaGallery'],async()=>{
       const data=await read('/api/v2/visual-qa/dashboard');
       const results=data?list(data,'results'):[];

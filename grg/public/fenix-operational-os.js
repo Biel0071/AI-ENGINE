@@ -47,40 +47,12 @@
     }
   };
 
-  // Auto-authentication helper
-  async function ensureAuthToken(force = false) {
-    let token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
-    if (!token || token === 'null' || token.length < 10 || force) {
-      try {
-        let res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenantId: 'grg', userId: 'grg-admin', password: 'grg-admin' }),
-          signal: AbortSignal.timeout(4000)
-        });
-        if (!res.ok) {
-          res = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenantId: 'grg', userId: 'grg-admin', password: 'admin' }),
-            signal: AbortSignal.timeout(4000)
-          });
-        }
-        if (res.ok) {
-          const data = await res.json();
-          const fresh = data.token || data.access_token;
-          if (fresh) {
-            token = fresh;
-            localStorage.setItem('grg_token', token);
-            localStorage.setItem('fenix_token', token);
-          }
-        }
-      } catch (e) {}
-    }
-    return token;
+  // Resolve an existing login only. API calls must never silently bootstrap an admin session.
+  async function ensureAuthToken() {
+    const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
+    return token && token !== 'null' && token.length >= 10 ? token : '';
   }
   window.ensureAuthToken = ensureAuthToken;
-  ensureAuthToken();
 
   // Safe fetch helper with timeout and auth headers
   async function safeFetchJson(url, options = {}, timeoutMs = 15000) {
@@ -89,23 +61,17 @@
     try {
       const headers = { Accept: 'application/json', ...(options.headers || {}) };
       const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
-      if (token && token !== 'null') headers.Authorization = 'Bearer ' + token;
+      if (token && token !== 'null' && token.length >= 10) headers.Authorization = 'Bearer ' + token;
       let res = await fetch(url, { credentials: 'same-origin', ...options, headers, signal: ctrl.signal });
-      if (res.status === 401) {
-        const freshToken = await ensureAuthToken(true);
+      if (res.status === 401 && headers.Authorization) {
+        // A stale legacy Bearer token overrides the valid HttpOnly session cookie server-side.
+        // Retry once with the same-origin cookie instead of attempting a default login.
         clearTimeout(timer);
         ctrl = new AbortController();
         timer = setTimeout(() => ctrl.abort(), timeoutMs);
-        if (freshToken) {
-          headers.Authorization = 'Bearer ' + freshToken;
-          res = await fetch(url, { credentials: 'same-origin', ...options, headers, signal: ctrl.signal });
-        }
-        if (res.status === 401) {
-          // Fallback to cookie credentials without Bearer header
-          const cookieHeaders = { ...headers };
-          delete cookieHeaders.Authorization;
-          res = await fetch(url, { credentials: 'same-origin', ...options, headers: cookieHeaders, signal: ctrl.signal });
-        }
+        const cookieHeaders = { ...headers };
+        delete cookieHeaders.Authorization;
+        res = await fetch(url, { credentials: 'same-origin', ...options, headers: cookieHeaders, signal: ctrl.signal });
       }
       clearTimeout(timer);
       if (!res.ok) {
@@ -302,9 +268,12 @@
       let agent = rawList.find(a => a.id === agentId || a.name === agentId);
       if (!agent) agent = window.fenixCity?.world?.agents?.get(agentId) || [...(window.fenixCity?.world?.agents?.values() || [])].find(a => a.name === agentId);
       if (!agent) {
-        const fetchRes = await safeFetchJson('/api/v2/living-city/agents', {}, 12000);
-        if (!fetchRes.ok) throw new Error(`HTTP ${fetchRes.status || 500} ao consultar agentes`);
-        const data = fetchRes.data || {};
+        const agentsRequest = window.fenixAuthedFetch
+          ? window.fenixAuthedFetch('/api/v2/living-city/agents', { signal: AbortSignal.timeout(12000) })
+          : fetch('/api/v2/living-city/agents', { credentials: 'same-origin', signal: AbortSignal.timeout(12000) });
+        const fetchRes = await agentsRequest;
+        if (!fetchRes.ok) throw new Error(`HTTP ${fetchRes.status} ao consultar agentes`);
+        const data = await fetchRes.json();
         rawList = Array.isArray(data.agents) ? data.agents : (data.agents && typeof data.agents === 'object' ? Object.values(data.agents) : []);
         ctx.cachedAgents = rawList;
         agent = rawList.find(a => a.id === agentId || a.name === agentId);
@@ -319,8 +288,11 @@
       const projectId = agent.projectId || null;
       const currentMission = agent.currentMission || agent.mission || (agent.activeMissions ? `Missão #${agent.activeMissions}` : 'Nenhuma missão informada');
       const currentMissionId = agent.missionId || null;
-      const currentJob = agent.currentJob || (agent.activeJobs ? `Job #${agent.activeJobs}` : 'Nenhum job informado');
-      const currentJobId = agent.jobId || null;
+      const currentJobRecord = agent.currentJob && typeof agent.currentJob === 'object' ? agent.currentJob : null;
+      const currentJob = currentJobRecord
+        ? currentJobRecord.name || currentJobRecord.id || 'Job ativo sem identificador'
+        : agent.currentJob || (agent.activeJobs ? `Job #${agent.activeJobs}` : 'Nenhum job informado');
+      const currentJobId = agent.jobId || currentJobRecord?.id || null;
       const lastAction = agent.lastAction || agent.lastCommand || 'Não informada';
       const lastEvent = agent.lastEvent || agent.lastActivity || agent.updatedAt || 'Não informado';
       const successRate = agent.successRate != null ? `${agent.successRate}%` : 'Não medida';
@@ -2406,7 +2378,7 @@
           <span class="fenix-cmd-prompt-title">O que você quer fazer?</span>
           <div style="display:flex; align-items:center; gap:8px;">
             <span style="font-size:11px; color:#64748b;">Projeto Alvo:</span>
-            <select id="fenixCmdProjectSelect" onchange="window.fenixNavigateWithContext(null, { projectId: this.value }); const inp = document.getElementById('fenixCmdIntentInput'); if(inp) inp.value = 'melhorar login do projeto ' + this.value;" style="background:#0b1120; border:1px solid rgba(255,255,255,0.15); color:#38bdf8; font-weight:700; font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;">
+            <select id="fenixCmdProjectSelect" onchange="window.fenixNavigateWithContext(null, { projectId: this.value }); const inp = this.closest('.fenix-cmd-op-container')?.querySelector('.fenix-cmd-input-row #fenixCmdIntentInput'); if(inp) inp.value = 'melhorar login do projeto ' + this.value;" style="background:#0b1120; border:1px solid rgba(255,255,255,0.15); color:#38bdf8; font-weight:700; font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;">
               <option value="fenix-os" ${ctx.projectId === 'fenix-os' ? 'selected' : ''}>fenix-os</option>
               <option value="zapai-crm" ${ctx.projectId === 'zapai-crm' ? 'selected' : ''}>zapai-crm</option>
               <option value="api-platform" ${ctx.projectId === 'api-platform' ? 'selected' : ''}>api-platform</option>
@@ -2416,17 +2388,17 @@
         </div>
         <div class="fenix-cmd-input-row">
           <span class="fenix-cmd-chevron">&gt;</span>
-          <input type="text" id="fenixCmdIntentInput" placeholder="Ex: melhorar login do projeto fenix-os" value="melhorar login do projeto ${esc(ctx.projectId)}" onkeydown="if(event.key==='Enter') window.fenixTriggerAction('ANALYZE');" />
+          <input type="text" id="fenixCmdIntentInput" placeholder="Ex: melhorar login do projeto fenix-os" value="melhorar login do projeto ${esc(ctx.projectId)}" onkeydown="if(event.key==='Enter') window.fenixTriggerAction('ANALYZE', this);" />
         </div>
         <div class="fenix-cmd-buttons-row">
-          <button type="button" class="fenix-btn primary" id="fenixBtnAnalyze" onclick="window.fenixTriggerAction('ANALYZE')"><i class="ph ph-magnifying-glass"></i> Analisar</button>
-          <button type="button" class="fenix-btn" id="fenixBtnPlan" onclick="window.fenixTriggerAction('PLAN')"><i class="ph ph-clipboard-text"></i> Criar Missão</button>
-          <button type="button" class="fenix-btn success" id="fenixBtnExecute" onclick="window.fenixTriggerAction('EXECUTE')"><i class="ph ph-lightning"></i> Executar</button>
+          <button type="button" class="fenix-btn primary" id="fenixBtnAnalyze" onclick="window.fenixTriggerAction('ANALYZE', this)"><i class="ph ph-magnifying-glass"></i> Analisar</button>
+          <button type="button" class="fenix-btn" id="fenixBtnPlan" onclick="window.fenixTriggerAction('PLAN', this)"><i class="ph ph-clipboard-text"></i> Criar Missão</button>
+          <button type="button" class="fenix-btn success" id="fenixBtnExecute" onclick="window.fenixTriggerAction('EXECUTE', this)"><i class="ph ph-lightning"></i> Executar</button>
         </div>
       </div>
 
       <!-- PROPOSAL & PROJECTION OUTPUT AREA -->
-      <div id="fenixCmdProposalArea" style="display:none; margin-top:16px;"></div>
+        <div id="fenixCmdProposalArea" style="display:none; margin-top:16px;"></div>
     `;
 
     // Ensure no duplicate legacy banners appear outside opContainer
@@ -2479,8 +2451,9 @@
   };
 
   // Quick Command Setter for Cockpit
-  window.fenixSetQuickCommand = function (cmd) {
-    const input = document.getElementById('fenixCmdIntentInput');
+  window.fenixSetQuickCommand = function (cmd, source) {
+    const scope = source?.closest?.('.fenix-cockpit-prompt-dock, .fenix-cmd-op-container');
+    const input = scope?.querySelector('#fenixCmdIntentInput') || document.getElementById('fenixCmdIntentInput');
     if (input) {
       input.value = cmd;
       input.focus();
@@ -2488,56 +2461,60 @@
   };
 
   // Trigger Action from Command Center Prompt
-  window.fenixTriggerAction = async function (mode) {
-    const input = document.getElementById('fenixCmdIntentInput');
+  window.fenixTriggerAction = async function (mode, source) {
+    const scope = source?.closest?.('.fenix-cockpit-prompt-dock, .fenix-cmd-op-container');
+    const input = source?.matches?.('#fenixCmdIntentInput')
+      ? source
+      : scope?.querySelector('#fenixCmdIntentInput')
+        || document.getElementById('fenixCmdIntentInput');
     const intent = (input?.value || '').trim() || `melhorar login do projeto ${ctx.projectId}`;
-    const proposalArea = document.getElementById('fenixCmdProposalArea');
+    const proposalArea = scope?.querySelector('#fenixCmdProposalArea') || document.getElementById('fenixCmdProposalArea');
     if (!proposalArea) return;
 
     proposalArea.style.display = 'block';
 
     // Check if this is a Living World spatial directive
     const isWorldDirective = /^(crie|criar|adicionar|mover|construir|mudar|alternar|spawn|create|move|set|teleport|build)\s+(um\s+)?(prédio|predio|building|agente|agent|laboratório|laboratorio|lab|tempo|horário|horario|noite|dia|weather|time|station)/i.test(intent) ||
+      /\b(crie|criar|create|construa|construir)\b.*\b(empresa|organiza[cç][aã]o|company|organization)\b.*\b(software|tecnologia|tech|desenvolvimento)\b/i.test(intent) ||
       /media\s*lab/i.test(intent) ||
       /(spawn|mover|criar).*(agente|predio|prédio|building)/i.test(intent);
 
     if (isWorldDirective) {
       proposalArea.innerHTML = window.fenixRenderState('LOADING', `Executando diretiva espacial no WorldStateEngine...`);
       try {
-        const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = 'Bearer ' + token;
-
-        const res = await fetch('/api/v2/living-city/command', {
+        const commandResult = await safeFetchJson('/api/v2/living-city/command', {
           method: 'POST',
-          headers,
-          body: JSON.stringify({ prompt: intent, intent, actor: 'operator' })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: intent, intent, actor: 'operator', projectId: ctx.projectId })
         });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          throw new Error(data.error || `HTTP ${res.status}`);
+        const data = commandResult.data;
+        if (!commandResult.ok || !data?.ok) {
+          throw new Error(data?.error || commandResult.statusText || commandResult.error || `HTTP ${commandResult.status || 'unknown'}`);
         }
 
         const results = Array.isArray(data.results) ? data.results : [];
+        const reality = data.materialization || null;
         const resultsSummary = results.map(r => `
           <li style="margin-bottom:4px;">
             <span style="color:#10b981; font-weight:700;">✓</span> 
             <strong>${esc(r.command?.type || 'COMANDO')}:</strong> 
             ${esc(r.description || JSON.stringify(r.command?.payload || {}))}
           </li>
-        `).join('') || '<li>Comando processado com sucesso pelo WorldCommandEngine.</li>';
+        `).join('') || (reality
+          ? `<li><span style="color:#10b981;font-weight:700;">✓</span> Entidade persistida: <strong>${esc(reality.organization?.name || 'Organização')}</strong> (<code>${esc(reality.organization?.id || '')}</code>)</li><li><span style="color:#10b981;font-weight:700;">✓</span> Edifício materializado: <strong>${esc(reality.building?.name || 'Workspace')}</strong> (<code>${esc(reality.building?.id || '')}</code>)</li>`
+          : '<li>Comando processado pelo WorldCommandEngine.</li>');
 
         proposalArea.innerHTML = `
           <div class="fenix-mission-proposal-card" style="border-color:rgba(56,189,248,0.4);">
             <div class="proposal-header">
-              <span class="proposal-badge" style="background:#0284c7; color:#fff;">LIVING WORLD MUTATION</span>
-              <h4>Mutação Espacial do Mundo 3D</h4>
+              <span class="proposal-badge" style="background:#0284c7; color:#fff;">${reality ? 'REALITY COMPILER · PERSISTIDO' : 'LIVING WORLD MUTATION'}</span>
+              <h4>${reality ? 'Organização criada no mundo existente' : 'Mutação Espacial do Mundo 3D'}</h4>
             </div>
 
             <div class="proposal-grid">
               <div><small>DIRETIVA DO OPERADOR</small><p style="color:#38bdf8; font-weight:700;">${esc(intent)}</p></div>
               <div><small>SUBSISTEMA</small><p style="color:#10b981; font-weight:700;">WorldStateEngine</p></div>
-              <div><small>COMANDOS EXECUTADOS</small><p>${data.count || results.length}</p></div>
+              <div><small>${reality ? 'PROJETO' : 'COMANDOS EXECUTADOS'}</small><p>${reality ? esc(data.blueprint?.projectId || ctx.projectId) : (data.count || results.length)}</p></div>
               <div><small>HORÁRIO DO MUNDO</small><p><code>${esc(data.worldState?.worldTime || 'Real-time')}</code></p></div>
               <div style="grid-column:1/-1;"><small>RESULTADOS DA MUTAÇÃO</small>
                 <ul style="margin:4px 0 0; padding-left:18px; font-size:12px; color:#e2e8f0; line-height:1.5;">
@@ -2547,7 +2524,7 @@
             </div>
 
             <div style="margin-top:16px; display:flex; gap:10px; justify-content:space-between; align-items:center;">
-              <button class="fenix-btn" onclick="document.getElementById('fenixCmdProposalArea').style.display='none'">Fechar</button>
+              <button class="fenix-btn" onclick="this.closest('#fenixCmdProposalArea').style.display='none'">Fechar</button>
               <button class="fenix-btn primary" onclick="if(window.fenixSwitchNav) window.fenixSwitchNav('city'); else document.querySelector('[data-view=\\'view-city\\']')?.click();" style="display:inline-flex; align-items:center; gap:6px;">
                 <i class="ph-bold ph-globe"></i> Ver no Mundo 3D (Spatial View)
               </button>
@@ -2561,8 +2538,12 @@
           window.syncLiveTargetTelemetry();
         }
         if (window.fenixWorld3D && typeof window.fenixWorld3D.syncRealData === 'function') {
-          window.fenixWorld3D.syncRealData();
+          window.fenixWorld3D.syncRealData().then(() => {
+            const buildingId = reality?.building?.id;
+            if (buildingId) window.fenixWorld3D?.focusBuilding?.(buildingId);
+          });
         }
+        if (reality?.building?.id) window.__fenixRealityBuildingId = reality.building.id;
         return;
       } catch (err) {
         proposalArea.innerHTML = window.fenixRenderState('ERROR', 'Falha ao executar diretiva no WorldStateEngine.', err.message);
@@ -2631,8 +2612,8 @@
           </div>
 
           <div style="margin-top:18px; display:flex; gap:10px; justify-content:flex-end;">
-            <button class="fenix-btn" onclick="document.getElementById('fenixCmdProposalArea').style.display='none'">Descartar</button>
-            <button class="fenix-btn primary" onclick="window.fenixConfirmAndExecuteMission('${esc(intent)}', '${esc(assignedAgent)}')">
+            <button class="fenix-btn" onclick="this.closest('#fenixCmdProposalArea').style.display='none'">Descartar</button>
+            <button class="fenix-btn primary" onclick="window.fenixConfirmAndExecuteMission('${esc(intent)}', '${esc(assignedAgent)}', this)">
               ⚡ Executar missão
             </button>
           </div>
@@ -2644,11 +2625,12 @@
   };
 
   // Confirm and execute mission
-  window.fenixConfirmAndExecuteMission = async function (intent, agent) {
+  window.fenixConfirmAndExecuteMission = async function (intent, agent, source) {
     const ok = confirm(`Deseja iniciar a execução autônoma da missão:\n"${intent}"\nAgente: ${agent}\nProjeto: ${ctx.projectId}`);
     if (!ok) return;
 
-    const proposalArea = document.getElementById('fenixCmdProposalArea');
+    const scope = source?.closest?.('.fenix-cockpit-prompt-dock, .fenix-cmd-op-container');
+    const proposalArea = source?.closest?.('#fenixCmdProposalArea') || scope?.querySelector('#fenixCmdProposalArea') || document.getElementById('fenixCmdProposalArea');
     if (proposalArea) {
       proposalArea.innerHTML = window.fenixRenderState('LOADING', `Iniciando missão autônoma no backend Fênix...`);
     }
@@ -2886,269 +2868,9 @@
   // ═══════════════════════════════════════════════════════════════════════════
   // 13. DEDICATED VIEW LOADERS (MCP, Observability, Visual QA, Terminal)
   // ═══════════════════════════════════════════════════════════════════════════
-  window.loadMcpView = async function () {
-    const connectorList = document.getElementById('connectorList');
-    const routerState = document.getElementById('routerState');
-    const toolList = document.getElementById('toolList');
-    const checkBtn = document.getElementById('checkApiBtn');
+  // MCP loading is owned by fenix-core-controller.js.
 
-    if (checkBtn && !checkBtn.__fenixBound) {
-      checkBtn.__fenixBound = true;
-      checkBtn.onclick = () => {
-        checkBtn.textContent = 'Verificando...';
-        window.loadMcpView().then(() => {
-          checkBtn.textContent = 'Conexões Verificadas!';
-          setTimeout(() => { checkBtn.textContent = 'Verificar conexao'; }, 1500);
-        });
-      };
-    }
-
-    try {
-      const [connRes, aiRes, capRes] = await Promise.all([
-        safeFetchJson('/api/connectors'),
-        safeFetchJson('/api/v2/ai-platform/status'),
-        safeFetchJson('/api/capabilities')
-      ]);
-
-      if (connectorList) {
-        let connectors = [
-          { name: 'GitHub Connector', details: '/opt/fenix-os/grg/src · Master branch', status: 'ONLINE' },
-          { name: 'Docker Engine Connector', details: '/var/run/docker.sock · Docker Engine', status: 'ONLINE' },
-          { name: 'BullMQ Redis Connector', details: 'Port :6379 · Queue fenix-jobs', status: 'ONLINE' },
-          { name: 'PostgreSQL Database', details: 'Port :5432 · Schema fenix', status: 'ONLINE' },
-          { name: 'Qdrant Vector DB', details: 'Port :6333 · Graph Brain embeddings', status: 'ONLINE' }
-        ];
-        if (connRes.ok && connRes.data && Array.isArray(connRes.data.connectors) && connRes.data.connectors.length > 0) {
-          connectors = connRes.data.connectors.map(c => ({
-            name: c.name || c.id,
-            details: c.provider || c.type || c.url || 'Conector Ativo',
-            status: c.status || c.state || 'ONLINE'
-          }));
-        }
-        connectorList.innerHTML = connectors.map(c => `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-            <td style="padding:10px; font-weight:700; color:#fff;">${esc(c.name)}</td>
-            <td style="padding:10px; color:#cbd5e1;">${esc(c.details)}</td>
-            <td style="padding:10px; color:${c.status === 'ONLINE' ? '#10b981' : '#f59e0b'}; font-weight:700;">● ${esc(c.status)}</td>
-          </tr>
-        `).join('');
-      }
-
-      if (routerState) {
-        const models = [
-          { name: 'Local Ollama LLM', model: 'qwen2.5:3b (fast-local)', status: 'ACTIVE', route: 'Primary' },
-          { name: 'Code Generation Engine', model: 'codellama:7b', status: 'STANDBY', route: 'Fallback' },
-          { name: 'Autonomous Reasoning Gateway', model: 'Fênix Multi-Agent Swarm', status: 'ACTIVE', route: 'Direct' }
-        ];
-        routerState.innerHTML = models.map(m => `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-            <td style="padding:10px; font-weight:700; color:#fff;">${esc(m.name)}</td>
-            <td style="padding:10px; color:#cbd5e1;">${esc(m.model)} · <span style="color:#38bdf8;">${esc(m.route)}</span></td>
-            <td style="padding:10px; color:#10b981; font-weight:700;">● ${esc(m.status)}</td>
-          </tr>
-        `).join('');
-      }
-
-      if (toolList) {
-        let tools = [
-          { name: 'bash-execution', desc: 'Execução segura de comandos em container/host', status: 'REGISTRADA' },
-          { name: 'file-system', desc: 'Leitura, escrita e diff de artefatos do repositório', status: 'REGISTRADA' },
-          { name: 'git-operations', desc: 'Branch, commit, merge e push governado', status: 'REGISTRADA' },
-          { name: 'docker-inspect', desc: 'Auditoria e ciclo de vida de contêineres', status: 'REGISTRADA' },
-          { name: 'browser-eval', desc: 'Validação visual Playwright e captura de tela', status: 'REGISTRADA' },
-          { name: 'memory-vector', desc: 'Busca semântica e armazenamento em Qdrant', status: 'REGISTRADA' },
-          { name: 'bullmq-dispatch', desc: 'Enfileiramento e monitoramento de DAG jobs', status: 'REGISTRADA' },
-          { name: 'knowledge-graph', desc: 'Consulta de nós e relacionamentos no GraphBrain', status: 'REGISTRADA' },
-          { name: 'reality-engine', desc: 'Cálculo de reality score e verificação anti-fake', status: 'REGISTRADA' }
-        ];
-        if (capRes.ok && capRes.data && Array.isArray(capRes.data.capabilities) && capRes.data.capabilities.length > 0) {
-          tools = capRes.data.capabilities.map(t => ({
-            name: t.name || t.id,
-            desc: t.description || t.type || 'Capacidade governada',
-            status: t.status || 'REGISTRADA'
-          }));
-        }
-        toolList.innerHTML = tools.map(t => `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-            <td style="padding:10px; font-weight:700; color:#38bdf8; font-family:monospace;">${esc(t.name)}</td>
-            <td style="padding:10px; color:#cbd5e1;">${esc(t.desc)}</td>
-            <td style="padding:10px; color:#10b981; font-weight:600;">● ${esc(t.status)}</td>
-          </tr>
-        `).join('');
-      }
-    } catch (e) {
-      console.warn('[FenixOS] MCP view load error:', e.message);
-    }
-  };
-
-  window.loadObservabilityView = async function () {
-    const obsMetrics = document.getElementById('observabilityMetrics');
-    const seriesGrid = document.getElementById('seriesGrid');
-    const sampleBtn = document.getElementById('sampleBtn');
-
-    if (sampleBtn && !sampleBtn.__fenixBound) {
-      sampleBtn.__fenixBound = true;
-      sampleBtn.onclick = async () => {
-        sampleBtn.textContent = 'Coletando telemetria…';
-        try {
-          await safeFetchJson('/api/v2/reality/summary');
-          await window.loadObservabilityView();
-          sampleBtn.textContent = 'Telemetria Atualizada!';
-        } catch (_) {
-          sampleBtn.textContent = 'Falha na coleta';
-        }
-        setTimeout(() => { sampleBtn.textContent = 'Coletar amostra'; }, 2000);
-      };
-    }
-
-    try {
-      const [eventsRes, realityRes, rtStatusRes] = await Promise.all([
-        safeFetchJson('/api/events?limit=40'),
-        safeFetchJson('/api/v2/reality/summary'),
-        safeFetchJson('/api/v2/runtime/full-status')
-      ]);
-
-      const events = (eventsRes.ok && eventsRes.data && Array.isArray(eventsRes.data.events)) ? eventsRes.data.events : [];
-      const streams = [...new Set(events.map(e => e.stream).filter(Boolean))];
-      const ht = (realityRes.ok && realityRes.data && realityRes.data.hostTelemetry) ? realityRes.data.hostTelemetry : {};
-      const pm2 = (rtStatusRes.ok && rtStatusRes.data && rtStatusRes.data.services && rtStatusRes.data.services.fenixOS) ? (rtStatusRes.data.services.fenixOS.pm2 || {}) : {};
-
-      const cpuVal = ht.cpu?.percent !== undefined ? ht.cpu.percent + '%' : (pm2.cpu !== undefined ? (typeof pm2.cpu === 'number' ? pm2.cpu.toFixed(1) : pm2.cpu) + '%' : '—');
-      const ramVal = ht.memory?.usedPercent !== undefined ? ht.memory.usedPercent + '%' : (pm2.memory ? Math.round(pm2.memory / 1024 / 1024 / 81.92) + '%' : '—');
-      const eventDisplay = eventsRes.ok ? String(events.length) : '—';
-      const streamDisplay = eventsRes.ok ? String(streams.length) : '—';
-
-      if (obsMetrics) {
-        obsMetrics.innerHTML = `
-          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
-            <div style="font-size:11px; color:var(--fenix-muted,#94a3b8);">EVENTBUS EVENTOS</div>
-            <div style="font-size:26px; font-weight:700; color:var(--fenix-cyan,#38bdf8);">${eventDisplay}</div>
-            <small style="color:${eventsRes.ok ? '#10b981' : '#f87171'};">● ${eventsRes.ok ? 'Fluxo SSE Ativo' : 'Indisponível'}</small>
-          </div>
-          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
-            <div style="font-size:11px; color:var(--fenix-muted,#94a3b8);">STREAMS ÚNICOS</div>
-            <div style="font-size:26px; font-weight:700; color:#a78bfa;">${streamDisplay}</div>
-            <small style="color:var(--fenix-muted,#94a3b8);">Jobs & Heartbeats</small>
-          </div>
-          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
-            <div style="font-size:11px; color:var(--fenix-muted,#94a3b8);">CPU HOST</div>
-            <div style="font-size:26px; font-weight:700; color:#f59e0b;">${cpuVal}</div>
-            <small style="color:var(--fenix-muted,#94a3b8);">Linux Kernel Load</small>
-          </div>
-          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
-            <div style="font-size:11px; color:var(--fenix-muted,#94a3b8);">RAM HOST</div>
-            <div style="font-size:26px; font-weight:700; color:#10b981;">${ramVal}</div>
-            <small style="color:var(--fenix-muted,#94a3b8);">Memória em Uso</small>
-          </div>
-        `;
-      }
-
-      if (seriesGrid) {
-        let displayEvents = events;
-        if (displayEvents.length === 0) {
-          displayEvents = [
-            { id: 'evt_rt_01', type: 'runtime.heartbeat', stream: 'system.runtime', source: 'Fastify Core Kernel', entity: 'Fastify Kernel', timestamp: new Date().toISOString(), severity: 'INFO' },
-            { id: 'evt_sw_02', type: 'swarm.supervisor.pulse', stream: 'agent.swarm', source: 'AgentRuntime', entity: 'Supervisor Orchestration', timestamp: new Date(Date.now() - 30000).toISOString(), severity: 'INFO' },
-            { id: 'evt_bm_03', type: 'job.queue.active', stream: 'bullmq.jobs', source: 'BullMQ Redis', entity: 'Queue Dispatcher', timestamp: new Date(Date.now() - 60000).toISOString(), severity: 'INFO' },
-            { id: 'evt_gb_04', type: 'graph.sync.completed', stream: 'knowledge.graph', source: 'GraphBrain', entity: 'Postgres Graph', timestamp: new Date(Date.now() - 120000).toISOString(), severity: 'INFO' }
-          ];
-        }
-        seriesGrid.innerHTML = displayEvents.slice(0, 16).map(e => `
-          <div class="fenix-event-card" data-event-id="${esc(e.id || ('evt_' + (e.sequence || Math.floor(Math.random() * 100000))))}" data-event-type="${esc(e.type || 'runtime.event')}" data-event-source="${esc(e.source || 'Fastify Gateway')}" data-event-entity="${esc(e.entity || 'EventBus Hub')}" data-event-project="${esc(e.project || 'fenix-os')}" data-event-severity="${esc(e.severity || (String(e.type).includes('error') ? 'ERROR' : 'INFO'))}" data-event-time="${esc(e.timestamp || new Date().toISOString())}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:10px; cursor:pointer; transition:all 0.2s ease;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <b style="font-size:12px; color:#f8fafc;">${esc(e.type || 'runtime.event')}</b>
-              <span style="font-size:10px; color:#10b981; font-weight:bold;">seq #${esc(e.sequence || 1)}</span>
-            </div>
-            <div style="font-size:11px; color:#94a3b8; margin-top:4px; font-family:monospace;">${esc(e.stream || 'system.events')}</div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-              <span style="font-size:10px; color:#64748b;">${esc(e.timestamp ? new Date(e.timestamp).toLocaleTimeString('pt-BR') : 'agora')} · fonte: ${esc(e.source || 'fenix')}</span>
-              <span style="font-size:9px; color:#38bdf8; font-weight:700;">Inspecionar →</span>
-            </div>
-          </div>
-        `).join('');
-      }
-    } catch (e) {
-      console.warn('[FenixOS] Observability load error:', e.message);
-    }
-  };
-
-  window.loadVisualQaDashboard = async function () {
-    const summaryEl = document.getElementById('qaSummary');
-    const galleryEl = document.getElementById('qaGallery');
-    const refreshBtn = document.getElementById('qaRefreshBtn');
-    const rerunBtn = document.getElementById('qaRerunBtn');
-
-    if (refreshBtn && !refreshBtn.__fenixBound) {
-      refreshBtn.__fenixBound = true;
-      refreshBtn.onclick = () => window.loadVisualQaDashboard();
-    }
-    if (rerunBtn && !rerunBtn.__fenixBound) {
-      rerunBtn.__fenixBound = true;
-      rerunBtn.onclick = () => {
-        rerunBtn.textContent = 'Executando QA...';
-        setTimeout(() => { rerunBtn.textContent = 'Re-run QA'; }, 3000);
-      };
-    }
-
-    if (summaryEl) summaryEl.innerHTML = 'Carregando evidências visuais...';
-
-    try {
-      const [dashRes, screenRes] = await Promise.all([
-        safeFetchJson('/api/v2/visual-qa/dashboard'),
-        safeFetchJson('/api/v2/visual-qa/screenshots')
-      ]);
-
-      let summary = { total: 14, passed: 14, failed: 0, screenshotsTaken: 14 };
-      if (dashRes.ok && dashRes.data && dashRes.data.summary) {
-        summary = dashRes.data.summary;
-      }
-
-      if (summaryEl) {
-        summaryEl.innerHTML = `
-          <div style="display:flex; gap:16px; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px 18px;">
-            <div><span style="color:#94a3b8; font-size:11px;">TOTAL TELAS:</span> <strong style="color:#f8fafc; font-size:16px;">${summary.total}</strong></div>
-            <div><span style="color:#94a3b8; font-size:11px;">PASSOU:</span> <strong style="color:#10b981; font-size:16px;">${summary.passed}</strong></div>
-            <div><span style="color:#94a3b8; font-size:11px;">FALHOU:</span> <strong style="color:#${summary.failed > 0 ? '#ef4444' : '#10b981'}; font-size:16px;">${summary.failed}</strong></div>
-            <div><span style="color:#94a3b8; font-size:11px;">SCREENSHOTS:</span> <strong style="color:#38bdf8; font-size:16px;">${summary.screenshotsTaken}</strong></div>
-            <div style="margin-left:auto;"><span class="evolution-badge" style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-size:10px; font-weight:800; padding:3px 10px; border-radius:12px;">● 100% AUDITADO</span></div>
-          </div>
-        `;
-      }
-
-      const screens = [
-        { name: 'view-command', label: 'Command Center', status: 'PASSED' },
-        { name: 'view-city', label: 'AI Living City', status: 'PASSED' },
-        { name: 'view-agents', label: 'Agents Control Room', status: 'PASSED' },
-        { name: 'view-projects', label: 'Project Intelligence Hub', status: 'PASSED' },
-        { name: 'view-ide', label: 'Integrated Dev Environment', status: 'PASSED' },
-        { name: 'view-operations', label: 'Operations & Jobs', status: 'PASSED' },
-        { name: 'view-runtime', label: 'Runtime Cockpit', status: 'PASSED' },
-        { name: 'view-memory', label: 'Memory Fabric', status: 'PASSED' },
-        { name: 'view-knowledge', label: 'Knowledge Observatory', status: 'PASSED' },
-        { name: 'view-mcp', label: 'MCP Hub & Connectors', status: 'PASSED' },
-        { name: 'view-browser', label: 'Browser QA Lab', status: 'PASSED' },
-        { name: 'view-observability', label: 'Observability & Events', status: 'PASSED' },
-        { name: 'view-terminal', label: 'Terminal Host', status: 'PASSED' }
-      ];
-
-      if (galleryEl) {
-        galleryEl.innerHTML = screens.map(s => `
-          <div class="qa-card" style="background:#0f172a; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; text-align:left;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <strong style="font-size:13px; color:#f8fafc;">${esc(s.label)}</strong>
-              <span style="font-size:10px; font-weight:800; color:#10b981; background:rgba(16,185,129,0.12); padding:2px 6px; border-radius:4px;">● ${esc(s.status)}</span>
-            </div>
-            <div style="font-size:11px; color:#94a3b8; margin-bottom:10px; font-family:monospace;">${esc(s.name)}</div>
-            <button onclick="window.showView('${s.name.replace('view-', '')}')" style="width:100%; background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); padding:6px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">
-              Abrir Tela →
-            </button>
-          </div>
-        `).join('');
-      }
-    } catch (e) {
-      console.warn('[FenixOS] Visual QA load error:', e.message);
-    }
-  };
+  // Observability and QA data loaders are owned by fenix-core-controller.js.
 
   window.loadTerminalView = function () {
     window.fenixInitTerminalEnhancements();
@@ -3166,45 +2888,7 @@
                        window.__fenixState?.currentRoute ||
                        'command';
 
-    if (activeView === 'command' || activeView === 'dashboard') {
-      window.fenixMountCommandCenter();
-    } else if (activeView === 'runtime') {
-      if (typeof window.loadRuntimeView === 'function') window.loadRuntimeView();
-      if (typeof window.fenixRenderRuntimeServices === 'function') window.fenixRenderRuntimeServices();
-    } else if (activeView === 'knowledge') {
-      if (typeof window.loadKnowledgeView === 'function') window.loadKnowledgeView();
-      if (typeof window.fenixRenderKnowledgeRelationships === 'function') window.fenixRenderKnowledgeRelationships();
-    } else if (activeView === 'memory') {
-      if (typeof window.loadMemoryView === 'function') window.loadMemoryView();
-      if (typeof window.fenixMountMemoryView === 'function') window.fenixMountMemoryView();
-    } else if (activeView === 'observability') {
-      if (typeof window.loadObservabilityView === 'function') window.loadObservabilityView();
-    } else if (activeView === 'browser') {
-      if (typeof window.loadVisualQaDashboard === 'function') window.loadVisualQaDashboard();
-    } else if (activeView === 'mcp') {
-      if (typeof window.loadMcpView === 'function') window.loadMcpView();
-    } else if (activeView === 'terminal') {
-      if (typeof window.loadTerminalView === 'function') window.loadTerminalView();
-    } else if (activeView === 'agents') {
-      if (typeof window.fenixLoadAgents === 'function') window.fenixLoadAgents();
-      if (typeof window.loadAgentsTable === 'function') window.loadAgentsTable();
-      if (typeof window.renderAgentsTable === 'function') window.renderAgentsTable();
-    } else if (activeView === 'operations') {
-      if (typeof window.loadLiveOperations === 'function') window.loadLiveOperations();
-      if (typeof window.renderOperationsView === 'function') window.renderOperationsView();
-    } else if (activeView === 'ide') {
-      if (typeof window.loadIdeView === 'function') window.loadIdeView();
-      if (typeof window.fenixInitIdeWorkspace === 'function') window.fenixInitIdeWorkspace();
-    } else if (activeView === 'city') {
-      if (typeof window.loadCityView === 'function') window.loadCityView();
-      if (typeof window.refreshCityBrief === 'function') window.refreshCityBrief();
-    } else if (activeView === 'projects') {
-      if (typeof window.loadRegistryProjects === 'function') window.loadRegistryProjects();
-    } else if (activeView === 'flowgraph') {
-      if (window.FenixFlowGraph && typeof window.FenixFlowGraph.mountView === 'function') {
-        window.FenixFlowGraph.mountView('view-flowgraph', { context: 'GLOBAL' });
-      }
-    }
+    if (activeView === 'command' || activeView === 'dashboard') window.fenixMountCommandCenter();
 
     // Ensure Contextual Screen Flow Graph Button on current view header
     const currentViewEl = document.getElementById('view-' + activeView);
@@ -3344,12 +3028,18 @@
 
     term.writeln('\x1b[1;36m══════════════════════════════════════════════════════════════════\x1b[0m');
     term.writeln('\x1b[1;32m  🔥 FÊNIX OS — Interactive Agentic Terminal v3.0\x1b[0m');
-    term.writeln('  Connected to Kernel: \x1b[1;33m209.50.241.22:3000\x1b[0m • 15 Specialists Online');
+    term.writeln('  Runtime conectado somente quando a API autenticada responder.');
     term.writeln('\x1b[1;36m══════════════════════════════════════════════════════════════════\x1b[0m');
     term.writeln('Type \x1b[1;37m"help"\x1b[0m for commands, or run any system command.\n');
 
     let currentLine = '';
-    const prompt = () => term.write('\r\n\x1b[1;32mfenix@vps\x1b[0m:\x1b[1;34m~$\x1b[0m ');
+    const prompt = () => term.write('\r\n\x1b[1;32mfenix@runtime\x1b[0m:\x1b[1;34m~$\x1b[0m ');
+    const fetchJson = async (url) => {
+      const response = await fetch(url, { credentials: 'same-origin', headers: { accept: 'application/json' } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      return data;
+    };
     prompt();
 
     term.onKey(({ key, domEvent }) => {
@@ -3366,39 +3056,36 @@
         }
         if (cmd === 'help') {
           term.writeln('  \x1b[1;33mstatus\x1b[0m    - Show operational cluster status');
-          term.writeln('  \x1b[1;33magents\x1b[0m    - List 15 active specialist agents');
+          term.writeln('  \x1b[1;33magents\x1b[0m    - List agents published by the runtime');
           term.writeln('  \x1b[1;33mprojects\x1b[0m  - List registered workspaces');
           term.writeln('  \x1b[1;33mclear\x1b[0m     - Clear terminal screen');
-          term.writeln('  \x1b[1;33mdate\x1b[0m      - Print server time');
+          term.writeln('  \x1b[1;33mdate\x1b[0m      - Print this interface clock');
           prompt();
           return;
         }
         if (cmd === 'agents') {
-          term.writeln('\x1b[1;34mSpecialist Fleet (15 Online):\x1b[0m');
-          term.writeln('  ● agent-architect      [READY]  Station: Architecture Station');
-          term.writeln('  ● agent-planner        [READY]  Station: War Room Desk');
-          term.writeln('  ● agent-orchestrator   [READY]  Station: War Room Command');
-          term.writeln('  ● agent-developer      [READY]  Station: Dev Desk 1');
-          term.writeln('  ● agent-backend        [READY]  Station: Backend Desk');
-          term.writeln('  ● agent-frontend       [READY]  Station: Frontend Desk');
-          term.writeln('  ● agent-database       [READY]  Station: Database Desk');
-          term.writeln('  ● agent-memory         [READY]  Station: Memory Fabric Desk');
-          term.writeln('  ● agent-security       [READY]  Station: Security Desk');
-          term.writeln('  ● agent-qa             [READY]  Station: QA Automation Rig');
-          term.writeln('  ● agent-devops         [READY]  Station: DevOps Server Terminal');
-          term.writeln('  ● agent-observability  [READY]  Station: Telemetry Ops Station');
-          term.writeln('  ● agent-research       [READY]  Station: AI Research Lab');
-          term.writeln('  ● agent-browser        [READY]  Station: Browser Automation Lab');
-          term.writeln('  ● agent-github         [READY]  Station: GitHub & VCS Station');
-          prompt();
+          fetchJson('/api/observability/live').then(data => {
+            const agents = Array.isArray(data.activeAgents) ? data.activeAgents : [];
+            term.writeln(`\x1b[1;34mAgentes publicados pelo runtime (${agents.length}):\x1b[0m`);
+            if (!agents.length) term.writeln('  Nenhum agente ativo publicado.');
+            for (const agent of agents) term.writeln(`  ● ${agent.name || agent.id}  [${agent.status || 'INDEFINIDO'}]  ${agent.role || ''} · ${agent.district || 'local não informado'}`);
+          }).catch(error => term.writeln(`\x1b[1;31mAgentes indisponíveis: ${error.message}\x1b[0m`)).finally(prompt);
+          return;
+        }
+        if (cmd === 'projects') {
+          fetchJson('/api/fenix/projects').then(data => {
+            const projects = Array.isArray(data.projects) ? data.projects : [];
+            term.writeln(`\x1b[1;34mProjetos cadastrados (${projects.length}):\x1b[0m`);
+            if (!projects.length) term.writeln('  Nenhum projeto cadastrado no Project Kernel.');
+            for (const project of projects) term.writeln(`  ● ${project.name || project.id}  [${project.lifecycle || project.maturity || 'CADASTRADO'}]`);
+          }).catch(error => term.writeln(`\x1b[1;31mProjetos indisponíveis: ${error.message}\x1b[0m`)).finally(prompt);
           return;
         }
         if (cmd === 'status') {
-          term.writeln('\x1b[1;32m● Fênix Kernel:\x1b[0m HEALTHY (100%)');
-          term.writeln('\x1b[1;32m● Redis Engine:\x1b[0m CONNECTED');
-          term.writeln('\x1b[1;32m● Active Fleet:\x1b[0m 15 / 15 Specialists');
-          term.writeln('\x1b[1;32m● Projects:\x1b[0m 4 Registered (fenix-os, zapai-crm, api-platform, ai-engine)');
-          prompt();
+          fetchJson('/api/runtime').then(data => {
+            term.writeln(`\x1b[1;34mRuntime: ${data.status || 'INDEFINIDO'} · verificado ${data.checkedAt || 'sem horário'}\x1b[0m`);
+            for (const service of data.services || []) term.writeln(`  ● ${service.id}: ${service.status}${service.error ? ` · ${service.error}` : ''}`);
+          }).catch(error => term.writeln(`\x1b[1;31mStatus indisponível: ${error.message}\x1b[0m`)).finally(prompt);
           return;
         }
         if (cmd === 'date') {
@@ -3410,14 +3097,18 @@
         // Forward to backend or fallback
         fetch('/api/v2/terminal/exec', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ command: cmd })
-        }).then(r => r.json()).then(res => {
-          if (res.output) term.writeln(res.output);
-          else term.writeln(`\x1b[38;5;244m[OK: ${cmd}]\x1b[0m`);
+        }).then(async response => {
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+          if (result.stdout) term.writeln(result.stdout);
+          if (result.stderr) term.writeln(`\x1b[1;31m${result.stderr}\x1b[0m`);
+          if (!result.stdout && !result.stderr) term.writeln(result.ok ? 'Comando concluído sem saída.' : `Comando não concluído (código ${result.code ?? 'indisponível'}).`);
           prompt();
-        }).catch(() => {
-          term.writeln(`\x1b[38;5;244m[OK: ${cmd}]\x1b[0m`);
+        }).catch(error => {
+          term.writeln(`\x1b[1;31mComando indisponível: ${error.message}\x1b[0m`);
           prompt();
         });
       } else if (domEvent.keyCode === 8) { // Backspace
@@ -3433,7 +3124,7 @@
 
     window.clearFenixTerminal = () => {
       term.clear();
-      term.write('\x1b[1;32mfenix@vps\x1b[0m:\x1b[1;34m~$\x1b[0m ');
+      term.write('\x1b[1;32mfenix@runtime\x1b[0m:\x1b[1;34m~$\x1b[0m ');
     };
   };
 
