@@ -8,7 +8,7 @@
   'use strict';
 
   const state = {
-    projectId: 'fenix-os',
+    projectId: localStorage.getItem('fenix_ide_project') || 'fenix-os',
     requestedProjectId: null,
     path: null,
     hash: null,
@@ -510,16 +510,31 @@
       }
 
       const saved = localStorage.getItem('fenix_ide_project');
-      const preferred = state.projects.find(p => p.id === state.requestedProjectId) ||
-                        state.projects.find(p => p.id === saved) ||
+      const requested = state.projects.find(p => p.id === state.requestedProjectId);
+      const savedProject = state.projects.find(p => p.id === saved);
+      const preferred = requested || savedProject || (!saved && (
                         state.projects.find(p => p.id === 'api-platform') ||
                         state.projects.find(p => p.id === 'fenix-os') ||
-                        state.projects[0];
+                        state.projects[0]));
 
       state.requestedProjectId = null;
       if (preferred) {
         if (select) select.value = preferred.id;
         await selectProject(preferred.id);
+      } else if (saved) {
+        const savedOption = [...(select?.options || [])].find(option => option.value === saved);
+        const projectName = localStorage.getItem('fenix_ide_project_name') || savedOption?.textContent?.trim() ||
+                            localStorage.getItem('fenix_active_project_name') || saved;
+        state.projectId = saved;
+        if (select) {
+          if (![...select.options].some(option => option.value === saved)) {
+            select.add(new Option(`${projectName} · contexto salvo`, saved));
+          }
+          select.value = saved;
+        }
+        window.GlobalSelectionStore?.select?.('project', saved, { id: saved, name: projectName, restoredLocally: true });
+        window.fenixSetActiveProject?.(saved, projectName);
+        status('Projeto anterior restaurado; aguardando dados do Project Kernel.', true);
       }
     } catch (error) {
       status(`Falha ao carregar projetos: ${error.message}`, true);
@@ -543,8 +558,10 @@
     localStorage.setItem('fenix_ide_project', id);
 
     const project = state.projects.find(item => item.id === id);
+    const projectName = project?.name || id;
+    localStorage.setItem('fenix_ide_project_name', projectName);
     window.GlobalSelectionStore?.select?.('project', id, project || { id, name: id });
-    window.fenixSetActiveProject?.(id, project?.name || id);
+    window.fenixSetActiveProject?.(id, projectName);
     const metaEl = document.getElementById('fenixIdeProjectMeta');
     if (metaEl) metaEl.textContent = project ? `${project.workspace} · consultando Git…` : '—';
     const pathEl = document.getElementById('fenixIdeLivePath');
@@ -1218,10 +1235,12 @@
       if (!await selectProject(projectId)) throw new Error('Troca de projeto cancelada');
     } else {
       const project = state.projects.find(item => item.id === projectId);
+      const projectName = project?.name || projectId;
       if (window.GlobalSelectionStore?.selectedProject?.id !== projectId) {
         window.GlobalSelectionStore?.select?.('project', projectId, project);
       }
-      window.fenixSetActiveProject?.(projectId, project?.name || projectId);
+      localStorage.setItem('fenix_ide_project_name', projectName);
+      window.fenixSetActiveProject?.(projectId, projectName);
     }
     return true;
   };

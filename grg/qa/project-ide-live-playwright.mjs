@@ -155,6 +155,18 @@ try {
   if (hubContext.project !== 'ide-visual' || hubContext.context !== 'Projeto de QA' || hubContext.selected !== 'ide-visual') {
     throw new Error(`Project Hub did not carry its project context into the IDE: ${JSON.stringify(hubContext)}`);
   }
+  await page.route('**/api/fenix/projects', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"projects":[]}' }));
+  await page.route('**/api/v2/projects-registry', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"projects":[]}' }));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelector('#fenixIdeProject')?.value === 'ide-visual');
+  const restoredContext = await page.evaluate(() => ({
+    project: document.querySelector('#fenixIdeProject')?.value,
+    context: document.querySelector('.fenix-context-project')?.textContent?.trim(),
+    selected: window.GlobalSelectionStore?.selectedProject?.id || null,
+  }));
+  if (restoredContext.project !== 'ide-visual' || restoredContext.context !== 'Projeto de QA' || restoredContext.selected !== 'ide-visual') {
+    throw new Error(`IDE did not restore the selected project while the catalog was empty: ${JSON.stringify(restoredContext)}`);
+  }
   const result = { ok: content === 'module.exports = { ready: false };\n' && saveStatus.startsWith('Salvo com sucesso') && await page.locator('.fenix-context-project').textContent() === 'Projeto de QA' && hubContext.selected === 'ide-visual' && errors.length === 0, screenRoutes, project: await page.locator('#fenixIdeProject').inputValue(), contextProject: await page.locator('.fenix-context-project').textContent(), selectedProject: hubContext.selected, editorValue, saveStatus, savedContent: content, errors, screenshot };
   console.log(JSON.stringify(result));
   if (!result.ok) process.exitCode = 2;
