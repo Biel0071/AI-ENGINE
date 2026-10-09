@@ -172,30 +172,30 @@ Atualizar a credencial/URL da API Platform por canal seguro, recuperar capacidad
 
 ### Verificações de navegador A–T
 
-Todos os itens são `NOT RUN / BLOCKED`; a interação manual com o navegador não foi concluída nesta sessão.
+O navegador público ainda não foi percorrido nesta sessão. Os itens abaixo distinguem a evidência E2E local da validação pendente na VPS.
 
 | Teste | Estado | Evidência |
 | --- | --- | --- |
 | A — Login | NOT RUN / BLOCKED | Sem sessão de navegador autenticada verificável |
-| B — Cidade | NOT RUN / BLOCKED | Ainda sem percurso completo da Cidade em runtime publicado |
-| C — Zoom | NOT RUN / BLOCKED | Sem captura/interação |
-| D — Seleção de edifício | NOT RUN / BLOCKED | Sem captura/interação |
-| E — Seleção de agente | NOT RUN / BLOCKED | Sem captura/interação |
+| B — Cidade | PASS local / BLOCKED público | `city-runtime-job-flow-playwright.mjs` abriu o renderer autenticado local |
+| C — Zoom | PASS local / BLOCKED público | Foco da estação e restauração de câmera após reload passaram |
+| D — Seleção de edifício | PASS local / BLOCKED público | Clique físico no projeto abriu o Project Kernel e retornou à Cidade |
+| E — Seleção de agente | PASS local / BLOCKED público | Agente atribuído ao job apareceu trabalhando na projeção da Cidade |
 | F — Criar projeto | NOT RUN / BLOCKED | Cobertura HTTP/local não equivale ao navegador |
-| G — Projeto aparece no mundo | NOT RUN / BLOCKED | Sem confirmação visual |
-| H — Executar missão | NOT RUN / BLOCKED | Coberto por contrato local de API, sem percurso completo no navegador |
-| I — Acompanhar execução | NOT RUN / BLOCKED | SSE foi testado no backend; UI completa com job real não foi verificada |
-| J — Resultado aparece | NOT RUN / BLOCKED | Sem navegador |
-| K — Memória atualiza | NOT RUN / BLOCKED | IDE confirmou `memória v1`; consulta visual e persistência durável após reinício pendentes |
+| G — Projeto aparece no mundo | PASS local / BLOCKED público | Projeto real do Project Kernel foi projetado e selecionado na Cidade |
+| H — Executar missão | PARTIAL / BLOCKED público | Job real do JobEngine foi executado; conversa → missão ainda não foi testada neste E2E |
+| I — Acompanhar execução | PASS local / BLOCKED público | Eventos de fila/início/sucesso e estado WORKING do agente foram observados |
+| J — Resultado aparece | PARTIAL / BLOCKED público | Job encerrou `SUCCEEDED`; apresentação do resultado detalhado na UI não foi coberta |
+| K — Memória atualiza | PARTIAL / BLOCKED público | IDE confirmou `memória v1`; consulta visual e persistência durável após reinício pendentes |
 | L — Buscar vídeo | NOT RUN / BLOCKED | Rota e testes controlados, sem browser |
 | M — Reproduzir vídeo | NOT RUN / BLOCKED | Sem player real verificado |
 | N — Buscar imagem | NOT RUN / BLOCKED | Rota e testes controlados, sem browser |
 | O — Abrir imagem | NOT RUN / BLOCKED | Sem viewer verificado |
-| P — Atualizar navegador | NOT RUN / BLOCKED | O teste local não cobriu restauração após recarga |
+| P — Atualizar navegador | PASS local / BLOCKED público | Reload restaurou agente, renderer e câmera na Cidade |
 | Q — Confirmar persistência | NOT RUN / BLOCKED | O runtime local caiu para armazenamento em memória; reinício não foi comprovado |
 | R — Queda de conexão | NOT RUN / BLOCKED | Sem simulação visual |
 | S — Reconectar | NOT RUN / BLOCKED | Sem simulação visual |
-| T — Coerência do mundo | NOT RUN / BLOCKED | Sem captura após reconexão |
+| T — Coerência do mundo | PARTIAL / BLOCKED público | 62 agentes vieram da API e o agente do job acompanhou seus eventos; qualidade visual ainda abaixo das referências |
 
 ## Atualização de observabilidade — 2026-10-08
 
@@ -222,3 +222,16 @@ Todos os itens são `NOT RUN / BLOCKED`; a interação manual com o navegador n�
 - O commit seletivo `3c9b89d1` foi enviado a `origin/fenix/operational-os-20260924`; inclui os arquivos relacionados a IDE, Runtime/JobEngine, Operações, QA e os testes desta entrega. Esse push não publicou a VPS.
 - O teste local iniciou com persistência degradada em memória por ausência de Postgres, Redis e Qdrant. Assim, ele prova o salvamento pela API e a resposta de memória da sessão de teste, não retenção durável 24/7.
 - A VPS continua sem deploy nem reinício: a credencial da API Platform falhou em autenticação e o host permanece sob os limites de capacidade já registrados. O E2E publicado e os itens A–T continuam pendentes.
+
+## Atualização de navegação, conectores e Cidade — 2026-10-09
+
+- O teste Playwright local autenticado `node qa/project-ide-live-playwright.mjs` percorreu os 16 destinos canônicos, exigiu exatamente uma tela ativa por rota e verificou que Project Mirror abre `#project`, em vez de ser redirecionado para Projetos.
+- O mesmo E2E verificou as ações de atualizar Provedores/MCP e Observabilidade: cada clique fez uma nova requisição à API e exibiu “Consulta concluída”, sem declarar que conectores estavam saudáveis.
+- A navegação era carregada tanto pelo roteador quanto por `wireInteractiveEnhancements`; isso disparava chamadas repetidas e mascarava a ação MCP. A hidratação agora fica no roteador, e o observador preserva somente as melhorias de interação. Removi os carregadores MCP, Runtime, Observabilidade e QA obsoletos que continham estados de infraestrutura e resultados pré-preenchidos.
+- A tela de QA inicia em “Aguardando leitura real do relatório”; não mostra mais `14/14`, “100% auditado” ou cartões PASSED antes de consultar a API.
+- O E2E de Cidade `node qa/city-runtime-job-flow-playwright.mjs` passou: API retornou 62 agentes, job do JobEngine percorreu `QUEUED → RUNNING → SUCCEEDED`, eventos apareceram, o agente foi visto em execução, o projeto abriu o workspace real e a câmera foi restaurada após navegação e reload. O teste usa um job local controlado e não cobre conversa → MissionKernel → memória durável.
+- As capturas de mundo, edifício e estação foram geradas em `grg/qa-results/playwright/city-runtime-job-flow-{world,building,agent}.png`. A cena continua de baixa complexidade geométrica e não corresponde ao acabamento cinematográfico das referências; a reconstrução visual segue parcial.
+- O E2E da IDE gravou `app.js` no workspace temporário pela API, retornou `Salvo com sucesso · memória v1` e não registrou erros de JavaScript. Esses testes usaram armazenamento local degradado em memória, sem Postgres, Redis ou Qdrant.
+- Os três scripts JavaScript alterados passaram `node --check`. Testes focados da Cidade: 21 aprovados; honestidade frontend/runtime: 24 aprovados. O E2E de rotas/IDE e o E2E da Cidade passaram nesta sessão.
+- Commits seletivos criados nesta sessão: `b42ebdb3` (navegação e loaders), `d1a808f9` (runtime da Cidade) e `df154bb8` (E2Es e regressões da Cidade).
+- Nenhum código foi implantado ou reiniciado na VPS. Provedor inválido, configuração remota divergente e pressão de disco/RAM continuam impedindo a comprovação segura do fluxo público 24/7; a credencial SSH fornecida na conversa não foi reutilizada.
