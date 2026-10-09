@@ -1,7 +1,21 @@
 const { EMPTY_STATE } = require('../../kernel/store');
-const { migrateState } = require('../../kernel/state-migrations');
+const { CURRENT_SCHEMA_VERSION, COLLECTIONS_BY_VERSION, migrateState } = require('../../kernel/state-migrations');
 const { applyRetention, loadLimits } = require('../../kernel/retention');
 const { withRetry } = require('../resilience/retry');
+
+const STATE_COLLECTIONS = [...new Set(Object.values(COLLECTIONS_BY_VERSION).flat())];
+
+// PostgreSQL JSONB already gives each query a detached object. Avoid the JSON stringify/parse
+// deep clone in migrateState for the common current-schema case; older or incomplete documents
+// still take the full migration and repair path.
+function normalizePersistedState(document) {
+  if (document && typeof document === 'object' && !Array.isArray(document)
+    && Number(document.schemaVersion) === CURRENT_SCHEMA_VERSION
+    && STATE_COLLECTIONS.every((collection) => Array.isArray(document[collection]))) {
+    return document;
+  }
+  return migrateState(document).state;
+}
 
 function safeIdentifier(value) {
   const identifier = String(value || 'fenix');
@@ -29,6 +43,9 @@ class PostgresStore {
     // canonical row. Serializing locally leaves one API and one worker transaction at
     // most in contention, instead of a 20-connection lock convoy doing duplicate clones.
     this.writeQueue = Promise.resolve();
+    this.cacheTtlMs = Number(env?.FENIX_STORE_CACHE_TTL_MS || process.env.FENIX_STORE_CACHE_TTL_MS || 750);
+    this.cachedState = null;
+    this.cachedAt = 0;
   }
 
   #prune(state) {
@@ -41,9 +58,9 @@ class PostgresStore {
     const { Pool } = require('pg');
     const pool = new Pool({
       connectionString: options.connectionString,
-      max: Number(options.maxConnections || 10),
+      max: Number(options.maxConnections || process.env.FENIX_PG_MAX_POOL || 25),
       idleTimeoutMillis: Number(options.idleTimeoutMs || 30_000),
-      connectionTimeoutMillis: Number(options.connectionTimeoutMs || 5_000),
+      connectionTimeoutMillis: Number(options.connectionTimeoutMs || process.env.FENIX_PG_TIMEOUT_MS || 20_000),
       ssl: options.ssl,
     });
     const store = new PostgresStore({
@@ -82,19 +99,22 @@ class PostgresStore {
   }
 
   async get(key) {
-    const result = await this.pool.query(
-      `SELECT document FROM ${this.schema}.kernel_state WHERE state_key = $1`, ['global'],
-    );
-    if (!result.rows[0]) throw new Error('PostgreSQL kernel state is not initialized');
-    return migrateState(result.rows[0].document).state;
+    return this.read();
   }
 
   async read() {
+    const now = Date.now();
+    if (this.cachedState && (now - this.cachedAt < this.cacheTtlMs)) {
+      return structuredClone(this.cachedState);
+    }
     const result = await this.pool.query(
       `SELECT document FROM ${this.schema}.kernel_state WHERE state_key = $1`, ['global'],
     );
     if (!result.rows[0]) throw new Error('PostgreSQL kernel state is not initialized');
-    return migrateState(result.rows[0].document).state;
+    const state = normalizePersistedState(result.rows[0].document);
+    this.cachedState = state;
+    this.cachedAt = now;
+    return structuredClone(state);
   }
 
   async write(state) {
@@ -105,6 +125,8 @@ class PostgresStore {
        WHERE state_key = $1`,
       ['global', JSON.stringify(migrated)],
     );
+    this.cachedState = migrated;
+    this.cachedAt = Date.now();
     return structuredClone(migrated);
   }
 
@@ -129,7 +151,7 @@ class PostgresStore {
           `SELECT document FROM ${this.schema}.kernel_state WHERE state_key = $1 FOR UPDATE`, ['global'],
         );
         if (!result.rows[0]) throw new Error('PostgreSQL kernel state is not initialized');
-        const current = migrateState(result.rows[0].document).state;
+        const current = normalizePersistedState(result.rows[0].document);
         const next = this.#prune(migrateState(await mutator(structuredClone(current))).state);
         await client.query(
           `UPDATE ${this.schema}.kernel_state
@@ -138,6 +160,8 @@ class PostgresStore {
           ['global', JSON.stringify(next)],
         );
         await client.query('COMMIT');
+        this.cachedState = next;
+        this.cachedAt = Date.now();
         return structuredClone(next);
       } catch (error) {
         try { await client.query('ROLLBACK'); } catch { /* connection may already be closed */ }
