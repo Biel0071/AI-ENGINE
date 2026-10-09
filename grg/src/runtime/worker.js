@@ -33,10 +33,15 @@ async function startWorker(options = {}) {
   // tinham chamador. Jobs e schedules ficam fora: BullMQ e o lease acima continuam sendo os
   // unicos donos desses dois fluxos. O modo pode ser desligado explicitamente para operacao
   // segmentada em containers dedicados.
+  // Each tick persists a heartbeat and runtime event in the singleton state document;
+  // job delivery stays on its separate BullMQ/polling path.
+  const livingTickIntervalMs = Number(env.FENIX_LIVING_TICK_MS || 15_000);
+  const livingLeaseTtlMs = Number(env.FENIX_LIVING_LEASE_TTL_MS || Math.max(15_000, livingTickIntervalMs * 3));
   const livingRuntime = env.FENIX_LIVING_RUNTIME === '0' ? null : new LivingRuntime({
     app, role: 'worker-companion', workerId: `${lease.ownerId}:living`,
     loops: defaultLoops(env).filter((loop) => !['jobs', 'schedules'].includes(loop.id)),
-    tickIntervalMs: Number(env.FENIX_LIVING_TICK_MS || 2_000),
+    tickIntervalMs: livingTickIntervalMs,
+    leaseTtlMs: livingLeaseTtlMs,
   }).start();
   app.livingRuntime = livingRuntime;
   // Cadencia propria do health-check de conexao (FLUXO 8); 0 forca o primeiro check ja no 1o ciclo.

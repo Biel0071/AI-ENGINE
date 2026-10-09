@@ -342,12 +342,15 @@ class StoreLease {
 }
 
 class LivingRuntime {
-  constructor({ app, lease = null, loops = null, role = 'all', tenantResolver = null, clock = Date, tickIntervalMs = 2_000, workerId = null }) {
+  constructor({ app, lease = null, loops = null, role = 'all', tenantResolver = null, clock = Date, tickIntervalMs = 2_000, leaseTtlMs = null, workerId = null }) {
     if (!app?.store) throw new Error('LivingRuntime requires the app composition root');
     this.app = app;
     this.clock = clock;
     this.role = role;
-    this.tickIntervalMs = Number(tickIntervalMs);
+    const interval = Number(tickIntervalMs);
+    this.tickIntervalMs = Number.isFinite(interval) && interval > 0 ? interval : 2_000;
+    const requestedLeaseTtl = Number(leaseTtlMs);
+    this.leaseTtlMs = Math.max(15_000, this.tickIntervalMs * 3, Number.isFinite(requestedLeaseTtl) ? requestedLeaseTtl : 0);
     this.workerId = workerId || `${role}-${uuid().slice(0, 8)}`;
     // A chave do lease inclui o ROLE. Com uma chave unica os sete servicos permanentes
     // disputariam a mesma lideranca e SEIS ficariam permanentemente de pe sem executar
@@ -357,8 +360,8 @@ class LivingRuntime {
     // Sem lease injetado: Redis quando existe, store quando nao. A escolha e explicita
     // aqui e nao se espalha pelo resto do modulo.
     this.lease = lease || (app.redis?.client
-      ? new (require('./redis-lease').RedisLease)({ client: app.redis.client, key: `fenix:runtime:leader:${role}`, ownerId: this.workerId })
-      : new StoreLease({ store: app.store, key: this.leaseKey, ownerId: this.workerId, clock }));
+      ? new (require('./redis-lease').RedisLease)({ client: app.redis.client, key: `fenix:runtime:leader:${role}`, ownerId: this.workerId, ttlMs: this.leaseTtlMs })
+      : new StoreLease({ store: app.store, key: this.leaseKey, ownerId: this.workerId, clock, ttlMs: this.leaseTtlMs }));
     this.loops = (loops || defaultLoops()).map((loop) => ({
       ...LOOP_DEFAULTS,
       ...loop,

@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { startWorker } = require('../src/runtime/worker');
+const { MemoryStore } = require('../src/kernel/store');
 
 test('runtime worker consumes BullMQ delivery and completes the canonical persisted job', async () => {
   const values = new Map();
@@ -21,8 +22,9 @@ test('runtime worker consumes BullMQ delivery and completes the canonical persis
     health: async () => ({ ok: true, adapter: 'fake-bullmq' }), close: async () => {},
   };
   const runtime = await startWorker({
-    env: { ...process.env, FENIX_ENV: 'development', FENIX_WORKER_ID: 'worker-real-1', FENIX_CONNECTION_CHECK: '0', FENIX_OBSERVABILITY_SAMPLE: '0' },
+    env: { ...process.env, FENIX_ENV: 'development', FENIX_WORKER_ID: 'worker-real-1', FENIX_CONNECTION_CHECK: '0', FENIX_OBSERVABILITY_SAMPLE: '0', FENIX_LIVING_RUNTIME: '0', FENIX_WORKER_POLL_MS: '60000' },
     redis, queues,
+    store: new MemoryStore(),
   });
   try {
     await runtime.app.controlPlane.createTenant({ id: 'worker-test', name: 'Worker Test' }, 'owner');
