@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { GitWorkspaceWriteCapability } = require('../repo-intel/git-write-capability');
+const { resolveProjectWorkspace } = require('../projects/project-workspace-resolver');
 
 const IGNORE = new Set(['.git', 'node_modules', 'dist', 'build', '.next', '.turbo', '.data', 'coverage', 'vendor', 'backups']);
 const writers = new Map();
@@ -15,20 +16,14 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   if (write && action !== 'file') return false;
   await app.controlPlane.authorize(tenantId, actorId, write ? 'project:write' : 'project:read');
   if (write) await app.controlPlane.authorize(tenantId, actorId, 'memory:write');
-  let project = (await app.store.read()).projects.find((item) => item.tenantId === tenantId && item.id === projectId);
-  if (!project?.workspace) {
-    const { getProjectById } = require('../projects/project-registry');
-    const regProj = getProjectById(projectId);
-    if (regProj && (regProj.localPath || regProj.workspace)) {
-      project = {
-        id: regProj.id,
-        tenantId,
-        name: regProj.name,
-        workspace: regProj.localPath || regProj.workspace,
-      };
-    }
-  }
-  if (!project?.workspace) return reply(404, { error: 'Project Kernel workspace not found' });
+  const storedProject = (await app.store.read()).projects.find((item) => item.tenantId === tenantId && item.id === projectId);
+  let regProj = null;
+  try { regProj = require('../projects/project-registry').getProjectById(projectId); }
+  catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
+  const workspace = resolveProjectWorkspace(storedProject, regProj);
+  const project = storedProject || (regProj && { id: regProj.id, tenantId, name: regProj.name });
+  if (!project || !workspace) return reply(404, { error: 'Project workspace is unavailable' });
+  project.workspace = workspace;
   let root;
   try { root = fs.realpathSync(project.workspace); } catch { return reply(404, { error: 'Project workspace is unavailable' }); }
   if (action === 'tree') return reply(200, { projectId, tree: scan(root, root, 0), source: 'project-kernel-workspace' });
@@ -58,7 +53,8 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   const recorded = { auditId: null, memoryId: null, memoryVersion: null, eventId: null, memoryRecorded: false };
   try {
     recorded.auditId = (await app.audit.record({ tenantId, actorId, action: 'project.ide.file.saved', resource: record })).id;
-    const memory = await app.memoryEngine.remember(tenantId, actorId, {
+    const memoryEngine = app.memoryEngine || app.memory;
+    const memory = await memoryEngine.remember(tenantId, actorId, {
       kind: 'project', projectId, title: `IDE: ${relative}`,
       content: `Arquivo ${relative} salvo na IDE em ${savedAt}. SHA-256 anterior: ${hash}. SHA-256 atual: ${nextHash}. Tamanho: ${record.bytes} bytes.`,
       stableKey: `ide-file:${projectId}:${relative}`, classification: 'internal', confidence: 1,

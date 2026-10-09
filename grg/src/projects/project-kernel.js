@@ -1,6 +1,7 @@
 const { uuid } = require('../kernel/ids');
 const { NotFoundError, ValidationError } = require('../kernel/errors');
 const { GitReadCapability } = require('../repo-intel/git-read-capability');
+const { resolveProjectWorkspace, resolveProjectBranch } = require('./project-workspace-resolver');
 
 const MATURITY = ['IDEA', 'SPECIFIED', 'ARCHITECTED', 'SCAFFOLDED', 'FUNCTIONAL', 'INTEGRATED', 'TESTED', 'PRODUCTION_READY'];
 
@@ -26,7 +27,7 @@ class ProjectKernel {
           id: regProj.id || regProj.projectId,
           tenantId,
           name: regProj.name,
-          workspace: regProj.localPath || regProj.workspace,
+          workspace: resolveProjectWorkspace(null, regProj),
           branch: regProj.branch || 'main',
           lifecycle: 'EVOLUTION',
           maturity: 'FUNCTIONAL',
@@ -58,7 +59,15 @@ class ProjectKernel {
     await this.cp.authorize(tenantId, actorId, 'project:read');
     const state = await this.store.read();
     const stored = state.projects.filter((item) => item.tenantId === tenantId);
-    if (stored.length > 0) return stored;
+    if (stored.length > 0) {
+      const { getProjectById } = require('./project-registry');
+      return stored.map((project) => {
+        const registeredProject = getProjectById(project.id);
+        const workspace = resolveProjectWorkspace(project, registeredProject);
+        const branch = resolveProjectBranch(project, registeredProject, workspace);
+        return { ...project, workspace, branch };
+      });
+    }
     try {
       const { getAllProjects } = require('./project-registry');
       const reg = await getAllProjects();
@@ -68,7 +77,7 @@ class ProjectKernel {
         name: p.name,
         displayName: p.displayName,
         repository: p.repository,
-        workspace: p.localPath || p.vpsPath || p.workspace,
+        workspace: resolveProjectWorkspace(null, p),
         branch: p.branch || 'main',
         lifecycle: 'EVOLUTION',
         maturity: 'FUNCTIONAL',
@@ -82,7 +91,9 @@ class ProjectKernel {
   }
   async analyze(tenantId, actorId, projectId) {
     await this.cp.authorize(tenantId, actorId, 'project:read');
-    const data = await this.store.read(); const project = data.projects.find((item) => item.tenantId === tenantId && item.id === projectId); if (!project) throw new NotFoundError(`project not found: ${projectId}`);
+    const data = await this.store.read(); const storedProject = data.projects.find((item) => item.tenantId === tenantId && item.id === projectId); if (!storedProject) throw new NotFoundError(`project not found: ${projectId}`);
+    const { getProjectById } = require('./project-registry');
+    const project = { ...storedProject, workspace: resolveProjectWorkspace(storedProject, getProjectById(projectId)) };
     if (!project.workspace) throw new ValidationError('project workspace is required for analysis');
     const read = new GitReadCapability({ workspaceRoot: project.workspace });
     const [status, branches, log, head] = await Promise.all([read.execute('status'), read.execute('branches'), read.execute('log'), read.execute('rev-parse')]);
