@@ -790,21 +790,20 @@
         if (inspector) inspector.style.display = 'none';
         document.body.classList.remove('fenix-mode-2d');
         document.body.classList.add('fenix-mode-3d');
-        if (window.fenixWorld3D) {
-          window.fenixWorld3D.resize?.();
-          window.fenixWorld3D._resumeAnimationLoop?.();
-          if (typeof window.fenixWorld3D.focusEntity === 'function' && typeof THREE !== 'undefined') {
-            window.fenixWorld3D.focusEntity(new THREE.Vector3(26, 0, -10), 55);
+        const world = window.fenixWorld3D || window.initFenixWorld3D?.();
+        if (world) {
+          world.resize?.();
+          world._resumeAnimationLoop?.();
+          world.syncRealData?.();
+          if (typeof world.focusEntity === 'function' && typeof THREE !== 'undefined') {
+            world.focusEntity(new THREE.Vector3(26, 0, -10), 55);
           }
         }
       } else if (mode === 'office') {
         if (feedDrawer) feedDrawer.style.display = 'none';
         if (window.fenixCity && typeof window.fenixCity.panToDistrict === 'function') {
           window.fenixCity.panToDistrict('command-center');
-          if (window.fenixCity.state?.targetCamera) {
-            window.fenixCity.state.targetCamera.zoom = 2.1;
-            window.fenixCity._updateZoomDisplay?.();
-          }
+          window.fenixCity.setZoom?.(2.1);
         }
         window.fenixOffice?.startPolling();
       } else if (mode === 'feed') {
@@ -1215,21 +1214,10 @@
   };
 
   window.fenixToggleFollowAgent = function(agentId) {
-    if (window.fenixWorld3D && typeof window.fenixWorld3D.followAgent === 'function') {
-      if (window.fenixWorld3D.followingAgentId === agentId) {
-        window.fenixWorld3D.stopFollowing();
-      } else {
-        window.fenixWorld3D.followAgent(agentId);
-      }
-    }
-    if (window.fenixCity) {
-      if (window.fenixCity.state.followAgentId === agentId) {
-        window.fenixCity.state.followAgentId = null;
-      } else {
-        window.fenixCity.followAgent(agentId);
-      }
-    }
-    const agent = window.fenixCity?.world?.agents?.get(agentId) || window.fenixWorld3D?.agents?.get(agentId);
+    const world = window.fenixWorld3D || window.fenixCity;
+    if (world?.followingAgentId === agentId) world.stopFollowing?.();
+    else world?.followAgent?.(agentId);
+    const agent = world?.agents?.get(agentId) || world?.world?.agents?.get(agentId);
     if (agent) window.fenixShowWorldAgentInspector(agent);
   };
 
@@ -1245,7 +1233,9 @@
     const d = distHit.district;
     const allAgents = window.fenixCity?.world?.agents ? [...window.fenixCity.world.agents.values()] : [];
     const residentAgents = allAgents.filter(a => (a.district || '').toLowerCase() === distHit.key.toLowerCase());
-    const buildingColor = d.color || '#00D9FF';
+    const rawColor = typeof d.color === 'number' ? `#${d.color.toString(16).padStart(6, '0')}` : String(d.color || '#6b8790');
+    const buildingColor = /^#[0-9a-f]{6}$/i.test(rawColor) ? rawColor : '#6b8790';
+    const buildingKey = String(distHit.key || d.key || d.id || '');
 
     const destination = {
       'command-center': 'command', 'project-district': 'projects',
@@ -1257,13 +1247,13 @@
     inspector.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:12px 14px 10px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.3);">
         <div style="display:flex; align-items:center; gap:10px;">
-          <div style="font-size:24px; line-height:1;">${d.emoji || '🏛️'}</div>
+          <div style="font-size:24px; line-height:1;">${esc(d.emoji || '🏛️')}</div>
           <div>
             <div style="font-weight:700; font-size:13px; color:#F8FAFC;">${esc(d.name || d.label)}</div>
             <div style="font-size:10px; color:${buildingColor}; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">${esc(d.key || 'DISTRITO')}</div>
           </div>
         </div>
-        <button onclick="document.getElementById('fenixWorldBuildingInspector').style.display='none'" style="background:none; border:none; color:#64748B; cursor:pointer; font-size:16px; line-height:1; padding:2px 4px;">✕</button>
+        <button type="button" data-building-action="close" aria-label="Fechar edifício" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:16px; line-height:1; padding:2px 4px;">✕</button>
       </div>
 
       <div style="padding:12px 14px; display:flex; flex-direction:column; gap:10px;">
@@ -1273,6 +1263,8 @@
             ${esc(d.department || 'Operações centrais do sistema')}
           </div>
         </div>
+
+        ${d.status ? `<div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:7px; padding:8px 10px;"><div style="font-size:9.5px; color:#64748B; text-transform:uppercase; font-weight:600; margin-bottom:3px;">Estado registrado</div><div style="font-size:11.5px; color:#E2E8F0;">${esc(d.status)}</div></div>` : ''}
 
         <div>
           <div style="font-size:9.5px; color:#64748B; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Capacidades do Kernel</div>
@@ -1290,28 +1282,154 @@
           </div>
           <div style="display:flex; flex-direction:column; gap:4px; max-height:120px; overflow-y:auto;">
             ${residentAgents.map(ag => `
-              <div onclick="window.fenixCity?.focusAgent('${ag.id}'); window.fenixShowWorldAgentInspector(window.fenixCity?.world?.agents?.get('${ag.id}'))" style="display:flex; align-items:center; justify-content:space-between; padding:5px 8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; cursor:pointer;" title="Clique para inspecionar no mapa">
+              <button type="button" data-agent-id="${esc(ag.id)}" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:5px 8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; cursor:pointer; text-align:left;" title="Clique para inspecionar no mapa">
                 <div style="display:flex; align-items:center; gap:6px;">
-                  <span style="font-size:13px;">${ag.emoji || '🤖'}</span>
+                  <span style="font-size:13px;">${esc(ag.emoji || '🤖')}</span>
                   <span style="font-size:11px; font-weight:600; color:#F8FAFC;">${esc(ag.displayName || ag.name)}</span>
                 </div>
                 <span style="font-size:9.5px; color:${ag.status === 'WORKING' ? '#00D9FF' : '#10B981'}; font-weight:600;">${esc(ag.status || 'AVAILABLE')}</span>
-              </div>
+              </button>
             `).join('')}
           </div>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px;">
-          <button class="office-btn office-btn-primary" onclick="window.fenixCity.panToDistrict('${distHit.key}')" style="justify-content:center; padding:6px 8px; font-size:11px;">
+          <button type="button" data-building-action="focus" class="office-btn office-btn-primary" style="justify-content:center; padding:6px 8px; font-size:11px;">
             <i class="ph-bold ph-magnifying-glass-plus"></i> Focar Edifício
           </button>
-          <button class="office-btn office-btn-secondary" onclick="window.showView?.('${destination}')" style="justify-content:center; padding:6px 8px; font-size:11px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#CBD5E1;">
+          <button type="button" data-building-action="view" class="office-btn office-btn-secondary" style="justify-content:center; padding:6px 8px; font-size:11px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#CBD5E1;">
             <i class="ph-bold ph-arrow-square-out"></i> View Completa
           </button>
         </div>
       </div>
     `;
 
+    inspector.style.display = 'block';
+    inspector.querySelector('[data-building-action="close"]').addEventListener('click', () => { inspector.style.display = 'none'; });
+    inspector.querySelector('[data-building-action="focus"]').addEventListener('click', () => {
+      if (window.fenixCity?.dynamicBuildings?.has(buildingKey)) window.fenixCity.focusBuilding?.(buildingKey);
+      else window.fenixCity?.panToDistrict?.(buildingKey);
+    });
+    inspector.querySelector('[data-building-action="view"]').addEventListener('click', () => window.showView?.(destination));
+    inspector.querySelectorAll('[data-agent-id]').forEach((row) => {
+      row.addEventListener('click', () => {
+        const agentId = row.dataset.agentId;
+        const agent = window.fenixCity?.agents?.get(agentId) || window.fenixCity?.world?.agents?.get(agentId);
+        if (typeof window.fenixCity?.selectAgent === 'function') window.fenixCity.selectAgent(agentId);
+        else if (agent) window.fenixShowWorldAgentInspector?.(agent);
+      });
+    });
+  };
+
+  window.fenixShowWorldProjectInspector = function(project, relatedJobs = []) {
+    const inspector = document.getElementById('fenixWorldBuildingInspector');
+    if (!inspector || !project?.id) return;
+    const snapshot = window.FENIX?.cityWorld?.snapshot || window.fenixWorld3D?.lastCitySnapshot || {};
+    const agents = (snapshot.agents || []).filter((agent) => String(agent.projectId || '') === String(project.id));
+    const jobs = Array.isArray(relatedJobs) ? relatedJobs.slice(0, 4) : [];
+    const status = String(project.lifecycleState || project.status || 'UNKNOWN').toUpperCase();
+    const statusColor = ['FAILED', 'ERROR', 'OFFLINE'].includes(status) ? '#f16a72'
+      : ['RUNNING', 'ACTIVE', 'BUILDING'].includes(status) ? '#27d7c4'
+        : ['QUEUED', 'DEGRADED', 'UNKNOWN'].includes(status) ? '#e8b45d' : '#a9bac9';
+
+    inspector.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:12px 14px 10px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.3);">
+        <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+          <div aria-hidden="true" style="display:grid; place-items:center; width:34px; height:34px; border-radius:9px; color:#9bb8c8; background:rgba(120,160,180,.12);">⌂</div>
+          <div style="min-width:0;">
+            <div data-project-name style="font-weight:700; font-size:13px; color:#F8FAFC; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+            <div data-project-status style="font-size:10px; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;"></div>
+          </div>
+        </div>
+        <button type="button" data-action="close" aria-label="Fechar projeto" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:16px; line-height:1; padding:2px 4px;">✕</button>
+      </div>
+      <div style="padding:12px 14px; display:flex; flex-direction:column; gap:10px;">
+        <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:7px; padding:8px 10px;">
+          <div style="font-size:9.5px; color:#64748B; text-transform:uppercase; font-weight:600; margin-bottom:3px;">Workspace registrado</div>
+          <div data-project-workspace style="font-size:11.5px; color:#D4DEE8; line-height:1.4; overflow-wrap:anywhere;"></div>
+        </div>
+        <div>
+          <div style="font-size:9.5px; color:#64748B; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Atividade recente · ${jobs.length}</div>
+          <div data-project-jobs style="display:flex; flex-direction:column; gap:4px; max-height:112px; overflow-y:auto;"></div>
+        </div>
+        <div>
+          <div style="font-size:9.5px; color:#64748B; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Agentes vinculados · ${agents.length}</div>
+          <div data-project-agents style="display:flex; flex-direction:column; gap:4px; max-height:90px; overflow-y:auto;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:2px;">
+          <button type="button" data-action="open-project" class="office-btn office-btn-primary" style="justify-content:center; padding:7px 8px; font-size:11px;">Abrir projeto</button>
+          <button type="button" data-action="open-operations" class="office-btn office-btn-secondary" style="justify-content:center; padding:7px 8px; font-size:11px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#CBD5E1;">Ver operações</button>
+        </div>
+        <div data-project-navigation-status role="status" style="font-size:10px; color:#f1aa83;"></div>
+      </div>
+    `;
+    inspector.querySelector('[data-project-name]').textContent = project.name || project.id;
+    inspector.querySelector('[data-project-status]').textContent = status;
+    inspector.querySelector('[data-project-status]').style.color = statusColor;
+    inspector.querySelector('[data-project-workspace]').textContent = project.workspace || 'Nenhum workspace informado pelo Project Kernel.';
+    inspector.querySelector('[data-action="close"]').addEventListener('click', () => { inspector.style.display = 'none'; });
+    inspector.querySelector('[data-action="open-project"]').addEventListener('click', async () => {
+      const navigationStatus = inspector.querySelector('[data-project-navigation-status]');
+      window.showView?.('projects');
+      if (typeof window.openProjectWorkspace !== 'function') {
+        navigationStatus.textContent = 'A rota do workspace de projetos não está disponível.';
+        return;
+      }
+      try {
+        await window.openProjectWorkspace(project.id);
+      } catch (error) {
+        navigationStatus.textContent = `Não foi possível abrir ${project.name || project.id}: ${error.message || 'falha na navegação'}`;
+      }
+    });
+    inspector.querySelector('[data-action="open-operations"]').addEventListener('click', () => {
+      if (typeof window.fenixNavigateWithContext === 'function') {
+        window.fenixNavigateWithContext('operations', { projectId: project.id, jobId: jobs[0]?.id || null });
+      } else {
+        window.showView?.('operations');
+      }
+    });
+
+    const jobList = inspector.querySelector('[data-project-jobs]');
+    if (!jobs.length) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:10px; color:#8291a1; padding:6px 8px;';
+      empty.textContent = 'Nenhum job recente relacionado neste snapshot.';
+      jobList.append(empty);
+    } else {
+      for (const job of jobs) {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; gap:8px; padding:5px 8px; background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.06); border-radius:6px; font-size:10px;';
+        const title = document.createElement('span');
+        title.style.cssText = 'color:#d7e0e8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+        title.textContent = job.title || job.type || job.id;
+        const state = document.createElement('span');
+        state.style.cssText = 'color:#a9bac9; white-space:nowrap;';
+        state.textContent = String(job.status || 'UNKNOWN').toUpperCase();
+        row.append(title, state);
+        jobList.append(row);
+      }
+    }
+
+    const agentList = inspector.querySelector('[data-project-agents]');
+    if (!agents.length) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:10px; color:#8291a1; padding:6px 8px;';
+      empty.textContent = 'Nenhum agente com vínculo ativo a este projeto.';
+      agentList.append(empty);
+    } else {
+      for (const agent of agents) {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.style.cssText = 'display:flex; justify-content:space-between; gap:8px; padding:6px 8px; background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.06); border-radius:6px; color:#d7e0e8; font-size:10px; cursor:pointer;';
+        const name = document.createElement('span');
+        name.textContent = agent.displayName || agent.name || agent.id;
+        const state = document.createElement('span');
+        state.textContent = String(agent.status || 'UNKNOWN').toUpperCase();
+        row.append(name, state);
+        row.addEventListener('click', () => window.fenixCity?.selectAgent?.(agent.id) || window.fenixInspectAgent?.(agent.id));
+        agentList.append(row);
+      }
+    }
     inspector.style.display = 'block';
   };
 

@@ -31,6 +31,7 @@
     'mission.resumed': { visualState: 'WORKING', location: 'command-center' },
     'mission.cancelled': { visualState: 'CANCELLED', location: 'command-center' },
     'mission.step.dispatched': { visualState: 'WORKING', location: 'execution' },
+    'mission.step.started': { visualState: 'WORKING', location: 'execution' },
     'mission.step.completed': { visualState: 'COMPLETED', location: 'execution' },
     'mission.step.approval-required': { visualState: 'WAITING', location: 'approval' },
     'mission.step.reconciled': { visualState: 'RECOVERING', location: 'execution' },
@@ -148,6 +149,7 @@
         window.__FENIX_SSE_SOURCE__ = new EventSource(SSE_URL);
       }
       es = window.__FENIX_SSE_SOURCE__;
+      window.__FENIX_SINGLETONS__?.register('eventSource:/api/v2/events/stream', es);
       es.addEventListener('open', function() {
         retries = 0;
         console.log('[FenixCityBridge] SSE connected to V8.2 event stream');

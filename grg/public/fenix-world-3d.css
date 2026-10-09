@@ -8,7 +8,13 @@
 #view-city .fenix-city-weather-hud{font-size:10px!important;white-space:nowrap}
 #view-city .fenix-city-canvas-area{min-height:480px!important;height:calc(100dvh - 165px)!important;background:#050d19!important}
 #view-city .fenix-city-canvas-area:after{display:none!important}
-#view-city #cityCanvas,#view-city .pixi-city-canvas,#view-city .fenix-city-brief,#view-city .fenix-world-layer{display:none!important}
+#view-city .fenix-world-3d { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; overflow: hidden; background: #050d19; display: block !important; }
+#view-city #cityCanvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; outline: none; background: #050810; display: none !important; }
+body.fenix-mode-2d #view-city .fenix-world-3d { display: none !important; }
+body.fenix-mode-2d #view-city #cityCanvas { display: block !important; cursor: grab; }
+body.fenix-mode-3d #view-city .fenix-world-3d { display: block !important; }
+body.fenix-mode-3d #view-city #cityCanvas { display: none !important; }
+#view-city .pixi-city-canvas,#view-city .fenix-city-brief,#view-city .fenix-world-layer{display:none!important}
 #view-city .fenix-city-bottom-bar{padding:8px 18px!important;min-height:39px;background:#07131f!important;font-size:10px!important}
 #view-city .fenix-city-bottom-bar .fenix-hero-btn{padding:5px 9px!important;font-size:10px!important}
 .fenix-world-3d{position:absolute;inset:0;z-index:3;overflow:hidden;background:#050d19}

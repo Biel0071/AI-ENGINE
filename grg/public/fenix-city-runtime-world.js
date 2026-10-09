@@ -73,6 +73,44 @@
     if (typeof options.focus === 'function') options.focus();
     saveNavigation(instance);
     emitSelection(instance);
+    if (kind === 'project') {
+      const project = instance.lastCitySnapshot?.projects?.find((item) => String(item.id) === next.id);
+      if (project && typeof window.fenixShowWorldProjectInspector === 'function') {
+        const relatedJobs = (instance.lastCitySnapshot.recentJobs || []).filter((job) => String(job.projectId || '') === next.id);
+        window.fenixShowWorldProjectInspector(project, relatedJobs);
+      }
+    } else if (kind === 'district' && typeof window.fenixShowWorldBuildingInspector === 'function') {
+      const district = instance.DISTRICTS?.[next.id];
+      if (district) {
+        window.fenixShowWorldBuildingInspector({
+          key: next.id,
+          district: { ...district, key: next.id, label: district.name, department: district.sub },
+        });
+      }
+    } else if (kind === 'building' && typeof window.fenixShowWorldBuildingInspector === 'function') {
+      const building = instance.dynamicBuildings?.get(next.id);
+      const project = building?.projectId
+        ? instance.lastCitySnapshot?.projects?.find((item) => String(item.id) === String(building.projectId))
+        : null;
+      if (project && typeof window.fenixShowWorldProjectInspector === 'function') {
+        const relatedJobs = (instance.lastCitySnapshot.recentJobs || []).filter((job) => String(job.projectId || '') === String(project.id));
+        window.fenixShowWorldProjectInspector(project, relatedJobs);
+      } else if (building) {
+        window.fenixShowWorldBuildingInspector({
+          key: next.id,
+          district: {
+            ...building,
+            key: next.id,
+            name: building.name || next.id,
+            label: building.name || next.id,
+            emoji: building.icon || '🏢',
+            color: building.color || '#6b8790',
+            department: building.department || 'Edifício registrado no WorldStateEngine',
+            capabilities: building.capabilities || [],
+          },
+        });
+      }
+    }
     return true;
   }
 
@@ -173,32 +211,45 @@
     group.name = `ProjectSite_${site.sceneId}`;
     group.position.set(site.position.x, site.position.y, site.position.z);
 
-    const baseMaterial = new T.MeshStandardMaterial({ color: 0x1b2835, metalness: 0.45, roughness: 0.5 });
-    const bodyMaterial = new T.MeshStandardMaterial({ color: 0x233443, metalness: 0.42, roughness: 0.32, transparent: true, opacity: 0.94 });
+    const baseMaterial = new T.MeshStandardMaterial({ color: 0x202b35, metalness: 0.28, roughness: 0.72 });
+    const bodyMaterial = new T.MeshStandardMaterial({ color: 0x2b3c49, metalness: 0.24, roughness: 0.48 });
     const trimColor = new T.Color(projectStatusColor(site.activityStatus, site.color));
-    const trimMaterial = new T.MeshStandardMaterial({ color: trimColor, emissive: trimColor, emissiveIntensity: 0.32, metalness: 0.25, roughness: 0.35 });
+    const trimMaterial = new T.MeshStandardMaterial({ color: 0x344653, metalness: 0.22, roughness: 0.62 });
+    const accentMaterial = new T.MeshStandardMaterial({ color: trimColor, emissive: trimColor, emissiveIntensity: 0.18, metalness: 0.2, roughness: 0.5 });
     const base = new T.Mesh(new T.BoxGeometry(6.2, 0.45, 5.7), baseMaterial);
     base.position.y = 0.25;
-    const body = new T.Mesh(new T.BoxGeometry(4.9, 2.5, 4.2), bodyMaterial);
-    body.position.y = 1.7;
-    const roof = new T.Mesh(new T.BoxGeometry(5.2, 0.3, 4.5), trimMaterial);
-    roof.position.y = 3.1;
-    const window = new T.Mesh(new T.BoxGeometry(4.92, 0.85, 0.09), new T.MeshStandardMaterial({ color: 0x91c6d3, metalness: 0.2, roughness: 0.16, transparent: true, opacity: 0.45 }));
-    window.position.set(0, 1.75, 2.12);
+    const variant = [...site.id].reduce((value, char) => ((value * 31) + char.charCodeAt(0)) >>> 0, 7) % 3;
+    const dimensions = [
+      { width: 4.7, depth: 4.2, height: 2.5 },
+      { width: 4.3, depth: 4.5, height: 3.15 },
+      { width: 4.9, depth: 4.1, height: 2.8 },
+    ][variant];
+    const roofY = 0.45 + dimensions.height;
+    const body = new T.Mesh(new T.BoxGeometry(dimensions.width, dimensions.height, dimensions.depth), bodyMaterial);
+    body.position.y = 0.45 + dimensions.height / 2;
+    const roof = new T.Mesh(new T.BoxGeometry(dimensions.width + 0.28, 0.22, dimensions.depth + 0.28), trimMaterial);
+    roof.position.y = roofY + 0.11;
+    const windowMaterial = new T.MeshStandardMaterial({ color: 0x526a75, metalness: 0.12, roughness: 0.3, transparent: true, opacity: 0.7 });
+    const window = new T.Mesh(new T.BoxGeometry(dimensions.width * 0.78, 0.56, 0.08), windowMaterial);
+    window.position.set(0, 1.75, dimensions.depth / 2 + 0.05);
+    const entry = new T.Mesh(new T.BoxGeometry(0.68, 1.2, 0.1), new T.MeshStandardMaterial({ color: 0x17232c, metalness: 0.25, roughness: 0.55 }));
+    entry.position.set(-dimensions.width * 0.27, 1.05, dimensions.depth / 2 + 0.08);
+    const facadeBand = new T.Mesh(new T.BoxGeometry(dimensions.width * 0.82, 0.1, 0.12), accentMaterial);
+    facadeBand.position.set(0, 0.9, dimensions.depth / 2 + 0.08);
     const status = new T.Mesh(new T.SphereGeometry(0.19, 10, 8), new T.MeshBasicMaterial({ color: trimColor }));
-    status.position.set(2.2, 3.55, 1.65);
+    status.position.set(dimensions.width * 0.38, roofY + 0.38, dimensions.depth * 0.32);
     const label = spriteLabel(site.name, projectStatusColor(site.activityStatus, site.color));
     label.scale.set(5.3, 1.1, 1);
-    label.position.set(0, 4.05, 0);
-    group.add(base, body, roof, window, status, label);
+    label.position.set(0, roofY + 0.82, 0);
+    group.add(base, body, roof, window, entry, facadeBand, status, label);
 
-    const hitBox = new T.Mesh(new T.BoxGeometry(6.4, 4.6, 5.9), new T.MeshBasicMaterial({ visible: false }));
-    hitBox.position.y = 2.1;
+    const hitBox = new T.Mesh(new T.BoxGeometry(6.4, dimensions.height + 2.1, 5.9), new T.MeshBasicMaterial({ visible: false }));
+    hitBox.position.y = (dimensions.height + 2.1) / 2;
     hitBox.userData = { type: 'project', projectId: site.id, sceneId: site.sceneId, name: site.name };
     group.add(hitBox);
     instance.interactiveMeshes.push(hitBox);
     instance.scene.add(group);
-    return { id: site.id, sceneId: site.sceneId, group, hitBox, status, trimMaterial, label, site };
+    return { id: site.id, sceneId: site.sceneId, group, hitBox, status, trimMaterial, accentMaterial, label, site };
   }
 
   function syncProjectSites(instance, projects, recentJobs) {
@@ -206,19 +257,29 @@
     instance.projectNodes ||= new Map();
     const activeIds = new Set(sites.map((site) => site.id));
     for (const site of sites) {
-      const existing = instance.projectNodes.get(site.id);
+      let existing = instance.projectNodes.get(site.id);
       if (!existing) {
         instance.projectNodes.set(site.id, makeProjectNode(instance, site));
         continue;
       }
+      const appearanceChanged = existing.site.name !== site.name
+        || existing.site.activityStatus !== site.activityStatus
+        || existing.site.color !== site.color;
+      if (appearanceChanged) {
+        disposeNode(instance, existing);
+        existing = makeProjectNode(instance, site);
+        instance.projectNodes.set(site.id, existing);
+        continue;
+      }
       existing.site = site;
+      existing.group.position.set(site.position.x, site.position.y, site.position.z);
       existing.hitBox.userData.name = site.name;
       existing.hitBox.userData.status = site.status;
       existing.hitBox.userData.activityStatus = site.activityStatus;
       const color = new THREE.Color(projectStatusColor(site.activityStatus, site.color));
       existing.status.material.color.copy(color);
-      existing.trimMaterial.color.copy(color);
-      existing.trimMaterial.emissive.copy(color);
+      existing.accentMaterial.color.copy(color);
+      existing.accentMaterial.emissive.copy(color);
     }
     for (const [id, node] of instance.projectNodes) {
       if (activeIds.has(id)) continue;
@@ -274,16 +335,19 @@
   };
 
   proto.selectAgent = function selectLiveAgent(agentId) {
-    return setSelection(this, 'agent', agentId, { focus: () => this.focusAgent?.(agentId) });
+    const selected = setSelection(this, 'agent', agentId, { focus: () => this.focusAgent?.(agentId) });
+    if (selected) {
+      const agent = this.agents?.get(String(agentId)) || this.world?.agents?.get(String(agentId));
+      if (agent && typeof window.fenixShowWorldAgentInspector === 'function') {
+        window.fenixShowWorldAgentInspector(agent);
+      }
+    }
+    return selected;
   };
 
   proto.selectBuilding = function selectLiveBuilding(buildingId) {
     const node = this.projectNodes && [...this.projectNodes.values()].find((item) => item.sceneId === buildingId || item.id === buildingId);
     if (node) return setSelection(this, 'project', node.id, { focus: () => this.focusEntity(node.group.position, 15) });
-    const existing = this.dynamicBuildings?.get(buildingId);
-    if (existing) {
-      return setSelection(this, 'building', buildingId, { focus: () => this.focusBuilding?.(buildingId) });
-    }
     return setSelection(this, 'building', buildingId, { focus: () => this.focusBuilding?.(buildingId) });
   };
 

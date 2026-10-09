@@ -9,10 +9,9 @@
   const MACHINE_COLUMNS = 4;
   const MACHINE_SPACING = 3.2;
   const PROJECT_ANCHOR = Object.freeze({ x: 42, z: 20 });
-  const PROJECT_COLUMNS = 6;
-  const PROJECT_SPACING = 8.5;
-  const MAX_PROJECT_SITES = 32;
-  const PROJECT_COLORS = Object.freeze(['#27d7c4', '#7aa2ff', '#e8b45d', '#ba8cff', '#69c7e8']);
+  const PROJECT_COLUMNS = 10;
+  const PROJECT_SPACING = 6.8;
+  const PROJECT_COLORS = Object.freeze(['#4e8f88', '#657ea0', '#9a8053', '#806d9b', '#4e8492']);
 
   function validId(value) {
     return typeof value === 'string' && value.trim().length > 0;
@@ -62,10 +61,10 @@
       seen.add(project.id);
       return true;
     });
-    const sites = candidates.slice(-MAX_PROJECT_SITES);
-    return sites.map((project, index) => {
+    return candidates.map((project, index) => {
       const column = index % PROJECT_COLUMNS;
       const row = Math.floor(index / PROJECT_COLUMNS);
+      const columnsInThisRow = Math.min(PROJECT_COLUMNS, candidates.length - row * PROJECT_COLUMNS);
       const hash = [...project.id].reduce((value, char) => ((value * 31) + char.charCodeAt(0)) >>> 0, 7);
       const linkedJobs = Array.isArray(recentJobs) ? recentJobs.filter((job) => job?.projectId === project.id) : [];
       const runningJobs = linkedJobs.filter((job) => String(job.status).toUpperCase() === 'RUNNING').length;
@@ -83,7 +82,7 @@
         workspace: project.workspace || null,
         color: PROJECT_COLORS[hash % PROJECT_COLORS.length],
         position: {
-          x: anchor.x + (column - (PROJECT_COLUMNS - 1) / 2) * PROJECT_SPACING,
+          x: anchor.x + (column - (columnsInThisRow - 1) / 2) * PROJECT_SPACING,
           y: 0,
           z: anchor.z + row * PROJECT_SPACING,
         },
@@ -91,5 +90,5 @@
     });
   }
 
-  return Object.freeze({ projectMachineScene, projectSceneSites, maxProjectSites: MAX_PROJECT_SITES });
+  return Object.freeze({ projectMachineScene, projectSceneSites });
 });

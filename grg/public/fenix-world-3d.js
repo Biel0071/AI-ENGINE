@@ -43,7 +43,14 @@
   }
 
   const T = THREE;
-  const STORAGE_KEY = 'fenix_world_camera_v3';
+  const STORAGE_KEY = 'fenix_world_camera_v4';
+  const LEGACY_STORAGE_KEY = 'fenix_world_camera_v3';
+  const CITY_DEFAULT_DISTANCE = 190;
+  const normalizeCameraDistance = (value) => {
+    const distance = Number(value);
+    if (!Number.isFinite(distance) || distance <= 0) return CITY_DEFAULT_DISTANCE;
+    return Math.max(8, Math.min(260, distance));
+  };
 
   // Canonical District Layout
   const DISTRICTS = [
@@ -119,11 +126,11 @@
     // Concrete Sidewalk Pavers with Expansion Joints
     static createConcretePaversTexture() {
       return this.create(256, 256, (ctx, w, h) => {
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = '#2b3642';
         ctx.fillRect(0, 0, w, h);
 
         // Slab joints
-        ctx.strokeStyle = '#334155';
+        ctx.strokeStyle = '#202b36';
         ctx.lineWidth = 4;
         const step = 64;
         for (let x = 0; x <= w; x += step) {
@@ -139,11 +146,12 @@
           ctx.stroke();
         }
 
-        // Surface speckle
-        for (let i = 0; i < 4000; i++) {
-          const x = Math.random() * w;
-          const y = Math.random() * h;
-          ctx.fillStyle = Math.random() > 0.5 ? '#64748b' : '#1e293b';
+        // Low-contrast deterministic grain avoids bright noise and frame-to-frame texture changes.
+        for (let i = 0; i < 640; i++) {
+          const x = (i * 73) % w;
+          const y = (i * 151) % h;
+          const shade = i % 3 === 0 ? 66 : i % 3 === 1 ? 49 : 35;
+          ctx.fillStyle = `rgb(${shade},${shade + 7},${shade + 14})`;
           ctx.fillRect(x, y, 1, 1);
         }
       }, 4, 4);
@@ -222,13 +230,13 @@
         const cellW = w / cols, cellH = h / rows;
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
-            const isLit = (r + c) % 2 === 0 || Math.random() > 0.4;
-            ctx.fillStyle = isLit ? '#38bdf8' : '#0369a1';
+            const isLit = (r * 3 + c * 5) % 7 < 4;
+            ctx.fillStyle = isLit ? '#586b70' : '#263a45';
             ctx.fillRect(c * cellW + 3, r * cellH + 3, cellW - 6, cellH - 6);
 
             // Blind silhouette / interior ceiling light
             if (isLit) {
-              ctx.fillStyle = 'rgba(255,255,255,0.45)';
+              ctx.fillStyle = 'rgba(220,205,170,0.14)';
               ctx.fillRect(c * cellW + 6, r * cellH + 6, cellW - 12, 6);
             }
           }
@@ -476,22 +484,22 @@
       });
     }
 
-    // High-Resolution Grafana SRE Dashboard Texture
+    // Observability screen frame. Live measurements are rendered by the UI from API state.
     static createGrafanaDashboardTexture() {
       return this.create(512, 256, (ctx, w, h) => {
         ctx.fillStyle = '#111217';
         ctx.fillRect(0, 0, w, h);
         ctx.fillStyle = '#181b1f';
         ctx.fillRect(0, 0, w, 22);
-        ctx.fillStyle = '#f59e0b';
+        ctx.fillStyle = '#27d7c4';
         ctx.font = 'bold 11px monospace';
-        ctx.fillText('API PLATFORM NOC · PRODUCTION HEALTH', 10, 15);
-        ctx.fillStyle = '#22c55e';
-        ctx.fillText('● CLUSTER HEALTHY (99.99%)', 330, 15);
-
-        ctx.fillStyle = '#181b1f';
-        ctx.fillRect(8, 28, 240, 105);
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('OBSERVABILIDADE · FÊNIX OS', 10, 15);
+        const panels = [
+          { x: 8, y: 30, w: 240, h: 95, title: 'LATÊNCIA' },
+          { x: 256, y: 30, w: 248, h: 95, title: 'TRÁFEGO' },
+          { x: 8, y: 133, w: 240, h: 110, title: 'WORKERS' },
+          { x: 256, y: 133, w: 248, h: 110, title: 'MEMÓRIA' },
+        ];
         ctx.font = '10px monospace';
         for (const panel of panels) {
           ctx.fillStyle = '#181b1f';
@@ -829,18 +837,22 @@
       if (!this.container) return;
 
       this.scene = new T.Scene();
-      this.scene.background = new T.Color(0x131d2e);
-      this.scene.fog = new T.FogExp2(0x131d2e, 0.0018);
+      this.scene.background = new T.Color(0x111a27);
+      this.scene.fog = new T.FogExp2(0x111a27, 0.0015);
 
       // Camera State
       const saved = this._loadState();
+      const savedTarget = saved.target && ['x', 'y', 'z'].every((axis) => Number.isFinite(Number(saved.target[axis])))
+        ? new T.Vector3(Number(saved.target.x), Number(saved.target.y), Number(saved.target.z))
+        : new T.Vector3(0, 0, 0);
+      const savedDistance = normalizeCameraDistance(saved.distance);
       this.cameraState = {
         azimuth: saved.azimuth !== undefined ? saved.azimuth : Math.PI / 4,
-        elevation: 0.615, // ~35.264° isometric angle
-        distance: saved.distance || 85,
-        target: new T.Vector3(14, 0, -4),
-        targetDistance: saved.distance || 85,
-        targetLookAt: new T.Vector3(14, 0, -4),
+        elevation: Number.isFinite(Number(saved.elevation)) ? Number(saved.elevation) : 0.615,
+        distance: savedDistance,
+        target: savedTarget.clone(),
+        targetDistance: savedDistance,
+        targetLookAt: savedTarget.clone(),
         targetAzimuth: null,
         targetElevation: null,
         dragging: false,
@@ -869,6 +881,9 @@
       this.pathGraph = new PathGraph();
       this.livePackets = [];
       this.agents = new Map();
+      this.world = { agents: this.agents };
+      this.DISTRICTS = Object.fromEntries(DISTRICTS.map(district => [district.id, district]));
+      this.state = { cityFilter: 'ALL', selectedCompanyId: null };
       this.vehicles = [];
       this.dataPulses = [];
       this.forkliftState = { step: 0, timer: 0, strobeTimer: 0, x: 26, z: 8.5, carrying: true };
@@ -901,10 +916,11 @@
       window.addEventListener('fenix-view-changed', () => {
         this._resumeAnimationLoop();
       });
-
       // Expose globally as singleton (Requirement 2)
+      window.FENIX_WORLD_3D = true;
       window.fenixWorld3D = this;
       window.fenixWorldEngine3D = this;
+      window.fenixCity = this;
       window.__FENIX_SINGLETONS__?.register('worldEngine', this);
       window.__FENIX_SINGLETONS__?.register('threeRenderLoop', this);
       console.log('[FenixWorld3D] ✅ Fênix World Engine 3.0 (High-Fidelity Digital Twin) initialized.');
@@ -935,16 +951,45 @@
 
     async syncRealData() {
       try {
-        const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+        const token = window.fenixGetAuthToken?.() || localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || window.sessionStorage?.getItem('fenix_token') || window.sessionStorage?.getItem('grg_token') || '';
         const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-        const fetchFn = window.fenixFetch || fetch;
-        const res = await fetchFn('/api/v2/living-city/state', { headers });
-        if (!res.ok) return;
-        const data = await res.json();
+        const fetchFn = window.fenixAuthedFetch || window.fenixFetch || fetch;
+        const requestState = async (endpoint) => {
+          const response = await fetchFn(endpoint, { credentials: 'same-origin', headers, signal: AbortSignal.timeout(10000) });
+          return response.ok ? response.json() : null;
+        };
+        let data = null;
+        try {
+          data = await requestState('/api/v2/living-city/state');
+        } catch (_) {
+          // The full state includes missions/projects/workers; keep City agents available if that projection is slow.
+        }
+        if (!Array.isArray(data?.agents) || data.agents.length === 0) {
+          try {
+            const agentState = await requestState('/api/v2/living-city/agents');
+            if (Array.isArray(agentState?.agents)) {
+              data = { ...(data || {}), ...agentState, agents: agentState.agents };
+            }
+          } catch (_) {
+            // Preserve the last rendered frame when both live projections are unavailable.
+          }
+        }
         if (!data) return;
+        if (!Array.isArray(data.agents)) return;
 
         // 1. Sync Live Agents & Empty State Overlay
-        const agentList = Array.isArray(data.agents) ? data.agents : [];
+        const agentList = data.agents;
+        const publishedAgentIds = new Set(agentList.map((agent) => String(agent.id || agent.agentId || '')).filter(Boolean));
+        for (const id of this.agents.keys()) {
+          if (publishedAgentIds.has(id)) continue;
+          this.removeDynamicEntity({ entityType: 'agent', id });
+          if (id === 'agent-camila') {
+            this.camilaGroup = null;
+            this.agentBadgeEl?.remove();
+            this.agentBadgeEl = null;
+            this.agentBadgePos = null;
+          }
+        }
         if (this.emptyOverlay) {
           this.emptyOverlay.style.display = agentList.length === 0 ? 'flex' : 'none';
         }
@@ -954,15 +999,13 @@
           if (agentList.some(a => String(a.id || a.agentId) === 'agent-camila') && !this.camilaGroup) {
             this._initCamilaAgent();
           }
-          if (agentList.some(a => ['agent-security', 'agent-infra', 'agent-ai-core', 'agent-expedicao'].includes(String(a.id || a.agentId))) && !this.workforceSpawned) {
-            this._initWorkforceAgents();
-            this.workforceSpawned = true;
-          }
-
           for (const a of agentList) {
             const id = String(a.id || a.agentId);
             const existing = this.agents.get(id);
+            const coordinates = this._normalizeAgentCoordinates(a.coordinates || a.homeCoordinates, this.agents.size, a);
             if (existing && existing.mesh) {
+              existing.mesh.position.set(coordinates.x, coordinates.y, coordinates.z);
+              existing.coordinates = coordinates;
               existing.status = a.status;
               existing.state = a.state;
               existing.currentTask = a.currentTask;
@@ -987,21 +1030,10 @@
               }
             } else {
               // Universal 3D Avatar Spawning for ALL active agents in the system
-              let coords = a.coordinates;
-              if (!coords || (coords.x === undefined && coords.z === undefined)) {
-                const idx = this.agents ? this.agents.size : 0;
-                const angle = (idx / 12) * Math.PI * 2;
-                const radius = 6.0 + ((idx % 3) * 4.5);
-                coords = {
-                  x: Math.cos(angle) * radius,
-                  y: 0.8,
-                  z: Math.sin(angle) * radius
-                };
-              }
               this.spawnDynamicAgent({
                 ...a,
                 id,
-                coordinates: coords
+                coordinates
               });
             }
           }
@@ -1049,9 +1081,55 @@
       }
     }
 
+    _normalizeAgentCoordinates(coords, index = 0, agent = {}) {
+      const x = Number(coords?.x);
+      const z = Number(coords?.z);
+      const y = Number(coords?.y);
+      const atOrigin = Math.abs(x) < 0.001 && Math.abs(z) < 0.001;
+      const buildingId = String(agent.buildingId || '').toLowerCase();
+      const districtId = String(agent.district || '').toLowerCase();
+      const workstationId = String(agent.workstationId || agent.stationId || '').toLowerCase();
+      const explicitlyAtHeadquarters = /fenix-hq|command-center/.test(buildingId)
+        || districtId === 'command-center'
+        || workstationId.includes('hq');
+      const hasAssignedStation = Boolean(workstationId && workstationId !== 'st-general-1' && !workstationId.includes('general'));
+      if (Number.isFinite(x) && Number.isFinite(z) && (!atOrigin || explicitlyAtHeadquarters || hasAssignedStation)) {
+        return { x, y: Number.isFinite(y) ? y : 0.8, z };
+      }
+      if (Number.isFinite(x) && coords?.y !== undefined && coords?.y !== null && Number.isFinite(y) && !atOrigin) {
+        return { x, y: 0.8, z: y };
+      }
+
+      const safeIndex = Number.isFinite(index) ? index : 0;
+      const identity = [agent.buildingId, agent.district, agent.department, agent.projectId, agent.companyId, agent.role, agent.name, agent.id]
+        .filter(Boolean).join(' ').toLowerCase();
+      const districtAliases = {
+        'bld-fenix-hq': 'command-center', 'fenix-hq': 'command-center', 'command-center': 'command-center',
+        'bld-deposito-mais': 'logistics', 'industrial': 'logistics', 'wms': 'logistics', 'warehouse': 'logistics',
+        'bld-api-platform': 'api-platform', 'api-platform': 'api-platform', 'backend': 'api-platform', 'infra': 'api-platform',
+        'bld-dev-loft': 'dev-district', 'engineering': 'dev-district', 'developer': 'dev-district', 'frontend': 'dev-district',
+        'bld-ai-nexus': 'ai-district', 'cognitive': 'ai-district', 'llm': 'ai-district', 'research': 'ai-district',
+        'memory-vault': 'data-center', 'data-center': 'data-center', 'database': 'data-center', 'security': 'data-center',
+        'observability': 'observatory', 'telemetry': 'observatory', 'monitor': 'observatory', 'sre': 'observatory',
+        'project': 'project-district', 'build': 'project-district'
+      };
+      const selectedDistrictId = Object.entries(districtAliases).find(([hint]) => identity.includes(hint))?.[1]
+        || DISTRICTS[safeIndex % DISTRICTS.length].id;
+      const district = DISTRICTS.find((item) => item.id === selectedDistrictId) || DISTRICTS[0];
+      const ring = Math.floor(safeIndex / DISTRICTS.length);
+      const spoke = safeIndex % DISTRICTS.length;
+      const angle = (spoke / DISTRICTS.length) * Math.PI * 2 + ring * 0.61803398875;
+      const radius = 17 + Math.min(12, ring * 1.4);
+      return { x: district.x + Math.cos(angle) * radius, y: 0.8, z: district.z + Math.sin(angle) * radius };
+    }
+
     _loadState() {
       try {
-        return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}');
+        const current = sessionStorage.getItem(STORAGE_KEY);
+        if (current) return JSON.parse(current);
+        const legacy = JSON.parse(sessionStorage.getItem(LEGACY_STORAGE_KEY) || '{}');
+        if (Number(legacy.distance) === 85) legacy.distance = CITY_DEFAULT_DISTANCE;
+        return legacy;
       } catch {
         return {};
       }
@@ -1060,8 +1138,14 @@
     _saveState() {
       try {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-          azimuth: this.cameraState.azimuth,
-          distance: this.cameraState.distance
+          azimuth: this.cameraState.targetAzimuth ?? this.cameraState.azimuth,
+          elevation: this.cameraState.targetElevation ?? this.cameraState.elevation,
+          distance: this.cameraState.targetDistance,
+          target: {
+            x: this.cameraState.targetLookAt.x,
+            y: this.cameraState.targetLookAt.y,
+            z: this.cameraState.targetLookAt.z
+          }
         }));
       } catch {}
     }
@@ -1110,7 +1194,7 @@
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       this.renderer.outputColorSpace = T.SRGBColorSpace;
       this.renderer.toneMapping = T.ACESFilmicToneMapping;
-      this.renderer.toneMappingExposure = 1.05;
+      this.renderer.toneMappingExposure = 0.9;
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = T.PCFSoftShadowMap;
       this.renderer.debug.checkShaderErrors = false;
@@ -1142,12 +1226,12 @@
     ══════════════════════════════════════════════════════════════════════════ */
     _initLighting() {
       // 1. Dual Hemisphere Ambient (Sky Blue from above + Warm Slate Earth from below)
-      this.hemiLight = new T.HemisphereLight(0xe0f2fe, 0x1e293b, 1.85);
+      this.hemiLight = new T.HemisphereLight(0xb9c8d5, 0x1e293b, 0.82);
       this.hemiLight.position.set(0, 80, 0);
       this.scene.add(this.hemiLight);
 
       // 2. Primary Solar Directional Light with PCF Soft Shadows
-      this.sunLight = new T.DirectionalLight(0xfffaf0, 2.5);
+      this.sunLight = new T.DirectionalLight(0xffe9cc, 1.4);
       this.sunLight.position.set(70, 95, 55);
       this.sunLight.castShadow = true;
       this.sunLight.shadow.mapSize.width = 2048;
@@ -1162,31 +1246,31 @@
       this.scene.add(this.sunLight);
 
       // 3. Cool Secondary Azure Fill Light (Opposite Angle) -> Prevents dark silhouettes!
-      this.fillLight = new T.DirectionalLight(0x7dd3fc, 1.05);
+      this.fillLight = new T.DirectionalLight(0x6da8b4, 0.38);
       this.fillLight.position.set(-65, 45, -55);
       this.scene.add(this.fillLight);
 
       // 4. Warm Ground Bounce Fill Light -> Illuminates undersides and truck suspensions
-      this.bounceLight = new T.DirectionalLight(0xfef08a, 0.55);
+      this.bounceLight = new T.DirectionalLight(0xf2bd76, 0.24);
       this.bounceLight.position.set(30, -20, 20);
       this.scene.add(this.bounceLight);
 
       // 5. Dedicated Architectural Interior Light for API Platform (Eliminating Pitch Black Interiors)
-      this.apiInteriorLight = new T.DirectionalLight(0xf1f5f9, 0.95);
+      this.apiInteriorLight = new T.DirectionalLight(0xd6e6e2, 0.65);
       this.apiInteriorLight.position.set(-18, 14, 30);
       this.apiInteriorLight.target.position.set(-18, 9, 2);
       this.scene.add(this.apiInteriorLight);
       this.scene.add(this.apiInteriorLight.target);
 
       // High-Mast Floodlight at Depósito Mais Loading Dock
-      this.dockFloodlight = new T.PointLight(0xfef08a, 4.8, 65, 1.1);
+      this.dockFloodlight = new T.PointLight(0xffc66d, 2.8, 65, 1.1);
       this.dockFloodlight.position.set(26, 14, -2);
       this.dockFloodlight.castShadow = true;
       this.dockFloodlight.shadow.bias = -0.0002;
       this.scene.add(this.dockFloodlight);
 
       // Central HQ Spire Light
-      const hqLight = new T.PointLight(0x00d9ff, 3.5, 45, 1.3);
+      const hqLight = new T.PointLight(0x19c5a3, 2.2, 45, 1.3);
       hqLight.position.set(0, 18, 0);
       this.scene.add(hqLight);
     }
@@ -1196,8 +1280,8 @@
       const roadTex = TextureFactory.createRoadTexture();
       const crosswalkTex = TextureFactory.createCrosswalkTexture();
       const sidewalkTex = TextureFactory.createConcretePaversTexture();
-      const whWallTex = TextureFactory.createCorrugatedTexture('#f8fafc', '#cbd5e1', 24);
-      const whRoofTex = TextureFactory.createCorrugatedTexture('#cbd5e1', '#94a3b8', 16);
+      const whWallTex = TextureFactory.createCorrugatedTexture('#7d8794', '#566273', 24);
+      const whRoofTex = TextureFactory.createCorrugatedTexture('#667285', '#414d5f', 16);
       const epoxyTex = TextureFactory.createWarehouseEpoxyTexture();
       const glassTex = TextureFactory.createCurtainGlassTexture();
       const containerBlueTex = TextureFactory.createContainerSideTexture('#0284c7');
@@ -1223,8 +1307,8 @@
         asphalt: new T.MeshStandardMaterial({ map: roadTex, roughness: 0.88, metalness: 0.08 }),
         crosswalk: new T.MeshStandardMaterial({ map: crosswalkTex, roughness: 0.82 }),
         sidewalk: new T.MeshStandardMaterial({ map: sidewalkTex, roughness: 0.78, metalness: 0.12 }),
-        grass: new T.MeshStandardMaterial({ color: 0x15803d, roughness: 0.92, metalness: 0.05 }),
-        water: new T.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.15, metalness: 0.85, transparent: true, opacity: 0.92 }),
+        grass: new T.MeshStandardMaterial({ color: 0x365944, roughness: 0.92, metalness: 0.02 }),
+        water: new T.MeshStandardMaterial({ color: 0x124357, roughness: 0.3, metalness: 0.55, transparent: true, opacity: 0.9 }),
         curb: new T.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 }),
         hazardStripe: new T.MeshBasicMaterial({ color: 0xfbbf24 }),
 
@@ -3827,15 +3911,17 @@
       });
 
       window.addEventListener('mouseup', (e) => {
+        const startedOnCanvas = this.cameraState.dragging;
         this.cameraState.dragging = false;
-        if (!this.cameraState.moved) this._handleCanvasClick(e);
+        if (startedOnCanvas && !this.cameraState.moved) this._handleCanvasClick(e);
         this._saveState();
       });
 
       c.addEventListener('wheel', (e) => {
         e.preventDefault();
         const delta = Math.sign(e.deltaY) * 6;
-        this.cameraState.targetDistance = Math.max(12, Math.min(180, this.cameraState.targetDistance + delta));
+      this.cameraState.targetDistance = Math.max(12, Math.min(260, this.cameraState.targetDistance + delta));
+        this._saveState();
       }, { passive: false });
 
       window.addEventListener('resize', () => {
@@ -3951,11 +4037,12 @@
       this.cameraMode = mode;
       if (mode === 'city' || mode === 'orbit') {
         this.followingAgentId = null;
-        this.cameraState.targetDistance = 55;
+        this.cameraState.targetDistance = CITY_DEFAULT_DISTANCE;
         this.cameraState.targetLookAt.set(0, 0, 0);
       } else if (mode === 'interior') {
         this.focusBuilding('api-platform');
       }
+      this._saveState();
       return this.cameraMode;
     }
 
@@ -4008,13 +4095,100 @@
       this.cameraState.targetDistance = targetDist;
       if (targetAzimuth !== null) this.cameraState.targetAzimuth = targetAzimuth;
       if (targetElevation !== null) this.cameraState.targetElevation = targetElevation;
+      this._saveState();
     }
 
     focusDistrict(districtId) {
       const d = DISTRICTS.find(item => item.id === districtId);
       if (d) {
         this.focusEntity(new T.Vector3(d.x, 0, d.z), d.isHero ? 42 : 55);
+        return true;
       }
+      return false;
+    }
+
+    panToDistrict(districtId) {
+      const aliases = {
+        'fenix-hq': 'command-center',
+        'command': 'command-center',
+        'industrial-hub': 'logistics',
+        'browser-district': 'observatory',
+        'memory-vault': 'data-center',
+        'project-forge': 'project-district',
+        'ai-nexus': 'ai-district',
+        'dev-loft': 'dev-district'
+      };
+      const requested = String(districtId || '').toLowerCase();
+      if (requested === 'all' || !requested) {
+        this.setCameraMode('city');
+        return true;
+      }
+      const id = aliases[requested] || requested;
+      this.state.cityFilter = id;
+      return this.focusDistrict(id) || Boolean(this.focusBuilding(id));
+    }
+
+    setZoom(zoomFactor) {
+      const zoom = Number(zoomFactor);
+      if (!Number.isFinite(zoom) || zoom <= 0) return false;
+      this.cameraState.targetDistance = Math.max(8, Math.min(260, CITY_DEFAULT_DISTANCE / zoom));
+      this._saveState();
+      return true;
+    }
+
+    zoomStep(direction) {
+      const steps = Number(direction);
+      if (!Number.isFinite(steps) || steps === 0) return false;
+      const factor = steps > 0 ? Math.pow(0.82, steps) : Math.pow(1.22, -steps);
+      this.cameraState.targetDistance = Math.max(8, Math.min(260, this.cameraState.targetDistance * factor));
+      this._saveState();
+      return true;
+    }
+
+    zoomIn() {
+      return this.zoomStep(1);
+    }
+
+    zoomOut() {
+      return this.zoomStep(-1);
+    }
+
+    rotateCamera() {
+      const currentAzimuth = this.cameraState.targetAzimuth ?? this.cameraState.azimuth;
+      this.cameraState.targetAzimuth = currentAzimuth + Math.PI / 2;
+      return true;
+    }
+
+    resetCamera() {
+      this.cameraState.targetLookAt.set(0, 0, 0);
+      this.cameraState.targetDistance = CITY_DEFAULT_DISTANCE;
+      this.cameraState.targetAzimuth = Math.PI / 4;
+      this.cameraState.targetElevation = 0.615;
+      this.stopFollowing();
+      this._saveState();
+      return true;
+    }
+
+    saveCamera() {
+      this._saveState();
+    }
+
+    centerAgent(agentId) {
+      return this.focusAgent(agentId);
+    }
+
+    enterBuilding(buildingId, floorNumber) {
+      this.focusBuilding(buildingId);
+      if (floorNumber !== undefined && floorNumber !== null) this.focusFloor(floorNumber);
+      return true;
+    }
+
+    navigateToLevel(level, entityId) {
+      if (level === 'agent') return this.focusAgent(entityId);
+      if (level === 'building' || level === 'floor') return this.enterBuilding(entityId, level === 'floor' ? entityId : undefined);
+      if (level === 'district') return this.panToDistrict(entityId);
+      this.setCameraMode('city');
+      return true;
     }
 
     focusBuilding(buildingId) {
@@ -4149,7 +4323,7 @@
         this.hemiLight.intensity = 0.65;
         this.dockFloodlight.intensity = 10.5;
       } else {
-        this.scene.background.set(0x131d2e);
+        this.scene.background.set(0x111a27);
         this.scene.fog.color.set(0x131d2e);
         this.sunLight.color.set(0xfffaf0);
         this.sunLight.intensity = 2.5;
@@ -4406,11 +4580,39 @@
       const floorH = 4.2;
       const height = floors * floorH;
       const coords = payload.coordinates || { x: -28.0, y: 0, z: 18.0 };
-      const color = payload.color || '#8b5cf6';
+      const color = payload.color || '#4e8f88';
       const icon = payload.icon || '🏢';
 
       if (this.dynamicBuildings && this.dynamicBuildings.has(id)) {
-        return { ok: true, id, updated: true, building: this.dynamicBuildings.get(id) };
+        const building = this.dynamicBuildings.get(id);
+        building.name = name;
+        building.status = payload.status || payload.lifecycleState || building.status || 'UNKNOWN';
+        building.projectId = payload.projectId || building.projectId || null;
+        building.workspace = payload.workspace || building.workspace || null;
+        building.color = payload.color || building.color || null;
+        building.icon = payload.icon || building.icon || null;
+        building.department = payload.department || payload.function || building.department || null;
+        building.capabilities = Array.isArray(payload.capabilities) ? payload.capabilities : (building.capabilities || []);
+        if (payload.coordinates && building.group) {
+          building.group.position.set(coords.x, Number.isFinite(coords.y) ? coords.y : 0, coords.z);
+          building.position = { x: coords.x, y: Number.isFinite(coords.y) ? coords.y : 0, z: coords.z };
+        }
+        if (building.hitBox?.userData) {
+          Object.assign(building.hitBox.userData, {
+            name,
+            projectId: building.projectId,
+            status: building.status,
+            workspace: building.workspace,
+          });
+        }
+        if (building.beacon?.material?.color?.setHex) {
+          const state = String(building.status).toUpperCase();
+          const statusColor = ['FAILED', 'DEAD_LETTER', 'ERROR', 'OFFLINE'].includes(state) ? 0xf16a72
+            : ['RUNNING', 'ACTIVE', 'BUILDING'].includes(state) ? 0x27d7c4
+              : ['QUEUED', 'DEGRADED'].includes(state) ? 0xe8b45d : 0x8d9aaa;
+          building.beacon.material.color.setHex(statusColor);
+        }
+        return { ok: true, id, updated: true, building };
       }
 
       this.dynamicBuildings = this.dynamicBuildings || new Map();
@@ -4426,10 +4628,10 @@
       bldGroup.add(foundationMesh);
 
       // Floor levels
-      const wallMat = new T.MeshStandardMaterial({
-        color: new T.Color(color),
-        roughness: 0.3,
-        metalness: 0.2
+      const wallMat = new T.MeshStandardMaterial({ color: 0x273542, roughness: 0.72, metalness: 0.22 });
+      const accentMat = new T.MeshStandardMaterial({
+        color: new T.Color(color), emissive: new T.Color(color), emissiveIntensity: 0.16,
+        roughness: 0.46, metalness: 0.38
       });
       const glassMat = this.materials.glassModern || new T.MeshPhysicalMaterial({
         color: 0x93c5fd,
@@ -4451,6 +4653,11 @@
         const glassCurtain = new T.Mesh(new T.BoxGeometry(width - 0.2, floorH - 0.3, depth - 0.2), glassMat);
         glassCurtain.position.y = floorY + (floorH / 2);
         bldGroup.add(glassCurtain);
+
+        // Thin facade band keeps project identity visible without tinting the whole structure.
+        const facadeBand = new T.Mesh(new T.BoxGeometry(width * 0.62, 0.14, 0.16), accentMat);
+        facadeBand.position.set(0, floorY + 0.48, depth / 2);
+        bldGroup.add(facadeBand);
 
         // Structural corner columns
         const colW = 0.6;
@@ -4478,7 +4685,11 @@
       // Communications Mast & Antenna with Blinking Red Beacon
       const mast = new T.Mesh(new T.CylinderGeometry(0.08, 0.14, 5.0, 8), this.materials.truckChrome || wallMat);
       mast.position.set(width / 4, roofY + 2.7, depth / 4);
-      const beacon = new T.Mesh(new T.SphereGeometry(0.2, 12, 12), new T.MeshBasicMaterial({ color: 0xef4444 }));
+      const buildingStatus = String(payload.status || payload.lifecycleState || 'UNKNOWN').toUpperCase();
+      const beaconColor = ['FAILED', 'DEAD_LETTER', 'ERROR', 'OFFLINE'].includes(buildingStatus) ? 0xf16a72
+        : ['RUNNING', 'ACTIVE', 'BUILDING'].includes(buildingStatus) ? 0x27d7c4
+          : ['QUEUED', 'DEGRADED'].includes(buildingStatus) ? 0xe8b45d : 0x8d9aaa;
+      const beacon = new T.Mesh(new T.SphereGeometry(0.16, 10, 8), new T.MeshBasicMaterial({ color: beaconColor }));
       beacon.position.set(width / 4, roofY + 5.2, depth / 4);
       bldGroup.add(mast, beacon);
 
@@ -4535,7 +4746,10 @@
         buildingId: id,
         name,
         floors,
-        department: payload.function || 'Operações e Inovação'
+        department: payload.function || 'Operações e Inovação',
+        projectId: payload.projectId || null,
+        status: buildingStatus,
+        workspace: payload.workspace || null
       };
       bldGroup.add(hitBox);
       this.interactiveMeshes.push(hitBox);
@@ -4544,10 +4758,18 @@
       this.dynamicBuildings.set(id, {
         id,
         name,
+        projectId: payload.projectId || null,
+        status: buildingStatus,
+        workspace: payload.workspace || null,
+        color,
+        icon,
+        department: payload.department || payload.function || null,
+        capabilities: Array.isArray(payload.capabilities) ? payload.capabilities : [],
         group: bldGroup,
         position: coords,
         floors,
-        beacon
+        beacon,
+        hitBox
       });
 
       console.log(`[FenixWorld3D] ✅ Dynamic Building instantiated: ${name} (${id}) at (${coords.x}, ${coords.z})`);
@@ -4952,22 +5174,40 @@
         });
       }
 
-      // 3d. Habbo/Tibia 3D Autonomous Agent Life Animations (Typing, Breathing, Emote Bobbing, Smartwatch Pulse)
+      // 3d. Habbo/Tibia 3D Autonomous Agent Life Animations (Performance Optimized: Frustum Culling + LOD + Vector Reuse)
       if (this.agents && this.agents.size > 0) {
+        if (!this._frustum) {
+          this._frustum = new T.Frustum();
+          this._projScreenMatrix = new T.Matrix4();
+          this._tempMoveDir = new T.Vector3();
+        }
+        this._projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+        this._frustum.setFromProjectionMatrix(this._projScreenMatrix);
+        this._frameCounter = (this._frameCounter || 0) + 1;
+
         let aIdx = 0;
         this.agents.forEach(agentRecord => {
           aIdx++;
           const ud = agentRecord.mesh ? agentRecord.mesh.userData : null;
-          if (!ud) return;
+          if (!ud || !agentRecord.mesh) return;
+
+          const inFrustum = this._frustum.containsPoint(agentRecord.mesh.position);
+          const camDist = this.camera.position.distanceTo(agentRecord.mesh.position);
+
+          // Culling: off-screen agents beyond close range skip animations
+          if (!inFrustum && camDist > 25 && !agentRecord.path) {
+            return;
+          }
+
           const aTime = time + aIdx * 1.35;
           // Dynamic Waypoint Navigation along PathGraph
           if (agentRecord.path && agentRecord.path.length > 0) {
             agentRecord.state = 'WALKING';
             const targetWp = agentRecord.path[agentRecord.pathIndex];
             if (targetWp) {
-              const moveDir = targetWp.clone().sub(agentRecord.mesh.position);
-              moveDir.y = 0;
-              const dist = moveDir.length();
+              this._tempMoveDir.copy(targetWp).sub(agentRecord.mesh.position);
+              this._tempMoveDir.y = 0;
+              const dist = this._tempMoveDir.length();
               if (dist < 0.25) {
                 agentRecord.pathIndex++;
                 if (agentRecord.pathIndex >= agentRecord.path.length) {
@@ -4983,22 +5223,29 @@
                   if (ud.armR) ud.armR.rotation.x = 0;
                 }
               } else {
-                moveDir.normalize();
+                this._tempMoveDir.normalize();
                 const walkSpeed = agentRecord.speed || 2.4;
-                agentRecord.mesh.position.addScaledVector(moveDir, walkSpeed * delta);
-                agentRecord.mesh.rotation.y = Math.atan2(moveDir.x, moveDir.z);
-                const walkCycle = time * 9;
-                if (ud.legL) ud.legL.rotation.x = Math.sin(walkCycle) * 0.65;
-                if (ud.legR) ud.legR.rotation.x = -Math.sin(walkCycle) * 0.65;
-                if (ud.armL) ud.armL.rotation.x = -Math.sin(walkCycle) * 0.45;
-                if (ud.armR) ud.armR.rotation.x = Math.sin(walkCycle) * 0.45;
-                agentRecord.mesh.position.y = (agentRecord.baseY || 0.9) + Math.abs(Math.sin(walkCycle * 2)) * 0.04;
+                agentRecord.mesh.position.addScaledVector(this._tempMoveDir, walkSpeed * delta);
+                agentRecord.mesh.rotation.y = Math.atan2(this._tempMoveDir.x, this._tempMoveDir.z);
+
+                // Skip limb kinematics if not in frustum or very distant
+                if (inFrustum && camDist < 75) {
+                  const walkCycle = time * 9;
+                  if (ud.legL) ud.legL.rotation.x = Math.sin(walkCycle) * 0.65;
+                  if (ud.legR) ud.legR.rotation.x = -Math.sin(walkCycle) * 0.65;
+                  if (ud.armL) ud.armL.rotation.x = -Math.sin(walkCycle) * 0.45;
+                  if (ud.armR) ud.armR.rotation.x = Math.sin(walkCycle) * 0.45;
+                  agentRecord.mesh.position.y = (agentRecord.baseY || 0.9) + Math.abs(Math.sin(walkCycle * 2)) * 0.04;
+                }
               }
             }
           }
 
+          // Kinematics LOD gating: distant agents skip subtle upper body animations
+          const allowSubtleAnim = inFrustum && camDist < 60 && (camDist < 30 || ((this._frameCounter + aIdx) % 2 === 0));
+
           // Seated typing animation for Alex, Elena, Maya (when not walking)
-          if (!agentRecord.path && ud.isSeated && ud.armL && ud.armR) {
+          if (!agentRecord.path && ud.isSeated && ud.armL && ud.armR && allowSubtleAnim) {
             ud.armL.rotation.x = Math.PI / 3.5 + Math.sin(aTime * 8) * 0.12;
             ud.armR.rotation.x = Math.PI / 3.5 + Math.cos(aTime * 8) * 0.12;
             if (ud.forearmL) ud.forearmL.rotation.x = Math.PI / 2.2 + Math.cos(aTime * 8) * 0.08;
@@ -5006,39 +5253,36 @@
           }
 
           // Standing idle breathing & subtle head turn for Gabriel, Lucas, Victor, Sora
-          if (!ud.isSeated && ud.head) {
+          if (!ud.isSeated && ud.head && allowSubtleAnim) {
             ud.head.rotation.y = Math.sin(aTime * 0.6) * 0.18;
           }
 
           // Overhead Emote / Role Badge floating bob
-          if (ud.emoteBadge) {
+          if (ud.emoteBadge && inFrustum && camDist < 70) {
             const baseY = ud.isSeated ? 1.15 + 1.28 : 1.45 + 1.28;
             ud.emoteBadge.position.y = baseY + Math.sin(aTime * 3.2) * 0.08;
           }
 
-          // Smartwatch LED pulsing on left wrist
-          if (ud.smartwatchLed && ud.smartwatchLed.material) {
+          // Smartwatch LED pulsing on left wrist (only when close)
+          if (ud.smartwatchLed && ud.smartwatchLed.material && inFrustum && camDist < 35) {
             const pulse = 0.55 + Math.sin(aTime * 5.5) * 0.45;
             ud.smartwatchLed.material.opacity = Math.max(0.3, pulse);
           }
 
           // Neural Halo for Sora AI Core
-          if (ud.neuralHalo) {
+          if (ud.neuralHalo && inFrustum && camDist < 70) {
             ud.neuralHalo.rotation.z += delta * 1.6;
             ud.neuralHalo.rotation.x = Math.PI / 2 + Math.sin(aTime * 2.2) * 0.14;
           }
 
           // Distance-based Character LOD (distant > 60m silhouette, medium 25-60m body, close < 25m details, very close < 10m facial details)
-          if (this.camera && agentRecord.mesh) {
-            const dist = this.camera.position.distanceTo(agentRecord.mesh.position);
-            const showFace = dist < 12;
-            const showDetails = dist < 28;
-            if (ud.faceParts && Array.isArray(ud.faceParts)) {
-              ud.faceParts.forEach(p => { if (p) p.visible = showFace; });
-            }
-            if (ud.detailParts && Array.isArray(ud.detailParts)) {
-              ud.detailParts.forEach(p => { if (p) p.visible = showDetails; });
-            }
+          const showFace = camDist < 12 && inFrustum;
+          const showDetails = camDist < 28 && inFrustum;
+          if (ud.faceParts && Array.isArray(ud.faceParts)) {
+            ud.faceParts.forEach(p => { if (p) p.visible = showFace; });
+          }
+          if (ud.detailParts && Array.isArray(ud.detailParts)) {
+            ud.detailParts.forEach(p => { if (p) p.visible = showDetails; });
           }
         });
       }
@@ -5113,6 +5357,8 @@
       }
       if (window.fenixWorld3D === this) window.fenixWorld3D = null;
       if (window.fenixWorldEngine3D === this) window.fenixWorldEngine3D = null;
+      if (window.fenixCity === this) window.fenixCity = null;
+      if (!window.fenixWorld3D && !window.fenixWorldEngine3D) window.FENIX_WORLD_3D = false;
       window.__FENIX_SINGLETONS__?.remove('worldEngine', this);
       window.__FENIX_SINGLETONS__?.remove('threeRenderLoop', this);
     }
@@ -5129,6 +5375,14 @@
     }
     return window.fenixWorld3D || window.fenixWorldEngine3D;
   };
+
+  window.addEventListener('fenix:viewchanged', (event) => {
+    if (event.detail?.viewId !== 'city') return;
+    const world = window.initFenixWorld3D?.();
+    world?.resize?.();
+    world?._resumeAnimationLoop?.();
+    world?.syncRealData?.();
+  });
 
   // Hot World Command Event Listener (SSE / Operator Commands)
   window.addEventListener('fenix:world-command', (e) => {
