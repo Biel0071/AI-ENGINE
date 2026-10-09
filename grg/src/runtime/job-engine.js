@@ -6,6 +6,7 @@ const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'DEAD_LETTER', 'RO
 const JOB_SOURCES = new Set(['codex', 'claude', 'antigravity', 'windsurf', 'vscode', 'mcp', 'cli', 'api', 'web', 'system', 'fenix-chat']);
 const RISK_LEVELS = new Set(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 const QUEUE_ENQUEUE_TIMEOUT_MS = Number(process.env.FENIX_QUEUE_ENQUEUE_TIMEOUT_MS || 5_000);
+const WORKER_HEARTBEAT_INTERVAL_MS = Number(process.env.FENIX_WORKER_HEARTBEAT_INTERVAL_MS || 15_000);
 const now = () => new Date().toISOString();
 const errorInfo = (error) => ({ name: error?.name || 'Error', message: String(error?.message || error).slice(0, 2000) });
 
@@ -56,6 +57,7 @@ class JobEngine {
   constructor({ store, controlPlane, events, queue = null, approvals = null, clock = Date, agentAssignment = null, memory = null }) {
     this.store = store; this.cp = controlPlane; this.events = events; this.queue = queue; this.approvals = approvals; this.clock = clock; this.agentAssignment = agentAssignment; this.memory = memory;
     this.handlers = new Map();
+    this.inFlightExecutions = new Map();
   }
   register(type, handler) {
     if (!/^[a-z][a-z0-9._-]{2,80}$/.test(type) || typeof handler !== 'function') throw new ValidationError('valid job type and handler are required');
@@ -185,29 +187,126 @@ class JobEngine {
   }
   async #execute(job, workerId) {
     const handler = this.handlers.get(job.type);
+    const controller = new AbortController();
+    const execution = { job, workerId, controller, timedOut: false, timeoutPersisted: false, timeoutError: null, outcome: null, settlement: null, heartbeatTimer: null };
+    const operation = Promise.resolve().then(() => handler(job.payload, { jobId: job.id, tenantId: job.tenantId, actorId: job.createdBy, job, signal: controller.signal, heartbeat: () => this.heartbeat(job.tenantId, job.id, workerId), isCancelled: () => this.isCancelled(job.tenantId, job.id), isPauseRequested: () => this.isPauseRequested(job.tenantId, job.id), checkPauseSignal: async () => { if (await this.isPauseRequested(job.tenantId, job.id)) throw new Error('job pause requested at safe boundary'); }, stage: (name, progress, patch) => this.stage(job.tenantId, job.id, workerId, name, progress, patch) }));
+    this.inFlightExecutions.set(job.id, execution);
+    operation.then(
+      (value) => { execution.outcome = { ok: true, value }; return this.#settleExecution(execution); },
+      (error) => { execution.outcome = { ok: false, error }; return this.#settleExecution(execution); },
+    ).catch((error) => console.error('[JobEngine] late execution settlement failed:', error.message));
     let timer;
     try {
       const result = await Promise.race([
-        handler(job.payload, { jobId: job.id, tenantId: job.tenantId, actorId: job.createdBy, job, heartbeat: () => this.heartbeat(job.tenantId, job.id, workerId), isCancelled: () => this.isCancelled(job.tenantId, job.id), isPauseRequested: () => this.isPauseRequested(job.tenantId, job.id), checkPauseSignal: async () => { if (await this.isPauseRequested(job.tenantId, job.id)) throw new Error('job pause requested at safe boundary'); }, stage: (name, progress, patch) => this.stage(job.tenantId, job.id, workerId, name, progress, patch) }),
-        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('job execution timed out')), job.limits.timeoutMs); }),
+        operation,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            const error = new Error('job execution timed out');
+            execution.timedOut = true;
+            execution.timeoutError = error;
+            controller.abort(error);
+            reject(error);
+          }, job.limits.timeoutMs);
+        }),
       ]);
       clearTimeout(timer);
       await this.store.update((state) => { const current = state.runtimeJobs.find((item) => item.id === job.id); current.status = current.cancelRequestedAt ? 'CANCELLED' : current.pauseRequestedAt ? 'PAUSED' : 'SUCCEEDED'; current.currentStage = current.status; current.progress = current.status === 'SUCCEEDED' || current.status === 'CANCELLED' ? 100 : current.progress; current.result = current.cancelRequestedAt ? null : boundResult(result); if (current.status !== 'PAUSED') current.completedAt = now(); current.updatedAt = now(); return state; });
     } catch (error) {
       clearTimeout(timer);
+      if (!controller.signal.aborted) controller.abort(error);
+      if (execution.timedOut) {
+        await this.store.update((state) => {
+          const current = state.runtimeJobs.find((item) => item.id === job.id && ['RUNNING', 'PAUSING'].includes(item.status) && item.workerId === workerId);
+          if (!current) return state;
+          current.error = errorInfo(execution.timeoutError || error);
+          current.currentStage = 'TIMED_OUT_WAITING'; current.updatedAt = now(); current.heartbeatAt = now();
+          return state;
+        });
+        execution.timeoutPersisted = true;
+        if (!execution.outcome) {
+          execution.heartbeatTimer = setInterval(() => {
+            this.heartbeat(job.tenantId, job.id, workerId).catch((heartbeatError) => console.error('[JobEngine] timed-out job heartbeat failed:', heartbeatError.message));
+          }, WORKER_HEARTBEAT_INTERVAL_MS);
+          execution.heartbeatTimer.unref?.();
+        }
+      } else {
+        await this.store.update((state) => {
+          const current = state.runtimeJobs.find((item) => item.id === job.id); current.error = errorInfo(error); current.updatedAt = now(); current.workerId = null;
+          if (current.cancelRequestedAt) current.status = 'CANCELLED';
+          else if (current.pauseRequestedAt) { current.status = 'PAUSED'; current.completedAt = null; }
+          else if (current.attempts < current.maxAttempts) { current.status = 'QUEUED'; current.scheduledFor = new Date(this.clock.now() + Math.min(60_000, 1000 * (2 ** (current.attempts - 1)))).toISOString(); }
+          else { current.status = 'DEAD_LETTER'; current.completedAt = now(); state.deadLetters.push({ id: uuid(), tenantId: current.tenantId, jobId: current.id, type: current.type, error: current.error, attempts: current.attempts, createdAt: now() }); }
+          current.currentStage = current.status;
+          return state;
+        });
+      }
+    }
+    let current = await this.getInternal(job.tenantId, job.id);
+    if (current.status === 'QUEUED' && this.queue && !this.inFlightExecutions.has(job.id)) await this.#enqueue(current);
+    const eventType = execution.timedOut && current.status === 'RUNNING' ? 'runtime.job.timed-out-waiting' : `runtime.job.${current.status.toLowerCase()}`;
+    await this.#publish(current, eventType, workerId);
+    await this.#rememberOutcome(current);
+    if (execution.timedOut && execution.outcome) {
+      await this.#settleExecution(execution);
+      current = await this.getInternal(job.tenantId, job.id);
+    }
+    return current;
+  }
+  async #settleExecution(execution) {
+    if (this.inFlightExecutions.get(execution.job.id) !== execution) return;
+    if (!execution.timedOut) {
+      this.inFlightExecutions.delete(execution.job.id);
+      return;
+    }
+    if (!execution.timeoutPersisted || !execution.outcome) return;
+    if (execution.settlement) return execution.settlement;
+    execution.settlement = (async () => {
+      const current = await this.getInternal(execution.job.tenantId, execution.job.id);
+      if (!['RUNNING', 'PAUSING'].includes(current.status) || current.workerId !== execution.workerId) {
+        this.inFlightExecutions.delete(execution.job.id);
+        clearInterval(execution.heartbeatTimer);
+        return;
+      }
+      let updated = false;
       await this.store.update((state) => {
-        const current = state.runtimeJobs.find((item) => item.id === job.id); current.error = errorInfo(error); current.updatedAt = now(); current.workerId = null;
-        if (current.cancelRequestedAt) current.status = 'CANCELLED';
-        else if (current.pauseRequestedAt) { current.status = 'PAUSED'; current.completedAt = null; }
-        else if (current.attempts < current.maxAttempts) { current.status = 'QUEUED'; current.scheduledFor = new Date(this.clock.now() + Math.min(60_000, 1000 * (2 ** (current.attempts - 1)))).toISOString(); }
-        else { current.status = 'DEAD_LETTER'; current.completedAt = now(); state.deadLetters.push({ id: uuid(), tenantId: current.tenantId, jobId: current.id, type: current.type, error: current.error, attempts: current.attempts, createdAt: now() }); }
-        current.currentStage = current.status;
+        const job = state.runtimeJobs.find((item) => item.tenantId === execution.job.tenantId && item.id === execution.job.id && ['RUNNING', 'PAUSING'].includes(item.status) && item.workerId === execution.workerId);
+        if (!job) return state;
+        if (execution.outcome.ok) {
+          job.status = job.cancelRequestedAt ? 'CANCELLED' : job.pauseRequestedAt ? 'PAUSED' : 'SUCCEEDED';
+          job.currentStage = job.status;
+          job.progress = ['SUCCEEDED', 'CANCELLED'].includes(job.status) ? 100 : job.progress;
+          job.result = job.cancelRequestedAt ? null : boundResult(execution.outcome.value);
+          job.error = job.cancelRequestedAt ? job.error : null;
+          if (job.status !== 'PAUSED') job.completedAt = now();
+        } else {
+          job.error = errorInfo(execution.timeoutError || execution.outcome.error);
+          job.workerId = null;
+          if (job.cancelRequestedAt) { job.status = 'CANCELLED'; job.completedAt = now(); }
+          else if (job.pauseRequestedAt) { job.status = 'PAUSED'; job.completedAt = null; }
+          else if (job.attempts < job.maxAttempts) {
+            job.status = 'QUEUED';
+            job.scheduledFor = new Date(this.clock.now() + Math.min(60_000, 1000 * (2 ** (job.attempts - 1)))).toISOString();
+          } else {
+            job.status = 'DEAD_LETTER'; job.completedAt = now();
+            state.deadLetters.push({ id: uuid(), tenantId: job.tenantId, jobId: job.id, type: job.type, error: job.error, attempts: job.attempts, createdAt: now() });
+          }
+          job.currentStage = job.status;
+        }
+        job.updatedAt = now();
+        updated = true;
         return state;
       });
-    }
-    const current = await this.getInternal(job.tenantId, job.id);
-    if (current.status === 'QUEUED' && this.queue) await this.#enqueue(current);
-    await this.#publish(current, `runtime.job.${current.status.toLowerCase()}`, workerId);
+      this.inFlightExecutions.delete(execution.job.id);
+      clearInterval(execution.heartbeatTimer);
+      if (!updated) return;
+      const result = await this.getInternal(execution.job.tenantId, execution.job.id);
+      if (result.status === 'QUEUED' && this.queue) await this.#enqueue(result);
+      await this.#publish(result, `runtime.job.${result.status.toLowerCase()}`, execution.workerId);
+      await this.#rememberOutcome(result);
+    })().finally(() => { execution.settlement = null; });
+    return execution.settlement;
+  }
+  async #rememberOutcome(current) {
     if (this.memory && TERMINAL.has(current.status)) {
       try {
         const outcome = current.status === 'SUCCEEDED'
@@ -223,7 +322,6 @@ class JobEngine {
         });
       } catch (error) { console.error('[JobEngine] outcome memory unavailable:', error.message); }
     }
-    return current;
   }
   async cancel(tenantId, actorId, jobId) {
     await this.cp.authorize(tenantId, actorId, 'runtime:execute');
@@ -326,7 +424,7 @@ class JobEngine {
     if (this.events) await this.events.publish({ tenantId, stream: `job:${jobId}`, type: 'rollback.completed', source: 'fenix-runtime', subject: jobId, data: { jobId, actorId, status: rolledBack.status }, idempotencyKey: `rollback.completed:${jobId}` });
     return rolledBack;
   }
-  async heartbeat(tenantId, jobId, workerId) { await this.store.update((state) => { const job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId && item.workerId === workerId && item.status === 'RUNNING'); if (!job) throw new NotFoundError('running job not found for worker'); job.heartbeatAt = now(); upsertHeartbeat(state, workerId, 1); return state; }); }
+  async heartbeat(tenantId, jobId, workerId) { await this.store.update((state) => { const job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId && item.workerId === workerId && ['RUNNING', 'PAUSING'].includes(item.status)); if (!job) throw new NotFoundError('running job not found for worker'); job.heartbeatAt = now(); upsertHeartbeat(state, workerId, 1); return state; }); }
   async stage(tenantId, jobId, workerId, name, progress = null, patch = {}) {
     if (!/^[a-z][a-z0-9._-]{2,80}$/.test(String(name || ''))) throw new ValidationError('valid job stage is required');
     let job;
@@ -351,7 +449,12 @@ class JobEngine {
   async recoverStale(staleAfterMs = 60_000) {
     const cutoff = this.clock.now() - Number(staleAfterMs); const requeued = [];
     await this.store.update((state) => {
-      for (const job of state.runtimeJobs.filter((item) => item.status === 'RUNNING' && Date.parse(item.heartbeatAt) < cutoff)) {
+      for (const job of state.runtimeJobs.filter((item) => ['RUNNING', 'PAUSING'].includes(item.status) && Date.parse(item.heartbeatAt) < cutoff)) {
+        if (job.pauseRequestedAt && !job.cancelRequestedAt) {
+          job.status = 'PAUSED'; job.currentStage = 'PAUSED'; job.workerId = null;
+          job.updatedAt = now(); job.completedAt = null;
+          continue;
+        }
         job.status = job.attempts < job.maxAttempts ? 'QUEUED' : 'DEAD_LETTER'; job.currentStage = job.status;
         job.workerId = null; job.error = { name: 'HeartbeatTimeout', message: 'worker heartbeat expired' }; job.updatedAt = now();
         if (job.status === 'QUEUED') { job.scheduledFor = now(); requeued.push(structuredClone(job)); }
