@@ -284,3 +284,10 @@ O navegador público ainda não foi percorrido nesta sessão. Os itens abaixo di
 - A leitura de capacidade durante a publicação marcou `fenix-backend` em aproximadamente 200% de CPU e 622 MiB de RAM, disco em 95% (4,9 GB livres) e `fenix-runtime-worker` online. Um health check mediu 2,6 s. Isso não permite certificar estabilidade contínua ou executar mais carga E2E de produção com segurança.
 - O workspace local contém alterações e arquivos não rastreados anteriores a esta etapa. Por isso, a sincronização foi limitada aos arquivos do commit publicado; as alterações preexistentes não foram incluídas, descartadas nem copiadas para a VPS.
 - Estado: correção do inspetor e do cache público **PUBLICADA**; health HTTP **PASS**; teste autenticado visual pós-deploy **PENDENTE**; navegação completa, fila real após restart e retenção de memória/job em reinício **PENDENTES**; operação 24/7 **NÃO COMPROVADA**.
+
+## Snapshot da fila persistida — 2026-10-09 12:41 UTC
+
+- Consulta agregada somente leitura ao `kernel_state` do PostgreSQL: 30 jobs `QUEUED`, 1 `RUNNING`, 5 `SUCCEEDED` e 4 `DEAD_LETTER`; missões: 1 `AWAITING_APPROVAL`, 1 `PLANNED`, 6 `SUCCEEDED` e 7 `CANCELLED`. O documento persistido tinha versão 1.902.523 e atualização em `12:40:58Z`.
+- O job ativo atual tinha heartbeat em `12:39:54Z`. Não reiniciei o worker nem drenhei fila: há uma execução viva e 30 jobs aguardando, então parar agora poderia interromper trabalho já aceito.
+- Isso confirma gravação e atualização do estado persistido durante a execução; não prova recuperação após reinício. O próximo teste de reinício deve esperar uma janela sem job ativo e confirmar a estratégia de drenagem/retomada.
+- A chave do provedor na VPS continua inválida; solicitei ao operador a atualização pelo ambiente protegido, sem compartilhar segredo no chat. Até essa alteração, não há prova de execução real via API Platform.
