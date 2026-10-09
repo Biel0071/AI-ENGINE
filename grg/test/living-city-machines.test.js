@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const { livingCityState } = require('../src/api/living-city-routes');
-const { projectMachineScene, projectSceneSites, maxProjectSites } = require('../public/fenix-city-machine-scene');
+const { projectMachineScene, projectSceneSites } = require('../public/fenix-city-machine-scene');
 
 test('City projects host and recent worker heartbeats as measured nodes', async () => {
   const now = new Date().toISOString();
@@ -44,8 +44,8 @@ test('scene nodes are a deterministic visual projection of measured runtime mach
   assert.deepEqual(projectMachineScene([]), []);
 });
 
-test('project sites are stable and bounded for world rendering', () => {
-  const projects = Array.from({ length: maxProjectSites + 3 }, (_, index) => ({
+test('project sites are stable and unique for every registered project', () => {
+  const projects = Array.from({ length: 35 }, (_, index) => ({
     id: `project-${index}`,
     name: `Projeto ${index}`,
     status: index === 0 ? 'RUNNING' : 'IDLE',
@@ -53,10 +53,11 @@ test('project sites are stable and bounded for world rendering', () => {
   }));
   const first = projectSceneSites(projects);
   const second = projectSceneSites(projects);
-  assert.equal(first.length, maxProjectSites);
+  assert.equal(first.length, projects.length);
   assert.deepEqual(first, second);
-  assert.equal(first[0].id, 'project-3');
+  assert.equal(first[0].id, 'project-0');
   assert.equal(new Set(first.map((site) => `${site.position.x}:${site.position.z}`)).size, first.length);
+  assert.ok(first.every((site) => Math.abs(site.position.x) <= 87.5 && Math.abs(site.position.z) <= 77.5));
   assert.deepEqual(projectSceneSites([]), []);
 });
 
