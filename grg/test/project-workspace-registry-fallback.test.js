@@ -66,3 +66,42 @@ test('Project Kernel and IDE resolve an existing registry workspace when the sav
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+
+test('IDE route tolerates a legacy ProjectRegistry class export and uses its configured workspace', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'fenix-legacy-project-workspace-'));
+  const registryPath = require.resolve('../src/projects/project-registry');
+  const registryModule = require.cache[registryPath];
+  const originalExports = registryModule.exports;
+  const originalWorkspace = process.env.FENIX_API_PLATFORM_WORKSPACE;
+  const originalBranch = process.env.FENIX_API_PLATFORM_BRANCH;
+  const staleWorkspace = path.join(root, 'missing-windows-workspace');
+  let response;
+
+  try {
+    await fs.writeFile(path.join(root, 'package.json'), '{"name":"api-platform-smoke"}\n');
+    process.env.FENIX_API_PLATFORM_WORKSPACE = root;
+    process.env.FENIX_API_PLATFORM_BRANCH = 'fenix/api-workspace-smoke';
+    registryModule.exports = { ProjectRegistry: class ProjectRegistry {} };
+    const store = { read: async () => ({ projects: [{ id: 'api-platform', tenantId: 'grg', name: 'API Platform', workspace: staleWorkspace }] }) };
+
+    await handleProjectWorkspaceRoutes(
+      { method: 'GET' },
+      {},
+      new URL('http://fenix.test/api/fenix/projects/api-platform/tree'),
+      { store, controlPlane: { authorize: async () => true } },
+      (_res, status, body) => { response = { status, body }; },
+      async () => ({}),
+      { tenantId: 'grg', actorId: 'qa' },
+    );
+
+    assert.equal(response.status, 200);
+    assert.ok(response.body.tree.some((item) => item.path === 'package.json'));
+  } finally {
+    registryModule.exports = originalExports;
+    if (originalWorkspace === undefined) delete process.env.FENIX_API_PLATFORM_WORKSPACE;
+    else process.env.FENIX_API_PLATFORM_WORKSPACE = originalWorkspace;
+    if (originalBranch === undefined) delete process.env.FENIX_API_PLATFORM_BRANCH;
+    else process.env.FENIX_API_PLATFORM_BRANCH = originalBranch;
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

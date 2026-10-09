@@ -18,8 +18,12 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   if (write) await app.controlPlane.authorize(tenantId, actorId, 'memory:write');
   const storedProject = (await app.store.read()).projects.find((item) => item.tenantId === tenantId && item.id === projectId);
   let regProj = null;
-  try { regProj = require('../projects/project-registry').getProjectById(projectId); }
+  try {
+    const registry = require('../projects/project-registry');
+    if (typeof registry.getProjectById === 'function') regProj = registry.getProjectById(projectId);
+  }
   catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
+  if (!regProj && typeof app.projectRegistry?.get === 'function') regProj = app.projectRegistry.get(projectId);
   const workspace = resolveProjectWorkspace(storedProject, regProj);
   const project = storedProject || (regProj && { id: regProj.id, tenantId, name: regProj.name });
   if (!project || !workspace) return reply(404, { error: 'Project workspace is unavailable' });
