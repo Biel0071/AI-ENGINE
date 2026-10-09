@@ -52,6 +52,18 @@ test('daily intelligence is deterministic, evidence-backed and idempotent per da
   const state = await app.store.read(); assert.equal(state.dailyIntelligenceReports.length, 1);
 });
 
+test('default activation schedule runs hourly and migrates the old five-minute default', async () => {
+  const app = await bootstrap();
+  await app.jobs.schedule('grg', 'alice', { type: 'operational.activation', intervalMs: 300_000, payload: { trigger: 'schedule' } });
+  const created = await app.operationalActivation.ensureSchedules('grg', 'alice');
+  assert.equal(created.length, 1);
+  const state = await app.store.read();
+  const activation = state.runtimeSchedules.find((item) => item.type === 'operational.activation');
+  assert.equal(activation.intervalMs, 3_600_000);
+  assert.ok(Date.parse(activation.nextRunAt) > Date.now() + 3_500_000);
+  await app.close();
+});
+
 test('operational schedules are recurring and idempotent', async () => {
   const app = await bootstrap(); const first = await app.operationalActivation.ensureSchedules('grg', 'alice', { activationIntervalMs: 60_000 }); const second = await app.operationalActivation.ensureSchedules('grg', 'alice', { activationIntervalMs: 60_000 });
   assert.equal(first.length, 2); assert.equal(second.length, 0);

@@ -36,6 +36,41 @@ test('scheduler emits due jobs and advances recurring schedules', async () => {
   const state = await app.store.read(); assert.ok(Date.parse(state.runtimeSchedules.find((item) => item.id === schedule.id).nextRunAt) > Date.now() - 1000);
 });
 
+test('recurring schedules coalesce while their previous job is unfinished', async () => {
+  const app = await bootstrap(); app.jobs.register('test.coalesced', async () => 'ok');
+  let clockNow = Date.now(); app.jobs.clock = { now: () => clockNow };
+  const schedule = await app.jobs.schedule('grg', 'alice', {
+    type: 'test.coalesced', payload: { trigger: 'schedule' },
+    runAt: new Date(clockNow - 1).toISOString(), intervalMs: 1_000,
+  });
+  const [first] = await app.jobs.tick('grg', 'alice');
+  assert.equal(first.source, 'system'); assert.equal(first.scheduleId, schedule.id);
+  clockNow += 1_000;
+  assert.deepEqual(await app.jobs.tick('grg', 'alice'), []);
+  const state = await app.store.read();
+  assert.equal(state.runtimeJobs.filter((job) => job.type === 'test.coalesced').length, 1);
+  assert.ok(Date.parse(state.runtimeSchedules.find((item) => item.id === schedule.id).nextRunAt) > clockNow);
+  const [completed] = await app.jobs.runBatch('schedule-worker'); assert.equal(completed.status, 'SUCCEEDED');
+  clockNow += 1_000;
+  const [nextRun] = await app.jobs.tick('grg', 'alice');
+  assert.equal(nextRun.source, 'system');
+  assert.equal((await app.store.read()).runtimeJobs.filter((job) => job.type === 'test.coalesced').length, 2);
+  await app.close();
+});
+
+test('legacy recurring jobs with schedule trigger are coalesced without changing their source', async () => {
+  const app = await bootstrap(); app.jobs.register('test.legacy-schedule', async () => 'ok');
+  let clockNow = Date.now(); app.jobs.clock = { now: () => clockNow };
+  const schedule = await app.jobs.schedule('grg', 'alice', {
+    type: 'test.legacy-schedule', payload: { trigger: 'schedule' },
+    runAt: new Date(clockNow - 1).toISOString(), intervalMs: 1_000,
+  });
+  await app.store.update((state) => { state.runtimeJobs.push({ id: 'legacy-scheduled-job', tenantId: 'grg', type: schedule.type, source: 'api', status: 'QUEUED', payload: { trigger: 'schedule' } }); return state; });
+  assert.deepEqual(await app.jobs.tick('grg', 'alice'), []);
+  assert.equal((await app.store.read()).runtimeJobs.filter((job) => job.type === schedule.type).length, 1);
+  await app.close();
+});
+
 test('job payloads reject secrets and resource limits are bounded', async () => {
   const app = await bootstrap(); app.jobs.register('test.secure', async () => true);
   await assert.rejects(() => app.jobs.submit('grg', 'alice', { type: 'test.secure', payload: { apiKey: 'leak' } }), /secret field/);

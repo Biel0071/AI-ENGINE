@@ -83,6 +83,7 @@ class JobEngine {
     const approvalRequired = policy.requireApproval || riskLevel === 'HIGH' || riskLevel === 'CRITICAL';
     const job = {
       id, jobId: id, tenantId, sessionId: input.sessionId || null, source,
+      scheduleId: input.scheduleId || null,
       type: input.type, prompt: input.prompt || input.payload?.prompt || null,
       missionId: input.missionId || input.context?.missionId || payload.missionId || null,
       projectId: input.projectId || input.context?.projectId || payload.projectId || null,
@@ -130,7 +131,17 @@ class JobEngine {
     const due = state.runtimeSchedules.filter((item) => item.tenantId === tenantId && item.enabled && Date.parse(item.nextRunAt) <= timestamp);
     const jobs = [];
     for (const schedule of due) {
-      jobs.push(await this.submit(tenantId, actorId, { type: schedule.type, payload: schedule.payload, limits: schedule.limits }));
+      const currentState = await this.store.read();
+      const pendingScheduledJob = currentState.runtimeJobs.some((job) => job.tenantId === tenantId
+        && job.type === schedule.type
+        && ['QUEUED', 'RUNNING', 'AWAITING_APPROVAL'].includes(job.status)
+        && (job.scheduleId === schedule.id || (!job.scheduleId && job.source === 'api' && job.payload?.trigger === 'schedule')));
+      if (!pendingScheduledJob) {
+        jobs.push(await this.submit(tenantId, actorId, {
+          type: schedule.type, payload: schedule.payload, limits: schedule.limits,
+          source: 'system', scheduleId: schedule.id,
+        }));
+      }
       await this.store.update((next) => { const current = next.runtimeSchedules.find((item) => item.id === schedule.id); if (current.intervalMs) current.nextRunAt = new Date(timestamp + current.intervalMs).toISOString(); else current.enabled = false; return next; });
     }
     return jobs;

@@ -3,6 +3,8 @@ const { ValidationError, NotFoundError } = require('../kernel/errors');
 const { assertNoSecrets } = require('../eventing/event-store');
 
 const COMPONENT_TIMEOUT_MS = 5_000;
+const DEFAULT_ACTIVATION_INTERVAL_MS = 60 * 60_000;
+const LEGACY_ACTIVATION_INTERVAL_MS = 5 * 60_000;
 const ASSURANCE_KINDS = new Set(['backup', 'restore', 'rollback', 'centralized-logs', 'build', 'smoke-test', 'external-validation']);
 const GA_PROOFS = ['backup', 'restore', 'rollback', 'centralized-logs', 'build', 'smoke-test', 'external-validation'];
 
@@ -148,8 +150,26 @@ class OperationalActivationService {
 
   async ensureSchedules(tenantId, actorId, input = {}) {
     await this.cp.authorize(tenantId, actorId, 'runtime:admin'); const state = await this.store.read(); const created = [];
-    const specs = [{ type: 'operational.activation', intervalMs: Number(input.activationIntervalMs || 300_000), payload: { trigger: 'schedule' } }, { type: 'operational.daily-intelligence', intervalMs: Number(input.dailyIntervalMs || 86_400_000), payload: {} }];
-    for (const spec of specs) if (!state.runtimeSchedules.some((item) => item.tenantId === tenantId && item.type === spec.type && item.enabled)) created.push(await this.jobs.schedule(tenantId, actorId, spec));
+    const specs = [{ type: 'operational.activation', intervalMs: Number(input.activationIntervalMs || DEFAULT_ACTIVATION_INTERVAL_MS), payload: { trigger: 'schedule' } }, { type: 'operational.daily-intelligence', intervalMs: Number(input.dailyIntervalMs || 86_400_000), payload: {} }];
+    for (const spec of specs) {
+      const existing = state.runtimeSchedules.find((item) => item.tenantId === tenantId && item.type === spec.type && item.enabled);
+      if (existing) {
+        if (spec.type === 'operational.activation' && input.activationIntervalMs == null
+          && existing.intervalMs === LEGACY_ACTIVATION_INTERVAL_MS && existing.payload?.trigger === 'schedule') {
+          await this.store.update((next) => {
+            const current = next.runtimeSchedules.find((item) => item.id === existing.id);
+            if (current?.enabled && current.intervalMs === LEGACY_ACTIVATION_INTERVAL_MS && current.payload?.trigger === 'schedule') {
+              current.intervalMs = spec.intervalMs;
+              current.nextRunAt = new Date(this.clock.now() + spec.intervalMs).toISOString();
+              current.updatedAt = now();
+            }
+            return next;
+          });
+        }
+        continue;
+      }
+      created.push(await this.jobs.schedule(tenantId, actorId, spec));
+    }
     return created;
   }
 
