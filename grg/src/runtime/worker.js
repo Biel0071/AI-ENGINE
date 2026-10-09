@@ -51,7 +51,12 @@ async function startWorker(options = {}) {
     loops: defaultLoops(env).filter((loop) => !['jobs', 'schedules'].includes(loop.id)),
     tickIntervalMs: livingTickIntervalMs,
     leaseTtlMs: livingLeaseTtlMs,
-  }).start();
+  });
+  if (livingRuntime) {
+    try { await livingRuntime.restoreSchedule(); }
+    catch (error) { process.stderr.write(`${JSON.stringify({ level: 'warn', component: 'living-runtime', message: `schedule restore failed: ${error.message}` })}\n`); }
+    livingRuntime.start();
+  }
   app.livingRuntime = livingRuntime;
   // Cadencia propria do health-check de conexao (FLUXO 8); 0 forca o primeiro check ja no 1o ciclo.
   const nowMs = () => Date.now(); let lastConnectionCheck = 0; let lastObservabilitySample = 0;

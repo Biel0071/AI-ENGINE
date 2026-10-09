@@ -129,3 +129,7 @@ test('runtime tuning variables are optional, never required', () => {
     assert.doesNotMatch(linha[1], /:\?/, `${nome} nao pode ser obrigatoria no compose`);
   }
 });
+
+test('the expensive operational boot loop is opt-in and configurable in containers', () => {
+  assert.match(compose, /^\s+FENIX_OPERATIONAL_BOOT_LOOP: \$\{FENIX_OPERATIONAL_BOOT_LOOP:-0\}$/m);
+});

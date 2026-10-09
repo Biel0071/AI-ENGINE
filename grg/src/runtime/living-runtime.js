@@ -244,6 +244,9 @@ function defaultLoops(env = process.env) {
       criticality: 'normal',
       timeoutMs: 120_000,
       run: async ({ app, tenantId, actorId }) => {
+        if (env.FENIX_OPERATIONAL_BOOT_LOOP !== '1') {
+          return { idle: true, reason: 'full operational boot scan is opt-in' };
+        }
         if (!app.operationalActivation) return { idle: true, reason: 'operational activation is not wired' };
         const result = await app.operationalActivation.boot(tenantId, actorId, { trigger: 'living-runtime' });
         // boot() desiste quando ja existe um run em voo. Isso e ociosidade real.
@@ -388,6 +391,33 @@ class LivingRuntime {
       suspended: loop.suspended,
       suspendedReason: loop.suspendedReason,
     }));
+  }
+
+  async restoreSchedule() {
+    const state = await this.app.store.read();
+    const nowMs = this.clock.now();
+    const lastCompletedAt = new Map();
+
+    for (const tick of Array.isArray(state?.livingRuntimeTicks) ? state.livingRuntimeTicks : []) {
+      if (tick?.role !== this.role || !Array.isArray(tick.loops)) continue;
+      for (const result of tick.loops) {
+        if (!result?.loop) continue;
+        const completedAt = Date.parse(result.completedAt);
+        if (!Number.isFinite(completedAt) || completedAt > nowMs) continue;
+        if (completedAt > (lastCompletedAt.get(result.loop) || 0)) {
+          lastCompletedAt.set(result.loop, completedAt);
+        }
+      }
+    }
+
+    let restored = 0;
+    for (const loop of this.loops) {
+      const completedAt = lastCompletedAt.get(loop.id);
+      if (!completedAt || nowMs - completedAt >= loop.intervalMs) continue;
+      loop.lastRunAt = new Date(completedAt).toISOString();
+      restored += 1;
+    }
+    return restored;
   }
 
   // Heartbeat no MESMO formato que o probe de `workers` le, para o componente ficar
