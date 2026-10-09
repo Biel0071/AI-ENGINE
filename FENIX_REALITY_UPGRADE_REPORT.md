@@ -235,3 +235,12 @@ O navegador público ainda não foi percorrido nesta sessão. Os itens abaixo di
 - Os três scripts JavaScript alterados passaram `node --check`. Testes focados da Cidade: 21 aprovados; honestidade frontend/runtime: 24 aprovados. O E2E de rotas/IDE e o E2E da Cidade passaram nesta sessão.
 - Commits seletivos criados nesta sessão: `b42ebdb3` (navegação e loaders), `d1a808f9` (runtime da Cidade) e `df154bb8` (E2Es e regressões da Cidade).
 - Nenhum código foi implantado ou reiniciado na VPS. Provedor inválido, configuração remota divergente e pressão de disco/RAM continuam impedindo a comprovação segura do fluxo público 24/7; a credencial SSH fornecida na conversa não foi reutilizada.
+
+## Verificação pública e capacidade da VPS — 2026-10-09
+
+- O shell público respondeu HTTP 200. Abrir diretamente `/app#city` não mostrou a Cidade; após selecionar “World — Cidade de Agentes”, o quadro principal permaneceu preto com “Aguardando eventos reais”, enquanto o minimapa ainda exibia a arte estática.
+- O asset local `fenix-city-runtime-world.js` respondeu 404 no servidor. Isso confirma que o bundle publicado não contém o renderer presente na branch enviada. O workspace de produção `/opt/fenix-os/grg` não é um checkout Git; o processo PM2 `fenix-backend` executa `/opt/fenix-os/grg/src/server.js`.
+- Sem sessão autenticada, `GET /api/v2/living-city/state` respondeu 401; o fluxo autenticado da Cidade não pôde ser validado no navegador.
+- `GET /api/v2/system/health` respondeu `ONLINE` em 1,3 s. Duas leituras de `/health` demoraram 5–7,3 s e oscilaram entre `degraded` e `ready`; `/api/v2/api-platform/health` excedeu o timeout de 8 s. A auditoria anterior registrou `INVALID_API_KEY` no provedor da API Platform.
+- A leitura SSH confirmou carga média 9,45, CPU do host em 99,7%, RAM disponível de 734 MiB, disco em 96% (4,6 GiB livres), `fenix-backend` com 82 reinícios e heap a 94,47%; `fenix-os-daemon` está parado.
+- A sessão usou a chave SSH já instalada e fez apenas leituras. Nenhum arquivo ou serviço da VPS foi alterado nesta verificação. O deploy permanece pendente porque o bundle remoto está divergente e a VPS está sob pressão de recursos; iniciar um deploy de API sem provedor validado e sem sessão autenticada não comprovaria o fluxo solicitado.
