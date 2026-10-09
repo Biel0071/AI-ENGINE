@@ -151,6 +151,9 @@ async function requestGet(baseUrl, path, apiKey, timeoutMs = 20000, maxRetries =
 // do gateway). Qualquer outro valor conta como em andamento e o polling continua ate o teto.
 // Estourar o teto e ERRO, nao texto vazio: o chamador precisa saber que nao houve geracao.
 const TERMINAL_ERRO = new Set(['failed', 'error', 'cancelled', 'canceled']);
+const GENERATION_PROVIDER_NAMES = new Set([
+  'ollama', 'openai', 'anthropic', 'claude', 'gemini', 'groq', 'openrouter', 'cloudflare', 'lmstudio',
+]);
 
 function textoDoJob(job) {
   const r = job && job.result;
@@ -249,7 +252,13 @@ class AIPlatformProvider {
     if (!this.baseUrl || !this.#apiKey) { this.lastError = 'missing URL or API key'; return false; }
     try {
       const payload = await requestGet(this.baseUrl, '/v1/health', this.#apiKey, 1500, 1);
-      return payload?.ok !== false;
+      const generationProviders = Object.entries(payload?.providers || {})
+        .filter(([name]) => GENERATION_PROVIDER_NAMES.has(String(name).toLowerCase()));
+      if (generationProviders.length && !generationProviders.some(([, provider]) => provider?.online === true || provider?.status === 'ONLINE')) {
+        this.lastError = 'no generation provider is online';
+        return false;
+      }
+      return payload?.ok !== false && payload?.success !== false && payload?.status !== 'OFFLINE';
     } catch (error) { this.lastError = String(error.message || error).slice(0, 300); return false; }
   }
 

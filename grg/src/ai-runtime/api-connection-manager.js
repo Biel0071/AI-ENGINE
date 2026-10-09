@@ -35,7 +35,8 @@ class ApiConnectionManager {
       reason = 'provider not configured (missing URL/key or not registered)';
     } else {
       try {
-        online = await provider.available();
+        const probe = typeof provider.availableFast === 'function' ? provider.availableFast : provider.available;
+        online = await probe.call(provider);
         if (!online) reason = provider.lastError || 'health check returned not-available (gateway up but no generation possible, or unreachable)';
       } catch (error) {
         online = false;

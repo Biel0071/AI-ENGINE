@@ -35,6 +35,22 @@ test('connection: sem provider configurado => OFFLINE, nunca ONLINE fabricado', 
   assert.match(snap.reason, /not configured/);
 });
 
+test('connection checks prefer the fast authenticated health probe over inference', async () => {
+  let fastChecks = 0;
+  let inferenceChecks = 0;
+  const provider = {
+    availableFast: async () => { fastChecks += 1; return true; },
+    available: async () => { inferenceChecks += 1; return false; },
+  };
+  const mgr = new ApiConnectionManager({ store: store(), bus: null, providers: { aiplatform: provider }, clock: () => 1_000_000 });
+
+  const snapshot = await mgr.check('aiplatform');
+
+  assert.equal(snapshot.status, 'ONLINE');
+  assert.equal(fastChecks, 1);
+  assert.equal(inferenceChecks, 0);
+});
+
 test('connection: provider volta => detecta ONLINE, transiciona e descobre capacidades', async () => {
   const provider = fakeProvider();
   const st = store();

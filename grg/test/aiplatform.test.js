@@ -36,7 +36,7 @@ test('provider reports available when gateway health is up', async () => {
 });
 
 test('provider reports unavailable without url/key', async () => {
-  const p = new AIPlatformProvider({ baseUrl: '', apiKey: '' });
+  const p = new AIPlatformProvider({ baseUrl: '', apiKey: '', env: {} });
   assert.equal(await p.available(), false);
 });
 
@@ -46,6 +46,38 @@ test('provider health rejects unauthorized responses instead of reporting a fals
   const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${server.address().port}`, apiKey: 'revoked' });
   assert.equal(await p.available(), false);
   server.close();
+});
+
+test('fast provider health reports offline when the gateway has no ready generation provider', async () => {
+  const server = http.createServer((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ success: true, status: 'ONLINE', providers: {
+      'mission-engine': { online: true, status: 'ONLINE' },
+      ollama: { online: false, status: 'OFFLINE' },
+    } }));
+  });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${server.address().port}`, apiKey: 'ap_test' });
+  try {
+    assert.equal(await p.availableFast(), false);
+    assert.match(p.lastError, /generation provider/i);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
+});
+
+test('fast provider health accepts an authenticated, ready generation provider', async () => {
+  const server = http.createServer((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ success: true, status: 'ONLINE', providers: {
+      'mission-engine': { online: true, status: 'ONLINE' },
+      ollama: { online: true, status: 'ONLINE' },
+    } }));
+  });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const p = new AIPlatformProvider({ baseUrl: `http://127.0.0.1:${server.address().port}`, apiKey: 'ap_test' });
+  try {
+    assert.equal(await p.availableFast(), true);
+    assert.equal(p.lastError, null);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
 test('chat() hits the gateway and returns text', async () => {
