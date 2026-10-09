@@ -16,7 +16,7 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   if (write && action !== 'file') return false;
   await app.controlPlane.authorize(tenantId, actorId, write ? 'project:write' : 'project:read');
   if (write) await app.controlPlane.authorize(tenantId, actorId, 'memory:write');
-  const storedProject = (await app.store.read()).projects.find((item) => item.tenantId === tenantId && item.id === projectId);
+  const storedProject = (await app.store.read()).projects.find((item) => item.tenantId === tenantId && (item.id || item.projectId) === projectId);
   let regProj = null;
   try {
     const registry = require('../projects/project-registry');
