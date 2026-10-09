@@ -4,6 +4,15 @@ const { loadSecurityConfig } = require('../security/config');
 const { RedisLease } = require('./redis-lease');
 const { LivingRuntime, defaultLoops } = require('./living-runtime');
 
+const MIN_LIVING_TICK_INTERVAL_MS = 15_000;
+
+function livingTickIntervalMsFromEnv(env = process.env) {
+  const configured = Number(env.FENIX_LIVING_TICK_MS);
+  return Number.isFinite(configured) && configured >= MIN_LIVING_TICK_INTERVAL_MS
+    ? configured
+    : MIN_LIVING_TICK_INTERVAL_MS;
+}
+
 async function startWorker(options = {}) {
   const env = options.env || process.env; const securityConfig = loadSecurityConfig(env); const infra = loadInfrastructureConfig(env, { requireExternal: securityConfig.production });
   // `options` (menos `env`, que ja foi lido acima) sobrepoe a config de infra: e o unico jeito de
@@ -35,7 +44,7 @@ async function startWorker(options = {}) {
   // segmentada em containers dedicados.
   // Each tick persists a heartbeat and runtime event in the singleton state document;
   // job delivery stays on its separate BullMQ/polling path.
-  const livingTickIntervalMs = Number(env.FENIX_LIVING_TICK_MS || 15_000);
+  const livingTickIntervalMs = livingTickIntervalMsFromEnv(env);
   const livingLeaseTtlMs = Number(env.FENIX_LIVING_LEASE_TTL_MS || Math.max(15_000, livingTickIntervalMs * 3));
   const livingRuntime = env.FENIX_LIVING_RUNTIME === '0' ? null : new LivingRuntime({
     app, role: 'worker-companion', workerId: `${lease.ownerId}:living`,
@@ -134,4 +143,4 @@ async function startWorker(options = {}) {
 }
 
 if (require.main === module) { startWorker().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exitCode = 1; }); }
-module.exports = { startWorker };
+module.exports = { startWorker, livingTickIntervalMsFromEnv };

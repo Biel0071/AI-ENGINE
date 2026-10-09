@@ -19,6 +19,36 @@ test('activation boot records real component state, history, events and readines
   const state = await app.store.read(); assert.equal(state.operationalComponentHistory.length, result.components.length); assert.ok(state.domainEvents.some((item) => item.type === 'operational.activation.completed'));
 });
 
+test('activation publishes component events in bounded batches with heartbeats', async () => {
+  const app = await bootstrap();
+  let heartbeats = 0; let inFlight = 0; let maxInFlight = 0; let checkedEvents = 0;
+  const heartbeatAtPublish = [];
+  app.operationalActivation.components = async () => Array.from({ length: 9 }, (_, index) => ({
+    id: `probe-${index}`, dependencies: [], check: async () => ({ ok: true }),
+  }));
+  app.operationalActivation.events = {
+    publish: async (event) => {
+      if (event.type === 'operational.component.checked') {
+        checkedEvents += 1;
+        heartbeatAtPublish.push(heartbeats);
+      }
+      inFlight += 1; maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      inFlight -= 1;
+    },
+  };
+
+  const result = await app.operationalActivation.boot('grg', 'alice', {
+    heartbeat: async () => { heartbeats += 1; },
+  });
+
+  assert.equal(result.components.length, 9);
+  assert.equal(checkedEvents, 9, 'every component must keep its own event');
+  assert.ok(maxInFlight <= 4, `component events peaked at ${maxInFlight} concurrent writes`);
+  assert.ok(heartbeatAtPublish.slice(4).some((count) => count > heartbeatAtPublish[0]));
+  await app.close();
+});
+
 test('degraded components open one investigation and recovery resolves it', async () => {
   const app = await bootstrap(); let healthy = false;
   app.operationalActivation.components = async () => [{ id: 'runtime', label: 'Runtime', dependencies: [], critical: true, check: async () => ({ ok: healthy, evidence: { reference: healthy ? 'health:recovered' : 'health:failed' } }) }];

@@ -459,6 +459,11 @@ class JobEngine {
   }
   async recoverStale(staleAfterMs = 60_000) {
     const cutoff = this.clock.now() - Number(staleAfterMs); const requeued = [];
+    const snapshot = await this.store.read();
+    if (!(snapshot.runtimeJobs || []).some((job) =>
+      ['RUNNING', 'PAUSING'].includes(job.status) && Date.parse(job.heartbeatAt) < cutoff,
+    )) return 0;
+
     await this.store.update((state) => {
       for (const job of state.runtimeJobs.filter((item) => ['RUNNING', 'PAUSING'].includes(item.status) && Date.parse(item.heartbeatAt) < cutoff)) {
         if (job.pauseRequestedAt && !job.cancelRequestedAt) {

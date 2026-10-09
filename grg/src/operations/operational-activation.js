@@ -3,6 +3,7 @@ const { ValidationError, NotFoundError } = require('../kernel/errors');
 const { assertNoSecrets } = require('../eventing/event-store');
 
 const COMPONENT_TIMEOUT_MS = 5_000;
+const ACTIVATION_BATCH_SIZE = 4;
 const DEFAULT_ACTIVATION_INTERVAL_MS = 60 * 60_000;
 const LEGACY_ACTIVATION_INTERVAL_MS = 5 * 60_000;
 const ASSURANCE_KINDS = new Set(['backup', 'restore', 'rollback', 'centralized-logs', 'build', 'smoke-test', 'external-validation']);
@@ -25,13 +26,12 @@ class OperationalActivationService {
     // por mais de dois minutos. A persistência continua sendo UMA escrita para o
     // lote todo e cada probe conserva seu próprio timeout/evidência.
     const probes = [];
-    const batchSize = 4;
-    for (let offset = 0; offset < definitions.length; offset += batchSize) {
-      const batch = definitions.slice(offset, offset + batchSize);
+    for (let offset = 0; offset < definitions.length; offset += ACTIVATION_BATCH_SIZE) {
+      const batch = definitions.slice(offset, offset + ACTIVATION_BATCH_SIZE);
       probes.push(...await Promise.all(batch.map((definition) => this.#probe(tenantId, definition))));
       if (typeof input.heartbeat === 'function') await input.heartbeat();
     }
-    const results = await this.#persistSweep(tenantId, actorId, run.id, probes);
+    const results = await this.#persistSweep(tenantId, actorId, run.id, probes, input.heartbeat);
     const blockers = results.filter((item) => item.critical && item.status !== 'ACTIVE');
     const status = blockers.length ? 'DEGRADED' : 'READY';
     const completedAt = now();
@@ -65,7 +65,7 @@ class OperationalActivationService {
   // Persiste a varredura inteira em UMA escrita. O trend continua sendo calculado contra o
   // historico ja gravado, e os registros do proprio lote entram na conta na ordem em que
   // foram sondados -- o resultado e identico ao de 26 escritas sequenciais.
-  async #persistSweep(tenantId, actorId, runId, records) {
+  async #persistSweep(tenantId, actorId, runId, records, heartbeat = null) {
     await this.store.update((state) => {
       for (const record of records) {
         record.runId = runId;
@@ -81,15 +81,19 @@ class OperationalActivationService {
     // Os eventos seguem um por componente: cada um alimenta cidade, versionamento e twin, e
     // um evento agregado apagaria a granularidade que o painel usa. O que sai do caminho
     // critico e a ESCRITA, nao a trilha.
-    // Events are independent after the aggregate sweep is persisted. Publish
-    // them concurrently so a 26-component activation does not serialize 26
-    // full FileStore snapshots and hold the runtime worker for minutes.
-    await Promise.all(records.map((record) => this.#event(
-      tenantId,
-      'operational.component.checked',
-      `${runId}:${record.componentId}`,
-      { actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } },
-    )));
+    // Keep per-component event detail while limiting the burst of serialized state
+    // writes. Heartbeats between batches prevent a slow event store from making the
+    // still-running activation look abandoned to stale-job recovery.
+    for (let offset = 0; offset < records.length; offset += ACTIVATION_BATCH_SIZE) {
+      const batch = records.slice(offset, offset + ACTIVATION_BATCH_SIZE);
+      await Promise.all(batch.map((record) => this.#event(
+        tenantId,
+        'operational.component.checked',
+        `${runId}:${record.componentId}`,
+        { actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } },
+      )));
+      if (typeof heartbeat === 'function') await heartbeat();
+    }
     return records;
   }
 
