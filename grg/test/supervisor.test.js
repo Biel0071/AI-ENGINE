@@ -153,3 +153,24 @@ test('startup failures wait through the grace window and one restart gets a fres
   assert.equal(state.status, 'HEALTHY');
   assert.equal(state.recoveryGraceUntil, null);
 });
+
+test('a manually restarted PM2 process gets startup grace after prior health success', async () => {
+  const supervisor = new FenixSupervisor({
+    startupGraceMs: 60_000,
+    logger: { info() {}, warn() {}, error() {} },
+    getProcessInfo: async () => ({ pid: 101, startedAt: Date.now() - 1_000 }),
+  });
+  const target = supervisor.targets.find((item) => item.id === 'fenix-backend');
+  const state = supervisor.states.get(target.id);
+  state.lastSuccessAt = new Date(Date.now() - 60_000).toISOString();
+  let restartCount = 0;
+  supervisor._pingUrl = async () => ({ ok: false, error: 'ECONNREFUSED', latencyMs: 1 });
+  supervisor._restartPm2Service = async () => { restartCount += 1; return { success: true }; };
+
+  await supervisor.checkTarget(target);
+  await supervisor.checkTarget(target);
+
+  assert.equal(restartCount, 0, 'a recent PM2 process start should be allowed to finish booting');
+  assert.equal(state.status, 'STARTING');
+  assert.equal(state.consecutiveFailures, 2);
+});

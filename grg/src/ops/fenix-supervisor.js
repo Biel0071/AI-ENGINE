@@ -36,6 +36,7 @@ class FenixSupervisor extends EventEmitter {
     const configuredGrace = options.startupGraceMs ?? process.env.FENIX_SUPERVISOR_STARTUP_GRACE_MS;
     const startupGraceMs = configuredGrace === undefined ? DEFAULT_STARTUP_GRACE_MS : Number(configuredGrace);
     this.startupGraceMs = Number.isFinite(startupGraceMs) ? Math.max(0, startupGraceMs) : DEFAULT_STARTUP_GRACE_MS;
+    this.getProcessInfo = options.getProcessInfo || ((pm2Name) => this._readPm2ProcessInfo(pm2Name));
 
     // Definição dos alvos monitorados
     this.targets = [
@@ -120,6 +121,24 @@ class FenixSupervisor extends EventEmitter {
     });
   }
 
+  _readPm2ProcessInfo(pm2Name) {
+    return new Promise((resolve) => {
+      exec('pm2 jlist', { timeout: 5000, maxBuffer: 4 * 1024 * 1024 }, (err, stdout) => {
+        if (err) return resolve(null);
+        try {
+          const processInfo = JSON.parse(stdout).find((item) => item.name === pm2Name);
+          const startedAt = Number(processInfo?.pm2_env?.pm_uptime);
+          resolve(processInfo ? {
+            pid: Number(processInfo.pid) || null,
+            startedAt: Number.isFinite(startedAt) && startedAt > 0 ? startedAt : null,
+          } : null);
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+  }
+
   /**
    * Executa a checagem de saúde de um serviço.
    */
@@ -153,8 +172,17 @@ class FenixSupervisor extends EventEmitter {
       state.lastDetails = { error: ping.error || `HTTP ${ping.statusCode}` };
 
       if (!state.firstFailureAt) state.firstFailureAt = now;
-      const inStartupGrace = !state.lastSuccessAt
-        && now - state.firstFailureAt < this.startupGraceMs;
+      let processStartedRecently = false;
+      try {
+        const processInfo = await this.getProcessInfo(target.pm2Name);
+        const startedAt = Number(processInfo?.startedAt);
+        processStartedRecently = Number.isFinite(startedAt)
+          && startedAt > 0
+          && now >= startedAt
+          && now - startedAt < this.startupGraceMs;
+      } catch { /* PM2 info is a hint; keep the HTTP health result authoritative. */ }
+      const inStartupGrace = processStartedRecently || (!state.lastSuccessAt
+        && now - state.firstFailureAt < this.startupGraceMs);
       const inRecoveryGrace = state.recoveryGraceUntil && now < state.recoveryGraceUntil;
       if (inStartupGrace || inRecoveryGrace) {
         state.status = 'STARTING';
