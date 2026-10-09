@@ -81,6 +81,13 @@ try {
   await page.screenshot({ path: `${screenshotBase}-agent.png`, fullPage: true });
   await page.evaluate(() => window.fenixWorld3D?.resetCamera?.());
   await page.waitForFunction(() => (window.fenixWorld3D?.cameraState?.distance || 0) > 150, { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const camera = window.fenixWorld3D?.cameraState;
+    return camera
+      && Math.abs(camera.distance - camera.targetDistance) < 0.1
+      && camera.targetAzimuth === null
+      && camera.targetElevation === null;
+  }, null, { timeout: 10000, polling: 100 });
   const projectTarget = await page.evaluate((projectId) => {
     const world = window.fenixWorld3D;
     const node = world?.projectNodes?.get(projectId);

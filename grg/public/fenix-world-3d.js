@@ -3978,7 +3978,7 @@
       }
     }
 
-    _updateCameraPosition(instant = false) {
+    _updateCameraPosition(instant = false, elapsedMs = 1000 / 60) {
       if (this.cameraMode === 'follow' && this.followingAgentId) {
         let targetMesh = null;
         if (this.followingAgentId === 'agent-camila' && this.camilaGroup) {
@@ -4001,17 +4001,19 @@
           this.cameraState.elevation = this.cameraState.targetElevation;
         }
       } else {
-        this.cameraState.distance += (this.cameraState.targetDistance - this.cameraState.distance) * 0.12;
-        this.cameraState.target.lerp(this.cameraState.targetLookAt, 0.12);
+        const elapsed = Math.min(250, Math.max(0, Number(elapsedMs) || 0));
+        const smoothing = 1 - Math.pow(0.88, elapsed / (1000 / 60));
+        this.cameraState.distance += (this.cameraState.targetDistance - this.cameraState.distance) * smoothing;
+        this.cameraState.target.lerp(this.cameraState.targetLookAt, smoothing);
         if (this.cameraState.targetAzimuth !== null) {
-          this.cameraState.azimuth += (this.cameraState.targetAzimuth - this.cameraState.azimuth) * 0.12;
+          this.cameraState.azimuth += (this.cameraState.targetAzimuth - this.cameraState.azimuth) * smoothing;
           if (Math.abs(this.cameraState.targetAzimuth - this.cameraState.azimuth) < 0.002) {
             this.cameraState.azimuth = this.cameraState.targetAzimuth;
             this.cameraState.targetAzimuth = null;
           }
         }
         if (this.cameraState.targetElevation !== null) {
-          this.cameraState.elevation += (this.cameraState.targetElevation - this.cameraState.elevation) * 0.12;
+          this.cameraState.elevation += (this.cameraState.targetElevation - this.cameraState.elevation) * smoothing;
           if (Math.abs(this.cameraState.targetElevation - this.cameraState.elevation) < 0.002) {
             this.cameraState.elevation = this.cameraState.targetElevation;
             this.cameraState.targetElevation = null;
@@ -5317,7 +5319,7 @@
       }
 
       // 7. Camera Smoothing & Render
-      this._updateCameraPosition(false);
+      this._updateCameraPosition(false, delta * 1000);
       this.renderer.render(this.scene, this.camera);
     }
 
