@@ -978,23 +978,23 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
   // --- GET /api/v2/living-city/building/:id ---
   if (req.method === 'GET' && url.pathname.startsWith('/api/v2/living-city/building/')) {
     const buildingId = decodeURIComponent(url.pathname.replace('/api/v2/living-city/building/', ''));
-    const building = worldEngine.findBuilding(buildingId) || {
-      id: buildingId,
-      name: buildingId.toUpperCase().replace(/^(BLD-)?/, '').replace(/-/g, ' '),
-      district: buildingId,
-      subsystem: 'Core Infrastructure',
-      health: 'HEALTHY',
-      emoji: '🏛️',
-      color: '#00D9FF',
-      floorsCount: 1,
-      description: 'Edifício operacional conectado ao runtime'
-    };
+    const building = worldEngine.findBuilding(buildingId);
+    if (!building) {
+      sendJson(res, 404, {
+        ok: false,
+        error: 'BUILDING_NOT_FOUND',
+        buildingId,
+        source: 'WorldStateEngine',
+      });
+      return true;
+    }
 
-    return sendJson(res, 200, {
+    sendJson(res, 200, {
       ok: true,
       source: 'WorldStateEngine/LivingBuildingState',
       building
     });
+    return true;
   }
 
   return false;

@@ -2074,28 +2074,62 @@
   };
 
   // Building / District Inspector (Maintained from v2.1)
-  window.fenixInspectBuilding = function (distOrKey) {
+  window.fenixInspectBuilding = async function (distOrKey) {
+    const entity = distOrKey && typeof distOrKey === 'object' ? distOrKey : {};
     let key = '';
     if (typeof distOrKey === 'string') {
       key = distOrKey.toUpperCase();
-    } else if (distOrKey && typeof distOrKey === 'object') {
-      key = String(distOrKey.key || distOrKey.id || distOrKey.name || '').toUpperCase();
+    } else if (entity) {
+      key = String(entity.key || entity.district || entity.id || entity.name || '').toUpperCase();
     }
 
     const DISTRICT_INFO = {
-      'COMMAND': { name: 'Command Tower', role: 'Núcleo Central & Orquestração', color: '#38bdf8', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-orchestrator', 'agent-planner'], desc: 'Quartel-general do Fênix OS com telemetria em tempo real do host Linux e containers.' },
-      'PROJECT': { name: 'Project Registry & Git Lab', role: 'Gerenciamento de Código & Espelhos', color: '#f59e0b', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-developer'], desc: 'Estação de indexação AST, inspeção de telas e espelho de repositórios.' },
-      'AI': { name: 'Cognitive Nexus', role: 'Inteligência Artificial & Knowledge Graph', color: '#a855f7', projectId: 'api-platform', projectName: 'AI Platform Tower', agents: ['agent-ai', 'agent-developer'], desc: 'Gateway multi-provedor LLM, orquestração de embeddings e grafo de memória.' },
-      'CREATIVE': { name: 'Design & UI Studio', role: 'Design System & Componentes', color: '#ec4899', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-frontend', 'agent-designer'], desc: 'Estúdio visual de prototipagem, layout fênix e componentes reativos.' },
-      'BACKEND': { name: 'Dual-Lane Fast Engine', role: 'Engenharia de Backend & Filas', color: '#10b981', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-backend'], desc: 'Kernel nativo Node.js com BullMQ workers para execução distribuída.' },
-      'DEV': { name: 'Development & Engineering Hub', role: 'Dual-Lane Engine & Testes', color: '#10b981', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-backend', 'agent-developer'], desc: 'Núcleo de engenharia de software com workers BullMQ e pipeline.' },
-      'BROWSER': { name: 'QA & Playwright Lab', role: 'Auditoria Visual & Testes E2E', color: '#06b6d4', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-qa'], desc: 'Laboratório de automação headless Chromium para testes de verdade visual.' },
-      'DATA': { name: 'Data Vault & Storage', role: 'Bancos de Dados & Governança', color: '#6366f1', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-backend', 'agent-security'], desc: 'Persistência segura de métricas, eventos auditáveis e sessões.' },
-      'OBSERVATORY': { name: 'Observatório do Sistema', role: 'Telemetria & Barramento SSE', color: '#14b8a6', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-orchestrator'], desc: 'Estação de observabilidade contínua de latência, saúde de serviços e logs.' }
+      'COMMAND': { name: 'Command Tower', role: 'Núcleo central e orquestração', buildingId: 'bld-fenix-hq', color: '#38bdf8', desc: 'Núcleo central do Fênix OS. O estado exibido abaixo vem do runtime.' },
+      'PROJECT': { name: 'Project Registry & Git Lab', role: 'Projetos e repositórios', buildingId: 'bld-dev-loft', color: '#f59e0b', desc: 'Área de projetos, workspaces e repositórios.' },
+      'AI': { name: 'Cognitive Nexus', role: 'Provedores e inteligência artificial', buildingId: 'bld-ai-nexus', color: '#a855f7', desc: 'Área de provedores, roteamento de modelos e conhecimento.' },
+      'LOGISTICS': { name: 'Depósito Mais Logística', role: 'Logística e operações', buildingId: 'bld-deposito-mais', color: '#f59e0b', desc: 'Área de operações logísticas. Os dados exibidos abaixo vêm do runtime.' },
+      'CREATIVE': { name: 'Design & UI Studio', role: 'Interface e componentes', buildingId: 'bld-dev-loft', color: '#ec4899', desc: 'Área de interface, componentes e design system.' },
+      'BACKEND': { name: 'Dual-Lane Fast Engine', role: 'Serviços e processamento', buildingId: 'bld-dev-loft', color: '#10b981', desc: 'Área de serviços, APIs e processamento de tarefas.' },
+      'DEV': { name: 'Development & Engineering Hub', role: 'Engenharia e testes', buildingId: 'bld-dev-loft', color: '#10b981', desc: 'Área de engenharia, testes e builds.' },
+      'BROWSER': { name: 'QA & Playwright Lab', role: 'QA e auditoria visual', buildingId: null, color: '#06b6d4', desc: 'Área de QA e auditoria visual.' },
+      'DATA': { name: 'Data Vault & Storage', role: 'Memória e persistência', buildingId: null, color: '#6366f1', desc: 'Área de memória, eventos e persistência.' },
+      'OBSERVATORY': { name: 'Observatório do Sistema', role: 'Observabilidade e telemetria', buildingId: 'bld-fenix-hq', color: '#14b8a6', desc: 'Área de observabilidade e telemetria.' }
     };
 
     const normKey = Object.keys(DISTRICT_INFO).find(k => key.includes(k)) || 'COMMAND';
     const info = DISTRICT_INFO[normKey];
+    const buildingId = String(entity.buildingId || entity.id || info.buildingId || '').trim();
+    const buildingUrl = buildingId ? `/api/v2/living-city/building/${encodeURIComponent(buildingId)}` : null;
+    window.fenixOpenInspector(entity.name || info.name, 'DISTRITO / EDIFÍCIO', window.fenixRenderState('LOADING', 'Consultando o registro do edifício e sua atividade no runtime.'));
+
+    const [buildingResult, agentsResult] = await Promise.all([
+      buildingUrl ? window.safeFetchJson(buildingUrl, {}, 8000) : Promise.resolve({ ok: false, error: 'ID canônico do edifício não informado.' }),
+      buildingId ? window.safeFetchJson('/api/v2/living-city/agents', {}, 8000) : Promise.resolve({ ok: false, error: 'Edifício sem ID canônico.' }),
+    ]);
+    const building = buildingResult.ok && buildingResult.data?.building ? buildingResult.data.building : null;
+    const agentData = agentsResult.ok ? agentsResult.data?.agents : null;
+    const runtimeAgents = Array.isArray(agentData) ? agentData : (agentData && typeof agentData === 'object' ? Object.values(agentData) : null);
+    const buildingAgents = building && runtimeAgents
+      ? runtimeAgents.filter(agent => String(agent.buildingId || '').toLowerCase() === String(building.id || buildingId).toLowerCase())
+      : null;
+    const rawHealth = building?.health?.percent ?? building?.health?.score ?? building?.health ?? building?.telemetry?.health?.percent ?? building?.metrics?.health?.percent;
+    const healthValue = rawHealth !== null && rawHealth !== undefined && rawHealth !== '' && Number.isFinite(Number(rawHealth))
+      ? `${Number(rawHealth)}%`
+      : 'Não medida';
+    const status = building?.status || building?.state || 'Não informado';
+    const projectId = building?.projectId || null;
+    const displayName = building?.name || entity.name || info.name;
+    const displayDistrict = building?.district || entity.district || normKey;
+    const buildingError = buildingResult.ok ? '' : (buildingResult.error || `HTTP ${buildingResult.status || 'indisponível'}`);
+    const agentsMarkup = buildingAgents === null
+      ? `<p class="fenix-insp-empty">${esc(agentsResult.error || 'Agentes indisponíveis nesta leitura.')}</p>`
+      : buildingAgents.length
+        ? buildingAgents.map(agent => `
+            <button class="fenix-action-btn" style="font-size:11px; padding:6px 12px;" onclick="window.fenixInspectAgent('${esc(agent.id || agent.agentId)}')">
+              🤖 ${esc(agent.name || agent.displayName || agent.id || agent.agentId)} · ${esc(agent.status || agent.state || 'Estado não informado')}
+            </button>
+          `).join('')
+        : '<p class="fenix-insp-empty">Nenhum agente vinculado a este edifício nesta leitura.</p>';
 
     const body = `
       <div class="fenix-insp-section">
@@ -2104,41 +2138,39 @@
             🏢
           </div>
           <div>
-            <h4 style="margin:0; font-size:15px; color:#f8fafc;">${esc(info.name)}</h4>
+            <h4 style="margin:0; font-size:15px; color:#f8fafc;">${esc(displayName)}</h4>
             <span style="font-size:11px; color:${info.color}; font-weight:600;">${esc(info.role)}</span>
           </div>
         </div>
-        <p class="fenix-insp-desc">${esc(info.desc)}</p>
+        <p class="fenix-insp-desc">${esc(building?.description || info.desc)}</p>
+        ${buildingError ? `<p class="fenix-insp-desc" role="status">Registro do edifício indisponível: ${esc(buildingError)}</p>` : ''}
       </div>
 
       <div class="fenix-insp-section">
         <div class="fenix-insp-grid">
-          <div><small>Projeto Vinculado</small><p style="color:#38bdf8; font-weight:700;">${esc(info.projectId || 'fenix-os')}</p></div>
-          <div><small>Status Operacional</small><p><span class="evolution-badge badge-online">● ONLINE</span></p></div>
-          <div><small>Saúde / Health</small><p style="color:#10b981; font-weight:700;">100%</p></div>
-          <div><small>Distrito Urbano</small><p><strong>${esc(normKey)}</strong></p></div>
+          <div><small>Projeto vinculado</small><p style="color:#38bdf8; font-weight:700;">${esc(projectId || 'Não vinculado')}</p></div>
+          <div><small>Status registrado</small><p>${esc(building ? status : 'Indisponível')}</p></div>
+          <div><small>Saúde / Health</small><p>${esc(building ? healthValue : 'Não medida')}</p></div>
+          <div><small>Distrito urbano</small><p><strong>${esc(displayDistrict)}</strong></p></div>
+          ${building?.measuredAt ? `<div><small>Medido em</small><p>${esc(building.measuredAt)}</p></div>` : ''}
         </div>
       </div>
 
       <div class="fenix-insp-section">
-        <h5>Agentes Lotados neste Edifício</h5>
+        <h5>Agentes vinculados neste edifício</h5>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
-          ${info.agents.map(aId => `
-            <button class="fenix-action-btn" style="font-size:11px; padding:6px 12px;" onclick="window.fenixInspectAgent('${esc(aId)}')">
-              🤖 ${esc(aId)}
-            </button>
-          `).join('')}
+          ${agentsMarkup}
         </div>
       </div>
     `;
 
     const footer = `
-      <button class="fenix-action-btn primary" onclick="window.fenixNavigateWithContext('projects', { projectId: '${esc(info.projectId)}', projectName: '${esc(info.projectName)}' })">📂 Abrir Projeto / Workspace</button>
+      ${projectId ? `<button class="fenix-action-btn primary" onclick="window.fenixNavigateWithContext('projects', { projectId: '${esc(projectId)}' })">📂 Abrir Projeto / Workspace</button>` : `<button class="fenix-action-btn primary" onclick="window.fenixNavigateWithContext('projects')">📂 Ver Projetos</button>`}
       <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('agents')">🤖 Ver Agentes</button>
       <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('operations')">⚙️ Ver Jobs</button>
     `;
 
-    window.fenixOpenInspector(info.name, 'DISTRITO / EDIFÍCIO', body, footer);
+    window.fenixOpenInspector(displayName, 'DISTRITO / EDIFÍCIO', body, footer, building);
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
