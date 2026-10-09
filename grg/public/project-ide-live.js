@@ -543,6 +543,7 @@
     localStorage.setItem('fenix_ide_project', id);
 
     const project = state.projects.find(item => item.id === id);
+    window.GlobalSelectionStore?.select?.('project', id, project || { id, name: id });
     window.fenixSetActiveProject?.(id, project?.name || id);
     const metaEl = document.getElementById('fenixIdeProjectMeta');
     if (metaEl) metaEl.textContent = project ? `${project.workspace} · consultando Git…` : '—';
@@ -1215,6 +1216,12 @@
       const select = document.getElementById('fenixIdeProject');
       if (select) select.value = projectId;
       if (!await selectProject(projectId)) throw new Error('Troca de projeto cancelada');
+    } else {
+      const project = state.projects.find(item => item.id === projectId);
+      if (window.GlobalSelectionStore?.selectedProject?.id !== projectId) {
+        window.GlobalSelectionStore?.select?.('project', projectId, project);
+      }
+      window.fenixSetActiveProject?.(projectId, project?.name || projectId);
     }
     return true;
   };

@@ -87,9 +87,16 @@ try {
   for (const route of screenRoutes) {
     await page.evaluate((target) => window.showView(target), route);
     try {
-      await page.waitForFunction((target) => location.hash === `#${target}` && document.getElementById(`view-${target}`)?.classList.contains('active') && document.querySelectorAll('.view.active').length === 1, route, { timeout: 5000 });
+      await page.waitForFunction((target) => location.hash === `#${target}` && document.getElementById(`view-${target}`)?.classList.contains('active') && document.querySelectorAll('.view.active').length === 1, route, { timeout: 10000 });
     } catch {
-      const state = await page.evaluate(() => ({ hash: location.hash, active: [...document.querySelectorAll('.view.active')].map((view) => view.id), route: window.__fenixState?.currentRoute }));
+      const state = await page.evaluate((target) => ({
+        target,
+        hash: location.hash,
+        hashMatches: location.hash === `#${target}`,
+        targetActive: document.getElementById(`view-${target}`)?.classList.contains('active'),
+        active: [...document.querySelectorAll('.view.active')].map((view) => view.id),
+        route: window.__fenixState?.currentRoute,
+      }), route);
       throw new Error(`Navigation to ${route} did not stabilize: ${JSON.stringify(state)}`);
     }
   }
@@ -107,6 +114,10 @@ try {
     () => document.querySelector('.fenix-context-project')?.textContent?.trim() === 'Projeto de QA',
     { timeout: 3000 }
   );
+  const globallySelectedProject = await page.evaluate(() => window.GlobalSelectionStore?.selectedProject?.id || null);
+  if (globallySelectedProject !== 'ide-visual') {
+    throw new Error(`IDE project selection did not update the shared selection store: ${globallySelectedProject}`);
+  }
   await page.locator('#fenixIdeLiveTree button[title="app.js"]').click();
   await page.waitForFunction(
     () => document.querySelector('#fenixIdeLiveStatus')?.textContent?.includes('pronto para edição'),
@@ -130,7 +141,21 @@ try {
   await page.screenshot({ path: screenshot, fullPage: true });
   const content = await fs.readFile(path.join(root, 'app.js'), 'utf8');
   const saveStatus = await page.locator('#fenixIdeLiveStatus').textContent();
-  const result = { ok: content === 'module.exports = { ready: false };\n' && saveStatus.startsWith('Salvo com sucesso') && await page.locator('.fenix-context-project').textContent() === 'Projeto de QA' && errors.length === 0, screenRoutes, project: await page.locator('#fenixIdeProject').inputValue(), contextProject: await page.locator('.fenix-context-project').textContent(), editorValue, saveStatus, savedContent: content, errors, screenshot };
+  await page.evaluate(() => window.showView('projects'));
+  const projectCard = page.locator('#flpCards .flp-card[data-project-id="ide-visual"]');
+  await projectCard.waitFor({ state: 'visible', timeout: 5000 });
+  await projectCard.click();
+  await page.locator('#flpDetail').getByRole('button', { name: 'Abrir na IDE', exact: true }).click();
+  await page.waitForFunction(() => location.hash === '#ide' && document.querySelector('#fenixIdeProject')?.value === 'ide-visual');
+  const hubContext = await page.evaluate(() => ({
+    project: document.querySelector('#fenixIdeProject')?.value,
+    context: document.querySelector('.fenix-context-project')?.textContent?.trim(),
+    selected: window.GlobalSelectionStore?.selectedProject?.id || null,
+  }));
+  if (hubContext.project !== 'ide-visual' || hubContext.context !== 'Projeto de QA' || hubContext.selected !== 'ide-visual') {
+    throw new Error(`Project Hub did not carry its project context into the IDE: ${JSON.stringify(hubContext)}`);
+  }
+  const result = { ok: content === 'module.exports = { ready: false };\n' && saveStatus.startsWith('Salvo com sucesso') && await page.locator('.fenix-context-project').textContent() === 'Projeto de QA' && hubContext.selected === 'ide-visual' && errors.length === 0, screenRoutes, project: await page.locator('#fenixIdeProject').inputValue(), contextProject: await page.locator('.fenix-context-project').textContent(), selectedProject: hubContext.selected, editorValue, saveStatus, savedContent: content, errors, screenshot };
   console.log(JSON.stringify(result));
   if (!result.ok) process.exitCode = 2;
 } catch (error) {
