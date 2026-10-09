@@ -366,6 +366,7 @@ class LivingRuntime {
       consecutiveFailures: 0,
       suspended: false,
       suspendedReason: null,
+      inFlightByTenant: new Map(),
     }));
     this.tenantResolver = tenantResolver || defaultTenantResolver;
     this.timer = null;
@@ -414,11 +415,36 @@ class LivingRuntime {
   async #runLoop(loop, context) {
     const started = this.clock.now();
     const record = { loop: loop.id, criticality: loop.criticality, startedAt: now() };
+    const tenantKey = String(context.tenantId || '__global__');
+    if (loop.inFlightByTenant.has(tenantKey)) {
+      loop.lastRunAt = now();
+      return {
+        ...record,
+        status: 'SKIPPED',
+        idle: false,
+        reason: 'previous timed-out invocation is still running for this tenant',
+        durationMs: 0,
+        completedAt: now(),
+      };
+    }
+
+    const controller = new AbortController();
+    const operation = Promise.resolve().then(() => loop.run({ ...context, signal: controller.signal }));
+    loop.inFlightByTenant.set(tenantKey, operation);
+    operation.finally(() => {
+      if (loop.inFlightByTenant.get(tenantKey) === operation) loop.inFlightByTenant.delete(tenantKey);
+    }).catch(() => {});
     let timer;
     try {
       const outcome = await Promise.race([
-        loop.run(context),
-        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`loop ${loop.id} timed out after ${loop.timeoutMs}ms`)), loop.timeoutMs); }),
+        operation,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            const error = new Error(`loop ${loop.id} timed out after ${loop.timeoutMs}ms`);
+            controller.abort(error);
+            reject(error);
+          }, loop.timeoutMs);
+        }),
       ]);
       clearTimeout(timer);
       loop.lastRunAt = now();
@@ -431,6 +457,7 @@ class LivingRuntime {
       return { ...record, status: 'RAN', idle: false, detail: outcome?.detail ?? null, durationMs: this.clock.now() - started, completedAt: now() };
     } catch (error) {
       clearTimeout(timer);
+      if (!controller.signal.aborted) controller.abort(error);
       loop.lastRunAt = now();
       loop.consecutiveFailures += 1;
       // Falha repetida suspende o loop em vez de repetir o mesmo erro para sempre. A
