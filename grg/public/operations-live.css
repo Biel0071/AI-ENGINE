@@ -5,3 +5,16 @@
 .flo-overview .flo-fact[data-kind=workers] strong{color:#9ed9ff}.flo-worker-summary{grid-column:1/-1;margin:0 0 6px;padding:13px 16px;border:1px solid #365b63;border-radius:9px;background:#112f38;color:#a8ebdf;font-size:12px}.flo-worker-summary[data-warning=true]{border-color:#815544;background:#352820;color:#ffd19b}.flo-badge.flo-stale,.flo-badge.flo-offline,.flo-badge.flo-dead{color:#ffad88}.flo-badge.flo-online,.flo-badge.flo-active,.flo-badge.flo-idle,.flo-badge.flo-ready,.flo-badge.flo-available{color:#67e8bf}
 
 .flo-card small{display:block}.flo-card-action{display:inline-flex;align-items:center;margin-top:14px}.flo-card .flo-job-error{line-height:1.5}
+
+.flo-badge-bg-execution{font:700 9px ui-monospace,monospace;padding:3px 8px;border-radius:999px;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.4);color:#38bdf8;letter-spacing:.04em;display:inline-flex;align-items:center;gap:4px}
+.flo-badge-approval{font:700 9px ui-monospace,monospace;padding:3px 8px;border-radius:999px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#f59e0b;letter-spacing:.04em;display:inline-flex;align-items:center;gap:4px}
+.flo-progress-box,.flo-token-box{margin:10px 0 6px;padding:8px 12px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.05);border-radius:7px}
+.flo-progress-header,.flo-token-header{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#9ab0c4;margin-bottom:5px}
+.flo-progress-track,.flo-token-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.flo-progress-fill{height:100%;background:linear-gradient(90deg,#22c55e,#38bdf8);border-radius:3px;transition:width .3s ease}
+.flo-token-fill{height:100%;background:linear-gradient(90deg,#a855f7,#ec4899);border-radius:3px;transition:width .3s ease}
+.flo-approval-row{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
+.flo-btn-approve{padding:6px 12px;background:#059669;border:1px solid #10b981;border-radius:6px;color:#fff;font-weight:700;font-size:11px;cursor:pointer;transition:all .2s}
+.flo-btn-approve:hover{background:#10b981}
+.flo-btn-reject{padding:6px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:6px;color:#ef4444;font-weight:700;font-size:11px;cursor:pointer;transition:all .2s}
+.flo-btn-reject:hover{background:rgba(239,68,68,.25)}
