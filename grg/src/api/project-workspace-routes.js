@@ -24,8 +24,9 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   }
   catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
   if (!regProj && typeof app.projectRegistry?.get === 'function') regProj = app.projectRegistry.get(projectId);
-  const workspace = resolveProjectWorkspace(storedProject, regProj);
-  const project = storedProject || (regProj && { id: regProj.id, tenantId, name: regProj.name });
+  const projectReference = storedProject || regProj || { id: projectId };
+  const workspace = resolveProjectWorkspace(projectReference, regProj);
+  const project = storedProject || (regProj && { id: regProj.id || regProj.projectId, tenantId, name: regProj.name }) || (workspace && { id: projectId, tenantId, name: projectId });
   if (!project || !workspace) return reply(404, { error: 'Project workspace is unavailable' });
   project.workspace = workspace;
   let root;
