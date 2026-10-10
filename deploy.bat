@@ -8,6 +8,7 @@ rem =========================================================================
 set KEY=C:/Users/Dell/.ssh/grg_fenix_vps
 set SRC=c:/projetos/ai-engine-core/ai-engine/grg/public
 set HOST=root@209.50.241.22
+if /I "%~1"=="activation-batch" goto ACTIVATION_BATCH_DEPLOY
 if /I "%~1"=="city" goto CITY_DEPLOY
 if /I "%~1"=="world3d" goto WORLD3D_DEPLOY
 if /I "%~1"=="world-hotfix" goto WORLD_HOTFIX
@@ -196,6 +197,29 @@ echo =========================================================================
 echo Deploy complete from canonical source: %SRC%
 echo =========================================================================
 exit /b 0
+
+:ACTIVATION_BATCH_DEPLOY
+echo Backing up and deploying the activation event-batching backend fix...
+ssh -i %KEY% %HOST% "mkdir -p /opt/fenix-backups && tar -czf /opt/fenix-backups/activation-batch-$(date -u +%%s).tgz -C /opt/fenix-os/grg src/eventing/event-store.js src/eventing/fabric-event-bus.js src/kernel/event-bus.js src/governance/audit-trail.js src/ai-city/ai-city-projection.js src/versioning/global-version-engine.js src/digital-twin/digital-twin.js src/operations/operational-activation.js"
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/eventing/event-store.js %HOST%:/opt/fenix-os/grg/src/eventing/event-store.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/eventing/fabric-event-bus.js %HOST%:/opt/fenix-os/grg/src/eventing/fabric-event-bus.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/kernel/event-bus.js %HOST%:/opt/fenix-os/grg/src/kernel/event-bus.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/governance/audit-trail.js %HOST%:/opt/fenix-os/grg/src/governance/audit-trail.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/ai-city/ai-city-projection.js %HOST%:/opt/fenix-os/grg/src/ai-city/ai-city-projection.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/versioning/global-version-engine.js %HOST%:/opt/fenix-os/grg/src/versioning/global-version-engine.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/digital-twin/digital-twin.js %HOST%:/opt/fenix-os/grg/src/digital-twin/digital-twin.js
+if errorlevel 1 exit /b 1
+scp -i %KEY% grg/src/operations/operational-activation.js %HOST%:/opt/fenix-os/grg/src/operations/operational-activation.js
+if errorlevel 1 exit /b 1
+ssh -i %KEY% %HOST% "for f in src/eventing/event-store.js src/eventing/fabric-event-bus.js src/kernel/event-bus.js src/governance/audit-trail.js src/ai-city/ai-city-projection.js src/versioning/global-version-engine.js src/digital-twin/digital-twin.js src/operations/operational-activation.js; do node --check /opt/fenix-os/grg/$f || exit 1; done; pm2 reload fenix-backend && (for i in $(seq 1 45); do curl -fsS -o /dev/null http://127.0.0.1:4410/health && break; sleep 1; done) && curl -fsS http://127.0.0.1:4410/health"
+exit /b %ERRORLEVEL%
 
 :CITY_DEPLOY
 echo Deploying canonical City frontend to both webroots...

@@ -42,39 +42,63 @@ class GlobalVersionEngine {
   }
 
   async record(event) {
-    const identity = resourceIdentity(event);
-    let version;
+    if (event?.type === 'fabric.events.batch' && Array.isArray(event.events)) return this.recordMany(event.events);
+    return (await this.recordMany([event]))[0];
+  }
+
+  async recordMany(events) {
+    if (!Array.isArray(events)) throw new TypeError('events must be an array');
+    if (!events.length) return [];
+    const versions = [];
     await this.store.update((state) => {
-      const replay = state.resourceVersions.find((item) => item.tenantId === event.tenantId && item.sourceEventId === event.id);
-      if (replay) { version = replay; return state; }
-      const history = state.resourceVersions.filter((item) => item.tenantId === event.tenantId && item.resourceKey === identity.resourceKey);
-      const previous = history.at(-1) || null;
-      const before = previous?.snapshot ?? null;
-      const after = stable(event.data || {});
-      const diff = changes(before, after);
-      version = {
-        id: uuid(), tenantId: event.tenantId, ...identity, version: history.length + 1,
-        eventType: event.type, sourceEventId: event.id, sourceStream: event.stream,
-        snapshot: after, previousVersionId: previous?.id || null,
-        author: event.data?.actorId || event.source,
-        reason: event.data?.reason || event.data?.rationale || event.type,
-        occurredAt: event.occurredAt, recordedAt: new Date().toISOString(),
-        correlationId: event.correlationId, causationId: event.causationId,
-      };
-      state.resourceVersions.push(version);
-      state.changeSets.push({
-        id: uuid(), tenantId: event.tenantId, resourceKey: identity.resourceKey,
-        fromVersion: previous?.version || 0, toVersion: version.version, changes: diff,
-        sourceEventId: event.id, author: version.author, reason: version.reason,
-        occurredAt: version.occurredAt,
-      });
+      const byEventId = new Map(state.resourceVersions.map((item) => [`${item.tenantId}\0${item.sourceEventId}`, item]));
+      const histories = new Map();
+      for (const item of state.resourceVersions) {
+        const key = `${item.tenantId}\0${item.resourceKey}`;
+        if (!histories.has(key)) histories.set(key, []);
+        histories.get(key).push(item);
+      }
+      for (const event of events) {
+        const eventKey = `${event.tenantId}\0${event.id}`;
+        let version = byEventId.get(eventKey);
+        if (!version) {
+          const identity = resourceIdentity(event);
+          const historyKey = `${event.tenantId}\0${identity.resourceKey}`;
+          let history = histories.get(historyKey);
+          if (!history) histories.set(historyKey, history = []);
+          const previous = history.at(-1) || null;
+          const after = stable(event.data || {});
+          const diff = changes(previous?.snapshot ?? null, after);
+          version = {
+            id: uuid(), tenantId: event.tenantId, ...identity, version: history.length + 1,
+            eventType: event.type, sourceEventId: event.id, sourceStream: event.stream,
+            snapshot: after, previousVersionId: previous?.id || null,
+            author: event.data?.actorId || event.source,
+            reason: event.data?.reason || event.data?.rationale || event.type,
+            occurredAt: event.occurredAt, recordedAt: new Date().toISOString(),
+            correlationId: event.correlationId, causationId: event.causationId,
+          };
+          state.resourceVersions.push(version);
+          history.push(version);
+          byEventId.set(eventKey, version);
+          state.changeSets.push({
+            id: uuid(), tenantId: event.tenantId, resourceKey: identity.resourceKey,
+            fromVersion: previous?.version || 0, toVersion: version.version, changes: diff,
+            sourceEventId: event.id, author: version.author, reason: version.reason,
+            occurredAt: version.occurredAt,
+          });
+        }
+        versions.push(version);
+      }
       return state;
     });
-    await this.bus.emit('global.version.recorded', {
-      tenantId: event.tenantId, resourceKey: version.resourceKey, version: version.version,
-      sourceEventId: event.id,
-    });
-    return version;
+    const notifications = versions.map((version) => ({ type: 'global.version.recorded', payload: {
+      tenantId: version.tenantId, resourceKey: version.resourceKey, version: version.version,
+      sourceEventId: version.sourceEventId,
+    } }));
+    if (typeof this.bus.emitBatch === 'function') await this.bus.emitBatch(notifications);
+    else for (const notification of notifications) await this.bus.emit(notification.type, notification.payload);
+    return versions;
   }
 
   async history(tenantId, actorId, resourceKey) {

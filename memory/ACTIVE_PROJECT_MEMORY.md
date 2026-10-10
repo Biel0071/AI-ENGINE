@@ -8,7 +8,7 @@
 
 ## 1. RESUMO EXECUTIVO DO ESTADO ATUAL
 
-- **Data da Última Sincronização**: 07/10/2026 09:34:04 (Atualização Automática)
+- **Data da Última Sincronização**: 09/10/2026 21:07:07 (Atualização Automática)
 - **Status Geral**: OPERACIONAL & AUDITÁVEL (100% Zero-Mock Compliance)
 - **Frontend Canônico Único**: [ai-engine/grg/public/index.html](file:///c:/projetos/ai-engine-core/ai-engine/grg/public/index.html) (14 views vanilla integradas + Marketplace)
 - **Servidor de Aplicação**: [ai-engine/grg/src/server.js](file:///c:/projetos/ai-engine-core/ai-engine/grg/src/server.js) (Porta 4400 Local / Porta 4410 VPS)
@@ -20,6 +20,8 @@
   - `Docker Postgres 16` (:5433 - `api-platform-postgres-1`): Banco relacional da API Platform
   - `Docker Redis 7` (:6380 - `api-platform-redis-1`): Cache e mensageria BullMQ
   - `Ollama Host Service` (:11434): Qwen 2.5 (0.5B e 3B), Qwen 3.5 0.8B, DeepSeek R1 1.5B
+- **Diagnóstico operacional (09/10/2026)**: a varredura de 9 componentes passou de 92 para no máximo 30 atualizações totais no teste, mantendo eventos e projeções individuais. VPS: disco 92%, swap em uso ~968 MiB, CPU steal até 46%; API Platform `/health` 200 no IP público.
+- **Alteração técnica**: eventos e auditoria são persistidos em lotes, enquanto Cidade, versões e twin são projetados uma vez por lote; heartbeat entre lotes continua ativo. Os 39 testes focados e quatro gates canônicos passaram. A suíte completa ainda tem falhas em áreas fora deste diff.
 - **Bateria de Testes Canônica Obrigatória (100% PASS — 56/56 Verificações)**:
   - `architecture-guard.test.js`: 5/5 Aprovado (Zero shells paralelas)
   - `frontend-honesty.test.js`: 19/19 Aprovado (Zero métricas fabricadas)

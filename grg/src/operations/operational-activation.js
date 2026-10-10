@@ -78,20 +78,19 @@ class OperationalActivationService {
       }
       return state;
     });
-    // Os eventos seguem um por componente: cada um alimenta cidade, versionamento e twin, e
-    // um evento agregado apagaria a granularidade que o painel usa. O que sai do caminho
-    // critico e a ESCRITA, nao a trilha.
-    // Keep per-component event detail while limiting the burst of serialized state
-    // writes. Heartbeats between batches prevent a slow event store from making the
-    // still-running activation look abandoned to stale-job recovery.
+    // Cada componente continua tendo evento próprio, mas a persistência e as projeções
+    // trabalham por lote para não reserializar o estado inteiro a cada item.
     for (let offset = 0; offset < records.length; offset += ACTIVATION_BATCH_SIZE) {
       const batch = records.slice(offset, offset + ACTIVATION_BATCH_SIZE);
-      await Promise.all(batch.map((record) => this.#event(
-        tenantId,
-        'operational.component.checked',
-        `${runId}:${record.componentId}`,
-        { actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } },
-      )));
+      const inputs = batch.map((record) => ({
+        tenantId, stream: `operations:${runId}:${record.componentId}`,
+        type: 'operational.component.checked', source: 'fenix-operational-activation',
+        subject: `${runId}:${record.componentId}`,
+        data: { actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } },
+        idempotencyKey: `operational.component.checked:${runId}:${record.componentId}`,
+      }));
+      if (typeof this.events?.publishBatch === 'function') await this.events.publishBatch(inputs);
+      else if (this.events) await Promise.all(inputs.map((input) => this.events.publish(input)));
       if (typeof heartbeat === 'function') await heartbeat();
     }
     return records;

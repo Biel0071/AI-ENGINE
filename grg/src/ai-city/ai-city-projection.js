@@ -44,32 +44,48 @@ class AICityProjection {
     return this;
   }
   async apply(event, options = {}) {
-    const chain = placement(event);
-    const status = eventStatus(event);
+    const events = event?.type === 'fabric.events.batch' && Array.isArray(event.events) ? event.events : [event];
+    const notifications = [];
     await this.store.update((state) => {
-      let parentId = null;
-      for (const [type, key, label] of chain) {
-        const qualifiedKey = `${parentId || 'root'}:${key}`;
-        const id = nodeId(event.tenantId, type, qualifiedKey);
-        let node = state.cityNodes.find((item) => item.id === id);
-        if (!node) {
-          node = { id, tenantId: event.tenantId, type, key, label: String(label), parentId, status, metrics: { eventCount: 0 }, createdAt: event.occurredAt };
-          state.cityNodes.push(node);
+      const nodesById = new Map(state.cityNodes.map((item) => [item.id, item]));
+      const edgeIds = new Set(state.cityEdges.map((item) => item.id));
+      const projectionsByTenant = new Map(state.cityProjectionStates.map((item) => [item.tenantId, item]));
+      for (const sourceEvent of events) {
+        const chain = placement(sourceEvent);
+        const status = eventStatus(sourceEvent);
+        let parentId = null;
+        for (const [type, key, label] of chain) {
+          const qualifiedKey = `${parentId || 'root'}:${key}`;
+          const id = nodeId(sourceEvent.tenantId, type, qualifiedKey);
+          let node = nodesById.get(id);
+          if (!node) {
+            node = { id, tenantId: sourceEvent.tenantId, type, key, label: String(label), parentId, status, metrics: { eventCount: 0 }, createdAt: sourceEvent.occurredAt };
+            state.cityNodes.push(node);
+            nodesById.set(id, node);
+          }
+          node.label = String(label); node.status = status; node.updatedAt = sourceEvent.occurredAt;
+          node.lastEventId = sourceEvent.id; node.metrics.eventCount += 1; node.metrics.lastEventAt = sourceEvent.occurredAt;
+          if (parentId) {
+            const edgeId = nodeId(sourceEvent.tenantId, 'EDGE', `${parentId}:${id}`);
+            if (!edgeIds.has(edgeId)) {
+              state.cityEdges.push({ id: edgeId, tenantId: sourceEvent.tenantId, fromId: parentId, toId: id, type: 'CONTAINS', createdAt: sourceEvent.occurredAt });
+              edgeIds.add(edgeId);
+            }
+          }
+          parentId = id;
         }
-        node.label = String(label); node.status = status; node.updatedAt = event.occurredAt;
-        node.lastEventId = event.id; node.metrics.eventCount += 1; node.metrics.lastEventAt = event.occurredAt;
-        if (parentId) {
-          const edgeId = nodeId(event.tenantId, 'EDGE', `${parentId}:${id}`);
-          if (!state.cityEdges.some((item) => item.id === edgeId)) state.cityEdges.push({ id: edgeId, tenantId: event.tenantId, fromId: parentId, toId: id, type: 'CONTAINS', createdAt: event.occurredAt });
-        }
-        parentId = id;
+        let projection = projectionsByTenant.get(sourceEvent.tenantId);
+        if (!projection) { projection = { tenantId: sourceEvent.tenantId, eventCount: 0, rebuiltAt: null }; state.cityProjectionStates.push(projection); projectionsByTenant.set(sourceEvent.tenantId, projection); }
+        projection.eventCount += 1; projection.lastEventId = sourceEvent.id; projection.updatedAt = sourceEvent.recordedAt;
+        notifications.push({ type: 'city.updated', payload: { tenantId: sourceEvent.tenantId, sourceEventId: sourceEvent.id, status } });
       }
-      let projection = state.cityProjectionStates.find((item) => item.tenantId === event.tenantId);
-      if (!projection) { projection = { tenantId: event.tenantId, eventCount: 0, rebuiltAt: null }; state.cityProjectionStates.push(projection); }
-      projection.eventCount += 1; projection.lastEventId = event.id; projection.updatedAt = event.recordedAt;
       return state;
     });
-    if (options.emit !== false) await this.bus.emit('city.updated', { tenantId: event.tenantId, sourceEventId: event.id, status });
+    if (options.emit !== false) {
+      if (typeof this.bus.emitBatch === 'function') await this.bus.emitBatch(notifications);
+      else for (const notification of notifications) await this.bus.emit(notification.type, notification.payload);
+    }
+    return events.length === 1 ? notifications[0] : notifications;
   }
   async map(tenantId, actorId) {
     await this.cp.authorize(tenantId, actorId, 'fabric:read');

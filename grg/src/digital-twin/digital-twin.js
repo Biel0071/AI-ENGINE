@@ -68,22 +68,34 @@ class DigitalTwinService {
   }
 
   async projectOperationalEvent(event) {
-    let projected;
+    if (event?.type === 'fabric.events.batch' && Array.isArray(event.events)) return this.projectOperationalEvents(event.events);
+    return (await this.projectOperationalEvents([event]))[0];
+  }
+
+  async projectOperationalEvents(events) {
+    if (!Array.isArray(events)) throw new TypeError('events must be an array');
+    if (!events.length) return [];
+    const projected = [];
     await this.store.update((state) => {
-      if (state.operationalTwins.some((item) => item.tenantId === event.tenantId && item.sourceEventId === event.id)) return state;
-      const scoped = (items) => items.filter((item) => item.tenantId === event.tenantId);
-      const resources = scoped(state.discoveredResources); const jobs = scoped(state.runtimeJobs); const deployments = scoped(state.deployments);
-      const byKind = (pattern) => resources.filter((item) => pattern.test(String(item.kind || item.type || ''))).length;
-      const model = {
-        compute: { cpu: byKind(/cpu/i), ram: byKind(/memory|ram/i), gpu: byKind(/gpu/i), disks: byKind(/disk|volume/i), containers: byKind(/container|docker/i) },
-        runtime: { workers: state.workerHeartbeats.length, queued: jobs.filter((item) => item.status === 'QUEUED').length, running: jobs.filter((item) => item.status === 'RUNNING').length, failed: jobs.filter((item) => ['FAILED', 'DEAD_LETTER'].includes(item.status)).length, schedules: scoped(state.runtimeSchedules).filter((item) => item.enabled).length },
-        data: { databases: byKind(/postgres|database/i), queues: byKind(/queue|redis/i) },
-        delivery: { deployments: deployments.length, production: deployments.filter((item) => item.environment === 'production').length },
-        operations: { services: scoped(state.serviceRegistry).length, incidents: scoped(state.cognitiveObservations).filter((item) => item.kind === 'DEGRADATION').length, health: resources.some((item) => ['DEGRADED', 'MISSING'].includes(item.status)) ? 'DEGRADED' : 'ACTIVE', costs: null, latency: null, performance: null },
-      };
-      state.operationalTwins.forEach((item) => { if (item.tenantId === event.tenantId) item.current = false; });
-      projected = { id: uuid(), tenantId: event.tenantId, subjectType: 'tenant-runtime', subjectId: event.tenantId, sourceEventId: event.id, current: true, model, builtAt: now() };
-      state.operationalTwins.push(projected); return state;
+      const existingByEventId = new Map(state.operationalTwins.map((item) => [`${item.tenantId}\0${item.sourceEventId}`, item]));
+      const tenantsToUpdate = new Set(events.filter((event) => !existingByEventId.has(`${event.tenantId}\0${event.id}`)).map((event) => event.tenantId));
+      for (const item of state.operationalTwins) if (tenantsToUpdate.has(item.tenantId)) item.current = false;
+      const modelsByTenant = new Map();
+      for (const event of events) {
+        const key = `${event.tenantId}\0${event.id}`;
+        const existing = existingByEventId.get(key);
+        if (existing) { projected.push(existing); continue; }
+        let model = modelsByTenant.get(event.tenantId);
+        if (!model) {
+          model = buildOperationalModel(state, event.tenantId);
+          modelsByTenant.set(event.tenantId, model);
+        }
+        const twin = { id: uuid(), tenantId: event.tenantId, subjectType: 'tenant-runtime', subjectId: event.tenantId, sourceEventId: event.id, current: true, model, builtAt: now() };
+        state.operationalTwins.push(twin);
+        existingByEventId.set(key, twin);
+        projected.push(twin);
+      }
+      return state;
     });
     return projected;
   }
@@ -92,6 +104,19 @@ class DigitalTwinService {
     await this.cp.authorize(tenantId, actorId, 'runtime:read'); const state = await this.store.read();
     return state.operationalTwins.filter((item) => item.tenantId === tenantId && item.current).sort((a, b) => b.builtAt.localeCompare(a.builtAt))[0] || null;
   }
+}
+
+function buildOperationalModel(state, tenantId) {
+  const scoped = (items) => items.filter((item) => item.tenantId === tenantId);
+  const resources = scoped(state.discoveredResources); const jobs = scoped(state.runtimeJobs); const deployments = scoped(state.deployments);
+  const byKind = (pattern) => resources.filter((item) => pattern.test(String(item.kind || item.type || ''))).length;
+  return {
+    compute: { cpu: byKind(/cpu/i), ram: byKind(/memory|ram/i), gpu: byKind(/gpu/i), disks: byKind(/disk|volume/i), containers: byKind(/container|docker/i) },
+    runtime: { workers: state.workerHeartbeats.length, queued: jobs.filter((item) => item.status === 'QUEUED').length, running: jobs.filter((item) => item.status === 'RUNNING').length, failed: jobs.filter((item) => ['FAILED', 'DEAD_LETTER'].includes(item.status)).length, schedules: scoped(state.runtimeSchedules).filter((item) => item.enabled).length },
+    data: { databases: byKind(/postgres|database/i), queues: byKind(/queue|redis/i) },
+    delivery: { deployments: deployments.length, production: deployments.filter((item) => item.environment === 'production').length },
+    operations: { services: scoped(state.serviceRegistry).length, incidents: scoped(state.cognitiveObservations).filter((item) => item.kind === 'DEGRADATION').length, health: resources.some((item) => ['DEGRADED', 'MISSING'].includes(item.status)) ? 'DEGRADED' : 'ACTIVE', costs: null, latency: null, performance: null },
+  };
 }
 
 // Compõe o modelo vivo a partir das projeções já existentes no estado.

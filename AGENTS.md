@@ -28,6 +28,14 @@ O `npm start` e o `npm run dev` da raiz executam `node grg/src/server.js`.
 O servidor anterior permanece apenas em `npm run start:legacy` e deve ser tratado
 como legado de migracao ate ser removido ou convertido em proxy explicito.
 
+## Diagnóstico operacional e fan-out em lotes (2026-10-09)
+
+- `EventStore.appendMany()` persiste eventos individuais numa atualização, preservando sequência por stream, hashes e idempotência. `FabricEventBus.publishBatch()` mantém os eventos tipados e notifica os consumidores com o lote para projetar Cidade, versões globais e twin uma vez por lote.
+- `EventBus.beginBatch()` consolida as gravações de auditoria depois do fan-out completo, mantendo um registro auditável por evento original e por notificação derivada. A ativação segue limitada a grupos de 4 e heartbeat entre grupos.
+- `activation-write-budget.test.js` reproduz o custo anterior de 92 atualizações com 9 componentes e garante no máximo 30 depois da alteração, verificando também evento, Cidade, versão e twin por componente.
+- Estado pós-implementação local: os 39 testes focados e os quatro gates canônicos passaram. O suite completo foi executado e acusou falhas distribuídas em testes existentes de Alexa, API Platform, shell visual, GitHub sem autenticação e capacidades não implementadas; nenhum gate obrigatório falhou.
+- Observação VPS: filesystem raiz 92%, swap ~968 MiB e CPU steal chegou a 46% em amostras. Fênix worker, Ollama CPU-only e PostgreSQL disputam CPU. API Platform respondeu 200 em seu IP público; a API legada na porta 4400 segue acessível publicamente e não foi parada sem confirmar seus consumidores.
+
 ## 2. Arvore arqueologica canonica
 
 ```text

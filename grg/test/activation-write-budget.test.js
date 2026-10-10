@@ -84,6 +84,24 @@ test('the sweep still records every component, with trend', async () => {
   assert.equal(eventos.filter((e) => e.type === 'operational.component.checked').length, 5, 'a trilha segue com um evento por componente');
 });
 
+test('component events keep all projections while batching whole-state writes', async () => {
+  const componentCount = 9;
+  const app = await bootstrap(componentCount);
+  const writes = contarEscritas(app.store);
+
+  await app.operationalActivation.boot('grg', 'grg-admin', { trigger: 'test' });
+
+  const state = await app.store.read();
+  const componentEvents = state.domainEvents.filter((event) => event.type === 'operational.component.checked');
+  const eventIds = new Set(componentEvents.map((event) => event.id));
+  assert.equal(componentEvents.length, componentCount, 'all individual component events remain persisted');
+  assert.equal(state.resourceVersions.filter((version) => eventIds.has(version.sourceEventId)).length, componentCount, 'every event remains versioned');
+  assert.equal(state.cityNodes.filter((node) => node.type === 'EVENT' && eventIds.has(node.key)).length, componentCount, 'every event remains projected into the City');
+  assert.equal(state.operationalTwins.filter((twin) => eventIds.has(twin.sourceEventId)).length, componentCount, 'every event remains represented in operational twin history');
+  assert.ok(writes.total <= 30, `component event fanout used ${writes.total} whole-state writes; expected batched writes <= 30`);
+  await app.close();
+});
+
 test('a second sweep builds trend against the first', async () => {
   const app = await bootstrap(3);
   await app.operationalActivation.boot('grg', 'grg-admin', { trigger: 'test' });
