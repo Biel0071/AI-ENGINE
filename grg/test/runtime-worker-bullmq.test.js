@@ -42,3 +42,40 @@ test('runtime worker consumes BullMQ delivery and completes the canonical persis
     await runtime.stop();
   }
 });
+
+test('runtime worker does not persist an idle heartbeat on every poll cycle', async () => {
+  const values = new Map();
+  const redis = {
+    client: {
+      async set(key, value, options) { if (options?.NX && values.has(key)) return null; values.set(key, value); return 'OK'; },
+      async get(key) { return values.get(key) ?? null; },
+      async del(key) { return values.delete(key) ? 1 : 0; },
+      async eval() { return 1; }, async pExpire() { return 1; }, async ping() { return 'PONG'; },
+    },
+    health: async () => ({ ok: true }), close: async () => {},
+  };
+  const queues = {
+    async enqueue(_queue, _type, _data, options) { return { id: options.idempotencyKey }; },
+    worker(queue, _handler, options) { return { queue, options, close: async () => {} }; },
+    health: async () => ({ ok: true, adapter: 'fake-bullmq' }), close: async () => {},
+  };
+  const runtime = await startWorker({
+    env: {
+      ...process.env, FENIX_ENV: 'development', FENIX_WORKER_ID: 'idle-worker',
+      FENIX_WORKER_POLL_MS: '10000', FENIX_CONNECTION_CHECK: '0',
+      FENIX_OBSERVABILITY_SAMPLE: '0', FENIX_LIVING_RUNTIME: '0',
+      FENIX_MISSION_RECONCILE: '0',
+    },
+    redis, queues, store: new MemoryStore(),
+  });
+  try {
+    let writes = 0;
+    const workerHeartbeat = runtime.app.jobs.workerHeartbeat.bind(runtime.app.jobs);
+    runtime.app.jobs.workerHeartbeat = async (...args) => { writes += 1; return workerHeartbeat(...args); };
+    await runtime.cycle();
+    await runtime.cycle();
+    assert.equal(writes, 1, 'an idle worker heartbeat should be persisted once per heartbeat interval');
+  } finally {
+    await runtime.stop();
+  }
+});

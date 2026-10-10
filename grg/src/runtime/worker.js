@@ -37,7 +37,15 @@ async function startWorker(options = {}) {
       return app.jobs.run(tenantId, jobId, lease.ownerId);
     }, { concurrency: Number(env.FENIX_WORKER_CONCURRENCY || 5), workerId: lease.ownerId })
     : null;
-  const intervalMs = Number(env.FENIX_WORKER_POLL_MS || 2_000); let stopping = false; let running = false;
+  const intervalMs = Number(env.FENIX_WORKER_POLL_MS || 2_000);
+  const configuredHeartbeatIntervalMs = Number(env.FENIX_WORKER_HEARTBEAT_INTERVAL_MS || 15_000);
+  const heartbeatIntervalMs = Math.max(
+    intervalMs,
+    Number.isFinite(configuredHeartbeatIntervalMs) && configuredHeartbeatIntervalMs > 0
+      ? Math.min(configuredHeartbeatIntervalMs, 15_000)
+      : 15_000,
+  );
+  let lastWorkerHeartbeatAt = 0; let stopping = false; let running = false;
   // O mesmo processo persistente do worker supervisiona os loops cognitivos que antes nao
   // tinham chamador. Jobs e schedules ficam fora: BullMQ e o lease acima continuam sendo os
   // unicos donos desses dois fluxos. O modo pode ser desligado explicitamente para operacao
@@ -61,7 +69,11 @@ async function startWorker(options = {}) {
   // Cadencia propria do health-check de conexao (FLUXO 8); 0 forca o primeiro check ja no 1o ciclo.
   const nowMs = () => Date.now(); let lastConnectionCheck = 0; let lastObservabilitySample = 0;
   const cycle = async () => {
-    await app.jobs.workerHeartbeat(lease.ownerId);
+    const heartbeatNow = nowMs();
+    if (heartbeatNow - lastWorkerHeartbeatAt >= heartbeatIntervalMs) {
+      await app.jobs.workerHeartbeat(lease.ownerId);
+      lastWorkerHeartbeatAt = heartbeatNow;
+    }
     const leader = lease.held ? await lease.renew() : await lease.acquire();
     if (leader) { const state = await app.store.read(); const dueTenants = [...new Set(state.runtimeSchedules.filter((item) => item.enabled).map((item) => item.tenantId))]; for (const tenantId of dueTenants) { const actor = state.runtimeSchedules.find((item) => item.tenantId === tenantId)?.createdBy; if (actor) await app.jobs.tick(tenantId, actor); } }
     // MEDIDO em producao: o worker cuidava de JOBS e ninguem cuidava de MISSOES. O ciclo de
