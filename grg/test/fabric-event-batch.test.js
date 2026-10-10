@@ -13,6 +13,16 @@ function countWrites(store) {
   return count;
 }
 
+test('FabricEventBus accepts the optional Redis client during app initialization', () => {
+  const fabricEvents = new FabricEventBus({ eventStore: {}, liveBus: new EventBus() });
+  const client = { publish() {} };
+
+  assert.equal(fabricEvents.setRedisClient(client), fabricEvents);
+  assert.equal(fabricEvents.redisClient, client);
+  assert.equal(fabricEvents.setRedisClient(null), fabricEvents);
+  assert.equal(fabricEvents.redisClient, null);
+});
+
 test('appendMany preserves event order, hashes and idempotency in one write', async () => {
   const store = new MemoryStore();
   const eventStore = new EventStore({ store });

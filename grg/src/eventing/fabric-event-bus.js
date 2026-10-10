@@ -1,5 +1,6 @@
 class FabricEventBus {
   constructor({ eventStore, liveBus }) { this.eventStore = eventStore; this.liveBus = liveBus; }
+  setRedisClient(client) { this.redisClient = client || null; return this; }
   async publish(input) { return (await this.publishBatch([input]))[0]; }
   async publishBatch(inputs) {
     if (!Array.isArray(inputs)) throw new TypeError('events must be an array');
