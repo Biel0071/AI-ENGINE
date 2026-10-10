@@ -75,8 +75,17 @@
   window.fenixGetAuthToken = fenixGetAuthToken;
 
   // Command Center reads the same canonical runtime contracts as the other views.
+  const COMMAND_TELEMETRY_POLL_INTERVAL_MS = 30_000;
   let commandSyncInFlight = false;
+  function shouldSyncCommandTelemetry() {
+    if (document.hidden) return false;
+    const hashView = (window.location.hash || '').replace(/^#\/?/, '').split(/[/?]/)[0];
+    const activeView = document.body?.dataset?.view || window.__fenixState?.currentRoute || hashView || 'command';
+    return activeView === 'command';
+  }
+
   async function syncLiveTargetTelemetry() {
+    if (!shouldSyncCommandTelemetry()) return;
     if (commandSyncInFlight) return;
     commandSyncInFlight = true;
     const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = String(value); };
@@ -220,7 +229,7 @@
 
       // Real Sync Status Timestamp
       const syncTime = new Date().toLocaleTimeString('pt-BR');
-      set('fenixCmdSyncStatus', `Sincronizado às ${syncTime} via SSE/Polling 5s (Host 209.50.241.22)`);
+      set('fenixCmdSyncStatus', `Sincronizado às ${syncTime} via eventos e atualização periódica`);
 
       if (bootResult.status === 'fulfilled') {
         const status = bootResult.value.status || 'UNKNOWN';
@@ -582,10 +591,6 @@ module.exports = authRouter;`
     } else if (viewId === 'flowgraph') {
       const mesh = document.getElementById('fenixFlowGraphDynamicMesh');
       if (mesh) mesh.style.display = 'block';
-    } else if (viewId === 'agents') {
-      if (typeof window.fenixLoadAgents === 'function') {
-        window.fenixLoadAgents();
-      }
     } else if (viewId === 'projects') {
       const hubTarget = document.getElementById('fenixProjectsHubTarget');
       const wsPanel = document.getElementById('fp-workspace');
@@ -1051,21 +1056,17 @@ module.exports = authRouter;`
   const bootV11Interactions = () => {
     updateLiveClock();
     ensureCityFleet();
-    syncLiveTargetTelemetry();
+    if (shouldSyncCommandTelemetry()) syncLiveTargetTelemetry();
     setInterval(updateLiveClock, 30000);
-    setInterval(syncLiveTargetTelemetry, 5000);
-  
-    if (typeof window.fenixLoadAgents === 'function') {
-      window.fenixLoadAgents();
-    }
+    setInterval(() => {
+      if (shouldSyncCommandTelemetry()) syncLiveTargetTelemetry();
+    }, COMMAND_TELEMETRY_POLL_INTERVAL_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (shouldSyncCommandTelemetry()) syncLiveTargetTelemetry();
+    });
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootV11Interactions, { once: true });
   else bootV11Interactions();
-
-  // Run immediately as well
-  updateLiveClock();
-  ensureCityFleet();
-  syncLiveTargetTelemetry();
 
   // Reactive listeners for world commands & decisions
   window.addEventListener('fenix:world-command', () => {

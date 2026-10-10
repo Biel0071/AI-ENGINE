@@ -4508,7 +4508,10 @@ window.__fenixSubmitIdeChat = async function () {
       } catch (_) {}
     }
     syncPlatformRibbon();
-    setInterval(syncPlatformRibbon, 5000);
+    setInterval(() => { if (!document.hidden) syncPlatformRibbon(); }, 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) syncPlatformRibbon();
+    });
   </script>
 <script>
 /* =========================================================
@@ -5069,8 +5072,6 @@ window.__fenixSubmitIdeChat = async function () {
         }
       } else if (viewId === 'agents') {
         if (typeof window.fenixLoadAgents === 'function') window.fenixLoadAgents();
-        if (typeof window.loadAgentsTable === 'function') window.loadAgentsTable();
-        if (typeof window.renderAgentsTable === 'function') window.renderAgentsTable();
       } else if (viewId === 'operations') {
         if (typeof window.loadLiveOperations === 'function') window.loadLiveOperations();
         else if (typeof window.renderOperationsView === 'function') window.renderOperationsView();
@@ -6523,9 +6524,18 @@ window.__fenixSubmitIdeChat = async function () {
     }
   };
 
-  // Poll Reality Engine every 5 seconds
-  setInterval(() => { if (!document.hidden) updateRealityEngineData(); }, 12000);
-  setTimeout(updateRealityEngineData, 300);
+  function isCommandViewActive() {
+    const hashView = (window.location.hash || '').replace(/^#\/?/, '').split(/[/?]/)[0];
+    const activeView = document.body?.dataset?.view || window.__fenixState?.currentRoute || hashView || 'command';
+    return activeView === 'command';
+  }
+  // The full infrastructure summary is expensive; refresh it only on its visible screen.
+  setInterval(() => {
+    if (!document.hidden && isCommandViewActive()) updateRealityEngineData();
+  }, 30000);
+  setTimeout(() => {
+    if (!document.hidden && isCommandViewActive()) updateRealityEngineData();
+  }, 300);
 
   // Universal Interaction Handler for Window Controls and Secondary Elements
   document.addEventListener('click', function(e) {
