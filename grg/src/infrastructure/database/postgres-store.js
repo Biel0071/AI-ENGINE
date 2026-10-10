@@ -118,7 +118,7 @@ class PostgresStore {
   }
 
   async write(state) {
-    const migrated = this.#prune(migrateState(state).state);
+    const migrated = this.#prune(normalizePersistedState(state));
     await this.pool.query(
       `UPDATE ${this.schema}.kernel_state
        SET document = $2::jsonb, version = version + 1, updated_at = now()
@@ -152,7 +152,8 @@ class PostgresStore {
         );
         if (!result.rows[0]) throw new Error('PostgreSQL kernel state is not initialized');
         const current = normalizePersistedState(result.rows[0].document);
-        const next = this.#prune(migrateState(await mutator(structuredClone(current))).state);
+        const mutated = await mutator(structuredClone(current));
+        const next = this.#prune(normalizePersistedState(mutated));
         await client.query(
           `UPDATE ${this.schema}.kernel_state
            SET document = $2::jsonb, version = version + 1, updated_at = now()
