@@ -5,25 +5,47 @@ const { getWorldSimulationEngine } = require('../world-model/world-simulation-en
 const { getWorldCommandEngine } = require('../world-model/world-command-engine');
 const { getWorldIntentPlanner } = require('../world-model/world-intent-planner');
 
+function workersFromSnapshot(app, state, tenantId) {
+  if (!Array.isArray(state.workerHeartbeats) || !Array.isArray(state.runtimeJobs)) return null;
+
+  const cutoff = Date.now() - 30_000;
+  const activeJobs = new Map();
+  const processedCounts = new Map();
+  const failedCounts = new Map();
+  for (const job of state.runtimeJobs) {
+    if (job.tenantId !== tenantId || !job.workerId && !job.lastWorkerId) continue;
+    if (job.status === 'RUNNING' && job.workerId && !activeJobs.has(job.workerId)) activeJobs.set(job.workerId, job.id);
+    if (job.status === 'SUCCEEDED' && job.lastWorkerId) processedCounts.set(job.lastWorkerId, (processedCounts.get(job.lastWorkerId) || 0) + 1);
+    if (['FAILED', 'DEAD_LETTER'].includes(job.status) && job.lastWorkerId) failedCounts.set(job.lastWorkerId, (failedCounts.get(job.lastWorkerId) || 0) + 1);
+  }
+
+  return state.workerHeartbeats.map((worker) => ({
+    workerId: worker.workerId,
+    queue: app.jobs.queue ? 'fenix-runtime' : null,
+    status: Date.parse(worker.lastSeenAt) >= cutoff ? 'ONLINE' : 'STALE',
+    currentJob: activeJobs.get(worker.workerId) || null,
+    processed: processedCounts.get(worker.workerId) || 0,
+    failed: failedCounts.get(worker.workerId) || 0,
+    lastHeartbeat: worker.lastSeenAt,
+    startedAt: worker.startedAt,
+  }));
+}
 async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = {}) {
   await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
   const worldEngine = getWorldStateEngine();
 
-  const [state, jobsSnapshot, missions, projects, workers] = await Promise.all([
+  const [state, missions, projects] = await Promise.all([
     app.store.read(),
-    agentsOnly ? Promise.resolve(null) : app.jobs.list(tenantId, actorId),
     agentsOnly ? Promise.resolve([]) : app.missions.list(tenantId, actorId),
     agentsOnly ? Promise.resolve([]) : app.projectKernel.list(tenantId, actorId),
-    agentsOnly ? Promise.resolve([]) : app.jobs.workers(tenantId, actorId),
   ]);
-  // The route already holds runtime:read authorization and this state snapshot
-  // contains runtimeJobs. Reuse it instead of authorizing and reading the same
-  // PostgreSQL document again through JobEngine.list().
-  const jobs = agentsOnly
-    ? (Array.isArray(state.runtimeJobs)
-      ? state.runtimeJobs.filter((job) => job.tenantId === tenantId)
-      : await app.jobs.list(tenantId, actorId))
-    : jobsSnapshot;
+  // Reuse the already-authorized state snapshot instead of re-reading jobs and
+  // worker heartbeats from PostgreSQL through JobEngine.
+  const jobs = Array.isArray(state.runtimeJobs)
+    ? state.runtimeJobs.filter((job) => job.tenantId === tenantId)
+    : await app.jobs.list(tenantId, actorId);
+  const snapshotWorkers = agentsOnly ? [] : workersFromSnapshot(app, state, tenantId);
+  const workers = agentsOnly ? [] : snapshotWorkers || await app.jobs.workers(tenantId, actorId);
   const profiles = state.agentProfiles || [];
 
   // Merge canonical catalog with WorldStateEngine agents (Camila, André, Marcos, Silva, CEO, etc.)
