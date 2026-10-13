@@ -9,12 +9,21 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
   await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
   const worldEngine = getWorldStateEngine();
 
-  const [state, jobs, missions, projects, workers] = await Promise.all([
-    app.store.read(), app.jobs.list(tenantId, actorId),
+  const [state, jobsSnapshot, missions, projects, workers] = await Promise.all([
+    app.store.read(),
+    agentsOnly ? Promise.resolve(null) : app.jobs.list(tenantId, actorId),
     agentsOnly ? Promise.resolve([]) : app.missions.list(tenantId, actorId),
     agentsOnly ? Promise.resolve([]) : app.projectKernel.list(tenantId, actorId),
     agentsOnly ? Promise.resolve([]) : app.jobs.workers(tenantId, actorId),
   ]);
+  // The route already holds runtime:read authorization and this state snapshot
+  // contains runtimeJobs. Reuse it instead of authorizing and reading the same
+  // PostgreSQL document again through JobEngine.list().
+  const jobs = agentsOnly
+    ? (Array.isArray(state.runtimeJobs)
+      ? state.runtimeJobs.filter((job) => job.tenantId === tenantId)
+      : await app.jobs.list(tenantId, actorId))
+    : jobsSnapshot;
   const profiles = state.agentProfiles || [];
 
   // Merge canonical catalog with WorldStateEngine agents (Camila, André, Marcos, Silva, CEO, etc.)
