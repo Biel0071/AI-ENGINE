@@ -46,6 +46,8 @@ class PostgresStore {
     this.cacheTtlMs = Number(env?.FENIX_STORE_CACHE_TTL_MS || process.env.FENIX_STORE_CACHE_TTL_MS || 750);
     this.cachedState = null;
     this.cachedAt = 0;
+    this.cacheGeneration = 0;
+    this.readPromise = null;
   }
 
   #prune(state) {
@@ -107,14 +109,30 @@ class PostgresStore {
     if (this.cachedState && (now - this.cachedAt < this.cacheTtlMs)) {
       return structuredClone(this.cachedState);
     }
-    const result = await this.pool.query(
-      `SELECT document FROM ${this.schema}.kernel_state WHERE state_key = $1`, ['global'],
-    );
-    if (!result.rows[0]) throw new Error('PostgreSQL kernel state is not initialized');
-    const state = normalizePersistedState(result.rows[0].document);
-    this.cachedState = state;
-    this.cachedAt = now;
-    return structuredClone(state);
+    const generation = this.cacheGeneration;
+    const existingRead = this.readPromise;
+    if (existingRead?.generation === generation) {
+      return structuredClone(await existingRead.promise);
+    }
+
+    const readPromise = (async () => {
+      const result = await this.pool.query(
+        `SELECT document FROM ${this.schema}.kernel_state WHERE state_key = $1`, ['global'],
+      );
+      if (!result.rows[0]) throw new Error('PostgreSQL kernel state is not initialized');
+      const state = normalizePersistedState(result.rows[0].document);
+      if (generation === this.cacheGeneration) {
+        this.cachedState = state;
+        this.cachedAt = Date.now();
+      }
+      return state;
+    })();
+    this.readPromise = { generation, promise: readPromise };
+    try {
+      return structuredClone(await readPromise);
+    } finally {
+      if (this.readPromise?.promise === readPromise) this.readPromise = null;
+    }
   }
 
   async write(state) {
@@ -125,6 +143,7 @@ class PostgresStore {
        WHERE state_key = $1`,
       ['global', JSON.stringify(migrated)],
     );
+    this.cacheGeneration += 1;
     this.cachedState = migrated;
     this.cachedAt = Date.now();
     return structuredClone(migrated);
@@ -161,6 +180,7 @@ class PostgresStore {
           ['global', JSON.stringify(next)],
         );
         await client.query('COMMIT');
+        this.cacheGeneration += 1;
         this.cachedState = next;
         this.cachedAt = Date.now();
         return structuredClone(next);
