@@ -31,14 +31,19 @@ function workersFromSnapshot(app, state, tenantId) {
   }));
 }
 async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = {}) {
-  await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
+  const membership = await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
   const worldEngine = getWorldStateEngine();
 
-  const [state, missions, projects] = await Promise.all([
+  const [state, projects] = await Promise.all([
     app.store.read(),
-    agentsOnly ? Promise.resolve([]) : app.missions.list(tenantId, actorId),
     agentsOnly ? Promise.resolve([]) : app.projectKernel.list(tenantId, actorId),
   ]);
+  // Admins have tenant-wide mission visibility, so reuse this already-authorized
+  // snapshot instead of making MissionKernel perform several identical reads.
+  const isTenantAdmin = ['admin', 'master_admin'].includes(String(membership?.role || '').toLowerCase());
+  const missions = agentsOnly ? [] : (isTenantAdmin && Array.isArray(state.missions)
+    ? state.missions.filter((mission) => mission.tenantId === tenantId)
+    : await app.missions.list(tenantId, actorId));
   // Reuse the already-authorized state snapshot instead of re-reading jobs and
   // worker heartbeats from PostgreSQL through JobEngine.
   const jobs = Array.isArray(state.runtimeJobs)
