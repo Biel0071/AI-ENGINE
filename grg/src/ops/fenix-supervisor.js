@@ -22,6 +22,8 @@ const { EventEmitter } = require('events');
 
 const DEFAULT_SUPERVISOR_PORT = Number(process.env.FENIX_SUPERVISOR_PORT || 4430);
 const DEFAULT_POLL_INTERVAL_MS = Number(process.env.FENIX_SUPERVISOR_POLL_INTERVAL_MS || 15_000);
+// The backend's dependency health response can take up to 15 seconds.
+const DEFAULT_HEALTH_TIMEOUT_MS = 18_000;
 const DEFAULT_STARTUP_GRACE_MS = 120_000;
 const MAX_RESTARTS_IN_WINDOW = 5;
 const RESTART_WINDOW_MS = 120_000;
@@ -32,6 +34,11 @@ class FenixSupervisor extends EventEmitter {
     super();
     this.port = options.port || DEFAULT_SUPERVISOR_PORT;
     this.pollIntervalMs = options.pollIntervalMs || DEFAULT_POLL_INTERVAL_MS;
+    const configuredHealthTimeout = options.healthTimeoutMs ?? process.env.FENIX_SUPERVISOR_HEALTH_TIMEOUT_MS;
+    const healthTimeoutMs = configuredHealthTimeout === undefined ? DEFAULT_HEALTH_TIMEOUT_MS : Number(configuredHealthTimeout);
+    this.healthTimeoutMs = Number.isFinite(healthTimeoutMs)
+      ? Math.min(60_000, Math.max(1_000, healthTimeoutMs))
+      : DEFAULT_HEALTH_TIMEOUT_MS;
     this.logger = options.logger || console;
     const configuredGrace = options.startupGraceMs ?? process.env.FENIX_SUPERVISOR_STARTUP_GRACE_MS;
     const startupGraceMs = configuredGrace === undefined ? DEFAULT_STARTUP_GRACE_MS : Number(configuredGrace);
@@ -83,6 +90,7 @@ class FenixSupervisor extends EventEmitter {
     this.server = null;
     this._timer = null;
     this._running = false;
+    this._pollInFlight = false;
   }
 
   async _pingUrl(urlStr, timeoutMs = 5000) {
@@ -156,7 +164,7 @@ class FenixSupervisor extends EventEmitter {
       state.quarantinedUntil = null;
     }
 
-    const ping = await this._pingUrl(target.url);
+    const ping = await this._pingUrl(target.url, target.healthTimeoutMs || this.healthTimeoutMs);
 
     if (ping.ok) {
       state.status = 'HEALTHY';
@@ -245,10 +253,16 @@ class FenixSupervisor extends EventEmitter {
   }
 
   async pollAll() {
-    for (const target of this.targets) {
-      if (target.enabled) {
-        await this.checkTarget(target);
+    if (this._pollInFlight) return;
+    this._pollInFlight = true;
+    try {
+      for (const target of this.targets) {
+        if (target.enabled) {
+          await this.checkTarget(target);
+        }
       }
+    } finally {
+      this._pollInFlight = false;
     }
   }
 

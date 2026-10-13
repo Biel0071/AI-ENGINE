@@ -174,3 +174,36 @@ test('a manually restarted PM2 process gets startup grace after prior health suc
   assert.equal(state.status, 'STARTING');
   assert.equal(state.consecutiveFailures, 2);
 });
+
+test('supervisor allows the health response budget and does not overlap slow polling cycles', async () => {
+  const supervisor = new FenixSupervisor({
+    healthTimeoutMs: 18_000,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  const target = supervisor.targets.find((item) => item.id === 'fenix-backend');
+  supervisor.targets = [target];
+
+  const timeouts = [];
+  let activeProbes = 0;
+  let peakActiveProbes = 0;
+  let releaseFirstProbe;
+  supervisor._pingUrl = async (_url, timeoutMs) => {
+    timeouts.push(timeoutMs);
+    activeProbes += 1;
+    peakActiveProbes = Math.max(peakActiveProbes, activeProbes);
+    if (timeouts.length === 1) await new Promise((resolve) => { releaseFirstProbe = resolve; });
+    activeProbes -= 1;
+    return { ok: true, statusCode: 200, data: {}, latencyMs: 1 };
+  };
+
+  const firstPoll = supervisor.pollAll();
+  await new Promise((resolve) => setImmediate(resolve));
+  const overlappingPoll = supervisor.pollAll();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(timeouts, [18_000]);
+  assert.equal(peakActiveProbes, 1);
+  releaseFirstProbe();
+  await Promise.all([firstPoll, overlappingPoll]);
+  assert.equal(supervisor.states.get(target.id).status, 'HEALTHY');
+});
