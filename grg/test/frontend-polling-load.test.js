@@ -6,6 +6,9 @@ const path = require('node:path');
 const publicDir = path.join(__dirname, '..', 'public');
 const interactions = fs.readFileSync(path.join(publicDir, 'fenix-v11-interactions.js'), 'utf8');
 const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
+const premiumWorld = fs.readFileSync(path.join(publicDir, 'premium-world-live.js'), 'utf8');
+const cityWorld3d = fs.readFileSync(path.join(publicDir, 'fenix-world-3d.js'), 'utf8');
+const cityReality = fs.readFileSync(path.join(publicDir, 'city-reality-engine.js'), 'utf8');
 
 test('dashboard telemetry is visibility and route aware, with a 30-second fallback', () => {
   assert.ok(/COMMAND_TELEMETRY_POLL_INTERVAL_MS\s*=\s*30_000/.test(interactions), 'use a 30-second fallback interval');
@@ -28,4 +31,15 @@ test('agent list is fetched only by its visible view loader, not at application 
 test('secondary telemetry polls only while useful to the visible command view', () => {
   assert.ok(/setInterval\(\(\) => \{\s*if \(!document\.hidden && isCommandViewActive\(\)\) updateRealityEngineData\(\);\s*\}, 30000\)/.test(html), 'poll infrastructure summary only on its visible screen');
   assert.ok(/setInterval\(\(\) => \{\s*if \(!document\.hidden\) syncPlatformRibbon\(\);\s*\}, 30000\)/.test(html), 'poll platform status every 30 seconds only while visible');
+});
+
+test('city renderers share one measured snapshot instead of polling the same state independently', () => {
+  assert.match(premiumWorld, /setInterval\(\(\) => \{ if \(view\.classList\.contains\('active'\)\) refresh\(\); \}, 15000\)/,
+    'the visible city snapshot should refresh on a single 15-second cadence');
+  assert.match(cityWorld3d, /window\.FENIX\?\.cityWorld\?\.snapshot/,
+    'the 3D world should render the shared measured snapshot');
+  assert.match(cityWorld3d, /addEventListener\(['"]fenix:city-world['"], this\.syncRealData\)/,
+    'the 3D world should update when the shared snapshot changes');
+  assert.match(cityReality, /window\.FENIX\?\.cityWorld\?\.snapshot/,
+    'the city dock should reuse the shared measured snapshot');
 });

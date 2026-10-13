@@ -931,12 +931,11 @@
       this.syncInterval = setInterval(() => {
         const cityView = document.getElementById('view-city');
         const isCityActive = cityView && (cityView.classList.contains('active') || cityView.style.display !== 'none');
-        if (!document.hidden && isCityActive) {
+        if (!document.hidden && isCityActive && !window.FENIX?.cityWorld) {
           this.syncRealData();
         }
       }, 15000);
-      window.addEventListener('fenix:data', this.syncRealData);
-      window.addEventListener('fenix-live', this.syncRealData);
+      window.addEventListener('fenix:city-world', this.syncRealData);
     }
 
     _resumeAnimationLoop() {
@@ -958,13 +957,17 @@
           const response = await fetchFn(endpoint, { credentials: 'same-origin', headers, signal: AbortSignal.timeout(10000) });
           return response.ok ? response.json() : null;
         };
-        let data = null;
-        try {
-          data = await requestState('/api/v2/living-city/state');
-        } catch (_) {
-          // The full state includes missions/projects/workers; keep City agents available if that projection is slow.
+        const sharedSnapshot = window.FENIX?.cityWorld?.snapshot || null;
+        const hasSharedAgentProjection = Array.isArray(sharedSnapshot?.agents);
+        let data = hasSharedAgentProjection ? sharedSnapshot : null;
+        if (!data) {
+          try {
+            data = await requestState('/api/v2/living-city/state');
+          } catch (_) {
+            // The full state includes missions/projects/workers; keep City agents available if that projection is slow.
+          }
         }
-        if (!Array.isArray(data?.agents) || data.agents.length === 0) {
+        if (!hasSharedAgentProjection && (!Array.isArray(data?.agents) || data.agents.length === 0)) {
           try {
             const agentState = await requestState('/api/v2/living-city/agents');
             if (Array.isArray(agentState?.agents)) {
@@ -5334,8 +5337,7 @@
         clearInterval(this.syncInterval);
         this.syncInterval = null;
       }
-      window.removeEventListener('fenix:data', this.syncRealData);
-      window.removeEventListener('fenix-live', this.syncRealData);
+      window.removeEventListener('fenix:city-world', this.syncRealData);
       if (this.scene) {
         this.scene.traverse((obj) => {
           if (obj.geometry) {

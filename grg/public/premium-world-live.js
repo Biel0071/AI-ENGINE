@@ -118,5 +118,5 @@
   });
   let refreshTimer;
   function scheduleRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh(), 2000); }
-  setInterval(() => { if (view.classList.contains('active')) refresh(); }, 60000);
+  setInterval(() => { if (view.classList.contains('active')) refresh(); }, 15000);
 })();

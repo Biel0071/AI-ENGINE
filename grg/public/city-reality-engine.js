@@ -239,13 +239,13 @@
         const headers = { 'content-type': 'application/json' };
         if (token) headers['authorization'] = `Bearer ${token}`;
 
+        let stateData = window.FENIX?.cityWorld?.snapshot || null;
         const [stateRes, healthRes] = await Promise.allSettled([
-          fetch('/api/v2/living-city/state', { headers }),
+          stateData ? Promise.resolve(null) : fetch('/api/v2/living-city/state', { headers }),
           fetch('/api/v2/system/health', { headers })
         ]);
 
-        let stateData = {};
-        if (stateRes.status === 'fulfilled' && stateRes.value.ok) {
+        if (!stateData && stateRes.status === 'fulfilled' && stateRes.value?.ok) {
           stateData = await stateRes.value.json();
         }
 
@@ -254,8 +254,8 @@
           healthData = await healthRes.value.json();
         }
 
-        this.renderBottomDockContent(stateData, healthData);
-        this.updateTopbarAndFooter(stateData, healthData);
+        this.renderBottomDockContent(stateData || {}, healthData);
+        this.updateTopbarAndFooter(stateData || {}, healthData);
       } catch (err) {
         if (!silent) console.warn('[CityRealityEngine] Falha ao atualizar Bottom Dock:', err);
       }
