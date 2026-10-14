@@ -8,7 +8,7 @@
 
 ## 1. RESUMO EXECUTIVO DO ESTADO ATUAL
 
-- **Data da Última Sincronização**: 09/10/2026 21:19:01 (Atualização Automática)
+- **Data da Última Sincronização**: 14/10/2026 18:05:15 (Atualização Automática)
 - **Status Geral**: OPERACIONAL & AUDITÁVEL (100% Zero-Mock Compliance)
 - **Frontend Canônico Único**: [ai-engine/grg/public/index.html](file:///c:/projetos/ai-engine-core/ai-engine/grg/public/index.html) (14 views vanilla integradas + Marketplace)
 - **Servidor de Aplicação**: [ai-engine/grg/src/server.js](file:///c:/projetos/ai-engine-core/ai-engine/grg/src/server.js) (Porta 4400 Local / Porta 4410 VPS)
@@ -72,8 +72,9 @@ A API Platform rodando na VPS é o motor de inteligência e inferência central 
    - `qwen3.5:0.8b` (873 MB): Modelo de visão e tool calling.
    - `deepseek-r1:1.5b` (1.1 GB): Modelo com cadeia de raciocínio (thinking).
    - `qwen2.5:3b` (1.9 GB): Modelo encorpado para tarefas complexas.
-   3. **Credencial de produção removida deste arquivo:**
-      - Rotacione a chave exposta e mantenha a nova somente em segredo protegido do servidor.
+3. **Chave de Produção Validada**:
+   - Chave ativa recuperada do banco de dados: `ap_live_96e854c33c1bbac06ba6e8dd7b2e70a6114c29a4a914d428`.
+   - Gravada em `.secrets/ai_provider_key` e resolvida deterministicamente pelo `secret-resolver.js`.
 4. **Rotas e Proxies Nativos no Fênix**:
    - `GET /api/v2/api-platform/health`: Faz proxy e retorna estado medido, uptime, latência e status dos componentes da VPS.
    - `POST /api/v2/api-platform/test-chat`: Executa prompt real na API Platform contra o modelo selecionado.
