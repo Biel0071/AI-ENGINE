@@ -47,3 +47,12 @@ This manifest records the source and runtime identities observed before the requ
 - The full `grg` suite ran serially against the broad working tree: 1,278 tests, 1,191 passed, 76 failed, and 11 skipped (about 11 minutes). Failures span provider, mission, workspace, UI reality, and legacy integration contracts; the full branch is not publishable as one release.
 - The pushed commit was reconstructed in a clean temporary worktree, then its conversation, mission, approval, audit, JobEngine, and memory tests passed: 9/9. The focused evidence/reconstruction/project-understanding group passed 23/23 in an earlier serial run.
 - REA proof used a synthetic fixture only; no production project was executed by REA.
+
+## Follow-up deployment audit (2026-10-14 16:09 UTC)
+
+- The GitHub feature branch was already current at `cceccb1d`; no source commits were pending push. The working tree still contained 1,837 changed or untracked paths (181 modified, 778 deleted, 878 untracked), so it was not staged or committed as a release.
+- Public checks returned HTTP 200 for Fênix `/app` on port 3000 and API Platform `/health` on port 3001. The Fênix API `/health` on port 4400 returned HTTP 503 (`degraded`): the AI provider check failed and the critical state-store probe timed out.
+- The Fênix container resolves its AI Platform credential from a non-environment secret source, while its `GRG_AIPLATFORM_KEY` environment value matches the active API Platform default key record. The authenticated API Platform `/v1/agents` read returned 200. A minimal `/v1/chat` request returned HTTP 500, `All providers in fallback chain failed`.
+- API Platform currently has enabled `groq` and `ollama` provider records, no model records, and no provider credential detected in those settings. Its usual provider-key environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`) were absent; `OLLAMA_BASE_URL` was set. No credential values were printed or copied.
+- The `deploy` SSH identity has no passwordless sudo and cannot read the root-owned Fênix production environment or secret files. The existing deployment hook remains unsafe and the VPS bare `master` history remains divergent; no deployment or production restart was performed.
+- The root filesystem remained at 93% usage with 7.5 GB available. A short process sample showed the two host Fênix Node processes at about 24.5% and 18.2% CPU, with another Node process at 18.1%. These are point-in-time readings, not capacity guarantees.
