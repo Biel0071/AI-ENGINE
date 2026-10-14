@@ -1362,8 +1362,20 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/security/encryption/status') return sendJson(res, 200, await app.cognitiveEncryption.getEncryptionStatus(tenantId, actorId), requestId);
       if (req.method === 'POST' && url.pathname === '/api/security/encryption/tokenize') { const b = await readJson(req); return sendJson(res, 200, await app.cognitiveEncryption.tokenizeAndEncrypt(tenantId, actorId, b.plaintext), requestId); }
 
-      if (req.method === 'GET' && url.pathname === '/api/city/npc/list') return sendJson(res, 200, await app.npcCity.listNpcAgents(tenantId, actorId), requestId);
+      if (req.method === 'GET' && url.pathname === '/api/city/npc/list') return sendJson(res, 200, await (app.cityLiveBridge ? app.cityLiveBridge.listNpcs(tenantId, actorId) : app.npcCity.listNpcAgents(tenantId, actorId)), requestId);
       if (req.method === 'POST' && url.pathname === '/api/city/npc/chat') { const b = await readJson(req); return sendJson(res, 200, await app.npcCity.chatWithNpc(tenantId, actorId, b.npcId, b.message), requestId); }
+      const npcInspectMatch = url.pathname.match(/^\/api\/city\/npc\/([^/]+)\/inspect$/);
+      if (req.method === 'GET' && npcInspectMatch) {
+        if (app.cityLiveBridge?.inspectNpc) return sendJson(res, 200, await app.cityLiveBridge.inspectNpc(tenantId, actorId, decodeURIComponent(npcInspectMatch[1])), requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/city/live-stream') {
+        res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
+        res.write(`data: ${JSON.stringify({ source: 'connected', at: new Date().toISOString() })}\n\n`);
+        const onLive = (payload) => { try { res.write(`data: ${JSON.stringify(payload)}\n\n`); } catch { /* conexão encerrada */ } };
+        app.bus.on('city.live', onLive);
+        req.on('close', () => { app.bus.off('city.live', onLive); });
+        return;
+      }
 
       if (req.method === 'GET' && url.pathname === '/api/company/daily-analysis') return sendJson(res, 200, await app.companyDailyAnalysis.getDailyReport(tenantId, actorId), requestId);
       if (req.method === 'GET' && url.pathname === '/api/company/calendar') return sendJson(res, 200, await app.companyDailyAnalysis.getOperationalCalendar(tenantId, actorId), requestId);

@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 41;
+const CURRENT_SCHEMA_VERSION = 42;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -99,6 +99,7 @@ const COLLECTIONS_BY_VERSION = {
   39: ['engineeringMemories', 'memoryReuseEvents'],
   40: ['systemAnalyses'],
   41: ['worldAssets'],
+  42: ['cityNpcStates'],
 };
 
 function normalizeVersion(value) {

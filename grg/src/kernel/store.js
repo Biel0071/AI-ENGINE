@@ -166,6 +166,7 @@ const EMPTY_STATE = () => ({
   orchestrationRequests: [],
   orchestrationMissions: [],
   orchestrationEvents: [],
+  cityNpcStates: [],
 });
 
 class MemoryStore {

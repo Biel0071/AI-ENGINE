@@ -77,6 +77,11 @@
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\ai-city-projection.js"
     },
     {
+      "name": "CityLiveBridge",
+      "type": "legacy",
+      "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\city-live-bridge.js"
+    },
+    {
       "name": "NpcCityEngine",
       "type": "legacy",
       "filePath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\src\\ai-city\\npc-city-engine.js"
