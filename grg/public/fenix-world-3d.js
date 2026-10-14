@@ -4216,10 +4216,14 @@
         label.element.hidden = !visible;
         if (!visible) continue;
 
-        if (!label.layoutSize || label.layoutSize.width !== width || label.layoutSize.height !== height) {
-          const measured = label.element.getBoundingClientRect();
-          label.layoutSize = { width, height, labelWidth: measured.width || 140, labelHeight: measured.height || 34 };
-        }
+          const defaultWidth = 140;
+          const defaultHeight = 34;
+          label.layoutSize = {
+            width,
+            height,
+            labelWidth: measured.width > 0 ? measured.width : defaultWidth,
+            labelHeight: measured.height > 0 ? measured.height : defaultHeight
+          };
         const { labelWidth, labelHeight } = label.layoutSize;
         const minX = labelWidth / 2 + 6;
         const maxX = width - minX;
