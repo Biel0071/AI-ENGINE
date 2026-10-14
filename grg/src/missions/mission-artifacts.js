@@ -201,7 +201,10 @@ function capsuleContent(mission, steps, summary) {
   const lines = [
     `Objective: ${mission.objective}`,
     `Result: ${mission.status} (${mission.progress}%)`,
-    `Steps: ${steps.map((item) => `${item.key}[${item.type}]=${item.status}`).join(', ')}`,
+    `Steps: ${steps.map((item) => {
+      const provenance = [item.jobId ? `job=${item.jobId}` : null, item.resultHash ? `result_sha256=${item.resultHash}` : null].filter(Boolean).join(' ');
+      return `${item.key}[${item.type}]=${item.status}${provenance ? ` (${provenance})` : ''}`;
+    }).join(', ')}`,
   ];
   if (summary.metrics.durationMs != null) lines.push(`Duration: ${summary.metrics.durationMs}ms`);
   if (summary.metrics.tokens != null) lines.push(`AI units: ${summary.metrics.tokens}`);

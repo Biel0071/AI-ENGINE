@@ -86,6 +86,7 @@ class JobEngine {
       scheduleId: input.scheduleId || null,
       type: input.type, prompt: input.prompt || input.payload?.prompt || null,
       missionId: input.missionId || input.context?.missionId || payload.missionId || null,
+      conversationId: input.conversationId || input.context?.conversationId || payload.context?.conversationId || null,
       projectId: input.projectId || input.context?.projectId || payload.projectId || null,
       workspaceId: input.workspaceId || input.context?.workspaceId || payload.workspaceId || null,
       screenId: input.screenId || input.context?.screenId || payload.screenId || null,
@@ -521,7 +522,23 @@ class JobEngine {
     }
     return completed;
   }
-  async #publish(job, type, actorId) { if (!this.events) return; await this.events.publish({ tenantId: job.tenantId, stream: `job:${job.id}`, type, source: 'fenix-runtime', subject: job.id, data: { actorId, jobId: job.id, jobType: job.type, status: job.status, attempts: job.attempts, limits: job.limits, agentId: job.agent?.agentId || null, projectId: job.projectId || null, missionId: job.missionId || null }, idempotencyKey: `${type}:${job.id}:${job.attempts}` }); }
+  async #publish(job, type, actorId) {
+    if (!this.events) return;
+    const conversationId = job.conversationId || job.context?.conversationId || null;
+    await this.events.publish({
+      tenantId: job.tenantId,
+      stream: `job:${job.id}`,
+      type,
+      source: 'fenix-runtime',
+      subject: job.id,
+      data: {
+        actorId, jobId: job.id, jobType: job.type, status: job.status, attempts: job.attempts,
+        limits: job.limits, agentId: job.agent?.agentId || null, projectId: job.projectId || null,
+        missionId: job.missionId || null, ...(conversationId ? { conversationId } : {}),
+      },
+      idempotencyKey: `${type}:${job.id}:${job.attempts}`,
+    });
+  }
 }
 
 function normalizeLimits(input = {}) { const limits = { timeoutMs: Number(input.timeoutMs || 300_000), memoryMb: Number(input.memoryMb || 512), cpuUnits: Number(input.cpuUnits || 1000) }; if (limits.timeoutMs < 100 || limits.timeoutMs > 86_400_000 || limits.memoryMb < 16 || limits.memoryMb > 65_536 || limits.cpuUnits < 10 || limits.cpuUnits > 64_000) throw new ValidationError('invalid job resource limits'); return limits; }

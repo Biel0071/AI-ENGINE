@@ -6,9 +6,8 @@
  * Never blocks on BullMQ queue, maintains sub-second latency, and records real tokens.
  */
 
-var { globalJobQueueManager } = require('./job-queue-manager');
-var { setConfirmationMode, getConfirmationMode, CONFIRMATION_MODES } = require('../routing/conversation-router');
-var { selectModelForTask, recordUsage, parseNaturalLanguageModelCommand, getSelectorMode } = require('../routing/model-router');
+var { setConfirmationMode } = require('../routing/conversation-router');
+var { parseNaturalLanguageModelCommand, getSelectorMode } = require('../routing/model-router');
 
 function safeEmit(method) {
   try {
@@ -104,110 +103,12 @@ function evaluateArithmetic(rawExpr) {
 }
 
 /**
- * Fast AI Generative Synthesizer
- * Generates dynamic, context-aware, analytical responses tailored to the user's prompt.
- * Seamlessly adapts to live system telemetry (BullMQ queue, selector mode, Redis status).
- * Never returns rigid pre-programmed templates.
+ * Synthetic responses are disabled. The chat route must use AIRouter and a connected provider.
  */
-function generateDynamicFastAIResponse(promptText) {
-  var text = String(promptText || '').trim();
-  var lower = text.toLowerCase();
-
-  // 1. Dynamic Arithmetic & Analytical Reasoning
-  var mathMatch = lower.match(/(?:quanto\s+[ée]\s*|calcular\s*|resolva\s*|\b)([0-9\s+\-*\/().]{3,})/i);
-  if (mathMatch) {
-    var mathResult = evaluateArithmetic(mathMatch[1]);
-    if (mathResult) {
-      var expr = mathResult.expression;
-      var ans = mathResult.result;
-      var op = mathResult.operator;
-
-      var mathAnswers = [
-        'Avaliando a expressão de ' + op + ' `' + expr + '`: o resultado computado é **' + ans + '**. Na Fast Lane do Fênix OS, operações numéricas e avaliações de constantes são resolvidas em O(1), mantendo a latência da conversa estritamente em milissegundos.',
-        'Calculando `' + expr + '` via motor analítico da Fast Lane: o valor obtido é **' + ans + '**. Se você precisar aplicar esse valor a um cálculo de taxa de transferência, dimensionamento de buffers ou variáveis de ambiente, posso estruturar os parâmetros.',
-        'O resultado analítico para a operação `' + expr + '` é **' + ans + '**. Processado instantaneamente pelo sintetizador analítico do Fênix sem enfileiramento na Job Lane.'
-      ];
-      // Deterministic but dynamic selection based on prompt length
-      var pickIdx = text.length % mathAnswers.length;
-      return mathAnswers[pickIdx];
-    }
-  }
-
-  // 2. Contextual Greetings & Operational Status
-  var isGreeting = (
-    lower === 'oi' || lower === 'olá' || lower === 'ola' ||
-    lower.startsWith('olá ') || lower.startsWith('ola ') || lower.startsWith('oi ') ||
-    lower.indexOf('bom dia') >= 0 || lower.indexOf('boa tarde') >= 0 || lower.indexOf('boa noite') >= 0 ||
-    lower.indexOf('como vai') >= 0 || lower.indexOf('tudo bem') >= 0 || lower.indexOf('como você está') >= 0 ||
-    lower.indexOf('como voce esta') >= 0
-  );
-
-  if (isGreeting) {
-    var mode = getSelectorMode();
-    var qStatus = globalJobQueueManager.getQueueStatus();
-    var runningCount = (qStatus && qStatus.running) || 0;
-    var waitingCount = (qStatus && qStatus.waiting) || 0;
-    var confMode = getConfirmationMode();
-
-    var queueDetail = runningCount > 0
-      ? 'atualmente processando ' + runningCount + ' tarefa(s) pesada(s) na Job Lane em paralelo'
-      : 'fila de engenharia ociosa e pronta para novas missões';
-
-    var greetingVariants = [
-      'Olá! Sou o **Fênix OS V8.2**, operando com latência sub-segundo na Fast Lane. O roteador de modelos está em modo **' + mode + '** (' + queueDetail + '). A política de confirmação ativa é **' + confMode + '**. Como posso auxiliar no seu desenvolvimento hoje?',
-      'Saudações! Fênix OS conectado e operacional. A rota conversacional da Fast Lane está ativa (' + queueDetail + ', roteamento **' + mode + '**). Você pode me fazer perguntas conceituais, solicitar cálculos ou despachar tarefas estruturadas para o worker autônomo.',
-      'Olá! Fênix OS V8.2 à disposição. Telemetria do sistema: modo **' + mode + '**, ' + waitingCount + ' tarefas em espera na fila BullMQ. Posso responder suas dúvidas de forma instantânea ou preparar missões completas de código.'
-    ];
-    var gIdx = (text.length + runningCount) % greetingVariants.length;
-    return greetingVariants[gIdx];
-  }
-
-  // 3. Technical & Ecosystem Inquiries: BullMQ, Redis, Concurrency, Architecture
-  if (lower.indexOf('bullmq') >= 0 || lower.indexOf('redis') >= 0) {
-    var qStat = globalJobQueueManager.getQueueStatus();
-    var qRun = (qStat && qStat.running) || 0;
-    var qWait = (qStat && qStat.waiting) || 0;
-
-    return 'A arquitetura do Fênix OS V8.2 implementa isolamento estrito de carga através do par **Redis 7 + BullMQ**:\n\n' +
-      '• **Dual-Lane Isolation:** Conversas interativas e consultas rápidas são processadas na Fast Lane com latência de milissegundos sem tocar na fila.\n' +
-      '• **Concorrência Controlada:** A fila BullMQ opera com `concurrency: 1` para impedir que inferências e compilações pesadas saturem a CPU do servidor.\n' +
-      '• **Estado em Tempo Real:** No momento, há ' + qRun + ' job(s) em execução e ' + qWait + ' job(s) em espera, com persistência de estado e retenção de telemetria de tokens.';
-  }
-
-  // 4. Inquiries about Models, Qwen, Ollama, and Routing
-  if (lower.indexOf('qwen') >= 0 || lower.indexOf('modelo') >= 0 || lower.indexOf('ollama') >= 0) {
-    var activeM = getSelectorMode();
-    return 'O **Model Router** do Fênix OS atua como cérebro unificado de inferência:\n\n' +
-      '• **Modo FAST:** Prioriza baixa latência na Fast Lane usando sintetizador generativo e modelos ultra-rápidos.\n' +
-      '• **Modo QWEN / SMART:** Mobiliza o **Qwen 2.5** via Ollama ou API Platform para raciocínio profundo de arquitetura, diffs e planejamento de missões na Job Lane.\n' +
-      '• **Modo AUTO:** Analisa a complexidade da intenção e direciona automaticamente para a melhor rota.\n' +
-      '• Modo atualmente selecionado: **' + activeM + '**. Você pode alternar digitando `/fast`, `/qwen`, `/auto` ou comandos em linguagem natural como *"faz com Qwen"*.';
-  }
-
-  // 5. Inquiries about ZapAI CRM
-  if (lower.indexOf('zapai') >= 0 || lower.indexOf('crm') >= 0) {
-    return 'O **ZapAI CRM** (porta 4025) é o módulo de mensageria omnichannel do ecossistema Fênix. O Fênix OS mantém espelhamento contínuo do seu código (`/opt/zapai`), incluindo telas críticas (Inbox, Chats, Contatos), contratos de API e suítes de validação visual via Playwright.';
-  }
-
-  // 6. Inquiries about API Platform
-  if (lower.indexOf('api platform') >= 0 || lower.indexOf('api-platform') >= 0) {
-    return 'O **API Platform** (porta 3001) é o gateway corporativo de inferência construído em Fastify com Docker e Redis. Ele centraliza governança de chaves, failover resiliente entre providers (Ollama, Mission Engine, APIs em nuvem) e endpoints padronizados compatíveis com contratos OpenAI `/v1/`.';
-  }
-
-  // 7. Inquiries about Capabilities & System Features
-  if (lower.indexOf('o que você faz') >= 0 || lower.indexOf('o que voce faz') >= 0 || lower.indexOf('quais suas capacidades') >= 0 || lower.indexOf('capacidades') >= 0) {
-    return 'O **Fênix OS V8.2** é um sistema operacional autônomo de engenharia de software com as seguintes capacidades centrais:\n\n' +
-      '1. **Fast Lane:** Conversação e raciocínio instantâneos com telemetria real de tokens e latência mínima.\n' +
-      '2. **Job Lane com BullMQ:** Despacho de missões estruturadas de auditoria, refatoração e testes em background (concurrency: 1).\n' +
-      '3. **Prompt Enhancer Multi-Camada:** Enriquecimento contextual com espelho do projeto, commits Git, telas e memória persistente.\n' +
-      '4. **Model Router Central:** Roteamento dinâmico entre modelos rápidos e modelos profundos (Qwen 2.5).\n' +
-      '5. **Projeção Visual da City:** Visualização em tempo real das ações físicas e navegação dos 19 agentes especializados.';
-  }
-
-  // 8. General Conversational & Contextual Synthesis
-  var snippet = text.length > 55 ? text.slice(0, 52) + '...' : text;
-  var currentSel = getSelectorMode();
-  return 'Analisei sua mensagem sobre "' + snippet + '" na Fast Lane (modo **' + currentSel + '**). A requisição foi avaliada pelo roteador de intenções sem gerar bloqueio na fila BullMQ. Se você desejar que essa instrução seja aprofundada como tarefa de modificação de código, análise de repositório ou teste automatizado, você pode solicitar: *"coloque na fila"* ou selecionar a ação apropriada.';
+function generateDynamicFastAIResponse() {
+  var error = new Error('Synthetic AI responses are disabled');
+  error.code = 'AI_PROVIDER_UNAVAILABLE';
+  throw error;
 }
 
 /**
@@ -215,75 +116,42 @@ function generateDynamicFastAIResponse(promptText) {
  * Attempts low-latency LLM call when appropriate; falls back smoothly to the Fast AI Generative Engine.
  * Guarantees sub-second latency and accurate token accounting.
  */
-async function callQuickModel(text) {
+async function callQuickModel(text, opts) {
   var t0 = Date.now();
-  var mode = getSelectorMode();
-  var isJobRunning = false;
-
-  try {
-    var qStatus = globalJobQueueManager.getQueueStatus();
-    if (qStatus && qStatus.running > 0) {
-      isJobRunning = true;
-    }
-  } catch (e) {}
-
-  // If user explicitly requested QWEN or remote model and no job is running:
-  if ((mode === 'QWEN' || mode === 'OLLAMA') && !isJobRunning) {
-    var OLLAMA_URL = process.env.GRG_OLLAMA_DIRECT_URL || process.env.FENIX_OLLAMA_URL || 'http://172.20.0.7:11434';
-    try {
-      var prompt = 'Você é o assistente executivo FÊNIX OS V8.2. Responda em 1 a 2 frases concisas em Português: ' + text;
-      var res = await fetch(OLLAMA_URL + '/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'qwen2.5:0.5b',
-          prompt: prompt,
-          stream: false,
-          options: { num_predict: 25, num_thread: 2, temperature: 0.3 }
-        }),
-        signal: AbortSignal.timeout(600)
-      });
-      if (res.ok) {
-        var data = await res.json();
-        var respText = (data.response || '').trim();
-        if (respText && respText.length > 2) {
-          var promptTokens = estimateBpeTokens(prompt);
-          var completionTokens = data.eval_count || estimateBpeTokens(respText);
-          var totalTokens = promptTokens + completionTokens;
-          return {
-            success: true,
-            text: respText,
-            tokens: totalTokens,
-            promptTokens: promptTokens,
-            completionTokens: completionTokens,
-            latencyMs: Date.now() - t0,
-            provider: 'Ollama',
-            model: 'qwen2.5:0.5b'
-          };
-        }
-      }
-    } catch (e) {
-      // Timeout or busy — fall back instantly to Fast AI Generative Synthesizer
-    }
+  var options = opts || {};
+  var router = options.app && options.app.aiRouter;
+  if (!router || typeof router.route !== 'function') {
+    var unavailable = new Error('No connected AI router is available');
+    unavailable.code = 'AI_PROVIDER_UNAVAILABLE';
+    throw unavailable;
   }
 
-  // Fast AI Generative Engine Execution (guaranteed sub-50ms latency)
-  var fastText = generateDynamicFastAIResponse(text);
-  var latency = Date.now() - t0;
+  var mode = getSelectorMode();
+  var preferTier = mode === 'QWEN' || mode === 'OLLAMA' ? 'local' : null;
+  var routed = await router.route(options.tenantId, options.actorId, {
+    lane: 'fast',
+    taskType: 'short_answer',
+    prompt: options.prompt || String(text || ''),
+    temperature: 0.3,
+    preferTier: preferTier,
+  });
+  var responseText = String(routed && routed.result && routed.result.text || '').trim();
+  if (!routed || routed.ok !== true || !responseText) {
+    var failure = new Error(routed && routed.selection && routed.selection.chosen && routed.selection.chosen.reason || 'No AI provider completed the request');
+    failure.code = 'AI_PROVIDER_UNAVAILABLE';
+    throw failure;
+  }
 
-  var pTokens = estimateBpeTokens(text);
-  var cTokens = estimateBpeTokens(fastText);
-  var actualTokens = pTokens + cTokens;
-
+  var result = routed.result || {};
   return {
     success: true,
-    text: fastText,
-    tokens: actualTokens,
-    promptTokens: pTokens,
-    completionTokens: cTokens,
-    latencyMs: latency,
-    provider: 'Fast AI Engine',
-    model: 'fast-generative-ai'
+    text: responseText,
+    tokens: Number(result.totalTokens || result.tokens || 0) || null,
+    promptTokens: Number(result.promptTokens || 0) || null,
+    completionTokens: Number(result.completionTokens || 0) || null,
+    latencyMs: Date.now() - t0,
+    provider: routed.provider || result.provider || null,
+    model: result.model || null,
   };
 }
 
@@ -294,18 +162,18 @@ async function handle(message, classificationResult, opts) {
   var reply = '';
   var usedAI = false;
   var tokens = 0;
-  var modelUsed = 'fast-generative-ai';
-  var providerUsed = 'Fast AI Engine';
+  var modelUsed = null;
+  var providerUsed = null;
 
   if (!text) {
     return {
       lane: 'FAST_LANE',
-      response: 'Olá! Estou ouvindo. Como posso auxiliar seu desenvolvimento hoje?',
+      response: '',
       latencyMs: 0,
-      tokens: 16,
-      usedAI: true,
-      model: 'fast-generative-ai',
-      provider: 'Fast AI Engine'
+      tokens: null,
+      usedAI: false,
+      model: null,
+      provider: null
     };
   }
 
@@ -313,17 +181,8 @@ async function handle(message, classificationResult, opts) {
   var modelCmdResult = parseNaturalLanguageModelCommand(text);
   if (modelCmdResult.handled) {
     reply = modelCmdResult.response;
-    tokens = estimateBpeTokens(text) + estimateBpeTokens(reply);
+    tokens = null;
     var lat = Date.now() - t0;
-
-    recordUsage({
-      isJob: false,
-      model: modelCmdResult.model || 'fast-generative-ai',
-      tokens: tokens,
-      estimatedTokens: 80,
-      latencyMs: lat,
-      provider: modelCmdResult.provider || 'Fast AI Engine'
-    });
 
     safeEmit('chatResponse', {
       lane: 'FAST_LANE',
@@ -346,66 +205,104 @@ async function handle(message, classificationResult, opts) {
   }
 
   // 2. Queue & Confirmation control commands
-  if (lower === 'pause a fila' || lower === 'pausar fila' || lower === 'pause' || lower === 'pausar' || text === '/queue pause' || text === '/queue off') {
-    await globalJobQueueManager.pauseQueue();
-    reply = '⏸ Fila de jobs pausada com sucesso. Novos jobs permanecerão em espera.';
+  if (text === '/models' || text === '/providers') {
+    var connectorRuntime = opts?.app?.aiRouter?.connectors;
+    if (!connectorRuntime || typeof connectorRuntime.list !== 'function') {
+      var providerCatalogError = new Error('Measured AI provider catalog is unavailable'); providerCatalogError.code = 'PROVIDER_CATALOG_UNAVAILABLE'; throw providerCatalogError;
+    }
+    await opts.app.controlPlane.authorize(opts.tenantId, opts.actorId, 'runtime:read');
+    var providerIds = connectorRuntime.list().filter(function(id) { return id.startsWith('ai:'); });
+    var providerRows = await Promise.all(providerIds.map(async function(id) {
+      var health = await connectorRuntime.status(opts.tenantId, opts.actorId, id);
+      var connector = connectorRuntime.connectors.get(id);
+      var modelResult = connector && typeof connector.models === 'function' ? connector.models() : null;
+      var models = modelResult && modelResult.state === 'measured' ? modelResult.value : (Array.isArray(modelResult) ? modelResult : []);
+      var state = health && health.state && health.state.state === 'measured' ? health.state.value : 'UNKNOWN';
+      var modelNames = Array.isArray(models) ? models : [];
+      return id.slice(3) + ': ' + state + (modelNames.length ? ' · ' + modelNames.join(', ') : '');
+    }));
+    reply = providerRows.length ? 'Provedores medidos:\n' + providerRows.join('\n') : 'Nenhum provedor de IA está registrado.';
+  } else if (text === '/tokens') {
+    if (!opts?.app?.store?.read) { var tokenStoreError = new Error('Persisted AI telemetry is unavailable'); tokenStoreError.code = 'TOKEN_TELEMETRY_UNAVAILABLE'; throw tokenStoreError; }
+    await opts.app.controlPlane.authorize(opts.tenantId, opts.actorId, 'runtime:read');
+    var telemetryState = await opts.app.store.read();
+    var calls = (telemetryState.aiCalls || []).filter(function(call) { return call.tenantId === opts.tenantId; });
+    var totalTokens = calls.reduce(function(sum, call) { return sum + (Number(call.totalTokens) || 0); }, 0);
+    reply = 'Telemetria persistida de IA: ' + totalTokens + ' tokens em ' + calls.length + ' chamadas para esta organização.';
+  } else if (lower === 'pause a fila' || lower === 'pausar fila' || lower === 'pause' || lower === 'pausar' || text === '/queue pause' || text === '/queue off') {
+    if (!opts?.app?.queues || typeof opts.app.queues.queue !== 'function') {
+      var pauseError = new Error('Persistent queue control is unavailable'); pauseError.code = 'QUEUE_CONTROL_UNAVAILABLE'; throw pauseError;
+    }
+    await opts.app.controlPlane.authorize(opts.tenantId, opts.actorId, 'runtime:admin');
+    var pauseQueue = opts.app.queues.queue('fenix-runtime');
+    if (typeof pauseQueue.pause !== 'function') { var pauseUnsupported = new Error('Queue pause is unsupported'); pauseUnsupported.code = 'QUEUE_CONTROL_UNAVAILABLE'; throw pauseUnsupported; }
+    await pauseQueue.pause();
+    reply = 'Fila BullMQ `fenix-runtime` pausada.';
   } else if (lower === 'retome a fila' || lower === 'retomar fila' || lower === 'retome' || lower === 'retomar' || text === '/queue resume' || text === '/queue on') {
-    await globalJobQueueManager.resumeQueue();
-    reply = '▶ Fila de jobs retomada. O processamento foi restabelecido.';
+    if (!opts?.app?.queues || typeof opts.app.queues.queue !== 'function') {
+      var resumeError = new Error('Persistent queue control is unavailable'); resumeError.code = 'QUEUE_CONTROL_UNAVAILABLE'; throw resumeError;
+    }
+    await opts.app.controlPlane.authorize(opts.tenantId, opts.actorId, 'runtime:admin');
+    var resumeQueue = opts.app.queues.queue('fenix-runtime');
+    if (typeof resumeQueue.resume !== 'function') { var resumeUnsupported = new Error('Queue resume is unsupported'); resumeUnsupported.code = 'QUEUE_CONTROL_UNAVAILABLE'; throw resumeUnsupported; }
+    await resumeQueue.resume();
+    reply = 'Fila BullMQ `fenix-runtime` retomada.';
   } else if (lower.indexOf('qual job está rodando') >= 0 || lower.indexOf('qual job esta rodando') >= 0) {
-    var runningJobs = globalJobQueueManager.listJobs({ status: 'RUNNING' });
+    if (!opts?.app?.jobs?.list) { var jobsError = new Error('Persistent JobEngine is unavailable'); jobsError.code = 'JOB_RUNTIME_UNAVAILABLE'; throw jobsError; }
+    var runningJobs = await opts.app.jobs.list(opts.tenantId, opts.actorId, 'RUNNING');
     if (runningJobs.length) {
-      reply = '⚙ **Job em Execução:** #' + runningJobs[0].id + ' — ' + runningJobs[0].title + ' (' + runningJobs[0].model + ' | ' + runningJobs[0].projectId + ')';
+      reply = 'Job em execução: ' + runningJobs[0].id + ' — ' + (runningJobs[0].title || runningJobs[0].type) + '.';
     } else {
       reply = 'Nenhum job em execução no momento.';
     }
-  } else if (lower.indexOf('mostre os jobs') >= 0 || lower.indexOf('mostre meus jobs') >= 0 || lower.indexOf('quais jobs') >= 0 || text === '/jobs' || text === '/queue') {
-    var jobs = globalJobQueueManager.listJobs().slice(0, 5);
-    if (!jobs.length) {
-      reply = 'Não há jobs na fila no momento.';
+  } else if (lower.indexOf('mostre os jobs') >= 0 || lower.indexOf('mostre meus jobs') >= 0 || lower.indexOf('quais jobs') >= 0 || text === '/jobs' || text === '/queue' || text === '/queue status') {
+    if (!opts?.app?.jobs?.list) { var jobsListError = new Error('Persistent JobEngine is unavailable'); jobsListError.code = 'JOB_RUNTIME_UNAVAILABLE'; throw jobsListError; }
+    var allJobs = await opts.app.jobs.list(opts.tenantId, opts.actorId);
+    if (text === '/queue' || text === '/queue status') {
+      var counts = allJobs.reduce(function(acc, job) { var state = String(job.status || 'UNKNOWN').toUpperCase(); acc[state] = (acc[state] || 0) + 1; return acc; }, {});
+      var bullmqState = opts.app.queues?.status ? await opts.app.queues.status('fenix-runtime') : null;
+      reply = 'JobEngine persistente: ' + allJobs.length + ' jobs; QUEUED ' + (counts.QUEUED || 0) + ', RUNNING ' + (counts.RUNNING || 0) + ', FAILED ' + (counts.FAILED || 0) + '. BullMQ: ' + (bullmqState ? 'conectado' : 'não configurado nesta instância.');
     } else {
-      var lines = ['📋 **Status da Fila de Jobs:**'];
-      for (var i = 0; i < jobs.length; i++) {
-        var j = jobs[i];
-        lines.push('• **Job #' + j.id + '** | ' + j.title + ' | Status: ' + j.status + ' | Modelo: ' + j.model);
+      var jobs = allJobs.slice(0, 5);
+      if (!jobs.length) {
+        reply = 'O JobEngine persistente não registra jobs para esta organização.';
+      } else {
+        var lines = ['Jobs recentes do JobEngine:'];
+        for (var i = 0; i < jobs.length; i++) {
+          var j = jobs[i];
+          lines.push('• ' + j.id + ' | ' + (j.title || j.type) + ' | ' + j.status);
+        }
+        reply = lines.join('\n');
       }
-      reply = lines.join('\n');
     }
   } else if (lower.indexOf('cancele o job') >= 0 || lower.indexOf('cancelar job') >= 0 || text.startsWith('/job cancel')) {
-    var jIdMatch = text.match(/\d+/);
+    var jIdMatch = text.match(/([A-Za-z0-9][A-Za-z0-9._:-]{1,127})\s*$/);
     if (jIdMatch) {
-      var targetId = jIdMatch[0];
-      try {
-        await globalJobQueueManager.cancelJob(targetId);
-        reply = '✕ Job #' + targetId + ' cancelado com sucesso.';
-      } catch (err) {
-        reply = 'Não foi possível cancelar o Job #' + targetId + ': ' + err.message;
-      }
+      var targetId = jIdMatch[1];
+      if (!opts?.app?.jobs?.cancel) { var cancelUnavailable = new Error('Persistent JobEngine is unavailable'); cancelUnavailable.code = 'JOB_RUNTIME_UNAVAILABLE'; throw cancelUnavailable; }
+      var cancelled = await opts.app.jobs.cancel(opts.tenantId, opts.actorId, targetId);
+      reply = 'Job ' + targetId + ' está em ' + cancelled.status + '.';
     } else {
       reply = 'Por favor informe o ID do job a ser cancelado. Exemplo: cancele o job 184.';
     }
   } else if (lower.indexOf('retry do job') >= 0 || text.startsWith('/job retry')) {
-    var retIdMatch = text.match(/\d+/);
+    var retIdMatch = text.match(/([A-Za-z0-9][A-Za-z0-9._:-]{1,127})\s*$/);
     if (retIdMatch) {
-      var rId = retIdMatch[0];
-      try {
-        await globalJobQueueManager.retryJob(rId);
-        reply = '↻ Job #' + rId + ' reenviado para a fila de execução.';
-      } catch (err) {
-        reply = 'Não foi possível reenviar o Job #' + rId + ': ' + err.message;
-      }
+      var rId = retIdMatch[1];
+      if (!opts?.app?.jobs?.retry) { var retryUnavailable = new Error('Persistent JobEngine is unavailable'); retryUnavailable.code = 'JOB_RUNTIME_UNAVAILABLE'; throw retryUnavailable; }
+      var retried = await opts.app.jobs.retry(opts.tenantId, opts.actorId, rId);
+      reply = 'Job ' + rId + ' reenviado; estado atual: ' + retried.status + '.';
     } else {
       reply = 'Informe o ID do job para retry. Exemplo: /job retry 184.';
     }
-  } else if (/^\/job\s+(\d+)$/.test(text) || /^job\s+#?(\d+)$/i.test(text)) {
-    var inspMatch = text.match(/\d+/);
-    var inspJob = inspMatch ? globalJobQueueManager.getJob(inspMatch[0]) : null;
+  } else if (/^\/job\s+[A-Za-z0-9._:-]+$/.test(text) || /^job\s+#?[A-Za-z0-9._:-]+$/i.test(text)) {
+    var inspMatch = text.match(/[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$/);
+    if (!opts?.app?.jobs?.get) { var inspectUnavailable = new Error('Persistent JobEngine is unavailable'); inspectUnavailable.code = 'JOB_RUNTIME_UNAVAILABLE'; throw inspectUnavailable; }
+    var inspJob = inspMatch ? await opts.app.jobs.get(opts.tenantId, opts.actorId, inspMatch[0]) : null;
     if (inspJob) {
-      reply = '📋 **Job #' + inspJob.id + ' — ' + inspJob.title + '**\n' +
-        '• Status: ' + inspJob.status + ' | Projeto: ' + inspJob.projectId + '\n' +
-        '• Modelo: ' + inspJob.model + ' (' + inspJob.provider + ') | Prioridade: ' + inspJob.priority + '\n' +
-        '• Tokens: ' + (inspJob.tokens ? inspJob.tokens.actual : 0) + ' (Estimados: ' + (inspJob.tokens ? inspJob.tokens.estimated : 0) + ')\n' +
-        '• Criado em: ' + inspJob.createdAt;
+      reply = 'Job ' + inspJob.id + ' — ' + (inspJob.title || inspJob.type) + '\n' +
+        'Status: ' + inspJob.status + ' | Projeto: ' + (inspJob.projectId || 'não vinculado') + '\n' +
+        'Missão: ' + (inspJob.missionId || 'não vinculada') + ' | Tentativas: ' + (inspJob.attempts || 0);
     } else {
       reply = 'Job #' + (inspMatch ? inspMatch[0] : '') + ' não encontrado.';
     }
@@ -414,13 +311,7 @@ async function handle(message, classificationResult, opts) {
     text.startsWith('/confirm') || lower === 'coloca na fila' || lower === 'colocar na fila' ||
     lower === 'pode executar' || lower === 'autorizar'
   ) {
-    var pending = globalJobQueueManager.listJobs({ status: 'PENDING_CONFIRMATION' })[0];
-    if (pending) {
-      await globalJobQueueManager.confirmJob(pending.id, (opts && opts.actorId) || 'grg-admin');
-      reply = '✓ Job #' + pending.id + ' (' + pending.title + ') confirmado e enviado para execução na fila!';
-    } else {
-      reply = 'Não há nenhum job aguardando confirmação no momento.';
-    }
+    reply = 'Aprovação exige a missão e a etapa específicas exibidas em Operações; nenhuma tarefa foi aprovada.';
   } else if (lower.indexOf('não peça confirmação') >= 0 || lower.indexOf('nao peca confirmacao') >= 0 || text === '/confirm never') {
     setConfirmationMode('NEVER');
     reply = 'Política de confirmação alterada para: NEVER (tarefas permitidas entram automaticamente na fila).';
@@ -433,27 +324,16 @@ async function handle(message, classificationResult, opts) {
   }
   // 3. ALL CONVERSATIONAL QUERIES: Route through Model Router -> Real Fast AI Model
   else {
-    var selectedModel = selectModelForTask({ lane: 'FAST_LANE', classification: (classificationResult && classificationResult.classification) || 'CHAT' });
-    var aiResult = await callQuickModel(text);
+    var aiResult = await callQuickModel(text, opts);
     reply = aiResult.text;
     tokens = aiResult.tokens;
     usedAI = true;
-    modelUsed = aiResult.model || selectedModel.model;
+    modelUsed = aiResult.model || null;
     providerUsed = aiResult.provider;
   }
 
   var latencyMs = Date.now() - t0;
-  if (!tokens) tokens = estimateBpeTokens(text) + estimateBpeTokens(reply);
-
-  recordUsage({
-    isJob: false,
-    model: modelUsed,
-    tokens: tokens,
-    estimatedTokens: (classificationResult && classificationResult.estimated_tokens) || 100,
-    latencyMs: latencyMs,
-    provider: providerUsed
-  });
-
+  if (!usedAI) tokens = null;
   safeEmit('chatResponse', {
     lane: 'FAST_LANE',
     latencyMs: latencyMs,

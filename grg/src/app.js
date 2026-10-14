@@ -1,5 +1,6 @@
 // Composition root: monta todos os planos do GRG Services OS com adapters locais.
 // Trocar um adapter (Postgres, LiteLLM, GitHub real, packagers reais) não muda este wiring.
+const { execFileSync } = require('node:child_process');
 const { MemoryStore, FileStore } = require('./kernel/store');
 const { EventBus } = require('./kernel/event-bus');
 const { OrganismIdentityService } = require('./kernel/organism-identity');
@@ -101,6 +102,20 @@ const { MasterAvatar } = require('./cognitive/master-avatar');
 const { StorageManager } = require('./storage/storage-manager');
 const { KnowledgeEngine } = require('./knowledge/knowledge-engine');
 const { ProviderRegistry, buildProvidersFromEnv, loadRoutes } = require('./ai-runtime/provider-registry');
+
+function discoverGitRepositoryRoot(startDirectory) {
+  try {
+    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      cwd: startDirectory,
+      encoding: 'utf8',
+      timeout: 5_000,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
+}
 
 async function createApp(options = {}) {
   const logger = options.logger || console;
@@ -354,8 +369,10 @@ async function createApp(options = {}) {
 
   // Developer District Services
   const workspaceRoot = process.env.FENIX_WORKSPACE_ROOT || path.join(__dirname, '..', '..');
+  const auditRepositoryRoot = discoverGitRepositoryRoot(__dirname);
   const fileSystemService = new FileSystemService(workspaceRoot);
   const gitRead = new GitReadCapability({ workspaceRoot });
+  const auditGitRead = auditRepositoryRoot ? new GitReadCapability({ workspaceRoot: auditRepositoryRoot }) : null;
   const gitWorkspaceWrite = new GitWorkspaceWriteCapability({ workspaceRoot });
   const gitCommit = new GitCommitCapability({ workspaceRoot });
   jobs.register('git.read', (payload) => gitRead.execute(payload.operation || 'status', payload.args || [], payload.root || '.'));
@@ -368,9 +385,59 @@ async function createApp(options = {}) {
   jobs.register('agent.workspace.execute', (payload, context) => agentWorkspaceExecutor.execute(context.tenantId, context.actorId, { ...payload, projectId: context.job?.projectId || payload.projectId, workspaceId: context.job?.workspaceId || payload.workspaceId, jobId: context.jobId, missionId: context.job?.missionId, agentId: context.job?.agent?.agentId || payload.agentId }));
   const agentExecutionRuntime = new AgentExecutionRuntime({ aiGateway, workspaceExecutor: agentWorkspaceExecutor, events: fabricEvents });
   jobs.register('agent.execute', (payload, context) => agentExecutionRuntime.execute(context.tenantId, context.actorId, { ...payload, jobId: context.jobId, missionId: context.job?.missionId, agent: context.job?.agent, context: context.job?.agent?.context || payload.context }));
-  const readOnlyAudit = new ReadOnlyAuditService({ store, gitRead, workspaceRoot });
-  jobs.register('fenix.readonly.audit', (payload, context) => readOnlyAudit.run(context.tenantId, context.actorId, { ...payload, projectId: context.job?.projectId || payload.projectId, missionId: context.job?.missionId || payload.missionId, jobId: context.jobId }));
-  const projectKernel = new ProjectKernel({ store, controlPlane, events: fabricEvents, gitRead });
+  const allowedAuditRoots = [
+    auditRepositoryRoot,
+    workspaceRoot,
+    ...String(process.env.FENIX_ALLOWED_PROJECT_ROOTS || '').split(/[;,]/).filter(Boolean),
+  ].filter((root) => typeof root === 'string' && root.trim());
+  const readOnlyAudit = new ReadOnlyAuditService({ store, gitRead: auditGitRead, workspaceRoot: auditRepositoryRoot || workspaceRoot, allowedRoots: allowedAuditRoots });
+  const registerReadOnlyAuditTool = async (tenantId) => {
+    await tools.registerNative(tenantId, {
+      toolId: 'system.readonly.audit',
+      version: '1.0.0',
+      name: 'Fênix Read-Only System Audit',
+      description: 'Read Git status, branches, recent commit metadata and diff statistics for the Fênix source repository.',
+      capabilities: ['workspace.read', 'git.read'],
+      permissions: ['project:read', 'runtime:execute'],
+      requirements: ['git'],
+      allowedNetworks: ['none'],
+      inputSchema: {
+        type: 'object',
+        properties: {
+          root: { type: 'string', maxLength: 512 },
+          workspacePath: { type: 'string', maxLength: 4096 },
+          projectId: { type: 'string', maxLength: 128 },
+          missionId: { type: 'string', maxLength: 128 },
+          jobId: { type: 'string', maxLength: 128 },
+          conversationId: { type: 'string', maxLength: 128 },
+        },
+        additionalProperties: false,
+      },
+      timeoutMs: 120_000,
+    }, (input, context) => readOnlyAudit.run(context.tenantId, context.actorId, input));
+  };
+  const auditToolTenants = new Set(['grg', ...((await store.read()).tenants || []).map((tenant) => tenant.id).filter(Boolean)]);
+  if (auditGitRead) {
+    for (const tenantId of auditToolTenants) await registerReadOnlyAuditTool(tenantId);
+  }
+  jobs.register('fenix.readonly.audit', async (payload, context) => {
+    if (!auditGitRead) throw new Error('Fênix source repository is unavailable for read-only audit');
+    // Tenants can be created after app startup. Register the native capability on first use
+    // so their audited missions follow the same ToolRegistry authorization path.
+    await registerReadOnlyAuditTool(context.tenantId);
+    const execution = await tools.execute(context.tenantId, context.actorId, 'system.readonly.audit', {
+      ...payload,
+      projectId: context.job?.projectId || payload.projectId,
+      missionId: context.job?.missionId || payload.missionId,
+      jobId: context.jobId,
+    }, { tenantId: context.tenantId, actorId: context.actorId, jobId: context.jobId });
+    return { ...execution.result, toolId: execution.toolId, toolStatus: execution.status };
+  });
+  const { globalGraphBrain } = require('./brain/graph-brain');
+  const { globalSystemTwinEngine } = require('./reconstruction/system-twin');
+  const graphBrain = options.graphBrain || globalGraphBrain;
+  const systemTwinEngine = options.systemTwinEngine || globalSystemTwinEngine;
+  const projectKernel = new ProjectKernel({ store, controlPlane, events: fabricEvents, gitRead, graphBrain, systemTwinEngine });
   const executionEngine = new ExecutionEngine(bus, workspaceRoot);
 
   const app = {
@@ -380,7 +447,7 @@ async function createApp(options = {}) {
     vectorStore, memory, memoryEngine: baseMemoryEngine, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
     liveBootKernel, runtimeKernel, aiOrchestrator, aek, digitalTwinEngine, cognitiveMemory, capabilityMarketplace,
-    storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine, gitRead, projectKernel, fullSystemBuilder, agentExecutionRuntime, engineeringMemory, workspaceRoot
+    storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine, gitRead, projectKernel, fullSystemBuilder, agentExecutionRuntime, engineeringMemory, workspaceRoot, auditRepositoryRoot, graphBrain, systemTwinEngine
   };
 
   // Phase 4: Startup Recovery
@@ -770,6 +837,7 @@ async function createApp(options = {}) {
   // caminho de embedding, que divergiria na dimensao do vetor e na pontuacao.
   const { ConversationStore } = require('./chat/conversation-store');
   app.conversations = new ConversationStore({ store, memory, llm, events: fabricEvents });
+  readOnlyAudit.conversations = app.conversations;
   app.masterAvatar = new MasterAvatar({ chat: app.chat, missionPlanner });
   app.npcCity.masterAvatar = app.masterAvatar;
   

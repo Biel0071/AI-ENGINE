@@ -11,6 +11,7 @@ const ESTIMATES = Object.freeze({
   'agent-observe': { durationMs: 45_000, tokens: 1_000, costUsd: 0.005, risk: 'LOW' },
   activate: { durationMs: 60_000, tokens: 0, costUsd: 0, risk: 'LOW' },
   'daily-intelligence': { durationMs: 45_000, tokens: 1_500, costUsd: 0.008, risk: 'LOW' },
+  audit: { durationMs: 30_000, tokens: 0, costUsd: 0, risk: 'LOW' },
   generate: { durationMs: 600_000, tokens: 20_000, costUsd: 0.1, risk: 'HIGH' },
 });
 
@@ -145,6 +146,7 @@ class MissionPlanner {
 }
 
 function buildSteps(mode, objective, context) {
+  if (mode === 'AUDIT') return [{ key: 'audit', type: 'audit', dependsOn: [], payload: { root: context.root || '.', workspacePath: context.workspacePath || null, conversationId: context.conversationId || null } }];
   if (mode === 'OPERATE') return [{ key: 'health', type: 'activate', dependsOn: [], payload: { trigger: 'mission' } }, { key: 'report', type: 'daily-intelligence', dependsOn: ['health'], payload: {} }];
   if (mode === 'OBSERVE') return [{ key: 'observe', type: 'agent-observe', dependsOn: [], payload: {} }, { key: 'analyze', type: 'analyze', dependsOn: ['observe'], payload: {} }];
   if (mode === 'BUILD') return [{ key: 'discover', type: 'discover', dependsOn: [], payload: {} }, { key: 'design', type: 'analyze', dependsOn: ['discover'], payload: {} }, { key: 'generate', type: 'generate', dependsOn: ['design'], payload: { prompt: objective, name: context.name || objective.slice(0, 80) } }];
@@ -155,7 +157,7 @@ function inferMode(value) { const text = value.toLowerCase(); if (/\b(criar|cons
 function normalizeMode(value, objective = '') {
   const mode = String(value || '').toUpperCase();
   if (!mode || mode === 'UNIFIED' || mode === 'AUTO') return inferMode(objective);
-  if (!['INSPECT', 'OPERATE', 'OBSERVE', 'BUILD'].includes(mode)) throw new ValidationError(`unsupported mission planning mode: ${mode}`);
+  if (!['INSPECT', 'OPERATE', 'OBSERVE', 'BUILD', 'AUDIT'].includes(mode)) throw new ValidationError(`unsupported mission planning mode: ${mode}`);
   return mode;
 }
 function hash(value) { return crypto.createHash('sha256').update(value).digest('hex'); }
