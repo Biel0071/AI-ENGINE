@@ -4,6 +4,9 @@ class ModelOrchestrator {
   constructor({ aiGateway }) {
     this.aiGateway = aiGateway;
     this.catalog = {
+      FAST: ['qwen2.5:3b', 'qwen2.5:0.5b', 'echo-small'],
+      STANDARD: ['qwen2.5:3b', 'qwen-2.5-7b', 'devstral-24b', 'echo-large'],
+      DEEP: ['gemini-2.5-pro', 'gpt-4o', 'gpt-5.1-codex-max', 'deepseek-r1'],
       CONVERSATION: ['gemini-2.5-flash', 'qwen-2.5-7b', 'gemma-2-9b', 'llama-3.3-70b'],
       PLANNING: ['gemini-2.5-pro', 'deepseek-r1', 'hermes-3'],
       CODE: ['devstral-24b', 'deepseek-coder', 'qwen-2.5-coder'],
@@ -61,6 +64,14 @@ class ModelOrchestrator {
 
   getCatalog() {
     return this.catalog;
+  }
+
+  getLanes() {
+    return {
+      FAST: this.catalog.FAST,
+      STANDARD: this.catalog.STANDARD,
+      DEEP: this.catalog.DEEP,
+    };
   }
 }
 

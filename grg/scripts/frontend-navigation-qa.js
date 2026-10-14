@@ -23,17 +23,19 @@ fs.mkdirSync(outDir, { recursive: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   context.setDefaultTimeout(actionTimeout);
   context.setDefaultNavigationTimeout(navigationTimeout);
-  if (process.env.FENIX_TOKEN) {
-    await context.addCookies([{ name: 'fenix_session', value: encodeURIComponent(process.env.FENIX_TOKEN), url: new URL(baseUrl).origin, httpOnly: true, sameSite: 'Lax' }]);
+  const sessionToken = process.env.FENIX_TOKEN || (fs.existsSync(path.join(__dirname, '..', '.session_token')) ? fs.readFileSync(path.join(__dirname, '..', '.session_token'), 'utf8').trim() : '');
+  if (sessionToken) {
+    await context.addCookies([{ name: 'fenix_session', value: encodeURIComponent(sessionToken), url: new URL(baseUrl).origin, httpOnly: true, sameSite: 'Lax' }]);
   }
   const page = await context.newPage();
-  if (process.env.FENIX_TOKEN) {
+  if (sessionToken) {
     await page.addInitScript((token) => {
       localStorage.setItem('grg_token', token);
       localStorage.setItem('fenix_token', token);
-    }, process.env.FENIX_TOKEN);
+    }, sessionToken);
   }
   const consoleErrors = [];
+
   const failedRequests = [];
   page.on('pageerror', error => consoleErrors.push({ type: 'pageerror', message: error.message }));
   page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push({ type: 'console', message: msg.text() }); });
@@ -50,13 +52,14 @@ fs.mkdirSync(outDir, { recursive: true });
   // Some Chromium profiles reject storage writes from an init script when the
   // initial document is redirected. Re-assert the same ephemeral token after
   // the origin is available; no token is written to disk by this process.
-  if (process.env.FENIX_TOKEN && new URL(baseUrl).origin === new URL(page.url()).origin) {
+  if (sessionToken && new URL(baseUrl).origin === new URL(page.url()).origin) {
     await page.evaluate((token) => {
       localStorage.setItem('grg_token', token);
       localStorage.setItem('fenix_token', token);
-    }, process.env.FENIX_TOKEN);
+    }, sessionToken);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: navigationTimeout });
   }
+
   await page.waitForTimeout(1200);
   // Standalone Chromium has no in-app session. Login is opt-in through env vars;
   // never embed or guess credentials in the QA script.

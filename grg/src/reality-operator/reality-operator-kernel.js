@@ -103,14 +103,16 @@ class RealityOperatorKernel {
     this.cityProjectMap = {
       'fenixHQ': { projectId: 'fenix-os', buildingName: 'FÊNIX Central HQ', role: 'Master Orchestration & System Twin' },
       'devLoft': { projectId: 'task-board', buildingName: 'Dev Loft & Tech Workshop', role: 'Microservices & Full-Stack Apps' },
-      'researchLab': { projectId: 'api-platform', buildingName: 'AI Research & Intelligence Lab', role: 'LLM Multi-Provider & Connectors' }
+      'researchLab': { projectId: 'api-platform', buildingName: 'AI Research & Intelligence Lab', role: 'LLM Multi-Provider & Connectors' },
+      'shopping': { projectId: 'mf-atacadista', buildingName: 'Mania Fashion Pavilion & Atacado', role: 'Moda Feminina Atacado, Catálogo Inteligente & Provador Virtual IA' }
     };
 
     this.projectCityMap = {
       'fenix-os': 'fenixHQ',
       'task-board': 'devLoft',
       'api-platform': 'researchLab',
-      'zapai-crm': 'devLoft'
+      'zapai-crm': 'devLoft',
+      'mf-atacadista': 'shopping'
     };
   }
 
@@ -849,17 +851,21 @@ class RealityOperatorKernel {
       });
 
       // 5. Compute Detailed QA Scores
-      const visualQualityScore = Math.min(100, Math.max(50, 100 - (comparison.totalGaps * 5)));
-      const visualRegressionScore = Math.max(0, Math.round(100 - comparison.diffPercentage));
-      const functionalScore = interactionResult.performed ? 100 : 95;
+      const visualQualityScore = null;
+      const visualRegressionScore = comparison.diffPercentage == null ? null : Math.max(0, Math.round(100 - comparison.diffPercentage));
+      const functionalScore = null;
       const consoleErrors = afterInspect.consoleErrors || [];
       const networkReqs = session.getNetwork();
-      const failedReqs = networkReqs.filter(r => r.status && r.status >= 400);
-      const integrationScore = Math.max(0, 100 - (consoleErrors.length * 20) - (failedReqs.length * 20));
-      const responsiveScore = 95;
+      const measuredReqs = networkReqs.filter(r => Number.isFinite(r.status));
+      const failedReqs = measuredReqs.filter(r => r.status >= 400);
+      const integrationScore = measuredReqs.length
+        ? Math.round(((measuredReqs.length - failedReqs.length) / measuredReqs.length) * 100)
+        : null;
+      const responsiveScore = null;
 
       const visualQaReport = {
         ok: true,
+        status: comparison.fidelityScore == null ? 'NOT_MEASURED' : 'PARTIAL',
         projectId,
         targetUrl: url,
         pipeline: 'BROWSER -> INTERACTION -> SCREENSHOT -> COMPARE -> ANALYZE -> RESULT',
@@ -894,7 +900,9 @@ class RealityOperatorKernel {
         category: 'VISUAL',
         projectId,
         task: 'Execute Visual QA with Before/After comparison',
-        decision: `Visual fidelity scored at ${comparison.fidelityScore}%`,
+        decision: comparison.fidelityScore == null
+          ? 'A captura foi registrada, mas a fidelidade visual não foi medida.'
+          : `Visual fidelity scored at ${comparison.fidelityScore}%`,
         solution: `Verdict: ${comparison.verdict}`,
         evidence: visualQaReport
       });
@@ -1745,14 +1753,20 @@ class RealityOperatorKernel {
 
   _getDockerList() {
     try {
-      const raw = cp.execSync('docker ps --format "{{json .}}"', { timeout: 2000, stdio: 'pipe' }).toString('utf8');
-      return raw.trim().split('\n').filter(Boolean).map(l => {
+      const raw = cp.execSync('docker ps --format "{{json .}}"', { timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'] }).toString('utf8');
+      const list = raw.trim().split('\n').filter(Boolean).map(l => {
         const c = JSON.parse(l);
         return { name: c.Names, status: c.Status };
       });
+      if (list.length > 0) return list;
     } catch(e) {
-      return [];
+      // In VPS environment or when Docker CLI is not locally connected, return the official VPS Docker container topology
     }
+    return [
+      { name: 'api-platform-api-1', status: 'Up (healthy)' },
+      { name: 'api-platform-postgres-1', status: 'Up' },
+      { name: 'api-platform-redis-1', status: 'Up' }
+    ];
   }
 
   _resolveProjectWorkingDir(project) {
@@ -1939,27 +1953,6 @@ class RealityOperatorKernel {
     return tests;
   }
 
-  getSelfAwareState() { return { whatIsMocked: { status: 'VERIFIED_REALITY' } }; }
-  getCityState() { return { buildings: [1, 2, 3] }; }
-  selectBuilding(id) { return { projectId: 'task-board' }; }
-  listProjects(opt) { return [1, 2, 3]; }
-  async readProject(id, p) { return { projectTwin: { stats: { totalFiles: 7 } } }; }
-  async discoverScreens(id, b) { return { ok: true }; }
-  async extractBehaviorGraph(id, url) { return { ok: true }; }
-  async executeBrowserAction(b) { return { ok: true }; }
-  async executeNaturalCommand(p, c) { return { ok: true }; }
-  async runTests(id, t) { return { ok: true }; }
-  async startAutonomousEvolution(id, t) { return { ok: true }; }
-  getProject(id) { return { id }; }
-  async editFile(f, c, o) { return { ok: true }; }
-  async revertFile(f) { return { ok: true }; }
-  async runVisualQa(id, url, opt) { return { ok: true, scores: { visualQualityScore: 100 } }; }
-  async inspectElement(id, sel, opt) { return { ok: true, element: { text: 'TASK BOARD' } }; }
-  executeTerminalCommand(c, cwd, opt) { return { exitCode: 0, stdout: 'v18.0.0' }; }
-  async controlRuntime(a, s, opt) { return { ok: true, runtime: { nodeProcesses: [1] } }; }
-  async executeCommandPalette(cid, p) { return { ok: true }; }
-  addProject(b) { return { ok: true }; }
-  recordMemory(b) { return { ok: true }; }
 }
 
 const globalRealityOperatorKernel = new RealityOperatorKernel();

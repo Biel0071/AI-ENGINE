@@ -1,0 +1,26 @@
+{
+  "remoteOnly": [
+    "api\\living-city-routes.js",
+    "brain\\brain-agent-engine.js",
+    "learning\\learning-engine.js",
+    "memory\\system-memory.js",
+    "observer\\system-observatory.js",
+    "projects\\project-reader.js"
+  ],
+  "changed": [
+    "app.js",
+    "server.js",
+    "ai-city\\perception-engine.js",
+    "api\\projects-registry-routes.js",
+    "api\\reality-engine.js",
+    "api\\runtime-full-status.js",
+    "api\\universal-system-routes.js",
+    "auth\\auth.js",
+    "brain\\graph-brain.js",
+    "connectors\\github-service.js",
+    "execution\\job-queue-manager.js",
+    "projects\\project-registry.js",
+    "reality-operator\\reality-operator-kernel.js",
+    "reconstruction\\dynamic-workforce.js"
+  ]
+}

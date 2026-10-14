@@ -2087,6 +2087,7 @@
       'COMMAND': { name: 'Command Tower', role: 'Núcleo central e orquestração', buildingId: 'bld-fenix-hq', color: '#38bdf8', desc: 'Núcleo central do Fênix OS. O estado exibido abaixo vem do runtime.' },
       'PROJECT': { name: 'Project Registry & Git Lab', role: 'Projetos e repositórios', buildingId: 'bld-dev-loft', color: '#f59e0b', desc: 'Área de projetos, workspaces e repositórios.' },
       'AI': { name: 'Cognitive Nexus', role: 'Provedores e inteligência artificial', buildingId: 'bld-ai-nexus', color: '#a855f7', desc: 'Área de provedores, roteamento de modelos e conhecimento.' },
+      'API': { name: 'API Platform Gateway', role: 'Gateway, provedores e operações de API', buildingId: 'bld-api-platform', color: '#06b6d4', desc: 'Gateway da API e operações do Fênix.' },
       'LOGISTICS': { name: 'Depósito Mais Logística', role: 'Logística e operações', buildingId: 'bld-deposito-mais', color: '#f59e0b', desc: 'Área de operações logísticas. Os dados exibidos abaixo vêm do runtime.' },
       'CREATIVE': { name: 'Design & UI Studio', role: 'Interface e componentes', buildingId: 'bld-dev-loft', color: '#ec4899', desc: 'Área de interface, componentes e design system.' },
       'BACKEND': { name: 'Dual-Lane Fast Engine', role: 'Serviços e processamento', buildingId: 'bld-dev-loft', color: '#10b981', desc: 'Área de serviços, APIs e processamento de tarefas.' },
@@ -2109,8 +2110,15 @@
     const building = buildingResult.ok && buildingResult.data?.building ? buildingResult.data.building : null;
     const agentData = agentsResult.ok ? agentsResult.data?.agents : null;
     const runtimeAgents = Array.isArray(agentData) ? agentData : (agentData && typeof agentData === 'object' ? Object.values(agentData) : null);
+    const canonicalId = (id) => window.FenixCityMachineScene?.canonicalBuildingId({ type: 'building', id: String(id || '') }) || String(id || '');
+    const targetBuildingId = canonicalId(building?.id || buildingId).toLowerCase();
+    const targetDistrict = String(building?.district || entity.district || '').toLowerCase();
     const buildingAgents = building && runtimeAgents
-      ? runtimeAgents.filter(agent => String(agent.buildingId || '').toLowerCase() === String(building.id || buildingId).toLowerCase())
+      ? runtimeAgents.filter(agent => {
+          const agentBuildingId = String(agent.buildingId || '').trim();
+          if (agentBuildingId) return canonicalId(agentBuildingId).toLowerCase() === targetBuildingId;
+          return Boolean(targetDistrict && String(agent.district || '').toLowerCase() === targetDistrict);
+        })
       : null;
     const rawHealth = building?.health?.percent ?? building?.health?.score ?? building?.health ?? building?.telemetry?.health?.percent ?? building?.metrics?.health?.percent;
     const healthValue = rawHealth !== null && rawHealth !== undefined && rawHealth !== '' && Number.isFinite(Number(rawHealth))

@@ -29,10 +29,15 @@
     jobs: [],
     runtimeJobs: [],
     agents: [],
+    agentsMeasured: false,
     missions: [],
+    missionsMeasured: false,
     projects: [],
+    projectsMeasured: false,
     operationalTwin: null,
-    events: []
+    events: [],
+    eventsMeasured: false,
+    jobsMeasured: false
   };
 
   let ws = null;
@@ -99,15 +104,20 @@
     if (data.queue) live.queue = data.queue;
     if (data.jobs) live.jobs = data.jobs;
     if (data.runtimeJobs) live.runtimeJobs = data.runtimeJobs;
-    if (data.agents) live.agents = data.agents;
-    if (data.missions) live.missions = data.missions;
-    if (data.projects) live.projects = data.projects;
+    live.agentsMeasured = Array.isArray(data.agents);
+    live.missionsMeasured = Array.isArray(data.missions);
+    live.projectsMeasured = Array.isArray(data.projects);
+    live.jobsMeasured = Array.isArray(data.jobs);
+    live.eventsMeasured = Array.isArray(data.events);
+    if (live.agentsMeasured) live.agents = data.agents;
+    if (live.missionsMeasured) live.missions = data.missions;
+    if (live.projectsMeasured) live.projects = data.projects;
     if (data.operationalTwin) live.operationalTwin = data.operationalTwin;
     if (data.agentRuntime) live.agentRuntime = data.agentRuntime;
     if (data.capacity) live.capacity = data.capacity;
     if (data.lastSeq) live.lastSeq = data.lastSeq;
-    if (data.events) live.events = data.events;
-    live.snapshotMeasured = true;
+    if (live.eventsMeasured) live.events = data.events;
+    live.snapshotMeasured = [live.agentsMeasured, live.missionsMeasured, live.projectsMeasured, live.jobsMeasured, live.eventsMeasured].some(Boolean);
     emit('snapshot', data);
     // HTTP snapshot recupera os dados, mas não prova que o canal realtime está
     // conectado. Só o handshake WebSocket pode promover o estado para ONLINE.
@@ -119,8 +129,15 @@
     const live = window.FENIX.live;
     if (msg.seq) live.lastSeq = Math.max(live.lastSeq, msg.seq);
     live.lastEventAt = msg.at || new Date().toISOString();
-    live.events.unshift(msg);
-    if (live.events.length > 250) live.events.pop();
+    const transportEvent = ['runtime.heartbeat', 'heartbeat', 'ping', 'pong'].includes(String(msg.type || '').toLowerCase());
+    if (!transportEvent) {
+      live.eventsMeasured = true;
+      const eventId = msg.id || msg.eventId || msg.seq;
+      if (!eventId || !live.events.some((event) => String(event.id || event.eventId || event.seq || '') === String(eventId))) {
+        live.events.unshift({ ...msg, source: 'runtime-event', occurredAt: msg.at || msg.occurredAt || null });
+        if (live.events.length > 250) live.events.pop();
+      }
+    }
 
     switch (msg.type) {
       case 'runtime.heartbeat':
@@ -231,7 +248,12 @@
     }
 
     updateQueueMetrics();
-    emit(msg.type, msg.payload || {});
+    emit(msg.type, transportEvent ? (msg.payload || {}) : {
+      ...(msg.payload || {}),
+      source: 'runtime-event',
+      eventId: msg.id || msg.eventId || null,
+      occurredAt: msg.at || msg.occurredAt || null
+    });
   }
 
   function ensureJob(id, status, data) {
@@ -333,6 +355,7 @@
         ws = new WebSocket(wsUrl());
         window.__FENIX_WS__ = ws;
       }
+      window.__FENIX_SINGLETONS__?.register('webSocket', ws);
     } catch (e) {
       scheduleReconnect();
       return;

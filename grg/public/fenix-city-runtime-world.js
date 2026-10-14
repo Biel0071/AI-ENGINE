@@ -73,44 +73,6 @@
     if (typeof options.focus === 'function') options.focus();
     saveNavigation(instance);
     emitSelection(instance);
-    if (kind === 'project') {
-      const project = instance.lastCitySnapshot?.projects?.find((item) => String(item.id) === next.id);
-      if (project && typeof window.fenixShowWorldProjectInspector === 'function') {
-        const relatedJobs = (instance.lastCitySnapshot.recentJobs || []).filter((job) => String(job.projectId || '') === next.id);
-        window.fenixShowWorldProjectInspector(project, relatedJobs);
-      }
-    } else if (kind === 'district' && typeof window.fenixShowWorldBuildingInspector === 'function') {
-      const district = instance.DISTRICTS?.[next.id];
-      if (district) {
-        window.fenixShowWorldBuildingInspector({
-          key: next.id,
-          district: { ...district, key: next.id, label: district.name, department: district.sub },
-        });
-      }
-    } else if (kind === 'building' && typeof window.fenixShowWorldBuildingInspector === 'function') {
-      const building = instance.dynamicBuildings?.get(next.id);
-      const project = building?.projectId
-        ? instance.lastCitySnapshot?.projects?.find((item) => String(item.id) === String(building.projectId))
-        : null;
-      if (project && typeof window.fenixShowWorldProjectInspector === 'function') {
-        const relatedJobs = (instance.lastCitySnapshot.recentJobs || []).filter((job) => String(job.projectId || '') === String(project.id));
-        window.fenixShowWorldProjectInspector(project, relatedJobs);
-      } else if (building) {
-        window.fenixShowWorldBuildingInspector({
-          key: next.id,
-          district: {
-            ...building,
-            key: next.id,
-            name: building.name || next.id,
-            label: building.name || next.id,
-            emoji: building.icon || '🏢',
-            color: building.color || '#6b8790',
-            department: building.department || 'Edifício registrado no WorldStateEngine',
-            capabilities: building.capabilities || [],
-          },
-        });
-      }
-    }
     return true;
   }
 
@@ -335,20 +297,14 @@
   };
 
   proto.selectAgent = function selectLiveAgent(agentId) {
-    const selected = setSelection(this, 'agent', agentId, { focus: () => this.focusAgent?.(agentId) });
-    if (selected) {
-      const agent = this.agents?.get(String(agentId)) || this.world?.agents?.get(String(agentId));
-      if (agent && typeof window.fenixShowWorldAgentInspector === 'function') {
-        window.fenixShowWorldAgentInspector(agent);
-      }
-    }
-    return selected;
+    return setSelection(this, 'agent', agentId, { focus: () => this.focusAgent?.(agentId) });
   };
 
   proto.selectBuilding = function selectLiveBuilding(buildingId) {
     const node = this.projectNodes && [...this.projectNodes.values()].find((item) => item.sceneId === buildingId || item.id === buildingId);
     if (node) return setSelection(this, 'project', node.id, { focus: () => this.focusEntity(node.group.position, 15) });
-    return setSelection(this, 'building', buildingId, { focus: () => this.focusBuilding?.(buildingId) });
+    const id = sceneModel.canonicalBuildingId({ type: 'building', id: String(buildingId || '') }) || String(buildingId || '');
+    return setSelection(this, 'building', id, { focus: () => this.focusBuilding?.(id) });
   };
 
   proto.enterProject = function enterProject(projectId) {
@@ -407,6 +363,15 @@
     if (data?.type === 'machine') return this.selectMachine(data.machineId);
     if (data?.type === 'project') return this.selectCityEntity('project', data.projectId, { focus: () => this.focusEntity(this.hoveredObject.parent.position, 15) });
     if (data?.type === 'agent') return this.selectAgent(data.agentId || data.id);
+    if (data?.type === 'company') {
+      const buildingId = sceneModel.canonicalBuildingId({
+        type: 'company',
+        id: data.id,
+        districtId: data.districtId,
+        companyId: data.companyId,
+      });
+      if (buildingId) return this.selectBuilding(buildingId);
+    }
     if (data?.type === 'district') {
       this.focusDistrict?.(data.districtId || data.id);
       return this.selectCityEntity('district', data.districtId || data.id, { focus: false });

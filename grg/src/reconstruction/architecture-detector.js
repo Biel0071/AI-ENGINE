@@ -1,134 +1,96 @@
 'use strict';
-/**
- * FÊNIX OS V11 — ARCHITECTURE DETECTOR
- * 
- * Inspects observable cues from headers, scripts, markup, bundle chunks, and endpoints.
- * Classifies every architectural assertion into:
- *   - OBSERVED (Direct concrete evidence from DOM, meta, network, or package manifests)
- *   - INFERRED (Architectural deduce based on frameworks and patterns)
- *   - UNKNOWN (Concealed or unverified without deep backend server access)
- * 
- * RULE: "Não inventar. Classificar: OBSERVED, INFERRED, UNKNOWN."
- * Database catalogs and internal secrets are NEVER marked OBSERVED on web client inspection
- * unless backend manifests or configuration manifests are explicitly verified.
- */
 
+/**
+ * Classifies architecture only from supplied evidence. File names, CSS classes,
+ * and the existence of a package manifest do not prove that a framework or
+ * service is active.
+ */
 class ArchitectureDetector {
-  /**
-   * Detects architecture from observation data and optional project files
-   */
   detectArchitecture(inspectionData = {}, projectFiles = []) {
-    const rawEvidence = {
-      scripts: inspectionData.scripts || [],
-      meta: inspectionData.meta || [],
-      classes: [],
-      apis: inspectionData.apis || [],
-      headers: inspectionData.headers || {}
+    const files = normalizeFiles(projectFiles);
+    const manifest = inspectionData.packageManifest || inspectionData.packageJson || null;
+    const dependencies = {
+      ...(manifest?.dependencies || {}),
+      ...(manifest?.devDependencies || {})
+    };
+    const header = normalizeHeaders(inspectionData.headers);
+    const apis = Array.isArray(inspectionData.apis) ? inspectionData.apis : [];
+    const routes = Array.isArray(inspectionData.routes) ? inspectionData.routes : [];
+    const dependencyEvidence = (name) => {
+      const label = ({ react: 'React', vue: 'Vue', '@angular/core': 'Angular', express: 'Express', fastify: 'Fastify', '@hono/node-server': 'Hono' })[name] || name;
+      return Object.prototype.hasOwnProperty.call(dependencies, name)
+        ? observed(`${label} dependency declared`, `package.json dependency: ${name}`)
+        : unknown(`Nenhuma dependência ${name} foi observada no manifesto disponível.`);
     };
 
-    if (Array.isArray(inspectionData.elements)) {
-      inspectionData.elements.forEach(el => {
-        if (el.className && typeof el.className === 'string') rawEvidence.classes.push(el.className);
-      });
+    const frontendFramework = firstEvidence(
+      dependencyEvidence('react'),
+      dependencyEvidence('vue'),
+      dependencyEvidence('@angular/core'),
+      unknown('Framework frontend não identificado por evidência disponível.')
+    );
+    const backendFramework =
+      header['x-powered-by']?.toLowerCase().includes('express')
+        ? observed('Express response header observed', 'HTTP response header: x-powered-by')
+        : firstEvidence(
+          dependencyEvidence('express'),
+          dependencyEvidence('fastify'),
+          dependencyEvidence('@hono/node-server'),
+          unknown('Framework backend não identificado por manifesto ou resposta observada.')
+        );
+
+    let apiStyle = unknown('Nenhuma requisição de API foi observada.');
+    if (apis.length) {
+      const graphql = apis.find((item) => endpointOf(item).toLowerCase().includes('graphql'));
+      const jsonResponse = apis.find((item) => String(item?.responseContentType || item?.contentType || '').toLowerCase().includes('json'));
+      apiStyle = graphql
+        ? observed('GraphQL endpoint observed', evidenceSource(graphql, 'network request'))
+        : (jsonResponse
+          ? observed('HTTP JSON API response observed', evidenceSource(jsonResponse, 'network response content-type'))
+          : observed('HTTP API requests observed; response format unknown', 'browser network requests'));
     }
 
-    const hasProjectFiles = Array.isArray(projectFiles) && projectFiles.length > 0;
-    const fileList = hasProjectFiles ? projectFiles.join(' ') : '';
+    const authEvidence = inspectionData.authenticationEvidence;
+    const authentication = authEvidence?.verified === true && typeof authEvidence.value === 'string'
+      ? observed(authEvidence.value, authEvidence.source || 'explicit authentication probe')
+      : unknown('Mecanismo de autenticação não foi verificado por fluxo ou configuração acessível.');
 
-    // Headers inspection
-    const serverHeader = (rawEvidence.headers['server'] || rawEvidence.headers['Server'] || '').toLowerCase();
-    const poweredBy = (rawEvidence.headers['x-powered-by'] || rawEvidence.headers['X-Powered-By'] || '').toLowerCase();
-    const hasApis = rawEvidence.apis.length > 0;
+    const databaseEvidence = inspectionData.databaseEvidence;
+    const database = databaseEvidence?.connected === true
+      ? observed(databaseEvidence.engine ? `${databaseEvidence.engine} connection observed` : 'Database connection observed', databaseEvidence.source || 'database health probe')
+      : unknown('Conexão e catálogo de banco não foram verificados.');
 
-    // Detect Frontend Framework
-    let frontendFramework = { value: 'Vanilla / Modern Web Components', status: 'OBSERVED', confidence: 0.90 };
-    if (fileList.includes('react') || fileList.includes('.tsx') || fileList.includes('jsx')) {
-      frontendFramework = { value: 'React 18 / TypeScript', status: 'OBSERVED', confidence: 0.98 };
-    } else if (fileList.includes('vue')) {
-      frontendFramework = { value: 'Vue 3 / Vite', status: 'OBSERVED', confidence: 0.98 };
-    } else if (rawEvidence.classes.some(c => c.includes('react') || c.includes('chakra'))) {
-      frontendFramework = { value: 'React SPA', status: 'OBSERVED', confidence: 0.92 };
-    }
+    const storageEvidence = inspectionData.storageEvidence;
+    const storage = storageEvidence?.verified === true
+      ? observed(storageEvidence.value || 'Storage provider observed', storageEvidence.source || 'explicit storage probe')
+      : unknown('Uso de armazenamento não foi verificado por execução ou configuração ativa.');
 
-    // Detect Backend Framework
-    let backendFramework;
-    if (hasProjectFiles && (fileList.includes('server.js') || fileList.includes('package.json'))) {
-      backendFramework = { value: 'Node.js (Fastify / Express)', status: 'OBSERVED', confidence: 0.95 };
-    } else if (poweredBy.includes('express')) {
-      backendFramework = { value: 'Node.js Express', status: 'OBSERVED', confidence: 0.95 };
-    } else if (serverHeader.includes('nginx') || serverHeader.includes('openresty')) {
-      backendFramework = { value: `Reverse Proxy (${serverHeader}) with Node.js Gateway`, status: 'OBSERVED', confidence: 0.85 };
-    } else {
-      backendFramework = { value: 'Node.js / Modular Gateway Service', status: 'INFERRED', confidence: 0.70 };
-    }
+    const runningServices = Array.isArray(inspectionData.runtimeEvidence?.services)
+      ? inspectionData.runtimeEvidence.services.filter((service) => service?.status === 'RUNNING' && service?.source)
+      : [];
+    const services = runningServices.length
+      ? observed(`Serviços em execução observados: ${runningServices.map((service) => service.name || service.id).join(', ')}`, runningServices.map((service) => service.source).join('; '))
+      : unknown('Nenhum processo ou worker em execução foi medido.');
 
-    // Detect API Style
-    let apiStyle;
-    if (hasApis) {
-      const isGraphql = rawEvidence.apis.some(a => (typeof a === 'string' ? a : a.url || '').includes('graphql'));
-      apiStyle = isGraphql
-        ? { value: 'GraphQL Schema API', status: 'OBSERVED', confidence: 0.95 }
-        : { value: 'RESTful JSON (OpenAPI v3 compatible)', status: 'OBSERVED', confidence: 0.98 };
-    } else {
-      apiStyle = { value: 'RESTful JSON API', status: 'UNKNOWN', confidence: 0.0 };
-    }
+    const declaredPackages = Object.keys(dependencies).sort();
+    const dependencyInventory = declaredPackages.length
+      ? observed(`${declaredPackages.length} pacotes declarados no manifesto`, 'package.json dependencies and devDependencies')
+      : unknown('Manifesto de dependências não foi fornecido.');
 
-    // Detect Authentication
-    let authentication;
-    const cookieHeader = rawEvidence.headers['cookie'] || rawEvidence.headers['set-cookie'] || '';
-    if (cookieHeader.includes('kc-access') || fileList.includes('keycloak')) {
-      authentication = { value: 'Keycloak OIDC / JWT Tokens', status: 'OBSERVED', confidence: 0.92 };
-    } else if (hasProjectFiles && fileList.includes('auth')) {
-      authentication = { value: 'Bearer Token / JWT + Session Guard', status: 'OBSERVED', confidence: 0.88 };
-    } else {
-      authentication = { value: 'Bearer Token / JWT Authentication', status: 'INFERRED', confidence: 0.75 };
-    }
+    const observedRoutes = routes.map(routeValue).filter(Boolean);
+    const routing = observedRoutes.length
+      ? observed(`Routes observed (${observedRoutes.length})`, 'browser links or route manifest')
+      : unknown('Nenhuma rota ou transição de navegação foi observada.');
 
-    // Detect Database
-    let database;
-    if (hasProjectFiles && (fileList.includes('migrations') || fileList.includes('schema.sql') || fileList.includes('postgres') || fileList.includes('server.js'))) {
-      database = { value: 'PostgreSQL + Redis (BullMQ queues)', status: 'OBSERVED', confidence: 0.92 };
-    } else {
-      database = { value: 'Direct Database Catalog Concealed (PostgreSQL/SQL inferred from schema norms)', status: 'UNKNOWN', confidence: 0.0 };
-    }
+    const stateEvidence = inspectionData.stateManagementEvidence;
+    const stateManagement = stateEvidence?.verified === true && typeof stateEvidence.value === 'string'
+      ? observed(stateEvidence.value, stateEvidence.source || 'explicit state inspection')
+      : unknown('Gerenciamento de estado não foi inspecionado.');
 
-    // Detect Storage
-    let storage;
-    if (hasProjectFiles && (fileList.includes('docker-compose') || fileList.includes('Dockerfile') || fileList.includes('minio'))) {
-      storage = { value: 'MinIO / S3 Object Store + Local File Storage', status: 'OBSERVED', confidence: 0.90 };
-    } else {
-      storage = { value: 'MinIO / S3 Object Store or Local Disk', status: 'INFERRED', confidence: 0.65 };
-    }
-
-    // Detect Services
-    let services;
-    if (hasProjectFiles && (fileList.includes('server.js') || fileList.includes('bullmq') || fileList.includes('worker'))) {
-      services = { value: 'Background BullMQ Workers, PM2 Daemons, Auto-Healer', status: 'OBSERVED', confidence: 0.92 };
-    } else {
-      services = { value: 'Background Service Workers / Cron Daemons', status: 'UNKNOWN', confidence: 0.0 };
-    }
-
-    // Detect Dependencies
-    let dependencies;
-    if (hasProjectFiles && fileList.includes('package.json')) {
-      dependencies = { value: 'Node.js v20+, Playwright, Vis.js, Phosphor Icons, Marked', status: 'OBSERVED', confidence: 0.95 };
-    } else {
-      dependencies = { value: 'Modern Browser Web Standards, Canvas, Fetch API', status: 'OBSERVED', confidence: 0.85 };
-    }
-
-    // Detect Routing
-    const routing = { value: 'Hash / Path SPA Client Router with Gateway Proxy', status: 'OBSERVED', confidence: 0.90 };
-
-    // Detect State Management
-    const stateManagement = { value: 'Single-Shell Global Store + LocalStorage persistence', status: 'OBSERVED', confidence: 0.86 };
-
-    // Detect Build System
-    let buildSystem;
-    if (hasProjectFiles && (fileList.includes('package.json') || fileList.includes('vite') || fileList.includes('webpack'))) {
-      buildSystem = { value: 'Vite / ESBuild bundler pipeline', status: 'OBSERVED', confidence: 0.90 };
-    } else {
-      buildSystem = { value: 'Vite / ESBuild bundler pipeline', status: 'INFERRED', confidence: 0.70 };
-    }
+    const buildFile = files.find((file) => /(^|\/)(vite|webpack|rollup|esbuild)\.config\./i.test(file));
+    const buildSystem = buildFile
+      ? observed(`Arquivo de configuração de build presente: ${pathBase(buildFile)}`, `filesystem path: ${buildFile}`)
+      : unknown('Configuração de build não foi observada.');
 
     const classification = {
       frontendFramework,
@@ -138,51 +100,74 @@ class ArchitectureDetector {
       database,
       storage,
       services,
-      dependencies,
+      dependencies: dependencyInventory,
       routing,
       stateManagement,
       buildSystem
     };
-
-    // Segregate into 3 lists: OBSERVED, INFERRED, UNKNOWN
-    const observed = {};
-    const inferred = {};
-    const unknown = {
-      internalDbEncryptionKeys: 'Concealed in environment secrets vault',
-      productionClusterTopologies: 'Requires cloud VPC peering access',
-      deepDbIndexes: 'Requires direct PG catalog metadata inspection'
-    };
-
-    Object.entries(classification).forEach(([dimension, data]) => {
-      if (data.status === 'OBSERVED') {
-        observed[dimension] = data;
-      } else if (data.status === 'INFERRED') {
-        inferred[dimension] = data;
-      } else {
-        unknown[dimension] = data;
-      }
-    });
+    const observedDimensions = Object.entries(classification).filter(([, item]) => item.status === 'OBSERVED');
+    const inferredDimensions = Object.entries(classification).filter(([, item]) => item.status === 'INFERRED');
+    const unknownDimensions = Object.entries(classification).filter(([, item]) => item.status === 'UNKNOWN');
+    const summary = observedDimensions.length
+      ? `${observedDimensions.length} dimensões arquiteturais observadas; ${unknownDimensions.length} ainda não verificadas.`
+      : 'Nenhum dado arquitetural observado.';
 
     return {
       architectureId: `arch:${Date.now()}`,
-      summary: `${classification.frontendFramework.value} + ${classification.backendFramework.value} (${classification.apiStyle.value})`,
+      summary,
       classification,
+      evidence: observedDimensions.map(([dimension, item]) => ({ dimension, source: item.evidence.source, value: item.value })),
       epistemicSummary: {
-        totalObserved: Object.keys(observed).length,
-        totalInferred: Object.keys(inferred).length,
-        totalUnknown: Object.keys(unknown).length
+        totalObserved: observedDimensions.length,
+        totalInferred: inferredDimensions.length,
+        totalUnknown: unknownDimensions.length
       },
-      OBSERVED: observed,
-      INFERRED: inferred,
-      UNKNOWN: unknown,
+      OBSERVED: Object.fromEntries(observedDimensions),
+      INFERRED: Object.fromEntries(inferredDimensions),
+      UNKNOWN: Object.fromEntries(unknownDimensions),
       updatedAt: new Date().toISOString()
     };
   }
 }
 
+function observed(value, source) {
+  return { value, status: 'OBSERVED', confidence: 1, evidence: { source } };
+}
+
+function unknown(reason) {
+  return { value: null, status: 'UNKNOWN', confidence: 0, reason, evidence: null };
+}
+
+function firstEvidence(...items) {
+  return items.find((item) => item.status === 'OBSERVED') || items.at(-1);
+}
+
+function normalizeFiles(files) {
+  if (!Array.isArray(files)) return [];
+  return files.map((file) => typeof file === 'string' ? file.replace(/\\/g, '/') : file?.path)
+    .filter((file) => typeof file === 'string');
+}
+
+function normalizeHeaders(headers) {
+  return Object.fromEntries(Object.entries(headers || {}).map(([key, value]) => [key.toLowerCase(), String(value)]));
+}
+
+function endpointOf(api) {
+  return typeof api === 'string' ? api : String(api?.url || api?.endpoint || '');
+}
+
+function evidenceSource(item, fallback) {
+  return typeof item?.evidenceSource === 'string' ? item.evidenceSource : fallback;
+}
+
+function routeValue(route) {
+  return typeof route === 'string' ? route : route?.path || route?.url || route?.route || null;
+}
+
+function pathBase(file) {
+  return file.slice(file.lastIndexOf('/') + 1);
+}
+
 const globalArchitectureDetector = new ArchitectureDetector();
 
-module.exports = {
-  ArchitectureDetector,
-  globalArchitectureDetector
-};
+module.exports = { ArchitectureDetector, globalArchitectureDetector };

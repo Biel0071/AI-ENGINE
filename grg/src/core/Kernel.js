@@ -82,12 +82,15 @@ class Kernel {
     this.setupLiveManifest();
     this.writeArtifacts();
 
-    console.log('[Kernel] PHASE 8: CONTINUOUS WATCHERS (Active)');
-    console.log('[Kernel] PHASE 9: CAPABILITY ACTIVATION (Scored)');
-    console.log('[Kernel] PHASE 10: MISSION MODE (Routing Engine Ready)');
-    
-    console.log('[Kernel] PHASE 11: SELF ORGANIZATION');
-    this.generateMissions();
+    if (process.env.FENIX_SMOKE_MODE !== '1') {
+      console.log('[Kernel] PHASE 8: CONTINUOUS WATCHERS (Active)');
+      console.log('[Kernel] PHASE 9: CAPABILITY ACTIVATION (Scored)');
+      console.log('[Kernel] PHASE 10: MISSION MODE (Routing Engine Ready)');
+      console.log('[Kernel] PHASE 11: SELF ORGANIZATION');
+      this.generateMissions();
+    } else {
+      console.log('[Kernel] FENIX_SMOKE_MODE=1: Light core activation (watchers and mission generation paused).');
+    }
 
     console.log('[Kernel] PHASE 12: DIGITAL TWIN (AI City Synced)');
     

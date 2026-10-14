@@ -24,12 +24,24 @@ class AgentRegistry {
   register(agentId, spec) {
     if (!agentId) throw new Error('agentId is required');
     if (!spec.name) throw new Error('spec.name is required');
-    this.agents.set(agentId, {
-      ...spec,
+    const record = {
       id: agentId,
+      agentId,
+      name: spec.name,
+      companyId: spec.companyId || null,
+      projectId: spec.projectId || null,
+      role: spec.role || spec.domain || 'specialist',
+      personality: spec.personality || 'analytical',
+      status: spec.status || 'AVAILABLE',
+      runtimeStatus: spec.runtimeStatus || 'READY',
+      currentMissionId: spec.currentMissionId || null,
+      memoryId: spec.memoryId || null,
+      worldEntityId: spec.worldEntityId || null,
+      ...spec,
       updatedAt: new Date().toISOString()
-    });
-    return this.agents.get(agentId);
+    };
+    this.agents.set(agentId, record);
+    return record;
   }
 
   get(agentId) {
@@ -38,6 +50,10 @@ class AgentRegistry {
 
   list() {
     return Array.from(this.agents.values());
+  }
+
+  count() {
+    return this.agents.size;
   }
 
   findByDomain(domain) {

@@ -1,0 +1,236 @@
+{
+  "version": "3.0.0-canonical",
+  "system": "FENIX OS — AUTONOMOUS ENGINEERING OS",
+  "phase": "PHASE 13: VISUAL REALITY REBUILD",
+  "designTokens": {
+    "colorPalette": {
+      "backgroundDark": "#050810",
+      "backgroundSubtle": "#080B12",
+      "backgroundSurface": "#0B1018",
+      "surfaceCard": "rgba(11, 16, 24, 0.95)",
+      "borderGlow": "rgba(0, 217, 255, 0.25)",
+      "accentCyan": "#00D9FF",
+      "accentBlue": "#4488FF",
+      "accentAmber": "#FFB020",
+      "accentGreen": "#25D366",
+      "accentRed": "#FF4D5E",
+      "accentPurple": "#A78BFA",
+      "textPrimary": "#F8FAFC",
+      "textSecondary": "#94A3B8",
+      "textMuted": "#64748B"
+    },
+    "typography": {
+      "fontHeadings": "'Inter', 'Space Grotesk', system-ui, sans-serif",
+      "fontBody": "'Inter', -apple-system, system-ui, sans-serif",
+      "fontMono": "'JetBrains Mono', 'Consolas', monospace",
+      "scale": {
+        "eyebrow": "10px",
+        "caption": "11px",
+        "bodySmall": "12px",
+        "body": "13px",
+        "bodyLarge": "14px",
+        "subhead": "16px",
+        "heading3": "18px",
+        "heading2": "22px",
+        "heading1": "26px",
+        "display": "32px"
+      }
+    },
+    "spacingGridPx": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      32,
+      48,
+      64
+    ],
+    "surfaces": {
+      "base": "#050810",
+      "subtle": "#080B12",
+      "surface": "#0B1018",
+      "elevated": "#0E1520",
+      "overlay": "rgba(5, 8, 16, 0.88)"
+    },
+    "borders": {
+      "subtle": "1px solid rgba(255, 255, 255, 0.06)",
+      "interactive": "1px solid rgba(255, 255, 255, 0.10)",
+      "focus": "1px solid #00D9FF",
+      "accent": "1px solid rgba(0, 217, 255, 0.35)",
+      "radius": {
+        "sm": "6px",
+        "md": "8px",
+        "lg": "12px",
+        "pill": "9999px"
+      }
+    },
+    "shadows": {
+      "sm": "0 2px 8px rgba(0, 0, 0, 0.25)",
+      "md": "0 8px 24px rgba(0, 0, 0, 0.35)",
+      "lg": "0 16px 40px rgba(0, 0, 0, 0.50)",
+      "glow": "0 0 24px rgba(0, 217, 255, 0.15)"
+    },
+    "elevation": {
+      "glassmorphism": "backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);",
+      "boxShadow": "0 8px 32px 0 rgba(0, 0, 0, 0.37)"
+    },
+    "motion": {
+      "transitionFast": "all 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
+      "transitionNormal": "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+      "pulse": "pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1)"
+    },
+    "iconography": {
+      "family": "Phosphor Icons Web (Phosphor Bold/Fill/Regular)",
+      "sizeNav": "18px",
+      "sizeAction": "14px",
+      "sizeBadge": "11px"
+    }
+  },
+  "spatialArchitecture": {
+    "philosophy": "TOKEN != DESIGN: Eliminating the SaaS KPI Dashboard antipattern in favor of dense, operational Cockpits, Consoles, and 4-Quadrant Workspaces.",
+    "patterns": {
+      "CockpitWorkspace": {
+        "target": "view-command",
+        "panes": [
+          "Left: Canonical System Navigation Rail",
+          "Center: Current Mission Workspace (Hero Stage, Stepper Timeline, System Pulse, Operational Stream)",
+          "Right: Dedicated Context Inspector (Mission, Agent, Host, Memory)"
+        ]
+      },
+      "WorkforceLivingConsole": {
+        "target": "view-agents",
+        "panes": [
+          "Top: Living Pulse Strip (Status, Capacity Ratio, Zero-Mock Counters)",
+          "Left: Squad Groups (Active Squad, Available Squad, Supervised Squad)",
+          "Right: Docked Agent Deep Inspector (Identity, Specialty, Capabilities, Memory, Direct Controls)"
+        ]
+      },
+      "DeveloperIdeQuad": {
+        "target": "view-ide",
+        "panes": [
+          "Quadrant 1 (Left): Project Explorer Tree & Workspace Navigator",
+          "Quadrant 2 (Center-Top): Multi-tab Code Editor with Syntax Highlighting & AST status",
+          "Quadrant 3 (Center-Right): Dark Live Preview Canvas with responsive viewport toggles",
+          "Quadrant 4 (Bottom): Docked Operations Tray (Terminal, Output, Diagnostics, Git Status)"
+        ]
+      },
+      "LivingAgentOfficeWorkspace": {
+        "target": "view-city (office mode)",
+        "panes": [
+          "Top: Living Office Pulse Strip (#officeHudTotalOffices, #officeHudActiveAgents, #officeHudInMeeting, #officeHudOpenConversations)",
+          "Center: Spatial Floorplan Grid (20 Desks in 4 Suites, 4 Collective Rooms: Alfa, Review, Lounge, War Room)",
+          "Right/Dock: Collaboration & Dialogue Drawer (#officeDockBody)",
+          "Modals: Door Knock, Multi-Agent Meeting, Emergency War Room"
+        ]
+      }
+    }
+  },
+  "canonicalComponents": [
+    "FenixShell",
+    "FenixNavigation",
+    "FenixCommandBar",
+    "FenixSurface",
+    "FenixPanel",
+    "FenixCard",
+    "FenixButton",
+    "FenixIconButton",
+    "FenixTabs",
+    "FenixBadge",
+    "FenixStatus",
+    "FenixMetric",
+    "FenixTimeline",
+    "FenixActivity",
+    "FenixAgent",
+    "FenixAgentCard",
+    "FenixMission",
+    "FenixMissionCard",
+    "FenixProject",
+    "FenixProjectCard",
+    "FenixInspector",
+    "FenixGraph",
+    "FenixGraphNode",
+    "FenixConsole",
+    "FenixDataTable",
+    "FenixEmptyState",
+    "FenixLoading",
+    "FenixError",
+    "FenixCockpitWorkspace",
+    "FenixWorkforceConsole",
+    "FenixSquadGroup",
+    "FenixIdeDockTray",
+    "FenixDarkPreviewCanvas",
+    "FenixLivingOffice",
+    "FenixOfficeDesk",
+    "FenixOfficeRoom",
+    "FenixKnockModal",
+    "FenixMeetingModal",
+    "FenixWarRoomModal",
+    "FenixOfficeDock"
+  ],
+  "states": [
+    "IDLE",
+    "HOVER",
+    "FOCUS",
+    "ACTIVE",
+    "SELECTED",
+    "LOADING",
+    "RUNNING",
+    "SUCCESS",
+    "WARNING",
+    "ERROR",
+    "PAUSED",
+    "BLOCKED",
+    "COMPLETED",
+    "DISABLED"
+  ],
+  "languages": {
+    "agentVisualLanguage": {
+      "principle": "Entidades operacionais autônomas agrupadas por Squads, telemetria viva, sem emojis como identidade central",
+      "indicators": ["Avatar Phosphor", "Especialização", "Status Glow", "Ação Corrente", "Barra de Progresso", "Telemetry Ring", "Deep Inspector Dock"]
+    },
+    "cityVisualLanguage": {
+      "principle": "Projeção isométrica viva do runtime real (Pixi.js/Three.js)",
+      "rules": ["Zero atividade falsa", "Entidades derivadas de jobs/agentes reais", "Distritos com iluminação dinâmica dia/noite"]
+    },
+    "editorVisualLanguage": {
+      "principle": "Ferramenta de engenharia profissional 4-quadrantes (IDE)",
+      "layout": ["Árvore de arquivos", "Editor com line-numbers", "Tabs de código", "Dark Canvas Preview", "Docked Operations Tray"]
+    },
+    "officeVisualLanguage": {
+      "principle": "Espaço de trabalho espacial vivo com desks, salas coletivas e docked drawer de colaboração",
+      "rules": ["Zero atividade simulada", "Knock formal com prioridade e timeout", "Circuit breaker anti-loop", "Mesas mapeadas para os 20 agentes reais", "War room reservada para incidentes críticos"]
+    },
+    "navigation": {
+      "domains": ["CORE", "BUILD", "INTELLIGENCE", "RUNTIME", "SYSTEM"],
+      "hierarchy": "Global System > Workspace > Context > Primary Object > Actions > Detail > Telemetry"
+    }
+  },
+  "density": {
+    "desktop": "Compact Operational Engineering Density",
+    "mobile": "Adaptive Touch Operability",
+    "lineHeight": 1.45
+  },
+  "responsiveness": {
+    "breakpoints": {
+      "mobile": "600px",
+      "tablet": "900px",
+      "desktop": "1440px",
+      "ultrawide": "1920px"
+    }
+  },
+  "accessibility": {
+    "contrastRatio": ">= 4.5:1 em todos os textos",
+    "screenReader": "Views com aria-label e estruturas semânticas acessíveis (ex: #cityListView)",
+    "focusIndicators": "Contorno cyan elétrico em controles focados"
+  },
+  "invariants": [
+    "Zero-Mock Factual UI: Marcador honesto (—) em slots não carregados",
+    "Vanilla JS Puro: Zero frameworks externos pesados (React, Vue, Next)",
+    "14 Views Nativamente Integradas no index.html canônico",
+    "Full-Stack Real Capability: Reciprocidade entre Front, API, Runtime e DB",
+    "Obsidian Foundation: Base #050810 em 100% dos view containers",
+    "Token != Design: Hierarquia espacial, layouts cockpit e 4-quadrantes obrigatórios"
+  ]
+}

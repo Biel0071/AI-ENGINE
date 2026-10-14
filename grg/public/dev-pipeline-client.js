@@ -47,7 +47,7 @@ window.executeDevPipeline = async function(prompt) {
     const terminal = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED']);
     const stage = (step) => step?.status === 'DISPATCHED' ? (step.jobType || 'EXECUTING') : (step?.status || 'PLANNED');
     for (let attempt = 0; attempt < 300; attempt += 1) {
-      const response = await fetch('/api/fenix/missions/' + encodeURIComponent(missionId), {
+      const response = await fetch('/api/missions/' + encodeURIComponent(missionId), {
         headers: token ? { authorization: 'Bearer ' + token } : {}, cache: 'no-store',
       });
       if (!response.ok) throw new Error('API returned ' + response.status);

@@ -1690,3 +1690,105 @@ body.art-director-photo-mode #wsCityContainer canvas:not(#cityCanvas) {
   border: none;
   border-radius: 8px;
 }
+
+/* ── FÊNIX AI CITY 4.0: SPATIAL AGENT CHAT & MULTI-FLOOR OVERLAYS ── */
+.fenix-spatial-agent-chat {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #f8fafc;
+  pointer-events: auto;
+  animation: fenixSpatialFadeIn 0.18s ease-out;
+}
+
+@keyframes fenixSpatialFadeIn {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.spatial-chat-body::-webkit-scrollbar {
+  width: 4px;
+}
+.spatial-chat-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.spatial-chat-bubble {
+  max-width: 86%;
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.spatial-chat-bubble.agent {
+  align-self: flex-start;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(0, 217, 255, 0.22);
+  color: #e2e8f0;
+  border-bottom-left-radius: 2px;
+}
+.spatial-chat-bubble.user {
+  align-self: flex-end;
+  background: rgba(0, 217, 255, 0.18);
+  border: 1px solid rgba(0, 217, 255, 0.45);
+  color: #ffffff;
+  border-bottom-right-radius: 2px;
+}
+.spatial-chat-bubble.system {
+  align-self: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.spatial-pill {
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.spatial-pill:hover {
+  filter: brightness(1.25);
+  transform: translateY(-1px);
+}
+.spatial-pill:active {
+  transform: translateY(0);
+}
+
+/* Floor selector button */
+.floor-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.floor-btn:hover {
+  background: rgba(0, 217, 255, 0.15);
+  border-color: rgba(0, 217, 255, 0.35);
+  color: #f8fafc;
+}
+.floor-btn.active {
+  background: rgba(0, 217, 255, 0.25);
+  border-color: #00d9ff;
+  color: #00d9ff;
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.3);
+}
+
+/* Station Preview Modal */
+.fenix-station-preview-modal {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #f8fafc;
+  pointer-events: auto;
+  animation: fenixSpatialFadeIn 0.18s ease-out;
+}
+

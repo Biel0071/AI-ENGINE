@@ -1,11 +1,13 @@
 /**
- * StorageManager — orquestra os drivers de armazenamento.
+ * StorageManager — orquestra os drivers de armazenamento com suporte multi-tier
+ * resiliente (PostgreSQL, Redis, Qdrant e SQLite).
  *
- * Em producao (DATABASE_URL definida): usa pg (PostgreSQL real).
- * Em producao (REDIS_URL definida): usa ioredis/redis real.
- * Fallback local: InMemoryDriver (zero dependencias nativas, funciona em read-only).
+ * Em producao:
+ * - Relacional: PostgreSQL Primário -> PostgreSQL Secundário -> SQLite Real -> InMemory (Degradado)
+ * - Cache: Redis Primário -> Redis Secundário -> MemoryCache (Degradado)
+ * - Vetorial: Qdrant Primário -> Qdrant Secundário -> LocalVector (Degradado)
  *
- * NAO ha mocks. Cada caminho conecta de verdade ou falha com mensagem clara.
+ * NAO ha mocks. Reporta honestamente 'HEALTHY' ou 'DEGRADED' com razoes claras.
  */
 const { InMemoryDriver } = require('./drivers/local/in-memory-driver');
 const { LocalVectorDriver } = require('./drivers/local/local-vector-driver');
@@ -13,6 +15,7 @@ const { MemoryCacheDriver } = require('./drivers/local/memory-cache-driver');
 
 class StorageManager {
   constructor(options = {}) {
+    this.eventBus = options.eventBus || null;
     this.drivers = {
       relational: null,
       cache: null,
@@ -21,87 +24,168 @@ class StorageManager {
     this.stats = {
       relationalProvider: 'none',
       cacheProvider: 'none',
-      vectorProvider: 'none'
+      vectorProvider: 'none',
+      persistenceState: 'INIT',
+      degradedReasons: []
     };
   }
 
   async boot() {
-    // ─── 1. Relational ────────────────────────────────────────────────────────
-    const dbUrl = process.env.DATABASE_URL;
-    if (dbUrl) {
+    this.stats.degradedReasons = [];
+
+    // ─── 1. Relational Multi-Tier ─────────────────────────────────────────────
+    const relationalCandidates = [
+      { type: 'postgresql', url: process.env.DATABASE_URL, label: 'primary' },
+      { type: 'postgresql', url: process.env.DATABASE_URL_SECONDARY, label: 'secondary' }
+    ].filter(c => Boolean(c.url));
+
+    let relationalConnected = false;
+    for (const cand of relationalCandidates) {
       try {
         const { PostgreSQLDriver } = require('./drivers/postgresql-driver');
-        this.drivers.relational = new PostgreSQLDriver({ url: dbUrl });
-        await this.drivers.relational.connect();
+        const driver = new PostgreSQLDriver({ url: cand.url });
+        await driver.connect();
+        this.drivers.relational = driver;
         this.stats.relationalProvider = 'postgresql';
-        console.log('[StorageManager] PostgreSQL connected.');
+        relationalConnected = true;
+        console.log(`[StorageManager] PostgreSQL (${cand.label}) connected.`);
+        break;
       } catch (err) {
-        console.warn('[StorageManager] PostgreSQL failed, falling back to InMemory:', err.message);
-        this.drivers.relational = new InMemoryDriver();
-        await this.drivers.relational.connect();
-        this.stats.relationalProvider = 'in-memory';
-      }
-    } else {
-      const sqlitePath = process.env.FENIX_KNOWLEDGE_SQLITE_PATH;
-      if (sqlitePath) {
-        const { SQLiteDriver } = require('./drivers/local/sqlite-driver');
-        this.drivers.relational = new SQLiteDriver({ dbPath: sqlitePath });
-        await this.drivers.relational.connect();
-        this.stats.relationalProvider = 'sqlite';
-        console.log('[StorageManager] SQLite knowledge store connected.');
-      } else {
-        console.log('[StorageManager] No DATABASE_URL or FENIX_KNOWLEDGE_SQLITE_PATH. Using InMemory driver.');
-        this.drivers.relational = new InMemoryDriver();
-        await this.drivers.relational.connect();
-        this.stats.relationalProvider = 'in-memory';
+        console.warn(`[StorageManager] PostgreSQL (${cand.label}) connection failed:`, err.message);
       }
     }
 
-    // ─── 2. Cache (Redis) ─────────────────────────────────────────────────────
-    const redisUrl = process.env.REDIS_URL;
-    if (redisUrl) {
+    if (!relationalConnected) {
+      const sqlitePath = process.env.FENIX_KNOWLEDGE_SQLITE_PATH;
+      if (sqlitePath) {
+        try {
+          const { SQLiteDriver } = require('./drivers/local/sqlite-driver');
+          const driver = new SQLiteDriver({ dbPath: sqlitePath });
+          await driver.connect();
+          this.drivers.relational = driver;
+          this.stats.relationalProvider = 'sqlite';
+          relationalConnected = true;
+          console.log('[StorageManager] SQLite knowledge store connected at', sqlitePath);
+        } catch (err) {
+          console.warn('[StorageManager] SQLite connection failed:', err.message);
+        }
+      }
+    }
+
+    if (!relationalConnected) {
+      console.warn('[StorageManager] No persistent database reachable. Relational storage degraded to in-memory.');
+      this.drivers.relational = new InMemoryDriver();
+      await this.drivers.relational.connect();
+      this.stats.relationalProvider = 'in-memory';
+      this.stats.degradedReasons.push('Relational database running in-memory (loss of persistence on restart)');
+    }
+
+    // ─── 2. Cache (Redis Multi-Tier) ──────────────────────────────────────────
+    const redisCandidates = [
+      { url: process.env.REDIS_URL, label: 'primary' },
+      { url: process.env.REDIS_URL_SECONDARY, label: 'secondary' }
+    ].filter(c => Boolean(c.url));
+
+    let cacheConnected = false;
+    for (const cand of redisCandidates) {
       try {
         const { RedisDriver } = require('./drivers/redis-driver');
-        this.drivers.cache = new RedisDriver({ url: redisUrl });
-        await this.drivers.cache.connect();
+        const driver = new RedisDriver({ url: cand.url });
+        await driver.connect();
+        this.drivers.cache = driver;
         this.stats.cacheProvider = 'redis';
-        console.log('[StorageManager] Redis connected.');
+        cacheConnected = true;
+        console.log(`[StorageManager] Redis (${cand.label}) connected.`);
+        break;
       } catch (err) {
-        console.warn('[StorageManager] Redis failed, falling back to MemoryCache:', err.message);
-        this.drivers.cache = new MemoryCacheDriver();
-        await this.drivers.cache.connect();
-        this.stats.cacheProvider = 'memory';
+        console.warn(`[StorageManager] Redis (${cand.label}) connection failed:`, err.message);
       }
-    } else {
-      console.log('[StorageManager] No REDIS_URL. Using MemoryCache driver.');
+    }
+
+    if (!cacheConnected) {
+      console.warn('[StorageManager] No Redis reachable. Cache storage running in memory.');
       this.drivers.cache = new MemoryCacheDriver();
       await this.drivers.cache.connect();
       this.stats.cacheProvider = 'memory';
+      this.stats.degradedReasons.push('Redis cache unavailable (running memory cache)');
     }
 
-    // ─── 3. Vector (Qdrant) ───────────────────────────────────────────────────
-    const qdrantUrl = process.env.FENIX_QDRANT_URL || process.env.QDRANT_URL;
-    if (qdrantUrl) {
+    // ─── 3. Vector (Qdrant Multi-Tier) ────────────────────────────────────────
+    const qdrantCandidates = [
+      { url: process.env.FENIX_QDRANT_URL || process.env.QDRANT_URL, label: 'primary' },
+      { url: process.env.QDRANT_URL_SECONDARY, label: 'secondary' }
+    ].filter(c => Boolean(c.url));
+
+    let vectorConnected = false;
+    for (const cand of qdrantCandidates) {
       try {
         const { QdrantDriver } = require('./drivers/qdrant-driver');
-        this.drivers.vector = new QdrantDriver({ url: qdrantUrl });
-        await this.drivers.vector.connect();
+        const driver = new QdrantDriver({ url: cand.url });
+        await driver.connect();
+        this.drivers.vector = driver;
         this.stats.vectorProvider = 'qdrant';
-        console.log('[StorageManager] Qdrant connected.');
+        vectorConnected = true;
+        console.log(`[StorageManager] Qdrant (${cand.label}) connected.`);
+        break;
       } catch (err) {
-        console.warn('[StorageManager] Qdrant failed, falling back to LocalVector:', err.message);
-        this.drivers.vector = new LocalVectorDriver();
-        await this.drivers.vector.connect();
-        this.stats.vectorProvider = 'local';
+        console.warn(`[StorageManager] Qdrant (${cand.label}) connection failed:`, err.message);
       }
-    } else {
-      console.log('[StorageManager] No QDRANT_URL. Using LocalVector driver.');
+    }
+
+    if (!vectorConnected) {
+      console.warn('[StorageManager] No Qdrant reachable. Vector storage running locally.');
       this.drivers.vector = new LocalVectorDriver();
       await this.drivers.vector.connect();
       this.stats.vectorProvider = 'local';
+      this.stats.degradedReasons.push('Qdrant vector store unreachable (running local fallback)');
     }
 
-    console.log(`[StorageManager] Boot complete — relational:${this.stats.relationalProvider} cache:${this.stats.cacheProvider} vector:${this.stats.vectorProvider}`);
+    // Avaliação geral de persistência
+    const isDegraded = this.stats.relationalProvider === 'in-memory' ||
+                       this.stats.cacheProvider === 'memory' ||
+                       this.stats.vectorProvider === 'local';
+
+    this.stats.persistenceState = isDegraded ? 'PERSISTENCE DEGRADED' : 'HEALTHY';
+
+    console.log(`[StorageManager] Boot complete — state:${this.stats.persistenceState} relational:${this.stats.relationalProvider} cache:${this.stats.cacheProvider} vector:${this.stats.vectorProvider}`);
+
+    if (this.eventBus) {
+      this.eventBus.emit('persistence:status', {
+        state: this.stats.persistenceState,
+        stats: this.getStats(),
+        reasons: this.stats.degradedReasons
+      });
+    }
+  }
+
+  async checkHealth() {
+    const health = {
+      relational: { ok: false, provider: this.stats.relationalProvider },
+      cache: { ok: false, provider: this.stats.cacheProvider },
+      vector: { ok: false, provider: this.stats.vectorProvider },
+      state: this.stats.persistenceState,
+      reasons: this.stats.degradedReasons
+    };
+
+    try {
+      if (this.drivers.relational?.isConnected) {
+        health.relational.ok = true;
+      }
+    } catch (_) {}
+
+    try {
+      if (this.drivers.cache?.isConnected) {
+        health.cache.ok = true;
+      }
+    } catch (_) {}
+
+    try {
+      if (this.drivers.vector?.isConnected) {
+        health.vector.ok = true;
+      }
+    } catch (_) {}
+
+    return health;
   }
 
   async shutdown() {
@@ -122,7 +206,10 @@ class StorageManager {
       missions:  this.stats.relationalProvider,
       knowledge: this.stats.relationalProvider,
       cache:     this.stats.cacheProvider,
-      vectors:   this.stats.vectorProvider
+      vectors:   this.stats.vectorProvider,
+      state:     this.stats.persistenceState,
+      degraded:  this.stats.persistenceState === 'PERSISTENCE DEGRADED',
+      reasons:   this.stats.degradedReasons
     };
   }
 }

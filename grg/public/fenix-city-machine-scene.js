@@ -12,9 +12,56 @@
   const PROJECT_COLUMNS = 10;
   const PROJECT_SPACING = 6.8;
   const PROJECT_COLORS = Object.freeze(['#4e8f88', '#657ea0', '#9a8053', '#806d9b', '#4e8492']);
+  const LOGISTICS_TRAFFIC_ROUTE = Object.freeze({ x: 22, startZ: -37, endZ: -4, speed: 3.4 });
+  const CANONICAL_BUILDING_IDS = Object.freeze({
+    'command-center': 'bld-fenix-hq',
+    'fenix-hq': 'bld-fenix-hq',
+    'bld-fenix-hq': 'bld-fenix-hq',
+    logistics: 'bld-deposito-mais',
+    'industrial-hub': 'bld-deposito-mais',
+    'deposito-mais': 'bld-deposito-mais',
+    'bld-deposito-mais': 'bld-deposito-mais',
+    'api-platform': 'bld-api-platform',
+    'bld-api-platform': 'bld-api-platform',
+    'dev-district': 'bld-dev-loft',
+    'bld-dev-loft': 'bld-dev-loft',
+    'ai-district': 'bld-ai-nexus',
+    'bld-ai-nexus': 'bld-ai-nexus',
+  });
 
   function validId(value) {
     return typeof value === 'string' && value.trim().length > 0;
+  }
+
+  function canonicalBuildingId(selection = {}) {
+    const type = String(selection.type || '').toLowerCase();
+    const value = selection.buildingId || selection.id || selection.districtId || selection.companyId;
+    const id = String(value || '').trim();
+    if (!id) return null;
+    const canonical = CANONICAL_BUILDING_IDS[id.toLowerCase()];
+    if (canonical) return canonical;
+    return type === 'building' && id.startsWith('bld-') ? id : null;
+  }
+
+  function advanceLaneTraffic(state = {}, deltaSeconds = 0) {
+    const route = LOGISTICS_TRAFFIC_ROUTE;
+    const span = route.endZ - route.startZ;
+    const z = Number.isFinite(Number(state.z)) ? Number(state.z) : route.startZ;
+    const direction = Number(state.direction) < 0 ? -1 : 1;
+    const offset = Math.max(0, Math.min(span, z - route.startZ));
+    const period = span * 2;
+    const currentPhase = direction > 0 ? offset : period - offset;
+    const elapsed = Math.max(0, Number(deltaSeconds) || 0);
+    const phase = ((currentPhase + elapsed * route.speed) % period + period) % period;
+    const forward = phase < span;
+    const routeOffset = forward ? phase : period - phase;
+    const nextDirection = forward ? 1 : -1;
+    return {
+      x: route.x,
+      z: route.startZ + routeOffset,
+      direction: nextDirection,
+      rotationY: nextDirection > 0 ? 0 : Math.PI,
+    };
   }
 
   function projectMachineScene(machines, anchor = MACHINE_ANCHOR) {
@@ -90,5 +137,11 @@
     });
   }
 
-  return Object.freeze({ projectMachineScene, projectSceneSites });
+  return Object.freeze({
+    LOGISTICS_TRAFFIC_ROUTE,
+    advanceLaneTraffic,
+    canonicalBuildingId,
+    projectMachineScene,
+    projectSceneSites,
+  });
 });

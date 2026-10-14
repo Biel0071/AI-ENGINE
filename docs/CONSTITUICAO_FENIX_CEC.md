@@ -7,6 +7,9 @@
 
 ## LEVEL 0 — UNIVERSAL AXIOMS (AS VERDADES IMUTÁVEIS)
 
+### Artigo 0º (REGRA ZERO — Da Independência Ontológica e Primazia Determinística do Agent OS)
+O Fênix OS é um Sistema Operacional para Computação Autônoma (Autonomous Computing OS), ontologicamente independente de qualquer modelo probabilístico de linguagem (LLM). O modelo não é o sistema; o modelo é apenas um provedor cognitivo plugável no Cognitive Bus. Se todas as APIs de IA externas ou locais cessarem, o Fênix OS permanece vivo, auditável e soberano: executa workflows determinísticos, resolve o MissionKernel DAG, despacha tarefas pelo Scheduler, orquestra Workers em nós do Fênix Mesh, manipula arquivos, dispara builds, roda testes, audita a realidade no Reality Engine, sincroniza memórias no Memory Fabric e renderiza o estado factual na AI City. Toda tarefa que puder ser resolvida deterministicamente por regras, scripts, AST ou skills catalogadas DEVE ser resolvida sem consumo de inferência probabilística (Modo DETERMINISTIC / ZERO-COST).
+
 ### Artigo 1º (Do Conhecimento Acumulado)
 O Conhecimento é o ativo primário e permanente. Todo código ou produto é uma manifestação derivada e temporária.
 

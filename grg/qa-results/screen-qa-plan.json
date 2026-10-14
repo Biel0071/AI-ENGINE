@@ -1,0 +1,415 @@
+{
+  "generatedAt": "2026-09-08T14:56:44.372Z",
+  "policy": "no-mock-read-only",
+  "domains": 5,
+  "screens": 14,
+  "activities": [
+    {
+      "id": "command.command.navigation",
+      "domain": "command",
+      "screen": "command",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"command\"], [data-nav=\"command\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-command"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/fenix/missions",
+        "/api/fenix/jobs"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "command.city.navigation",
+      "domain": "command",
+      "screen": "city",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"city\"], [data-nav=\"city\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-city"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/v2/city/state"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "command.agents.navigation",
+      "domain": "command",
+      "screen": "agents",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"agents\"], [data-nav=\"agents\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-agents"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/agents/panel",
+        "/api/agents/swarm",
+        "/api/v2/agents/live-states"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "command.operations.navigation",
+      "domain": "command",
+      "screen": "operations",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"operations\"], [data-nav=\"operations\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-operations"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/fenix/missions",
+        "/api/fenix/jobs",
+        "/api/v2/jarvis/jobs"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "build.projects.navigation",
+      "domain": "build",
+      "screen": "projects",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"projects\"], [data-nav=\"projects\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-projects"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/v2/projects",
+        "/api/project-mirror/projects"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "build.ide.navigation",
+      "domain": "build",
+      "screen": "ide",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"ide\"], [data-nav=\"ide\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-ide"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/dev/fs",
+        "/api/project-mirror",
+        "/api/v2/vision/inspect-element"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "build.terminal.navigation",
+      "domain": "build",
+      "screen": "terminal",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"terminal\"], [data-nav=\"terminal\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-terminal"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/dev/fs",
+        "/api/dev/terminal"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "intelligence.memory.navigation",
+      "domain": "intelligence",
+      "screen": "memory",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"memory\"], [data-nav=\"memory\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-memory"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/fenix/memory/search",
+        "/api/v2/memory/development"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "intelligence.knowledge.navigation",
+      "domain": "intelligence",
+      "screen": "knowledge",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"knowledge\"], [data-nav=\"knowledge\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-knowledge"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/knowledge-federation/publications"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "intelligence.mcp.navigation",
+      "domain": "intelligence",
+      "screen": "mcp",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"mcp\"], [data-nav=\"mcp\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-mcp"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/connectors",
+        "/api/fenix/providers"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "infrastructure.runtime.navigation",
+      "domain": "infrastructure",
+      "screen": "runtime",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"runtime\"], [data-nav=\"runtime\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-runtime"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/health",
+        "/api/v2/city/state"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "infrastructure.observability.navigation",
+      "domain": "infrastructure",
+      "screen": "observability",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"observability\"], [data-nav=\"observability\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-observability"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/observability/metrics",
+        "/api/observability/series"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "validation.project.navigation",
+      "domain": "validation",
+      "screen": "project",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"project\"], [data-nav=\"project\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-project"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/project-mirror",
+        "/api/v2/projects"
+      ],
+      "backendEvidence": true
+    },
+    {
+      "id": "validation.browser.navigation",
+      "domain": "validation",
+      "screen": "browser",
+      "mode": "read-only",
+      "steps": [
+        {
+          "action": "navigate",
+          "selector": "[data-view=\"browser\"], [data-nav=\"browser\"]"
+        },
+        {
+          "action": "assert-visible-view",
+          "selector": "#view-browser"
+        },
+        {
+          "action": "scroll",
+          "deltaY": 700
+        },
+        {
+          "action": "click-safe-visible-controls",
+          "max": 8
+        }
+      ],
+      "endpoints": [
+        "/api/v2/frontend-reality/screens",
+        "/api/v2/frontend-reality/audit"
+      ],
+      "backendEvidence": true
+    }
+  ]
+}

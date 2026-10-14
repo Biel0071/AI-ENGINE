@@ -20,7 +20,15 @@ class ScreenDiscoveryEngine {
    */
   async scanProjectScreens(projectId, rootPath) {
     if (!rootPath || !fs.existsSync(rootPath)) {
-      return { projectId, screens: [], totalScreens: 0 };
+      return {
+        projectId,
+        screens: [],
+        totalScreens: 0,
+        overallHealthScore: null,
+        zeroDeadButtonsPass: null,
+        verificationStatus: 'NOT_VERIFIED',
+        status: 'NOT_DISCOVERED'
+      };
     }
 
     const screens = [];
@@ -47,9 +55,10 @@ class ScreenDiscoveryEngine {
       projectId,
       totalScreens: screens.length,
       screens,
-      overallHealthScore: Math.round(screens.reduce((acc, s) => acc + (s.healthScore || 90), 0) / screens.length),
-      zeroDeadButtonsPass: screens.length > 0 && screens.every(s => (s.actions || []).every(a => a.operational)),
-      status: screens.length === 0 ? 'NOT_DISCOVERED' : 'DISCOVERED',
+      overallHealthScore: null,
+      zeroDeadButtonsPass: null,
+      verificationStatus: 'NOT_VERIFIED',
+      status: screens.length === 0 ? 'NOT_DISCOVERED' : 'STATIC_INVENTORY',
       scannedAt: new Date().toISOString()
     };
   }
@@ -101,9 +110,11 @@ class ScreenDiscoveryEngine {
           forms: [],
           states: { loading: /loading|spinner|isloading/i.test(content), error: /error|falha|errmsg/i.test(content), empty: /empty|nenhum|vazio/i.test(content), success: /success|sucesso|concluido/i.test(content) },
           status: 'DISCOVERED',
-          healthScore: 100,
+          verificationStatus: 'NOT_VERIFIED',
+          evidenceSource: 'STATIC_SOURCE',
+          healthScore: null,
           visualHash: crypto.createHash('sha256').update(`${relPath}:${view}`).digest('hex').slice(0, 16),
-          lastVerified: new Date().toISOString()
+          lastVerified: null
         });
       }
       return screens;
@@ -122,7 +133,9 @@ class ScreenDiscoveryEngine {
         element: 'button',
         label: textMatch,
         handler: hasOnClick ? 'onClickHandler' : 'inlineAction',
-        operational: hasOnClick || /type=['"]submit['"]/i.test(btn)
+        handlerPresent: hasOnClick || /type=['"]submit['"]/i.test(btn),
+        operational: null,
+        verificationStatus: 'NOT_VERIFIED'
       };
     });
 
@@ -132,14 +145,10 @@ class ScreenDiscoveryEngine {
       formId: `form_${baseName}_${idx + 1}`,
       fields: (form.match(/<input[^>]*name=['"]([^'"]+)['"]/gi) || []).map(i => i.replace(/.*name=['"]([^'"]+)['"].*/, '$1')),
       submitHandler: /onSubmit=\{/.test(form) ? 'handleSubmit' : 'defaultSubmit',
-      operational: true
+      handlerPresent: /onSubmit=\{/.test(form),
+      operational: null,
+      verificationStatus: 'NOT_VERIFIED'
     }));
-
-    // Calculate per-screen health score
-    let health = 100;
-    if (actions.some(a => !a.operational)) health -= 15; // Dead button penalty
-    if (forms.some(f => !f.operational)) health -= 10;
-    if (!/catch|error|loading/i.test(content)) health -= 5;
 
     const screenRecord = {
       screenId: `screen_${baseName.toLowerCase()}`,
@@ -157,10 +166,12 @@ class ScreenDiscoveryEngine {
         empty: /empty|nenhum|vazio/i.test(content),
         success: /success|sucesso|concluido/i.test(content)
       },
-      status: health >= 80 ? 'FUNCTIONAL' : 'PARTIAL',
-      healthScore: health,
+      status: 'DISCOVERED',
+      verificationStatus: 'NOT_VERIFIED',
+      evidenceSource: 'STATIC_SOURCE',
+      healthScore: null,
       visualHash: crypto.createHash('sha256').update(content).digest('hex').slice(0, 16),
-      lastVerified: new Date().toISOString()
+      lastVerified: null
     };
 
     screens.push(screenRecord);

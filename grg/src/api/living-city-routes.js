@@ -4,6 +4,26 @@ const { getWorldStateEngine } = require('../world-model/world-state-engine');
 const { getWorldSimulationEngine } = require('../world-model/world-simulation-engine');
 const { getWorldCommandEngine } = require('../world-model/world-command-engine');
 const { getWorldIntentPlanner } = require('../world-model/world-intent-planner');
+const { getProjectById } = require('../projects/project-registry');
+const { globalGraphBrain } = require('../brain/graph-brain');
+const { RealityCompiler, persistBlueprintToGraphBrain, isOrganizationCreationIntent } = require('../world-model/reality-compiler');
+
+const realityCompiler = new RealityCompiler();
+
+async function executeRealityIntent({ intent, projectId, tenantId, actorId, worldEngine, graphBrain = globalGraphBrain, projectResolver = getProjectById }) {
+  if (!projectId) throw new Error('Selecione um projeto real antes de criar a empresa no mundo.');
+  const project = projectResolver(projectId);
+  if (!project) throw new Error(`Projeto não encontrado no registro canônico: ${projectId}`);
+  const compiled = realityCompiler.compile(intent, {
+    tenantId,
+    project,
+    existingBuildings: Object.values(worldEngine.buildings || {})
+  });
+  if (!compiled.recognized) throw new Error(compiled.reason || 'Intenção não suportada pelo compilador atual.');
+  const materialization = worldEngine.commitWorldBlueprint(compiled.blueprint, { issuer: actorId || 'operator' });
+  const graph = persistBlueprintToGraphBrain(compiled.blueprint, graphBrain);
+  return { blueprint: materialization.blueprint, materialization, graph };
+}
 
 function workersFromSnapshot(app, state, tenantId) {
   if (!Array.isArray(state.workerHeartbeats) || !Array.isArray(state.runtimeJobs)) return null;
@@ -30,6 +50,7 @@ function workersFromSnapshot(app, state, tenantId) {
     startedAt: worker.startedAt,
   }));
 }
+
 async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = {}) {
   const membership = await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
   const worldEngine = getWorldStateEngine();
@@ -70,9 +91,9 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
   }).map((agent) => {
     const id = String(agent.id || agent.agentId);
     const profile = profiles.find((item) => String(item.id || '').toLowerCase() === id.toLowerCase());
-    const currentJob = jobs.find((job) => job.status === 'RUNNING' && (job.agent?.agentId === id || job.agentId === id)) || agent.currentJob || null;
+    const currentJob = jobs.find((job) => job.status === 'RUNNING' && (job.agent?.agentId === id || job.agent?.id === id || job.agentId === id)) || null;
     const storedStatus = String(profile?.status || agent.status || 'AVAILABLE').toUpperCase();
-    const status = currentJob ? 'WORKING' : (storedStatus === 'ACTIVE' ? 'AVAILABLE' : storedStatus);
+    const status = currentJob ? 'WORKING' : (['ACTIVE', 'WORKING'].includes(storedStatus) ? 'AVAILABLE' : storedStatus);
     return {
       id, agentId: id, name: profile?.displayName || agent.name || id,
       displayName: profile?.displayName || agent.displayName || agent.name || id,
@@ -90,12 +111,14 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
       targetCoordinates: agent.targetCoordinates || null,
       path: agent.path || [],
       facing: agent.facing || 'SE',
-      speed: agent.speed || 0.04,
-      status, state: agent.state || status,
+      speed: Number.isFinite(agent.speed) ? agent.speed : null,
+      status, state: status,
       provider: currentJob?.agent?.provider || agent.provider || null,
-      model: currentJob?.agent?.model || agent.model || 'qwen2.5:3b',
+      model: currentJob?.agent?.model || agent.model || null,
       currentJob: currentJob ? { id: currentJob.id, name: currentJob.name || currentJob.prompt || currentJob.type, progress: currentJob.progress } : null,
-      currentTask: agent.currentTask || currentJob?.name || currentJob?.prompt || null,
+      jobId: currentJob?.id || null,
+      missionId: currentJob?.missionId || null,
+      currentTask: currentJob?.name || currentJob?.prompt || null,
       projectId: currentJob?.projectId || null,
       avatar: profile?.avatar || agent.avatar || null,
       skills: agent.skills || [],
@@ -141,6 +164,7 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
     worldTime: worldEngine.worldTime,
     companies: Object.values(worldEngine.companies || {}),
     agents,
+    worldAssets: agentsOnly ? [] : (state.worldAssets || []).filter((asset) => asset.tenantId === tenantId),
     vehicles: Object.values(worldEngine.vehicles),
     constructions: Object.values(worldEngine.constructions),
     workstations: Object.values(worldEngine.workstations),
@@ -181,7 +205,7 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
   };
 }
 
-async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrIdentity, maybeIdentity) {
+async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrIdentity, maybeIdentity, dependencies = {}) {
   let readJson;
   let identity;
   if (typeof readJsonOrIdentity === 'function') {
@@ -201,8 +225,8 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
     };
   }
 
-  const worldEngine = getWorldStateEngine();
-  const simEngine = getWorldSimulationEngine();
+  const worldEngine = dependencies.worldEngine || getWorldStateEngine();
+  const simEngine = dependencies.simulationEngine || getWorldSimulationEngine();
 
   // Ensure simulation engine is running
   if (!simEngine.isRunning) {
@@ -251,8 +275,8 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
   if (req.method === 'POST' && url.pathname === '/api/v2/living-city/command') {
     try {
       const body = await readJson(req);
-      const commandEngine = getWorldCommandEngine();
-      const planner = getWorldIntentPlanner();
+      const commandEngine = dependencies.commandEngine || getWorldCommandEngine();
+      const planner = dependencies.planner || getWorldIntentPlanner();
 
       let commandsToExecute = [];
       let plannedReport = null;
@@ -267,7 +291,37 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
         }];
       } else if (body.prompt || body.intent) {
         // Natural language prompt/intent
-        plannedReport = planner.plan(body.prompt || body.intent, {
+        const intent = body.prompt || body.intent;
+        if (isOrganizationCreationIntent(intent)) {
+          await app.controlPlane.authorize(identity.tenantId, identity.actorId, 'runtime:write');
+          const reality = await executeRealityIntent({
+            intent,
+            projectId: body.projectId,
+            tenantId: identity.tenantId,
+            actorId: body.actor || identity.actorId,
+            worldEngine,
+            graphBrain: dependencies.graphBrain || globalGraphBrain
+          });
+          sendJson(res, 200, {
+            ok: true,
+            source: 'RealityCompiler/WorldStateEngine/GraphBrain',
+            created: reality.materialization.created,
+            blueprint: reality.blueprint,
+            materialization: {
+              organization: reality.materialization.organization,
+              building: reality.materialization.building,
+              event: reality.materialization.event || null
+            },
+            graph: reality.graph,
+            worldState: {
+              buildingsCount: Object.keys(worldEngine.buildings).length,
+              organizationsCount: Object.keys(worldEngine.companies).length,
+              worldTime: worldEngine.worldTime
+            }
+          });
+          return true;
+        }
+        plannedReport = planner.plan(intent, {
           activeBuildingId: body.activeBuildingId,
           activeAgentId: body.activeAgentId,
           tenantId: identity.tenantId
@@ -619,12 +673,6 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
 
     const data = await livingCityState(app, identity.tenantId, identity.actorId);
     let ag = data.agents.find(a => String(a.id || a.agentId).toLowerCase() === agentId.toLowerCase());
-    if (!ag && worldEngine.agents[agentId]) {
-      ag = worldEngine.agents[agentId];
-    }
-    if (!ag && worldEngine.findAgent) {
-      ag = worldEngine.findAgent(agentId);
-    }
 
     if (!ag) {
       sendJson(res, 404, { ok: false, error: `Agente '${agentId}' não encontrado para lifecycle.` });
@@ -632,44 +680,44 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
     }
 
     const bld = ag.buildingId ? (worldEngine.buildings[ag.buildingId] || null) : null;
-    const currentTask = ag.currentTask || (ag.currentJob ? ag.currentJob.name : 'Standby operacional · Pronto para novas atribuições');
-    const missionId = ag.missionId || (ag.currentJob ? ag.currentJob.id : null);
+    const currentTask = ag.currentTask || (ag.currentJob ? ag.currentJob.name : null);
+    const missionId = ag.missionId || ag.currentJob?.missionId || null;
 
     const lifecycle = {
       whoAmI: {
         id: ag.id || ag.agentId,
         name: ag.name || ag.displayName,
-        role: ag.role || 'Especialista Fênix',
-        department: ag.department || 'OPERATIONS',
-        company: ag.company || 'Fênix Enterprise',
-        model: ag.model || 'qwen2.5:3b',
-        avatar: ag.avatar || '🤖'
+        role: ag.role || null,
+        department: ag.department || null,
+        company: ag.company || null,
+        model: ag.model || null,
+        avatar: ag.avatar || null
       },
       whereAmI: {
-        buildingId: ag.buildingId || 'bld-api-platform',
-        buildingName: bld ? bld.name : 'API Platform & Core Loft',
-        district: ag.district || (bld ? bld.district : 'dev-district'),
-        floorNum: typeof ag.floorNum === 'number' ? ag.floorNum : 0,
+        buildingId: ag.buildingId || null,
+        buildingName: bld ? bld.name : null,
+        district: ag.district || (bld ? bld.district : null),
+        floorNum: typeof ag.floorNum === 'number' ? ag.floorNum : null,
         workstationId: ag.workstationId || ag.stationId || null,
-        coordinates: ag.coordinates || { x: 0, y: 0.8, z: 0 }
+        coordinates: ag.coordinates || null
       },
       whatAmIDoing: {
-        status: ag.status || 'AVAILABLE',
-        state: ag.state || 'IDLE',
+        status: ag.status || 'NOT_MEASURED',
+        state: ag.state || 'NOT_MEASURED',
         currentTask,
         currentJob: ag.currentJob || null,
-        facing: ag.facing || 'SE',
-        speed: ag.speed || 2.2
+        facing: ag.facing || null,
+        speed: Number.isFinite(ag.speed) ? ag.speed : null
       },
       whyAmIDoingThis: {
-        missionId: missionId || 'none',
+        missionId,
         objective: currentTask,
-        parentGoal: missionId ? `Execução de missão operacional ${missionId}` : 'Observação e prontidão operacional',
-        projectId: ag.projectId || 'fênix-core'
+        parentGoal: ag.parentGoal || null,
+        projectId: ag.projectId || null
       },
       whatWillIDoNext: {
-        nextAction: ag.status === 'WORKING' ? 'Concluir tarefas atribuídas e registrar evidências' : 'Aguardar despacho de novo job ou comando do operador',
-        pipelineStep: ag.status === 'WORKING' ? 'IN_PROGRESS' : 'IDLE',
+        nextAction: ag.nextAction || null,
+        pipelineStep: ag.pipelineStep || null,
         upcomingTasks: []
       },
       whatIsMyMemory: {
@@ -677,15 +725,15 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
         recentEntries: (ag.memory || []).slice(-5)
       },
       whatAreMySkillsAndTools: {
-        skills: ag.skills || ['task_execution', 'telemetry_monitoring', 'code_synthesis'],
-        tools: ag.tools || ['api_call', 'read_file', 'write_file', 'run_command'],
-        permissions: ['read', 'write', 'execute']
+        skills: ag.skills || [],
+        tools: ag.tools || [],
+        permissions: ag.permissions || []
       },
       whatIsMyEnergyAndAttention: {
-        energyPercent: typeof ag.energy === 'number' ? ag.energy : 100,
-        attentionPercent: typeof ag.attention === 'number' ? ag.attention : 100,
-        tokensProcessed: ag.tokens || 0,
-        latency: ag.latency || '12ms'
+        energyPercent: Number.isFinite(ag.energy) ? ag.energy : null,
+        attentionPercent: Number.isFinite(ag.attention) ? ag.attention : null,
+        tokensProcessed: Number.isFinite(ag.tokens) ? ag.tokens : null,
+        latency: ag.latency || null
       },
       howToInteract: {
         allowedActions: ['chat', 'inspect', 'assign', 'follow', 'pause', 'resume'],
@@ -705,27 +753,6 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
   // --- GET /api/v2/living-city/agent/:id ---
   if (req.method === 'GET' && url.pathname.startsWith('/api/v2/living-city/agent/')) {
     const agentId = decodeURIComponent(url.pathname.replace('/api/v2/living-city/agent/', ''));
-    
-    // First, check WorldStateEngine directly (handles Camila, CEO, André, Marcos, etc.)
-    const worldAgent = worldEngine.findAgent(agentId);
-    if (worldAgent) {
-      sendJson(res, 200, {
-        ok: true,
-        source: 'WorldStateEngine/LivingAgentRuntime',
-        agent: {
-          ...worldAgent,
-          location: worldAgent.district,
-          state: worldAgent.state || worldAgent.status,
-          emoji: worldAgent.avatar || '🤖',
-          tokens: 0,
-          latency: '14ms',
-          episodicMemory: worldAgent.memory || [],
-          lastAction: worldAgent.currentTask || (worldAgent.currentJob ? worldAgent.currentJob.name : 'Standby operacional'),
-          nextAction: 'Pronto para execução contínua no runtime'
-        }
-      });
-      return true;
-    }
 
     const isCeo = agentId.toLowerCase() === 'agent.ceo' || agentId.toLowerCase() === 'ceo';
     if (isCeo && app.ceoAgent) {
@@ -734,7 +761,7 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
         const telemetry = app.companyBrain ? await app.companyBrain.getTelemetry(identity.tenantId, company?.id) : {};
         const hypotheses = typeof app.evolutionLab?.listHypotheses === 'function' ? app.evolutionLab.listHypotheses() : [];
         const experiments = typeof app.evolutionLab?.listExperiments === 'function' ? app.evolutionLab.listExperiments() : [];
-        return sendJson(res, 200, {
+        sendJson(res, 200, {
           ok: true,
           source: 'CEOAgent/CompanyBrain',
           agent: {
@@ -773,8 +800,9 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
             nextAction: 'Ready for executive directives'
           }
         });
+        return true;
       } catch (err) {
-        return sendJson(res, 200, {
+        sendJson(res, 200, {
           ok: true,
           source: 'CEOAgent/Fallback',
           agent: {
@@ -803,6 +831,7 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
             nextAction: 'Ready for executive directives'
           }
         });
+        return true;
       }
     }
 
@@ -810,7 +839,7 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
       const data = await livingCityState(app, identity.tenantId, identity.actorId);
       const ag = data.agents.find(a => String(a.id || a.agentId).toLowerCase() === agentId.toLowerCase());
       if (ag) {
-        return sendJson(res, 200, {
+        sendJson(res, 200, {
           ok: true,
           source: 'JobEngine/ProjectKernel',
           agent: {
@@ -818,33 +847,37 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
             agentId: ag.id,
             name: ag.name,
             role: ag.role,
-            department: ag.department || ag.district || 'TECHNOLOGY',
-            company: ag.company || app.companyBrain?.company?.name || 'Fênix Enterprise',
+            department: ag.department || ag.district || null,
+            company: ag.company || null,
             currentJob: ag.currentJob,
-            model: ag.model || 'qwen2.5:3b',
-            tools: ag.tools || ['file_read', 'git_inspect', 'command_exec', 'test_runner'],
-            permissions: ['read', 'write', 'execute'],
-            status: ag.status || 'AVAILABLE',
-            state: ag.state || 'AVAILABLE',
-            location: ag.district || 'dev-district',
-            district: ag.district || 'dev-district',
+            currentTask: ag.currentTask || null,
+            jobId: ag.jobId || null,
+            missionId: ag.missionId || null,
+            projectId: ag.projectId || null,
+            model: ag.model || null,
+            tools: ag.tools || [],
+            permissions: ag.permissions || [],
+            status: ag.status || 'NOT_MEASURED',
+            state: ag.state || 'NOT_MEASURED',
+            location: ag.district || null,
+            district: ag.district || null,
             emoji: ag.avatar || '🤖',
-            tokens: 0,
-            latency: '—',
+            tokens: Number.isFinite(ag.tokens) ? ag.tokens : null,
+            latency: ag.latency || null,
             memory: ag.memory || [],
-            episodicMemory: ag.memory && ag.memory.length > 0 ? ag.memory : [
-              { timestamp: new Date().toISOString(), content: `Agente sincronizado no distrito ${ag.district || 'dev-district'}` }
-            ],
-            lastAction: ag.currentTask || (ag.currentJob ? ag.currentJob.name : 'Standby aguardando atribuição no distrito'),
-            nextAction: 'Pronto para execução de tarefas'
+            episodicMemory: ag.memory || [],
+            lastAction: ag.lastAction || ag.currentTask || (ag.currentJob ? ag.currentJob.name : null),
+            nextAction: ag.nextAction || null
           }
         });
+        return true;
       }
     } catch (err) {
       // Proceed to 404
     }
 
-    return sendJson(res, 404, { ok: false, error: `Agente '${agentId}' não encontrado` });
+    sendJson(res, 404, { ok: false, error: `Agente '${agentId}' não encontrado` });
+    return true;
   }
 
   // --- Network Graph ---
@@ -994,7 +1027,7 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
       edges.push({ from: `project:${p.id}`, to: 'api:company_brain', relation: 'exposes_api' });
     });
 
-    return sendJson(res, 200, {
+    sendJson(res, 200, {
       ok: true,
       source: 'LivingCity/CognitiveNetworkEngine',
       measuredAt: new Date().toISOString(),
@@ -1009,6 +1042,7 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
       nodes,
       edges
     });
+    return true;
   }
 
   // --- GET /api/v2/living-city/building/:id ---
@@ -1036,4 +1070,4 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
   return false;
 }
 
-module.exports = { handleLivingCityRoutes, livingCityState };
+module.exports = { handleLivingCityRoutes, livingCityState, executeRealityIntent };

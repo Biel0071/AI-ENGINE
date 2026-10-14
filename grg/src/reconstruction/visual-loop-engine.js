@@ -1,167 +1,100 @@
 'use strict';
-/**
- * FÊNIX OS V11 — VISUAL LOOP & AUTONOMOUS FIX ENGINE
- * 
- * Implements the Continuous Visual Evolution Cycle:
- *   SCREENSHOT BEFORE
- *   ↓
- *   CHANGE
- *   ↓
- *   BUILD / VERIFY
- *   ↓
- *   BROWSER RENDER
- *   ↓
- *   SCREENSHOT AFTER
- *   ↓
- *   VISUAL DIFF & GAP ANALYSIS
- *   ↓
- *   AUTO FIX JOB GENERATION (QA Agent -> Frontend Agent)
- *   ↓
- *   RETEST
- * 
- * Maximum 3 automatic iteration cycles per mission.
- */
 
 const fs = require('fs');
 const path = require('path');
 const { globalVisualComparator } = require('./visual-comparator');
 const { globalSystemObserver } = require('./system-observer');
-const { globalGraphBrain } = require('../brain/graph-brain');
 
 class VisualLoopEngine {
   constructor(options = {}) {
     this.artifactsDir = options.artifactsDir || path.join(__dirname, '..', '.data', 'visual_loop');
-    if (!fs.existsSync(this.artifactsDir)) {
-      fs.mkdirSync(this.artifactsDir, { recursive: true });
-    }
+    this.observer = options.observer || globalSystemObserver;
+    this.comparator = options.comparator || globalVisualComparator;
+    if (!fs.existsSync(this.artifactsDir)) fs.mkdirSync(this.artifactsDir, { recursive: true });
   }
 
   /**
-   * Runs the autonomous visual loop (up to maxCycles, default 3)
+   * Capture evidence for a visual run. Repair is withheld until a real
+   * comparison and an isolated, verifiable change executor are available.
    */
   async runVisualLoop(params = {}) {
-    const startTime = Date.now();
-    const systemUrl = params.url || 'http://127.0.0.1:3000';
-    const maxCycles = Math.min(3, params.maxCycles || 3);
-    const targetFidelity = params.targetFidelity || 88;
+    const startedAt = Date.now();
+    const systemUrl = typeof params.url === 'string' ? params.url.trim() : '';
+    const maxCycles = Math.min(3, Math.max(1, Number(params.maxCycles) || 3));
 
-    const cycles = [];
-    let currentFidelity = 0;
-    let converged = false;
-
-    // STEP 1: INITIAL BEFORE SCREENSHOT
-    let beforeObs = null;
-    try {
-      beforeObs = await globalSystemObserver.observeUrl(systemUrl, { timeoutMs: 8000 });
-    } catch (e) {
-      beforeObs = { screenshot: null, elements: [] };
+    if (!systemUrl) {
+      return blockedResult({ status: 'INPUT_REQUIRED', reason: 'Informe a URL da aplicação a observar.', maxCycles, startedAt });
     }
 
-    let beforeScreenshot = beforeObs.screenshot || path.join(this.artifactsDir, `before_baseline_${Date.now()}.png`);
+    let observation;
+    try {
+      observation = await this.observer.observeUrl(systemUrl, { timeoutMs: 8000 });
+    } catch (error) {
+      return blockedResult({
+        status: 'BLOCKED',
+        reason: 'A observação da aplicação falhou.',
+        observationStatus: 'UNAVAILABLE',
+        failureCode: 'OBSERVATION_FAILED',
+        maxCycles,
+        startedAt
+      });
+    }
 
-    for (let cycleNum = 1; cycleNum <= maxCycles; cycleNum++) {
-      const cycleStart = Date.now();
-
-      // 1. CHANGE: Compute required adjustments (CSS tokens, component alignments, spacing)
-      const proposedFix = {
-        cycle: cycleNum,
-        tokensAdjusted: ['--fenix-color-primary', '--fenix-spacing-4', '--fenix-radius-md'],
-        cssPatch: `:root { --fenix-color-primary: #3b82f6; --fenix-spacing-4: 16px; --fenix-radius-md: 8px; }`,
-        affectedComponents: ['MetricCardsRow', 'SystemHealthChart', 'SidebarNav']
-      };
-
-      // 2. BUILD / VERIFY: syntax and bundle sanity check
-      const buildVerification = {
-        ok: true,
-        syntaxValid: true,
-        bundlePassed: true,
-        verifiedAt: new Date().toISOString()
-      };
-
-      // 3. BROWSER: Refresh and capture AFTER screenshot
-      let afterObs = null;
-      try {
-        afterObs = await globalSystemObserver.observeUrl(systemUrl, { timeoutMs: 6000 });
-      } catch (e) {
-        afterObs = { screenshot: null, elements: beforeObs.elements };
-      }
-
-      const afterScreenshot = afterObs.screenshot || path.join(this.artifactsDir, `after_cycle_${cycleNum}_${Date.now()}.png`);
-
-      // 4. VISUAL DIFF & MULTI-DIMENSIONAL GAP ANALYSIS
-      const comparison = globalVisualComparator.compare({
-        referenceImage: params.referenceImage || beforeScreenshot,
-        currentImage: afterScreenshot,
+    const hasBrowserScreenshot = observation?.driver === 'playwright'
+      && typeof observation.screenshot === 'string'
+      && fs.existsSync(observation.screenshot);
+    const comparison = hasBrowserScreenshot && params.referenceImage
+      ? this.comparator.compare({
+        referenceImage: params.referenceImage,
+        currentImage: observation.screenshot,
         referenceDna: params.referenceDna || {},
         currentDna: params.currentDna || {},
-        referenceComponents: params.referenceComponents || ['Header', 'Sidebar', 'Card'],
-        currentComponents: params.currentComponents || ['Header', 'Sidebar', 'Card']
-      });
+        referenceComponents: params.referenceComponents || [],
+        currentComponents: params.currentComponents || [],
+        viewport: params.viewport
+      })
+      : null;
 
-      // Simulate fidelity convergence per cycle
-      const cycleFidelityBonus = (cycleNum - 1) * 8;
-      const effectiveFidelity = Math.min(100, comparison.fidelityScore + cycleFidelityBonus);
-      currentFidelity = effectiveFidelity;
+    const reason = !hasBrowserScreenshot
+      ? 'A observação não produziu uma captura real do navegador; nenhum ciclo de correção foi executado.'
+      : !comparison || comparison.measurementStatus !== 'MEASURED'
+        ? 'A comparação visual ainda não mede diferença de pixels; nenhum ciclo de correção foi executado.'
+        : 'O executor isolado de reparo não está configurado; nenhuma alteração foi aplicada.';
 
-      // 5. AUTO FIX JOB DISPATCH
-      const fixJob = {
-        id: `fixjob:cycle_${cycleNum}_${Date.now()}`,
-        name: `AutoFix Visual Defect Cycle ${cycleNum}`,
-        assignedFrom: 'agent-qa',
-        assignedTo: 'agent-frontend',
-        status: effectiveFidelity >= targetFidelity ? 'RESOLVED' : 'APPLIED',
-        resolvedGapsCount: comparison.totalGaps,
-        gapsRemaining: Math.max(0, comparison.totalGaps - cycleNum)
-      };
-
-      // Record learning in GraphBrain
-      try {
-        globalGraphBrain.recordLearning({
-          category: 'visual-qa',
-          error: `Visual Gap detected in Cycle ${cycleNum}`,
-          solution: `Applied CSS and layout token refinement: fidelity reached ${effectiveFidelity}%`,
-          pattern: 'Autonomous Visual Retest Loop',
-          principle: 'Never stop after a single run; converge within 3 cycles',
-          projectId: params.systemId || 'system:fenix-core'
-        });
-      } catch (e) {}
-
-      cycles.push({
-        cycle: cycleNum,
-        beforeScreenshot,
-        afterScreenshot,
-        proposedFix,
-        buildVerification,
-        fidelityScore: effectiveFidelity,
-        passed: effectiveFidelity >= targetFidelity,
-        fixJob,
-        durationMs: Date.now() - cycleStart
-      });
-
-      // Check if target fidelity reached
-      if (effectiveFidelity >= targetFidelity) {
-        converged = true;
-        break;
-      }
-
-      // Next cycle uses current after screenshot as the new before
-      beforeScreenshot = afterScreenshot;
-    }
-
-    return {
-      ok: true,
-      loopId: `vloop:${Date.now()}`,
+    return blockedResult({
+      status: hasBrowserScreenshot && comparison?.measurementStatus === 'MEASURED' ? 'BLOCKED_NO_REPAIR_EXECUTOR' : 'NOT_MEASURED',
+      reason,
       systemUrl,
-      converged,
-      finalFidelityScore: currentFidelity,
-      targetFidelity,
-      totalCyclesExecuted: cycles.length,
-      maxCyclesAllowed: maxCycles,
-      cycles,
-      totalDurationMs: Date.now() - startTime,
-      timestamp: new Date().toISOString()
-    };
+      observationStatus: observation?.observationStatus || 'UNKNOWN',
+      targetOk: observation?.targetOk ?? null,
+      screenshot: hasBrowserScreenshot ? observation.screenshot : null,
+      comparison,
+      maxCycles,
+      startedAt
+    });
   }
+}
+
+function blockedResult({ status, reason, systemUrl = null, observationStatus = 'NOT_RUN', targetOk = null, screenshot = null, comparison = null, failureCode = null, maxCycles = 0, startedAt }) {
+  return {
+    ok: false,
+    loopId: null,
+    status,
+    reason,
+    failureCode,
+    systemUrl,
+    observationStatus,
+    targetOk,
+    screenshot,
+    comparison,
+    converged: false,
+    finalFidelityScore: comparison?.fidelityScore ?? null,
+    totalCyclesExecuted: 0,
+    maxCyclesAllowed: maxCycles,
+    cycles: [],
+    totalDurationMs: Date.now() - startedAt,
+    timestamp: new Date().toISOString()
+  };
 }
 
 const globalVisualLoopEngine = new VisualLoopEngine();

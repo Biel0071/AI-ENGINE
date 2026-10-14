@@ -93,7 +93,7 @@
       document.dispatchEvent(new CustomEvent('fenix-city-connection', { detail: { status: window.FENIX.city.connectionStatus }, bubbles: true }));
       return;
     }
-    if (!type || type === 'snapshot') return;
+    if (!type || ['snapshot', 'runtime.snapshot', 'ping', 'heartbeat', 'connected'].includes(type)) return;
 
     let visual = CITY_EVENT_MAP[type];
     if (!visual) {
@@ -163,6 +163,7 @@
           if (!ev || ev.type === 'heartbeat') return;
           var detail = {
             type: ev.type,
+            source: 'event-stream',
             id: ev.id,
             timestamp: ev.timestamp,
             occurredAt: ev.timestamp,

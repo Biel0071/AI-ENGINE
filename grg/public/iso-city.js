@@ -12,6 +12,7 @@ function _pseudoRandom() {
  */
 
 const AGENT_ROLES = [
+  { id: 'agent.ceo',       name: 'CEO Agent', role: 'Chief Executive Officer', district: 'command-center', emoji: '👔', color: '#ffd700' },
   { id: 'agent-architect', name: 'Arquiteto', role: 'System Architecture', district: 'command-center', emoji: '📐', color: '#f97316' },
   { id: 'agent-planner',   name: 'Planejador', role: 'Mission Planning', district: 'command-center', emoji: '🎯', color: '#ef4444' },
   { id: 'agent-twin',      name: 'Digital Twin', role: 'Digital Twin & Sandbox', district: 'project-district', emoji: '🪞', color: '#06b6d4' },
@@ -26,13 +27,18 @@ const AGENT_ROLES = [
   { id: 'agent-memory',    name: 'Guardião da Memória', role: 'Episodic & Vector Memory', district: 'data-center', emoji: '🧬', color: '#0d9488' },
   { id: 'agent-security',  name: 'Segurança', role: 'Security & Sandbox Guard', district: 'data-center', emoji: '🛡️', color: '#e11d48' },
   { id: 'agent-obs',       name: 'Observabilidade', role: 'Telemetry & Trace Ops', district: 'observatory', emoji: '👁️', color: '#6366f1' },
-  { id: 'agent-devops',    name: 'DevOps & SRE', role: 'Deployment & CI/CD', district: 'observatory', emoji: '🚀', color: '#7c3aed' }
+  { id: 'agent-devops',    name: 'DevOps & SRE', role: 'Deployment & CI/CD', district: 'observatory', emoji: '🚀', color: '#7c3aed' },
+  { id: 'agent-camila',    name: 'Supervisora Camila', role: 'Supervisora de Qualidade & Embalagem WMS', district: 'industrial', emoji: '👩‍💼', color: '#f59e0b' },
+  { id: 'agent-andre',     name: 'Especialista WMS André', role: 'Analista de Sistemas WMS', district: 'industrial', emoji: '👨‍💻', color: '#f59e0b' },
+  { id: 'agent-marcos',    name: 'Gerente Comercial Marcos', role: 'Líder de Vendas Atacadistas B2B', district: 'industrial', emoji: '👔', color: '#f59e0b' },
+  { id: 'agent-silva',     name: 'Diretor Silva', role: 'Diretor de Operações Logísticas', district: 'industrial', emoji: '📊', color: '#f59e0b' },
+  { id: 'agent-expedicao', name: 'Agente Expedição', role: 'Conferente & Despachante de Cargas', district: 'industrial', emoji: '👷', color: '#f59e0b' }
 ];
 
 const CANONICAL_DISTRICTS = Object.freeze({
   'command-center': {
-    id: 'command-center', key: 'command-center', name: 'Command Center', label: 'COMMAND CENTER',
-    color: '#ef4444', emoji: '🏛️', x: 0, y: 0, w: 4, h: 4,
+    id: 'command-center', key: 'command-center', name: 'Command Center & HQ', label: 'COMMAND CENTER',
+    color: '#ef4444', emoji: '🏛️', x: 0, y: -5.0, w: 4, h: 4,
     buildingType: 'core_spire',
     department: 'Orquestração Central e Governança do Kernel',
     capabilities: ['Kernel Supervisor', 'State Store', 'Event Bus', 'Mission Dispatch'],
@@ -40,7 +46,7 @@ const CANONICAL_DISTRICTS = Object.freeze({
   },
   'project-district': {
     id: 'project-district', key: 'project-district', name: 'Project District', label: 'PROJECT DISTRICT',
-    color: '#06b6d4', emoji: '📁', x: -7, y: -4, w: 3, h: 3,
+    color: '#06b6d4', emoji: '📁', x: 9.0, y: -7.5, w: 3, h: 3,
     buildingType: 'workshop_complex',
     department: 'Gerenciamento de Projetos e Workspaces Ativos',
     capabilities: ['Project Hub', 'Code Forge', 'Deploy Bay'],
@@ -48,7 +54,7 @@ const CANONICAL_DISTRICTS = Object.freeze({
   },
   'ai-district': {
     id: 'ai-district', key: 'ai-district', name: 'AI District', label: 'AI DISTRICT',
-    color: '#a855f7', emoji: '🧠', x: 7, y: -4, w: 3, h: 3,
+    color: '#a855f7', emoji: '🧠', x: 8.0, y: -5.5, w: 3, h: 3,
     buildingType: 'knowledge_library',
     department: 'Inteligência Artificial, Modelos Cognitivos e RAG',
     capabilities: ['Neural Nexus', 'Cognitive Core', 'Model Registry'],
@@ -56,15 +62,15 @@ const CANONICAL_DISTRICTS = Object.freeze({
   },
   'creative-district': {
     id: 'creative-district', key: 'creative-district', name: 'Creative District', label: 'CREATIVE DISTRICT',
-    color: '#ec4899', emoji: '🎨', x: 7, y: 5, w: 3, h: 3,
+    color: '#ec4899', emoji: '🎨', x: -8.5, y: -1.0, w: 3, h: 3,
     buildingType: 'creative_studio',
     department: 'Design System, Interfaces, UX e Componentes Visuais',
     capabilities: ['Canvas Pavilion', 'Design Tokens', 'User Experience'],
     buildings: ['Design Studio', 'UI Pavilion', 'UX Lab']
   },
   'dev-district': {
-    id: 'dev-district', key: 'dev-district', name: 'Dev District', label: 'DEV DISTRICT',
-    color: '#10b981', emoji: '💻', x: -7, y: 5, w: 3, h: 3,
+    id: 'dev-district', key: 'dev-district', name: 'Dev District & Engineering', label: 'ENGINEERING & APIS',
+    color: '#10b981', emoji: '💻', x: -6.5, y: 3.5, w: 3, h: 3,
     buildingType: 'command_tower',
     department: 'Engenharia de Software, APIs, Runtime e Qualidade',
     capabilities: ['Code Synthesis', 'API Endpoints', 'QA Automation'],
@@ -72,7 +78,7 @@ const CANONICAL_DISTRICTS = Object.freeze({
   },
   'data-center': {
     id: 'data-center', key: 'data-center', name: 'Data Center', label: 'DATA CENTER',
-    color: '#3b82f6', emoji: '🗄️', x: 0, y: 8, w: 3, h: 3,
+    color: '#3b82f6', emoji: '🗄️', x: 7.5, y: 4.0, w: 3, h: 3,
     buildingType: 'database_silos',
     department: 'Persistência Relacional, Memória Episódica e Segurança',
     capabilities: ['SQLite Store', 'Memory Vault', 'Shield Fortress'],
@@ -80,11 +86,91 @@ const CANONICAL_DISTRICTS = Object.freeze({
   },
   'observatory': {
     id: 'observatory', key: 'observatory', name: 'Observatory', label: 'OBSERVATORY',
-    color: '#6366f1', emoji: '🔭', x: 0, y: -8, w: 3, h: 3,
+    color: '#6366f1', emoji: '🔭', x: 0, y: -11.0, w: 3, h: 3,
     buildingType: 'observatory_dome',
     department: 'Telemetria, Observabilidade, Traces e CI/CD',
     capabilities: ['Telemetry Radar', 'Trace Analyzer', 'CI/CD Pipeline'],
     buildings: ['Observatory Dome', 'Metrics Station', 'Launch Pad']
+  },
+  'industrial': {
+    id: 'industrial', key: 'industrial', name: 'Distrito Industrial', label: 'DEPÓSITO MAIS HUB',
+    color: '#f59e0b', emoji: '📦', x: 6.0, y: -2.5, w: 4, h: 4,
+    buildingType: 'warehouse_hub',
+    department: 'Logística de Armazenagem, WMS & Distribuição',
+    capabilities: ['Depósito Mais Hub', 'Docas de Expedição', 'Gestão de Estoque'],
+    buildings: ['Depósito Mais HQ', 'Doca 01', 'Armazém Central']
+  },
+  'porto': {
+    id: 'porto', key: 'porto', name: 'Porto Digital', label: 'PORTO DIGITAL',
+    color: '#0284c7', emoji: '🚢', x: 12.0, y: -4.0, w: 3, h: 3,
+    buildingType: 'port_terminal',
+    department: 'Integrações Externas, Webhooks & Exportação',
+    capabilities: ['API Gateway Marítimo', 'Conteinerização', 'Terminal de Cargas'],
+    buildings: ['Terminal de Carga', 'Doca Seca', 'Farol de Conexão']
+  },
+  'research': {
+    id: 'research', key: 'research', name: 'P&D & Bio-Inovação', label: 'RESEARCH & LABS',
+    color: '#8b5cf6', emoji: '🔬', x: -6.0, y: -8.0, w: 3, h: 3,
+    buildingType: 'research_complex',
+    department: 'Pesquisa Científica, LLMs & Bio-Computação',
+    capabilities: ['Ollama Cluster', 'Model Benchmark', 'Genome Graph'],
+    buildings: ['Research Lab Hub', 'Quantum Pod', 'Bio-Informatics Silo']
+  },
+  'residential': {
+    id: 'residential', key: 'residential', name: 'Residencial', label: 'VILA DOS AGENTES',
+    color: '#14b8a6', emoji: '🏡', x: -9.5, y: -5.5, w: 3, h: 3,
+    buildingType: 'residential_blocks',
+    department: 'Living Pods, Standby & Recuperação Energética de Agentes',
+    capabilities: ['Agent Dormitories', 'Recharge Bays', 'Community Garden'],
+    buildings: ['Living Tower A', 'Living Tower B', 'Pod Oasis']
+  },
+  'business': {
+    id: 'business', key: 'business', name: 'Distrito Financeiro', label: 'BUSINESS & FINANCE',
+    color: '#eab308', emoji: '💼', x: 1.5, y: 5.0, w: 3, h: 3,
+    buildingType: 'financial_tower',
+    department: 'TrustPag Pagamentos, Contratos & Token Economy',
+    capabilities: ['Payment Gateway', 'Escrow Ledger', 'Financial Analytics'],
+    buildings: ['TrustPag Tower', 'Exchange Plaza', 'Audit Center']
+  },
+  'security': {
+    id: 'security', key: 'security', name: 'Fortaleza de Segurança', label: 'SECURITY CITADEL',
+    color: '#e11d48', emoji: '🛡️', x: 8.5, y: 0.5, w: 3, h: 3,
+    buildingType: 'security_bastion',
+    department: 'Zero-Trust, Firewall de Tokens & Sandbox Guard',
+    capabilities: ['Sandbox Sentinel', 'Token Firewall', 'Cryptographic Vault'],
+    buildings: ['Security Citadel', 'Firewall Bastion', 'Key Vault']
+  },
+  'hospital': {
+    id: 'hospital', key: 'hospital', name: 'Hospital do Sistema', label: 'HEALTH & RECOVERY',
+    color: '#22c55e', emoji: '🏥', x: 5.0, y: 8.5, w: 3, h: 3,
+    buildingType: 'medical_center',
+    department: 'Auto-Cura, Self-Healing, Mitigação de Erros & Dead Letters',
+    capabilities: ['Dead Letter Clinic', 'Self-Healing Unit', 'Agent Triage'],
+    buildings: ['Sanatório de Agentes', 'Recovery Ward', 'Diagnostics Center']
+  },
+  'shopping': {
+    id: 'shopping', key: 'shopping', name: 'Marketplace Fênix', label: 'MARKETPLACE & TOOLS',
+    color: '#d946ef', emoji: '🛍️', x: -2.0, y: 8.5, w: 3, h: 3,
+    buildingType: 'commercial_arcade',
+    department: 'Loja de Habilidades, Ferramentas MCP & Model Store',
+    capabilities: ['MCP Bazaar', 'Tool Catalog', 'Skill Exchange'],
+    buildings: ['MCP Emporium', 'Skill Arcade', 'Plugin Mall']
+  },
+  'praca-central': {
+    id: 'praca-central', key: 'praca-central', name: 'Praça Central', label: 'FORUM & AGORA',
+    color: '#f97316', emoji: '⛲', x: 0, y: 0, w: 2, h: 2,
+    buildingType: 'central_plaza',
+    department: 'Ponto de Encontro, Fórum Deliberativo & Eventos Cívicos',
+    capabilities: ['Community Forum', 'Broadcast Tower', 'Deliberation Agora'],
+    buildings: ['O Obelisco', 'Fonte Luminosa', 'Coreto Cívico']
+  },
+  'praia': {
+    id: 'praia', key: 'praia', name: 'Praia Digital & Marina', label: 'PRAIA & LAZER',
+    color: '#06b6d4', emoji: '🏖️', x: -11.0, y: 8.5, w: 4, h: 3,
+    buildingType: 'coastal_boardwalk',
+    department: 'Zona de Lazer, Relaxamento e Conexão de Redes Externas',
+    capabilities: ['Marina de Fibra', 'Lounge à Beira-Mar', 'Cabo Submarino'],
+    buildings: ['Pier de Fibra', 'Farol da Costa', 'Cabana Digital']
   }
 });
 
@@ -93,11 +179,21 @@ function normalizeDistrict(district) {
   const d = String(district).toLowerCase().trim();
   if (d === 'command-center' || d === 'central' || d === 'orchestration') return 'command-center';
   if (d === 'project-district' || d === 'projects' || d === 'git' || d === 'archive') return 'project-district';
-  if (d === 'ai-district' || d === 'ai' || d === 'knowledge' || d === 'research') return 'ai-district';
+  if (d === 'ai-district' || d === 'ai' || d === 'knowledge') return 'ai-district';
   if (d === 'creative-district' || d === 'creative' || d === 'design' || d === 'frontend') return 'creative-district';
   if (d === 'dev-district' || d === 'dev' || d === 'development' || d === 'backend' || d === 'qa' || d === 'browser_qa' || d === 'terminal') return 'dev-district';
-  if (d === 'data-center' || d === 'data' || d === 'database' || d === 'memory' || d === 'security') return 'data-center';
+  if (d === 'data-center' || d === 'data' || d === 'database' || d === 'memory') return 'data-center';
   if (d === 'observatory' || d === 'devops' || d === 'communication') return 'observatory';
+  if (d === 'industrial' || d === 'logistics' || d === 'deposito' || d === 'deposito-mais') return 'industrial';
+  if (d === 'porto' || d === 'port' || d === 'harbor') return 'porto';
+  if (d === 'research' || d === 'labs' || d === 'science') return 'research';
+  if (d === 'residential' || d === 'housing' || d === 'living') return 'residential';
+  if (d === 'business' || d === 'finance' || d === 'trustpag') return 'business';
+  if (d === 'security' || d === 'shield' || d === 'fortress') return 'security';
+  if (d === 'hospital' || d === 'health' || d === 'clinic') return 'hospital';
+  if (d === 'shopping' || d === 'marketplace' || d === 'bazaar') return 'shopping';
+  if (d === 'praca-central' || d === 'praca' || d === 'forum') return 'praca-central';
+  if (d === 'praia' || d === 'coast' || d === 'beach') return 'praia';
   return 'command-center';
 }
 
@@ -118,40 +214,254 @@ const MUNDER_DIFFLIN_WAYPOINTS = Object.freeze({
   CENTRAL_HALL:     { x: 0.0, y: 0.0, label: 'Corredor Central', thought: 'Circulando pelo escritório 🚶' }
 });
 
+const CANONICAL_BUILDING_PORTALS = Object.freeze({
+  HQ_SPIRE: {
+    name: 'FÊNIX Central HQ Spire',
+    door: { x: 0.0, y: -4.0, label: 'Porta da Central HQ' },
+    interior: { x: -5.0, y: -7.0, label: 'War Room Executiva' },
+    district: 'command-center',
+    enterThought: 'Entrando na Central HQ 🏛️',
+    exitThought: 'Saindo da Central HQ para a praça 🚶'
+  },
+  DEV_LOFT: {
+    name: 'Dev Loft & Engineering Workshop',
+    door: { x: -6.5, y: 4.5, label: 'Portão do Dev Loft' },
+    interior: { x: -2.2, y: 1.0, label: 'Bancada de Desenvolvimento' },
+    district: 'dev-district',
+    enterThought: 'Entrando no Dev Loft para codificar 💻',
+    exitThought: 'Saindo do Dev Loft para o corredor 🚶'
+  },
+  DEPOSITO_MAIS: {
+    name: 'Depósito Mais Hub & Armazém',
+    door: { x: 5.5, y: -2.0, label: 'Doca Central' },
+    interior: { x: 6.0, y: -2.5, label: 'Pátio de Cargas' },
+    district: 'industrial',
+    enterThought: 'Entrando no Depósito Mais 📦',
+    exitThought: 'Saindo das Docas para o bulevar 🚶'
+  },
+  AI_NEXUS: {
+    name: 'AI Neural Nexus & Lab',
+    door: { x: 7.5, y: -4.5, label: 'Entrada do AI Nexus' },
+    interior: { x: 3.5, y: 11.0, label: 'Lab de IA & Modelos' },
+    district: 'ai-district',
+    enterThought: 'Entrando no AI Nexus para consulta RAG 🧠',
+    exitThought: 'Saindo do AI Nexus para o bulevar 🚶'
+  },
+  DATA_CENTER: {
+    name: 'Datacenter Vault & Security Citadel',
+    door: { x: 7.5, y: 5.0, label: 'Eclusa do Datacenter' },
+    interior: { x: -5.0, y: 11.0, label: 'Terminal do Datacenter' },
+    district: 'data-center',
+    enterThought: 'Entrando no Datacenter Vault 🗄️',
+    exitThought: 'Saindo do Datacenter Vault 🚶'
+  },
+  PROJECT_FORGE: {
+    name: 'Code Forge & Deploy Bay',
+    door: { x: 8.5, y: -6.5, label: 'Baia do Code Forge' },
+    interior: { x: 8.5, y: 11.0, label: 'Estação GitHub & VCS' },
+    district: 'project-district',
+    enterThought: 'Entrando no Code Forge 📁',
+    exitThought: 'Saindo do Code Forge 🚶'
+  },
+  CREATIVE_STUDIO: {
+    name: 'Creative Studio & UX Pavilion',
+    door: { x: -8.0, y: 0.0, label: 'Átrio do Design Studio' },
+    interior: { x: 6.5, y: 1.0, label: 'Bancada Frontend & Design' },
+    district: 'creative-district',
+    enterThought: 'Entrando no Creative Studio 🎨',
+    exitThought: 'Saindo do Creative Studio 🚶'
+  },
+  OBSERVATORY: {
+    name: 'Observatory Dome & Telemetry',
+    door: { x: 0.0, y: -10.0, label: 'Rampa do Observatory' },
+    interior: { x: -8.0, y: 11.0, label: 'Cúpula de Telemetria' },
+    district: 'observatory',
+    enterThought: 'Subindo para o Observatory Dome 🔭',
+    exitThought: 'Descendo do Observatory para a avenida 🚶'
+  }
+});
+
 const CANONICAL_AGENT_STATIONS = {
   // War Room (Command & Planning)
-  'agent-orchestrator': { x: -6.5, y: -5.5, facing: 'SE', district: 'command-center', deskLabel: 'Orchestrator Desk' },
-  'agent-planner':      { x: -3.0, y: -5.5, facing: 'SW', district: 'command-center', deskLabel: 'Planner Desk' },
+  'agent.ceo':          { x: -6.5, y: -5.5, facing: 'SE', district: 'command-center', deskLabel: 'CEO Command Suite', file: 'ai-engine/grg/src/core/supervisor.js', floor: 1, service: 'Supervisor & Kernel' },
+  'ceo':                { x: -6.5, y: -5.5, facing: 'SE', district: 'command-center', deskLabel: 'CEO Command Suite', file: 'ai-engine/grg/src/core/supervisor.js', floor: 1, service: 'Supervisor & Kernel' },
+  'agent-orchestrator': { x: -6.5, y: -5.5, facing: 'SE', district: 'command-center', deskLabel: 'Orchestrator Desk', file: 'ai-engine/grg/src/core/kernel.js', floor: 1, service: 'Kernel Master' },
+  'agent-planner':      { x: -3.0, y: -5.5, facing: 'SW', district: 'command-center', deskLabel: 'Planner Desk', file: 'ai-engine/grg/src/missions/mission-engine.js', floor: 2, service: 'GA Mission Engine' },
 
   // Central Open Bullpen (Engineering & Quality)
-  'agent-architect':    { x: -6.5, y: 1.0,  facing: 'SE', district: 'dev-district', deskLabel: 'Architecture Station' },
-  'agent-developer':    { x: -2.2, y: 1.0,  facing: 'NE', district: 'dev-district', deskLabel: 'Dev Desk 1' },
-  'agent-backend':      { x: 2.2,  y: 1.0,  facing: 'NE', district: 'dev-district', deskLabel: 'Backend Desk' },
-  'agent-frontend':     { x: 6.5,  y: 1.0,  facing: 'NW', district: 'creative-district', deskLabel: 'Frontend Desk' },
+  'agent-architect':    { x: -6.5, y: 1.0,  facing: 'SE', district: 'dev-district', deskLabel: 'Architecture Station', file: 'ai-engine/grg/src/core/kernel.js', floor: 2, service: 'Runtime Kernel' },
+  'agent-developer':    { x: -2.2, y: 1.0,  facing: 'NE', district: 'dev-district', deskLabel: 'Dev Desk 1', file: 'ai-engine/grg/src/server.js', floor: 2, service: 'Node.js Express 4400' },
+  'agent-backend':      { x: 2.2,  y: 1.0,  facing: 'NE', district: 'dev-district', deskLabel: 'Backend Desk', file: 'ai-engine/grg/src/server.js', floor: 2, service: 'API & Microservices' },
+  'agent-frontend':     { x: 6.5,  y: 1.0,  facing: 'NW', district: 'creative-district', deskLabel: 'Frontend Desk', file: 'ai-engine/grg/public/index.html', floor: 3, service: 'Single-Shell UI' },
   
-  'agent-database':     { x: -6.5, y: 4.5,  facing: 'NW', district: 'data-center', deskLabel: 'Database Desk' },
-  'agent-db':           { x: -6.5, y: 4.5,  facing: 'NW', district: 'data-center', deskLabel: 'Database Desk' },
-  'agent-memory':       { x: -2.2, y: 4.5,  facing: 'NW', district: 'data-center', deskLabel: 'Memory Fabric Desk' },
-  'agent-security':     { x: 2.2,  y: 4.5,  facing: 'NW', district: 'data-center', deskLabel: 'Security Desk' },
-  'agent-qa':           { x: 6.5,  y: 4.5,  facing: 'NE', district: 'dev-district', deskLabel: 'QA Automation Rig' },
+  'agent-database':     { x: -6.5, y: 4.5,  facing: 'NW', district: 'data-center', deskLabel: 'Database Desk', file: 'ai-engine/grg/src/persistence/storage.js', floor: 1, service: 'SQLite & Store' },
+  'agent-db':           { x: -6.5, y: 4.5,  facing: 'NW', district: 'data-center', deskLabel: 'Database Desk', file: 'ai-engine/grg/src/persistence/storage.js', floor: 1, service: 'SQLite & Store' },
+  'agent-memory':       { x: -2.2, y: 4.5,  facing: 'NW', district: 'data-center', deskLabel: 'Memory Fabric Desk', file: 'ai-engine/grg/src/memory/memory-engine.js', floor: 2, service: 'Episodic Memory' },
+  'agent-security':     { x: 2.2,  y: 4.5,  facing: 'NW', district: 'data-center', deskLabel: 'Security Desk', file: 'ai-engine/grg/src/governance/gatekeeper.js', floor: 2, service: 'Gatekeeper Sandbox' },
+  'agent-qa':           { x: 6.5,  y: 4.5,  facing: 'NE', district: 'dev-district', deskLabel: 'QA Automation Rig', file: 'ai-engine/grg/test/e2e-smoke.test.js', floor: 3, service: 'Playwright Tests' },
 
   // Data Center Vault & Telemetry Ops
-  'agent-devops':       { x: -5.0, y: 11.0, facing: 'SW', district: 'observatory', deskLabel: 'DevOps Server Terminal' },
-  'agent-observability':{ x: -8.0, y: 11.0, facing: 'SE', district: 'observatory', deskLabel: 'Telemetry Ops Station' },
-  'agent-obs':          { x: -8.0, y: 11.0, facing: 'SE', district: 'observatory', deskLabel: 'Telemetry Ops Station' },
+  'agent-devops':       { x: -5.0, y: 11.0, facing: 'SW', district: 'observatory', deskLabel: 'DevOps Server Terminal', file: 'docker-compose.yml', floor: 1, service: 'Docker & VPS CI/CD' },
+  'agent-observability':{ x: -8.0, y: 11.0, facing: 'SE', district: 'observatory', deskLabel: 'Telemetry Ops Station', file: 'ai-engine/grg/src/observability/prometheus-exporter.js', floor: 1, service: 'Prometheus & Logs' },
+  'agent-obs':          { x: -8.0, y: 11.0, facing: 'SE', district: 'observatory', deskLabel: 'Telemetry Ops Station', file: 'ai-engine/grg/src/observability/prometheus-exporter.js', floor: 1, service: 'Prometheus & Logs' },
 
   // AI & Automation Lab
-  'agent-research':     { x: 3.5,  y: 11.0, facing: 'SW', district: 'ai-district', deskLabel: 'AI Model Research Desk' },
-  'agent-browser':      { x: 6.5,  y: 11.0, facing: 'NE', district: 'dev-district', deskLabel: 'Browser Automation Lab' },
-  'agent-github':       { x: 8.5,  y: 11.0, facing: 'SE', district: 'project-district', deskLabel: 'GitHub & VCS Station' },
+  'agent-research':     { x: 3.5,  y: 11.0, facing: 'SW', district: 'ai-district', deskLabel: 'AI Model Research Desk', file: 'ai-engine/grg/src/ai/llm-provider.js', floor: 1, service: 'Ollama Inference' },
+  'agent-browser':      { x: 6.5,  y: 11.0, facing: 'NE', district: 'dev-district', deskLabel: 'Browser Automation Lab', file: 'ai-engine/grg/src/browser/browser-service.js', floor: 3, service: 'Headless Browser' },
+  'agent-github':       { x: 8.5,  y: 11.0, facing: 'SE', district: 'project-district', deskLabel: 'GitHub & VCS Station', file: 'ai-engine/grg/src/git/git-service.js', floor: 1, service: 'Git & Workspaces' },
 
   // Optional aliases
-  'agent-twin':         { x: -7.2, y: -3.8, facing: 'SE', district: 'project-district', deskLabel: 'Digital Twin Station' },
-  'agent-ai':           { x: 6.0,  y: -4.0, facing: 'SW', district: 'ai-district', deskLabel: 'AI Core Station' },
-  'agent-knowledge':    { x: 8.2,  y: -3.2, facing: 'SW', district: 'ai-district', deskLabel: 'Knowledge Station' },
-  'agent-ux':           { x: 7.8,  y: 5.5,  facing: 'NW', district: 'creative-district', deskLabel: 'UX Design Desk' },
-  'agent-docs':         { x: -5.4, y: 5.8,  facing: 'NE', district: 'dev-district', deskLabel: 'Docs Station' }
+  'agent-twin':         { x: -7.2, y: -3.8, facing: 'SE', district: 'project-district', deskLabel: 'Digital Twin Station', file: 'ai-engine/grg/src/twin/digital-twin.js', floor: 1, service: 'Digital Twin Sim' },
+  'agent-ai':           { x: 6.0,  y: -4.0, facing: 'SW', district: 'ai-district', deskLabel: 'AI Core Station', file: 'ai-engine/grg/src/ai/llm-provider.js', floor: 1, service: 'Cognitive Engine' },
+  'agent-knowledge':    { x: 8.2,  y: -3.2, facing: 'SW', district: 'ai-district', deskLabel: 'Knowledge Station', file: 'ai-engine/grg/src/knowledge/graph.js', floor: 2, service: 'Knowledge Graph' },
+  'agent-ux':           { x: 7.8,  y: 5.5,  facing: 'NW', district: 'creative-district', deskLabel: 'UX Design Desk', file: 'ai-engine/grg/public/unified.css', floor: 3, service: 'Design Tokens' },
+  'agent-docs':         { x: -5.4, y: 5.8,  facing: 'NE', district: 'dev-district', deskLabel: 'Docs Station', file: 'ai-engine/grg/docs/CONSTITUICAO_FENIX_CEC.md', floor: 2, service: 'Specs & Docs' },
+  'agent-camila':       { x: 6.0,  y: -2.5, facing: 'SW', district: 'industrial', deskLabel: 'Mesa Supervisão Camila', file: 'crm/backend/crm/ai-agents/agents/camilaAgent.js', floor: 2, service: 'Supervisão de Embalagem & WMS' },
+  'camila':             { x: 6.0,  y: -2.5, facing: 'SW', district: 'industrial', deskLabel: 'Mesa Supervisão Camila', file: 'crm/backend/crm/ai-agents/agents/camilaAgent.js', floor: 2, service: 'Supervisão de Embalagem & WMS' },
+  'agent-andre':        { x: 6.5,  y: -2.2, facing: 'NW', district: 'industrial', deskLabel: 'Bancada WMS André', file: 'ai-engine/grg/src/company/company-brain.js', floor: 2, service: 'Roteamento de Picking WMS' },
+  'agent-marcos':       { x: 5.8,  y: -2.8, facing: 'SE', district: 'industrial', deskLabel: 'Mesa Comercial Marcos', file: 'ai-engine/grg/src/company/company-brain.js', floor: 3, service: 'Vendas Atacadistas B2B' },
+  'agent-silva':        { x: 6.2,  y: -2.8, facing: 'SW', district: 'industrial', deskLabel: 'Gabinete Diretor Silva', file: 'ai-engine/grg/src/company/company-brain.js', floor: 3, service: 'Diretoria de Operações Logísticas' },
+  'agent-expedicao':    { x: 5.5,  y: -2.0, facing: 'NW', district: 'industrial', deskLabel: 'Terminal Docas Expedição', file: 'ai-engine/grg/src/company/company-brain.js', floor: 1, service: 'Recepção e Cargas Pesadas' }
 };
+
+const CANONICAL_BUILDING_FLOORS = Object.freeze({
+  'dev-district': {
+    id: 'dev-loft',
+    name: 'Dev Loft & Engineering Workshop',
+    district: 'dev-district',
+    accentColor: '#10b981',
+    floors: [
+      {
+        floorNum: 1,
+        name: 'Lobby & Infraestrutura VPS',
+        short: 'F1 Infra',
+        theme: 'slate',
+        props: ['serverRack', 'coffeeBar', 'waterCooler', 'filingCabinet'],
+        stations: ['agent-devops', 'agent-obs']
+      },
+      {
+        floorNum: 2,
+        name: 'Backend & APIs Node.js',
+        short: 'F2 Backend',
+        theme: 'parquet',
+        props: ['kanbanBoard', 'filingCabinet', 'devDesk'],
+        stations: ['agent-backend', 'agent-developer', 'agent-architect', 'agent-docs']
+      },
+      {
+        floorNum: 3,
+        name: 'Frontend & QA Suite Playwright',
+        short: 'F3 Frontend',
+        theme: 'carpet',
+        props: ['browserMonitor', 'kanbanBoard', 'devDesk'],
+        stations: ['agent-frontend', 'agent-qa', 'agent-browser', 'agent-ux']
+      }
+    ]
+  },
+  'command-center': {
+    id: 'fenix-hq',
+    name: 'FÊNIX Central HQ Spire',
+    district: 'command-center',
+    accentColor: '#ef4444',
+    floors: [
+      {
+        floorNum: 1,
+        name: 'Command Center & Supervisor',
+        short: 'F1 Command',
+        theme: 'marble',
+        props: ['conferenceTable', 'whiteboard'],
+        stations: ['agent.ceo', 'agent-orchestrator']
+      },
+      {
+        floorNum: 2,
+        name: 'War Room Executiva & Missões',
+        short: 'F2 War Room',
+        theme: 'marble',
+        props: ['kanbanBoard', 'conferenceTable', 'whiteboard'],
+        stations: ['agent-planner']
+      }
+    ]
+  },
+  'ai-district': {
+    id: 'ai-nexus',
+    name: 'AI Neural Nexus & Lab',
+    district: 'ai-district',
+    accentColor: '#a855f7',
+    floors: [
+      {
+        floorNum: 1,
+        name: 'Model Cluster & Inferência (Ollama/Qwen)',
+        short: 'F1 Inferência',
+        theme: 'cleanroom',
+        props: ['serverRack', 'browserMonitor'],
+        stations: ['agent-ai', 'agent-research']
+      },
+      {
+        floorNum: 2,
+        name: 'RAG, Vetores & Grafo Cognitivo',
+        short: 'F2 Conhecimento',
+        theme: 'cleanroom',
+        props: ['kanbanBoard', 'filingCabinet'],
+        stations: ['agent-knowledge']
+      }
+    ]
+  },
+  'data-center': {
+    id: 'data-center',
+    name: 'Datacenter Vault & Security Citadel',
+    district: 'data-center',
+    accentColor: '#3b82f6',
+    floors: [
+      {
+        floorNum: 1,
+        name: 'Silos de Banco de Dados & Armazenamento',
+        short: 'F1 Storage',
+        theme: 'slate',
+        props: ['serverRack', 'filingCabinet'],
+        stations: ['agent-db', 'agent-database']
+      },
+      {
+        floorNum: 2,
+        name: 'Guardião da Memória & Cidadela de Segurança',
+        short: 'F2 Segurança',
+        theme: 'slate',
+        props: ['serverRack', 'whiteboard'],
+        stations: ['agent-memory', 'agent-security']
+      }
+    ]
+  },
+  'industrial': {
+    id: 'bld-industrial',
+    name: 'Centro de Operações & Logística',
+    district: 'industrial',
+    accentColor: '#f59e0b',
+    floors: [
+      {
+        floorNum: 1,
+        name: 'Recepção, Triagem & Docas Pesadas',
+        short: 'F1 Docas',
+        theme: 'slate',
+        props: ['serverRack', 'filingCabinet'],
+        stations: ['agent-expedicao']
+      },
+      {
+        floorNum: 2,
+        name: 'Separação Automatizada & Controle de Qualidade WMS',
+        short: 'F2 Qualidade & WMS',
+        theme: 'wood',
+        props: ['kanbanBoard', 'filingCabinet', 'devDesk'],
+        stations: ['agent-camila', 'agent-andre']
+      },
+      {
+        floorNum: 3,
+        name: 'Gestão Executiva, Vendas & B2B',
+        short: 'F3 Vendas & Diretoria',
+        theme: 'marble',
+        props: ['conferenceTable', 'whiteboard'],
+        stations: ['agent-marcos', 'agent-silva']
+      }
+    ]
+  }
+});
 
 const AVATAR_PALETTES = Object.freeze({
   skins: {
@@ -893,6 +1203,22 @@ class CityWorldGrid {
   }
 }
 
+// Fênix Operating Modes: LIVE / OBSERVATION / DEBUG
+window.fenixCityMode = 'LIVE';
+window.fenixSetOperatingMode = function(mode) {
+  const valid = ['LIVE', 'OBSERVATION', 'DEBUG'];
+  if (!valid.includes(mode)) return;
+  window.fenixCityMode = mode;
+  // Update button states
+  const strip = document.getElementById('fenixOperatingModeStrip');
+  if (strip) {
+    strip.querySelectorAll('.fenix-opmode-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
+    });
+  }
+  window.dispatchEvent(new CustomEvent('fenix-operating-mode-changed', { detail: { mode } }));
+};
+
 class IsoCityEngine {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
@@ -900,36 +1226,51 @@ class IsoCityEngine {
     this.ctx = this.canvas.getContext('2d');
     this.time = 0;
 
-    // T31 — Multi-level navigation
-    this.viewLevel = 'city'; // 'city' | 'building' | 'floor' | 'agent'
+    // Fênix AI City 4.0 — Multi-level navigation & Floors
+    this.viewLevel = 'city'; // 'world' | 'city' | 'district' | 'building' | 'floor' | 'station' | 'agent'
     this.activeDistrict = null;   // district key string
-    this.activeFloor    = null;   // floor index 0-11
+    this.activeBuilding = null;   // active building key
+    this.activeFloor    = null;   // floor index
     this.activeAgent    = null;   // agent object
+    this.activeFloorsByBuilding = {
+      'dev-district': 2,
+      'command-center': 1,
+      'ai-district': 1,
+      'data-center': 1
+    };
+    this.canonicalStations = CANONICAL_AGENT_STATIONS;
 
-    // T35 — Zoom-to-building animation state
+    // Zoom-to-building animation state
     this._zoomAnim = { active: false, scale: 0, target: 1 };
     this.isNight = true;
+    this.initHeroBaseImage();
 
     this.state = {
-      camera: { x: 0, y: -20, zoom: 1.35 },
-      targetCamera: { x: 0, y: -20, zoom: 1.35 },
+      camera: { x: 0, y: 0, zoom: 1.05 },
+      targetCamera: { x: 0, y: 0, zoom: 1.05 },
       isDragging: false,
       lastMouse: { x: 0, y: 0 },
       tileSize: 32,
       hoveredAgent: null,
       hoveredDistrict: null,
+      hoveredPinId: null,
+      hoveredHeroBuilding: null,
+      showAllLabels: false,
       followAgentId: null,
       followMissionId: null,
       cityFilter: 'ALL',
       lastTime: performance.now(),
       selectedAgent: null,
-      photoMode: false
+      photoMode: false,
+      renderMode: 'pixel'
     };
     this.rotationQuarter = 0;
     try {
       const saved = JSON.parse(localStorage.getItem('fenix_city_camera') || 'null');
-      if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) && Number.isFinite(saved.zoom) && saved.zoom >= 0.4 && saved.zoom <= 2.85) {
-        this.state.camera = { x: saved.x, y: saved.y, zoom: saved.zoom };
+      if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) && Number.isFinite(saved.zoom) && saved.zoom >= 0.35 && saved.zoom <= 4.2) {
+        const effZoom = (saved.zoom < 0.95 || saved.zoom === 1.35) ? 1.05 : saved.zoom;
+        const effY = (saved.y === -20 || saved.y === 0) ? 35 : saved.y;
+        this.state.camera = { x: saved.x, y: effY, zoom: effZoom };
         this.state.targetCamera = { ...this.state.camera };
         this.rotationQuarter = (Number(saved.rotationQuarter) || 0) & 3;
       }
@@ -941,6 +1282,9 @@ class IsoCityEngine {
       missions: [],
       jobs: [],
       projects: [],
+      vehicles: [],
+      constructions: [],
+      workstations: [],
       particles: [],
       bubbles: [],
       envelopes: []
@@ -965,6 +1309,12 @@ class IsoCityEngine {
     this.resize();
     window.addEventListener('resize', () => this.resize());
     this.setupEvents();
+    window.addEventListener('fenix:viewchanged', (event) => {
+      if (event.detail?.viewId === 'city') this.startLoop();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && document.getElementById('view-city')?.classList.contains('active')) this.startLoop();
+    });
     
     // Sync with real API every 3s and on live events
     this._syncInterval = setInterval(() => {
@@ -995,6 +1345,39 @@ class IsoCityEngine {
   _initDefaultLivingAgents() {
     // Constraint 2 & 12: Zero fake agents. Population comes only from live runtime state.
     this.world.agents.clear();
+  }
+
+  initHeroBaseImage() {
+    this.heroImage = new Image();
+    this.heroImage.src = '/assets/fenix-city-canvas-hd.png';
+    this.heroImageLoaded = false;
+    this.heroImage.onload = () => {
+      this.heroImageLoaded = true;
+    };
+    this.heroImage.onerror = () => {
+      console.warn('[IsoCity] Falha ao carregar fenix-city-canvas-hd.png');
+    };
+  }
+
+  setZoom(z) {
+    this.state.targetCamera.zoom = Math.max(0.4, Math.min(3.8, z));
+    const btnD = document.getElementById('btnPillDistritos');
+    const btnP = document.getElementById('btnPillPredios');
+    if (btnD && btnP) {
+      btnD.classList.toggle('active', z <= 1.2);
+      btnP.classList.toggle('active', z > 1.2);
+    }
+    if (typeof this._updateZoomDisplay === 'function') {
+      this._updateZoomDisplay();
+    }
+  }
+
+  zoomIn() {
+    this.setZoom(this.state.targetCamera.zoom * 1.15);
+  }
+
+  zoomOut() {
+    this.setZoom(this.state.targetCamera.zoom * 0.88);
   }
 
 
@@ -1139,7 +1522,7 @@ class IsoCityEngine {
     this.canvas.addEventListener('wheel', e => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      this.state.targetCamera.zoom = Math.max(0.4, Math.min(2.8, this.state.targetCamera.zoom * delta));
+      this.state.targetCamera.zoom = Math.max(0.4, Math.min(3.8, this.state.targetCamera.zoom * delta));
     }, { passive: false });
 
     // Touch gestures for mobile & tablet (drag, pinch-to-zoom, tap, double-tap, long-press)
@@ -1195,7 +1578,7 @@ class IsoCityEngine {
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const currentDist = Math.hypot(dx, dy);
         const factor = currentDist / initialPinchDist;
-        this.state.targetCamera.zoom = Math.max(0.4, Math.min(2.8, initialPinchZoom * factor));
+        this.state.targetCamera.zoom = Math.max(0.4, Math.min(3.8, initialPinchZoom * factor));
         this._updateZoomDisplay();
       }
     }, { passive: true });
@@ -1237,6 +1620,35 @@ class IsoCityEngine {
       this._closeContextMenu();
       const rect = this.canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      
+      // Check hero building hitboxes only when in hero mode
+      if (this.state.renderMode === 'hero' && this.heroImageLoaded && this._heroHitboxes) {
+        const hit = this._heroHitboxes.find(b => {
+          return Math.hypot(mx - b.x, my - b.y) <= (b.w / 2) ||
+                 (mx >= b.x - b.w / 2 && mx <= b.x + b.w / 2 && my >= b.y - b.h / 2 && my <= b.y + b.h / 2);
+        });
+        if (hit) {
+          if (hit.companyId) {
+            window.fenixSelectCompany?.(hit.companyId);
+            window.fenixOpenSystemInspector?.(hit.companyId);
+          } else {
+            window.fenixPanToDistrict?.(hit.id);
+            window.fenixOpenSystemInspector?.(hit.id);
+          }
+          return;
+        }
+      }
+
+      // Check floating pin labels first
+      if (this._pinHitBoxes) {
+        for (const box of this._pinHitBoxes) {
+          if (mx >= box.x && mx <= box.x + box.w && my >= box.y && my <= box.y + box.h) {
+            window.fenixPanToDistrict?.(box.id);
+            return; // consumed
+          }
+        }
+      }
+
       // Minimap hit test
       const mw = 110, mh = 80;
       const mmX = this.canvas.width - mw - 14, mmY = 14;
@@ -1265,47 +1677,97 @@ class IsoCityEngine {
         this.state.selectedAgent = agent;
         const tw = this.state.tileSize;
         const th = tw / 2;
-        const z = 2.4;
+        const z = 3.2;
         const rect = this.canvas.getBoundingClientRect();
         // Golden-third framing: places agent at ~38% screen width (offset -12% from center, leaving contextual space on right)
         const goldenOffsetX = Math.round(rect.width * 0.12);
-        const cameraPoint = this.toScreen(agent.x, agent.y, 0, 0, 0, z);
+        const ax = (typeof agent.x === 'number' && !isNaN(agent.x)) ? agent.x : (typeof agent.homeX === 'number' && !isNaN(agent.homeX) ? agent.homeX : 0);
+        const ay = (typeof agent.y === 'number' && !isNaN(agent.y)) ? agent.y : (typeof agent.homeY === 'number' && !isNaN(agent.homeY) ? agent.homeY : 0);
+        const cameraPoint = this.toScreen(ax, ay, 0, 0, 0, z);
         this.state.targetCamera.x = -Math.round(cameraPoint.x) - goldenOffsetX;
         this.state.targetCamera.y = -Math.round(cameraPoint.y);
         this.state.targetCamera.zoom = z;
         this._updateZoomDisplay();
+        this.updateBreadcrumbs();
 
         const cx = rect.width / 2 + this.state.camera.x;
         const cy = rect.height / 2 + this.state.camera.y;
-        const sc = this.toScreen(agent.x, agent.y, 0.22, cx, cy, z);
+        const sc = this.toScreen(ax, ay, 0.22, cx, cy, z);
 
         window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: this.state.selectedAgent, agentId: this.state.selectedAgent.id } }));
         this.saveCamera();
-        window.showView?.('agents');
-        setTimeout(() => window.fenixInspectAgent?.(agent.id), 80);
+        if (typeof window.closeSpatialChat === 'function') window.closeSpatialChat();
+        if (typeof window.fenixShowWorldAgentInspector === 'function') {
+          window.fenixShowWorldAgentInspector(agent);
+        } else if (typeof window.fenixOpenAgent === 'function') {
+          window.fenixOpenAgent(agent.id);
+        }
         return;
       }
+
+      // Fênix AI City 4.0: Workstation Hit Test
+      const wsHit = this._hitTestWorkstation(mx, my);
+      if (wsHit) {
+        if (typeof window.closeSpatialChat === 'function') window.closeSpatialChat();
+        const st = wsHit.station;
+        const cameraPoint = this.toScreen(st.x, st.y, 0, 0, 0, 2.8);
+        const rect = this.canvas.getBoundingClientRect();
+        const goldenOffsetX = Math.round(rect.width * 0.12);
+        this.state.targetCamera.x = -Math.round(cameraPoint.x) - goldenOffsetX;
+        this.state.targetCamera.y = -Math.round(cameraPoint.y);
+        this.state.targetCamera.zoom = 2.8;
+        this._updateZoomDisplay();
+        this.openStationPreview(st, wsHit.agentId);
+        this.updateBreadcrumbs();
+        return;
+      }
+
       const distHit = this._hitTestDistrict(mx, my);
       if (distHit) {
         if (typeof window.closeSpatialChat === 'function') window.closeSpatialChat();
-        // Cutaway: toggle cutaway on clicked building entrance or activate zoom level 4
-        this.state.cutawayBuilding = (this.state.cutawayBuilding === distHit.key) ? null : distHit.key;
-        this.state.targetCamera.zoom = Math.max(this.state.targetCamera.zoom, 1.95);
+        if (typeof window.closeStationPreview === 'function') window.closeStationPreview();
+        this.activeBuilding = distHit.key;
+        this.updateFloorSelector(distHit.key);
+        // Zoom and center camera smoothly on the landmark building in 2.5D space with cutaway
+        const d = distHit.district;
+        const cameraPoint = this.toScreen(d.x, d.y, 0, 0, 0, 2.1);
+        this.state.targetCamera.x = -Math.round(cameraPoint.x);
+        this.state.targetCamera.y = -Math.round(cameraPoint.y);
+        this.state.targetCamera.zoom = 2.1;
+        this.state.cutawayBuilding = distHit.key;
         this._updateZoomDisplay();
+        this.updateBreadcrumbs();
         window.dispatchEvent(new CustomEvent('fenix-district-selected', { detail: distHit }));
+        if (distHit.key) {
+          window.GlobalSelectionStore?.select('world_entity', distHit.key, { name: distHit.name || distHit.key, district: distHit.key });
+        }
         this.saveCamera();
-        const destination = {
-          'command-center': 'command', 'project-district': 'projects',
-          'ai-district': 'mcp', 'creative-district': 'ide',
-          'dev-district': 'ide', 'data-center': 'memory',
-          'observatory': 'observability', 'browser-district': 'browser'
-        }[distHit.key] || 'operations';
-        window.showView?.(destination);
+        if (typeof window.fenixShowWorldBuildingInspector === 'function') {
+          window.fenixShowWorldBuildingInspector(distHit);
+        }
         return;
       }
       this.state.selectedAgent = null;
       if (typeof window.closeSpatialChat === 'function') window.closeSpatialChat();
+      if (typeof window.closeStationPreview === 'function') window.closeStationPreview();
       if (typeof window.closeSpatialDrawer === 'function') window.closeSpatialDrawer();
+      this.updateBreadcrumbs();
+    });
+
+    this.canvas.addEventListener('dblclick', (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const agent = this.state.hoveredAgent || this._hitTestAgent(mx, my);
+      if (agent) {
+        this.followAgent(agent.id);
+        this.state.targetCamera.zoom = 3.2;
+        this._updateZoomDisplay();
+        if (typeof window.fenixShowWorldAgentInspector === 'function') {
+          window.fenixShowWorldAgentInspector(agent);
+        }
+        return;
+      }
+      this.resetCamera();
     });
 
     // WASD and Arrow key navigation
@@ -1340,69 +1802,15 @@ class IsoCityEngine {
         window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: target } }));
       }
     });
-    // Double-click to reset camera
-    this.canvas.addEventListener('dblclick', () => {
-      this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
-      this._updateZoomDisplay();
-    });
 
     // Toolbar Zoom & Filter controls
-    document.getElementById('btnZoomIn')?.addEventListener('click', () => {
-      this.state.targetCamera.zoom = Math.min(2.8, this.state.targetCamera.zoom * 1.25);
-      this._updateZoomDisplay();
-    });
-    document.getElementById('btnZoomOut')?.addEventListener('click', () => {
-      this.state.targetCamera.zoom = Math.max(0.4, this.state.targetCamera.zoom * 0.8);
-      this._updateZoomDisplay();
-    });
     document.getElementById('btnResetCamera')?.addEventListener('click', () => {
-      this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
+      this.state.targetCamera = { x: 0, y: 35, zoom: 1.05 };
       this.state.followAgentId = null;
       this.state.followMissionId = null;
       this._updateZoomDisplay();
     });
-    document.getElementById('btnFollowAgent')?.addEventListener('click', () => {
-      const selected = this.state.selectedAgent;
-      if (!selected) return;
-      this.state.followAgentId = this.state.followAgentId === selected.id ? null : selected.id;
-      const button = document.getElementById('btnFollowAgent');
-      if (button) button.classList.toggle('active', Boolean(this.state.followAgentId));
-    });
-    document.getElementById('btnFollowMission')?.addEventListener('click', () => {
-      const missionId = this.state.selectedAgent?.missionId || this.state.selectedAgent?.currentMission?.id || this.state.selectedAgent?.currentMission?.missionId;
-      if (!missionId) return;
-      this.state.followAgentId = null;
-      this.state.followMissionId = this.state.followMissionId === missionId ? null : missionId;
-      document.getElementById('btnFollowMission')?.classList.toggle('active', Boolean(this.state.followMissionId));
-    });
-    document.getElementById('btnTogglePhotoMode')?.addEventListener('click', () => {
-      this.state.photoMode = !this.state.photoMode;
-      const btn = document.getElementById('btnTogglePhotoMode');
-      if (btn) btn.classList.toggle('active', this.state.photoMode);
-    });
-    document.getElementById('btnCityFilters')?.addEventListener('click', () => this.toggleFilterMenu());
-    document.getElementById('citySearchInput')?.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter') return;
-      const query = String(event.currentTarget.value || '').trim().toLowerCase();
-      if (!query) return;
-      const agent = [...this.world.agents.values()].find((item) => `${item.id} ${item.name}`.toLowerCase().includes(query));
-      if (agent) return this.focusAgent(agent.id);
-      const mission = this.world.missions?.find?.((item) => `${item.id} ${item.name || item.title}`.toLowerCase().includes(query));
-      if (mission) return this.focusMission(mission.id);
-      const job = this.world.jobs?.find?.((item) => `${item.id} ${item.title || item.type}`.toLowerCase().includes(query));
-      if (job) return this.focusJob(job.id);
-      const project = this.world.projects?.find?.((item) => `${item.id} ${item.name || item.projectName}`.toLowerCase().includes(query));
-      if (project) return this.focusProject(project.id || project.projectId);
-      this.canvas.setAttribute('aria-label', `AI City: nenhuma entidade encontrada para ${query}`);
-    });
-    document.getElementById('btnFullscreenCity')?.addEventListener('click', () => {
-      const container = document.getElementById('wsCityContainer') || this.canvas;
-      if (!document.fullscreenElement) {
-        container.requestFullscreen?.().catch(() => {});
-      } else {
-        document.exitFullscreen?.().catch(() => {});
-      }
-    });
+    
     document.getElementById('btnCityListView')?.addEventListener('click', () => {
       const list = document.getElementById('cityListView');
       const canvas = this.canvas;
@@ -1413,19 +1821,8 @@ class IsoCityEngine {
       document.getElementById('btnCityListView')?.setAttribute('aria-pressed', String(open));
       if (open) window.dispatchEvent(new CustomEvent('fenix-city-list-requested'));
     });
-
-    document.getElementById('btnFitCity')?.addEventListener('click', () => this.fitCity());
-    document.getElementById('btnCenterAgent')?.addEventListener('click', () => this.centerAgent());
-    document.getElementById('btnCenterMission')?.addEventListener('click', () => this.centerMission());
-    document.getElementById('btnToggleCityAudio')?.addEventListener('click', () => {
-      const enabled = this.audio?.toggle();
-      const btn = document.getElementById('btnToggleCityAudio');
-      if (btn) {
-        btn.classList.toggle('active', Boolean(enabled));
-        btn.innerHTML = enabled ? '<i class="ph ph-speaker-high"></i> SOM ON' : '<i class="ph ph-speaker-slash"></i> SOM';
-      }
-    });
   }
+
 
   _hitTestHandoff(mx, my) {
     const handoff = this.activeHandoff;
@@ -1479,13 +1876,14 @@ class IsoCityEngine {
 
   _updateZoomDisplay() {
     const z = this.state.targetCamera.zoom;
-    let badge = 'L3 EDIFÍCIO';
-    let levelStr = '1.35x';
-    if (z < 0.65) { badge = 'L1 CIDADE'; levelStr = '0.45x'; }
-    else if (z < 1.15) { badge = 'L2 DISTRITO'; levelStr = '0.85x'; }
-    else if (z < 1.75) { badge = 'L3 EDIFÍCIO'; levelStr = '1.35x'; }
-    else if (z < 2.45) { badge = 'L4 INTERIOR'; levelStr = '1.95x'; }
-    else { badge = 'L5 WORKSPACE'; levelStr = '2.85x'; }
+    let badge = 'L2 EDIFÍCIO';
+    let levelStr = `${z.toFixed(2)}x`;
+    if (z < 1.30) { badge = 'L0 MACRO WORLD'; }
+    else if (z < 1.90) { badge = 'L1 DISTRITO'; }
+    else if (z < 2.70) { badge = 'L2 EDIFÍCIO'; }
+    else if (z < 3.30) { badge = 'L3 CORTE INTERIOR'; }
+    else if (z < 3.90) { badge = 'L4 AGENTE'; }
+    else { badge = 'L5 ESTAÇÃO'; }
 
     const el = document.getElementById('cityZoomBadge');
     if (el) el.textContent = badge;
@@ -1495,6 +1893,283 @@ class IsoCityEngine {
     if (lbl) {
       lbl.textContent = `${Math.round(z * 100)}% · ${badge}`;
     }
+    this.updateBreadcrumbs();
+  }
+
+  getActiveFloor(bldKey) {
+    if (!this.activeFloorsByBuilding) {
+      this.activeFloorsByBuilding = { 'dev-district': 2, 'command-center': 1, 'ai-district': 1, 'data-center': 1 };
+    }
+    return this.activeFloorsByBuilding[bldKey] || 1;
+  }
+
+  setActiveFloor(bldKey, floorNum) {
+    if (!this.activeFloorsByBuilding) {
+      this.activeFloorsByBuilding = { 'dev-district': 2, 'command-center': 1, 'ai-district': 1, 'data-center': 1 };
+    }
+    this.activeFloorsByBuilding[bldKey] = floorNum;
+    this.updateFloorSelector(bldKey);
+    this.updateBreadcrumbs();
+  }
+
+  updateFloorSelector(bldKey) {
+    const el = document.getElementById('cityFloorSelector');
+    if (!el) return;
+    const bld = CANONICAL_BUILDING_FLOORS[bldKey];
+    if (!bld || !bld.floors || bld.floors.length <= 1) {
+      el.style.display = 'none';
+      return;
+    }
+    const titleEl = document.getElementById('floorSelectorTitle');
+    if (titleEl) titleEl.textContent = `${bld.id.toUpperCase()}`;
+
+    const btnsEl = document.getElementById('floorSelectorButtons');
+    if (!btnsEl) return;
+
+    const currentFl = this.getActiveFloor(bldKey);
+    btnsEl.innerHTML = bld.floors.map(f => {
+      const active = f.floorNum === currentFl ? 'active' : '';
+      return `<button type="button" class="floor-btn ${active}" data-floor="${f.floorNum}" title="${f.name}">
+        <span style="font-size:12px;">📐</span> ${f.short || ('F' + f.floorNum)}
+      </button>`;
+    }).join('');
+
+    btnsEl.querySelectorAll('.floor-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const fnum = Number(btn.getAttribute('data-floor'));
+        this.setActiveFloor(bldKey, fnum);
+        if (window.fenixWorld3D?.focusFloor) {
+          window.fenixWorld3D.focusFloor(fnum);
+        }
+      };
+    });
+
+    el.style.display = 'flex';
+  }
+
+  
+  _applyModes() {
+    const mode = window.fenixCityMode || 'LIVE';
+    // LIVE: zero labels by default, actions enabled
+    // OBSERVATION: zero labels by default, actions DISABLED (read-only)
+    // DEBUG: all labels visible, all telemetry, IDs shown
+    if (mode === 'DEBUG') {
+      this.state.showAllLabels = true;
+    } else {
+      // Both LIVE and OBSERVATION: labels only on hover/selection
+      this.state.showAllLabels = false;
+    }
+    this.state.actionsEnabled = (mode === 'LIVE');
+    
+    // Semantic zoom: adjust visible details based on camera zoom
+    const zoom = this.state.camera.zoom;
+    if (zoom < 0.5) {
+      // District overview: only district health badges, no agents/props
+      this.state.semanticZoomLevel = 'district';
+      this.state.showAgentSprites = false;
+      this.state.showProps = false;
+      this.state.showVehicles = false;
+    } else if (zoom < 0.85) {
+      // City overview: buildings visible, agents as dots, no props
+      this.state.semanticZoomLevel = 'city';
+      this.state.showAgentSprites = true;
+      this.state.showProps = false;
+      this.state.showVehicles = false;
+    } else if (zoom < 1.5) {
+      // Building level: agents with sprites, vehicles, some props
+      this.state.semanticZoomLevel = 'building';
+      this.state.showAgentSprites = true;
+      this.state.showProps = true;
+      this.state.showVehicles = true;
+    } else {
+      // Agent/detail level: everything visible, names shown
+      this.state.semanticZoomLevel = 'agent';
+      this.state.showAgentSprites = true;
+      this.state.showProps = true;
+      this.state.showVehicles = true;
+    }
+  }
+
+  updateBreadcrumbs() {
+    const el = document.getElementById('cityBreadcrumb');
+    if (!el) return;
+
+    const z = this.state.targetCamera.zoom;
+    const crumbs = [
+      { label: '🏙️ Cidade', action: () => this.navigateToLevel('city') }
+    ];
+
+    // District
+    const distKey = this.activeDistrict || (this.state.selectedAgent?.district) || (this.state.hoveredDistrict?.key) || this.activeBuilding;
+    if (distKey && CANONICAL_DISTRICTS[distKey]) {
+      const d = CANONICAL_DISTRICTS[distKey];
+      crumbs.push({
+        label: `${d.emoji || '🏘️'} ${d.name}`,
+        action: () => this.navigateToLevel('district', d)
+      });
+    }
+
+    // Building & Floor
+    const bldKey = this.activeBuilding || distKey;
+    if (bldKey && CANONICAL_BUILDING_FLOORS[bldKey]) {
+      const bld = CANONICAL_BUILDING_FLOORS[bldKey];
+      crumbs.push({
+        label: `🏢 ${bld.name}`,
+        action: () => this.navigateToLevel('building', bld)
+      });
+
+      const flNum = this.getActiveFloor(bldKey);
+      const fl = bld.floors.find(f => f.floorNum === flNum) || bld.floors[0];
+      crumbs.push({
+        label: `📐 ${fl.short || ('Andar ' + flNum)}`,
+        action: () => this.navigateToLevel('floor', { bldKey, flNum })
+      });
+    }
+
+    // Selected Agent
+    if (this.state.selectedAgent) {
+      crumbs.push({
+        label: `🤖 ${this.state.selectedAgent.displayName || this.state.selectedAgent.name}`,
+        action: () => this.focusAgent(this.state.selectedAgent.id)
+      });
+    }
+
+    if (crumbs.length <= 1 && z <= 0.8) {
+      el.style.display = 'none';
+      return;
+    }
+
+    el.style.display = 'flex';
+    el.innerHTML = crumbs.map((c, i) => {
+      const isLast = i === crumbs.length - 1;
+      const cls = isLast ? 'breadcrumb-current' : 'breadcrumb-item';
+      return `<span class="${cls}" data-crumb-index="${i}" style="cursor:pointer;">${c.label}</span>${!isLast ? '<span class="breadcrumb-sep" style="color:#64748B; margin:0 4px;">›</span>' : ''}`;
+    }).join('');
+
+    el.querySelectorAll('.breadcrumb-item').forEach((item) => {
+      const idx = Number(item.getAttribute('data-crumb-index'));
+      item.onclick = (e) => {
+        e.stopPropagation();
+        if (crumbs[idx] && crumbs[idx].action) crumbs[idx].action();
+      };
+    });
+  }
+
+  navigateToLevel(level, context) {
+    if (level === 'city') {
+      this.state.selectedAgent = null;
+      this.activeBuilding = null;
+      this.state.targetCamera.x = 0;
+      this.state.targetCamera.y = -20;
+      this.state.targetCamera.zoom = 0.65;
+      const flEl = document.getElementById('cityFloorSelector');
+      if (flEl) flEl.style.display = 'none';
+    } else if (level === 'district') {
+      const d = context || CANONICAL_DISTRICTS['command-center'];
+      const cp = this.toScreen(d.x, d.y, 0, 0, 0, 1);
+      this.state.targetCamera.x = -cp.x;
+      this.state.targetCamera.y = -cp.y;
+      this.state.targetCamera.zoom = 1.15;
+    } else if (level === 'building') {
+      const bldKey = context.id || context.district || 'dev-district';
+      this.activeBuilding = bldKey;
+      const d = CANONICAL_DISTRICTS[bldKey] || { x: 0, y: 0 };
+      const cp = this.toScreen(d.x, d.y, 0, 0, 0, 1);
+      this.state.targetCamera.x = -cp.x;
+      this.state.targetCamera.y = -cp.y;
+      this.state.targetCamera.zoom = 1.85;
+      this.updateFloorSelector(bldKey);
+    } else if (level === 'floor') {
+      const bldKey = context.bldKey || 'dev-district';
+      this.activeBuilding = bldKey;
+      this.setActiveFloor(bldKey, context.flNum || 1);
+      const d = CANONICAL_DISTRICTS[bldKey] || { x: 0, y: 0 };
+      const cp = this.toScreen(d.x, d.y, 0, 0, 0, 1);
+      this.state.targetCamera.x = -cp.x;
+      this.state.targetCamera.y = -cp.y;
+      this.state.targetCamera.zoom = 2.4;
+    }
+    this._updateZoomDisplay();
+    this.updateBreadcrumbs();
+  }
+
+  _hitTestWorkstation(mx, my) {
+    const { camera } = this.state;
+    const zoom = camera.zoom;
+    const cx = this.canvas.width / 2 + camera.x;
+    const cy = this.canvas.height / 2 + camera.y;
+
+    for (const [agentId, st] of Object.entries(CANONICAL_AGENT_STATIONS)) {
+      const sc = this.toScreen(st.x, st.y, 0, cx, cy, zoom);
+      if (Math.hypot(mx - sc.x, my - (sc.y - 18 * zoom)) < 26 * zoom) {
+        return { agentId, station: st };
+      }
+    }
+    return null;
+  }
+
+  openStationPreview(station, agentId) {
+    const modal = document.getElementById('fenixStationPreviewModal');
+    if (!modal) return;
+    if (typeof station === 'string') {
+      agentId = station;
+      station = CANONICAL_AGENT_STATIONS[agentId];
+    }
+    if (!station) return;
+
+    const titleEl = document.getElementById('stationPreviewTitle');
+    const bldEl = document.getElementById('stationPreviewBuilding');
+    const agentEl = document.getElementById('stationPreviewAgent');
+    const fileEl = document.getElementById('stationPreviewFile');
+    const statusEl = document.getElementById('stationPreviewStatus');
+    const codeEl = document.getElementById('stationPreviewCodeBox');
+
+    const agent = this.world.agents.get(agentId) || { name: station.deskLabel || 'Especialista', role: station.service };
+    const filePath = station.file || 'ai-engine/grg/src/server.js';
+
+    if (titleEl) titleEl.textContent = station.deskLabel || 'Estação de Trabalho';
+    if (bldEl) bldEl.textContent = `${station.district || 'Dev Loft'} · Andar ${station.floor || 1}`;
+    if (agentEl) agentEl.textContent = agent.displayName || agent.name || agentId;
+    if (fileEl) fileEl.textContent = filePath;
+    if (statusEl) statusEl.textContent = `ATIVO · ${station.service || 'Runtime Fênix'}`;
+
+    if (codeEl) {
+      codeEl.textContent = `// Arquivo: ${filePath}\n// Módulo: ${station.service || 'Kernel'}\n// Agente: ${agent.displayName || agent.name || agentId}\n// Runtime: CONEXÃO ATIVA (Zero-Mock Factual)`;
+    }
+
+    window._currentActiveStationFile = filePath;
+    window._currentActiveStationAgent = agentId;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const cx = rect.width / 2 + this.state.targetCamera.x;
+    const cy = rect.height / 2 + this.state.targetCamera.y;
+    const sc = this.toScreen(station.x, station.y, 0, cx, cy, this.state.targetCamera.zoom);
+
+    const left = Math.max(20, Math.min(rect.width - 380, sc.x + 30));
+    const top = Math.max(70, Math.min(rect.height - 320, sc.y - 120));
+    modal.style.left = left + 'px';
+    modal.style.top = top + 'px';
+    modal.style.display = 'flex';
+  }
+
+  focusStationForAgent(agentId) {
+    const st = CANONICAL_AGENT_STATIONS[agentId];
+    if (!st) return;
+    const cameraPoint = this.toScreen(st.x, st.y, 0, 0, 0, 3.0);
+    const rect = this.canvas.getBoundingClientRect();
+    const goldenOffsetX = Math.round(rect.width * 0.12);
+    this.state.targetCamera.x = -Math.round(cameraPoint.x) - goldenOffsetX;
+    this.state.targetCamera.y = -Math.round(cameraPoint.y);
+    this.state.targetCamera.zoom = 3.0;
+    this._updateZoomDisplay();
+    this.openStationPreview(st, agentId);
+    this.updateBreadcrumbs();
+  }
+
+  focusEntity(type, id) {
+    if (type === 'agent') this.focusAgent(id);
+    else if (type === 'building') this.panToDistrict(id);
   }
 
   focusAgent(agentId) {
@@ -1506,20 +2181,24 @@ class IsoCityEngine {
       this.state.selectedAgent = target;
       const tw = this.state.tileSize;
       const th = this.state.tileSize / 2;
-      const z = 2.4;
+      const z = 3.2;
       const rect = this.canvas.getBoundingClientRect();
-      const goldenOffsetX = Math.round((rect.width ?? 1200) * 0.12);
+      const goldenOffsetX = Math.round(rect.width * 0.12);
       const cameraPoint = this.toScreen(target.x, target.y, 0, 0, 0, z);
       this.state.targetCamera.x = -Math.round(cameraPoint.x) - goldenOffsetX;
       this.state.targetCamera.y = -Math.round(cameraPoint.y);
       this.state.targetCamera.zoom = z;
       this._updateZoomDisplay();
+      this.updateBreadcrumbs();
       window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: target, agentId: target.id } }));
-      const cx = rect.width / 2 + this.state.camera.x;
-      const cy = rect.height / 2 + this.state.camera.y;
-      const sc = this.toScreen(target.x, target.y, 0.22, cx, cy, z);
-      if (typeof window.openSpatialAgentChat === 'function') window.openSpatialAgentChat(target, sc);
-      if (typeof window.openSpatialAgentDrawer === 'function') window.openSpatialAgentDrawer(target);
+      const cx = rect.width / 2 + this.state.targetCamera.x;
+      const cy = rect.height / 2 + this.state.targetCamera.y;
+      if (typeof window.closeSpatialChat === 'function') window.closeSpatialChat();
+      if (typeof window.fenixShowWorldAgentInspector === 'function') {
+        window.fenixShowWorldAgentInspector(target);
+      } else if (typeof window.fenixOpenAgent === 'function') {
+        window.fenixOpenAgent(target.id);
+      }
     }
   }
 
@@ -1824,8 +2503,37 @@ class IsoCityEngine {
   }
 
   checkHover(mx, my) {
+    let overPin = false;
+    this.state.hoveredPinId = null;
+    this.state.hoveredHeroBuilding = null;
+
+    if (this.state.renderMode === 'hero' && this.heroImageLoaded && this._heroHitboxes) {
+      const hit = this._heroHitboxes.find(b => {
+        return Math.hypot(mx - b.x, my - b.y) <= (b.w / 2) ||
+               (mx >= b.x - b.w / 2 && mx <= b.x + b.w / 2 && my >= b.y - b.h / 2 && my <= b.y + b.h / 2);
+      });
+      if (hit) {
+        this.state.hoveredHeroBuilding = hit.id;
+        this.canvas.style.cursor = 'pointer';
+        return;
+      }
+    }
+
+    if (this._pinHitBoxes) {
+      for (const box of this._pinHitBoxes) {
+        if (mx >= box.x && mx <= box.x + box.w && my >= box.y && my <= box.y + box.h) {
+          overPin = true;
+          this.state.hoveredPinId = box.id;
+          break;
+        }
+      }
+    }
     this.state.hoveredAgent = this._hitTestAgent(mx, my);
-    this.canvas.style.cursor = this.state.hoveredAgent ? 'pointer' : (this.state.isDragging ? 'grabbing' : 'grab');
+    if (overPin || this.state.hoveredAgent) {
+      this.canvas.style.cursor = 'pointer';
+    } else {
+      this.canvas.style.cursor = this.state.isDragging ? 'grabbing' : 'grab';
+    }
   }
 
   async syncRealData() {
@@ -1861,7 +2569,7 @@ class IsoCityEngine {
         }
       } catch (e) {}
 
-      if (!fetchedSuccessfully && window.FENIX?.live?.snapshotMeasured && Array.isArray(window.FENIX.live.agents)) {
+      if (!fetchedSuccessfully && window.FENIX?.live?.agentsMeasured === true && Array.isArray(window.FENIX.live.agents)) {
         apiAgents = window.FENIX.live.agents;
         fetchedSuccessfully = true;
         authoritativeAgents = true;
@@ -1886,6 +2594,22 @@ class IsoCityEngine {
         const sdata = sharedWorld?.snapshot || await fetch('/api/v2/living-city/state', { headers, signal: AbortSignal.timeout(12000) }).then(r => r.ok ? r.json() : null);
         if (sdata) {
           if (Array.isArray(sdata.projects)) this.world.projects = sdata.projects;
+          if (Array.isArray(sdata.vehicles)) this.world.vehicles = sdata.vehicles;
+          if (Array.isArray(sdata.constructions)) this.world.constructions = sdata.constructions;
+          if (Array.isArray(sdata.workstations)) this.world.workstations = sdata.workstations;
+          if (Array.isArray(sdata.agents)) {
+            const existingIds = new Set(apiAgents.map(a => String(a.id || a.agentId).toLowerCase()));
+            for (const sa of sdata.agents) {
+              const saId = String(sa.id || sa.agentId).toLowerCase();
+              if (!existingIds.has(saId)) {
+                apiAgents.push(sa);
+                existingIds.add(saId);
+              } else {
+                const target = apiAgents.find(a => String(a.id || a.agentId).toLowerCase() === saId);
+                if (target) Object.assign(target, sa);
+              }
+            }
+          }
           if (sdata.metrics) {
             this.cityMetrics = sdata.metrics;
             const elMem = document.getElementById('cityMemoriesCount');
@@ -1897,6 +2621,18 @@ class IsoCityEngine {
             const elSk = document.getElementById('citySkillsCount');
             if (elSk && sdata.metrics.skillsCount !== undefined) elSk.textContent = '💡 SKILLS: ' + sdata.metrics.skillsCount;
           }
+        }
+      } catch (e) {}
+
+      // Fetch Living Agent Office & Spatial Presence State
+      let officeData = null;
+      try {
+        const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const oRes = await fetch('/api/v2/office/state', { headers, signal: AbortSignal.timeout(6000) });
+        if (oRes.ok) {
+          officeData = await oRes.json();
+          this.officeData = officeData;
         }
       } catch (e) {}
 
@@ -1912,14 +2648,30 @@ class IsoCityEngine {
           emoji: '🤖',
           district: a.district || a.location || 'dev-district'
         };
-        const st = CANONICAL_AGENT_STATIONS[id] || CANONICAL_AGENT_STATIONS[spec.id] || { x: 0, y: 0, facing: 'SE' };
+        let st = CANONICAL_AGENT_STATIONS[id] || CANONICAL_AGENT_STATIONS[spec.id];
+        if (!st) {
+          const normId = id.replace(/^fenix-/, 'agent-').replace(/-agent$/, '');
+          st = CANONICAL_AGENT_STATIONS[normId];
+        }
+        if (!st) {
+          const rKey = (a.role || spec.role || '').toLowerCase();
+          const matchKey = Object.keys(CANONICAL_AGENT_STATIONS).find(k => k.includes(rKey) || rKey.includes(k.replace('agent-', '')));
+          if (matchKey) st = CANONICAL_AGENT_STATIONS[matchKey];
+        }
+        if (!st) st = { x: 0, y: 0, facing: 'SE' };
         const homeX = st.x;
         const homeY = st.y;
         const existing = this.world.agents.get(id);
         const curX = (existing && typeof existing.x === 'number' && !isNaN(existing.x)) ? existing.x : homeX;
         const curY = (existing && typeof existing.y === 'number' && !isNaN(existing.y)) ? existing.y : homeY;
 
-        const rawState = String(a.state || a.status || existing?.status || 'IDLE').toUpperCase();
+        let rawState = String(a.state || a.status || existing?.status || 'IDLE').toUpperCase();
+        if (officeData && officeData.presence && officeData.presence.agents) {
+          const p = officeData.presence.agents[id] || officeData.presence.agents[spec.id] || officeData.presence.agents[id.replace(/^agent-/, 'fenix-') + '-agent'];
+          if (p && p.status) {
+            rawState = p.status;
+          }
+        }
         const isWorking = ['WORKING', 'RUNNING', 'BUSY', 'TESTING', 'CODING', 'DEPLOYING'].includes(rawState) || Boolean(a.currentJob || a.currentJobId);
         const isError = ['ERROR', 'FAILED', 'BLOCKED', 'UNHEALTHY'].includes(rawState);
         const isCelebrating = rawState === 'CELEBRATING';
@@ -1954,11 +2706,26 @@ class IsoCityEngine {
           tx: (typeof agent.tx === 'number' && !isNaN(agent.tx)) ? agent.tx : curX,
           ty: (typeof agent.ty === 'number' && !isNaN(agent.ty)) ? agent.ty : curY,
           name: a.name || spec.name,
-          displayName: a.name || spec.name,
+          displayName: a.displayName || a.name || spec.name,
           role: a.role || spec.role,
+          company: a.company || spec.company || 'Fênix Enterprise',
+          companyId: a.companyId || 'ai-engine',
+          department: a.department || 'OPERATIONS',
+          workstationId: a.workstationId || a.stationId || st.id || null,
+          stationId: a.workstationId || a.stationId || st.id || null,
+          buildingId: a.buildingId || st.buildingId || null,
+          floorNum: a.floorNum !== undefined ? a.floorNum : (st.floor || 1),
+          currentTask: a.currentTask || null,
+          currentJob: a.currentJob || null,
+          skills: Array.isArray(a.skills) ? a.skills : [],
+          tools: Array.isArray(a.tools) ? a.tools : [],
+          memory: Array.isArray(a.memory) ? a.memory : (Array.isArray(a.episodicMemory) ? a.episodicMemory : []),
+          model: a.model || 'qwen2.5:3b',
+          provider: a.provider || null,
           color: spec.color,
-          emoji: spec.emoji,
+          emoji: a.avatar || spec.emoji,
           district: normalizeDistrict(a.location || a.district || spec.district),
+          deskLabel: st.deskLabel || 'Estação Canônica',
           homeX,
           homeY,
           status: rawState,
@@ -1967,16 +2734,99 @@ class IsoCityEngine {
           facing: agent.facing || st.facing || 'SE',
           isReal: true,
           currentGoal: a.currentGoal || (a.currentJobId ? `Job #${a.currentJobId}` : (isWorking ? 'Em execução real' : 'Pronto para novas missões')),
-          episodicMemory: a.episodicMemory || [],
+          episodicMemory: Array.isArray(a.memory) ? a.memory : (a.episodicMemory || []),
           personality: a.personality || '',
           intelligenceLevel: a.intelligenceLevel || 0
         });
         next.set(id, agent);
       }
 
+      // Process Spatial Office Interactions (Conversations, Meetings, War Room)
+      if (officeData) {
+        // 1. Active Conversations
+        if (Array.isArray(officeData.activeConversations)) {
+          for (const conv of officeData.activeConversations) {
+            if (conv.status !== 'ACTIVE') continue;
+            const fromAg = next.get(conv.fromAgent) || next.get(String(conv.fromAgent).replace(/^fenix-/, 'agent-').replace(/-agent$/, ''));
+            const toAg = next.get(conv.toAgent) || next.get(String(conv.toAgent).replace(/^fenix-/, 'agent-').replace(/-agent$/, ''));
+            if (fromAg && toAg) {
+              fromAg.status = 'IN_CONVERSATION';
+              toAg.status = 'IN_CONVERSATION';
+              fromAg.animState = 'communicate';
+              toAg.animState = 'communicate';
+              fromAg.tx = toAg.homeX + 0.65;
+              fromAg.ty = toAg.homeY - 0.25;
+              fromAg.routeActive = true;
+              fromAg.facing = 'NW';
+              toAg.facing = 'SE';
+              const lastMsg = (conv.messages && conv.messages.length) ? conv.messages[conv.messages.length - 1] : null;
+              const msgText = lastMsg ? (lastMsg.text || lastMsg.content) : (conv.topic || 'Alinhamento em andamento');
+              fromAg.bubble = { text: msgText, life: 7.0, isImportant: true };
+            }
+          }
+        }
+
+        // 2. Active Meetings
+        if (Array.isArray(officeData.activeMeetings)) {
+          for (const mtg of officeData.activeMeetings) {
+            if (mtg.status !== 'ACTIVE' && mtg.status !== 'IN_PROGRESS') continue;
+            const parts = mtg.participants || [];
+            parts.forEach((pId, idx) => {
+              const pAg = next.get(pId) || next.get(String(pId).replace(/^fenix-/, 'agent-').replace(/-agent$/, ''));
+              if (pAg) {
+                pAg.status = 'IN_MEETING';
+                pAg.animState = 'communicate';
+                const angle = (idx / Math.max(1, parts.length)) * Math.PI * 2;
+                pAg.tx = -5.0 + Math.cos(angle) * 1.6;
+                pAg.ty = -6.8 + Math.sin(angle) * 1.0;
+                pAg.routeActive = true;
+                pAg.bubble = { text: '🤝 ' + (mtg.title || 'Reunião de Alinhamento'), life: 8.0, isImportant: true };
+              }
+            });
+          }
+        }
+
+        // 3. War Room
+        const isWarRoom = officeData.presence?.warRoomActive || (officeData.activeMeetings || []).some(m => m.type === 'WAR_ROOM' || m.roomId === 'room-war-room');
+        if (isWarRoom) {
+          const warRoomTeam = ['agent-orchestrator', 'agent-architect', 'agent-backend', 'agent-qa', 'agent-devops', 'agent-security'];
+          warRoomTeam.forEach(wId => {
+            const wAg = next.get(wId);
+            if (wAg) {
+              wAg.status = 'WAR_ROOM';
+              wAg.animState = 'working';
+              wAg.tx = -6.5;
+              wAg.ty = -5.5;
+              wAg.routeActive = true;
+              wAg.bubble = { text: '🚨 War Room Emergencial', life: 10.0, isImportant: true };
+            }
+          });
+        }
+
+        // 4. Update HUD metrics
+        const elOffices = document.getElementById('officeHudTotalOffices');
+        if (elOffices && officeData.offices) elOffices.textContent = officeData.offices.length;
+        const elActive = document.getElementById('officeHudActiveAgents');
+        if (elActive && officeData.presence?.agents) elActive.textContent = Object.keys(officeData.presence.agents).length;
+        const elInConv = document.getElementById('officeHudInConversation');
+        if (elInConv) elInConv.textContent = (officeData.activeConversations || []).length;
+        const elInMtg = document.getElementById('officeHudInMeeting');
+        if (elInMtg) elInMtg.textContent = (officeData.activeMeetings || []).length;
+        const elWar = document.getElementById('officeHudWarRoomStatus');
+        if (elWar) {
+          elWar.textContent = isWarRoom ? 'CRÍTICO' : 'NORMAL';
+          elWar.className = 'office-metric-val ' + (isWarRoom ? 'red' : 'green');
+        }
+        const elHuman = document.getElementById('officeHudHumanStatus');
+        if (elHuman) elHuman.textContent = officeData.presence?.human?.status || 'AVAILABLE';
+      }
+
       if (fetchedSuccessfully) {
         this.world.agents = next;
-        if (window.FENIX?.live) window.FENIX.live.agents = apiAgents;
+        if (window.FENIX?.live) {
+          window.FENIX.live.agents = apiAgents;
+          window.FENIX.live.agentsMeasured = true;
+        }
       }
 
       // Update HUD online/working/errors counters
@@ -2042,17 +2892,38 @@ class IsoCityEngine {
 
   startLoop() {
     const loop = (t) => {
+      const cityView = document.getElementById('view-city');
+      const isVisible = cityView && cityView.classList.contains('active') && cityView.style.display !== 'none' && !document.hidden;
+      if (!isVisible) {
+        this._loopRunning = false;
+        return;
+      }
       const delta = Math.min((t - this.state.lastTime) / 1000, 0.1);
       this.state.lastTime = t;
       this.time = t / 1000;
+
+      const isHeadless = Boolean(navigator.webdriver) || (typeof navigator !== 'undefined' && /headless/i.test(navigator.userAgent)) || Boolean(window.__FENIX_HEADLESS__);
+      if (isHeadless) {
+        if (this._lastDrawTime && (t - this._lastDrawTime < 100)) {
+          requestAnimationFrame(loop);
+          return;
+        }
+        this._lastDrawTime = t;
+      }
+
       this.update(delta);
       this.draw();
       requestAnimationFrame(loop);
     };
-    requestAnimationFrame(loop);
+    if (!this._loopRunning) {
+      this._loopRunning = true;
+      requestAnimationFrame(loop);
+    }
   }
 
   update(delta) {
+    this._applyModes();
+    
     // WASD and Arrow key smooth panning
     if (this.keysDown && this.keysDown.size > 0) {
       const panSpeed = (520 / Math.max(0.4, this.state.camera.zoom)) * delta;
@@ -2201,18 +3072,25 @@ class IsoCityEngine {
       const interval = 16 + (seed % 14);
       if (agent.routineTimer > interval && !agent._moving && !agent.routeActive) {
         agent.routineTimer = 0;
+        const portalList = typeof CANONICAL_BUILDING_PORTALS !== 'undefined' ? Object.values(CANONICAL_BUILDING_PORTALS) : [];
+        const randomPortal = portalList.length ? portalList[Math.floor(_pseudoRandom() * portalList.length)] : null;
         const routineChoices = [
           MUNDER_DIFFLIN_WAYPOINTS.COFFEE_BAR,
           MUNDER_DIFFLIN_WAYPOINTS.WATER_COOLER,
           MUNDER_DIFFLIN_WAYPOINTS.WHITEBOARD,
           MUNDER_DIFFLIN_WAYPOINTS.CONFERENCE_TABLE,
-          { x: agent.homeX, y: agent.homeY, thought: 'Standby na estação de trabalho 💻' }
+          MUNDER_DIFFLIN_WAYPOINTS.CENTRAL_HALL,
+          ...(randomPortal ? [
+            { x: randomPortal.door.x, y: randomPortal.door.y, thought: randomPortal.exitThought },
+            { x: randomPortal.interior.x, y: randomPortal.interior.y, thought: randomPortal.enterThought }
+          ] : []),
+          { x: agent.homeX, y: agent.homeY, thought: 'Retornando à estação de trabalho 💻' }
         ];
         const choice = routineChoices[Math.floor(_pseudoRandom() * routineChoices.length)];
         agent.tx = choice.x;
         agent.ty = choice.y;
         agent.routeActive = true;
-        agent.thoughtBubble = { text: choice.thought, life: 4.5, isWork: false };
+        agent.thoughtBubble = { text: choice.thought, life: 5.0, isWork: false };
       }
     }
 
@@ -2271,6 +3149,36 @@ class IsoCityEngine {
           }
         }
       }
+      // Spontaneous social group conversation when near idle colleagues
+      if (!isWorking && !isError && !agent._moving && (!agent.bubble || agent.bubble.life <= 0)) {
+        agent.socialTimer = (agent.socialTimer || 0) + delta;
+        if (agent.socialTimer > 8) {
+          agent.socialTimer = 0;
+          for (const peer of this.world.agents.values()) {
+            if (peer === agent || peer._moving || peer.status === 'OFFLINE') continue;
+            const pdist = Math.hypot(peer.x - agent.x, peer.y - agent.y);
+            if (pdist < 1.35) {
+              const pdx = peer.x - agent.x;
+              const pdy = peer.y - agent.y;
+              agent.facing = Math.abs(pdx) > Math.abs(pdy) ? (pdx > 0 ? 'SE' : 'NW') : (pdy > 0 ? 'SW' : 'NE');
+              peer.facing = Math.abs(pdx) > Math.abs(pdy) ? (pdx > 0 ? 'NW' : 'SE') : (pdy > 0 ? 'NE' : 'SW');
+              agent.ambientState = 'communicate';
+              agent.animDuration = 4.0;
+              peer.ambientState = 'communicate';
+              peer.animDuration = 4.0;
+              const chatTopics = [
+                'Alinhando sprint com ' + (peer.displayName || peer.name) + ' 💬',
+                'Contratos e testes 100% verificados ✅',
+                'Otimizando latência do barramento ⚡',
+                'Diagramas de arquitetura atualizados 📐',
+                'Sincronizando memória ativa do cluster 🧠'
+              ];
+              agent.bubble = { text: chatTopics[Math.floor(_pseudoRandom() * chatTopics.length)], life: 5.0 };
+              break;
+            }
+          }
+        }
+      }
       if (!agent.facing) agent.facing = 'SE';
     }
 
@@ -2300,13 +3208,27 @@ class IsoCityEngine {
     const cx = width / 2 + camera.x;
     const cy = height / 2 + camera.y;
 
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
 
     // Atmospheric night backdrop
     this._drawBackdrop(ctx, width, height);
 
-    // 2.5D Living Pixel Game World
-    if (window.FenixPixelEngine && window.FenixPixelEngine.Cache.ready) {
+    if (this.state.renderMode === 'hero' && this.heroImageLoaded) {
+      this._drawHeroCityLayer(ctx, cx, cy, zoom, width, height);
+      this._drawHandoff(ctx, cx, cy, zoom);
+      this._drawEnvelopes(ctx, cx, cy, zoom);
+      if (!this.state.photoMode) {
+        this._drawCityEventHud(ctx, width);
+        this._drawEmptyWorldOverlay(ctx, width, height);
+      }
+      return;
+    }
+
+    // 2.5D Living Pixel Game World (Habbo / Tibia Inspired Living Computational World)
+    if (window.FenixPixelEngine) {
+      if (!window.FenixPixelEngine.Cache?.ready && typeof window.FenixPixelEngine.init === 'function') {
+        window.FenixPixelEngine.init();
+      }
       this._drawLivingPixelWorld(ctx, cx, cy, zoom, width, height);
     } else {
       this._drawGrid(ctx, cx, cy, zoom);
@@ -2321,13 +3243,304 @@ class IsoCityEngine {
     this._drawProjectLots(ctx, cx, cy, zoom);
     this._drawHandoff(ctx, cx, cy, zoom);
     this._drawEnvelopes(ctx, cx, cy, zoom);
+    this._drawMasterWorldNeonSigns(ctx, cx, cy, zoom);
 
     // HUD and Overlays (hidden in Photo Mode for pure Art Director Gate visual)
     if (!this.state.photoMode) {
       this._drawCityEventHud(ctx, width);
       this._drawHUD(ctx, width, height);
       this._drawMinimap(ctx, width, height);
+      this._drawEmptyWorldOverlay(ctx, width, height);
     }
+  }
+
+  _drawEmptyWorldOverlay(ctx, width, height) {
+    if ((this.world.agents && this.world.agents.size > 0) || (this.world.projects && this.world.projects.length > 0)) return;
+
+    ctx.save();
+    const cardW = Math.min(width - 32, 440);
+    const cardH = 150;
+    const cardX = (width - cardW) / 2;
+    const cardY = height - cardH - 60;
+
+    ctx.fillStyle = 'rgba(10, 16, 28, 0.88)';
+    ctx.strokeStyle = 'rgba(0, 217, 255, 0.3)';
+    ctx.lineWidth = 1;
+
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(cardX, cardY, cardW, cardH, 12);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+      ctx.strokeRect(cardX, cardY, cardW, cardH);
+    }
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '600 15px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Seu mundo ainda está vazio.', width / 2, cardY + 34);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.font = '400 12px Inter, sans-serif';
+    ctx.fillText('Nenhuma empresa ou agente registrado no runtime.', width / 2, cardY + 56);
+
+    const btnY = cardY + 86;
+    const btnW = (cardW - 48) / 3;
+    const labels = ['+ Criar empresa', '+ Conectar projeto', '+ Workspace'];
+    for (let i = 0; i < 3; i++) {
+      const bx = cardX + 16 + i * (btnW + 8);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.strokeStyle = 'rgba(0, 217, 255, 0.2)';
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(bx, btnY, btnW, 36, 6);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillRect(bx, btnY, btnW, 36);
+        ctx.strokeRect(bx, btnY, btnW, 36);
+      }
+      ctx.fillStyle = '#00D9FF';
+      ctx.font = '500 11px Inter, sans-serif';
+      ctx.fillText(labels[i], bx + btnW / 2, btnY + 22);
+    }
+
+    ctx.restore();
+  }
+
+  _drawMasterWorldNeonSigns(ctx, cx, cy, zoom) {
+    if (zoom < 0.65) return;
+    const landmarks = [
+      { id: 'fenix-core', label: 'FÊNIX CORE', x: 0, y: -5.0, z: 1.45, color: '#ff8a00', icon: '🔥', primary: true },
+      { id: 'ai-runtime', label: 'AI RUNTIME', x: 8.0, y: -5.5, z: 1.05, color: '#00e5ff', icon: '⚡' },
+      { id: 'knowledge', label: 'KNOWLEDGE', x: -6.0, y: -8.0, z: 0.95, color: '#38bdf8', icon: '🌐' },
+      { id: 'agent-district', label: 'AGENT DISTRICT', x: -8.5, y: -1.0, z: 0.85, color: '#00e5ff', icon: '👥' },
+      { id: 'deploy-center', label: 'DEPLOY CENTER', x: -6.5, y: 3.5, z: 0.95, color: '#a855f7', icon: '🎲' },
+      { id: 'observability', label: 'OBSERVABILITY', x: 0, y: -11.0, z: 1.05, color: '#38bdf8', icon: '📊' }
+    ];
+
+    for (const lm of landmarks) {
+      const sc = this.toScreen(lm.x, lm.y, lm.z, cx, cy, zoom);
+      ctx.save();
+
+      const fontSize = Math.round(Math.min(13, Math.max(9, 10.5 * zoom)));
+      ctx.font = `800 ${fontSize}px 'Inter', sans-serif`;
+      const textWidth = ctx.measureText(lm.label).width;
+      const padX = 8 * zoom;
+      const padY = 4 * zoom;
+      const boxW = textWidth + padX * 2 + (16 * zoom);
+      const boxH = (fontSize + padY * 2);
+      const boxX = sc.x - boxW / 2;
+      const boxY = sc.y - boxH / 2;
+
+      // Dark translucent sign board
+      ctx.fillStyle = lm.primary ? 'rgba(20, 10, 6, 0.92)' : 'rgba(6, 12, 22, 0.92)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(boxX, boxY, boxW, boxH, 4 * zoom);
+      } else {
+        ctx.rect(boxX, boxY, boxW, boxH);
+      }
+      ctx.fill();
+
+      // Glowing Neon border
+      ctx.strokeStyle = lm.color;
+      ctx.lineWidth = lm.primary ? Math.max(2, 2.5 * zoom) : Math.max(1.5, 1.8 * zoom);
+      ctx.shadowColor = lm.color;
+      ctx.shadowBlur = 10 * zoom;
+      ctx.stroke();
+
+      // Sign Icon and Text
+      ctx.shadowColor = lm.color;
+      ctx.shadowBlur = 8 * zoom;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      const iconX = boxX + padX;
+      const textX = iconX + (14 * zoom);
+      const midY = boxY + boxH / 2;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(lm.icon, iconX, midY);
+      ctx.fillStyle = lm.color;
+      ctx.fillText(lm.label, textX, midY);
+
+      // Support pylons connecting sign to roof
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(boxX + 6 * zoom, boxY + boxH);
+      ctx.lineTo(boxX + 6 * zoom, boxY + boxH + 6 * zoom);
+      ctx.moveTo(boxX + boxW - 6 * zoom, boxY + boxH);
+      ctx.lineTo(boxX + boxW - 6 * zoom, boxY + boxH + 6 * zoom);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+
+  _drawHeroCityLayer(ctx, cx, cy, zoom, width, height) {
+    const img = this.heroImage;
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+
+    // Center and scale image so it fits the canvas comfortably
+    const baseScale = Math.max(width / img.width, height / img.height);
+    const sw = img.width * baseScale * zoom;
+    const sh = img.height * baseScale * zoom;
+    const dx = cx - sw / 2;
+    const dy = cy - sh / 2;
+
+    ctx.drawImage(img, dx, dy, sw, sh);
+
+    // 15 Canonical Buildings normalized positions on the master canvas
+    const HERO_BUILDINGS = [
+      { id: 'logistics', name: 'LOGÍSTICA', sub: 'Operações e Entregas', icon: 'ph-truck', color: '#EF4444', nx: 0.730, ny: 0.445 },
+      { id: 'command-center', name: 'FÊNIX HQ', sub: 'Sistema Central', icon: 'ph-fire', color: '#FFB020', nx: 0.505, ny: 0.255 },
+      { id: 'residential', name: 'RESIDENCIAL', sub: 'Agentes · Moradia', icon: 'ph-house', color: '#F59E0B', nx: 0.175, ny: 0.180 },
+      { id: 'research', name: 'RESEARCH', sub: 'IA e Inovação', icon: 'ph-atom', color: '#A855F7', nx: 0.280, ny: 0.275 },
+      { id: 'design', name: 'DESIGN', sub: 'UI/UX e Criatividade', icon: 'ph-palette', color: '#EC4899', nx: 0.145, ny: 0.400 },
+      { id: 'dev-district', name: 'ENGINEERING', sub: 'Desenvolvimento', icon: 'ph-code', color: '#00D9FF', nx: 0.350, ny: 0.560 },
+      { id: 'praca-central', name: 'PRAÇA CENTRAL', sub: 'Eventos e Reuniões', icon: 'ph-users', color: '#10B981', nx: 0.330, ny: 0.700 },
+      { id: 'praia', name: 'PRAIA', sub: 'Lazer e Social', icon: 'ph-umbrella', color: '#06B6D4', nx: 0.080, ny: 0.760 },
+      { id: 'business', name: 'BUSINESS', sub: 'Comercial e Vendas', icon: 'ph-briefcase', color: '#F97316', nx: 0.575, ny: 0.600 },
+      { id: 'shopping', name: 'SHOPPING', sub: 'Serviços e Lojas', icon: 'ph-shopping-bag', color: '#EAB308', nx: 0.500, ny: 0.780 },
+      { id: 'porto', name: 'PORTO', sub: 'Logística e Distribuição', icon: 'ph-boat', color: '#38BDF8', nx: 0.745, ny: 0.240 },
+      { id: 'industrial', name: 'INDUSTRIAL', sub: 'Produção e Manufatura', icon: 'ph-factory', color: '#F97316', nx: 0.850, ny: 0.140 },
+      { id: 'security', name: 'SECURITY', sub: 'Segurança e Monitoramento', icon: 'ph-shield-check', color: '#EF4444', nx: 0.900, ny: 0.470 },
+      { id: 'data-center', name: 'DATA CENTER', sub: 'Infraestrutura e Cloud', icon: 'ph-cpu', color: '#3B82F6', nx: 0.850, ny: 0.630 },
+      { id: 'hospital', name: 'HOSPITAL', sub: 'Saúde e Bem-estar', icon: 'ph-first-aid', color: '#3B82F6', nx: 0.760, ny: 0.780 }
+    ];
+
+    this._heroHitboxes = HERO_BUILDINGS.map(b => ({
+      ...b,
+      x: dx + b.nx * sw,
+      y: dy + b.ny * sh,
+      w: 120 * zoom,
+      h: 42 * zoom
+    }));
+
+    // Floating location pin over selected entity/building (if any)
+    const selEntity = window.GlobalSelectionStore?.selectedEntity;
+    if (selEntity && selEntity.id) {
+      const pinTarget = this._heroHitboxes.find(b => b.id === selEntity.id || b.companyId === selEntity.id);
+      if (pinTarget) {
+        this._drawHeroPin(ctx, pinTarget.x, pinTarget.y - 28 * zoom, zoom);
+      }
+    }
+
+    // Hover Highlight on Building / Badge
+    if (this.state.hoveredHeroBuilding) {
+      const h = this._heroHitboxes.find(b => b.id === this.state.hoveredHeroBuilding);
+      if (h) {
+        ctx.save();
+        ctx.shadowColor = h.color;
+        ctx.shadowBlur = 18 * zoom;
+        ctx.strokeStyle = h.color;
+        ctx.lineWidth = 2 * zoom;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(h.x - h.w / 2, h.y - h.h / 2, h.w, h.h, 8 * zoom);
+        } else {
+          ctx.rect(h.x - h.w / 2, h.y - h.h / 2, h.w, h.h);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Deterministic Vehicles & Activity
+    this._drawHeroVehicles(ctx, dx, dy, sw, sh, zoom);
+  }
+
+  _drawHeroPin(ctx, px, py, zoom) {
+    const now = Date.now();
+    const bob = Math.sin(now / 220) * (6 * zoom);
+    const pinY = py + bob;
+
+    // Drop shadow
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(px, py + 24 * zoom, 14 * zoom, 6 * zoom, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pulsing signal rings (deterministic)
+    const tRing = (now % 1400) / 1400;
+    ctx.strokeStyle = `rgba(239, 68, 68, ${1 - tRing})`;
+    ctx.lineWidth = 2 * zoom;
+    ctx.beginPath();
+    ctx.ellipse(px, py + 24 * zoom, (14 + tRing * 24) * zoom, (6 + tRing * 10) * zoom, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 3D Teardrop Pin Body
+    const r = 16 * zoom;
+    ctx.shadowColor = '#EF4444';
+    ctx.shadowBlur = 18 * zoom;
+
+    const grad = ctx.createRadialGradient(px - r * 0.3, pinY - r * 0.3, r * 0.1, px, pinY, r);
+    grad.addColorStop(0, '#FF6B6B');
+    grad.addColorStop(0.7, '#EF4444');
+    grad.addColorStop(1, '#991B1B');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(px, pinY, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pointer bottom
+    ctx.beginPath();
+    ctx.moveTo(px - r * 0.7, pinY + r * 0.5);
+    ctx.lineTo(px, pinY + r * 1.5);
+    ctx.lineTo(px + r * 0.7, pinY + r * 0.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Center icon/dot
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(px, pinY, r * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  _drawHeroVehicles(ctx, dx, dy, sw, sh, zoom) {
+    const now = Date.now();
+    // 1. Depósito Mais delivery truck moving from Depósito Mais along avenue
+    const tTruck = (now % 10000) / 10000;
+    let tx, ty;
+    if (tTruck < 0.5) {
+      const p = tTruck / 0.5;
+      tx = dx + (0.72 - p * 0.20) * sw;
+      ty = dy + 0.49 * sh;
+    } else {
+      const p = (tTruck - 0.5) / 0.5;
+      tx = dx + (0.52 - p * 0.12) * sw;
+      ty = dy + (0.49 + p * 0.13) * sh;
+    }
+
+    ctx.save();
+    ctx.fillStyle = '#F97316'; // Depósito Mais orange
+    ctx.fillRect(tx - 10 * zoom, ty - 5 * zoom, 20 * zoom, 10 * zoom);
+    ctx.fillStyle = '#FFFFFF'; // Cargo container
+    ctx.fillRect(tx - 8 * zoom, ty - 4 * zoom, 12 * zoom, 8 * zoom);
+    ctx.fillStyle = '#FEF08A'; // Headlights
+    ctx.fillRect(tx - 10 * zoom, ty - 3 * zoom, 2 * zoom, 2 * zoom);
+    ctx.restore();
+
+    // 2. Monorail pulse along left track
+    const tTrain = (now % 7000) / 7000;
+    const trainX = dx + (0.04 + tTrain * 0.16) * sw;
+    const trainY = dy + (0.62 + tTrain * 0.08) * sh;
+    ctx.save();
+    ctx.fillStyle = '#DC2626'; // Monorail red stripe
+    ctx.fillRect(trainX - 16 * zoom, trainY - 4 * zoom, 32 * zoom, 8 * zoom);
+    ctx.fillStyle = '#E2E8F0'; // Body
+    ctx.fillRect(trainX - 14 * zoom, trainY - 3 * zoom, 28 * zoom, 6 * zoom);
+    ctx.restore();
   }
 
   _projectLotPosition(index) {
@@ -2340,6 +3553,24 @@ class IsoCityEngine {
     const list = this.world.projects || [];
     this._projectLotHits = [];
     if (!list.length) return;
+    if (this.state.renderMode === 'pixel') {
+      // In 2.5D Living Pixel World, project buildings are already rendered via FenixPixelEngine (Project Forge, Tech Startup, Quantum Dome)
+      // Register project lot hitboxes around Project Forge zone (10, -8) without drawing crude neon blocks
+      for (let index = 0; index < Math.min(list.length, 12); index++) {
+        const project = list[index];
+        const px = 10.0 + (index % 3) * 1.5 - Math.floor(index / 3) * 0.8;
+        const py = -8.0 + Math.floor(index / 3) * 1.5;
+        const base = this.toScreen(px, py, 0, cx, cy, zoom);
+        this._projectLotHits.push({
+          id: project.id,
+          x: base.x,
+          y: base.y - 40 * zoom,
+          width: 45 * zoom,
+          height: 60 * zoom
+        });
+      }
+      return;
+    }
     const colors = ['#33dec0', '#4cb9ff', '#ac88ff', '#ffbb65'];
     for (let index = 0; index < Math.min(list.length, 24); index++) {
       const project = list[index];
@@ -2381,79 +3612,104 @@ class IsoCityEngine {
 
     // ── 1. TERRAIN PASS ──────────────────────────────────────────
     // Continuous 2.5D isometric tiles drawn in topological diagonal order
-    // Expansive 29x29 metropolis encompassing all 7 canonical districts
-    const minG = -14, maxG = 14;
+    // Expansive 51x51 coastal island metropolis filling the viewport with zero wasted void
+    const minG = -24, maxG = 24;
     for (let sum = 2 * minG; sum <= 2 * maxG; sum++) {
       for (let gx = minG; gx <= maxG; gx++) {
         const gy = sum - gx;
         if (gy < minG || gy > maxG) continue;
 
+        const dist = Math.hypot(gx, gy);
+
+        // A. Oceanic Boundaries & Coastlines
+        const isPraiaBeach = (gx <= -10 && gx >= -18 && gy >= 7 && gy <= 17);
+        const isPortoDock  = (gx >= 12 && gx <= 19 && gy >= -6 && gy <= 0);
+        const isCliffZone  = (gx <= -11 && gx >= -18 && gy <= -9 && gy <= -16);
+        const isWater      = (dist > 22.8 || gx < -19 || gx > 19 || gy < -19 || gy > 19 || (gx + gy > 28) || (gx - gy > 28) || (-gx + gy > 28) || (-gx - gy > 28)) && !isPraiaBeach && !isPortoDock && !isCliffZone;
+
+        // B. Avenues, Arterials & Roundabout (Coherent Urban Grid)
+        const isRoundaboutRing  = (dist >= 1.6 && dist <= 2.9);
+        const isAvenidaFenix    = (gx === 0 || gx === 1) && gy >= -16 && gy <= 16;
+        const isAvenidaCriadores= (gy === 0 || gy === 1) && gx >= -18 && gx <= 18;
+        const isNorthIndustrial = (gy === -4 || gy === -5) && gx >= 1 && gx <= 18;
+        const isSouthInnovation = (gy === 6 || gy === 7) && gx >= -14 && gx <= 14;
+        const isEastLogistics   = (gx === 9 || gx === 10) && gy >= -10 && gy <= 4;
+        const isWestBoulevard   = (gx === -9 || gx === -10) && gy >= -14 && gy <= 12;
+        const isResearchSpur    = (gy === -9 || gy === -10) && gx >= -14 && gx <= 1;
+        const isCommercialSpur  = (gy === 9 || gy === 10) && gx >= -9 && gx <= 0;
+        const isHospitalSpur    = (gy === 9 || gy === 10) && gx >= 0 && gx <= 12;
+        const isPortoSpur       = (gy === -3 || gy === -4) && gx >= 11 && gx <= 18;
+        const isPraiaSpur       = (gx === -11 || gx === -12) && gy >= 6 && gy <= 14;
+
+        const isRoad = isRoundaboutRing || isAvenidaFenix || isAvenidaCriadores || isNorthIndustrial || isSouthInnovation || isEastLogistics || isWestBoulevard || isResearchSpur || isCommercialSpur || isHospitalSpur || isPortoSpur || isPraiaSpur;
+
+        // C. Sidewalks Framing Urban Street Blocks
+        const isAvenidaFenixSidewalk    = (gx === -1 || gx === 2) && gy >= -16 && gy <= 16;
+        const isAvenidaCriadoresSidewalk= (gy === -1 || gy === 2) && gx >= -18 && gx <= 18;
+        const isIndustrialSidewalk      = ((gy === -3 || gy === -6) && gx >= 1 && gx <= 18);
+        const isInnovationSidewalk      = ((gy === 5 || gy === 8) && gx >= -14 && gx <= 14);
+        const isWestSidewalk            = ((gx === -8 || gx === -11) && gy >= -14 && gy <= 12);
+        const isEastSidewalk            = ((gx === 8 || gx === 11) && gy >= -10 && gy <= 4);
+
+        const isSidewalk = (!isRoad && !isWater && !isPraiaBeach && !isPortoDock && !isCliffZone) && (
+          isAvenidaFenixSidewalk || isAvenidaCriadoresSidewalk || isIndustrialSidewalk || isInnovationSidewalk || isWestSidewalk || isEastSidewalk || (dist >= 2.9 && dist <= 3.8)
+        );
+
+        // D. Plazas, Courtyards & Dedicated Pavements
+        const isPlazaCenter   = (dist < 1.6);
+        const isPlazaDeposito = (gx >= 4 && gx <= 11 && gy >= -3 && gy <= 0 && !isRoad);
+        const isPlazaData     = (gx >= 6 && gx <= 12 && gy >= 2 && gy <= 5 && !isRoad);
+        const isParkingComm   = (gx >= -6 && gx <= -3 && gy >= 10 && gy <= 12);
+        const isParkingHosp   = (gx >= 6 && gx <= 10 && gy >= 11 && gy <= 13);
+        const isHelipadGround = (gx >= 6 && gx <= 8 && gy >= 7 && gy <= 8);
+        const isGardenCentral = ((gx >= -3 && gx <= -1 && gy >= -3 && gy <= -1) || (gx >= 1 && gx <= 3 && gy >= -3 && gy <= -1));
+        const isGardenHosp    = (gx >= 4 && gx <= 7 && gy >= 7 && gy <= 9 && !isHelipadGround);
+        const isPlazaDev      = (gx >= -11 && gx <= -5 && gy >= 2 && gy <= 5 && !isRoad);
+        const isPlazaCreative = (gx >= -12 && gx <= -5 && gy >= -11 && gy <= -7 && !isRoad);
+        const isBoardwalk     = (gx === -10 && gy >= 7 && gy <= 16) || (gx === -13 && gy === 7);
+
         let tile = Cache.tiles.grass;
-
-        // Central Avenues & District Arterial Roads
-        const isEastWestAvenue = (gy === 0 || gy === 1);
-        const isNorthSouthBlvd = (gx === 0 || gx === 1);
-        const isNorthArterial  = (gx === 0 || gx === 1) && gy <= 0 && gy >= -13; // to Observatory
-        const isSouthArterial  = (gx === 0 || gx === 1) && gy >= 0 && gy <= 13;  // to Data Center
-        const isWestDevSpur    = (gy === 5 || gy === 6) && gx <= 0 && gx >= -11;  // to Dev District
-        const isWestProjSpur   = (gy === -5 || gy === -4) && gx <= 0 && gx >= -11; // to Project Forge
-        const isEastAISpur     = (gy === -5 || gy === -4) && gx >= 0 && gx <= 11;  // to AI Nexus
-        const isEastCreatSpur  = (gy === 5 || gy === 6) && gx >= 0 && gx <= 11;  // to Creative Studio
-
-        const isRoad = isEastWestAvenue || isNorthSouthBlvd || isNorthArterial || isSouthArterial ||
-                       isWestDevSpur || isWestProjSpur || isEastAISpur || isEastCreatSpur;
-
-        // Intersections
-        const isIntersection = (isEastWestAvenue && isNorthSouthBlvd) ||
-                               ((gy === 5 || gy === 6 || gy === -5 || gy === -4) && (gx === 0 || gx === 1));
-
-        // Crosswalks
-        const isCrosswalk = (!isIntersection) && isRoad && (
-          ((gx === -2 || gx === 3) && isEastWestAvenue) ||
-          ((gy === -2 || gy === 3) && isNorthSouthBlvd) ||
-          (gx === -8 && (gy === 5 || gy === -5)) ||
-          (gx === 8 && (gy === 5 || gy === -5))
-        );
-
-        // Sidewalks with 3D curbs lining avenues
-        const isSidewalk = (!isRoad) && (
-          ((gy === -1 || gy === 2) && gx >= -12 && gx <= 12) ||
-          ((gx === -1 || gx === 2) && gy >= -13 && gy <= 13)
-        );
-
-        // Distinct District Plazas
-        const isPlazaCommand  = (gx >= -3 && gx <= 3 && gy >= -3 && gy <= -1);
-        const isPlazaProject  = (gx >= -11 && gx <= -5 && gy >= -7 && gy <= -3);
-        const isPlazaAI       = (gx >= 5 && gx <= 11 && gy >= -7 && gy <= -3);
-        const isPlazaDev      = (gx >= -11 && gx <= -5 && gy >= 3 && gy <= 7);
-        const isPlazaCreative = (gx >= 5 && gx <= 11 && gy >= 3 && gy <= 7);
-        const isPlazaData     = (gx >= -3 && gx <= 3 && gy >= 8 && gy <= 13);
-        const isPlazaObs      = (gx >= -3 && gx <= 3 && gy >= -13 && gy <= -8);
-
-        if (isCrosswalk) {
-          tile = Cache.tiles.crosswalk;
-        } else if (isIntersection) {
-          tile = Cache.tiles.asphalt;
-        } else if (isEastWestAvenue || isWestDevSpur || isWestProjSpur || isEastAISpur || isEastCreatSpur) {
-          tile = ((gy % 2) === 0) ? Cache.tiles.asphaltDashed1 : Cache.tiles.asphalt;
-        } else if (isNorthSouthBlvd || isNorthArterial || isSouthArterial) {
-          tile = ((gx % 2) === 0) ? Cache.tiles.asphaltDashed2 : Cache.tiles.asphalt;
+        if (isWater) {
+          tile = Cache.tiles.water;
+        } else if (isPraiaBeach) {
+          if (isBoardwalk && Cache.tiles.boardwalk) {
+            tile = Cache.tiles.boardwalk;
+          } else {
+            tile = (gx <= -16 || gy >= 15 || dist > 21) ? Cache.tiles.water : Cache.tiles.sand;
+          }
+        } else if (isPortoDock) {
+          tile = (gx >= 18 || dist > 21.5) ? Cache.tiles.water : Cache.tiles.dock;
+        } else if (isCliffZone) {
+          tile = (gx <= -16.5 || gy <= -14.5) ? Cache.tiles.water : Cache.tiles.cliff;
+        } else if (isPlazaCenter) {
+          tile = Cache.tiles.paverStone || Cache.tiles.plaza;
+        } else if (isPlazaDeposito || isPlazaData) {
+          tile = Cache.tiles.industrialConcrete || Cache.tiles.asphalt;
+        } else if (isParkingComm || isParkingHosp || isHelipadGround) {
+          tile = Cache.tiles.industrialConcrete || Cache.tiles.parking || Cache.tiles.asphalt;
+        } else if (isGardenCentral || isGardenHosp) {
+          tile = Cache.tiles.flowerGarden || Cache.tiles.grass;
+        } else if (isRoad) {
+          const isCrosswalk = ((gx === 0 || gx === 1) && (gy === -3 || gy === 3)) ||
+                              ((gy === 0 || gy === 1) && (gx === -3 || gx === 3)) ||
+                              (gx === 5 && (gy === 6 || gy === 7)) ||
+                              (gx === 6 && (gy === -4 || gy === -5)) ||
+                              (gx === -3 && (gy === 6 || gy === 7));
+          if (isCrosswalk && Cache.tiles.crosswalk) {
+            tile = Cache.tiles.crosswalk;
+          } else if (isAvenidaCriadores || isNorthIndustrial || isSouthInnovation || isPortoSpur) {
+            tile = ((gy % 2) === 0) ? Cache.tiles.asphaltDashed1 : Cache.tiles.asphalt;
+          } else if (isAvenidaFenix || isEastLogistics || isWestBoulevard) {
+            tile = ((gx % 2) === 0) ? Cache.tiles.asphaltDashed2 : Cache.tiles.asphalt;
+          } else {
+            tile = Cache.tiles.asphalt;
+          }
         } else if (isSidewalk) {
           tile = Cache.tiles.sidewalk;
-        } else if (isPlazaCommand) {
-          tile = Cache.tiles.plaza;
-        } else if (isPlazaProject) {
-          tile = Cache.tiles.plazaProject || Cache.tiles.plaza;
-        } else if (isPlazaAI) {
-          tile = Cache.tiles.plazaAI || Cache.tiles.plaza;
         } else if (isPlazaDev) {
           tile = Cache.tiles.plaza;
         } else if (isPlazaCreative) {
           tile = Cache.tiles.plazaCreative || Cache.tiles.plaza;
-        } else if (isPlazaData) {
-          tile = Cache.tiles.plazaData || Cache.tiles.plaza;
-        } else if (isPlazaObs) {
-          tile = Cache.tiles.plazaObs || Cache.tiles.plaza;
         }
 
         const sc = this.toScreen(gx, gy, 0, cx, cy, zoom);
@@ -2461,39 +3717,78 @@ class IsoCityEngine {
         const py = Math.round(sc.y - 16 * zoom);
         const pw = Math.round(64 * zoom);
         const ph = Math.round(32 * zoom);
+
+        // Hardware frustum culling: skip tiles outside viewport
+        if (px + pw < -64 || px > width + 64 || py + ph < -64 || py > height + 64) continue;
         ctx.drawImage(tile, px, py, pw, ph);
       }
     }
 
     // ── 2. GROUND LIGHT POOLS PASS ───────────────────────────────
     const lampPositions = [
-      [-1, -1], [2, -1], [-1, 2], [2, 2],
-      [-5, -1], [5, -1], [-1, 5], [2, 5],
-      [-8, -3], [8, -3], [-8, 4], [8, 4],
-      [0, -7], [0, 7], [0, -12], [0, 12]
+      [-1, -2], [2, -2], [-1, 3], [2, 3],
+      [-1, -7], [2, -7], [-1, 7], [2, 7],
+      [-1, -12], [2, -12], [-1, 12], [2, 12],
+      [-5, -1], [-5, 2], [5, -1], [5, 2],
+      [-9, -1], [-9, 2], [9, -1], [9, 2],
+      [-13, -1], [-13, 2], [13, -1], [13, 2],
+      [-9, 5], [-9, 8], [9, 5], [9, 8],
+      [-9, -6], [-9, -9], [9, -6], [9, -9],
+      [4, -3], [7, -3], [12, -3], [15, -3]
     ];
-    for (const [lx, ly] of lampPositions) {
-      const sc = this.toScreen(lx, ly, 0, cx, cy, zoom);
-      ctx.drawImage(
-        Cache.props.lampLightPool,
-        Math.round(sc.x - 64 * zoom),
-        Math.round(sc.y - 32 * zoom),
-        Math.round(128 * zoom),
-        Math.round(64 * zoom)
-      );
+    if (Cache.props?.lampLightPool) {
+      for (const [lx, ly] of lampPositions) {
+        const sc = this.toScreen(lx, ly, 0, cx, cy, zoom);
+        if (sc.x < -100 || sc.x > width + 100 || sc.y < -100 || sc.y > height + 100) continue;
+        ctx.drawImage(
+          Cache.props.lampLightPool,
+          Math.round(sc.x - 64 * zoom),
+          Math.round(sc.y - 32 * zoom),
+          Math.round(128 * zoom),
+          Math.round(64 * zoom)
+        );
+      }
     }
 
     // ── 3. UNIFIED 2.5D DEPTH-SORTED SCENE GRAPH ──────────────────
     const scene = [];
 
-    // Helper to add landmark building with cutaway support
+    // Determine single closest canonical landmark to screen center for Tier 3 cutaway
+    let closestBuildingKey = null;
+    let minCenterDist = 90 * zoom;
+    if (zoom >= 2.7) {
+      const landmarkCoords = {
+        'command-center': { x: 0, y: -5.5 },
+        'industrial': { x: 6.5, y: -2.5 },
+        'project-district': { x: 10.0, y: -8.0 },
+        'ai-district': { x: 8.0, y: -5.5 },
+        'dev-district': { x: -7.0, y: 4.0 },
+        'creative-district': { x: -9.5, y: -1.5 },
+        'data-center': { x: 8.0, y: 4.5 },
+        'observatory': { x: 0, y: -13.0 }
+      };
+      for (const [k, c] of Object.entries(landmarkCoords)) {
+        if (CANONICAL_BUILDING_FLOORS[k]) {
+          const sc = this.toScreen(c.x, c.y, 0, cx, cy, zoom);
+          const d = Math.hypot(sc.x - width / 2, sc.y - height / 2);
+          if (d < minCenterDist) {
+            minCenterDist = d;
+            closestBuildingKey = k;
+          }
+        }
+      }
+    }
+
+    // Helper to add landmark building with strict single-cutaway support (Tier 3: zoom >= 2.7)
     const addBuilding = (canvas, bx, by, sortOffset, w, h, bldKey) => {
       if (!canvas) return;
       const base = this.toScreen(bx, by, 0, cx, cy, zoom);
-      // Cutaway triggers at Zoom Level 4 (zoom >= 1.75) OR if this building/district is selected
-      const isCutaway = (zoom >= 1.75) || (this.state.cutawayBuilding && (this.state.cutawayBuilding === bldKey || this.state.cutawayBuilding === 'all'));
+      const hasInterior = Boolean(CANONICAL_BUILDING_FLOORS[bldKey]);
+      const isExplicitCutaway = hasInterior && Boolean(this.state.cutawayBuilding) && (this.state.cutawayBuilding === bldKey);
+      const isFocused = hasInterior && (this.activeBuilding === bldKey);
+      const isClosest = hasInterior && (closestBuildingKey === bldKey && !this.activeBuilding && !this.state.cutawayBuilding);
+      const isCutaway = hasInterior && (isExplicitCutaway || (zoom >= 2.7 && (isFocused || isClosest)));
 
-      // If cutaway, render interior room floor & lighting behind the faded facade
       if (isCutaway) {
         scene.push({
           sortY: base.y - 12 * zoom,
@@ -2506,6 +3801,23 @@ class IsoCityEngine {
       scene.push({
         sortY: base.y + sortOffset * zoom,
         draw: () => {
+          // Projected Isometric Ground Shadow (SE sun direction)
+          ctx.save();
+          const sw = (w * 0.52) * zoom;
+          const sh = (h * 0.38) * zoom;
+          const sGrad = ctx.createRadialGradient(
+            base.x + sw * 0.25, base.y + 4 * zoom, 2,
+            base.x + sw * 0.45, base.y + 6 * zoom, sw * 1.15
+          );
+          sGrad.addColorStop(0, 'rgba(0, 4, 15, 0.42)');
+          sGrad.addColorStop(0.5, 'rgba(0, 4, 15, 0.22)');
+          sGrad.addColorStop(1, 'rgba(0, 4, 15, 0)');
+          ctx.fillStyle = sGrad;
+          ctx.beginPath();
+          ctx.ellipse(base.x + sw * 0.25, base.y + 6 * zoom, sw * 0.95, sh * 0.45, Math.PI / 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
           if (isCutaway) {
             ctx.save();
             ctx.globalAlpha = Math.max(0.14, 1 - (zoom - 1.5) * 1.6);
@@ -2522,33 +3834,404 @@ class IsoCityEngine {
       });
     };
 
-    // A. 7 Canonical District Landmarks
-    // 1. Command Center: FÊNIX HQ Spire
-    addBuilding(Cache.buildings.fenixHQ, 0, -3.5, 0, 160, 175, 'command-center');
+    // Helper to add environmental prop with frustum culling
+    const addProp = (canvas, px, py, ox, oy, pw, ph, sortOffsetY = 0) => {
+      if (!canvas) return;
+      const sc = this.toScreen(px, py, 0, cx, cy, zoom);
+      if (sc.x < -80 || sc.x > width + 80 || sc.y < -80 || sc.y > height + 80) return;
+      scene.push({
+        sortY: sc.y + sortOffsetY * zoom,
+        draw: () => {
+          ctx.drawImage(
+            canvas,
+            Math.round(sc.x - ox * zoom),
+            Math.round(sc.y - oy * zoom),
+            Math.round(pw * zoom),
+            Math.round(ph * zoom)
+          );
+        }
+      });
+    };
 
-    // 2. Project District: CODE FORGE Deployment Bay
-    addBuilding(Cache.buildings.projectForge, -8, -4.5, 0, 150, 155, 'project-district');
+    // A. 15 Canonical District & Enterprise Landmarks
+    addBuilding(Cache.buildings.fenixHQ, 0, -5.5, 0, 160, 175, 'command-center');
+    addBuilding(Cache.buildings.depositoMais, 6.5, -2.5, 0, 180, 165, 'industrial');
+    addBuilding(Cache.buildings.projectForge, 10.0, -8.0, 0, 150, 155, 'project-district');
+    addBuilding(Cache.buildings.aiNexus, 8.0, -5.5, 0, 150, 170, 'ai-district');
+    addBuilding(Cache.buildings.devLoft, -7.0, 4.0, 0, 150, 155, 'dev-district');
+    addBuilding(Cache.buildings.researchLab, -7.0, -8.5, 0, 150, 155, 'research');
+    addBuilding(Cache.buildings.creativeStudio, -9.5, -1.5, 0, 150, 155, 'creative-district');
+    addBuilding(Cache.buildings.securityCitadel, 9.0, 1.0, 0, 160, 170, 'security');
+    addBuilding(Cache.buildings.businessTower, 2.0, 5.0, 0, 160, 180, 'business');
+    addBuilding(Cache.buildings.dataCenter, 8.0, 4.5, 0, 160, 165, 'data-center');
+    addBuilding(Cache.buildings.observatory, 0, -13.0, 0, 150, 165, 'observatory');
+    addBuilding(Cache.buildings.hospital, 5.5, 9.0, 0, 150, 160, 'hospital');
+    addBuilding(Cache.buildings.shopping, -2.5, 9.0, 0, 160, 155, 'shopping');
+    addBuilding(Cache.buildings.residential, -11.0, -5.5, 0, 150, 160, 'residential');
+    addBuilding(Cache.buildings.portTerminal, 13.5, -4.0, 0, 180, 160, 'porto');
 
-    // 3. AI District: AI NEXUS Neural Core
-    addBuilding(Cache.buildings.aiNexus, 8, -4.5, 0, 150, 170, 'ai-district');
+    // B. Secondary Architectural Buildings (Dense District Architecture)
+    if (Cache.buildings.civicAnnex) {
+      addBuilding(Cache.buildings.civicAnnex, -3.2, -4.5, 0, 120, 110, 'command-center');
+      addBuilding(Cache.buildings.civicAnnex, -0.5, 9.0, 0, 120, 110, 'shopping');
+    }
+    if (Cache.buildings.depositoWarehouseB) {
+      addBuilding(Cache.buildings.depositoWarehouseB, 9.5, -2.5, 0, 150, 125, 'industrial');
+      addBuilding(Cache.buildings.depositoWarehouseB, 7.0, -6.5, 0, 150, 125, 'industrial');
+    }
+    if (Cache.buildings.apartmentBlockA) {
+      addBuilding(Cache.buildings.apartmentBlockA, -13.0, -4.5, 0, 130, 150, 'residential');
+      addBuilding(Cache.buildings.apartmentBlockA, -9.0, -6.5, 0, 130, 150, 'residential');
+      addBuilding(Cache.buildings.apartmentBlockA, 3.5, 7.5, 0, 130, 150, 'business');
+    }
+    if (Cache.buildings.townhouseRow) {
+      addBuilding(Cache.buildings.townhouseRow, -13.5, -7.0, 0, 120, 105, 'residential');
+      addBuilding(Cache.buildings.townhouseRow, -11.5, -3.0, 0, 120, 105, 'residential');
+      addBuilding(Cache.buildings.townhouseRow, -6.5, 1.5, 0, 120, 105, 'dev-district');
+    }
+    if (Cache.buildings.quantumDome) {
+      addBuilding(Cache.buildings.quantumDome, -10.5, -9.0, 0, 110, 95, 'research');
+      addBuilding(Cache.buildings.quantumDome, 11.5, -6.0, 0, 110, 95, 'project-district');
+    }
+    if (Cache.buildings.serverBarn) {
+      addBuilding(Cache.buildings.serverBarn, 10.5, 4.5, 0, 120, 110, 'data-center');
+      addBuilding(Cache.buildings.serverBarn, 6.5, -6.0, 0, 120, 110, 'ai-district');
+    }
+    if (Cache.buildings.storefrontCafe) {
+      addBuilding(Cache.buildings.storefrontCafe, -5.0, 9.0, 0, 100, 115, 'shopping');
+      addBuilding(Cache.buildings.storefrontCafe, -3.5, 3.5, 0, 100, 115, 'dev-district');
+    }
+    if (Cache.buildings.guardTower) {
+      addBuilding(Cache.buildings.guardTower, 11.5, 1.0, 0, 60, 120, 'security');
+      addBuilding(Cache.buildings.guardTower, 5.0, -0.5, 0, 60, 120, 'industrial');
+    }
 
-    // 4. Dev District: DEV LOFT Red-Brick Workshop
-    addBuilding(Cache.buildings.devLoft, -8, 5.5, 0, 150, 155, 'dev-district');
 
-    // 5. Dev District / Science Lab: RESEARCH & QA LAB
-    addBuilding(Cache.buildings.researchLab, -4.5, 4.5, 0, 150, 155, 'dev-district');
+    // C. NEW FILLER BUILDINGS (DENSE URBAN WORLD)
+    if (Cache.buildings.officeBlockA) {
+      // NW block: gx=-8..-1, gy=-3..-1
+      addBuilding(Cache.buildings.officeBlockA, -3.5, -2.5, 0, 70, 130, 'business');
+      addBuilding(Cache.buildings.retailStripA, -5.5, -1.5, 0, 90, 100, 'shopping');
+      addBuilding(Cache.buildings.apartmentMidA, -2.5, -1.5, 0, 60, 145, 'residential');
+      addBuilding(Cache.buildings.techStartup, -1.5, -2.5, 0, 70, 120, 'dev-district');
 
-    // 6. Creative District: CREATIVE STUDIO Glass Pavilion
-    addBuilding(Cache.buildings.creativeStudio, 8, 5.5, 0, 150, 155, 'creative-district');
+      // NE block: gx=2..8, gy=-3..-1
+      addBuilding(Cache.buildings.officeBlockB, 3.5, -1.5, 0, 70, 140, 'business');
+      addBuilding(Cache.buildings.restaurantA, 5.0, -1.5, 0, 70, 85, 'shopping');
+      addBuilding(Cache.buildings.apartmentMidB, 4.0, -2.5, 0, 60, 125, 'residential');
+      addBuilding(Cache.buildings.parkingStructure, 2.5, -2.5, 0, 80, 115, 'industrial');
 
-    // 7. Data Center: DATA CENTER Vault Silos
-    addBuilding(Cache.buildings.dataCenter, 0, 10.5, 0, 160, 165, 'data-center');
+      // SW block: gx=-8..-1, gy=2..5
+      addBuilding(Cache.buildings.hotelSmall, -3.5, 2.5, 0, 70, 135, 'business');
+      addBuilding(Cache.buildings.retailStripB, -5.5, 2.5, 0, 90, 105, 'shopping');
+      addBuilding(Cache.buildings.clinicSmall, -2.5, 3.5, 0, 80, 105, 'hospital');
+      addBuilding(Cache.buildings.workshopGarage, -4.5, 4.5, 0, 80, 85, 'industrial');
 
-    // 8. Observatory: OBSERVATORY Dome & Telescope
-    addBuilding(Cache.buildings.observatory, 0, -10.5, 0, 150, 165, 'observatory');
+      // SE block: gx=2..8, gy=2..5
+      addBuilding(Cache.buildings.officeBlockA, 3.5, 2.5, 0, 70, 130, 'business');
+      addBuilding(Cache.buildings.techStartup, 5.5, 2.5, 0, 70, 120, 'dev-district');
+      addBuilding(Cache.buildings.apartmentMidA, 3.5, 3.5, 0, 60, 145, 'residential');
+      addBuilding(Cache.buildings.restaurantA, 5.5, 3.5, 0, 70, 85, 'shopping');
 
-    // B. Munder Difflin Living Office — Physical Infrastructure & Desks
-    // 1. All 15 Canonical Specialist Desks (Central Bullpen, AI Lab, Data Center)
+      // Far NW: gx=-8..-1, gy=-8..-6
+      addBuilding(Cache.buildings.apartmentMidB, -3.5, -7.5, 0, 60, 125, 'residential');
+      addBuilding(Cache.buildings.clinicSmall, -5.5, -7.5, 0, 80, 105, 'hospital');
+      addBuilding(Cache.buildings.parkingStructure, -2.5, -6.5, 0, 80, 115, 'industrial');
+      addBuilding(Cache.buildings.workshopGarage, -4.5, -6.5, 0, 80, 85, 'industrial');
+
+      // Far NE: gx=2..8, gy=-8..-6
+      addBuilding(Cache.buildings.officeBlockB, 3.5, -7.5, 0, 70, 140, 'business');
+      addBuilding(Cache.buildings.hotelSmall, 5.5, -7.5, 0, 70, 135, 'business');
+      addBuilding(Cache.buildings.retailStripA, 3.5, -6.5, 0, 90, 100, 'shopping');
+      addBuilding(Cache.buildings.retailStripB, 5.5, -6.5, 0, 90, 105, 'shopping');
+      
+      // Additional scattered filler blocks to avoid empty spaces
+      addBuilding(Cache.buildings.apartmentMidA, -8.5, 2.5, 0, 60, 145, 'residential');
+      addBuilding(Cache.buildings.apartmentMidB, -8.5, 3.5, 0, 60, 125, 'residential');
+      addBuilding(Cache.buildings.officeBlockA, 7.5, 2.5, 0, 70, 130, 'business');
+      addBuilding(Cache.buildings.officeBlockB, 7.5, 3.5, 0, 70, 140, 'business');
+      addBuilding(Cache.buildings.hotelSmall, -8.5, -2.5, 0, 70, 135, 'business');
+      addBuilding(Cache.buildings.restaurantA, 7.5, -2.5, 0, 70, 85, 'shopping');
+    }
+
+    // C. Logistics Container Stacks & Equipment
+
+    if (Cache.props.containerStackBlue) {
+      addProp(Cache.props.containerStackBlue, 12.0, -2.5, 34, 44, 68, 52);
+      addProp(Cache.props.containerStackBlue, 15.0, -2.5, 34, 44, 68, 52);
+      addProp(Cache.props.containerStackBlue, 10.5, -1.0, 34, 44, 68, 52);
+    }
+    if (Cache.props.containerStackRed) {
+      addProp(Cache.props.containerStackRed, 12.0, -1.0, 34, 44, 68, 52);
+      addProp(Cache.props.containerStackRed, 15.0, -1.0, 34, 44, 68, 52);
+      addProp(Cache.props.containerStackRed, 8.5, -1.0, 34, 44, 68, 52);
+    }
+    if (Cache.props.forklift) {
+      addProp(Cache.props.forklift, 7.5, -1.2, 18, 24, 36, 30);
+      addProp(Cache.props.forklift, 11.0, -2.2, 18, 24, 36, 30);
+    }
+    if (Cache.props.cargoPallet) {
+      addProp(Cache.props.cargoPallet, 5.5, -1.8, 20, 20, 40, 28);
+      addProp(Cache.props.cargoPallet, 7.0, -1.8, 20, 20, 40, 28);
+      addProp(Cache.props.cargoPallet, 10.0, -1.8, 20, 20, 40, 28);
+    }
+    if (Cache.props.helipad) {
+      // Relocated to Hospital emergency landing bay (off active street)
+      addProp(Cache.props.helipad, 7.0, 7.5, 40, 24, 80, 48, -1);
+    }
+
+    // D. Central Plaza Marble Fountain (Center 0, 0)
+    if (Cache.props.centralFountain) {
+      addProp(Cache.props.centralFountain, 0, 0, 48, 38, 96, 64);
+    }
+    if (Cache.props.parkBench) {
+      addProp(Cache.props.parkBench, -1.1, 0.7, 18, 18, 36, 24);
+      addProp(Cache.props.parkBench, 1.1, 0.7, 18, 18, 36, 24);
+      addProp(Cache.props.parkBench, -1.1, -0.7, 18, 18, 36, 24);
+      addProp(Cache.props.parkBench, 1.1, -0.7, 18, 18, 36, 24);
+    }
+    if (Cache.props.flowerBed) {
+      addProp(Cache.props.flowerBed, -2.0, 0, 24, 16, 48, 28);
+      addProp(Cache.props.flowerBed, 2.0, 0, 24, 16, 48, 28);
+    }
+
+    // E. Maritime Gantry Crane & Cargo Ship (Porto Digital)
+    if (Cache.props.cargoShip) {
+      addProp(Cache.props.cargoShip, 16.0, -3.8, 80, 45, 160, 70, -10);
+    }
+    if (Cache.props.harborCrane) {
+      addProp(Cache.props.harborCrane, 14.0, -4.8, 60, 138, 120, 150, 15);
+    }
+
+    // F. Cascading Cliff Waterfall
+    if (Cache.props.waterfall) {
+      addProp(Cache.props.waterfall, -12.5, -10.5, 24, 70, 48, 80, -5);
+    }
+
+    // G. Beach Palms & Parasols
+    if (Cache.props.palmTree) {
+      const palms = [
+        [-11, 8], [-12, 10], [-10, 11], [-13, 12], [-11, 14],
+        [-14, 9], [-15, 11], [-13, 15]
+      ];
+      for (const [px, py] of palms) addProp(Cache.props.palmTree, px, py, 32, 78, 64, 90);
+    }
+    if (Cache.props.beachUmbrella) {
+      const umbrellas = [
+        [-11.8, 8.5], [-12.8, 7.2], [-10.8, 12.5],
+        [-13.5, 10.5], [-12.0, 11.0]
+      ];
+      for (const [ux, uy] of umbrellas) addProp(Cache.props.beachUmbrella, ux, uy, 24, 44, 48, 54);
+    }
+
+    // H. Sakura Trees (Central Plaza Perimeter Framing)
+    if (Cache.props.treeSakura) {
+      const sakuras = [
+        [-3.2, -3.2], [3.2, -3.2], [-3.2, 3.2], [3.2, 3.2],
+        [-1.8, -2.8], [1.8, -2.8]
+      ];
+      for (const [sx, sy] of sakuras) addProp(Cache.props.treeSakura, sx, sy, 32, 70, 64, 80);
+    }
+
+    // I. Street Trees (Linden & Oak)
+    if (Cache.props.treeLinden || Cache.props.tree) {
+      const treeSprite = Cache.props.treeLinden || Cache.props.tree;
+      const streetTrees = [
+        [-1.8, -4], [2.2, -4], [-1.8, -8], [2.2, -8], [-1.8, 4], [2.2, 4], [-1.8, 8], [2.2, 8],
+        [-4, -1.8], [-4, 2.2], [-8, -1.8], [-8, 2.2], [4, -1.8], [4, 2.2], [8, -1.8], [8, 2.2]
+      ];
+      for (const [tx, ty] of streetTrees) addProp(treeSprite, tx, ty, 28, 58, 56, 70);
+
+      // Systematic trees along sidewalks
+      const sysTrees = [];
+      for(let x=-12; x<=12; x++) {
+         if(Math.abs(x)%2===0 && x!==0 && x!==-1 && x!==1) {
+            sysTrees.push([x+0.2, -1.2]);
+            sysTrees.push([x-0.2, 1.2]);
+            sysTrees.push([x+0.2, -4.2]);
+            sysTrees.push([x-0.2, 6.2]);
+         }
+      }
+      for(let y=-12; y<=12; y++) {
+         if(Math.abs(y)%2===0 && y!==0 && y!==-1 && y!==1) {
+            sysTrees.push([-1.2, y+0.2]);
+            sysTrees.push([1.2, y-0.2]);
+            sysTrees.push([-4.2, y+0.2]);
+            sysTrees.push([9.2, y-0.2]);
+         }
+      }
+      for(let i=0; i<sysTrees.length; i++) {
+        let t = (i%2===0 && Cache.props.treeLinden) ? Cache.props.treeLinden : Cache.props.tree;
+        if(t) addProp(t, sysTrees[i][0], sysTrees[i][1], 28, 58, 56, 70);
+      }
+    }
+
+    // J. Coniferous Pine Trees (Observatory & Mountain Ridge)
+    if (Cache.props.treePine) {
+      const pines = [
+        [-2, -12], [2, -12], [-4, -13], [4, -13], [-1, -15], [1, -15],
+        [-5, -14], [5, -14], [-3, -16], [3, -16], [0, -15], [-7, -13], [7, -13]
+      ];
+      for (const [px, py] of pines) addProp(Cache.props.treePine, px, py, 24, 68, 48, 80);
+    }
+
+    // K. Broadleaf Oak Trees (Residential & Parks)
+    if (Cache.props.tree) {
+      const oaks = [[-12, -3.5], [-14, -3.5], [-10, -7.5], [-3, 7], [3, 7]];
+      for (const [ox, oy] of oaks) addProp(Cache.props.tree, ox, oy, 32, 68, 64, 80);
+    }
+
+    // L. Hedges & Flowerbeds
+    if (Cache.props.bushHedge) {
+      const hedges = [[-1.8, -2], [2.2, -2], [-1.8, 2], [2.2, 2], [4.5, -1.5], [-4.5, 3.5]];
+      for (const [hx, hy] of hedges) addProp(Cache.props.bushHedge, hx, hy, 20, 18, 40, 26);
+    }
+    if (Cache.props.flowerBed) {
+      const flowerBeds = [
+        [-1.5, 1.0], [2.5, 1.0], [4.5, 8.5], [-3.5, 8.5],
+        [1.5, -2.0], [-1.5, -2.0]
+      ];
+      for (const [fx, fy] of flowerBeds) addProp(Cache.props.flowerBed, fx, fy, 24, 16, 48, 28);
+    }
+
+
+    // FILLER PROPS
+    if (Cache.props.mailbox) {
+      addProp(Cache.props.mailbox, -1.2, -1.2, 10, 24, 20, 30);
+      addProp(Cache.props.mailbox, 3.2, 2.8, 10, 24, 20, 30);
+      addProp(Cache.props.mailbox, -4.2, 2.8, 10, 24, 20, 30);
+    }
+    if (Cache.props.newsstand) {
+      addProp(Cache.props.newsstand, -2.5, -1.2, 18, 34, 36, 40);
+      addProp(Cache.props.newsstand, 4.5, 2.8, 18, 34, 36, 40);
+    }
+    if (Cache.props.vendingMachine) {
+      addProp(Cache.props.vendingMachine, -3.5, -1.2, 12, 34, 24, 40);
+      addProp(Cache.props.vendingMachine, 2.5, 2.8, 12, 34, 24, 40);
+      addProp(Cache.props.vendingMachine, 5.5, -1.2, 12, 34, 24, 40);
+    }
+    if (Cache.props.dumpster) {
+      addProp(Cache.props.dumpster, -4.5, -2.8, 15, 18, 30, 24);
+      addProp(Cache.props.dumpster, 3.5, -2.8, 15, 18, 30, 24);
+      addProp(Cache.props.dumpster, 4.5, 4.2, 15, 18, 30, 24);
+      addProp(Cache.props.dumpster, -3.5, 4.2, 15, 18, 30, 24);
+    }
+    if (Cache.props.phoneBooth) {
+      addProp(Cache.props.phoneBooth, -2.8, -1.2, 10, 34, 20, 40);
+      addProp(Cache.props.phoneBooth, 3.8, 2.8, 10, 34, 20, 40);
+    }
+    if (Cache.props.busStop) {
+      addProp(Cache.props.busStop, -1.5, -1.5, 20, 34, 40, 40);
+      addProp(Cache.props.busStop, 2.5, 2.5, 20, 34, 40, 40);
+      addProp(Cache.props.busStop, -5.5, 1.5, 20, 34, 40, 40);
+    }
+
+    // M. Street Furniture & Civic Props
+
+    for (const [lx, ly] of lampPositions) {
+      addProp(Cache.props.streetlamp, lx, ly, 16, 54, 32, 64);
+    }
+    if (Cache.props.bench) {
+      const benches = [
+        [-1.2, -0.6], [1.2, -0.6], [-1.2, 0.6], [1.2, 0.6],
+        [-1.5, 5.0], [2.5, 5.0], [-1.5, -5.0], [2.5, -5.0],
+        [4.5, 7.5], [6.5, 7.5]
+      ];
+      for (const [bx, by] of benches) addProp(Cache.props.bench, bx, by, 18, 18, 36, 24);
+    }
+    if (Cache.props.trafficLight) {
+      const trafficLights = [[-1.2, 0.2], [2.2, 0.2], [-1.2, 6.2], [2.2, 6.2]];
+      for (const [tx, ty] of trafficLights) addProp(Cache.props.trafficLight, tx, ty, 12, 52, 24, 60);
+    }
+    if (Cache.props.metroEntrance) {
+      addProp(Cache.props.metroEntrance, 1.5, 1.8, 32, 30, 64, 44);
+    }
+    if (Cache.props.kioskNews) {
+      addProp(Cache.props.kioskNews, -1.5, 1.8, 27, 40, 54, 50);
+      addProp(Cache.props.kioskNews, 3.0, 3.5, 27, 40, 54, 50);
+    }
+    if (Cache.props.cafeTable) {
+      addProp(Cache.props.cafeTable, -4.2, 7.8, 24, 38, 48, 48);
+      addProp(Cache.props.cafeTable, -3.2, 7.8, 24, 38, 48, 48);
+      addProp(Cache.props.cafeTable, -4.5, 3.8, 24, 38, 48, 48);
+    }
+    if (Cache.props.bikeRack) {
+      addProp(Cache.props.bikeRack, -5.5, 3.2, 22, 20, 44, 28);
+      addProp(Cache.props.bikeRack, 1.8, 2.5, 22, 20, 44, 28);
+    }
+    if (Cache.props.fireHydrant) {
+      const hydrants = [[-1.5, 4.2], [2.5, 4.2], [-7.5, 2.2], [7.5, 2.2]];
+      for (const [hx, hy] of hydrants) addProp(Cache.props.fireHydrant, hx, hy, 10, 22, 20, 28);
+    }
+    if (Cache.props.trashBin) {
+      const bins = [[-1.5, -3.5], [2.5, -3.5], [-1.5, 3.5], [2.5, 3.5]];
+      for (const [bx, by] of bins) addProp(Cache.props.trashBin, bx, by, 10, 24, 20, 30);
+    }
+    if (Cache.props.solarPanelArray) {
+      addProp(Cache.props.solarPanelArray, -8.5, -7.0, 32, 26, 64, 36);
+      addProp(Cache.props.solarPanelArray, 11.5, -7.0, 32, 26, 64, 36);
+    }
+    if (Cache.props.transformerBox) {
+      addProp(Cache.props.transformerBox, 9.5, 5.5, 16, 24, 32, 32);
+      addProp(Cache.props.transformerBox, 11.0, -1.5, 16, 24, 32, 32);
+    }
+
+    // N. Dynamic Animated Vehicles on Roadways & Parked Cars
+    if (Cache.props.carSedanWhite) {
+      addProp(Cache.props.carSedanWhite, -4.5, 11.2, 22, 18, 44, 24);
+      addProp(Cache.props.carSedanWhite, 8.5, 11.2, 22, 18, 44, 24);
+    }
+    if (Cache.props.carTaxiYellow) {
+      addProp(Cache.props.carTaxiYellow, -3.5, 11.2, 22, 19, 44, 26);
+    }
+    if (Cache.props.vanDeliveryOrange || Cache.props.deliveryTruck) {
+      const vanSprite = Cache.props.vanDeliveryOrange || Cache.props.deliveryTruck;
+      const vanPhase = ((this.time || 0) * 0.12) % 1;
+      const vanX = 2.0 + vanPhase * 8.0;
+      addProp(vanSprite, vanX, -4.5, 28, 22, 56, 32);
+    }
+    if (Cache.props.ambulance) {
+      const ambPhase = ((this.time || 0) * 0.14) % 1;
+      const ambX = 0.5 + ambPhase * 7.5;
+      addProp(Cache.props.ambulance, ambX, 6.5, 27, 24, 54, 32);
+    }
+    if (Cache.props.carTaxiYellow || Cache.props.car) {
+      const taxiSprite = Cache.props.carTaxiYellow || Cache.props.car;
+      const taxiPhase = ((this.time || 0) * 0.16) % 1;
+      const taxiY = -12 + taxiPhase * 24;
+      addProp(taxiSprite, 1.0, taxiY, 22, 19, 44, 26);
+    }
+    if (Cache.props.carSedanWhite || Cache.props.car) {
+      const carSprite = Cache.props.carSedanWhite || Cache.props.car;
+      const carPhase = ((this.time || 0) * 0.15) % 1;
+      const carX = -14 + carPhase * 28;
+      addProp(carSprite, carX, 0.5, 22, 18, 44, 24);
+    }
+    if (Cache.props.policeCruiser) {
+      const copPhase = ((this.time || 0) * 0.13) % 1;
+      const copY = -12 + copPhase * 24;
+      addProp(Cache.props.policeCruiser, -9.5, copY, 22, 18, 44, 24);
+    }
+    if (Cache.props.freightTruck) {
+      addProp(Cache.props.freightTruck, 8.0, -3.5, 38, 28, 76, 38);
+    }
+    if (Cache.props.commuterTrain) {
+      const trainSpeed = 0.08;
+      const trainPhase = ((this.time || 0) * trainSpeed) % 4;
+      const segment = Math.floor(trainPhase);
+      const frac = trainPhase - segment;
+      const perimeterLoop = [
+        { x: -16.0, y: -16.0 }, { x: 16.0, y: -16.0 },
+        { x: 16.0, y: 16.0 }, { x: -16.0, y: 16.0 }
+      ];
+      const p1 = perimeterLoop[segment];
+      const p2 = perimeterLoop[(segment + 1) % 4];
+      const tx = p1.x + (p2.x - p1.x) * frac;
+      const ty = p1.y + (p2.y - p1.y) * frac;
+      addProp(Cache.props.commuterTrain, tx, ty, 60, 24, 120, 36, 20);
+    }
+
+    // O. Munder Difflin Living Office — Physical Infrastructure & Desks
     const placedStations = new Set();
     for (const [agentId, st] of Object.entries(CANONICAL_AGENT_STATIONS)) {
       const posKey = `${st.x},${st.y}`;
@@ -2557,7 +4240,7 @@ class IsoCityEngine {
 
       const ws = this.toScreen(st.x, st.y, 0, cx, cy, zoom);
       scene.push({
-        sortY: ws.y - 2 * zoom, // Placed at workstation depth
+        sortY: ws.y - 2 * zoom,
         draw: () => {
           if (Cache.workstations && Cache.workstations.devDesk) {
             ctx.drawImage(
@@ -2572,171 +4255,44 @@ class IsoCityEngine {
       });
     }
 
-    // 2. Executive War Room: Conference Table & Architecture Whiteboard
-    if (Cache.workstations && Cache.workstations.conferenceTable) {
-      const ct = this.toScreen(-5.0, -6.8, 0, cx, cy, zoom);
-      scene.push({
-        sortY: ct.y + 2 * zoom,
-        draw: () => {
-          ctx.drawImage(
-            Cache.workstations.conferenceTable,
-            Math.round(ct.x - 48 * zoom),
-            Math.round(ct.y - 32 * zoom),
-            Math.round(96 * zoom),
-            Math.round(64 * zoom)
-          );
-        }
-      });
-    }
+    if (Cache.workstations?.conferenceTable) addProp(Cache.workstations.conferenceTable, -5.0, -6.8, 48, 32, 96, 64, 2);
+    if (Cache.workstations?.whiteboard) addProp(Cache.workstations.whiteboard, -5.0, -9.0, 32, 48, 64, 56, 1);
+    if (Cache.workstations?.coffeeBar) addProp(Cache.workstations.coffeeBar, 3.5, -8.0, 26, 44, 52, 52, 2);
+    if (Cache.workstations?.waterCooler) addProp(Cache.workstations.waterCooler, 6.5, -8.0, 16, 44, 32, 50, 2);
 
-    if (Cache.workstations && Cache.workstations.whiteboard) {
-      const wb = this.toScreen(-5.0, -9.0, 0, cx, cy, zoom);
-      scene.push({
-        sortY: wb.y + 1 * zoom,
-        draw: () => {
-          ctx.drawImage(
-            Cache.workstations.whiteboard,
-            Math.round(wb.x - 32 * zoom),
-            Math.round(wb.y - 48 * zoom),
-            Math.round(64 * zoom),
-            Math.round(56 * zoom)
-          );
-        }
-      });
-    }
-
-    // 3. Dunder Breakroom & Lounge: Coffee Espresso Bar & Water Cooler
-    if (Cache.workstations && Cache.workstations.coffeeBar) {
-      const cb = this.toScreen(3.5, -8.0, 0, cx, cy, zoom);
-      scene.push({
-        sortY: cb.y + 2 * zoom,
-        draw: () => {
-          ctx.drawImage(
-            Cache.workstations.coffeeBar,
-            Math.round(cb.x - 26 * zoom),
-            Math.round(cb.y - 44 * zoom),
-            Math.round(52 * zoom),
-            Math.round(52 * zoom)
-          );
-        }
-      });
-    }
-
-    if (Cache.workstations && Cache.workstations.waterCooler) {
-      const wc = this.toScreen(6.5, -8.0, 0, cx, cy, zoom);
-      scene.push({
-        sortY: wc.y + 2 * zoom,
-        draw: () => {
-          ctx.drawImage(
-            Cache.workstations.waterCooler,
-            Math.round(wc.x - 16 * zoom),
-            Math.round(wc.y - 44 * zoom),
-            Math.round(32 * zoom),
-            Math.round(50 * zoom)
-          );
-        }
-      });
-    }
-
-    // 4. Datacenter Server Vault: Triple 42U Server Racks
-    if (Cache.workstations && Cache.workstations.serverRack) {
-      for (const rx of [-6.0, -4.0, -2.0]) {
-        const sr = this.toScreen(rx, 9.5, 0, cx, cy, zoom);
+    // Living World: Persistent Vehicles (Logistics, Trucks, Drones)
+    if (Array.isArray(this.world.vehicles)) {
+      for (const v of this.world.vehicles) {
+        const vx = typeof v.x === 'number' ? v.x : 0;
+        const vy = typeof v.y === 'number' ? v.y : 0;
+        const isDrone = v.type === 'DRONE';
+        const altitude = isDrone ? (typeof v.altitude === 'number' ? v.altitude * 0.015 : 0.35) : 0.05;
+        const sc = this.toScreen(vx, vy, altitude, cx, cy, zoom);
         scene.push({
-          sortY: sr.y + 2 * zoom,
+          sortY: sc.y,
           draw: () => {
-            ctx.drawImage(
-              Cache.workstations.serverRack,
-              Math.round(sr.x - 20 * zoom),
-              Math.round(sr.y - 60 * zoom),
-              Math.round(40 * zoom),
-              Math.round(68 * zoom)
-            );
+            this._drawWorldVehicle(ctx, v, cx, cy, zoom);
           }
         });
       }
     }
 
-    // C. Streetlamps
-    for (const [lx, ly] of lampPositions) {
-      const sc = this.toScreen(lx, ly, 0, cx, cy, zoom);
-      scene.push({
-        sortY: sc.y,
-        draw: () => {
-          ctx.drawImage(
-            Cache.props.streetlamp,
-            Math.round(sc.x - 16 * zoom),
-            Math.round(sc.y - 54 * zoom),
-            Math.round(32 * zoom),
-            Math.round(64 * zoom)
-          );
-        }
-      });
+    // Living World: Persistent Constructions (Foundations, Cranes, Finishing)
+    if (Array.isArray(this.world.constructions)) {
+      for (const c of this.world.constructions) {
+        const cxCoord = typeof c.x === 'number' ? c.x : 0;
+        const cyCoord = typeof c.y === 'number' ? c.y : 0;
+        const sc = this.toScreen(cxCoord, cyCoord, 0, cx, cy, zoom);
+        scene.push({
+          sortY: sc.y,
+          draw: () => {
+            this._drawWorldConstruction(ctx, c, cx, cy, zoom);
+          }
+        });
+      }
     }
 
-    // D. Trees
-    const treePositions = [
-      [-4, -4], [-7, -3], [-3, 4], [4, 5], [7, -2], [8, 3], [-7, 6]
-    ];
-    for (const [tx, ty] of treePositions) {
-      const sc = this.toScreen(tx, ty, 0, cx, cy, zoom);
-      scene.push({
-        sortY: sc.y,
-        draw: () => {
-          ctx.drawImage(
-            Cache.props.tree,
-            Math.round(sc.x - 32 * zoom),
-            Math.round(sc.y - 70 * zoom),
-            Math.round(64 * zoom),
-            Math.round(80 * zoom)
-          );
-        }
-      });
-    }
-
-    // E. Planters
-    const planterPositions = [
-      [1, -2.5], [-1, -2.5], [3.5, -1.8], [-4.5, 2.2]
-    ];
-    for (const [px, py] of planterPositions) {
-      const sc = this.toScreen(px, py, 0, cx, cy, zoom);
-      scene.push({
-        sortY: sc.y,
-        draw: () => {
-          ctx.drawImage(
-            Cache.props.planter,
-            Math.round(sc.x - 14 * zoom),
-            Math.round(sc.y - 32 * zoom),
-            Math.round(28 * zoom),
-            Math.round(38 * zoom)
-          );
-        }
-      });
-    }
-
-    // F. Benches
-    const benchPositions = [
-      [3, -1], [-3, 2.2]
-    ];
-    for (const [bx, by] of benchPositions) {
-      const sc = this.toScreen(bx, by, 0, cx, cy, zoom);
-      scene.push({
-        sortY: sc.y,
-        draw: () => {
-          ctx.drawImage(
-            Cache.props.bench,
-            Math.round(sc.x - 18 * zoom),
-            Math.round(sc.y - 18 * zoom),
-            Math.round(36 * zoom),
-            Math.round(24 * zoom)
-          );
-        }
-      });
-    }
-
-    // G. Pure 2.5D Living Game World (No abstract 3D wireframe cubes or polygons)
-
-    // H. Characters (Agents)
+    // P. Characters (Agents)
     for (const agent of this.world.agents.values()) {
       if (!this._filterAllowsAgent(agent)) continue;
       const ax = (typeof agent.x === 'number' && !isNaN(agent.x)) ? agent.x : (typeof agent.homeX === 'number' && !isNaN(agent.homeX) ? agent.homeX : 0);
@@ -2757,56 +4313,402 @@ class IsoCityEngine {
     for (const item of scene) {
       item.draw();
     }
+
+    // ── 4. FLOATING 3D ISOMETRIC DISTRICT PINS & HABBO DIALOGUES ──
+    this._drawFloatingCityPins(ctx, cx, cy, zoom);
+    this._drawHabboAgentDialogues(ctx, cx, cy, zoom);
+  }
+
+  _drawFloatingCityPins(ctx, cx, cy, zoom) {
+    this._pinHitBoxes = [];
+    if (this.state.photoMode || zoom >= 2.2) return;
+    const Cache = window.FenixPixelEngine?.Cache || {};
+    const pins = [
+      { id: 'command-center', x: 0, y: -5.5, h: 180, icon: '🏢', title: 'FÊNIX HQ', sub: 'Sistema Central', color: '#38bdf8' },
+      { id: 'industrial', x: 6.5, y: -2.5, h: 165, icon: '🏭', title: 'DEPÓSITO MAIS', sub: 'Construção & Materiais', color: '#ea580c', isCompany: true, hasRedPin: true },
+      { id: 'dev-district', x: -7.0, y: 4.0, h: 160, icon: '⚡', title: 'API PLATFORM', sub: 'Gateway & Microservices', color: '#00D9FF', isCompany: true },
+      { id: 'creative-district', x: -9.5, y: -1.5, h: 155, icon: '🎨', title: 'DESIGN', sub: 'UI/UX e Criatividade', color: '#ec4899' },
+      { id: 'project-district', x: 10.0, y: -8.0, h: 155, icon: '📁', title: 'PROJECTS', sub: 'Code Forge & Deploy', color: '#06b6d4' },
+      { id: 'ai-district', x: 8.0, y: -5.5, h: 170, icon: '🧠', title: 'AI NEXUS', sub: 'Modelos & RAG Lab', color: '#a855f7' },
+      { id: 'research', x: -7.0, y: -8.5, h: 155, icon: '🔬', title: 'RESEARCH', sub: 'IA e Inovação', color: '#a855f7' },
+      { id: 'residential', x: -11.0, y: -5.5, h: 160, icon: '🏠', title: 'RESIDENCIAL', sub: 'Vila dos Agentes', color: '#14b8a6' },
+      { id: 'praia', x: -12.0, y: 9.5, h: 120, icon: '🏖️', title: 'PRAIA', sub: 'Lazer & Convivência', color: '#f59e0b' },
+      { id: 'shopping', x: -2.5, y: 9.0, h: 155, icon: '🛍️', title: 'SHOPPING', sub: 'Serviços e Ferramentas', color: '#d946ef' },
+      { id: 'business', x: 2.0, y: 5.0, h: 180, icon: '💼', title: 'BUSINESS', sub: 'Comercial & Financeiro', color: '#f59e0b' },
+      { id: 'hospital', x: 5.5, y: 9.0, h: 160, icon: '🏥', title: 'HOSPITAL', sub: 'Self-Healing & Recuperação', color: '#22c55e' },
+      { id: 'data-center', x: 8.0, y: 4.5, h: 165, icon: '🗄️', title: 'DATA CENTER', sub: 'Memória e Cloud Vault', color: '#06b6d4' },
+      { id: 'security', x: 9.0, y: 1.0, h: 170, icon: '🛡️', title: 'SECURITY', sub: 'Fortaleza & Sandbox', color: '#ef4444' },
+      { id: 'porto', x: 13.5, y: -4.0, h: 160, icon: '⚓', title: 'PORTO', sub: 'Logística & Exportação', color: '#0284c7' },
+      { id: 'observatory', x: 0, y: -13.0, h: 165, icon: '🔭', title: 'OBSERVATORY', sub: 'Telemetria e CI/CD', color: '#6366f1' },
+      { id: 'central-plaza', x: 0, y: 0, h: 70, icon: '🏛️', title: 'PRAÇA CENTRAL', sub: 'Eventos & Fórum', color: '#10b981' }
+    ];
+
+    for (const pin of pins) {
+      const isSelected = (this.activeDistrict === pin.id);
+      const isHovered = (this.state.hoveredPinId === pin.id);
+      const isExpanded = isSelected || isHovered || (Boolean(this.state.showAllLabels) && zoom < 1.90);
+
+      const sc = this.toScreen(pin.x, pin.y, 0, cx, cy, zoom);
+      const px = sc.x;
+      const py = sc.y - (pin.h - 30) * zoom;
+
+      ctx.save();
+      const bob = Math.sin(this.time * 2.5 + pin.x) * 3;
+      const finalY = py + bob;
+
+      // Register interactive hitbox (always covers the pin area)
+      const hitW = 48 * zoom;
+      const hitH = 48 * zoom;
+      this._pinHitBoxes.push({
+        id: pin.id,
+        x: px - hitW / 2,
+        y: finalY - hitH,
+        w: hitW,
+        h: hitH
+      });
+
+      if (isExpanded) {
+        // FULL EXPANDED BADGE (Active on hover or selection)
+        if (isSelected) {
+          ctx.shadowColor = pin.color;
+          ctx.shadowBlur = 16 * zoom;
+        }
+
+        const allAgents = this.agents || (this.world && this.world.agents ? Array.from(this.world.agents.values()) : []) || (this.state && this.state.agents ? this.state.agents : []);
+        const districtAgents = allAgents.filter(a => a.district === pin.id || a.districtId === pin.id);
+        const agentCount = districtAgents.length || '—';
+
+        const allMissions = this.missions || (this.state && this.state.missions) || [];
+        const districtMissions = allMissions.filter(m => m.district === pin.id || m.districtId === pin.id);
+        const missionCount = districtMissions.length || '—';
+
+        const label = `${pin.icon} ${(pin.title || pin.id).toUpperCase()}`;
+        const sublabel = `${agentCount} agentes · ${missionCount} missões`;
+
+        ctx.font = `bold ${Math.round(11 * Math.min(1.2, zoom))}px "Inter", sans-serif`;
+        const nameWidth = ctx.measureText(label).width;
+        ctx.font = `${Math.round(10 * Math.min(1.2, zoom))}px "Inter", sans-serif`;
+        const subWidth = ctx.measureText(sublabel).width;
+
+        const pillW = Math.max(nameWidth, subWidth) + 24;
+        const pillH = Math.max(38, 38 * Math.min(1.2, zoom));
+        const pillX = Math.max(16, Math.min((ctx.canvas ? ctx.canvas.width : 1920) - pillW - 16, px - pillW / 2));
+        const pillY = finalY - pillH;
+
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillW, pillH, 8);
+        ctx.fillStyle = isSelected ? 'rgba(0, 217, 255, 0.28)' : 'rgba(9, 14, 26, 0.92)';
+        ctx.fill();
+        ctx.strokeStyle = isSelected ? 'rgba(0, 217, 255, 0.85)' : (pin.hasRedPin ? 'rgba(239, 68, 68, 0.8)' : 'rgba(255, 255, 255, 0.2)');
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Needle pointer
+        const needleX = Math.max(pillX + 12, Math.min(pillX + pillW - 12, px));
+        ctx.beginPath();
+        ctx.moveTo(needleX - 5, pillY + pillH);
+        ctx.lineTo(needleX + 5, pillY + pillH);
+        ctx.lineTo(needleX, pillY + pillH + 6);
+        ctx.closePath();
+        ctx.fillStyle = isSelected ? 'rgba(0, 217, 255, 0.8)' : 'rgba(255, 255, 255, 0.25)';
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.font = `bold ${Math.round(11 * Math.min(1.2, zoom))}px "Inter", sans-serif`;
+        ctx.fillStyle = isSelected ? '#00D9FF' : (pin.hasRedPin ? '#fca5a5' : '#F8FAFC');
+        ctx.textAlign = 'center';
+        ctx.fillText(label, pillX + pillW/2, pillY + pillH * 0.45);
+
+        ctx.font = `${Math.round(10 * Math.min(1.2, zoom))}px "Inter", sans-serif`;
+        ctx.fillStyle = isSelected ? 'rgba(0, 217, 255, 0.85)' : '#94A3B8';
+        ctx.fillText(sublabel, pillX + pillW/2, pillY + pillH * 0.8);
+      } else if (pin.isCompany) {
+        // Subtle company landmark beacon (Depósito Mais, API Platform, Fênix HQ)
+        const dotR = Math.max(10, 11 * Math.min(1.2, zoom));
+        ctx.shadowColor = pin.color;
+        ctx.shadowBlur = 8 * zoom;
+
+        ctx.beginPath();
+        ctx.arc(px, finalY - dotR, dotR, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(9, 14, 26, 0.88)';
+        ctx.fill();
+        ctx.strokeStyle = pin.color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.font = `${Math.round(10 * Math.min(1.2, zoom))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pin.icon, px, finalY - dotR);
+      } else {
+        // MINIMAL SLEEK WAYPOINT (Section 18: CIDADE > TEXTO - Clean unobtrusive micro-beacon)
+        const dotR = Math.max(3.5, 4.5 * Math.min(1.2, zoom));
+        const pulse = Math.sin(this.time * 3 + pin.x) * 1.5;
+
+        // Outer pulse ring
+        ctx.strokeStyle = pin.color;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.5 + Math.sin(this.time * 3 + pin.x) * 0.3;
+        ctx.beginPath();
+        ctx.arc(px, finalY - 8 * zoom, dotR + 3 + pulse, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner glowing core
+        ctx.globalAlpha = 0.9;
+        ctx.shadowColor = pin.color;
+        ctx.shadowBlur = 6 * zoom;
+        ctx.fillStyle = pin.color;
+        ctx.beginPath();
+        ctx.arc(px, finalY - 8 * zoom, dotR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(px, finalY - 8 * zoom, dotR * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Distinct 3D Red Map Marker Pin above Depósito Mais
+      if (pin.hasRedPin && Cache.props?.mapPinRed) {
+        const pinBob = Math.sin(this.time * 3) * 4;
+        ctx.drawImage(
+          Cache.props.mapPinRed,
+          Math.round(px - 16 * zoom),
+          Math.round(finalY - (isExpanded ? 52 : 36) * zoom + pinBob),
+          Math.round(32 * zoom),
+          Math.round(44 * zoom)
+        );
+      }
+
+      ctx.restore();
+    }
+  }
+
+  _drawHabboAgentDialogues(ctx, cx, cy, zoom) {
+    if (this.state.photoMode) return;
+    const sampleDialogues = {
+      'agent.ceo': 'Evolução contínua Fênix 4.0.',
+      'agent.orchestrator': 'Enxame sincronizado em 24/7.',
+      'agent.developer': 'Refatorando módulos na IDE.',
+      'agent.frontend': 'Interface espacial 60 FPS.',
+      'agent.backend': 'Microserviços Fastify ativos.',
+      'agent.database': 'PostgreSQL & BullMQ prontos.',
+      'agent.visual': 'Visual isométrico lapidado.',
+      'agent.browser': 'Navegação e OCR autônomos.',
+      'agent.research': 'Mapeando papers e modelos.',
+      'agent.debug': 'Auditoria de stacktrace ativa.',
+      'agent.testing': '19 invariantes validados.',
+      'agent.security': 'Sandbox Zero-Trust verificado.',
+      'agent.git': 'Branch limpa e sincronizada.',
+      'agent.github': 'Portfolio e clone 1-clique.',
+      'agent.deployment': 'Paridade dual VPS garantida.',
+      'agent.automation': 'Fluxos de auto-evolução.',
+      'agent.computer': 'Host local & headless pronto.',
+      'agent.media': 'Processamento visual ativo.',
+      'agent.prompt': 'Prompts enriquecidos via RAG.',
+      'agent.documentation': 'Memória ativa sincronizada.'
+    };
+
+    for (const agent of this.world.agents.values()) {
+      const ax = (typeof agent.x === 'number' && !isNaN(agent.x)) ? agent.x : (typeof agent.homeX === 'number' && !isNaN(agent.homeX) ? agent.homeX : 0);
+      const ay = (typeof agent.y === 'number' && !isNaN(agent.y)) ? agent.y : (typeof agent.homeY === 'number' && !isNaN(agent.homeY) ? agent.homeY : 0);
+      const sc = this.toScreen(ax, ay, 0, cx, cy, zoom);
+
+      const aId = String(agent.id || '');
+      const isInteracting = (this.state.hoveredAgent?.id === agent.id || this.state.selectedAgent?.id === agent.id);
+      const dialogue = agent.bubble?.text || (isInteracting ? (sampleDialogues[aId] || sampleDialogues[aId.replace('-', '.')] || sampleDialogues[aId.replace('.', '-')]) : null);
+      if (!dialogue) continue;
+
+      const bubbleW = Math.min(150, dialogue.length * 6 + 18);
+      const bubbleH = 22;
+      const bx = sc.x - bubbleW / 2;
+      const by = sc.y - 48 * zoom;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1;
+
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bubbleW, bubbleH, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(sc.x - 3, by + bubbleH);
+      ctx.lineTo(sc.x + 3, by + bubbleH);
+      ctx.lineTo(sc.x, by + bubbleH + 4);
+      ctx.closePath();
+      ctx.fillStyle = '#38bdf8';
+      ctx.fill();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '600 9px "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(dialogue.length > 25 ? dialogue.slice(0, 24) + '…' : dialogue, sc.x, by + 14);
+
+      ctx.restore();
+    }
   }
 
   _drawInteriorFloor(ctx, bldKey, bx, by, cx, cy, zoom) {
     const tw = this.state.tileSize;
     const th = tw / 2;
+    const P = window.FenixPixelEngine;
+    const Cache = P?.Cache;
+
+    const bldDef = CANONICAL_BUILDING_FLOORS[bldKey];
+    const activeFloorNum = this.getActiveFloor(bldKey);
+    const floorDef = bldDef?.floors?.find(f => f.floorNum === activeFloorNum) || bldDef?.floors?.[0];
+    const themeName = floorDef?.theme || 'slate';
+    const floorTile = Cache?.floors?.[themeName];
+
     const themeColors = {
-      'command-center':  { floor: '#1e293b', border: '#ef4444', glow: 'rgba(239, 68, 68, 0.28)', label: 'WAR ROOM & GOVERNANCE' },
-      'project-district': { floor: '#0f172a', border: '#06b6d4', glow: 'rgba(6, 182, 212, 0.28)', label: 'CODE FORGE & DEPLOY BAY' },
-      'ai-district':      { floor: '#1a102f', border: '#a855f7', glow: 'rgba(168, 85, 247, 0.28)', label: 'NEURAL NEXUS LAB' },
-      'dev-district':     { floor: '#13231b', border: '#10b981', glow: 'rgba(16, 185, 129, 0.28)', label: 'DEV LOFT & WORKSHOP' },
-      'creative-district':{ floor: '#261224', border: '#ec4899', glow: 'rgba(236, 72, 153, 0.28)', label: 'DESIGN STUDIO & UX LAB' },
-      'data-center':      { floor: '#0c1e33', border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.28)', label: 'DATA VAULT & SILOS' },
-      'observatory':      { floor: '#181836', border: '#6366f1', glow: 'rgba(99, 102, 241, 0.28)', label: 'OBSERVATORY & TELEMETRY' }
+      'command-center':  { border: '#ef4444', glow: 'rgba(239, 68, 68, 0.28)', label: 'WAR ROOM & GOVERNANCE' },
+      'project-district': { border: '#06b6d4', glow: 'rgba(6, 182, 212, 0.28)', label: 'CODE FORGE & DEPLOY BAY' },
+      'ai-district':      { border: '#a855f7', glow: 'rgba(168, 85, 247, 0.28)', label: 'NEURAL NEXUS LAB' },
+      'dev-district':     { border: '#10b981', glow: 'rgba(16, 185, 129, 0.28)', label: 'DEV LOFT & WORKSHOP' },
+      'creative-district':{ border: '#ec4899', glow: 'rgba(236, 72, 153, 0.28)', label: 'DESIGN STUDIO & UX LAB' },
+      'data-center':      { border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.28)', label: 'DATA VAULT & SILOS' },
+      'observatory':      { border: '#6366f1', glow: 'rgba(99, 102, 241, 0.28)', label: 'OBSERVATORY & TELEMETRY' }
     };
     const theme = themeColors[bldKey] || themeColors['command-center'];
 
     ctx.save();
-    // 3x3 interior room slab beneath building facade
+
+    // 1. Draw procedural cutaway walls behind the room
+    if (Cache?.cutaways) {
+      const backWallL = this.toScreen(bx - 1.4, by - 0.5, 0, cx, cy, zoom);
+      const backWallR = this.toScreen(bx + 0.5, by - 1.4, 0, cx, cy, zoom);
+      if (Cache.cutaways.wallL) {
+        ctx.drawImage(Cache.cutaways.wallL,
+          Math.round(backWallL.x - 40 * zoom),
+          Math.round(backWallL.y - 72 * zoom),
+          Math.round(80 * zoom),
+          Math.round(88 * zoom)
+        );
+      }
+      if (Cache.cutaways.wallR) {
+        ctx.drawImage(Cache.cutaways.wallR,
+          Math.round(backWallR.x - 40 * zoom),
+          Math.round(backWallR.y - 72 * zoom),
+          Math.round(80 * zoom),
+          Math.round(88 * zoom)
+        );
+      }
+    }
+
+    // 2. 3x3 interior room slab with procedural texture tile
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
         const sc = this.toScreen(bx + dx, by + dy, 0, cx, cy, zoom);
-        ctx.fillStyle = theme.floor;
+        if (floorTile) {
+          ctx.drawImage(floorTile,
+            Math.round(sc.x - 32 * zoom),
+            Math.round(sc.y - 16 * zoom),
+            Math.round(64 * zoom),
+            Math.round(32 * zoom)
+          );
+        } else {
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.moveTo(sc.x, sc.y - th * zoom);
+          ctx.lineTo(sc.x + tw * zoom, sc.y);
+          ctx.lineTo(sc.x, sc.y + th * zoom);
+          ctx.lineTo(sc.x - tw * zoom, sc.y);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.strokeStyle = theme.border;
+        ctx.lineWidth = 1 * zoom;
         ctx.beginPath();
         ctx.moveTo(sc.x, sc.y - th * zoom);
         ctx.lineTo(sc.x + tw * zoom, sc.y);
         ctx.lineTo(sc.x, sc.y + th * zoom);
         ctx.lineTo(sc.x - tw * zoom, sc.y);
         ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = theme.border;
-        ctx.lineWidth = 1 * zoom;
         ctx.stroke();
       }
     }
 
-    // Room perimeter ambient radial glow
+    // 3. Render active floor props
+    if (floorDef?.props && Cache?.workstations) {
+      if (floorDef.props.includes('kanbanBoard') && Cache.workstations.kanbanBoard) {
+        const kb = this.toScreen(bx - 0.7, by - 0.7, 0, cx, cy, zoom);
+        ctx.drawImage(Cache.workstations.kanbanBoard,
+          Math.round(kb.x - 32 * zoom),
+          Math.round(kb.y - 44 * zoom),
+          Math.round(64 * zoom),
+          Math.round(52 * zoom)
+        );
+      }
+      if (floorDef.props.includes('serverRack') && Cache.workstations.serverRack) {
+        const sr = this.toScreen(bx + 0.8, by - 0.6, 0, cx, cy, zoom);
+        ctx.drawImage(Cache.workstations.serverRack,
+          Math.round(sr.x - 24 * zoom),
+          Math.round(sr.y - 40 * zoom),
+          Math.round(48 * zoom),
+          Math.round(52 * zoom)
+        );
+      }
+      if (floorDef.props.includes('filingCabinet') && Cache.workstations.filingCabinet) {
+        const fc = this.toScreen(bx - 0.9, by + 0.6, 0, cx, cy, zoom);
+        ctx.drawImage(Cache.workstations.filingCabinet,
+          Math.round(fc.x - 14 * zoom),
+          Math.round(fc.y - 32 * zoom),
+          Math.round(28 * zoom),
+          Math.round(40 * zoom)
+        );
+      }
+      if (floorDef.props.includes('browserMonitor') && Cache.workstations.browserMonitor) {
+        const bm = this.toScreen(bx + 0.7, by + 0.6, 0, cx, cy, zoom);
+        ctx.drawImage(Cache.workstations.browserMonitor,
+          Math.round(bm.x - 24 * zoom),
+          Math.round(bm.y - 36 * zoom),
+          Math.round(48 * zoom),
+          Math.round(44 * zoom)
+        );
+      }
+      if (floorDef.props.includes('waterCooler') && Cache.workstations.waterCooler) {
+        const wc = this.toScreen(bx - 0.8, by - 0.2, 0, cx, cy, zoom);
+        ctx.drawImage(Cache.workstations.waterCooler,
+          Math.round(wc.x - 16 * zoom),
+          Math.round(wc.y - 40 * zoom),
+          Math.round(32 * zoom),
+          Math.round(50 * zoom)
+        );
+      }
+    }
+
+    // 4. Room perimeter ambient radial glow
     const center = this.toScreen(bx, by, 0, cx, cy, zoom);
-    const grad = ctx.createRadialGradient(center.x, center.y, 8 * zoom, center.x, center.y, 75 * zoom);
+    const grad = ctx.createRadialGradient(center.x, center.y, 8 * zoom, center.x, center.y, 80 * zoom);
     grad.addColorStop(0, theme.glow);
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(center.x, center.y, 75 * zoom, 0, Math.PI * 2);
+    ctx.arc(center.x, center.y, 80 * zoom, 0, Math.PI * 2);
     ctx.fill();
 
-    // Interior Department Label Banner
-    ctx.font = `700 ${Math.max(9, 10 * zoom)}px "JetBrains Mono", monospace`;
-    ctx.fillStyle = theme.border;
+    // 5. Interior Department & Floor Label Banner (Clamped Capsule Pill)
+    const floorLabel = floorDef && bldDef ? `${bldDef.name.toUpperCase()} · ${floorDef.name.toUpperCase()}` : `${theme.label}`;
+    ctx.save();
+    ctx.font = `700 10.5px "JetBrains Mono", monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText(`⚡ ${theme.label} [INTERIOR]`, center.x, center.y - 32 * zoom);
+    const textW = ctx.measureText(`⚡ ${floorLabel}`).width;
+    const pillY = center.y - 38 * zoom;
+    ctx.fillStyle = 'rgba(10, 15, 29, 0.9)';
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(center.x - textW / 2 - 8, pillY - 11, textW + 16, 20, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = theme.border;
+    ctx.fillText(`⚡ ${floorLabel}`, center.x, pillY + 3);
+    ctx.restore();
+
     ctx.restore();
   }
 
@@ -3098,34 +5000,36 @@ class IsoCityEngine {
     this._drawDistrictBuildings(ctx, d, cx, cy, zoom, dep);
     this._drawWorkstations(ctx, d, cx, cy, zoom, dep);
 
-    // Label
-    const center = this.toScreen(d.x, d.y, dep, cx, cy, zoom);
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10*zoom;
-    // Emoji do distrito
-    if (d.emoji && zoom > 0.6) {
-      ctx.font = `${Math.max(10, 14*zoom)}px 'Inter',sans-serif`;
+    // Label: Strictly Tier 0-1 (zoom < 1.70) when not in building cutaway
+    if (zoom >= 0.8 && zoom < 1.70 && !this.state.cutawayBuilding && this.activeDistrict !== d.id) {
+      const center = this.toScreen(d.x, d.y, dep, cx, cy, zoom);
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 6 * zoom;
+      // Emoji do distrito
+      if (d.emoji) {
+        ctx.font = `${Math.min(14, Math.max(10, 12 * zoom))}px 'Inter',sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.globalAlpha = 0.85;
+        ctx.fillText(d.emoji, center.x, center.y - 48 * zoom);
+        ctx.globalAlpha = 1;
+      }
+      // Nome do distrito
+      ctx.font = `700 ${Math.min(12, Math.max(9, 10.5 * zoom))}px 'Inter',sans-serif`;
       ctx.textAlign = 'center';
-      ctx.globalAlpha = 0.9;
-      ctx.fillText(d.emoji, center.x, center.y - 52*zoom);
-      ctx.globalAlpha = 1;
+      ctx.fillStyle = agentsHere > 0 ? d.color : '#e2e8f0';
+      if (agentsHere > 0) {
+        ctx.shadowColor = d.color;
+        ctx.shadowBlur = 6 * zoom;
+      }
+      ctx.fillText(d.label, center.x, center.y - 35 * zoom);
+      ctx.shadowBlur = 0;
+      if (agentsHere > 0) {
+        ctx.font = `600 ${Math.min(9, Math.max(7, 7.5 * zoom))}px 'JetBrains Mono',monospace`;
+        ctx.fillStyle = d.color;
+        ctx.fillText(`${agentsHere} AGENTE${agentsHere>1?'S':''}`, center.x, center.y - 24 * zoom);
+      }
+      ctx.restore();
     }
-    // Nome do distrito
-    ctx.font = `700 ${Math.max(9, 11*zoom)}px 'Inter',sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = agentsHere > 0 ? d.color : '#e2e8f0';
-    if (agentsHere > 0) {
-      ctx.shadowColor = d.color;
-      ctx.shadowBlur = 8*zoom;
-    }
-    ctx.fillText(d.label, center.x, center.y - 38*zoom);
-    ctx.shadowBlur = 0;
-    if (agentsHere > 0) {
-      ctx.font = `600 ${Math.max(7,8*zoom)}px 'JetBrains Mono',monospace`;
-      ctx.fillStyle = d.color;
-      ctx.fillText(`${agentsHere} AGENTE${agentsHere>1?'S':''}`, center.x, center.y - 26*zoom);
-    }
-    ctx.restore();
   }
 
   _drawDistrictBuildings(ctx, d, cx, cy, zoom, dep) {
@@ -3442,52 +5346,77 @@ class IsoCityEngine {
     // Floating Nameplate with Level-Of-Detail (LOD)
     const headY = sc.y - 36 * zoom;
     const tagY = headY - 6 * zoom;
-
-    if (!this.state.photoMode && (isHovered || isSelected || isWorking || zoom >= 1.8)) {
+    // Strict LOD: Tier 0 (zoom < 1.30) never displays agent text, Tier 1 only displays hovered/selected
+    const shouldShowLabel = (zoom >= 1.30) && (isHovered || isSelected || (Boolean(this.state.showAllLabels) && zoom >= 1.90));
+    if (!this.state.photoMode && shouldShowLabel) {
       ctx.save();
       const displayName = agent.displayName || agent.name;
-      ctx.font = `700 ${Math.max(9, 10.5 * zoom)}px 'Inter',sans-serif`;
+      const effZoom = Math.min(1.25, Math.max(0.85, zoom * 0.45));
+      const fontSize = Math.min(11, Math.max(9, 10 * effZoom));
+      ctx.font = `700 ${fontSize}px 'Inter',sans-serif`;
       ctx.textAlign = 'center';
       const tw = ctx.measureText(displayName).width;
+      const boxH = Math.min(20, Math.max(16, 17 * effZoom));
 
-      ctx.fillStyle = 'rgba(8, 12, 24, 0.88)';
+      ctx.fillStyle = 'rgba(8, 12, 24, 0.90)';
       ctx.strokeStyle = (isMaster ? '#ef4444' : agent.color) + '99';
-      ctx.lineWidth = Math.max(1, zoom);
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(sc.x - tw / 2 - 8, tagY - 14 * zoom, tw + 16, 17 * zoom, 5);
+      ctx.roundRect(sc.x - tw / 2 - 8, tagY - boxH, tw + 16, boxH, 4);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
-      ctx.fillText((agent.emoji ? agent.emoji + ' ' : '') + displayName, sc.x, tagY - 1.5 * zoom);
+      ctx.fillText((agent.emoji ? agent.emoji + ' ' : '') + displayName, sc.x, tagY - boxH / 2 + 3.5);
 
       if (isSelected || isHovered) {
-        ctx.font = `600 ${Math.max(7, 8 * zoom)}px 'JetBrains Mono',monospace`;
-        ctx.fillStyle = agent.color || '#38bdf8';
-        ctx.fillText(`[${agent.status || 'IDLE'}]`, sc.x, tagY + 12 * zoom);
+        ctx.font = `600 8px 'JetBrains Mono',monospace`;
+        let tagColor = agent.color || '#38bdf8';
+        let tagText = `[${agent.status || 'AVAILABLE'}]`;
+        if (agent.status === 'IN_CONVERSATION') { tagColor = '#f59e0b'; tagText = '[CONVERSANDO 💬]'; }
+        else if (agent.status === 'IN_MEETING') { tagColor = '#a855f7'; tagText = '[REUNIÃO 🤝]'; }
+        else if (agent.status === 'WAR_ROOM') { tagColor = '#ef4444'; tagText = '[WAR ROOM 🚨]'; }
+        else if (isWorking) {
+          tagColor = '#00d9ff';
+          const jobText = agent.currentJobId ? `JOB #${agent.currentJobId}` : (agent.missionId ? `MIS #${agent.missionId}` : 'OPERANDO ⚡');
+          tagText = `[${jobText}]`;
+        }
+        ctx.fillStyle = tagColor;
+        ctx.fillText(tagText, sc.x, tagY + 11);
+
+        // Mission indicator chip above nameplate
+        if (agent.currentMission || agent.currentJobId || agent.missionId) {
+          const misId = agent.currentJobId ? `JOB #${agent.currentJobId}` : `MIS #${agent.missionId || agent.currentMission?.id || 'ACT'}`;
+          ctx.font = `700 8px 'JetBrains Mono',monospace`;
+          ctx.fillStyle = '#00d9ff';
+          ctx.textAlign = 'center';
+          ctx.fillText(`⚡ ${misId}`, sc.x, tagY - boxH - 4);
+        }
       }
       ctx.restore();
-    } else if (!this.state.photoMode && zoom < 0.8) {
+    } else if (!this.state.photoMode && zoom < 1.30) {
       ctx.save();
       ctx.fillStyle = agent.color || '#38bdf8';
       ctx.beginPath();
-      ctx.arc(sc.x, tagY, 2.5 * zoom, 0, Math.PI * 2);
+      ctx.arc(sc.x, tagY, Math.min(3, Math.max(1.8, 2.2 * zoom)), 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
-    // Speech bubble
-    if (!this.state.photoMode && agent.bubble && agent.bubble.life > 0 && (isHovered || isSelected || zoom >= 2.1)) {
+    // Speech bubble (Clamped scaling to prevent screen clutter at deep zoom)
+    const shouldShowBubble = isHovered || isSelected || (zoom >= 1.5 && zoom < 2.5 && (agent.bubble?.isImportant || agent.status === 'IN_CONVERSATION' || agent.status === 'IN_MEETING'));
+    if (!this.state.photoMode && agent.bubble && agent.bubble.life > 0 && shouldShowBubble) {
       const bAlpha = Math.min(1, agent.bubble.life);
       ctx.save();
       ctx.globalAlpha = bAlpha;
-      const bText = String(agent.bubble.text || '').slice(0, 28);
-      ctx.font = `600 ${Math.max(8, 9.5 * zoom)}px 'Inter',sans-serif`;
+      const bText = String(agent.bubble.text || '').slice(0, 36);
+      const effZoom = Math.min(1.2, Math.max(0.85, zoom * 0.45));
+      ctx.font = `600 ${Math.min(11, Math.max(8, 9.5 * effZoom))}px 'Inter',sans-serif`;
       ctx.textAlign = 'center';
       const bw = ctx.measureText(bText).width + 16;
-      const bh = 20 * zoom;
+      const bh = Math.min(22, 18 * effZoom);
       const bx = sc.x - bw / 2;
-      const by = tagY - bh - 8 * zoom;
+      const by = tagY - bh - 6 * effZoom;
 
       ctx.fillStyle = (agent.color || '#38bdf8') + 'e6';
       ctx.beginPath();
@@ -3498,17 +5427,17 @@ class IsoCityEngine {
       ctx.beginPath();
       ctx.moveTo(sc.x - 4, by + bh);
       ctx.lineTo(sc.x + 4, by + bh);
-      ctx.lineTo(sc.x, by + bh + 5 * zoom);
+      ctx.lineTo(sc.x, by + bh + 4);
       ctx.closePath();
       ctx.fill();
 
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(bText, sc.x, by + bh * 0.68);
+      ctx.fillText(bText, sc.x, by + bh * 0.65);
       ctx.restore();
     }
 
     // Thought bubble (Munder Difflin Living Office)
-    if (!this.state.photoMode && agent.thoughtBubble && agent.thoughtBubble.life > 0 && (isHovered || isSelected || zoom >= 2.1)) {
+    if (!this.state.photoMode && agent.thoughtBubble && agent.thoughtBubble.life > 0 && (isHovered || isSelected || (zoom >= 2.0 && agent.thoughtBubble.isWork))) {
       const tAlpha = Math.min(1, agent.thoughtBubble.life);
       ctx.save();
       ctx.globalAlpha = tAlpha;
@@ -3538,6 +5467,275 @@ class IsoCityEngine {
       ctx.fillStyle = agent.thoughtBubble.isWork ? '#38bdf8' : '#e2e8f0';
       ctx.fillText(tText, sc.x, ty + th * 0.68);
       ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  _drawWorldVehicle(ctx, v, cx, cy, zoom) {
+    if (!v) return;
+    const Cache = window.FenixPixelEngine?.Cache || {};
+    const vx = typeof v.x === 'number' ? v.x : 0;
+    const vy = typeof v.y === 'number' ? v.y : 0;
+    const isDrone = v.type === 'DRONE';
+    const altitude = isDrone ? (typeof v.altitude === 'number' ? v.altitude * 0.015 : 0.35) : 0.05;
+
+    // Ground shadow
+    const groundSc = this.toScreen(vx, vy, 0, cx, cy, zoom);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.beginPath();
+    const shadowW = (isDrone ? 12 : 28) * zoom;
+    const shadowH = (isDrone ? 6 : 14) * zoom;
+    ctx.ellipse(groundSc.x, groundSc.y, shadowW, shadowH, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Vehicle entity
+    const sc = this.toScreen(vx, vy, altitude, cx, cy, zoom);
+    ctx.save();
+
+    if (isDrone) {
+      // High-tech delivery drone
+      const bob = Math.sin(this.time * 6) * 3 * zoom;
+      const dy = sc.y + bob;
+
+      // Drone chassis
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5 * zoom;
+      ctx.beginPath();
+      ctx.roundRect(sc.x - 10 * zoom, dy - 8 * zoom, 20 * zoom, 12 * zoom, 3 * zoom);
+      ctx.fill();
+      ctx.stroke();
+
+      // Rotor arms
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2 * zoom;
+      ctx.beginPath();
+      ctx.moveTo(sc.x - 16 * zoom, dy - 12 * zoom);
+      ctx.lineTo(sc.x + 16 * zoom, dy + 6 * zoom);
+      ctx.moveTo(sc.x - 16 * zoom, dy + 6 * zoom);
+      ctx.lineTo(sc.x + 16 * zoom, dy - 12 * zoom);
+      ctx.stroke();
+
+      // Spinning rotor blur
+      const rotorAngle = (this.time * 25) % (Math.PI * 2);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.lineWidth = 1.5 * zoom;
+      const rotorOffsets = [
+        [-16, -12], [16, -12], [-16, 6], [16, 6]
+      ];
+      for (const [rx, ry] of rotorOffsets) {
+        ctx.beginPath();
+        ctx.ellipse(sc.x + rx * zoom, dy + ry * zoom, 8 * zoom, 3 * zoom, rotorAngle, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Blinking beacon
+      const beaconOn = Math.floor(this.time * 4) % 2 === 0;
+      if (beaconOn) {
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(sc.x, dy - 6 * zoom, 2.5 * zoom, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Cargo crate hanging below
+      if (v.cargo) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 1 * zoom;
+        ctx.beginPath();
+        ctx.roundRect(sc.x - 6 * zoom, dy + 5 * zoom, 12 * zoom, 9 * zoom, 2 * zoom);
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else {
+      // Ground vehicles (Truck / Van)
+      let sprite = null;
+      let pw = 56, ph = 32, ox = 28, oy = 22;
+      if (v.type === 'TRUCK' && Cache.props?.freightTruck) {
+        sprite = Cache.props.freightTruck;
+        pw = 76; ph = 38; ox = 38; oy = 28;
+      } else if (Cache.props?.cargoVan) {
+        sprite = Cache.props.cargoVan;
+        pw = 56; ph = 32; ox = 28; oy = 22;
+      }
+
+      if (sprite) {
+        ctx.drawImage(
+          sprite,
+          Math.round(sc.x - ox * zoom),
+          Math.round(sc.y - oy * zoom),
+          Math.round(pw * zoom),
+          Math.round(ph * zoom)
+        );
+      } else {
+        // Fallback procedural isometric truck
+        ctx.fillStyle = v.color || (v.owner ? '#ea580c' : '#0284c7');
+        ctx.beginPath();
+        ctx.roundRect(sc.x - 22 * zoom, sc.y - 14 * zoom, 44 * zoom, 22 * zoom, 4 * zoom);
+        ctx.fill();
+      }
+    }
+
+    // Floating label / HUD for vehicle
+    if (!this.state.photoMode && zoom >= 0.75) {
+      const tagY = sc.y - (isDrone ? 22 : 30) * zoom;
+      ctx.font = `700 ${Math.max(7, 8.5 * zoom)}px 'JetBrains Mono',monospace`;
+      ctx.textAlign = 'center';
+
+      // Badge bg
+      const nameText = v.name || v.id;
+      const statusText = `[${v.status || 'TRANSIT'}] ${v.cargo ? '• ' + v.cargo : ''}`;
+      const tw1 = ctx.measureText(nameText).width;
+      const tw2 = ctx.measureText(statusText).width;
+      const maxTw = Math.max(tw1, tw2) + 12 * zoom;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.strokeStyle = isDrone ? '#38bdf8' : (v.color || '#06b6d4');
+      ctx.lineWidth = 1 * zoom;
+      ctx.beginPath();
+      ctx.roundRect(sc.x - maxTw / 2, tagY - 14 * zoom, maxTw, 22 * zoom, 4 * zoom);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(nameText, sc.x, tagY - 3 * zoom);
+      ctx.font = `600 ${Math.max(6, 7 * zoom)}px 'Inter',sans-serif`;
+      ctx.fillStyle = isDrone ? '#7dd3fc' : (v.color || '#67e8f9');
+      ctx.fillText(statusText, sc.x, tagY + 6 * zoom);
+    }
+
+    ctx.restore();
+  }
+
+  _drawWorldConstruction(ctx, c, cx, cy, zoom) {
+    if (!c) return;
+    const cxCoord = typeof c.x === 'number' ? c.x : 0;
+    const cyCoord = typeof c.y === 'number' ? c.y : 0;
+    const sc = this.toScreen(cxCoord, cyCoord, 0, cx, cy, zoom);
+
+    ctx.save();
+
+    // 1. Foundation Slab & Scaffolding
+    const w = 60 * zoom;
+    const h = 36 * zoom;
+
+    // Foundation pad (isometric rhombus)
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5 * zoom;
+    ctx.beginPath();
+    ctx.moveTo(sc.x, sc.y - h / 2);
+    ctx.lineTo(sc.x + w / 2, sc.y);
+    ctx.lineTo(sc.x, sc.y + h / 2);
+    ctx.lineTo(sc.x - w / 2, sc.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Construction yellow/black hazard tape border
+    ctx.strokeStyle = '#f59e0b';
+    ctx.setLineDash([4 * zoom, 4 * zoom]);
+    ctx.lineWidth = 2 * zoom;
+    ctx.beginPath();
+    ctx.rect(sc.x - (w / 2 + 4 * zoom), sc.y - (h / 2 + 4 * zoom), w + 8 * zoom, h + 8 * zoom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 2. Scaffolding Structure Columns
+    const stage = String(c.stage || 'STRUCTURE').toUpperCase();
+    const colHeight = (stage === 'FOUNDATION' ? 12 : (stage === 'STRUCTURE' ? 26 : 38)) * zoom;
+
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5 * zoom;
+    const pillars = [
+      { x: sc.x - w * 0.35, y: sc.y },
+      { x: sc.x + w * 0.35, y: sc.y },
+      { x: sc.x, y: sc.y - h * 0.3 },
+      { x: sc.x, y: sc.y + h * 0.3 }
+    ];
+    for (const p of pillars) {
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x, p.y - colHeight);
+      ctx.stroke();
+    }
+
+    // Top girder connectors
+    if (stage !== 'FOUNDATION') {
+      ctx.strokeStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.moveTo(sc.x - w * 0.35, sc.y - colHeight);
+      ctx.lineTo(sc.x, sc.y - h * 0.3 - colHeight);
+      ctx.lineTo(sc.x + w * 0.35, sc.y - colHeight);
+      ctx.lineTo(sc.x, sc.y + h * 0.3 - colHeight);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // Crane if in progress
+    const craneArmX = sc.x + 18 * zoom;
+    const craneArmY = sc.y - colHeight - 16 * zoom;
+    ctx.strokeStyle = '#eab308';
+    ctx.lineWidth = 2 * zoom;
+    ctx.beginPath();
+    ctx.moveTo(sc.x, sc.y - colHeight);
+    ctx.lineTo(sc.x, craneArmY);
+    ctx.lineTo(craneArmX + 14 * zoom, craneArmY - 4 * zoom);
+    ctx.stroke();
+
+    // Crane cable & hook
+    const hookSway = Math.sin(this.time * 2.5) * 3 * zoom;
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1 * zoom;
+    ctx.beginPath();
+    ctx.moveTo(craneArmX + 8 * zoom, craneArmY - 3 * zoom);
+    ctx.lineTo(craneArmX + 8 * zoom + hookSway, craneArmY + 12 * zoom);
+    ctx.stroke();
+
+    // 3. Construction Info Tag / Progress HUD
+    if (!this.state.photoMode && zoom >= 0.7 && zoom < 2.0) {
+      const tagY = sc.y - colHeight - 26 * zoom;
+      ctx.font = `700 ${Math.max(7, 8.5 * zoom)}px 'JetBrains Mono',monospace`;
+      ctx.textAlign = 'center';
+
+      const title = c.name || c.id;
+      const progress = Math.min(100, Math.max(0, Number(c.progress || 0)));
+      const sub = `🚧 ${stage} • ${progress}%`;
+
+      const tw = Math.max(ctx.measureText(title).width, ctx.measureText(sub).width) + 16 * zoom;
+      const bh = 26 * zoom;
+
+      // Card bg
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1 * zoom;
+      ctx.beginPath();
+      ctx.roundRect(sc.x - tw / 2, tagY - 14 * zoom, tw, bh, 4 * zoom);
+      ctx.fill();
+      ctx.stroke();
+
+      // Title & Stage
+      ctx.fillStyle = '#fef08a';
+      ctx.fillText(title, sc.x, tagY - 2 * zoom);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = `600 ${Math.max(6, 7.5 * zoom)}px 'Inter',sans-serif`;
+      ctx.fillText(sub, sc.x, tagY + 8 * zoom);
+
+      // Mini progress bar at bottom of card
+      const barW = tw - 12 * zoom;
+      const barH = 3 * zoom;
+      const barX = sc.x - barW / 2;
+      const barY = tagY + 10 * zoom;
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.fillRect(barX, barY, barW, barH);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(barX, barY, barW * (progress / 100), barH);
     }
 
     ctx.restore();
@@ -3702,11 +5900,14 @@ class IsoCityEngine {
 
   _openContextMenu(e) {
     this._closeContextMenu();
+    // In OBSERVATION mode, only allow inspect (no mutating actions)
+    const isObservation = (window.fenixCityMode === 'OBSERVATION');
     const rect = this.canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
 
     const agent = this._hitTestAgent(mx, my);
-    const distHit = !agent ? this._hitTestDistrict(mx, my) : null;
+    const wsHit = !agent ? this._hitTestWorkstation(mx, my) : null;
+    const distHit = (!agent && !wsHit) ? this._hitTestDistrict(mx, my) : null;
 
     const menu = document.createElement('div');
     menu.className = 'fenix-city-context-menu';
@@ -3714,19 +5915,21 @@ class IsoCityEngine {
     menu.style.top = `${Math.min(window.innerHeight - 320, e.clientY)}px`;
 
     if (agent) {
+      const dis = isObservation ? ' disabled style="opacity:0.4; pointer-events:none;"' : '';
       menu.innerHTML = `
-        <div class="fenix-ctx-header">${agent.emoji || '🤖'} ${agent.displayName || agent.name}</div>
+        <div class="fenix-ctx-header">${agent.emoji || '🤖'} ${agent.displayName || agent.name}${isObservation ? ' <span style="font-size:9px; color:#6366f1;">(OBS)</span>' : ''}</div>
         <button class="fenix-ctx-item" data-action="inspect"><span>🔍</span> Inspecionar Agente</button>
         <button class="fenix-ctx-item" data-action="follow"><span>🎥</span> Seguir Câmera</button>
-        <button class="fenix-ctx-item" data-action="assign"><span>📋</span> Atribuir Tarefa</button>
         <button class="fenix-ctx-item" data-action="memory"><span>🧠</span> Ver Memória</button>
         <button class="fenix-ctx-item" data-action="logs"><span>📄</span> Ver Logs</button>
         <button class="fenix-ctx-item" data-action="project"><span>📁</span> Ver Projeto</button>
-        <button class="fenix-ctx-item" data-action="rename"><span>✏️</span> Renomear Agente</button>
-        <button class="fenix-ctx-item" data-action="avatar"><span>🎨</span> Customizar Avatar</button>
+        <button class="fenix-ctx-item" data-action="station"><span>🖥️</span> Ir para a Estação</button>
         <div class="fenix-ctx-divider"></div>
-        <button class="fenix-ctx-item" data-action="toggle-pause"><span>${agent.status === 'PAUSED' ? '▶️ Retomar Agente' : '⏸️ Pausar Agente'}</span></button>
-        <button class="fenix-ctx-item danger" data-action="restart"><span>🔄</span> Reiniciar Agente</button>
+        <button class="fenix-ctx-item"${dis} data-action="chat"><span>💬</span> Conversar (Chat Espacial)</button>
+        <button class="fenix-ctx-item"${dis} data-action="tasks"><span>📋</span> Perguntar Tarefas do Dia</button>
+        <button class="fenix-ctx-item"${dis} data-action="assign"><span>📝</span> Atribuir Tarefa</button>
+        <button class="fenix-ctx-item"${dis} data-action="toggle-pause"><span>${agent.status === 'PAUSED' ? '▶️ Retomar Agente' : '⏸️ Pausar Agente'}</span></button>
+        <button class="fenix-ctx-item danger"${dis} data-action="restart"><span>🔄</span> Reiniciar Agente</button>
       `;
 
       menu.addEventListener('click', async (evt) => {
@@ -3735,7 +5938,14 @@ class IsoCityEngine {
         const action = btn.getAttribute('data-action');
         this._closeContextMenu();
 
-        if (action === 'inspect') {
+        if (action === 'chat') {
+          this.focusAgent(agent.id);
+        } else if (action === 'tasks') {
+          this.focusAgent(agent.id);
+          setTimeout(() => { if (typeof window.askSpatialAgentQuick === 'function') window.askSpatialAgentQuick('tasks'); }, 200);
+        } else if (action === 'station') {
+          this.focusStationForAgent(agent.id);
+        } else if (action === 'inspect') {
           this.state.selectedAgent = agent;
           window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent, agentId: agent.id } }));
         } else if (action === 'follow') {
@@ -3753,10 +5963,6 @@ class IsoCityEngine {
         } else if (action === 'project') {
           const pId = agent.projectId || agent.currentMission?.projectId || 'FENIX-CORE';
           this.focusProject(pId);
-        } else if (action === 'rename') {
-          this._openRenameModal(agent);
-        } else if (action === 'avatar') {
-          this._openAvatarEditorModal(agent);
         } else if (action === 'toggle-pause') {
           const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
           const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
@@ -3770,20 +5976,61 @@ class IsoCityEngine {
           this.syncRealData();
         }
       });
-    } else if (distHit) {
-      const d = distHit.district;
+    } else if (wsHit) {
+      const st = wsHit.station;
       menu.innerHTML = `
-        <div class="fenix-ctx-header">${d.emoji || '🏛️'} ${d.name}</div>
-        <button class="fenix-ctx-item" data-action="inspect-district"><span>🔍</span> Inspecionar Distrito</button>
-        <button class="fenix-ctx-item" data-action="focus-district"><span>🎥</span> Focar Câmera</button>
-        <button class="fenix-ctx-item" data-action="filter-district"><span>🎯</span> Filtrar Deste Distrito</button>
+        <div class="fenix-ctx-header">🖥️ ${st.deskLabel}</div>
+        <button class="fenix-ctx-item" data-action="open-station"><span>🔍</span> Inspecionar Estação (Preview)</button>
+        <button class="fenix-ctx-item" data-action="open-ide"><span>💻</span> Abrir Arquivo no IDE</button>
+        <button class="fenix-ctx-item" data-action="open-terminal"><span>⚡</span> Abrir Terminal</button>
+        <button class="fenix-ctx-item" data-action="focus-station"><span>🎥</span> Focar Câmera</button>
       `;
       menu.addEventListener('click', (evt) => {
         const btn = evt.target.closest('button[data-action]');
         if (!btn) return;
         const action = btn.getAttribute('data-action');
         this._closeContextMenu();
-        if (action === 'inspect-district') {
+
+        if (action === 'open-station') {
+          this.openStationPreview(st, wsHit.agentId);
+        } else if (action === 'open-ide') {
+          window._currentActiveStationFile = st.file;
+          if (typeof window.openStationInIDE === 'function') window.openStationInIDE();
+        } else if (action === 'open-terminal') {
+          if (typeof window.openStationTerminal === 'function') window.openStationTerminal();
+        } else if (action === 'focus-station') {
+          this.focusStationForAgent(wsHit.agentId);
+        }
+      });
+    } else if (distHit) {
+      const d = distHit.district;
+      const bld = CANONICAL_BUILDING_FLOORS[distHit.key];
+      let floorsHtml = '';
+      if (bld && bld.floors && bld.floors.length > 1) {
+        floorsHtml = `<div class="fenix-ctx-divider"></div>
+        <div style="font-size:9.5px; color:#64748B; text-transform:uppercase; padding:4px 10px; font-weight:700;">Andares do Edifício:</div>` +
+        bld.floors.map(f => `<button class="fenix-ctx-item" data-action="floor-${f.floorNum}"><span>📐</span> ${f.name}</button>`).join('');
+      }
+
+      menu.innerHTML = `
+        <div class="fenix-ctx-header">${d.emoji || '🏛️'} ${d.name}</div>
+        <button class="fenix-ctx-item" data-action="enter-building"><span>🏢</span> Entrar no Edifício</button>
+        <button class="fenix-ctx-item" data-action="inspect-district"><span>🔍</span> Inspecionar Departamento</button>
+        <button class="fenix-ctx-item" data-action="focus-district"><span>🎥</span> Focar Câmera</button>
+        ${floorsHtml}
+      `;
+      menu.addEventListener('click', (evt) => {
+        const btn = evt.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        this._closeContextMenu();
+
+        if (action === 'enter-building') {
+          this.navigateToLevel('building', d);
+        } else if (action.startsWith('floor-')) {
+          const fnum = Number(action.split('-')[1]);
+          this.navigateToLevel('floor', { bldKey: distHit.key, flNum: fnum });
+        } else if (action === 'inspect-district') {
           window.dispatchEvent(new CustomEvent('fenix-district-selected', { detail: distHit }));
         } else if (action === 'focus-district') {
           const tw = this.state.tileSize;
@@ -3793,26 +6040,27 @@ class IsoCityEngine {
           this.state.targetCamera.y = -cameraPoint.y;
           this.state.targetCamera.zoom = 1.35;
           this._updateZoomDisplay();
-        } else if (action === 'filter-district') {
-          this.state.cityFilter = distHit.key;
         }
       });
     } else {
       menu.innerHTML = `
-        <div class="fenix-ctx-header">🌐 AI CITY</div>
-        <button class="fenix-ctx-item" data-action="reset-camera"><span>🔄</span> Resetar Câmera</button>
-        <button class="fenix-ctx-item" data-action="create-agent"><span>➕</span> Criar Novo Agente</button>
+        <div class="fenix-ctx-header">🌐 FÊNIX AI CITY 4.0</div>
+        <button class="fenix-ctx-item" data-action="world-view"><span>🌍</span> Visão Macro da Cidade (0.65x)</button>
+        <button class="fenix-ctx-item" data-action="reset-camera"><span>🔄</span> Resetar Posição da Câmera</button>
+        <button class="fenix-ctx-item" data-action="toggle-light"><span>🌙</span> Alternar Dia / Noite</button>
       `;
       menu.addEventListener('click', (evt) => {
         const btn = evt.target.closest('button[data-action]');
         if (!btn) return;
         const action = btn.getAttribute('data-action');
         this._closeContextMenu();
-        if (action === 'reset-camera') {
-          this.state.targetCamera = { x: 0, y: 0, zoom: 1.0 };
-          this._updateZoomDisplay();
-        } else if (action === 'create-agent') {
-          this._openCreateAgentWizard();
+
+        if (action === 'world-view') {
+          this.navigateToLevel('city');
+        } else if (action === 'reset-camera') {
+          this.resetCamera();
+        } else if (action === 'toggle-light') {
+          this.toggleDayNight();
         }
       });
     }
@@ -4692,37 +6940,7 @@ class IsoCityEngine {
   }
 
   _drawMinimap(ctx, w, h) {
-    const mw = 110, mh = 80;
-    const mx = w - mw - 14, my = 14;
-    ctx.save();
-    ctx.fillStyle = 'rgba(2,6,23,0.82)';
-    ctx.strokeStyle = 'rgba(56,189,248,0.2)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(mx, my, mw, mh, 6); ctx.fill(); ctx.stroke();
-
-    // Districts on minimap
-    const scaleX = mw / 34, scaleY = mh / 30;
-    for (const d of Object.values(this.DISTRICTS)) {
-      const px = mx + (d.x + 17) * scaleX - d.w*scaleX/2;
-      const py = my + (d.y + 15) * scaleY - d.h*scaleY/2;
-      ctx.fillStyle = d.color + '70';
-      ctx.fillRect(px, py, d.w*scaleX, d.h*scaleY);
-    }
-    // Agents on minimap
-    for (const a of this.world.agents.values()) {
-      const px = mx + (a.x + 17) * scaleX;
-      const py = my + (a.y + 15) * scaleY;
-      ctx.fillStyle = a.color;
-      ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI*2); ctx.fill();
-    }
-    // Viewport indicator
-    const vx = -this.state.camera.x / (this.state.tileSize * this.state.camera.zoom);
-    const vy = -this.state.camera.y / (this.state.tileSize * this.state.camera.zoom * 0.5);
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth=1;
-    const vPx = mx + (vx + 17) * scaleX - 10, vPy = my + (vy + 15) * scaleY - 7;
-    ctx.strokeRect(vPx, vPy, 20, 14);
-
-    ctx.restore();
+    // Minimap is now handled by a separate canvas element in the bottom left
   }
 
   setCameraMode(mode) {
@@ -4773,8 +6991,8 @@ class IsoCityEngine {
 
   resetCamera() {
     this.state.targetCamera.x = 0;
-    this.state.targetCamera.y = -20;
-    this.state.targetCamera.zoom = 1.35;
+    this.state.targetCamera.y = 35;
+    this.state.targetCamera.zoom = 1.05;
     this.state.followAgentId = null;
     this.state.selectedAgent = null;
     this._updateZoomDisplay();
@@ -4794,7 +7012,7 @@ class IsoCityEngine {
   }
 
   zoomStep(dir) {
-    const STEPS = [0.45, 0.85, 1.35, 1.95, 2.85];
+    const STEPS = [0.45, 0.75, 1.05, 1.45, 2.05, 2.85];
     const current = this.state.targetCamera.zoom;
     let nextIdx = 2;
     if (dir > 0) {
@@ -4809,21 +7027,6 @@ class IsoCityEngine {
     this._updateZoomDisplay();
   }
 
-  _updateZoomDisplay() {
-    const z = this.state.targetCamera.zoom;
-    let badge = 'L3 EDIFÍCIO';
-    let levelStr = '1.35x';
-    if (z < 0.65) { badge = 'L1 CIDADE'; levelStr = '0.45x'; }
-    else if (z < 1.15) { badge = 'L2 DISTRITO'; levelStr = '0.85x'; }
-    else if (z < 1.75) { badge = 'L3 EDIFÍCIO'; levelStr = '1.35x'; }
-    else if (z < 2.45) { badge = 'L4 INTERIOR'; levelStr = '1.95x'; }
-    else { badge = 'L5 WORKSPACE'; levelStr = '2.85x'; }
-
-    const el = document.getElementById('cityZoomBadge');
-    if (el) el.textContent = badge;
-    const elLevel = document.getElementById('fenixCityZoomLevel');
-    if (elLevel) elLevel.textContent = levelStr;
-  }
 
   focusAgent(agentId) {
     if (!agentId) return;
@@ -4846,9 +7049,12 @@ class IsoCityEngine {
       window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agent: target, agentId: target.id } }));
       const cx = rect.width / 2 + this.state.camera.x;
       const cy = rect.height / 2 + this.state.camera.y;
-      const sc = this.toScreen(target.x, target.y, 0.22, cx, cy, z);
-      if (typeof window.openSpatialAgentChat === 'function') window.openSpatialAgentChat(target, sc);
-      if (typeof window.openSpatialAgentDrawer === 'function') window.openSpatialAgentDrawer(target);
+      if (typeof window.closeSpatialChat === 'function') window.closeSpatialChat();
+      if (typeof window.fenixShowWorldAgentInspector === 'function') {
+        window.fenixShowWorldAgentInspector(target);
+      } else if (typeof window.fenixOpenAgent === 'function') {
+        window.fenixOpenAgent(target.id);
+      }
     }
   }
 
@@ -4860,6 +7066,152 @@ class IsoCityEngine {
 }
 
 window.IsoCityEngine = IsoCityEngine;
+
+// Workstation Modal and IDE Binding Helpers
+window.openStationPreview = function (station, agentId) {
+  window.fenixCity?.openStationPreview(station, agentId);
+};
+
+window.closeStationPreview = function () {
+  const modal = document.getElementById('fenixStationPreviewModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.openStationInIDE = function () {
+  const filePath = window._currentActiveStationFile || 'ai-engine/grg/src/server.js';
+  sessionStorage.setItem('fenix_city_return_available', 'true');
+  if (window.fenixCity?.state?.camera) {
+    sessionStorage.setItem('fenix_city_return_camera', JSON.stringify({
+      x: window.fenixCity.state.camera.x,
+      y: window.fenixCity.state.camera.y,
+      zoom: window.fenixCity.state.camera.zoom
+    }));
+  }
+  window.closeStationPreview?.();
+  if (typeof window.showView === 'function') {
+    window.showView('ide');
+  } else if (typeof window.switchViewToIde === 'function') {
+    window.switchViewToIde();
+  }
+  window.dispatchEvent(new CustomEvent('fenix-open-file-ide', { detail: { filePath } }));
+};
+
+window.openStationTerminal = function () {
+  sessionStorage.setItem('fenix_city_return_available', 'true');
+  if (window.fenixCity?.state?.camera) {
+    sessionStorage.setItem('fenix_city_return_camera', JSON.stringify({
+      x: window.fenixCity.state.camera.x,
+      y: window.fenixCity.state.camera.y,
+      zoom: window.fenixCity.state.camera.zoom
+    }));
+  }
+  window.closeStationPreview?.();
+  if (typeof window.showView === 'function') {
+    window.showView('terminal');
+  } else if (typeof window.switchView === 'function') {
+    window.switchView('terminal');
+  }
+};
+
+window.closeSpatialChat = function () {
+  const chatEl = document.getElementById('fenixSpatialAgentChat');
+  if (chatEl) chatEl.style.display = 'none';
+};
+
+window.askSpatialAgentQuick = async function (topic) {
+  const currentAgent = window.__currentSpatialAgent || { id: 'agent-orchestrator', name: 'Orquestrador', role: 'Orquestração', district: 'dev-district' };
+  const body = document.getElementById('spatialChatBody');
+  if (!body) return;
+
+  const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  if (topic === 'station') {
+    if (window.fenixCity && typeof window.fenixCity.focusStationForAgent === 'function') {
+      window.fenixCity.focusStationForAgent(currentAgent.id);
+    }
+    const userBubble = document.createElement('div');
+    userBubble.className = 'spatial-chat-bubble user';
+    userBubble.textContent = 'Indo até a sua estação de trabalho.';
+    body.appendChild(userBubble);
+    body.scrollTop = body.scrollHeight;
+    return;
+  }
+
+  let prompt = '';
+  let questionLabel = '';
+  if (topic === 'tasks') {
+    questionLabel = 'Quais tarefas você concluiu recentemente?';
+    prompt = `Relate de forma concisa e factual as tarefas recentemente concluídas ou registradas no sistema sob sua alçada (${currentAgent.name} / ${currentAgent.role}).`;
+  } else if (topic === 'current') {
+    questionLabel = 'Qual é a sua atividade ou trabalho em execução agora?';
+    prompt = `Descreva sua atividade atual e estado operacional no distrito ${currentAgent.district || 'Command Center'}.`;
+  } else if (topic === 'memory') {
+    questionLabel = 'O que você tem registrado na sua memória recente?';
+    prompt = `Apresente um resumo factual das memórias recentes e diretrizes operacionais sob seu escopo.`;
+  } else {
+    questionLabel = `Consulta rápida: ${topic}`;
+    prompt = `Status e dados operacionais para ${topic}.`;
+  }
+
+  const userBubble = document.createElement('div');
+  userBubble.className = 'spatial-chat-bubble user';
+  userBubble.textContent = questionLabel;
+  body.appendChild(userBubble);
+  body.scrollTop = body.scrollHeight;
+
+  const typing = document.createElement('div');
+  typing.id = 'spatialChatTyping';
+  typing.className = 'spatial-chat-bubble agent';
+  typing.style.opacity = '0.75';
+  typing.style.fontStyle = 'italic';
+  typing.textContent = 'Consultando telemetria operacional...';
+  body.appendChild(typing);
+  body.scrollTop = body.scrollHeight;
+
+  try {
+    const res = await fetch('/api/v2/conversation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: prompt,
+        agentId: currentAgent.id,
+        context: {
+          agentName: currentAgent.name,
+          role: currentAgent.role,
+          district: currentAgent.district,
+          topic: topic,
+          view: 'city'
+        }
+      })
+    });
+    const data = await res.json();
+    typing.remove();
+    const reply = data.reply || data.response || data.output || data.message || `Atividade de ${currentAgent.name}: Monitoramento e execução ativa no distrito ${currentAgent.district || 'Dev'}. Telemetria verificada.`;
+    const replyBubble = document.createElement('div');
+    replyBubble.className = 'spatial-chat-bubble agent';
+    replyBubble.innerHTML = `<strong>${esc(currentAgent.name)}:</strong><br>${esc(reply).replace(/\n/g, '<br>')}`;
+    body.appendChild(replyBubble);
+    body.scrollTop = body.scrollHeight;
+
+    if (window.fenixCity && window.fenixCity.world) {
+      const cityAgent = window.fenixCity.world.agents.get(currentAgent.id) ||
+                        [...window.fenixCity.world.agents.values()].find(a => a.id === currentAgent.id || a.name === currentAgent.name);
+      if (cityAgent) {
+        cityAgent.bubble = { text: reply.slice(0, 48) + (reply.length > 48 ? '...' : ''), life: 5.0 };
+      }
+    }
+  } catch (err) {
+    typing.remove();
+    const fallbackText = currentAgent.currentJob
+      ? `Job ativo: ${currentAgent.currentJob} · Distrito: ${currentAgent.district || 'Command'}. Telemetria local ativa.`
+      : `Especialista operacional ${currentAgent.name} pronto para instruções. Conectado ao runtime.`;
+    const fallbackBubble = document.createElement('div');
+    fallbackBubble.className = 'spatial-chat-bubble agent';
+    fallbackBubble.innerHTML = `<strong>${esc(currentAgent.name)}:</strong><br>${esc(fallbackText)}`;
+    body.appendChild(fallbackBubble);
+    body.scrollTop = body.scrollHeight;
+  }
+};
 
 function bootIsoCity() {
   if (window.FENIX_WORLD_3D) return;
@@ -4883,4 +7235,279 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => setTimeout(bootIsoCity, 150), { once: true });
 } else {
   setTimeout(bootIsoCity, 150);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const cvs = document.getElementById('cityCanvas');
+    if (cvs) {
+      cvs.addEventListener('contextmenu', async (e) => {
+        e.preventDefault();
+        const city = window.fenixCity;
+        if (!city) return;
+        
+        // Find if we clicked an agent or a building
+        // Since we don't have the exact inverse matrix easily accessible here without hooking into city internals,
+        // we use city.state.hoveredAgent or hoveredDistrict from the last mousemove (which city already tracks)
+        const agent = city.state.hoveredAgent;
+        const district = city.state.hoveredDistrict;
+        
+        let type = null;
+        let id = null;
+        let actions = [];
+        
+        const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+        const headers = { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+
+        if (agent) {
+          type = 'agent';
+          id = agent.id || agent.agentId;
+          actions = [
+            { label: 'Dispatch Mission', action: () => { 
+                fetch('/api/v2/jobs', { method: 'POST', headers, body: JSON.stringify({ title: 'Contextual Dispatch', description: 'Dispatched via UI', agentId: id, priority: 'high', status: 'QUEUED' }) })
+                .then(r => { if(r.ok && window.FenixToast) window.FenixToast.show('Mission dispatched', 'success'); });
+            } },
+            { label: 'View Logs', action: () => {
+                fetch('/api/v2/system/telemetry', { headers }).then(r => r.json()).then(data => {
+                    console.log('Logs for', id, data);
+                    window.fenixSelectEntity('agent', id);
+                });
+            } },
+            { label: 'Restart Agent', action: () => { 
+                fetch('/api/command', { method: 'POST', headers, body: JSON.stringify({ command: 'restart', target: id, type: 'agent' }) })
+                .then(r => { if(r.ok && window.FenixToast) window.FenixToast.show('Agent restarted', 'success'); });
+            } }
+          ];
+        } else if (district) {
+          type = 'building';
+          id = district;
+          actions = [
+            { label: 'Inspect Operations', action: () => {
+                fetch(`/api/v2/company/info/${id}`, { headers }).then(r => r.json()).then(data => {
+                    console.log('Operations for', id, data);
+                    window.fenixSelectEntity('building', id);
+                });
+            } },
+            { label: 'Restart Service', action: () => { 
+                fetch('/api/command', { method: 'POST', headers, body: JSON.stringify({ command: 'restart', target: id, type: 'service' }) })
+                .then(r => { if(r.ok && window.FenixToast) window.FenixToast.show('Service restarted', 'success'); });
+            } },
+            { label: 'Pause Mission', action: () => { 
+                fetch('/api/command', { method: 'POST', headers, body: JSON.stringify({ command: 'pause', target: id, type: 'mission' }) })
+                .then(r => { if(r.ok && window.FenixToast) window.FenixToast.show('Mission paused', 'success'); });
+            } }
+          ];
+        }
+        
+        if (type && id) {
+          showContextMenu(e.clientX, e.clientY, `${type.toUpperCase()}: ${id}`, actions);
+        }
+      });
+    }
+  });
+
+  function showContextMenu(x, y, title, actions) {
+    let menu = document.getElementById('fenix-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'fenix-context-menu';
+      menu.style.position = 'fixed';
+      menu.style.background = 'rgba(15, 23, 42, 0.95)';
+      menu.style.backdropFilter = 'blur(10px)';
+      menu.style.border = '1px solid rgba(255,255,255,0.1)';
+      menu.style.borderRadius = '8px';
+      menu.style.padding = '8px 0';
+      menu.style.zIndex = '999999';
+      menu.style.color = '#fff';
+      menu.style.fontFamily = 'Inter, sans-serif';
+      menu.style.fontSize = '12px';
+      menu.style.minWidth = '160px';
+      document.body.appendChild(menu);
+      
+      document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target)) menu.style.display = 'none';
+      });
+    }
+    
+    menu.innerHTML = `<div style="padding: 4px 12px; font-weight: bold; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 4px;">${title}</div>`;
+    actions.forEach(act => {
+      const btn = document.createElement('div');
+      btn.textContent = act.label;
+      btn.style.padding = '6px 12px';
+      btn.style.cursor = 'pointer';
+      btn.onmouseenter = () => btn.style.background = 'rgba(255,255,255,0.1)';
+      btn.onmouseleave = () => btn.style.background = 'transparent';
+      btn.onclick = () => {
+        act.action();
+        menu.style.display = 'none';
+      };
+      menu.appendChild(btn);
+    });
+    
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.display = 'block';
+  }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const viewCity = document.getElementById('view-city');
+    const existingMinimap = document.getElementById('fenixMinimap');
+    if (existingMinimap && document.getElementById('fenixFloatingMinimap')) {
+      existingMinimap.style.display = 'none';
+    }
+    if (viewCity && !document.getElementById('fenixMinimap') && !document.getElementById('fenixFloatingMinimap')) {
+      // Deliverable 3: Minimapa Absolute Bottom-Left
+      const minimap = document.createElement('canvas');
+      minimap.id = 'fenixMinimap';
+      minimap.width = 180;
+      minimap.height = 120;
+      minimap.style.position = 'absolute';
+      minimap.style.bottom = '20px';
+      minimap.style.left = '20px';
+      minimap.style.zIndex = '50';
+      minimap.style.background = 'rgba(2, 6, 23, 0.82)';
+      minimap.style.border = '1px solid rgba(56, 189, 248, 0.2)';
+      minimap.style.borderRadius = '6px';
+      minimap.style.cursor = 'pointer';
+      viewCity.appendChild(minimap);
+
+      let minimapLoopRunning = false;
+      let lastMinimapTime = 0;
+      const renderMinimap = (now = 0) => {
+        if (!viewCity || !viewCity.classList.contains('active') || viewCity.style.display === 'none' || document.hidden) {
+          minimapLoopRunning = false;
+          return;
+        }
+        if (!window.fenixCity) {
+          requestAnimationFrame(renderMinimap);
+          return;
+        }
+        if (now && lastMinimapTime && (now - lastMinimapTime < 500)) {
+          requestAnimationFrame(renderMinimap);
+          return;
+        }
+        lastMinimapTime = now || performance.now();
+        const city = window.fenixCity;
+        const ctx = minimap.getContext('2d');
+        const mw = 180, mh = 120;
+        ctx.clearRect(0, 0, mw, mh);
+
+        const scaleX = mw / 34;
+        const scaleY = mh / 30;
+
+        // Tiles coloridos por distrito
+        if (city.DISTRICTS) {
+          for (const d of Object.values(city.DISTRICTS)) {
+            const px = (d.x + 17) * scaleX - (d.w * scaleX) / 2;
+            const py = (d.y + 15) * scaleY - (d.h * scaleY) / 2;
+            ctx.fillStyle = d.color + '70';
+            ctx.fillRect(px, py, d.w * scaleX, d.h * scaleY);
+          }
+        }
+
+        // Indicador de viewport
+        if (city.state && city.state.camera && city.state.tileSize) {
+          const A = -city.state.camera.x / (city.state.tileSize * city.state.camera.zoom);
+          const B = -city.state.camera.y / ((city.state.tileSize / 2) * city.state.camera.zoom);
+          const rotX = (A + B) / 2;
+          const rotY = (B - A) / 2;
+          let mapX = rotX, mapY = rotY;
+          if (city.rotationQuarter === 1) { mapX = rotY; mapY = -rotX; }
+          else if (city.rotationQuarter === 2) { mapX = -rotX; mapY = -rotY; }
+          else if (city.rotationQuarter === 3) { mapX = -rotY; mapY = rotX; }
+          
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.lineWidth = 1.5;
+          const vPx = (mapX + 17) * scaleX - 10;
+          const vPy = (mapY + 15) * scaleY - 7;
+          ctx.strokeRect(vPx, vPy, 20, 14);
+        }
+        
+        requestAnimationFrame(renderMinimap);
+      };
+      renderMinimap();
+
+      minimap.addEventListener('click', (e) => {
+        if (!window.fenixCity) return;
+        const city = window.fenixCity;
+        const rect = minimap.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const scaleX = 180 / 34, scaleY = 120 / 30;
+        
+        const mapX = x / scaleX - 17;
+        const mapY = y / scaleY - 15;
+        
+        city.state.followAgentId = null;
+        city.state.selectedAgent = null;
+        
+        // Pan to position
+        if (typeof city.toScreen === 'function') {
+          const cameraPoint = city.toScreen(mapX, mapY, 0, 0, 0, 1.15);
+          city.state.targetCamera.x = -cameraPoint.x;
+          city.state.targetCamera.y = -cameraPoint.y;
+          city.state.targetCamera.zoom = 1.15;
+          if (typeof city._updateZoomDisplay === 'function') {
+            city._updateZoomDisplay();
+          }
+        }
+      });
+    }
+
+    if (viewCity && !document.getElementById('fenix-city-event-timeline')) {
+      const timeline = document.createElement('div');
+      timeline.id = 'fenix-city-event-timeline';
+      timeline.style.position = 'absolute';
+      timeline.style.bottom = '20px';
+      timeline.style.left = '50%';
+      timeline.style.transform = 'translateX(-50%)';
+      timeline.style.width = '80%';
+      timeline.style.maxWidth = '800px';
+      timeline.style.height = '40px';
+      timeline.style.background = 'rgba(15, 23, 42, 0.8)';
+      timeline.style.backdropFilter = 'blur(8px)';
+      timeline.style.border = '1px solid rgba(255,255,255,0.1)';
+      timeline.style.borderRadius = '20px';
+      timeline.style.display = 'flex';
+      timeline.style.alignItems = 'center';
+      timeline.style.padding = '0 16px';
+      timeline.style.gap = '8px';
+      timeline.style.overflowX = 'auto';
+      timeline.style.zIndex = '10';
+      timeline.style.scrollbarWidth = 'none';
+      viewCity.appendChild(timeline);
+      
+      // Listen for incoming events to populate
+      document.addEventListener('fenix-live', (e) => {
+        const ev = e.detail;
+        const eventType = String(ev?.type || '').toLowerCase();
+        if (!ev || ['ping', 'heartbeat', 'status', 'snapshot', 'runtime.snapshot'].includes(eventType)) return;
+        const evNode = document.createElement('div');
+        evNode.style.flex = '0 0 auto';
+        evNode.style.padding = '4px 12px';
+        evNode.style.background = 'rgba(255,255,255,0.05)';
+        evNode.style.borderRadius = '12px';
+        evNode.style.fontSize = '11px';
+        evNode.style.color = '#e2e8f0';
+        evNode.style.cursor = 'pointer';
+        evNode.style.whiteSpace = 'nowrap';
+        let chain = ev.cause ? ` → ${ev.cause}` : '';
+        if (ev.chain && Array.isArray(ev.chain)) chain = ' → ' + ev.chain.join(' → ');
+        evNode.textContent = `[${ev.type}] ${ev.message || ev.summary || ev.id || 'Event'}${chain}`;
+        
+        evNode.onclick = () => {
+          if (ev.agentId) window.fenixSelectEntity('agent', ev.agentId);
+          else if (ev.missionId) window.fenixSelectEntity('mission', ev.missionId);
+          else if (ev.jobId) window.fenixSelectEntity('job', ev.jobId);
+        };
+        
+        timeline.prepend(evNode);
+        if (timeline.children.length > 20) {
+          timeline.removeChild(timeline.lastChild);
+        }
+      });
+    }
+  });
 }

@@ -5,39 +5,49 @@
    ========================================================================== */
 
 :root {
-  /* Depth & Surface Hierarchy — V9 Master Palette */
-  --fenix-bg-root: #070B12;
-  --fenix-bg-surface: #0C1420;
-  --fenix-bg-surface-2: #111B2A;
-  --fenix-bg-panel: rgba(12, 20, 32, 0.88);
-  --fenix-bg-card: rgba(17, 27, 42, 0.85);
-  --fenix-bg-card-hover: rgba(22, 36, 58, 0.95);
-  --fenix-bg-input: rgba(7, 11, 18, 0.8);
-  --fenix-bg-glass-blur: blur(14px);
+  /* Depth & Surface Hierarchy — FÊNIX Obsidian Foundation */
+  --fenix-bg-base: #050810;
+  --fenix-bg-root: #050810;
+  --fenix-bg-subtle: #080B12;
+  --fenix-bg-surface: #0B1018;
+  --fenix-bg-surface-elevated: #101622;
+  --fenix-bg-panel: rgba(11, 16, 24, 0.92);
+  --fenix-bg-card: rgba(16, 22, 34, 0.85);
+  --fenix-bg-card-hover: rgba(22, 32, 48, 0.95);
+  --fenix-bg-input: rgba(8, 11, 18, 0.9);
+  --fenix-bg-glass-blur: blur(16px);
 
-  /* Master Palette Accents (Verde FÊNIX identity) */
-  --fenix-primary: #00E5A0;
-  --fenix-info: #22B8FF;
+  /* Master Palette Accents (Autonomous Engineering OS) */
+  --fenix-accent-cyan: #00D9FF;
+  --fenix-accent-blue: #4488FF;
+  --fenix-accent-amber: #FFB020;
+  --fenix-accent-green: #25D366;
+  --fenix-accent-red: #FF4D5E;
+
+  /* Semantic Aliases */
+  --fenix-primary: var(--fenix-accent-cyan);
+  --fenix-info: var(--fenix-accent-cyan);
   --fenix-intelligence: #A855F7;
-  --fenix-warning: #F5B942;
-  --fenix-error: #FF4D67;
+  --fenix-warning: var(--fenix-accent-amber);
+  --fenix-error: var(--fenix-accent-red);
+  --fenix-success: var(--fenix-accent-green);
 
   /* Legacy & Semantic Bindings */
-  --fenix-green: var(--fenix-primary);
-  --fenix-cyan: var(--fenix-info);
-  --fenix-blue: #3b82f6;
+  --fenix-green: var(--fenix-accent-green);
+  --fenix-cyan: var(--fenix-accent-cyan);
+  --fenix-blue: var(--fenix-accent-blue);
   --fenix-blue-dark: #1d4ed8;
-  --fenix-gold: var(--fenix-warning);
+  --fenix-gold: var(--fenix-accent-amber);
   --fenix-purple: var(--fenix-intelligence);
-  --fenix-rose: var(--fenix-error);
+  --fenix-rose: var(--fenix-accent-red);
 
   /* Borders & Glows */
   --fenix-border-subtle: rgba(255, 255, 255, 0.08);
   --fenix-border-medium: rgba(255, 255, 255, 0.14);
-  --fenix-border-glow-primary: rgba(0, 229, 160, 0.35);
-  --fenix-border-glow-cyan: rgba(34, 184, 255, 0.35);
-  --fenix-border-glow-blue: rgba(59, 130, 246, 0.4);
-  --fenix-border-glow-green: rgba(0, 229, 160, 0.35);
+  --fenix-border-glow-primary: rgba(0, 217, 255, 0.35);
+  --fenix-border-glow-cyan: rgba(0, 217, 255, 0.35);
+  --fenix-border-glow-blue: rgba(68, 136, 255, 0.4);
+  --fenix-border-glow-green: rgba(37, 211, 102, 0.35);
 
   /* Typography */
   --fenix-text-bright: #ffffff;
@@ -64,17 +74,99 @@
   /* Fonts */
   --fenix-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --fenix-font-mono: 'JetBrains Mono', Consolas, monospace;
+
+  /* Spacing Tokens */
+  --fenix-space-3xs: 2px;
+  --fenix-space-2xs: 4px;
+  --fenix-space-xs: 6px;
+  --fenix-space-sm: 8px;
+  --fenix-space-md: 12px;
+  --fenix-space-lg: 16px;
+  --fenix-space-xl: 24px;
+  --fenix-space-2xl: 32px;
+  --fenix-space-3xl: 48px;
+
+  /* Motion Tokens */
+  --fenix-duration-fast: 120ms;
+  --fenix-duration-normal: 220ms;
+  --fenix-duration-slow: 380ms;
+  --fenix-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --fenix-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --fenix-transition-fast: var(--fenix-duration-fast) var(--fenix-ease-standard);
+  --fenix-transition-normal: var(--fenix-duration-normal) var(--fenix-ease-standard);
+  --fenix-transition-slow: var(--fenix-duration-slow) var(--fenix-ease-standard);
+
+  /* Z-Index Hierarchy */
+  --fenix-z-base: 1;
+  --fenix-z-elevated: 10;
+  --fenix-z-sticky: 100;
+  --fenix-z-dropdown: 1000;
+  --fenix-z-backdrop: 1040;
+  --fenix-z-modal: 1050;
+  --fenix-z-palette: 1060;
+  --fenix-z-popover: 1070;
+  --fenix-z-tooltip: 1080;
+  --fenix-z-toast: 1090;
+
+  /* Breakpoint Reference Tokens */
+  --fenix-bp-mobile: 600px;
+  --fenix-bp-tablet: 900px;
+  --fenix-bp-laptop: 1250px;
+  --fenix-bp-desktop: 1440px;
 }
 
 /* ==========================================================================
    1. GLOBAL RESETS & SCROLLBARS
    ========================================================================== */
 html, body {
-  background: var(--fenix-bg-root) !important;
+  background: var(--fenix-bg-base) !important;
   color: var(--fenix-text-primary);
   font-family: var(--fenix-font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Canonical View Surfaces — Eliminates Transparent Background Leaks */
+.views-container,
+.views-container > .view,
+#view-command,
+#view-city,
+#view-agents,
+#view-ide,
+#view-operations,
+#view-runtime,
+#view-projects,
+#view-memory,
+#view-knowledge,
+#view-mcp,
+#view-browser,
+#view-observability,
+#view-terminal,
+#view-flowgraph,
+#view-marketplace {
+  background-color: var(--fenix-bg-base) !important;
+  color: var(--fenix-text-primary);
+}
+
+/* Canonical Sidebar Domain Sections */
+.nav-section-header {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fenix-text-dim);
+  padding: 12px 10px 4px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.nav-section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* Premium Scrollbars */

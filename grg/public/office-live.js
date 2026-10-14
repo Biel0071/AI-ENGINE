@@ -882,7 +882,7 @@
     const isWarRoom = agent.status === 'WAR_ROOM';
 
     let badgeColor = '#10B981';
-    let statusLabel = agent.state || agent.status || 'IDLE';
+    let statusLabel = agent.state || agent.status || 'NÃO INFORMADO';
 
     if (isWarRoom) { badgeColor = '#EF4444'; statusLabel = 'WAR ROOM 🚨'; }
     else if (isMeeting) { badgeColor = '#A855F7'; statusLabel = 'REUNIÃO 🤝'; }
@@ -900,15 +900,15 @@
       desc: hasCompany ? (agent.department || 'Empresa Vinculada') : 'Agente Autônomo'
     };
 
-    const taskName = agent.currentTask || agent.assignedTask?.taskName || agent.assignedTask?.name || agent.currentJob?.name || agent.currentMission?.title || agent.currentGoal || (isWorking ? 'Em execução técnica no workspace' : 'Standby na estação de trabalho');
+    const taskName = agent.currentTask || agent.assignedTask?.taskName || agent.assignedTask?.name || agent.currentJob?.name || agent.currentMission?.title || agent.currentGoal || (isWorking ? 'Execução ativa; tarefa não informada' : 'Nenhuma tarefa ativa informada');
     const taskProgress = agent.currentJob?.progress !== undefined ? agent.currentJob.progress : (agent.assignedTask?.progress !== undefined ? agent.assignedTask.progress : (agent.taskProgress !== undefined ? agent.taskProgress : null));
 
     const skills = Array.isArray(agent.skills) ? agent.skills : [];
     const tools = Array.isArray(agent.tools) ? agent.tools : [];
     const memory = Array.isArray(agent.memory) ? agent.memory : (Array.isArray(agent.episodicMemory) ? agent.episodicMemory : []);
-    const model = agent.model || 'qwen2.5:3b';
-    const floor = agent.floorNum ? `Andar ${agent.floorNum}` : (agent.buildingId ? 'Andar 1' : 'Pátio');
-    const building = agent.buildingId ? (agent.buildingId.replace(/^bld-/, '').toUpperCase()) : 'HQ SPIRE';
+    const model = agent.model || 'Não informado';
+    const floor = Number.isFinite(agent.floorNum) ? `Andar ${agent.floorNum}` : 'Andar não informado';
+    const building = agent.buildingId ? agent.buildingId.replace(/^bld-/, '').toUpperCase() : 'Prédio não informado';
 
     return `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:12px 14px 10px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.3);">
@@ -963,7 +963,7 @@
           </div>
           <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:6px 8px;">
             <div style="font-size:9px; color:#64748B;">ESTAÇÃO / MESA</div>
-            <div style="font-size:11px; font-weight:600; color:#F8FAFC; margin-top:2px;">${esc(agent.deskLabel || agent.workstationId || 'Mesa Operacional')}</div>
+            <div style="font-size:11px; font-weight:600; color:#F8FAFC; margin-top:2px;">${esc(agent.deskLabel || agent.workstationId || 'Estação não informada')}</div>
           </div>
         </div>
 
@@ -974,7 +974,7 @@
             <span style="font-size:10px; color:#94a3b8;">Runtime Model:</span>
             <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; color:#a855f7;">${esc(model)}</span>
           </div>
-          <span style="font-size:9px; color:#10b981; font-weight:600;">● ZERO-MOCK</span>
+          <span style="font-size:9px; color:${agent.model ? '#10b981' : '#94a3b8'}; font-weight:600;">${agent.model ? '● Modelo informado' : 'Modelo não informado'}</span>
         </div>
 
         <!-- Skills & Tools -->
@@ -994,20 +994,20 @@
             <span style="font-size:10px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px;">
               <i class="ph-bold ph-tree-structure"></i> Ciclo Vital (9 Perguntas Canônicas)
             </span>
-            <span style="font-size:9px; background:rgba(16,185,129,0.15); color:#10b981; padding:1px 6px; border-radius:4px; font-weight:700;">● ZERO-MOCK</span>
+            <span style="font-size:9px; color:#94a3b8;">Dados publicados pelo runtime</span>
           </div>
 
           <div style="display:flex; flex-direction:column; gap:5px; font-size:10.5px; color:#cbd5e1;">
             <!-- 1. Quem sou eu? -->
             <div style="background:rgba(255,255,255,0.02); padding:5px 6px; border-radius:5px;">
               <strong style="color:#94a3b8; font-size:9.5px; text-transform:uppercase;">1. Quem sou eu?</strong>
-              <div style="color:#f8fafc; font-weight:600; margin-top:1px;">${esc(agent.lifecycle.whoAmI?.name || agent.displayName || agent.name)} · <span style="color:#38bdf8;">${esc(agent.lifecycle.whoAmI?.role || agent.role || 'Especialista')}</span> (${esc(agent.lifecycle.whoAmI?.company || 'Fênix')})</div>
+              <div style="color:#f8fafc; font-weight:600; margin-top:1px;">${esc(agent.lifecycle.whoAmI?.name || agent.displayName || agent.name)} · <span style="color:#38bdf8;">${esc(agent.lifecycle.whoAmI?.role || agent.role || 'Não informado')}</span> (${esc(agent.lifecycle.whoAmI?.company || 'Empresa não informada')})</div>
             </div>
 
             <!-- 2. Onde estou? -->
             <div style="background:rgba(255,255,255,0.02); padding:5px 6px; border-radius:5px;">
               <strong style="color:#94a3b8; font-size:9.5px; text-transform:uppercase;">2. Onde estou?</strong>
-              <div style="color:#f8fafc; margin-top:1px;">🏢 ${esc(agent.lifecycle.whereAmI?.buildingName || building)} (Andar ${esc(agent.lifecycle.whereAmI?.floorNum != null ? agent.lifecycle.whereAmI.floorNum : floor)}) · ${esc(agent.lifecycle.whereAmI?.district || 'dev-district')}</div>
+              <div style="color:#f8fafc; margin-top:1px;">🏢 ${esc(agent.lifecycle.whereAmI?.buildingName || building)} · ${esc(agent.lifecycle.whereAmI?.floorNum != null ? `Andar ${agent.lifecycle.whereAmI.floorNum}` : floor)} · ${esc(agent.lifecycle.whereAmI?.district || 'Distrito não informado')}</div>
             </div>
 
             <!-- 3. O que estou fazendo? -->
@@ -1019,36 +1019,36 @@
             <!-- 4. Por que estou fazendo isso? -->
             <div style="background:rgba(255,255,255,0.02); padding:5px 6px; border-radius:5px;">
               <strong style="color:#94a3b8; font-size:9.5px; text-transform:uppercase;">4. Por que estou fazendo isso?</strong>
-              <div style="color:#e2e8f0; margin-top:1px;">🎯 ${esc(agent.lifecycle.whyAmIDoingThis?.parentGoal || 'Observação e prontidão operacional')}</div>
+              <div style="color:#e2e8f0; margin-top:1px;">🎯 ${esc(agent.lifecycle.whyAmIDoingThis?.parentGoal || 'Objetivo não informado')}</div>
             </div>
 
             <!-- 5. O que farei em seguida? -->
             <div style="background:rgba(255,255,255,0.02); padding:5px 6px; border-radius:5px;">
               <strong style="color:#94a3b8; font-size:9.5px; text-transform:uppercase;">5. O que farei em seguida?</strong>
-              <div style="color:#e2e8f0; margin-top:1px;">⏭️ ${esc(agent.lifecycle.whatWillIDoNext?.nextAction || 'Aguardar novo job ou diretiva')}</div>
+              <div style="color:#e2e8f0; margin-top:1px;">⏭️ ${esc(agent.lifecycle.whatWillIDoNext?.nextAction || 'Próxima ação não informada')}</div>
             </div>
 
             <!-- 6. Qual é minha memória? -->
             <div style="background:rgba(255,255,255,0.02); padding:5px 6px; border-radius:5px;">
               <strong style="color:#94a3b8; font-size:9.5px; text-transform:uppercase;">6. Qual é minha memória?</strong>
-              <div style="color:#e2e8f0; margin-top:1px;">🧠 ${agent.lifecycle.whatIsMyMemory?.episodicCount || (memory || []).length} episódios persistidos no Graph Brain</div>
+              <div style="color:#e2e8f0; margin-top:1px;">🧠 ${agent.lifecycle.whatIsMyMemory?.episodicCount ?? memory.length} episódios de memória reportados</div>
             </div>
 
             <!-- 7. Habilidades e Ferramentas -->
             <div style="background:rgba(255,255,255,0.02); padding:5px 6px; border-radius:5px;">
               <strong style="color:#94a3b8; font-size:9.5px; text-transform:uppercase;">7. Habilidades & Ferramentas:</strong>
-              <div style="color:#38bdf8; margin-top:1px; font-size:10px;">${(agent.lifecycle.whatAreMySkillsAndTools?.skills || skills || []).slice(0, 4).join(', ') || 'Execução autônoma'}</div>
+              <div style="color:#38bdf8; margin-top:1px; font-size:10px;">${(agent.lifecycle.whatAreMySkillsAndTools?.skills || skills || []).slice(0, 4).join(', ') || 'Nenhuma habilidade informada'}</div>
             </div>
 
             <!-- 8. Energia e Atenção -->
             <div style="background:rgba(255,255,255,0.02); padding:5px 6px; border-radius:5px; display:flex; justify-content:space-between;">
               <div>
                 <strong style="color:#94a3b8; font-size:9.5px; text-transform:uppercase;">8. Energia:</strong>
-                <span style="color:#10b981; font-weight:700; margin-left:4px;">${agent.lifecycle.whatIsMyEnergyAndAttention?.energyPercent ?? 100}%</span>
+                <span style="color:#10b981; font-weight:700; margin-left:4px;">${agent.lifecycle.whatIsMyEnergyAndAttention?.energyPercent == null ? 'Não medida' : `${agent.lifecycle.whatIsMyEnergyAndAttention.energyPercent}%`}</span>
               </div>
               <div>
                 <strong style="color:#94a3b8; font-size:9.5px; text-transform:uppercase;">Atenção:</strong>
-                <span style="color:#38bdf8; font-weight:700; margin-left:4px;">${agent.lifecycle.whatIsMyEnergyAndAttention?.attentionPercent ?? 100}%</span>
+                <span style="color:#38bdf8; font-weight:700; margin-left:4px;">${agent.lifecycle.whatIsMyEnergyAndAttention?.attentionPercent == null ? 'Não medida' : `${agent.lifecycle.whatIsMyEnergyAndAttention.attentionPercent}%`}</span>
               </div>
             </div>
 
@@ -1078,7 +1078,7 @@
         <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:7px; padding:8px 10px; display:flex; flex-direction:column; gap:6px;">
           <div style="font-size:9.5px; color:#64748B; text-transform:uppercase; font-weight:600; display:flex; justify-content:space-between;">
             <span>Conversa Direta com Agente</span>
-            <span style="color:#10B981; font-size:9px;">● ONLINE</span>
+            <span style="color:#94A3B8; font-size:9px;">CANAL DE CONVERSA</span>
           </div>
           <div id="worldAgentChatLog" style="max-height:80px; overflow-y:auto; font-size:11px; color:#cbd5e1; display:flex; flex-direction:column; gap:4px; padding:2px 0;">
             <div style="color:#64748B; font-style:italic;">Pergunte algo para ${esc(agent.displayName || agent.name)}...</div>
@@ -1231,8 +1231,19 @@
     if (!inspector || !distHit) return;
 
     const d = distHit.district;
-    const allAgents = window.fenixCity?.world?.agents ? [...window.fenixCity.world.agents.values()] : [];
-    const residentAgents = allAgents.filter(a => (a.district || '').toLowerCase() === distHit.key.toLowerCase());
+    const citySnapshot = window.FENIX?.cityWorld?.snapshot;
+    const agentsMeasured = Array.isArray(citySnapshot?.agents);
+    const allAgents = agentsMeasured ? citySnapshot.agents : [];
+    const buildingId = window.FenixCityMachineScene?.canonicalBuildingId({ type: 'district', id: distHit.key }) || '';
+    const residentAgents = agentsMeasured
+      ? allAgents.filter(agent => {
+          const agentBuildingId = String(agent.buildingId || '').trim();
+          if (agentBuildingId) {
+            return (window.FenixCityMachineScene?.canonicalBuildingId({ type: 'building', id: agentBuildingId }) || agentBuildingId).toLowerCase() === buildingId.toLowerCase();
+          }
+          return String(agent.district || '').toLowerCase() === distHit.key.toLowerCase();
+        })
+      : null;
     const rawColor = typeof d.color === 'number' ? `#${d.color.toString(16).padStart(6, '0')}` : String(d.color || '#6b8790');
     const buildingColor = /^#[0-9a-f]{6}$/i.test(rawColor) ? rawColor : '#6b8790';
     const buildingKey = String(distHit.key || d.key || d.id || '');
@@ -1278,10 +1289,10 @@
         <div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <span style="font-size:9.5px; color:#64748B; text-transform:uppercase; font-weight:600;">Agentes Residentes</span>
-            <span style="font-size:10px; color:#10B981; font-weight:700;">${residentAgents.length} PRESENTES</span>
+            <span style="font-size:10px; color:#10B981; font-weight:700;">${residentAgents === null ? 'NÃO MEDIDO' : `${residentAgents.length} PRESENTES`}</span>
           </div>
           <div style="display:flex; flex-direction:column; gap:4px; max-height:120px; overflow-y:auto;">
-            ${residentAgents.map(ag => `
+            ${residentAgents === null ? '<p class="fenix-insp-empty">Agentes indisponíveis nesta leitura da API.</p>' : residentAgents.length === 0 ? '<p class="fenix-insp-empty">Nenhum agente vinculado neste registro.</p>' : residentAgents.map(ag => `
               <button type="button" data-agent-id="${esc(ag.id)}" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:5px 8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; cursor:pointer; text-align:left;" title="Clique para inspecionar no mapa">
                 <div style="display:flex; align-items:center; gap:6px;">
                   <span style="font-size:13px;">${esc(ag.emoji || '🤖')}</span>

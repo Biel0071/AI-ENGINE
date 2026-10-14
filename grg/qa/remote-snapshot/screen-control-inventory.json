@@ -1,0 +1,490 @@
+{
+  "htmlPath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\qa\\remote-snapshot\\index.html",
+  "screens": [
+    {
+      "name": "command",
+      "domain": "command",
+      "found": true,
+      "buttons": [
+        {
+          "label": "Screens 0",
+          "attrs": "class=\"nav-item\" style=\"width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;\""
+        },
+        {
+          "label": "Components 0",
+          "attrs": "class=\"nav-item\" style=\"width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;\""
+        },
+        {
+          "label": "APIs 0",
+          "attrs": "class=\"nav-item\" style=\"width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;\""
+        },
+        {
+          "label": "Backend 0",
+          "attrs": "class=\"nav-item\" style=\"width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;\""
+        },
+        {
+          "label": "Workers 0",
+          "attrs": "class=\"nav-item\" style=\"width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;\""
+        },
+        {
+          "label": "AI Providers",
+          "attrs": "class=\"nav-item\" style=\"width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;\""
+        },
+        {
+          "label": "Jobs",
+          "attrs": "class=\"nav-item\" style=\"width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;\""
+        },
+        {
+          "label": "Graph",
+          "attrs": "class=\"nav-item\" style=\"width: 100%; text-align: left; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer;\""
+        },
+        {
+          "label": "AI CITY",
+          "attrs": "id=\"wsModeCityBtn\" onclick=\"setWorkspaceMode('city')\" style=\"background: var(--accent); color: #fff; border: none; border-radius: 3px; padding: 2px 8px; font-size: 9px; cursor: pointer; font-family: var(--font-mono);\""
+        },
+        {
+          "label": "PREVIEW",
+          "attrs": "id=\"wsModePreviewBtn\" onclick=\"setWorkspaceMode('preview')\" style=\"background: rgba(255,255,255,0.1); color: var(--text-muted); border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 9px; cursor: pointer; font-family: var(--font-mono);\""
+        },
+        {
+          "label": "Abrir Preview",
+          "attrs": "id=\"inspPreviewBtn\" onclick=\"\" style=\"margin-top: 8px; background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 11px; cursor: pointer; font-family: var(--font-ui); display: flex; align-items: center; justify-content: center; gap: 6px;\""
+        },
+        {
+          "label": "",
+          "attrs": "type=\"submit\" class=\"btn-send\""
+        }
+      ],
+      "forms": [
+        "id=\"masterCmdForm\" style=\"display: flex; gap: 12px;\""
+      ],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/fenix/missions",
+          "/api/fenix/jobs"
+        ],
+        "foundInAssets": [
+          "/api/fenix/missions",
+          "/api/fenix/jobs"
+        ],
+        "missingExpected": []
+      }
+    },
+    {
+      "name": "city",
+      "domain": "validation",
+      "found": true,
+      "buttons": [],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/v2/city/state"
+        ],
+        "foundInAssets": [],
+        "missingExpected": [
+          "/api/v2/city/state"
+        ]
+      }
+    },
+    {
+      "name": "agents",
+      "domain": "intelligence",
+      "found": true,
+      "buttons": [],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/agents/panel",
+          "/api/agents/swarm",
+          "/api/v2/agents/live-states"
+        ],
+        "foundInAssets": [
+          "/api/agents/panel",
+          "/api/agents/swarm"
+        ],
+        "missingExpected": [
+          "/api/v2/agents/live-states"
+        ]
+      }
+    },
+    {
+      "name": "ide",
+      "domain": "build",
+      "found": true,
+      "buttons": [
+        {
+          "label": "CHAT",
+          "attrs": "class=\"panel-tab active\""
+        },
+        {
+          "label": "AGENTS",
+          "attrs": "class=\"panel-tab\""
+        },
+        {
+          "label": "JOBS",
+          "attrs": "class=\"panel-tab\""
+        },
+        {
+          "label": "MEMÓRIA",
+          "attrs": "class=\"panel-tab\""
+        },
+        {
+          "label": "GRAFOS",
+          "attrs": "class=\"panel-tab\""
+        },
+        {
+          "label": "",
+          "attrs": "type=\"submit\" class=\"btn-send\""
+        },
+        {
+          "label": "",
+          "attrs": "class=\"toolbar-btn\""
+        },
+        {
+          "label": "",
+          "attrs": "class=\"toolbar-btn\""
+        },
+        {
+          "label": "Visual",
+          "attrs": "class=\"toolbar-btn active\""
+        },
+        {
+          "label": "Código",
+          "attrs": "class=\"toolbar-btn\""
+        },
+        {
+          "label": "Split",
+          "attrs": "class=\"toolbar-btn\""
+        },
+        {
+          "label": "Preview",
+          "attrs": "class=\"toolbar-btn\""
+        },
+        {
+          "label": "Salvar",
+          "attrs": "id=\"saveBtn\" class=\"btn-primary-sm\""
+        },
+        {
+          "label": "",
+          "attrs": "class=\"icon-btn-small\" id=\"fsLoadBtn\""
+        },
+        {
+          "label": "",
+          "attrs": "class=\"icon-btn-small\""
+        }
+      ],
+      "forms": [
+        "id=\"cmdForm\" class=\"chat-composer\""
+      ],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/dev/fs",
+          "/api/project-mirror",
+          "/api/v2/vision/inspect-element"
+        ],
+        "foundInAssets": [
+          "/api/project-mirror"
+        ],
+        "missingExpected": [
+          "/api/dev/fs",
+          "/api/v2/vision/inspect-element"
+        ]
+      }
+    },
+    {
+      "name": "operations",
+      "domain": "command",
+      "found": true,
+      "buttons": [
+        {
+          "label": "Decompor e criar",
+          "attrs": "type=\"submit\""
+        }
+      ],
+      "forms": [
+        "id=\"programForm\" class=\"toolbar-row\""
+      ],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/fenix/missions",
+          "/api/fenix/jobs",
+          "/api/v2/jarvis/jobs"
+        ],
+        "foundInAssets": [
+          "/api/fenix/missions",
+          "/api/fenix/jobs"
+        ],
+        "missingExpected": [
+          "/api/v2/jarvis/jobs"
+        ]
+      }
+    },
+    {
+      "name": "runtime",
+      "domain": "command",
+      "found": true,
+      "buttons": [
+        {
+          "label": "Executar tick",
+          "attrs": "id=\"tickBtn\""
+        }
+      ],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/health",
+          "/api/v2/city/state"
+        ],
+        "foundInAssets": [
+          "/health"
+        ],
+        "missingExpected": [
+          "/api/v2/city/state"
+        ]
+      }
+    },
+    {
+      "name": "project",
+      "domain": "build",
+      "found": true,
+      "buttons": [
+        {
+          "label": "Scan Real",
+          "attrs": "id=\"pmScanBtn\" class=\"btn-primary-sm\""
+        }
+      ],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/project-mirror",
+          "/api/v2/projects"
+        ],
+        "foundInAssets": [
+          "/api/project-mirror"
+        ],
+        "missingExpected": [
+          "/api/v2/projects"
+        ]
+      }
+    },
+    {
+      "name": "projects",
+      "domain": "build",
+      "found": true,
+      "buttons": [],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/v2/projects",
+          "/api/project-mirror/projects"
+        ],
+        "foundInAssets": [
+          "/api/project-mirror/projects"
+        ],
+        "missingExpected": [
+          "/api/v2/projects"
+        ]
+      }
+    },
+    {
+      "name": "memory",
+      "domain": "intelligence",
+      "found": true,
+      "buttons": [],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/fenix/memory/search",
+          "/api/v2/memory/development"
+        ],
+        "foundInAssets": [],
+        "missingExpected": [
+          "/api/fenix/memory/search",
+          "/api/v2/memory/development"
+        ]
+      }
+    },
+    {
+      "name": "knowledge",
+      "domain": "intelligence",
+      "found": true,
+      "buttons": [],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/knowledge-federation/publications"
+        ],
+        "foundInAssets": [
+          "/api/knowledge-federation/publications"
+        ],
+        "missingExpected": []
+      }
+    },
+    {
+      "name": "mcp",
+      "domain": "infrastructure",
+      "found": true,
+      "buttons": [
+        {
+          "label": "Verificar conexao",
+          "attrs": "id=\"checkApiBtn\""
+        }
+      ],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/connectors",
+          "/api/fenix/providers"
+        ],
+        "foundInAssets": [
+          "/api/connectors"
+        ],
+        "missingExpected": [
+          "/api/fenix/providers"
+        ]
+      }
+    },
+    {
+      "name": "browser",
+      "domain": "validation",
+      "found": true,
+      "buttons": [],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/v2/frontend-reality/screens",
+          "/api/v2/frontend-reality/audit"
+        ],
+        "foundInAssets": [],
+        "missingExpected": [
+          "/api/v2/frontend-reality/screens",
+          "/api/v2/frontend-reality/audit"
+        ]
+      }
+    },
+    {
+      "name": "observability",
+      "domain": "infrastructure",
+      "found": true,
+      "buttons": [
+        {
+          "label": "Coletar amostra",
+          "attrs": "id=\"sampleBtn\""
+        }
+      ],
+      "forms": [],
+      "links": [],
+      "endpoints": {
+        "declared": [],
+        "expected": [
+          "/api/observability/metrics",
+          "/api/observability/series"
+        ],
+        "foundInAssets": [
+          "/api/observability/metrics",
+          "/api/observability/series"
+        ],
+        "missingExpected": []
+      }
+    },
+    {
+      "name": "terminal",
+      "domain": "validation",
+      "found": true,
+      "buttons": [
+        {
+          "label": "Clonar e analisar",
+          "attrs": "type=\"submit\""
+        },
+        {
+          "label": "Salvar arquivo",
+          "attrs": "id=\"fileSaveBtn\""
+        },
+        {
+          "label": "Executar",
+          "attrs": "id=\"terminalBtn\""
+        },
+        {
+          "label": "Atualizar",
+          "attrs": "id=\"previewRefreshBtn\""
+        },
+        {
+          "label": "Gerar proposta",
+          "attrs": "id=\"aiEditBtn\""
+        },
+        {
+          "label": "Mover",
+          "attrs": "id=\"movePathBtn\""
+        },
+        {
+          "label": "Delegar",
+          "attrs": "id=\"devAgentBtn\""
+        }
+      ],
+      "forms": [
+        "id=\"gitCloneForm\" class=\"stack-form\""
+      ],
+      "links": [],
+      "endpoints": {
+        "declared": [
+          "/api/fenix/missions"
+        ],
+        "expected": [
+          "/api/dev/fs",
+          "/api/dev/terminal"
+        ],
+        "foundInAssets": [
+          "/api/dev/terminal"
+        ],
+        "missingExpected": [
+          "/api/dev/fs"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "total": 14,
+    "found": 14,
+    "buttons": 39,
+    "forms": 4,
+    "declaredEndpoints": 1,
+    "expectedEndpoints": 23,
+    "screensWithMissingExpectedEndpoints": [
+      "city",
+      "agents",
+      "ide",
+      "operations",
+      "runtime",
+      "project",
+      "projects",
+      "memory",
+      "mcp",
+      "browser",
+      "terminal"
+    ]
+  }
+}

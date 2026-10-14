@@ -5,7 +5,7 @@ const { AgentExecutionRuntime } = require('../src/agents/agent-execution-runtime
 test('agent runtime emits tool success only after the real workspace executor succeeds', async () => {
   const events = [];
   const runtime = new AgentExecutionRuntime({
-    aiGateway: { invoke: async () => ({ provider: 'test', model: 'test', text: JSON.stringify({ operations: [{ tool: 'filesystem.write', operation: 'write', path: 'proof.js' }] }) }) },
+    aiGateway: { invoke: async () => ({ provider: 'test', model: 'test', text: JSON.stringify({ operations: [{ tool: 'filesystem.write', operation: 'write', path: 'proof.js' }], tests: ['node --check proof.js'] }) }) },
     workspaceExecutor: { execute: async () => ({ status: 'SUCCEEDED', artifact: 'proof.js' }) },
     events: { publish: async (event) => events.push(event) },
   });
@@ -17,7 +17,7 @@ test('agent runtime emits tool success only after the real workspace executor su
 test('agent runtime emits a failed tool result and propagates executor errors', async () => {
   const events = [];
   const runtime = new AgentExecutionRuntime({
-    aiGateway: { invoke: async () => ({ provider: 'test', model: 'test', text: JSON.stringify({ operations: [{ tool: 'terminal.execute', operation: 'run', path: null }] }) }) },
+    aiGateway: { invoke: async () => ({ provider: 'test', model: 'test', text: JSON.stringify({ operations: [{ tool: 'terminal.execute', operation: 'run', path: null }], tests: ['node --check proof.js'] }) }) },
     workspaceExecutor: { execute: async () => { throw new Error('executor unavailable'); } },
     events: { publish: async (event) => events.push(event) },
   });

@@ -28,7 +28,8 @@ async function main() {
     const [job, history, city] = await Promise.all([jobResponse.json(), eventsResponse.json(), cityResponse.json()]);
     const eventTypes = (history.events || []).map((event) => event.type);
     const ok = jobResponse.ok && eventsResponse.ok && cityResponse.ok && job.status === 'SUCCEEDED' && eventTypes.includes('runtime.job.succeeded');
-    console.log(JSON.stringify({ ok, jobId, status: job.status, eventTypes, cityStatus: cityResponse.status, cityMetrics: city.metrics }));
+    console.log(JSON.stringify({ ok, jobId, status: job.status, eventTypes, cityStatus: cityResponse.status, cityMetrics: city.metrics,
+      machines: (city.machines || []).map((machine) => ({ id: machine.id, kind: machine.kind, status: machine.status, currentJob: machine.currentJob || null })) }));
     if (!ok) process.exitCode = 2;
   } finally {
     await fetch(`${base}/api/logout`, { method: 'POST', headers, signal: AbortSignal.timeout(5000) }).catch(() => {});

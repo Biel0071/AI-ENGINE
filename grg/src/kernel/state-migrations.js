@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 40;
+const CURRENT_SCHEMA_VERSION = 41;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -98,6 +98,7 @@ const COLLECTIONS_BY_VERSION = {
   38: ['projectKernelStates'],
   39: ['engineeringMemories', 'memoryReuseEvents'],
   40: ['systemAnalyses'],
+  41: ['worldAssets'],
 };
 
 function normalizeVersion(value) {
@@ -110,7 +111,7 @@ function normalizeVersion(value) {
 }
 
 function migrateState(input, now = () => new Date().toISOString()) {
-  const state = input && typeof input === 'object' ? structuredClone(input) : {};
+  const state = input && typeof input === 'object' ? JSON.parse(JSON.stringify(input)) : {};
   let version = normalizeVersion(state.schemaVersion);
   const applied = [];
 

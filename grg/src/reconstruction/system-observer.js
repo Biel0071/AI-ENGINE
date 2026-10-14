@@ -121,7 +121,7 @@ class SystemObserver {
       await page.waitForTimeout(options.settleMs || 800);
 
       const title = await page.title().catch(() => 'Untitled View');
-      const statusCode = response ? response.status() : 200;
+      const statusCode = response ? response.status() : null;
 
       // Real screenshot capture
       const screenshotFileName = `observation_${Date.now()}.png`;
@@ -146,7 +146,8 @@ class SystemObserver {
           seen.add(el);
 
           const rect = el.getBoundingClientRect();
-          const isVisible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden';
+          const style = window.getComputedStyle(el);
+          const isVisible = rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden';
           const text = (el.innerText || el.value || el.getAttribute('aria-label') || el.getAttribute('title') || '').trim().slice(0, 120);
 
           results.push({
@@ -159,6 +160,21 @@ class SystemObserver {
             name: el.getAttribute('name') || null,
             href: el.getAttribute('href') || null,
             type: el.getAttribute('type') || null,
+            evidenceLevel: 'BROWSER_RENDER',
+            computedStyle: {
+              color: style.color,
+              backgroundColor: style.backgroundColor,
+              borderColor: style.borderColor,
+              fontFamily: style.fontFamily,
+              fontSize: style.fontSize,
+              fontWeight: style.fontWeight,
+              lineHeight: style.lineHeight,
+              padding: style.padding,
+              margin: style.margin,
+              gap: style.gap,
+              borderRadius: style.borderRadius,
+              boxShadow: style.boxShadow
+            },
             isVisible,
             bounds: {
               x: Math.round(rect.x),
@@ -210,6 +226,7 @@ class SystemObserver {
 
         return results;
       }).catch(() => []);
+      const viewport = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight })).catch(() => null);
 
       // Discover internal routes from links
       elementsDiscovery.forEach(elem => {
@@ -232,8 +249,12 @@ class SystemObserver {
 
       return {
         ok: true,
+        observationStatus: 'BROWSER_OBSERVED',
+        targetOk: Number.isFinite(statusCode) && statusCode >= 200 && statusCode < 400,
+        interactiveVerification: false,
         targetUrl,
         title,
+        viewport,
         statusCode,
         driver: 'playwright',
         latencyMs: Date.now() - startTime,
@@ -285,17 +306,21 @@ class SystemObserver {
           const title = titleMatch ? titleMatch[1].trim() : 'Observed View';
           const elements = [];
           const seenLinks = new Set();
+          const staticEvidence = (element) => ({
+            ...element,
+            isVisible: null,
+            bounds: null,
+            evidenceLevel: 'HTML_SOURCE'
+          });
 
           // Regex-based element identification
           const buttonMatches = body.match(/<(button|input[^>]+type=["'](button|submit)["'])[^>]*>(.*?)<\/(button)?>/gi) || [];
           buttonMatches.forEach((m, idx) => {
-            elements.push({
+            elements.push(staticEvidence({
               category: 'BUTTON',
               tag: m.startsWith('<button') ? 'button' : 'input',
-              text: m.replace(/<[^>]+>/g, '').trim().slice(0, 80) || `Button ${idx + 1}`,
-              isVisible: true,
-              bounds: { x: 0, y: idx * 40, width: 120, height: 36 }
-            });
+              text: m.replace(/<[^>]+>/g, '').trim().slice(0, 80) || null
+            }));
           });
 
           const linkMatches = body.match(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi) || [];
@@ -311,42 +336,39 @@ class SystemObserver {
                   discoveredRoutes.add(u.pathname);
                 } catch (e) {}
               }
-              elements.push({
+              elements.push(staticEvidence({
                 category: 'LINK',
                 tag: 'a',
                 text: textMatch.slice(0, 80) || href,
-                href,
-                isVisible: true,
-                bounds: { x: 0, y: 0, width: 80, height: 20 }
-              });
+                href
+              }));
             }
           });
 
           const inputMatches = body.match(/<input[^>]+(type=["'](text|email|password|number|search)["'][^>]*)>/gi) || [];
-          inputMatches.forEach((m, idx) => {
-            elements.push({
+          inputMatches.forEach((m) => {
+            elements.push(staticEvidence({
               category: 'INPUT',
               tag: 'input',
-              text: `Input ${idx + 1}`,
-              isVisible: true,
-              bounds: { x: 0, y: idx * 50, width: 220, height: 38 }
-            });
+              text: null
+            }));
           });
 
           const formMatches = body.match(/<form[^>]*>/gi) || [];
           formMatches.forEach(() => {
-            elements.push({ category: 'FORM', tag: 'form', text: 'Form', isVisible: true, bounds: { x: 0, y: 0, width: 400, height: 200 } });
+            elements.push(staticEvidence({ category: 'FORM', tag: 'form', text: null }));
           });
 
           const cardMatches = body.match(/class=["'][^"']*(card|box|panel)[^"']*["']/gi) || [];
-          cardMatches.forEach((m, idx) => {
-            elements.push({ category: 'CARD', tag: 'div', text: `Card ${idx + 1}`, isVisible: true, bounds: { x: 0, y: idx * 100, width: 300, height: 180 } });
+          cardMatches.forEach((m) => {
+            const classMatch = m.match(/class=["']([^"']+)["']/i);
+            elements.push(staticEvidence({ category: 'CARD', tag: 'div', text: classMatch?.[1] || null }));
           });
 
           const headerMatches = body.match(/<(header|nav)[^>]*>/gi) || [];
           headerMatches.forEach((m) => {
             const cat = m.startsWith('<header') ? 'HEADER' : 'NAVIGATION';
-            elements.push({ category: cat, tag: cat.toLowerCase(), text: cat, isVisible: true, bounds: { x: 0, y: 0, width: 1440, height: 60 } });
+            elements.push(staticEvidence({ category: cat, tag: cat.toLowerCase(), text: null }));
           });
 
           const elementsSummary = {};
@@ -356,8 +378,12 @@ class SystemObserver {
 
           resolve({
             ok: res.statusCode >= 200 && res.statusCode < 400,
+            observationStatus: 'STATIC_HTML_ONLY',
+            targetOk: res.statusCode >= 200 && res.statusCode < 400,
+            interactiveVerification: false,
             targetUrl,
             title,
+            viewport: null,
             statusCode: res.statusCode,
             driver: 'http-probe',
             latencyMs: Date.now() - startTime,
@@ -379,9 +405,13 @@ class SystemObserver {
       req.on('error', (err) => {
         resolve({
           ok: false,
+          observationStatus: 'UNAVAILABLE',
+          targetOk: false,
+          interactiveVerification: false,
           targetUrl,
           title: 'Error',
-          statusCode: 500,
+          viewport: null,
+          statusCode: null,
           driver: 'http-probe',
           error: err.message,
           latencyMs: Date.now() - startTime,

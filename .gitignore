@@ -15,5 +15,6 @@ crm/backend/crm/sessions/
 *.zip
 node.exe
 .data/
+.secrets/
 grg/memory/.fenix-agent-identity.json
 grg/dist/

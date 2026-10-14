@@ -10,14 +10,17 @@ const path = require('node:path');
 const NODE_TYPES = Object.freeze([
   'PROJECT', 'COMPANY', 'REPOSITORY', 'BRANCH', 'COMMIT',
   'PAGE', 'COMPONENT', 'API', 'SERVICE', 'DATABASE',
-  'AGENT', 'TOOL', 'MODEL', 'TASK', 'JOB',
-  'TEST', 'SCREENSHOT', 'ERROR', 'FIX', 'DECISION', 'KNOWLEDGE', 'PATTERN'
+  'AGENT', 'TOOL', 'MODEL', 'TASK', 'JOB', 'WORLD', 'ORGANIZATION', 'BUILDING',
+  'TEST', 'DEPENDENCY', 'SCREENSHOT', 'ERROR', 'FIX', 'DECISION', 'KNOWLEDGE', 'PATTERN'
 ]);
 
 const EDGE_TYPES = Object.freeze([
   'HAS_PAGE', 'USES_API', 'HAS_COMPONENT', 'USES_SERVICE', 'HAS_COMMIT',
   'USED_BY', 'FIXED_BY', 'VALIDATED_BY', 'PRODUCED', 'EXECUTED_BY',
-  'RELATED_TO', 'APPLIES_TO'
+  'RELATED_TO', 'APPLIES_TO', 'CONTAINS', 'PART_OF', 'OWNS', 'LOCATED_IN',
+  'WORKS_IN', 'MANAGES', 'DEPENDS_ON', 'PRODUCES', 'CONSUMES', 'EXECUTES',
+  'COMMUNICATES_WITH', 'CONNECTED_TO', 'SERVES', 'HAS_WORLD', 'BELONGS_TO',
+  'HAS_TEST'
 ]);
 
 class GraphBrain {
@@ -54,8 +57,10 @@ class GraphBrain {
         edges: this.edges,
       };
       fs.writeFileSync(this.storagePath, JSON.stringify(data, null, 2), 'utf8');
+      return true;
     } catch (e) {
       // safe fallback
+      return false;
     }
   }
 

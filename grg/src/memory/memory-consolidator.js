@@ -1,4 +1,4 @@
-﻿const { MemoryGateway } = require('./memory-fabric');
+const { MemoryGateway } = require('./memory-fabric');
 
 class MemoryConsolidator {
   constructor(fabric, eventBus) {
@@ -19,6 +19,13 @@ class MemoryConsolidator {
       clearInterval(this.interval);
       this.interval = null;
     }
+  }
+
+  status() {
+    return {
+      state: this.interval ? 'ACTIVE' : 'STOPPED',
+      interval: Boolean(this.interval)
+    };
   }
 
   async consolidate() {

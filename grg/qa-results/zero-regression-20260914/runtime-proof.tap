@@ -1,0 +1,44 @@
+TAP version 13
+# [Kernel] UNIVERSAL ACTIVATION MODE (v1.0) Initiated...
+# [Kernel] PHASE 1: DISCOVERY
+# [FenixWorker] Redis host: localhost port: 6379
+# [Kernel] PHASE 2: UNDERSTANDING (Classification Complete)
+# [Kernel] PHASE 3: RUNTIME REGISTRATION (Registries Synced)
+# [Kernel] PHASE 4: DEPENDENCY GRAPH (Built)
+# [Kernel] PHASE 5: ACTIVATION
+# [Kernel] PHASE 6: KNOWLEDGE INGESTION (Semantic Memory Loaded)
+# [Kernel] PHASE 7: LIVE MANIFEST (WebSocket Hooked)
+# [Kernel] PHASE 8: CONTINUOUS WATCHERS (Active)
+# [Kernel] PHASE 9: CAPABILITY ACTIVATION (Scored)
+# [Kernel] PHASE 10: MISSION MODE (Routing Engine Ready)
+# [Kernel] PHASE 11: SELF ORGANIZATION
+# [Kernel] Discovered 1 internal optimization missions.
+# [Kernel] PHASE 12: DIGITAL TWIN (AI City Synced)
+# [Kernel] ACTIVATION COMPLETE. Operating System is ACTIVE = TRUE.
+# [StorageManager] No DATABASE_URL. Using InMemory driver.
+# [StorageManager] No REDIS_URL. Using MemoryCache driver.
+# [StorageManager] No QDRANT_URL. Using LocalVector driver.
+# [StorageManager] Boot complete — relational:in-memory cache:memory vector:local
+# [MemoryConsolidator] Memory loop activated.
+# [Server] Bypassing legacy BootManager; using FÊNIX_KERNEL.
+# [StartupRecovery] Recovered 0 pending missions.
+# [DEBUG ProductRoutes Entry] GET /api/v2/queue
+# [DEBUG ProductRoutes Entry] GET /api/jobs
+# [DEBUG ProductRoutes Entry] GET /api/v2/queue
+# [DEBUG ProductRoutes Entry] GET /api/v2/public/queue
+# [DEBUG ProductRoutes Entry] GET /api/v2/queue
+# Subtest: queue aliases expose only persisted jobs; v2 and WebSocket require the real session
+ok 1 - queue aliases expose only persisted jobs; v2 and WebSocket require the real session
+  ---
+  duration_ms: 5078.6728
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6409.6372

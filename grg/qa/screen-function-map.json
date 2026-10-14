@@ -1,0 +1,315 @@
+{
+  "generatedAt": "2026-09-08T14:56:44.227Z",
+  "source": {
+    "manifest": "qa\\frontend-screen-manifest.json",
+    "html": "public\\index.html",
+    "assetDir": "public"
+  },
+  "domains": {
+    "command": [
+      "command",
+      "city",
+      "agents",
+      "operations"
+    ],
+    "build": [
+      "projects",
+      "ide",
+      "terminal"
+    ],
+    "intelligence": [
+      "memory",
+      "knowledge",
+      "mcp"
+    ],
+    "infrastructure": [
+      "runtime",
+      "observability"
+    ],
+    "validation": [
+      "project",
+      "browser"
+    ]
+  },
+  "screens": [
+    {
+      "name": "command",
+      "domain": "command",
+      "purpose": "prompt e entrada de missões",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/fenix/missions",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/fenix/jobs",
+          "backend": true,
+          "asset": true
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "city",
+      "domain": "command",
+      "purpose": "runtime visual, workers e métricas",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/v2/city/state",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "agents",
+      "domain": "command",
+      "purpose": "agentes e subagentes",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/agents/panel",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/agents/swarm",
+          "backend": true,
+          "asset": false
+        },
+        {
+          "endpoint": "/api/v2/agents/live-states",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "ide",
+      "domain": "build",
+      "purpose": "chat, código, preview e edição visual",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/dev/fs",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/project-mirror",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/v2/vision/inspect-element",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "operations",
+      "domain": "command",
+      "purpose": "missões, jobs e controle operacional",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/fenix/missions",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/fenix/jobs",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/v2/jarvis/jobs",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "runtime",
+      "domain": "infrastructure",
+      "purpose": "health, serviços e workers",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/health",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/v2/city/state",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "project",
+      "domain": "validation",
+      "purpose": "Project Mirror e arquitetura do projeto",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/project-mirror",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/v2/projects",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "projects",
+      "domain": "build",
+      "purpose": "projetos acoplados e grafo",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/v2/projects",
+          "backend": true,
+          "asset": false
+        },
+        {
+          "endpoint": "/api/project-mirror/projects",
+          "backend": true,
+          "asset": true
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "memory",
+      "domain": "intelligence",
+      "purpose": "memória de engenharia e visual",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/fenix/memory/search",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/v2/memory/development",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "knowledge",
+      "domain": "intelligence",
+      "purpose": "conhecimento e grafo",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/knowledge-federation/publications",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "mcp",
+      "domain": "intelligence",
+      "purpose": "conectores e providers",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/connectors",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/fenix/providers",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "browser",
+      "domain": "validation",
+      "purpose": "QA visual e auditoria de interação",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/v2/frontend-reality/screens",
+          "backend": true,
+          "asset": false
+        },
+        {
+          "endpoint": "/api/v2/frontend-reality/audit",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "observability",
+      "domain": "infrastructure",
+      "purpose": "métricas, séries e evidências",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/observability/metrics",
+          "backend": true,
+          "asset": false
+        },
+        {
+          "endpoint": "/api/observability/series",
+          "backend": true,
+          "asset": false
+        }
+      ],
+      "status": "backend-ready"
+    },
+    {
+      "name": "terminal",
+      "domain": "build",
+      "purpose": "filesystem, terminal isolado e preview",
+      "viewPresentInHtml": true,
+      "endpoints": [
+        {
+          "endpoint": "/api/dev/fs",
+          "backend": true,
+          "asset": true
+        },
+        {
+          "endpoint": "/api/dev/terminal",
+          "backend": true,
+          "asset": true
+        }
+      ],
+      "status": "backend-ready"
+    }
+  ],
+  "summary": {
+    "screens": 14,
+    "backendReady": 14,
+    "needsReview": 0,
+    "endpointContracts": 29,
+    "backendContracts": 29,
+    "assetReferences": 14
+  }
+}

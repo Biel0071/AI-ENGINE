@@ -113,6 +113,39 @@ test('BullMQ runtime parses TLS credentials and submits idempotent jobs', async 
   assert.equal(workers.workers[0].workerId, 'worker-1');
 });
 
+test('BullMQ runtime maps unsupported idempotency keys to stable valid custom ids', async () => {
+  const { Job } = require('bullmq');
+  const added = [];
+  class FakeQueue {
+    constructor() {}
+    async add(name, payload, options) {
+      const job = Object.create(Job.prototype);
+      job.opts = options;
+      job.name = name;
+      job.validateOptions({ data: payload });
+      added.push(options.jobId);
+      return { id: options.jobId };
+    }
+  }
+  const runtime = new BullMQRuntime({ connection: {}, QueueClass: FakeQueue, WorkerClass: class {} });
+  const key = 'mission.created:123e4567-e89b-12d3-a456-426614174000';
+
+  await runtime.enqueue('software-builds', 'build', {}, { idempotencyKey: key });
+  await runtime.enqueue('software-builds', 'build', {}, { idempotencyKey: key });
+  await runtime.enqueue('software-builds', 'build', {}, { idempotencyKey: 'legacy:repeat:job-id' });
+
+  assert.equal(added.length, 3);
+  assert.equal(added[0], added[1]);
+  assert.notEqual(added[0], key);
+  assert.equal(added[2], 'legacy:repeat:job-id');
+  assert.doesNotThrow(() => {
+    const job = Object.create(Job.prototype);
+    job.opts = { jobId: added[0] };
+    job.name = 'build';
+    job.validateOptions({ data: {} });
+  });
+});
+
 test('S3 object adapter stores tenant-prefixed objects and verifies checksums', async () => {
   class Command { constructor(input) { this.input = input; } }
   const objects = new Map();

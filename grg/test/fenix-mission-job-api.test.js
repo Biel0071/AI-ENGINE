@@ -8,8 +8,54 @@ const http = require('node:http');
 const WebSocket = require('ws');
 const { start } = require('../src/server');
 const { createApp } = require('../src/app');
+const { handleUniversalSystemRoutes } = require('../src/api/universal-system-routes');
+const { handleUniversalJobRoutes } = require('../src/api/universal-job-routes');
+const { globalJobQueueManager } = require('../src/execution/job-queue-manager');
 
 const admin = { tenantId: 'fenix-test', userId: 'fenix-test-admin', password: crypto.randomBytes(24).toString('base64url') };
+
+test('versioned canonical job paths are not consumed by legacy conversation routes', async () => {
+  const originalCreateJob = globalJobQueueManager.createJob;
+  let legacyResponseSent = false;
+  globalJobQueueManager.createJob = () => ({ id: 'legacy-job' });
+  try {
+    const stored = new Map();
+    const app = { jobs: {
+      submit: async (tenantId, actorId, input) => {
+        const job = { id: 'canonical-job', jobId: 'canonical-job', tenantId, createdBy: actorId, type: input.type, status: 'QUEUED' };
+        stored.set(job.id, job);
+        return job;
+      },
+      get: async (_tenantId, _actorId, id) => stored.get(id),
+      cancel: async (_tenantId, _actorId, id) => {
+        const job = stored.get(id); job.status = 'CANCELLED'; return job;
+      },
+    } };
+    let response;
+    const sendJson = (_res, status, body) => { response = { status, body }; };
+    const handled = await handleUniversalSystemRoutes(
+      { method: 'POST' }, {}, new URL('http://localhost/api/v2/jobs'),
+      (...args) => { legacyResponseSent = true; sendJson(...args); }, async () => ({ type: 'discovery.scan' }),
+      { tenantId: 'grg', actorId: 'grg-admin' }, {}
+    );
+    assert.equal(handled, false);
+    assert.equal(legacyResponseSent, false);
+
+    const post = { method: 'POST' }; const postUrl = new URL('http://localhost/api/v2/jobs');
+    assert.equal(await handleUniversalJobRoutes(post, {}, postUrl, app, sendJson, async () => ({ type: 'discovery.scan' }), { tenantId: 'grg', actorId: 'grg-admin' }), true);
+    assert.equal(response.status, 202); assert.equal(response.body.jobId, 'canonical-job');
+
+    const getUrl = new URL('http://localhost/api/v2/jobs/canonical-job');
+    assert.equal(await handleUniversalJobRoutes({ method: 'GET' }, {}, getUrl, app, sendJson, async () => ({}), { tenantId: 'grg', actorId: 'grg-admin' }), true);
+    assert.equal(response.body.status, 'QUEUED');
+
+    const cancelUrl = new URL('http://localhost/api/v2/jobs/canonical-job/cancel');
+    assert.equal(await handleUniversalJobRoutes({ method: 'POST' }, {}, cancelUrl, app, sendJson, async () => ({}), { tenantId: 'grg', actorId: 'grg-admin' }), true);
+    assert.equal(response.status, 202); assert.equal(response.body.status, 'CANCELLED');
+  } finally {
+    globalJobQueueManager.createJob = originalCreateJob;
+  }
+});
 
 test('FENIX mission/job HTTP contract persists DAG, events, checkpoints and controls', async () => {
   const dataFile = path.join(os.tmpdir(), `fenix-mission-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
@@ -57,24 +103,38 @@ test('FENIX mission/job HTTP contract persists DAG, events, checkpoints and cont
   }
 });
 
-test('FENIX SSE stream sends the connected event from a started server', async () => {
+test('FENIX SSE stream delivers canonical runtime events to browser message listeners', async () => {
   const dataFile = path.join(os.tmpdir(), `fenix-sse-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
   const server = await start(0, { dataFile, llm: false, bootstrapAdmin: { ...admin, tenantName: 'FENIX SSE', name: 'FENIX SSE', role: 'master_admin' } });
   try {
     const port = server.address().port;
     const login = await fetch(`http://127.0.0.1:${port}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(admin) }).then((r) => r.json());
     assert.ok(login.token);
-    const event = await new Promise((resolve, reject) => {
-      const req = http.request(`http://127.0.0.1:${port}/api/v2/events/stream`, { method: 'GET', headers: { authorization: `Bearer ${login.token}` } }, (res) => {
+    const inspector = await fetch(`http://127.0.0.1:${port}/api/city/npc/agent-architect/inspect`, { headers: { authorization: `Bearer ${login.token}` } });
+    assert.equal(inspector.status, 200);
+    assert.equal((await inspector.json()).success, true);
+    const stream = await new Promise((resolve, reject) => {
+      const req = http.request(`http://127.0.0.1:${port}/api/city/live-stream`, { method: 'GET', headers: { authorization: `Bearer ${login.token}` } }, (res) => {
         assert.equal(res.statusCode, 200);
         assert.match(String(res.headers['content-type']), /text\/event-stream/);
         let body = '';
-        const timer = setTimeout(() => { req.destroy(); reject(new Error('SSE connected event timeout')); }, 3000);
-        res.on('data', (chunk) => { body += chunk.toString(); if (body.includes('event: connected')) { clearTimeout(timer); req.destroy(); resolve(body); } });
+        let emitted = false;
+        const timer = setTimeout(() => { req.destroy(); reject(new Error('SSE runtime event timeout')); }, 3000);
+        res.on('data', (chunk) => {
+          body += chunk.toString();
+          if (!emitted && body.includes('data: {"type":"connected"')) {
+            emitted = true;
+            void server.app.bus.emit('mission.step.started', { type: 'mission.step.started', tenantId: admin.tenantId, data: { missionId: 'mission-proof', stepKey: 'discover', jobId: 'job-proof' } });
+          }
+          if ((body.match(/data: \{"event":"mission\.step\.started"/g) || []).length >= 2) {
+            clearTimeout(timer); req.destroy(); resolve(body);
+          }
+        });
       });
       req.on('error', (error) => { if (error.code !== 'ECONNRESET') reject(error); }); req.end();
     });
-    assert.match(event, /data: \{"status":"CONNECTED"/);
+    assert.match(stream, /event: connected\ndata: \{"type":"connected","status":"CONNECTED"/);
+    assert.match(stream, /event: mission\.step\.started\ndata: \{"event":"mission\.step\.started","type":"mission\.step\.started"[\s\S]*?\n\ndata: \{"event":"mission\.step\.started","type":"mission\.step\.started"/);
   } finally { await new Promise((resolve) => server.close(resolve)); try { fs.unlinkSync(dataFile); } catch {} }
 });
 
@@ -105,8 +165,8 @@ test('FENIX WebSocket stream authenticates and forwards a real runtime event', a
     });
     await server.app.bus.emit('test.runtime.event', { agentId: 'Developer', source: 'contract-test' });
     const event = await eventPromise;
-    assert.equal(event.payload.type, 'test.runtime.event');
-    assert.equal(event.payload.payload.agentId, 'Developer');
+    assert.equal(event.type, 'test.runtime.event');
+    assert.equal(event.payload.agentId, 'Developer');
     assert.ok(messages.length >= 2);
   } finally {
     if (ws && ws.readyState !== WebSocket.CLOSED) ws.terminate();

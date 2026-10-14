@@ -15,6 +15,61 @@ const { globalGraphBrain } = require('../brain/graph-brain');
 const { globalBrowserAgent, BrowserSession } = require('../browser/browser-agent');
 const { globalVisualTestEngine } = require('../qa/visual-test-engine');
 const { getFullStatus } = require('./runtime-full-status');
+const networkSamples = new WeakMap();
+
+function readLinuxNetworkCounters() {
+  if (process.platform !== 'linux') return null;
+  try {
+    const fs = require('node:fs');
+    const lines = fs.readFileSync('/proc/net/dev', 'utf8').split(/\r?\n/).slice(2);
+    let receivedBytes = 0;
+    let transmittedBytes = 0;
+    let interfaceCount = 0;
+    for (const line of lines) {
+      const separator = line.indexOf(':');
+      if (separator < 0) continue;
+      const name = line.slice(0, separator).trim();
+      if (!name || name === 'lo') continue;
+      const counters = line.slice(separator + 1).trim().split(/\s+/).map(Number);
+      if (counters.length < 9 || !Number.isFinite(counters[0]) || !Number.isFinite(counters[8])) continue;
+      receivedBytes += counters[0];
+      transmittedBytes += counters[8];
+      interfaceCount += 1;
+    }
+    return { receivedBytes, transmittedBytes, interfaceCount };
+  } catch {
+    return null;
+  }
+}
+
+function sampleNetworkTelemetry(app, now = Date.now()) {
+  const counters = readLinuxNetworkCounters();
+  if (!counters || !app || typeof app !== 'object') {
+    return { status: 'UNAVAILABLE', interfaceCount: null, receiveBytesPerSecond: null, transmitBytesPerSecond: null, throughputBps: null };
+  }
+
+  const previous = networkSamples.get(app);
+  networkSamples.set(app, { ...counters, at: now });
+  if (!previous || now <= previous.at) {
+    return { status: 'SAMPLING', interfaceCount: counters.interfaceCount, receiveBytesPerSecond: null, transmitBytesPerSecond: null, throughputBps: null };
+  }
+
+  const elapsedSeconds = (now - previous.at) / 1000;
+  const receivedDelta = counters.receivedBytes - previous.receivedBytes;
+  const transmittedDelta = counters.transmittedBytes - previous.transmittedBytes;
+  if (receivedDelta < 0 || transmittedDelta < 0) {
+    return { status: 'SAMPLING', interfaceCount: counters.interfaceCount, receiveBytesPerSecond: null, transmitBytesPerSecond: null, throughputBps: null };
+  }
+  const receiveBytesPerSecond = Math.round(receivedDelta / elapsedSeconds);
+  const transmitBytesPerSecond = Math.round(transmittedDelta / elapsedSeconds);
+  return {
+    status: 'MEASURED',
+    interfaceCount: counters.interfaceCount,
+    receiveBytesPerSecond,
+    transmitBytesPerSecond,
+    throughputBps: (receiveBytesPerSecond + transmitBytesPerSecond) * 8,
+  };
+}
 const {
   globalSystemObserver,
   globalVideoSystemDecoder,
@@ -347,6 +402,19 @@ const CANONICAL_PATTERNS = [
 async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, identity, app) {
   const pathname = url.pathname;
   const method = req.method;
+  const graphBrain = app?.graphBrain || globalGraphBrain;
+  const systemTwinEngine = app?.systemTwinEngine || globalSystemTwinEngine;
+  const getTwin = (id) => {
+    const twin = systemTwinEngine.getTwin(id);
+    return twin && (!twin.tenantId || twin.tenantId === identity?.tenantId) ? twin : null;
+  };
+  const getTwins = () => systemTwinEngine.getAllTwins().filter((twin) => !twin.tenantId || twin.tenantId === identity?.tenantId);
+
+  if (pathname.startsWith('/api/v2/provider-platform/')) {
+    const { handleProviderPlatformRoutes } = require('./provider-platform-routes');
+    const handled = await handleProviderPlatformRoutes(req, res, url, sendJson, readJson, identity, app);
+    if (handled) return true;
+  }
 
   // ═════════════════════════════════════════════════════════════════════════
   // PROJECTS REGISTRY ENDPOINTS (/api/v2/projects-registry)
@@ -429,7 +497,9 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     const matchProjTwin = subPath.match(/^project\/([^/]+)\/twin$/);
     if (method === 'GET' && matchProjTwin) {
       try {
-        const twin = globalSystemTwinEngine.getTwin(`twin_${matchProjTwin[1]}`) || globalRealityOperatorKernel.getProject(matchProjTwin[1]);
+        const twin = getTwins().find((item) => item.projectId === matchProjTwin[1])
+          || getTwin(`twin_${matchProjTwin[1]}`)
+          || globalRealityOperatorKernel.getProject(matchProjTwin[1]);
         return sendJson(res, 200, { ok: true, projectId: matchProjTwin[1], twin });
       } catch(e) {
         return sendJson(res, 500, { ok: false, error: e.message });
@@ -505,8 +575,8 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     // 13. Global Reality Graph Stats
     if (method === 'GET' && subPath === 'graph') {
       try {
-        const stats = globalGraphBrain.getStats();
-        return sendJson(res, 200, { ok: true, stats, nodesCount: globalGraphBrain.nodes.size, edgesCount: globalGraphBrain.edges.length });
+        const stats = graphBrain.getStats();
+        return sendJson(res, 200, { ok: true, stats, nodesCount: graphBrain.nodes.size, edgesCount: graphBrain.edges.length });
       } catch(e) {
         return sendJson(res, 500, { ok: false, error: e.message });
       }
@@ -777,247 +847,89 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     }
   }
 
-  // FÊNIX OS: Real System Health & Host Telemetry
-  if (method === 'GET' && (pathname === '/api/v2/system/health' || pathname === '/api/system/health')) {
-    const os = require('os');
-    let runningJobs = 0;
-    let waitingJobs = 0;
-    try {
-      const { globalJobQueueManager } = require('../execution/job-queue-manager');
-      if (globalJobQueueManager) {
-        runningJobs = globalJobQueueManager.listJobs({ status: 'RUNNING' }).length;
-        waitingJobs = globalJobQueueManager.listJobs({ status: 'WAITING' }).length;
-      }
-    } catch (_) {}
-
-    const cpus = os.cpus() || [];
-    const load = os.loadavg() || [0, 0, 0];
-    const mem = process.memoryUsage();
-    const totalMem = os.totalmem();
-    const freeMem = os.freemem();
-    const usedMem = totalMem - freeMem;
-    const cpuPct = cpus.length ? Math.min(100, Math.round((load[0] / cpus.length) * 100)) : 12;
-
-    return sendJson(res, 200, {
-      ok: true,
-      status: 'ONLINE',
-      cpu: cpuPct / 100,
-      system: {
-        cpu: cpuPct,
-        ram: Math.round(mem.rss / (1024 * 1024)),
-        totalRamMb: Math.round(totalMem / (1024 * 1024)),
-        usedRamMb: Math.round(usedMem / (1024 * 1024))
-      },
-      memory: {
-        usedMb: Math.round(mem.rss / (1024 * 1024)),
-        heapUsedMb: Math.round(mem.heapUsed / (1024 * 1024)),
-        totalMb: Math.round(totalMem / (1024 * 1024))
-      },
-      uptime: Math.round(process.uptime()),
-      activeJobs: runningJobs + waitingJobs,
-      runningJobs,
-      waitingJobs,
-      vps: { host: '209.50.241.22', backendPort: 4410, frontendPort: 3000 },
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // FÊNIX OS: Real API Platform Integration (VPS 209.50.241.22:3001)
-  if (method === 'GET' && pathname === '/api/v2/api-platform/health') {
-    const http = require('node:http');
-    const apUrl = process.env.GRG_AIPLATFORM_URL || 'http://127.0.0.1:3001';
-    let targetHost = '127.0.0.1';
-    let targetPort = 3001;
-    try {
-      const u = new URL(apUrl);
-      targetHost = u.hostname || '127.0.0.1';
-      targetPort = Number(u.port) || 3001;
-    } catch (_) {}
-
-    return new Promise((resolve) => {
-      const vpsReq = http.get({
-        hostname: targetHost,
-        port: targetPort,
-        path: '/health',
-        timeout: 3000
-      }, (vpsRes) => {
-        let raw = '';
-        vpsRes.on('data', chunk => raw += chunk);
-        vpsRes.on('end', async () => {
-          try {
-            const data = JSON.parse(raw);
-            resolve(sendJson(res, 200, { ok: true, success: true, status: 'ONLINE', online: true, latency: 8, uptime: Math.round(process.uptime()), data, source: `${targetHost}:${targetPort}` }));
-          } catch (_) {
-            resolve(sendJson(res, 200, { ok: true, success: true, status: 'ONLINE', online: true, latency: 12, uptime: Math.round(process.uptime()), raw }));
-          }
-        });
-      });
-      vpsReq.on('error', async (err) => {
-        let providers = [];
-        try {
-          if (app.aiGateway && typeof app.aiGateway.providerHealth === 'function') {
-            const pHealth = await app.aiGateway.providerHealth();
-            providers = Object.entries(pHealth).map(([p, v]) => ({ provider: p, status: v.ok ? 'READY' : 'UNAVAILABLE', model: v.model, latency: v.latency }));
-          }
-        } catch (_) {}
-        resolve(sendJson(res, 200, {
-          ok: false,
-          success: false,
-          status: 'OFFLINE',
-          online: false,
-          service: 'fastify-api-platform',
-          port: targetPort,
-          error: `API Platform port ${targetPort} unreachable: ${err.message}`,
-          availableProviders: providers.length ? providers : [
-            { provider: 'ollama', status: 'READY', model: 'qwen2.5:3b', note: 'Coupled Local Runtime' },
-            { provider: 'anthropic', status: process.env.ANTHROPIC_API_KEY ? 'CONFIGURED' : 'NEEDS_KEY' },
-            { provider: 'openai', status: process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NEEDS_KEY' }
-          ],
-          timestamp: new Date().toISOString()
-        }));
-      });
-      vpsReq.on('timeout', async () => {
-        vpsReq.destroy();
-        let providers = [];
-        try {
-          if (app.aiGateway && typeof app.aiGateway.providerHealth === 'function') {
-            const pHealth = await app.aiGateway.providerHealth();
-            providers = Object.entries(pHealth).map(([p, v]) => ({ provider: p, status: v.ok ? 'READY' : 'UNAVAILABLE', model: v.model, latency: v.latency }));
-          }
-        } catch (_) {}
-        resolve(sendJson(res, 200, {
-          ok: false,
-          success: false,
-          status: 'TIMEOUT',
-          online: false,
-          service: 'fastify-api-platform',
-          port: targetPort,
-          error: `API Platform port ${targetPort} timed out after 3000ms`,
-          availableProviders: providers.length ? providers : [
-            { provider: 'ollama', status: 'READY', model: 'qwen2.5:3b', note: 'Coupled Local Runtime' }
-          ],
-          timestamp: new Date().toISOString()
-        }));
-      });
-    });
-  }
-
   if (method === 'POST' && pathname === '/api/v2/api-platform/test-chat') {
+    await app.controlPlane.authorize(identity.tenantId, identity.actorId, 'ai:invoke');
     const apiKey = resolveAIProviderKey();
     if (!apiKey) return sendJson(res, 503, { ok: false, error: 'API Platform key is not configured' });
-    const http = require('node:http');
+    const apiBase = process.env.GRG_AIPLATFORM_URL || process.env.API_PLATFORM_URL;
+    const model = process.env.GRG_AIPLATFORM_MODEL || process.env.FENIX_AI_DEFAULT_MODEL;
+    if (!apiBase || !model) return sendJson(res, 503, { ok: false, error: 'API Platform URL and model must be configured on the server' });
     const body = await readJson(req).catch(() => ({}));
-    const message = body.message || 'Fênix OS Live Test';
+    const message = typeof body.message === 'string' ? body.message.trim() : '';
+    if (!message || message.length > 4000) return sendJson(res, 400, { ok: false, error: 'message must contain between 1 and 4000 characters' });
+    let endpoint;
+    try {
+      endpoint = new URL('/v1/chat/completions', apiBase);
+      if (!['http:', 'https:'].includes(endpoint.protocol)) throw new Error('unsupported protocol');
+    } catch (_) {
+      return sendJson(res, 503, { ok: false, error: 'API Platform URL is invalid' });
+    }
     const payload = JSON.stringify({
-      model: 'qwen2.5:3b',
+      model,
       messages: [{ role: 'user', content: message }],
       max_tokens: 40
     });
-    return new Promise((resolve) => {
-      const vpsReq = http.request({
-        hostname: '209.50.241.22',
-        port: 3001,
-        path: '/v1/chat/completions',
+    try {
+      const platformResponse = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'Content-Length': Buffer.byteLength(payload)
+          'Content-Length': Buffer.byteLength(payload),
         },
-        timeout: 60000
-      }, (vpsRes) => {
-        let raw = '';
-        vpsRes.on('data', chunk => raw += chunk);
-        vpsRes.on('end', () => {
-          try {
-            const data = JSON.parse(raw);
-            resolve(sendJson(res, 200, { ok: vpsRes.statusCode === 200, status: vpsRes.statusCode, data }));
-          } catch (_) {
-            resolve(sendJson(res, 200, { ok: false, status: vpsRes.statusCode, raw }));
-          }
-        });
+        body: payload,
+        signal: AbortSignal.timeout(60_000),
       });
-      vpsReq.on('error', (err) => {
-        resolve(sendJson(res, 502, { ok: false, error: err.message }));
-      });
-      vpsReq.on('timeout', () => {
-        vpsReq.destroy();
-        resolve(sendJson(res, 504, { ok: false, error: 'VPS Gateway Timeout' }));
-      });
-      vpsReq.write(payload);
-      vpsReq.end();
-    });
+      const data = await platformResponse.json().catch(() => null);
+      if (!platformResponse.ok) return sendJson(res, 502, { ok: false, status: platformResponse.status, error: 'API Platform rejected the test request' });
+      return sendJson(res, 200, { ok: true, status: platformResponse.status, data });
+    } catch (error) {
+      const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+      return sendJson(res, timedOut ? 504 : 502, { ok: false, error: timedOut ? 'API Platform request timed out' : 'API Platform is unreachable' });
+    }
   }
 
   if (method === 'POST' && pathname === '/api/v2/api-platform/deploy') {
-    try {
-      const { execSync } = require('node:child_process');
-      const key = 'C:/Users/Dell/.ssh/grg_fenix_vps';
-      const cmd = 'ssh -i ' + key + ' root@209.50.241.22 "docker restart api-platform-api-1"';
-      const out = execSync(cmd, { encoding: 'utf8', timeout: 30000 });
-      return sendJson(res, 200, { ok: true, output: out, timestamp: new Date().toISOString() });
-    } catch (err) {
-      return sendJson(res, 500, { ok: false, error: err.message });
-    }
+    return sendJson(res, 410, {
+      ok: false,
+      code: 'LEGACY_DEPLOY_ROUTE_RETIRED',
+      error: 'Use o fluxo de deploy de Operações, que registra aprovação, execução e resultado.',
+    });
   }
 
   // City state and daily operations belong to product-experience-routes.
   // Fall through to those existing runtime integrations instead of shadowing
   // them with fabricated totals, timestamps and success responses.
 
-  // 0. Live Telemetry (Enhanced V10: Unmocked Host CPU, RAM, Disk & Network)
+  // 0. Live Telemetry (OS-measured values only)
   if (method === 'GET' && pathname === '/api/v2/telemetry/live') {
     const os = require('os');
     const cpus = os.cpus();
     const freeMem = os.freemem();
     const totalMem = os.totalmem();
     const memUsage = process.memoryUsage();
-
-    // Real Host Disk Usage (Cross-Platform)
-    let disk = { totalGb: 60, usedGb: 44, usedPercent: 73 };
-    try {
-      const fs = require('fs');
-      if (typeof fs.statfsSync === 'function') {
-        const stats = fs.statfsSync(process.platform === 'win32' ? process.cwd() : '/');
-        const totalBytes = stats.bsize * stats.blocks;
-        const freeBytes = stats.bsize * stats.bfree;
-        const usedBytes = totalBytes - freeBytes;
-        disk.totalGb = Math.round(totalBytes / (1024 * 1024 * 1024));
-        disk.usedGb = Math.round(usedBytes / (1024 * 1024 * 1024));
-        disk.usedPercent = Math.min(100, Math.max(0, Math.round((usedBytes / totalBytes) * 100)));
-      } else {
-        const { execSync } = require('node:child_process');
-        const df = execSync("df -P / | tail -1 | awk '{print $2,$3,$5}'", { timeout: 1500, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim().split(/\s+/);
-        if (df.length >= 3) {
-          disk.totalGb = Math.round(parseInt(df[0], 10) / (1024 * 1024));
-          disk.usedGb = Math.round(parseInt(df[1], 10) / (1024 * 1024));
-          disk.usedPercent = parseInt(df[2].replace('%', ''), 10) || 73;
-        }
-      }
-    } catch (e) {}
-
-    // Real Host Network Telemetry
-    let network = { activeInterfaces: 0, trafficScore: 28 };
-    try {
-      const ifaces = os.networkInterfaces();
-      network.activeInterfaces = Object.keys(ifaces).length;
-      network.trafficScore = Math.min(95, Math.max(12, Math.round(15 + (os.loadavg()[0] * 3))));
-    } catch (e) {}
+    const { measureCpuPercent, readDiskUsage } = require('./reality-engine');
+    const cpuPercent = await measureCpuPercent().catch(() => null);
+    const disk = readDiskUsage();
+    const network = sampleNetworkTelemetry(app);
+    const loadAverage = os.loadavg();
 
     return sendJson(res, 200, {
       ok: true,
       timestamp: new Date().toISOString(),
       cpu: {
         cores: cpus.length,
-        model: cpus[0]?.model || 'VPS Xeon',
-        loadAvg: os.loadavg(),
-        percent: Math.min(100, Math.max(5, Math.round((os.loadavg()[0] / (cpus.length || 1)) * 100)))
+        model: cpus[0]?.model || null,
+        loadAvg: loadAverage,
+        percent: cpuPercent,
+        measurement: 'OS_CPU_TIME_DELTA',
+        status: cpuPercent == null ? 'UNAVAILABLE' : 'MEASURED',
       },
       memory: {
         totalMb: Math.round(totalMem / (1024 * 1024)),
         freeMb: Math.round(freeMem / (1024 * 1024)),
         usedMb: Math.round((totalMem - freeMem) / (1024 * 1024)),
-        usedPercent: Math.round(((totalMem - freeMem) / totalMem) * 100),
+        usedPercent: totalMem > 0 ? Math.round(((totalMem - freeMem) / totalMem) * 100) : null,
         processRssMb: Math.round(memUsage.rss / (1024 * 1024)),
         processHeapUsedMb: Math.round(memUsage.heapUsed / (1024 * 1024))
       },
@@ -1041,14 +953,38 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     try {
       const body = await readJson(req);
       const { url: targetUrl, options } = body || {};
-      const observation = await globalSystemObserver.observeUrl(targetUrl || 'http://127.0.0.1:3000', options || {});
+      if (typeof targetUrl !== 'string' || !targetUrl.trim()) {
+        return sendJson(res, 400, { ok: false, code: 'TARGET_URL_REQUIRED', error: 'Informe a URL da aplicação que deve ser observada.' });
+      }
+      const observation = await globalSystemObserver.observeUrl(targetUrl, options || {});
       return sendJson(res, 200, { ok: true, observation });
     } catch (err) {
       return sendJson(res, 500, { error: err.message });
     }
   }
 
-  // V11.2: Video System Decoder (Keyframes, Scene Detection, Action Timeline)
+  // V11.2: Video frame extraction and persisted evidence retrieval
+  const videoArtifactMatch = pathname.match(/^\/api\/v2\/system-reconstruction\/video\/([^/]+)(?:\/frames\/([^/]+))?$/);
+  if (method === 'GET' && videoArtifactMatch) {
+    try {
+      const [, artifactId, frameName] = videoArtifactMatch;
+      if (frameName) {
+        const frame = globalVideoSystemDecoder.readFrame(artifactId, frameName);
+        res.writeHead(200, {
+          'content-type': 'image/jpeg',
+          'content-length': frame.length,
+          'cache-control': 'private, no-store',
+          'x-content-type-options': 'nosniff'
+        });
+        res.end(frame);
+        return true;
+      }
+      return sendJson(res, 200, { ok: true, report: globalVideoSystemDecoder.readArtifact(artifactId) });
+    } catch (err) {
+      return sendJson(res, err.status || 500, { ok: false, code: err.code || 'VIDEO_ARTIFACT_READ_FAILED', error: err.message });
+    }
+  }
+
   if (method === 'POST' && pathname === '/api/v2/system-reconstruction/video') {
     try {
       const body = await readJson(req);
@@ -1084,11 +1020,11 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
   if (method === 'GET' && pathname === '/api/v2/system-reconstruction/twin') {
     const id = url.searchParams.get('id');
     if (id) {
-      const twin = globalSystemTwinEngine.getTwin(id);
+      const twin = getTwin(id);
       if (!twin) return sendJson(res, 404, { error: 'System Twin not found' });
       return sendJson(res, 200, { ok: true, twin });
     }
-    const twins = globalSystemTwinEngine.getAllTwins();
+    const twins = getTwins();
     return sendJson(res, 200, { ok: true, count: twins.length, twins });
   }
 
@@ -1096,7 +1032,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
   if (method === 'POST' && pathname === '/api/v2/system-reconstruction/twin') {
     try {
       const body = await readJson(req);
-      const twin = globalSystemTwinEngine.createOrUpdateTwin(body || {});
+      const twin = systemTwinEngine.createOrUpdateTwin({ ...(body || {}), tenantId: identity?.tenantId || null });
       return sendJson(res, 200, { ok: true, twin });
     } catch (err) {
       return sendJson(res, 500, { error: err.message });
@@ -1106,9 +1042,9 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
   // V11.7: Visual DNA
   if (method === 'GET' && pathname === '/api/v2/system-reconstruction/visual-dna') {
     const id = url.searchParams.get('id');
-    const twin = id ? globalSystemTwinEngine.getTwin(id) : null;
-    const visualDna = twin?.visualDna || globalVisualDnaEngine.extractVisualDna({});
-    return sendJson(res, 200, { ok: true, visualDna });
+    const twin = id ? getTwin(id) : null;
+    const visualDna = twin?.visualDna || null;
+    return sendJson(res, 200, { ok: true, status: visualDna ? 'AVAILABLE_FROM_TWIN' : 'NOT_DISCOVERED', visualDna });
   }
 
   // V11.8: Visual Gap Comparison (Side-by-side, overlay, multi-gap analysis)
@@ -1125,39 +1061,18 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
   // V11.9: System Level Maturity Evaluator (Level 1..5)
   if (method === 'GET' && pathname === '/api/v2/system-reconstruction/level') {
     const id = url.searchParams.get('id');
-    const twin = id ? globalSystemTwinEngine.getTwin(id) : null;
-    const level = globalSystemLevelEvaluator.evaluateSystem(twin || {
-      name: 'FÊNIX OS Core',
-      backendRunning: true,
-      singleShell: true,
-      apisCount: 30,
-      testsPassing: 25,
-      agentsCount: 14,
-      telemetryOnline: true,
-      autoFixActive: true,
-      architectureGuardCompliant: true
-    });
+    const twin = id ? getTwin(id) : null;
+    const level = globalSystemLevelEvaluator.evaluateSystem({ name: twin?.name || 'Fênix OS Core', evidence: twin?.evidence || null });
     return sendJson(res, 200, { ok: true, level });
   }
 
   // V11.10: Interactive Visual System Map (Miro View)
   if (method === 'GET' && pathname === '/api/v2/system-reconstruction/system-map') {
     const id = url.searchParams.get('id');
-    const twin = (id && globalSystemTwinEngine.getTwin(id)) || globalSystemTwinEngine.getAllTwins()[0] || {
-      id: 'system:fenix-os',
-      name: 'FÊNIX OS V11 Visual Fullstack Engine',
-      status: 'VERIFIED',
-      pages: [
-        { id: 'page:cockpit', title: 'Command Center & Cockpit', url: '/', nextScreens: ['page:city', 'page:ide', 'page:projects'] },
-        { id: 'page:city', title: 'AI City 2.0 Isometric Runtime', url: '/city', nextScreens: ['page:projects'] },
-        { id: 'page:ide', title: 'Master Agentic IDE & Workflows', url: '/ide', nextScreens: ['page:projects'] },
-        { id: 'page:projects', title: 'Projects Registry & Workspace', url: '/projects', nextScreens: ['page:cockpit'] }
-      ],
-      components: ['CityRenderer', 'ActiveChatPane', 'VisualCodeMapper', 'VisualTestEngine', 'SystemObserver'],
-      apis: ['/api/v2/telemetry/live', '/api/v2/system-reconstruction/reconstruct', '/api/v2/city/state']
-    };
+    const twin = (id && getTwin(id)) || (!id && getTwins()[0]) || null;
+    if (!twin) return sendJson(res, 200, { ok: true, status: 'NOT_DISCOVERED', systemMap: null });
     const systemMap = globalSystemMapExplorer.generateSystemMap(twin);
-    return sendJson(res, 200, { ok: true, systemMap });
+    return sendJson(res, 200, { ok: true, status: systemMap.status, systemMap });
   }
 
   // V11.11: Dynamic Workforce & Executors
@@ -1169,36 +1084,11 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
 
   // V11.12: Universal Context-Aware Chat
   if (method === 'POST' && pathname === '/api/v2/system-reconstruction/chat') {
-    try {
-      const body = await readJson(req);
-      const { message = '', context = {} } = body || {};
-      const detectedProject = context.project || 'ZapAI CRM';
-      const detectedScreen = context.screen || (message.toLowerCase().includes('inbox') ? 'Inbox Omnichannel' : 'Cockpit Dashboard');
-
-      const isImproveCommand = message.toLowerCase().includes('melhore') || message.toLowerCase().includes('reconstrua') || message.toLowerCase().includes('otimize');
-
-      const responseMessage = isImproveCommand
-        ? `🔥 Missão de Evolução criada para [${detectedProject} > ${detectedScreen}].\n` +
-          `• Estado Atual: Conectado e monitorado via System Twin\n` +
-          `• Referência Visual: Baseline blessed\n` +
-          `• Gaps Identificados: 0 regressões críticas, otimização de renderização e tokens CSS aplicada.\n` +
-          `• Jobs Delegados: Frontend Agent (V11 Component Spec) + Visual QA Agent.`
-        : `FÊNIX OS V11 ouvindo no contexto de [${detectedProject} > ${detectedScreen}]. Pronto para executar reconstrução visual, auditoria ou autodiagnóstico.`;
-
-      return sendJson(res, 200, {
-        ok: true,
-        reply: responseMessage,
-        context: {
-          project: detectedProject,
-          screen: detectedScreen,
-          agent: 'Master Orchestrator',
-          executor: 'ANTIGRAVITY'
-        },
-        timestamp: new Date().toISOString()
-      });
-    } catch (err) {
-      return sendJson(res, 500, { error: err.message });
-    }
+    return sendJson(res, 501, {
+      ok: false,
+      code: 'RECONSTRUCTION_CHAT_UNAVAILABLE',
+      error: 'Este canal ainda não está conectado ao orquestrador de conversas. Nenhuma missão ou job foi criado.'
+    });
   }
 
   // V11.13: URL to System (Full Plan & Actions)
@@ -1206,10 +1096,13 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     try {
       const body = await readJson(req);
       const { url: targetUrl, options } = body || {};
-      const plan = await globalUrlToSystemEngine.analyzeAndPlan(targetUrl || 'http://127.0.0.1:3000', options || {});
+      if (typeof targetUrl !== 'string' || !targetUrl.trim()) {
+        return sendJson(res, 400, { ok: false, code: 'TARGET_URL_REQUIRED', error: 'Informe a URL da aplicação que deve ser analisada.' });
+      }
+      const plan = await globalUrlToSystemEngine.analyzeAndPlan(targetUrl, options || {});
       return sendJson(res, 200, plan);
     } catch (err) {
-      return sendJson(res, 500, { error: err.message });
+      return sendJson(res, err.status || 500, { ok: false, code: err.code || 'SYSTEM_ANALYSIS_FAILED', error: err.message });
     }
   }
 
@@ -1224,7 +1117,8 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     try {
       const body = await readJson(req);
       const { systemId, target = 'WEB', options } = body || {};
-      const twin = (systemId && globalSystemTwinEngine.getTwin(systemId)) || globalSystemTwinEngine.getAllTwins()[0] || { name: 'fenix-project' };
+      const twin = systemId ? getTwin(systemId) : null;
+      if (!twin) return sendJson(res, 404, { ok: false, code: 'SYSTEM_TWIN_NOT_FOUND', error: 'O sistema precisa ser analisado e registrado antes de exportar.' });
       const packaged = globalExportTargetsEngine.packageProject(twin, target, options || {});
       return sendJson(res, 200, { ok: true, export: packaged });
     } catch (err) {
@@ -1503,32 +1397,40 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
 
   // 6. Graph Brain & Knowledge
   if (method === 'GET' && pathname === '/api/v2/graph/stats') {
-    return sendJson(res, 200, { ok: true, ...globalGraphBrain.getStats() });
+    const visibleNodes = Array.from(graphBrain.nodes.values()).filter((node) => !node.properties?.tenantId || node.properties.tenantId === identity?.tenantId);
+    const typeCounts = {};
+    for (const node of visibleNodes) typeCounts[node.type] = (typeCounts[node.type] || 0) + 1;
+    const visibleNodeIds = new Set(visibleNodes.map((node) => node.id));
+    const visibleEdges = graphBrain.edges.filter((edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to));
+    return sendJson(res, 200, { ok: true, totalNodes: visibleNodes.length, totalEdges: visibleEdges.length, nodeTypes: typeCounts });
   }
 
   if (method === 'GET' && pathname === '/api/v2/graph/data') {
+    const nodes = Array.from(graphBrain.nodes.values()).filter((node) => !node.properties?.tenantId || node.properties.tenantId === identity?.tenantId);
+    const visibleNodeIds = new Set(nodes.map((node) => node.id));
+    const edges = graphBrain.edges.filter((edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to));
     return sendJson(res, 200, {
       ok: true,
-      nodes: Array.from(globalGraphBrain.nodes.values()),
-      edges: globalGraphBrain.edges,
-      stats: globalGraphBrain.getStats()
+      nodes,
+      edges,
+      stats: { totalNodes: nodes.length, totalEdges: edges.length }
     });
   }
 
     if (method === 'GET' && pathname === '/api/v2/graph/patterns') {
     const q = url.searchParams.get('q');
-    return sendJson(res, 200, { ok: true, patterns: globalGraphBrain.findPatterns(q) });
+    return sendJson(res, 200, { ok: true, patterns: graphBrain.findPatterns(q) });
   }
 
   if (method === 'POST' && pathname === '/api/v2/graph/learn') {
     const body = await readJson(req).catch(() => ({}));
-    const result = globalGraphBrain.recordLearning(body);
+    const result = graphBrain.recordLearning(body);
     return sendJson(res, 200, { ok: true, ...result });
   }
 
   // 6b. Knowledge Hub & Reborn Memory Skills
   if (method === 'GET' && (pathname === '/api/v2/knowledge' || pathname === '/api/v2/knowledge/skills')) {
-    const stats = globalGraphBrain.getStats();
+    const stats = graphBrain.getStats();
     const skills = [
       { id: 'skill-screen-dna', name: 'Screen DNA Extraction & Visual Mining', category: 'Frontend', status: 'ACTIVE', level: 'L5', reuseCount: 42 },
       { id: 'skill-genomic-reconstruction', name: 'Genomic Sandbox Reconstruction', category: 'Core', status: 'ACTIVE', level: 'L5', reuseCount: 28 },
@@ -1822,7 +1724,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
           job.status = 'PASS';
           job.log.push(`[${new Date().toISOString()}] Cycle 1 Passed cleanly. Zero defects on target.`);
           job.completedAt = Date.now();
-          globalGraphBrain.recordLearning({
+          graphBrain.recordLearning({
             type: 'AUTO_FIX_VERIFY',
             projectId,
             targetUrl,
@@ -1902,7 +1804,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         job.completedAt = Date.now();
 
         // Record in Graph Brain
-        globalGraphBrain.recordLearning({
+        graphBrain.recordLearning({
           type: 'AUTO_FIX_EXECUTION',
           projectId,
           targetUrl,
@@ -2266,6 +2168,17 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
   // Multi-Provider Inference (Flux.1 Schnell, ComfyUI, Gemini Imagen 3)
   // Powers Fênix OS Studio, MF Atacadista Virtual Try-On, Bulk Catalogs
   // ═════════════════════════════════════════════════════════════════════════
+  if (pathname.startsWith('/api/v2/images') || pathname.startsWith('/api/v2/creative-studio')) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
+    if (method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return true;
+    }
+  }
+
   if (pathname.startsWith('/api/v2/images')) {
     // 1. Providers status & telemetry
     if (method === 'GET' && pathname === '/api/v2/images/providers') {
@@ -2291,6 +2204,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
           style = 'FASHION',
           width = 1024,
           height = 1024,
+          format,
           provider = 'auto',
           sourceProject = 'fenix-os',
           seed
@@ -2306,6 +2220,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
           style,
           width: Number(width) || 1024,
           height: Number(height) || 1024,
+          format,
           provider,
           sourceProject,
           seed
@@ -2315,6 +2230,12 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
       } catch (err) {
         return sendJson(res, err.status || 500, { ok: false, code: err.code || 'IMAGE_GENERATION_FAILED', error: err.message || 'Falha na geração de imagem' });
       }
+    }
+
+    // 3b. Supported Creative Formats
+    if (method === 'GET' && pathname === '/api/v2/images/formats') {
+      const formats = globalImageEngine.getCreativeFormats();
+      return sendJson(res, 200, { ok: true, count: formats.length, formats });
     }
 
     // 4. Dedicated Virtual Try-On for MF Atacadista & Fashion Catalog
@@ -2353,6 +2274,82 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         });
       } catch (err) {
         return sendJson(res, 500, { ok: false, error: err.message || 'Falha no Provador Virtual IA' });
+      }
+    }
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // FÊNIX OS — OPEN-SOURCE CREATIVE STUDIO (/api/v2/creative-studio)
+  // Wan2.1, LTX-Video, CameraCtrl (Higgsfield), LivePortrait, Flux Logos,
+  // BiRefNet, IOPaint, Fabric.js, ag-psd 5-layer .PSD & Premiere/AE FCPXML
+  // ═════════════════════════════════════════════════════════════════════════
+  if (pathname.startsWith('/api/v2/creative-studio')) {
+    if (method === 'GET' && pathname === '/api/v2/creative-studio/stack') {
+      return sendJson(res, 200, {
+        ok: true,
+        stack: globalImageEngine.getOpenSourceStack(),
+        formats: globalImageEngine.getCreativeFormats(),
+        cameraPresets: globalImageEngine.getCameraMotionPresets(),
+        psdLayers: globalImageEngine.getCanonicalPsdLayers(),
+        providers: globalImageEngine.getProviders(),
+      });
+    }
+
+    if (method === 'POST' && pathname === '/api/v2/creative-studio/logo') {
+      try {
+        const body = await readJson(req).catch(() => ({}));
+        const result = await globalImageEngine.generateLogoIdentity(body);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { ok: false, error: err.message || 'Falha ao gerar logotipo' });
+      }
+    }
+
+    if (method === 'POST' && pathname === '/api/v2/creative-studio/video') {
+      try {
+        const body = await readJson(req).catch(() => ({}));
+        const result = await globalImageEngine.generateVideoClip(body);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { ok: false, error: err.message || 'Falha ao gerar vídeo curto' });
+      }
+    }
+
+    if (method === 'POST' && pathname === '/api/v2/creative-studio/storyboard') {
+      try {
+        const body = await readJson(req).catch(() => ({}));
+        const result = globalImageEngine.generateStoryboard(body);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { ok: false, error: err.message || 'Falha ao gerar storyboard multi-cenas' });
+      }
+    }
+
+    if (method === 'POST' && pathname === '/api/v2/creative-studio/export/psd') {
+      try {
+        const body = await readJson(req).catch(() => ({}));
+        const psd = globalImageEngine.buildPsdBuffer(body);
+        return sendJson(res, 200, {
+          ok: true,
+          signature: psd.signature,
+          width: psd.width,
+          height: psd.height,
+          byteLength: psd.byteLength,
+          layers: psd.layers,
+          psdBase64: psd.buffer.toString('base64'),
+        });
+      } catch (err) {
+        return sendJson(res, 400, { ok: false, error: err.message || 'Falha ao gerar arquivo .PSD' });
+      }
+    }
+
+    if (method === 'POST' && pathname === '/api/v2/creative-studio/export/premiere-xml') {
+      try {
+        const body = await readJson(req).catch(() => ({}));
+        const timeline = globalImageEngine.buildPremiereXml(body);
+        return sendJson(res, 200, timeline);
+      } catch (err) {
+        return sendJson(res, 400, { ok: false, error: err.message || 'Falha ao exportar timeline Premiere/After Effects' });
       }
     }
   }

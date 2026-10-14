@@ -29,7 +29,7 @@ test('UNIFIED FRONTEND SUITE: Full E2E Navigation, Auth, Assets, and Live Operat
   assert.equal(rootRes.status, 200);
   const rootHtml = await rootRes.text();
   assert.match(rootHtml, /GRG SERVI/i, 'Root serves login.html');
-  assert.match(rootHtml, /\/app#command/, 'Login redirects to /app#command');
+  assert.match(rootHtml, /\/app#city/, 'A new session opens the primary City workspace');
 
   // 2. Perform Login
   const loginRes = await fetch(`${base}/api/login`, {
@@ -106,4 +106,18 @@ test('UNIFIED FRONTEND SUITE: Full E2E Navigation, Auth, Assets, and Live Operat
   assert.equal(evRes.status, 200);
   const evData = await evRes.json();
   assert.ok(Array.isArray(evData.events), 'Events list returned');
+
+  // 8. Real Mission Execution (Fase 4 - REAL TASK)
+  const missionRes = await fetch(`${base}/api/missions`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ goal: 'Analise este projeto, encontre um problema real e tente corrigi-lo.' })
+  });
+  assert.equal(missionRes.status, 201, 'Mission successfully created');
+  const missionData = await missionRes.json();
+  assert.ok(missionData.id, 'Mission ID returned');
+  assert.ok(missionData.status, 'Mission status returned');
+  
+  // Verify it was correctly materialized by the planner
+  assert.ok(missionData.steps || missionData.objective, 'Mission properties populated');
 }));

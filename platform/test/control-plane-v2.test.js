@@ -74,3 +74,30 @@ test('subadmin can analyze and learn but cannot publish', async (t) => {
     /cannot perform project:deploy/,
   );
 });
+
+test('operator audit logs record all mutating operations with idempotency and evidence', async (t) => {
+  const service = await createService(t);
+  await service.addMember('biel0071-software-house', 'biel0071', {
+    userId: 'audited-worker',
+    role: 'employee',
+    operationId: 'op-add-member-1',
+  });
+  await service.requestAnalysisFor('biel0071-software-house', 'biel0071', 'ai-engine', {
+    mode: 'standard',
+    operationId: 'op-analyze-1',
+  });
+
+  const logs = await service.listOperatorAuditLogs('biel0071-software-house', 'biel0071');
+  assert.ok(logs.length >= 2);
+  const memberLog = logs.find((l) => l.action === 'member:add');
+  assert.ok(memberLog);
+  assert.equal(memberLog.actorId, 'biel0071');
+  assert.equal(memberLog.entityId, 'audited-worker');
+  assert.equal(memberLog.operationId, 'op-add-member-1');
+  assert.ok(memberLog.evidence.length > 0);
+
+  const analysisLog = logs.find((l) => l.action === 'project:analyze');
+  assert.ok(analysisLog);
+  assert.equal(analysisLog.operationId, 'op-analyze-1');
+});
+

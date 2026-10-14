@@ -25,6 +25,17 @@
   function navigateProject(id) { if (typeof window.openProjectWorkspace==='function') window.openProjectWorkspace(id); else window.showView?.('projects'); }
   function action(parent,label,callback,primary=false) { const button=make('button',primary?'fw3-action primary':'fw3-action',label); button.type='button'; button.addEventListener('click',callback); parent.append(button); }
   function row(parent,label,value) { const item=make('div','fw3-detail-row'); item.append(make('span','',label),make('strong','',value ?? '—')); parent.append(item); }
+  function agentsForBuilding(data, buildingId, districtId) {
+    if (!Array.isArray(data?.agents)) return null;
+    const canonical = (id) => window.FenixCityMachineScene?.canonicalBuildingId({ type: 'building', id: String(id || '') }) || String(id || '');
+    const targetId = canonical(buildingId);
+    const district = String(districtId || '').toLowerCase();
+    return data.agents.filter((agent) => {
+      const agentBuildingId = String(agent.buildingId || '').trim();
+      if (agentBuildingId) return canonical(agentBuildingId).toLowerCase() === targetId.toLowerCase();
+      return Boolean(district && String(agent.district || '').toLowerCase() === district);
+    });
+  }
   function render() {
     const data=window.FENIX?.cityWorld?.snapshot;
     const error=window.FENIX?.cityWorld?.error;
@@ -46,19 +57,16 @@
     context.replaceChildren(); context.hidden=!selected;
     if (!selected) return;
     const close=make('button','fw3-context-close','×'); close.type='button'; close.setAttribute('aria-label','Fechar detalhes'); close.addEventListener('click',()=>engine.back());
-    const kicker=make('span','fw3-context-kicker',selected.kind==='district'?'BAIRRO':selected.kind==='project'?'PROJETO · PROJECT KERNEL':selected.kind==='machine'?'MÁQUINA · RUNTIME':'AGENTE · RUNTIME');
+    const kicker=make('span','fw3-context-kicker',selected.kind==='district'?'BAIRRO':selected.kind==='building'?'EDIFÍCIO · RUNTIME':selected.kind==='project'?'PROJETO · PROJECT KERNEL':selected.kind==='machine'?'MÁQUINA · RUNTIME':'AGENTE · RUNTIME');
     context.append(close,kicker);
-    if (!data && selected.kind!=='district') { context.append(make('h2','','Restaurando seleção'),make('p','','Aguardando a leitura do Project Kernel para mostrar os dados e ações.')); return; }
+    if (!data && !['district','building'].includes(selected.kind)) { context.append(make('h2','','Restaurando seleção'),make('p','','Aguardando a leitura do Project Kernel para mostrar os dados e ações.')); return; }
     const actions=make('div','fw3-actions');
     if (selected.kind==='district') {
       const district=engine.state.labels.find(item=>item.kind==='district' && item.id===selected.id);
       context.append(make('h2','',district?.element.querySelector('strong')?.textContent || selected.id),make('p','','Explore os espaços e a atividade real deste bairro.'));
-      const agents=(data?.agents||[]).filter(agent=>{
-        const role=String(agent.role||agent.name||'').toLowerCase();
-        const key=String(agent.district||'').toLowerCase();
-        return key===selected.id || (selected.id==='dev-district' && /developer|backend|architect/.test(role));
-      });
-      row(context,'Agentes associados',agents.length);
+      const buildingId=window.FenixCityMachineScene?.canonicalBuildingId({type:'district',id:selected.id}) || selected.id;
+      const agents=agentsForBuilding(data,buildingId,selected.id);
+      row(context,'Agentes associados',agents===null?'Não medido':agents.length);
       if (selected.id==='project-district') row(context,'Projetos registrados',data?.projects?.length ?? '—');
       action(actions,'Ver agentes',()=>window.showView?.('agents'));
       action(actions,'Ver operações',()=>window.showView?.('operations'));
@@ -75,13 +83,24 @@
       for (const job of jobs.slice(0, 3)) action(actions,`${job.status || '—'} · ${String(job.title || job.id).slice(0, 34)}`,()=>window.fenixCityWorkflow?.openJob(job.id));
     } else if (selected.kind==='building') {
       const buildings=data?.buildings || {};
-      const building=Array.isArray(buildings)?buildings.find(item=>item.id===selected.id):buildings[selected.id];
-      const agents=(data?.agents||[]).filter(agent=>agent.buildingId===selected.id);
-      context.append(make('h2','',building?.name || selected.id),make('p','',building?.function || building?.description || 'Espaço registrado no estado do mundo Fênix.'));
-      row(context,'Estado',building?.status || '—'); row(context,'Agentes associados',agents.length);
-      row(context,'Andares',building?.floors ?? '—');
+      const canonicalId=window.FenixCityMachineScene?.canonicalBuildingId({type:'building',id:selected.id}) || selected.id;
+      const building=Array.isArray(buildings)?buildings.find(item=>item.id===canonicalId||item.id===selected.id):buildings[canonicalId]||buildings[selected.id];
+      const dynamicBuilding=engine.dynamicBuildings?.get(selected.id) || engine.dynamicBuildings?.get(canonicalId);
+      const districtId=building?.district || dynamicBuilding?.district || Object.values(engine.DISTRICTS||{}).find(item=>window.FenixCityMachineScene?.canonicalBuildingId({type:'district',id:item.id})===canonicalId)?.id || '';
+      const agents=agentsForBuilding(data,canonicalId,districtId);
+      const title=building?.name || dynamicBuilding?.name || engine.DISTRICTS?.[districtId]?.name || selected.id;
+      context.append(make('h2','',title),make('p','',building?.function || building?.description || dynamicBuilding?.department || engine.DISTRICTS?.[districtId]?.sub || 'Edifício do mundo Fênix. Os dados operacionais vêm da API.'));
+      row(context,'Estado',building?.status || dynamicBuilding?.status || (data?'Não informado':'Indisponível'));
+      row(context,'Agentes associados',agents===null?'Não medido':agents.length);
+      row(context,'Andares',building?.floors ?? dynamicBuilding?.floors ?? '—');
+      if (!data) context.append(make('p','fw3-context-note','A leitura do Project Kernel está indisponível; os dados do edifício e dos agentes não foram medidos.'));
       action(actions,'Entrar no espaço',()=>engine.enterBuilding(selected.id),true);
       action(actions,'Ver operações',()=>window.showView?.('operations'));
+      for (const agent of (agents||[]).slice(0,6)) {
+        const agentId=String(agent.id||agent.agentId||'');
+        if (!agentId) continue;
+        action(actions,`${agent.name||agent.displayName||agentId} · ${agent.status||agent.state||'Sem estado'}`,()=>engine.selectAgent(agentId));
+      }
     } else if (selected.kind==='machine') {
       const machine=data?.machines?.find(item=>item.id===selected.id);
       const workers=(data?.workers||[]);

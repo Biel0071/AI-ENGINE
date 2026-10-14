@@ -1,0 +1,151 @@
+{
+  "base": "http://127.0.0.1:4400",
+  "checkedAt": "2026-09-08T14:56:46.729Z",
+  "results": [
+    {
+      "endpoint": "/api/fenix/missions",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/fenix/jobs",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/v2/city/state",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/agents/panel",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/agents/swarm",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/v2/agents/live-states",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/dev/fs",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/project-mirror",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/v2/vision/inspect-element",
+      "method": "POST",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/v2/jarvis/jobs",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "status": 200,
+      "category": "available"
+    },
+    {
+      "endpoint": "/api/v2/projects",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/project-mirror/projects",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/fenix/memory/search",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/v2/memory/development",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/knowledge-federation/publications",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/connectors",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/fenix/providers",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/v2/frontend-reality/screens",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/v2/frontend-reality/audit",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/observability/metrics",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/observability/series",
+      "method": "GET",
+      "status": 401,
+      "category": "protected-route"
+    },
+    {
+      "endpoint": "/api/dev/terminal",
+      "method": "POST",
+      "status": 401,
+      "category": "protected-route"
+    }
+  ],
+  "summary": {
+    "total": 23,
+    "available": 1,
+    "protected": 22,
+    "missing": 0,
+    "other": 0
+  }
+}

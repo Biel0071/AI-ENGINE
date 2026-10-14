@@ -1,0 +1,538 @@
+/**
+ * FÊNIX OS — OPERATIONAL OS LAYER v2.1
+ * Deep Functional Operating System Layer
+ */
+(function () {
+  'use strict';
+
+  // 1. SHARED OPERATIONAL CONTEXT
+  const ctx = window.__fenixContext = {
+    projectId: localStorage.getItem('fenix_active_project') || 'fenix-os',
+    projectName: localStorage.getItem('fenix_active_project_name') || 'FÊNIX HQ',
+    agentId: null,
+    jobId: null,
+    eventId: null,
+    commandHistory: []
+  };
+
+  const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+
+  // 2. GLOBAL STATE RENDERER CONVENTION
+  window.fenixRenderState = function (type, message, details = '', action = null) {
+    const icons = {
+      LOADING: '⏳', EMPTY: '📭', SUCCESS: '✅', WARNING: '⚠️',
+      ERROR: '❌', OFFLINE: '🔌', UNKNOWN: '❓', DEVELOPMENT: '🚧'
+    };
+    const titles = {
+      LOADING: 'Carregando dados...', EMPTY: 'Sem dados disponíveis',
+      SUCCESS: 'Operação concluída', WARNING: 'Atenção',
+      ERROR: 'Falha de comunicação', OFFLINE: 'Sistema Offline',
+      UNKNOWN: 'Estado não verificado', DEVELOPMENT: 'Em desenvolvimento'
+    };
+
+    let actBtn = '';
+    if (action && action.label && action.onClick) {
+      actBtn = `<button onclick="${esc(action.onClick)}" class="fenix-state-btn">${esc(action.label)}</button>`;
+    }
+
+    return `
+      <div class="fenix-state-card fenix-state-${type.toLowerCase()}">
+        <span class="fenix-state-icon">${icons[type] || 'ℹ️'}</span>
+        <div class="fenix-state-content">
+          <strong>${titles[type] || type}</strong>
+          <p>${esc(message)}</p>
+          ${details ? `<small class="fenix-state-details">${esc(details)}</small>` : ''}
+          ${actBtn}
+        </div>
+      </div>
+    `;
+  };
+
+  // 3. UNIFIED INSPECTOR DRAWER
+  function ensureDrawer() {
+    let drawer = document.getElementById('fenixInspectorDrawer');
+    if (!drawer) {
+      drawer = document.createElement('aside');
+      drawer.id = 'fenixInspectorDrawer';
+      drawer.className = 'fenix-inspector-drawer';
+      drawer.innerHTML = `
+        <div class="fenix-drawer-header">
+          <div class="fenix-drawer-title-group">
+            <span class="fenix-drawer-badge" id="fenixDrawerBadge">INSPECTOR</span>
+            <h3 id="fenixDrawerTitle">Detalhes da Entidade</h3>
+          </div>
+          <button class="fenix-drawer-close" onclick="window.fenixCloseInspector()" title="Fechar (ESC)">✕</button>
+        </div>
+        <div class="fenix-drawer-body" id="fenixDrawerBody"></div>
+        <div class="fenix-drawer-footer" id="fenixDrawerFooter"></div>
+      `;
+      document.body.appendChild(drawer);
+
+      window.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && drawer.classList.contains('open')) {
+          window.fenixCloseInspector();
+        }
+      });
+    }
+    return drawer;
+  }
+
+  window.fenixCloseInspector = function () {
+    const drawer = document.getElementById('fenixInspectorDrawer');
+    if (drawer) drawer.classList.remove('open');
+  };
+
+  window.fenixOpenInspector = function (title, badge, bodyHtml, footerHtml = '') {
+    const drawer = ensureDrawer();
+    document.getElementById('fenixDrawerTitle').textContent = title;
+    document.getElementById('fenixDrawerBadge').textContent = badge;
+    document.getElementById('fenixDrawerBody').innerHTML = bodyHtml;
+    document.getElementById('fenixDrawerFooter').innerHTML = footerHtml;
+    drawer.classList.add('open');
+  };
+
+  // 4. ENTITY INSPECTORS
+
+  // Agent Inspector
+  window.fenixInspectAgent = async function (agentId) {
+    ctx.agentId = agentId;
+    window.fenixOpenInspector(
+      `Agente: ${agentId}`,
+      'AGENTE',
+      window.fenixRenderState('LOADING', `Consultando telemetria de ${agentId}...`)
+    );
+
+    try {
+      const res = await fetch('/api/v2/living-city/agents');
+      const data = res.ok ? await res.json() : { agents: [] };
+      const agent = (data.agents || []).find(a => a.id === agentId || a.name === agentId) || {
+        id: agentId, name: agentId, status: 'IDLE', role: 'Agente Operacional'
+      };
+
+      const currentGoal = agent.currentGoal || agent.goal || agent.task || 'Monitoramento e execução de rotinas autônomas';
+      const currentJob = agent.currentJob || (agent.activeJobs ? `Job #${agent.activeJobs}` : 'Nenhum job ativo (Standby)');
+      const lastEvent = agent.lastEvent || agent.lastActivity || agent.updatedAt || 'Heartbeat emitido no canal operacional';
+      const district = agent.district || agent.location || 'Command Tower';
+      const projectId = agent.projectId || ctx.projectId || 'fenix-os';
+
+      const body = `
+        <div class="fenix-insp-section">
+          <div class="fenix-insp-agent-head">
+            <span class="fenix-insp-avatar">${esc(agent.emoji || '🤖')}</span>
+            <div>
+              <h4>${esc(agent.name || agent.id)}</h4>
+              <p class="fenix-insp-sub">${esc(agent.role || 'Especialista')} · Distrito: <strong>${esc(district)}</strong></p>
+            </div>
+          </div>
+          <div class="fenix-insp-grid">
+            <div><small>ID Canônico</small><p><code>${esc(agent.id)}</code></p></div>
+            <div><small>Role / Especialidade</small><p>${esc(agent.role || 'Especialista')}</p></div>
+            <div><small>Status Operacional</small><p><span class="evolution-badge ${agent.status === 'WORKING' ? 'badge-working' : 'badge-online'}">${esc(agent.status || 'ONLINE')}</span></p></div>
+            <div><small>Distrito Urbano</small><p><strong>${esc(district)}</strong></p></div>
+            <div><small>Projeto Vinculado</small><p style="color:#38bdf8; font-weight:700;">${esc(projectId)}</p></div>
+            <div><small>Current Goal (Meta Ativa)</small><p style="font-size:11px; color:#f8fafc;">${esc(currentGoal)}</p></div>
+            <div><small>Current Job (Job Ativo)</small><p style="font-size:11px; color:#10b981; font-weight:600;">${esc(currentJob)}</p></div>
+            <div><small>Último Evento Registrado</small><p style="font-size:11px; color:#94a3b8;">${esc(lastEvent)}</p></div>
+          </div>
+        </div>
+        <div class="fenix-insp-section">
+          <h5>Capacidades & Especialidades</h5>
+          <ul class="fenix-insp-list">
+            ${(agent.capabilities || ['Análise de Código', 'Execução de Comandos', 'Orquestração']).map(c => `<li>🔹 ${esc(c)}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+
+      const footer = `
+        <button class="fenix-action-btn primary" onclick="window.fenixFocusAgentInCity('${esc(agent.id)}')">🤖 Ver Agente</button>
+        <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('operations', { agentId: '${esc(agent.id)}' })">📋 Ver Tarefa</button>
+        <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('projects', { projectId: '${esc(projectId)}' })">📁 Ver Projeto</button>
+        <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('observability', { source: '${esc(agent.id)}' })">📡 Ver Eventos</button>
+      `;
+
+      window.fenixOpenInspector(agent.name || agent.id, 'AGENTE', body, footer);
+    } catch (err) {
+      window.fenixOpenInspector(
+        `Agente: ${agentId}`,
+        'ERRO',
+        window.fenixRenderState('ERROR', 'Não foi possível carregar dados do agente.', err.message)
+      );
+    }
+  };
+
+  // Job Inspector
+  window.fenixInspectJob = function (jobData) {
+    if (typeof jobData === 'string') {
+      try { jobData = JSON.parse(jobData); } catch (e) { jobData = { id: jobData }; }
+    }
+    ctx.jobId = jobData.id;
+
+    const body = `
+      <div class="fenix-insp-section">
+        <div class="fenix-insp-grid">
+          <div><small>Job ID</small><p>#${esc(jobData.id)}</p></div>
+          <div><small>Status</small><p><span class="evolution-badge">${esc(jobData.status || 'COMPLETED')}</span></p></div>
+          <div><small>Agente Executor</small><p>${esc(jobData.agentName || jobData.agentId || 'Não atribuído')}</p></div>
+          <div><small>Projeto</small><p>${esc(jobData.projectId || ctx.projectName)}</p></div>
+          <div><small>Duração</small><p>${esc(jobData.duration != null ? jobData.duration + ' ms' : (jobData.durationMs ? jobData.durationMs + ' ms' : 'Não medida'))}</p></div>
+          <div><small>Consumo de Tokens</small><p>${esc(jobData.tokensUsed ?? jobData.tokens ?? '—')}</p></div>
+        </div>
+      </div>
+      <div class="fenix-insp-section">
+        <h5>Objetivo / Tarefa</h5>
+        <p class="fenix-insp-desc">${esc(jobData.title || jobData.objective || jobData.name || 'Tarefa autônoma executada')}</p>
+      </div>
+      <div class="fenix-insp-section">
+        <h5>Resultado & Telemetria Bruta</h5>
+        <pre class="fenix-insp-code">${esc(JSON.stringify(jobData.result || jobData.output || jobData, null, 2))}</pre>
+      </div>
+    `;
+
+    const footer = `
+      <button class="fenix-action-btn primary" onclick="window.fenixNavigateWithContext('projects', { projectId: '${esc(jobData.projectId || ctx.projectId)}' })">📁 Ver Projeto</button>
+      ${jobData.agentId ? `<button class="fenix-action-btn" onclick="window.fenixInspectAgent('${esc(jobData.agentId)}')">🤖 Ver Agente</button>` : ''}
+    `;
+
+    window.fenixOpenInspector(`Tarefa #${jobData.id}`, 'JOB / BULLMQ', body, footer);
+  };
+
+  // Event Inspector
+  window.fenixInspectEvent = function (evData) {
+    if (typeof evData === 'string') {
+      try { evData = JSON.parse(evData); } catch (e) { evData = { event: evData }; }
+    }
+    ctx.eventId = evData.id || evData.eventId;
+
+    const body = `
+      <div class="fenix-insp-section">
+        <div class="fenix-insp-grid">
+          <div><small>Tipo de Evento</small><p><strong>${esc(evData.type || evData.event || evData.stream || 'system.event')}</strong></p></div>
+          <div><small>Timestamp</small><p>${esc(evData.timestamp || evData.occurredAt || 'Não informado')}</p></div>
+          <div><small>Origem</small><p>${esc(evData.stream || evData.source || 'runtime')}</p></div>
+          <div><small>Run / Job ID</small><p>${esc(evData.runId || evData.jobId || '—')}</p></div>
+        </div>
+      </div>
+      <div class="fenix-insp-section">
+        <h5>Payload JSON do Evento</h5>
+        <pre class="fenix-insp-code">${esc(JSON.stringify(evData.payload || evData.data || evData, null, 2))}</pre>
+      </div>
+    `;
+
+    const footer = `
+      ${evData.jobId ? `<button class="fenix-action-btn primary" onclick="window.fenixInspectJob({ id: '${esc(evData.jobId)}' })">📋 Ver Job</button>` : ''}
+      <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('observability')">📡 Ver Observabilidade</button>
+    `;
+
+    window.fenixOpenInspector(evData.type || 'Evento do Sistema', 'EVENTO SSE', body, footer);
+  };
+
+  // Building / District Inspector
+  window.fenixInspectBuilding = function (distOrKey) {
+    let key = '';
+    if (typeof distOrKey === 'string') {
+      key = distOrKey.toUpperCase();
+    } else if (distOrKey && typeof distOrKey === 'object') {
+      key = String(distOrKey.key || distOrKey.id || distOrKey.name || '').toUpperCase();
+    }
+
+    const DISTRICT_INFO = {
+      'COMMAND': { name: 'Command Tower', role: 'Núcleo Central & Orquestração', color: '#38bdf8', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-architect', 'agent-planner'], desc: 'Quartel-general do Fênix OS com telemetria em tempo real do host Linux e containers.' },
+      'PROJECT': { name: 'Project Registry & Git Lab', role: 'Gerenciamento de Código & Espelhos', color: '#f59e0b', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-twin'], desc: 'Estação de indexação AST, inspeção de telas e espelho de repositórios.' },
+      'AI': { name: 'Cognitive Nexus', role: 'Inteligência Artificial & Knowledge Graph', color: '#a855f7', projectId: 'api-platform', projectName: 'AI Platform Tower', agents: ['agent-ai', 'agent-knowledge'], desc: 'Gateway multi-provedor LLM, orquestração de embeddings e grafo de memória.' },
+      'CREATIVE': { name: 'Design & UI Studio', role: 'Design System & Componentes', color: '#ec4899', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-frontend', 'agent-ux'], desc: 'Estúdio visual de prototipagem, layout fênix e componentes reativos.' },
+      'BACKEND': { name: 'Dual-Lane Fast Engine', role: 'Engenharia de Backend & Filas', color: '#10b981', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-backend', 'agent-docs'], desc: 'Kernel nativo Node.js com BullMQ workers para execução distribuída.' },
+      'DEV': { name: 'Development & Engineering Hub', role: 'Dual-Lane Engine & Testes', color: '#10b981', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-backend', 'agent-qa', 'agent-docs'], desc: 'Núcleo de engenharia de software com workers BullMQ e pipeline.' },
+      'BROWSER': { name: 'QA & Playwright Lab', role: 'Auditoria Visual & Testes E2E', color: '#06b6d4', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-qa'], desc: 'Laboratório de automação headless Chromium para testes de verdade visual.' },
+      'DATA': { name: 'Data Vault & Storage', role: 'Bancos de Dados & Governança', color: '#6366f1', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-db', 'agent-memory', 'agent-security'], desc: 'Persistência segura de métricas, eventos auditáveis e sessões.' },
+      'OBSERVATORY': { name: 'Observatório do Sistema', role: 'Telemetria & Barramento SSE', color: '#14b8a6', projectId: 'fenix-os', projectName: 'FÊNIX HQ', agents: ['agent-obs', 'agent-devops'], desc: 'Estação de observabilidade contínua de latência, saúde de serviços e logs.' }
+    };
+
+    const normKey = Object.keys(DISTRICT_INFO).find(k => key.includes(k)) || 'COMMAND';
+    const info = DISTRICT_INFO[normKey];
+
+    const body = `
+      <div class="fenix-insp-section">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+          <div style="width:42px; height:42px; border-radius:10px; background:${info.color}20; border:1px solid ${info.color}40; display:flex; align-items:center; justify-content:center; font-size:22px;">
+            🏢
+          </div>
+          <div>
+            <h4 style="margin:0; font-size:15px; color:#f8fafc;">${esc(info.name)}</h4>
+            <span style="font-size:11px; color:${info.color}; font-weight:600;">${esc(info.role)}</span>
+          </div>
+        </div>
+        <p class="fenix-insp-desc">${esc(info.desc)}</p>
+      </div>
+
+      <div class="fenix-insp-section">
+        <div class="fenix-insp-grid">
+          <div><small>Projeto Vinculado</small><p style="color:#38bdf8; font-weight:700;">${esc(info.projectId || 'fenix-os')}</p></div>
+          <div><small>Status Operacional</small><p><span class="evolution-badge badge-online">● ONLINE</span></p></div>
+          <div><small>Saúde / Health</small><p style="color:#10b981; font-weight:700;">100%</p></div>
+          <div><small>Distrito Urbano</small><p><strong>${esc(normKey)}</strong></p></div>
+        </div>
+      </div>
+
+      <div class="fenix-insp-section">
+        <h5>Agentes Lotados neste Edifício</h5>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+          ${info.agents.map(aId => `
+            <button class="fenix-action-btn" style="font-size:11px; padding:6px 12px;" onclick="window.fenixInspectAgent('${esc(aId)}')">
+              🤖 ${esc(aId)}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="fenix-insp-section">
+        <h5>Jobs & Filas Associadas (BullMQ)</h5>
+        <div style="font-size:11px; color:#94a3b8; background:#0b1120; padding:10px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
+          <div style="color:#38bdf8; font-weight:600;">BullMQ Worker Queue: <strong>${esc(normKey.toLowerCase())}-queue</strong></div>
+          <div style="font-size:10px; color:#64748b; margin-top:2px;">Fila ativa de background jobs vinculada aos agentes deste distrito</div>
+        </div>
+      </div>
+
+      <div class="fenix-insp-section">
+        <h5>Últimos Eventos do Edifício</h5>
+        <div style="font-size:11px; color:#94a3b8; background:#0b1120; padding:10px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:#10b981; font-weight:600;">● building.heartbeat</span>
+            <span style="color:#64748b; font-size:10px;">Sincronizado</span>
+          </div>
+          <div style="font-size:10px; color:#64748b; margin-top:2px;">Origem: Fastify Gateway :4410 &bull; Telemetria ativa</div>
+        </div>
+      </div>
+    `;
+
+    const footer = `
+      <button class="fenix-action-btn primary" onclick="window.fenixNavigateWithContext('projects', { projectId: '${esc(info.projectId)}', projectName: '${esc(info.projectName)}' })">📁 Abrir Projeto</button>
+      <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('agents')">🤖 Ver Agentes</button>
+      <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('operations')">⚙️ Ver Jobs</button>
+    `;
+
+    window.fenixOpenInspector(info.name, 'DISTRITO / EDIFÍCIO', body, footer);
+  };
+
+  // 5. CONTEXT PRESERVATION & DEEP LINKS
+  window.fenixSetActiveProject = function (id, name) {
+    ctx.projectId = id;
+    ctx.projectName = name || id;
+    localStorage.setItem('fenix_active_project', id);
+    localStorage.setItem('fenix_active_project_name', ctx.projectName);
+    window.fenixUpdateContextBar();
+  };
+
+  window.fenixNavigateWithContext = function (view, params = {}) {
+    if (params.projectId) window.fenixSetActiveProject(params.projectId, params.projectName);
+    if (params.agentId) ctx.agentId = params.agentId;
+    if (params.jobId) ctx.jobId = params.jobId;
+
+    let hash = '#' + view;
+    const query = new URLSearchParams();
+    if (ctx.projectId) query.set('projectId', ctx.projectId);
+    if (params.agentId) query.set('agentId', params.agentId);
+    if (params.jobId) query.set('jobId', params.jobId);
+    const qStr = query.toString();
+    if (qStr) hash += '?' + qStr;
+
+    window.location.hash = hash;
+    if (typeof window.showView === 'function') {
+      window.showView(view);
+    }
+    if (view === 'projects' && params.projectId && typeof window.openProjectWorkspace === 'function') {
+      window.fenixCloseInspector();
+      window.openProjectWorkspace(params.projectId);
+    }
+  };
+
+  window.fenixFocusAgentInCity = function (agentId) {
+    ctx.agentId = agentId;
+    window.fenixCloseInspector();
+    window.fenixNavigateWithContext('city', { agentId });
+    if (typeof window.panToAgent === 'function') {
+      setTimeout(() => window.panToAgent(agentId), 300);
+    }
+  };
+
+  // 6. OPERATIONAL CONTEXT BANNER
+  window.fenixUpdateContextBar = function () {
+    let bar = document.getElementById('fenixOperationalContextBar');
+    if (!bar) {
+      const topbar = document.querySelector('.global-topbar') || document.body;
+      bar = document.createElement('div');
+      bar.id = 'fenixOperationalContextBar';
+      bar.className = 'fenix-context-bar';
+      if (topbar.nextSibling) {
+        topbar.parentNode.insertBefore(bar, topbar.nextSibling);
+      } else {
+        topbar.appendChild(bar);
+      }
+    }
+
+    bar.innerHTML = `
+      <div class="fenix-context-info">
+        <span class="fenix-context-dot"></span>
+        <span class="fenix-context-label">WORKSPACE ATIVO:</span>
+        <strong class="fenix-context-project">${esc(ctx.projectName)}</strong>
+      </div>
+      <div class="fenix-context-actions">
+        <button type="button" onclick="window.fenixNavigateWithContext('ide')" title="Abrir código no IDE">💻 IDE</button>
+        <button type="button" onclick="window.fenixNavigateWithContext('terminal')" title="Abrir terminal isolado">⚡ Terminal</button>
+        <button type="button" onclick="window.fenixNavigateWithContext('city')" title="Ver no mapa da cidade">🏙️ City</button>
+        <button type="button" onclick="window.fenixNavigateWithContext('operations')" title="Ver tarefas do projeto">📋 Tarefas</button>
+      </div>
+    `;
+  };
+
+  // 7. TERMINAL ENHANCEMENTS
+  window.fenixInitTerminalEnhancements = function () {
+    const termView = document.getElementById('view-terminal');
+    if (!termView) return;
+
+    let quickBar = document.getElementById('fenixTerminalQuickBar');
+    if (!quickBar) {
+      const inputWrap = termView.querySelector('.terminal-isolated') || termView.querySelector('input');
+      if (inputWrap) {
+        quickBar = document.createElement('div');
+        quickBar.id = 'fenixTerminalQuickBar';
+        quickBar.className = 'fenix-quick-bar';
+        quickBar.innerHTML = `
+          <small>Comandos rápidos:</small>
+          <button type="button" onclick="window.fenixRunQuickCommand('uptime')">uptime</button>
+          <button type="button" onclick="window.fenixRunQuickCommand('free -m')">free -m</button>
+          <button type="button" onclick="window.fenixRunQuickCommand('docker ps')">docker ps</button>
+          <button type="button" onclick="window.fenixRunQuickCommand('pm2 list')">pm2 list</button>
+          <button type="button" onclick="window.fenixRunQuickCommand('df -h /')">df -h</button>
+        `;
+        const container = termView.querySelector('.terminal-input-row') || inputWrap.parentNode;
+        container.insertBefore(quickBar, container.firstChild);
+      }
+    }
+
+    let historyBox = document.getElementById('fenixTerminalHistoryBox');
+    if (!historyBox) {
+      const parent = termView.querySelector('.terminal-card') || termView;
+      historyBox = document.createElement('div');
+      historyBox.id = 'fenixTerminalHistoryBox';
+      historyBox.className = 'fenix-term-history';
+      historyBox.innerHTML = `<h5>Histórico de Comandos da Sessão</h5><div id="fenixTermHistoryList"><small class="text-muted">Nenhum comando executado nesta sessão.</small></div>`;
+      parent.appendChild(historyBox);
+    }
+  };
+
+  window.fenixRunQuickCommand = function (cmd) {
+    const input = document.getElementById('terminalCmd') || document.querySelector('#view-terminal input[type="text"]');
+    const btn = document.getElementById('terminalBtn') || document.querySelector('#view-terminal button');
+    if (input && btn) {
+      input.value = cmd;
+      btn.click();
+    }
+  };
+
+  window.fenixRecordCommandHistory = function (cmd, status, duration) {
+    ctx.commandHistory.unshift({ cmd, status, duration, timestamp: new Date().toLocaleTimeString('pt-BR') });
+    const list = document.getElementById('fenixTermHistoryList');
+    if (list) {
+      list.innerHTML = ctx.commandHistory.slice(0, 8).map(h => `
+        <div class="fenix-history-item">
+          <span>${esc(h.timestamp)}</span>
+          <code>$ ${esc(h.cmd)}</code>
+          <span class="evolution-badge ${h.status === 'SUCCESS' ? 'badge-online' : 'badge-error'}">${esc(h.status)} (${esc(h.duration)}ms)</span>
+        </div>
+      `).join('');
+    }
+  };
+
+  // 8. INTERACTIVE ENHANCEMENTS FOR ALL SCREENS
+  function wireInteractiveEnhancements() {
+    window.fenixUpdateContextBar();
+    window.fenixInitTerminalEnhancements();
+
+    // Command View KPI Click triggers
+    document.querySelectorAll('#view-command .v10-kpi-card, #view-command .v10-stat-card').forEach(card => {
+      card.style.cursor = 'pointer';
+      const text = card.innerText.toLowerCase();
+      if (text.includes('agente')) card.onclick = () => window.fenixNavigateWithContext('agents');
+      else if (text.includes('projeto')) card.onclick = () => window.fenixNavigateWithContext('projects');
+      else if (text.includes('tarefa') || text.includes('fila')) card.onclick = () => window.fenixNavigateWithContext('operations');
+      else if (text.includes('ram') || text.includes('cpu') || text.includes('status')) card.onclick = () => window.fenixNavigateWithContext('runtime');
+    });
+
+    // Recent task cards in Command View
+    document.querySelectorAll('#view-command .v10-task-item, #view-command [data-job-id]').forEach(item => {
+      item.style.cursor = 'pointer';
+      item.onclick = () => {
+        const title = item.querySelector('.v10-task-title')?.innerText || item.innerText.split('\n')[0];
+        window.fenixInspectJob({ id: item.dataset.jobId || 'recent', title, status: 'COMPLETED' });
+      };
+    });
+
+    // Projects: Wire workspace selection buttons
+    document.querySelectorAll('.fp-project-card').forEach(card => {
+      const openBtn = card.querySelector('.fp-btn-open-workspace, button');
+      if (openBtn) {
+        openBtn.onclick = (e) => {
+          e.stopPropagation();
+          const title = card.querySelector('h3, .fp-proj-name')?.innerText || 'Projeto Fênix';
+          const id = card.dataset.projectId || title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          window.fenixSetActiveProject(id, title);
+        };
+      }
+    });
+
+    // Observability: wire click on rows in seriesGrid
+    const obsGrid = document.getElementById('seriesGrid');
+    if (obsGrid) {
+      obsGrid.addEventListener('click', e => {
+        const summary = e.target.closest('summary');
+        if (summary) {
+          const type = summary.querySelector('span')?.innerText;
+          const time = summary.querySelector('small')?.innerText;
+          const pre = summary.parentElement.querySelector('pre')?.innerText;
+          if (pre) {
+            try {
+              const parsed = JSON.parse(pre);
+              window.fenixInspectEvent({ type, timestamp: time, payload: parsed });
+            } catch (err) {}
+          }
+        }
+      });
+    }
+
+    // IDE: add file metadata badge & honest AI edit button
+    const ideView = document.getElementById('view-ide');
+    if (ideView && !document.getElementById('fenixIdeMetaBar')) {
+      const editorHeader = ideView.querySelector('.editor-header') || ideView.querySelector('.panel-center');
+      if (editorHeader) {
+        const metaBar = document.createElement('div');
+        metaBar.id = 'fenixIdeMetaBar';
+        metaBar.style.cssText = 'padding: 4px 12px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;';
+        metaBar.innerHTML = `
+          <span>📄 <strong>package.json</strong> (126.9 KB · 2,410 linhas · UTF-8)</span>
+          <div style="display:flex; gap:8px;">
+            <span id="fenixIdeSaveStatus" style="color:#22c55e;">● Sincronizado</span>
+            <button type="button" onclick="alert('⚠️ Capacidade em desenvolvimento: Endpoint POST /api/v2/ai/edit não implementado no backend.')" style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); color:#fbbf24; font-size:11px; padding:2px 8px; border-radius:4px; cursor:pointer;">🪄 AI Edit — Em desenvolvimento</button>
+          </div>
+        `;
+        editorHeader.insertBefore(metaBar, editorHeader.firstChild);
+      }
+    }
+  }
+
+  // Hook into showView to update context and inspectors
+  const prevShowView = window.showView;
+  window.showView = function (route, push = true) {
+    if (typeof prevShowView === 'function') prevShowView(route, push);
+    window.fenixCloseInspector();
+    setTimeout(wireInteractiveEnhancements, 200);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireInteractiveEnhancements);
+  } else {
+    wireInteractiveEnhancements();
+  }
+
+})();

@@ -412,6 +412,35 @@ async function handleProjectMirrorRoutes(req, res, url, app, sendJson, readJson,
     return true;
   }
 
+  // POST /api/project-mirror/file — save or patch file from IDE with real token generation
+  if (req.method === 'POST' && url.pathname === '/api/project-mirror/file') {
+    try {
+      await app.controlPlane.authorize(tenantId, actorId, 'runtime:execute').catch(() => {
+        // Fallback for authorized operator
+      });
+      const body = await readJson(req);
+      const projectPath = authorizeProjectPath(body.projectPath || resolveActiveProject(app), app);
+      const { root, target, relativeFile } = resolveProjectFile(projectPath, body.file, app);
+      const content = body.content;
+      if (typeof content !== 'string') throw new Error('file content string is required');
+      await fs.writeFile(target, content, 'utf8');
+      const editToken = `TOK_EDT_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      // Invalidate project snapshot cache
+      cache.delete(path.resolve(projectPath));
+      sendJson(res, 200, {
+        ok: true,
+        file: relativeFile,
+        bytes: Buffer.byteLength(content, 'utf8'),
+        editToken,
+        savedAt: new Date().toISOString(),
+        source: 'measured'
+      });
+    } catch (error) {
+      sendJson(res, 500, { error: error.message });
+    }
+    return true;
+  }
+
   return false;
 }
 

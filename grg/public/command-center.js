@@ -51,7 +51,8 @@
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
     try {
-      const res = await fetch(path, {
+      const fetchFn = window.fenixFetch || fetch;
+      const res = await fetchFn(path, {
         method,
         credentials: 'same-origin',
         headers,
@@ -202,8 +203,18 @@
   // ==========================================
   // MODAL OVERLAY MANAGER
   // ==========================================
+  function ensureModalContainer() {
+    let container = document.getElementById('orchModalContainer');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'orchModalContainer';
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
   function openModal(titleHtml, bodyHtml, footerHtml = '', deskId = null) {
-    const container = document.getElementById('orchModalContainer');
+    const container = ensureModalContainer();
     if (!container) return;
     const markup = `
       <div class="orch-modal-backdrop" id="orchModalBackdrop"${deskId ? ` data-agent-desk="${esc(deskId)}"` : ''}>
@@ -559,8 +570,32 @@
       return;
     }
 
-    const title = `<i class="ph-fill ph-gear" style="color:var(--fenix-cyan);"></i> JOB DETAIL: ${esc(job.id)}`;
+    const status = String(job.status || '').toUpperCase();
+    const isRunning = ['RUNNING', 'STARTING', 'EXECUTING'].includes(status);
+    const isWaitingApproval = ['WAITING_APPROVAL', 'APPROVAL_REQUIRED', 'PENDING_APPROVAL'].includes(status) || Boolean(job.requiresApproval);
+    const terminal = ['SUCCEEDED', 'COMPLETED', 'FAILED', 'CANCELLED', 'DEAD_LETTER'].includes(status);
+
+    const rawProgress = job.progress ?? (job.stepsCompleted != null && job.totalSteps ? (Number(job.stepsCompleted) / Number(job.totalSteps)) * 100 : null);
+    const progressVal = ['COMPLETED', 'SUCCEEDED'].includes(status) ? 100 : (
+      rawProgress != null && Number.isFinite(Number(rawProgress)) ? Math.max(0, Math.min(100, Math.round(Number(rawProgress)))) : null
+    );
+    const executionStatus = isRunning
+      ? (job.eta || 'Em execução · previsão indisponível')
+      : (terminal ? (['COMPLETED', 'SUCCEEDED'].includes(status) ? 'Concluído' : status) : (status === 'QUEUED' ? 'Aguardando worker' : 'Estado indisponível'));
+
+    const rawTokens = job.tokens ?? job.tokenUsage?.total ?? job.tokensUsed ?? job.result?.metrics?.tokens;
+    const tokensUsed = Number.isFinite(Number(rawTokens)) && rawTokens != null ? Number(rawTokens) : null;
+    const tokenBudget = Number.isFinite(Number(job.tokenBudget)) && job.tokenBudget != null ? Number(job.tokenBudget) : null;
+    const tokenPct = tokenBudget > 0 && tokensUsed != null ? Math.min(100, Math.round((tokensUsed / tokenBudget) * 100)) : null;
+
+    const title = `<i class="ph-fill ph-gear" style="color:var(--fenix-cyan);"></i> JOB DETAIL: ${esc(job.id)} ${isRunning ? '<span class="orch-status-pill online" style="font-size:9px; vertical-align:middle; margin-left:6px;">⚡ EM SEGUNDO PLANO</span>' : ''} ${isWaitingApproval ? '<span class="orch-status-pill warn" style="font-size:9px; vertical-align:middle; margin-left:6px; background:rgba(245,158,11,0.2); border-color:#f59e0b; color:#f59e0b;">⚠️ AGUARDA APROVAÇÃO</span>' : ''}`;
     const body = `
+      ${isWaitingApproval ? `
+      <div class="orch-modal-section" style="border:1px solid #f59e0b; background:rgba(245,158,11,0.08); border-radius:8px; padding:12px; margin-bottom:12px;">
+        <div style="color:#f59e0b; font-weight:700; font-size:12px; display:flex; align-items:center; gap:6px;"><i class="ph-fill ph-warning"></i> AGUARDANDO APROVAÇÃO OPERACIONAL</div>
+        <div style="font-size:11px; color:#cbd5e1; margin-top:4px;">Este job foi submetido a aprovação humana de governança (Rule 27 / Rule 7).</div>
+      </div>
+      ` : ''}
       <div class="orch-modal-section">
         <div class="orch-modal-section-title">Dados Operacionais</div>
         <div class="orch-modal-grid">
@@ -570,11 +605,11 @@
           </div>
           <div class="orch-modal-data-item">
             <div class="orch-modal-data-lbl">Tipo / Executor</div>
-            <div class="orch-modal-data-val">${esc(job.type || job.jobType || 'task')}</div>
+            <div class="orch-modal-data-val">${esc(job.type || job.jobType || 'Indisponível')}</div>
           </div>
           <div class="orch-modal-data-item">
             <div class="orch-modal-data-lbl">Agente Atribuído</div>
-            <div class="orch-modal-data-val">${esc(job.agentId || job.agent?.name || 'Testing')}</div>
+            <div class="orch-modal-data-val">${esc(job.agent?.name || job.agentId || 'Não atribuído')}</div>
           </div>
           <div class="orch-modal-data-item">
             <div class="orch-modal-data-lbl">Status</div>
@@ -583,9 +618,29 @@
         </div>
       </div>
       <div class="orch-modal-section">
+        <div class="orch-modal-section-title">Execução &amp; Carregamento</div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; color:#94a3b8;">
+          <span>Progresso: <strong style="color:#fff;">${progressVal == null ? 'Indisponível' : `${progressVal}%`}</strong></span>
+          <span style="color:var(--fenix-cyan); font-family:var(--fenix-font-mono);">${executionStatus}</span>
+        </div>
+        <div style="height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden;">
+          <div style="width:${progressVal ?? 0}%; height:100%; background:linear-gradient(90deg, #00E5A0, #38BDF8); border-radius:3px; transition:width 0.3s;"></div>
+        </div>
+      </div>
+      <div class="orch-modal-section">
+        <div class="orch-modal-section-title">Gasto de Tokens</div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; color:#94a3b8;">
+          <span>Consumo: <strong style="color:#fff;">${tokensUsed == null ? 'Indisponível' : `${tokensUsed.toLocaleString('pt-BR')} tokens`}</strong></span>
+          <span style="color:var(--fenix-purple); font-family:var(--fenix-font-mono);">${tokenBudget == null ? 'Orçamento não informado' : (tokenPct == null ? `Orçamento: ${tokenBudget.toLocaleString('pt-BR')}` : `${tokenPct}% do orçamento (${tokenBudget.toLocaleString('pt-BR')})`)}</span>
+        </div>
+        <div style="height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden;">
+          <div style="width:${tokenPct ?? 0}%; height:100%; background:linear-gradient(90deg, #a855f7, #ec4899); border-radius:3px; transition:width 0.3s;"></div>
+        </div>
+      </div>
+      <div class="orch-modal-section">
         <div class="orch-modal-section-title">Prompt / Instrução</div>
         <div class="orch-modal-data-item">
-          <div style="font-size:11px; color:#fff;">${esc(job.prompt || job.title || 'Execução de tarefa no workspace.')}</div>
+          <div style="font-size:11px; color:#fff;">${esc(job.prompt || job.payload?.prompt || job.title || 'Instrução não publicada pelo runtime.')}</div>
         </div>
       </div>
       ${job.error ? `
@@ -598,9 +653,8 @@
       ` : ''}
     `;
 
-    const status = String(job.status || '').toUpperCase();
-    const terminal = ['SUCCEEDED', 'COMPLETED', 'FAILED', 'CANCELLED', 'DEAD_LETTER'].includes(status);
     const footer = `
+      ${isWaitingApproval ? '<button class="orch-inspect-btn" id="modalJobApprove" style="background:#059669; border-color:#10b981; color:#fff; font-weight:700;">✓ APROVAR JOB</button><button class="orch-inspect-btn" id="modalJobReject" style="background:rgba(239,68,68,0.2); border-color:#ef4444; color:#ef4444; font-weight:700;">✕ REJEITAR</button>' : ''}
       ${status === 'PAUSED' ? '<button class="orch-inspect-btn" id="modalJobResume">RETOMAR</button>' : ''}
       ${['QUEUED', 'RUNNING', 'STARTING'].includes(status) ? '<button class="orch-inspect-btn" id="modalJobPause">PAUSAR</button>' : ''}
       ${['QUEUED', 'RUNNING', 'STARTING', 'PAUSED'].includes(status) ? '<button class="orch-inspect-btn" id="modalJobCancel" style="color:var(--fenix-red);">PARAR</button>' : ''}
@@ -610,10 +664,12 @@
 
     openModal(title, body, footer);
     document.getElementById('modalJobBtnClose')?.addEventListener('click', closeModal);
-    const action = async (name) => {
-      const response = await apiCall(`/api/fenix/jobs/${encodeURIComponent(job.id)}/${name}`, 'POST');
+    const action = async (name, payload = {}) => {
+      const response = await apiCall(`/api/v2/jobs/${encodeURIComponent(job.id)}/${name}`, 'POST', Object.keys(payload).length ? payload : null);
       if (response) { closeModal(); renderPanels(); }
     };
+    document.getElementById('modalJobApprove')?.addEventListener('click', () => action('approve'));
+    document.getElementById('modalJobReject')?.addEventListener('click', () => action('reject', { reason: 'Rejeitado pelo operador' }));
     document.getElementById('modalJobPause')?.addEventListener('click', () => action('pause'));
     document.getElementById('modalJobResume')?.addEventListener('click', () => action('resume'));
     document.getElementById('modalJobCancel')?.addEventListener('click', () => action('cancel'));
@@ -695,7 +751,7 @@
 
   // Modal de Logs do Agente / Agent Desk V2.1
   function openAgentDeskModal(agentId) {
-    const container = document.getElementById('orchModalContainer');
+    const container = ensureModalContainer();
     if (container) {
       const existing = container.querySelector(`.orch-modal-backdrop[data-agent-desk="${agentId}"]`);
       if (existing) {
@@ -711,8 +767,29 @@
     const jobs = live.jobs || [];
     const tasks = live.tasks || [];
     let ag = agents.find(a => String(a.id || a.agentId || a.name || '').toLowerCase() === String(agentId || '').toLowerCase()) || { id: agentId, name: agentId };
+    const isCeo = String(agentId || '').toLowerCase() === 'agent.ceo' ||
+                  String(ag?.id || ag?.agentId || '').toLowerCase() === 'agent.ceo' ||
+                  String(ag?.role || '').toUpperCase() === 'CHIEF_EXECUTIVE_OFFICER';
+    if (isCeo) {
+      ag = {
+        id: 'agent.ceo',
+        name: 'CEO Agent',
+        role: 'CHIEF_EXECUTIVE_OFFICER',
+        district: 'command-center',
+        department: 'EXECUTIVE',
+        company: 'Fênix Enterprise',
+        companyStatus: 'OPERATIONAL',
+        status: 'ACTIVE',
+        model: 'qwen2.5:3b',
+        tools: ['company_metrics', 'delegate_job', 'observe_enterprise'],
+        permissions: ['*'],
+        tokens: ag?.tokens ?? '—',
+        latency: window.FENIX?.live?.wsLatencyMs ? `${window.FENIX.live.wsLatencyMs}ms` : '—',
+        ...ag
+      };
+    }
     const agentTitle = formatAgentTitle(ag);
-    const title = `<i class="ph-fill ph-desktop" style="color:var(--fenix-cyan);"></i> AGENT DESK: ${esc(agentTitle)}`;
+    const title = `<i class="ph-fill ph-desktop" style="color:${isCeo ? '#ffd700' : 'var(--fenix-cyan)'};"></i> ${isCeo ? 'CEO EXECUTIVE DESK' : 'AGENT DESK'}: ${esc(agentTitle)}`;
     const currentJob = ag?.currentJob;
     const currentMission = ag?.currentMission;
     const agentLogs = Array.isArray(ag?.logs) ? ag.logs.slice(0, 10) : [];
@@ -737,8 +814,9 @@
       return t.startsWith('git.') || p.commit || p.branch;
     }).slice(0, 5);
 
-    // Current action
-    const currentAction = ag?.currentAction || ag?.workMsg || (currentJob ? `Executando job ${currentJob.type || currentJob.id}` : 'Standby aguardando atribuição no distrito');
+    // Current action & Next action
+    const currentAction = ag?.currentAction || ag?.workMsg || (currentJob ? `Executando job ${currentJob.type || currentJob.id}` : (isCeo ? 'Observando telemetria e saúde corporativa' : 'Standby aguardando atribuição no distrito'));
+    const nextAction = ag?.nextAction || (isCeo ? 'Pronto para diretivas estratégicas e delegação de missões' : 'Standby aguardando tarefas no distrito');
 
     // Terminal state
     const hasTerminal = ag?.terminal?.active || ag?.terminalOutput;
@@ -746,6 +824,7 @@
     const body = `
       <div class="orch-modal-tabs">
         <button class="orch-modal-tab active" data-desk-tab="overview">VISÃO GERAL</button>
+        ${isCeo ? '<button class="orch-modal-tab" data-desk-tab="ceo-chat" style="color:#ffd700; font-weight:700;"><i class="ph-bold ph-chats"></i> CHAT COM CEO</button>' : ''}
         <button class="orch-modal-tab" data-desk-tab="activity">ATIVIDADE</button>
         <button class="orch-modal-tab" data-desk-tab="tasks">TAREFAS</button>
         <button class="orch-modal-tab" data-desk-tab="memory">MEMÓRIA</button>
@@ -759,25 +838,59 @@
 
       <!-- TAB 1: OVERVIEW -->
       <div class="orch-desk-tab-pane active" id="deskTab-overview">
+        ${isCeo ? `
+        <div class="orch-modal-section" style="border:1px solid rgba(255,215,0,0.3); background:rgba(255,215,0,0.03); border-radius:8px; padding:12px; margin-bottom:12px;">
+          <div class="orch-modal-section-title" style="color:#ffd700; display:flex; justify-content:space-between; align-items:center;">
+            <span>PAINEL EXECUTIVO: FÊNIX ENTERPRISE</span>
+            <button class="orch-inspect-btn" id="modalOpenCeoChatBtn" style="background:rgba(255,215,0,0.15); border-color:#ffd700; color:#ffd700; font-size:11px; padding:4px 12px; font-weight:700;">
+              <i class="ph-bold ph-chat-circle-dots"></i> CHAT COM O CEO
+            </button>
+          </div>
+          <div class="orch-modal-data-grid">
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">COMPANY STATUS</div><div class="orch-modal-data-val" style="color:var(--fenix-green); font-weight:700;">${esc(ag?.companyStatus || 'OPERATIONAL')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">EMPRESA</div><div class="orch-modal-data-val">${esc(ag?.company || 'Fênix Enterprise')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">OBJETIVOS / METAS</div><div class="orch-modal-data-val">3 metas estratégicas</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">AGENTES ATIVOS</div><div class="orch-modal-data-val">${agents.length} em frota</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">JOBS EM ANDAMENTO</div><div class="orch-modal-data-val">${jobs.filter(j => j.status === 'RUNNING').length}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">PROBLEMAS</div><div class="orch-modal-data-val" style="color:${jobs.some(j => j.status === 'FAILED') ? 'var(--fenix-amber)' : 'var(--fenix-green)'};">${jobs.filter(j => j.status === 'FAILED').length} falhas</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">HIPÓTESES (EVOLUTION)</div><div class="orch-modal-data-val">Laboratório Ativo</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">EXPERIMENTOS</div><div class="orch-modal-data-val">Mapeamento Contínuo</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">DECISÕES RECENTES</div><div class="orch-modal-data-val">Rastro auditável</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MEMÓRIA EPISÓDICA</div><div class="orch-modal-data-val">Memória viva sincronizada</div></div>
+          </div>
+        </div>
+        ` : ''}
+
         <div class="orch-modal-section">
           <div class="orch-modal-section-title">Identidade Operacional</div>
           <div class="orch-modal-data-grid">
-            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">STATUS</div><div class="orch-modal-data-val" style="color:${ag?.status === 'WORKING' || ag?.status === 'ACTIVE' ? 'var(--fenix-green)' : 'var(--fenix-cyan)'};">${esc(ag?.status || 'IDLE')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">NOME</div><div class="orch-modal-data-val">${esc(ag?.name || agentTitle)}</div></div>
             <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">PAPEL CANÔNICO</div><div class="orch-modal-data-val" style="text-transform:uppercase;">${esc(ag?.role || 'Autonomous Agent')}</div></div>
-            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MODELO / PROVIDER</div><div class="orch-modal-data-val">${esc(ag?.model || ag?.modelName || 'qwen2.5:3b (aiplatform)')}</div></div>
-            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">DISTRITO CANÔNICO</div><div class="orch-modal-data-val">${esc(ag?.district || 'CENTRAL')}</div></div>
-            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MISSÃO VINCULADA</div><div class="orch-modal-data-val">${esc(currentMission?.name || currentMission?.id || 'Nenhuma')}</div></div>
-            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">JOB VINCULADO</div><div class="orch-modal-data-val">${esc(currentJob?.name || currentJob?.id || 'Nenhum')}</div></div>
-            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">PROJETO</div><div class="orch-modal-data-val">${esc(ag?.associatedProject || ag?.project || 'Fênix Core OS')}</div></div>
-            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">HEARTBEAT</div><div class="orch-modal-data-val">${ag?.uptimeMinutes == null ? 'Ativo (< 1s)' : `${ag.uptimeMinutes} min`}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">DEPARTAMENTO</div><div class="orch-modal-data-val">${esc(ag?.department || ag?.district || 'CENTRAL')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">EMPRESA</div><div class="orch-modal-data-val">${esc(ag?.company || 'Fênix Enterprise')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">STATUS</div><div class="orch-modal-data-val" style="color:${ag?.status === 'WORKING' || ag?.status === 'ACTIVE' ? 'var(--fenix-green)' : 'var(--fenix-cyan)'};">${esc(ag?.status || 'AVAILABLE')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">JOB ATUAL</div><div class="orch-modal-data-val">${esc(currentJob?.name || currentJob?.id || 'Standby')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MODELO</div><div class="orch-modal-data-val">${esc(ag?.model || ag?.modelName || 'qwen2.5:3b')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">TOOLS</div><div class="orch-modal-data-val">${esc((ag?.tools || agentSkills || ['file_read', 'git_inspect', 'command_exec']).slice(0, 3).join(', '))}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">PERMISSÕES</div><div class="orch-modal-data-val">${esc((ag?.permissions || ['READ', 'EXECUTE']).join(', '))}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">TOKENS</div><div class="orch-modal-data-val">${esc(ag?.tokens || 0)}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">LATÊNCIA</div><div class="orch-modal-data-val">${esc(ag?.latency || '—')}</div></div>
+            <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">MEMÓRIA</div><div class="orch-modal-data-val">${ag?.memory?.entries || (ag?.episodicMemory ? ag.episodicMemory.length : 0)} entradas</div></div>
           </div>
         </div>
 
         <div class="orch-modal-section">
-          <div class="orch-modal-section-title">Ação em Tempo Real (Current Action)</div>
-          <div style="background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.3); border-radius:6px; padding:10px 12px; font-family:var(--fenix-font-mono); font-size:12px; color:#fff;">
-            <span style="color:var(--fenix-cyan); font-weight:700;">● EXECUÇÃO:</span> ${esc(currentAction)}
+          <div class="orch-modal-section-title">Ação em Tempo Real & Próxima Ação</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div style="background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.3); border-radius:6px; padding:10px 12px; font-family:var(--fenix-font-mono); font-size:11px; color:#fff;">
+              <span style="color:var(--fenix-cyan); font-weight:700;">● ÚLTIMA AÇÃO:</span> ${esc(currentAction)}
+            </div>
+            <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:6px; padding:10px 12px; font-family:var(--fenix-font-mono); font-size:11px; color:#fff;">
+              <span style="color:var(--fenix-green); font-weight:700;">● PRÓXIMA AÇÃO:</span> ${esc(nextAction)}
+            </div>
           </div>
+        </div>
+      </div>
         </div>
       </div>
 
@@ -945,6 +1058,22 @@
           </div>
         </div>
       </div>
+
+      ${isCeo ? `
+      <!-- TAB CEO CHAT -->
+      <div class="orch-desk-tab-pane" id="deskTab-ceo-chat" style="display:none;">
+        <div class="orch-modal-section">
+          <div class="orch-modal-section-title" style="color:#ffd700;">Canal Executivo Direto com o CEO Agent</div>
+          <div id="ceoDeskChatHistory" style="background:#020617; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:10px; font-family:var(--fenix-font-mono); font-size:11px; max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+            <div style="color:#94a3b8; font-style:italic;">Olá. Sou o CEO Agent do Fênix. Pergunte sobre o status da empresa, atividades, métricas consolidadas ou experimentos científicos.</div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <input type="text" id="ceoDeskChatInput" placeholder="Faça uma pergunta executiva (ex.: Como está a empresa?)..." style="flex:1; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:8px 12px; color:#fff; font-size:12px;" />
+            <button id="ceoDeskChatSubmit" class="orch-inspect-btn" style="background:var(--fenix-cyan); color:#000; font-weight:700;">ENVIAR</button>
+          </div>
+        </div>
+      </div>
+      ` : ''}
     `;
 
     const hasJob = currentJob && currentJob.id;
@@ -985,6 +1114,34 @@
             pane.classList.toggle('active', isTarget);
           });
         });
+      });
+
+      modalEl.querySelector('#modalOpenCeoChatBtn')?.addEventListener('click', () => {
+        const tab = modalEl.querySelector('.orch-modal-tab[data-desk-tab="ceo-chat"]');
+        if (tab) tab.click();
+      });
+
+      const sendCeoChat = async () => {
+        const input = modalEl.querySelector('#ceoDeskChatInput');
+        const history = modalEl.querySelector('#ceoDeskChatHistory');
+        if (!input || !history || !input.value.trim()) return;
+        const msg = input.value.trim();
+        input.value = '';
+        history.innerHTML += `<div style="color:#38bdf8; text-align:right;"><strong>Você:</strong> ${esc(msg)}</div>`;
+        history.scrollTop = history.scrollHeight;
+        try {
+          const res = await apiCall('/api/v2/company/ceo/chat', 'POST', { message: msg });
+          const answer = res?.answer || res?.response || 'INSUFFICIENT DATA';
+          history.innerHTML += `<div style="color:#ffd700;"><strong>CEO Agent:</strong> ${esc(answer)}</div>`;
+        } catch (err) {
+          history.innerHTML += `<div style="color:#ef4444;"><strong>CEO Agent:</strong> Erro ao processar requisição: ${esc(err.message)}</div>`;
+        }
+        history.scrollTop = history.scrollHeight;
+      };
+
+      modalEl.querySelector('#ceoDeskChatSubmit')?.addEventListener('click', sendCeoChat);
+      modalEl.querySelector('#ceoDeskChatInput')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendCeoChat();
       });
     }
 
@@ -1217,14 +1374,27 @@
       openModal('APPROVAL INSPECT: ' + esc(apprvId), `<pre style="font-size:10px;background:#000;padding:10px;color:#a5f3fc;">${esc(JSON.stringify(apprv, null, 2))}</pre>`, '<button class="orch-inspect-btn" onclick="document.querySelector(\'.orch-modal\')?.remove()">VOLTAR</button>');
     });
     document.getElementById('btnApproveAction')?.addEventListener('click', async () => {
-      await apiCall(`/api/approvals/${encodeURIComponent(apprvId)}/approve`, 'POST').catch(() => null);
+      const button = document.getElementById('btnApproveAction');
+      if (button) button.disabled = true;
+      const result = await apiCall(`/api/approvals/${encodeURIComponent(apprvId)}/approve`, 'POST').catch(() => null);
+      if (!result || result.error || !['approved', 'consumed'].includes(String(result.status || '').toLowerCase())) {
+        if (button) button.disabled = false;
+        showToast(result?.error || 'A aprovação não foi concluída. Verifique as permissões e tente novamente.', 'error');
+        return;
+      }
       closeModal();
+      showToast(result.jobId ? `Aprovação registrada. Job ${result.jobId} foi despachado.` : 'Aprovação registrada.', 'success');
       renderPanels();
     });
     document.getElementById('btnRejectAction')?.addEventListener('click', async () => {
       const reason = prompt('Motivo da rejeição:');
-      await apiCall(`/api/approvals/${encodeURIComponent(apprvId)}/reject`, 'POST', { reason }).catch(() => null);
+      const result = await apiCall(`/api/approvals/${encodeURIComponent(apprvId)}/reject`, 'POST', { reason }).catch(() => null);
+      if (!result || result.error || String(result.status || '').toLowerCase() !== 'rejected') {
+        showToast(result?.error || 'A rejeição não foi registrada. Verifique as permissões e tente novamente.', 'error');
+        return;
+      }
       closeModal();
+      showToast('Rejeição registrada.', 'success');
       renderPanels();
     });
   }
@@ -1466,40 +1636,46 @@
   // SYSTEM HEALTH MATRIX (Rule 21)
   // ==========================================
   async function openSystemHealthModal() {
-    const health = await apiCall('/health').catch(() => null) || {};
-    const obs = await apiCall('/api/observability/live').catch(() => null) || {};
+    const [health, obs, auto] = await Promise.all([
+      apiCall('/health').catch(() => null) || {},
+      apiCall('/api/observability/live').catch(() => null) || {},
+      apiCall('/api/v2/autonomous/heartbeat').catch(() => null) || {}
+    ]);
     const live = window.FENIX?.live || {};
+    const autoHeartbeat = auto?.heartbeat || auto || {};
     const title = `<i class="ph-fill ph-heartbeat" style="color:var(--fenix-green);"></i> SYSTEM HEALTH V2.1 — SUBSYSTEM MATRIX`;
-    
+
+    const wsLatency = live.wsLatencyMs != null ? `${live.wsLatencyMs}ms` : '—';
     const subsystems = [
-      { name: 'FÊNIX CORE', status: health.ok ? 'ONLINE' : 'DEGRADED', latency: '< 1ms', desc: 'Kernel de orquestração & microkernel Fênix' },
-      { name: 'API GATEWAY', status: health.ok ? 'ONLINE' : 'DEGRADED', latency: '2ms', desc: 'HTTP API endpoints, autenticação JWT & cookies' },
-      { name: 'MISSION KERNEL', status: (live.missions || obs.activeMissions) ? 'ONLINE' : 'STANDBY', latency: '4ms', desc: 'Planejamento DAG, checkpoints, reconciliação' },
-      { name: 'JOB ENGINE', status: 'ONLINE', latency: '3ms', desc: 'Fila universal v2, retry governado, workers' },
-      { name: 'WORKERS', status: 'ONLINE', latency: '< 5ms', desc: 'Executores locais & background tasks ativas' },
-      { name: 'WEBSOCKET REALTIME', status: live.status === 'ONLINE' || live.status === 'CONNECTED' ? 'ONLINE' : 'ONLINE', latency: '1ms', desc: 'Canal de eventos bidirecional /events' },
-      { name: 'EVENT STORE', status: 'ONLINE', latency: '2ms', desc: 'Log append-only, deduplicação & retenção' },
-      { name: 'DATABASE', status: health.components?.database?.ok !== false ? 'ONLINE' : 'ONLINE', latency: '1ms', desc: 'SQLite / WAL mode com write-through cache' },
-      { name: 'MEMORY FABRIC', status: 'ONLINE', latency: '3ms', desc: 'Memória de engenharia, vetorial e curto prazo' },
-      { name: 'KNOWLEDGE GRAPH', status: 'ONLINE', latency: '5ms', desc: 'Grafo de entidades, dependências e projetos' },
-      { name: 'MCP CONNECTORS', status: 'READY', latency: '< 10ms', desc: 'Model Context Protocol connectors registry' },
-      { name: 'BROWSER QA', status: 'ONLINE', latency: '< 20ms', desc: 'Playwright headless testing (1080p, 900p, 768p, 720p)' },
-      { name: 'GIT SUBSYSTEM', status: 'ONLINE', latency: '8ms', desc: 'Controle de versão, status, branches & commits' },
-      { name: 'TERMINAL SHELL', status: 'READY', latency: '< 2ms', desc: 'Subprocessos governados & sandbox execution' }
+      { name: 'FÊNIX CORE', status: health.ok ? 'ONLINE' : 'DEGRADED', latency: wsLatency, desc: 'Kernel de orquestração & microkernel Fênix' },
+      { name: 'API GATEWAY', status: health.ok ? 'ONLINE' : 'DEGRADED', latency: wsLatency, desc: 'HTTP API endpoints, autenticação JWT & cookies' },
+      { name: 'AUTONOMOUS LOOP', status: autoHeartbeat.evolution === 'ACTIVE' ? 'ONLINE' : (autoHeartbeat.evolution || 'STANDBY'), latency: '—', desc: 'Loop contínuo de auto-evolução e auto-aprendizado' },
+      { name: 'PERSISTÊNCIA RELACIONAL', status: autoHeartbeat.persistence || (health.components?.database?.ok ? 'HEALTHY' : 'DEGRADED'), latency: '—', desc: 'PostgreSQL 17 / cluster persistente' },
+      { name: 'CACHE & FILAS', status: health.components?.redis?.ok !== false ? 'ONLINE' : 'DEGRADED', latency: '—', desc: 'Redis 7 / BullMQ broker universal' },
+      { name: 'VECTOR STORE', status: autoHeartbeat.persistence === 'HEALTHY' ? 'ONLINE' : 'STANDBY', latency: '—', desc: 'Qdrant / Coleção fenix_memory' },
+      { name: 'MISSION KERNEL', status: (live.missions?.length || obs.activeMissions) ? 'ONLINE' : 'STANDBY', latency: '—', desc: 'Planejamento DAG, checkpoints, reconciliação' },
+      { name: 'JOB ENGINE', status: 'ONLINE', latency: '—', desc: 'Fila universal v2, retry governado, workers' },
+      { name: 'WEBSOCKET REALTIME', status: live.status === 'ONLINE' || live.status === 'CONNECTED' ? 'ONLINE' : (live.status || 'SYNCING'), latency: wsLatency, desc: 'Canal de eventos bidirecional /events' },
+      { name: 'MEMORY FABRIC', status: autoHeartbeat.memory === 'ACTIVE' ? 'ONLINE' : (autoHeartbeat.memory || 'ACTIVE'), latency: '—', desc: 'EvolutionMemory e conhecimento persistente' },
+      { name: 'KNOWLEDGE GRAPH', status: 'ONLINE', latency: '—', desc: 'Grafo de entidades, dependências e projetos' },
+      { name: 'MCP CONNECTORS', status: 'READY', latency: '—', desc: 'Model Context Protocol connectors registry' },
+      { name: 'BROWSER QA', status: 'ONLINE', latency: '—', desc: 'Playwright headless testing (1080p, 900p, 768p, 720p)' },
+      { name: 'GIT SUBSYSTEM', status: 'ONLINE', latency: '—', desc: 'Controle de versão, status, branches & commits' }
     ];
 
+    const isGlobalHealthy = health.ok && autoHeartbeat.persistence === 'HEALTHY';
     const body = `
       <div class="orch-modal-section">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div class="orch-modal-section-title" style="margin:0;">Matriz de Saúde dos 14 Subsistemas Canônicos</div>
-          <span class="orch-status-pill online" style="font-size:9px;">GLOBAL: 100% OPERACIONAL</span>
+          <div class="orch-modal-section-title" style="margin:0;">Matriz de Saúde dos Subsistemas Canônicos</div>
+          <span class="orch-status-pill ${isGlobalHealthy ? 'online' : 'warn'}" style="font-size:9px;">GLOBAL: ${isGlobalHealthy ? 'OPERACIONAL' : 'PARCIAL'}</span>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
           ${subsystems.map(s => `
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:6px; padding:8px 10px;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-family:var(--fenix-font-mono); font-size:10px; font-weight:700; color:#fff;">${esc(s.name)}</span>
-                <span class="orch-status-pill done" style="font-size:8px;">${esc(s.status)}</span>
+                <span class="orch-status-pill ${s.status === 'ONLINE' || s.status === 'HEALTHY' || s.status === 'READY' ? 'done' : 'warn'}" style="font-size:8px;">${esc(s.status)}</span>
               </div>
               <div style="font-size:8.5px; color:var(--fenix-text-dim); margin-top:3px;">${esc(s.desc)}</div>
               <div style="font-size:8px; color:var(--fenix-cyan); font-family:var(--fenix-font-mono); margin-top:2px;">Latência: ${esc(s.latency)}</div>
@@ -2090,17 +2266,27 @@
     if (distEl) distEl.textContent = realAg.district || 'Não publicado';
   }
 
-  // Listen for agent clicks in AI City canvas
+  // Listen for agent clicks in AI City canvas — preserve Living World when AI City is active
   window.addEventListener('fenix-agent-selected', (e) => {
     if (e.detail?.agent) {
       selectedAgentId = e.detail.agent.id || e.detail.agent.name;
       updateAgentInspector(selectedAgentId);
       renderPanels();
-      openAgentDeskModal(selectedAgentId);
+      const cityView = document.getElementById('view-city');
+      const isCityActive = cityView && (cityView.classList.contains('active') || cityView.style.display === 'flex' || cityView.style.display === 'block');
+      if (!isCityActive && !e.detail?.spatialOnly) {
+        openAgentDeskModal(selectedAgentId);
+      }
     }
   });
   window.addEventListener('fenix-handoff-selected', (e) => openHandoffInspector(e.detail));
-  window.addEventListener('fenix-district-selected', (e) => openDepartmentWorkspaceModal(e.detail?.key, e.detail?.district));
+  window.addEventListener('fenix-district-selected', (e) => {
+    const cityView = document.getElementById('view-city');
+    const isCityActive = cityView && (cityView.classList.contains('active') || cityView.style.display === 'flex' || cityView.style.display === 'block');
+    if (!isCityActive) {
+      openDepartmentWorkspaceModal(e.detail?.key, e.detail?.district);
+    }
+  });
   window.addEventListener('fenix-city-connection', () => refreshSystemHealth());
   document.addEventListener('fenix-city-connection', () => refreshSystemHealth());
   window.addEventListener('fenix-mission-selected', (e) => openMissionDetailModal(e.detail?.missionId));
@@ -2261,10 +2447,10 @@
     if (key === 'AI-DISTRICT' || key === 'AI' || key === 'AI_MODELS' || key === 'API-PLATFORM') {
       return `
         <div class="orch-modal-grid">
-          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">VPS API Platform</div><div class="orch-modal-data-val" id="apiPlatformStatusVal" style="color:var(--fenix-green);"><i class="ph-fill ph-circle"></i> ONLINE (3001)</div></div>
-          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Host & Engine</div><div class="orch-modal-data-val">209.50.241.22 (Fastify)</div></div>
-          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Modelos Ativos</div><div class="orch-modal-data-val" style="color:var(--fenix-cyan);">Qwen 2.5 (0.5B/3B) + DeepSeek R1</div></div>
-          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Database / Cache</div><div class="orch-modal-data-val">Postgres 16 + Redis 7 BullMQ</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">VPS API Platform</div><div class="orch-modal-data-val" id="apiPlatformStatusVal" style="color:var(--fenix-muted);">VERIFICANDO</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Host & Engine</div><div class="orch-modal-data-val" id="apiPlatformHostVal">Aguardando resposta</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Providers medidos</div><div class="orch-modal-data-val" id="apiPlatformModelsVal" style="color:var(--fenix-cyan);">Aguardando resposta</div></div>
+          <div class="orch-modal-data-item"><div class="orch-modal-data-lbl">Persistência e cache</div><div class="orch-modal-data-val" id="apiPlatformStorageVal">Aguardando health do Fênix</div></div>
         </div>
         <div style="margin-top:10px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -2273,7 +2459,7 @@
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button id="btnOpenApiIde" class="orch-inspect-btn" style="color:var(--fenix-cyan);font-size:9.5px;padding:4px 8px;"><i class="ph-fill ph-code"></i> Programar na IDE</button>
-            <button id="btnDeployApiVps" class="orch-inspect-btn" style="color:var(--fenix-green);font-size:9.5px;padding:4px 8px;"><i class="ph-fill ph-arrows-clockwise"></i> Reiniciar / Deploy VPS</button>
+            <button id="btnDeployApiVps" class="orch-inspect-btn" style="color:var(--fenix-green);font-size:9.5px;padding:4px 8px;"><i class="ph-fill ph-arrows-clockwise"></i> Abrir operações de deploy</button>
             <button id="btnTestApiChat" class="orch-inspect-btn" style="color:var(--fenix-purple);font-size:9.5px;padding:4px 8px;"><i class="ph-fill ph-paper-plane-right"></i> Testar Chat IA</button>
           </div>
           <div id="apiPlatformLiveOutput" style="display:none;margin-top:8px;padding:6px;background:#05070f;border-radius:4px;font-family:var(--fenix-font-mono);font-size:9.5px;color:#a5b4fc;max-height:100px;overflow-y:auto;white-space:pre-wrap;"></div>
@@ -2511,14 +2697,7 @@
     document.getElementById('modalDeptClose')?.addEventListener('click', closeModal);
     document.getElementById('modalDeptFocusCity')?.addEventListener('click', () => {
       closeModal();
-      if (window.fenixCity && d.x != null && d.y != null) {
-        const tw = window.fenixCity.state.tileSize;
-        const th = tw / 2;
-        window.fenixCity.state.targetCamera.x = -(d.x - d.y) * tw;
-        window.fenixCity.state.targetCamera.y = -(d.x + d.y) * th;
-        window.fenixCity.state.targetCamera.zoom = 1.6;
-        window.fenixCity._updateZoomDisplay?.();
-      }
+      if (window.fenixCity?.panToDistrict) window.fenixCity.panToDistrict(dKey);
     });
     document.getElementById('modalDeptFilterCity')?.addEventListener('click', () => {
       closeModal();
@@ -2562,27 +2741,22 @@
       const outEl = document.getElementById('apiPlatformLiveOutput');
       if (outEl) {
         outEl.style.display = 'block';
-        outEl.textContent = 'Enviando comando de reinício/deploy para VPS 209.50.241.22...';
+        outEl.textContent = 'Abrindo Operações. Deploys de produção passam pelo fluxo de aprovação e ficam registrados no histórico.';
       }
-      try {
-        const res = await fetch('/api/v2/api-platform/deploy', { method: 'POST' });
-        const json = await res.json();
-        if (outEl) outEl.textContent = json.ok ? `[VPS DEPLOY OK] ${json.output || 'Container api-platform-api-1 reiniciado com sucesso!'}` : `[ERRO] ${json.error}`;
-      } catch (err) {
-        if (outEl) outEl.textContent = `[ERRO DEPLOY] ${err.message}`;
-      }
+      closeModal();
+      window.showView?.('operations');
     });
     document.getElementById('btnTestApiChat')?.addEventListener('click', async () => {
       const outEl = document.getElementById('apiPlatformLiveOutput');
       if (outEl) {
         outEl.style.display = 'block';
-        outEl.textContent = 'Consultando Ollama (Qwen) na VPS através da API Platform...';
+        outEl.textContent = 'Enviando uma mensagem de teste à API Platform configurada no servidor...';
       }
       try {
         const res = await fetch('/api/v2/api-platform/test-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: 'Olá Fênix OS!', model: 'qwen2.5:0.5b' })
+          body: JSON.stringify({ message: 'Olá Fênix OS!' })
         });
         const json = await res.json();
         if (outEl) outEl.textContent = json.ok ? `[IA RESPOSTA] ${json.data?.choices?.[0]?.message?.content || JSON.stringify(json.data)}` : `[STATUS ${json.status || 'ERR'}] ${json.error || JSON.stringify(json)}`;
@@ -2591,13 +2765,46 @@
       }
     });
     if (dKey === 'AI-DISTRICT' || dKey === 'AI' || dKey === 'AI_MODELS' || dKey === 'API-PLATFORM') {
-      fetch('/api/v2/api-platform/health').then(r => r.json()).then(res => {
-        if (res.ok && res.data) {
-          const upt = res.data.uptime ? `${(res.data.uptime / 3600).toFixed(1)}h` : '—';
-          const uptEl = document.getElementById('apiPlatformUptime');
-          if (uptEl) uptEl.textContent = `Uptime: ${upt} | Latência: ${res.data.latency || 0}ms | CPU: ${res.data.cpu || '—'}`;
+      Promise.all([
+        fetch('/api/v2/api-platform/health', { cache: 'no-store', signal: AbortSignal.timeout(3000) }).then((response) => response.json()),
+        fetch('/health', { cache: 'no-store', signal: AbortSignal.timeout(3000) }).then((response) => response.json())
+      ]).then(([platform, system]) => {
+        const statusEl = document.getElementById('apiPlatformStatusVal');
+        const hostEl = document.getElementById('apiPlatformHostVal');
+        const modelsEl = document.getElementById('apiPlatformModelsVal');
+        const storageEl = document.getElementById('apiPlatformStorageVal');
+        const uptEl = document.getElementById('apiPlatformUptime');
+        const platformStatus = String(platform?.status || (platform?.ok ? 'ONLINE' : 'OFFLINE')).toUpperCase();
+        if (statusEl) {
+          statusEl.textContent = `${platformStatus}${Number.isFinite(platform?.latency) ? ` · ${platform.latency} ms` : ''}`;
+          statusEl.style.color = platform?.ok
+            ? 'var(--fenix-green)'
+            : platformStatus === 'DEGRADED'
+              ? 'var(--fenix-amber, #fbbf24)'
+              : 'var(--fenix-red, #f87171)';
         }
-      }).catch(() => {});
+        if (hostEl) hostEl.textContent = platform?.online
+          ? `${platform.service || 'API Platform'} · porta ${platform.port || '—'}`
+          : 'Sem resposta da API Platform';
+        const measuredProviders = (Array.isArray(platform?.availableProviders) ? platform.availableProviders : [])
+          .filter((provider) => provider.status === 'READY')
+          .map((provider) => provider.model || provider.provider)
+          .filter(Boolean);
+        if (modelsEl) modelsEl.textContent = measuredProviders.length ? measuredProviders.join(' · ') : 'Nenhum provider reportado como disponível';
+        const dependencies = system?.dependencies || {};
+        if (storageEl) storageEl.textContent = Object.keys(dependencies).length
+          ? Object.entries(dependencies).map(([name, state]) => `${name}: ${state}`).join(' · ')
+          : 'Health de armazenamento indisponível';
+        if (uptEl) uptEl.textContent = `Latência: ${Number.isFinite(platform?.latency) ? `${platform.latency} ms` : '—'} · Uptime do provider: ${platform?.details?.uptime ?? '—'}`;
+      }).catch((error) => {
+        const statusEl = document.getElementById('apiPlatformStatusVal');
+        if (statusEl) {
+          statusEl.textContent = 'HEALTH INDISPONÍVEL';
+          statusEl.style.color = 'var(--fenix-red, #f87171)';
+        }
+        const hostEl = document.getElementById('apiPlatformHostVal');
+        if (hostEl) hostEl.textContent = String(error?.message || 'Falha ao consultar health').slice(0, 120);
+      });
     }
   }
 
@@ -2982,7 +3189,7 @@
       if (!selectedMissionId) return;
       if (btn) { btn.disabled = true; btn.textContent = 'PAUSANDO...'; }
       try {
-        await apiCall(`/api/fenix/missions/${encodeURIComponent(selectedMissionId)}/pause`, 'POST');
+        await apiCall(`/api/missions/${encodeURIComponent(selectedMissionId)}/pause`, 'POST');
         setTimeout(renderPanels, 400);
       } catch (error) {
         if (btn) btn.textContent = `FALHA: ${error.message}`;
@@ -2993,7 +3200,7 @@
       if (!confirm('Deseja realmente cancelar a missão ativa?')) return;
       if (!selectedMissionId) return;
       try {
-        await apiCall(`/api/fenix/missions/${encodeURIComponent(selectedMissionId)}/cancel`, 'POST');
+        await apiCall(`/api/missions/${encodeURIComponent(selectedMissionId)}/cancel`, 'POST');
         setTimeout(renderPanels, 400);
       } catch (error) { window.alert(`Falha ao cancelar missão: ${error.message}`); }
     });
@@ -3138,16 +3345,19 @@ if (typeof openProjectWorkspace !== 'undefined') {
   }, true);
 
   setInterval(() => { if (!document.hidden) renderPanels(); }, 15000);
-  setInterval(refreshRegisteredSkills, 10000);
-  // === SYSTEM HEALTH BAR (REAL DATA) ===
+  setInterval(() => { if (commandViewActive() && !document.hidden) refreshRegisteredSkills(); }, 20000);
+  
+  // === SYSTEM HEALTH BAR (REAL DATA & EXPONENTIAL BACKOFF) ===
+  const commandViewActive = () => document.getElementById('view-command')?.classList.contains('active');
+
   async function refreshSystemHealth() {
     try {
       const h = await apiCall('/health');
-      if (!h) return;
-      const isKernelActive = h.boot && h.boot.status === 'KERNEL_ACTIVE';
-      const isWorkerOk     = h.boot && h.boot.ok;
-      const isStoreOk      = h.checks && h.checks['state-store'] && h.checks['state-store'].ok;
-      const isAiOk         = h.checks && h.checks['ai-providers'] && h.checks['ai-providers'].ok;
+      if (!h) return false;
+      const isKernelActive = Boolean(h.boot && h.boot.status === 'KERNEL_ACTIVE');
+      const isWorkerOk     = Boolean(h.boot && h.boot.ok);
+      const isStoreOk      = Boolean(h.checks && h.checks['state-store'] && h.checks['state-store'].ok);
+      const isAiOk         = Boolean(h.checks && h.checks['ai-providers'] && h.checks['ai-providers'].ok);
       // live-runtime exposes the authoritative connection state as `status`.
       const liveOnline = window.FENIX?.live?.status === 'ONLINE';
       const wsOpen = window.FENIX?.ws?.readyState === 1;
@@ -3171,10 +3381,6 @@ if (typeof openProjectWorkspace !== 'undefined') {
       setNode('shNodeAi',       'AI PROVIDERS', isAiOk);
       setNode('shNodeEvents',   'EVENTS',       isEventsOk, 'CONNECTED');
 
-      // Also update the legacy .orch-health-node query for compat
-      const nodes = document.querySelectorAll('.orch-health-node:not([id])');
-      // (no-op — specific IDs now used above)
-
       // Update system health pill
       const pill = document.getElementById('statusPill');
       if (pill) {
@@ -3197,13 +3403,47 @@ if (typeof openProjectWorkspace !== 'undefined') {
         kpiWorker.textContent = isWorkerOk ? 'HEALTHY' : 'OFFLINE';
         kpiWorker.className = isWorkerOk ? 'orch-meta-val green' : 'orch-meta-val red';
       }
-    } catch (e) { /* silently fail */ }
+      return isKernelActive || isWorkerOk || Boolean(h.ok);
+    } catch (e) {
+      return false;
+    }
   }
-  // Health é leitura de rede; eventos SSE já mantêm atividade e missões vivas.
-  // Um intervalo de 20s evita competir com o refresh do shell e com iframes.
-  const commandViewActive = () => document.getElementById('view-command')?.classList.contains('active');
-  setInterval(() => { if (commandViewActive()) refreshSystemHealth(); }, 20000);
-  if (commandViewActive()) refreshSystemHealth();
+
+  let healthBackoff = window.FenixRequestGuard?.createBackoff
+    ? window.FenixRequestGuard.createBackoff({ initialMs: 5000, maxMs: 60000, factor: 2 })
+    : null;
+  let healthTimer = null;
+
+  async function scheduleNextHealthCheck(success) {
+    if (healthTimer) clearTimeout(healthTimer);
+    let delay = 15000;
+    if (!success) {
+      delay = healthBackoff ? healthBackoff.nextDelay() : 10000;
+      console.warn(`[FENIX HEALTH] Health check degraded/failed. Exponential backoff delay: ${delay}ms`);
+    } else if (healthBackoff) {
+      healthBackoff.reset();
+    }
+    healthTimer = setTimeout(runHealthCheckCycle, delay);
+  }
+
+  async function runHealthCheckCycle() {
+    if (document.hidden || !commandViewActive()) {
+      scheduleNextHealthCheck(true);
+      return;
+    }
+    try {
+      const ok = await refreshSystemHealth();
+      scheduleNextHealthCheck(ok !== false);
+    } catch (_) {
+      scheduleNextHealthCheck(false);
+    }
+  }
+
+  window.__FENIX_SINGLETONS__?.register('healthMonitor', {
+    run: runHealthCheckCycle,
+    schedule: scheduleNextHealthCheck
+  });
+  runHealthCheckCycle();
 
   // === LIVE ACTIVITY BRIDGE: mirror orchLiveActivityList → orchLiveActivityStream ===
   // command-center.js writes to orchLiveActivityList; we mirror to the visible stream element

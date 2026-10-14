@@ -83,8 +83,9 @@
 
   function requestJson(path, options = {}) {
     const headers = { 'content-type': 'application/json', authorization: 'Bearer ' + (localStorage.getItem('grg_token') || ''), ...(options.headers || {}) };
-    if (typeof fetch === 'function') {
-      return fetch(path, { ...options, headers }).then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
+    const fetchFn = window.fenixFetch || (typeof fetch === 'function' ? fetch : null);
+    if (fetchFn) {
+      return fetchFn(path, { ...options, headers }).then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
     }
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -1925,10 +1926,28 @@
     if (!canvas || canvas.dataset.ready === '1') return;
     canvas.dataset.ready = '1';
     const ctx = canvas.getContext('2d');
-    function draw() {
+
+    let lastW = 0, lastH = 0;
+    function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = Math.max(1, rect.width);
-      canvas.height = Math.max(1, rect.height);
+      const rw = Math.max(1, Math.floor(rect.width));
+      const rh = Math.max(1, Math.floor(rect.height));
+      if (rw !== lastW || rh !== lastH) {
+        lastW = canvas.width = rw;
+        lastH = canvas.height = rh;
+      }
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    function draw() {
+      const runtimeView = $('view-runtime') || canvas.closest('.view');
+      const isVisible = !document.hidden && canvas.isConnected && canvas.offsetParent !== null && (!runtimeView || runtimeView.classList.contains('active'));
+      if (!isVisible) {
+        setTimeout(() => requestAnimationFrame(draw), 500);
+        return;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.strokeStyle = 'rgba(88, 166, 255, 0.18)';
       ctx.lineWidth = 1;
@@ -1949,65 +1968,114 @@
     draw();
   }
 
-  async function hydrate() {
+  let isHydrating = false;
+  async function hydrate(options = {}) {
+    if (isHydrating) {
+      cockpitDebug().lastHydrateSkipped = 'already_in_progress';
+      return;
+    }
+    isHydrating = true;
     const debug = cockpitDebug();
     debug.lastHydrateStartedAt = new Date().toISOString();
+
+    const activeView = document.querySelector('.view.active')?.id || 'view-command';
+    const forceDomain = options.forceDomain || null;
+
+    // 1. CORE ESSENTIAL LOADERS (Requirement 6: /health, /runtime/snapshot, /api/fenix/projects, /api/v2/jobs, /api/missions)
     const loaders = [
       ['health', () => requestJson('/health'), 5000],
       ['snapshot', () => requestJson('/runtime/snapshot'), 12000],
       ['projects', () => api('/api/fenix/projects'), 5000],
-      // O Command Center usa o contrato FÊNIX canônico. Uma única leitura de
-      // cada recurso evita a rajada inicial que deixava a cidade vazia/429.
-      ['jobs', () => api(`/api/fenix/jobs?_rt=${Date.now()}`, { cache: 'no-store' }), 3500],
-      ['missions', () => api(`/api/fenix/missions?_rt=${Date.now()}`, { cache: 'no-store' }), 3500],
-      ['eventsApi', () => api('/api/events?limit=80'), 3500],
-      ['missionEvents', () => api(`/api/fenix/mission-events?limit=80&_rt=${Date.now()}`, { cache: 'no-store' }), 3500],
-      ['memory', () => api('/api/fenix/memory/search?q=&limit=20'), 2200],
-      ['learning', () => api('/api/memory/search?q=procedural&limit=20'), 2200],
-      ['knowledge', () => api('/api/knowledge'), 2200],
-      ['skills', () => api('/api/skills'), 2200],
-      ['connectors', () => api('/api/connectors'), 2200],
-      ['connections', () => api('/api/connectors'), 2200],
-      ['repositories', () => api('/api/repositories'), 2200],
-      ['git', () => api('/api/project-mirror'), 2200],
-      ['agentsPanel', () => api('/api/agents/panel'), 2200],
-      ['swarm', () => api('/api/agents/panel'), 2200],
-      ['router', () => api('/api/ai/router/select'), 2200]
+      ['jobs', () => api('/api/v2/jobs', { cache: 'no-store' }), 3500],
+      ['missions', () => api('/api/missions', { cache: 'no-store' }), 3500]
     ];
-    const [snapshotKey, snapshotFn, snapshotTimeout] = loaders[0];
+
+    // 2. LAZY / SOB DEMANDA LOADERS (Requirement 6: only fetch when corresponding view is active or explicitly requested)
+    if (activeView === 'view-command' || activeView === 'view-runtime' || forceDomain === 'command') {
+      loaders.push(
+        ['eventsApi', () => api('/api/events?limit=80'), 3500],
+        ['missionEvents', () => api('/api/missions/events?limit=80', { cache: 'no-store' }), 3500],
+        ['agentsPanel', () => api('/api/agents/panel'), 2200],
+        ['router', () => api('/api/ai/router/select'), 2200]
+      );
+    }
+    if (activeView === 'view-memory' || forceDomain === 'memory') {
+      loaders.push(
+        ['memory', () => api('/api/fenix/memory/search?q=&limit=20'), 2200],
+        ['learning', () => api('/api/memory/search?q=procedural&limit=20'), 2200]
+      );
+    }
+    if (activeView === 'view-knowledge' || forceDomain === 'knowledge') {
+      loaders.push(
+        ['knowledge', () => api('/api/knowledge'), 2200]
+      );
+    }
+    if (activeView === 'view-skills' || forceDomain === 'skills') {
+      loaders.push(
+        ['skills', () => api('/api/skills'), 2200]
+      );
+    }
+    if (activeView === 'view-mcp' || forceDomain === 'connectors') {
+      loaders.push(
+        ['connectors', () => api('/api/connectors'), 2200]
+      );
+    }
+    if (activeView === 'view-ide' || activeView === 'view-projects' || forceDomain === 'repositories') {
+      loaders.push(
+        ['repositories', () => api('/api/repositories'), 2200],
+        ['git', () => api('/api/project-mirror'), 2200]
+      );
+    }
+
     try {
-      const snapshot = await withTimeout(snapshotFn(), snapshotTimeout, null);
-      if (snapshot?.operationalTwin) {
-        state.api[snapshotKey] = snapshot;
-        state.api.tasks = snapshot.tasks || snapshot.payload?.tasks || [];
-        render();
-      }
-    } catch (error) {
-      if (!state.api.snapshot?.operationalTwin) state.api.snapshot = { error: error.message };
-    }
-    await Promise.all(loaders.map(async ([key, fn, timeout]) => {
-      if (key === 'snapshot' && state.api.snapshot?.operationalTwin) return;
+      const [snapshotKey, snapshotFn, snapshotTimeout] = loaders[0];
       try {
-        const value = await withTimeout(fn(), timeout, { timeout: true });
-        if (value?.timeout && state.api[key]) return;
-        state.api[key] = value;
+        const snapshot = await withTimeout(snapshotFn(), snapshotTimeout, null);
+        if (snapshot?.operationalTwin) {
+          state.api[snapshotKey] = snapshot;
+          state.api.tasks = snapshot.tasks || snapshot.payload?.tasks || [];
+          render();
+        }
+      } catch (error) {
+        if (!state.api.snapshot?.operationalTwin) state.api.snapshot = { error: error.message };
       }
-      catch (error) { state.api[key] = { error: error.message }; }
-    }));
-    const hydratedSnapshot = state.api.snapshot;
-    state.api.tasks = hydratedSnapshot?.tasks || hydratedSnapshot?.payload?.tasks || [];
-    if (state.api.snapshot) {
-      document.dispatchEvent(new CustomEvent('fenix-live', { detail: { type: 'snapshot', ...state.api.snapshot } }));
+
+      await Promise.all(loaders.map(async ([key, fn, timeout]) => {
+        if (key === 'snapshot' && state.api.snapshot?.operationalTwin) return;
+        try {
+          const value = await withTimeout(fn(), timeout, { timeout: true });
+          if (value?.timeout && state.api[key]) return;
+          state.api[key] = value;
+        }
+        catch (error) { state.api[key] = { error: error.message }; }
+      }));
+
+      // Invariants & deduplicated aliases
+      if (state.api.connectors) state.api.connections = state.api.connectors;
+      if (state.api.agentsPanel) state.api.swarm = state.api.agentsPanel;
+
+      const hydratedSnapshot = state.api.snapshot;
+      state.api.tasks = hydratedSnapshot?.tasks || hydratedSnapshot?.payload?.tasks || [];
+      if (state.api.snapshot) {
+        document.dispatchEvent(new CustomEvent('fenix-live', { detail: { type: 'snapshot', ...state.api.snapshot } }));
+      }
+      if (Array.isArray(state.api.eventsApi?.events)) {
+        state.events = state.api.eventsApi.events.concat(state.events).slice(0, 200);
+      }
+      render();
+      window.__FENIX_OPERATIONAL_STATE__ = state;
+      window.renderCommandCenterPanels?.();
+      cockpitDebug().lastHydrateFinishedAt = new Date().toISOString();
+      cockpitDebug().lastSnapshotStatus = state.api.snapshot?.status || state.api.snapshot?.error || (state.api.snapshot?.timeout ? 'timeout' : 'none');
+    } finally {
+      isHydrating = false;
     }
-    if (Array.isArray(state.api.eventsApi?.events)) {
-      state.events = state.api.eventsApi.events.concat(state.events).slice(0, 200);
-    }
-    render();
-    window.__FENIX_OPERATIONAL_STATE__ = state;
-    window.renderCommandCenterPanels?.();
-    cockpitDebug().lastHydrateFinishedAt = new Date().toISOString();
-    cockpitDebug().lastSnapshotStatus = state.api.snapshot?.status || state.api.snapshot?.error || (state.api.snapshot?.timeout ? 'timeout' : 'none');
   }
+
+  // Expose lazy domain hydration hook
+  window.hydrateFenixDomain = function(domain) {
+    return hydrate({ forceDomain: domain });
+  };
 
   function withTimeout(promise, ms, fallback) {
     return Promise.race([
@@ -2040,10 +2108,11 @@
     renderShell();
     render();
     hydrate();
-    setInterval(() => {
+    const cockpitTimer = setInterval(() => {
       const active = document.querySelector('.view.active')?.id;
       if (!document.hidden && ['view-command', 'view-runtime', 'view-city'].includes(active)) hydrate();
     }, 15000);
+    window.__FENIX_SINGLETONS__?.register('pollingManager', cockpitTimer);
   }
 
   function readInitialSnapshot() {

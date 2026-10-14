@@ -140,6 +140,114 @@
             { id: 'st-master-avatar', col: 6, row: 3, label: 'Master Orchestrator Station', role: 'master-avatar', agentName: 'Master Avatar', module: 'Autonomous Core', file: 'src/server.js' },
             { id: 'st-architect-1', col: 2, row: 4, label: 'Systems Architect Desk', role: 'architect', agentName: 'Principal Architect', module: 'Runtime Kernel', file: 'src/kernel.js' }
           ]
+        },
+        {
+          id: 'fenix-f2',
+          floorNum: 2,
+          name: 'Living Office & Software Engineering',
+          icon: 'ph-code',
+          theme: 'wood',
+          floorCols: 14,
+          floorRows: 10,
+          rooms: [
+            { id: 'dev-floor', name: 'Open Office & Dual Screens', bounds: { c1: 0, r1: 0, c2: 8, r2: 6 }, color: '#111827' },
+            { id: 'war-meeting', name: 'Deliberation & Strategy', bounds: { c1: 9, r1: 0, c2: 13, r2: 6 }, color: '#1F2937' },
+            { id: 'lounge-cafe', name: 'Lounge Bar & Coffee', bounds: { c1: 0, r1: 7, c2: 13, r2: 9 }, color: '#0F172A' }
+          ],
+          props: [
+            { type: 'mission_board', col: 4, row: 0, label: 'Sprint Mission Kanban' },
+            { type: 'espresso', col: 1, row: 8, label: 'Artisan Espresso Station' },
+            { type: 'water_cooler', col: 3, row: 8, label: 'Hydro Station' },
+            { type: 'plant', col: 0, row: 0, label: 'Monstera Deliciosa' },
+            { type: 'plant', col: 8, row: 0, label: 'Office Palm' },
+            { type: 'browser_monitor', col: 11, row: 1, label: 'Live Architecture Telemetry' }
+          ],
+          stations: [
+            { id: 'st-hq-dev1', col: 3, row: 3, label: 'Senior Core Engineer', role: 'developer', agentName: 'Senior Core Dev', module: 'Living Runtime', file: 'src/server.js' },
+            { id: 'st-hq-dev2', col: 6, row: 3, label: 'Frontend Reality Specialist', role: 'frontend', agentName: 'Frontend Engineer', module: 'City Visuals', file: 'public/iso-city.js' },
+            { id: 'st-hq-qa', col: 11, row: 4, label: 'QA Reliability Officer', role: 'qa', agentName: 'QA Automation Lead', module: 'Zero-Mock Guard', file: 'test/architecture-guard.test.js' }
+          ]
+        }
+      ]
+    },
+    'bld-deposito-mais': {
+      id: 'bld-deposito-mais',
+      name: 'Industrial Hub & Logística',
+      project: 'Logística & WMS',
+      floors: [
+        {
+          id: 'deposito-f1',
+          floorNum: 1,
+          name: 'Docas de Carga & Recepção Pesada',
+          icon: 'ph-truck',
+          theme: 'slate',
+          floorCols: 14,
+          floorRows: 10,
+          rooms: [
+            { id: 'dock-bay', name: 'Docas de Carregamento 1 a 4', bounds: { c1: 0, r1: 0, c2: 8, r2: 5 }, color: '#1E293B' },
+            { id: 'staging-area', name: 'Triagem & Pesagem de Cargas', bounds: { c1: 9, r1: 0, c2: 13, r2: 5 }, color: '#0F172A' },
+            { id: 'maintenance', name: 'Garagem de Empilhadeiras', bounds: { c1: 0, r1: 6, c2: 13, r2: 9 }, color: '#090D16' }
+          ],
+          props: [
+            { type: 'server', col: 10, row: 2, label: 'WMS Terminal Integrador', blink: true },
+            { type: 'mission_board', col: 4, row: 0, label: 'Escala de Despacho & Romaneios' },
+            { type: 'desk', col: 2, row: 2, label: 'Guichê da Doca 01' },
+            { type: 'espresso', col: 12, row: 8, label: 'Café da Expedição' },
+            { type: 'plant', col: 0, row: 0, label: 'Palmeira Industrial' }
+          ],
+          stations: [
+            { id: 'st-dock-lead', col: 3, row: 3, label: 'Operador Chefe de Docas', role: 'devops', agentName: 'Doca Lead Roberto', module: 'Controle de Frotas' },
+            { id: 'st-staging-worker', col: 11, row: 3, label: 'Conferente de Mercadorias', role: 'backend', agentName: 'Agente Expedição', module: 'Leitura Código de Barras' }
+          ]
+        },
+        {
+          id: 'deposito-f2',
+          floorNum: 2,
+          name: 'Separação Automatizada & WMS',
+          icon: 'ph-barcode',
+          theme: 'wood',
+          floorCols: 14,
+          floorRows: 10,
+          rooms: [
+            { id: 'sorting-lines', name: 'Esteiras de Separação / Picking', bounds: { c1: 0, r1: 0, c2: 7, r2: 5 }, color: '#271206' },
+            { id: 'wms-control', name: 'Centro de Inteligência WMS', bounds: { c1: 8, r1: 0, c2: 13, r2: 5 }, color: '#451A03' },
+            { id: 'pack-bay', name: 'Embalagem & Etiquetagem', bounds: { c1: 0, r1: 6, c2: 13, r2: 9 }, color: '#1C1917' }
+          ],
+          props: [
+            { type: 'mission_board', col: 4, row: 0, label: 'Painel WMS de Picking em Tempo Real' },
+            { type: 'server', col: 11, row: 2, label: 'Servidor Local WMS / Banco de Dados', blink: true },
+            { type: 'browser_monitor', col: 9, row: 1, label: 'Dashboard de Produtividade Diária' },
+            { type: 'water_cooler', col: 0, row: 3, label: 'Bebedouro da Separação' }
+          ],
+          stations: [
+            { id: 'st-wms-analyst', col: 10, row: 3, label: 'Analista de Sistemas WMS', role: 'developer', agentName: 'Especialista WMS André', module: 'Algoritmo de Roteamento de Picking' },
+            { id: 'st-pack-supervisor', col: 4, row: 8, label: 'Supervisora de Embalagem', role: 'architect', agentName: 'Supervisora Camila', module: 'Controle de Qualidade' }
+          ]
+        },
+        {
+          id: 'deposito-f3',
+          floorNum: 3,
+          name: 'Gestão Executiva, Vendas & B2B',
+          icon: 'ph-chart-line-up',
+          theme: 'obsidian',
+          floorCols: 14,
+          floorRows: 10,
+          rooms: [
+            { id: 'sales-bullpen', name: 'Mesa de Vendas & Negociação B2B', bounds: { c1: 0, r1: 0, c2: 7, r2: 5 }, color: '#0B0F19' },
+            { id: 'director-office', name: 'Diretoria Geral & Controladoria', bounds: { c1: 8, r1: 0, c2: 13, r2: 5 }, color: '#030712' },
+            { id: 'meeting-suite', name: 'Sala de Deliberação Comercial', bounds: { c1: 0, r1: 6, c2: 13, r2: 9 }, color: '#111827' }
+          ],
+          props: [
+            { type: 'mission_board', col: 4, row: 0, label: 'Metas Comerciais & Pipeline de Contratos' },
+            { type: 'espresso', col: 13, row: 0, label: 'Espresso Executivo Nespresso' },
+            { type: 'plant', col: 0, row: 0, label: 'Ficus Robusta' },
+            { type: 'plant', col: 8, row: 0, label: 'Orquídea de Recepção' },
+            { type: 'filing_cabinet', col: 12, row: 4, label: 'Arquivo Contratual B2B' }
+          ],
+          stations: [
+            { id: 'st-sales-lead', col: 3, row: 3, label: 'Líder de Vendas Atacadistas', role: 'master-avatar', agentName: 'Gerente Comercial Marcos', module: 'CRM & Fechamento de Vendas' },
+            { id: 'st-director-desk', col: 10, row: 3, label: 'Estação da Diretoria Operacional', role: 'architect', agentName: 'Diretor de Operações Silva', module: 'Governança & ROI de Frotas' }
+          ]
         }
       ]
     },

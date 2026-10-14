@@ -113,7 +113,7 @@ class AIGateway {
   // `provider`/`model` opcionais: quando o AI Router já decidiu por evidência, ele os passa
   // e o Gateway executa essa escolha (mantendo cache/breaker/rate-limit/aiCalls). Ausentes,
   // o Gateway roteia pela config como sempre — retrocompatível.
-  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, format = null, provider = null, model = null }) {
+  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, format = null, provider = null, model = null, lane = null }) {
     await this.cp.authorize(tenantId, actorId, 'ai:invoke');
     if (!prompt) throw new ValidationError('prompt is required');
     if (this.rateLimiter) await this.rateLimiter.consume(tenantId, 'ai.invoke');
@@ -166,7 +166,7 @@ class AIGateway {
       const { candidate, result } = selected;
       const usedModel = result.model || candidate.model;
       const usage = {
-        taskType, provider: candidate.provider, model: usedModel,
+        taskType, lane: lane || (taskType === 'classification' || taskType === 'status' ? 'fast' : (taskType === 'architecture' || taskType === 'plan' ? 'deep' : 'standard')), provider: candidate.provider, model: usedModel,
         promptTokens: Number(result.promptTokens ?? promptEstimate),
         completionTokens: Number(result.completionTokens ?? estimateTokens(result.text)),
         cached: false, latencyMs: Date.now() - started,
@@ -184,11 +184,80 @@ class AIGateway {
         tenantId, taskType, provider: candidate.provider, model: usedModel,
         tokens: usage.promptTokens + usage.completionTokens, fallbackDepth: errors.length,
       });
-      return { text: result.text, cached: false, provider: candidate.provider, model: usedModel };
+      return { text: result.text, cached: false, provider: candidate.provider, model: usedModel, lane: usage.lane };
     } catch (error) {
       await this.releaseResources(tenantId, tokenReservation, costReservation);
       throw error;
     }
+  }
+
+  async stream(tenantId, actorId, { taskType = 'default', prompt, temperature = 0.3, format = null, provider = null, model = null, lane = null, onToken = null, signal = null }) {
+    await this.cp.authorize(tenantId, actorId, 'ai:invoke');
+    if (!prompt) throw new ValidationError('prompt is required');
+    if (this.rateLimiter) await this.rateLimiter.consume(tenantId, 'ai.invoke');
+
+    const override = provider ? { provider, model } : null;
+    const candidates = this.candidates(taskType, override);
+    const promptEstimate = estimateTokens(prompt);
+    const started = Date.now();
+    const errors = [];
+    let selected;
+
+    for (const candidate of candidates) {
+      const p = this.providers[candidate.provider];
+      if (!p) {
+        errors.push({ provider: candidate.provider, error: 'not configured' });
+        continue;
+      }
+      try {
+        const usedModel = candidate.model;
+        let res;
+        if (typeof p.stream === 'function') {
+          res = await p.stream({
+            model: usedModel,
+            prompt,
+            temperature,
+            onToken: (chunk, frame) => {
+              if (typeof onToken === 'function') {
+                try { onToken(chunk, frame); } catch {}
+              }
+              if (this.bus) {
+                this.bus.emit('ai.stream.token', { tenantId, taskType, provider: candidate.provider, model: usedModel, token: chunk });
+              }
+            },
+            signal,
+          });
+        } else {
+          const comp = await p.complete({ model: usedModel, prompt, temperature, format });
+          if (typeof onToken === 'function' && comp.text) onToken(comp.text);
+          res = { ...comp, streamed: false };
+        }
+        selected = { candidate, result: res };
+        break;
+      } catch (error) {
+        errors.push({ provider: candidate.provider, error: error.code || error.name || error.message || 'provider error' });
+        if (this.bus) await this.bus.emit('ai.provider_failed', { tenantId, taskType, provider: candidate.provider, code: error.code || error.name });
+      }
+    }
+    if (!selected) throw new ValidationError(`No AI provider succeeded: ${errors.map((item) => item.provider).join(', ')}`);
+
+    const { candidate, result } = selected;
+    const usedModel = result.model || candidate.model;
+    const resolvedLane = lane || (taskType === 'classification' || taskType === 'status' ? 'fast' : (taskType === 'architecture' || taskType === 'plan' ? 'deep' : 'standard'));
+    const usage = {
+      taskType, lane: resolvedLane, provider: candidate.provider, model: usedModel,
+      promptTokens: Number(result.promptTokens ?? promptEstimate),
+      completionTokens: Number(result.completionTokens ?? estimateTokens(result.text)),
+      cached: false, latencyMs: Date.now() - started,
+    };
+    await this.record(tenantId, actorId, usage);
+    if (this.bus) {
+      await this.bus.emit('ai.stream.complete', {
+        tenantId, taskType, lane: resolvedLane, provider: candidate.provider, model: usedModel,
+        tokens: usage.promptTokens + usage.completionTokens,
+      });
+    }
+    return { text: result.text, streamed: result.streamed !== false, provider: candidate.provider, model: usedModel, tokens: usage.promptTokens + usage.completionTokens, lane: resolvedLane };
   }
 
   async reserveResources(tenantId, tokens, costUsd) {
@@ -274,7 +343,35 @@ class AIGateway {
       totalTokens: calls.reduce((sum, item) => sum + item.totalTokens, 0),
       totalCostUsd: Number(calls.reduce((sum, item) => sum + item.costUsd, 0).toFixed(6)),
       byProvider: Object.groupBy ? Object.groupBy(calls, (item) => item.provider || 'legacy') : groupBy(calls, (item) => item.provider || 'legacy'),
+      tokenEconomy: await this.tokenEconomyMetrics(tenantId),
       budget: await this.budget(tenantId),
+    };
+  }
+
+  async tokenEconomyMetrics(tenantId = 'grg') {
+    const state = await this.store.read();
+    const calls = (state.aiCalls || []).filter((item) => !tenantId || item.tenantId === tenantId);
+    const totalTokens = calls.reduce((sum, item) => sum + (item.totalTokens || 0), 0);
+    const totalCostUsd = Number(calls.reduce((sum, item) => sum + (item.costUsd || 0), 0).toFixed(6));
+
+    const laneCounts = { fast: 0, standard: 0, deep: 0 };
+    for (const c of calls) {
+      const l = c.lane || (c.taskType === 'classification' || c.taskType === 'status' ? 'fast' : (c.taskType === 'architecture' || c.taskType === 'plan' ? 'deep' : 'standard'));
+      if (laneCounts[l] !== undefined) laneCounts[l]++;
+      else laneCounts.standard++;
+    }
+    const totalCalls = calls.length || 1;
+    const missions = state.missions || [];
+    const jobs = state.jobs || [];
+
+    return {
+      costPerJob: jobs.length ? Number((totalCostUsd / jobs.length).toFixed(6)) : totalCostUsd,
+      costPerMission: missions.length ? Number((totalCostUsd / missions.length).toFixed(6)) : totalCostUsd,
+      tokensSaved: Math.round(laneCounts.fast * 800 + laneCounts.standard * 300),
+      fastLanePct: Number(((laneCounts.fast / totalCalls) * 100).toFixed(1)),
+      standardPct: Number(((laneCounts.standard / totalCalls) * 100).toFixed(1)),
+      deepPct: Number(((laneCounts.deep / totalCalls) * 100).toFixed(1)),
+      laneBreakdown: laneCounts
     };
   }
 }

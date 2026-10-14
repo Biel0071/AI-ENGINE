@@ -1,0 +1,12 @@
+{
+  "url": "http://209.50.241.22:4400/index.html",
+  "groups": 5,
+  "views": 14,
+  "navigationPass": 1,
+  "collapsePass": 0,
+  "errors": [
+    "Failed to read the 'localStorage' property from 'Window': Access is denied for this document."
+  ],
+  "pass": false,
+  "policy": "static-shell-only; backend/auth not inferred"
+}

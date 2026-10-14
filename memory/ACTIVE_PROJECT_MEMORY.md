@@ -72,9 +72,8 @@ A API Platform rodando na VPS é o motor de inteligência e inferência central 
    - `qwen3.5:0.8b` (873 MB): Modelo de visão e tool calling.
    - `deepseek-r1:1.5b` (1.1 GB): Modelo com cadeia de raciocínio (thinking).
    - `qwen2.5:3b` (1.9 GB): Modelo encorpado para tarefas complexas.
-3. **Chave de Produção Validada**:
-   - Chave ativa recuperada do banco de dados: `ap_live_96e854c33c1bbac06ba6e8dd7b2e70a6114c29a4a914d428`.
-   - Gravada em `.secrets/ai_provider_key` e resolvida deterministicamente pelo `secret-resolver.js`.
+   3. **Credencial de produção removida deste arquivo:**
+      - Rotacione a chave exposta e mantenha a nova somente em segredo protegido do servidor.
 4. **Rotas e Proxies Nativos no Fênix**:
    - `GET /api/v2/api-platform/health`: Faz proxy e retorna estado medido, uptime, latência e status dos componentes da VPS.
    - `POST /api/v2/api-platform/test-chat`: Executa prompt real na API Platform contra o modelo selecionado.
@@ -1233,6 +1232,46 @@ Localização: `<brain>/api-platform-verification/`
 - `world_v18_api_platform.png`: Interior do Floor 1 da API Platform com Elena em sua estação, monitores com dashboards de cluster e balão de pensamento flutuante `⚡ API: Sincronismo BullMQ`.
 - `world_v18_overview.png`: Visão multinível dos andares 1 e 2 exibindo Alex, Elena, Lucas, Maya, racks de servidores com LEDs ativos e conduíte óptico de dados com pacote de token.
 
+---
 
+## 31. FASE 31 — INTEGRAÇÃO MF ATACADISTA & UNIVERSAL IMAGE GENERATION ENGINE (07/10/2026)
+
+### 31.1 Mapeamento First-Class do MF Atacadista (`charming-einstein`)
+- **Projeto Integrado**: `mf-atacadista` (`C:\Users\Dell\Documents\antigravity\charming-einstein`, repo `https://github.com/Biel0071/formalize-magic-ddaf0047.git`).
+- **Stack**: React 18 + Vite + TypeScript + Tailwind CSS + Radix UI + Supabase/REST.
+- **Estrutura Mapeada**: 38 páginas/rotas, 7 serviços de domínio (Grade de Atacado, AllowPay, Catálogo Inteligente, Rastreio, etc.).
+- **Vínculo na Cidade 3D**: Mapeado no edifício canônico `shopping` (*Mania Fashion Pavilion & Atacado*).
+- **Compilação**: `npm run build` executado e verificado com sucesso (`✓ built in 1m 23s`, 0 erros TypeScript/Vite).
+
+### 31.2 Motor Universal de Geração de Imagens Fênix OS (`ImageGenerationEngine`)
+- **Arquivo**: `ai-engine/grg/src/services/image-generation-engine.js`.
+- **Cascata Multi-Provider com Failover Automático**:
+  1. `flux-fast` (Flux.1 Schnell via Pollinations): Fotorrealismo em 1.8s - 3.5s para moda/lookbooks, modelos brasileiros e catálogo.
+  2. `api-platform` (ComfyUI na VPS porta :3001).
+  3. `gemini-imagen` (Google Imagen 3).
+  4. Garantia Offline (SVG Vetorial de Alta Fidelidade).
+- **Endpoints REST Canônicos**:
+  - `POST /api/v2/images/generate`
+  - `GET /api/v2/images/providers`
+  - `GET /api/v2/images/history`
+  - `POST /api/v2/images/fashion-tryon`
+- **Acesso Ecossistema**: Autorização flexível para projetos do ecossistema consumirem imagens sem atrito de autenticação (`server.js`).
+
+### 31.3 Estúdio Visual Interativo no Frontend Canônico
+- **Arquivos**: `ai-engine/grg/public/fenix-mascot-sidebar.js` e `fenix-mascot-sidebar.css`.
+- **Localização**: Integrado na aba `PROVIDERS` do painel direito oficial (`#fsbImageStudio`).
+- **Recursos**: Seleção de Projeto Alvo (`MF Atacadista`, `Fênix OS`, `ZapAI`), Estilo/Preset (`FASHION`, `PRODUCT`, `BANNER`, `3D_RENDER`), Chips com prompts pré-configurados, Seleção de Engine e Formato, Card de Preview com latência real e histórico recente.
+
+### 31.4 Acoplamento no E-commerce MF Atacadista
+- **Serviço Cliente**: `src/services/api/fenixImageService.ts` conectando ao endpoint `/api/v2/images/fashion-tryon` e `/generate`.
+- **Provador Virtual**: `src/pages/fashion/FashionTryOn.tsx` conectado com fallback para o cluster Fênix OS.
+
+### 31.5 Verificação Factual de Produção & Browser Real
+- `image-generation-engine.test.js`: 6/6 PASS.
+- `architecture-guard.test.js`: 5/5 PASS.
+- `frontend-honesty.test.js`: 19/19 PASS.
+- `frontend-runtime-safety.test.js`: 5/5 PASS.
+- **Deploy VPS Realizado**: PM2 #5 (`fenix-backend`) e PM2 #6 (`fenix-frontend`) recarregados e online.
+- **Captura Playwright em Produção**: `vps-live-world-providers-v9.png` comprovando a cidade 3D WebGL ativa e o AI Vision & Image Studio renderizado e operacional no navegador real.
 
 

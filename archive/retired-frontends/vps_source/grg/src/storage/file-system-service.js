@@ -1,0 +1,202 @@
+const fs = require('node:fs/promises');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
+const path = require('node:path');
+
+const execFileAsync = promisify(execFile);
+
+class FileSystemService {
+  constructor(workspaceRoot) {
+    if (!workspaceRoot) {
+      throw new Error('Workspace Root is mandatory for FileSystemService');
+    }
+    this.workspaceRoot = path.resolve(workspaceRoot);
+  }
+
+  _resolveAndValidatePath(targetPath) {
+    if (!targetPath || targetPath === '.') {
+      return this.workspaceRoot;
+    }
+    const candidate = path.isAbsolute(targetPath) ? path.resolve(targetPath) : path.resolve(this.workspaceRoot, targetPath);
+
+    // Primary workspace root check
+    const relPrimary = path.relative(this.workspaceRoot, candidate);
+    if ((!relPrimary.startsWith('..') && !path.isAbsolute(relPrimary)) || this.workspaceRoot.toLowerCase() === candidate.toLowerCase()) {
+      return candidate;
+    }
+
+    // Additional authorized project roots
+    const authorizedRoots = [
+      'C:\\projetos\\ZAPAI-FINAL',
+      'C:\\projetos\\ai-engine-core',
+      'C:\\projetos\\ai-engine-core\\ai-engine\\projects\\API-PLATAFORM'
+    ].map(r => path.resolve(r));
+
+    try {
+      const kFile = path.join(__dirname, '..', '..', 'memory', 'projects-knowledge-map.json');
+      const fsSync = require('node:fs');
+      if (fsSync.existsSync(kFile)) {
+        const kData = JSON.parse(fsSync.readFileSync(kFile, 'utf8'));
+        Object.values(kData).forEach(p => { if (p.localPath) authorizedRoots.push(path.resolve(p.localPath)); });
+      }
+    } catch (e) {}
+
+    const isAuthorized = authorizedRoots.some(root => {
+      const rel = path.relative(root, candidate);
+      return (!rel.startsWith('..') && !path.isAbsolute(rel)) || root.toLowerCase() === candidate.toLowerCase();
+    });
+
+    if (isAuthorized) {
+      return candidate;
+    }
+
+    throw new Error(`Security Violation: Path traversal detected. Access outside workspace root is forbidden.`);
+  }
+
+  async exists(targetPath) {
+    const safePath = this._resolveAndValidatePath(targetPath);
+    try {
+      await fs.access(safePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async stat(targetPath) {
+    const safePath = this._resolveAndValidatePath(targetPath);
+    return await fs.stat(safePath);
+  }
+
+  async listDirectory(targetPath) {
+    const safePath = this._resolveAndValidatePath(targetPath);
+    const entries = await fs.readdir(safePath, { withFileTypes: true });
+    return entries.map(entry => ({
+      name: entry.name,
+      isDirectory: entry.isDirectory(),
+      isFile: entry.isFile(),
+      path: path.posix.join(targetPath || '', entry.name) // Use posix for frontend consistency
+    })).sort((a, b) => {
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  async readFile(targetPath, encoding = 'utf-8') {
+    const safePath = this._resolveAndValidatePath(targetPath);
+    return await fs.readFile(safePath, { encoding });
+  }
+
+  async writeFile(targetPath, content) {
+    const safePath = this._resolveAndValidatePath(targetPath);
+    await fs.mkdir(path.dirname(safePath), { recursive: true });
+    await fs.writeFile(safePath, content, { encoding: 'utf-8' });
+    return true;
+  }
+
+  async createFile(targetPath, content = '') {
+    const safePath = this._resolveAndValidatePath(targetPath);
+    const fileExists = await this.exists(targetPath);
+    if (fileExists) {
+      throw new Error(`File already exists at ${targetPath}`);
+    }
+    await fs.writeFile(safePath, content, { encoding: 'utf-8' });
+    return true;
+  }
+
+  async createDirectory(targetPath) {
+    const safePath = this._resolveAndValidatePath(targetPath);
+    await fs.mkdir(safePath, { recursive: true });
+    return true;
+  }
+
+  async cloneRepository({ url, directory = null, branch = null } = {}) {
+    const repoUrl = normalizeGitUrl(url);
+    const targetName = safeRelativeDirectory(directory || repoUrl.split('/').pop().replace(/\.git$/i, ''));
+    await fs.mkdir(this.workspaceRoot, { recursive: true });
+    const targetPath = this._resolveAndValidatePath(targetName);
+    const targetExists = await this.exists(targetName);
+    if (targetExists) {
+      const gitDir = path.join(targetPath, '.git');
+      try {
+        await fs.access(gitDir);
+        return { status: 'EXISTS', path: targetPath, relativePath: targetName, url: repoUrl };
+      } catch {
+        throw new Error(`Target path already exists and is not a git repository: ${targetName}`);
+      }
+    }
+    const args = ['clone', '--depth', '1', '--single-branch'];
+    if (branch) args.push('--branch', String(branch));
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    args.push(repoUrl, targetPath);
+    const result = await execFileAsync('git', args, { cwd: this.workspaceRoot, timeout: 180_000, windowsHide: true });
+    return { status: 'CLONED', path: targetPath, relativePath: targetName.split(path.sep).join('/'), url: repoUrl, stdout: result.stdout || '', stderr: result.stderr || '' };
+  }
+
+  async rename(oldPath, newPath) {
+    const safeOldPath = this._resolveAndValidatePath(oldPath);
+    const safeNewPath = this._resolveAndValidatePath(newPath);
+    try {
+      await fs.access(safeNewPath);
+      throw new Error(`Destination already exists: ${newPath}`);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    await fs.mkdir(path.dirname(safeNewPath), { recursive: true });
+    await fs.rename(safeOldPath, safeNewPath);
+    return true;
+  }
+
+  async move(srcPath, destPath) {
+    return this.rename(srcPath, destPath); // In Node, rename functions as move across same filesystem
+  }
+
+  async copy(srcPath, destPath) {
+    const safeSrc = this._resolveAndValidatePath(srcPath);
+    const safeDest = this._resolveAndValidatePath(destPath);
+    await fs.cp(safeSrc, safeDest, { recursive: true });
+    return true;
+  }
+
+  async delete(targetPath) {
+    const safePath = this._resolveAndValidatePath(targetPath);
+    await fs.rm(safePath, { recursive: true, force: true });
+    return true;
+  }
+}
+
+function normalizeGitUrl(value) {
+  const url = String(value || '').trim();
+  if (!url) throw new Error('repository url is required');
+  let parsed;
+  try { parsed = new URL(url); } catch { throw new Error('repository url must be a valid HTTPS URL'); }
+  if (parsed.protocol !== 'https:') throw new Error('repository url must use https');
+  if (!/^(github\.com|gitlab\.com|bitbucket\.org)$/i.test(parsed.hostname)) throw new Error('only GitHub, GitLab and Bitbucket HTTPS repositories are allowed');
+  parsed.hash = '';
+  parsed.search = '';
+  return parsed.toString().replace(/\/$/, '').replace(/\.git$/i, '') + '.git';
+}
+
+function safeDirectoryName(value) {
+  return String(value || '').trim().replace(/\.git$/i, '').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+}
+
+function safeRelativeDirectory(value) {
+  const raw = String(value || '').trim().replace(/\\/g, '/');
+  if (!raw) throw new Error('target directory is required');
+  if (raw.startsWith('/') || /^[a-zA-Z]:\//.test(raw)) throw new Error('target directory must be relative to the workspace');
+  const segments = raw.split('/').filter(Boolean);
+  if (!segments.length || segments.length > 8) throw new Error('target directory must contain between 1 and 8 path segments');
+  const sanitized = segments.map((segment) => {
+    if (segment === '.' || segment === '..') throw new Error('target directory cannot contain traversal segments');
+    const safe = safeDirectoryName(segment);
+    if (!safe || safe === '.' || safe === '..') throw new Error('target directory contains an invalid path segment');
+    return safe;
+  });
+  const relative = sanitized.join(path.sep);
+  if (relative.length > 240) throw new Error('target directory is too long');
+  return relative;
+}
+
+module.exports = { FileSystemService, safeRelativeDirectory };

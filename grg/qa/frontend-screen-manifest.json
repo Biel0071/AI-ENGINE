@@ -1,11 +1,11 @@
 {
   "version": 1,
   "domains": {
-    "command": ["command", "operations", "runtime"],
-    "build": ["ide", "project", "projects"],
-    "intelligence": ["agents", "memory", "knowledge"],
-    "infrastructure": ["mcp", "observability"],
-    "validation": ["browser", "city", "terminal"]
+    "command": ["command", "city", "agents", "operations"],
+    "build": ["projects", "ide", "terminal"],
+    "intelligence": ["memory", "knowledge", "mcp"],
+    "infrastructure": ["runtime", "observability"],
+    "validation": ["project", "browser"]
   },
   "screens": {
     "command": {"purpose":"prompt e entrada de missões","readEndpoints":["/api/fenix/missions","/api/fenix/jobs"]},

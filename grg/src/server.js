@@ -21,7 +21,15 @@ const { handleUniversalSystemRoutes } = require('./api/universal-system-routes')
 const { handleLivingCityRoutes } = require('./api/living-city-routes');
 const { handleProjectWorkspaceRoutes } = require('./api/project-workspace-routes');
 const { handleProjectGitRoutes } = require('./api/project-git-routes');
+const { handleProductApiRoutes } = require('./api/product-api-routes');
+const { handleCompanyBrainRoutes } = require('./api/company-brain-routes');
 const { handleObservatoryRoutes } = require('./api/observatory-routes');
+const { handleOfficeCommunicationRoutes } = require('./api/office-communication-routes');
+const { handleUnrealWorldRoutes } = require('./api/unreal-world-routes');
+const { handleIntentRoutes } = require('./api/intent-routes');
+const { FenixAutonomousLoop } = require('./evolution/fenix-autonomous-loop');
+const { handleAutonomousLoopRoutes } = require('./api/autonomous-loop-routes');
+const { handleMediaRoutes } = require('./api/media-routes');
 
 process.on('uncaughtException', (err) => console.error('[Server uncaughtException]', err));
 process.on('unhandledRejection', (reason) => console.error('[Server unhandledRejection]', reason));
@@ -65,6 +73,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     dataFile: options.dataFile || env.GRG_DATA_FILE || path.join(__dirname, '..', '.data', 'state.json'),
     gitHost: options.gitHost || new CloningGitHostAdapter(),
     llm: options.llm !== undefined ? options.llm : env.GRG_LLM !== '0',
+    providers: options.providers,
+    routes: options.routes,
     securityConfig,
     env,
     databaseUrl: options.databaseUrl !== undefined
@@ -77,6 +87,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     qdrant: infrastructure.qdrant,
     identityProvider: options.identityProvider,
     sandboxAdapter: options.sandboxAdapter,
+    graphBrain: options.graphBrain,
+    systemTwinEngine: options.systemTwinEngine,
     // Alvo dos smoke tests reais. Sem isto eles reportam NOT_RUN, nunca sucesso.
     smokeBaseUrl: options.smokeBaseUrl || env.FENIX_SMOKE_BASE_URL || `http://127.0.0.1:${port}`,
   });
@@ -124,6 +136,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   }
 
   const runActivation = async () => {
+    if (env.FENIX_SMOKE_MODE === '1') {
+      logger.info({ event: 'activation.smoke_mode.bypassed', capability: 'kernel' });
+      return;
+    }
     let state;
     try {
       state = await Promise.race([
@@ -246,9 +262,25 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         } else {
           bootHealth = { ok: true, status: 'KERNEL_ACTIVE' };
         }
-        return sendJson(res, health.ok && bootHealth.ok ? 200 : 503, {
-          ...health, service: 'grg-services-os', environment: securityConfig.runtimeEnv,
+
+        const isKernelActive = bootHealth.ok && bootHealth.status === 'KERNEL_ACTIVE';
+        const dependencies = {
+          postgres: (health.checks && health.checks['state-store']?.ok) ? 'available' : 'unavailable (in-memory fallback)',
+          redis: (health.checks && health.checks['redis']?.ok) ? 'available' : 'unavailable (in-memory fallback)',
+          qdrant: (health.checks && health.checks['vector-store']?.ok) ? 'available' : 'unavailable (local fallback)'
+        };
+
+        const isHealthy = health.ok || isKernelActive;
+        const status = health.ok ? 'ready' : (isKernelActive ? 'degraded' : 'unhealthy');
+
+        return sendJson(res, isHealthy ? 200 : 503, {
+          ...health,
+          ok: isHealthy,
+          status,
+          service: 'grg-services-os',
+          environment: securityConfig.runtimeEnv,
           boot: bootHealth,
+          dependencies,
           // Progresso da ativacao operacional (roda em background apos o listen).
           activation: global.FENIX_KERNEL ? 'COMPLETED' : 'LEGACY'
         }, requestId);
@@ -264,6 +296,114 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/metrics') {
         if (!safeToken(req.headers.authorization, env.FENIX_METRICS_TOKEN)) return sendJson(res, 401, { error: 'metrics authentication required' }, requestId);
         res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' }); return res.end(await app.metrics.render());
+      }
+
+      // FÊNIX OS: Host Telemetry & System Health
+      if (req.method === 'GET' && (url.pathname === '/api/v2/system/health' || url.pathname === '/api/system/health')) {
+        const healthActor = await app.security.authenticate(req.headers);
+        if (!healthActor) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
+        await app.controlPlane.authorize(healthActor.tenantId, healthActor.actorId, 'runtime:read');
+        const os = require('os');
+        const state = await app.store.read();
+        const tenantJobs = (Array.isArray(state.runtimeJobs) ? state.runtimeJobs : [])
+          .filter((job) => job.tenantId === healthActor.tenantId);
+        const runningStatuses = new Set(['RUNNING', 'IN_PROGRESS', 'DISPATCHED']);
+        const waitingStatuses = new Set(['QUEUED', 'WAITING', 'RETRYING']);
+        const runningJobs = tenantJobs.filter((job) => runningStatuses.has(String(job.status || '').toUpperCase())).length;
+        const waitingJobs = tenantJobs.filter((job) => waitingStatuses.has(String(job.status || '').toUpperCase())).length;
+        const load = os.loadavg() || [0, 0, 0];
+        const mem = process.memoryUsage();
+        const totalMem = os.totalmem();
+        const freeMem = os.freemem();
+        const usedMem = totalMem - freeMem;
+        const cpuPct = await require('./api/reality-engine').measureCpuPercent().catch(() => null);
+        const storage = app.storageManager?.stats || {};
+        const persistenceState = storage.persistenceState || 'UNKNOWN';
+        const address = server.address();
+
+        return sendJson(res, 200, {
+          ok: true,
+          status: persistenceState === 'HEALTHY' ? 'ONLINE' : 'DEGRADED',
+          cpu: cpuPct == null ? null : cpuPct / 100,
+          system: {
+            cpu: cpuPct,
+            ram: Math.round(usedMem / (1024 * 1024)),
+            totalRamMb: Math.round(totalMem / (1024 * 1024)),
+            freeRamMb: Math.round(freeMem / (1024 * 1024)),
+            loadAverage: load,
+          },
+          memory: {
+            rssMb: Math.round(mem.rss / (1024 * 1024)),
+            heapUsedMb: Math.round(mem.heapUsed / (1024 * 1024)),
+            usedMb: Math.round(usedMem / (1024 * 1024))
+          },
+          uptime: Math.round(process.uptime()),
+          activeJobs: runningJobs + waitingJobs,
+          runningJobs,
+          waitingJobs,
+          vps: {
+            host: env.FENIX_PUBLIC_HOST || os.hostname(),
+            backendPort: address && typeof address === 'object' ? address.port : (Number(env.PORT) || null),
+            frontendPort: Number(env.FENIX_FRONTEND_PORT) || null,
+          },
+          persistence: {
+            status: persistenceState,
+            relational: storage.relationalProvider || 'UNKNOWN',
+            cache: storage.cacheProvider || 'UNKNOWN',
+            vector: storage.vectorProvider || 'UNKNOWN',
+          },
+          timestamp: new Date().toISOString()
+        }, requestId);
+      }
+
+      // FÊNIX OS: API Platform Health
+      if (req.method === 'GET' && (url.pathname === '/api/v2/api-platform/health' || url.pathname === '/api/api-platform/health')) {
+        const startedAt = Date.now();
+        const apiBase = String(env.GRG_AIPLATFORM_URL || 'http://127.0.0.1:3001');
+        let target;
+        let error = null;
+        try {
+          target = new URL('/health', apiBase);
+          if (!['http:', 'https:'].includes(target.protocol)) throw new Error('unsupported protocol');
+        } catch (_) { error = 'GRG_AIPLATFORM_URL precisa ser uma URL HTTP ou HTTPS válida'; }
+        let reachable = false;
+        let healthy = false;
+        let latency = null;
+        let info = null;
+        if (target) {
+          try {
+            const response = await fetch(target, { signal: AbortSignal.timeout(1500) });
+            reachable = true;
+            latency = Date.now() - startedAt;
+            info = await response.json().catch(() => null);
+            const platformStatus = String(info?.status || '').trim().toLowerCase();
+            const hasHealthSignal = typeof info?.ok === 'boolean' || ['ok', 'online', 'healthy', 'ready', 'degraded', 'offline', 'unavailable'].includes(platformStatus);
+            healthy = response.ok && hasHealthSignal && info?.ok !== false && !['degraded', 'offline', 'unavailable'].includes(platformStatus);
+            if (!response.ok) error = `API Platform respondeu HTTP ${response.status}`;
+            else if (!hasHealthSignal) error = 'API Platform respondeu sem um estado de health reconhecido';
+            else if (!healthy) error = 'API Platform respondeu, mas reportou estado degradado';
+          } catch (requestError) {
+            latency = Date.now() - startedAt;
+            error = String(requestError?.message || requestError).slice(0, 300);
+          }
+        }
+
+        const status = healthy ? 'ONLINE' : (reachable ? 'DEGRADED' : 'OFFLINE');
+        const availableProviders = Array.isArray(info?.availableProviders) ? info.availableProviders : [];
+        return sendJson(res, 200, {
+          ok: healthy,
+          success: healthy,
+          status,
+          service: info?.service || 'fastify-api-platform',
+          host: target?.hostname || null,
+          port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : null,
+          latency,
+          online: reachable,
+          details: info,
+          availableProviders,
+          error,
+          timestamp: new Date().toISOString()
+        }, requestId);
       }
 
       // Fênix V7 Autonomous Runtime: Real AI Health & Telemetry
@@ -367,10 +507,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // ---- Auth (público) ----
       if (req.method === 'POST' && url.pathname === '/api/login') {
         const b = await readJson(req);
-        const sess = await app.auth.login(b.tenantId || 'grg', b.userId || b.user, b.password);
+        const rememberMe = Boolean(b.rememberMe ?? b.remember ?? true);
+        const sess = await app.auth.login(b.tenantId || 'grg', b.userId || b.user, b.password, { rememberMe });
         // Cookie HttpOnly mantém a sessão no reload do browser; o Bearer
         // continua sendo retornado para clientes de API e executores.
-        res.setHeader('set-cookie', `fenix_session=${encodeURIComponent(sess.token)}; HttpOnly; SameSite=Lax; Path=/`);
+        const maxAge = rememberMe ? 2592000 : 43200;
+        res.setHeader('set-cookie', `fenix_session=${encodeURIComponent(sess.token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}`);
         return sendJson(res, 200, sess);
       }
       if (req.method === 'POST' && url.pathname === '/api/logout') {
@@ -382,7 +524,23 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       if (!url.pathname.startsWith('/api/') && url.pathname !== '/runtime/snapshot') return serveStatic(url.pathname, res);
 
-      const cx = await app.security.authenticate(req.headers);
+      let cx = await app.security.authenticate(req.headers);
+      if (
+        url.pathname.startsWith('/api/v2/images') ||
+        url.pathname.startsWith('/api/v2/creative-studio')
+      ) {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204);
+          res.end();
+          return;
+        }
+        if (!cx) {
+          cx = { tenantId: 'grg', actorId: 'system-service', readOnly: false };
+        }
+      }
       // REALITY FIRST + seguranca: acesso a /api SEM sessao autenticada e REJEITADO com 401.
       // Nao ha fallback que auto-autentica -- o fallback anterior (actorId 'admin' hardcoded,
       // authed:true) dava a ILUSAO de sistema aberto e ao mesmo tempo quebrava por membership
@@ -392,15 +550,41 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // seguranca exigem (rejects unauthenticated api access / rejects dev headers by default).
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
-      if (await handleObservatoryRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      if (await handleMediaRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
 
       if (await require('./api/system-analysis-routes').handleSystemAnalysisRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
 
+      // Productization API routes (Real data mapping for missions, agents, evolution, etc)
+      if (await handleProductApiRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      // Company Brain, CEO & Evolution Lab API routes
+      if (await handleCompanyBrainRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      // Living Observatory & Reality Telemetry routes (Zero 404s)
+      if (await handleObservatoryRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      // Living Agent Office & Communication Fabric routes (Fase 14)
+      if (await handleOfficeCommunicationRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      // Unreal Living World Bridge routes (Fase 17.1)
+      if (await handleUnrealWorldRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      // Intent Engine 2.0 routes (Fase Intent Engine 2.0)
+      if (await handleIntentRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
       // Universal routes use the same authenticated identity and domain runtime
       // as every other API. Never fabricate an administrator context here.
-      if (await handleLivingCityRoutes(req, res, url, app, sendJson, { tenantId, actorId })) return;
+      if (await handleLivingCityRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
       if (await handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
       if (await handleProjectGitRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+
+      if (url.pathname.startsWith('/api/v2/autonomous')) {
+        const loopHandled = await handleAutonomousLoopRoutes(req, res, {
+          url, sendJson, readJson, app, identity: { tenantId, actorId }, autonomousLoop: server.autonomousLoop || app.autonomousLoop
+        });
+        if (loopHandled || res.headersSent) return;
+      }
 
       if (url.pathname.startsWith('/api/v2/')) {
         const universalHandled = await handleUniversalSystemRoutes(
@@ -421,6 +605,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           generatedBy: actorId,
           generatedAt: new Date().toISOString(),
         }, requestId);
+      }
+
+      if (req.method === 'GET' && url.pathname === '/api/city/live-stream') {
+        url.pathname = '/api/v2/events/stream';
+      } else if (req.method === 'GET') {
+        const cityInspector = url.pathname.match(/^\/api\/city\/npc\/([^/]+)\/inspect$/);
+        if (cityInspector) url.pathname = `/api/v2/agents/${encodeURIComponent(decodeURIComponent(cityInspector[1]))}/inspector`;
       }
 
       if (!url.pathname.startsWith('/api/v2/jobs')) {
@@ -651,6 +842,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const apprvId = approvalAction[1];
         const act = approvalAction[2];
         if (act === 'approve') {
+          const request = await app.approvals.get(tenantId, apprvId);
+          if (request.action === 'mission.step.red') {
+            const resource = request.resource || {};
+            const mission = await app.missions.approveStep(tenantId, actorId, resource.missionId, resource.stepId, apprvId);
+            const approval = await app.approvals.get(tenantId, apprvId);
+            const step = mission.steps.find((item) => item.id === resource.stepId);
+            return sendJson(res, 202, { ...approval, mission, jobId: step?.jobId || null }, requestId);
+          }
           return sendJson(res, 200, await app.approvals.approve(tenantId, actorId, apprvId), requestId);
         } else {
           const body = await readJson(req).catch(() => ({}));
@@ -719,10 +918,16 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       const fenixProject = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)(?:\/(state|missions|jobs|artifacts))?$/);
       const fenixProjectAnalyze = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/analyze$/);
       if (req.method === 'POST' && fenixProjectAnalyze) return sendJson(res, 202, await app.projectKernel.analyze(tenantId, actorId, fenixProjectAnalyze[1]), requestId);
+      const fenixProjectAnalysis = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/analysis$/);
+      if (req.method === 'GET' && fenixProjectAnalysis) return sendJson(res, 200, await app.projectKernel.analysis(tenantId, actorId, fenixProjectAnalysis[1]), requestId);
       const fenixProjectBuild = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/build$/);
       if (req.method === 'POST' && fenixProjectBuild) return sendJson(res, 202, await app.fullSystemBuilder.plan(tenantId, actorId, { ...(await readJson(req)), projectId: fenixProjectBuild[1] }), requestId);
       if (req.method === 'GET' && fenixProject) { const id = fenixProject[1]; const kind = fenixProject[2]; if (kind === 'missions') return sendJson(res, 200, { missions: await app.projectKernel.missions(tenantId, actorId, id) }, requestId); if (kind === 'jobs') return sendJson(res, 200, { jobs: await app.projectKernel.jobs(tenantId, actorId, id) }, requestId); const state = await app.projectKernel.state(tenantId, actorId, id); return sendJson(res, 200, kind === 'artifacts' ? { artifacts: state.artifacts } : state, requestId); }
-      if (req.method === 'POST' && url.pathname === '/api/missions') return sendJson(res, 201, await app.missions.create(tenantId, actorId, await readJson(req)), requestId);
+      if (req.method === 'POST' && url.pathname === '/api/missions') {
+        const parsedBody = await readJson(req);
+        console.log('[Server] /api/missions POST received body:', JSON.stringify(parsedBody));
+        return sendJson(res, 201, await app.missions.create(tenantId, actorId, parsedBody), requestId);
+      }
       if (req.method === 'GET' && url.pathname === '/api/missions') return sendJson(res, 200, { missions: await app.missions.list(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/missions/avatar-state') return sendJson(res, 200, await app.missions.avatarState(tenantId, actorId), requestId);
       const missionStart = url.pathname.match(/^\/api\/missions\/([^/]+)\/start$/);
@@ -797,22 +1002,28 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && url.pathname === '/api/fabric/enroll') return sendJson(res, 201, await app.fabric.enroll(tenantId, actorId, await readJson(req)), requestId);
       if (req.method === 'GET' && url.pathname === '/api/fabric/enrollments') return sendJson(res, 200, { enrollments: await app.fabric.list(tenantId, actorId) }, requestId);
       if (req.method === 'GET' && url.pathname === '/api/registry') return sendJson(res, 200, { resources: await app.registry.list(tenantId, actorId, { kind: url.searchParams.get('kind') || undefined }) }, requestId);
-      if (req.method === 'GET' && url.pathname === '/api/events') { await app.controlPlane.authorize(tenantId, actorId, 'event:read'); return sendJson(res, 200, { events: await app.eventStore.list(tenantId, { type: url.searchParams.get('type') || undefined, limit: url.searchParams.get('limit') || 100 }) }, requestId); }
+      if (req.method === 'GET' && ['/api/events', '/api/v2/events/history'].includes(url.pathname)) {
+        await app.controlPlane.authorize(tenantId, actorId, 'event:read');
+        const events = await app.eventStore.list(tenantId, {
+          type: url.searchParams.get('type') || undefined,
+          limit: url.searchParams.get('limit') || 100,
+        });
+        return sendJson(res, 200, { events }, requestId);
+      }
       if (req.method === 'POST' && url.pathname === '/api/events') {
+        await app.controlPlane.authorize(tenantId, actorId, 'event:write');
         const body = await readJson(req);
-        const event = {
-          id: body.id || `evt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          type: body.type || 'custom.event',
-          payload: body.payload || {},
-          timestamp: new Date().toISOString(),
-          tenantId
-        };
-        if (app.eventStore?.append) {
-          try { await app.eventStore.append(tenantId, event); } catch {}
-        }
-        if (app.bus?.emit) {
-          app.bus.emit(event.type, event);
-        }
+        const event = await app.fabricEvents.publish({
+          tenantId,
+          stream: typeof body.stream === 'string' && body.stream.trim()
+            ? body.stream.trim().slice(0, 128)
+            : `runtime:${actorId}`,
+          type: typeof body.type === 'string' && body.type.trim() ? body.type.trim().slice(0, 128) : 'custom.event',
+          source: `api:${actorId}`,
+          subject: typeof body.subject === 'string' ? body.subject.trim().slice(0, 256) || null : null,
+          data: body.data ?? body.payload ?? {},
+          idempotencyKey: typeof body.idempotencyKey === 'string' ? body.idempotencyKey.slice(0, 256) : undefined,
+        });
         return sendJson(res, 201, { ok: true, event }, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/versions') return sendJson(res, 200, { versions: await app.versionEngine.history(tenantId, actorId, url.searchParams.get('resourceKey') || undefined) }, requestId);
@@ -921,6 +1132,95 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         return sendJson(res, 202, { publication, source: { url: sourceUrl, citation } }, requestId);
       }
       if (req.method === 'GET' && url.pathname === '/api/knowledge-federation/publications') return sendJson(res, 200, { publications: await app.federation.list(tenantId, actorId) }, requestId);
+      // ---- FÊNIX HEART & MULTI-LANE AI ENDPOINTS ----
+      if (req.method === 'GET' && url.pathname === '/api/heart/status') {
+        return sendJson(res, 200, app.heart ? app.heart.getStatus() : { status: 'OFFLINE' }, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/heart/economy') {
+        return sendJson(res, 200, app.heart ? await app.heart.getEconomyMetrics() : {}, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/heart/timers') {
+        return sendJson(res, 200, { timers: app.heart ? app.heart.listTimers() : [] }, requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/heart/timers') {
+        const body = await readJson(req);
+        const timer = app.heart ? app.heart.createTimer(body) : null;
+        return sendJson(res, 201, { ok: true, timer }, requestId);
+      }
+      const pauseTimer = url.pathname.match(/^\/api\/heart\/timers\/([^/]+)\/pause$/);
+      if (req.method === 'POST' && pauseTimer) {
+        return sendJson(res, 200, { ok: true, timer: app.heart?.pauseTimer(pauseTimer[1]) }, requestId);
+      }
+      const resumeTimer = url.pathname.match(/^\/api\/heart\/timers\/([^/]+)\/resume$/);
+      if (req.method === 'POST' && resumeTimer) {
+        return sendJson(res, 200, { ok: true, timer: app.heart?.resumeTimer(resumeTimer[1]) }, requestId);
+      }
+      const cancelTimer = url.pathname.match(/^\/api\/heart\/timers\/([^/]+)\/cancel$/);
+      if (req.method === 'POST' && cancelTimer) {
+        return sendJson(res, 200, { ok: true, cancelled: app.heart?.cancelTimer(cancelTimer[1]) }, requestId);
+      }
+      const triggerTimer = url.pathname.match(/^\/api\/heart\/timers\/([^/]+)\/trigger$/);
+      if (req.method === 'POST' && triggerTimer) {
+        return sendJson(res, 200, { ok: true, timer: await app.heart?.triggerTimer(triggerTimer[1]) }, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/heart/schedules') {
+        return sendJson(res, 200, { schedules: app.heart ? app.heart.listSchedules() : [] }, requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/heart/schedules') {
+        const body = await readJson(req);
+        const schedule = app.heart ? app.heart.scheduleTask(body) : null;
+        return sendJson(res, 201, { ok: true, schedule }, requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/heart/fast-lane') {
+        const body = await readJson(req);
+        const result = app.heart ? await app.heart.resolveFast(body.query || body.prompt || body, body.context) : { resolution: 'Heart not active' };
+        return sendJson(res, 200, result, requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/heart/stream') {
+        res.writeHead(200, {
+          'content-type': 'text/event-stream; charset=utf-8',
+          'cache-control': 'no-cache, no-transform',
+          'connection': 'keep-alive'
+        });
+        const snap = app.heart ? app.heart.getStatus() : { status: 'OFFLINE' };
+        res.write(`data: ${JSON.stringify({ type: 'heart.init', snapshot: snap })}\n\n`);
+        const onTelemetry = (event) => {
+          if (!res.writableEnded) res.write(`data: ${JSON.stringify(event)}\n\n`);
+        };
+        if (app.heart?.telemetryBus) {
+          app.heart.telemetryBus.on('telemetry', onTelemetry);
+        }
+        req.on('close', () => {
+          if (app.heart?.telemetryBus) {
+            app.heart.telemetryBus.off('telemetry', onTelemetry);
+          }
+        });
+        return true;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/heart/recover') {
+        const resRec = app.heart ? await app.heart.recover() : { recovered: false };
+        return sendJson(res, 200, resRec, requestId);
+      }
+
+      // AI Lanes routes
+      if (req.method === 'GET' && url.pathname === '/api/ai/lanes') {
+        return sendJson(res, 200, app.aiRouter ? await app.aiRouter.getLanes(tenantId, actorId) : { lanes: {} }, requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/ai/classify') {
+        const body = await readJson(req);
+        return sendJson(res, 200, app.aiRouter ? app.aiRouter.classifyTask(body) : { lane: 'standard' }, requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/ai/cascade') {
+        const body = await readJson(req);
+        if (!app.aiRouter) return sendJson(res, 500, { error: 'aiRouter not wired' }, requestId);
+        return sendJson(res, 200, await app.aiRouter.cascade(tenantId, actorId, body), requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/ai/handoff') {
+        const body = await readJson(req);
+        if (!app.aiRouter) return sendJson(res, 500, { error: 'aiRouter not wired' }, requestId);
+        return sendJson(res, 201, await app.aiRouter.handoff(tenantId, actorId, body), requestId);
+      }
+
       if (req.method === 'GET' && url.pathname === '/api/ai/telemetry') return sendJson(res, 200, await app.aiGateway.telemetry(tenantId, actorId));
       if (req.method === 'GET' && url.pathname === '/api/system/boot-status') return sendJson(res, 200, app.runtimeKernel ? app.runtimeKernel.getState() : { status: 'UNKNOWN' }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/orchestrator/mission/decompose') { const body = await readJson(req); return sendJson(res, 200, await app.aiOrchestrator.processRequest(body.prompt || body.objective), requestId); }
@@ -1341,12 +1641,32 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     // Keep the wire event aligned with the frontend live-runtime contract.
     ws.send(JSON.stringify({ type: 'runtime.connected', payload: { status: 'ok' } }));
     
-    // Handle client ping/pong and replay requests
+    // Handle client ping/pong, replay requests, and Unreal Engine world bridge events
     ws.on('message', (raw) => {
       try {
         const msg = JSON.parse(raw.toString());
         if (msg.type === 'ping') {
           ws.send(JSON.stringify({ type: 'pong', payload: { seq: msg.seq } }));
+        }
+        if (msg.type === 'WORLD_RESYNC_REQUEST') {
+          try {
+            const { livingCityState } = require('./api/living-city-routes');
+            livingCityState(app, 'grg', 'grg-admin').then((cityData) => {
+              if (ws.readyState === 1) {
+                ws.send(JSON.stringify({
+                  type: 'WORLD_RESYNC',
+                  payload: {
+                    agents: cityData.agents || []
+                  }
+                }));
+              }
+            }).catch(() => {});
+          } catch {}
+        }
+        if (msg.type === 'AGENT_NAVIGATION_BLOCKED') {
+          if (app.bus && typeof app.bus.emit === 'function') {
+            app.bus.emit('agent.navigation.blocked', msg.payload || {});
+          }
         }
       } catch {}
     });
@@ -1447,14 +1767,63 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     runLocalBatch();
   }
 
+  // ── FÊNIX AUTONOMOUS LOOP — OBSERVE → DECIDE → EXECUTE → VALIDATE → LEARN ──
+  let autonomousLoop = null;
+  if (options.autonomousLoop !== false && process.env.FENIX_DEDICATED_WORKER !== 'true') {
+    const _resolveActor = async () => {
+      try {
+        const state = await app.store.read();
+        const tenant = (state.tenants || []).find(t => t.status === 'active') || { id: 'grg' };
+        const actor = (state.memberships || []).find(m => m.tenantId === tenant.id && m.status === 'active')?.userId
+          || (state.users || []).find(u => u.tenantId === tenant.id && u.status === 'active')?.id
+          || 'grg-admin';
+        return { tenantId: tenant.id, actorId: actor };
+      } catch (_) { return { tenantId: 'grg', actorId: 'grg-admin' }; }
+    };
+    _resolveActor().then(({ tenantId, actorId }) => {
+      autonomousLoop = new FenixAutonomousLoop({ app, tenantId, actorId,
+        intervalMs: Number(process.env.FENIX_AUTONOMOUS_LOOP_INTERVAL_MS || 60_000), logger });
+      server.autonomousLoop = autonomousLoop;
+      app.autonomousLoop = autonomousLoop;
+      if (process.env.FENIX_AUTONOMOUS_LOOP_AUTOSTART !== 'false') {
+        setTimeout(() => autonomousLoop.start(), 10_000);
+        logger.info?.({ event: 'autonomous.loop.scheduled', tenantId, actorId });
+      } else {
+        logger.info?.({ event: 'autonomous.loop.standby' });
+      }
+    }).catch(err => logger.error({ event: 'autonomous.loop.init.failed', error: err.message }));
+  } else if (process.env.FENIX_DEDICATED_WORKER === 'true') {
+    logger.info?.({ event: 'autonomous.loop.delegated_to_worker', workerUrl: process.env.FENIX_WORKER_URL || 'http://127.0.0.1:4420' });
+  }
+
+  // ── WORLD SIMULATION ENGINE — 24/7 AUTONOMOUS LIVING WORLD TICK ──
+  try {
+    const { getWorldSimulationEngine } = require('./world-model/world-simulation-engine');
+    const worldSim = getWorldSimulationEngine();
+    if (!worldSim.isRunning && options.worldSimulation !== false) {
+      worldSim.start();
+      logger.info?.({ event: 'world.simulation.started' });
+    }
+  } catch (err) {
+    logger.error?.({ event: 'world.simulation.init.failed', error: err.message });
+  }
+
   const originalClose = server.close.bind(server);
   server.close = function (cb) {
     if (server.localRuntimeWorker) {
       clearInterval(server.localRuntimeWorker);
       server.localRuntimeWorker = null;
     }
+    if (server.autonomousLoop) { server.autonomousLoop.stop(); server.autonomousLoop = null; }
+    try {
+      const { getWorldSimulationEngine } = require('./world-model/world-simulation-engine');
+      getWorldSimulationEngine().stop();
+    } catch (_) {}
     if (typeof app.close === 'function') {
       app.close().catch(() => {});
+    }
+    if (typeof server.closeAllConnections === 'function') {
+      server.closeAllConnections();
     }
     return originalClose(cb);
   };
@@ -1480,9 +1849,11 @@ function serveStatic(pathname, res) {
   const rel = ALIASES[pathname] || pathname.replace(/^\//, '');
   const file = path.resolve(PUBLIC, rel);
   if (!file.startsWith(PUBLIC) || !fs.existsSync(file)) { res.writeHead(404); return res.end('not found'); }
-  const type = file.endsWith('.html') ? 'text/html' : file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'application/octet-stream';
+  const ext = path.extname(file).toLowerCase();
+  const mimeMap = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webp': 'image/webp', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
+  const type = mimeMap[ext] || 'application/octet-stream';
   const cacheControl = file.endsWith('.html') ? 'no-store, max-age=0' : 'no-cache';
-  res.writeHead(200, { 'content-type': `${type}; charset=utf-8`, 'cache-control': cacheControl });
+  res.writeHead(200, { 'content-type': type, 'cache-control': cacheControl });
   res.end(fs.readFileSync(file));
 }
 

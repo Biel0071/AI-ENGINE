@@ -20,7 +20,30 @@
            '';
   }
 
-  const CANONICAL_COMPANIES = Object.freeze([]);
+  async function fetchSystemEventHistory() {
+    const token = getAuthToken();
+    const headers = { accept: 'application/json' };
+    if (token) headers.authorization = `Bearer ${token}`;
+    const fetchFn = window.fenixAuthedFetch || fetch;
+    const response = await fetchFn('/api/v2/events/history?limit=100', {
+      credentials: 'same-origin',
+      headers,
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (!Array.isArray(data.events)) throw new Error('A API não retornou uma lista de eventos.');
+    const ignoredTypes = new Set(['snapshot', 'runtime.snapshot', 'status', 'ping', 'heartbeat', 'connected']);
+    data.events = data.events.filter((event) => {
+      const type = String(event?.type || event?.event || event?.eventType || '').toLowerCase();
+      return type && !ignoredTypes.has(type);
+    }).sort((left, right) => {
+      const leftAt = Date.parse(left?.occurredAt || left?.timestamp || left?.createdAt || '') || 0;
+      const rightAt = Date.parse(right?.occurredAt || right?.timestamp || right?.createdAt || '') || 0;
+      return rightAt - leftAt;
+    });
+    return data;
+  }
 
   class CityRealityEngine {
     constructor() {
@@ -32,6 +55,8 @@
       this.activeDockTab = 'grid4';
       this.isNetworkMode = false;
       this.pollTimer = null;
+      this.events = null;
+      this.latestEvent = null;
 
       this.init();
     }
@@ -66,6 +91,26 @@
             this.setMode('world');
           }
         });
+      }
+
+      document.addEventListener('fenix-live', (event) => {
+        const detail = event.detail || {};
+        const type = String(detail.type || '').toLowerCase();
+        if (!['runtime-event', 'event-stream'].includes(String(detail.source || ''))) return;
+        if (!type || ['snapshot', 'runtime.snapshot', 'status', 'ping', 'pong', 'heartbeat', 'connected'].includes(type)) return;
+        this.latestEvent = detail;
+        this.renderLatestEventTicker(detail);
+      });
+    }
+
+    renderLatestEventTicker(event) {
+      const type = String(event?.type || event?.event || 'Evento do sistema');
+      const payload = event?.data || event?.payload || {};
+      const description = event?.message || event?.summary || payload.message || payload.title || '';
+      const label = [type, description].filter(Boolean).join(' · ').slice(0, 120);
+      for (const id of ['tickerKernelStatus', 'tickerKernelStatus2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = label;
       }
     }
 
@@ -228,7 +273,7 @@
         if (comp.recommendations && comp.recommendations.length > 0) {
           fenixText.innerHTML = `<strong>Diagnóstico Fênix:</strong> ${comp.recommendations[0]}<br><span style="color:#00D9FF; font-size:10.5px;">Sugestão autônoma pronta para despacho.</span>`;
         } else {
-          fenixText.innerHTML = `<strong>Diagnóstico Fênix:</strong> Operação saudável com telemetria nominal. Nenhum gargalo crítico detectado no turno.`;
+          fenixText.innerHTML = `<strong>Diagnóstico Fênix:</strong> Sem diagnóstico registrado para esta empresa.`;
         }
       }
     }
@@ -239,13 +284,17 @@
         const headers = { 'content-type': 'application/json' };
         if (token) headers['authorization'] = `Bearer ${token}`;
 
-        let stateData = window.FENIX?.cityWorld?.snapshot || null;
-        const [stateRes, healthRes] = await Promise.allSettled([
-          stateData ? Promise.resolve(null) : fetch('/api/v2/living-city/state', { headers }),
-          fetch('/api/v2/system/health', { headers })
+        let stateData = null;
+        const fetchFn = window.fenixAuthedFetch || fetch;
+        const requestOptions = { credentials: 'same-origin', headers, signal: AbortSignal.timeout(10000) };
+        const [stateRes, healthRes, eventsRes, telemetryRes] = await Promise.allSettled([
+          fetchFn('/api/v2/living-city/state', requestOptions),
+          fetchFn('/api/v2/system/health', requestOptions),
+          fetchSystemEventHistory(),
+          fetchFn('/api/v2/telemetry/live', requestOptions)
         ]);
 
-        if (!stateData && stateRes.status === 'fulfilled' && stateRes.value?.ok) {
+        if (stateRes.status === 'fulfilled' && stateRes.value?.ok) {
           stateData = await stateRes.value.json();
         }
 
@@ -254,21 +303,47 @@
           healthData = await healthRes.value.json();
         }
 
-        this.renderBottomDockContent(stateData || {}, healthData);
-        this.updateTopbarAndFooter(stateData || {}, healthData);
+        let telemetryData = null;
+        if (telemetryRes.status === 'fulfilled' && telemetryRes.value?.ok) {
+          const responseData = await telemetryRes.value.json();
+          if (responseData?.ok) telemetryData = responseData;
+        }
+
+        let events = null;
+        if (eventsRes.status === 'fulfilled') events = eventsRes.value.events;
+        this.events = events;
+        window.__fenixSystemEvents = events;
+        window.__fenixSystemEventsError = events === null ? eventsRes.reason?.message || 'API indisponível' : null;
+        window.fenixRenderAlerts?.();
+
+        this.renderBottomDockContent(stateData, healthData);
+        this.updateTopbarAndFooter(stateData, healthData, events, {
+          health: healthRes.status === 'fulfilled' && healthRes.value.ok,
+          state: Boolean(stateData),
+          events: events !== null,
+          telemetry: telemetryData !== null,
+        }, telemetryData || {});
       } catch (err) {
         if (!silent) console.warn('[CityRealityEngine] Falha ao atualizar Bottom Dock:', err);
       }
     }
 
     renderBottomDockContent(data, healthData = {}) {
-      const agents = data.agents || [];
-      const jobs = data.recentJobs || [];
+      const hasAgentSnapshot = Array.isArray(data?.agents);
+      const hasJobSnapshot = Array.isArray(data?.recentJobs);
+      const agents = hasAgentSnapshot ? data.agents : [];
+      const jobs = hasJobSnapshot ? data.recentJobs : [];
       const badgeAgents = document.getElementById('dockBadgeAgents');
       const badgeMissions = document.getElementById('dockBadgeMissions');
 
-      if (badgeAgents) badgeAgents.textContent = agents.length;
-      if (badgeMissions) badgeMissions.textContent = jobs.length;
+      if (badgeAgents) badgeAgents.textContent = hasAgentSnapshot ? agents.length : '—';
+      if (badgeMissions) badgeMissions.textContent = hasJobSnapshot ? jobs.length : '—';
+      const agentStatusDot = document.getElementById('dockAgentsStatusDot');
+      if (agentStatusDot) {
+        const hasOnlineAgent = hasAgentSnapshot && agents.some((agent) => /ONLINE|AVAILABLE|IDLE|WORKING|BUSY|RUNNING/.test(String(agent.status || agent.state || '').toUpperCase()));
+        agentStatusDot.classList.toggle('online', hasOnlineAgent);
+        agentStatusDot.dataset.state = !hasAgentSnapshot ? 'unavailable' : hasOnlineAgent ? 'online' : 'idle';
+      }
 
       const grid4 = document.getElementById('dock4GridContainer');
       const carousel = document.getElementById('dockCarouselContainer');
@@ -280,22 +355,22 @@
         // Window 1: Mapa Global
         const tag = document.getElementById('dockActiveDistrictTag');
         if (tag) {
-          tag.textContent = this.activeCompany ? (this.activeCompany.name.toUpperCase()) : 'DISTRITO INDUSTRIAL';
+          tag.textContent = this.activeCompany ? (this.activeCompany.name.toUpperCase()) : 'DISTRITOS';
         }
-        this.drawMiniMapRadar();
-
         // Window 2: Agentes Conectados
         const agentsCount = document.getElementById('dockCardAgentsCount');
-        if (agentsCount) agentsCount.textContent = agents.length;
+        if (agentsCount) agentsCount.textContent = hasAgentSnapshot ? agents.length : '—';
         const agentsList = document.getElementById('dockCardAgentsList');
         if (agentsList) {
-          if (agents.length === 0) {
-            agentsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhum agente online.</div>';
+          if (!hasAgentSnapshot) {
+            agentsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Agentes indisponíveis nesta leitura.</div>';
+          } else if (agents.length === 0) {
+            agentsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhum agente publicado pela API.</div>';
           } else {
             let html = '';
             for (const ag of agents.slice(0, 15)) {
               const isWorking = ag.status === 'WORKING';
-              const taskDialogue = ag.currentTask || (isWorking ? 'Executando alinhamento' : 'Standby na estação');
+              const taskDialogue = ag.currentTask || ag.assignedTask || ag.status || 'Sem atividade publicada pela API';
               html += `
                 <div class="dock-mini-agent-row" onclick="window.fenixCity?.focusAgent?.('${ag.id}')" title="Focar agente ${ag.name}">
                   <div class="dock-mini-agent-left">
@@ -337,24 +412,26 @@
 
         // Window 4: Missões
         const missionsCount = document.getElementById('dockCardMissionsCount');
-        if (missionsCount) missionsCount.textContent = jobs.length;
+        if (missionsCount) missionsCount.textContent = hasJobSnapshot ? jobs.length : '—';
         const missionsList = document.getElementById('dockCardMissionsList');
         if (missionsList) {
-          if (jobs.length === 0) {
-            missionsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhuma missão ativa.</div>';
+          if (!hasJobSnapshot) {
+            missionsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Jobs indisponíveis nesta leitura.</div>';
+          } else if (jobs.length === 0) {
+            missionsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhum job publicado pela API.</div>';
           } else {
             let html = '';
             for (const job of jobs.slice(0, 10)) {
               const isRunning = job.status === 'RUNNING';
-              const progress = Number.isFinite(job.progress) ? job.progress : (isRunning ? 65 : 100);
+              const progress = Number.isFinite(job.progress) ? Math.max(0, Math.min(100, job.progress)) : null;
               html += `
-                <div class="dock-mini-mission-row" onclick="window.fenixSelectJob?.('${job.id}')" title="Missão: ${job.title || job.id}">
+                <div class="dock-mini-mission-row" onclick="window.fenixSelectJob?.('${job.id}')" title="Job: ${job.title || job.id}">
                   <div class="dock-mission-top-row">
                     <span class="dock-mission-name">${job.title || job.id}</span>
-                    <span class="dock-mission-status-pill" style="color:${isRunning ? '#00D9FF' : '#10B981'};">${job.status || 'OK'}</span>
+                    <span class="dock-mission-status-pill" style="color:${isRunning ? '#00D9FF' : '#94A3B8'};">${job.status || '—'}</span>
                   </div>
                   <div class="dock-mission-bar">
-                    <div class="dock-mission-fill" style="width:${progress}%;"></div>
+                    <div class="dock-mission-fill" style="width:${progress ?? 0}%;"></div>
                   </div>
                 </div>
               `;
@@ -377,13 +454,15 @@
                 <div style="display:flex; flex-direction:column; gap:1px;">
                   <div style="font-size:11px; font-weight:700; color:#F8FAFC;">${ag.name}</div>
                   <div style="font-size:9.5px; color:${isWorking ? '#10B981' : '#94A3B8'};">
-                    ${isWorking ? '● Executando' : '○ Standby'} · ${ag.role || 'Agente'}
+                    ${ag.status || ag.state || 'Estado não informado'} · ${ag.role || 'Agente'}
                   </div>
                 </div>
               </div>
             `;
           }
-          carousel.innerHTML = html || '<div style="color:#64748B; font-size:11px;">Nenhum agente registrado.</div>';
+          carousel.innerHTML = !hasAgentSnapshot
+            ? '<div style="color:#64748B; font-size:11px;">Agentes indisponíveis nesta leitura.</div>'
+            : html || '<div style="color:#64748B; font-size:11px;">Nenhum agente publicado pela API.</div>';
         } else if (this.activeDockTab === 'missions') {
           let html = '';
           for (const job of jobs.slice(0, 10)) {
@@ -394,18 +473,20 @@
                   <span style="font-size:10.5px; font-weight:700; color:#F8FAFC; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                     ${job.title || job.id}
                   </span>
-                  <span style="font-size:8.5px; color:${isRunning ? '#10B981' : '#F59E0B'}; font-weight:700;">
+                  <span style="font-size:8.5px; color:${isRunning ? '#22D3EE' : /COMPLETED|SUCCEEDED|DONE/.test(String(job.status || '').toUpperCase()) ? '#34D399' : /FAIL|ERROR/.test(String(job.status || '').toUpperCase()) ? '#FB7185' : '#94A3B8'}; font-weight:700;">
                     ${job.status}
                   </span>
                 </div>
                 <div style="font-size:9px; color:#94A3B8;">Agente: ${job.agentId || '—'}</div>
-                <div style="height:3px; background:rgba(255,255,255,0.08); border-radius:2px; margin-top:2px;">
-                  <div style="height:100%; width:${Number.isFinite(job.progress) ? job.progress : 0}%; background:${isRunning ? '#00D9FF' : '#10B981'}; border-radius:2px;"></div>
+                  <div style="height:3px; background:rgba(255,255,255,0.08); border-radius:2px; margin-top:2px;">
+                    <div style="height:100%; width:${Number.isFinite(job.progress) ? Math.max(0, Math.min(100, job.progress)) : 0}%; opacity:${Number.isFinite(job.progress) ? 1 : 0}; background:${isRunning ? '#00D9FF' : '#10B981'}; border-radius:2px;"></div>
                 </div>
               </div>
             `;
           }
-          carousel.innerHTML = html || '<div style="color:#64748B; font-size:11px;">Nenhuma missão recente.</div>';
+          carousel.innerHTML = !hasJobSnapshot
+            ? '<div style="color:#64748B; font-size:11px;">Jobs indisponíveis nesta leitura.</div>'
+            : html || '<div style="color:#64748B; font-size:11px;">Nenhum job publicado pela API.</div>';
         } else if (this.activeDockTab === 'cutaway') {
           carousel.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px; padding:4px 8px;">
@@ -433,88 +514,37 @@
       }
     }
 
-    drawMiniMapRadar() {
-      const canvas = document.getElementById('dockMiniMapCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-
-      ctx.fillStyle = '#060B14';
-      ctx.fillRect(0, 0, w, h);
-
-      // Isometric radar grid lines
-      ctx.strokeStyle = 'rgba(0, 217, 255, 0.12)';
-      ctx.lineWidth = 1;
-      for (let i = -w; i < w * 2; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i + h, h);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(i, h);
-        ctx.lineTo(i + h, 0);
-        ctx.stroke();
-      }
-
-      // District dots
-      const districts = [
-        { x: w * 0.5, y: h * 0.45, color: '#00D9FF', name: 'Central' },
-        { x: w * 0.28, y: h * 0.65, color: '#F97316', name: 'Industrial' },
-        { x: w * 0.72, y: h * 0.35, color: '#10B981', name: 'Dev' },
-        { x: w * 0.35, y: h * 0.25, color: '#A855F7', name: 'IA' },
-        { x: w * 0.65, y: h * 0.75, color: '#38BDF8', name: 'Porto' }
-      ];
-
-      for (const d of districts) {
-        ctx.fillStyle = d.color;
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Pulsing beacon for active company
-      if (this.activeCompanyId) {
-        const activeX = w * 0.5;
-        const activeY = h * 0.5;
-        ctx.strokeStyle = '#00D9FF';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(activeX, activeY, 7, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-    }
-
-    updateTopbarAndFooter(data, healthData = {}) {
-      const agents = data.agents || [];
-      const jobs = data.recentJobs || [];
+    updateTopbarAndFooter(data, healthData = {}, events = null, availability = {}, telemetryData = {}) {
+      const agents = Array.isArray(data?.agents) ? data.agents : null;
+      const jobs = Array.isArray(data?.recentJobs) ? data.recentJobs : null;
 
       // Topbar pills
       const topbarAgents = document.getElementById('topbarAgentsPill');
-      if (topbarAgents) topbarAgents.textContent = `${agents.length} Agentes`;
+      if (topbarAgents) topbarAgents.textContent = `${agents ? agents.length : '—'} Agentes`;
 
       const topbarMissions = document.getElementById('topbarMissionsPill');
-      if (topbarMissions) topbarMissions.textContent = `${jobs.length} Missões`;
+      const activeJobStatuses = new Set(['ACTIVE', 'RUNNING', 'DISPATCHED', 'EXECUTING', 'IN_PROGRESS']);
+      const measuredJobs = Number.isFinite(healthData.activeJobs)
+        ? healthData.activeJobs
+        : jobs?.filter((job) => activeJobStatuses.has(String(job?.status || job?.state || '').toUpperCase())).length;
+      if (topbarMissions) topbarMissions.textContent = `${measuredJobs ?? '—'} Jobs na fila`;
 
       const topbarMeetings = document.getElementById('topbarMeetingsPill');
       if (topbarMeetings) topbarMeetings.textContent = `— Reuniões`;
 
       const topbarHealth = document.getElementById('topbarSystemHealthPill');
-      if (topbarHealth) topbarHealth.textContent = healthData.status ? `${healthData.status} Sistema` : `— Sistema`;
+      if (topbarHealth) topbarHealth.textContent = healthData.status ? `${healthData.status} Sistema` : 'Indisponível';
 
       const topbarWeather = document.getElementById('topbarWeatherPill');
       if (topbarWeather) {
-        const hour = new Date().getHours();
-        const isNight = hour < 6 || hour >= 18;
-        topbarWeather.textContent = isNight ? '20°C Céu Limpo' : '24°C Ensolarado';
+        topbarWeather.textContent = 'Clima —';
         const icon = document.getElementById('topbarWeatherIcon');
-        if (icon) icon.className = isNight ? 'ph-bold ph-moon-stars' : 'ph-bold ph-sun';
+        if (icon) icon.className = 'ph-bold ph-cloud';
       }
 
       // Footer hardware gauges
       const alertBtn = document.getElementById('footerAlertCount');
-      if (alertBtn) alertBtn.textContent = '0';
+      if (alertBtn) alertBtn.textContent = `Eventos (${Array.isArray(events) ? events.length : '—'})`;
 
       const cpuFill = document.getElementById('gaugeCpuFill');
       const cpuVal = document.getElementById('gaugeCpuVal');
@@ -525,22 +555,62 @@
       const netFill = document.getElementById('gaugeNetFill');
       const netVal = document.getElementById('gaugeNetVal');
 
-      const cpuPercent = healthData.cpuPercent ?? null;
-      const memPercent = healthData.memPercent ?? null;
-      const diskPercent = healthData.diskPercent ?? null;
-      const netSpeed = healthData.netSpeed ?? '—';
+      const cpuPercent = telemetryData.cpu?.percent ?? healthData.hostTelemetry?.cpu?.percent ?? healthData.system?.cpu ?? healthData.cpuPercent ?? null;
+      const usedRamMb = telemetryData.memory?.usedMb ?? healthData.system?.ram ?? healthData.memory?.usedMb ?? healthData.hostTelemetry?.memory?.usedMb;
+      const totalRamMb = telemetryData.memory?.totalMb ?? healthData.system?.totalRamMb ?? healthData.memory?.totalMb ?? healthData.hostTelemetry?.memory?.totalMb;
+      const memPercent = telemetryData.memory?.usedPercent ?? healthData.hostTelemetry?.memory?.usedPercent ?? healthData.memPercent
+        ?? (Number.isFinite(usedRamMb) && Number.isFinite(totalRamMb) && totalRamMb > 0 ? Math.round(usedRamMb / totalRamMb * 100) : null);
+      const diskPercent = telemetryData.disk?.usedPercent ?? healthData.hostTelemetry?.disk?.usedPercent ?? healthData.diskPercent ?? null;
+      const networkBitsPerSecond = telemetryData.network?.throughputBps ?? healthData.hostTelemetry?.network?.throughput ?? healthData.netSpeed ?? null;
+      const netSpeed = Number.isFinite(networkBitsPerSecond)
+        ? networkBitsPerSecond >= 1_000_000 ? `${(networkBitsPerSecond / 1_000_000).toFixed(1)} Mbps` : `${(networkBitsPerSecond / 1_000).toFixed(1)} Kbps`
+        : null;
 
-      if (cpuFill) cpuFill.style.width = cpuPercent != null ? `${Math.min(100, cpuPercent)}%` : '0%';
-      if (cpuVal) cpuVal.textContent = cpuPercent != null ? `${cpuPercent}%` : '—';
+      const setGauge = (fill, value, percent, label) => {
+        if (fill) fill.style.width = Number.isFinite(percent) ? `${Math.max(0, Math.min(100, percent))}%` : '0%';
+        if (value) value.textContent = label == null ? '—' : String(label);
+      };
 
-      if (memFill) memFill.style.width = memPercent != null ? `${Math.min(100, memPercent)}%` : '0%';
-      if (memVal) memVal.textContent = memPercent != null ? `${memPercent}%` : '—';
+      setGauge(cpuFill, cpuVal, cpuPercent, Number.isFinite(cpuPercent) ? `${cpuPercent}%` : null);
 
-      if (diskFill) diskFill.style.width = diskPercent != null ? `${Math.min(100, diskPercent)}%` : '0%';
-      if (diskVal) diskVal.textContent = diskPercent != null ? `${diskPercent}%` : '—';
+      setGauge(memFill, memVal, memPercent, Number.isFinite(memPercent) ? `${memPercent}%` : null);
 
-      if (netFill) netFill.style.width = netSpeed !== '—' ? '25%' : '0%';
-      if (netVal) netVal.textContent = netSpeed;
+      setGauge(diskFill, diskVal, diskPercent, Number.isFinite(diskPercent) ? `${diskPercent}%` : null);
+
+      setGauge(netFill, netVal, null, netSpeed);
+
+      const host = healthData.vps?.host || healthData.host || null;
+      for (const id of ['tickerHost', 'tickerHost2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = host || 'Indisponível';
+      }
+
+      const tickerState = document.getElementById('fenixTickerStatus');
+      const tickerStateText = document.getElementById('fenixTickerState');
+      const isHealthAvailable = availability.health || Boolean(healthData.status);
+      const isApiAvailable = isHealthAvailable || availability.events || availability.state;
+      const stateText = isHealthAvailable ? String(healthData.status || 'ONLINE') : isApiAvailable ? 'PARCIAL' : 'INDISPONÍVEL';
+      if (tickerState) {
+        tickerState.dataset.state = isHealthAvailable ? (String(healthData.status).toLowerCase() === 'online' ? 'online' : 'degraded') : isApiAvailable ? 'partial' : 'unavailable';
+        tickerState.title = isHealthAvailable ? 'Status recebido de /api/v2/system/health' : isApiAvailable ? 'API respondeu parcialmente; telemetria de host indisponível' : 'Sem resposta da API do Fênix';
+      }
+      if (tickerStateText) tickerStateText.textContent = stateText;
+
+      for (const id of ['tickerFastLane', 'tickerFastLane2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = healthData.fastLane?.status || telemetryData.fastLane?.status || (isApiAvailable ? 'NÃO MEDIDA' : 'INDISPONÍVEL');
+      }
+
+      if (Array.isArray(events) && events.length) {
+        this.latestEvent = this.latestEvent || events[0];
+        this.renderLatestEventTicker(this.latestEvent);
+      } else if (!this.latestEvent) {
+        const emptyState = Array.isArray(events) ? 'SEM EVENTOS REGISTRADOS' : 'EVENTOS INDISPONÍVEIS';
+        for (const id of ['tickerKernelStatus', 'tickerKernelStatus2']) {
+          const element = document.getElementById(id);
+          if (element) element.textContent = emptyState;
+        }
+      }
     }
 
     setDockTab(tab) {
@@ -868,16 +938,17 @@
         if (res.ok) {
           const data = await res.json();
           if (fenixText) {
-            fenixText.innerHTML = `<strong>Resposta Fênix:</strong> ${data.reply || data.response || 'Diretiva aceita e registrada no organismo.'}`;
+            const reply = typeof data.reply === 'string' ? data.reply : typeof data.response === 'string' ? data.response : '';
+            fenixText.textContent = reply ? `Resposta Fênix: ${reply}` : 'A API respondeu sem conteúdo. O comando pode não ter sido executado.';
           }
         } else {
           if (fenixText) {
-            fenixText.innerHTML = `<strong>Fênix:</strong> Comando registrado no barramento executivo.`;
+            fenixText.textContent = `Falha ao enviar o comando à API (HTTP ${res.status}).`;
           }
         }
       } catch (err) {
         if (fenixText) {
-          fenixText.innerHTML = `<strong>Fênix:</strong> Diretiva enviada ao núcleo autônomo.`;
+          fenixText.textContent = `Falha de comunicação com a API: ${err.message || 'serviço indisponível'}.`;
         }
       }
     }
@@ -896,11 +967,22 @@
       input.focus();
     }
   };
-  window.fenixShowAlertsModal = () => {
+  window.fenixShowAlertsModal = async () => {
     const modal = document.getElementById('fenixAlertsModal');
     if (modal) {
-      window.fenixRenderAlerts?.();
       modal.style.display = 'flex';
+      const list = document.getElementById('fenixAlertsModalList');
+      if (list) list.textContent = 'Consultando eventos reais da API…';
+      try {
+        const result = await fetchSystemEventHistory();
+        window.__fenixSystemEvents = result.events;
+        window.__fenixSystemEventsError = null;
+        if (window.fenixCityReality) window.fenixCityReality.events = result.events;
+      } catch (error) {
+        window.__fenixSystemEvents = null;
+        window.__fenixSystemEventsError = error.message || 'API indisponível';
+      }
+      window.fenixRenderAlerts?.();
     } else if (typeof window.showNotification === 'function') {
       window.showNotification('Painel de eventos indisponível nesta tela.');
     }
@@ -908,13 +990,11 @@
 
   window.fenixRenderAlerts = () => {
     const list = document.getElementById('fenixAlertsModalList');
-    if (!list) return;
-    const source = window.state?.data?.events;
-    const events = Array.isArray(source) ? source : (Array.isArray(source?.events) ? source.events : null);
+    const events = Array.isArray(window.__fenixSystemEvents) ? window.__fenixSystemEvents : null;
     const badge = document.getElementById('footerAlertCount');
     const counts = { all: events?.length ?? null, critical: 0, warning: 0, info: 0 };
     const severityOf = (event) => {
-      const value = String(event?.severity || event?.level || event?.data?.severity || 'info').toLowerCase();
+      const value = String(event?.severity || event?.level || event?.data?.severity || event?.data?.level || 'info').toLowerCase();
       if (/critical|fatal|emergency|error/.test(value)) return 'critical';
       if (/warn|degrad|stale/.test(value)) return 'warning';
       return 'info';
@@ -929,6 +1009,15 @@
     setCount('fenixAlertWarningCount', events ? counts.warning : null);
     setCount('fenixAlertInfoCount', events ? counts.info : null);
     if (badge) badge.textContent = `Eventos (${counts.all == null ? '—' : counts.all})`;
+    const notificationBadge = document.getElementById('fnxNotifCount');
+    if (notificationBadge) {
+      const alerts = counts.critical + counts.warning;
+      notificationBadge.textContent = events && alerts ? String(alerts) : '';
+      notificationBadge.hidden = !events || alerts === 0;
+      notificationBadge.style.display = !events || alerts === 0 ? 'none' : 'flex';
+      notificationBadge.setAttribute('aria-hidden', String(!events || alerts === 0));
+    }
+    if (!list) return;
     list.replaceChildren();
     const empty = (message) => {
       const item = document.createElement('div');
@@ -937,7 +1026,7 @@
       item.style.cssText = 'padding:28px 16px;text-align:center;color:#94a3b8;font-size:12px;';
       list.append(item);
     };
-    if (!events) { empty('UNAVAILABLE · não foi possível carregar os eventos da API.'); return; }
+    if (!events) { empty(`API indisponível · ${window.__fenixSystemEventsError || 'falha ao consultar /api/v2/events/history'}`); return; }
     if (!events.length) { empty('Nenhum evento registrado pela API.'); return; }
     for (const event of events) {
       const severity = severityOf(event);
@@ -956,7 +1045,7 @@
       title.textContent = String(event?.title || event?.type || event?.name || event?.id || 'Evento do sistema');
       const description = document.createElement('div');
       description.style.cssText = 'font-size:11.5px;color:#cbd5e1;margin-top:4px;';
-      description.textContent = String(event?.message || event?.description || event?.summary || event?.source || 'Sem descrição fornecida pela API.');
+      description.textContent = String(event?.message || event?.description || event?.summary || event?.data?.message || event?.data?.description || 'A API registrou o evento sem descrição.');
       const time = document.createElement('time');
       const occurredAt = event?.occurredAt || event?.createdAt || event?.timestamp;
       const parsedTime = occurredAt ? new Date(occurredAt) : null;

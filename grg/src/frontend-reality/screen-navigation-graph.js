@@ -26,22 +26,24 @@ class ScreenNavigationGraph {
         component: screen.component,
         permissions: screen.permissions,
         healthScore: screen.healthScore,
-        status: screen.status
+        status: screen.status,
+        isEntryPoint: screen.isEntryPoint === true,
+        verificationStatus: screen.verificationStatus || 'NOT_VERIFIED'
       });
 
-      // Derive transitions based on route structure
-      if (screen.route === '/' || screen.route === '/login') {
-        // Root links to other primary views
-        const otherScreens = screens.filter(s => s.screenId !== screen.screenId);
-        for (const target of otherScreens) {
-          edges.push({
-            from: screen.screenId,
-            to: target.screenId,
-            action: `navigate(${target.route})`,
-            type: 'NAVIGATIONAL',
-            operational: true
-          });
-        }
+      // Only explicit transition evidence is included. Route hierarchy alone
+      // does not prove that the user can navigate between two screens.
+      for (const transition of (screen.navigationEdges || [])) {
+        if (!transition?.targetScreenId) continue;
+        edges.push({
+          from: screen.screenId,
+          to: transition.targetScreenId,
+          action: transition.action || null,
+          type: 'NAVIGATIONAL',
+          operational: null,
+          verificationStatus: 'NOT_VERIFIED',
+          evidenceSource: transition.evidenceSource || 'STATIC_SOURCE'
+        });
       }
     }
 
@@ -51,7 +53,8 @@ class ScreenNavigationGraph {
       totalEdges: edges.length,
       nodes,
       edges,
-      rootScreenId: nodes[0]?.id || 'screen_dashboard_root',
+      rootScreenId: nodes.find((node) => node.isEntryPoint)?.id || null,
+      verificationStatus: 'NOT_VERIFIED',
       generatedAt: new Date().toISOString()
     };
 

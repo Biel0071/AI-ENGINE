@@ -250,7 +250,9 @@ const CANONICAL_VEHICLES_DATA = {};
 const CANONICAL_CONSTRUCTIONS_DATA = {};
 
 class WorldStateEngine {
-  constructor() {
+  constructor(options = {}) {
+    this.stateFilePath = options.stateFilePath || options.storagePath || STATE_FILE;
+    this.stateDirectory = path.dirname(this.stateFilePath);
     this.version = '3.0.0';
     this.worldTime = {
       tick: 1,
@@ -266,6 +268,7 @@ class WorldStateEngine {
     this.agents = { ...CANONICAL_AGENTS_DATA };
     this.vehicles = { ...CANONICAL_VEHICLES_DATA };
     this.constructions = { ...CANONICAL_CONSTRUCTIONS_DATA };
+    this.worldBlueprints = {};
     this.mutationLog = [];
     this._persistTimeout = null;
     this.isInitialized = false;
@@ -275,12 +278,12 @@ class WorldStateEngine {
 
   initialize() {
     try {
-      if (!fs.existsSync(STATE_DIR)) {
-        fs.mkdirSync(STATE_DIR, { recursive: true });
+      if (!fs.existsSync(this.stateDirectory)) {
+        fs.mkdirSync(this.stateDirectory, { recursive: true });
       }
 
-      if (fs.existsSync(STATE_FILE)) {
-        const raw = fs.readFileSync(STATE_FILE, 'utf8');
+      if (fs.existsSync(this.stateFilePath)) {
+        const raw = fs.readFileSync(this.stateFilePath, 'utf8');
         const parsed = JSON.parse(raw);
         if (parsed && parsed.version) {
           this.worldTime = { ...this.worldTime, ...(parsed.worldTime || {}) };
@@ -301,6 +304,7 @@ class WorldStateEngine {
           }
           this.vehicles = { ...CANONICAL_VEHICLES_DATA, ...(parsed.vehicles || {}) };
           this.constructions = { ...CANONICAL_CONSTRUCTIONS_DATA, ...(parsed.constructions || {}) };
+          this.worldBlueprints = { ...(parsed.worldBlueprints || {}) };
           this.mutationLog = Array.isArray(parsed.mutationLog) ? parsed.mutationLog.slice(-100) : [];
           this.isInitialized = true;
           return;
@@ -326,7 +330,7 @@ class WorldStateEngine {
   }
 
   getStateFilePath() {
-    return STATE_FILE;
+    return this.stateFilePath;
   }
 
   persistState() {
@@ -335,8 +339,8 @@ class WorldStateEngine {
 
   persist() {
     try {
-      if (!fs.existsSync(STATE_DIR)) {
-        fs.mkdirSync(STATE_DIR, { recursive: true });
+      if (!fs.existsSync(this.stateDirectory)) {
+        fs.mkdirSync(this.stateDirectory, { recursive: true });
       }
       const data = {
         version: this.version,
@@ -349,10 +353,93 @@ class WorldStateEngine {
         agents: this.agents,
         vehicles: this.vehicles,
         constructions: this.constructions,
+        worldBlueprints: this.worldBlueprints,
         mutationLog: this.mutationLog.slice(-100)
       };
-      fs.writeFileSync(STATE_FILE, JSON.stringify(data, null, 2), 'utf8');
-    } catch (_) {}
+      const temporaryPath = `${this.stateFilePath}.${process.pid}.tmp`;
+      fs.writeFileSync(temporaryPath, JSON.stringify(data, null, 2), 'utf8');
+      fs.renameSync(temporaryPath, this.stateFilePath);
+      return true;
+    } catch (_) { return false; }
+  }
+
+  commitWorldBlueprint(blueprint, { issuer = 'reality-compiler' } = {}) {
+    if (!blueprint || !blueprint.id || !blueprint.projectId || !blueprint.tenantId || !Array.isArray(blueprint.entities)) {
+      throw new Error('A versioned blueprint with project, tenant, and entities is required.');
+    }
+    const organization = blueprint.entities.find(entity => entity.type === 'ORGANIZATION');
+    const building = blueprint.entities.find(entity => entity.type === 'BUILDING');
+    if (!organization?.id || !building?.id || !building.coordinates
+      || !Number.isFinite(building.coordinates.x) || !Number.isFinite(building.coordinates.z)) {
+      throw new Error('Blueprint must include a concrete organization and positioned building.');
+    }
+    if (!blueprint.relationships?.some(edge => edge.type === 'SERVES' && edge.from === organization.id && edge.to === `project:${blueprint.projectId}`)) {
+      throw new Error('Blueprint organization must be related to its selected project.');
+    }
+
+    const committed = this.worldBlueprints[blueprint.id];
+    if (committed) {
+      if (committed.projectId !== blueprint.projectId) throw new Error('Blueprint ID is already committed to another project.');
+      return {
+        created: false,
+        blueprint: committed,
+        organization: this.companies[organization.id],
+        building: this.buildings[building.id]
+      };
+    }
+    if (this.companies[organization.id] || this.buildings[building.id]) {
+      throw new Error('Blueprint entity IDs collide with existing world entities.');
+    }
+
+    const timestamp = new Date().toISOString();
+    const nextCompanies = { ...this.companies, [organization.id]: {
+      id: organization.id,
+      name: organization.name,
+      companyType: organization.organizationType,
+      tenantId: organization.tenantId,
+      projectId: organization.projectId,
+      buildingId: organization.buildingId,
+      status: organization.status,
+      source: 'reality-compiler',
+      createdAt: timestamp
+    } };
+    const nextBuildings = { ...this.buildings, [building.id]: {
+      ...building,
+      companyId: organization.id,
+      sourceId: blueprint.projectId,
+      sourceType: 'PROJECT',
+      createdFrom: 'reality-compiler',
+      createdAt: timestamp
+    } };
+    const committedBlueprint = { ...blueprint, committedAt: timestamp };
+    const nextBlueprints = { ...this.worldBlueprints, [blueprint.id]: committedBlueprint };
+    const record = {
+      id: `mutation:${blueprint.id}`,
+      success: true,
+      type: 'WORLD_BLUEPRINT_MATERIALIZED',
+      payload: {
+        blueprintId: blueprint.id,
+        projectId: blueprint.projectId,
+        organizationId: organization.id,
+        buildingId: building.id
+      },
+      issuer,
+      timestamp
+    };
+
+    const previous = { companies: this.companies, buildings: this.buildings, worldBlueprints: this.worldBlueprints, mutationLog: this.mutationLog };
+    this.companies = nextCompanies;
+    this.buildings = nextBuildings;
+    this.worldBlueprints = nextBlueprints;
+    this.mutationLog = [...this.mutationLog, record].slice(-300);
+    if (!this.persist()) {
+      Object.assign(this, previous);
+      throw new Error('World blueprint could not be persisted.');
+    }
+
+    globalBus.emit('world.mutation', record);
+    globalBus.emit('world.blueprint.materialized', record.payload);
+    return { created: true, blueprint: committedBlueprint, organization: nextCompanies[organization.id], building: nextBuildings[building.id], event: record };
   }
 
   registerEntity(entity) {
@@ -390,6 +477,7 @@ class WorldStateEngine {
         agents: Object.keys(this.agents).length,
         vehicles: Object.keys(this.vehicles).length,
         constructions: Object.keys(this.constructions).length,
+        worldBlueprints: Object.keys(this.worldBlueprints).length,
         mutations: this.mutationLog.length
       },
       companies: Object.values(this.companies),
@@ -404,6 +492,7 @@ class WorldStateEngine {
       vehiclesMap: this.vehicles,
       constructions: Object.values(this.constructions),
       constructionsMap: this.constructions,
+      worldBlueprints: this.worldBlueprints,
       recentMutations: this.mutationLog.slice(-20)
     };
   }

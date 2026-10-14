@@ -66,14 +66,14 @@ class SqliteStore {
   }
 
   async read() {
-    if (this.cachedState) return structuredClone(this.cachedState);
+    if (this.cachedState) return JSON.parse(JSON.stringify(this.cachedState));
     if (this.isClosed || !this.db) throw new Error('SQLite store is closed');
     return new Promise((resolve, reject) => {
       this.db.get(`SELECT document FROM kernel_state WHERE state_key = ?`, ['global'], (err, row) => {
         if (err) return reject(err);
         if (!row) return reject(new Error('SQLite kernel state is not initialized'));
         this.cachedState = this.#prune(migrateState(JSON.parse(row.document)).state);
-        resolve(structuredClone(this.cachedState));
+        resolve(JSON.parse(JSON.stringify(this.cachedState)));
       });
     });
   }
@@ -82,21 +82,21 @@ class SqliteStore {
     const migrated = this.#prune(migrateState(state).state);
     this.cachedState = migrated;
     if (this.isClosed || !this.db) {
-      return structuredClone(migrated);
+      return JSON.parse(JSON.stringify(migrated));
     }
     const docStr = JSON.stringify(migrated);
     return new Promise((resolve, reject) => {
-      if (this.isClosed || !this.db) return resolve(structuredClone(migrated));
+      if (this.isClosed || !this.db) return resolve(JSON.parse(JSON.stringify(migrated)));
       this.db.run(`
         UPDATE kernel_state
         SET document = ?, version = version + 1, updated_at = CURRENT_TIMESTAMP
         WHERE state_key = ?
       `, [docStr, 'global'], (err) => {
         if (err) {
-          if (this.isClosed || !this.db) resolve(structuredClone(migrated));
+          if (this.isClosed || !this.db) resolve(JSON.parse(JSON.stringify(migrated)));
           else reject(err);
         } else {
-          resolve(structuredClone(migrated));
+          resolve(JSON.parse(JSON.stringify(migrated)));
         }
       });
     });
@@ -104,16 +104,16 @@ class SqliteStore {
 
   async update(mutator) {
     if (this.isClosed) {
-      if (this.cachedState) return mutator(structuredClone(this.cachedState));
+      if (this.cachedState) return mutator(JSON.parse(JSON.stringify(this.cachedState)));
       throw new Error('SQLite store is closed');
     }
     const task = this.writeQueue.then(async () => {
       if (this.isClosed) {
-        if (this.cachedState) return mutator(structuredClone(this.cachedState));
+        if (this.cachedState) return mutator(JSON.parse(JSON.stringify(this.cachedState)));
         return null;
       }
       const current = await this.read();
-      const next = await mutator(structuredClone(current));
+      const next = await mutator(JSON.parse(JSON.stringify(current)));
       return await this.write(next);
     });
     this.writeQueue = task.catch(() => {});

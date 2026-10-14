@@ -30,12 +30,21 @@ test('login com credenciais corretas retorna token e role', async () => {
 test('login com senha errada e rejeitado', async () => {
   const app = await bootstrap();
   await assert.rejects(() => app.auth.login('grg', 'admin1010', 'errada'), ForbiddenError);
+  await assert.rejects(() => app.auth.login('grg', 'admin1010', 'admin123'), ForbiddenError);
+  await assert.rejects(() => app.auth.login('grg', 'admin1010', 'GRG1020304050'), ForbiddenError);
 });
 
 test('credenciais mestras legadas nao contornam o usuario persistido', async () => {
   const app = await bootstrap();
   await assert.rejects(() => app.auth.login('grg', 'grg-admin', 'grg-admin'), ForbiddenError);
   await assert.rejects(() => app.auth.login('grg', 'admin', 'admin1010'), ForbiddenError);
+});
+
+test('legacy bootstrap passwords cannot bypass the persisted password hash', async () => {
+  const app = await bootstrap();
+  await app.auth.ensureUser('grg', 'grg-admin', 'a-long-unique-password-for-this-test', 'admin');
+  await assert.rejects(() => app.auth.login('grg', 'grg-admin', 'grg-admin'), ForbiddenError);
+  await assert.rejects(() => app.auth.login('grg', 'grg-admin', 'admin'), ForbiddenError);
 });
 
 test('token valido resolve contexto; invalido nao', async () => {

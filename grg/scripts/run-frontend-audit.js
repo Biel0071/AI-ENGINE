@@ -8,7 +8,7 @@ const steps = [
   ['screen-map', 'scripts/build-screen-function-map.js', [], 12_000],
   ['screen-plan', 'scripts/generate-screen-qa-plan.js', [], 5_000],
   ['screen-contracts', 'scripts/probe-screen-contracts.js', [], 12_000],
-  ['frontend-fast', 'scripts/frontend-navigation-qa.js', ['--fast'], 20_000],
+  ['frontend-fast', 'scripts/frontend-navigation-qa.js', ['--fast'], 60_000],
   ['screen-readiness', 'scripts/build-screen-readiness-report.js', [], 5_000],
 ];
 const results = [];

@@ -1,0 +1,342 @@
+[
+  {
+    "screenId": "SCR-COMMAND",
+    "name": "Unified Command Center & Avatar Hub",
+    "route": "/app#command",
+    "domId": "view-command",
+    "layout": "Split-pane with HUD, telemetry cards, and multi-modal command chat",
+    "controllers": [
+      "unified-app.js",
+      "command-center.js",
+      "fenix-command-bridge.js"
+    ],
+    "apiDependencies": [
+      "/api/me",
+      "/api/overview",
+      "/api/avatar/message",
+      "/api/events"
+    ],
+    "dataSources": [
+      "RuntimeEventBus",
+      "ControlPlane",
+      "MemoryFabric"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-CITY",
+    "name": "Isometric AI City & Universal Digital Twin",
+    "route": "/app#city",
+    "domId": "view-city",
+    "layout": "Pixi.js / Three.js Canvas with 5 distinct districts and living agent avatars",
+    "controllers": [
+      "iso-city.js",
+      "fenix-pixel-engine.js",
+      "pixi-city-renderer.js",
+      "fenix-city-event-adapter.js"
+    ],
+    "apiDependencies": [
+      "/api/city",
+      "/api/v2/living-city/agents",
+      "/api/events"
+    ],
+    "dataSources": [
+      "WorldModel",
+      "RuntimeWorkerPool",
+      "JobEngine"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-AGENTS",
+    "name": "Workforce & Agent Enxame Cockpit",
+    "route": "/app#agents",
+    "domId": "view-agents",
+    "layout": "Grid of specialized agent cards with state badges, metrics, and memory drawers",
+    "controllers": [
+      "unified-app.js",
+      "fenix-core-controller.js"
+    ],
+    "apiDependencies": [
+      "/api/overview",
+      "/api/agents",
+      "/api/jobs"
+    ],
+    "dataSources": [
+      "AgentRegistry",
+      "WorkforceManager"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-IDE",
+    "name": "Visual IDE & Project Kernel Code Studio",
+    "route": "/app#ide",
+    "domId": "view-ide",
+    "layout": "100% full-screen code editor, file tree, terminal pane, and git diff inspector",
+    "controllers": [
+      "project-ide-live.js",
+      "fenix-visual-ide.js",
+      "ide-enhancer.js"
+    ],
+    "apiDependencies": [
+      "/api/projects",
+      "/api/projects/:id/fs",
+      "/api/projects/:id/git"
+    ],
+    "dataSources": [
+      "FileSystemService",
+      "ProjectMirror",
+      "GitHostAdapter"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-OPERATIONS",
+    "name": "Operations Rail & Reciprocity Engine",
+    "route": "/app#operations",
+    "domId": "view-operations",
+    "layout": "Continuous engineering console, pipeline triggers, and reciprocity auditor",
+    "controllers": [
+      "operations-live.js",
+      "dev-pipeline-client.js"
+    ],
+    "apiDependencies": [
+      "/api/v2/engineering/reciprocity/verify",
+      "/api/observability/metrics"
+    ],
+    "dataSources": [
+      "ReciprocityEngine",
+      "QualityGate"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-RUNTIME",
+    "name": "Runtime Cockpit & Process Inspector",
+    "route": "/app#runtime",
+    "domId": "view-runtime",
+    "layout": "Service list, CPU/RAM telemetry gauges, heap inspect, and cluster mesh status",
+    "controllers": [
+      "runtime-cockpit.js",
+      "live-runtime.js"
+    ],
+    "apiDependencies": [
+      "/api/runtime",
+      "/api/runtime/services",
+      "/api/runtime/capabilities",
+      "/health"
+    ],
+    "dataSources": [
+      "Kernel",
+      "StorageManager",
+      "FenixMeshCluster"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-PROJECTS",
+    "name": "Project Hub & Absorption Portfolio",
+    "route": "/app#projects",
+    "domId": "view-projects",
+    "layout": "Project catalog, repository cloning, 4D DNA inspection, and export wizard",
+    "controllers": [
+      "project-hub-live.js",
+      "project-hub-controller.js"
+    ],
+    "apiDependencies": [
+      "/api/projects",
+      "/api/connectors/github/repositories"
+    ],
+    "dataSources": [
+      "ProjectRegistry",
+      "SystemAbsorptionEngine"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-MEMORY",
+    "name": "Memory Fabric & Knowledge Base",
+    "route": "/app#memory",
+    "domId": "view-memory",
+    "layout": "Tabbed browser for episodic, procedural, semantic, and structural memory records",
+    "controllers": [
+      "memory-live.js",
+      "unified-app.js"
+    ],
+    "apiDependencies": [
+      "/api/overview",
+      "/api/skills"
+    ],
+    "dataSources": [
+      "MemoryConsolidator",
+      "ProceduralLearningEngine",
+      "QdrantVectorStore"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-KNOWLEDGE",
+    "name": "Knowledge Graph & Corpus Browser",
+    "route": "/app#knowledge",
+    "domId": "view-knowledge",
+    "layout": "Document search, knowledge entity cards, and citation backlinks",
+    "controllers": [
+      "unified-app.js"
+    ],
+    "apiDependencies": [
+      "/api/overview"
+    ],
+    "dataSources": [
+      "KnowledgeGraph",
+      "CognitiveBank"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-MCP",
+    "name": "MCP Connectors & Tools Gateway",
+    "route": "/app#mcp",
+    "domId": "view-mcp",
+    "layout": "Grid of active MCP servers, connected tools, and schema definitions",
+    "controllers": [
+      "connections-panel.js",
+      "unified-app.js"
+    ],
+    "apiDependencies": [
+      "/api/connectors",
+      "/api/skills"
+    ],
+    "dataSources": [
+      "ConnectorRegistry",
+      "ExecutableSkillEngine"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-BROWSER",
+    "name": "Browser Automation & Web Reality Operator",
+    "route": "/app#browser",
+    "domId": "view-browser",
+    "layout": "Headless / live browser viewport, DOM inspector, and visual assertion recorder",
+    "controllers": [
+      "unified-app.js"
+    ],
+    "apiDependencies": [
+      "/api/overview"
+    ],
+    "dataSources": [
+      "RealityOperatorKernel",
+      "PlaywrightEngine"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-OBSERVABILITY",
+    "name": "Observability & Metrics Radar",
+    "route": "/app#observability",
+    "domId": "view-observability",
+    "layout": "Time-series telemetry charts, error rate graphs, and latency histograms",
+    "controllers": [
+      "observatory-client.js"
+    ],
+    "apiDependencies": [
+      "/api/observability/metrics"
+    ],
+    "dataSources": [
+      "PrometheusExporter",
+      "StructuredLogger"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-TERMINAL",
+    "name": "Universal Shell & Interactive Terminal",
+    "route": "/app#terminal",
+    "domId": "view-terminal",
+    "layout": "Xterm.js streaming console linked to safe sandbox execution",
+    "controllers": [
+      "unified-app.js"
+    ],
+    "apiDependencies": [
+      "/api/runtime"
+    ],
+    "dataSources": [
+      "DeterministicEngine",
+      "ChildProcessRunner"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-FLOWGRAPH",
+    "name": "DAG & Workflow Graph Visualizer",
+    "route": "/app#flowgraph",
+    "domId": "view-flowgraph",
+    "layout": "Node-edge interactive canvas showing mission dependencies and step execution",
+    "controllers": [
+      "fenix-flow-graph.js"
+    ],
+    "apiDependencies": [
+      "/api/missions",
+      "/api/events"
+    ],
+    "dataSources": [
+      "MissionKernel",
+      "DependencyGraph"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-LOGIN",
+    "name": "Authentication & Credential Gateway",
+    "route": "/login",
+    "domId": "loginForm",
+    "layout": "W3C compliant form with remember-me persistent session and Credential Management",
+    "controllers": [
+      "login.html"
+    ],
+    "apiDependencies": [
+      "/api/login",
+      "/api/me"
+    ],
+    "dataSources": [
+      "AuthService",
+      "PostgresStore"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  },
+  {
+    "screenId": "SCR-MARKETPLACE",
+    "name": "Extensions & Executable Skills Marketplace",
+    "route": "/app#marketplace",
+    "domId": "view-marketplace",
+    "layout": "Catalog of verified executable skills and community plugins",
+    "controllers": [
+      "marketplace-live.js"
+    ],
+    "apiDependencies": [
+      "/api/skills"
+    ],
+    "dataSources": [
+      "SelfCreatingSkillEngine",
+      "CapabilityMarketplace"
+    ],
+    "visualStatus": "CERTIFIED_FACTUAL",
+    "testStatus": "PASS"
+  }
+]

@@ -24,6 +24,9 @@ const DEFAULT_LIMITS = {
   cityNodes: 750,
   cityEdges: 750,
   cityProjectionStates: 200,
+  // Assets externos sao referenciados pela Cidade; limitar o cache persistido evita
+  // que URLs e metadados aumentem o documento de estado sem limite.
+  worldAssets: 500,
   // Eventos de dominio e derivados (~900 bytes por evento).
   domainEvents: 1_000,
   executionTimeline: 1_000,

@@ -1,0 +1,27 @@
+{
+  "totalProjects": 1,
+  "projects": [
+    {
+      "projectId": "ai-engine-core",
+      "name": "Fênix OS Agent Operating System Core",
+      "path": "C:/projetos/ai-engine-core/ai-engine",
+      "repository": "https://github.com/Biel0071/ai-engine-core",
+      "techStack": [
+        "Node.js 20+",
+        "Vanilla JS ES Modules",
+        "Pixi.js 8",
+        "Three.js",
+        "PostgreSQL",
+        "Redis",
+        "Qdrant",
+        "Fastify"
+      ],
+      "frontend": "ai-engine/grg/public/index.html (Single Source of Truth, 14 canonical views)",
+      "backend": "ai-engine/grg/src/server.js (HTTP / WebSocket / MissionKernel)",
+      "database": "PostgreSQL 16 + in-memory fallback",
+      "status": "PRODUCTION_ONLINE",
+      "testSuitesPassed": 194,
+      "zeroAiCertified": true
+    }
+  ]
+}

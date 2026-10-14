@@ -19,11 +19,12 @@ const { ValidationError, NotFoundError } = require('../kernel/errors');
 const STALE_MS = 5 * 60 * 1000;
 
 class NpcCityEngine {
-  constructor({ store, bus, controlPlane, agentSwarm, masterAvatar, digitalTwin, eventStore, clock }) {
+  constructor({ store, bus, controlPlane, agentSwarm, aiGateway, masterAvatar, digitalTwin, eventStore, clock }) {
     this.store = store;
     this.bus = bus;
     this.cp = controlPlane;
     this.agentSwarm = agentSwarm;
+    this.aiGateway = aiGateway;
     this.masterAvatar = masterAvatar;
     this.digitalTwin = digitalTwin;
     this.eventStore = eventStore;
@@ -76,7 +77,7 @@ class NpcCityEngine {
     const npc = specialists.find((s) => s.id === npcId || s.domain === npcId);
     if (!npc) throw new NotFoundError(`NPC Subagent not found: ${npcId}`);
 
-    // A fala do personagem so pode afirmar o que de fato aconteceu: o evento despachado.
+    // Primeiro registra a mensagem no AgentSwarm; depois solicita uma resposta ao Gateway real.
     let dispatchedEvent = null;
     if (this.agentSwarm && typeof this.agentSwarm.dispatchEvent === 'function') {
       dispatchedEvent = await this.agentSwarm.dispatchEvent(tenantId, actorId, {
@@ -90,11 +91,32 @@ class NpcCityEngine {
       await this.masterAvatar.reportAction(`Conversou com NPC ${npc.name}: ${message.slice(0, 50)}`);
     }
 
-    // O balao de fala descreve o resultado REAL. Se o evento foi despachado, ele carrega o id e
-    // o stream onde a prova vive; se nao houve barramento, diz isso -- nao finge notificacao.
+    const ai = { status: 'FALLBACK', provider: null, model: null, cached: false };
+    let responseText = dispatchedEvent
+      ? `Mensagem recebida e registrada. A IA está indisponível; fallback determinístico: confirme novamente quando o Gateway estiver disponível.`
+      : 'Mensagem recebida, mas nenhum barramento está conectado; nada foi despachado.';
+
+    if (dispatchedEvent && typeof this.aiGateway?.invoke === 'function') {
+      try {
+        const result = await this.aiGateway.invoke(tenantId, actorId, {
+          taskType: 'default',
+          prompt: `Responda como ${npc.name}, especialista em ${npc.role}. Seja direto e não afirme ações que não executou.\n\nMensagem: ${message}`,
+        });
+        if (typeof result?.text === 'string' && result.text.trim()) {
+          responseText = result.text.trim();
+          ai.status = 'CONNECTED';
+          ai.provider = result.provider || null;
+          ai.model = result.model || null;
+          ai.cached = Boolean(result.cached);
+        }
+      } catch (_) {
+        // A resposta abaixo identifica claramente o fallback e não finge uma chamada bem-sucedida.
+      }
+    }
+
     const reply = dispatchedEvent
-      ? `[${npc.name} (${npc.role})]: evento ${dispatchedEvent.type} despachado no stream swarm:${npc.id} (id ${dispatchedEvent.id}).`
-      : `[${npc.name} (${npc.role})]: mensagem recebida, mas nenhum barramento de eventos esta conectado -- nada foi despachado.`;
+      ? `[${npc.name} (${npc.role})]: ${responseText} (evento ${dispatchedEvent.type} no stream swarm:${npc.id}, id ${dispatchedEvent.id}).`
+      : `[${npc.name} (${npc.role})]: ${responseText}`;
 
     return {
       npcId: npc.id,
@@ -104,6 +126,7 @@ class NpcCityEngine {
       dispatched: Boolean(dispatchedEvent),
       eventId: dispatchedEvent ? dispatchedEvent.id : null,
       eventStream: dispatchedEvent ? `swarm:${npc.id}` : null,
+      ai,
       timestamp: new Date().toISOString(),
     };
   }

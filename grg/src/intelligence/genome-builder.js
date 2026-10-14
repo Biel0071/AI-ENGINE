@@ -55,7 +55,7 @@ class GenomeBuilder {
       agentDna: {
         activeAgents: agentDna.activeAgents || [],
         skillsInventory: agentDna.skillsInventory || [],
-        taskSuccessRate: agentDna.taskSuccessRate || 100.0
+        taskSuccessRate: Number.isFinite(agentDna.taskSuccessRate) ? agentDna.taskSuccessRate : null
       }
     };
 
@@ -104,7 +104,9 @@ class GenomeBuilder {
           componentDelta: newDna.visualDna.componentTree.length - oldDna.visualDna.componentTree.length
         },
         agent: {
-          successRateDelta: Number((newDna.agentDna.taskSuccessRate - oldDna.agentDna.taskSuccessRate).toFixed(2))
+          successRateDelta: Number.isFinite(oldDna.agentDna.taskSuccessRate) && Number.isFinite(newDna.agentDna.taskSuccessRate)
+            ? Number((newDna.agentDna.taskSuccessRate - oldDna.agentDna.taskSuccessRate).toFixed(2))
+            : null
         }
       }
     };

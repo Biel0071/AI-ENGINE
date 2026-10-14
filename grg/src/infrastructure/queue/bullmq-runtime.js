@@ -1,3 +1,5 @@
+const crypto = require('node:crypto');
+
 function connectionFromUrl(redisUrl) {
   const url = new URL(redisUrl);
   if (!['redis:', 'rediss:'].includes(url.protocol)) throw new Error('queue connection must use redis:// or rediss://');
@@ -37,7 +39,7 @@ class BullMQRuntime {
 
   async enqueue(queueName, jobName, payload, options = {}) {
     return this.queue(queueName).add(jobName, payload, {
-      jobId: options.idempotencyKey,
+      jobId: bullMqJobId(options.idempotencyKey),
       attempts: Number(options.attempts || 3),
       backoff: options.backoff || { type: 'exponential', delay: 1_000 },
       removeOnComplete: options.removeOnComplete ?? 1_000,
@@ -117,6 +119,14 @@ class BullMQRuntime {
     await Promise.all([...this.queues.values()].map((queue) => queue.close()));
     for (const state of this.workerState.values()) { state.status = 'OFFLINE'; state.currentJob = null; state.lastHeartbeat = new Date().toISOString(); }
   }
+}
+
+function bullMqJobId(idempotencyKey) {
+  if (idempotencyKey == null) return undefined;
+  const key = String(idempotencyKey);
+  const parts = key.split(':');
+  if (!/^\d+$/.test(key) && (!key.includes(':') || parts.length === 3)) return key;
+  return `fenix-${crypto.createHash('sha256').update(key).digest('hex')}`;
 }
 
 module.exports = { BullMQRuntime, connectionFromUrl };

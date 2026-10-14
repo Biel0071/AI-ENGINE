@@ -1,0 +1,2706 @@
+/* ======================================================================
+   FENIX OS V11 — DESIGN SYSTEM & MASTER UI/UX EVOLUTION (PHASE 6)
+   Implements the exact visual standard of the Fênix OS reference mockup:
+   - Dark Obsidian/Space Black Canvas (#04060A, #080C14)
+   - Verde Fênix (#00E5A0) & Cyan (#22D3EE) Accents & Neon Glows
+   - Glassmorphism Surfaces with 1px Subtle Borders
+   - Unified Global Shell (Sidebar, Search Topbar, Status Indicators)
+   - 8 Living Modules: Command Center, AI City, Agentes, Projetos,
+     Memória, Flow Graph, IDE, Operações
+   ====================================================================== */
+
+:root {
+  --fenix-bg-root: #04060A;
+  --fenix-bg-sidebar: #06090F;
+  --fenix-bg-surface: #090E17;
+  --fenix-bg-card: rgba(13, 20, 32, 0.72);
+  --fenix-bg-card-hover: rgba(18, 28, 44, 0.88);
+  --fenix-bg-glass: rgba(10, 16, 26, 0.82);
+
+  --fenix-border-subtle: rgba(255, 255, 255, 0.06);
+  --fenix-border-default: rgba(255, 255, 255, 0.09);
+  --fenix-border-hover: rgba(255, 255, 255, 0.16);
+  --fenix-border-glow: rgba(0, 229, 160, 0.35);
+
+  --fenix-green: #00E5A0;
+  --fenix-green-dim: rgba(0, 229, 160, 0.12);
+  --fenix-green-glow: 0 0 20px rgba(0, 229, 160, 0.25), 0 0 6px rgba(0, 229, 160, 0.15);
+
+  --fenix-cyan: #22D3EE;
+  --fenix-cyan-dim: rgba(34, 211, 238, 0.12);
+  --fenix-cyan-glow: 0 0 20px rgba(34, 211, 238, 0.25);
+
+  --fenix-purple: #A78BFA;
+  --fenix-purple-dim: rgba(167, 139, 250, 0.12);
+
+  --fenix-amber: #FBBF24;
+  --fenix-amber-dim: rgba(251, 191, 36, 0.12);
+
+  --fenix-rose: #FB7185;
+  --fenix-rose-dim: rgba(251, 113, 133, 0.12);
+
+  --fenix-blue: #60A5FA;
+  --fenix-blue-dim: rgba(96, 165, 250, 0.12);
+
+  --fenix-text-primary: #F8FAFC;
+  --fenix-text-secondary: #94A3B8;
+  --fenix-text-muted: #64748B;
+  --fenix-text-ghost: #475569;
+
+  --fenix-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fenix-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* === GLOBAL SHELL ENHANCEMENTS === */
+body {
+  background-color: var(--fenix-bg-root) !important;
+  color: var(--fenix-text-primary) !important;
+  font-family: var(--fenix-font-sans) !important;
+  overflow: hidden !important;
+}
+
+/* === TOPBAR HEADER === */
+.v10-header, header.topbar, #mainHeader {
+  background: rgba(6, 9, 15, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid var(--fenix-border-subtle) !important;
+  height: 52px !important;
+  padding: 0 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  z-index: 50 !important;
+}
+
+.v10-brand-area {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.v10-brand-logo {
+  width: 26px !important;
+  height: 26px !important;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 160, 0.6)) !important;
+}
+.v10-brand-name {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  color: #FFFFFF !important;
+}
+.v10-brand-sub {
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.18em !important;
+  color: var(--fenix-green) !important;
+  text-transform: uppercase !important;
+}
+
+/* Topbar Search Pill */
+.v10-search-bar {
+  background: rgba(14, 22, 34, 0.85) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 9999px !important;
+  padding: 6px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 380px !important;
+  max-width: 40vw !important;
+  transition: all 0.2s ease !important;
+}
+.v10-search-bar:hover, .v10-search-bar:focus-within {
+  border-color: rgba(0, 229, 160, 0.4) !important;
+  box-shadow: 0 0 16px rgba(0, 229, 160, 0.12) !important;
+}
+.v10-search-bar i {
+  color: var(--fenix-text-muted) !important;
+  font-size: 14px !important;
+}
+.v10-search-bar input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: var(--fenix-text-primary) !important;
+  font-size: 12px !important;
+  font-family: var(--fenix-font-sans) !important;
+  width: 100% !important;
+}
+.v10-search-bar input::placeholder {
+  color: var(--fenix-text-muted) !important;
+}
+.v10-search-bar kbd {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  font-size: 10px !important;
+  font-family: var(--fenix-font-mono) !important;
+  color: var(--fenix-text-secondary) !important;
+}
+
+/* Topbar Right Controls */
+.v10-status-pill {
+  background: rgba(0, 229, 160, 0.08) !important;
+  border: 1px solid rgba(0, 229, 160, 0.3) !important;
+  border-radius: 9999px !important;
+  padding: 5px 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: var(--fenix-green) !important;
+  box-shadow: 0 0 12px rgba(0, 229, 160, 0.15) !important;
+}
+.v10-pulse-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: var(--fenix-green) !important;
+  box-shadow: 0 0 8px var(--fenix-green) !important;
+  animation: fenixPulseDot 2s infinite ease-in-out !important;
+}
+@keyframes fenixPulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.v10-clock {
+  font-size: 12px !important;
+  color: var(--fenix-text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+/* === SIDEBAR NAVIGATION === */
+.sidebar-nav, #mainSidebarNav {
+  background: var(--fenix-bg-sidebar) !important;
+  border-right: 1px solid var(--fenix-border-subtle) !important;
+  width: 220px !important;
+  min-width: 220px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 12px 10px !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+}
+
+.v10-sidebar-menu {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
+
+.v10-nav-group-header {
+  display: none !important; /* Flatten out the clunky group headers matching mockup */
+}
+.v10-nav-group-items {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+.v10-nav-btn, .nav-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: #8493A8 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  text-decoration: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.v10-nav-btn i, .nav-item i {
+  font-size: 17px !important;
+  color: #64748B !important;
+  transition: all 0.18s ease !important;
+}
+
+.v10-nav-btn:hover, .nav-item:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #F1F5F9 !important;
+  transform: translateX(2px) !important;
+}
+.v10-nav-btn:hover i, .nav-item:hover i {
+  color: var(--fenix-cyan) !important;
+}
+
+/* Active Nav Item - Sleek Verde Fênix Pill */
+.v10-nav-btn.active, .nav-item.active {
+  background: rgba(0, 229, 160, 0.08) !important;
+  border: 1px solid rgba(0, 229, 160, 0.28) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  box-shadow: inset 0 0 12px rgba(0, 229, 160, 0.06), 0 0 16px rgba(0, 229, 160, 0.08) !important;
+}
+.v10-nav-btn.active i, .nav-item.active i {
+  color: var(--fenix-green) !important;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 160, 0.5)) !important;
+}
+
+/* Sidebar Footer User Card */
+.fenix-sidebar-user-footer {
+  margin-top: auto !important;
+  padding: 12px !important;
+  background: rgba(13, 20, 32, 0.6) !important;
+  border: 1px solid var(--fenix-border-subtle) !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.fenix-sidebar-user-avatar {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: 1.5px solid rgba(0, 229, 160, 0.4) !important;
+  object-fit: cover !important;
+}
+.fenix-sidebar-user-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+.fenix-sidebar-user-name {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.fenix-sidebar-user-status {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--fenix-green) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+/* ======================================================================
+   MODULE 1: COMMAND CENTER (TOP-LEFT OF MOCKUP)
+   ====================================================================== */
+.fenix-cmd-container {
+  padding: 24px 32px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+  overflow-y: auto !important;
+  max-width: 1600px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Top Greeting Bar */
+.fenix-cmd-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  flex-wrap: wrap !important;
+  gap: 16px !important;
+}
+.fenix-cmd-header-left {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+.fenix-cmd-category-label {
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: var(--fenix-green) !important;
+}
+.fenix-cmd-title {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: #FFFFFF !important;
+  margin: 0 !important;
+}
+.fenix-cmd-subtitle {
+  font-size: 13px !important;
+  color: var(--fenix-text-secondary) !important;
+  margin: 0 !important;
+}
+
+/* Top Right Stat Pills */
+.fenix-cmd-header-pills {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+.fenix-stat-pill {
+  background: rgba(13, 20, 32, 0.8) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--fenix-text-secondary) !important;
+}
+.fenix-stat-pill strong {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+.fenix-stat-pill.pill-green {
+  border-color: rgba(0, 229, 160, 0.3) !important;
+  color: var(--fenix-green) !important;
+}
+.fenix-stat-pill.pill-amber {
+  border-color: rgba(251, 191, 36, 0.3) !important;
+  color: var(--fenix-amber) !important;
+}
+.fenix-stat-pill.pill-red {
+  border-color: rgba(251, 113, 133, 0.3) !important;
+  color: var(--fenix-rose) !important;
+}
+.fenix-stat-pill.pill-teal {
+  border-color: rgba(34, 211, 238, 0.3) !important;
+  color: var(--fenix-cyan) !important;
+}
+
+/* Mission Hero Banner */
+.fenix-hero-mission-card {
+  background: linear-gradient(135deg, rgba(8, 14, 24, 0.95) 0%, rgba(13, 22, 36, 0.85) 100%) !important;
+  border: 1px solid rgba(0, 229, 160, 0.24) !important;
+  border-radius: 14px !important;
+  padding: 24px 28px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(0, 229, 160, 0.04) !important;
+  gap: 24px !important;
+}
+.fenix-hero-mission-card::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0; top: 0; bottom: 0; width: 4px !important;
+  background: linear-gradient(180deg, var(--fenix-green) 0%, var(--fenix-cyan) 100%) !important;
+}
+.fenix-hero-mission-left {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+.fenix-hero-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(167, 139, 250, 0.15) !important;
+  border: 1px solid rgba(167, 139, 250, 0.35) !important;
+  color: #C084FC !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  padding: 3px 10px !important;
+  border-radius: 9999px !important;
+  width: fit-content !important;
+}
+.fenix-hero-title {
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: #FFFFFF !important;
+  margin: 0 !important;
+}
+.fenix-hero-desc {
+  font-size: 12.5px !important;
+  color: var(--fenix-text-secondary) !important;
+  margin: 0 !important;
+  line-height: 1.5 !important;
+  max-width: 580px !important;
+}
+.fenix-hero-progress-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  margin-top: 6px !important;
+  flex-wrap: wrap !important;
+}
+.fenix-progress-bar-wrap {
+  width: 200px !important;
+  height: 6px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9999px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+.fenix-progress-bar-fill {
+  height: 100% !important;
+  background: linear-gradient(90deg, var(--fenix-green) 0%, var(--fenix-cyan) 100%) !important;
+  box-shadow: 0 0 10px var(--fenix-green) !important;
+  border-radius: 9999px !important;
+  transition: width 0.4s ease !important;
+}
+.fenix-hero-pct {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: var(--fenix-green) !important;
+}
+.fenix-hero-elapsed {
+  font-size: 11.5px !important;
+  color: var(--fenix-text-muted) !important;
+}
+.fenix-hero-btn {
+  background: rgba(0, 229, 160, 0.1) !important;
+  border: 1px solid rgba(0, 229, 160, 0.35) !important;
+  color: var(--fenix-green) !important;
+  padding: 6px 14px !important;
+  border-radius: 7px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+.fenix-hero-btn:hover {
+  background: var(--fenix-green) !important;
+  color: #04060A !important;
+  box-shadow: 0 0 16px rgba(0, 229, 160, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.fenix-hero-mission-right {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+.fenix-hero-emblem-img {
+  height: 115px !important;
+  max-width: 220px !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 0 20px rgba(0, 229, 160, 0.35)) !important;
+}
+
+/* 4-KPIs Row */
+.fenix-kpi-quad-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 16px !important;
+}
+@media (max-width: 1024px) {
+  .fenix-kpi-quad-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+.fenix-kpi-card {
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 12px !important;
+  padding: 18px 20px !important;
+  backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  transition: all 0.2s ease !important;
+}
+.fenix-kpi-card:hover {
+  background: var(--fenix-bg-card-hover) !important;
+  border-color: rgba(0, 229, 160, 0.3) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+.fenix-kpi-icon-wrap {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 20px !important;
+  flex-shrink: 0 !important;
+}
+.fenix-kpi-icon-wrap.teal {
+  background: rgba(0, 229, 160, 0.12) !important;
+  color: var(--fenix-green) !important;
+}
+.fenix-kpi-icon-wrap.blue {
+  background: rgba(96, 165, 250, 0.12) !important;
+  color: var(--fenix-blue) !important;
+}
+.fenix-kpi-icon-wrap.purple {
+  background: rgba(167, 139, 250, 0.12) !important;
+  color: var(--fenix-purple) !important;
+}
+.fenix-kpi-icon-wrap.amber {
+  background: rgba(251, 191, 36, 0.12) !important;
+  color: var(--fenix-amber) !important;
+}
+.fenix-kpi-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+.fenix-kpi-title {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--fenix-text-secondary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+.fenix-kpi-val {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  color: #FFFFFF !important;
+  letter-spacing: -0.01em !important;
+}
+.fenix-kpi-sub {
+  font-size: 10.5px !important;
+  color: var(--fenix-text-muted) !important;
+}
+
+/* Two-Column Activity & Intelligence Grid */
+.fenix-cmd-lower-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 18px !important;
+}
+@media (max-width: 900px) {
+  .fenix-cmd-lower-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+.fenix-activity-panel {
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+}
+.fenix-activity-panel-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-bottom: 1px solid var(--fenix-border-subtle) !important;
+  padding-bottom: 12px !important;
+}
+.fenix-activity-panel-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.fenix-activity-panel-title i {
+  color: var(--fenix-cyan) !important;
+}
+
+.fenix-activity-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+.fenix-activity-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+  transition: all 0.15s ease !important;
+}
+.fenix-activity-item:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.fenix-activity-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+.fenix-activity-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(0, 229, 160, 0.3) !important;
+  object-fit: cover !important;
+}
+.fenix-activity-agent {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+}
+.fenix-activity-action {
+  font-size: 11.5px !important;
+  color: var(--fenix-text-secondary) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.fenix-activity-time {
+  font-size: 10.5px !important;
+  color: var(--fenix-text-muted) !important;
+  white-space: nowrap !important;
+}
+.fenix-decision-badge {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+}
+.fenix-decision-badge.green {
+  background: rgba(0, 229, 160, 0.12) !important;
+  color: var(--fenix-green) !important;
+}
+.fenix-decision-badge.cyan {
+  background: rgba(34, 211, 238, 0.12) !important;
+  color: var(--fenix-cyan) !important;
+}
+.fenix-decision-badge.purple {
+  background: rgba(167, 139, 250, 0.12) !important;
+  color: var(--fenix-purple) !important;
+}
+
+/* ======================================================================
+   MODULE 2: AI CITY (TOP-RIGHT OF MOCKUP)
+   ====================================================================== */
+.fenix-city-view-container {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #04060A !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+.fenix-module-header {
+  padding: 12px 24px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  background: rgba(8, 12, 20, 0.95) !important;
+  border-bottom: 1px solid var(--fenix-border-subtle) !important;
+  z-index: 10 !important;
+}
+.fenix-module-title-area {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.fenix-module-title {
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  color: #FFFFFF !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+.fenix-module-title span {
+  color: var(--fenix-text-muted) !important;
+}
+
+.fenix-pill-tabs {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--fenix-border-subtle) !important;
+  border-radius: 9999px !important;
+  padding: 3px !important;
+}
+.fenix-pill-tab {
+  background: transparent !important;
+  border: none !important;
+  color: var(--fenix-text-secondary) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 5px 14px !important;
+  border-radius: 9999px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+.fenix-pill-tab:hover {
+  color: #FFFFFF !important;
+}
+.fenix-pill-tab.active {
+  background: rgba(0, 229, 160, 0.15) !important;
+  color: var(--fenix-green) !important;
+  font-weight: 700 !important;
+}
+
+/* AI City Atmospheric Canvas Area */
+.fenix-city-canvas-area {
+  flex: 1 !important;
+  height: calc(100vh - 110px) !important;
+  min-height: 500px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: radial-gradient(ellipse at 50% 50%, #0d1728 0%, #04060A 80%) !important;
+}
+.fenix-city-backdrop-img {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  opacity: 0.95 !important;
+  filter: contrast(1.05) saturate(1.1) !important;
+  z-index: 1 !important;
+}
+
+/* District Hub Overlays */
+.fenix-district-hub-node {
+  position: absolute !important;
+  z-index: 10 !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.fenix-district-hub-node:hover {
+  transform: translateY(-4px) scale(1.05) !important;
+}
+.fenix-district-chip {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
+  background: rgba(9, 14, 24, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+}
+.fenix-district-name {
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: #FFFFFF !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+.fenix-district-agents-count {
+  font-size: 9.5px !important;
+  color: var(--fenix-text-secondary) !important;
+}
+
+/* Specific District Accents */
+.fenix-district-chip.magenta {
+  border-color: rgba(217, 70, 239, 0.4) !important;
+  box-shadow: 0 0 16px rgba(217, 70, 239, 0.25) !important;
+}
+.fenix-district-chip.magenta .fenix-district-name { color: #F0ABFC !important; }
+
+.fenix-district-chip.orange {
+  border-color: rgba(249, 115, 22, 0.4) !important;
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.25) !important;
+}
+.fenix-district-chip.orange .fenix-district-name { color: #FDBA74 !important; }
+
+.fenix-district-chip.cyan {
+  border-color: rgba(34, 211, 238, 0.4) !important;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.25) !important;
+}
+.fenix-district-chip.cyan .fenix-district-name { color: #67E8F9 !important; }
+
+.fenix-district-chip.blue {
+  border-color: rgba(96, 165, 250, 0.4) !important;
+  box-shadow: 0 0 16px rgba(96, 165, 250, 0.25) !important;
+}
+.fenix-district-chip.blue .fenix-district-name { color: #93C5FD !important; }
+
+.fenix-district-chip.green {
+  border-color: rgba(0, 229, 160, 0.4) !important;
+  box-shadow: 0 0 16px rgba(0, 229, 160, 0.25) !important;
+}
+.fenix-district-chip.green .fenix-district-name { color: var(--fenix-green) !important; }
+
+.fenix-district-chip.purple {
+  border-color: rgba(167, 139, 250, 0.4) !important;
+  box-shadow: 0 0 16px rgba(167, 139, 250, 0.25) !important;
+}
+.fenix-district-chip.purple .fenix-district-name { color: #C4B5FD !important; }
+
+/* AI City Bottom Bar */
+.fenix-city-bottom-bar {
+  padding: 10px 24px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  background: rgba(6, 9, 15, 0.95) !important;
+  border-top: 1px solid var(--fenix-border-subtle) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  color: var(--fenix-text-secondary) !important;
+}
+.fenix-city-bottom-bar span.active-tag {
+  color: var(--fenix-green) !important;
+}
+
+/* ======================================================================
+   MODULE 3: AGENTES (WORKFORCE DE AGENTES - MIDDLE LEFT OF MOCKUP)
+   ====================================================================== */
+.fenix-agents-view-container {
+  padding: 20px 28px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+  overflow-y: auto !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.fenix-agents-grid-8, .fenix-agents-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 14px !important;
+}
+@media (max-width: 1200px) {
+  .fenix-agents-grid-8, .fenix-agents-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 700px) {
+  .fenix-agents-grid-8, .fenix-agents-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.fenix-agent-card-item {
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+.fenix-agent-card-item:hover {
+  background: var(--fenix-bg-card-hover) !important;
+  border-color: rgba(0, 229, 160, 0.4) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 229, 160, 0.12) !important;
+  transform: translateY(-3px) !important;
+}
+.fenix-agent-card-top {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.fenix-agent-avatar-wrap {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  border: 2px solid rgba(0, 229, 160, 0.4) !important;
+  padding: 2px !important;
+  flex-shrink: 0 !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.fenix-agent-avatar-img {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+}
+.fenix-agent-name-col {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+.fenix-agent-card-name {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+}
+.fenix-agent-status-badge {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  color: var(--fenix-green) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+.fenix-agent-missions-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 11px !important;
+  color: var(--fenix-text-secondary) !important;
+  border-top: 1px solid var(--fenix-border-subtle) !important;
+  padding-top: 8px !important;
+}
+.fenix-agent-missions-count {
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+}
+.fenix-agent-tags-row {
+  display: flex !important;
+  gap: 5px !important;
+  flex-wrap: wrap !important;
+}
+.fenix-agent-tag {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 4px !important;
+  padding: 2px 7px !important;
+  font-size: 10px !important;
+  color: var(--fenix-text-secondary) !important;
+}
+
+/* ======================================================================
+   MODULE 4: HUB DE PROJETOS (MIDDLE CENTER OF MOCKUP)
+   ====================================================================== */
+.fenix-projects-hub-container {
+  display: flex !important;
+  flex: 1 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: var(--fenix-bg-root) !important;
+}
+.fenix-projects-hub-subnav {
+  width: 200px !important;
+  min-width: 200px !important;
+  background: var(--fenix-bg-sidebar) !important;
+  border-right: 1px solid var(--fenix-border-subtle) !important;
+  padding: 16px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+.fenix-subnav-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--fenix-text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+.fenix-subnav-btn:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #FFFFFF !important;
+}
+.fenix-subnav-btn.active {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #60A5FA !important;
+}
+
+.fenix-project-active-card {
+  flex: 1 !important;
+  padding: 24px !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+}
+.fenix-proj-hero-header {
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 12px !important;
+  padding: 20px 24px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 16px !important;
+}
+.fenix-proj-hero-left {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+.fenix-proj-title-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.fenix-proj-title {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #FFFFFF !important;
+  margin: 0 !important;
+}
+.fenix-proj-badge-status {
+  background: rgba(0, 229, 160, 0.12) !important;
+  border: 1px solid rgba(0, 229, 160, 0.3) !important;
+  color: var(--fenix-green) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 8px !important;
+  border-radius: 9999px !important;
+}
+.fenix-proj-sub {
+  font-size: 12px !important;
+  color: var(--fenix-text-secondary) !important;
+  margin: 0 !important;
+}
+.fenix-proj-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  font-size: 11.5px !important;
+  color: var(--fenix-text-secondary) !important;
+}
+.fenix-proj-avatars-stack {
+  display: flex !important;
+  align-items: center !important;
+  margin-left: 6px !important;
+}
+.fenix-proj-avatar-mini {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  border: 1.5px solid #090E17 !important;
+  margin-left: -6px !important;
+  object-fit: cover !important;
+}
+
+/* Two-column Interior for Projects */
+.fenix-proj-interior-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 16px !important;
+}
+.fenix-recent-files-card {
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+}
+.fenix-recent-files-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin-top: 10px !important;
+}
+.fenix-recent-file-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 10px !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-radius: 6px !important;
+  font-size: 11.5px !important;
+  font-family: var(--fenix-font-mono) !important;
+  color: var(--fenix-text-primary) !important;
+}
+.fenix-recent-file-meta {
+  color: var(--fenix-text-muted) !important;
+  font-size: 10.5px !important;
+}
+
+.fenix-proj-dag-card {
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 180px !important;
+}
+
+/* ======================================================================
+   MODULE 5: MEMÓRIA (MAPA COGNITIVO DA MEMÓRIA - MIDDLE RIGHT)
+   ====================================================================== */
+.fenix-memory-view-layout {
+  display: flex !important;
+  flex: 1 !important;
+  height: 100% !important;
+  gap: 16px !important;
+  padding: 20px 24px !important;
+  box-sizing: border-box !important;
+  background: var(--fenix-bg-root) !important;
+}
+.fenix-memory-graph-pane {
+  flex: 1 !important;
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 14px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.fenix-memory-detail-sidebar {
+  width: 300px !important;
+  min-width: 300px !important;
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 14px !important;
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+.fenix-mem-cluster-title {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #FFFFFF !important;
+  margin: 0 !important;
+}
+.fenix-mem-cluster-count {
+  font-size: 12px !important;
+  color: var(--fenix-green) !important;
+  font-weight: 600 !important;
+}
+.fenix-metric-meter-row {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+.fenix-metric-meter-labels {
+  display: flex !important;
+  justify-content: space-between !important;
+  font-size: 11px !important;
+  color: var(--fenix-text-secondary) !important;
+}
+.fenix-metric-meter-bar {
+  height: 5px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9999px !important;
+  overflow: hidden !important;
+}
+.fenix-metric-meter-fill {
+  height: 100% !important;
+  background: var(--fenix-green) !important;
+  border-radius: 9999px !important;
+}
+
+/* ======================================================================
+   MODULE 6: FLOW GRAPH (FLOWGRAPH SISTÊMICO - BOTTOM LEFT)
+   ====================================================================== */
+.fenix-flowgraph-view-layout {
+  padding: 20px 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  background: var(--fenix-bg-root) !important;
+}
+.fenix-dag-canvas-container {
+  flex: 1 !important;
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  padding: 30px !important;
+}
+
+/* ======================================================================
+   MODULE 7: IDE (WORKSPACE DE ENGENHARIA - BOTTOM CENTER)
+   ====================================================================== */
+.fenix-ide-layout-evolution {
+  display: flex !important;
+  flex: 1 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: var(--fenix-bg-root) !important;
+}
+.fenix-ide-file-tree {
+  width: 220px !important;
+  min-width: 220px !important;
+  background: var(--fenix-bg-sidebar) !important;
+  border-right: 1px solid var(--fenix-border-subtle) !important;
+  padding: 12px 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  font-family: var(--fenix-font-mono) !important;
+  font-size: 11.5px !important;
+}
+.fenix-ide-editor-area {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+.fenix-ide-tabs-header {
+  height: 38px !important;
+  background: rgba(8, 12, 20, 0.95) !important;
+  border-bottom: 1px solid var(--fenix-border-subtle) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 8px !important;
+  gap: 4px !important;
+}
+.fenix-ide-tab {
+  background: transparent !important;
+  border: none !important;
+  color: var(--fenix-text-secondary) !important;
+  font-size: 11.5px !important;
+  font-family: var(--fenix-font-mono) !important;
+  padding: 6px 14px !important;
+  border-radius: 6px 6px 0 0 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+.fenix-ide-tab.active {
+  background: #0D1420 !important;
+  color: #FFFFFF !important;
+  border-bottom: 2px solid var(--fenix-green) !important;
+}
+.fenix-ide-code-viewport {
+  flex: 1 !important;
+  background: #080C14 !important;
+  padding: 16px !important;
+  overflow-y: auto !important;
+  font-family: var(--fenix-font-mono) !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+  color: #E2E8F0 !important;
+}
+
+.fenix-ide-assistant-sidebar {
+  width: 260px !important;
+  min-width: 260px !important;
+  background: var(--fenix-bg-sidebar) !important;
+  border-left: 1px solid var(--fenix-border-subtle) !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+}
+.fenix-assistant-box {
+  background: rgba(13, 20, 32, 0.8) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 10px !important;
+  padding: 12px !important;
+}
+
+/* ======================================================================
+   MODULE 8: OPERAÇÕES (CENTRO DE OPERAÇÕES - BOTTOM RIGHT)
+   ====================================================================== */
+.fenix-ops-view-container {
+  padding: 20px 28px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  background: var(--fenix-bg-root) !important;
+  overflow-y: auto !important;
+}
+.fenix-ops-jobs-table-card {
+  background: var(--fenix-bg-card) !important;
+  border: 1px solid var(--fenix-border-default) !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  overflow: hidden !important;
+}
+.fenix-ops-job-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 14px !important;
+  border-bottom: 1px solid var(--fenix-border-subtle) !important;
+  gap: 16px !important;
+  transition: all 0.15s ease !important;
+}
+.fenix-ops-job-row:last-child {
+  border-bottom: none !important;
+}
+.fenix-ops-job-row:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+.fenix-job-name-cell {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 220px !important;
+  font-family: var(--fenix-font-mono) !important;
+  font-size: 12px !important;
+  color: #FFFFFF !important;
+}
+.fenix-job-status-badge {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+.fenix-job-status-badge.running {
+  background: rgba(0, 229, 160, 0.12) !important;
+  color: var(--fenix-green) !important;
+  border: 1px solid rgba(0, 229, 160, 0.3) !important;
+}
+.fenix-job-status-badge.queued {
+  background: rgba(251, 191, 36, 0.12) !important;
+  color: var(--fenix-amber) !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+.fenix-job-status-badge.success {
+  background: rgba(34, 211, 238, 0.12) !important;
+  color: var(--fenix-cyan) !important;
+  border: 1px solid rgba(34, 211, 238, 0.3) !important;
+}
+.fenix-job-progress-cell {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.fenix-job-time-cell {
+  font-size: 11px !important;
+  color: var(--fenix-text-muted) !important;
+  width: 80px !important;
+  text-align: right !important;
+}
+
+/* ======================================================================
+   GLOBAL PRESENTATION FOOTER (BOTTOM BAR OF MOCKUP)
+   ====================================================================== */
+.fenix-presentation-footer {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 30px !important;
+  background: rgba(4, 6, 10, 0.96) !important;
+  backdrop-filter: blur(12px) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 0 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 11px !important;
+  color: var(--fenix-text-muted) !important;
+  letter-spacing: 0.05em !important;
+  user-select: none !important;
+  z-index: 9999 !important;
+}
+.fenix-footer-emblem {
+  height: 16px !important;
+  filter: drop-shadow(0 0 6px var(--fenix-green)) !important;
+}
+.fenix-footer-center {
+  font-weight: 600 !important;
+  color: var(--fenix-text-secondary) !important;
+}
+.fenix-footer-right {
+  font-weight: 700 !important;
+  color: var(--fenix-green) !important;
+  letter-spacing: 0.15em !important;
+}
+
+/* ======================================================================
+   VIEW SPECIFIC MASTER OVERRIDES & REGRESSION SAFEGUARDS
+   ====================================================================== */
+
+/* 1. Command Center: 100% full width, no squeezing */
+#view-command,
+#view-command.active {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #04060A !important;
+}
+.fenix-cmd-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1 !important;
+  padding: 24px 32px 50px !important;
+}
+#fenixCommandOperationalContainer {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0px !important;
+  max-height: 0px !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* 2. Hide Redundant Operational Context Secondary Bar */
+#fenixOperationalContextBar,
+.workspace-context-bar,
+#workspaceContextBar {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0px !important;
+  max-height: 0px !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* 3. IDE View: Top Toolbar + Body (File Tree | Split Editor & Preview | Assistant) */
+#view-ide,
+#view-ide.active,
+#view-ide.fenix-ide-layout-evolution {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: var(--fenix-bg-root) !important;
+}
+
+/* 4. Memory View: Full screen radial map without legacy clutter */
+#view-memory,
+#view-memory.active {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  background: var(--fenix-bg-root) !important;
+}
+#view-memory .reborn-container,
+#view-memory #rebornPanel,
+#view-memory .reborn-matrix-card,
+#view-memory .workspace-view,
+#view-memory [class*="reborn-"] {
+  display: none !important;
+}
+
+/* 5. Project Hub: High-end Design Standard */
+#view-projects,
+#view-projects.active {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  background: #04060A !important;
+  padding: 20px 28px 50px !important;
+}
+#fp-hub-sidebar {
+  display: none !important;
+}
+
+.fenix-projects-hub-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1400px;
+}
+
+/* Project Hero Card */
+.fenix-proj-hero-card {
+  background: linear-gradient(135deg, rgba(8, 14, 26, 0.95) 0%, rgba(13, 22, 38, 0.95) 100%);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+  border-radius: 12px;
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 229, 160, 0.05);
+}
+.fenix-proj-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: rgba(0, 229, 160, 0.12);
+  color: var(--fenix-green);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+  margin-bottom: 8px;
+}
+.fenix-proj-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+.fenix-proj-desc {
+  font-size: 12.5px;
+  color: var(--fenix-text-secondary);
+  margin: 0 0 16px;
+  max-width: 600px;
+  line-height: 1.5;
+}
+.fenix-proj-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.fenix-proj-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11.5px;
+  color: var(--fenix-text-muted);
+}
+.fenix-proj-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fenix-proj-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+/* Lower Two-Column Grid */
+.fenix-proj-lower-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 20px;
+}
+.fenix-proj-panel {
+  background: var(--fenix-bg-card);
+  border: 1px solid var(--fenix-border-subtle);
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+}
+.fenix-proj-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.fenix-proj-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Recent Files List */
+.fenix-recent-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fenix-recent-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.fenix-recent-file-item:hover {
+  background: rgba(0, 229, 160, 0.06);
+  border-color: rgba(0, 229, 160, 0.2);
+}
+.fenix-recent-file-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fenix-recent-file-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.fenix-recent-file-icon.ts { background: rgba(56, 189, 248, 0.15); color: #38BDF8; }
+.fenix-recent-file-icon.tsx { background: rgba(34, 211, 238, 0.15); color: #22D3EE; }
+.fenix-recent-file-icon.js { background: rgba(251, 191, 36, 0.15); color: #FBBF24; }
+.fenix-recent-file-name {
+  font-family: var(--fenix-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+.fenix-recent-file-meta {
+  font-size: 10.5px;
+  color: var(--fenix-text-muted);
+}
+.fenix-recent-file-time {
+  font-size: 11px;
+  color: var(--fenix-text-muted);
+}
+
+/* Architecture DAG Interactive View */
+.fenix-arch-dag-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 24px 10px;
+  background: rgba(4, 6, 12, 0.6);
+  border-radius: 8px;
+  position: relative;
+  overflow-x: auto;
+}
+.fenix-arch-dag-node {
+  flex: 1;
+  min-width: 110px;
+  background: #0B1322;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  transition: all 0.25s;
+}
+.fenix-arch-dag-node.active {
+  border-color: var(--fenix-green);
+  box-shadow: 0 0 14px rgba(0, 229, 160, 0.2);
+}
+.fenix-arch-dag-node i {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+.fenix-arch-dag-node .node-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.fenix-arch-dag-node .node-sub {
+  font-size: 9px;
+  color: var(--fenix-text-muted);
+  font-family: var(--fenix-font-mono);
+}
+.fenix-arch-dag-node .node-status {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+.fenix-arch-dag-node .node-status.green { background: rgba(0,229,160,0.15); color: #00E5A0; }
+.fenix-arch-dag-node .node-status.cyan { background: rgba(34,211,238,0.15); color: #22D3EE; }
+.fenix-arch-dag-node .node-status.blue { background: rgba(96,165,250,0.15); color: #60A5FA; }
+.fenix-arch-dag-node .node-status.purple { background: rgba(167,139,250,0.15); color: #A78BFA; }
+.fenix-arch-dag-arrow {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* 6. Flowgraph: Clean DAG Pipeline Presentation */
+.fenix-flowgraph-view-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: #04060A !important;
+  padding: 20px 28px 50px !important;
+}
+.fenix-dag-canvas-container {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #060910 !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 12px !important;
+  position: relative !important;
+  margin-top: 14px !important;
+  padding: 20px !important;
+}
+#view-flowgraph .ffg-container,
+#view-flowgraph .ffg-loading-state,
+#view-flowgraph .ffg-empty-state {
+  display: none !important;
+}
+
+#fenixMemoryOperationalContainer {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Presentation Footer Anti-Occlusion & Decoupled Workspace Styling */
+.views-container {
+  padding-bottom: 52px !important;
+}
+
+#view-command,
+#view-projects,
+#view-agents,
+#view-ide,
+#view-operations,
+#view-city,
+#view-memory,
+#view-flowgraph {
+  padding-bottom: 52px !important;
+  box-sizing: border-box !important;
+}
+
+#fp-workspace {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  background: var(--fenix-bg-root) !important;
+  padding-bottom: 60px !important;
+  box-sizing: border-box !important;
+}
+
+.fenix-district-chip.active-glow {
+  transform: scale(1.08);
+  box-shadow: 0 0 20px rgba(0, 229, 160, 0.6) !important;
+  border-color: #00E5A0 !important;
+}
+
+.fenix-ide-tab.active {
+  color: var(--fenix-cyan) !important;
+  border-bottom: 2px solid var(--fenix-cyan) !important;
+  background: rgba(34, 211, 238, 0.08) !important;
+}
+
+.fenix-ide-file-tree div:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #FFFFFF !important;
+}
+
+
+
+/* Dynamic Agent Cards CSS */
+.fenix-empty-state {
+  text-align: center;
+  color: var(--fenix-text-muted);
+  font-size: 14px;
+  padding: 40px;
+}
+
+.fenix-agent-card {
+  background: var(--fenix-bg-card);
+  border: 1px solid var(--fenix-border-default);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(12px);
+}
+
+.fenix-agent-card:hover {
+  background: var(--fenix-bg-card-hover);
+  border-color: var(--fenix-border-glow);
+  box-shadow: var(--fenix-green-glow);
+  transform: translateY(-2px);
+}
+
+.fenix-agent-card .agent-avatar {
+  display: flex;
+  justify-content: center;
+}
+
+.fenix-agent-card .agent-avatar img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 229, 160, 0.2);
+}
+
+.fenix-agent-card .agent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  text-align: center;
+}
+
+.fenix-agent-card .agent-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fenix-text-primary);
+  margin: 0;
+}
+
+.fenix-agent-card .agent-role-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--fenix-text-secondary);
+}
+
+.fenix-agent-card .agent-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.fenix-agent-card .agent-status.online { background: #00E5A0; box-shadow: 0 0 8px #00E5A0; }
+.fenix-agent-card .agent-status.busy { background: #FBBF24; box-shadow: 0 0 8px #FBBF24; }
+.fenix-agent-card .agent-status.offline { background: #64748B; }
+
+.fenix-agent-card .agent-stats {
+  font-size: 11px;
+  color: var(--fenix-text-muted);
+}
+
+.fenix-agent-card .agent-tags,
+.fenix-agent-card .agent-personality {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+.fenix-agent-card .agent-tag,
+.fenix-agent-card .agent-trait {
+  font-size: 9px;
+  padding: 2px 6px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 4px;
+  color: var(--fenix-cyan);
+}
+
+/* Agent Cards V11 */
+.fenix-agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 10px 0;
+}
+.fenix-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: var(--fenix-text-secondary);
+  font-size: 14px;
+}
+.fenix-agent-card {
+  background: var(--fenix-bg-card);
+  border: 1px solid var(--fenix-border-default);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.fenix-agent-card:hover {
+  background: var(--fenix-bg-card-hover);
+  border-color: rgba(0, 229, 160, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.agent-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.agent-avatar img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 229, 160, 0.4);
+  object-fit: cover;
+}
+.agent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.agent-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+.agent-role-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--fenix-cyan);
+  background: var(--fenix-cyan-dim);
+  padding: 2px 8px;
+  border-radius: 12px;
+  width: fit-content;
+  text-transform: uppercase;
+}
+.agent-status {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.agent-status.online { background: var(--fenix-green); box-shadow: 0 0 8px var(--fenix-green); }
+.agent-status.busy { background: var(--fenix-amber); box-shadow: 0 0 8px var(--fenix-amber); }
+.agent-status.offline { background: var(--fenix-text-muted); }
+
+.agent-stats {
+  font-size: 11px;
+  color: var(--fenix-text-secondary);
+}
+.agent-tags, .agent-personality {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.agent-tag, .agent-trait {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--fenix-text-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.agent-metrics {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--fenix-border-subtle);
+  font-size: 11px;
+}
+.agent-metrics div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.agent-metrics div span {
+  font-weight: 700;
+  color: var(--fenix-green);
+}
+.agent-metrics div small {
+  color: var(--fenix-text-muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+
+/* FLOW GRAPH TABS & CONTROLS */
+.fenix-flowgraph-tabs {
+  display: flex;
+  gap: 10px;
+  padding: 10px 15px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 10;
+}
+
+.fenix-fg-tab {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fenix-fg-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.fenix-fg-tab.active {
+  background: rgba(0, 229, 160, 0.1);
+  border-color: rgba(0, 229, 160, 0.4);
+  color: #00E5A0;
+}
+
+.fenix-fg-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 229, 160, 0.2);
+  border-radius: 20px;
+  z-index: 100;
+}
+
+.fenix-fg-controls button {
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.fenix-fg-controls button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.fenix-fg-search {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  outline: none;
+  font-size: 12px;
+  width: 150px;
+}
+
+.fenix-fg-search:focus {
+  border-color: #00E5A0;
+}
+
+.fenix-screen-node:hover {
+  transform: translateY(-5px);
+  border-color: #00E5A0;
+  box-shadow: 0 4px 20px rgba(0, 229, 160, 0.2);
+}
+
+.fenix-memory-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 16px;
+}
+.fenix-mem-layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.fenix-mem-layer:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.fenix-mem-layer.active {
+  background: rgba(0, 229, 160, 0.1);
+  box-shadow: 0 0 10px rgba(0, 229, 160, 0.2);
+}
+.layer-num {
+  font-weight: 700;
+  color: var(--fenix-cyan);
+  font-family: monospace;
+}
+.layer-name {
+  color: #E2E8F0;
+  font-size: 13px;
+  flex: 1;
+}
+.layer-bar {
+  height: 4px;
+  background: linear-gradient(90deg, #00E5A0, #38BDF8);
+  border-radius: 2px;
+}
+.fenix-memory-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.fenix-memory-timeline label {
+  color: #94A3B8;
+  font-size: 12px;
+  font-weight: 600;
+}
+.fenix-timeline-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  outline: none;
+}
+.fenix-timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00E5A0;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 229, 160, 0.5);
+}
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #64748B;
+  font-size: 11px;
+}
+.fenix-memory-search {
+  margin-bottom: 16px;
+}
+.fenix-mem-search-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: #F8FAFC;
+  font-size: 13px;
+  outline: none;
+  backdrop-filter: blur(8px);
+}
+.fenix-mem-search-input:focus {
+  border-color: #00E5A0;
+}
+
+.fenix-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,229,160,0.3);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+.fenix-zoom-controls button {
+  background: rgba(0,229,160,0.15);
+  border: 1px solid rgba(0,229,160,0.3);
+  color: #00E5A0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+.fenix-zoom-controls button:hover {
+  background: rgba(0,229,160,0.3);
+}
+.fenix-zoom-controls span {
+  color: #E2E8F0;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: center;
+}
+
+.fenix-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,229,160,0.3);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+.fenix-zoom-controls button {
+  background: rgba(0,229,160,0.15);
+  border: 1px solid rgba(0,229,160,0.3);
+  color: #00E5A0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+.fenix-zoom-controls button:hover {
+  background: rgba(0,229,160,0.3);
+}
+.fenix-zoom-controls span {
+  color: #E2E8F0;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: center;
+}
+\n
+/* Cyberpunk Agent Cards Fix */
+#fenix-agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.cp-agent-card {
+  background: rgba(10, 15, 20, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  animation: cpFadeInUp 0.5s ease backwards;
+  cursor: pointer;
+}
+
+.cp-agent-card:hover {
+  border-color: rgba(0, 229, 160, 0.8);
+  box-shadow: 0 0 20px rgba(0, 229, 160, 0.3), inset 0 0 10px rgba(0, 229, 160, 0.1);
+  transform: translateY(-4px);
+}
+
+.cp-card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.cp-avatar-box {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: rgba(0, 229, 160, 0.1);
+  border: 1px solid rgba(0, 229, 160, 0.4);
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cp-avatar-box img {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+.cp-header-info {
+  flex: 1;
+}
+
+.cp-agent-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 4px 0;
+  text-shadow: 0 0 8px rgba(255,255,255,0.3);
+}
+
+.cp-agent-role {
+  font-size: 11px;
+  color: #00E5A0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.cp-status-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.cp-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.cp-status-dot.online {
+  background: #00E5A0;
+  box-shadow: 0 0 8px #00E5A0;
+  animation: cpPulseOnline 2s infinite;
+}
+.cp-status-dot.offline {
+  background: #ff4757;
+  box-shadow: 0 0 8px #ff4757;
+}
+
+.cp-metrics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 5px;
+}
+.cp-metric-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: #aaa;
+}
+.cp-metric-label { width: 60px; }
+.cp-metric-bar-bg {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cp-metric-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00E5A0, #00b894);
+  border-radius: 2px;
+}
+.cp-metric-val { width: 35px; text-align: right; color: #fff; font-weight: bold; }
+
+.cp-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+.cp-tag {
+  font-size: 10px;
+  padding: 3px 8px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: #22d3ee;
+  border-radius: 4px;
+}
+.cp-trait {
+  font-size: 10px;
+  padding: 3px 8px;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  color: #a78bfa;
+  border-radius: 4px;
+}
+
+@keyframes cpPulseOnline {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 160, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 229, 160, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 160, 0); }
+}
+@keyframes cpFadeInUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* COMMAND CENTER KPI SPARKLINE */
+.fenix-kpi-card { position: relative; overflow: hidden; transition: box-shadow 0.3s ease; }
+.fenix-kpi-card:hover { box-shadow: 0 0 15px rgba(0, 229, 160, 0.15); }
+.fenix-kpi-sparkline { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, rgba(0, 229, 160, 0.8), transparent); animation: sparklinePulse 3s infinite; }
+@keyframes sparklinePulse { 0% { opacity: 0.3; transform: scaleX(0.8); } 50% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0.3; transform: scaleX(0.8); } }
+.fenix-progress-bar-fill { background-image: linear-gradient(90deg, #00E5A0, #0ab582, #00E5A0); background-size: 200% 100%; animation: gradientMove 2s linear infinite; }
+@keyframes gradientMove { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* MEMORY VIEW */
+.fenix-mem-layer .layer-bar { transition: width 0.5s ease, background-color 0.5s ease; }
+.fenix-radial-node circle { transform-origin: center; animation: pulseNode 3s infinite alternate; }
+@keyframes pulseNode { 0% { r: 15px; } 100% { r: 17px; filter: brightness(1.2); } }
+.fenix-memory-graph-pane svg line { animation: dashAnim 20s linear infinite; }
+@keyframes dashAnim { to { stroke-dashoffset: -100; } }
+
+/* PROJECTS VIEW */
+.fenix-proj-hero-card { position: relative; background-clip: padding-box; border: 1px solid transparent; }
+.fenix-proj-hero-card::before { content: ""; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px; background: linear-gradient(45deg, rgba(0,229,160,0.3), rgba(255,255,255,0.05), rgba(0,229,160,0.3)); z-index: -1; border-radius: 9px; animation: rotateGradient 5s linear infinite; }
+@keyframes rotateGradient { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+.fenix-arch-dag-node { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.fenix-arch-dag-node:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0, 229, 160, 0.2); }
+
+/* IDE VIEW */
+.fenix-ide-file-tree div[style*="padding-left: 24px"]::before,
+.fenix-ide-file-tree div[style*="padding-left: 36px"]::before,
+.fenix-ide-file-tree div[style*="padding-left: 48px"]::before {
+  content: ''; position: absolute; left: calc(var(--pl, 12px) - 8px); top: 0; bottom: 0; border-left: 1px dashed rgba(255,255,255,0.1);
+}
+.fenix-ide-file-tree div { position: relative; }
+.typing-indicator { display: inline-flex; align-items: center; gap: 3px; }
+.typing-indicator span { width: 4px; height: 4px; background: var(--fenix-green); border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+.code-kw { color: #C678DD; } .code-str { color: #98C379; } .code-fn { color: #61AFEF; }
+
+/* RUNTIME VIEW */
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.status-healthy { background: #00E5A0; box-shadow: 0 0 8px rgba(0,229,160,0.6); animation: pulseHealthy 2s infinite; }
+.status-warning { background: #F59E0B; box-shadow: 0 0 8px rgba(245,158,11,0.6); animation: pulseWarning 2s infinite; }
+@keyframes pulseHealthy { 0% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.8; } }
+@keyframes pulseWarning { 0% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.8; } }
+.workspace-card { position: relative; overflow: hidden; }
+.workspace-card::after { content: ''; position: absolute; inset: 0; border: 1px solid transparent; background: linear-gradient(135deg, rgba(0,229,160,0.1), transparent 50%, rgba(0,229,160,0.1)) border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmerBorder 4s linear infinite; pointer-events: none; border-radius: inherit; }
+@keyframes shimmerBorder { to { background-position: 200% center; } }
+.runtime-tooltip { position: relative; }
+.runtime-tooltip:hover::after { content: attr(data-tooltip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #0D1626; color: #FFF; padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; border: 1px solid rgba(0,229,160,0.3); z-index: 100; pointer-events: none; }
+
+
+/* =========================================================================
+   PHASE NEXT EVOLUTION: AI CITY 3.0, HYBRID IDE & OBSIDIAN COGNITIVE GRAPH
+   ========================================================================= */
+
+/* AI City 3.0 Isometric Canvas */
+.fenix-isometric-city-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  outline: none;
+  background: #04060A;
+  cursor: grab;
+  touch-action: none;
+}
+.fenix-isometric-city-canvas:active {
+  cursor: grabbing;
+}
+
+/* AI City District Bar */
+.fenix-city-district-bar .fenix-subnav-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94A3B8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.fenix-city-district-bar .fenix-subnav-btn:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #38BDF8;
+}
+.fenix-city-district-bar .fenix-subnav-btn.active {
+  background: rgba(0, 229, 160, 0.15);
+  border-color: rgba(0, 229, 160, 0.4);
+  color: #00E5A0;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(0, 229, 160, 0.2);
+}
+
+/* Hybrid IDE Workspace Layout */
+.fenix-ide-layout-evolution {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #04060A;
+  overflow: hidden;
+}
+
+.fenix-ide-center-split {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.fenix-ide-editor-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #050914;
+  border-right: 1px solid rgba(56, 189, 248, 0.15);
+  min-width: 320px;
+  position: relative;
+}
+
+.fenix-ide-preview-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #070C1A;
+  min-width: 320px;
+  overflow: hidden;
+}
+
+/* Device Preview Frame (Desktop, Tablet 768px, Mobile 375px) */
+.fenix-preview-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+  background: radial-gradient(circle at center, #0F172A 0%, #030712 100%);
+}
+
+.fenix-device-frame {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background: #0A0F1E;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Visual Inspector Hover & Select Highlight */
+[data-inspector-tag] {
+  transition: outline 0.15s ease, box-shadow 0.15s ease;
+}
+.visual-inspector-active [data-inspector-tag]:hover {
+  outline: 2px dashed #38BDF8 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+  cursor: crosshair;
+}
+
+/* Diff Proposal Box */
+.fenix-diff-proposal {
+  background: #030712;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  font-family: var(--fenix-font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  overflow-x: auto;
+}
+
+/* Obsidian Dynamic Cognitive Graph SVG */
+.fenix-memory-graph-pane svg line {
+  stroke-linecap: round;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+.fenix-radial-node {
+  transition: transform 0.2s ease, opacity 0.3s ease;
+}
+.fenix-radial-node:hover {
+  transform: scale(1.08);
+}
+.fenix-radial-node.active circle {
+  stroke-width: 3px !important;
+  filter: url(#glowCyan) !important;
+}
+
+/* Timeline scrubber live playback animation */
+.fenix-timeline-slider {
+  accent-color: #00E5A0;
+}
+
+/* Visual Inspector Selection & Pulsing Outline */
+.visual-inspector-active [data-inspector-tag] {
+  cursor: crosshair !important;
+}
+.visual-inspector-active [data-inspector-tag]:hover {
+  outline: 2px dashed #38BDF8 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.4) !important;
+}
+.fenix-inspector-selected {
+  outline: 2px solid #00E5A0 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 16px rgba(0, 229, 160, 0.6) !important;
+  position: relative !important;
+  z-index: 10 !important;
+  animation: fenixPulseInspector 2s infinite ease-in-out;
+}
+@keyframes fenixPulseInspector {
+  0%, 100% { outline-color: #00E5A0; box-shadow: 0 0 12px rgba(0,229,160,0.5); }
+  50% { outline-color: #38BDF8; box-shadow: 0 0 20px rgba(56,189,248,0.7); }
+}
+
+/* Obsidian Cognitive Graph Dynamic Filter States */
+.fenix-radial-node.dimmed {
+  opacity: 0.25 !important;
+  transform: scale(0.9) !important;
+}
+.fenix-radial-node.highlighted {
+  opacity: 1 !important;
+  transform: scale(1.15) !important;
+}
+

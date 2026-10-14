@@ -1,0 +1,352 @@
+/* ==========================================================================
+   FÊNIX OS — UNREAL LIVING WORLD 3D DECK (Fases 17.3 a 17.15)
+   ========================================================================== */
+
+.unreal-world-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #050810;
+  color: #E2E8F0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+
+/* 1. Header Ribbon */
+.unreal-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(11, 16, 26, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.unreal-ribbon-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.unreal-badge-protocol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 217, 255, 0.12);
+  border: 1px solid rgba(0, 217, 255, 0.35);
+  color: #00D9FF;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-family: monospace;
+}
+
+.unreal-telemetry-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.unreal-telem-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.unreal-telem-val {
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.unreal-telem-val.cyan { color: #00D9FF; }
+.unreal-telem-val.green { color: #10B981; }
+.unreal-telem-val.amber { color: #F59E0B; }
+.unreal-telem-val.purple { color: #A855F7; }
+
+/* 2. Main Workspace Layout */
+.unreal-workspace {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: calc(100% - 46px);
+  overflow: hidden;
+  position: relative;
+}
+
+/* 3. Left Spatial 3D Canvas / Viewport */
+.unreal-viewport-panel {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background: radial-gradient(circle at 50% 50%, #0d1527 0%, #050810 100%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.unreal-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.unreal-canvas:active {
+  cursor: grabbing;
+}
+
+/* Spatial Viewport Overlay HUD */
+.unreal-viewport-hud {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.unreal-hud-card {
+  background: rgba(11, 16, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  font-size: 11px;
+}
+
+/* District Quick Selector on Viewport */
+.unreal-district-selector {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  background: rgba(11, 16, 26, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 5px 8px;
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  z-index: 5;
+}
+
+.unreal-district-chip {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94A3B8;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.unreal-district-chip:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #F8FAFC;
+}
+
+.unreal-district-chip.active {
+  background: rgba(0, 217, 255, 0.18);
+  border-color: rgba(0, 217, 255, 0.4);
+  color: #00D9FF;
+}
+
+/* 4. Right Control & Inspector Drawer */
+.unreal-sidebar {
+  width: 380px;
+  height: 100%;
+  background: #090E17;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.unreal-sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0B111D;
+}
+
+.unreal-sidebar-tab {
+  flex: 1;
+  padding: 10px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #94A3B8;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.unreal-sidebar-tab:hover {
+  color: #F8FAFC;
+}
+
+.unreal-sidebar-tab.active {
+  color: #00D9FF;
+  border-bottom-color: #00D9FF;
+  background: rgba(0, 217, 255, 0.04);
+}
+
+.unreal-tab-content {
+  display: none;
+  padding: 16px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.unreal-tab-content.active {
+  display: flex;
+}
+
+/* Section Cards */
+.unreal-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unreal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #F8FAFC;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Forms & Inputs */
+.unreal-input {
+  width: 100%;
+  background: #060911;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: #F8FAFC;
+  font-size: 11.5px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.unreal-input:focus {
+  border-color: #00D9FF;
+}
+
+.unreal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+}
+
+.unreal-btn-primary {
+  background: linear-gradient(135deg, #00D9FF, #0090FF);
+  color: #050810;
+  font-weight: 700;
+}
+
+.unreal-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.unreal-btn-success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10B981;
+}
+
+.unreal-btn-success:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+.unreal-btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #EF4444;
+}
+
+.unreal-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* OODA Loop Stages */
+.ooda-stage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ooda-stage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  font-size: 10.5px;
+}
+
+.ooda-stage-name {
+  color: #94A3B8;
+  font-weight: 600;
+}
+
+.ooda-stage-badge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.ooda-stage-badge.done {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10B981;
+}
+
+/* Social Graph List */
+.social-link-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 11px;
+}
+
+.social-link-item:last-child {
+  border-bottom: none;
+}

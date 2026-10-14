@@ -93,8 +93,10 @@ class ControlPlane {
   }
 
   async getMembership(tenantId, userId) {
-    await this.getTenant(tenantId);
     const state = await this.store.read();
+    if (!state.tenants.some((tenant) => tenant.id === tenantId)) {
+      throw new NotFoundError(`Tenant not found: ${tenantId}`);
+    }
     const m = state.memberships.find((x) => x.tenantId === tenantId && x.userId === userId);
     if (!m) throw new NotFoundError(`Membership not found for user: ${userId}`);
     return m;

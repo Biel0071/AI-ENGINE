@@ -557,34 +557,37 @@
           const ht = data?.hostTelemetry || {};
           const cpuEl = document.getElementById('v10GaugeCpu');
           const cpuFill = document.getElementById('v10CpuFill') || document.getElementById('v10CpuGaugeFill');
-          const cpuPercent = (ht.cpu && ht.cpu.percent !== undefined) ? ht.cpu.percent : (data ? 15 : '--');
-          if (cpuEl) cpuEl.textContent = cpuPercent === '--' ? '--%' : `${cpuPercent}%`;
-          if (cpuFill) cpuFill.setAttribute('stroke-dasharray', `${cpuPercent === '--' ? 0 : cpuPercent}, 100`);
+          const cpuPercent = Number.isFinite(ht.cpu?.percent) ? ht.cpu.percent : null;
+          if (cpuEl) cpuEl.textContent = cpuPercent == null ? '—' : `${cpuPercent}%`;
+          if (cpuFill) cpuFill.setAttribute('stroke-dasharray', `${cpuPercent == null ? 0 : cpuPercent}, 100`);
 
           const ramEl = document.getElementById('v10GaugeRam');
           const ramFill = document.getElementById('v10RamFill') || document.getElementById('v10RamGaugeFill');
-          const ramPercent = (ht.memory && ht.memory.usedPercent !== undefined) ? ht.memory.usedPercent : (data ? 61 : '--');
-          if (ramEl) ramEl.textContent = ramPercent === '--' ? '--%' : `${ramPercent}%`;
-          if (ramFill) ramFill.setAttribute('stroke-dasharray', `${ramPercent === '--' ? 0 : ramPercent}, 100`);
+          const ramPercent = Number.isFinite(ht.memory?.usedPercent) ? ht.memory.usedPercent : null;
+          if (ramEl) ramEl.textContent = ramPercent == null ? '—' : `${ramPercent}%`;
+          if (ramFill) ramFill.setAttribute('stroke-dasharray', `${ramPercent == null ? 0 : ramPercent}, 100`);
 
           const diskEl = document.getElementById('v10GaugeDisk');
           const diskFill = document.getElementById('v10DiskFill') || document.getElementById('v10DiskGaugeFill');
-          const diskPercent = (ht.disk && ht.disk.usedPercent !== undefined) ? ht.disk.usedPercent : (data ? 81 : '--');
-          if (diskEl) diskEl.textContent = diskPercent === '--' ? '--%' : `${diskPercent}%`;
-          if (diskFill) diskFill.setAttribute('stroke-dasharray', `${diskPercent === '--' ? 0 : diskPercent}, 100`);
+          const diskPercent = Number.isFinite(ht.disk?.usedPercent) ? ht.disk.usedPercent : null;
+          if (diskEl) diskEl.textContent = diskPercent == null ? '—' : `${diskPercent}%`;
+          if (diskFill) diskFill.setAttribute('stroke-dasharray', `${diskPercent == null ? 0 : diskPercent}, 100`);
 
           const netEl = document.getElementById('v10GaugeNet');
           const netFill = document.getElementById('v10NetFill') || document.getElementById('v10NetGaugeFill');
-          const netScore = (ht.network && ht.network.trafficScore !== undefined) ? ht.network.trafficScore : (data ? 25 : '--');
-          if (netEl) netEl.textContent = netScore === '--' ? '--%' : `${netScore}%`;
-          if (netFill) netFill.setAttribute('stroke-dasharray', `${netScore === '--' ? 0 : netScore}, 100`);
+          const netThroughputBps = Number.isFinite(ht.network?.throughputBps) ? ht.network.throughputBps : null;
+          const netLabel = netThroughputBps == null ? '—' : netThroughputBps >= 1_000_000
+            ? `${(netThroughputBps / 1_000_000).toFixed(1)} Mbps`
+            : `${(netThroughputBps / 1_000).toFixed(1)} Kbps`;
+          if (netEl) netEl.textContent = netLabel;
+          if (netFill) netFill.setAttribute('stroke-dasharray', '0, 100');
 
           STATE.system = {
             status: teleStatus,
             cpu: ht?.cpu?.percent ?? null,
             ram: ht?.memory?.usedPercent ?? null,
             disk: ht?.disk?.usedPercent ?? null,
-            net: ht?.network?.trafficScore ?? null,
+            net: netThroughputBps,
             uptime: uptimeStr || null,
             lastFetch: new Date().toISOString()
           };
@@ -940,11 +943,51 @@
         if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
       });
     });
+    const sidebarToggle=byId('sidebarCollapseBtn');
+    const sidebarNav=byId('mainSidebarNav');
+    const syncSidebarToggle=()=>{
+      if(!sidebarToggle)return;
+      const expanded=innerWidth<=760
+        ?document.body.classList.contains('sidebar-labels-visible')
+        :innerWidth<=900
+          ?document.body.classList.contains('menu-open')
+          :innerWidth<=1180
+            ?document.body.classList.contains('sidebar-labels-visible')
+            :!sidebarNav?.classList.contains('collapsed');
+      sidebarToggle.setAttribute('aria-controls','mainSidebarNav');
+      sidebarToggle.setAttribute('aria-expanded',String(expanded));
+      sidebarToggle.setAttribute('aria-label',expanded?'Mostrar apenas ícones no menu':'Mostrar nomes no menu');
+      sidebarToggle.title=expanded?'Mostrar apenas ícones no menu':'Mostrar nomes no menu';
+    };
+    try{
+      if(localStorage.getItem('fenix_sidebar_labels')==='1')document.body.classList.add('sidebar-labels-visible');
+    }catch(_){}
+    syncSidebarToggle();
     document.addEventListener('click',event=>{
       const nav=event.target.closest('#v10SidebarMenu [data-view]');
       if(nav){event.preventDefault();event.stopImmediatePropagation();window.showView(nav.dataset.view);return;}
       const toggle=event.target.closest('#sidebarCollapseBtn');
-      if(toggle){event.preventDefault();event.stopImmediatePropagation();document.body.classList.toggle(innerWidth<=900?'menu-open':'sidebar-collapsed');toggle.setAttribute('aria-expanded',String(!document.body.classList.contains('sidebar-collapsed')));return;}
+      if(toggle){
+        event.preventDefault();event.stopImmediatePropagation();
+        if(innerWidth<=760){
+          document.body.classList.toggle('sidebar-labels-visible');
+          try{localStorage.setItem('fenix_sidebar_labels',document.body.classList.contains('sidebar-labels-visible')?'1':'0');}catch(_){}
+        }else if(innerWidth<=900){
+          document.body.classList.toggle('menu-open');
+        }else if(innerWidth<=1180){
+          document.body.classList.toggle('sidebar-labels-visible');
+          try{localStorage.setItem('fenix_sidebar_labels',document.body.classList.contains('sidebar-labels-visible')?'1':'0');}catch(_){}
+        }else if(typeof window.fenixCollapseLeftSidebar==='function'){
+          window.fenixCollapseLeftSidebar();
+        }else if(sidebarNav){
+          const collapsed=!sidebarNav.classList.contains('collapsed');
+          sidebarNav.classList.toggle('collapsed',collapsed);
+          sidebarNav.classList.toggle('is-collapsed',collapsed);
+          try{localStorage.setItem('fenix_sidebar_collapsed',collapsed?'1':'0');}catch(_){}
+        }
+        syncSidebarToggle();
+        return;
+      }
       const retry=event.target.closest('[data-retry-view]');if(retry)loaders[retry.dataset.retryView]?.();
     },true);
     document.addEventListener('input',e=>{if(e.target.matches('[data-job-search]'))renderJobs();});
@@ -957,7 +1000,7 @@
     document.querySelectorAll('#view-mcp h1').forEach(e=>e.textContent='Provedores e MCP');
     ['autonomousCycleBtn','tickBtn','qaRerunBtn'].forEach(id=>{const el=byId(id);if(el){el.disabled=true;el.title='Em desenvolvimento — execução segura ainda não integrada nesta tela';el.textContent+=' · Em desenvolvimento';}});
     installCityInspector();
-    window.showView(location.hash.slice(1)||'command',false);
+    window.showView(location.hash.slice(1)||'city',false);
   }
   function installCityInspector(){
     const dialog=document.createElement('dialog');dialog.className='evolution-dialog';dialog.id='evolutionCityInspector';dialog.setAttribute('aria-labelledby','evolutionInspectorTitle');document.body.append(dialog);

@@ -75,13 +75,19 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
 }
 
 function safeFile(root, relative) {
-  if (typeof relative !== 'string' || !relative || path.isAbsolute(relative) || relative.includes('\\') || relative.includes('\0')) return null;
-  const segments = relative.split('/');
-  if (segments.some((segment) => !segment || segment === '.' || segment === '..' || segment.startsWith('.') || IGNORE.has(segment))) return null;
+  if (typeof relative !== 'string' || !relative) return null;
+  const clean = relative.replace(/\\/g, '/').replace(/^\/+/, '').trim();
+  if (!clean || clean.includes('\0')) return null;
+  const segments = clean.split('/');
+  if (segments.some((segment) => !segment || segment === '.' || segment === '..' || segment === '.git' || IGNORE.has(segment))) return null;
   const target = path.resolve(root, ...segments);
   const resolved = path.relative(root, target);
   if (!resolved || resolved.startsWith('..') || path.isAbsolute(resolved)) return null;
-  try { if (fs.realpathSync(target) !== target) return null; } catch { return null; }
+  try {
+    const realTarget = fs.realpathSync(target);
+    const realRoot = fs.realpathSync(root);
+    if (!realTarget.startsWith(realRoot + path.sep) && realTarget !== realRoot) return null;
+  } catch { return null; }
   return target;
 }
 

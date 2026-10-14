@@ -43,6 +43,37 @@ test('the router prefers local, then free, then paid - by policy over healthy pr
   await app.close?.();
 });
 
+test('providers in one tier are checked concurrently so a fast-lane miss is not multiplied by provider count', async () => {
+  let active = 0;
+  let maxActive = 0;
+  let measuring = false;
+  const delayedProvider = (name, up) => ({
+    name,
+    models: [`${name}-model`],
+    available: async () => {
+      if (!measuring) return up;
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      active -= 1;
+      return up;
+    },
+    complete: async () => ({ text: 'pong', model: `${name}-model` }),
+  });
+  const app = await appWith({
+    ollama: delayedProvider('ollama', false),
+    local: delayedProvider('local', false),
+    groq: delayedProvider('groq', true),
+  });
+
+  maxActive = 0;
+  measuring = true;
+  const selected = await app.aiRouter.select('grg', 'grg-admin');
+  assert.equal(selected.chosen.value, 'groq');
+  assert.ok(maxActive >= 2, `connector health checks should overlap, observed max concurrency ${maxActive}`);
+  await app.close?.();
+});
+
 test('failover: when local is down, the router falls to the free tier', async () => {
   const app = await appWith({ ollama: fakeProvider('ollama', { up: false }), groq: fakeProvider('groq'), anthropic: fakeProvider('anthropic') });
   const sel = await app.aiRouter.select('grg', 'grg-admin');

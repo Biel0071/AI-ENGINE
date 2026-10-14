@@ -1,0 +1,42 @@
+{
+  "entityId": "FENIX-OS-AGENT-KERNEL",
+  "version": "2.0.0-SOVEREIGN",
+  "status": "SELF_CONSCIOUS_AUTONOMOUS_OS",
+  "identity": {
+    "nature": "Autonomous Computing Operating System (Agent OS)",
+    "sovereignty": "Independência Ontológica de LLM (Regra Zero / Artigo 0º)",
+    "operatingModes": [
+      "MODE A (Cognitive)",
+      "MODE B (Deterministic Zero-AI)"
+    ]
+  },
+  "capabilities": [
+    "Zero-AI Deterministic Execution (0 tokens, $0.00 cost)",
+    "Autonomous Multi-Agent Squads with Anti-Loop Circuit Breaker",
+    "Self-Creating Skill Engine with Sandbox Verification and Promotion",
+    "Cognitive Bus with 6-stage Escalation and Runtime Toggle",
+    "Federated Mesh Cluster with Automated Node Failover (PC <-> VPS)",
+    "Full-Stack Frontend/Backend Reciprocity & System Absorption",
+    "Single Source of Truth Frontend with 14 Vanilla JS Views",
+    "Persistent 30-Day Session with W3C Credential Management"
+  ],
+  "knownDebts": [
+    {
+      "id": "DEBT-001",
+      "type": "MAINTENANCE",
+      "description": "Consolidate experimental scripts in grg/scripts/",
+      "priority": "LOW"
+    },
+    {
+      "id": "DEBT-002",
+      "type": "OPTIMIZATION",
+      "description": "Monitor VPS memory pressure during heavy concurrent Ollama inference",
+      "priority": "MEDIUM"
+    }
+  ],
+  "futureOpportunities": [
+    "Dedicated PM2 Evolution Worker (fenix-evolution-worker)",
+    "Continuous background self-improvement loop in separate process",
+    "Spatial 3D digital twin deep immersion"
+  ]
+}

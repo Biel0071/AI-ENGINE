@@ -45,6 +45,11 @@
 - Paridade dual absoluta de 100% entre `/opt/fenix-os/public/` e `/opt/fenix-os/grg/public/`.
 - Após o deploy, verificar que PM2 #16 (`fenix-backend`) e PM2 #17 (`fenix-frontend`) estão `online` e que a resposta HTTP é 200 OK.
 
+### Regra VI — Consulta e Atualização Obrigatória da Memória Ativa
+- O arquivo `ACTIVE_PROJECT_MEMORY.md` (na raiz e em `memory/`) é a **Memória Ativa Oficial e Mapa Vivo do Projeto**.
+- Todo agente DEVE OBRIGATORIAMENTE ler `ACTIVE_PROJECT_MEMORY.md` no início de qualquer intervenção.
+- Ao concluir modificações relevantes, o agente DEVE sincronizar ou registrar as alterações na seção de *Últimas Modificações* (executando `node grg/scripts/sync-active-memory.js`), unificando o conhecimento de todos os agentes em **uma coisa só**.
+
 ---
 
 ## 3. Comandos de Validação Rápida

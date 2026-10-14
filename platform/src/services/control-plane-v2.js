@@ -92,7 +92,17 @@ class AccessControlledControlPlane extends ControlPlaneService {
       state.memberships.push({ tenantId, userId, role, status: 'active', createdAt: new Date().toISOString() });
       return state;
     });
-    return this.getMembership(tenantId, userId);
+    const membership = await this.getMembership(tenantId, userId);
+    await this.appendOperatorAuditLog({
+      tenantId,
+      actorId,
+      action: 'member:add',
+      entityType: 'membership',
+      entityId: userId,
+      operationId: input.operationId || input.requestId,
+      evidence: [`user:${userId}`, `role:${role}`],
+    });
+    return membership;
   }
 
   async listProjectsFor(tenantId, actorId) {
@@ -102,7 +112,17 @@ class AccessControlledControlPlane extends ControlPlaneService {
 
   async registerProjectFor(tenantId, actorId, input) {
     await this.authorize(tenantId, actorId, 'project:create');
-    return this.registerProject(tenantId, input);
+    const project = await this.registerProject(tenantId, input);
+    await this.appendOperatorAuditLog({
+      tenantId,
+      actorId,
+      action: 'project:register',
+      entityType: 'project',
+      entityId: project.id,
+      operationId: input.operationId || input.requestId,
+      evidence: [`project:${project.id}`, `repo:${project.repository?.url || project.repository?.name}`],
+    });
+    return project;
   }
 
   async requestAnalysisFor(tenantId, actorId, projectId, input = {}) {
@@ -116,6 +136,15 @@ class AccessControlledControlPlane extends ControlPlaneService {
       summary: `Analysis ${run.id} queued in ${run.mode} mode`,
       evidence: [`run:${run.id}`],
       confidence: 1,
+    });
+    await this.appendOperatorAuditLog({
+      tenantId,
+      actorId,
+      action: 'project:analyze',
+      entityType: 'run',
+      entityId: run.id,
+      operationId: input.operationId || input.requestId,
+      evidence: [`run:${run.id}`, `mode:${run.mode}`],
     });
     return run;
   }
@@ -132,7 +161,46 @@ class AccessControlledControlPlane extends ControlPlaneService {
       evidence: [`deployment:${deployment.id}`],
       confidence: 1,
     });
+    await this.appendOperatorAuditLog({
+      tenantId,
+      actorId,
+      action: 'project:deploy',
+      entityType: 'deployment',
+      entityId: deployment.id,
+      operationId: input.operationId || input.requestId,
+      evidence: [`deployment:${deployment.id}`, `status:${deployment.status}`],
+    });
     return deployment;
+  }
+
+  async appendOperatorAuditLog(input) {
+    const log = {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      actorId: input.actorId,
+      action: String(input.action || 'unknown'),
+      entityType: input.entityType || 'system',
+      entityId: input.entityId || null,
+      operationId: input.operationId || input.requestId || randomUUID(),
+      evidence: Array.isArray(input.evidence) ? input.evidence.filter(Boolean) : [],
+      status: input.status || 'SUCCESS',
+      metadata: input.metadata || {},
+      timestamp: new Date().toISOString(),
+    };
+    await this.store.update((state) => {
+      state.operatorAuditLogs ||= [];
+      state.operatorAuditLogs.push(log);
+      return state;
+    });
+    return log;
+  }
+
+  async listOperatorAuditLogs(tenantId, actorId) {
+    await this.authorize(tenantId, actorId, 'project:read');
+    const state = await this.store.read();
+    return (state.operatorAuditLogs || [])
+      .filter((log) => log.tenantId === tenantId)
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   }
 
   async appendMemoryEvent(input) {

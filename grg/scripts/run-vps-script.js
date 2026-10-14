@@ -38,7 +38,7 @@ async function main() {
 
   // Execute
   await new Promise((resolve, reject) => {
-    conn.exec(`node ${remoteFile}`, (err, stream) => {
+    conn.exec(`NODE_PATH=/opt/fenix-os/grg/node_modules node ${remoteFile}`, (err, stream) => {
       if (err) return reject(err);
       stream.on('close', (code) => {
         conn.end();

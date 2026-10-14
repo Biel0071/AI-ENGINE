@@ -1,0 +1,408 @@
+{
+  "generatedAt": "2026-09-01T17:23:43.318Z",
+  "source": {
+    "map": "qa/screen-function-map.json",
+    "plan": "qa-results/screen-qa-plan.json",
+    "navigation": "qa-results/frontend-navigation-qa.json"
+  },
+  "summary": {
+    "screens": 14,
+    "priorities": {
+      "P0": 1,
+      "P1": 0,
+      "P2": 13
+    },
+    "blockedAuth": 14,
+    "missingAssetContracts": 13
+  },
+  "items": [
+    {
+      "id": "screen.command",
+      "priority": "P0",
+      "domain": "command",
+      "screen": "command",
+      "purpose": "prompt e entrada de missões",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/fenix/missions",
+          "/api/fenix/jobs"
+        ],
+        "unreferencedExpectedEndpoints": [],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "validar POST /api/fenix/missions com sessão autenticada e confirmar missionId"
+      ],
+      "qaActivity": "command.command.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.city",
+      "priority": "P2",
+      "domain": "validation",
+      "screen": "city",
+      "purpose": "runtime visual, workers e métricas",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [],
+        "unreferencedExpectedEndpoints": [
+          "/api/v2/city/state"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "validation.city.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.agents",
+      "priority": "P2",
+      "domain": "intelligence",
+      "screen": "agents",
+      "purpose": "agentes e subagentes",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/agents/panel"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/agents/swarm",
+          "/api/v2/agents/live-states"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "intelligence.agents.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.ide",
+      "priority": "P2",
+      "domain": "build",
+      "screen": "ide",
+      "purpose": "chat, código, preview e edição visual",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/project-mirror"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/dev/fs",
+          "/api/v2/vision/inspect-element"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "build.ide.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.operations",
+      "priority": "P2",
+      "domain": "command",
+      "screen": "operations",
+      "purpose": "missões, jobs e controle operacional",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/fenix/missions",
+          "/api/fenix/jobs"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/v2/jarvis/jobs"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "command.operations.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.runtime",
+      "priority": "P2",
+      "domain": "command",
+      "screen": "runtime",
+      "purpose": "health, serviços e workers",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/health"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/v2/city/state"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "command.runtime.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.project",
+      "priority": "P2",
+      "domain": "build",
+      "screen": "project",
+      "purpose": "Project Mirror e arquitetura do projeto",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/project-mirror"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/v2/projects"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "build.project.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.projects",
+      "priority": "P2",
+      "domain": "build",
+      "screen": "projects",
+      "purpose": "projetos acoplados e grafo",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/project-mirror/projects"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/v2/projects"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "build.projects.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.memory",
+      "priority": "P2",
+      "domain": "intelligence",
+      "screen": "memory",
+      "purpose": "memória de engenharia e visual",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/fenix/memory"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/v2/memory/development"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "intelligence.memory.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.knowledge",
+      "priority": "P2",
+      "domain": "intelligence",
+      "screen": "knowledge",
+      "purpose": "conhecimento e grafo",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [],
+        "unreferencedExpectedEndpoints": [
+          "/api/knowledge-federation/publications"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "intelligence.knowledge.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.mcp",
+      "priority": "P2",
+      "domain": "infrastructure",
+      "screen": "mcp",
+      "purpose": "conectores e providers",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/connectors"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/fenix/providers"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "infrastructure.mcp.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.browser",
+      "priority": "P2",
+      "domain": "validation",
+      "screen": "browser",
+      "purpose": "QA visual e auditoria de interação",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [],
+        "unreferencedExpectedEndpoints": [
+          "/api/v2/frontend-reality/screens",
+          "/api/v2/frontend-reality/audit"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "validation.browser.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.observability",
+      "priority": "P2",
+      "domain": "infrastructure",
+      "screen": "observability",
+      "purpose": "métricas, séries e evidências",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [],
+        "unreferencedExpectedEndpoints": [
+          "/api/observability/metrics",
+          "/api/observability/series"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "infrastructure.observability.navigation",
+      "policy": "evidence-separated-no-mock"
+    },
+    {
+      "id": "screen.terminal",
+      "priority": "P2",
+      "domain": "validation",
+      "screen": "terminal",
+      "purpose": "filesystem, terminal isolado e preview",
+      "currentEvidence": {
+        "htmlView": true,
+        "backendContract": true,
+        "assetEndpoints": [
+          "/api/dev/terminal"
+        ],
+        "unreferencedExpectedEndpoints": [
+          "/api/dev/fs"
+        ],
+        "navigation": "BLOCKED_AUTH",
+        "navigationError": "application redirected to GRG-login"
+      },
+      "nextActions": [
+        "abrir hash real da tela",
+        "confirmar view visível",
+        "executar scroll",
+        "clicar somente controles seguros sem mutação",
+        "ligar cada endpoint ao módulo de tela e adicionar teste de contrato"
+      ],
+      "qaActivity": "validation.terminal.navigation",
+      "policy": "evidence-separated-no-mock"
+    }
+  ]
+}

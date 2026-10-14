@@ -228,6 +228,59 @@ const PROJECTS = [
     icon: '🧬',
     tags: ['dna', 'twin', 'engine'],
   },
+  {
+    id: 'mf-atacadista',
+    projectId: 'mf-atacadista',
+    name: 'MF Atacadista',
+    displayName: 'Mania Fashion Pavilion',
+    organization: 'Mania Fashion Atacado',
+    description: 'E-commerce B2B de Moda Feminina — Grade Atacado, Provador Virtual IA, Catálogo Inteligente, AllowPay e Orçamentos',
+    repository: 'https://github.com/Biel0071/formalize-magic-ddaf0047.git',
+    github: 'Biel0071/formalize-magic-ddaf0047',
+    branch: 'main',
+    localPath: 'C:\\Users\\Dell\\Documents\\antigravity\\charming-einstein',
+    vpsPath: '/opt/mf-atacadista',
+    productionPath: '/opt/mf-atacadista',
+    frontend: {
+      framework: 'React 18 + Vite + TypeScript + Tailwind CSS + Radix UI',
+      path: 'C:\\Users\\Dell\\Documents\\antigravity\\charming-einstein',
+      port: 5173,
+      entry: 'src/main.tsx',
+      pagesCount: 38,
+    },
+    backend: {
+      runtime: 'Node.js / Supabase Edge Functions',
+      framework: 'REST API + Edge Functions (fashion-virtual-tryon, allowpay, tracking)',
+      port: 54321,
+    },
+    database: {
+      primary: 'PostgreSQL / Supabase',
+    },
+    services: ['catalog', 'try-on-ai', 'bulk-image-search', 'creative-studio-ai', 'higgsfield-video-engine', 'adobe-psd-bridge', 'orders', 'wholesale-rules', 'allowpay', 'tracking'],
+    apis: ['/api/products', '/api/orders', '/api/banners', '/api/fashion-virtual-tryon', '/api/allowpay', '/api/v2/creative-studio/stack', '/api/v2/creative-studio/export/psd', '/api/v2/creative-studio/export/premiere-xml'],
+    pages: [
+      '/', '/loja', '/loja/:slug', '/produto/:slug', '/carrinho', '/checkout',
+      '/ofertas', '/pedidos', '/conta', '/rastreio/:id', '/fashion/try-on',
+      '/admin/dashboard', '/admin/produtos', '/admin/produtos/novo', '/admin/produtos/imagens',
+      '/admin/estudio-criativo', '/admin/pedidos', '/admin/banners', '/admin/clientes', '/admin/inteligencia'
+    ],
+    routes: ['/api/products', '/api/orders', '/api/banners', '/api/fashion-virtual-tryon', '/api/allowpay', '/api/v2/creative-studio/stack'],
+    components: ['StoreHome', 'StoreCatalog', 'ProductPage', 'FashionTryOn', 'AdminCreativeStudio', 'AdminBulkImageSearch', 'AdminOrders', 'AdminProductsList'],
+    tests: ['tests/e2e-smoke.spec.ts'],
+    deployment: { type: 'vite-spa', port: 5173 },
+    health: 'http://localhost:5173/',
+    status: 'ONLINE',
+    agents: ['Camila', 'Beatriz', 'Sofia', 'Lucas'],
+    jobs: { queue: 'mf-image-jobs', workers: ['fashion-worker'] },
+    knowledge: { domain: 'fashion-wholesale-ecommerce' },
+    memory: { contextKey: 'mf-atacadista-context' },
+    currentVersion: '2.5.0',
+    color: '#e84393',
+    palette: ['#e84393', '#fd79a8', '#2d3436'],
+    buildingType: 'fashion-pavilion',
+    icon: '👗',
+    tags: ['ecommerce', 'atacado', 'fashion', 'try-on-ai', 'creative-studio', 'react', 'tailwind'],
+  },
 ];
 
 function getGitInfo(vpsPath) {
@@ -244,34 +297,60 @@ function getGitInfo(vpsPath) {
   }
 }
 
-function countFiles(dir, ext) {
-  if (!dir || !fs.existsSync(dir)) return 0;
+const PROJECT_SNAPSHOT_CACHE_TTL_MS = 10 * 60_000;
+const projectSnapshotCache = new WeakMap();
+
+function countProjectFiles(dir) {
+  if (!dir || !fs.existsSync(dir)) return { totalFiles: 0, jsFiles: 0, tsFiles: 0 };
   try {
-    let count = 0;
+    const metrics = { totalFiles: 0, jsFiles: 0, tsFiles: 0 };
     const walk = (d) => {
       const items = fs.readdirSync(d, { withFileTypes: true });
       for (const it of items) {
         if (it.name === 'node_modules' || it.name === '.git') continue;
         const full = path.join(d, it.name);
         if (it.isDirectory()) walk(full);
-        else if (!ext || it.name.endsWith('.' + ext)) count++;
+        else {
+          metrics.totalFiles += 1;
+          if (it.name.endsWith('.js')) metrics.jsFiles += 1;
+          if (it.name.endsWith('.ts')) metrics.tsFiles += 1;
+        }
       }
     };
     walk(dir);
-    return count;
+    return metrics;
   } catch (e) {
-    return 0;
+    return { totalFiles: 0, jsFiles: 0, tsFiles: 0 };
   }
 }
 
 function getProjectSnapshot(project) {
   const targetPath = project.vpsPath || project.localPath;
-  const gitInfo = targetPath ? getGitInfo(targetPath) : {};
-  const fileCount = fs.existsSync(targetPath) ? countFiles(targetPath, null) : 0;
-  const jsCount = fs.existsSync(targetPath) ? countFiles(targetPath, 'js') : 0;
-  const tsCount = fs.existsSync(targetPath) ? countFiles(targetPath, 'ts') : 0;
-  return Object.assign({}, project, gitInfo, {
-    metrics: { totalFiles: fileCount, jsFiles: jsCount, tsFiles: tsCount },
+  const now = Date.now();
+  let snapshot = projectSnapshotCache.get(project);
+  if (!snapshot || snapshot.targetPath !== targetPath || now - snapshot.cachedAt >= PROJECT_SNAPSHOT_CACHE_TTL_MS) {
+    snapshot = {
+      targetPath,
+      cachedAt: now,
+      gitInfo: targetPath ? getGitInfo(targetPath) : {},
+      metrics: countProjectFiles(targetPath),
+    };
+    projectSnapshotCache.set(project, snapshot);
+  }
+  return Object.assign({}, project, snapshot.gitInfo, {
+    id: project.id,
+    name: project.name,
+    slug: project.slug || project.id,
+    companyId: project.companyId || null,
+    workspaceId: project.workspaceId || project.id,
+    repository: project.repository || null,
+    path: targetPath,
+    status: project.status || 'ONLINE',
+    runtime: project.backend?.runtime || 'Node.js',
+    technology: project.frontend?.framework || project.technology || 'Fullstack',
+    createdAt: project.createdAt || '2026-01-01T00:00:00.000Z',
+    updatedAt: project.updatedAt || new Date().toISOString(),
+    metrics: snapshot.metrics,
     lastUpdated: new Date().toISOString(),
   });
 }

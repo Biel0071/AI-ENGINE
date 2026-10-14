@@ -20,7 +20,8 @@ window.FENIX.api = async function api(path, options = {}, retried = false) {
   const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
   if (!(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
   try {
-    const res = await fetch(path, { ...options, credentials: 'same-origin', headers: { ...headers, ...options.headers } });
+    const fetchFn = window.fenixFetch || fetch;
+    const res = await fetchFn(path, { ...options, credentials: 'same-origin', headers: { ...headers, ...options.headers } });
     if (res.status === 401 && !retried) {
       const success = await attemptRefresh();
       if (success) return window.FENIX.api(path, options, true);
@@ -71,7 +72,8 @@ async function bootFenix() {
     // /health is intentionally public and is the authoritative liveness
     // signal. Do not label a healthy backend OFFLINE merely because the UI
     // session has no bearer token for protected overview routes.
-    const publicHealth = await fetch('/health', { headers: { Accept: 'application/json' } })
+    const fetchFn = window.fenixFetch || fetch;
+    const publicHealth = await fetchFn('/health', { headers: { Accept: 'application/json' } })
       .then((r) => r.ok ? r.json() : null).catch(() => null);
     const status = (publicHealth?.ok || publicHealth?.status === 'ready') ? publicHealth
       : await window.FENIX.api('/api/v2/ai-platform/status').catch(() => null)
@@ -103,7 +105,7 @@ async function bootFenix() {
       }
     }
 
-    // Load sequence: live-runtime PRIMEIRO (WS), depois UI
+    // Load sequence: supplementary scripts loaded in parallel
     const scripts = [
       '/runtime-cockpit.js?v=17',
       '/live-runtime.js?v=12',
@@ -114,10 +116,13 @@ async function bootFenix() {
       '/fenix-command-bridge.js?v=2'
     ];
 
-    for (const src of scripts) {
-      console.log('[FENIX] Loading:', src);
-      await new Promise(resolve => {
-        const id = `fenix-script-${src.split('?')[0].replace(/[^a-z0-9]+/gi, '-')}`;
+    await Promise.all(scripts.map(src => {
+      const cleanSrc = src.split('?')[0];
+      if (document.querySelector(`script[src*="${cleanSrc}"]`)) {
+        return Promise.resolve();
+      }
+      return new Promise(resolve => {
+        const id = `fenix-script-${cleanSrc.replace(/[^a-z0-9]+/gi, '-')}`;
         if (document.getElementById(id)) {
           resolve();
           return;
@@ -134,9 +139,9 @@ async function bootFenix() {
         s.onload = done;
         s.onerror = done;
         document.body.appendChild(s);
-        setTimeout(done, 8000);
+        setTimeout(done, 4000);
       });
-    }
+    }));
 
     document.dispatchEvent(new Event('FENIX_READY'));
     window.FENIX_BOOTED = true;

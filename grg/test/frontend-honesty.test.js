@@ -145,6 +145,7 @@ test('ai city live: atividade e eventos devem ser determinísticos e derivados d
   assert.match(adapter, /fenix-live/);
   assert.match(adapter, /sourceEventId/);
   assert.match(adapter, /'job.created'/);
+  assert.match(adapter, /'mission\.step\.started'/);
   assert.match(adapter, /'human.approval_required'/);
   assert.match(adapter, /'agent.tool.call'/);
   assert.match(adapter, /'job.retrying'/);

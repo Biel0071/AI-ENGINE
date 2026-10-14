@@ -61,7 +61,11 @@ class ConnectorRuntime {
       });
     }
 
-    const test = await connector.selfTest();
+    const withTimeout = (p, ms) => Promise.race([
+      p,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`selfTest timed out after ${ms}ms`)), ms)),
+    ]);
+    const test = await withTimeout(connector.selfTest(), 3500).catch((err) => ({ ok: false, latencyMs: 3500, error: String(err.message || err) }));
     await this.#recordMetric(tenantId, connectorId, { kind: 'selfTest', ok: test.ok === true, latencyMs: valueOfLatency(test) });
 
     if (test.ok !== true) {
@@ -88,19 +92,27 @@ class ConnectorRuntime {
   // o painel os mostra como PLANNED a partir de uma lista separada de capacidades.
   async statusAll(tenantId, actorId) {
     if (this.cp) await this.cp.authorize(tenantId, actorId, 'runtime:read');
-    const out = [];
-    for (const id of this.connectors.keys()) {
-      // Um conector indisponível não pode derrubar o inventário inteiro nem
-      // transformar a saúde do sistema em uma resposta 500. Cada item conserva
-      // seu estado honesto e a evidência do erro fica isolada no próprio conector.
-      try { out.push(await this.status(tenantId, actorId, id)); }
-      catch (error) {
-        out.push(this.#report(id, CONNECTOR_STATES.DEGRADED, {
-          authenticated: false,
-          error: String(error.message || error).slice(0, 300),
-        }));
-      }
-    }
+    const ids = Array.from(this.connectors.keys());
+    const withTimeout = (p, ms) => Promise.race([
+      p,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`status timed out after ${ms}ms`)), ms)),
+    ]);
+    const results = await Promise.allSettled(
+      ids.map(async (id) => {
+        try {
+          return await withTimeout(this.status(tenantId, actorId, id), 3500);
+        } catch (error) {
+          return this.#report(id, CONNECTOR_STATES.DEGRADED, {
+            authenticated: false,
+            error: String(error.message || error).slice(0, 300),
+          });
+        }
+      })
+    );
+    const out = results.map((r, i) => r.status === 'fulfilled' ? r.value : this.#report(ids[i], CONNECTOR_STATES.DEGRADED, {
+      authenticated: false,
+      error: String(r.reason?.message || r.reason).slice(0, 300),
+    }));
     return { connectors: out, total: measured(out.length, 'runtime:registered connectors') };
   }
 

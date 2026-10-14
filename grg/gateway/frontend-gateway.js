@@ -157,7 +157,7 @@ function fetchFromBackend(apiPath, caller) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
   const pathname = parsedUrl.pathname;
 
@@ -184,43 +184,73 @@ const server = http.createServer(async (req, res) => {
     const headers = { ...req.headers, host: '127.0.0.1:' + BACKEND_PORT };
 
     const isSse = pathname.includes('/events') || (req.headers['accept'] && req.headers['accept'].includes('text/event-stream'));
-    if (isSse) {
-      headers['accept'] = 'text/event-stream';
-      headers['connection'] = 'keep-alive';
-    }
 
-    const proxyReq = http.request({
-      host: '127.0.0.1',
-      port: BACKEND_PORT,
-      path: req.url,
-      method: req.method,
-      headers
-    }, (proxyRes) => {
-      const outHeaders = { ...proxyRes.headers };
-      if (isSse || (proxyRes.headers['content-type'] && proxyRes.headers['content-type'].includes('text/event-stream'))) {
-        outHeaders['Cache-Control'] = 'no-cache, no-transform';
-        outHeaders['Connection'] = 'keep-alive';
-        outHeaders['X-Accel-Buffering'] = 'no';
+    const forward = (bodyBuffer) => {
+      console.log('[GW FORWARDING]', req.method, pathname, 'bodyLen:', bodyBuffer ? bodyBuffer.length : 0);
+      const headers = { ...req.headers, host: '127.0.0.1:' + BACKEND_PORT };
+      if (isSse) {
+        headers['accept'] = 'text/event-stream';
+        headers['connection'] = 'keep-alive';
       }
-      res.writeHead(proxyRes.statusCode, outHeaders);
-      proxyRes.pipe(res);
-    });
-
-    proxyReq.on('error', (err) => {
-      if (!res.headersSent) {
-        res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Fenix Backend initializing...', details: err.message }));
+      if (bodyBuffer) {
+        headers['content-length'] = bodyBuffer.length;
       }
-    });
+      const proxyReq = http.request({
+        host: '127.0.0.1',
+        port: BACKEND_PORT,
+        path: req.url,
+        method: req.method,
+        headers
+      }, (proxyRes) => {
+        console.log('[GW PROXY RES]', req.method, pathname, proxyRes.statusCode);
+        const outHeaders = { ...proxyRes.headers };
+        if (isSse || (proxyRes.headers['content-type'] && proxyRes.headers['content-type'].includes('text/event-stream'))) {
+          outHeaders['Cache-Control'] = 'no-cache, no-transform';
+          outHeaders['Connection'] = 'keep-alive';
+          outHeaders['X-Accel-Buffering'] = 'no';
+        }
+        res.writeHead(proxyRes.statusCode, outHeaders);
+        proxyRes.pipe(res);
+      });
 
-    req.on('aborted', () => {
-      proxyReq.destroy();
-    });
+      proxyReq.on('error', (err) => {
+        console.log('[GW PROXY ERR]', req.method, pathname, err.message);
+        if (!res.headersSent) {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Fenix Backend initializing...', details: err.message }));
+        }
+      });
+
+      req.on('aborted', () => {
+        proxyReq.destroy();
+      });
+
+      if (bodyBuffer && bodyBuffer.length > 0) {
+        proxyReq.write(bodyBuffer);
+      }
+      proxyReq.end();
+    };
 
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
-      proxyReq.end();
+      forward(null);
     } else {
-      req.pipe(proxyReq);
+      console.log('[GW BODY WAIT]', req.method, pathname);
+      const chunks = [];
+      req.on('data', c => {
+        console.log('[GW DATA CHUNK]', c.length);
+        chunks.push(c);
+      });
+      req.on('end', () => {
+        console.log('[GW END CHUNKS]', chunks.length);
+        forward(Buffer.concat(chunks));
+      });
+      req.on('error', (err) => {
+        console.log('[GW BODY ERROR]', err.message);
+        if (!res.headersSent) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Request body error' }));
+        }
+      });
     }
     return;
   }

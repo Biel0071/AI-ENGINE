@@ -3,6 +3,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { ConflictError, NotFoundError } = require('../services/control-plane');
 const { ForbiddenError } = require('../domain/access-control');
+const { defaultTokenService } = require('../auth/token-service');
 
 const CONTENT_TYPES = {
   '.css': 'text/css; charset=utf-8',
@@ -25,13 +26,6 @@ async function readJson(request) {
   return body ? JSON.parse(body) : {};
 }
 
-function contextFrom(request) {
-  return {
-    tenantId: String(request.headers['x-tenant-id'] || '').trim(),
-    actorId: String(request.headers['x-user-id'] || '').trim(),
-  };
-}
-
 async function serveStatic(publicRoot, pathname, response) {
   const requested = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
   const resolved = path.resolve(publicRoot, requested);
@@ -49,7 +43,7 @@ async function serveStatic(publicRoot, pathname, response) {
   }
 }
 
-function createHttpServerV2({ service, publicRoot }) {
+function createHttpServerV2({ service, publicRoot, tokenService = defaultTokenService }) {
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
     try {
@@ -62,12 +56,24 @@ function createHttpServerV2({ service, publicRoot }) {
         return;
       }
 
-      const { tenantId, actorId } = contextFrom(request);
+      // Token issuance endpoint
+      if (request.method === 'POST' && url.pathname === '/api/v2/auth/token') {
+        const body = await readJson(request);
+        const token = tokenService.generateSessionToken(body);
+        return sendJson(response, 200, { token });
+      }
+
+      const auth = await tokenService.authenticateRequest(request, service.store);
+      const tenantId = auth.tenantId;
+      const actorId = auth.actorId;
       if (!tenantId || !actorId) {
         return sendJson(response, 400, { error: 'x-tenant-id and x-user-id headers are required' });
       }
 
       // Existing endpoints
+      if (request.method === 'GET' && url.pathname === '/api/v2/audit-logs') {
+        return sendJson(response, 200, { logs: await service.listOperatorAuditLogs(tenantId, actorId) });
+      }
       if (request.method === 'GET' && url.pathname === '/api/v2/overview') {
         return sendJson(response, 200, await service.getOverviewFor(tenantId, actorId));
       }

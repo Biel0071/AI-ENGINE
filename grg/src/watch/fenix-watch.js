@@ -1,15 +1,17 @@
-const { SystemModule } = require('../../kernel/module');
+const { SystemModule } = require('../kernel/module');
 
 class FenixWatch extends SystemModule {
   constructor({ eventBus = null, orchestrator = null } = {}) {
     super('fenix_watch', '1.0.0');
+    delete this.status;
+    this._statusState = 'STOPPED';
     this.eventBus = eventBus;
     this.orchestrator = orchestrator;
     this.watchedProjects = new Set();
   }
 
   async start() {
-    this.status = 'ONLINE';
+    this._statusState = 'ONLINE';
     if (this.eventBus) {
        this.eventBus.on('build.failed', (data) => this.handleIncident('build', data));
        this.eventBus.on('test.failed', (data) => this.handleIncident('test', data));
@@ -34,6 +36,19 @@ class FenixWatch extends SystemModule {
         riskLevel: 'SAFE' // Prod/Deploys demandem APPROVAL (WARNING)
       }).catch(console.error);
     }
+  }
+
+  async stop() {
+    this._statusState = 'STOPPED';
+    this.watchedProjects.clear();
+    return this;
+  }
+
+  status() {
+    return {
+      state: this._statusState || 'OFFLINE',
+      watchedProjects: Array.from(this.watchedProjects)
+    };
   }
 }
 

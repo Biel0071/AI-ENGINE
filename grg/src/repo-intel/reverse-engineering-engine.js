@@ -58,8 +58,7 @@ class ReverseEngineeringEngine {
       },
       agentDna: {
         activeAgents: ['Orchestrator', 'Developer'],
-        skillsInventory: ['project-scanner'],
-        taskSuccessRate: 100.0
+        skillsInventory: ['project-scanner']
       }
     });
 
@@ -76,13 +75,21 @@ class ReverseEngineeringEngine {
         totalRoutes,
         totalDatabaseSchemas: totalSchemas,
         totalIntegrations,
-        estimatedTotalFunctions: (totalComponents * 3) + (totalRoutes * 2) + 10
       },
       entryPoints: scanResult.entryPoints,
       database: scanResult.database,
       components: scanResult.components,
       routes: scanResult.routes,
       integrations: scanResult.integrations,
+      analysisEvidence: {
+        schemaVersion: 1,
+        scanner: 'ProjectUnderstandingScanner',
+        digestAlgorithm: 'sha256',
+        observationDigest: scanResult.observationDigest,
+        coverage: scanResult.coverage,
+        sourceEvidenceCount: scanResult.sourceEvidence.length,
+        targetContentUntrusted: true,
+      },
       initialDna,
       ingestedAt: new Date().toISOString(),
       readyForEdit: true

@@ -43,7 +43,7 @@ function scanDirectory(dirPath, maxDepth) {
 
 function getGitCommits(vpsPath, limit) {
   try {
-    var out = execSync('git -C ' + vpsPath + ' log --oneline -' + (limit || 5) + ' 2>/dev/null', { timeout: 3000 });
+    var out = execSync('git -C ' + vpsPath + ' log --oneline -' + (limit || 5), { timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] });
     return out.toString().trim().split('\n').filter(Boolean).map(function(l) {
       var parts = l.split(' ');
       var hash = parts[0];

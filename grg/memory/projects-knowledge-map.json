@@ -23,7 +23,7 @@
       "package.json",
       "README.md"
     ],
-    "lastScan": "2026-08-26T14:37:25.892Z",
+    "lastScan": "2026-09-03T22:19:03.416Z",
     "lastCommit": "HEAD",
     "healthScore": 99.8,
     "knownIssues": []
@@ -53,12 +53,51 @@
       "package.json",
       "README.md"
     ],
-    "lastScan": "2026-08-26T14:37:25.906Z",
+    "lastScan": "2026-09-03T22:19:03.445Z",
     "lastCommit": "HEAD",
     "healthScore": 96.5,
     "knownIssues": [
       "Aviso de tipagem em handler de webhook"
     ]
+  },
+  "api-platform": {
+    "projectId": "api-platform",
+    "name": "API Platform & VPS Gateway",
+    "localPath": "C:\\projetos\\ai-engine-core\\ai-engine\\projects\\API-PLATAFORM",
+    "connected": true,
+    "status": "HEALTHY",
+    "tags": [
+      "VPS",
+      "Docker",
+      "Gateway",
+      "Ollama",
+      "FastAPI"
+    ],
+    "framework": "FastAPI / Node.js Core",
+    "language": "JavaScript / TypeScript / Python",
+    "architecture": "Multi-Model AI Gateway & High-Throughput Inference Hub",
+    "frontend": "http://209.50.241.22:8081/",
+    "backend": "http://209.50.241.22:3001/",
+    "docs": "http://209.50.241.22:3001/docs/",
+    "vps": "209.50.241.22",
+    "apiKey": "",
+    "model": "qwen2.5:3b",
+    "buildCommand": "docker compose up -d",
+    "testCommand": "node test-apilayer.mjs",
+    "devCommand": "npm run dev",
+    "entrypoints": [
+      "docker-compose.yml",
+      "apps/api/src/server.ts"
+    ],
+    "importantFiles": [
+      "docker-compose.yml",
+      "package.json",
+      "README.md"
+    ],
+    "lastScan": "2026-09-08T22:20:00.000Z",
+    "lastCommit": "HEAD",
+    "healthScore": 100,
+    "knownIssues": []
   },
   "dview": {
     "projectId": "dview",
@@ -86,7 +125,7 @@
       "package.json",
       "README.md"
     ],
-    "lastScan": "2026-08-26T14:37:25.901Z",
+    "lastScan": "2026-09-03T22:19:03.431Z",
     "lastCommit": "HEAD",
     "healthScore": 98,
     "knownIssues": []
@@ -115,7 +154,7 @@
       "package.json",
       "README.md"
     ],
-    "lastScan": "2026-08-26T14:37:25.894Z",
+    "lastScan": "2026-09-03T22:19:03.421Z",
     "lastCommit": "HEAD",
     "healthScore": 98,
     "knownIssues": []

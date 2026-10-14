@@ -1,0 +1,739 @@
+/* FÊNIX premium cockpit layout layer.
+   Keeps the canonical DOM and runtime bindings intact while giving the command
+   workspace a stable, readable hierarchy at desktop, tablet and mobile sizes. */
+
+.fenix-os-layout > .main-body { padding-right: 0; }
+
+/* The rail belongs to the command view's own body row. The legacy shell rule
+   was subtracting it a second time, leaving the canvas only a few hundred px. */
+.views-container > #view-command {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+}
+
+.fenix-os-layout > .orch-right-column {
+  width: 360px;
+}
+
+.orch-center-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.orch-city-zone {
+  height: clamp(330px, 43vh, 500px);
+  min-height: 330px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.2);
+}
+
+.orch-city-toolbar,
+.orch-city-ribbon {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.orch-city-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.orch-bottom-trio {
+  grid-template-columns: minmax(360px, 1.7fr) minmax(220px, .95fr) minmax(220px, .95fr);
+  min-height: 320px;
+  flex: 0 0 320px;
+  padding: 0;
+  background: transparent;
+}
+
+.orch-chat-card,
+.orch-missions-card,
+.orch-inspector-card {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 14px;
+  box-shadow: 0 14px 36px rgba(0,0,0,.18);
+}
+
+.orch-chat-card { min-height: 320px; }
+
+.orch-right-column {
+  padding: 10px;
+  gap: 10px;
+  background: rgba(7,11,22,.98);
+}
+
+.fenix-city-filter-menu {
+  position: absolute;
+  top: 48px;
+  right: 14px;
+  z-index: 12;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  gap: 4px;
+  padding: 7px;
+  background: rgba(7,11,22,.97);
+  border: 1px solid rgba(6,182,212,.35);
+  border-radius: 9px;
+  box-shadow: 0 14px 35px rgba(0,0,0,.45);
+}
+.fenix-city-filter-menu button {
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 5px;
+  padding: 6px 7px;
+  background: rgba(255,255,255,.04);
+  color: var(--fenix-text-muted);
+  font: 700 9px var(--fenix-font-mono);
+  cursor: pointer;
+}
+.fenix-city-filter-menu button:hover { color: #fff; border-color: var(--fenix-cyan); }
+
+.orch-log-entry { width: 100%; text-align: left; font: inherit; cursor: pointer; }
+.orch-log-entry:hover { background: rgba(6,182,212,.08); }
+
+.orch-right-quad-grid {
+  padding: 0;
+  gap: 10px;
+}
+
+@media (max-width: 1440px) {
+  .fenix-os-layout > .main-body { padding-right: 0 !important; }
+  .views-container > .view {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+  .views-container > .view > .orch-body-row {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+  .orch-right-column {
+    width: 360px;
+    flex: 0 0 360px;
+    position: static !important;
+    transform: none !important;
+    height: 100% !important;
+    max-height: 100% !important;
+  }
+  .fenix-os-layout > .view,
+  body > .view { right: 0; }
+  .orch-bottom-trio {
+    grid-template-columns: minmax(340px, 1.5fr) minmax(205px, .9fr) minmax(205px, .9fr);
+  }
+}
+
+@media (max-width: 1180px) {
+  .fenix-os-layout > .main-body { padding-right: 0; }
+  .fenix-orchestrator-layout .orch-body-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fenix-orchestrator-layout .orch-body-row > .orch-center-area {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+  /* Context cards are secondary at laptop/tablet widths. Keeping them as
+     flex siblings steals the operating surface and shrink-wraps AI City.
+     They remain available through Missions/Agents navigation. */
+  .views-container > .orch-missions-card,
+  .views-container > .orch-inspector-card { display: none !important; }
+  .fenix-os-layout > .orch-right-column {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: 40px;
+    width: min(430px, calc(100vw - 24px));
+    max-height: min(58vh, 520px);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 14px;
+    box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  }
+  .orch-right-column { transform: translateX(calc(100% + 20px)); transition: transform .2s ease; }
+  .orch-right-column:hover,
+  .orch-right-column:focus-within { transform: translateX(0); }
+  .views-container > .view > .orch-right-column:hover,
+  .views-container > .view > .orch-right-column:focus-within { transform: translateX(0); }
+  .orch-center-area { padding-right: 12px; }
+  .fenix-os-layout > .view,
+  body > .view { right: 0; }
+}
+
+/* Touch screens have no hover gesture; keep the operational rail reachable
+   instead of translating it permanently outside the viewport. */
+@media (max-width: 1180px) and (hover: none) {
+  .orch-right-column { transform: translateX(0); }
+}
+
+@media (max-width: 760px) {
+  .fenix-os-layout { min-width: 0; overflow-x: hidden; }
+  .orch-topbar { min-width: 0; padding: 0 8px; }
+  .orch-brand { min-width: 0; gap: 7px; }
+  .orch-brand-info { min-width: 0; }
+  .orch-brand-subtitle,
+  .orch-telemetry-strip,
+  .orch-user-titles,
+  .orch-quick-actions { display: none; }
+  .orch-user-section { margin-left: auto; }
+  .main-body { flex-direction: column; min-height: 0; overflow: auto; }
+  .sidebar-nav {
+    width: 100%; height: auto; max-height: 116px; flex: 0 0 auto;
+    flex-direction: row; align-items: stretch; overflow-x: auto; overflow-y: hidden;
+    border-right: 0; border-bottom: 1px solid rgba(255,255,255,.08); padding: 4px;
+  }
+  .sidebar-nav .nav-top { display: flex; flex: 1; gap: 3px; min-width: max-content; }
+  .sidebar-nav .nav-group { display: contents; }
+  .sidebar-nav .nav-group-label,
+  .sidebar-nav .nav-bottom { display: none; }
+  .sidebar-nav .nav-item { width: auto; min-width: 76px; height: 42px; padding: 0 8px; justify-content: center; flex-direction: column; gap: 2px; font-size: 8px; }
+  .sidebar-nav .nav-item i { font-size: 15px; }
+  .views-container { min-height: 0; width: 100%; overflow: visible; }
+  .views-container > #view-command { flex: 0 0 100% !important; width: 100% !important; min-width: 0 !important; }
+  .fenix-orchestrator-layout { display: block; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  .fenix-orchestrator-layout .orch-center-area { overflow: visible; width: 100%; }
+  .orch-body-row { display: flex; flex-direction: column; min-width: 0; }
+  .orch-body-row > * { width: 100%; max-width: 100%; }
+  .fenix-orchestrator-layout .orch-right-column { width: 100%; max-width: 100%; transform: none; }
+  .fenix-os-layout > .view,
+  body > .view { left: 0; right: 0; top: auto; bottom: auto; position: static; width: 100%; min-height: 0; }
+  .fenix-os-layout > .view.active,
+  body > .view.active { display: flex; }
+  .orch-city-zone { height: 330px; min-height: 300px; }
+  .orch-city-toolbar { align-items: flex-start; gap: 6px; }
+  .orch-city-controls { gap: 3px; }
+  .orch-city-controls .orch-tool-btn { padding: 4px 6px; font-size: 9px; }
+  .orch-bottom-trio {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 0 0 auto;
+  }
+  .fenix-orchestrator-layout .orch-bottom-trio {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+  .fenix-orchestrator-layout .orch-bottom-trio > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .orch-chat-card,
+  .orch-missions-card,
+  .orch-inspector-card { min-height: 280px; }
+  .orch-ribbon-counters { gap: 8px; overflow-x: auto; white-space: nowrap; }
+  .orch-city-ribbon { overflow: hidden; }
+  .orch-telemetry-strip { display: none; }
+}
+
+@media (max-width: 480px) {
+  .orch-center-area { padding: 6px; }
+  .orch-city-zone { border-radius: 10px; }
+  .orch-chat-avatar-pane { width: 58px; padding: 6px; }
+  .orch-chat-hero-avatar { width: 42px; height: 42px; font-size: 20px; }
+  .orch-bottom-trio { gap: 8px; }
+}
+
+/* AI City is the operating surface, not a dashboard card. On desktop the
+   real runtime map receives the visual priority; contextual panels remain
+   available below and in the operational rail without competing with it. */
+.views-container > .view:not(.active),
+.fenix-orchestrator-layout:not(.active) {
+  display: none !important;
+}
+
+.views-container > .view.active {
+  display: flex !important;
+  flex: 1 1 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+@media (min-width: 761px) {
+  .fenix-orchestrator-layout.active {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .fenix-orchestrator-layout .orch-body-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex: 1 1 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .fenix-orchestrator-layout .orch-center-area {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-gutter: stable;
+  }
+
+  .fenix-orchestrator-layout .orch-city-zone {
+    height: clamp(340px, 45vh, 520px) !important;
+    min-height: 320px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .fenix-orchestrator-layout .orch-bottom-trio {
+    min-height: 280px !important;
+    flex: 0 0 auto !important;
+    grid-template-columns: minmax(360px, 1.6fr) minmax(220px, 1fr) minmax(220px, 1fr) !important;
+  }
+
+  .orch-right-column {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 380px !important;
+    flex: 0 0 380px !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: static !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+  }
+}
+
+#view-city {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+#cityCanvas,
+canvas#cityCanvas,
+.city-canvas-host canvas {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+#view-city #cityCanvas,
+#view-city > #cityCanvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.city-side-panel {
+  display: grid;
+  grid-template-rows: 1fr 1fr 1.2fr;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.city-side-panel section {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+
+.city-list {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  min-height: 0;
+}
+
+.city-list.compact { gap: 6px; }
+
+.city-row, .job-dag-row, .event-row {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 6px 8px !important;
+  align-items: center !important;
+  text-align: left !important;
+  border: 1px solid var(--fenix-border, rgba(255,255,255,0.08)) !important;
+  border-radius: 8px !important;
+  background: rgba(15,23,42,0.6) !important;
+  color: var(--text-main, #cbd5e1) !important;
+  padding: 8px 10px !important;
+  cursor: pointer !important;
+  overflow: hidden !important;
+}
+
+.job-dag-row { grid-template-columns: 28px minmax(0, 1fr) auto !important; }
+.event-row { grid-template-columns: 58px minmax(0, 1fr) !important; }
+
+.city-row:hover, .job-dag-row:hover, .event-row:hover {
+  border-color: rgba(6,182,212,0.4) !important;
+  background: rgba(15,23,42,0.9) !important;
+}
+
+.city-row b, .job-dag-row b, .event-row span {
+  color: var(--text-bright, #f8fafc) !important;
+  font-size: 11.5px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.city-row small, .job-dag-row small, .event-row small {
+  color: var(--text-muted, #94a3b8) !important;
+  font-size: 10px !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+  display: block !important;
+  max-width: 100% !important;
+}
+
+.event-row time {
+  color: var(--text-muted, #94a3b8) !important;
+  font-family: var(--fenix-font-mono, monospace) !important;
+  font-size: 10px !important;
+  white-space: nowrap !important;
+}
+
+/* Linear / Raycast Style Toasts */
+#fenixToastContainer {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: 400px;
+  width: calc(100% - 48px);
+}
+
+.fenix-toast {
+  pointer-events: auto;
+  background: rgba(13, 18, 29, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  font-size: 12px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fenix-toast-info { border-left: 3px solid #38bdf8; }
+.fenix-toast-success { border-left: 3px solid #10b981; }
+.fenix-toast-error { border-left: 3px solid #ef4444; }
+.fenix-toast-warning { border-left: 3px solid #f59e0b; }
+
+/* Linear Master Category Pills */
+.fp-cat-pill {
+  transition: all 0.15s ease;
+}
+.fp-cat-pill:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Inspector Drawer Tabs */
+.fenix-dr-tab {
+  transition: all 0.15s ease;
+}
+.fenix-dr-tab:hover {
+  color: #f8fafc !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ==========================================================================
+   SPATIAL UX: CONTEXTUAL CHAT BESIDE CHARACTER & SPATIAL INSPECTOR
+   ========================================================================== */
+.fenix-spatial-chat-card {
+  position: absolute;
+  z-index: 50;
+  width: 320px;
+  max-width: 90vw;
+  background: rgba(12, 20, 32, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 229, 160, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 24px rgba(0, 229, 160, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-family: var(--fenix-font-sans, 'Inter', sans-serif);
+}
+
+.fenix-spatial-chat-card::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 36px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(12, 20, 32, 0.94);
+}
+
+.spatial-chat-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.spatial-chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spatial-chat-body {
+  padding: 12px 14px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.spatial-chat-bubble {
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 90%;
+  word-break: break-word;
+}
+.spatial-chat-bubble.agent {
+  background: rgba(17, 27, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  align-self: flex-start;
+  color: #e2e8f0;
+}
+.spatial-chat-bubble.user {
+  background: linear-gradient(135deg, rgba(0, 229, 160, 0.25) 0%, rgba(34, 184, 255, 0.2) 100%);
+  border: 1px solid rgba(0, 229, 160, 0.4);
+  align-self: flex-end;
+  color: #f8fafc;
+}
+
+.spatial-chat-footer {
+  padding: 8px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  gap: 6px;
+  background: rgba(7, 11, 18, 0.7);
+}
+.spatial-chat-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #f8fafc;
+  outline: none;
+  font-family: inherit;
+}
+.spatial-chat-input:focus {
+  border-color: var(--fenix-primary, #00E5A0);
+  background: rgba(255, 255, 255, 0.08);
+}
+.spatial-chat-send {
+  background: var(--fenix-primary, #00E5A0);
+  border: none;
+  color: #070B12;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.spatial-chat-send:hover {
+  background: #22B8FF;
+  color: #070B12;
+}
+
+/* Spatial Lateral Inspector Drawer inside City */
+.fenix-spatial-drawer {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  max-width: 92vw;
+  background: rgba(12, 20, 32, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid rgba(0, 229, 160, 0.3);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.8);
+  z-index: 45;
+  display: none;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.fenix-spatial-drawer.open {
+  display: flex !important;
+  transform: translateX(0);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FÊNIX OS — PREMIUM PRO WORKSPACE & SUBVIEW GRIDS
+   ══════════════════════════════════════════════════════════════════ */
+.workspace-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px 28px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  gap: 16px;
+}
+
+.workspace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.workspace-header h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 2px 0 0;
+  letter-spacing: -0.02em;
+}
+
+.workspace-header small {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--fenix-primary, #00E5A0);
+  text-transform: uppercase;
+}
+
+.workspace-grid {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.workspace-grid.two-columns {
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+}
+
+.workspace-grid.three-columns {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.workspace-card {
+  background: rgba(12, 20, 32, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-sizing: border-box;
+  min-width: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.workspace-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.workspace-card h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.workspace-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.workspace-card table th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.workspace-card table td {
+  padding: 10px;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.workspace-card table tr:last-child td {
+  border-bottom: none;
+}

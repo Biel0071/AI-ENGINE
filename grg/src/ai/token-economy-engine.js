@@ -45,6 +45,14 @@ class TokenEconomyEngine extends SystemModule {
       totalCalls: 0,
       cacheHits: 0,
       cacheMisses: 0,
+      patternHits: 0,
+      memoryHits: 0,
+      graphHits: 0,
+      dnaHits: 0,
+      previousSolutionHits: 0,
+      apiCallsAvoided: 0,
+      localModelCalls: 0,
+      externalModelCalls: 0,
       tokensInput: 0,
       tokensOutput: 0,
       tokensSaved: 0,
@@ -267,6 +275,216 @@ class TokenEconomyEngine extends SystemModule {
   }
 
   /**
+   * 8-Tier Cascading Knowledge & Model Query (Prompt Req #5)
+   * 1. Cache
+   * 2. Pattern Library
+   * 3. Memory Fabric
+   * 4. Graph Brain
+   * 5. Project DNA
+   * 6. Previous Solutions
+   * 7. Local Model
+   * 8. External API
+   */
+  async queryCascade({
+    task = 'component_reconstruction',
+    prompt = '',
+    systemPrompt = '',
+    projectId = 'default',
+    tenantId = 'grg',
+    actorId = 'system',
+    patternLibrary = null,
+    memoryFabric = null,
+    graphBrain = null,
+    projectDna = null,
+    localRunner = null,
+    fallbackLlm = null,
+    expectedTokens = 2200,
+  } = {}) {
+    const startTime = Date.now();
+    const resultRecord = {
+      task,
+      projectId,
+      tokensInput: 0,
+      tokensOutput: 0,
+      tokensTotal: 0,
+      estimatedCost: 0,
+      latency: 0,
+      model: 'NONE',
+      cacheHit: false,
+      memoryHit: false,
+      patternHit: false,
+      graphHit: false,
+      dnaHit: false,
+      localModelUsed: false,
+      externalModelUsed: false,
+      tokensSaved: 0,
+      apiCallsAvoided: 0,
+      source: 'UNKNOWN',
+      solution: null,
+    };
+
+    // TIER 1: Cache (Prompt & Result)
+    const cached = this.checkCache(systemPrompt, prompt, 'fast-lane', projectId);
+    if (cached) {
+      resultRecord.cacheHit = true;
+      resultRecord.tokensSaved = cached.tokensSaved || expectedTokens;
+      resultRecord.apiCallsAvoided = 1;
+      resultRecord.source = 'CACHE';
+      resultRecord.solution = cached.response;
+      resultRecord.latency = Date.now() - startTime;
+      this.metrics.tasksSolvedWithoutLlm++;
+      return resultRecord;
+    }
+
+    // TIER 2: Pattern Library
+    if (patternLibrary && typeof patternLibrary.findPatterns === 'function') {
+      const patterns = patternLibrary.findPatterns(task);
+      if (patterns && patterns.length > 0) {
+        const topPattern = patterns[0];
+        resultRecord.patternHit = true;
+        resultRecord.tokensSaved = expectedTokens;
+        resultRecord.apiCallsAvoided = 1;
+        resultRecord.source = 'PATTERN_LIBRARY';
+        resultRecord.solution = topPattern;
+        resultRecord.latency = Date.now() - startTime;
+        this.metrics.patternHits++;
+        this.metrics.tokensSaved += expectedTokens;
+        this.metrics.tasksSolvedWithoutLlm++;
+        this.recordCache(systemPrompt, prompt, 'fast-lane', projectId, topPattern);
+        return resultRecord;
+      }
+    }
+
+    // TIER 3: Memory Fabric
+    if (memoryFabric && typeof memoryFabric.retrieve === 'function') {
+      try {
+        const memories = await memoryFabric.retrieve(tenantId, actorId, task, { limit: 3 });
+        if (memories && memories.length > 0) {
+          resultRecord.memoryHit = true;
+          resultRecord.tokensSaved = Math.round(expectedTokens * 0.9);
+          resultRecord.apiCallsAvoided = 1;
+          resultRecord.source = 'MEMORY_FABRIC';
+          resultRecord.solution = memories[0].content || memories[0];
+          resultRecord.latency = Date.now() - startTime;
+          this.metrics.memoryHits++;
+          this.metrics.tokensSaved += resultRecord.tokensSaved;
+          this.metrics.tasksSolvedWithoutLlm++;
+          return resultRecord;
+        }
+      } catch (_) {}
+    }
+
+    // TIER 4: Graph Brain
+    if (graphBrain && typeof graphBrain.findPatterns === 'function') {
+      const graphMatches = graphBrain.findPatterns(task);
+      if (graphMatches && graphMatches.length > 0) {
+        resultRecord.graphHit = true;
+        resultRecord.tokensSaved = Math.round(expectedTokens * 0.85);
+        resultRecord.apiCallsAvoided = 1;
+        resultRecord.source = 'GRAPH_BRAIN';
+        resultRecord.solution = graphMatches[0].properties;
+        resultRecord.latency = Date.now() - startTime;
+        this.metrics.graphHits++;
+        this.metrics.tokensSaved += resultRecord.tokensSaved;
+        this.metrics.tasksSolvedWithoutLlm++;
+        return resultRecord;
+      }
+    }
+
+    // TIER 5: Project DNA
+    if (projectDna) {
+      const screenMatch = (projectDna.screens || []).find(s => 
+        (s.screenId && s.screenId.includes(task)) || (s.title && s.title.toLowerCase().includes(task.toLowerCase()))
+      );
+      const compMatch = (projectDna.components || []).find(c => 
+        (c.name && c.name.toLowerCase().includes(task.toLowerCase())) || (c.id && c.id.includes(task))
+      );
+      if (screenMatch || compMatch) {
+        resultRecord.dnaHit = true;
+        resultRecord.tokensSaved = Math.round(expectedTokens * 0.8);
+        resultRecord.apiCallsAvoided = 1;
+        resultRecord.source = 'PROJECT_DNA';
+        resultRecord.solution = screenMatch || compMatch;
+        resultRecord.latency = Date.now() - startTime;
+        this.metrics.dnaHits++;
+        this.metrics.tokensSaved += resultRecord.tokensSaved;
+        this.metrics.tasksSolvedWithoutLlm++;
+        return resultRecord;
+      }
+    }
+
+    // TIER 6: Previous Solutions Cache
+    if (this.resultCache.has(task)) {
+      const prev = this.resultCache.get(task);
+      resultRecord.tokensSaved = Math.round(expectedTokens * 0.95);
+      resultRecord.apiCallsAvoided = 1;
+      resultRecord.source = 'PREVIOUS_SOLUTIONS';
+      resultRecord.solution = prev;
+      resultRecord.latency = Date.now() - startTime;
+      this.metrics.previousSolutionHits++;
+      this.metrics.tokensSaved += resultRecord.tokensSaved;
+      this.metrics.tasksSolvedWithoutLlm++;
+      return resultRecord;
+    }
+
+    // TIER 7: Local Model
+    if (localRunner && typeof localRunner === 'function') {
+      try {
+        const localRes = await localRunner({ prompt, systemPrompt });
+        resultRecord.localModelUsed = true;
+        resultRecord.model = 'local:ollama-qwen';
+        resultRecord.tokensInput = this.estimateTokens(prompt) + this.estimateTokens(systemPrompt);
+        resultRecord.tokensOutput = this.estimateTokens(localRes);
+        resultRecord.tokensTotal = resultRecord.tokensInput + resultRecord.tokensOutput;
+        resultRecord.source = 'LOCAL_MODEL';
+        resultRecord.solution = localRes;
+        resultRecord.latency = Date.now() - startTime;
+        this.metrics.localModelCalls++;
+        this.recordCall({
+          model: 'qwen2.5:3b',
+          tokensInput: resultRecord.tokensInput,
+          tokensOutput: resultRecord.tokensOutput,
+          latencyMs: resultRecord.latency,
+          task,
+          projectId
+        });
+        this.resultCache.set(task, localRes);
+        return resultRecord;
+      } catch (_) {}
+    }
+
+    // TIER 8: External API Fallback
+    if (fallbackLlm && typeof fallbackLlm === 'function') {
+      const extRes = await fallbackLlm({ prompt, systemPrompt });
+      resultRecord.externalModelUsed = true;
+      resultRecord.model = 'external:api-platform';
+      resultRecord.tokensInput = this.estimateTokens(prompt) + this.estimateTokens(systemPrompt);
+      resultRecord.tokensOutput = this.estimateTokens(extRes);
+      resultRecord.tokensTotal = resultRecord.tokensInput + resultRecord.tokensOutput;
+      resultRecord.source = 'EXTERNAL_API';
+      resultRecord.solution = extRes;
+      resultRecord.latency = Date.now() - startTime;
+      this.metrics.externalModelCalls++;
+      this.recordCall({
+        model: 'openai-gpt4o',
+        tokensInput: resultRecord.tokensInput,
+        tokensOutput: resultRecord.tokensOutput,
+        latencyMs: resultRecord.latency,
+        task,
+        projectId
+      });
+      this.resultCache.set(task, extRes);
+      return resultRecord;
+    }
+
+    // Default synthesis
+    resultRecord.source = 'SYNTHESIS_FALLBACK';
+    resultRecord.solution = { synthesized: true, task };
+    resultRecord.latency = Date.now() - startTime;
+    return resultRecord;
+  }
+
+  /**
    * Calculate Live Dev Efficiency Score & Comprehensive Report
    */
   getEfficiencyReport() {
@@ -281,6 +499,12 @@ class TokenEconomyEngine extends SystemModule {
       ((this.metrics.baselineComparison.baselineTokensPerTask - avgTokensPerTask) / this.metrics.baselineComparison.baselineTokensPerTask) * 100
     )));
 
+    const knowledgeHits = this.metrics.cacheHits + this.metrics.patternHits + this.metrics.memoryHits + this.metrics.graphHits + this.metrics.dnaHits + this.metrics.previousSolutionHits;
+    const KNOWLEDGE_REUSE_RATE = Number((knowledgeHits / Math.max(1, totalOps)).toFixed(4));
+    
+    const totalTokensUsed = this.metrics.tokensInput + this.metrics.tokensOutput;
+    const TOKEN_SAVINGS_RATE = Number((this.metrics.tokensSaved / Math.max(1, totalTokensUsed + this.metrics.tokensSaved)).toFixed(4));
+
     // Dev Efficiency Score: combines token reduction, cache hit rate, and non-LLM resolutions
     const devEfficiencyScore = Math.min(100, Math.max(50, Math.round(50 + (tokenReductionPercent * 0.35) + (cacheHitRate * 0.15))));
 
@@ -288,10 +512,19 @@ class TokenEconomyEngine extends SystemModule {
       devEfficiencyScore, // eg. 78 / 100
       costMode: this.costMode,
       tokenReductionPercent: `${tokenReductionPercent}%`,
+      KNOWLEDGE_REUSE_RATE,
+      TOKEN_SAVINGS_RATE,
       metrics: {
         totalCalls: this.metrics.totalCalls,
         cacheHits: this.metrics.cacheHits,
         cacheMisses: this.metrics.cacheMisses,
+        patternHits: this.metrics.patternHits,
+        memoryHits: this.metrics.memoryHits,
+        graphHits: this.metrics.graphHits,
+        dnaHits: this.metrics.dnaHits,
+        apiCallsAvoided: this.metrics.apiCallsAvoided || this.metrics.tasksSolvedWithoutLlm,
+        localModelCalls: this.metrics.localModelCalls,
+        externalModelCalls: this.metrics.externalModelCalls,
         cacheHitRate: `${cacheHitRate.toFixed(1)}%`,
         totalTokensInput: this.metrics.tokensInput,
         totalTokensOutput: this.metrics.tokensOutput,
@@ -312,3 +545,4 @@ class TokenEconomyEngine extends SystemModule {
 }
 
 module.exports = { TokenEconomyEngine };
+

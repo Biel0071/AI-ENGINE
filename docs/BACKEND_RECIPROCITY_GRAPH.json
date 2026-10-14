@@ -1,0 +1,291 @@
+[
+  {
+    "screenId": "SCR-COMMAND",
+    "name": "Unified Command Center & Avatar Hub",
+    "route": "/app#command",
+    "frontendControllers": [
+      "unified-app.js",
+      "command-center.js",
+      "fenix-command-bridge.js"
+    ],
+    "apis": [
+      "/api/me",
+      "/api/overview",
+      "/api/avatar/message",
+      "/api/events"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/me",
+      "/api/overview",
+      "/api/avatar/message",
+      "/api/events"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-CITY",
+    "name": "Isometric AI City & Universal Digital Twin",
+    "route": "/app#city",
+    "frontendControllers": [
+      "iso-city.js",
+      "fenix-pixel-engine.js",
+      "pixi-city-renderer.js",
+      "fenix-city-event-adapter.js"
+    ],
+    "apis": [
+      "/api/city",
+      "/api/v2/living-city/agents",
+      "/api/events"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/city",
+      "/api/v2/living-city/agents",
+      "/api/events"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-AGENTS",
+    "name": "Workforce & Agent Enxame Cockpit",
+    "route": "/app#agents",
+    "frontendControllers": [
+      "unified-app.js",
+      "fenix-core-controller.js"
+    ],
+    "apis": [
+      "/api/overview",
+      "/api/agents",
+      "/api/jobs"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/overview",
+      "/api/agents",
+      "/api/jobs"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-IDE",
+    "name": "Visual IDE & Project Kernel Code Studio",
+    "route": "/app#ide",
+    "frontendControllers": [
+      "project-ide-live.js",
+      "fenix-visual-ide.js",
+      "ide-enhancer.js"
+    ],
+    "apis": [
+      "/api/projects",
+      "/api/projects/:id/fs",
+      "/api/projects/:id/git"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/projects",
+      "/api/projects/:id/fs",
+      "/api/projects/:id/git"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-OPERATIONS",
+    "name": "Operations Rail & Reciprocity Engine",
+    "route": "/app#operations",
+    "frontendControllers": [
+      "operations-live.js",
+      "dev-pipeline-client.js"
+    ],
+    "apis": [
+      "/api/v2/engineering/reciprocity/verify",
+      "/api/observability/metrics"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/v2/engineering/reciprocity/verify",
+      "/api/observability/metrics"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-RUNTIME",
+    "name": "Runtime Cockpit & Process Inspector",
+    "route": "/app#runtime",
+    "frontendControllers": [
+      "runtime-cockpit.js",
+      "live-runtime.js"
+    ],
+    "apis": [
+      "/api/runtime",
+      "/api/runtime/services",
+      "/api/runtime/capabilities",
+      "/health"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/runtime",
+      "/api/runtime/services",
+      "/api/runtime/capabilities",
+      "/health"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-PROJECTS",
+    "name": "Project Hub & Absorption Portfolio",
+    "route": "/app#projects",
+    "frontendControllers": [
+      "project-hub-live.js",
+      "project-hub-controller.js"
+    ],
+    "apis": [
+      "/api/projects",
+      "/api/connectors/github/repositories"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/projects",
+      "/api/connectors/github/repositories"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-MEMORY",
+    "name": "Memory Fabric & Knowledge Base",
+    "route": "/app#memory",
+    "frontendControllers": [
+      "memory-live.js",
+      "unified-app.js"
+    ],
+    "apis": [
+      "/api/overview",
+      "/api/skills"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/overview",
+      "/api/skills"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-KNOWLEDGE",
+    "name": "Knowledge Graph & Corpus Browser",
+    "route": "/app#knowledge",
+    "frontendControllers": [
+      "unified-app.js"
+    ],
+    "apis": [
+      "/api/overview"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/overview"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-MCP",
+    "name": "MCP Connectors & Tools Gateway",
+    "route": "/app#mcp",
+    "frontendControllers": [
+      "connections-panel.js",
+      "unified-app.js"
+    ],
+    "apis": [
+      "/api/connectors",
+      "/api/skills"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/connectors",
+      "/api/skills"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-BROWSER",
+    "name": "Browser Automation & Web Reality Operator",
+    "route": "/app#browser",
+    "frontendControllers": [
+      "unified-app.js"
+    ],
+    "apis": [
+      "/api/overview"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/overview"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-OBSERVABILITY",
+    "name": "Observability & Metrics Radar",
+    "route": "/app#observability",
+    "frontendControllers": [
+      "observatory-client.js"
+    ],
+    "apis": [
+      "/api/observability/metrics"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/observability/metrics"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-TERMINAL",
+    "name": "Universal Shell & Interactive Terminal",
+    "route": "/app#terminal",
+    "frontendControllers": [
+      "unified-app.js"
+    ],
+    "apis": [
+      "/api/runtime"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/runtime"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-FLOWGRAPH",
+    "name": "DAG & Workflow Graph Visualizer",
+    "route": "/app#flowgraph",
+    "frontendControllers": [
+      "fenix-flow-graph.js"
+    ],
+    "apis": [
+      "/api/missions",
+      "/api/events"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/missions",
+      "/api/events"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-LOGIN",
+    "name": "Authentication & Credential Gateway",
+    "route": "/login",
+    "frontendControllers": [
+      "login.html"
+    ],
+    "apis": [
+      "/api/login",
+      "/api/me"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/login",
+      "/api/me"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  },
+  {
+    "screenId": "SCR-MARKETPLACE",
+    "name": "Extensions & Executable Skills Marketplace",
+    "route": "/app#marketplace",
+    "frontendControllers": [
+      "marketplace-live.js"
+    ],
+    "apis": [
+      "/api/skills"
+    ],
+    "reciprocalBackendRoutes": [
+      "/api/skills"
+    ],
+    "status": "BALANCED_RECIPROCITY"
+  }
+]

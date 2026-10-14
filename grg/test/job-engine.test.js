@@ -29,6 +29,55 @@ test('queued jobs can be cancelled and are never claimed', async () => {
   assert.deepEqual(await app.jobs.runBatch('worker-1'), []); assert.equal(called, false);
 });
 
+test('idle worker polls without rewriting the canonical state every tick', async () => {
+  const app = await bootstrap();
+  let clockNow = Date.now();
+  app.jobs.clock = { now: () => clockNow };
+  let writes = 0;
+  const update = app.store.update.bind(app.store);
+  app.store.update = (...args) => { writes += 1; return update(...args); };
+
+  assert.deepEqual(await app.jobs.runBatch('idle-worker'), []);
+  assert.deepEqual(await app.jobs.runBatch('idle-worker'), []);
+  assert.equal(writes, 1, 'only the initial worker heartbeat should be persisted');
+  clockNow += 16_000;
+  assert.deepEqual(await app.jobs.runBatch('idle-worker'), []);
+  assert.equal(writes, 2, 'idle worker heartbeat should be refreshed after its interval');
+
+  await app.close();
+});
+
+test('stale jobs with a pending cancel are cancelled instead of requeued after worker loss', async () => {
+  const app = await bootstrap(); let executions = 0; app.jobs.register('test.stale-cancel', async () => { executions += 1; return 'unexpected'; });
+  const restartJob = await app.jobs.submit('grg', 'alice', { type: 'test.stale-cancel' });
+  const staleAt = new Date(Date.now() - 120_000).toISOString();
+  await app.store.update((state) => {
+    for (const job of state.runtimeJobs.filter((item) => item.id === restartJob.id)) {
+      job.status = 'RUNNING'; job.currentStage = 'RUNNING'; job.workerId = 'worker-before-restart';
+      job.attempts = 1; job.cancelRequestedAt = staleAt; job.heartbeatAt = staleAt; job.startedAt = staleAt;
+    }
+    state.workerHeartbeats.push({ workerId: 'worker-before-restart', lastSeenAt: staleAt });
+    return state;
+  });
+
+  assert.deepEqual(await app.jobs.runBatch('worker-after-restart'), []);
+  assert.equal((await app.jobs.getInternal('grg', restartJob.id)).status, 'CANCELLED');
+
+  const recoveryJob = await app.jobs.submit('grg', 'alice', { type: 'test.stale-cancel' });
+  await app.store.update((state) => {
+    const job = state.runtimeJobs.find((item) => item.id === recoveryJob.id);
+    job.status = 'RUNNING'; job.currentStage = 'RUNNING'; job.workerId = 'worker-recovery';
+    job.attempts = 1; job.cancelRequestedAt = staleAt; job.heartbeatAt = staleAt; job.startedAt = staleAt;
+    return state;
+  });
+  assert.equal(await app.jobs.recoverStale(60_000), 0);
+  assert.equal((await app.jobs.getInternal('grg', recoveryJob.id)).status, 'CANCELLED');
+  assert.equal(executions, 0);
+  const events = await app.eventStore.list('grg');
+  assert.equal(events.filter((event) => event.type === 'runtime.job.cancelled' && [restartJob.id, recoveryJob.id].includes(event.data.jobId)).length, 2);
+  await app.close();
+});
+
 test('scheduler emits due jobs and advances recurring schedules', async () => {
   const app = await bootstrap(); app.jobs.register('test.scheduled', async () => 'ok');
   const schedule = await app.jobs.schedule('grg', 'alice', { type: 'test.scheduled', runAt: new Date(0).toISOString(), intervalMs: 1000 });
@@ -43,14 +92,18 @@ test('recurring schedules coalesce while their previous job is unfinished', asyn
     type: 'test.coalesced', payload: { trigger: 'schedule' },
     runAt: new Date(clockNow - 1).toISOString(), intervalMs: 1_000,
   });
+
   const [first] = await app.jobs.tick('grg', 'alice');
-  assert.equal(first.source, 'system'); assert.equal(first.scheduleId, schedule.id);
+  assert.equal(first.source, 'system');
+  assert.equal(first.scheduleId, schedule.id);
   clockNow += 1_000;
+
   assert.deepEqual(await app.jobs.tick('grg', 'alice'), []);
   const state = await app.store.read();
   assert.equal(state.runtimeJobs.filter((job) => job.type === 'test.coalesced').length, 1);
   assert.ok(Date.parse(state.runtimeSchedules.find((item) => item.id === schedule.id).nextRunAt) > clockNow);
-  const [completed] = await app.jobs.runBatch('schedule-worker'); assert.equal(completed.status, 'SUCCEEDED');
+  const [completed] = await app.jobs.runBatch('schedule-worker');
+  assert.equal(completed.status, 'SUCCEEDED');
   clockNow += 1_000;
   const [nextRun] = await app.jobs.tick('grg', 'alice');
   assert.equal(nextRun.source, 'system');
@@ -65,7 +118,11 @@ test('legacy recurring jobs with schedule trigger are coalesced without changing
     type: 'test.legacy-schedule', payload: { trigger: 'schedule' },
     runAt: new Date(clockNow - 1).toISOString(), intervalMs: 1_000,
   });
-  await app.store.update((state) => { state.runtimeJobs.push({ id: 'legacy-scheduled-job', tenantId: 'grg', type: schedule.type, source: 'api', status: 'QUEUED', payload: { trigger: 'schedule' } }); return state; });
+  await app.store.update((state) => {
+    state.runtimeJobs.push({ id: 'legacy-scheduled-job', tenantId: 'grg', type: schedule.type, source: 'api', status: 'QUEUED', payload: { trigger: 'schedule' } });
+    return state;
+  });
+
   assert.deepEqual(await app.jobs.tick('grg', 'alice'), []);
   assert.equal((await app.store.read()).runtimeJobs.filter((job) => job.type === schedule.type).length, 1);
   await app.close();
@@ -100,7 +157,7 @@ test('canonical jobs preserve universal client context and can be claimed by Bul
   assert.deepEqual(job.context.sourceFiles, ['grg/public/index.html']);
   assert.equal(job.policy.requireApproval, false);
   assert.equal(enqueued[0][0], 'fenix-runtime');
-  assert.equal(enqueued[0][3].idempotencyKey, `${job.id}:0`);
+  assert.equal(enqueued[0][3].idempotencyKey, `${job.id}-0`);
 
   const done = await app.jobs.run('grg', job.id, 'worker-bullmq');
   assert.equal(done.status, 'SUCCEEDED');

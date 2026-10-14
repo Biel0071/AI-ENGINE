@@ -76,11 +76,11 @@ test('production: global-selection-store starts with selectedEntity = null', () 
   assert.match(code, /this\._listeners = new Set\(\);/, 'Listeners must be initialized');
 });
 
-test('production: city-reality-engine has empty CANONICAL_COMPANIES and null initial company', () => {
+test('production: city-reality-engine has no seeded company fallback and null initial company', () => {
   const cityRealityPath = path.join(PUBLIC_DIR, 'city-reality-engine.js');
   assert.ok(fs.existsSync(cityRealityPath), 'city-reality-engine.js must exist');
   const code = fs.readFileSync(cityRealityPath, 'utf8');
-  assert.match(code, /const CANONICAL_COMPANIES = Object\.freeze\(\[\]\);/, 'CANONICAL_COMPANIES in city-reality-engine must be empty');
+  assert.doesNotMatch(code, /CANONICAL_COMPANIES|zapai-crm|deposito-mais/, 'city-reality-engine must not contain seeded company records');
   assert.match(code, /this\.activeCompanyId = null;/, 'Initial activeCompanyId must be null');
   assert.match(code, /this\.activeCompany = null;/, 'Initial activeCompany must be null');
   assert.doesNotMatch(code, /activeCompanyId = ['"]deposito-mais['"]/, 'activeCompanyId must never default to deposito-mais');
@@ -130,5 +130,8 @@ test('production: city notifications are rendered from API events without seeded
   assert.doesNotMatch(city, /0 alertas críticos ativos|Telemetria operando em modo nominal de alta fidelidade/i);
   assert.doesNotMatch(world, /99\.99%|12\.4k|0 Alertas|Fila Zerada/);
   assert.match(city, /window\.fenixRenderAlerts\s*=\s*\(\)\s*=>/);
-  assert.match(city, /window\.state\?\.data\?\.events/);
+  assert.match(city, /fetchSystemEventHistory/);
+  assert.match(city, /\/api\/v2\/events\/history/);
+  assert.match(city, /window\.__fenixSystemEvents/);
+  assert.doesNotMatch(city, /window\.state\?\.data\?\.events/);
 });

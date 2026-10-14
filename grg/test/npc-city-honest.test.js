@@ -75,6 +75,32 @@ test('npc-city: fala reflete o evento REALMENTE despachado', async () => {
   assert.equal(r.eventStream, 'swarm:agent-architect');
 });
 
+test('npc-city: chat usa resposta real do AI Gateway depois do despacho AgentSwarm', async () => {
+  const eng = new NpcCityEngine({
+    store: null, controlPlane: cp, agentSwarm: swarm, eventStore: fakeEventStore({}), clock: () => 1000,
+    aiGateway: { invoke: async () => ({ text: 'A resposta veio do modelo conectado.', provider: 'ollama', model: 'qwen2.5:3b', cached: false }) },
+  });
+
+  const r = await eng.chatWithNpc('t', 'a', 'agent-architect', 'Como está o sistema?');
+
+  assert.match(r.npcReply, /A resposta veio do modelo conectado/);
+  assert.deepEqual(r.ai, { status: 'CONNECTED', provider: 'ollama', model: 'qwen2.5:3b', cached: false });
+});
+
+test('npc-city: falha do AI Gateway retorna fallback determinístico e transparente', async () => {
+  const eng = new NpcCityEngine({
+    store: null, controlPlane: cp, agentSwarm: swarm, eventStore: fakeEventStore({}), clock: () => 1000,
+    aiGateway: { invoke: async () => { throw new Error('provider unavailable'); } },
+  });
+
+  const r = await eng.chatWithNpc('t', 'a', 'agent-architect', 'Como está o sistema?');
+
+  assert.equal(r.ai.status, 'FALLBACK');
+  assert.equal(r.ai.provider, null);
+  assert.match(r.npcReply, /fallback determinístico/i);
+  assert.doesNotMatch(r.npcReply, /provider unavailable/);
+});
+
 test('npc-city: sem swarm/barramento, a fala NAO finge despacho', async () => {
   const eng = new NpcCityEngine({ store: null, controlPlane: cp, agentSwarm: { specialists: swarm.specialists }, eventStore: fakeEventStore({}), clock: () => 1000 });
   const r = await eng.chatWithNpc('t', 'a', 'agent-architect', 'oi');

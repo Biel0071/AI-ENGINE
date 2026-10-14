@@ -1,0 +1,976 @@
+{
+  "url": "http://127.0.0.1:4400/app",
+  "startedAt": "2026-09-03T23:28:54.427Z",
+  "navigation": [
+    {
+      "view": "command",
+      "domain": "command",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app",
+      "after": "http://127.0.0.1:4400/app#command",
+      "visibleViews": [
+        "view-command"
+      ],
+      "activeNav": [
+        "command"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "operations",
+      "domain": "command",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#command",
+      "after": "http://127.0.0.1:4400/app#operations",
+      "visibleViews": [
+        "view-operations"
+      ],
+      "activeNav": [
+        "operations"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "runtime",
+      "domain": "command",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#operations",
+      "after": "http://127.0.0.1:4400/app#runtime",
+      "visibleViews": [
+        "view-runtime"
+      ],
+      "activeNav": [
+        "runtime"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "ide",
+      "domain": "build",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#runtime",
+      "after": "http://127.0.0.1:4400/app#ide",
+      "visibleViews": [
+        "view-ide"
+      ],
+      "activeNav": [
+        "ide"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "project",
+      "domain": "build",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#ide",
+      "after": "http://127.0.0.1:4400/app#project",
+      "visibleViews": [
+        "view-project"
+      ],
+      "activeNav": [
+        "project"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "projects",
+      "domain": "build",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#project",
+      "after": "http://127.0.0.1:4400/app#projects",
+      "visibleViews": [
+        "view-projects"
+      ],
+      "activeNav": [
+        "projects"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "agents",
+      "domain": "intelligence",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#projects",
+      "after": "http://127.0.0.1:4400/app#agents",
+      "visibleViews": [
+        "view-agents"
+      ],
+      "activeNav": [
+        "agents"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "memory",
+      "domain": "intelligence",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#agents",
+      "after": "http://127.0.0.1:4400/app#memory",
+      "visibleViews": [
+        "view-memory"
+      ],
+      "activeNav": [
+        "memory"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "knowledge",
+      "domain": "intelligence",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#memory",
+      "after": "http://127.0.0.1:4400/app#knowledge",
+      "visibleViews": [
+        "view-knowledge"
+      ],
+      "activeNav": [
+        "knowledge"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "mcp",
+      "domain": "infrastructure",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#knowledge",
+      "after": "http://127.0.0.1:4400/app#mcp",
+      "visibleViews": [
+        "view-mcp"
+      ],
+      "activeNav": [
+        "mcp"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "observability",
+      "domain": "infrastructure",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#mcp",
+      "after": "http://127.0.0.1:4400/app#observability",
+      "visibleViews": [
+        "view-observability"
+      ],
+      "activeNav": [
+        "observability"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "browser",
+      "domain": "validation",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#observability",
+      "after": "http://127.0.0.1:4400/app#browser",
+      "visibleViews": [
+        "view-browser"
+      ],
+      "activeNav": [
+        "browser"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "city",
+      "domain": "validation",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#browser",
+      "after": "http://127.0.0.1:4400/app#city",
+      "visibleViews": [
+        "view-city"
+      ],
+      "activeNav": [
+        "city"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "terminal",
+      "domain": "validation",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#city",
+      "after": "http://127.0.0.1:4400/app#terminal",
+      "visibleViews": [
+        "view-terminal"
+      ],
+      "activeNav": [
+        "terminal"
+      ],
+      "scrollTest": true
+    }
+  ],
+  "controls": [
+    {
+      "view": "command",
+      "label": "−",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "command",
+      "label": "+",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "command",
+      "label": "RESET",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "command",
+      "label": "FILTROS",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "operations",
+      "label": "Decompor e criar",
+      "skipped": true
+    },
+    {
+      "view": "runtime",
+      "label": "Executar ciclo autônomo",
+      "skipped": true
+    },
+    {
+      "view": "runtime",
+      "label": "Executar tick",
+      "skipped": true
+    },
+    {
+      "view": "ide",
+      "label": "CHAT",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "ide",
+      "label": "AGENTS",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "ide",
+      "label": "JOBS",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "ide",
+      "label": "MEMÓRIA",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "project",
+      "label": "Scan Real",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "projects",
+      "label": "Contratar",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "mcp",
+      "label": "Verificar conexao",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "observability",
+      "label": "Coletar amostra",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "terminal",
+      "label": "Clonar e analisar",
+      "skipped": true
+    },
+    {
+      "view": "terminal",
+      "label": "Salvar arquivo",
+      "skipped": true
+    },
+    {
+      "view": "terminal",
+      "label": "Executar",
+      "skipped": true
+    },
+    {
+      "view": "terminal",
+      "label": "Atualizar",
+      "skipped": false,
+      "clicked": true
+    }
+  ],
+  "consoleErrors": [
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/cockpit-app.js?v=3' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/runtime-cockpit.js?v=17' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/live-runtime.js?v=11' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/visual-inspector.js?v=3' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/projects): {error: rate limit exceeded, requestId: 6d75cee6-4268-4678-a2aa-26d91d036be9, status: 429, endpoint: /api/fenix/projects}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/jobs?_rt=1788478139456): {error: rate limit exceeded, requestId: 1ca3b81c-1630-4b95-8d77-62ce46bf4675, status: 429, endpoint: /api/fenix/jobs?_rt=1788478139456}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/missions?_rt=1788478139457): {error: rate limit exceeded, requestId: b7f68141-e165-4566-bd40-04a1e4fa1175, status: 429, endpoint: /api/fenix/missions?_rt=1788478139457}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/events?limit=80): {error: rate limit exceeded, requestId: 89dd0515-9a97-48ff-baa8-cddb8d7ad1d7, status: 429, endpoint: /api/events?limit=80}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/mission-events?limit=80&_rt=1788478139458): {error: rate limit exceeded, requestId: 3978d2f4-4bb1-4919-aaba-aac1c5fa4eae, status: 429, endpoint: /api/fenix/mission-events?limit=80&_rt=1788478139458}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/memory/search?q=&limit=20): {error: rate limit exceeded, requestId: 0fbe5aa1-ce47-43d3-b95a-72934babca4b, status: 429, endpoint: /api/fenix/memory/search?q=&limit=20}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/memory/search?q=procedural&limit=20): {error: rate limit exceeded, requestId: 6d287003-969b-428e-8124-852315e6ff2e, status: 429, endpoint: /api/memory/search?q=procedural&limit=20}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/knowledge): {error: rate limit exceeded, requestId: 0129b5af-435c-45b7-abf9-1cf4ba0c2029, status: 429, endpoint: /api/knowledge}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/skills): {error: rate limit exceeded, requestId: 5125499c-b88b-4980-b60b-a5ab6510fbe5, status: 429, endpoint: /api/skills}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/connectors): {error: rate limit exceeded, requestId: c778fceb-32b3-4b57-84a7-1b10b9c95f85, status: 429, endpoint: /api/connectors}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/repositories): {error: rate limit exceeded, requestId: ed6922cd-774b-4448-803c-a19bab4467dd, status: 429, endpoint: /api/repositories}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/project-mirror): {error: rate limit exceeded, requestId: 11f0d418-f8bc-44cf-855a-f806276e3827, status: 429, endpoint: /api/project-mirror}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/agents/panel): {error: rate limit exceeded, requestId: b4a19861-a377-4595-b004-6aa5030ef9c1, status: 429, endpoint: /api/agents/panel}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/ai/router/select): {error: rate limit exceeded, requestId: cdcea4f1-fc4c-4658-a632-b4c3c134c890, status: 429, endpoint: /api/ai/router/select}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/connectors): {error: rate limit exceeded, requestId: d86f07a3-9df4-4a0e-825e-e90c6cb40b52, status: 429, endpoint: /api/connectors}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/agents/panel): {error: rate limit exceeded, requestId: a401ca4d-cb19-47ee-8306-6b10267f0c27, status: 429, endpoint: /api/agents/panel}"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/ide-enhancer.js?v=5' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/jobs-app.js?v=3' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/cockpit-app.js?v=3' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/project-mirror/projects): {error: rate limit exceeded, requestId: 8bd53789-36af-41d9-9137-974b4eb34925, status: 429, endpoint: /api/project-mirror/projects}"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/visual-inspector.js?v=3' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Refused to execute script from 'http://127.0.0.1:4400/jobs-app.js?v=3' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled."
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/project-mirror/projects): {error: rate limit exceeded, requestId: 22fe9428-10cd-4dee-8043-25631e517d86, status: 429, endpoint: /api/project-mirror/projects}"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/project-mirror): {error: rate limit exceeded, requestId: 338c9916-0b2e-406f-8f10-50a5b02805e7, status: 429, endpoint: /api/project-mirror}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/v2/system/status): {error: rate limit exceeded, requestId: 3e43c555-90b5-423f-9151-01b43c69c393, status: 429, endpoint: /api/v2/system/status}"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/project-mirror/scan): {error: rate limit exceeded, requestId: 2288cd41-073b-454f-9955-c7e4ace37dac, status: 429, endpoint: /api/project-mirror/scan}"
+    },
+    {
+      "type": "pageerror",
+      "message": "Object"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/projects): {error: rate limit exceeded, requestId: 340c860f-6c85-436d-938d-15ef354230a0, status: 429, endpoint: /api/fenix/projects}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/jobs?_rt=1788478153339): {error: rate limit exceeded, requestId: 687a7d53-dd57-4297-9e32-68210eaa3639, status: 429, endpoint: /api/fenix/jobs?_rt=1788478153339}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/missions?_rt=1788478153340): {error: rate limit exceeded, requestId: 768efc82-7cbc-42f6-9d03-c5f2cac9ddf5, status: 429, endpoint: /api/fenix/missions?_rt=1788478153340}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/events?limit=80): {error: rate limit exceeded, requestId: a32c2331-c633-4be4-abe3-1bf424c53e68, status: 429, endpoint: /api/events?limit=80}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/mission-events?limit=80&_rt=1788478153340): {error: rate limit exceeded, requestId: 6e0df0d7-a8a3-417f-a291-91fdb6e7d276, status: 429, endpoint: /api/fenix/mission-events?limit=80&_rt=1788478153340}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/fenix/memory/search?q=&limit=20): {error: rate limit exceeded, requestId: e52ec97f-b343-43a7-a8ad-e7e77d17f8f4, status: 429, endpoint: /api/fenix/memory/search?q=&limit=20}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/memory/search?q=procedural&limit=20): {error: rate limit exceeded, requestId: 5067a662-d8fe-4762-b2b9-a99aabad09cc, status: 429, endpoint: /api/memory/search?q=procedural&limit=20}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/knowledge): {error: rate limit exceeded, requestId: 6ec5360d-e563-4554-b8ff-a5e543d77f28, status: 429, endpoint: /api/knowledge}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/skills): {error: rate limit exceeded, requestId: ad2a7d1e-1a50-44be-b69d-6e5a061224c1, status: 429, endpoint: /api/skills}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/connectors): {error: rate limit exceeded, requestId: a3aa9f31-66e3-4839-ad11-a0bd4d4ed913, status: 429, endpoint: /api/connectors}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/repositories): {error: rate limit exceeded, requestId: a3fbd909-0a3a-40cf-a279-2b31455e0523, status: 429, endpoint: /api/repositories}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/project-mirror): {error: rate limit exceeded, requestId: 6f39a167-7908-44fd-8f4f-89032ebd840f, status: 429, endpoint: /api/project-mirror}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/agents/panel): {error: rate limit exceeded, requestId: 0505c084-ebbd-4ce0-ab6a-61734b0b430b, status: 429, endpoint: /api/agents/panel}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/ai/router/select): {error: rate limit exceeded, requestId: a8e31ff3-b5e0-4572-8628-6d3614c70fa3, status: 429, endpoint: /api/ai/router/select}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/connectors): {error: rate limit exceeded, requestId: a0af842a-b95f-41bf-9b62-3779056847db, status: 429, endpoint: /api/connectors}"
+    },
+    {
+      "type": "console",
+      "message": "[FENIX] Erro API (/api/agents/panel): {error: rate limit exceeded, requestId: c9bf3053-963a-4f0d-80f4-c19307691cde, status: 429, endpoint: /api/agents/panel}"
+    },
+    {
+      "type": "pageerror",
+      "message": "API em backoff após limite de requisições"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "pageerror",
+      "message": "API em backoff após limite de requisições"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    }
+  ],
+  "failedRequests": [
+    {
+      "url": "http://127.0.0.1:4400/cockpit-app.js?v=3",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/runtime-cockpit.js?v=17",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/live-runtime.js?v=11",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/visual-inspector.js?v=3",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/ide-enhancer.js?v=5",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/jobs-app.js?v=3",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/cockpit-app.js?v=3",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/visual-inspector.js?v=3",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/jobs-app.js?v=3",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:4400/api/v2/ai-platform/status",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "title": "FÊNIX OS | Master Agentic IDE",
+  "initial": {
+    "hash": "",
+    "fenix": "object",
+    "runChat": "function",
+    "views": [
+      "view-command",
+      "view-ide",
+      "view-project",
+      "view-city",
+      "view-projects",
+      "view-agents",
+      "view-operations",
+      "view-runtime",
+      "view-memory",
+      "view-knowledge",
+      "view-mcp",
+      "view-browser",
+      "view-observability",
+      "view-terminal"
+    ],
+    "nav": [
+      {
+        "text": "DASHBOARD",
+        "view": "command"
+      },
+      {
+        "text": "MISSÕES",
+        "view": "operations"
+      },
+      {
+        "text": "AGENTES",
+        "view": "agents"
+      },
+      {
+        "text": "AI CITY",
+        "view": "city"
+      },
+      {
+        "text": "MEMÓRIA",
+        "view": "memory"
+      },
+      {
+        "text": "SKILLS",
+        "view": "knowledge"
+      },
+      {
+        "text": "TELEMETRY",
+        "view": "runtime"
+      },
+      {
+        "text": "OBSERVABILITY",
+        "view": "observability"
+      },
+      {
+        "text": "PROJECTS",
+        "view": "projects"
+      },
+      {
+        "text": "BROWSER QA",
+        "view": "browser"
+      },
+      {
+        "text": "IDE",
+        "view": "ide"
+      },
+      {
+        "text": "TERMINAL",
+        "view": "terminal"
+      },
+      {
+        "text": "MCP HUB",
+        "view": "mcp"
+      },
+      {
+        "text": "PROJECT MIRROR",
+        "view": "project"
+      },
+      {
+        "text": "CONFIGURAÇÕES",
+        "view": "terminal"
+      }
+    ]
+  },
+  "finishedAt": "2026-09-03T23:29:24.666Z",
+  "summary": {
+    "navTotal": 14,
+    "navPass": 14,
+    "controlTotal": 19,
+    "controlClicked": 13,
+    "controlSkipped": 6,
+    "consoleErrors": 126,
+    "failedRequests": 10,
+    "domains": {
+      "command": {
+        "total": 3,
+        "pass": 3
+      },
+      "build": {
+        "total": 3,
+        "pass": 3
+      },
+      "intelligence": {
+        "total": 3,
+        "pass": 3
+      },
+      "infrastructure": {
+        "total": 2,
+        "pass": 2
+      },
+      "validation": {
+        "total": 3,
+        "pass": 3
+      }
+    }
+  }
+}

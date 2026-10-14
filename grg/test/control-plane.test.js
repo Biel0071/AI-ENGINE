@@ -57,3 +57,24 @@ test('isolation: membership required to authorize', async () => {
   await cp.createTenant({ name: 'Acme' }, 'alice');
   await assert.rejects(() => cp.authorize('acme', 'stranger', 'project:read'));
 });
+
+test('reads canonical state once when resolving a membership', async () => {
+  let reads = 0;
+  const cp = new ControlPlane({
+    store: {
+      async read() {
+        reads += 1;
+        return {
+          tenants: [{ id: 'acme', status: 'active' }],
+          memberships: [{ tenantId: 'acme', userId: 'alice', role: 'admin', status: 'active' }],
+        };
+      },
+    },
+    bus: new EventBus(),
+  });
+
+  const membership = await cp.getMembership('acme', 'alice');
+
+  assert.equal(membership.role, 'admin');
+  assert.equal(reads, 1);
+});

@@ -16,6 +16,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
+
+const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const MAX_IMAGE_BYTES = 40 * 1024 * 1024;
+const MAX_IMAGE_PIXELS = 4_000_000;
 
 class VisualComparator {
   constructor(options = {}) {
@@ -56,8 +61,7 @@ class VisualComparator {
       referenceLayout = {},
       currentLayout = {},
       referenceBehavior = [],
-      currentBehavior = [],
-      viewport = { width: 1440, height: 900 }
+      currentBehavior = []
     } = params;
 
     const gaps = {
@@ -70,22 +74,19 @@ class VisualComparator {
       behaviorGap: []
     };
 
-    // 1. Image Pixel / Dimension Diff
-    let diffPercentage = 0.0;
-    const refExists = referenceImage && fs.existsSync(referenceImage);
-    const curExists = currentImage && fs.existsSync(currentImage);
-
-    if (refExists && curExists) {
-      try {
-        const rStat = fs.statSync(referenceImage);
-        const cStat = fs.statSync(currentImage);
-        if (rStat.size === cStat.size) {
-          diffPercentage = 0.0;
-        } else {
-          diffPercentage = Math.min(100, Math.abs(cStat.size - rStat.size) / Math.max(rStat.size, 1) * 100);
-        }
-      } catch (e) {}
-    }
+    const refExists = isExistingFile(referenceImage);
+    const curExists = isExistingFile(currentImage);
+    const pixelDiff = refExists && curExists
+      ? comparePngFiles(referenceImage, currentImage, params.pixelTolerance)
+      : { status: 'NOT_MEASURED', reason: 'Dois arquivos de imagem válidos são necessários.' };
+    const parsedMaximumDiff = Number(params.maximumDiffPercent);
+    const maximumDiffPercent = Number.isFinite(parsedMaximumDiff)
+      ? Math.max(0, Math.min(100, parsedMaximumDiff))
+      : 15;
+    const measuredViewport = pixelDiff.status === 'MEASURED'
+      ? { width: pixelDiff.current.width, height: pixelDiff.current.height }
+      : null;
+    const viewport = isValidViewport(params.viewport) ? params.viewport : measuredViewport;
 
     // 2. Component Gap (Missing & Surplus widgets)
     const curCompNames = new Set(currentComponents.map(c => typeof c === 'string' ? c : c.name));
@@ -228,27 +229,42 @@ class VisualComparator {
     let totalGaps = 0;
     Object.values(gaps).forEach(list => { totalGaps += list.length; });
 
-    // Fidelity Score (0 to 100)
-    const fidelityScore = Math.max(0, Math.min(100, Math.round(100 - (diffPercentage * 0.3) - (totalGaps * 4))));
     const criticalGapsCount = gaps.componentGap.filter(g => g.severity === 'HIGH').length + gaps.behaviorGap.length;
-    const passed = fidelityScore >= 85.0 && criticalGapsCount === 0;
 
     const result = {
       comparisonId: `cmp:${Date.now()}`,
       timestamp: new Date().toISOString(),
       viewport,
+      measuredViewport,
+      maximumDiffPercent,
       referenceImage,
       currentImage,
-      diffPercentage: Number(diffPercentage.toFixed(2)),
-      fidelityScore,
-      passed,
-      verdict: passed ? 'PASSED_VISUAL_TOLERANCE' : 'REQUIRES_RECONSTRUCTION_FIX',
+      imageEvidence: {
+        referenceExists: Boolean(refExists),
+        currentExists: Boolean(curExists),
+        reference: pixelDiff.reference || null,
+        current: pixelDiff.current || null,
+        pixelDiffAvailable: pixelDiff.status === 'MEASURED'
+      },
+      measurementMethod: pixelDiff.status === 'MEASURED' ? 'PIXEL_RGBA_THRESHOLD' : null,
+      measurementStatus: pixelDiff.status,
+      measurementReason: pixelDiff.reason || null,
+      pixelDiff: pixelDiff.status === 'MEASURED' ? pixelDiff : null,
+      diffPercentage: pixelDiff.status === 'MEASURED' ? pixelDiff.diffPercentage : null,
+      fidelityScore: pixelDiff.status === 'MEASURED' ? Math.round(100 - pixelDiff.diffPercentage) : null,
+      passed: pixelDiff.status === 'MEASURED'
+        ? (pixelDiff.diffPercentage <= maximumDiffPercent && criticalGapsCount === 0)
+        : null,
+      verdict: pixelDiff.status !== 'MEASURED'
+        ? 'VISUAL_COMPARISON_UNAVAILABLE'
+        : (pixelDiff.diffPercentage <= maximumDiffPercent && criticalGapsCount === 0 ? 'PASSED_VISUAL_TOLERANCE' : 'REQUIRES_RECONSTRUCTION_FIX'),
       totalGaps,
+      criticalGapsCount,
       gaps,
       modes: {
-        sideBySide: { enabled: true, splitRatio: 0.5 },
-        overlay: { enabled: true, defaultOpacity: 0.6 },
-        diffMask: { enabled: true, color: '#ef4444' }
+        sideBySide: { enabled: Boolean(refExists && curExists), splitRatio: 0.5 },
+        overlay: { enabled: Boolean(refExists && curExists), defaultOpacity: 0.6 },
+        diffMask: { enabled: false, color: '#ef4444' }
       }
     };
 
@@ -257,6 +273,170 @@ class VisualComparator {
 
     return result;
   }
+}
+
+function isExistingFile(filePath) {
+  if (typeof filePath !== 'string' || filePath.length > 4096) return false;
+  try { return fs.statSync(filePath).isFile(); } catch { return false; }
+}
+
+function isValidViewport(viewport) {
+  return viewport && Number.isFinite(viewport.width) && Number.isFinite(viewport.height) &&
+    viewport.width > 0 && viewport.height > 0;
+}
+
+function comparePngFiles(referencePath, currentPath, toleranceInput) {
+  let reference;
+  let current;
+  try {
+    reference = decodePng(referencePath);
+    current = decodePng(currentPath);
+  } catch (error) {
+    return { status: 'NOT_MEASURED', reason: error.message };
+  }
+  const publicReference = { width: reference.width, height: reference.height, channels: reference.channels };
+  const publicCurrent = { width: current.width, height: current.height, channels: current.channels };
+  if (reference.width !== current.width || reference.height !== current.height) {
+    return {
+      status: 'DIMENSION_MISMATCH',
+      reason: 'As capturas têm dimensões diferentes; ajuste o viewport antes da comparação.',
+      reference: publicReference,
+      current: publicCurrent
+    };
+  }
+
+  const tolerance = Number.isFinite(Number(toleranceInput)) ? Math.max(0, Math.min(255, Number(toleranceInput))) : 8;
+  const totalPixels = reference.width * reference.height;
+  let changedPixels = 0;
+  let totalAbsoluteDifference = 0;
+  const channels = 4;
+  for (let pixel = 0; pixel < totalPixels; pixel += 1) {
+    let maxChannelDifference = 0;
+    for (let channel = 0; channel < channels; channel += 1) {
+      const referenceValue = channelValue(reference, pixel, channel);
+      const currentValue = channelValue(current, pixel, channel);
+      const difference = Math.abs(referenceValue - currentValue);
+      maxChannelDifference = Math.max(maxChannelDifference, difference);
+      totalAbsoluteDifference += difference;
+    }
+    if (maxChannelDifference > tolerance) changedPixels += 1;
+  }
+
+  const diffPercentage = Number(((changedPixels / totalPixels) * 100).toFixed(4));
+  const meanAbsoluteDifferencePercent = Number(((totalAbsoluteDifference / (totalPixels * channels * 255)) * 100).toFixed(4));
+  return {
+    status: 'MEASURED',
+    reference: publicReference,
+    current: publicCurrent,
+    tolerance,
+    totalPixels,
+    changedPixels,
+    diffPercentage,
+    meanAbsoluteDifferencePercent
+  };
+}
+
+function decodePng(filePath) {
+  const stat = fs.statSync(filePath);
+  if (!stat.isFile() || stat.size > MAX_IMAGE_BYTES) throw new Error('Imagem inválida ou acima do limite de comparação.');
+  const image = fs.readFileSync(filePath);
+  if (image.length < 33 || !image.subarray(0, 8).equals(PNG_SIGNATURE)) throw new Error('A comparação de pixels aceita PNGs válidos.');
+
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = -1;
+  let interlaceMethod = -1;
+  const idat = [];
+  let offset = 8;
+  let sawHeader = false;
+  let sawEnd = false;
+  while (offset + 12 <= image.length) {
+    const length = image.readUInt32BE(offset);
+    const chunkType = image.toString('ascii', offset + 4, offset + 8);
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    const chunkEnd = dataEnd + 4;
+    if (dataEnd > image.length || chunkEnd > image.length) throw new Error('Arquivo PNG truncado.');
+    const expectedCrc = image.readUInt32BE(dataEnd);
+    const actualCrc = crc32(image.subarray(offset + 4, dataEnd));
+    if (expectedCrc !== actualCrc) throw new Error('Checksum PNG inválido.');
+    const data = image.subarray(dataStart, dataEnd);
+
+    if (chunkType === 'IHDR') {
+      if (sawHeader || length !== 13) throw new Error('Cabeçalho PNG inválido.');
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+      interlaceMethod = data[12];
+      sawHeader = true;
+    } else if (chunkType === 'IDAT') {
+      idat.push(data);
+    } else if (chunkType === 'IEND') {
+      sawEnd = true;
+      break;
+    }
+    offset = chunkEnd;
+  }
+
+  const channels = colorType === 2 ? 3 : (colorType === 6 ? 4 : 0);
+  if (!sawHeader || !sawEnd || !idat.length || !width || !height) throw new Error('PNG incompleto.');
+  if (bitDepth !== 8 || !channels || interlaceMethod !== 0) throw new Error('Formato PNG não suportado para comparação de pixels.');
+  if (width * height > MAX_IMAGE_PIXELS) throw new Error('Imagem excede o limite de pixels para comparação.');
+
+  const rowBytes = width * channels;
+  const expectedLength = (rowBytes + 1) * height;
+  let inflated;
+  try {
+    inflated = zlib.inflateSync(Buffer.concat(idat), { maxOutputLength: expectedLength });
+  } catch {
+    throw new Error('Dados compactados do PNG inválidos.');
+  }
+  if (inflated.length !== expectedLength) throw new Error('Dimensão dos dados PNG inválida.');
+
+  const decoded = Buffer.alloc(rowBytes * height);
+  for (let y = 0; y < height; y += 1) {
+    const inputRow = y * (rowBytes + 1);
+    const outputRow = y * rowBytes;
+    const filter = inflated[inputRow];
+    if (filter > 4) throw new Error('Filtro PNG inválido.');
+    for (let x = 0; x < rowBytes; x += 1) {
+      const left = x >= channels ? decoded[outputRow + x - channels] : 0;
+      const above = y > 0 ? decoded[outputRow - rowBytes + x] : 0;
+      const upperLeft = y > 0 && x >= channels ? decoded[outputRow - rowBytes + x - channels] : 0;
+      const predictor = filter === 0 ? 0
+        : filter === 1 ? left
+          : filter === 2 ? above
+            : filter === 3 ? Math.floor((left + above) / 2)
+              : paethPredictor(left, above, upperLeft);
+      decoded[outputRow + x] = (inflated[inputRow + 1 + x] + predictor) & 255;
+    }
+  }
+  return { width, height, channels, data: decoded };
+}
+
+function channelValue(image, pixel, channel) {
+  if (channel === 3 && image.channels === 3) return 255;
+  return image.data[pixel * image.channels + channel];
+}
+
+function paethPredictor(left, above, upperLeft) {
+  const base = left + above - upperLeft;
+  const leftDistance = Math.abs(base - left);
+  const aboveDistance = Math.abs(base - above);
+  const upperLeftDistance = Math.abs(base - upperLeft);
+  if (leftDistance <= aboveDistance && leftDistance <= upperLeftDistance) return left;
+  return aboveDistance <= upperLeftDistance ? above : upperLeft;
+}
+
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
 }
 
 const globalVisualComparator = new VisualComparator();

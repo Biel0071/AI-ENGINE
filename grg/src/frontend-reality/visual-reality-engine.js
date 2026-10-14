@@ -59,8 +59,8 @@ class VisualRealityEngine extends SystemModule {
           { step: 3, screen: 'IDE Web', action: 'Abrir Código', expected: 'Árvore de arquivos e editor sincronizados' },
           { step: 4, screen: 'Job Inspector', action: 'Executar Missão', expected: 'DAG de microtarefas em execução' }
         ],
-        status: 'VERIFIED_SUCCESS',
-        lastTested: new Date().toISOString()
+        status: 'NOT_RUN',
+        lastTested: null
       }]
     ]);
   }
@@ -97,13 +97,14 @@ class VisualRealityEngine extends SystemModule {
       projectId,
       totalScreens: discovery.totalScreens,
       overallHealthScore: discovery.overallHealthScore,
-      qualityLevel: 'NÍVEL 10 (PRODUÇÃO & REALITY CERTIFIED)',
+      qualityLevel: discovery.totalScreens ? 'STATIC_INVENTORY_ONLY' : 'NOT_DISCOVERED',
+      verificationStatus: 'NOT_VERIFIED',
       screens: discovery.screens,
       navigationGraph: graph,
       audit,
       designSystem: this.designSystem,
       userFlowsCount: this.userFlows.size,
-      zeroDeadButtonsPass: audit.zeroDeadButtonsEnforced,
+      zeroDeadButtonsPass: null,
       scannedAt: new Date().toISOString()
     };
 
@@ -112,7 +113,8 @@ class VisualRealityEngine extends SystemModule {
         projectId,
         totalScreens: discovery.totalScreens,
         healthScore: discovery.overallHealthScore,
-        zeroDeadButtons: audit.zeroDeadButtonsEnforced
+        zeroDeadButtons: null,
+        verificationStatus: 'NOT_VERIFIED'
       });
     }
 
@@ -122,11 +124,11 @@ class VisualRealityEngine extends SystemModule {
   /** Lightweight inventory used by the screen browser; reads only the canonical shell. */
   scanShell(projectId = 'fenix_enterprise') {
     const shellPath = require('path').join(__dirname, '..', '..', 'public', 'index.html');
-    if (projectId !== 'fenix_enterprise' || !require('fs').existsSync(shellPath)) return { projectId, screens: [], totalScreens: 0, status: 'NOT_DISCOVERED' };
+    if (projectId !== 'fenix_enterprise' || !require('fs').existsSync(shellPath)) return { projectId, screens: [], totalScreens: 0, status: 'NOT_DISCOVERED', verificationStatus: 'NOT_VERIFIED' };
     const content = require('fs').readFileSync(shellPath, 'utf8');
     const screens = this.discoveryEngine._extractScreensFromFile(content, 'public/index.html', shellPath);
     this.discoveryEngine.screenRegistry.set(projectId, screens);
-    return { projectId, screens, totalScreens: screens.length, status: screens.length ? 'DISCOVERED' : 'NOT_DISCOVERED' };
+    return { projectId, screens, totalScreens: screens.length, status: screens.length ? 'STATIC_INVENTORY' : 'NOT_DISCOVERED', verificationStatus: 'NOT_VERIFIED' };
   }
 
   /**
@@ -138,18 +140,19 @@ class VisualRealityEngine extends SystemModule {
     return {
       elementLabel,
       screenId,
-      component: 'Dashboard',
-      file: 'src/components/Dashboard.tsx',
-      functionHandler: 'handleCreateProject()',
+      component: null,
+      file: null,
+      functionHandler: null,
       apiEndpoint: null,
       backendService: null,
       databaseEntity: null,
-      correlationStatus: 'UNRESOLVED_REQUIRES_SCAN'
+      correlationStatus: 'NOT_RESOLVED',
+      reason: 'A correlação entre elemento e código ainda não foi observada em execução.'
     };
   }
 
   /**
-   * Run "Click Everything Test" simulation
+   * Report available actions without claiming they were executed.
    */
   runClickEverythingTest(projectId = 'fenix_test_lab') {
     const screens = this.discoveryEngine.getScreens(projectId);
@@ -161,23 +164,22 @@ class VisualRealityEngine extends SystemModule {
           screen: screen.title,
           element: action.label,
           handler: action.handler,
-          status: action.operational ? 'WORKING' : 'NO_HANDLER',
-          latencyMs: Math.floor(Math.random() * 15) + 5,
-          destructiveness: 'SAFE_READ_OR_CREATE'
+          status: 'NOT_EXECUTED',
+          latencyMs: null,
+          evidenceStatus: 'STATIC_INVENTORY_ONLY',
+          reason: 'Nenhum executor de navegador foi conectado a esta análise.'
         });
       }
     }
 
-    const workingCount = results.filter(r => r.status === 'WORKING').length;
-    const totalCount = results.length;
-
     return {
       projectId,
-      totalElementsTested: totalCount,
-      workingCount,
-      brokenCount: totalCount - workingCount,
-      successRate: totalCount ? `${Math.round((workingCount / totalCount) * 100)}%` : null,
-      status: totalCount ? 'COMPLETED' : 'NOT_RUN_NO_ACTIONS',
+      totalElementsTested: 0,
+      totalElementsDiscovered: results.length,
+      workingCount: null,
+      brokenCount: null,
+      successRate: null,
+      status: 'NOT_RUN_NO_RUNTIME',
       elements: results,
       timestamp: new Date().toISOString()
     };
@@ -188,32 +190,16 @@ class VisualRealityEngine extends SystemModule {
    * Detects broken elements/screens, generates surgical patch, and validates through Reality Gate
    */
   async executeAutonomousRepair(projectId, issue = {}) {
-    const repairId = `repair_${Date.now()}`;
-    
-    const repairPlan = {
-      repairId,
+    return {
+      repairId: null,
       projectId,
-      targetFile: issue.file || 'src/components/Dashboard.tsx',
-      issueDetected: issue.description || 'Botão sem handler operacional identificado',
-      patchApplied: {
-        line: 42,
-        change: '+ onClick={handleExecuteAction} + aria-label="Ação operacional"',
-        status: 'PATCH_APPLIED'
-      },
-      validation: {
-        buildPassed: true,
-        testsPassed: true,
-        zeroMocksScore: 99.8,
-        visualQaVerified: true
-      },
-      status: 'REPAIR_SUCCESSFUL'
+      issueDetected: issue.description || null,
+      targetFile: issue.file || null,
+      patchApplied: null,
+      validation: null,
+      status: 'BLOCKED',
+      reason: 'Nenhum executor isolado de reparos está configurado para aplicar e validar alterações.'
     };
-
-    if (this.eventBus) {
-      this.eventBus.emit('frontend_reality.repaired', repairPlan);
-    }
-
-    return repairPlan;
   }
 }
 

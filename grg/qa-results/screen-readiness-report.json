@@ -1,0 +1,332 @@
+{
+  "generatedAt": "2026-09-08T14:57:20.663Z",
+  "policy": "evidence-separated-no-mock",
+  "domains": 5,
+  "screens": 14,
+  "authenticationBlocked": true,
+  "navigationSummary": {
+    "navTotal": 14,
+    "navPass": 14,
+    "controlTotal": 18,
+    "controlClicked": 12,
+    "controlSkipped": 6,
+    "consoleErrors": 0,
+    "failedRequests": 0,
+    "domains": {
+      "command": {
+        "total": 4,
+        "pass": 4
+      },
+      "build": {
+        "total": 3,
+        "pass": 3
+      },
+      "intelligence": {
+        "total": 3,
+        "pass": 3
+      },
+      "infrastructure": {
+        "total": 2,
+        "pass": 2
+      },
+      "validation": {
+        "total": 2,
+        "pass": 2
+      }
+    }
+  },
+  "contractSummary": {
+    "total": 23,
+    "available": 1,
+    "protected": 22,
+    "missing": 0,
+    "other": 0
+  },
+  "rows": [
+    {
+      "screen": "command",
+      "domain": "command",
+      "purpose": "prompt e entrada de missões",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/fenix/missions",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/fenix/jobs",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "city",
+      "domain": "command",
+      "purpose": "runtime visual, workers e métricas",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/v2/city/state",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "agents",
+      "domain": "command",
+      "purpose": "agentes e subagentes",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/agents/panel",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/agents/swarm",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/v2/agents/live-states",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "ide",
+      "domain": "build",
+      "purpose": "chat, código, preview e edição visual",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/dev/fs",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/project-mirror",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/v2/vision/inspect-element",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "operations",
+      "domain": "command",
+      "purpose": "missões, jobs e controle operacional",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/fenix/missions",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/fenix/jobs",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/v2/jarvis/jobs",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "runtime",
+      "domain": "infrastructure",
+      "purpose": "health, serviços e workers",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/health",
+          "backendDeclared": true,
+          "runtime": 200
+        },
+        {
+          "endpoint": "/api/v2/city/state",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "project",
+      "domain": "validation",
+      "purpose": "Project Mirror e arquitetura do projeto",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/project-mirror",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/v2/projects",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "projects",
+      "domain": "build",
+      "purpose": "projetos acoplados e grafo",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/v2/projects",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/project-mirror/projects",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "memory",
+      "domain": "intelligence",
+      "purpose": "memória de engenharia e visual",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/fenix/memory/search",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/v2/memory/development",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "knowledge",
+      "domain": "intelligence",
+      "purpose": "conhecimento e grafo",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/knowledge-federation/publications",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "mcp",
+      "domain": "intelligence",
+      "purpose": "conectores e providers",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/connectors",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/fenix/providers",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "browser",
+      "domain": "validation",
+      "purpose": "QA visual e auditoria de interação",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/v2/frontend-reality/screens",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/v2/frontend-reality/audit",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "observability",
+      "domain": "infrastructure",
+      "purpose": "métricas, séries e evidências",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/observability/metrics",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/observability/series",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    },
+    {
+      "screen": "terminal",
+      "domain": "build",
+      "purpose": "filesystem, terminal isolado e preview",
+      "staticView": true,
+      "backendContract": true,
+      "navigation": "BLOCKED_AUTH",
+      "endpointEvidence": [
+        {
+          "endpoint": "/api/dev/fs",
+          "backendDeclared": true,
+          "runtime": 401
+        },
+        {
+          "endpoint": "/api/dev/terminal",
+          "backendDeclared": true,
+          "runtime": 401
+        }
+      ]
+    }
+  ]
+}

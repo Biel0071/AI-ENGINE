@@ -164,3 +164,18 @@ test('provider ausente ou desconhecido derruba o boot em vez de escolher por con
   assert.notEqual(invalido.status, 0);
   assert.match(invalido.erro, /unsupported FENIX_AI_DEFAULT_PROVIDER/);
 });
+
+test('database, cache, artifact e metric credentials come only from mounted secret files', { skip: TEM_SH ? false : 'sh ausente no PATH' }, () => {
+  const base = { FENIX_AI_DEFAULT_PROVIDER: 'ollama', FENIX_OLLAMA_URL: 'http://ollama:11434' };
+  for (const [variavel, esperado] of [
+    ['DATABASE_URL', 'postgresql://fenix:pg-de-teste@postgres:5432/fenix?schema=fenix'],
+    ['REDIS_URL', 'redis://:redis-de-teste@redis:6379'],
+    ['FENIX_S3_ACCESS_KEY_ID', 'minio-id'],
+    ['FENIX_S3_SECRET_ACCESS_KEY', 'minio-secret'],
+    ['FENIX_METRICS_TOKEN', 'metrics-de-teste'],
+  ]) {
+    const r = rodar({ env: base, imprimir: variavel });
+    assert.equal(r.status, 0, `${variavel}: ${r.erro}`);
+    assert.equal(r.saida, esperado, `${variavel} must come from its mounted test secret`);
+  }
+});

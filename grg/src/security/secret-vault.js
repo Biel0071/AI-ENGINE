@@ -14,7 +14,11 @@ class SecretVault {
   constructor({ vaultPath = null } = {}) {
     this.vaultPath = vaultPath || path.join(__dirname, '..', '..', 'memory', '.secrets-vault.json');
     this.inMemorySecrets = new Map();
-    this.encryptionKey = crypto.scryptSync(process.env.FENIX_VAULT_KEY || 'fenix-master-secret-key-salt-2026', 'salt', 32);
+    try {
+      this.encryptionKey = crypto.scryptSync(process.env.FENIX_VAULT_KEY || 'fenix-master-secret-key-salt-2026', 'salt', 32, { maxmem: 64 * 1024 * 1024 });
+    } catch {
+      this.encryptionKey = crypto.createHash('sha256').update(process.env.FENIX_VAULT_KEY || 'fenix-master-secret-key-salt-2026').digest();
+    }
     this._loadVault();
   }
 

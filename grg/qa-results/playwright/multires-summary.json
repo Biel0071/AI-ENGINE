@@ -1,0 +1,62 @@
+[
+  {
+    "resolution": "1920x1080",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "districtCount": 20,
+    "departmentWorkspaceVerified": true,
+    "agentDeskVerified": true,
+    "missionWorkspaceVerified": true,
+    "jobInspectorVerified": true,
+    "screenshotPath": "qa-results/playwright/fenix-v2-1920x1080.png",
+    "consoleErrors": 0,
+    "consoleErrorDetails": []
+  },
+  {
+    "resolution": "1440x900",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "districtCount": 20,
+    "departmentWorkspaceVerified": "Verified on 1920x1080",
+    "agentDeskVerified": "Verified on 1920x1080",
+    "missionWorkspaceVerified": "Verified on 1920x1080",
+    "jobInspectorVerified": "Verified on 1920x1080",
+    "screenshotPath": "qa-results/playwright/fenix-v2-1440x900.png",
+    "consoleErrors": 0,
+    "consoleErrorDetails": []
+  },
+  {
+    "resolution": "1366x768",
+    "viewport": {
+      "width": 1366,
+      "height": 768
+    },
+    "districtCount": 20,
+    "departmentWorkspaceVerified": "Verified on 1920x1080",
+    "agentDeskVerified": "Verified on 1920x1080",
+    "missionWorkspaceVerified": "Verified on 1920x1080",
+    "jobInspectorVerified": "Verified on 1920x1080",
+    "screenshotPath": "qa-results/playwright/fenix-v2-1366x768.png",
+    "consoleErrors": 0,
+    "consoleErrorDetails": []
+  },
+  {
+    "resolution": "1280x720",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "districtCount": 20,
+    "departmentWorkspaceVerified": "Verified on 1920x1080",
+    "agentDeskVerified": "Verified on 1920x1080",
+    "missionWorkspaceVerified": "Verified on 1920x1080",
+    "jobInspectorVerified": "Verified on 1920x1080",
+    "screenshotPath": "qa-results/playwright/fenix-v2-1280x720.png",
+    "consoleErrors": 0,
+    "consoleErrorDetails": []
+  }
+]

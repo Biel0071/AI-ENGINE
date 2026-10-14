@@ -1,0 +1,1311 @@
+{
+  "timestamp": "2026-10-01T19:47:12.124Z",
+  "baseURL": "http://127.0.0.1:4400",
+  "cssAudit": {
+    "links": [
+      "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap",
+      "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css",
+      "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/thin/style.css",
+      "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/light/style.css",
+      "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css",
+      "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css",
+      "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css",
+      "https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css",
+      "/unified.css?v=fenix4",
+      "/fenix-ide-v2.css?v=fenix3",
+      "/command-center.css?v=fenix3",
+      "/fenix-premium-layout.css?v=fenix5",
+      "/city-overrides.css?v=fenix3",
+      "/living-panels.css?v=fenix3",
+      "/fenix-design-system.css?v=2",
+      "/fenix-flow-graph.css?v=2",
+      "/fenix-v11-evolution.css?v=8",
+      "/fenix-v11-phase6.css?v=11",
+      "/fenix-mascot-sidebar.css?v=1",
+      "/fenix-v10.css?v=v10.0",
+      "fenix-v15.css",
+      "/fenix-window-overrides.css?v=evolution-20260917",
+      "/city-return.css?v=1",
+      "/runtime-health-badge.css?v=1",
+      "/project-ide-live.css?v=2",
+      "/project-hub-live.css?v=2",
+      "/marketplace-live.css?v=1",
+      "/operations-live.css?v=4",
+      "/city-brief.css?v=2",
+      "/premium-world.css?v=2",
+      "/fenix-world-3d.css?v=3",
+      "/memory-live.css?v=2",
+      "/inspector-measured.css?v=1"
+    ],
+    "inlineStylesheets": [
+      {
+        "index": 0,
+        "length": 112,
+        "importantCount": 0
+      },
+      {
+        "index": 1,
+        "length": 43,
+        "importantCount": 0
+      },
+      {
+        "index": 2,
+        "length": 3284,
+        "importantCount": 0
+      },
+      {
+        "index": 3,
+        "length": 6394,
+        "importantCount": 0
+      },
+      {
+        "index": 4,
+        "length": 315,
+        "importantCount": 0
+      },
+      {
+        "index": 5,
+        "length": 42702,
+        "importantCount": 0
+      },
+      {
+        "index": 6,
+        "length": 167313,
+        "importantCount": 0
+      },
+      {
+        "index": 7,
+        "length": 620,
+        "importantCount": 0
+      },
+      {
+        "index": 8,
+        "length": 16429,
+        "importantCount": 20
+      },
+      {
+        "index": 9,
+        "length": 8376,
+        "importantCount": 0
+      },
+      {
+        "index": 10,
+        "length": 2725,
+        "importantCount": 0
+      },
+      {
+        "index": 11,
+        "length": 469,
+        "importantCount": 0
+      },
+      {
+        "index": 12,
+        "length": 3282,
+        "importantCount": 0
+      },
+      {
+        "index": 13,
+        "length": 241,
+        "importantCount": 0
+      },
+      {
+        "index": 14,
+        "length": 1128,
+        "importantCount": 1
+      },
+      {
+        "index": 15,
+        "length": 116,
+        "importantCount": 0
+      },
+      {
+        "index": 16,
+        "length": 1132,
+        "importantCount": 0
+      }
+    ]
+  },
+  "views": {
+    "command": {
+      "found": true,
+      "id": "view-command",
+      "className": "view active fenix-orchestrator-layout",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(4, 6, 10)",
+      "elementsCount": 295,
+      "inlineStyleCount": 70,
+      "buttonCount": 19,
+      "cardCount": 5,
+      "tableCount": 0,
+      "badgeCount": 2,
+      "headingCount": 3,
+      "inputCount": 6,
+      "sampleStyles": [
+        {
+          "tag": "div",
+          "class": "",
+          "style": "position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "color:var(--fenix-cyan); font-size:11px; padding:4px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "color:var(--fenix-green); font-size:11px; padding:4px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "color:var(--fenix-purple); font-size:11px; padding:4px;"
+        },
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "font-size:11px;color:var(--fenix-text-dim);padding:8px;"
+        },
+        {
+          "tag": "span",
+          "class": "",
+          "style": "color:#10b981"
+        },
+        {
+          "tag": "b",
+          "class": "",
+          "style": "color:#10b981"
+        },
+        {
+          "tag": "span",
+          "class": "",
+          "style": "color:#10b981"
+        },
+        {
+          "tag": "b",
+          "class": "",
+          "style": "color:#10b981"
+        }
+      ],
+      "containsHyphenPlaceholder": true,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Central de Operações Fênix",
+        "H1: Boa tarde, GRG.",
+        "H2: Engenharia Reversa: test-app.apk (ANDROI"
+      ]
+    },
+    "city": {
+      "found": true,
+      "id": "view-city",
+      "className": "view fenix-city-view-container active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 529,
+      "inlineStyleCount": 82,
+      "buttonCount": 142,
+      "cardCount": 1,
+      "tableCount": 0,
+      "badgeCount": 0,
+      "headingCount": 5,
+      "inputCount": 1,
+      "sampleStyles": [
+        {
+          "tag": "div",
+          "class": "fenix-module-header",
+          "style": "z-index:20; background:#0B1018; border-bottom:1px solid rgba(255,255,255,0.06); padding:10px 16px;"
+        },
+        {
+          "tag": "div",
+          "class": "fenix-module-title-area",
+          "style": "display:flex; align-items:center; gap:14px; flex-wrap:wrap;"
+        },
+        {
+          "tag": "div",
+          "class": "fenix-module-title",
+          "style": "letter-spacing:1px; color:#F8FAFC; font-weight:800; font-size:13px;"
+        },
+        {
+          "tag": "span",
+          "class": "",
+          "style": "color:#00D9FF;"
+        },
+        {
+          "tag": "div",
+          "class": "fenix-city-district-bar",
+          "style": "display:flex; gap:6px; flex-wrap:wrap; align-items:center;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:flex; align-items:center; gap:12px;"
+        },
+        {
+          "tag": "button",
+          "class": "",
+          "style": "display:flex; align-items:center; gap:6px; background:linear-gradient(135deg, rgba(37,211,102,0.15), rgba(0,217,255,0.15)); border:1px solid rgba(37,211,102,0.35); color:#25D366; padding:4px 12px; font-size:11px; font-weight:700; border-radius:8px; cursor:pointer; transition:all 0.18s; box-shadow:0 4px 12px rgba(37,211,102,0.12);"
+        },
+        {
+          "tag": "div",
+          "class": "fenix-city-weather-hud",
+          "style": "display:flex; align-items:center; gap:6px; background:#080B12; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:4px 10px; font-size:11.5px; color:#94A3B8;"
+        },
+        {
+          "tag": "i",
+          "class": "ph-bold ph-moon",
+          "style": "color:#FFB020;"
+        },
+        {
+          "tag": "button",
+          "class": "fenix-hud-btn",
+          "style": "background:transparent; border:none; color:#00D9FF; cursor:pointer; padding:2px 4px; font-size:12px; margin-left:4px;"
+        }
+      ],
+      "containsHyphenPlaceholder": false,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H2: Mapa visual indisponível",
+        "H2: Pulso da Cidade",
+        "H3: Projetos",
+        "H3: Atividade recente",
+        "H1: Um sistema vivo."
+      ]
+    },
+    "agents": {
+      "found": true,
+      "id": "view-agents",
+      "className": "view fenix-agents-view-container active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 757,
+      "inlineStyleCount": 28,
+      "buttonCount": 9,
+      "cardCount": 81,
+      "tableCount": 2,
+      "badgeCount": 39,
+      "headingCount": 43,
+      "inputCount": 6,
+      "sampleStyles": [
+        {
+          "tag": "div",
+          "class": "fenix-module-header",
+          "style": "background:transparent; padding:0; border:none; margin-bottom:14px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:flex; gap:10px; align-items:center;"
+        },
+        {
+          "tag": "button",
+          "class": "fenix-hero-btn",
+          "style": "padding:6px 14px; font-size:12px;"
+        },
+        {
+          "tag": "div",
+          "class": "v10-card fenix-agent-capacity-strip",
+          "style": "margin-bottom: 16px; background: rgba(13, 22, 38, 0.85); border: 1px solid rgba(0, 229, 160, 0.22); border-radius: 10px; padding: 12px 18px; backdrop-filter: blur(12px);"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"
+        },
+        {
+          "tag": "h3",
+          "class": "v10-card-title",
+          "style": "font-size:13px; font-weight:700; color:#FFFFFF; display:flex; align-items:center; gap:8px; margin:0;"
+        },
+        {
+          "tag": "i",
+          "class": "ph-fill ph-users-three",
+          "style": "color:var(--fenix-cyan, #22D3EE);"
+        },
+        {
+          "tag": "span",
+          "class": "v10-live-pill",
+          "style": "font-size:11px; padding:3px 10px; background:rgba(0,229,160,0.12); color:#00E5A0; border:1px solid rgba(0,229,160,0.3); border-radius:12px; font-weight:700;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:8px 12px; text-align:center;"
+        }
+      ],
+      "containsHyphenPlaceholder": false,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H2: Frota operacional",
+        "H3: Agentes e tarefas reais",
+        "H3: Agentes registrados",
+        "H3: CEO Agent",
+        "H3: Orchestrator Agent",
+        "H3: Developer Agent"
+      ]
+    },
+    "ide": {
+      "found": true,
+      "id": "view-ide",
+      "className": "view fenix-ide-layout-evolution active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 60,
+      "inlineStyleCount": 3,
+      "buttonCount": 11,
+      "cardCount": 0,
+      "tableCount": 0,
+      "badgeCount": 0,
+      "headingCount": 1,
+      "inputCount": 3,
+      "sampleStyles": [
+        {
+          "tag": "input",
+          "class": "fenix-live-ide-tree-search",
+          "style": ""
+        },
+        {
+          "tag": "textarea",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "div",
+          "class": "fenix-live-ide-preview-loading",
+          "style": "display:none;"
+        }
+      ],
+      "containsHyphenPlaceholder": true,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: IDE de Projetos"
+      ]
+    },
+    "operations": {
+      "found": true,
+      "id": "view-operations",
+      "className": "view fenix-ops-view-container active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 558,
+      "inlineStyleCount": 41,
+      "buttonCount": 47,
+      "cardCount": 120,
+      "tableCount": 0,
+      "badgeCount": 40,
+      "headingCount": 1,
+      "inputCount": 2,
+      "sampleStyles": [
+        {
+          "tag": "input",
+          "class": "flo-search",
+          "style": ""
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        },
+        {
+          "tag": "div",
+          "class": "flo-token-fill",
+          "style": "width: 0%;"
+        }
+      ],
+      "containsHyphenPlaceholder": true,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Operações & Auto-Evolução"
+      ]
+    },
+    "runtime": {
+      "found": true,
+      "id": "view-runtime",
+      "className": "view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 342,
+      "inlineStyleCount": 184,
+      "buttonCount": 3,
+      "cardCount": 24,
+      "tableCount": 3,
+      "badgeCount": 34,
+      "headingCount": 28,
+      "inputCount": 0,
+      "sampleStyles": [
+        {
+          "tag": "div",
+          "class": "",
+          "style": "grid-column:1/-1; margin-top:20px;"
+        },
+        {
+          "tag": "h4",
+          "class": "",
+          "style": "color:#f8fafc; font-size:14px; margin:0 0 12px; display:flex; align-items:center; gap:8px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:12px;"
+        },
+        {
+          "tag": "div",
+          "class": "fenix-srv-card",
+          "style": "background:#0f172a; border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px 14px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"
+        },
+        {
+          "tag": "h5",
+          "class": "",
+          "style": "margin:0; color:#f8fafc; font-size:12px;"
+        },
+        {
+          "tag": "span",
+          "class": "evolution-badge",
+          "style": "background:#10b98115; color:#10b981; font-size:9px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "font-size:11px; color:#94a3b8;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "font-size:11px; color:#94a3b8;"
+        },
+        {
+          "tag": "strong",
+          "class": "",
+          "style": "color:#10b981;"
+        }
+      ],
+      "containsHyphenPlaceholder": true,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Runtime",
+        "H2: Health",
+        "H2: Servicos",
+        "H2: Workers",
+        "H4: 🖥️ Matriz Operacional de Serviços & Dep",
+        "H5: HOST"
+      ]
+    },
+    "projects": {
+      "found": true,
+      "id": "view-projects",
+      "className": "view fenix-projects-view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 148,
+      "inlineStyleCount": 17,
+      "buttonCount": 24,
+      "cardCount": 7,
+      "tableCount": 0,
+      "badgeCount": 3,
+      "headingCount": 4,
+      "inputCount": 4,
+      "sampleStyles": [
+        {
+          "tag": "div",
+          "class": "flp-header-actions",
+          "style": "display:flex; align-items:center; gap:8px; flex-wrap:wrap;"
+        },
+        {
+          "tag": "button",
+          "class": "flp-button flp-button-soft",
+          "style": "display:inline-flex; align-items:center; gap:6px;"
+        },
+        {
+          "tag": "i",
+          "class": "ph-bold ph-github-logo",
+          "style": "font-size:16px; color:#38bdf8;"
+        },
+        {
+          "tag": "span",
+          "class": "",
+          "style": "color: rgb(56, 189, 248);"
+        },
+        {
+          "tag": "button",
+          "class": "flp-button flp-button-soft",
+          "style": "display:inline-flex; align-items:center; gap:6px;"
+        },
+        {
+          "tag": "i",
+          "class": "ph-bold ph-plus-circle",
+          "style": "color:#00E5A0;"
+        },
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "div",
+          "class": "flp-hub-mode-tabs",
+          "style": "display:flex; border-bottom:1px solid rgba(133,179,215,.14); margin-bottom:14px; gap:4px;"
+        },
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        }
+      ],
+      "containsHyphenPlaceholder": true,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Projetos em evolução",
+        "H2: HttpApp",
+        "H3: Execução do Projeto",
+        "H3: Artefatos Registrados"
+      ]
+    },
+    "memory": {
+      "found": true,
+      "id": "view-memory",
+      "className": "view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 477,
+      "inlineStyleCount": 2,
+      "buttonCount": 103,
+      "cardCount": 0,
+      "tableCount": 0,
+      "badgeCount": 0,
+      "headingCount": 4,
+      "inputCount": 3,
+      "sampleStyles": [
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        }
+      ],
+      "containsHyphenPlaceholder": false,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Memória",
+        "H2: FÊNIX OS",
+        "H3: Relações (1)",
+        "H2: Buscar registros"
+      ]
+    },
+    "knowledge": {
+      "found": true,
+      "id": "view-knowledge",
+      "className": "view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 195,
+      "inlineStyleCount": 78,
+      "buttonCount": 32,
+      "cardCount": 12,
+      "tableCount": 2,
+      "badgeCount": 8,
+      "headingCount": 14,
+      "inputCount": 2,
+      "sampleStyles": [
+        {
+          "tag": "div",
+          "class": "workspace-actions",
+          "style": "display:flex; gap:8px; align-items:center;"
+        },
+        {
+          "tag": "span",
+          "class": "",
+          "style": "padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);"
+        },
+        {
+          "tag": "span",
+          "class": "",
+          "style": "padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3);"
+        },
+        {
+          "tag": "button",
+          "class": "",
+          "style": "background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;"
+        },
+        {
+          "tag": "button",
+          "class": "",
+          "style": "background:#10b981; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;"
+        },
+        {
+          "tag": "button",
+          "class": "",
+          "style": "background:#2563eb; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "margin-top:14px;"
+        },
+        {
+          "tag": "span",
+          "class": "",
+          "style": "color:#10b981;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap:10px; margin-bottom:20px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px; text-align:center; cursor:pointer;"
+        }
+      ],
+      "containsHyphenPlaceholder": true,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Observatório & Sistema de Autoconhecimen",
+        "H2: Project Twins (4 Ecosystem Projects)",
+        "H2: Screen Twins (16 Verified Views & Maturi",
+        "H2: Manifesto KOS & Padrões Arquiteturais",
+        "H2: Knowledge Graph & Relações de Sistema",
+        "H4: 🔗 Cadeia de Relacionamentos Cognitivos"
+      ]
+    },
+    "mcp": {
+      "found": true,
+      "id": "view-mcp",
+      "className": "view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 127,
+      "inlineStyleCount": 24,
+      "buttonCount": 2,
+      "cardCount": 3,
+      "tableCount": 3,
+      "badgeCount": 18,
+      "headingCount": 4,
+      "inputCount": 0,
+      "sampleStyles": [
+        {
+          "tag": "small",
+          "class": "",
+          "style": "color:#38bdf8; font-weight:800; letter-spacing:0.1em; text-transform:uppercase;"
+        },
+        {
+          "tag": "h1",
+          "class": "",
+          "style": "font-size:22px; font-weight:800; color:#f8fafc; margin:4px 0 0;"
+        },
+        {
+          "tag": "button",
+          "class": "",
+          "style": "background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;"
+        },
+        {
+          "tag": "article",
+          "class": "workspace-card",
+          "style": "background:#0f172a; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px;"
+        },
+        {
+          "tag": "h2",
+          "class": "",
+          "style": "font-size:14px; color:#f8fafc; margin:0 0 12px; display:flex; align-items:center; gap:8px;"
+        },
+        {
+          "tag": "table",
+          "class": "",
+          "style": "width:100%; border-collapse:collapse; font-size:12px;"
+        },
+        {
+          "tag": "tr",
+          "class": "",
+          "style": "border-bottom:1px solid rgba(255,255,255,0.1); color:#64748b; font-size:10px; text-transform:uppercase; text-align:left;"
+        },
+        {
+          "tag": "th",
+          "class": "",
+          "style": "padding:8px 10px;"
+        },
+        {
+          "tag": "th",
+          "class": "",
+          "style": "padding:8px 10px;"
+        },
+        {
+          "tag": "th",
+          "class": "",
+          "style": "padding:8px 10px;"
+        }
+      ],
+      "containsHyphenPlaceholder": false,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Provedores e MCP",
+        "H2: 🔌 Conectores de Infraestrutura",
+        "H2: 🧠 Roteamento de IA & Modelos",
+        "H2: ⚡ Ferramentas Governadas (Tool Registry)"
+      ]
+    },
+    "browser": {
+      "found": true,
+      "id": "view-browser",
+      "className": "view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 128,
+      "inlineStyleCount": 103,
+      "buttonCount": 17,
+      "cardCount": 15,
+      "tableCount": 0,
+      "badgeCount": 1,
+      "headingCount": 1,
+      "inputCount": 0,
+      "sampleStyles": [
+        {
+          "tag": "small",
+          "class": "",
+          "style": "color:#10b981; font-weight:800; letter-spacing:0.1em; text-transform:uppercase;"
+        },
+        {
+          "tag": "h1",
+          "class": "",
+          "style": "font-size:22px; font-weight:800; color:#f8fafc; margin:4px 0 0;"
+        },
+        {
+          "tag": "div",
+          "class": "qa-header",
+          "style": "display:flex; gap:10px; margin:0;"
+        },
+        {
+          "tag": "button",
+          "class": "fp-btn fp-btn-primary",
+          "style": "background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;"
+        },
+        {
+          "tag": "button",
+          "class": "fp-btn",
+          "style": "background:rgba(255,255,255,0.06); color:#cbd5e1; border:1px solid rgba(255,255,255,0.12); padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;"
+        },
+        {
+          "tag": "section",
+          "class": "workspace-card",
+          "style": "background:transparent; border:none; padding:0;"
+        },
+        {
+          "tag": "div",
+          "class": "qa-summary",
+          "style": "margin-bottom:16px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:flex; gap:16px; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px 20px; flex-wrap:wrap;"
+        },
+        {
+          "tag": "span",
+          "class": "",
+          "style": "color:#94a3b8; font-size:11px; font-weight:700;"
+        },
+        {
+          "tag": "strong",
+          "class": "",
+          "style": "color:#f8fafc; font-size:18px; margin-left:6px;"
+        }
+      ],
+      "containsHyphenPlaceholder": false,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Browser QA & Visual Certification"
+      ]
+    },
+    "observability": {
+      "found": true,
+      "id": "view-observability",
+      "className": "view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 18,
+      "inlineStyleCount": 0,
+      "buttonCount": 2,
+      "cardCount": 2,
+      "tableCount": 0,
+      "badgeCount": 0,
+      "headingCount": 3,
+      "inputCount": 0,
+      "sampleStyles": [],
+      "containsHyphenPlaceholder": false,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Observabilidade",
+        "H2: Metricas",
+        "H2: Series"
+      ]
+    },
+    "terminal": {
+      "found": true,
+      "id": "view-terminal",
+      "className": "view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 119,
+      "inlineStyleCount": 59,
+      "buttonCount": 15,
+      "cardCount": 7,
+      "tableCount": 0,
+      "badgeCount": 0,
+      "headingCount": 9,
+      "inputCount": 11,
+      "sampleStyles": [
+        {
+          "tag": "small",
+          "class": "",
+          "style": "color:#94a3b8; font-weight:700;"
+        },
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "input",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "textarea",
+          "class": "",
+          "style": ""
+        },
+        {
+          "tag": "article",
+          "class": "workspace-card full-span",
+          "style": "grid-column: 1 / -1;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"
+        },
+        {
+          "tag": "h2",
+          "class": "",
+          "style": "display:flex; align-items:center; gap:8px; margin:0;"
+        },
+        {
+          "tag": "i",
+          "class": "ph ph-terminal-window",
+          "style": "color:#38bdf8;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:flex; gap:6px;"
+        }
+      ],
+      "containsHyphenPlaceholder": true,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Projeto, arquivo, terminal e preview",
+        "H2: Clonar projeto",
+        "H2: Arquivo aberto",
+        "H2: Terminal Operacional Fênix OS (XTerm.js)",
+        "H2: Preview vivo",
+        "H2: Edicao assistida por IA"
+      ]
+    },
+    "flowgraph": {
+      "found": true,
+      "id": "view-flowgraph",
+      "className": "view fenix-flowgraph-view-layout active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 107,
+      "inlineStyleCount": 7,
+      "buttonCount": 25,
+      "cardCount": 0,
+      "tableCount": 0,
+      "badgeCount": 1,
+      "headingCount": 0,
+      "inputCount": 3,
+      "sampleStyles": [
+        {
+          "tag": "div",
+          "class": "fenix-module-header",
+          "style": "background:transparent; padding:0; border:none; margin-bottom:10px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:flex; align-items:center; gap:10px;"
+        },
+        {
+          "tag": "span",
+          "class": "v10-live-pill",
+          "style": "background:rgba(0,229,160,0.12); color:#00E5A0; border:1px solid rgba(0,229,160,0.3); font-size:11px; font-weight:700; padding:3px 10px; border-radius:12px;"
+        },
+        {
+          "tag": "div",
+          "class": "",
+          "style": "display:block; width:100%; height:calc(100vh - 140px); min-height:500px; position:relative; background:#050810; border-radius:8px; border:1px solid rgba(255,255,255,0.06);"
+        },
+        {
+          "tag": "input",
+          "class": "ffg-search-input",
+          "style": ""
+        },
+        {
+          "tag": "button",
+          "class": "ffg-btn",
+          "style": "padding:4px 8px;"
+        },
+        {
+          "tag": "input",
+          "class": "fenix-fg-search",
+          "style": ""
+        }
+      ],
+      "containsHyphenPlaceholder": false,
+      "containsNoData": false,
+      "headingsSummary": []
+    },
+    "marketplace": {
+      "found": true,
+      "id": "view-marketplace",
+      "className": "view active",
+      "visible": true,
+      "width": 1316,
+      "height": 992,
+      "computedBackground": "rgb(5, 8, 16)",
+      "elementsCount": 12,
+      "inlineStyleCount": 0,
+      "buttonCount": 2,
+      "cardCount": 0,
+      "tableCount": 0,
+      "badgeCount": 0,
+      "headingCount": 1,
+      "inputCount": 0,
+      "sampleStyles": [],
+      "containsHyphenPlaceholder": false,
+      "containsNoData": false,
+      "headingsSummary": [
+        "H1: Marketplace"
+      ]
+    }
+  },
+  "overallStats": {
+    "totalInlineStyleAttributes": 698,
+    "totalImportantRules": 0,
+    "consoleErrors": 89,
+    "consoleWarnings": 6
+  },
+  "consoleErrorsSample": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/summary",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/twins/project",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/twins/screen",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/visual-dna",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/unknowns",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/gaps",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/evolution",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/agents/panel",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/reality/score",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/public/projects",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/fenix/intelligence/missions",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/mirror/projects",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/summary",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/twins/project",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/twins/screen",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/visual-dna",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/unknowns",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/gaps",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/evolution",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:4400/api/v2/observatory/data-lineage",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+  // 13. File Tree & Real IDE File Read/Write (Phases 6, 7, 8)
+  const _treeCache = new Map();
+  function _buildTree(dirPath, maxDepth, depth) {
+    maxDepth = maxDepth === undefined ? 1 : maxDepth;
+    depth = depth === undefined ? 0 : depth;
+    const cacheKey = `${dirPath}:${maxDepth}`;
+    if (depth === 0 && _treeCache.has(cacheKey)) {
+      const cached = _treeCache.get(cacheKey);
+      if (Date.now() - cached.time < 300000) {
+        return cached.tree;
+      }
+    }
+    if (depth > maxDepth) return [];
+    const IGNORE = new Set(['.git', 'node_modules', '.next', '.nuxt', 'dist', 'build',
+      '__pycache__', '.cache', 'coverage', '.data', 'vendor', '.yarn', '.pm2', 'qa', 'archive', 'backups', 'temp_backup', 'temp_backup2', '.gemini']);
+    try {
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      const tree = entries
+        .filter(e => !IGNORE.has(e.name) && !e.name.startsWith('.') && !e.isSymbolicLink())
+        .sort((a, b) => {
+          if (a.isDirectory() && !b.isDirectory()) return -1;
+          if (!a.isDirectory() && b.isDirectory()) return 1;
+          return a.name.localeCompare(b.name);
+        })
+        .slice(0, 30)
+        .map(entry => {
+          const fullPath = path.join(dirPath, entry.name);
+          if (entry.isDirectory()) {
+            return {
+              type: 'directory', name: entry.name, path: fullPath,
+              children: depth < maxDepth ? _buildTree(fullPath, maxDepth, depth + 1) : []
+            };
+          } else {
+            let size = 0;
+            try { size = fs.statSync(fullPath).size; } catch(e2) {}
+            return { type: 'file', name: entry.name, path: fullPath, size };
+          }
+        });
+      if (depth === 0) {
+        _treeCache.set(cacheKey, { time: Date.now(), tree });
+      }
+      return tree;
+    } catch(e) { return []; }
+  }
+
+  function _detectLang(filePath) {
+    const ext = (filePath.split('.').pop() || '').toLowerCase();
+    const langMap = {
+      js: 'javascript', ts: 'typescript', jsx: 'jsx', tsx: 'tsx',
+      py: 'python', html: 'html', css: 'css', json: 'json', md: 'markdown',
+      sh: 'bash', sql: 'sql', yaml: 'yaml', yml: 'yaml', env: 'plaintext',
+      txt: 'plaintext', rs: 'rust', go: 'go', php: 'php'
+    };
+    return langMap[ext] || 'plaintext';
+  }
+
+  const _matchTree = pathname.match(/^\/api\/v2\/projects\/([^/]+)\/tree$/);
+  if (method === 'GET' && _matchTree) {
+    await app.controlPlane.authorize(identity.tenantId, identity.actorId, 'project:read');
+    const pid = decodeURIComponent(_matchTree[1]);
+    const proj = getProjectById(pid);
+    if (!proj) return sendJson(res, 404, { error: 'Project not found', pid });
+    const vpsPath = proj.vpsPath || proj.productionPath || null;
+    if (!vpsPath || !fs.existsSync(vpsPath)) {
+      return sendJson(res, 200, { ok: true, tree: [], projectId: pid, note: 'Path not accessible: ' + vpsPath });
+    }
+    try {
+      const maxD = Math.min(3, Math.max(0, Number.parseInt(url.searchParams.get('depth') || '1', 10) || 1));
+      const tree = _buildTree(vpsPath, maxD, 0);
+      return sendJson(res, 200, { ok: true, projectId: pid, rootPath: vpsPath, tree });
+    } catch(e) {
+      return sendJson(res, 500, { error: e.message });
+    }
+  }
+
+  const _matchFileRead = pathname.match(/^\/api\/v2\/projects\/([^/]+)\/file$/);
+  if (method === 'GET' && _matchFileRead) {
+    await app.controlPlane.authorize(identity.tenantId, identity.actorId, 'project:read');
+    const pid = decodeURIComponent(_matchFileRead[1]);
+    const proj = getProjectById(pid);
+    if (!proj) return sendJson(res, 404, { error: 'Project not found' });
+    const vpsPath = proj.vpsPath || proj.productionPath || null;
+    const filePath = url.searchParams.get('path') || '';
+    if (!filePath) return sendJson(res, 400, { error: 'path query param required' });
+    const resolved = resolveLegacyProjectFile(vpsPath, filePath);
+    if (!resolved) return sendJson(res, 403, { error: 'File is outside the project or unavailable' });
+    try {
+      const stat = fs.statSync(resolved);
+      if (stat.size > 2 * 1024 * 1024) return sendJson(res, 413, { error: 'File too large (>2MB)' });
+      const fileContent = fs.readFileSync(resolved, 'utf8');
+      return sendJson(res, 200, { ok: true, path: resolved, content: fileContent, size: stat.size, language: _detectLang(filePath) });
+    } catch(e) {
+      return sendJson(res, 404, { error: e.message });
+    }
+  }
+
+  const _matchFileSave = pathname.match(/^\/api\/v2\/projects\/([^/]+)\/file$/);
+  if (method === 'POST' && _matchFileSave) {
+    await app.controlPlane.authorize(identity.tenantId, identity.actorId, 'project:write');
+    const pid = decodeURIComponent(_matchFileSave[1]);
+    const proj = getProjectById(pid);
+    if (!proj) return sendJson(res, 404, { error: 'Project not found' });
+    const vpsPath = proj.vpsPath || proj.productionPath || null;
+    const body = await readJson(req);
+    const { path: filePath, content: fileContent } = body || {};
+    if (!filePath) return sendJson(res, 400, { error: 'path required in body' });
+    const resolved = resolveLegacyProjectFile(vpsPath, filePath);
+    if (!resolved) return sendJson(res, 403, { error: 'File is outside the project or unavailable' });
+    if (typeof fileContent !== 'string' || Buffer.byteLength(fileContent) > 1024 * 1024) return sendJson(res, 413, { error: 'Content must be text up to 1 MB' });
+    try {
+      fs.copyFileSync(resolved, resolved + '.fenix-bak');
+      fs.writeFileSync(resolved, fileContent, 'utf8');
+      const readBack = fs.readFileSync(resolved, 'utf8');
+      if (readBack !== fileContent) {
+        if (fs.existsSync(resolved + '.fenix-bak')) fs.copyFileSync(resolved + '.fenix-bak', resolved);
+        return sendJson(res, 500, { error: 'Write integrity verification mismatch' });
+      }
+      return sendJson(res, 200, { ok: true, path: resolved, savedAt: new Date().toISOString(), verified: true });
+    } catch(e) {
+      return sendJson(res, 500, { error: e.message });
+    }
+  }
+
+
+  const _matchFileRevert = pathname.match(/^\/api\/v2\/projects\/([^/]+)\/file\/revert$/);
+  if (method === 'POST' && _matchFileRevert) {
+    await app.controlPlane.authorize(identity.tenantId, identity.actorId, 'project:write');
+    const pid = decodeURIComponent(_matchFileRevert[1]);
+    const proj = getProjectById(pid);
+    if (!proj) return sendJson(res, 404, { error: 'Project not found' });
+    const vpsPath = proj.vpsPath || proj.productionPath || null;
+    const body = await readJson(req);
+    const { path: filePath } = body || {};
+    if (!filePath) return sendJson(res, 400, { error: 'path required in body' });
+    const resolved = resolveLegacyProjectFile(vpsPath, filePath);
+    if (!resolved) return sendJson(res, 403, { error: 'File is outside the project or unavailable' });
+    try {
+      const bakFile = resolved + '.fenix-bak';
+      if (!fs.existsSync(bakFile)) {
+        return sendJson(res, 404, { error: 'No backup found to revert' });
+      }
+      if (fs.lstatSync(bakFile).isSymbolicLink() || fs.realpathSync(bakFile) !== bakFile) return sendJson(res, 403, { error: 'Backup is not a regular project file' });
+      fs.copyFileSync(bakFile, resolved);
+      const revertedContent = fs.readFileSync(resolved, 'utf8');
+      return sendJson(res, 200, { ok: true, path: resolved, reverted: true, content: revertedContent });
+    } catch(e) {
+      return sendJson(res, 500, { error: e.message });
+    }
+  }
+

@@ -312,6 +312,9 @@
     }
 
     currentProject = p;
+    if (window.GlobalSelectionStore && typeof window.GlobalSelectionStore.select === 'function') {
+      window.GlobalSelectionStore.select('project', projectId, p);
+    }
 
     // Pre-populate Digital Twin 5 Questions across all 15 workspace tabs
     const allTabs = ['overview', 'files', 'screens', 'components', 'apis', 'runtime', 'git', 'tests', 'qa', 'agents', 'jobs', 'memory', 'twin', 'preview', 'system-map'];
@@ -1054,7 +1057,7 @@
           <h4 style="color:#64748b; font-size:11px; margin:0 0 8px; text-transform:uppercase;">Consumo de Hardware</h4>
           <div style="font-size:18px; font-weight:700; color:#38bdf8;">${pm2.memoryMb || 220} MB RAM</div>
           <div style="font-size:11px; color:#94a3b8; margin-top:6px;">CPU Host: <strong>${ht.cpu?.percent || 0}%</strong></div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">RAM Host: <strong>${ht.memory?.usedPercent || 0}%</strong></div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">RAM Host: <strong>${Number.isFinite(ht.memory?.usedPercent) ? `${ht.memory.usedPercent}%` : '—'}</strong></div>
         </div>
 
         <div style="background:#0f172a; border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:16px;">

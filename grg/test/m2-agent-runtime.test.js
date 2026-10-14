@@ -38,7 +38,7 @@ test('M2: AgentRegistry — Catalog of 19 Agents & Task Routing', () => {
   assert.strictEqual(debugMatch.id, FENIX_AGENTS.DEBUG);
 });
 
-test('M2: AgentRuntime — Execution, Context Sharing, Delegation & Events', async () => {
+test('M2: AgentRuntime — delegation without executor fails visibly', async () => {
   const bus = new UnifiedEventBus();
   await bus.start();
 
@@ -70,9 +70,7 @@ test('M2: AgentRuntime — Execution, Context Sharing, Delegation & Events', asy
   const orchestratorInstance = runtime.getAgent(orchestratorId);
   assert.strictEqual(orchestratorInstance.role, 'Orchestrator Agent');
 
-  const executionResult = await runtime.executeAgent(orchestratorId);
-  assert.strictEqual(executionResult.orchestrationDone, true);
-  assert.strictEqual(executionResult.feResult.success, true);
+  await assert.rejects(runtime.executeAgent(orchestratorId), { code: 'AGENT_EXECUTOR_UNAVAILABLE' });
 
   // Verify Shared Context Bus collected the discovery
   const projectContext = runtime.sharedContext.get('prj_store');
@@ -82,7 +80,7 @@ test('M2: AgentRuntime — Execution, Context Sharing, Delegation & Events', asy
   // Verify event stream captured spawns and completions
   assert.strictEqual(capturedEvents.includes(FENIX_EVENTS.AGENT_SPAWNED), true);
   assert.strictEqual(capturedEvents.includes(FENIX_EVENTS.AGENT_STARTED), true);
-  assert.strictEqual(capturedEvents.includes(FENIX_EVENTS.AGENT_FINISHED), true);
+  assert.strictEqual(capturedEvents.includes(FENIX_EVENTS.AGENT_FAILED), true);
   assert.strictEqual(capturedEvents.includes('agent.handoff'), true);
 
   await runtime.stop();

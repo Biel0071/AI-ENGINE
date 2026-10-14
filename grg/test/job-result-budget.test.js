@@ -42,6 +42,8 @@ test('an oversized result is replaced by a marker instead of bloating the docume
   assert.ok(done.result.bytes > done.result.limitBytes, 'o marcador informa o tamanho real');
   // O marcador diz ONDE procurar: sem isso, alguem depura achando que o handler devolveu vazio.
   assert.deepEqual(done.result.keys, ['run', 'components', 'readiness']);
+  assert.deepEqual(done.result.run, { id: 'r1', status: 'READY' });
+  assert.equal(done.result.readiness.id, 'rr1');
   // O teto vale para o que foi GRAVADO, nao so para o que a chamada devolveu.
   const state = await app.store.read();
   const gravado = state.runtimeJobs.find((item) => item.id === done.id);
@@ -52,11 +54,27 @@ test('the metrics the mission kernel reads survive the budget', async () => {
   const app = await bootstrap();
   // mission-kernel.js:148 le job.result.metrics.tokens/costUsd. Se o teto cortasse isso, a
   // missao perderia custo e tokens em silencio -- pior que o problema original.
-  app.jobs.register('test.metricas', async () => ({ metrics: { tokens: 1234, costUsd: 0.42 } }));
+  app.jobs.register('test.metricas', async () => ({ metrics: { tokens: 1234, costUsd: 0.42 }, output: 'x'.repeat(10_000) }));
   await app.jobs.submit('grg', 'alice', { type: 'test.metricas' });
   const [done] = await app.jobs.runBatch('worker-1');
+  assert.equal(done.result.truncated, true);
   assert.equal(done.result.metrics.tokens, 1234);
   assert.equal(done.result.metrics.costUsd, 0.42);
+});
+
+test('discovery count survives when the container inventory is stored separately', async () => {
+  const app = await bootstrap();
+  app.jobs.register('test.discovery', async () => ({
+    scan: { id: 'scan-1', status: 'COMPLETED', resourceCount: 9 },
+    changes: 9,
+    resources: Array.from({ length: 9 }, (_, index) => ({ id: `container-${index}`, details: 'x'.repeat(700) })),
+  }));
+  await app.jobs.submit('grg', 'alice', { type: 'test.discovery' });
+  const [done] = await app.jobs.runBatch('worker-1');
+  assert.equal(done.result.truncated, true);
+  assert.deepEqual(done.result.scan, { id: 'scan-1', status: 'COMPLETED', resourceCount: 9 });
+  assert.equal(done.result.changes, 9);
+  assert.ok(Buffer.byteLength(JSON.stringify(done.result), 'utf8') < 1_000);
 });
 
 test('a handler returning nothing still stores null, not a marker', async () => {

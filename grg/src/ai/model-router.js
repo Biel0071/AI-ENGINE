@@ -1,4 +1,4 @@
-﻿const { resolveSecret } = require('../security/secret-resolver');
+const { resolveSecret } = require('../security/secret-resolver');
 
 class ModelRouter {
   constructor({ tokenEconomyEngine = null, providerRegistry = null, devMemory = null } = {}) {
@@ -8,14 +8,31 @@ class ModelRouter {
     this.escalationsCount = 0;
   }
 
-  route(context, options) {
+  route(context = {}, options = {}) {
+    if (options.deterministic || options.mode === 'deterministic' || context?.taskType === 'deterministic' || context?.complexity === 'NONE') {
+      return { provider: 'DETERMINISTIC', model: 'none', tier: 'ZERO_COST', costPer1kTokens: 0.0 };
+    }
     return { provider: 'AI Platform', model: 'qwen2.5:3b', tier: 'ECONOMICAL', costPer1kTokens: 0.0001 };
   }
 
-  async executeRequest({ prompt, contextData, taskType = 'general', complexity = 'MEDIUM', projectId = 'default' }) {
+  async executeRequest({ prompt, contextData = {}, taskType = 'general', complexity = 'MEDIUM', projectId = 'default', options = {} }) {
     const rawContextSize = JSON.stringify(contextData).length;
     const optimizedContextSize = Math.floor(rawContextSize * 0.75); 
     const tokensSaved = Math.floor((rawContextSize - optimizedContextSize) / 4);
+
+    const costMode = this.economy ? this.economy.costMode : 'BALANCED';
+    if (taskType === 'deterministic' || complexity === 'NONE' || costMode === 'DETERMINISTIC' || options?.deterministic) {
+      return {
+        success: true,
+        provider: 'DETERMINISTIC',
+        model: 'none',
+        content: typeof prompt === 'string' ? prompt : JSON.stringify(prompt),
+        tokens: 0,
+        latencyMs: 0,
+        fallbackTriggered: false,
+        telemetry: { rawContextSize, optimizedContextSize: 0, tokensSaved: rawContextSize }
+      };
+    }
 
     if (this.devMemory) {
       const pastSols = this.devMemory.timelineLogs?.filter(l => l.projectId === projectId && l.event === 'SOLUTION_APPLIED') || [];
@@ -27,7 +44,6 @@ class ModelRouter {
     const payloadStr = JSON.stringify({ prompt, context: contextData });
     
     // 1. Determine roles to try based on complexity and cost-saving mode
-    const costMode = this.economy ? this.economy.costMode : 'BALANCED';
     let rolesToTry = [];
     
     if (costMode === 'MAXIMUM_SAVING' || complexity === 'TRIVIAL') {

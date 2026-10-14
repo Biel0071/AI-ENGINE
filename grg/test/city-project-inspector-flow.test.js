@@ -7,7 +7,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const sceneModel = require('../public/fenix-city-machine-scene');
 
-test('selecting a live City project opens its real project and linked job context', () => {
+test('selecting a live City project publishes selection for the single contextual panel', () => {
   class Engine {}
   const project = { id: 'project-real', name: 'Real project', status: 'ACTIVE', workspace: 'C:/workspace/project-real' };
   const jobs = [
@@ -15,6 +15,7 @@ test('selecting a live City project opens its real project and linked job contex
     { id: 'job-other', projectId: 'other-project', title: 'Other project', status: 'FAILED' },
   ];
   const calls = [];
+  const events = [];
   const session = new Map();
   const target = { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } };
   const engine = Object.assign(Object.create(Engine.prototype), {
@@ -30,7 +31,7 @@ test('selecting a live City project opens its real project and linked job contex
     fenixWorld3D: engine,
     fenixShowWorldProjectInspector: (selected, linkedJobs) => calls.push({ selected, linkedJobs }),
     addEventListener() {},
-    dispatchEvent() {},
+    dispatchEvent(event) { events.push({ type: event.type, detail: event.detail }); },
   };
   const CustomEvent = class { constructor(type, options) { this.type = type; this.detail = options.detail; } };
   const source = fs.readFileSync(path.join(__dirname, '../public/fenix-city-runtime-world.js'), 'utf8');
@@ -44,14 +45,17 @@ test('selecting a live City project opens its real project and linked job contex
 
   engine.selectCityEntity('project', project.id, { focus: false });
 
-  assert.deepEqual(calls.map(({ selected, linkedJobs }) => ({ selected, linkedJobs })), [{ selected: project, linkedJobs: [jobs[0]] }]);
+  assert.deepEqual(calls, [], 'map selection should not open a competing legacy inspector');
+  assert.equal(events.at(-1).type, 'fenix:world-selection');
+  assert.deepEqual({ ...events.at(-1).detail }, { kind: 'project', id: project.id, level: 'world' });
   assert.deepEqual({ ...engine.state.selected }, { kind: 'project', id: project.id });
 });
 
-test('selecting a City agent opens its live inspector after camera selection', () => {
+test('selecting a City agent publishes selection without opening a competing modal', () => {
   class Engine {}
   const agent = { id: 'agent-real', name: 'Real agent', status: 'WORKING' };
   const inspected = [];
+  const events = [];
   const target = { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } };
   const engine = Object.assign(Object.create(Engine.prototype), {
     state: { selected: null, level: 'world', history: [] },
@@ -67,7 +71,7 @@ test('selecting a City agent opens its live inspector after camera selection', (
     fenixWorld3D: engine,
     fenixShowWorldAgentInspector: (selected) => inspected.push(selected),
     addEventListener() {},
-    dispatchEvent() {},
+    dispatchEvent(event) { events.push({ type: event.type, detail: event.detail }); },
   };
   const CustomEvent = class { constructor(type, options) { this.type = type; this.detail = options.detail; } };
   const source = fs.readFileSync(path.join(__dirname, '../public/fenix-city-runtime-world.js'), 'utf8');
@@ -81,6 +85,8 @@ test('selecting a City agent opens its live inspector after camera selection', (
 
   engine.selectAgent(agent.id);
 
-  assert.deepEqual(inspected, [agent]);
+  assert.deepEqual(inspected, [], 'map selection should not open a competing legacy inspector');
+  assert.equal(events.at(-1).type, 'fenix:world-selection');
+  assert.deepEqual({ ...events.at(-1).detail }, { kind: 'agent', id: agent.id, level: 'world' });
   assert.deepEqual({ ...engine.state.selected }, { kind: 'agent', id: agent.id });
 });

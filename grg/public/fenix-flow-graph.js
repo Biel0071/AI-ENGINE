@@ -151,8 +151,8 @@
       const [agentsData, jobsData, missionsData, projectsData, brainData, realityData] = await Promise.all([
         safeFetch('/api/v2/living-city/agents'),
         safeFetch('/api/v2/jobs'),
-        safeFetch('/api/v2/fenix/intelligence/missions'),
-        safeFetch('/api/v2/projects'),
+        safeFetch('/api/missions'),
+        safeFetch('/api/v2/projects').then(p => p || safeFetch('/api/fenix/projects')),
         safeFetch('/api/v2/graph/data'),
         safeFetch('/api/v2/reality/summary')
       ]);
@@ -1762,17 +1762,20 @@
 
     fitView() {
       if (!this.state.bounds || this.state.nodes.length === 0) return;
-      const rect = this.dom.body.getBoundingClientRect();
+      let width = this.dom?.body?.clientWidth || this.container?.clientWidth || window.innerWidth;
+      let height = this.dom?.body?.clientHeight || this.container?.clientHeight || (window.innerHeight - 140);
+      if (width < 300) width = Math.max(900, window.innerWidth - 260);
+      if (height < 250) height = Math.max(600, window.innerHeight - 160);
       const b = this.state.bounds;
 
-      const padding = 80;
-      const scaleX = (rect.width - padding * 2) / Math.max(b.width, 100);
-      const scaleY = (rect.height - padding * 2) / Math.max(b.height, 100);
-      const targetZoom = Math.min(1.2, Math.max(0.35, Math.min(scaleX, scaleY)));
+      const padding = 60;
+      const scaleX = (width - padding * 2) / Math.max(b.width, 100);
+      const scaleY = (height - padding * 2) / Math.max(b.height, 100);
+      const targetZoom = Math.min(1.15, Math.max(0.4, Math.min(scaleX, scaleY)));
 
       this.state.zoom = targetZoom;
-      this.state.pan.x = (rect.width / 2) - ((b.minX + b.width / 2) * targetZoom);
-      this.state.pan.y = (rect.height / 2) - ((b.minY + b.height / 2) * targetZoom);
+      this.state.pan.x = Math.max(40, (width / 2) - ((b.minX + b.width / 2) * targetZoom));
+      this.state.pan.y = Math.max(40, (height / 2) - ((b.minY + b.height / 2) * targetZoom));
 
       this.applyTransform();
     }

@@ -37,6 +37,22 @@ test('master delegates green work but can never execute it directly', async () =
   assert.equal(task.status, 'DISPATCHED'); assert.equal(task.policyLevel, 'GREEN'); assert.ok(task.jobId);
   await assert.rejects(() => app.agentEcosystem.createTask('grg', 'alice', { agentId: master.id, title: 'Bypass', action: 'inspection.reindex', evidence }), ForbiddenError);
   const state = await app.store.read(); assert.ok(state.domainEvents.some((item) => item.type === 'agent.task.delegated')); assert.equal(state.runtimeJobs[0].type, 'inspection.run');
+  assert.equal(state.runtimeJobs[0].agent.agentId, architect.id);
+});
+
+test('creates multiple durable scoped specialists and dispatches work under their identities', async () => {
+  const { app, master, project } = await bootstrap();
+  const first = await app.hierarchy.createAgent('grg', 'alice', { entityId: project.id, name: 'Investigador de API', role: 'research', description: 'Inspeciona contratos da API' });
+  const second = await app.hierarchy.createAgent('grg', 'alice', { entityId: project.id, name: 'Investigador de Logs', role: 'research' });
+  assert.notEqual(first.id, second.id);
+  assert.notEqual(first.identity, second.identity);
+  assert.equal((await app.hierarchy.listAgents('grg', 'alice', project.id)).filter((agent) => agent.dynamic).length, 2);
+  const task = await app.agentEcosystem.delegate('grg', 'alice', { masterAgentId: master.id, targetAgentId: first.id, title: 'Inspecionar projeto', action: 'inspection.reindex', evidence, payload: { workspacePath: '/authorized/project' }, execute: true });
+  const job = await app.jobs.getInternal('grg', task.jobId);
+  assert.equal(job.agent.agentId, first.id);
+  assert.equal(job.agent.name, 'Investigador de API');
+  assert.equal(job.agent.entityId, project.id);
+  await assert.rejects(() => app.jobs.submit('grg', 'alice', { type: 'inspection.run', agentId: master.id }), ForbiddenError);
 });
 
 test('yellow work is blocked without objective gates and dispatched when every gate passes', async () => {

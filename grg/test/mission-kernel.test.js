@@ -16,6 +16,19 @@ test('mission DAG dispatches through Job Engine and stores only compact agent ev
   assert.equal(completed.status, 'SUCCEEDED'); assert.equal(completed.progress, 100); assert.equal(completed.summary.metrics.naturalLanguageAgentMessages, 0); assert.ok(completed.summary.metrics.structuredBytes > 0); assert.equal(JSON.stringify(completed.events).includes(input().objective), false); assert.ok(completed.events.every((item) => item.payloadHash.length === 64));
 });
 
+test('mission records a started step from the Job Engine start event', async () => {
+  const app = await bootstrap();
+  const mission = await app.missions.create('grg', 'alice', input([{ key: 'observe', type: 'daily-intelligence' }]));
+  await app.missions.start('grg', 'alice', mission.id);
+  await app.jobs.runBatch('worker-start-event', 1);
+
+  const completed = await app.missions.get('grg', 'alice', mission.id);
+  const types = completed.events.map((event) => event.type);
+  assert.ok(types.includes('mission.step.started'));
+  assert.ok(types.indexOf('mission.step.started') < types.indexOf('mission.step.completed'));
+  assert.equal(completed.steps[0].status, 'SUCCEEDED');
+});
+
 test('mission plans reject arbitrary executors, cyclic DAGs, unsafe refs and weak yellow gates', async () => {
   const app = await bootstrap();
   await assert.rejects(() => app.missions.create('grg', 'alice', input([{ key: 'bad', type: 'daily-intelligence', jobType: 'evil.exec' }])), ValidationError);

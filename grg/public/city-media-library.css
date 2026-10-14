@@ -1,0 +1,55 @@
+.fenix-city-media-panel[hidden] { display: none !important; }
+.fenix-city-media-panel {
+  position: fixed;
+  z-index: 1200;
+  inset: 76px 20px 20px auto;
+  width: min(480px, calc(100vw - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #e7f3f5;
+  background: linear-gradient(165deg, rgba(11, 23, 32, .98), rgba(5, 11, 18, .98));
+  border: 1px solid rgba(75, 223, 197, .3);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .64), inset 0 1px rgba(255, 255, 255, .045);
+  backdrop-filter: blur(20px);
+}
+.fenix-city-media-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:22px 22px 16px; border-bottom:1px solid rgba(208, 241, 238, .09); }
+.fenix-city-media-eyebrow { color:#50dbc3; font-size:10px; font-weight:800; letter-spacing:.16em; }
+.fenix-city-media-header h2 { margin:7px 0 5px; color:#f2fbfa; font-size:21px; letter-spacing:-.035em; }
+.fenix-city-media-header p { max-width:360px; margin:0; color:#96afb5; font-size:12px; line-height:1.55; }
+.fenix-city-media-close { width:34px; height:34px; flex:0 0 34px; border:1px solid rgba(210,235,235,.12); border-radius:10px; color:#c5d4d6; background:rgba(255,255,255,.04); font-size:24px; cursor:pointer; }
+.fenix-city-media-search { padding:16px 22px 0; }
+.fenix-city-media-query-label { display:block; margin-bottom:8px; color:#b4c8ca; font-size:11px; font-weight:650; }
+.fenix-city-media-controls { display:grid; grid-template-columns:minmax(0,1fr) 94px auto; gap:8px; }
+.fenix-city-media-controls input,.fenix-city-media-controls select { min-width:0; height:40px; padding:0 11px; border:1px solid rgba(159,202,205,.18); border-radius:9px; outline:none; color:#e8f5f3; background:#0b171f; font:inherit; font-size:12px; }
+.fenix-city-media-controls input:focus,.fenix-city-media-controls select:focus { border-color:#43d8bc; box-shadow:0 0 0 3px rgba(67,216,188,.12); }
+.fenix-city-media-controls input::placeholder { color:#71868c; }
+.fenix-city-media-controls option { color:#e8f5f3; background:#0b171f; }
+.fenix-city-media-submit { padding:0 13px; border:0; border-radius:9px; color:#06231e; background:linear-gradient(135deg,#5ae2c6,#31c8a8); font-size:12px; font-weight:800; cursor:pointer; }
+.fenix-city-media-submit:disabled { opacity:.55; cursor:wait; }
+.fenix-city-media-status { min-height:18px; margin:10px 22px 0; color:#98b3b6; font-size:11px; }
+.fenix-city-media-status[data-state="error"] { color:#ff9b9b; }
+.fenix-city-media-status[data-state="success"] { color:#64e5c1; }
+.fenix-city-media-section { min-height:0; padding:13px 22px 0; }
+.fenix-city-media-section:last-child { flex:1; padding-bottom:18px; overflow:auto; }
+.fenix-city-media-section h3 { margin:0 0 9px; color:#cde0e1; font-size:11px; font-weight:750; letter-spacing:.04em; }
+.fenix-city-media-grid { display:grid; gap:8px; }
+.fenix-city-media-card { display:grid; grid-template-columns:94px minmax(0,1fr); min-height:78px; overflow:hidden; border:1px solid rgba(173,212,213,.11); border-radius:11px; background:rgba(255,255,255,.025); }
+.fenix-city-media-preview { width:94px; height:78px; display:block; object-fit:cover; background:#071018; }
+.fenix-city-media-video { width:94px; height:78px; display:block; object-fit:cover; background:#071018; }
+.fenix-city-media-meta { min-width:0; padding:9px 10px; }
+.fenix-city-media-name { display:block; overflow:hidden; color:#e2efef; font-size:11px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+.fenix-city-media-credit { display:block; margin-top:4px; color:#829b9f; font-size:10px; }
+.fenix-city-media-actions { display:flex; align-items:center; gap:7px; margin-top:7px; }
+.fenix-city-media-actions button,.fenix-city-media-actions a { padding:5px 8px; border:1px solid rgba(82,221,194,.25); border-radius:7px; color:#6fe4cb; background:rgba(63,205,179,.07); font-size:10px; font-weight:700; text-decoration:none; cursor:pointer; }
+.fenix-city-media-actions button:disabled { color:#91a5a7; cursor:default; }
+.fenix-city-media-empty { padding:13px; border:1px dashed rgba(173,212,213,.15); border-radius:10px; color:#829b9f; font-size:11px; text-align:center; }
+@media (max-width: 640px) {
+  .fenix-city-media-panel { inset:12px; width:auto; border-radius:14px; }
+  .fenix-city-media-header { padding:18px 16px 13px; }
+  .fenix-city-media-search,.fenix-city-media-section { padding-left:16px; padding-right:16px; }
+  .fenix-city-media-status { margin-left:16px; margin-right:16px; }
+  .fenix-city-media-controls { grid-template-columns:minmax(0,1fr) 88px; }
+  .fenix-city-media-submit { grid-column:1/-1; height:38px; }
+}

@@ -73,3 +73,13 @@ test('City falls back to the agents endpoint when the full state has no agent pr
   assert.equal(world.agents.get('agent-camila')?.name, 'Supervisora Camila');
   assert.equal(world.emptyOverlay.style.display, 'none');
 });
+
+test('City reports unavailable agents when both API projections fail', async () => {
+  const world = createWorld(async () => ({ ok: false, json: async () => ({ error: 'HTTP 503' }) }));
+
+  await world.syncRealData();
+
+  assert.equal(world.telemetryStatus, 'UNAVAILABLE');
+  assert.equal(world.emptyOverlay.style.display, 'flex');
+  assert.match(world.emptyOverlay.innerHTML, /Agentes indisponíveis nesta leitura/);
+});

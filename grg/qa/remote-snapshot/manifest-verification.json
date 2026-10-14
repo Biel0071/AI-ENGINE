@@ -1,0 +1,10 @@
+{
+  "htmlPath": "C:\\projetos\\ai-engine-core\\ai-engine\\grg\\qa\\remote-snapshot\\index.html",
+  "expected": 14,
+  "nav": 14,
+  "viewIds": 14,
+  "missingNav": [],
+  "missingView": [],
+  "duplicateNav": [],
+  "pass": true
+}

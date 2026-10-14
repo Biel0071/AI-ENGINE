@@ -69,6 +69,7 @@ const EMPTY_STATE = () => ({
   rollbackProposals: [],
   cityNodes: [],
   cityEdges: [],
+  worldAssets: [],
   cityProjectionStates: [],
   runtimeJobs: [],
   runtimeSchedules: [],

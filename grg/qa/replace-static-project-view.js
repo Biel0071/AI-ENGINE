@@ -1,0 +1,14 @@
+'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
+const target = path.join(__dirname, '..', 'public', 'index.html');
+const html = fs.readFileSync(target, 'utf8');
+const startMarker = '<div id="view-projects"';
+const endMarker = '<div id="view-agents"';
+if (html.split(startMarker).length !== 2 || html.split(endMarker).length !== 2) throw new Error('Project view markers changed');
+const start = html.indexOf(startMarker);
+const end = html.indexOf(endMarker, start);
+if (!html.slice(start, end).includes('Fênix Authentication') || !html.slice(start, end).includes('68%')) throw new Error('Expected static mock project view was not found');
+const replacement = '<div id="view-projects" class="view fenix-projects-view" aria-label="Projetos do Project Kernel"></div>\n\n';
+fs.writeFileSync(target, html.slice(0, start) + replacement + html.slice(end));
+console.log(`Replaced ${end - start} bytes of static project mockup with the live Project Kernel mount`);

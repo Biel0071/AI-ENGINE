@@ -6,12 +6,14 @@ RUN npm ci --omit=dev && npm cache clean --force
 FROM node:22.17.1-alpine
 ENV NODE_ENV=production
 WORKDIR /app
-RUN apk add --no-cache docker-cli git curl && addgroup -S fenix && adduser -S -G fenix -u 10001 fenix
+RUN apk add --no-cache docker-cli git curl chromium nss freetype harfbuzz ca-certificates ttf-freefont && addgroup -S fenix && adduser -S -G fenix -u 10001 fenix && mkdir -p /app/analyses && chown fenix:fenix /app/analyses
+ENV FENIX_CHROMIUM_PATH=/usr/bin/chromium-browser
 COPY --from=dependencies --chown=fenix:fenix /app/node_modules ./node_modules
 COPY --chown=fenix:fenix src ./src
 COPY --chown=fenix:fenix skills ./skills
 COPY --chown=fenix:fenix public ./public
 COPY --chown=fenix:fenix runtime ./runtime
+COPY --chown=fenix:fenix qa/frontend-screen-manifest.json ./qa/frontend-screen-manifest.json
 COPY --chown=fenix:fenix ops/container-entrypoint.sh ./ops/container-entrypoint.sh
 COPY --chown=fenix:fenix ops/context-snapshot.js ops/import-closure.js ops/llm-preflight.js ops/capability-probe.js ./ops/
 COPY --chown=fenix:fenix package.json ./package.json

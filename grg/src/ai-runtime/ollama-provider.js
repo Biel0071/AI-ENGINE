@@ -74,11 +74,12 @@ class OllamaProvider {
 
   // interface do AI Gateway
   async complete({ model, prompt, temperature = 0, maxTokens = 2048, format = null }) {
+    const normalizedFormat = (format && typeof format === 'object' && format.type === 'json_object') ? 'json' : format;
     const res = await post(this.baseUrl, '/api/generate', {
       model: model || this.model,
       prompt,
       stream: false,
-      ...(format ? { format } : {}),
+      ...(normalizedFormat ? { format: normalizedFormat } : {}),
       options: { temperature, num_predict: maxTokens },
     });
     if (res && res.error) throw new Error(`ollama: ${res.error}`);
@@ -92,8 +93,9 @@ class OllamaProvider {
 
   // chat com histórico + system prompt (usado pelo ChatAgent LLM)
   async chat({ model, messages, format = null, temperature = 0.3 }) {
+    const normalizedFormat = (format && typeof format === 'object' && format.type === 'json_object') ? 'json' : format;
     const payload = { model: model || this.model, messages, stream: false, options: { temperature } };
-    if (format) payload.format = format; // 'json' força saída JSON
+    if (normalizedFormat) payload.format = normalizedFormat; // 'json' força saída JSON
     const res = await post(this.baseUrl, '/api/chat', payload);
     if (res && res.error) throw new Error(`ollama: ${res.error}`);
     return { text: res.message ? res.message.content : '', raw: res };

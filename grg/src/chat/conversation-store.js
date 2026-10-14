@@ -104,6 +104,27 @@ class ConversationStore {
         });
       } catch { /* indice degradado, conversa intacta */ }
     }
+    if (this.events && typeof this.events.publish === 'function') {
+      try {
+        await this.events.publish({
+          tenantId,
+          stream: `conversation:${conversationId}`,
+          type: 'conversation.message.appended',
+          source: 'fenix-conversation-store',
+          subject: message.id,
+          data: {
+            actorId,
+            conversationId,
+            messageId: message.id,
+            role: message.role,
+            source: message.source,
+            contentHash: crypto.createHash('sha256').update(message.content).digest('hex'),
+            createdAt: message.createdAt,
+          },
+          idempotencyKey: `conversation.message.appended:${message.id}`,
+        });
+      } catch { /* event delivery may lag; the message and its memory remain durable */ }
+    }
     return message;
   }
 

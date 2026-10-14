@@ -149,33 +149,59 @@ class JobEngine {
   }
   async runBatch(workerId, limit = 5) {
     if (!workerId) throw new ValidationError('workerId is required');
-    const claimed = [];
+    const snapshot = await this.store.read();
+    const nowMs = this.clock.now();
+    const hasRecoverableJobs = snapshot.runtimeJobs.some((job) => {
+      if (job.status !== 'RUNNING' || !job.heartbeatAt) return false;
+      const ageMs = nowMs - Date.parse(job.heartbeatAt);
+      const timeoutMs = Number(job.limits?.timeoutMs || 300_000);
+      const owner = snapshot.workerHeartbeats.find((worker) => worker.workerId === job.workerId);
+      const ownerAgeMs = owner?.lastSeenAt ? nowMs - Date.parse(owner.lastSeenAt) : Infinity;
+      return Number.isFinite(ageMs) && (
+        ageMs > Math.max(timeoutMs, 30_000)
+        || (job.workerId && job.workerId !== workerId && (!Number.isFinite(ownerAgeMs) || ownerAgeMs > 30_000))
+      );
+    });
+    const hasDueJobs = snapshot.runtimeJobs.some((job) => job.status === 'QUEUED' && Date.parse(job.scheduledFor) <= nowMs);
+    const lastHeartbeat = snapshot.workerHeartbeats.find((worker) => worker.workerId === workerId)?.lastSeenAt;
+    const heartbeatDue = !lastHeartbeat || !Number.isFinite(Date.parse(lastHeartbeat)) || nowMs - Date.parse(lastHeartbeat) >= WORKER_HEARTBEAT_INTERVAL_MS;
+    if (!hasRecoverableJobs && !hasDueJobs && !heartbeatDue) return [];
+
+    const claimed = []; const cancelled = [];
     await this.store.update((state) => {
       // Um processo pode morrer depois do claim e antes do resultado. Sem esta
       // recuperação, o job fica RUNNING para sempre e o DAG nunca volta a liberar
       // o próximo passo. O heartbeat é a fonte de verdade: jobs sem heartbeat
       // recente são devolvidos à fila de forma idempotente.
-      const nowMs = this.clock.now();
+      const transactionNowMs = this.clock.now();
       for (const stale of state.runtimeJobs.filter((item) => item.status === 'RUNNING' && item.heartbeatAt)) {
-        const ageMs = nowMs - Date.parse(stale.heartbeatAt);
+        const ageMs = transactionNowMs - Date.parse(stale.heartbeatAt);
         const timeoutMs = Number(stale.limits?.timeoutMs || 300_000);
         const owner = state.workerHeartbeats.find((worker) => worker.workerId === stale.workerId);
         const ownerAgeMs = owner?.lastSeenAt ? nowMs - Date.parse(owner.lastSeenAt) : Infinity;
         const orphanedAfterRestart = stale.workerId && stale.workerId !== workerId
           && (!Number.isFinite(ownerAgeMs) || ownerAgeMs > 30_000);
         if (Number.isFinite(ageMs) && (ageMs > Math.max(timeoutMs, 30_000) || orphanedAfterRestart)) {
-          stale.status = 'QUEUED';
-          stale.currentStage = 'QUEUED';
           stale.workerId = null;
           stale.updatedAt = now();
-          stale.error = errorInfo(new Error('worker heartbeat expired; job recovered by scheduler'));
-          stale.scheduledFor = new Date(nowMs).toISOString();
+          if (stale.cancelRequestedAt) {
+            stale.status = 'CANCELLED'; stale.currentStage = 'CANCELLED'; stale.completedAt ||= now();
+            cancelled.push(JSON.parse(JSON.stringify(stale)));
+          } else if (stale.pauseRequestedAt) {
+            stale.status = 'PAUSED'; stale.currentStage = 'PAUSED'; stale.completedAt = null;
+          } else {
+            stale.status = 'QUEUED'; stale.currentStage = 'QUEUED';
+            stale.error = errorInfo(new Error('worker heartbeat expired; job recovered by scheduler'));
+            stale.scheduledFor = new Date(transactionNowMs).toISOString();
+          }
         }
       }
       const due = state.runtimeJobs.filter((item) => item.status === 'QUEUED' && Date.parse(item.scheduledFor) <= this.clock.now()).sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt)).slice(0, Math.min(50, Number(limit)));
-      for (const job of due) { this.#claim(job, workerId); claimed.push(structuredClone(job)); }
-      upsertHeartbeat(state, workerId, claimed.length); return state;
+      for (const job of due) { this.#claim(job, workerId); claimed.push(JSON.parse(JSON.stringify(job))); }
+      if (hasRecoverableJobs || claimed.length || heartbeatDue) upsertHeartbeat(state, workerId, claimed.length);
+      return state;
     });
+    await Promise.all(cancelled.map((job) => this.#publish(job, 'runtime.job.cancelled', workerId).catch((error) => console.error('[JobEngine] failed to publish recovered cancellation:', error))));
     return Promise.all(claimed.map(async (job) => {
       await this.#publish(job, 'runtime.job.started', workerId).catch((error) => console.error('[JobEngine] failed to publish job start:', error));
       return this.#execute(job, workerId);
@@ -187,7 +213,7 @@ class JobEngine {
     await this.store.update((state) => {
       const job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId);
       if (!job || job.status !== 'QUEUED' || Date.parse(job.scheduledFor) > this.clock.now()) return state;
-      this.#claim(job, workerId); claimed = structuredClone(job); upsertHeartbeat(state, workerId, 1); return state;
+      this.#claim(job, workerId); claimed = JSON.parse(JSON.stringify(job)); upsertHeartbeat(state, workerId, 1); return state;
     });
     if (!claimed) return null;
     await this.#publish(claimed, 'runtime.job.started', workerId).catch((error) => console.error('[JobEngine] failed to publish job start:', error));
@@ -459,27 +485,32 @@ class JobEngine {
     });
   }
   async recoverStale(staleAfterMs = 60_000) {
-    const cutoff = this.clock.now() - Number(staleAfterMs); const requeued = [];
+    const cutoff = this.clock.now() - Number(staleAfterMs); const requeued = []; const cancelled = [];
     const snapshot = await this.store.read();
-    if (!(snapshot.runtimeJobs || []).some((job) =>
+    const hasStaleJobs = (snapshot.runtimeJobs || []).some((job) =>
       ['RUNNING', 'PAUSING'].includes(job.status) && Date.parse(job.heartbeatAt) < cutoff,
-    )) return 0;
+    );
+    if (!hasStaleJobs) return 0;
 
     await this.store.update((state) => {
       for (const job of state.runtimeJobs.filter((item) => ['RUNNING', 'PAUSING'].includes(item.status) && Date.parse(item.heartbeatAt) < cutoff)) {
-        if (job.pauseRequestedAt && !job.cancelRequestedAt) {
-          job.status = 'PAUSED'; job.currentStage = 'PAUSED'; job.workerId = null;
-          job.updatedAt = now(); job.completedAt = null;
-          continue;
+        job.workerId = null; job.updatedAt = now();
+        if (job.cancelRequestedAt) {
+          job.status = 'CANCELLED'; job.currentStage = 'CANCELLED'; job.completedAt ||= now();
+          cancelled.push(JSON.parse(JSON.stringify(job)));
+        } else if (job.pauseRequestedAt) {
+          job.status = 'PAUSED'; job.currentStage = 'PAUSED'; job.completedAt = null;
+        } else {
+          job.status = job.attempts < job.maxAttempts ? 'QUEUED' : 'DEAD_LETTER'; job.currentStage = job.status;
+          job.error = { name: 'HeartbeatTimeout', message: 'worker heartbeat expired' };
+          if (job.status === 'QUEUED') { job.scheduledFor = now(); requeued.push(JSON.parse(JSON.stringify(job))); }
+          else { job.completedAt = now(); state.deadLetters.push({ id: uuid(), tenantId: job.tenantId, jobId: job.id, type: job.type, error: job.error, attempts: job.attempts, createdAt: now() }); }
         }
-        job.status = job.attempts < job.maxAttempts ? 'QUEUED' : 'DEAD_LETTER'; job.currentStage = job.status;
-        job.workerId = null; job.error = { name: 'HeartbeatTimeout', message: 'worker heartbeat expired' }; job.updatedAt = now();
-        if (job.status === 'QUEUED') { job.scheduledFor = now(); requeued.push(structuredClone(job)); }
-        else { job.completedAt = now(); state.deadLetters.push({ id: uuid(), tenantId: job.tenantId, jobId: job.id, type: job.type, error: job.error, attempts: job.attempts, createdAt: now() }); }
       }
       return state;
     });
     if (this.queue) await Promise.all(requeued.map((job) => this.#enqueue(job)));
+    await Promise.all(cancelled.map((job) => this.#publish(job, 'runtime.job.cancelled', 'fenix-runtime').catch((error) => console.error('[JobEngine] failed to publish recovered cancellation:', error))));
     return requeued.length;
   }
   async get(tenantId, actorId, jobId) { await this.cp.authorize(tenantId, actorId, 'runtime:read'); return this.getInternal(tenantId, jobId); }
@@ -511,7 +542,7 @@ class JobEngine {
   async #enqueue(job) {
     const delay = Math.max(0, Date.parse(job.scheduledFor) - this.clock.now());
     const enqueue = this.queue.enqueue('fenix-runtime', job.type, { tenantId: job.tenantId, jobId: job.id }, {
-      idempotencyKey: `${job.id}:${job.attempts}`, attempts: 5, backoff: { type: 'exponential', delay: 500 }, delay,
+      idempotencyKey: `${job.id}-${job.attempts}`, attempts: 5, backoff: { type: 'exponential', delay: 500 }, delay,
     });
     const completed = await Promise.race([
       enqueue.then(() => true),

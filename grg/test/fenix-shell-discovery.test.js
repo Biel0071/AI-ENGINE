@@ -3,14 +3,18 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { ScreenDiscoveryEngine } = require('../src/frontend-reality/screen-discovery-engine');
 
-test('FÊNIX shell discovery maps the 14 real hash-routed views', async () => {
+test('FÊNIX shell discovery maps the 18 hash-routed views in the current source', async () => {
   const engine = new ScreenDiscoveryEngine();
   const result = await engine.scanProjectScreens('fenix_enterprise', path.join(__dirname, '..', 'public'));
-  assert.equal(result.totalScreens, 14);
+  assert.equal(result.totalScreens, 18);
   assert.deepEqual(result.screens.map(screen => screen.screenId), [
-    'screen_command', 'screen_ide', 'screen_project', 'screen_city', 'screen_projects',
-    'screen_agents', 'screen_operations', 'screen_runtime', 'screen_memory', 'screen_knowledge',
-    'screen_mcp', 'screen_browser', 'screen_observability', 'screen_terminal'
+    'screen_command', 'screen_ide', 'screen_project', 'screen_dna', 'screen_metrics', 'screen_city',
+    'screen_projects', 'screen_agents', 'screen_operations', 'screen_runtime', 'screen_memory',
+    'screen_knowledge', 'screen_mcp', 'screen_marketplace', 'screen_browser', 'screen_observability',
+    'screen_terminal', 'screen_flowgraph'
   ]);
   assert.ok(result.screens.every(screen => screen.status === 'DISCOVERED'));
+  assert.equal(result.status, 'STATIC_INVENTORY');
+  assert.equal(result.overallHealthScore, null);
+  assert.equal(result.zeroDeadButtonsPass, null);
 });

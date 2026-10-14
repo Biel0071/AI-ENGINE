@@ -12,7 +12,7 @@ const { FabricEventBus } = require('../src/eventing/fabric-event-bus');
 const { ToolRegistry } = require('../src/execution/tool-registry');
 const { ScriptLibrary, canonical } = require('../src/execution/script-library');
 const { SandboxExecutionEngine } = require('../src/execution/sandbox-execution-engine');
-const { dockerArgs } = require('../src/execution/docker-rootless-sandbox');
+const { dockerArgs, DockerRootlessSandbox } = require('../src/execution/docker-rootless-sandbox');
 const { ValidationError } = require('../src/kernel/errors');
 
 async function bootstrap(adapter = { run: async ({ argv, tool, limits }) => ({ exitCode: 0, stdout: `ran ${argv.join(' ')} token=secret-value`, stderr: '', sandbox: { image: tool.image, limits } }) }) {
@@ -44,4 +44,31 @@ test('production execution fails closed without a matching consumed approval', a
 test('docker sandbox arguments enforce isolation and immutable image', () => {
   const image = `repo/node@sha256:${'b'.repeat(64)}`; const args = dockerArgs({ executionId: 'abc123', tool: { image }, argv: ['node', '--test'], workdir: '/tmp/work', limits: { pids: 64, memoryMb: 256, cpuUnits: 500 }, network: 'none', environment: {} });
   assert.ok(args.includes('--rm')); assert.ok(args.includes('--read-only')); assert.ok(args.includes('ALL')); assert.ok(args.includes('no-new-privileges')); assert.ok(args.includes('none')); assert.ok(args.includes(image)); assert.equal(args.includes('/bin/sh'), false);
+});
+
+test('rootless process-time mode bounds CPU without a CPU cgroup controller', () => {
+  const args = dockerArgs({ executionId: 'cpu-test', tool: { image: `repo/node@sha256:${'b'.repeat(64)}` }, argv: ['node', '--version'], workdir: '/tmp/work', limits: { pids: 64, memoryMb: 256, cpuUnits: 500, timeoutMs: 5000 }, network: 'none', cpuMode: 'process-time' });
+  assert.deepEqual(args.slice(args.indexOf('--ulimit'), args.indexOf('--ulimit') + 2), ['--ulimit', 'cpu=3:4']);
+  assert.equal(args.includes('--cpus'), false);
+  assert.ok(args.includes('--memory'));
+  assert.ok(args.includes('--pids-limit'));
+});
+
+test('rootless sandbox force-removes a container after Docker run fails', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'fenix-sandbox-cleanup-'));
+  const repo = path.join(parent, 'repo');
+  fs.mkdirSync(repo);
+  const calls = [];
+  try {
+    const sandbox = new DockerRootlessSandbox({ workspaceRoot: parent, dockerHost: 'unix:///run/user/1001/docker.sock', cpuMode: 'process-time', exec: async (_bin, args) => {
+      calls.push(args);
+      if (args[0] === 'run') throw new Error('simulated timeout');
+      return { stdout: '', stderr: '' };
+    } });
+    await assert.rejects(sandbox.run({ executionId: 'cleanup-proof', tool: { image: 'node:22-alpine', allowedNetworks: ['none'] }, argv: ['node', '--version'], workspacePath: repo, limits: { timeoutMs: 5000, memoryMb: 256, cpuUnits: 1000, pids: 64 } }), /simulated timeout/);
+    assert.deepEqual(calls[1], ['rm', '-f', 'fenix-sbx-cleanup-proo']);
+  } finally { fs.rmSync(parent, { recursive: true, force: true }); }
 });

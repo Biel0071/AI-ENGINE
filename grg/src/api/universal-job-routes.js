@@ -38,6 +38,47 @@ async function systemStatus(app, tenantId, actorId) {
 async function handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, identity) {
   const { tenantId, actorId } = identity;
 
+  if (['POST', 'GET'].includes(req.method) && url.pathname === '/api/v2/queue/status') {
+    await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
+    const jobs = await app.jobs.list(tenantId, actorId);
+    const bullmq = app.queues?.status ? await app.queues.status('fenix-runtime') : null;
+    const count = (...statuses) => jobs.filter((job) => statuses.includes(String(job.status).toUpperCase())).length;
+    sendJson(res, 200, {
+      ok: true,
+      source: 'JobEngine',
+      bullmq,
+      queue: {
+        total: jobs.length,
+        completed: count('COMPLETED', 'SUCCEEDED'),
+        running: count('RUNNING'),
+        waiting: count('QUEUED', 'WAITING', 'READY', 'RETRYING'),
+        failed: count('FAILED', 'DEAD_LETTER'),
+        cancelled: count('CANCELLED'),
+        paused: count('PAUSED'),
+      },
+      jobs: jobs.map(presentJob),
+    });
+    return true;
+  }
+
+  const queueControl = url.pathname.match(/^\/api\/v2\/queue\/(pause|resume|clear-completed)$/);
+  if (req.method === 'POST' && queueControl) {
+    const action = queueControl[1];
+    await app.controlPlane.authorize(tenantId, actorId, 'runtime:admin');
+    if (action === 'clear-completed') {
+      sendJson(res, 501, { ok: false, error: 'PERSISTENT_JOB_PURGE_UNSUPPORTED', source: 'JobEngine' });
+      return true;
+    }
+    if (!app.queues || typeof app.queues.queue !== 'function') {
+      sendJson(res, 503, { ok: false, error: 'QUEUE_CONTROL_UNAVAILABLE', source: 'JobEngine' });
+      return true;
+    }
+    const queue = app.queues.queue('fenix-runtime');
+    await queue[action]();
+    sendJson(res, 200, { ok: true, queue: 'fenix-runtime', source: 'BullMQ', status: action === 'pause' ? 'PAUSED' : 'RUNNING' });
+    return true;
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/v2/jobs') {
     const body = await readJson(req);
     const type = body.type || 'development.execute';

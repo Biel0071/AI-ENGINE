@@ -1,0 +1,64 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
+const { start } = require('../src/server');
+const git = promisify(execFile);
+
+test('Project Kernel IDE reads, edits and rejects stale or escaping paths', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'fenix-ide-project-'));
+  const dataFile = path.join(os.tmpdir(), `fenix-ide-state-${crypto.randomUUID()}.json`);
+  const password = crypto.randomBytes(24).toString('base64url');
+  let server;
+  try {
+    await git('git', ['init', '-b', 'main'], { cwd: root });
+    await fs.writeFile(path.join(root, 'app.js'), 'module.exports = 1;\n');
+    await git('git', ['add', 'app.js'], { cwd: root });
+    await git('git', ['-c', 'user.email=fenix@test.invalid', '-c', 'user.name=FENIX Test', 'commit', '-m', 'initial'], { cwd: root });
+    server = await start(0, { dataFile, llm: false, bootstrapAdmin: { tenantId: 'grg', userId: 'ide-admin', password, tenantName: 'IDE Test', name: 'IDE Admin', role: 'master_admin' } });
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const login = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tenantId: 'grg', userId: 'ide-admin', password }) }).then((response) => response.json());
+    const headers = { authorization: `Bearer ${login.token}`, 'content-type': 'application/json' };
+    const project = await fetch(`${base}/api/fenix/projects`, { method: 'POST', headers, body: JSON.stringify({ id: 'ide-real', name: 'IDE Real', workspace: root, branch: 'main' }) }).then((response) => response.json());
+    assert.equal(project.id, 'ide-real');
+    const tree = await fetch(`${base}/api/fenix/projects/ide-real/tree`, { headers }).then((response) => response.json());
+    assert.ok(tree.tree.some((item) => item.path === 'app.js'));
+    const analyzed = await fetch(`${base}/api/fenix/projects/ide-real/analyze`, { method: 'POST', headers });
+    assert.equal(analyzed.status, 202);
+    const analysisResult = await analyzed.json();
+    assert.match(analysisResult.head, /^[0-9a-f]{40}$/);
+    assert.equal(analysisResult.perception.status, 'PARTIAL_OBSERVATION');
+    assert.equal(analysisResult.perception.files > 0, true);
+    const persistedAnalysisResponse = await fetch(`${base}/api/fenix/projects/ide-real/analysis`, { headers });
+    assert.equal(persistedAnalysisResponse.status, 200);
+    const persistedAnalysis = await persistedAnalysisResponse.json();
+    assert.equal(persistedAnalysis.artifact.type, 'FENIX_PROJECT_PERCEPTION_MAP');
+    assert.ok(persistedAnalysis.report.files.some((item) => item.path === 'app.js'));
+    assert.ok(persistedAnalysis.report.tests.every((item) => item.status === 'NOT_RUN'));
+    const read = await fetch(`${base}/api/fenix/projects/ide-real/file?path=app.js`, { headers }).then((response) => response.json());
+    assert.equal(read.content, 'module.exports = 1;\n');
+    const save = await fetch(`${base}/api/fenix/projects/ide-real/file`, { method: 'PUT', headers, body: JSON.stringify({ path: 'app.js', content: 'module.exports = 2;\n', expectedHash: read.hash }) });
+    assert.equal(save.status, 200);
+    const saved = await save.json();
+    assert.equal(saved.memoryRecorded, true);
+    assert.equal(saved.memoryVersion, 1);
+    const persisted = await server.app.store.read();
+    assert.ok(persisted.memories.some((item) => item.id === saved.memoryId && item.projectId === project.id));
+    assert.ok(persisted.memoryVersions.some((item) => item.memoryId === saved.memoryId));
+    assert.ok(persisted.auditEvents.some((item) => item.id === saved.auditId && item.action === 'project.ide.file.saved'));
+    assert.ok(persisted.domainEvents.some((item) => item.id === saved.eventId));
+    assert.equal(await fs.readFile(path.join(root, 'app.js'), 'utf8'), 'module.exports = 2;\n');
+    const stale = await fetch(`${base}/api/fenix/projects/ide-real/file`, { method: 'PUT', headers, body: JSON.stringify({ path: 'app.js', content: 'module.exports = 3;\n', expectedHash: read.hash }) });
+    assert.equal(stale.status, 409);
+    const escape = await fetch(`${base}/api/fenix/projects/ide-real/file?path=..%2Fsecret.txt`, { headers });
+    assert.equal(escape.status, 400);
+  } finally {
+    if (server) server.close();
+    await fs.rm(root, { recursive: true, force: true });
+    await fs.rm(dataFile, { force: true });
+  }
+});

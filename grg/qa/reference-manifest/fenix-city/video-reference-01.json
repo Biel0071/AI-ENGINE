@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "referenceId": "fenix-workflow-observation-01",
+  "purpose": "Design input for evidence-backed visual and structural reverse engineering",
+  "provenance": {
+    "source": "user_attachment",
+    "fileName": "1001647635.mp4",
+    "sha256": "049d427a7c6f8b088f6ab703a7a491a6ca74ed0b68cabc7c81d5b54520391fc5",
+    "repositoryCopy": false,
+    "captureTimestamp": null
+  },
+  "media": {
+    "container": "mp4",
+    "durationSeconds": 75.020816,
+    "video": {
+      "codec": "h264",
+      "width": 720,
+      "height": 1280,
+      "averageFrameRate": 30,
+      "streamDurationSeconds": 74.9
+    },
+    "audio": {
+      "codec": "aac",
+      "streamDurationSeconds": 75.020816
+    }
+  },
+  "analysis": {
+    "evidenceMethod": "qualitative review of 11 representative frames sampled across the clip",
+    "exactFrameTimestampsRecorded": false,
+    "observations": [
+      {
+        "evidence": "OBSERVED_IN_SAMPLED_FRAMES",
+        "description": "A dark green and black interface presents a clone workflow in stages: observe, repair, clean room, diff, and parity."
+      },
+      {
+        "evidence": "OBSERVED_IN_SAMPLED_FRAMES",
+        "description": "The target appears to be an After Effects project. The workflow inspects the visible application and its UI structure, including windows, panels, timeline, and layers."
+      },
+      {
+        "evidence": "OBSERVED_IN_SAMPLED_FRAMES",
+        "description": "The interface presents a target-versus-clone comparison and a visual parity score."
+      }
+    ],
+    "designImplications": [
+      "Separate observation, structural mapping, reconstruction, and comparison into visible steps.",
+      "Keep each claim linked to its source: screenshot, DOM/UI tree, runtime probe, or test result.",
+      "Show unknown or untested states explicitly and make comparison criteria inspectable."
+    ],
+    "notVerifiedByThisReference": [
+      "The demonstrated clone's functional correctness or completeness.",
+      "The validity or calculation method of any score shown in the video.",
+      "Any Fênix implementation, runtime status, or visual parity percentage."
+    ],
+    "processingValidation": {
+      "decoder": "VideoSystemDecoder",
+      "localExecutionStatus": "PASS",
+      "method": "FFprobe metadata inspection plus FFmpeg uniform frame extraction",
+      "sampleIntervalSeconds": 10,
+      "keyframesExtracted": 7,
+      "framesVisuallyReviewedAtRequestedSeconds": [5, 20, 40, 65],
+      "contentAnalysisStatus": "NOT_VERIFIED",
+      "artifactLocation": "local temporary validation output; the video has not been uploaded to a Fênix server instance",
+      "notes": [
+        "The decoder measured duration, codec, dimensions, and frame rate from the supplied file.",
+        "Uniform sample positions are approximate points in the clip, not exact timestamps of decoded source frames.",
+        "The reviewed frames show an observe, map, clean-room, diff, and parity workflow; actions and displayed scores remain unverified claims from the reference."
+      ]
+    }
+  }
+}

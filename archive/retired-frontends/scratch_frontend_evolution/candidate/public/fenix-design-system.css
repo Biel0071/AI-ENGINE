@@ -1,0 +1,854 @@
+/* ==========================================================================
+   FÊNIX OS — CONSOLIDATED MASTER DESIGN SYSTEM
+   Dark Premium AI Operating System & Autonomous Engineering Environment
+   Strictly maintains Single Shell layout geometry and zero-mock reality.
+   ========================================================================== */
+
+:root {
+  /* Depth & Surface Hierarchy — V9 Master Palette */
+  --fenix-bg-root: #070B12;
+  --fenix-bg-surface: #0C1420;
+  --fenix-bg-surface-2: #111B2A;
+  --fenix-bg-panel: rgba(12, 20, 32, 0.88);
+  --fenix-bg-card: rgba(17, 27, 42, 0.85);
+  --fenix-bg-card-hover: rgba(22, 36, 58, 0.95);
+  --fenix-bg-input: rgba(7, 11, 18, 0.8);
+  --fenix-bg-glass-blur: blur(14px);
+
+  /* Master Palette Accents (Verde FÊNIX identity) */
+  --fenix-primary: #00E5A0;
+  --fenix-info: #22B8FF;
+  --fenix-intelligence: #A855F7;
+  --fenix-warning: #F5B942;
+  --fenix-error: #FF4D67;
+
+  /* Legacy & Semantic Bindings */
+  --fenix-green: var(--fenix-primary);
+  --fenix-cyan: var(--fenix-info);
+  --fenix-blue: #3b82f6;
+  --fenix-blue-dark: #1d4ed8;
+  --fenix-gold: var(--fenix-warning);
+  --fenix-purple: var(--fenix-intelligence);
+  --fenix-rose: var(--fenix-error);
+
+  /* Borders & Glows */
+  --fenix-border-subtle: rgba(255, 255, 255, 0.08);
+  --fenix-border-medium: rgba(255, 255, 255, 0.14);
+  --fenix-border-glow-primary: rgba(0, 229, 160, 0.35);
+  --fenix-border-glow-cyan: rgba(34, 184, 255, 0.35);
+  --fenix-border-glow-blue: rgba(59, 130, 246, 0.4);
+  --fenix-border-glow-green: rgba(0, 229, 160, 0.35);
+
+  /* Typography */
+  --fenix-text-bright: #ffffff;
+  --fenix-text-primary: #e2e8f0;
+  --fenix-text-secondary: #94a3b8;
+  --fenix-text-muted: #64748b;
+  --fenix-text-dim: #475569;
+
+  /* Radius */
+  --fenix-radius-xs: 4px;
+  --fenix-radius-sm: 6px;
+  --fenix-radius-md: 10px;
+  --fenix-radius-lg: 14px;
+  --fenix-radius-pill: 9999px;
+
+  /* Shadows */
+  --fenix-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --fenix-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --fenix-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7);
+  --fenix-glow-cyan: 0 0 16px rgba(56, 189, 248, 0.25);
+  --fenix-glow-blue: 0 0 20px rgba(37, 99, 235, 0.3);
+  --fenix-glow-green: 0 0 14px rgba(16, 185, 129, 0.3);
+
+  /* Fonts */
+  --fenix-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fenix-font-mono: 'JetBrains Mono', Consolas, monospace;
+}
+
+/* ==========================================================================
+   1. GLOBAL RESETS & SCROLLBARS
+   ========================================================================== */
+html, body {
+  background: var(--fenix-bg-root) !important;
+  color: var(--fenix-text-primary);
+  font-family: var(--fenix-font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Premium Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--fenix-radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.4);
+}
+
+/* ==========================================================================
+   2. REUSABLE ATOMIC COMPONENTS
+   ========================================================================== */
+
+/* Cards & Surfaces */
+.fenix-card, .workspace-card, .fp-card, .v10-card, .v10-panel {
+  background: var(--fenix-bg-card) !important;
+  backdrop-filter: var(--fenix-bg-glass-blur);
+  -webkit-backdrop-filter: var(--fenix-bg-glass-blur);
+  border: 1px solid var(--fenix-border-subtle) !important;
+  border-radius: var(--fenix-radius-md) !important;
+  box-shadow: var(--fenix-shadow-sm) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.fenix-card:hover, .workspace-card:hover, .fp-card:hover {
+  border-color: var(--fenix-border-glow-cyan) !important;
+  box-shadow: var(--fenix-shadow-md), var(--fenix-glow-cyan) !important;
+}
+
+/* Buttons */
+.fenix-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--fenix-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.fenix-btn:active {
+  transform: scale(0.97);
+}
+
+.fenix-btn-primary {
+  background: linear-gradient(135deg, var(--fenix-blue-dark) 0%, var(--fenix-blue) 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+}
+.fenix-btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.5), 0 0 10px rgba(56, 189, 248, 0.3) !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+}
+
+.fenix-btn-secondary {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--fenix-text-primary) !important;
+  border: 1px solid var(--fenix-border-medium) !important;
+}
+.fenix-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: var(--fenix-cyan) !important;
+  color: #ffffff !important;
+}
+
+.fenix-btn-danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+.fenix-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: var(--fenix-rose) !important;
+  color: #ffffff !important;
+}
+
+/* Badges & Status Pills */
+.fenix-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--fenix-radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+}
+
+.fenix-badge-cyan {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--fenix-cyan);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.fenix-badge-green {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--fenix-green);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.fenix-badge-purple {
+  background: rgba(168, 85, 247, 0.12);
+  color: var(--fenix-purple);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.fenix-badge-gold {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--fenix-gold);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.fenix-badge-rose {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--fenix-rose);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ==========================================================================
+   2.1 CANONICAL GLOBAL STATUS SYSTEM
+   CONNECTING · SYNCING · ONLINE · RUNNING · DEGRADED · ERROR · OFFLINE · RETRYING
+   ========================================================================== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--fenix-radius-pill);
+  line-height: 1;
+}
+.status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-connecting {
+  background: rgba(34, 184, 255, 0.12);
+  color: var(--fenix-info);
+  border: 1px solid rgba(34, 184, 255, 0.3);
+}
+.status-connecting::before { background: var(--fenix-info); }
+
+.status-syncing {
+  background: rgba(168, 85, 247, 0.12);
+  color: var(--fenix-intelligence);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+.status-syncing::before {
+  background: var(--fenix-intelligence);
+}
+
+.status-online {
+  background: rgba(0, 229, 160, 0.12);
+  color: var(--fenix-primary);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+}
+.status-online::before {
+  background: var(--fenix-primary);
+  box-shadow: 0 0 6px var(--fenix-primary);
+}
+
+.status-running {
+  background: rgba(34, 184, 255, 0.15);
+  color: var(--fenix-info);
+  border: 1px solid rgba(34, 184, 255, 0.4);
+}
+.status-running::before {
+  background: var(--fenix-info);
+  box-shadow: 0 0 8px var(--fenix-info);
+}
+
+.status-degraded {
+  background: rgba(245, 185, 66, 0.12);
+  color: var(--fenix-warning);
+  border: 1px solid rgba(245, 185, 66, 0.3);
+}
+.status-degraded::before { background: var(--fenix-warning); }
+
+.status-error {
+  background: rgba(255, 77, 103, 0.15);
+  color: var(--fenix-error);
+  border: 1px solid rgba(255, 77, 103, 0.4);
+}
+.status-error::before {
+  background: var(--fenix-error);
+  box-shadow: 0 0 6px var(--fenix-error);
+}
+
+.status-offline {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--fenix-text-muted);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+.status-offline::before { background: var(--fenix-text-muted); }
+
+.status-retrying {
+  background: rgba(245, 185, 66, 0.15);
+  color: var(--fenix-warning);
+  border: 1px solid rgba(245, 185, 66, 0.4);
+}
+.status-retrying::before { background: var(--fenix-warning); }
+
+/* Pulse indicator dot */
+.fenix-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+}
+
+.fenix-pulse-dot.green {
+  background: var(--fenix-green);
+  box-shadow: 0 0 8px var(--fenix-green);
+}
+.fenix-pulse-dot.green::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1px solid var(--fenix-green);
+  animation: fenix-pulse-anim 2s infinite ease-out;
+}
+
+@keyframes fenix-pulse-anim {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ==========================================================================
+   3. SHELL TOPBAR & SIDEBAR ELEVATION
+   ========================================================================== */
+
+/* Topbar */
+.v10-topbar, .global-topbar {
+  background: rgba(7, 11, 20, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.v10-cmd-input, #cmdGlobalSearchInput {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: var(--fenix-radius-sm) !important;
+  color: var(--fenix-text-primary) !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  transition: all 0.2s ease !important;
+}
+.v10-cmd-input:focus, #cmdGlobalSearchInput:focus {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--fenix-cyan) !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
+  outline: none !important;
+}
+
+/* Sidebar Navigation Items */
+.sidebar-nav {
+  background: rgba(7, 11, 20, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.nav-item {
+  color: var(--fenix-text-secondary) !important;
+  border-radius: var(--fenix-radius-sm) !important;
+  transition: all 0.15s ease !important;
+  margin: 2px 4px !important;
+}
+.nav-item:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+.nav-item.active {
+  color: #ffffff !important;
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.25) 0%, rgba(56, 189, 248, 0.08) 100%) !important;
+  border-left: 3px solid var(--fenix-cyan) !important;
+}
+
+/* Navigation Group Labels */
+.nav-group-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  color: var(--fenix-text-muted) !important;
+  text-transform: uppercase !important;
+  padding: 8px 10px 4px !important;
+}
+
+/* ==========================================================================
+   4. COMMAND PALETTE MODAL (Ctrl + K)
+   ========================================================================== */
+.fenix-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 15vh;
+}
+
+.fenix-palette-modal {
+  width: 620px;
+  max-width: 92vw;
+  background: #0b1329;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--fenix-radius-md);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fenix-palette-search-box {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 12px;
+}
+.fenix-palette-search-box i {
+  font-size: 20px;
+  color: var(--fenix-cyan);
+}
+.fenix-palette-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 15px;
+  font-family: var(--fenix-font-sans);
+  outline: none;
+}
+.fenix-palette-input::placeholder {
+  color: var(--fenix-text-muted);
+}
+.fenix-palette-kbd {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: var(--fenix-text-muted);
+  font-family: var(--fenix-font-mono);
+}
+
+.fenix-palette-results {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fenix-palette-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--fenix-radius-sm);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  color: var(--fenix-text-primary);
+}
+.fenix-palette-item:hover, .fenix-palette-item.active {
+  background: rgba(56, 189, 248, 0.12);
+  color: #ffffff;
+}
+.fenix-palette-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fenix-palette-item-icon {
+  font-size: 18px;
+  color: var(--fenix-cyan);
+}
+.fenix-palette-item-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.fenix-palette-item-desc {
+  font-size: 11px;
+  color: var(--fenix-text-muted);
+}
+.fenix-palette-item-action {
+  font-size: 11px;
+  font-family: var(--fenix-font-mono);
+  color: var(--fenix-text-muted);
+}
+
+/* ==========================================================================
+   5. WORKFORCE CONSOLE (AGENTS) ELEVATION
+   ========================================================================== */
+.agent-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.agent-spec-card {
+  background: var(--fenix-bg-card);
+  border: 1px solid var(--fenix-border-subtle);
+  border-radius: var(--fenix-radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.agent-spec-card:hover {
+  border-color: var(--fenix-border-glow-cyan);
+  transform: translateY(-2px);
+  box-shadow: var(--fenix-shadow-md), var(--fenix-glow-cyan);
+}
+
+.agent-spec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.agent-spec-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.agent-spec-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fenix-radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--fenix-border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.agent-spec-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+.agent-spec-role {
+  font-size: 11px;
+  color: var(--fenix-cyan);
+  font-family: var(--fenix-font-mono);
+}
+
+.agent-spec-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fenix-text-secondary);
+}
+.agent-spec-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.agent-spec-meta-label {
+  color: var(--fenix-text-muted);
+}
+.agent-spec-meta-val {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.agent-spec-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.agent-spec-btn {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--fenix-radius-xs);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--fenix-border-subtle);
+  color: var(--fenix-text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+.agent-spec-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--fenix-cyan);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   6. BUILDING & AGENT CONTEXTUAL INSPECTOR PANELS
+   ========================================================================== */
+.fenix-drawer-panel {
+  position: fixed;
+  top: 54px;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-width: 90vw;
+  background: rgba(10, 18, 36, 0.96);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fenix-drawer-panel.open {
+  transform: translateX(0);
+}
+
+.fenix-drawer-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fenix-drawer-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fenix-drawer-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--fenix-text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.fenix-drawer-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ffffff;
+}
+
+.fenix-drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ==========================================================================
+   7. COMMAND PALETTE (CTRL + K) — PREMIUM SPOTLIGHT OVERLAY
+   ========================================================================== */
+dialog#cmdDialog.command-dialog {
+  padding: 0;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--fenix-radius-lg, 14px);
+  background: rgba(8, 15, 30, 0.94);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85), 0 0 30px rgba(56, 189, 248, 0.2);
+  width: 660px;
+  max-width: 92vw;
+  color: var(--fenix-text-primary, #e2e8f0);
+  overflow: hidden;
+  position: fixed;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 9999;
+}
+dialog#cmdDialog::backdrop {
+  background: rgba(3, 7, 18, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.command-palette-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+.command-palette-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+.command-palette-input-wrap input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
+  width: 100%;
+  font-family: var(--fenix-font-sans, -apple-system, sans-serif);
+}
+.command-palette-input-wrap input::placeholder {
+  color: var(--fenix-text-muted, #64748b);
+}
+.command-palette-close {
+  background: transparent;
+  border: none;
+  color: var(--fenix-text-muted, #64748b);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.command-palette-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.command-palette-results {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cmd-group-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fenix-text-muted, #64748b);
+  padding: 8px 12px 4px;
+}
+.cmd-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--fenix-radius-sm, 6px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--fenix-text-primary, #e2e8f0);
+  border: 1px solid transparent;
+  background: transparent;
+  user-select: none;
+}
+.cmd-item:hover, .cmd-item.selected {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #ffffff;
+  transform: translateX(2px);
+}
+.cmd-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.cmd-item-icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 16px;
+  color: var(--fenix-cyan, #38bdf8);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.cmd-item:hover .cmd-item-icon, .cmd-item.selected .cmd-item-icon {
+  background: var(--fenix-cyan, #38bdf8);
+  color: #040813;
+}
+.cmd-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cmd-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmd-item-sub {
+  font-size: 11px;
+  color: var(--fenix-text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmd-item-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fenix-text-secondary, #94a3b8);
+  flex-shrink: 0;
+}
+.cmd-empty-hint {
+  padding: 24px;
+  text-align: center;
+  color: var(--fenix-text-muted, #64748b);
+  font-size: 13px;
+  font-style: italic;
+}
+.command-palette-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: rgba(4, 8, 19, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  color: var(--fenix-text-muted, #64748b);
+}
+.command-palette-footer kbd {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: var(--fenix-font-mono, monospace);
+  color: var(--fenix-text-secondary, #94a3b8);
+}
+

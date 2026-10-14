@@ -1,0 +1,2513 @@
+{
+  "savedAt": "2026-10-14T14:55:30.267Z",
+  "conversations": [
+    {
+      "conversationId": "conv_1790889710838_7e0896",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T21:21:50.838Z",
+      "updatedAt": "2026-10-01T21:21:50.842Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790890241029_50a225",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T21:30:41.029Z",
+      "updatedAt": "2026-10-01T21:30:41.032Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790891020902_989cc4",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T21:43:40.902Z",
+      "updatedAt": "2026-10-01T21:43:40.905Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790891084533_858142",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T21:44:44.533Z",
+      "updatedAt": "2026-10-01T21:44:44.535Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790891208366_efdca5",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T21:46:48.366Z",
+      "updatedAt": "2026-10-01T21:46:48.369Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790892046946_a1eaa6",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T22:00:46.946Z",
+      "updatedAt": "2026-10-01T22:00:46.948Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790892422631_03d4f2",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T22:07:02.631Z",
+      "updatedAt": "2026-10-01T22:07:02.634Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790892449771_c809de",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T22:07:29.771Z",
+      "updatedAt": "2026-10-01T22:07:29.773Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790893548094_41dc04",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T22:25:48.094Z",
+      "updatedAt": "2026-10-01T22:25:48.104Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1790893929799_251af8",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-01T22:32:09.799Z",
+      "updatedAt": "2026-10-01T22:32:09.802Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791483116895_19fbe5",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-08T18:11:56.895Z",
+      "updatedAt": "2026-10-08T18:11:56.899Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791491725763_952af6",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-08T20:35:25.764Z",
+      "updatedAt": "2026-10-08T20:35:25.769Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791496514660_d8ac2e",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-08T21:55:14.660Z",
+      "updatedAt": "2026-10-08T21:55:14.674Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791546280288_a96df9",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-09T11:44:40.288Z",
+      "updatedAt": "2026-10-09T11:44:40.307Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791573237702_552ac1",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-09T19:13:57.702Z",
+      "updatedAt": "2026-10-09T19:13:57.712Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791590105594_2e2f3a",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-09T23:55:05.594Z",
+      "updatedAt": "2026-10-09T23:55:05.600Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791903111309_b7ad34",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-13T14:51:51.309Z",
+      "updatedAt": "2026-10-13T14:51:51.313Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791922193485_e057b3",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-13T20:09:53.485Z",
+      "updatedAt": "2026-10-13T20:09:53.490Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791939245570_adf79c",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-14T00:54:05.570Z",
+      "updatedAt": "2026-10-14T00:54:05.575Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791939954656_306e9e",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-14T01:05:54.656Z",
+      "updatedAt": "2026-10-14T01:05:54.660Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791941570721_57aa22",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-14T01:32:50.721Z",
+      "updatedAt": "2026-10-14T01:32:50.723Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791963100727_78f7a9",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-14T07:31:40.727Z",
+      "updatedAt": "2026-10-14T07:31:40.733Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791975478920_ebfc23",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-14T10:57:58.920Z",
+      "updatedAt": "2026-10-14T10:57:58.924Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791988911717_84cf8d",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-14T14:41:51.717Z",
+      "updatedAt": "2026-10-14T14:41:51.723Z",
+      "lastMessage": "Tests running now. Will update with report."
+    },
+    {
+      "conversationId": "conv_1791989730260_ee7f51",
+      "type": "DIRECT",
+      "participants": [
+        "agent-qa",
+        "agent-backend"
+      ],
+      "roomId": "office-backend",
+      "missionId": null,
+      "projectId": null,
+      "taskId": null,
+      "context": {
+        "knockReason": "Verify regression tests"
+      },
+      "status": "ACTIVE",
+      "messageCount": 1,
+      "createdAt": "2026-10-14T14:55:30.260Z",
+      "updatedAt": "2026-10-14T14:55:30.262Z",
+      "lastMessage": "Tests running now. Will update with report."
+    }
+  ],
+  "messages": [
+    {
+      "messageId": "msg_1790889710842_dcf2b9",
+      "conversationId": "conv_1790889710838_7e0896",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T21:21:50.842Z"
+    },
+    {
+      "messageId": "msg_1790890241032_ee0104",
+      "conversationId": "conv_1790890241029_50a225",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T21:30:41.032Z"
+    },
+    {
+      "messageId": "msg_1790891020905_bd8f32",
+      "conversationId": "conv_1790891020902_989cc4",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T21:43:40.905Z"
+    },
+    {
+      "messageId": "msg_1790891084535_5c1dbd",
+      "conversationId": "conv_1790891084533_858142",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T21:44:44.535Z"
+    },
+    {
+      "messageId": "msg_1790891208369_93ef43",
+      "conversationId": "conv_1790891208366_efdca5",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T21:46:48.369Z"
+    },
+    {
+      "messageId": "msg_1790892046948_b18a27",
+      "conversationId": "conv_1790892046946_a1eaa6",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T22:00:46.948Z"
+    },
+    {
+      "messageId": "msg_1790892422634_79abe1",
+      "conversationId": "conv_1790892422631_03d4f2",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T22:07:02.634Z"
+    },
+    {
+      "messageId": "msg_1790892449773_2c3f54",
+      "conversationId": "conv_1790892449771_c809de",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T22:07:29.773Z"
+    },
+    {
+      "messageId": "msg_1790893548103_a563fd",
+      "conversationId": "conv_1790893548094_41dc04",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T22:25:48.104Z"
+    },
+    {
+      "messageId": "msg_1790893929802_d667f5",
+      "conversationId": "conv_1790893929799_251af8",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-01T22:32:09.802Z"
+    },
+    {
+      "messageId": "msg_1791483116899_47efff",
+      "conversationId": "conv_1791483116895_19fbe5",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-08T18:11:56.899Z"
+    },
+    {
+      "messageId": "msg_1791491725769_c788b1",
+      "conversationId": "conv_1791491725763_952af6",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-08T20:35:25.769Z"
+    },
+    {
+      "messageId": "msg_1791496514673_f6a4cf",
+      "conversationId": "conv_1791496514660_d8ac2e",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-08T21:55:14.674Z"
+    },
+    {
+      "messageId": "msg_1791546280307_fd0f54",
+      "conversationId": "conv_1791546280288_a96df9",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-09T11:44:40.307Z"
+    },
+    {
+      "messageId": "msg_1791573237712_7a4b49",
+      "conversationId": "conv_1791573237702_552ac1",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-09T19:13:57.712Z"
+    },
+    {
+      "messageId": "msg_1791590105599_99da0a",
+      "conversationId": "conv_1791590105594_2e2f3a",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-09T23:55:05.600Z"
+    },
+    {
+      "messageId": "msg_1791903111313_87cf0f",
+      "conversationId": "conv_1791903111309_b7ad34",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-13T14:51:51.313Z"
+    },
+    {
+      "messageId": "msg_1791922193490_eb8b65",
+      "conversationId": "conv_1791922193485_e057b3",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-13T20:09:53.490Z"
+    },
+    {
+      "messageId": "msg_1791939245574_54715d",
+      "conversationId": "conv_1791939245570_adf79c",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-14T00:54:05.575Z"
+    },
+    {
+      "messageId": "msg_1791939954660_c12ea2",
+      "conversationId": "conv_1791939954656_306e9e",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-14T01:05:54.660Z"
+    },
+    {
+      "messageId": "msg_1791941570723_cdd070",
+      "conversationId": "conv_1791941570721_57aa22",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-14T01:32:50.723Z"
+    },
+    {
+      "messageId": "msg_1791963100733_3d5b7d",
+      "conversationId": "conv_1791963100727_78f7a9",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-14T07:31:40.733Z"
+    },
+    {
+      "messageId": "msg_1791975478924_d1c4f9",
+      "conversationId": "conv_1791975478920_ebfc23",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-14T10:57:58.924Z"
+    },
+    {
+      "messageId": "msg_1791988911723_ea206f",
+      "conversationId": "conv_1791988911717_84cf8d",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-14T14:41:51.723Z"
+    },
+    {
+      "messageId": "msg_1791989730262_ab9668",
+      "conversationId": "conv_1791989730260_ee7f51",
+      "senderId": "agent-qa",
+      "recipients": [
+        "agent-backend"
+      ],
+      "content": "Tests running now. Will update with report.",
+      "type": "DIRECT",
+      "context": {},
+      "status": "DELIVERED",
+      "createdAt": "2026-10-14T14:55:30.262Z"
+    }
+  ],
+  "meetings": [
+    {
+      "meetingId": "meet_1790889710845_cde23b",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790889710848_4200",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T21:21:50.848Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T21:21:50.845Z",
+      "updatedAt": "2026-10-01T21:21:50.853Z",
+      "endedAt": "2026-10-01T21:21:50.853Z"
+    },
+    {
+      "meetingId": "meet_1790890241035_ad9408",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790890241037_ef8c",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T21:30:41.037Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T21:30:41.035Z",
+      "updatedAt": "2026-10-01T21:30:41.039Z",
+      "endedAt": "2026-10-01T21:30:41.039Z"
+    },
+    {
+      "meetingId": "meet_1790891020907_1d1458",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790891020910_59e8",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T21:43:40.910Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T21:43:40.907Z",
+      "updatedAt": "2026-10-01T21:43:40.912Z",
+      "endedAt": "2026-10-01T21:43:40.912Z"
+    },
+    {
+      "meetingId": "meet_1790891084537_14ca83",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790891084539_6675",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T21:44:44.539Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T21:44:44.537Z",
+      "updatedAt": "2026-10-01T21:44:44.540Z",
+      "endedAt": "2026-10-01T21:44:44.540Z"
+    },
+    {
+      "meetingId": "meet_1790891208372_150b44",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790891208374_6f48",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T21:46:48.374Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T21:46:48.372Z",
+      "updatedAt": "2026-10-01T21:46:48.376Z",
+      "endedAt": "2026-10-01T21:46:48.376Z"
+    },
+    {
+      "meetingId": "meet_1790892046950_c0d9b2",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790892046951_d5b2",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T22:00:46.951Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T22:00:46.950Z",
+      "updatedAt": "2026-10-01T22:00:46.953Z",
+      "endedAt": "2026-10-01T22:00:46.953Z"
+    },
+    {
+      "meetingId": "meet_1790892422635_13bab1",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790892422636_6899",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T22:07:02.636Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T22:07:02.635Z",
+      "updatedAt": "2026-10-01T22:07:02.637Z",
+      "endedAt": "2026-10-01T22:07:02.637Z"
+    },
+    {
+      "meetingId": "meet_1790892449774_38b744",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790892449776_4055",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T22:07:29.776Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T22:07:29.774Z",
+      "updatedAt": "2026-10-01T22:07:29.777Z",
+      "endedAt": "2026-10-01T22:07:29.777Z"
+    },
+    {
+      "meetingId": "meet_1790893548109_7c6569",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790893548112_b93d",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T22:25:48.112Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T22:25:48.109Z",
+      "updatedAt": "2026-10-01T22:25:48.115Z",
+      "endedAt": "2026-10-01T22:25:48.115Z"
+    },
+    {
+      "meetingId": "meet_1790893929804_c8d247",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1790893929806_b7f4",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-01T22:32:09.806Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-01T22:32:09.804Z",
+      "updatedAt": "2026-10-01T22:32:09.807Z",
+      "endedAt": "2026-10-01T22:32:09.807Z"
+    },
+    {
+      "meetingId": "meet_1791483116903_e1ee83",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791483116922_f020",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-08T18:11:56.922Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-08T18:11:56.903Z",
+      "updatedAt": "2026-10-08T18:11:56.930Z",
+      "endedAt": "2026-10-08T18:11:56.930Z"
+    },
+    {
+      "meetingId": "meet_1791491725775_307b22",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791491725788_8cca",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-08T20:35:25.788Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-08T20:35:25.775Z",
+      "updatedAt": "2026-10-08T20:35:25.792Z",
+      "endedAt": "2026-10-08T20:35:25.792Z"
+    },
+    {
+      "meetingId": "meet_1791496514678_5408b1",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791496514682_2f1f",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-08T21:55:14.682Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-08T21:55:14.678Z",
+      "updatedAt": "2026-10-08T21:55:14.686Z",
+      "endedAt": "2026-10-08T21:55:14.686Z"
+    },
+    {
+      "meetingId": "meet_1791546280313_0ea045",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791546280318_fd29",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-09T11:44:40.318Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-09T11:44:40.313Z",
+      "updatedAt": "2026-10-09T11:44:40.342Z",
+      "endedAt": "2026-10-09T11:44:40.342Z"
+    },
+    {
+      "meetingId": "meet_1791573237720_e65692",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791573237727_2d84",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-09T19:13:57.727Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-09T19:13:57.720Z",
+      "updatedAt": "2026-10-09T19:13:57.732Z",
+      "endedAt": "2026-10-09T19:13:57.732Z"
+    },
+    {
+      "meetingId": "meet_1791590105604_d63109",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791590105607_1cc9",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-09T23:55:05.607Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-09T23:55:05.604Z",
+      "updatedAt": "2026-10-09T23:55:05.610Z",
+      "endedAt": "2026-10-09T23:55:05.610Z"
+    },
+    {
+      "meetingId": "meet_1791903111319_e3c9e2",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791903111325_38a7",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-13T14:51:51.325Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-13T14:51:51.319Z",
+      "updatedAt": "2026-10-13T14:51:51.330Z",
+      "endedAt": "2026-10-13T14:51:51.330Z"
+    },
+    {
+      "meetingId": "meet_1791922193494_174c50",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791922193498_3632",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-13T20:09:53.498Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-13T20:09:53.494Z",
+      "updatedAt": "2026-10-13T20:09:53.500Z",
+      "endedAt": "2026-10-13T20:09:53.500Z"
+    },
+    {
+      "meetingId": "meet_1791939245580_f35af3",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791939245584_4c42",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-14T00:54:05.584Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-14T00:54:05.580Z",
+      "updatedAt": "2026-10-14T00:54:05.587Z",
+      "endedAt": "2026-10-14T00:54:05.587Z"
+    },
+    {
+      "meetingId": "meet_1791939954663_3f9d78",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791939954666_a322",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-14T01:05:54.667Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-14T01:05:54.663Z",
+      "updatedAt": "2026-10-14T01:05:54.670Z",
+      "endedAt": "2026-10-14T01:05:54.670Z"
+    },
+    {
+      "meetingId": "meet_1791941570725_7293b0",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791941570726_d078",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-14T01:32:50.727Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-14T01:32:50.725Z",
+      "updatedAt": "2026-10-14T01:32:50.728Z",
+      "endedAt": "2026-10-14T01:32:50.728Z"
+    },
+    {
+      "meetingId": "meet_1791963100739_b5376c",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791963100743_498d",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-14T07:31:40.743Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-14T07:31:40.740Z",
+      "updatedAt": "2026-10-14T07:31:40.746Z",
+      "endedAt": "2026-10-14T07:31:40.746Z"
+    },
+    {
+      "meetingId": "meet_1791975478927_a4f0dc",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791975478929_2372",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-14T10:57:58.929Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-14T10:57:58.927Z",
+      "updatedAt": "2026-10-14T10:57:58.932Z",
+      "endedAt": "2026-10-14T10:57:58.932Z"
+    },
+    {
+      "meetingId": "meet_1791988911729_99332e",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791988911733_d03a",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-14T14:41:51.733Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-14T14:41:51.729Z",
+      "updatedAt": "2026-10-14T14:41:51.736Z",
+      "endedAt": "2026-10-14T14:41:51.736Z"
+    },
+    {
+      "meetingId": "meet_1791989730264_b7c4a8",
+      "topic": "Fênix Zero-AI Alignment",
+      "roomId": "room-meeting-a",
+      "participants": [
+        "grg-admin",
+        "agent-architect",
+        "agent-security"
+      ],
+      "missionId": null,
+      "projectId": null,
+      "decisions": [
+        {
+          "id": "dec_1791989730266_3e34",
+          "decision": "All communication must pass through circuit breaker",
+          "author": "agent-security",
+          "timestamp": "2026-10-14T14:55:30.266Z"
+        }
+      ],
+      "actionItems": [],
+      "messages": [],
+      "summary": "Decision ratified unanimously",
+      "status": "ENDED",
+      "createdAt": "2026-10-14T14:55:30.264Z",
+      "updatedAt": "2026-10-14T14:55:30.267Z",
+      "endedAt": "2026-10-14T14:55:30.267Z"
+    }
+  ],
+  "knocks": [
+    {
+      "knockId": "knock_1790889710831_e00dbd",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T21:21:50.832Z",
+      "respondedAt": "2026-10-01T21:21:50.835Z"
+    },
+    {
+      "knockId": "knock_1790890241026_1ce9de",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T21:30:41.026Z",
+      "respondedAt": "2026-10-01T21:30:41.028Z"
+    },
+    {
+      "knockId": "knock_1790891020898_3176c5",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T21:43:40.898Z",
+      "respondedAt": "2026-10-01T21:43:40.900Z"
+    },
+    {
+      "knockId": "knock_1790891084530_3eff41",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T21:44:44.530Z",
+      "respondedAt": "2026-10-01T21:44:44.532Z"
+    },
+    {
+      "knockId": "knock_1790891208361_50ce0a",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T21:46:48.361Z",
+      "respondedAt": "2026-10-01T21:46:48.364Z"
+    },
+    {
+      "knockId": "knock_1790892046943_66c922",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T22:00:46.944Z",
+      "respondedAt": "2026-10-01T22:00:46.945Z"
+    },
+    {
+      "knockId": "knock_1790892422628_024211",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T22:07:02.629Z",
+      "respondedAt": "2026-10-01T22:07:02.630Z"
+    },
+    {
+      "knockId": "knock_1790892449769_4bf613",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T22:07:29.769Z",
+      "respondedAt": "2026-10-01T22:07:29.771Z"
+    },
+    {
+      "knockId": "knock_1790893548087_6bdcbe",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T22:25:48.088Z",
+      "respondedAt": "2026-10-01T22:25:48.092Z"
+    },
+    {
+      "knockId": "knock_1790893929793_b4c379",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-01T22:32:09.793Z",
+      "respondedAt": "2026-10-01T22:32:09.796Z"
+    },
+    {
+      "knockId": "knock_1791483116887_e9f5c4",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-08T18:11:56.887Z",
+      "respondedAt": "2026-10-08T18:11:56.892Z"
+    },
+    {
+      "knockId": "knock_1791491725745_fb3253",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-08T20:35:25.746Z",
+      "respondedAt": "2026-10-08T20:35:25.757Z"
+    },
+    {
+      "knockId": "knock_1791496514650_b6017e",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-08T21:55:14.651Z",
+      "respondedAt": "2026-10-08T21:55:14.658Z"
+    },
+    {
+      "knockId": "knock_1791546280277_b3e488",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-09T11:44:40.278Z",
+      "respondedAt": "2026-10-09T11:44:40.286Z"
+    },
+    {
+      "knockId": "knock_1791573237640_f57c5b",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-09T19:13:57.641Z",
+      "respondedAt": "2026-10-09T19:13:57.669Z"
+    },
+    {
+      "knockId": "knock_1791590105589_6d9b65",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-09T23:55:05.589Z",
+      "respondedAt": "2026-10-09T23:55:05.592Z"
+    },
+    {
+      "knockId": "knock_1791903111301_1f62cd",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-13T14:51:51.302Z",
+      "respondedAt": "2026-10-13T14:51:51.306Z"
+    },
+    {
+      "knockId": "knock_1791922193471_237070",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-13T20:09:53.471Z",
+      "respondedAt": "2026-10-13T20:09:53.480Z"
+    },
+    {
+      "knockId": "knock_1791939245564_11d9cc",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-14T00:54:05.564Z",
+      "respondedAt": "2026-10-14T00:54:05.568Z"
+    },
+    {
+      "knockId": "knock_1791939954650_12e648",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-14T01:05:54.651Z",
+      "respondedAt": "2026-10-14T01:05:54.654Z"
+    },
+    {
+      "knockId": "knock_1791941570717_01d164",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-14T01:32:50.717Z",
+      "respondedAt": "2026-10-14T01:32:50.719Z"
+    },
+    {
+      "knockId": "knock_1791963100721_df1c14",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-14T07:31:40.721Z",
+      "respondedAt": "2026-10-14T07:31:40.725Z"
+    },
+    {
+      "knockId": "knock_1791975478911_f8925d",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-14T10:57:58.911Z",
+      "respondedAt": "2026-10-14T10:57:58.917Z"
+    },
+    {
+      "knockId": "knock_1791988911708_d80bb2",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-14T14:41:51.708Z",
+      "respondedAt": "2026-10-14T14:41:51.712Z"
+    },
+    {
+      "knockId": "knock_1791989730256_c3204a",
+      "fromAgent": "agent-qa",
+      "toAgent": "agent-backend",
+      "officeId": "office-backend",
+      "reason": "Verify regression tests",
+      "missionId": null,
+      "projectId": null,
+      "context": {},
+      "status": "ACCEPT",
+      "timestamp": "2026-10-14T14:55:30.257Z",
+      "respondedAt": "2026-10-14T14:55:30.259Z"
+    }
+  ],
+  "activityFeed": [
+    {
+      "id": "act_1791989730265_xvlh",
+      "timestamp": "2026-10-14T14:55:30.265Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791989730262_guz1",
+      "timestamp": "2026-10-14T14:55:30.262Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791989730259_lsn2",
+      "timestamp": "2026-10-14T14:55:30.259Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791988911732_w7os",
+      "timestamp": "2026-10-14T14:41:51.732Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791988911720_2d2m",
+      "timestamp": "2026-10-14T14:41:51.720Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791988911712_xg16",
+      "timestamp": "2026-10-14T14:41:51.712Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791975478929_8w9r",
+      "timestamp": "2026-10-14T10:57:58.929Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791975478922_zy1o",
+      "timestamp": "2026-10-14T10:57:58.922Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791975478916_1h2q",
+      "timestamp": "2026-10-14T10:57:58.916Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791963100742_s3qa",
+      "timestamp": "2026-10-14T07:31:40.742Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791963100730_k15r",
+      "timestamp": "2026-10-14T07:31:40.730Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791963100724_okz0",
+      "timestamp": "2026-10-14T07:31:40.724Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791941570726_iqqn",
+      "timestamp": "2026-10-14T01:32:50.726Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791941570722_4pn1",
+      "timestamp": "2026-10-14T01:32:50.722Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791941570719_gzsb",
+      "timestamp": "2026-10-14T01:32:50.719Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791939954665_msi2",
+      "timestamp": "2026-10-14T01:05:54.665Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791939954658_u32e",
+      "timestamp": "2026-10-14T01:05:54.658Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791939954654_gl1q",
+      "timestamp": "2026-10-14T01:05:54.654Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791939245584_ik7p",
+      "timestamp": "2026-10-14T00:54:05.584Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791939245573_mz5c",
+      "timestamp": "2026-10-14T00:54:05.573Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791939245567_vbo8",
+      "timestamp": "2026-10-14T00:54:05.567Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791922193497_aq5w",
+      "timestamp": "2026-10-13T20:09:53.497Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791922193488_a7vc",
+      "timestamp": "2026-10-13T20:09:53.488Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791922193475_80o8",
+      "timestamp": "2026-10-13T20:09:53.475Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791903111323_jjti",
+      "timestamp": "2026-10-13T14:51:51.323Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791903111311_rt1m",
+      "timestamp": "2026-10-13T14:51:51.311Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791903111305_364t",
+      "timestamp": "2026-10-13T14:51:51.305Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791590105607_def0",
+      "timestamp": "2026-10-09T23:55:05.607Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791590105597_r5y9",
+      "timestamp": "2026-10-09T23:55:05.597Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791590105592_krd9",
+      "timestamp": "2026-10-09T23:55:05.592Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791573237726_27tz",
+      "timestamp": "2026-10-09T19:13:57.726Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791573237707_6uw8",
+      "timestamp": "2026-10-09T19:13:57.707Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791573237668_wuwv",
+      "timestamp": "2026-10-09T19:13:57.668Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791546280317_agpd",
+      "timestamp": "2026-10-09T11:44:40.317Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791546280291_gao6",
+      "timestamp": "2026-10-09T11:44:40.291Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791546280285_mggh",
+      "timestamp": "2026-10-09T11:44:40.285Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791496514681_gqwj",
+      "timestamp": "2026-10-08T21:55:14.681Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791496514663_rbyp",
+      "timestamp": "2026-10-08T21:55:14.663Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791496514657_wpnc",
+      "timestamp": "2026-10-08T21:55:14.657Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791491725787_oy0d",
+      "timestamp": "2026-10-08T20:35:25.787Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791491725766_x58n",
+      "timestamp": "2026-10-08T20:35:25.766Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791491725756_fob5",
+      "timestamp": "2026-10-08T20:35:25.756Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1791483116921_2ofc",
+      "timestamp": "2026-10-08T18:11:56.921Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1791483116897_4km3",
+      "timestamp": "2026-10-08T18:11:56.897Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1791483116891_6zn7",
+      "timestamp": "2026-10-08T18:11:56.891Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790893929805_xpzo",
+      "timestamp": "2026-10-01T22:32:09.805Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790893929801_kkaf",
+      "timestamp": "2026-10-01T22:32:09.801Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790893929795_u6m2",
+      "timestamp": "2026-10-01T22:32:09.795Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790893548112_1idx",
+      "timestamp": "2026-10-01T22:25:48.112Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790893548100_tz7w",
+      "timestamp": "2026-10-01T22:25:48.100Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790893548091_8uk9",
+      "timestamp": "2026-10-01T22:25:48.091Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790892449775_guv3",
+      "timestamp": "2026-10-01T22:07:29.775Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790892449772_z56e",
+      "timestamp": "2026-10-01T22:07:29.772Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790892449770_xzy1",
+      "timestamp": "2026-10-01T22:07:29.770Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790892422636_npjs",
+      "timestamp": "2026-10-01T22:07:02.636Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790892422632_cruj",
+      "timestamp": "2026-10-01T22:07:02.632Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790892422630_8bsf",
+      "timestamp": "2026-10-01T22:07:02.630Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790892046951_6kzb",
+      "timestamp": "2026-10-01T22:00:46.951Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790892046947_xoff",
+      "timestamp": "2026-10-01T22:00:46.947Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790892046945_z2dm",
+      "timestamp": "2026-10-01T22:00:46.945Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790891208373_u51v",
+      "timestamp": "2026-10-01T21:46:48.373Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790891208368_5cxy",
+      "timestamp": "2026-10-01T21:46:48.368Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790891208363_alet",
+      "timestamp": "2026-10-01T21:46:48.363Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790891084538_wl0m",
+      "timestamp": "2026-10-01T21:44:44.538Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790891084534_1ad1",
+      "timestamp": "2026-10-01T21:44:44.534Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790891084532_u8fr",
+      "timestamp": "2026-10-01T21:44:44.532Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790891020909_r6lw",
+      "timestamp": "2026-10-01T21:43:40.909Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790891020904_0zvj",
+      "timestamp": "2026-10-01T21:43:40.904Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790891020900_6kd6",
+      "timestamp": "2026-10-01T21:43:40.900Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790890241036_81cu",
+      "timestamp": "2026-10-01T21:30:41.036Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790890241031_70e0",
+      "timestamp": "2026-10-01T21:30:41.031Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790890241027_etcg",
+      "timestamp": "2026-10-01T21:30:41.027Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    },
+    {
+      "id": "act_1790889710848_80uj",
+      "timestamp": "2026-10-01T21:21:50.848Z",
+      "type": "MEETING_START",
+      "actor": "grg-admin",
+      "target": "room-meeting-a",
+      "summary": "Reunião iniciada em room-meeting-a: \"Fênix Zero-AI Alignment\" (3 participantes)",
+      "details": null
+    },
+    {
+      "id": "act_1790889710841_e6yd",
+      "timestamp": "2026-10-01T21:21:50.841Z",
+      "type": "CONVERSATION_START",
+      "actor": "agent-backend",
+      "target": "agent-qa",
+      "summary": "agent-backend aceitou a conversa com agent-qa",
+      "details": null
+    },
+    {
+      "id": "act_1790889710835_59ni",
+      "timestamp": "2026-10-01T21:21:50.835Z",
+      "type": "KNOCK",
+      "actor": "agent-qa",
+      "target": "agent-backend",
+      "summary": "agent-qa bateu na porta de agent-backend: \"Verify regression tests\"",
+      "details": null
+    }
+  ]
+}

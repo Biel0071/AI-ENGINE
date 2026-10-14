@@ -5,7 +5,16 @@
   const make = (tag, className, value) => { const element = document.createElement(tag); if (className) element.className = className; if (value !== undefined) element.textContent = String(value ?? ''); return element; };
   const label = (item) => item?.properties?.name || item?.properties?.title || item?.name || item?.id || 'Sem nome';
   const svg = (tag, attrs = {}) => { const element = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const [key, value] of Object.entries(attrs)) element.setAttribute(key, value); return element; };
-  async function getJson(path) { const response = await fetch(path, { credentials: 'same-origin', signal: AbortSignal.timeout(30000) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`); return data; }
+  async function getJson(path) {
+    const token = (typeof window.fenixGetAuthToken === 'function')
+      ? window.fenixGetAuthToken()
+      : (localStorage.getItem('grg_token') || localStorage.getItem('fenix_token') || sessionStorage.getItem('grg_token') || (document.cookie.match(/fenix_session=([^;]+)/) || [])[1] || '');
+    const headers = { Accept: 'application/json', ...(token && token !== 'null' ? { Authorization: `Bearer ${token}` } : {}) };
+    const response = await fetch(path, { headers, credentials: 'same-origin', signal: AbortSignal.timeout(30000) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    return data;
+  }
   function shell() {
     const view = $('view-memory');
     if (!view || view.dataset.liveMemory === 'true') return;

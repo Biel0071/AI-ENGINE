@@ -366,7 +366,7 @@ window.addEventListener('load', () => {
       const assistant = turns[i + 1]?.role === 'assistant' ? turns[i + 1] : null;
       if (user) groups.push({ user, assistant });
     }
-    target.innerHTML = groups.length ? groups.reverse().map((item, index) => `<button class="history-item" data-history-index="${groups.length - index - 1}"><i class="ph ph-chat-circle"></i><span>${esc(item.user.content.slice(0, 80))}<small>${item.assistant ? esc(item.assistant.content.slice(0, 100)) : 'sem resposta'}</small></span></button>`).join('') : '<div class="empty-state">Nenhuma conversa salva ainda.</div>';
+    target.innerHTML = groups.length ? groups.reverse().map((item, index) => `<button class="history-item" data-history-index="${groups.length - index - 1}"><i class="ph ph-chat-circle"></i><span>${esc((item.user?.content || '').slice(0, 80))}<small>${item.assistant?.content ? esc(item.assistant.content.slice(0, 100)) : 'sem resposta'}</small></span></button>`).join('') : '<div class="empty-state">Nenhuma conversa salva ainda.</div>';
     target.querySelectorAll('[data-history-index]').forEach((button) => button.addEventListener('click', () => {
       const item = groups[Number(button.dataset.historyIndex)];
       if (!item) return;

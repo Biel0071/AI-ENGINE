@@ -1,0 +1,5113 @@
+{
+  "generatedAt": "2026-10-01T19:03:53.036Z",
+  "gitCommit": "5baa8078cde628d882fa7cbc6d9fead34a8d7e61",
+  "gitBranch": "fenix/operational-os-20260924",
+  "totalSourceFiles": 462,
+  "totalPublicFiles": 83,
+  "totalTestSuites": 194,
+  "totalViews": 18,
+  "totalRoutes": 475,
+  "allSrcFiles": [
+    {
+      "path": "grg/src/absorption/project-absorption-engine.js",
+      "sizeBytes": 35721,
+      "lines": 942,
+      "hash": "117ca0f674548683f59bcf41b639da3348b2a26ef210ddab25213caf2e7d3ad0"
+    },
+    {
+      "path": "grg/src/absorption/system-absorption-engine.js",
+      "sizeBytes": 9355,
+      "lines": 254,
+      "hash": "5d39fc59bd43411b18b03881069305cf03b5224dccfd34a0a7013fb1dab9007a"
+    },
+    {
+      "path": "grg/src/agents/agent-avatar-registry.js",
+      "sizeBytes": 4699,
+      "lines": 133,
+      "hash": "b27dc8d0c3f3b101c774cec31eb3b52b2bf9882499b1012d32fc8c12e57753fe"
+    },
+    {
+      "path": "grg/src/agents/agent-definitions.js",
+      "sizeBytes": 6851,
+      "lines": 168,
+      "hash": "c9029d879deda3d3f8a050962b5d6e6f99de900c499a716918b697a4548e0118"
+    },
+    {
+      "path": "grg/src/agents/agent-execution-runtime.js",
+      "sizeBytes": 7472,
+      "lines": 130,
+      "hash": "9b99d93fd8899a078d19349103205a5327f24e4e9672b826c13e721e4e836900"
+    },
+    {
+      "path": "grg/src/agents/agent-job-assignment.js",
+      "sizeBytes": 2911,
+      "lines": 31,
+      "hash": "d2eb871c5c7f2948a2e609e143d7c44b27952c53d5529f301651f355620c02a4"
+    },
+    {
+      "path": "grg/src/agents/agent-registry.js",
+      "sizeBytes": 3017,
+      "lines": 87,
+      "hash": "cf441c48b009d1339fcb51e126381091136384b6c2ae31191f934f0734307ef6"
+    },
+    {
+      "path": "grg/src/agents/agent-swarm.js",
+      "sizeBytes": 5036,
+      "lines": 113,
+      "hash": "f9283a8131b58c6098caa3b08fcc82125ac6bf75c0db0348593913c5c119bb94"
+    },
+    {
+      "path": "grg/src/agents/agent-workspace-executor.js",
+      "sizeBytes": 11056,
+      "lines": 152,
+      "hash": "415effa3eb4420259b75dafa50e846bd4786b7e6dd05403f5cd6033828a5a2db"
+    },
+    {
+      "path": "grg/src/agents/autonomous-agent-ecosystem.js",
+      "sizeBytes": 19012,
+      "lines": 177,
+      "hash": "70b95476e26e4f8f01b8143a8b8582f98dc7af86dcbd1ed37f1d19374183a434"
+    },
+    {
+      "path": "grg/src/agents/scientist-agent.js",
+      "sizeBytes": 14105,
+      "lines": 363,
+      "hash": "510c22f2809f5445d301c10d0134ae793fab87afc46618e7a0b70ba51f61f62c"
+    },
+    {
+      "path": "grg/src/ai/context-assembler.js",
+      "sizeBytes": 3738,
+      "lines": 145,
+      "hash": "dab200a5b77b9dacd7bf4af08b3942d7fcb75b8a26180bb0a6738a4208e9651c"
+    },
+    {
+      "path": "grg/src/ai/model-router.js",
+      "sizeBytes": 6129,
+      "lines": 151,
+      "hash": "b490168f45bab631cb69898dd427f2a3c99614d6815fe570228a37090558d469"
+    },
+    {
+      "path": "grg/src/ai/provider-registry.js",
+      "sizeBytes": 3002,
+      "lines": 99,
+      "hash": "3a463e54c18e0c56c691fd92d9e531a9c5e615642235c3291f5c8d735947d854"
+    },
+    {
+      "path": "grg/src/ai/token-economy-engine.js",
+      "sizeBytes": 18777,
+      "lines": 549,
+      "hash": "b3adc21b716549c99b9c16833c462269fb547a7e0ce2b45170ffb8952cf16150"
+    },
+    {
+      "path": "grg/src/ai-city/ai-city-projection.js",
+      "sizeBytes": 5673,
+      "lines": 102,
+      "hash": "1abcd6d5c1d80d93cb63660f955eed18844793ff5a53eb6870d935f1b9188c4a"
+    },
+    {
+      "path": "grg/src/ai-city/npc-city-engine.js",
+      "sizeBytes": 5344,
+      "lines": 113,
+      "hash": "229e611f22a4c92f9cc2f6e1d0e22c634f3ad526fdd486fdffb58bfb7e2c6f88"
+    },
+    {
+      "path": "grg/src/ai-city/perception-engine.js",
+      "sizeBytes": 2688,
+      "lines": 86,
+      "hash": "8c08c5055cf9a235c9f88c4e44b4d449d364c40c1cd490dfc73eb66a6ed871ba"
+    },
+    {
+      "path": "grg/src/ai-runtime/ai-gateway.js",
+      "sizeBytes": 20697,
+      "lines": 391,
+      "hash": "a9093be061221c2d756049a8ec32261e902444e29ed6dbfbbda8990723c7ea2c"
+    },
+    {
+      "path": "grg/src/ai-runtime/ai-router.js",
+      "sizeBytes": 23140,
+      "lines": 517,
+      "hash": "a5c8119d9bf0429dffbd665c1e9928a602814571344a71e9d39d9c3dad3efba7"
+    },
+    {
+      "path": "grg/src/ai-runtime/aiplatform-provider.js",
+      "sizeBytes": 18002,
+      "lines": 354,
+      "hash": "cdf47169e4f50b25ec7a9c745906db2e50bf1db62c959117117afff530bd1ede"
+    },
+    {
+      "path": "grg/src/ai-runtime/api-connection-manager.js",
+      "sizeBytes": 5804,
+      "lines": 122,
+      "hash": "d49312df3ee0c9ee5a2e128c30e7758f33d208622b40d11d5b4ca5f6ef6c5a6c"
+    },
+    {
+      "path": "grg/src/ai-runtime/capability-registry.js",
+      "sizeBytes": 1290,
+      "lines": 52,
+      "hash": "cf1846c03a974758a87ecb18a6532b15421b225ecaddcc106a2d50e54f08d2dc"
+    },
+    {
+      "path": "grg/src/ai-runtime/fabricated-response.js",
+      "sizeBytes": 4188,
+      "lines": 74,
+      "hash": "ba687dae2e981e6ad05f6a59df530181fdb3cb2b2c8d4d5b37f418bc190c969d"
+    },
+    {
+      "path": "grg/src/ai-runtime/http-providers.js",
+      "sizeBytes": 9499,
+      "lines": 163,
+      "hash": "493b461259992562a2813846dfeff74d7b0811222fe61f583f166c965b0fcb20"
+    },
+    {
+      "path": "grg/src/ai-runtime/model-orchestrator.js",
+      "sizeBytes": 2413,
+      "lines": 79,
+      "hash": "7afa7180c107592daffc0712f72d651167fa8bc5e3ca508a59b7dbe1ce110472"
+    },
+    {
+      "path": "grg/src/ai-runtime/ollama-provider.js",
+      "sizeBytes": 5525,
+      "lines": 111,
+      "hash": "e6258feb27a88b348b92bcdc2abd0bb1eeb9bf059bdfd77462ad215b861fec1b"
+    },
+    {
+      "path": "grg/src/ai-runtime/ollama-stream.js",
+      "sizeBytes": 5541,
+      "lines": 119,
+      "hash": "941d87aebe73840ce761990f761400b442876757c55dc485dfa950c55e174d05"
+    },
+    {
+      "path": "grg/src/ai-runtime/provider-registry.js",
+      "sizeBytes": 7570,
+      "lines": 164,
+      "hash": "4772d780fcab77c70a292c48b03c6650a5346abcf74347a80437bb6b003e12ff"
+    },
+    {
+      "path": "grg/src/ai-runtime/providers.js",
+      "sizeBytes": 1071,
+      "lines": 32,
+      "hash": "6cdd420b1d07a7e5e11efb0a1a541640a7ed113f73c77cdcefeb8f85db5846cc"
+    },
+    {
+      "path": "grg/src/air/fenix-air.js",
+      "sizeBytes": 12270,
+      "lines": 345,
+      "hash": "f8db26e6fe8004d389c1e15903bd485c03565faa80957c6538dd552b7f54a6aa"
+    },
+    {
+      "path": "grg/src/analysis/capture.js",
+      "sizeBytes": 7651,
+      "lines": 100,
+      "hash": "e33c189f7ad8bd6ec8a782f521ee2d419709fd78683e8eb8873686ed9be29d4c"
+    },
+    {
+      "path": "grg/src/analysis/evidence.js",
+      "sizeBytes": 4596,
+      "lines": 64,
+      "hash": "4f05105923f4f17aa9974e907347a53959ef037a9f6d3a1ae10b50d2037a66ba"
+    },
+    {
+      "path": "grg/src/analysis/export.js",
+      "sizeBytes": 11951,
+      "lines": 98,
+      "hash": "5b2220622d896f7235254945138af88ef1fee392b7a3b6356df8ff41f407da83"
+    },
+    {
+      "path": "grg/src/analysis/isolated-tests.js",
+      "sizeBytes": 3384,
+      "lines": 43,
+      "hash": "aa983d8251a7908bc249ec503f19208292a20ca65a0f8f6a432497ccc6f47518"
+    },
+    {
+      "path": "grg/src/analysis/system-analysis.js",
+      "sizeBytes": 21874,
+      "lines": 222,
+      "hash": "d52c85b855fd18b8a2f96331462105e3e52e8e75710c619c175390bd84044ca6"
+    },
+    {
+      "path": "grg/src/api/autonomous-loop-routes.js",
+      "sizeBytes": 4884,
+      "lines": 112,
+      "hash": "7467605c725357e2b9946ba37e1fac169eeca35387662931da7d7eea6de09438"
+    },
+    {
+      "path": "grg/src/api/cloud-routes.js",
+      "sizeBytes": 5475,
+      "lines": 162,
+      "hash": "8197da0f7653367442b8eb92ada123c53e405b1af1d1b85ec4f94cf1b9715a84"
+    },
+    {
+      "path": "grg/src/api/company-brain-routes.js",
+      "sizeBytes": 13122,
+      "lines": 283,
+      "hash": "9f97651ddc89491cfe54b4ddcc1650e2865691ab54da1cf3246f2daf82ab0452"
+    },
+    {
+      "path": "grg/src/api/conversation-routes.js",
+      "sizeBytes": 33219,
+      "lines": 775,
+      "hash": "cf9b4bd6139ebdb59873dedd44ea749465fcc44ba69e79b658507f5393e56537"
+    },
+    {
+      "path": "grg/src/api/developer-routes.js",
+      "sizeBytes": 12333,
+      "lines": 274,
+      "hash": "3528b2a369b08a900aa69ddcb654b1b3b38437738032f9777cb774378f762184"
+    },
+    {
+      "path": "grg/src/api/living-city-routes.js",
+      "sizeBytes": 14312,
+      "lines": 299,
+      "hash": "6f4350ee18b69f6e4e14c8db819a259c1f83273a4dc3bcc07b17f8a694820042"
+    },
+    {
+      "path": "grg/src/api/orchestration-routes.js",
+      "sizeBytes": 3349,
+      "lines": 87,
+      "hash": "7c192329eb7185d89b4d21ba68933d2182e706c138ef6aa2ff7e94e7b4b436a6"
+    },
+    {
+      "path": "grg/src/api/product-api-routes.js",
+      "sizeBytes": 8019,
+      "lines": 208,
+      "hash": "2bee1fb191f247c24354f14ae5428f181459850763325de236704ff1019c7afa"
+    },
+    {
+      "path": "grg/src/api/product-experience-routes.js",
+      "sizeBytes": 102945,
+      "lines": 2581,
+      "hash": "02d13e91cf052f2a5d25dcfc9039bfffbc93ec940e4d617cd639f9888e2b3898"
+    },
+    {
+      "path": "grg/src/api/project-git-routes.js",
+      "sizeBytes": 23918,
+      "lines": 490,
+      "hash": "fc9081b20ca44f93f6a6cf1f1db6e0060b66bcd45ba16216b6daf0e105cd400f"
+    },
+    {
+      "path": "grg/src/api/project-mirror-routes.js",
+      "sizeBytes": 19040,
+      "lines": 419,
+      "hash": "6bf3806deaa2f6507404d52a08b7ac10c8f8fc3bc8433949b80c2e7822c060d1"
+    },
+    {
+      "path": "grg/src/api/project-workspace-routes.js",
+      "sizeBytes": 6862,
+      "lines": 109,
+      "hash": "c16fba9aba851f5ffa3083b120cfedb9779ed4eac67ccba3303e27770032d9a3"
+    },
+    {
+      "path": "grg/src/api/projects-registry-routes.js",
+      "sizeBytes": 6750,
+      "lines": 165,
+      "hash": "1487f1649c707112ede418c5a84f7f31809f6212b1e7b8c2544f99cc3a8e393b"
+    },
+    {
+      "path": "grg/src/api/reality-engine.js",
+      "sizeBytes": 15501,
+      "lines": 427,
+      "hash": "75b265e54f5e96e333a6d3ef2f417ecf08e15705e4add570c7aa2d18b77d3a5d"
+    },
+    {
+      "path": "grg/src/api/runtime-full-status.js",
+      "sizeBytes": 5283,
+      "lines": 134,
+      "hash": "e6456bcc5861e36d51d5a4b631d35383d7f526c9b73458b80981b143d77a0354"
+    },
+    {
+      "path": "grg/src/api/system-analysis-routes.js",
+      "sizeBytes": 1791,
+      "lines": 26,
+      "hash": "b70bd6c36760db3da97bb4792c535adda2197d247003101795ca8ee2702a9e47"
+    },
+    {
+      "path": "grg/src/api/universal-job-routes.js",
+      "sizeBytes": 7745,
+      "lines": 171,
+      "hash": "bfd822760d30804f3905a65d3fd6a6c5ade1658d87c8d8792f7f8bb4f809365f"
+    },
+    {
+      "path": "grg/src/api/universal-system-routes.js",
+      "sizeBytes": 87870,
+      "lines": 1992,
+      "hash": "ecf309088a6bcfe1de7f33225e3d27f714bd7ee27b6a78d373ca68b164eae812"
+    },
+    {
+      "path": "grg/src/app-factory/app-factory.js",
+      "sizeBytes": 3467,
+      "lines": 77,
+      "hash": "ca1d675b7813c41f08280e10d4a127e6a815e3c116f682eaa12da70d99967be7"
+    },
+    {
+      "path": "grg/src/app.js",
+      "sizeBytes": 65228,
+      "lines": 912,
+      "hash": "723c83154f6cc914e7f7c43920c5b5f2fcc651f9eba3f43cd6def222c8ef95ba"
+    },
+    {
+      "path": "grg/src/auth/auth.js",
+      "sizeBytes": 9942,
+      "lines": 200,
+      "hash": "35201e598de162c2222994d391e3af7594e230fe0653697b946e5d941a614671"
+    },
+    {
+      "path": "grg/src/auth/oidc-verifier.js",
+      "sizeBytes": 1502,
+      "lines": 20,
+      "hash": "d2a372ff52f880f36520b607854a9fa07239df8b50cc9a56a97e21beb66c9ff8"
+    },
+    {
+      "path": "grg/src/automation/computer-control-agent.js",
+      "sizeBytes": 8262,
+      "lines": 213,
+      "hash": "0d5f33684b51351950ffe99e9545044b1170b3d127bd0ffe69d97a5ccae99fbe"
+    },
+    {
+      "path": "grg/src/brain/graph-brain.js",
+      "sizeBytes": 5499,
+      "lines": 161,
+      "hash": "98ef24724c3f7b89449b8320cb0d81662fbfd18f981e076408922cb8f0571b4e"
+    },
+    {
+      "path": "grg/src/browser/browser-agent.js",
+      "sizeBytes": 16547,
+      "lines": 425,
+      "hash": "3359ff7ea4dd00eb5507488a7850b4512535430aa401d732def04c0329f4cc42"
+    },
+    {
+      "path": "grg/src/capabilities/capability-marketplace.js",
+      "sizeBytes": 1764,
+      "lines": 60,
+      "hash": "5145c92fb6378abbbb84e9df61ad3fc1c176084f60f7dde8787840babeb417fd"
+    },
+    {
+      "path": "grg/src/capabilities/capability-registry.js",
+      "sizeBytes": 8651,
+      "lines": 65,
+      "hash": "27230fb888fa6733dc68e7830ec21dfc3537ca311b3cae504ec73962a5a5a691"
+    },
+    {
+      "path": "grg/src/chat/chat-agent.js",
+      "sizeBytes": 33021,
+      "lines": 550,
+      "hash": "3c6a12f4cdb9000e14e9e803b525d7d8a40a316e90702d4db4900b1428a442d1"
+    },
+    {
+      "path": "grg/src/chat/conversation-gateway.js",
+      "sizeBytes": 2783,
+      "lines": 86,
+      "hash": "2b2052a2375e646d830c611bec6c8ff0a3976dc76e707e207b059f920c97efa5"
+    },
+    {
+      "path": "grg/src/chat/conversation-store.js",
+      "sizeBytes": 12460,
+      "lines": 263,
+      "hash": "21504c485c300ef64b980888728b7a927d47745c78ea59a54e4cad01bc747681"
+    },
+    {
+      "path": "grg/src/chat/live-chat-routes.js",
+      "sizeBytes": 16681,
+      "lines": 317,
+      "hash": "b4f7436ce92fd7c3d44190de51c925d180fa2cacf37e82108f32f3da80b3a096"
+    },
+    {
+      "path": "grg/src/cli/runtime-console.js",
+      "sizeBytes": 3420,
+      "lines": 97,
+      "hash": "c22abeadf594124bb014090b8696e5faebea1a1bae5dff0ab55138c51204e7f8"
+    },
+    {
+      "path": "grg/src/clients/fenix-http-client.js",
+      "sizeBytes": 2244,
+      "lines": 34,
+      "hash": "94fef3749752e098c3665f3583e413b63b5e608008ed6df0912645f91f390104"
+    },
+    {
+      "path": "grg/src/cognition/cognitive-bank.js",
+      "sizeBytes": 2632,
+      "lines": 91,
+      "hash": "3cadba254af127581485994f0c462c6baee8ad7027cd8567f0d25c49b17a2c26"
+    },
+    {
+      "path": "grg/src/cognition/cognitive-bus.js",
+      "sizeBytes": 8952,
+      "lines": 269,
+      "hash": "3b175fad4669d2d139ba5dceb2d3ad858ad966fa96c6a5469e1f188eb42e11e8"
+    },
+    {
+      "path": "grg/src/cognition/digital-twin.js",
+      "sizeBytes": 2423,
+      "lines": 81,
+      "hash": "66c4d48ce254a100b26e5eb16bb7338aecaa3693782ba82be51343631633dd63"
+    },
+    {
+      "path": "grg/src/cognition/knowledge-graph.js",
+      "sizeBytes": 3123,
+      "lines": 105,
+      "hash": "2223199f497bd5d81b8421de56ce319d485f6b690674169b76002740c3005ad5"
+    },
+    {
+      "path": "grg/src/cognition/mission-engine/mission-engine.js",
+      "sizeBytes": 3939,
+      "lines": 105,
+      "hash": "8fda70282d6e35cd1275f1a845fdd02074c95341bfe1cf6c08b7120e5d8ec297"
+    },
+    {
+      "path": "grg/src/cognition/mission-engine/mission-learner.js",
+      "sizeBytes": 438,
+      "lines": 17,
+      "hash": "58bfc03f8e7a4e8c7d4cc49e7add072bc0ff5ffd9cb4d5bd1b6a234c50d40a3d"
+    },
+    {
+      "path": "grg/src/cognition/mission-engine/mission-validator.js",
+      "sizeBytes": 517,
+      "lines": 18,
+      "hash": "52c6fa4cf04c4116db0d41dc86fc9a702185ac0653f160bfdafdfc2253cab385"
+    },
+    {
+      "path": "grg/src/cognition/prompt-runtime.js",
+      "sizeBytes": 2590,
+      "lines": 76,
+      "hash": "b4cfc1405beef663e166b9b1e56d4006945d87ca1f9c69ea2ba16546a8228a65"
+    },
+    {
+      "path": "grg/src/cognitive/admin-avatar.js",
+      "sizeBytes": 2351,
+      "lines": 24,
+      "hash": "5f0e4c1d990d15b8e2959181ab81c0b63f396517157e1f3f6c1c119870d29c8e"
+    },
+    {
+      "path": "grg/src/cognitive/background-cognition.js",
+      "sizeBytes": 1719,
+      "lines": 51,
+      "hash": "b5be8935060ad4ea3a4f10cdbfe6bf1e689086ec20e9d27e970239022bc05384"
+    },
+    {
+      "path": "grg/src/cognitive/cognitive-core.js",
+      "sizeBytes": 12209,
+      "lines": 31,
+      "hash": "e369be737f27cc8cab0a195b9d7850b59fba0dab63082cfc82c09fa428f458bd"
+    },
+    {
+      "path": "grg/src/cognitive/cognitive-hierarchy.js",
+      "sizeBytes": 13563,
+      "lines": 187,
+      "hash": "83ff9e4354a8777067dbb256eaa1e50b74b0f620c0fcc73d44a4529987da7791"
+    },
+    {
+      "path": "grg/src/cognitive/cognitive-optimization-engine.js",
+      "sizeBytes": 2029,
+      "lines": 64,
+      "hash": "a51af31cadd133a4fd3bf953e2c36839c3a76008548fc1c01afe0bee096a9274"
+    },
+    {
+      "path": "grg/src/cognitive/cross-project-learning.js",
+      "sizeBytes": 2399,
+      "lines": 74,
+      "hash": "03509c9e6b7247e1b54a999eda414e55f848a210424ffc51ec52a6bc1a831d51"
+    },
+    {
+      "path": "grg/src/cognitive/external-search.js",
+      "sizeBytes": 5423,
+      "lines": 115,
+      "hash": "27c25ee77384ab690c2a189799c22c525dfcfc9d9fcb886f958b4487c5570692"
+    },
+    {
+      "path": "grg/src/cognitive/hypothesis-engine.js",
+      "sizeBytes": 4182,
+      "lines": 118,
+      "hash": "7ca377e69bee7e29c02be0e53e9a2eb769c83c8ba3817c957e5f7b88a49dfcb7"
+    },
+    {
+      "path": "grg/src/cognitive/learning-projection.js",
+      "sizeBytes": 1269,
+      "lines": 45,
+      "hash": "28ad117ccf0727fca54b6c334440370c674285106b64a2d563ba6c439029a5a6"
+    },
+    {
+      "path": "grg/src/cognitive/master-avatar.js",
+      "sizeBytes": 3787,
+      "lines": 119,
+      "hash": "9509fd7f122b1fe6598e2108c4c81692df33f71efa30c21643a2661bd20ac0e4"
+    },
+    {
+      "path": "grg/src/cognitive/multimodal-pipeline.js",
+      "sizeBytes": 3773,
+      "lines": 94,
+      "hash": "f574b9433751f3be4a8568ba81499fd14b10ca917ef3f8039c1a4929c6e603ff"
+    },
+    {
+      "path": "grg/src/company/ceo-agent.js",
+      "sizeBytes": 23769,
+      "lines": 578,
+      "hash": "3defc182dbd122a45fdf4e6c10192db30681b0d191a056bc9084e876525a7354"
+    },
+    {
+      "path": "grg/src/company/company-brain.js",
+      "sizeBytes": 22761,
+      "lines": 666,
+      "hash": "6d8bd45aef736fc6256debb22e589437b7b862de26fea974095f927c77f1e3d5"
+    },
+    {
+      "path": "grg/src/compiler/prompt-compiler.js",
+      "sizeBytes": 21059,
+      "lines": 521,
+      "hash": "b4319d0a5a19564e61fb5406ca9d902b4d20e83046eedb00246a6877c71b08e8"
+    },
+    {
+      "path": "grg/src/connections/connection-broker.js",
+      "sizeBytes": 13346,
+      "lines": 397,
+      "hash": "6e7b64f2127147dc950f635d151a5952e8e0efcc90e195a08e649fab9fb40fd4"
+    },
+    {
+      "path": "grg/src/connections/connection-browser-session.js",
+      "sizeBytes": 1435,
+      "lines": 44,
+      "hash": "f255dfd364b48d14604740a07ed4ad4ad129c3f190ab19dcacc1204018f3c418"
+    },
+    {
+      "path": "grg/src/connections/providers/github-provider.js",
+      "sizeBytes": 2505,
+      "lines": 71,
+      "hash": "1458eb640d55b606a4323c9a589ec55c1e6d31e01b059c0d6b4b3c9f77437240"
+    },
+    {
+      "path": "grg/src/connections/providers/google-provider.js",
+      "sizeBytes": 1698,
+      "lines": 62,
+      "hash": "9df23d7db47104ece75cd83877c17b76bfb3326b8424e303f6bbe34b5e3f55f3"
+    },
+    {
+      "path": "grg/src/connections/providers/openai-provider.js",
+      "sizeBytes": 2642,
+      "lines": 110,
+      "hash": "dcc6322c5fe145c301c1891b2c3bb81687949fc4d6cef5c874b8827c960975c1"
+    },
+    {
+      "path": "grg/src/connectors/ai-provider-adapter.js",
+      "sizeBytes": 6607,
+      "lines": 131,
+      "hash": "61844d7023d81d5b7f3de35f2d3b967c9e079006f0f30a282183b41c11c21396"
+    },
+    {
+      "path": "grg/src/connectors/connector-contract.js",
+      "sizeBytes": 3747,
+      "lines": 65,
+      "hash": "310ea83b7ec2aa642985bf01ced701dcf61172e77161cdf111db9c432a03ee8a"
+    },
+    {
+      "path": "grg/src/connectors/connector-runtime.js",
+      "sizeBytes": 7873,
+      "lines": 184,
+      "hash": "70023901c00b3c007ee45cce0de18540232df9232212571cb1b9b46770afb69e"
+    },
+    {
+      "path": "grg/src/connectors/github-connector-adapter.js",
+      "sizeBytes": 6238,
+      "lines": 132,
+      "hash": "2e07c120e30bd2a7eb332ea68eca4b5cab8277b87900a3e46a320823bb0c1805"
+    },
+    {
+      "path": "grg/src/connectors/github-engine.js",
+      "sizeBytes": 3243,
+      "lines": 133,
+      "hash": "e596b8575b748d0293ebc8de226018de5d69e9ab0b99ddfead5d5bdeab95e1b8"
+    },
+    {
+      "path": "grg/src/connectors/github-service.js",
+      "sizeBytes": 5790,
+      "lines": 163,
+      "hash": "fb8388c1c73fdc7d99057273e96ca48b1440295e1f4cd0ac3160f63885957153"
+    },
+    {
+      "path": "grg/src/context/context-engine.js",
+      "sizeBytes": 904,
+      "lines": 37,
+      "hash": "7dfb5575d53fe2904784edbc77125bdc46cbcbf79fc23933d88fdd49f24563bd"
+    },
+    {
+      "path": "grg/src/control-plane/control-plane.js",
+      "sizeBytes": 6596,
+      "lines": 161,
+      "hash": "b858ae9427025cf15b8b7443d7b494e62c003d1b10e7dd066db432279f11d934"
+    },
+    {
+      "path": "grg/src/core/CapabilityExecutor.js",
+      "sizeBytes": 1136,
+      "lines": 35,
+      "hash": "1d6692faf8b2121140af863ff4d6c4f4ea90e385011b32c9d25e2e3e1233e63b"
+    },
+    {
+      "path": "grg/src/core/CapabilityRouter.js",
+      "sizeBytes": 1704,
+      "lines": 46,
+      "hash": "7f1fd825a7e688a78ef8d4c962e8551daaab5e0997ae5d0c331e4cd9a0e79476"
+    },
+    {
+      "path": "grg/src/core/contracts/dna-types.js",
+      "sizeBytes": 2914,
+      "lines": 115,
+      "hash": "109fb9f2346af87e86ed95635de8f2911e5a68fee930142dca7ee571c2d93b7d"
+    },
+    {
+      "path": "grg/src/core/contracts/event-types.js",
+      "sizeBytes": 2319,
+      "lines": 86,
+      "hash": "29869e3b763abf669319fc2bd8c24ece83f1c9a72f3e4e7f399842eccd00b150"
+    },
+    {
+      "path": "grg/src/core/contracts/observation-event.js",
+      "sizeBytes": 2842,
+      "lines": 98,
+      "hash": "7b6d9a1d36ea81c7b58891350edf8e68bc3683e838618d0f8e999e51eb9dda54"
+    },
+    {
+      "path": "grg/src/core/contracts/task.js",
+      "sizeBytes": 3622,
+      "lines": 134,
+      "hash": "f5d53587b2732c41e606d359e87a047af78bbae74f800cb8c1305fd6c37f5856"
+    },
+    {
+      "path": "grg/src/core/ExecutionBus.js",
+      "sizeBytes": 2697,
+      "lines": 87,
+      "hash": "6f051fddc06661bcd2050d00c2b090dbb964f5ac0d9f1ee2fa20864494cfa442"
+    },
+    {
+      "path": "grg/src/core/ExecutionPolicies.js",
+      "sizeBytes": 874,
+      "lines": 30,
+      "hash": "5c270ba9d0038b62d5837ebdbac5ae7793c1cf9c5308bd97396f4f8fe662982c"
+    },
+    {
+      "path": "grg/src/core/Kernel.js",
+      "sizeBytes": 9607,
+      "lines": 257,
+      "hash": "ade0ce377577c2c69450ce5bfb96a369c53cf93bbb21f581c007718b2d3ecda2"
+    },
+    {
+      "path": "grg/src/core/PluginManager.js",
+      "sizeBytes": 1760,
+      "lines": 56,
+      "hash": "96cd2be88fcdd78d43860b09dca7344cf875f0cb3c13867e50935da0cbf44e72"
+    },
+    {
+      "path": "grg/src/core/Registries.js",
+      "sizeBytes": 1526,
+      "lines": 34,
+      "hash": "054092237194695c4212515d7a3e91cf917d4e5abdd5950f0eb23afd9803ec97"
+    },
+    {
+      "path": "grg/src/core/Registry.js",
+      "sizeBytes": 534,
+      "lines": 30,
+      "hash": "8e9fb24d520af1abd353fca18c2a6f68756715dff4f7a38f84bb8e59afa6a019"
+    },
+    {
+      "path": "grg/src/core/RuntimeRegistry.js",
+      "sizeBytes": 1652,
+      "lines": 59,
+      "hash": "46f3b98b37bff7438e184f05a16f6d419064ba8630e958d53b635a7f8af0222b"
+    },
+    {
+      "path": "grg/src/core/UnifiedEventBus.js",
+      "sizeBytes": 5365,
+      "lines": 182,
+      "hash": "0ea764a528f5685691c45d3d51233f53a950a87b7f3758c3070b44e08ecf850e"
+    },
+    {
+      "path": "grg/src/devices/agent-runtime/windows-agent.js",
+      "sizeBytes": 15827,
+      "lines": 449,
+      "hash": "3295b2ea5afb30f390b10b7315c015f5c2197c9b4980ae425a9ff99408df2cb3"
+    },
+    {
+      "path": "grg/src/devices/desktop/desktop-agent-manager.js",
+      "sizeBytes": 2248,
+      "lines": 76,
+      "hash": "9dd5a362f0e50b506050e13dc8a247e2bd09b8e743fa032ed10b6701c79eaaa9"
+    },
+    {
+      "path": "grg/src/devices/device-manager.js",
+      "sizeBytes": 12622,
+      "lines": 409,
+      "hash": "0002da82d53de4d01c92ed4b6ac7e3b81752c35c61b62c347257565081848abc"
+    },
+    {
+      "path": "grg/src/devices/mobile/android-remote-agent.js",
+      "sizeBytes": 15075,
+      "lines": 397,
+      "hash": "ddec402eda4c3e3a514de0e9303a32fc91222a9ca10024e897a1134e0fbfc72f"
+    },
+    {
+      "path": "grg/src/digital-twin/digital-twin-engine.js",
+      "sizeBytes": 3816,
+      "lines": 110,
+      "hash": "41a4705356221cc6e67e20e90322058b007833028fdc6a56bff7ae73693e62f6"
+    },
+    {
+      "path": "grg/src/digital-twin/digital-twin.js",
+      "sizeBytes": 9578,
+      "lines": 164,
+      "hash": "5fa2e2b607d591e3a2e20e59d1590fefa78c23033f6e4b4a867e7679addee249"
+    },
+    {
+      "path": "grg/src/digital-twin/universal-digital-twin.js",
+      "sizeBytes": 3425,
+      "lines": 103,
+      "hash": "3fd74db8ee3cdff0fd93214d6a4198a519edc6f3c30eecd1b075756acf383465"
+    },
+    {
+      "path": "grg/src/discovery/discovery-engine.js",
+      "sizeBytes": 6394,
+      "lines": 127,
+      "hash": "2dfff084c3ce0a813402f8302d6b42888d22743b02ae9bed5de50de3ae3fae96"
+    },
+    {
+      "path": "grg/src/discovery-network/discovery-network.js",
+      "sizeBytes": 4631,
+      "lines": 43,
+      "hash": "e15f1bef0c49c49309ba781cb79d87139e36a580a21ce9690853192d07867add"
+    },
+    {
+      "path": "grg/src/discovery-network/discovery-projection.js",
+      "sizeBytes": 1003,
+      "lines": 9,
+      "hash": "d7ba17582776fa63cd50c95bfe3aaaf7818226e9c575322d79daca4dc7c1f26e"
+    },
+    {
+      "path": "grg/src/discovery-network/docker-cli-probe.js",
+      "sizeBytes": 1004,
+      "lines": 12,
+      "hash": "62cd8fcf571bf7b6f4defdec345f73cb71d4c4b6be185c11ac0c4df0a4826acf"
+    },
+    {
+      "path": "grg/src/eventing/event-bus.js",
+      "sizeBytes": 2841,
+      "lines": 108,
+      "hash": "da1974624818d1a488f32f5cbca52e208488e1b97fa1ec9fcaaf0f503f70493d"
+    },
+    {
+      "path": "grg/src/eventing/event-store.js",
+      "sizeBytes": 3433,
+      "lines": 39,
+      "hash": "204a0b7cfa6eb442f92d0bd26e29bff1e0367375f3ca6259a99478d404793e9b"
+    },
+    {
+      "path": "grg/src/eventing/fabric-event-bus.js",
+      "sizeBytes": 490,
+      "lines": 7,
+      "hash": "fad67dbe9f9263a710dffdad8320efbf0af88aa9535335d96da0e214ea3eb4dc"
+    },
+    {
+      "path": "grg/src/eventing/fenix-event-bus.js",
+      "sizeBytes": 8566,
+      "lines": 156,
+      "hash": "3c0839a9643d42d0c8913448b44ff5d2316f6d99d7b89433c68253de743e5a1e"
+    },
+    {
+      "path": "grg/src/eventing/fenix-ws-bridge.js",
+      "sizeBytes": 25049,
+      "lines": 629,
+      "hash": "f2ad164d0604728e62014b3968fcbd90a294086f91686e532e8c19020256f0cb"
+    },
+    {
+      "path": "grg/src/evolution/adversarial-engine.js",
+      "sizeBytes": 9710,
+      "lines": 283,
+      "hash": "8caff232c9a1741d1fc8d990d7450da15fb3884d4d0fed41242f46ffa4a2317e"
+    },
+    {
+      "path": "grg/src/evolution/agent-genome.js",
+      "sizeBytes": 13726,
+      "lines": 339,
+      "hash": "6e41f1f28aa9619eeee3c02835d38ab7d65839adb0a1b7c17fee016ab1e510b7"
+    },
+    {
+      "path": "grg/src/evolution/ai-economy-engine.js",
+      "sizeBytes": 1144,
+      "lines": 41,
+      "hash": "38c1d13f2e70dddb1473b846a2f645d2968880a47db0073634f24f350d679656"
+    },
+    {
+      "path": "grg/src/evolution/autonomous-evolution-controller.js",
+      "sizeBytes": 7965,
+      "lines": 258,
+      "hash": "c66a85de9eebed964faddeb59a21ac1ca331e84883e359f81e8c40d114d03e9b"
+    },
+    {
+      "path": "grg/src/evolution/autonomous-evolution-kernel.js",
+      "sizeBytes": 5937,
+      "lines": 155,
+      "hash": "1f33fdc94b7ef3b84632fd4cc212dfc03478aeb42cd137ed10a095d82c537cd3"
+    },
+    {
+      "path": "grg/src/evolution/autonomous-mission-queue.js",
+      "sizeBytes": 7337,
+      "lines": 222,
+      "hash": "59c9820cc10943abe5cc88e1d56be282be14ff3652f3aedfec9be5e8d8e9c6ed"
+    },
+    {
+      "path": "grg/src/evolution/context-builder.js",
+      "sizeBytes": 5994,
+      "lines": 123,
+      "hash": "930776dfe3f41d08848bc2aa1eb775e03f141060b571cdbfce1231baaefc196a"
+    },
+    {
+      "path": "grg/src/evolution/evolution-engine.js",
+      "sizeBytes": 8022,
+      "lines": 218,
+      "hash": "a437ebd0418f265b54cbcc619ab9870a8559bd8b3495e2f66cfeb3cfc750e1f2"
+    },
+    {
+      "path": "grg/src/evolution/evolution-lab.js",
+      "sizeBytes": 8293,
+      "lines": 243,
+      "hash": "d1380dc18140534c9b0a8f72a56272eb93d8f4ec57200fc616af07012fd6223e"
+    },
+    {
+      "path": "grg/src/evolution/evolution-memory.js",
+      "sizeBytes": 5305,
+      "lines": 148,
+      "hash": "71a006ff1ed67a867e41dc773ce5d35cc9b7d3753d240522cf2f5b676d750994"
+    },
+    {
+      "path": "grg/src/evolution/external-change-detector.js",
+      "sizeBytes": 6298,
+      "lines": 175,
+      "hash": "3773a550941cafdc1a0ffbfd7920b7e36c668130e677ead2a1b4aa14ffc64670"
+    },
+    {
+      "path": "grg/src/evolution/fenix-autonomous-loop.js",
+      "sizeBytes": 18093,
+      "lines": 466,
+      "hash": "ab8c9b6f20d466e2fdb71ca177c1b9124e09ff85920b098d815b612f412e0191"
+    },
+    {
+      "path": "grg/src/evolution/fitness-engine.js",
+      "sizeBytes": 9870,
+      "lines": 238,
+      "hash": "7aaf4eb7a68b5356bbe9ea7ed8a98a58991968c1742d4abd85cfdd166ee9838b"
+    },
+    {
+      "path": "grg/src/evolution/learning-engine.js",
+      "sizeBytes": 950,
+      "lines": 34,
+      "hash": "014ae85555bebd940f1a8a6b44b47caebc0057bae3bf92ca527254c4505452e1"
+    },
+    {
+      "path": "grg/src/evolution/population-engine.js",
+      "sizeBytes": 11305,
+      "lines": 302,
+      "hash": "46227722d4dd589384cb1f3c390682137fd6c5d847be562a1c4e0f1a5e72a6e0"
+    },
+    {
+      "path": "grg/src/evolution/system-knowledge-generator.js",
+      "sizeBytes": 5383,
+      "lines": 116,
+      "hash": "6b2e096516cc9dcb0d9820e5d9d6a900c8ea4f9d5ba5ffdafaad3ba1438334eb"
+    },
+    {
+      "path": "grg/src/execution/dev-mission-planner.js",
+      "sizeBytes": 19712,
+      "lines": 447,
+      "hash": "601ecab44b9c04bccda6545ea4b0e806b7815de35f85b68300785091e3101ceb"
+    },
+    {
+      "path": "grg/src/execution/docker-rootless-sandbox.js",
+      "sizeBytes": 5062,
+      "lines": 55,
+      "hash": "bf67c17c512694774bc234cf285564247a069e736715710e9bae9483e0bbf185"
+    },
+    {
+      "path": "grg/src/execution/execution-engine.js",
+      "sizeBytes": 7731,
+      "lines": 219,
+      "hash": "a4ba6d194c758f1bd4a0413c2167d15d64964e1facf33063e2da4da46ac41fc7"
+    },
+    {
+      "path": "grg/src/execution/fast-lane-engine.js",
+      "sizeBytes": 22101,
+      "lines": 484,
+      "hash": "705b0e12b8d589b46766a40b3d79d90fe3b4934084a42c24c1a885cb655e9c50"
+    },
+    {
+      "path": "grg/src/execution/fenix-worker.js",
+      "sizeBytes": 15946,
+      "lines": 402,
+      "hash": "0411b2e7761e0b814badeb70852a7c8878f81471cae88f546b9d6224b8ad8739"
+    },
+    {
+      "path": "grg/src/execution/job-queue-manager.js",
+      "sizeBytes": 14230,
+      "lines": 453,
+      "hash": "dfcbc39571675c87793dcccc39ecbb7c0cfbaad288722bc99e2ca909d8e1d1a1"
+    },
+    {
+      "path": "grg/src/execution/job-queue.js",
+      "sizeBytes": 2042,
+      "lines": 76,
+      "hash": "c614f23eb2a9ff4f12a8d8c645e95148e117f29fc97504e5cd0f9e3ea3b19a73"
+    },
+    {
+      "path": "grg/src/execution/job-worker.js",
+      "sizeBytes": 4899,
+      "lines": 137,
+      "hash": "5ccc5cfb7b219ab7ce9f4ecebdc00af0e602b08d68d037752263a28c6b2790ef"
+    },
+    {
+      "path": "grg/src/execution/permission-matrix.js",
+      "sizeBytes": 3268,
+      "lines": 125,
+      "hash": "9244f34bd9051f4bda9f1dcbe94a8ac1093fe983301ec48c6fc2683881dbbe43"
+    },
+    {
+      "path": "grg/src/execution/preview-engine.js",
+      "sizeBytes": 3152,
+      "lines": 127,
+      "hash": "1a0f891aea6ce4a931945883894b3d24a12332b58e82a906bde9535074d8defd"
+    },
+    {
+      "path": "grg/src/execution/principal-agent.js",
+      "sizeBytes": 9076,
+      "lines": 267,
+      "hash": "fb17f0f0d4acbc409f3096c3076a2f12695637f66f13d0c73f9483a8d6d8998e"
+    },
+    {
+      "path": "grg/src/execution/prompt-enhancer.js",
+      "sizeBytes": 10740,
+      "lines": 268,
+      "hash": "6545c4cd2fa0299e51e6cce85a1d527bfaa59aef5c52a10b3a6ce51300ed29cf"
+    },
+    {
+      "path": "grg/src/execution/reality-enforcement-engine.js",
+      "sizeBytes": 12762,
+      "lines": 397,
+      "hash": "af38aad254c1281af23032e85ae41954e2bfa3f0f01d88a940d3ed043a000f25"
+    },
+    {
+      "path": "grg/src/execution/sandbox-execution-engine.js",
+      "sizeBytes": 7098,
+      "lines": 39,
+      "hash": "22d88d1b9da89ab2c13b0df192043c883803d91d776fb23e58be894c7efa086d"
+    },
+    {
+      "path": "grg/src/execution/script-library.js",
+      "sizeBytes": 6031,
+      "lines": 38,
+      "hash": "8ba4274b4ed557641ac854f46b9dff402a86ab4c7c8790f11514553405049a79"
+    },
+    {
+      "path": "grg/src/execution/task-engine.js",
+      "sizeBytes": 6718,
+      "lines": 233,
+      "hash": "8c7c498b2ec46c276dc2ddd1fb5686b69d3aff9bfeb6e4715fe49ea7d21ba2a5"
+    },
+    {
+      "path": "grg/src/execution/tool-registry.js",
+      "sizeBytes": 5992,
+      "lines": 62,
+      "hash": "8bdaade889e5f57b53f50ae12164cf27059e69e075b1bffee42d7c06b760ee5a"
+    },
+    {
+      "path": "grg/src/execution/worker-scheduler.js",
+      "sizeBytes": 1545,
+      "lines": 52,
+      "hash": "c5e46359b4753f384c34d8df5757fc5408f3b5c0bdcae7ddc5d3c555da5fac11"
+    },
+    {
+      "path": "grg/src/executive/executive-brain.js",
+      "sizeBytes": 12784,
+      "lines": 237,
+      "hash": "b24fde317135a38599f5fff88b2cfe24ccdcef317a211326b4913617bc50b5b9"
+    },
+    {
+      "path": "grg/src/executive/executive-contract.js",
+      "sizeBytes": 4895,
+      "lines": 91,
+      "hash": "991dd3760f74deb4a8a7bb1d7e95f339a401358a90ee4af4f525acffa3560146"
+    },
+    {
+      "path": "grg/src/fabric/fabric-projection.js",
+      "sizeBytes": 1275,
+      "lines": 17,
+      "hash": "31e9b3d2b847afa875276e7efe1a7bffacb946b1e4fd5ca0db240afb0585acbb"
+    },
+    {
+      "path": "grg/src/fabric/fenix-fabric.js",
+      "sizeBytes": 3998,
+      "lines": 29,
+      "hash": "b86d93aac6838546aaede97a26bf3c253618ef3a9e0e02048589eb8e3787283d"
+    },
+    {
+      "path": "grg/src/fabric/identity-provider.js",
+      "sizeBytes": 1407,
+      "lines": 16,
+      "hash": "4a74dbb247ae043500f8fc2da8b65301cc881e2a58de5adaed90290ebca6f539"
+    },
+    {
+      "path": "grg/src/fabric/service-registry.js",
+      "sizeBytes": 3314,
+      "lines": 28,
+      "hash": "cc86d13c4ecdfdf3ea90df6759c40dd9373e8ed20e2c8d02aba8c94869fde5e1"
+    },
+    {
+      "path": "grg/src/factory/software-factory-engine.js",
+      "sizeBytes": 4098,
+      "lines": 152,
+      "hash": "9d2de058b2b51efa02c81bda1bf4c9b9fb082b485259a40083502cf64d729e0e"
+    },
+    {
+      "path": "grg/src/federation/federation-projection.js",
+      "sizeBytes": 1219,
+      "lines": 12,
+      "hash": "f9f60c4a4ae55a1d05390b6bd51f78207925c5e7635e5289f07af928f592121c"
+    },
+    {
+      "path": "grg/src/federation/knowledge-federation.js",
+      "sizeBytes": 2887,
+      "lines": 20,
+      "hash": "3f5b3d62e27aed82cbd0d203f3ff140a6adc867b5551366c7f422be316f5230c"
+    },
+    {
+      "path": "grg/src/frontend-reality/orphan-screen-detector.js",
+      "sizeBytes": 3327,
+      "lines": 97,
+      "hash": "8509681f0a7ef6afd2196b37243beadcb4e362b8b597bfe72d20b315c42c6b6d"
+    },
+    {
+      "path": "grg/src/frontend-reality/screen-discovery-engine.js",
+      "sizeBytes": 7000,
+      "lines": 179,
+      "hash": "9068211c8bf97cb6befa9790030e09375264cdaf5456d37346ca2ecb5bd8841a"
+    },
+    {
+      "path": "grg/src/frontend-reality/screen-navigation-graph.js",
+      "sizeBytes": 2117,
+      "lines": 75,
+      "hash": "9e0140220c107f0d9b0eae16feea1b14aa562436c15a1150e8578a9a8e91690c"
+    },
+    {
+      "path": "grg/src/frontend-reality/visual-reality-engine.js",
+      "sizeBytes": 7887,
+      "lines": 221,
+      "hash": "e5ef6ac511a0d0b3996a8405e621b1be450de95aeaeef4d8a8212fd2285d7884"
+    },
+    {
+      "path": "grg/src/governance/approval-engine.js",
+      "sizeBytes": 6055,
+      "lines": 117,
+      "hash": "ae6fe8bd02cf9936c3410d6c09f44407fe96447884ac312c1870e6ab56ed56fd"
+    },
+    {
+      "path": "grg/src/governance/audit-trail.js",
+      "sizeBytes": 2525,
+      "lines": 80,
+      "hash": "aa2cac56c8403f266b06d025324406a9dcb032398297095ef74c88fa6ff4f5b1"
+    },
+    {
+      "path": "grg/src/governance/frontend-honesty-audit.js",
+      "sizeBytes": 7562,
+      "lines": 169,
+      "hash": "18eec9ac42d06cecb007bb793f1b728fb99e839fb86bcc56c89bd80411762594"
+    },
+    {
+      "path": "grg/src/governance/gatekeeper.js",
+      "sizeBytes": 14247,
+      "lines": 277,
+      "hash": "331618967afdf3420ad16e29c76f1e1470829c28fc715ec4ecc2ae9d4595f851"
+    },
+    {
+      "path": "grg/src/governance/policy-engine.js",
+      "sizeBytes": 1936,
+      "lines": 26,
+      "hash": "83d04a2644db82130d5e1de88f49c7007133444608f67473df2474ed0234ac4e"
+    },
+    {
+      "path": "grg/src/governance/production-readiness.js",
+      "sizeBytes": 15891,
+      "lines": 322,
+      "hash": "4f425a366d2d5ce69e33005713ded09cc085b54d1eaffcb594376cc10ce5196e"
+    },
+    {
+      "path": "grg/src/governance/readiness-matrix.js",
+      "sizeBytes": 18543,
+      "lines": 401,
+      "hash": "06242117c81bc409f88adf31573bbf25f2a083077abbec04917ba60622ce684f"
+    },
+    {
+      "path": "grg/src/governance/simulation-audit.js",
+      "sizeBytes": 14889,
+      "lines": 257,
+      "hash": "05665ca1149d9e623fc36c077581fc838f9bb5cae1ed89c347e48334f47e3df5"
+    },
+    {
+      "path": "grg/src/infrastructure/ai-gateway/ai-gateway.js",
+      "sizeBytes": 3771,
+      "lines": 106,
+      "hash": "524aa8a3da0feee98b11808a407f2c717033a1e8bbc6dcf86b94836399a6492e"
+    },
+    {
+      "path": "grg/src/infrastructure/api-registry.js",
+      "sizeBytes": 3276,
+      "lines": 101,
+      "hash": "6d81111c9894beee026291b95e669436669c5c0090d4f87a27394359d5242130"
+    },
+    {
+      "path": "grg/src/infrastructure/autonomous-doctor.js",
+      "sizeBytes": 3329,
+      "lines": 94,
+      "hash": "40280c4317e8bbe528da1f1f9e8428dc39ac72d9d1187d7b9901fb520fb2d043"
+    },
+    {
+      "path": "grg/src/infrastructure/backup/file-backup-service.js",
+      "sizeBytes": 2276,
+      "lines": 53,
+      "hash": "a71fb00ff2233d3fdaf3712b7edf5981973d7d59978e076fedc83601e4bd7077"
+    },
+    {
+      "path": "grg/src/infrastructure/config.js",
+      "sizeBytes": 2267,
+      "lines": 45,
+      "hash": "aef4ce9f0c847d64d51e9bb66f70f278464ac175bccd4eb5c2830dc2ca5e8b8a"
+    },
+    {
+      "path": "grg/src/infrastructure/database/postgres-store.js",
+      "sizeBytes": 7551,
+      "lines": 183,
+      "hash": "e1c3c7dc6a12bb2906f0aaaec9dc45e8b6221a377ac144960fb23c2d22fcda33"
+    },
+    {
+      "path": "grg/src/infrastructure/database/sqlite-store.js",
+      "sizeBytes": 5457,
+      "lines": 145,
+      "hash": "f75f36e6e95f93c6be6b1c0d1c4261bc6d6f3ce5350a1f4f2ed67d3d5d84c55c"
+    },
+    {
+      "path": "grg/src/infrastructure/health.js",
+      "sizeBytes": 521,
+      "lines": 23,
+      "hash": "9a606ae5af4827fab0d7018c635ab8acfd9ce5cc20313c27b138851b08786cdd"
+    },
+    {
+      "path": "grg/src/infrastructure/messaging/idempotency.js",
+      "sizeBytes": 2448,
+      "lines": 66,
+      "hash": "d339861346930d122b1ae90f7af2bcc2d12c2751ee9297f5f9696f703d1bb5b9"
+    },
+    {
+      "path": "grg/src/infrastructure/messaging/inbox.js",
+      "sizeBytes": 1681,
+      "lines": 44,
+      "hash": "c4b7710966ad133c04065e159ca2ddaaa356592d4333e78714e9d3d941fed8ac"
+    },
+    {
+      "path": "grg/src/infrastructure/messaging/outbox.js",
+      "sizeBytes": 2646,
+      "lines": 81,
+      "hash": "7482894020b5e2b07c0935b6f4bc597c07920d037881396d556534476aa1abfa"
+    },
+    {
+      "path": "grg/src/infrastructure/monitoring/health-registry.js",
+      "sizeBytes": 1691,
+      "lines": 42,
+      "hash": "3f6d638e67a6fe7d34957625f1bd52da375a9d5065fd0ae61f34f22bc48bf2a5"
+    },
+    {
+      "path": "grg/src/infrastructure/monitoring/prometheus-exporter.js",
+      "sizeBytes": 1477,
+      "lines": 19,
+      "hash": "cb547efae6ad57852fa43fbc68fdb23c78ef1efbbc3291acb33e9df74080c1a7"
+    },
+    {
+      "path": "grg/src/infrastructure/node-registry.js",
+      "sizeBytes": 2220,
+      "lines": 76,
+      "hash": "7b3134356a15bffdf39c8e0d586a0d46e4917f8197d04090ecf04d64987de9da"
+    },
+    {
+      "path": "grg/src/infrastructure/observability/structured-logger.js",
+      "sizeBytes": 838,
+      "lines": 19,
+      "hash": "a5aba4fd6138751ad5d386f258e75c8b0a254b907b0e727eabc9d620f0918f3a"
+    },
+    {
+      "path": "grg/src/infrastructure/queue/bullmq-runtime.js",
+      "sizeBytes": 6015,
+      "lines": 123,
+      "hash": "ee5a776013fc8e6af82bb007c67c449f1208f2ba46a47f533c9e42bc35f930b9"
+    },
+    {
+      "path": "grg/src/infrastructure/redis/redis-cache.js",
+      "sizeBytes": 1631,
+      "lines": 50,
+      "hash": "b725115fc73e428b61008528e3a3a8e4ff22d3c43d9cfd86e033f7516b89092c"
+    },
+    {
+      "path": "grg/src/infrastructure/redis/redis-rate-limiter.js",
+      "sizeBytes": 1266,
+      "lines": 35,
+      "hash": "5ba530a4f1bdf507628bfe08496e72e707f667abf897d52cf6aaf61f0a2bdb4c"
+    },
+    {
+      "path": "grg/src/infrastructure/resilience/circuit-breaker.js",
+      "sizeBytes": 1819,
+      "lines": 62,
+      "hash": "a4feefc5fd4b70f1d89c670f75cdcab44dd561eb2a7036bf57c26e2844c12d6c"
+    },
+    {
+      "path": "grg/src/infrastructure/resilience/retry.js",
+      "sizeBytes": 1554,
+      "lines": 41,
+      "hash": "a45c68468fa51f1929eab4b2602dfebc9740091cbccadd80147d5be3c7a3baff"
+    },
+    {
+      "path": "grg/src/infrastructure/scheduler.js",
+      "sizeBytes": 2919,
+      "lines": 103,
+      "hash": "d6f84e6b680b5f5277ebf6f3a564c9b082ec4f4c2a54d0a09d65076a627c55d7"
+    },
+    {
+      "path": "grg/src/infrastructure/service-manager/index.js",
+      "sizeBytes": 632,
+      "lines": 18,
+      "hash": "bbb6c3bfe25bae6dfd7f1aa0ced91962179e6a3c341d9c96877b4fd26de19245"
+    },
+    {
+      "path": "grg/src/infrastructure/service-manager/linux-service-provider.js",
+      "sizeBytes": 1497,
+      "lines": 59,
+      "hash": "bc7cbc700c3002706c64bfa49a892fe75cfc9aa4911d0087bbb1f1306b42ae3a"
+    },
+    {
+      "path": "grg/src/infrastructure/service-manager/service-provider-contract.js",
+      "sizeBytes": 1012,
+      "lines": 43,
+      "hash": "bd4369fc387ca103070b9f4b6ea8ce4067137e124c278dc7d23e94e3a1b81305"
+    },
+    {
+      "path": "grg/src/infrastructure/service-manager/windows-service-provider.js",
+      "sizeBytes": 2974,
+      "lines": 82,
+      "hash": "df1f1dacb2a676c98c1e9159f88c336b9ba71aa59e6a54964b5f5dac3b42d54c"
+    },
+    {
+      "path": "grg/src/infrastructure/storage/s3-object-store.js",
+      "sizeBytes": 3216,
+      "lines": 84,
+      "hash": "c74084e9f2212771ef856d3844f51dd9c72fbd903cc964c64f57144853a461ab"
+    },
+    {
+      "path": "grg/src/infrastructure/telemetry-manifest.js",
+      "sizeBytes": 2256,
+      "lines": 77,
+      "hash": "c652413a7a5c786557c31491b75b87a6a69cd49f205995766ba5fcac80f9b60d"
+    },
+    {
+      "path": "grg/src/infrastructure/telemetry.js",
+      "sizeBytes": 1242,
+      "lines": 46,
+      "hash": "258b7a08a4e385f9000428748ac4c1a47e533e086d8ab9c3bc0e98ec105dbad6"
+    },
+    {
+      "path": "grg/src/inspection/cognitive-inspection-engine.js",
+      "sizeBytes": 9061,
+      "lines": 42,
+      "hash": "643ea386b1999fa82399a033f0cc9b4e567d84aa53d608e6cf0e2b1b538b993c"
+    },
+    {
+      "path": "grg/src/inspection/inspection-report.js",
+      "sizeBytes": 4619,
+      "lines": 28,
+      "hash": "4613336e16518993e31d18854340126011bf141b21802cafe011e170267b8a89"
+    },
+    {
+      "path": "grg/src/intelligence/causal-analyzer.js",
+      "sizeBytes": 1615,
+      "lines": 48,
+      "hash": "6f4d0ff02a80f38bb688cedcfe3e67389509fac37025dafc712b367e2dbffc7e"
+    },
+    {
+      "path": "grg/src/intelligence/genome-builder.js",
+      "sizeBytes": 3623,
+      "lines": 115,
+      "hash": "a4c639f229cb7a107b7ea31cd0c21b29872ba96c58fd07e00ce885715574e633"
+    },
+    {
+      "path": "grg/src/intelligence/universal-engineering-engine.js",
+      "sizeBytes": 7904,
+      "lines": 238,
+      "hash": "ae594d8632249958fde047e01ae0263cc3d5b1c79d26fde58744081e64cb65d9"
+    },
+    {
+      "path": "grg/src/intelligence/workflow-extractor.js",
+      "sizeBytes": 2229,
+      "lines": 81,
+      "hash": "8cc768d5f34daeb89df2ce9c862b06c65ef3d76944ff82ace265558e43b09ce4"
+    },
+    {
+      "path": "grg/src/keos/configurable-pipeline.js",
+      "sizeBytes": 1360,
+      "lines": 52,
+      "hash": "b5f65be3dc2cf8e786e91bd7a378aa03229fb2e2bb888296736588c34a7f5227"
+    },
+    {
+      "path": "grg/src/keos/expanded-constitution-index.js",
+      "sizeBytes": 4122,
+      "lines": 90,
+      "hash": "233ca8e80e3ae24c6fc78ddf0af082cccad1c5eae40dbe7eb405c7a8f13ab081"
+    },
+    {
+      "path": "grg/src/keos/universal-adapters.js",
+      "sizeBytes": 1282,
+      "lines": 38,
+      "hash": "f07b7bab4d826172ec1f70f5a30aeb2a5ad2a073d203017107287c41583dfb9a"
+    },
+    {
+      "path": "grg/src/keos/universal-cognitive-protocol.js",
+      "sizeBytes": 4314,
+      "lines": 85,
+      "hash": "a76c09bc66e1614e7f7d024d2575ff0acaa93f50f2f3e25d24ca9957a04c5519"
+    },
+    {
+      "path": "grg/src/kernel/access-control.js",
+      "sizeBytes": 1947,
+      "lines": 50,
+      "hash": "58b4d0aded03274731bed904e3a1b486dfe554cb9ec34b9c57a0bd6dd4693f79"
+    },
+    {
+      "path": "grg/src/kernel/boot.js",
+      "sizeBytes": 2701,
+      "lines": 95,
+      "hash": "9143f7107fb01c5458b1c3e8998929ff504ed4d647b581aef07f94e0d1785bd1"
+    },
+    {
+      "path": "grg/src/kernel/capability-graph.js",
+      "sizeBytes": 3192,
+      "lines": 114,
+      "hash": "54de2be76c9ba7a90350eb3edda40857a83fa7e2e09f4e35346a4a00ec68143d"
+    },
+    {
+      "path": "grg/src/kernel/capability-marketplace.js",
+      "sizeBytes": 1204,
+      "lines": 44,
+      "hash": "56a3db4a16d8973c94f8d993754d73b17b9bf89132d2cadef92138b1480160a7"
+    },
+    {
+      "path": "grg/src/kernel/capability-registry.js",
+      "sizeBytes": 1166,
+      "lines": 48,
+      "hash": "8dc0ca8a938cb0645ce573b55bda52a743d4aa7688dca0ac45933f0aaf53f9a3"
+    },
+    {
+      "path": "grg/src/kernel/deterministic-engine.js",
+      "sizeBytes": 11500,
+      "lines": 308,
+      "hash": "3d56b1bef7d5cda85ed25fd7313fa36d1f9d8c15d51a091d214661f9cf3de554"
+    },
+    {
+      "path": "grg/src/kernel/errors.js",
+      "sizeBytes": 1079,
+      "lines": 41,
+      "hash": "df577cd22ef626712a04b9006637d7a2dde216277633a810a192bd084a113fff"
+    },
+    {
+      "path": "grg/src/kernel/event-bus.js",
+      "sizeBytes": 961,
+      "lines": 36,
+      "hash": "8976d968d47036a16c104e5db4824789faebccdefe500fc3fa477d5a98326421"
+    },
+    {
+      "path": "grg/src/kernel/ids.js",
+      "sizeBytes": 317,
+      "lines": 17,
+      "hash": "270561e023a8dfc9ead2bad3904124ad7f81ebdf5b2ee89a9c6424a201abb7d3"
+    },
+    {
+      "path": "grg/src/kernel/live-boot-kernel.js",
+      "sizeBytes": 8604,
+      "lines": 219,
+      "hash": "9272dbbdfa014c6a9800f9de86e837436835109616e10f1b316c6a7f3524fdb2"
+    },
+    {
+      "path": "grg/src/kernel/measurement.js",
+      "sizeBytes": 3192,
+      "lines": 75,
+      "hash": "8cb122d550f7a1d66f90878f7cd65a62e0333568abc5cf341605914628efb0dd"
+    },
+    {
+      "path": "grg/src/kernel/missing-subsystem.js",
+      "sizeBytes": 450,
+      "lines": 18,
+      "hash": "f17ba1e355b4b6497d5799463246adccf5b31e2586dcae314b2f32baee325bb8"
+    },
+    {
+      "path": "grg/src/kernel/mission/gates.js",
+      "sizeBytes": 1494,
+      "lines": 58,
+      "hash": "07750635008543ca4411d7477e9cd1f7096862d9623d582535d8b95ccf0b700e"
+    },
+    {
+      "path": "grg/src/kernel/mission/registry.js",
+      "sizeBytes": 3636,
+      "lines": 121,
+      "hash": "756c2ddcb826aa3409d55acdd54ac1a8a3813e08d4d25a3d99ce4aa229885d64"
+    },
+    {
+      "path": "grg/src/kernel/module.js",
+      "sizeBytes": 1670,
+      "lines": 73,
+      "hash": "ed0bf69ca565ed687389cf946135361b36b30bf9af4e221795f95f701ba523be"
+    },
+    {
+      "path": "grg/src/kernel/organism-identity.js",
+      "sizeBytes": 7210,
+      "lines": 159,
+      "hash": "1bc2e3be284d298625248087f92c07373a87c01d9db708558d331bee72479d4d"
+    },
+    {
+      "path": "grg/src/kernel/retention.js",
+      "sizeBytes": 8452,
+      "lines": 162,
+      "hash": "1324641c87d69dd4ee2d07b6a86f186b8930dd059de5df89060a91dcf04a489a"
+    },
+    {
+      "path": "grg/src/kernel/runtime-kernel.js",
+      "sizeBytes": 2826,
+      "lines": 93,
+      "hash": "d7eb7b90cff24b64f7c2b57357b97fafa354af8bdbcfdb7eeb21f4b1e205b03f"
+    },
+    {
+      "path": "grg/src/kernel/service-registry.js",
+      "sizeBytes": 1182,
+      "lines": 53,
+      "hash": "e7c0f343d3657da81883ac5fddb668a9f8b40acfd00ef14f4d06426568316752"
+    },
+    {
+      "path": "grg/src/kernel/state-migrations.js",
+      "sizeBytes": 9429,
+      "lines": 137,
+      "hash": "a3af7744b8a9c81d65456640f85259afbf0a4adfed91b68ab8349ea5ca346a5c"
+    },
+    {
+      "path": "grg/src/kernel/states.js",
+      "sizeBytes": 310,
+      "lines": 16,
+      "hash": "6a56789c401e2304702c114ab74dea996899bb516d518c72851f237f4fb359e2"
+    },
+    {
+      "path": "grg/src/kernel/store.js",
+      "sizeBytes": 9442,
+      "lines": 304,
+      "hash": "b8744c1f9fd4b0ef235c30f23e8d5897a784691e8dc6bcb226c8001c02fb75ec"
+    },
+    {
+      "path": "grg/src/kernel/supervisor.js",
+      "sizeBytes": 2861,
+      "lines": 88,
+      "hash": "1d8f7b75a865672e09b386a301d0c57ba2f20ee412292892fcd513a366e19d54"
+    },
+    {
+      "path": "grg/src/knowledge/decision-engine.js",
+      "sizeBytes": 2765,
+      "lines": 85,
+      "hash": "81fa725f108020cc1fbd7b57f0e9978854d88e4f2cfc35bb83eb12a17693a18c"
+    },
+    {
+      "path": "grg/src/knowledge/knowledge-engine.js",
+      "sizeBytes": 3748,
+      "lines": 127,
+      "hash": "763491714878bfeeacee31e2b863e48d0e474bde33fb76d6726496d88cc07865"
+    },
+    {
+      "path": "grg/src/knowledge/knowledge-routes.js",
+      "sizeBytes": 3089,
+      "lines": 114,
+      "hash": "8fa04b2a284057b6d76424977e113f2c203899979368a83c1b4e6a9e80bf98d5"
+    },
+    {
+      "path": "grg/src/knowledge/learning-engine.js",
+      "sizeBytes": 5010,
+      "lines": 139,
+      "hash": "7cb9876faf91bbaec1e4a69a0c7a7e10aa8ef8d93acde95e3974fe4b61589bd4"
+    },
+    {
+      "path": "grg/src/knowledge-graph/knowledge-graph.js",
+      "sizeBytes": 7065,
+      "lines": 99,
+      "hash": "1adecaf5c6baa19f847d2ad9d29981988c0187864b15432e305f79c28759361d"
+    },
+    {
+      "path": "grg/src/memory/cognitive-memory-engine.js",
+      "sizeBytes": 1846,
+      "lines": 51,
+      "hash": "9ad5eb6ba910583397bc066d480692e9b6cd7bc11990273c87bdcbc1ab65486e"
+    },
+    {
+      "path": "grg/src/memory/development-memory.js",
+      "sizeBytes": 5863,
+      "lines": 204,
+      "hash": "b6de1e3692dd2e2a4cf0471de2ed3999c247dcccc7aab1605aaa5dcad1bf6040"
+    },
+    {
+      "path": "grg/src/memory/embedding.js",
+      "sizeBytes": 983,
+      "lines": 26,
+      "hash": "6a4d4a1555d40a294bd4c96296c8fd0c44c4ad032af999900571183381b41f0b"
+    },
+    {
+      "path": "grg/src/memory/engineering-memory.js",
+      "sizeBytes": 6609,
+      "lines": 44,
+      "hash": "741bfe65e2c9da3410af35acc9e6202d9d8d4b85b8168428d118613ba17a8e0b"
+    },
+    {
+      "path": "grg/src/memory/knowledge-genome.js",
+      "sizeBytes": 5561,
+      "lines": 154,
+      "hash": "c883ed77526e765a8a4ec75e1e87cdc2591fc9f046297c8cb3bd38953fbb0c51"
+    },
+    {
+      "path": "grg/src/memory/memory-consolidator.js",
+      "sizeBytes": 1687,
+      "lines": 58,
+      "hash": "fc55635b8675db904fcbc2e6541d06d2d177391e6072c148ae360bca2ac1a94a"
+    },
+    {
+      "path": "grg/src/memory/memory-engine.js",
+      "sizeBytes": 16456,
+      "lines": 276,
+      "hash": "07392ee1f233c268ce53a548d16512d146dd19cac7f8a6e6f959ec09955bbfe6"
+    },
+    {
+      "path": "grg/src/memory/memory-fabric.js",
+      "sizeBytes": 5718,
+      "lines": 160,
+      "hash": "202617ad064a8955fea9c6c5b73b62ce815fc39fbb12bcc669296f0e38c5a1e1"
+    },
+    {
+      "path": "grg/src/memory/pattern-library.js",
+      "sizeBytes": 6894,
+      "lines": 202,
+      "hash": "d689a8bc3be1e7750d06a512a4d480996828594d8af8456a4af57d1f09f6ff56"
+    },
+    {
+      "path": "grg/src/memory/procedural-learning-engine.js",
+      "sizeBytes": 14496,
+      "lines": 358,
+      "hash": "631e089c7d28cbfe49d41150becafdd3a453a2ac8b0446b889d02c33e33580be"
+    },
+    {
+      "path": "grg/src/memory/qdrant-vector-store.js",
+      "sizeBytes": 3961,
+      "lines": 90,
+      "hash": "e6ce51bb00fc6de2c5d1edbf6f8930bfbcce8da44499465b5a62c66671b2651e"
+    },
+    {
+      "path": "grg/src/mind/fenix-mind.js",
+      "sizeBytes": 20659,
+      "lines": 494,
+      "hash": "16774d4a1be03ad13b24bb441dd742db9d54b788eb0734595203c479b90eb7df"
+    },
+    {
+      "path": "grg/src/missions/estimator.js",
+      "sizeBytes": 1800,
+      "lines": 50,
+      "hash": "3a2510cdcc5806e14595d37a6cd15d52d0fcb48ef2c52ffbcd13b0b5b0f25190"
+    },
+    {
+      "path": "grg/src/missions/intent-engine.js",
+      "sizeBytes": 1919,
+      "lines": 51,
+      "hash": "9834b62ea1535bbf5644cb4e6364cc00e9de1cf58e973156db75c85cabcfe6ad"
+    },
+    {
+      "path": "grg/src/missions/job-scheduler.js",
+      "sizeBytes": 3068,
+      "lines": 86,
+      "hash": "5bc3b00d32f7b65e64033bcdbca68bf7fb7cda573b913bc81cb776507536d459"
+    },
+    {
+      "path": "grg/src/missions/mission-artifacts.js",
+      "sizeBytes": 11461,
+      "lines": 226,
+      "hash": "0d6462bab4d0782f46ad9ab89c5f40528da998808e4d10817b9f2f7819de472c"
+    },
+    {
+      "path": "grg/src/missions/mission-checkpoints.js",
+      "sizeBytes": 3633,
+      "lines": 40,
+      "hash": "7a04f334ef66bcb0ac75e807936fa1c55696c4802e6a25eb0ff56ff8c491b347"
+    },
+    {
+      "path": "grg/src/missions/mission-dna.js",
+      "sizeBytes": 1171,
+      "lines": 42,
+      "hash": "7fb07a24535822ec015ff769554fc1d4e1e1aa90b1d8fccb90b649ebe9a8fcf1"
+    },
+    {
+      "path": "grg/src/missions/mission-kernel.js",
+      "sizeBytes": 37523,
+      "lines": 307,
+      "hash": "3964cf1537d9854ad7f756cd63f2f38f6e60d7b938a70d54ac355ec1ccc51d5e"
+    },
+    {
+      "path": "grg/src/missions/mission-planner.js",
+      "sizeBytes": 10537,
+      "lines": 165,
+      "hash": "5a291c3958abc2e951fe2b0d1d3e129741894a98fb869dcef59659c32f5d50e8"
+    },
+    {
+      "path": "grg/src/missions/mission-routes.js",
+      "sizeBytes": 3037,
+      "lines": 113,
+      "hash": "6b8bd175818fc7b558b9838cde279e8e28201785fb5a45366518d53be23a1ed0"
+    },
+    {
+      "path": "grg/src/missions/mission-schema.js",
+      "sizeBytes": 3186,
+      "lines": 95,
+      "hash": "60cd714064a92df311031ae26e9cd703f6a458c4049744a61020174b4e95b556"
+    },
+    {
+      "path": "grg/src/missions/quality-gate.js",
+      "sizeBytes": 4417,
+      "lines": 116,
+      "hash": "1d3a98c955249c3b403a34db73981db6fd240b67f65ec66f918c597bda164257"
+    },
+    {
+      "path": "grg/src/missions/read-only-audit.js",
+      "sizeBytes": 1984,
+      "lines": 21,
+      "hash": "40235bf18b89ef5730674b4370bc271dd1318e5ccbaff080aa21f0361465dc4a"
+    },
+    {
+      "path": "grg/src/missions/worker-base.js",
+      "sizeBytes": 4116,
+      "lines": 160,
+      "hash": "4a15c5b9ac2c8709e121ed4003d0fee03a99ae8e67b1458dec1678f30087457c"
+    },
+    {
+      "path": "grg/src/missions/worker-registry.js",
+      "sizeBytes": 3800,
+      "lines": 134,
+      "hash": "2a2122fcf9e4ec8509daef9a35be3f1331243db5e22976c12b3c0a2be58813b0"
+    },
+    {
+      "path": "grg/src/missions/workers/architect-worker.js",
+      "sizeBytes": 713,
+      "lines": 25,
+      "hash": "310e8535d32afb45d3c7509611e9ffea01101ca22a8d6b2b71386cc96472f77a"
+    },
+    {
+      "path": "grg/src/missions/workers/backend-worker.js",
+      "sizeBytes": 690,
+      "lines": 25,
+      "hash": "22543c0b2a6bc3a4918361318167041c51e03d5a6cbcf15602aee72578fa676d"
+    },
+    {
+      "path": "grg/src/missions/workers/database-worker.js",
+      "sizeBytes": 685,
+      "lines": 25,
+      "hash": "fd78d0e159ff948cba80e4d784496543fa2d8a328d016f929a82a609737cf9f7"
+    },
+    {
+      "path": "grg/src/missions/workers/deploy-worker.js",
+      "sizeBytes": 686,
+      "lines": 25,
+      "hash": "41d94ac623e3d5c773979208d13c708195e97b6fff52f69a6f43e7b0955291f3"
+    },
+    {
+      "path": "grg/src/missions/workers/devops-worker.js",
+      "sizeBytes": 686,
+      "lines": 25,
+      "hash": "a1ad4a0390ded87e8e8f63f8e8f24bd302d16eb8249e99d02eaf4d096fac9816"
+    },
+    {
+      "path": "grg/src/missions/workers/documentation-worker.js",
+      "sizeBytes": 720,
+      "lines": 25,
+      "hash": "304f5292f7756be4001013d08af3baaa0a4bed69b496e89c098b1a88fb3781d0"
+    },
+    {
+      "path": "grg/src/missions/workers/frontend-worker.js",
+      "sizeBytes": 679,
+      "lines": 25,
+      "hash": "85dc928859e7346455e6c91a3ebe17633ebb1a5fc2d80f9129d1ee1b76c6045b"
+    },
+    {
+      "path": "grg/src/missions/workers/planner-worker.js",
+      "sizeBytes": 693,
+      "lines": 25,
+      "hash": "c099e0929e9b2dd9fabcb46e511cb1c04566227eb59025c3e1ab102a28ef31de"
+    },
+    {
+      "path": "grg/src/missions/workers/qa-worker.js",
+      "sizeBytes": 664,
+      "lines": 25,
+      "hash": "20b74b9b53b6f32ddd1a08fde98e89e5d83d16d049ac63655eafefe8c205a02e"
+    },
+    {
+      "path": "grg/src/missions/workers/security-worker.js",
+      "sizeBytes": 697,
+      "lines": 25,
+      "hash": "aff1de9f7f1416e88b0da2bf56ea7c1ea3515a546003cf824c48de063fcf0935"
+    },
+    {
+      "path": "grg/src/nexus/cognitive-marketplace.js",
+      "sizeBytes": 1827,
+      "lines": 60,
+      "hash": "4c2020c357d85dd34be56ea437e7128b4f6e78b3bded1d0380ee504f5068f566"
+    },
+    {
+      "path": "grg/src/nexus/executive-command-center.js",
+      "sizeBytes": 1704,
+      "lines": 55,
+      "hash": "2de311482bfbcdae1d71ee2c1ab5a58b78da99fc54a6d546dbdf748e4c601900"
+    },
+    {
+      "path": "grg/src/nexus/executive-timeline.js",
+      "sizeBytes": 1441,
+      "lines": 38,
+      "hash": "3a1f3d4981ac09d8f50b5503e507b9511d6c9a1a0b68b3657bf6e591bc39638e"
+    },
+    {
+      "path": "grg/src/nexus/unified-cognitive-core.js",
+      "sizeBytes": 1876,
+      "lines": 58,
+      "hash": "ff8d0473163ec07231317511f8d5ff15df3269715f10008c8ef0da473af56318"
+    },
+    {
+      "path": "grg/src/observer/development-observer.js",
+      "sizeBytes": 3663,
+      "lines": 125,
+      "hash": "5f1c9aed9345e7f6c46842dd012d1e3e59763a93d68d1320f3007cfdd8e18851"
+    },
+    {
+      "path": "grg/src/observer/session-recorder.js",
+      "sizeBytes": 2463,
+      "lines": 79,
+      "hash": "836b9374960ab82bac5ac5e2814fbde3b7801cedd1254e35d297478b5e784617"
+    },
+    {
+      "path": "grg/src/observer/visual-timeline.js",
+      "sizeBytes": 2803,
+      "lines": 94,
+      "hash": "9d6c075c274a60c8f572aa5517170a06743383b334e3ec925ead7119b41d1b03"
+    },
+    {
+      "path": "grg/src/omega/autonomous-research.js",
+      "sizeBytes": 1298,
+      "lines": 43,
+      "hash": "6da21bb15d0be9177f308c5c2af30fa2b8846ad2a8997b480343ce64f126794a"
+    },
+    {
+      "path": "grg/src/omega/brain-federation.js",
+      "sizeBytes": 1828,
+      "lines": 59,
+      "hash": "56fcfe91ce49940a8f19dad33cf936331d113d510901eed2081a8140134d1f78"
+    },
+    {
+      "path": "grg/src/omega/cognitive-atoms-fabric.js",
+      "sizeBytes": 1989,
+      "lines": 64,
+      "hash": "268f9276464399765fb9daa68e41a0d86127848e3c66bce64ea450f93edcd40b"
+    },
+    {
+      "path": "grg/src/omega/cognitive-council.js",
+      "sizeBytes": 8140,
+      "lines": 139,
+      "hash": "0f2184dedd7ca503dde985dc833533ebe02f3eaf80cd580e51e4f6bbb05365c3"
+    },
+    {
+      "path": "grg/src/omega/collective-intelligence.js",
+      "sizeBytes": 3340,
+      "lines": 78,
+      "hash": "f1066049875e611e9ea2624a089faf28588b2f312d72df9da2cd89a312d26017"
+    },
+    {
+      "path": "grg/src/omega/context-expansion-engine.js",
+      "sizeBytes": 2387,
+      "lines": 72,
+      "hash": "55794facc8606d2579623913eaf3313276a30060b79661e5645929b448bd715c"
+    },
+    {
+      "path": "grg/src/omega/human-digital-twin.js",
+      "sizeBytes": 2555,
+      "lines": 78,
+      "hash": "a9e9bb5eb4f4ca28f4f72cd8881f93f537ef33614fc4095af6d0419c7ee276c2"
+    },
+    {
+      "path": "grg/src/omega/model-economy-engine.js",
+      "sizeBytes": 1219,
+      "lines": 37,
+      "hash": "e1bbf119fc354808530823c42ff8a0208850ae9bdb7f475ed6d66de40f13bd39"
+    },
+    {
+      "path": "grg/src/omega/recursive-intelligence.js",
+      "sizeBytes": 2203,
+      "lines": 59,
+      "hash": "c1ef9b69c468eec9cd7a0b624f4a3d0fd0656f50d0638285627cd764d573c5ef"
+    },
+    {
+      "path": "grg/src/omega-infinity/cognitive-dna-compiler.js",
+      "sizeBytes": 974,
+      "lines": 33,
+      "hash": "a60cb2d0582de81fb38ad615ba70198525c58f8a170d5ce98452a77a4610fd6b"
+    },
+    {
+      "path": "grg/src/omega-infinity/cognitive-laws-engine.js",
+      "sizeBytes": 3184,
+      "lines": 74,
+      "hash": "d9eac92337e499051c75af52583c62f5e27190565f0b8fb22081f9f67e6d8b43"
+    },
+    {
+      "path": "grg/src/omega-infinity/living-physics-engine.js",
+      "sizeBytes": 774,
+      "lines": 28,
+      "hash": "7ec7f1b02e6160611fe086ca18b6b21df83ba7afc64542669e9f1c05ada9d01f"
+    },
+    {
+      "path": "grg/src/omega-infinity/meta-consciousness.js",
+      "sizeBytes": 982,
+      "lines": 33,
+      "hash": "babc2112f91fd559df1dfcff803c188d707a04f4cce3ff66441cae6e5f0fb7fa"
+    },
+    {
+      "path": "grg/src/omega-infinity/reality-feedback-engine.js",
+      "sizeBytes": 1141,
+      "lines": 37,
+      "hash": "0d997d6d76b29ecd249fb36b326f2e0233cb42f4ec2f73aea226b74fb27b0809"
+    },
+    {
+      "path": "grg/src/omega-infinity/self-evolution-kernel.js",
+      "sizeBytes": 2718,
+      "lines": 60,
+      "hash": "e3a2b769d31bfde03252a1e32f21196928e3e7d317da40c52a053dc10e90741b"
+    },
+    {
+      "path": "grg/src/onedeploy/analyzers.js",
+      "sizeBytes": 2242,
+      "lines": 42,
+      "hash": "8bc8c4400b8cf8729d159f9c9589b96e9588e65e7c2abc4b95bc90c2801d7454"
+    },
+    {
+      "path": "grg/src/onedeploy/continuous-improvement-loop.js",
+      "sizeBytes": 1877,
+      "lines": 38,
+      "hash": "3340330525ed99d87287ddadbed58759b33040afa189e210f1c5251dc2d16012"
+    },
+    {
+      "path": "grg/src/onedeploy/onedeploy-orchestrator.js",
+      "sizeBytes": 14381,
+      "lines": 294,
+      "hash": "5364bd2e308c29cb34b9b4755b4f6cd699c7b9fe1312d67fb574dfe2c7bf790b"
+    },
+    {
+      "path": "grg/src/onedeploy/testing-smoke-e2e.js",
+      "sizeBytes": 2647,
+      "lines": 46,
+      "hash": "8a2f172c101dcfe8a6a55e5c56a3f5c45373e21db855608c98e488b3fa940da9"
+    },
+    {
+      "path": "grg/src/operations/company-daily-analysis.js",
+      "sizeBytes": 2883,
+      "lines": 69,
+      "hash": "2f138cb0cd508fad1e84f9d251d4761f55e3430e2abc72150362d0451696f3d9"
+    },
+    {
+      "path": "grg/src/operations/deploy-center.js",
+      "sizeBytes": 2162,
+      "lines": 57,
+      "hash": "d4c40a633a0995669eaa9c97a45ac7389cff985431debc7fdb82301d6cb36842"
+    },
+    {
+      "path": "grg/src/operations/host-metrics.js",
+      "sizeBytes": 4425,
+      "lines": 104,
+      "hash": "3ff31c9c1880dfcf9852c3a0a216d663f60caa9001838f51563f1db5aebaea74"
+    },
+    {
+      "path": "grg/src/operations/observability-center.js",
+      "sizeBytes": 5959,
+      "lines": 115,
+      "hash": "4a53ee3a88291fed619e917bebd8d2727f1c3e3e2500fedfa7718dab62a143c4"
+    },
+    {
+      "path": "grg/src/operations/observability-series.js",
+      "sizeBytes": 8345,
+      "lines": 164,
+      "hash": "90e8a12155e583b5f1eb35a86f973be008e6ede3e88a59348f38af29b727d45a"
+    },
+    {
+      "path": "grg/src/operations/operational-activation.js",
+      "sizeBytes": 22132,
+      "lines": 191,
+      "hash": "43e05efc47b3dbfa9f56c7cf0fc28981010147636c6c63bad927153e44bff9e7"
+    },
+    {
+      "path": "grg/src/operations/operational-components.js",
+      "sizeBytes": 7163,
+      "lines": 42,
+      "hash": "9eb2223305a6d0a497e6c99e39fb668ef47f60e5f1c44b9816828a6eb6efcbb7"
+    },
+    {
+      "path": "grg/src/ops/fenix-mesh.js",
+      "sizeBytes": 5986,
+      "lines": 169,
+      "hash": "f8e89179251d70fa57f9b951014c96f8177183e956b9ed7f01259e927c33fe4b"
+    },
+    {
+      "path": "grg/src/ops/master-node.js",
+      "sizeBytes": 4180,
+      "lines": 113,
+      "hash": "a413edf43376fe40eccd6d444cd23b0b07f2674f3013b80f0061623f9092df52"
+    },
+    {
+      "path": "grg/src/ops/vps-operations.js",
+      "sizeBytes": 6977,
+      "lines": 149,
+      "hash": "47333a4c2670a7461b41a8c3194e344fdca6d21dac240c5acf66b971bb230a29"
+    },
+    {
+      "path": "grg/src/orchestrator/ai-ceo-engine.js",
+      "sizeBytes": 1281,
+      "lines": 36,
+      "hash": "7b30d273800fc5ab86f36d354f62cff72260161fcf163964c721c37cffc41610"
+    },
+    {
+      "path": "grg/src/orchestrator/ai-cto-engine.js",
+      "sizeBytes": 1967,
+      "lines": 51,
+      "hash": "e84195ebac6a1f191ef5b74df34528aee3bb8f3ca925a2396fabaccbbe08e700"
+    },
+    {
+      "path": "grg/src/orchestrator/ai-orchestrator.js",
+      "sizeBytes": 3746,
+      "lines": 106,
+      "hash": "88159892162b0b2d55baf50d837ca56741dbbba8a82164daacc7a43f31797633"
+    },
+    {
+      "path": "grg/src/orchestrator/autonomous-job-orchestrator.js",
+      "sizeBytes": 40231,
+      "lines": 864,
+      "hash": "fb9d2dbcd91f3bc18ae0485b1a58193ed8500bc8064a887a3a3b4c5daa3fe789"
+    },
+    {
+      "path": "grg/src/orchestrator/central-orchestrator.js",
+      "sizeBytes": 19958,
+      "lines": 352,
+      "hash": "17413916f21bb0efe087c793c4cc899d6064aaca0e0f9a4e08f9356e40a7360d"
+    },
+    {
+      "path": "grg/src/orchestrator/estimator-engine.js",
+      "sizeBytes": 1342,
+      "lines": 56,
+      "hash": "3ab965320fce46d603bb341399edcc1dd2731d49bda682d042c6cecae70b939f"
+    },
+    {
+      "path": "grg/src/orchestrator/intent-engine.js",
+      "sizeBytes": 2056,
+      "lines": 56,
+      "hash": "113d52c897dbdcce3002487ced40056609c01d3e61acb070bb66a8a589d98ef2"
+    },
+    {
+      "path": "grg/src/orchestrator/job-orchestrator.js",
+      "sizeBytes": 2206,
+      "lines": 86,
+      "hash": "4ce4e6d3ff22caf5545ba97005122ef92598c1ae5124f97b7ef004fc74582194"
+    },
+    {
+      "path": "grg/src/orchestrator/orchestration-repository.js",
+      "sizeBytes": 3503,
+      "lines": 103,
+      "hash": "ef605a51f1a2cb0d1c6f8b077ca94139b9f1ccc5977ce3132560b4d9748bec62"
+    },
+    {
+      "path": "grg/src/orchestrator/orchestrator.js",
+      "sizeBytes": 2531,
+      "lines": 54,
+      "hash": "1c29febbf071c780b70e6e3fe04d46fa9c7ea817214a1ae818d15f4df5ba0d62"
+    },
+    {
+      "path": "grg/src/orchestrator/quality-gate.js",
+      "sizeBytes": 2903,
+      "lines": 79,
+      "hash": "2796ab1ed9a96b6f292f98e44e0f2eb118fc88746c819d8cff2b9c390a1544ed"
+    },
+    {
+      "path": "grg/src/orchestrator/real-world-executor.js",
+      "sizeBytes": 3920,
+      "lines": 104,
+      "hash": "bdcd5c4fc1c0be1b51e10b2af4fc3d73a7d084a007a2a779355347d5b2773447"
+    },
+    {
+      "path": "grg/src/orchestrator/resource-model-router.js",
+      "sizeBytes": 1626,
+      "lines": 44,
+      "hash": "67e14c53cd4b68eed2f566cec3e4ad23727f44aaccc2d676dfc9cb7519e295f6"
+    },
+    {
+      "path": "grg/src/performance/cognitive-performance-engine.js",
+      "sizeBytes": 7581,
+      "lines": 144,
+      "hash": "afe1caf5ab41a39b6a964558131919a48eb7831cb2dd9805322159fd71680531"
+    },
+    {
+      "path": "grg/src/plugins/fenix-api/index.js",
+      "sizeBytes": 1629,
+      "lines": 49,
+      "hash": "3385e9dd56652c7288c1e010c2c16d3662c81e265e5f2576c1c976a9eded9aa9"
+    },
+    {
+      "path": "grg/src/plugins/hermes/index.js",
+      "sizeBytes": 667,
+      "lines": 15,
+      "hash": "d7e651d4cee293071e6654998c69c5d3a55f66b445f0272543612c69f4fa5fe7"
+    },
+    {
+      "path": "grg/src/plugins/open-source-adapters.js",
+      "sizeBytes": 3604,
+      "lines": 117,
+      "hash": "3eee4b2a3b279cade3e310f68fd818ee73d5efa14f8664b850ff07e75059f774"
+    },
+    {
+      "path": "grg/src/plugins/openclaw/index.js",
+      "sizeBytes": 659,
+      "lines": 15,
+      "hash": "941d82bf0f97af35ce4e2cd4f86f0df8bf0c2bfe38dc1154bbb96dd37e481aa0"
+    },
+    {
+      "path": "grg/src/plugins/plugin-manager.js",
+      "sizeBytes": 4048,
+      "lines": 129,
+      "hash": "55c2d8db0c85251339fa634028e406a34e1208764f34cce9b16b1e895aa0ab6e"
+    },
+    {
+      "path": "grg/src/plugins/plugin-skills-ecosystem.js",
+      "sizeBytes": 3236,
+      "lines": 97,
+      "hash": "ec505bd5fd512df248829dd0dfbd07393149a703d417a8c446c0e840731a6f60"
+    },
+    {
+      "path": "grg/src/plugins/vps-manager/ssh-capability.js",
+      "sizeBytes": 2254,
+      "lines": 66,
+      "hash": "19344bb2a172a3d9d602a8bae97d29fb1fac32dcf1768b2b861b61b9fa0f0b61"
+    },
+    {
+      "path": "grg/src/product/project-dna.js",
+      "sizeBytes": 4777,
+      "lines": 129,
+      "hash": "18d2ba0840d624504a065affa388a61b3265892b42275165ea1658802c906e71"
+    },
+    {
+      "path": "grg/src/product/white-label.js",
+      "sizeBytes": 8175,
+      "lines": 175,
+      "hash": "c05f89d632b3c0e9ce6f89547f63454a944b7116af7495612295f0166e654ccc"
+    },
+    {
+      "path": "grg/src/project-mirror/scanner.js",
+      "sizeBytes": 11682,
+      "lines": 275,
+      "hash": "d86a1eed2dd822af5c264a2524f86bf29840570ed7fbbb6a7fa3285d4b8dc9ba"
+    },
+    {
+      "path": "grg/src/project-mirror/screen-extractor.js",
+      "sizeBytes": 10833,
+      "lines": 283,
+      "hash": "007e8a78ee974bc1c2fde443d310895f3b46f5755483d24bf6446465383ecf1f"
+    },
+    {
+      "path": "grg/src/projects/api-registry.js",
+      "sizeBytes": 5509,
+      "lines": 171,
+      "hash": "4cf9818b58444a33c58db1cb63ff52ff2b4427db4f7db804646d30c5fd93d365"
+    },
+    {
+      "path": "grg/src/projects/component-registry.js",
+      "sizeBytes": 5690,
+      "lines": 142,
+      "hash": "b242546367c20f57d5b3aaa7c01aed36ca859b6eff5fe33029fb339849014b4d"
+    },
+    {
+      "path": "grg/src/projects/full-system-builder.js",
+      "sizeBytes": 3280,
+      "lines": 26,
+      "hash": "e370b2b4f2103094983ca15cc0598f0d5151437884d4b94e194fbc40db93cc69"
+    },
+    {
+      "path": "grg/src/projects/page-registry.js",
+      "sizeBytes": 10628,
+      "lines": 319,
+      "hash": "455b3ade5af8e51eebdd39e72ea19bea20e6207983e92a4e75386176661734e4"
+    },
+    {
+      "path": "grg/src/projects/project-deploy.js",
+      "sizeBytes": 5021,
+      "lines": 79,
+      "hash": "23c73d7c6faa71fdd2f8eed6985e8ee92aef5e7142f9b311294488539959582f"
+    },
+    {
+      "path": "grg/src/projects/project-discovery-manager.js",
+      "sizeBytes": 18966,
+      "lines": 512,
+      "hash": "d2d42818a285e4a35b0db7ee2fdf1ec2e8419e050a1d73b70dc5ac07d28eda9b"
+    },
+    {
+      "path": "grg/src/projects/project-kernel.js",
+      "sizeBytes": 7260,
+      "lines": 98,
+      "hash": "5d12706603246725b44d0f4e2a18a0e182cdaa4c8dfb0b18d08e61bac832706d"
+    },
+    {
+      "path": "grg/src/projects/project-registry.js",
+      "sizeBytes": 12713,
+      "lines": 337,
+      "hash": "9547bac4251fbd6962628068f6cabb4a37c65c6678da056da4078bcaac684bdc"
+    },
+    {
+      "path": "grg/src/qa/visual-test-engine.js",
+      "sizeBytes": 2984,
+      "lines": 103,
+      "hash": "3afe3a52bef6bec77f084b127b9d672ebc63b174ecc5e051d7eb87176bcf221a"
+    },
+    {
+      "path": "grg/src/reality-operator/reality-operator-kernel.js",
+      "sizeBytes": 81080,
+      "lines": 1973,
+      "hash": "d0f3d8dd4c8ce186501054b9bd3956cebe51ab972e59fdb0a11fa740265335b5"
+    },
+    {
+      "path": "grg/src/reconstruction/architecture-detector.js",
+      "sizeBytes": 8274,
+      "lines": 189,
+      "hash": "66d23ea3e0a8e55b5902a4b89ac2409be151f2680d58345ec5e85a9256e5a6cf"
+    },
+    {
+      "path": "grg/src/reconstruction/dynamic-workforce.js",
+      "sizeBytes": 9102,
+      "lines": 224,
+      "hash": "1690ba4fb32d320b7cd61c88d9d49cf32ee7e7843c16b5774052d25fab2ffe9c"
+    },
+    {
+      "path": "grg/src/reconstruction/export-targets-engine.js",
+      "sizeBytes": 9260,
+      "lines": 287,
+      "hash": "0f1177d3530f2899ab905b7512dad7d6075e1c3ba12b1da444affe8ded30ce70"
+    },
+    {
+      "path": "grg/src/reconstruction/fullstack-generator.js",
+      "sizeBytes": 10794,
+      "lines": 358,
+      "hash": "f922897be1bc2a1961b2c645c3f74e95f945de94657ac54bd9498d88028db917"
+    },
+    {
+      "path": "grg/src/reconstruction/graphs-engine.js",
+      "sizeBytes": 5480,
+      "lines": 202,
+      "hash": "b1ee8753685fb270d15beb2f0afca0bd0d6c6b58a462ef4e33b7a52410e5c988"
+    },
+    {
+      "path": "grg/src/reconstruction/index.js",
+      "sizeBytes": 2423,
+      "lines": 75,
+      "hash": "c747dbe941d5b8ee646a11c097dd818b6c5286ca6581ef60ed0ac116fe5eb1c8"
+    },
+    {
+      "path": "grg/src/reconstruction/screen-reconstruction-engine.js",
+      "sizeBytes": 25604,
+      "lines": 718,
+      "hash": "667c3c9fbf17be1a6aac75e8efa516554296668d2849e63261f1f79de563129a"
+    },
+    {
+      "path": "grg/src/reconstruction/system-level-evaluator.js",
+      "sizeBytes": 5969,
+      "lines": 172,
+      "hash": "09b00fa1256a20f683aa0308e10ab95caa52a37a3bdd8aace22d2c9fcf75388d"
+    },
+    {
+      "path": "grg/src/reconstruction/system-map-explorer.js",
+      "sizeBytes": 4742,
+      "lines": 148,
+      "hash": "9b81104a0f2b7342ca30a587c9d7b20693c056809d3783c49506683755d9e4e6"
+    },
+    {
+      "path": "grg/src/reconstruction/system-observer.js",
+      "sizeBytes": 15072,
+      "lines": 410,
+      "hash": "5d6af8358c783c2a4ea849f8b387ce362e32b39d36599f777b9d033a7720e87e"
+    },
+    {
+      "path": "grg/src/reconstruction/system-twin.js",
+      "sizeBytes": 6068,
+      "lines": 174,
+      "hash": "13920f7d9c6ddb6e1fcdd22de6b207eb92f081d8827d4ea5c43c85f7a2ad3038"
+    },
+    {
+      "path": "grg/src/reconstruction/universal-reconstruction-engine.js",
+      "sizeBytes": 12519,
+      "lines": 331,
+      "hash": "1aab4b606ffe87063ff2446351ce02e91dfdd6abab38686ec3f1a4f1ac28cb77"
+    },
+    {
+      "path": "grg/src/reconstruction/url-to-system.js",
+      "sizeBytes": 4871,
+      "lines": 147,
+      "hash": "9c93acf540d8dded0995a13befc4e57dd026f43d017294d1cdef49c88c3fc6b0"
+    },
+    {
+      "path": "grg/src/reconstruction/video-decoder.js",
+      "sizeBytes": 10131,
+      "lines": 284,
+      "hash": "94b2933d8d30df39cf701ff1244a99cf99e2f673941d7ba8685c725240ed64ff"
+    },
+    {
+      "path": "grg/src/reconstruction/visual-comparator.js",
+      "sizeBytes": 9806,
+      "lines": 268,
+      "hash": "414a6be67c006bcd7257998d05f36691693ae178ba344d293fe886348650bc64"
+    },
+    {
+      "path": "grg/src/reconstruction/visual-dna-engine.js",
+      "sizeBytes": 8470,
+      "lines": 281,
+      "hash": "2924b335147410b008863579ee2ecd8fac3a7bb7c9a4623838b5883f02222938"
+    },
+    {
+      "path": "grg/src/reconstruction/visual-loop-engine.js",
+      "sizeBytes": 5679,
+      "lines": 173,
+      "hash": "9ccb9db500a83ba695c626ce3c031a9afa84cd97d139cd73d7eb2ba5ccf8f6fd"
+    },
+    {
+      "path": "grg/src/repo-intel/artifact-graph.js",
+      "sizeBytes": 2846,
+      "lines": 90,
+      "hash": "9e7583aa1b987eb43edde3896579a75ba89c370778f78953c22fc18ee8f3c80c"
+    },
+    {
+      "path": "grg/src/repo-intel/cloning-git-host.js",
+      "sizeBytes": 1428,
+      "lines": 39,
+      "hash": "7a9d81a50d52189861bb906c835055092518bc0858dc9cd6e122aa04bcefff86"
+    },
+    {
+      "path": "grg/src/repo-intel/fs-git-host.js",
+      "sizeBytes": 2466,
+      "lines": 61,
+      "hash": "784ca4aeb548edc40b0e992f7fb6190e0f257cc8b137e3dcd16755a7b1977c43"
+    },
+    {
+      "path": "grg/src/repo-intel/function-inventory.js",
+      "sizeBytes": 1713,
+      "lines": 75,
+      "hash": "e5eb8da855b83edb71191868bbf3a908bdb2f02cf9419187bd5f38893bff4e49"
+    },
+    {
+      "path": "grg/src/repo-intel/git-commit-capability.js",
+      "sizeBytes": 2710,
+      "lines": 28,
+      "hash": "c3ad4e9a643e345ad6d49a9fd4cd7efb196cd3978ba9825aa1e41f5e752a85c7"
+    },
+    {
+      "path": "grg/src/repo-intel/git-read-capability.js",
+      "sizeBytes": 1641,
+      "lines": 32,
+      "hash": "da9f12e5a32cdb1572055cb59aae1dd4c537131916151992d1eb3da33505f74b"
+    },
+    {
+      "path": "grg/src/repo-intel/git-write-capability.js",
+      "sizeBytes": 6818,
+      "lines": 95,
+      "hash": "c336910e35fa52d589bc954750e8ef85d7d3ad2db2505671bc370824aa6e42da"
+    },
+    {
+      "path": "grg/src/repo-intel/github-connector.js",
+      "sizeBytes": 9647,
+      "lines": 267,
+      "hash": "74bf12432c71abb528cc67861576284e6c6a6e4b985c568e127b3273c6c8c541"
+    },
+    {
+      "path": "grg/src/repo-intel/github-operations.js",
+      "sizeBytes": 6276,
+      "lines": 96,
+      "hash": "e756fc40301280190fa912aadcd92b5ff44d56e40813cc7a17dc3bcda09f39e7"
+    },
+    {
+      "path": "grg/src/repo-intel/portfolio.js",
+      "sizeBytes": 2690,
+      "lines": 65,
+      "hash": "93b485d22709fededd92b407f657b0f72a7036833b78089d4a56d24b517b98ea"
+    },
+    {
+      "path": "grg/src/repo-intel/ports.js",
+      "sizeBytes": 899,
+      "lines": 29,
+      "hash": "3b506f25a5435c2a225f78a69fd25711bca236187d1f4268885f8a30ccb04043"
+    },
+    {
+      "path": "grg/src/repo-intel/project-understanding-scanner.js",
+      "sizeBytes": 5777,
+      "lines": 154,
+      "hash": "8d453b47223f246cd332a38b91788bb6e597f8c2f1e2bf457def220695a798bb"
+    },
+    {
+      "path": "grg/src/repo-intel/repository-intelligence.js",
+      "sizeBytes": 7073,
+      "lines": 165,
+      "hash": "48a7c8cbce9ddea5a374db78c854cb6b880cb4fc7b9a81295716d63c52bb4a07"
+    },
+    {
+      "path": "grg/src/repo-intel/reverse-engineering-engine.js",
+      "sizeBytes": 3511,
+      "lines": 96,
+      "hash": "5b9262ac94862965411a65c75990a90925c31a12c403ddebcf9cfac0b89e04a6"
+    },
+    {
+      "path": "grg/src/repo-intel/scanner.js",
+      "sizeBytes": 3993,
+      "lines": 99,
+      "hash": "b097d90d531bb15869d6446fcbc870188b4f4088d6d53fa83a8d1464858bd980"
+    },
+    {
+      "path": "grg/src/research/source-client.js",
+      "sizeBytes": 13203,
+      "lines": 308,
+      "hash": "d745eed7934c9bbc026f180d64be2880a23f3eca5c9fbc58e99af2b4381aaed2"
+    },
+    {
+      "path": "grg/src/research/web-research-agent.js",
+      "sizeBytes": 1625,
+      "lines": 54,
+      "hash": "f18bfb655ecdf9c2db857f87ef7d24a506e468cd164a2abc73a11d69632c49a2"
+    },
+    {
+      "path": "grg/src/routing/conversation-router.js",
+      "sizeBytes": 11353,
+      "lines": 317,
+      "hash": "733bf6480cc04d67eec2903f2bad0f301d40921aca1a9ee65a0803d11d5291b4"
+    },
+    {
+      "path": "grg/src/routing/model-router.js",
+      "sizeBytes": 10580,
+      "lines": 356,
+      "hash": "b423ec191690bba372a5d3eff61b534176d78217bb8952e2998e7e554cb6239c"
+    },
+    {
+      "path": "grg/src/runtime/agent-runtime.js",
+      "sizeBytes": 8096,
+      "lines": 246,
+      "hash": "a89234033a408f27ff98bad1acc2284e60653f0e0463c69020ea27eee7aba551"
+    },
+    {
+      "path": "grg/src/runtime/auto-update.js",
+      "sizeBytes": 3145,
+      "lines": 87,
+      "hash": "720d53a86f01f0c064392c1f67c0b17ee7da671087b8361ca6ba02834eaaa2e4"
+    },
+    {
+      "path": "grg/src/runtime/daemon.js",
+      "sizeBytes": 4555,
+      "lines": 114,
+      "hash": "0ddaa097833bbc46f78dec6b1a04d6df27ff363606094a2e4dab517b6b577dd0"
+    },
+    {
+      "path": "grg/src/runtime/deployer.js",
+      "sizeBytes": 5359,
+      "lines": 109,
+      "hash": "93cd5fcae4776271549047f50576d5cad832c36cdbbe3910142cc5b8efc7b94b"
+    },
+    {
+      "path": "grg/src/runtime/docker-deploy-adapter.js",
+      "sizeBytes": 3911,
+      "lines": 44,
+      "hash": "846ad5aedfa04121a86882adf3a0fa3a716ec5ed21312ea87c1f514fabd3b896"
+    },
+    {
+      "path": "grg/src/runtime/fenix-heart.js",
+      "sizeBytes": 23738,
+      "lines": 742,
+      "hash": "1bd3239fa999e7cf392035e29652feaf786bef4cf83ae726e18a45403356ef48"
+    },
+    {
+      "path": "grg/src/runtime/job-engine.js",
+      "sizeBytes": 31050,
+      "lines": 427,
+      "hash": "09352b67129671307e0d517313b4017ba43daf4f3bd358b4f987aeda9b7cc90e"
+    },
+    {
+      "path": "grg/src/runtime/living-runtime.js",
+      "sizeBytes": 27069,
+      "lines": 558,
+      "hash": "aca8cd93f75e4981c7b698bdaa905700512e222cced548bbf63e5bbc803b4322"
+    },
+    {
+      "path": "grg/src/runtime/redis-lease.js",
+      "sizeBytes": 1065,
+      "lines": 14,
+      "hash": "ed7efa66d8b11e6354e140c1f7f98d42e7c6ea7153021ad944d94f2e6514b22a"
+    },
+    {
+      "path": "grg/src/runtime/worker.js",
+      "sizeBytes": 10666,
+      "lines": 133,
+      "hash": "cb2db15349b1157c0cc364aaebcd3f2ee1c15e85f3e5da89c3cc9a9e08118f71"
+    },
+    {
+      "path": "grg/src/scos/application-genome.js",
+      "sizeBytes": 2612,
+      "lines": 52,
+      "hash": "21c3aa084d80d28c6c1dd9909431f41842a837ff875ca7680c6c31f487c4ee7a"
+    },
+    {
+      "path": "grg/src/scos/creation-evolution-engine.js",
+      "sizeBytes": 867,
+      "lines": 31,
+      "hash": "6e3258f2ab85cd58d68d4546c5c6cdd63741d49457c5840b9f650fae35eee13e"
+    },
+    {
+      "path": "grg/src/scos/design-intelligence-os.js",
+      "sizeBytes": 3660,
+      "lines": 59,
+      "hash": "f9e417bd903f81a4aac85155a57e0370107b3a27dd5db874493a2d1d22b0c0e2"
+    },
+    {
+      "path": "grg/src/scos/fullstack-factory.js",
+      "sizeBytes": 10402,
+      "lines": 255,
+      "hash": "a3f3275eb8cea9194383c57f5e45ea4f2540e3b63470c9426a47696d54d79d0f"
+    },
+    {
+      "path": "grg/src/security/cognitive-encryption.js",
+      "sizeBytes": 5755,
+      "lines": 123,
+      "hash": "3cc73fe690d37bd42914c0661c1594e38f8d49f04bba515c42be3852c42b98b1"
+    },
+    {
+      "path": "grg/src/security/config.js",
+      "sizeBytes": 2696,
+      "lines": 62,
+      "hash": "e3ed6c65be25ef1adb155d89c15109cdfc448ddb0206506f47fa3f173c8dfb82"
+    },
+    {
+      "path": "grg/src/security/fenix-vault.js",
+      "sizeBytes": 3572,
+      "lines": 109,
+      "hash": "b64c5eb9dfba816f81905f727ce60659cd7c8290519d81c19a755e6047c7c9ea"
+    },
+    {
+      "path": "grg/src/security/secret-resolver.js",
+      "sizeBytes": 5122,
+      "lines": 129,
+      "hash": "9d63125623b74d10d4e9292c95e99c5662b71671dd02111d776da59bd3740b51"
+    },
+    {
+      "path": "grg/src/security/secret-vault.js",
+      "sizeBytes": 3153,
+      "lines": 107,
+      "hash": "41e93325dfd6325628d51226aa15115403a79b9d63823937b1706055cfdace95"
+    },
+    {
+      "path": "grg/src/security/security-plane.js",
+      "sizeBytes": 3361,
+      "lines": 82,
+      "hash": "329fecfdd8a359c784473000ec511e0474751ab5cbbf3eb374a74d4e3e4ea0a4"
+    },
+    {
+      "path": "grg/src/security/security-shield.js",
+      "sizeBytes": 1820,
+      "lines": 60,
+      "hash": "641bab2a625aa26098b8dc5fb3cfb5e25aa765373f2063e045cb26c51c72ebc4"
+    },
+    {
+      "path": "grg/src/server.js",
+      "sizeBytes": 137532,
+      "lines": 1740,
+      "hash": "1b1c33db405636f1e92cd9f431c36ac19e2695e697362086d643612d39678e74"
+    },
+    {
+      "path": "grg/src/skills/executable-skill-schema.js",
+      "sizeBytes": 2613,
+      "lines": 86,
+      "hash": "214fcd594626ef392ada6939f6b4b89af1bba08c6168aa8c44c436e80a0f64fd"
+    },
+    {
+      "path": "grg/src/skills/learning-loop.js",
+      "sizeBytes": 1574,
+      "lines": 58,
+      "hash": "8057a1723b86fc979da480a39ff1f494f223be9e4a987e7b620f394303265fe2"
+    },
+    {
+      "path": "grg/src/skills/self-creating-skill-engine.js",
+      "sizeBytes": 5088,
+      "lines": 146,
+      "hash": "5f9d5d5214f36acd9fed60d526e94da98d73b70eebb93cae85645fd43ad4ba7e"
+    },
+    {
+      "path": "grg/src/skills/skill-evolution-engine.js",
+      "sizeBytes": 2263,
+      "lines": 77,
+      "hash": "839d3c16d9c5327350b9ded36e2f92880bb22d14786fa8c8a4a5410acaed8a57"
+    },
+    {
+      "path": "grg/src/skills/skill-registry.js",
+      "sizeBytes": 9528,
+      "lines": 274,
+      "hash": "da2a877439de915e6a0d8f036fcbf3f466dae0e51293c61d5ca8f2323ee63a0c"
+    },
+    {
+      "path": "grg/src/software-factory/dev-pipeline.js",
+      "sizeBytes": 26855,
+      "lines": 610,
+      "hash": "40b6b3be573f99e9a27c7cf37c9348d999f7ce2fd9a8710bfe5a504a81d940d3"
+    },
+    {
+      "path": "grg/src/software-factory/frontend-backend-reciprocity-engine.js",
+      "sizeBytes": 10067,
+      "lines": 281,
+      "hash": "345830e15ed731e8cda401831ecf68a2d0b4db9988cb857deb4462f040b7d3ae"
+    },
+    {
+      "path": "grg/src/software-factory/git-worktree-manager.js",
+      "sizeBytes": 2548,
+      "lines": 50,
+      "hash": "4a7c335d41ce5da26d02cf335ec4425a176b797cd0ccf07a18eee55296a8e6e4"
+    },
+    {
+      "path": "grg/src/software-factory/project-factory.js",
+      "sizeBytes": 3212,
+      "lines": 93,
+      "hash": "4d3c334658e5f4b9c6a2a8bc905be6b9ac794123c769c3a20377f7cd9a63987f"
+    },
+    {
+      "path": "grg/src/software-factory/safe-dev-pipeline.js",
+      "sizeBytes": 17777,
+      "lines": 299,
+      "hash": "c133e9f3d3d3d40f8cd1be96bd6c2e447923f5b223dabd50f6b7ca1b920f6b21"
+    },
+    {
+      "path": "grg/src/software-factory/software-factory.js",
+      "sizeBytes": 11510,
+      "lines": 257,
+      "hash": "e95488ba3151173061ea8ebfd242ad38980589b12f3f4ee370c3406ab2bcfbad"
+    },
+    {
+      "path": "grg/src/software-factory/visual-engine.js",
+      "sizeBytes": 2112,
+      "lines": 23,
+      "hash": "dd7991de867e582a705820686c5316100d5b5c5b69a10b76ad10e0b9f1155db5"
+    },
+    {
+      "path": "grg/src/storage/drivers/local/in-memory-driver.js",
+      "sizeBytes": 1845,
+      "lines": 66,
+      "hash": "5b1db8ccff43ec088617add56b52146576c94e2cb3879752e5085b36f8dc8d4e"
+    },
+    {
+      "path": "grg/src/storage/drivers/local/local-vector-driver.js",
+      "sizeBytes": 2467,
+      "lines": 93,
+      "hash": "f8edca32c2f057a645d9689a56e90a7f5e2a087598fbea9aa52a34d1ee3576a4"
+    },
+    {
+      "path": "grg/src/storage/drivers/local/memory-cache-driver.js",
+      "sizeBytes": 1260,
+      "lines": 51,
+      "hash": "cc91e8b23fdbcb340df27c3ac09be93a19efb6b38f4265968d91ecc9d6349af0"
+    },
+    {
+      "path": "grg/src/storage/drivers/local/sqlite-driver.js",
+      "sizeBytes": 3722,
+      "lines": 123,
+      "hash": "942ce75374981f6aba79e29ca267b2299a136cef20fe521605371533a46de495"
+    },
+    {
+      "path": "grg/src/storage/drivers/postgresql-driver.js",
+      "sizeBytes": 2531,
+      "lines": 80,
+      "hash": "89462aaf3ef75688bdce89d159b8bd51033a9526a735e11307f49173cf743dab"
+    },
+    {
+      "path": "grg/src/storage/drivers/qdrant-driver.js",
+      "sizeBytes": 3680,
+      "lines": 117,
+      "hash": "1b2e091f7eb298e7d9078a5757af942cbe015036977b102ea25ddffc72631a44"
+    },
+    {
+      "path": "grg/src/storage/drivers/redis-driver.js",
+      "sizeBytes": 2298,
+      "lines": 79,
+      "hash": "7077cdd360093657c45a091fa132c1c75ec14644ead1fd129cfc5f6ddf80d8c3"
+    },
+    {
+      "path": "grg/src/storage/file-system-service.js",
+      "sizeBytes": 8308,
+      "lines": 204,
+      "hash": "4d97a9d8f0dc34caddff7d0f4e993e580a359bef43e7e88f705813ec952f2a85"
+    },
+    {
+      "path": "grg/src/storage/storage-manager.js",
+      "sizeBytes": 8257,
+      "lines": 218,
+      "hash": "54eea977e1e192b26115ac7581557815d2e1bc1fdbfdd54ea59ca12813237563"
+    },
+    {
+      "path": "grg/src/storage/storage-provider.js",
+      "sizeBytes": 862,
+      "lines": 38,
+      "hash": "e4faf1bb3a739fdd8e5d49290ab72ab396ac07fb8ed6c6d3e13918106800e7c2"
+    },
+    {
+      "path": "grg/src/storage/stores/index.js",
+      "sizeBytes": 1746,
+      "lines": 68,
+      "hash": "823a526682af8ea29a52cc68b7bf7a2a07c0167273622b4cb22cbae4519c5e30"
+    },
+    {
+      "path": "grg/src/uios/capability-operating-system.js",
+      "sizeBytes": 1811,
+      "lines": 56,
+      "hash": "8c54b92022990ba4b13b28f1b9400397568346d5337cfb190f7b13d46dca9629"
+    },
+    {
+      "path": "grg/src/uios/knowledge-operating-system.js",
+      "sizeBytes": 3036,
+      "lines": 83,
+      "hash": "094f206ba58e3ce1d68f0e831c236a99dcc8677d26679b44ddf1562d7164b869"
+    },
+    {
+      "path": "grg/src/uios/mission-compiler.js",
+      "sizeBytes": 1294,
+      "lines": 38,
+      "hash": "0ba53ede61e1faae36c76af02958155b9b28ae2793bf793780504dfa32c5834b"
+    },
+    {
+      "path": "grg/src/uios/world-model-factory.js",
+      "sizeBytes": 1259,
+      "lines": 46,
+      "hash": "864d36ac0ea9f76c2e132b3a19c189df48584112f14c28f950939ce47c73b14c"
+    },
+    {
+      "path": "grg/src/utils/math.js",
+      "sizeBytes": 130,
+      "lines": 1,
+      "hash": "ce9c5df3821dcc38ff45f531fe2e6442deaee70dfba73622e98d75093c0bbf41"
+    },
+    {
+      "path": "grg/src/versioning/global-version-engine.js",
+      "sizeBytes": 8024,
+      "lines": 150,
+      "hash": "811c20b252a5f90751b8f8fe1b6b1a7f21e5cb6825922a745b4ba83735b61fe2"
+    },
+    {
+      "path": "grg/src/vision/vision-agent.js",
+      "sizeBytes": 6023,
+      "lines": 174,
+      "hash": "e602150c15607c4e8803b1dbbfe96088dfce0a783806e43e46c5c54d8ef88617"
+    },
+    {
+      "path": "grg/src/visual-ide/visual-code-mapper.js",
+      "sizeBytes": 3290,
+      "lines": 106,
+      "hash": "06ae40120993d7dc2b57b3a0a5665b75a752b5dc7a84341f3fb0147d9e70db5c"
+    },
+    {
+      "path": "grg/src/voice/alexa-voice-gateway.js",
+      "sizeBytes": 24653,
+      "lines": 582,
+      "hash": "9e452b0c403386033c4bc546bf21a792ef72436039ead20bb4d4785e97437560"
+    },
+    {
+      "path": "grg/src/watch/fenix-watch.js",
+      "sizeBytes": 1536,
+      "lines": 56,
+      "hash": "33a58fb8fb42b0caf287f5fa62bbe9644d6997b086993984f2173d8fb3091edf"
+    },
+    {
+      "path": "grg/src/workforce/agent-entity.js",
+      "sizeBytes": 4270,
+      "lines": 160,
+      "hash": "03b1580e4552a94a6b9821004adaa26f158069b6cda2af1b80f0c040ac4e2d32"
+    },
+    {
+      "path": "grg/src/workforce/agent-factory.js",
+      "sizeBytes": 4619,
+      "lines": 148,
+      "hash": "ce6b6b2c654b0c0f3ef1ba1115452bc4f867141d69a9f98efcd9585fe2704666"
+    },
+    {
+      "path": "grg/src/workforce/workforce.js",
+      "sizeBytes": 18898,
+      "lines": 333,
+      "hash": "193693ff6306f04f991e7cfcc342e5a4b415b7726af1c576babafeb9a851cd89"
+    },
+    {
+      "path": "grg/src/workspace/cognitive-presence-engine.js",
+      "sizeBytes": 1582,
+      "lines": 47,
+      "hash": "d2c421a77e6fb212b878afbfc97d00bdb6406129e5278fb930dd78c7d562b20b"
+    },
+    {
+      "path": "grg/src/workspace/cognitive-workspace-modes.js",
+      "sizeBytes": 1821,
+      "lines": 54,
+      "hash": "335a5153bd226b78029a343f6af01c1ec95423ca98e661c3c3e091bed4a32bba"
+    },
+    {
+      "path": "grg/src/workspace/executive-cognitive-assistant.js",
+      "sizeBytes": 3011,
+      "lines": 96,
+      "hash": "15457f9882a3fecd2780dee1219ad89209b41649e1c3fd52ea3238afd10bfe83"
+    },
+    {
+      "path": "grg/src/workspace/multi-project-workspace-manager.js",
+      "sizeBytes": 3385,
+      "lines": 120,
+      "hash": "f0b689c47933806b595531c9256e1efca57ad15916abec673f1957b4508ff187"
+    },
+    {
+      "path": "grg/src/world-model/universal-system-model.js",
+      "sizeBytes": 4902,
+      "lines": 136,
+      "hash": "e9a464f2853d773dc7d6865eb7ed5d62a65f9b7a2e2203492ac622d471313e25"
+    },
+    {
+      "path": "grg/src/world-model/world-model.js",
+      "sizeBytes": 7357,
+      "lines": 226,
+      "hash": "b7f31790f8979da29c970a69dbd1f36d44661a875a46e20e9a1d019547d3e74a"
+    }
+  ],
+  "publicFiles": [
+    {
+      "file": "city-brief.css",
+      "path": "grg/public/city-brief.css",
+      "ext": ".css",
+      "sizeBytes": 3699,
+      "lines": 4,
+      "hash": "0e24f5671cd9ca8deefe6b8b6d7fe6bbcfc0344ef0ece04eeb3704c8d7ac6de2"
+    },
+    {
+      "file": "city-brief.js",
+      "path": "grg/public/city-brief.js",
+      "ext": ".js",
+      "sizeBytes": 7249,
+      "lines": 85,
+      "hash": "6650b42c469481849d711493c6aa4035c6504180896f6e2e2b11c37c7c25ec8b"
+    },
+    {
+      "file": "city-integration.js",
+      "path": "grg/public/city-integration.js",
+      "ext": ".js",
+      "sizeBytes": 34664,
+      "lines": 762,
+      "hash": "057ad3c284a38f1350b9063a53ec71f2e8acfb9d7e2dd61e074ed2073ff32eef"
+    },
+    {
+      "file": "city-overrides.css",
+      "path": "grg/public/city-overrides.css",
+      "ext": ".css",
+      "sizeBytes": 42151,
+      "lines": 1693,
+      "hash": "5da201a95680e517dd9d677bfc17b88c50e8a0157409d5c242bf44c4f4b51c9b"
+    },
+    {
+      "file": "city-return.css",
+      "path": "grg/public/city-return.css",
+      "ext": ".css",
+      "sizeBytes": 636,
+      "lines": 2,
+      "hash": "5a86d7c73c0dd58082130baddb64ad00c77b12d27af115d23bf03d7aef5a1450"
+    },
+    {
+      "file": "city-return.js",
+      "path": "grg/public/city-return.js",
+      "ext": ".js",
+      "sizeBytes": 1448,
+      "lines": 29,
+      "hash": "f9a872d78b23d072e70b95975695fcb9c3e30ec2eb84795ef1e3b90db084f98b"
+    },
+    {
+      "file": "cockpit-app.js",
+      "path": "grg/public/cockpit-app.js",
+      "ext": ".js",
+      "sizeBytes": 2844,
+      "lines": 60,
+      "hash": "1d24f472dff4545ed7ea30594a8228f4aa735c263730249061feee1d8f71c7f5"
+    },
+    {
+      "file": "command-center.css",
+      "path": "grg/public/command-center.css",
+      "ext": ".css",
+      "sizeBytes": 50069,
+      "lines": 2101,
+      "hash": "591c4652e847e7c38d7181bbbd21a0c0d0af135de2db4c174feb42191055b41a"
+    },
+    {
+      "file": "command-center.js",
+      "path": "grg/public/command-center.js",
+      "ext": ".js",
+      "sizeBytes": 236593,
+      "lines": 4081,
+      "hash": "29eedade2cba9edcfdba9a19d96bb3fa93be225a04a4ee0c1fc10c3c39403c3e"
+    },
+    {
+      "file": "connections-panel.js",
+      "path": "grg/public/connections-panel.js",
+      "ext": ".js",
+      "sizeBytes": 10178,
+      "lines": 264,
+      "hash": "93316bb7b48131eddd5d40682ea1437651cadbdc3d781c5e947a6ac42060d8fc"
+    },
+    {
+      "file": "design-system.css",
+      "path": "grg/public/design-system.css",
+      "ext": ".css",
+      "sizeBytes": 6532,
+      "lines": 149,
+      "hash": "b81b9a68f4f5ec7f60a72b932e7e3a068abd93fa0516db42e000402f833fa1cc"
+    },
+    {
+      "file": "dev-pipeline-client.js",
+      "path": "grg/public/dev-pipeline-client.js",
+      "ext": ".js",
+      "sizeBytes": 3853,
+      "lines": 69,
+      "hash": "9e13ca68eca4daa3a9439bc67f6d9897ade4cb3a2aa3b88e710c73703871e115"
+    },
+    {
+      "file": "favicon.ico",
+      "path": "grg/public/favicon.ico",
+      "ext": ".ico",
+      "sizeBytes": 2,
+      "lines": 2,
+      "hash": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6"
+    },
+    {
+      "file": "fenix-bootstrap.js",
+      "path": "grg/public/fenix-bootstrap.js",
+      "ext": ".js",
+      "sizeBytes": 5354,
+      "lines": 148,
+      "hash": "033a0c0d7200ad1c4ba036d1f55fbb5c504dd08a185e023b1ee02b862c888b2c"
+    },
+    {
+      "file": "fenix-city-event-adapter.js",
+      "path": "grg/public/fenix-city-event-adapter.js",
+      "ext": ".js",
+      "sizeBytes": 11024,
+      "lines": 193,
+      "hash": "336aded4f5cb0b3c0fc36ddcdd48ce441c0aa910d2a876862eae1dcc45b0d5a9"
+    },
+    {
+      "file": "fenix-city-workflow.js",
+      "path": "grg/public/fenix-city-workflow.js",
+      "ext": ".js",
+      "sizeBytes": 14228,
+      "lines": 176,
+      "hash": "ca17777b744f3aff750d75a0948e99e79adfe9db593b08b250dc80958ad72759"
+    },
+    {
+      "file": "fenix-command-bridge.js",
+      "path": "grg/public/fenix-command-bridge.js",
+      "ext": ".js",
+      "sizeBytes": 1629,
+      "lines": 34,
+      "hash": "986572239535fd8197ae7285d11919440fb0a01e4b2d707ecfba73ba73b47878"
+    },
+    {
+      "file": "fenix-command-palette.js",
+      "path": "grg/public/fenix-command-palette.js",
+      "ext": ".js",
+      "sizeBytes": 21495,
+      "lines": 540,
+      "hash": "6d1e30b21eda7eb9be0f4602e78ba35b7118cd763a75e55d776b56d56b29afdf"
+    },
+    {
+      "file": "fenix-core-controller.js",
+      "path": "grg/public/fenix-core-controller.js",
+      "ext": ".js",
+      "sizeBytes": 60446,
+      "lines": 1035,
+      "hash": "99722604081b64416c4707adf6b5020c461a0347bc7e87b17ac677c92f3baa97"
+    },
+    {
+      "file": "fenix-design-system.css",
+      "path": "grg/public/fenix-design-system.css",
+      "ext": ".css",
+      "sizeBytes": 23396,
+      "lines": 894,
+      "hash": "02e4ab6ec8530edb57ce2513af0d1b82d888420f2e312fc8ef22f60f8d63e21b"
+    },
+    {
+      "file": "fenix-evolve.js",
+      "path": "grg/public/fenix-evolve.js",
+      "ext": ".js",
+      "sizeBytes": 11744,
+      "lines": 320,
+      "hash": "f3861370403042cf24f9a6aa33dc78ec2c9278dcedcdd419fa379391015f9687"
+    },
+    {
+      "file": "fenix-flow-graph.css",
+      "path": "grg/public/fenix-flow-graph.css",
+      "ext": ".css",
+      "sizeBytes": 22932,
+      "lines": 1077,
+      "hash": "620c7c59971115ef66705afb221d9153f7143144bc87de3bd173cb6aaed87541"
+    },
+    {
+      "file": "fenix-flow-graph.js",
+      "path": "grg/public/fenix-flow-graph.js",
+      "ext": ".js",
+      "sizeBytes": 111778,
+      "lines": 2686,
+      "hash": "763f3e90a5da1d0822a6b525c49cf9c5ed11e385b1b7a390dd75fecd78fad48d"
+    },
+    {
+      "file": "fenix-ide-v2.css",
+      "path": "grg/public/fenix-ide-v2.css",
+      "ext": ".css",
+      "sizeBytes": 17012,
+      "lines": 341,
+      "hash": "a4ec207480cb55277fc3687d0e4a1a370102d631bfc7eece78eb18b62698d48b"
+    },
+    {
+      "file": "fenix-mascot-sidebar.css",
+      "path": "grg/public/fenix-mascot-sidebar.css",
+      "ext": ".css",
+      "sizeBytes": 41219,
+      "lines": 2019,
+      "hash": "51f42d2ea05142bc23530828de495e5b36c9ef6c4f4954c7db1d8363f6fc94a9"
+    },
+    {
+      "file": "fenix-mascot-sidebar.js",
+      "path": "grg/public/fenix-mascot-sidebar.js",
+      "ext": ".js",
+      "sizeBytes": 114909,
+      "lines": 2523,
+      "hash": "80ce58a3b0fe37bc6387cfb6f3c898869b4df0091ce241c5ded5d03f790fc5e9"
+    },
+    {
+      "file": "fenix-operational-os.js",
+      "path": "grg/public/fenix-operational-os.js",
+      "ext": ".js",
+      "sizeBytes": 232436,
+      "lines": 3902,
+      "hash": "12977eb398260d8e56dfddb44af8c5b6d94cd1de5f423d5fb8f6d42728d3b795"
+    },
+    {
+      "file": "fenix-pixel-engine.js",
+      "path": "grg/public/fenix-pixel-engine.js",
+      "ext": ".js",
+      "sizeBytes": 84180,
+      "lines": 2420,
+      "hash": "eea50078dec400099d77670145bbd583b57afbd6a113424ba296592e5da48630"
+    },
+    {
+      "file": "fenix-premium-layout.css",
+      "path": "grg/public/fenix-premium-layout.css",
+      "ext": ".css",
+      "sizeBytes": 20318,
+      "lines": 740,
+      "hash": "96e3018b5d7e91652ac6dc45cefad2dd82ad84dbbef31d85f9c089a166190c63"
+    },
+    {
+      "file": "fenix-v10.css",
+      "path": "grg/public/fenix-v10.css",
+      "ext": ".css",
+      "sizeBytes": 33886,
+      "lines": 1428,
+      "hash": "1f5c5b7f5f15145a6fbc691cea29c5a4d7bb8cb2c3ad03c96154e1a33e05c5ef"
+    },
+    {
+      "file": "fenix-v11-evolution.css",
+      "path": "grg/public/fenix-v11-evolution.css",
+      "ext": ".css",
+      "sizeBytes": 74745,
+      "lines": 2425,
+      "hash": "7ae3456657567c3c4f8979b6e60c459b5e2897aede4ce23fea500f6e6aff3d72"
+    },
+    {
+      "file": "fenix-v11-interactions.js",
+      "path": "grg/public/fenix-v11-interactions.js",
+      "ext": ".js",
+      "sizeBytes": 91320,
+      "lines": 1920,
+      "hash": "eb2fd8b41bb18411cf21c6f69c6f9d26f3885a8774c67390c2af1b7fa5b649d0"
+    },
+    {
+      "file": "fenix-v11-phase6.css",
+      "path": "grg/public/fenix-v11-phase6.css",
+      "ext": ".css",
+      "sizeBytes": 84849,
+      "lines": 2838,
+      "hash": "3da866594eefe1fb02aab6bc554f6360e433c30b4443e8c98ceba1da1d1bcc61"
+    },
+    {
+      "file": "fenix-v15.css",
+      "path": "grg/public/fenix-v15.css",
+      "ext": ".css",
+      "sizeBytes": 11227,
+      "lines": 359,
+      "hash": "a9560c110fb8f47fc39595755ee13e6e172e0cec7397f2f7994980fca0d88c3f"
+    },
+    {
+      "file": "fenix-v8-ui.js",
+      "path": "grg/public/fenix-v8-ui.js",
+      "ext": ".js",
+      "sizeBytes": 28319,
+      "lines": 618,
+      "hash": "2ed877c96159e96b0adb6e0d346d824e883d3a0ec9f01ade8f9cb66f27c164f1"
+    },
+    {
+      "file": "fenix-visual-ide.js",
+      "path": "grg/public/fenix-visual-ide.js",
+      "ext": ".js",
+      "sizeBytes": 68970,
+      "lines": 1280,
+      "hash": "42cf252fd059642d400fdfc5d5b6c61426df070cd8bc9452fbe9bef71d2f8e28"
+    },
+    {
+      "file": "fenix-window-overrides.css",
+      "path": "grg/public/fenix-window-overrides.css",
+      "ext": ".css",
+      "sizeBytes": 37000,
+      "lines": 1140,
+      "hash": "821fb0e6200cd2d74dc766e272eccc0e63e001fcc013cadfb88d7842e7652127"
+    },
+    {
+      "file": "fenix-world-3d.css",
+      "path": "grg/public/fenix-world-3d.css",
+      "ext": ".css",
+      "sizeBytes": 10508,
+      "lines": 41,
+      "hash": "9cdc033a3f1751770ae797163f7105c29c791255a2a6a1e6ff9e2e6c3990de53"
+    },
+    {
+      "file": "fenix-world-3d.js",
+      "path": "grg/public/fenix-world-3d.js",
+      "ext": ".js",
+      "sizeBytes": 33039,
+      "lines": 433,
+      "hash": "0b1ca9d77a1b3c63567fef4c03355f97be36b185b2c54f379b04e5bfe2e534e1"
+    },
+    {
+      "file": "fenix-world-ui.js",
+      "path": "grg/public/fenix-world-ui.js",
+      "ext": ".js",
+      "sizeBytes": 10131,
+      "lines": 112,
+      "hash": "0bb99c0652aae3fbe450d4310b50d79749b66d725a6a1012d4a4a8f835698b49"
+    },
+    {
+      "file": "fenix.css",
+      "path": "grg/public/fenix.css",
+      "ext": ".css",
+      "sizeBytes": 3560,
+      "lines": 43,
+      "hash": "2d4a4c2c8a0bf5a1b469eb29c897478026a012a73c842f216ed265f3eb2a36f0"
+    },
+    {
+      "file": "ide-enhancer.js",
+      "path": "grg/public/ide-enhancer.js",
+      "ext": ".js",
+      "sizeBytes": 19827,
+      "lines": 460,
+      "hash": "a063f2afc116cf67a9e6ffd1319e203bf351a0f10f887d34c9bc8aa07fda30b5"
+    },
+    {
+      "file": "index.html",
+      "path": "grg/public/index.html",
+      "ext": ".html",
+      "sizeBytes": 351770,
+      "lines": 5916,
+      "hash": "d0062d085f139fe443b32d3c7b3839bf9ed1c53fefea98353f58669a430a0b32"
+    },
+    {
+      "file": "index_frozen_backup.html",
+      "path": "grg/public/index_frozen_backup.html",
+      "ext": ".html",
+      "sizeBytes": 16804,
+      "lines": 290,
+      "hash": "69cb63e156dd9a5c29e7f3944b5ad9fcbc7f8aa9e3cfb3d16c56dc619e970c9a"
+    },
+    {
+      "file": "inspector-measured.css",
+      "path": "grg/public/inspector-measured.css",
+      "ext": ".css",
+      "sizeBytes": 805,
+      "lines": 2,
+      "hash": "13c6956551f95f7b4f5c87bf465c24f6f5768ad2dd687b49280557a4223d056e"
+    },
+    {
+      "file": "iso-city.js",
+      "path": "grg/public/iso-city.js",
+      "ext": ".js",
+      "sizeBytes": 215239,
+      "lines": 4892,
+      "hash": "96d537b9262eff801b9cf7ee41c00cdb5a20e90c830544c5aefc41333612ad02"
+    },
+    {
+      "file": "jobs-app.js",
+      "path": "grg/public/jobs-app.js",
+      "ext": ".js",
+      "sizeBytes": 2489,
+      "lines": 70,
+      "hash": "83ceb19d46a6d02d52a23bbf9c8d449fb62291ca8b9a8ba5d24545625fae13ee"
+    },
+    {
+      "file": "layout-patch.css",
+      "path": "grg/public/layout-patch.css",
+      "ext": ".css",
+      "sizeBytes": 1508,
+      "lines": 83,
+      "hash": "01e8c74a726cffe9080c4ddb1c121ef9ce9cb19cefa80d8afabd8ec8ed9a1fe0"
+    },
+    {
+      "file": "level30.css",
+      "path": "grg/public/level30.css",
+      "ext": ".css",
+      "sizeBytes": 7442,
+      "lines": 206,
+      "hash": "a651d9ab973906773e736edf6f36f7aad633e3d123201d947496e583f0eda242"
+    },
+    {
+      "file": "live-runtime.js",
+      "path": "grg/public/live-runtime.js",
+      "ext": ".js",
+      "sizeBytes": 14463,
+      "lines": 420,
+      "hash": "fe4936ca61869779e0613eb74f067bec2f48cb677aabef67c6af7eac8ac0f070"
+    },
+    {
+      "file": "living-panels.css",
+      "path": "grg/public/living-panels.css",
+      "ext": ".css",
+      "sizeBytes": 3691,
+      "lines": 93,
+      "hash": "dada70c1377068038f13f53a7c8d971ec33f83023589cd395511f50761fd743d"
+    },
+    {
+      "file": "login.html",
+      "path": "grg/public/login.html",
+      "ext": ".html",
+      "sizeBytes": 10853,
+      "lines": 166,
+      "hash": "bdd7f630d6855785e79ae9038e876538f7cff8b36a2fc234539b82deea6ca282"
+    },
+    {
+      "file": "marketplace-live.css",
+      "path": "grg/public/marketplace-live.css",
+      "ext": ".css",
+      "sizeBytes": 686,
+      "lines": 2,
+      "hash": "8acc0efda893c17c8359d6ac406756f08f1fd6d232a96eb720f1d81c3b544d1b"
+    },
+    {
+      "file": "marketplace-live.js",
+      "path": "grg/public/marketplace-live.js",
+      "ext": ".js",
+      "sizeBytes": 2198,
+      "lines": 30,
+      "hash": "3d22131d5bed5e00bb581511b036e7515d97f0bebabfd1e882758c805635e8e7"
+    },
+    {
+      "file": "memory-live.css",
+      "path": "grg/public/memory-live.css",
+      "ext": ".css",
+      "sizeBytes": 5793,
+      "lines": 11,
+      "hash": "5e73015d70b585fc4733816252e2e8b9a1f881e6a5a27c0c74c5854256fe03d0"
+    },
+    {
+      "file": "memory-live.js",
+      "path": "grg/public/memory-live.js",
+      "ext": ".js",
+      "sizeBytes": 13894,
+      "lines": 146,
+      "hash": "2d94eecb72c3cc1ec47760520f5d4b6aea2cfdb49c5770f8191339f7de2802fc"
+    },
+    {
+      "file": "observatory-client.js",
+      "path": "grg/public/observatory-client.js",
+      "ext": ".js",
+      "sizeBytes": 46957,
+      "lines": 784,
+      "hash": "75a13ac8a363b4af800355cf66f17549590e442be5d2145d8f682665c427433c"
+    },
+    {
+      "file": "office.css",
+      "path": "grg/public/office.css",
+      "ext": ".css",
+      "sizeBytes": 7040,
+      "lines": 85,
+      "hash": "be4c097faba5f401006f97e23e2d6ae1c82566b3a9433bc9eaae29045f6cc35b"
+    },
+    {
+      "file": "operations-live.css",
+      "path": "grg/public/operations-live.css",
+      "ext": ".css",
+      "sizeBytes": 5779,
+      "lines": 21,
+      "hash": "9b637fb59a889f197805f52e24ebc1a75825049be9d7af2198af19f50dc3a2f3"
+    },
+    {
+      "file": "operations-live.js",
+      "path": "grg/public/operations-live.js",
+      "ext": ".js",
+      "sizeBytes": 28929,
+      "lines": 533,
+      "hash": "64aedd312ff3520a9f49c03c1e2799d5eb3d96a7ad3f5a83f9f382fa1071d292"
+    },
+    {
+      "file": "pixi-building-interior.js",
+      "path": "grg/public/pixi-building-interior.js",
+      "ext": ".js",
+      "sizeBytes": 65471,
+      "lines": 1521,
+      "hash": "184a0a1efc42d1c385c2964e4a54e5c9ee6b976e07a7bbc7fee4af5da521e088"
+    },
+    {
+      "file": "pixi-character-system.js",
+      "path": "grg/public/pixi-character-system.js",
+      "ext": ".js",
+      "sizeBytes": 43706,
+      "lines": 1230,
+      "hash": "74d65e5eaeb29df12de8b1d633a82f837c744bb549ed7ba04b8c6430814c779c"
+    },
+    {
+      "file": "pixi-city-renderer.js",
+      "path": "grg/public/pixi-city-renderer.js",
+      "ext": ".js",
+      "sizeBytes": 113598,
+      "lines": 3039,
+      "hash": "8598b709b2dc63a8eede21481506427e6b230a4bd668a52dbf13d874b1048e75"
+    },
+    {
+      "file": "pixi-game-art-pipeline.js",
+      "path": "grg/public/pixi-game-art-pipeline.js",
+      "ext": ".js",
+      "sizeBytes": 56236,
+      "lines": 1641,
+      "hash": "21b3b0308d7c3530fd215950546a2f4091aaa4c18f793918a6d8f52832e4b6d9"
+    },
+    {
+      "file": "pixi-interaction-engine.js",
+      "path": "grg/public/pixi-interaction-engine.js",
+      "ext": ".js",
+      "sizeBytes": 13652,
+      "lines": 364,
+      "hash": "6ee56519d5e24c7d50a427f08335db63c06910b597f14df34c08e11e0ca74148"
+    },
+    {
+      "file": "pixi-semantic-zoom.js",
+      "path": "grg/public/pixi-semantic-zoom.js",
+      "ext": ".js",
+      "sizeBytes": 9617,
+      "lines": 277,
+      "hash": "9ede352acf0b5bdc27b3aebfbfb7b9df0058baaaebe4753278877d444c53ca6b"
+    },
+    {
+      "file": "premium-world-live.js",
+      "path": "grg/public/premium-world-live.js",
+      "ext": ".js",
+      "sizeBytes": 7183,
+      "lines": 120,
+      "hash": "b587bdc416c48c8b6017927b8538c4375c158a5abdcec69548f3a80c78e0cdf4"
+    },
+    {
+      "file": "premium-world.css",
+      "path": "grg/public/premium-world.css",
+      "ext": ".css",
+      "sizeBytes": 6382,
+      "lines": 28,
+      "hash": "9dc7038676f6d5935312b73d210579671e7cea9fd4fc64d14a9724867dcc388b"
+    },
+    {
+      "file": "preview.html",
+      "path": "grg/public/preview.html",
+      "ext": ".html",
+      "sizeBytes": 960,
+      "lines": 21,
+      "hash": "814fe7ffedfea95f0b20ef10e2c42b7678882228578c5f60f5ebdabb15a53fc0"
+    },
+    {
+      "file": "project-hub-controller.js",
+      "path": "grg/public/project-hub-controller.js",
+      "ext": ".js",
+      "sizeBytes": 121804,
+      "lines": 1954,
+      "hash": "f82131de0bf81dc5f721a1eb17494d6009698cb0c2a5e6b914d3cfd022b97da5"
+    },
+    {
+      "file": "project-hub-live.css",
+      "path": "grg/public/project-hub-live.css",
+      "ext": ".css",
+      "sizeBytes": 15560,
+      "lines": 95,
+      "hash": "e38ea7d6d81b4fa359cec1d660d4a1a81a5959bb2dc3930708aef33b945fe7f1"
+    },
+    {
+      "file": "project-hub-live.js",
+      "path": "grg/public/project-hub-live.js",
+      "ext": ".js",
+      "sizeBytes": 93267,
+      "lines": 2069,
+      "hash": "580e74d1f60f83d15fdd17c5b62c6364340f6d9526a10c72f6a741722e30900a"
+    },
+    {
+      "file": "project-ide-live.css",
+      "path": "grg/public/project-ide-live.css",
+      "ext": ".css",
+      "sizeBytes": 9829,
+      "lines": 88,
+      "hash": "21a8147f648f6d0ba09e540949480283d9aba7bb97f21d2f3be1319c1df5ee20"
+    },
+    {
+      "file": "project-ide-live.js",
+      "path": "grg/public/project-ide-live.js",
+      "ext": ".js",
+      "sizeBytes": 22757,
+      "lines": 539,
+      "hash": "90aef9a459cb260a03f6ef41c3ad7eb26cef2b715f72a6366c6c9fc7a4e981ea"
+    },
+    {
+      "file": "runtime-cockpit.js",
+      "path": "grg/public/runtime-cockpit.js",
+      "ext": ".js",
+      "sizeBytes": 104437,
+      "lines": 2063,
+      "hash": "dc7e827d7faa160ac3633c5bc1cbd5a50ebea52ad65c732b98ffdd43cd9f77f6"
+    },
+    {
+      "file": "runtime-health-badge.css",
+      "path": "grg/public/runtime-health-badge.css",
+      "ext": ".css",
+      "sizeBytes": 1170,
+      "lines": 2,
+      "hash": "430c95f6dda9c2aef02dad4d6d9095c1e2571481ff492e00841c3b9e49211064"
+    },
+    {
+      "file": "runtime-health-badge.js",
+      "path": "grg/public/runtime-health-badge.js",
+      "ext": ".js",
+      "sizeBytes": 1693,
+      "lines": 28,
+      "hash": "6740b5b418fa52c309a35b4f662421873f9bb61f8f6584aaf71f7ab268707f3f"
+    },
+    {
+      "file": "system-analysis.css",
+      "path": "grg/public/system-analysis.css",
+      "ext": ".css",
+      "sizeBytes": 2334,
+      "lines": 6,
+      "hash": "2c3a5c15cbd408be7cfb7622813f477557f0cf969559287f27fa2f445c096380"
+    },
+    {
+      "file": "system-analysis.js",
+      "path": "grg/public/system-analysis.js",
+      "ext": ".js",
+      "sizeBytes": 5583,
+      "lines": 55,
+      "hash": "196db146f91e7292c8bfaeacbad5022b701a092c3d197b4d55dfce540a1403f1"
+    },
+    {
+      "file": "task-creator.js",
+      "path": "grg/public/task-creator.js",
+      "ext": ".js",
+      "sizeBytes": 9668,
+      "lines": 239,
+      "hash": "e4f7991f19f6263cc9eef11e9ee4e2127563318492547b16187398bed5424344"
+    },
+    {
+      "file": "unified-app.js",
+      "path": "grg/public/unified-app.js",
+      "ext": ".js",
+      "sizeBytes": 97535,
+      "lines": 1974,
+      "hash": "fa369153c11302a65c42faaa4a5e4e9d7c39afca50de8fde642de8c076b31edc"
+    },
+    {
+      "file": "unified.css",
+      "path": "grg/public/unified.css",
+      "ext": ".css",
+      "sizeBytes": 24882,
+      "lines": 515,
+      "hash": "2126b725bb341ea579aeb6e3ad162065be307a2398dc5b44fa2e4f731c82d62c"
+    },
+    {
+      "file": "visual-inspector.js",
+      "path": "grg/public/visual-inspector.js",
+      "ext": ".js",
+      "sizeBytes": 3349,
+      "lines": 82,
+      "hash": "719d10d6c523a6bb9c8f695be5e58ccaac2ebf51fa0e618676012d94e86d3a71"
+    }
+  ],
+  "testFiles": [
+    {
+      "testName": "activation-write-budget.test.js",
+      "path": "grg/test/activation-write-budget.test.js",
+      "lines": 98,
+      "sizeBytes": 5878
+    },
+    {
+      "testName": "agent-execution-runtime.test.js",
+      "path": "grg/test/agent-execution-runtime.test.js",
+      "lines": 28,
+      "sizeBytes": 1923
+    },
+    {
+      "testName": "agent-execution-truth.test.js",
+      "path": "grg/test/agent-execution-truth.test.js",
+      "lines": 35,
+      "sizeBytes": 1951
+    },
+    {
+      "testName": "agent-job-assignment.test.js",
+      "path": "grg/test/agent-job-assignment.test.js",
+      "lines": 18,
+      "sizeBytes": 1277
+    },
+    {
+      "testName": "agent-workspace-executor.test.js",
+      "path": "grg/test/agent-workspace-executor.test.js",
+      "lines": 197,
+      "sizeBytes": 15394
+    },
+    {
+      "testName": "agentic-development-e2e.test.js",
+      "path": "grg/test/agentic-development-e2e.test.js",
+      "lines": 149,
+      "sizeBytes": 6609
+    },
+    {
+      "testName": "ai-city.test.js",
+      "path": "grg/test/ai-city.test.js",
+      "lines": 42,
+      "sizeBytes": 2746
+    },
+    {
+      "testName": "ai-enabled-certification.test.js",
+      "path": "grg/test/ai-enabled-certification.test.js",
+      "lines": 142,
+      "sizeBytes": 5181
+    },
+    {
+      "testName": "ai-gateway-enterprise.test.js",
+      "path": "grg/test/ai-gateway-enterprise.test.js",
+      "lines": 136,
+      "sizeBytes": 7394
+    },
+    {
+      "testName": "ai-route-default-model.test.js",
+      "path": "grg/test/ai-route-default-model.test.js",
+      "lines": 10,
+      "sizeBytes": 560
+    },
+    {
+      "testName": "ai-router.test.js",
+      "path": "grg/test/ai-router.test.js",
+      "lines": 120,
+      "sizeBytes": 6364
+    },
+    {
+      "testName": "ai-runtime.test.js",
+      "path": "grg/test/ai-runtime.test.js",
+      "lines": 60,
+      "sizeBytes": 2542
+    },
+    {
+      "testName": "aiplatform-job-polling.test.js",
+      "path": "grg/test/aiplatform-job-polling.test.js",
+      "lines": 249,
+      "sizeBytes": 11308
+    },
+    {
+      "testName": "aiplatform.test.js",
+      "path": "grg/test/aiplatform.test.js",
+      "lines": 123,
+      "sizeBytes": 6391
+    },
+    {
+      "testName": "alexa-real-activation-e2e.test.js",
+      "path": "grg/test/alexa-real-activation-e2e.test.js",
+      "lines": 212,
+      "sizeBytes": 9482
+    },
+    {
+      "testName": "alexa-real-project-e2e.test.js",
+      "path": "grg/test/alexa-real-project-e2e.test.js",
+      "lines": 132,
+      "sizeBytes": 5401
+    },
+    {
+      "testName": "alexa-voice-bidirectional-e2e.test.js",
+      "path": "grg/test/alexa-voice-bidirectional-e2e.test.js",
+      "lines": 243,
+      "sizeBytes": 11032
+    },
+    {
+      "testName": "alexa-voice-e2e.test.js",
+      "path": "grg/test/alexa-voice-e2e.test.js",
+      "lines": 242,
+      "sizeBytes": 9842
+    },
+    {
+      "testName": "architecture-guard.test.js",
+      "path": "grg/test/architecture-guard.test.js",
+      "lines": 214,
+      "sizeBytes": 9236
+    },
+    {
+      "testName": "auth.test.js",
+      "path": "grg/test/auth.test.js",
+      "lines": 66,
+      "sizeBytes": 2804
+    },
+    {
+      "testName": "autonomous-agent-certification.test.js",
+      "path": "grg/test/autonomous-agent-certification.test.js",
+      "lines": 175,
+      "sizeBytes": 7245
+    },
+    {
+      "testName": "autonomous-agent-ecosystem.test.js",
+      "path": "grg/test/autonomous-agent-ecosystem.test.js",
+      "lines": 111,
+      "sizeBytes": 9868
+    },
+    {
+      "testName": "autonomous-cycle.test.js",
+      "path": "grg/test/autonomous-cycle.test.js",
+      "lines": 37,
+      "sizeBytes": 1472
+    },
+    {
+      "testName": "capability-registry.test.js",
+      "path": "grg/test/capability-registry.test.js",
+      "lines": 38,
+      "sizeBytes": 3332
+    },
+    {
+      "testName": "central-orchestrator.test.js",
+      "path": "grg/test/central-orchestrator.test.js",
+      "lines": 221,
+      "sizeBytes": 12180
+    },
+    {
+      "testName": "chat-agent-real.test.js",
+      "path": "grg/test/chat-agent-real.test.js",
+      "lines": 16,
+      "sizeBytes": 580
+    },
+    {
+      "testName": "chat-capability-facts.test.js",
+      "path": "grg/test/chat-capability-facts.test.js",
+      "lines": 87,
+      "sizeBytes": 4927
+    },
+    {
+      "testName": "chat-executive-activation.test.js",
+      "path": "grg/test/chat-executive-activation.test.js",
+      "lines": 61,
+      "sizeBytes": 3225
+    },
+    {
+      "testName": "chat-llm.test.js",
+      "path": "grg/test/chat-llm.test.js",
+      "lines": 63,
+      "sizeBytes": 2796
+    },
+    {
+      "testName": "chat.test.js",
+      "path": "grg/test/chat.test.js",
+      "lines": 82,
+      "sizeBytes": 3579
+    },
+    {
+      "testName": "city-runtime-truth.test.js",
+      "path": "grg/test/city-runtime-truth.test.js",
+      "lines": 56,
+      "sizeBytes": 2302
+    },
+    {
+      "testName": "cognitive-core.test.js",
+      "path": "grg/test/cognitive-core.test.js",
+      "lines": 56,
+      "sizeBytes": 5702
+    },
+    {
+      "testName": "cognitive-council-voting.test.js",
+      "path": "grg/test/cognitive-council-voting.test.js",
+      "lines": 116,
+      "sizeBytes": 6578
+    },
+    {
+      "testName": "cognitive-hierarchy.test.js",
+      "path": "grg/test/cognitive-hierarchy.test.js",
+      "lines": 90,
+      "sizeBytes": 6665
+    },
+    {
+      "testName": "cognitive-inspection.test.js",
+      "path": "grg/test/cognitive-inspection.test.js",
+      "lines": 39,
+      "sizeBytes": 5110
+    },
+    {
+      "testName": "cognitive-workspace-eca.test.js",
+      "path": "grg/test/cognitive-workspace-eca.test.js",
+      "lines": 58,
+      "sizeBytes": 2513
+    },
+    {
+      "testName": "company-brain-reality.test.js",
+      "path": "grg/test/company-brain-reality.test.js",
+      "lines": 246,
+      "sizeBytes": 12797
+    },
+    {
+      "testName": "compose-runtime-env.test.js",
+      "path": "grg/test/compose-runtime-env.test.js",
+      "lines": 132,
+      "sizeBytes": 8465
+    },
+    {
+      "testName": "connector-runtime.test.js",
+      "path": "grg/test/connector-runtime.test.js",
+      "lines": 92,
+      "sizeBytes": 4784
+    },
+    {
+      "testName": "container-entrypoint.test.js",
+      "path": "grg/test/container-entrypoint.test.js",
+      "lines": 167,
+      "sizeBytes": 8807
+    },
+    {
+      "testName": "continuous-evolution-loop.test.js",
+      "path": "grg/test/continuous-evolution-loop.test.js",
+      "lines": 147,
+      "sizeBytes": 5592
+    },
+    {
+      "testName": "control-plane.test.js",
+      "path": "grg/test/control-plane.test.js",
+      "lines": 60,
+      "sizeBytes": 2390
+    },
+    {
+      "testName": "conversation-store.test.js",
+      "path": "grg/test/conversation-store.test.js",
+      "lines": 168,
+      "sizeBytes": 9343
+    },
+    {
+      "testName": "desktop-agent-project-discovery-e2e.test.js",
+      "path": "grg/test/desktop-agent-project-discovery-e2e.test.js",
+      "lines": 208,
+      "sizeBytes": 9200
+    },
+    {
+      "testName": "deterministic-mode.test.js",
+      "path": "grg/test/deterministic-mode.test.js",
+      "lines": 47,
+      "sizeBytes": 1692
+    },
+    {
+      "testName": "device-agent-e2e.test.js",
+      "path": "grg/test/device-agent-e2e.test.js",
+      "lines": 238,
+      "sizeBytes": 9864
+    },
+    {
+      "testName": "digital-twin.test.js",
+      "path": "grg/test/digital-twin.test.js",
+      "lines": 90,
+      "sizeBytes": 4839
+    },
+    {
+      "testName": "discovery-federation.test.js",
+      "path": "grg/test/discovery-federation.test.js",
+      "lines": 53,
+      "sizeBytes": 3952
+    },
+    {
+      "testName": "discovery.test.js",
+      "path": "grg/test/discovery.test.js",
+      "lines": 64,
+      "sizeBytes": 3121
+    },
+    {
+      "testName": "e2e-http.test.js",
+      "path": "grg/test/e2e-http.test.js",
+      "lines": 334,
+      "sizeBytes": 19123
+    },
+    {
+      "testName": "e2e-smoke.test.js",
+      "path": "grg/test/e2e-smoke.test.js",
+      "lines": 124,
+      "sizeBytes": 4588
+    },
+    {
+      "testName": "engineering-memory-reuse.test.js",
+      "path": "grg/test/engineering-memory-reuse.test.js",
+      "lines": 26,
+      "sizeBytes": 1434
+    },
+    {
+      "testName": "engineering-memory.test.js",
+      "path": "grg/test/engineering-memory.test.js",
+      "lines": 23,
+      "sizeBytes": 1999
+    },
+    {
+      "testName": "enterprise-foundation.test.js",
+      "path": "grg/test/enterprise-foundation.test.js",
+      "lines": 127,
+      "sizeBytes": 6946
+    },
+    {
+      "testName": "evolution.test.js",
+      "path": "grg/test/evolution.test.js",
+      "lines": 76,
+      "sizeBytes": 3860
+    },
+    {
+      "testName": "execution-engine-windows.test.js",
+      "path": "grg/test/execution-engine-windows.test.js",
+      "lines": 23,
+      "sizeBytes": 1101
+    },
+    {
+      "testName": "executive-brain.test.js",
+      "path": "grg/test/executive-brain.test.js",
+      "lines": 84,
+      "sizeBytes": 4782
+    },
+    {
+      "testName": "executive-contract.test.js",
+      "path": "grg/test/executive-contract.test.js",
+      "lines": 40,
+      "sizeBytes": 2203
+    },
+    {
+      "testName": "external-adapters.test.js",
+      "path": "grg/test/external-adapters.test.js",
+      "lines": 178,
+      "sizeBytes": 8054
+    },
+    {
+      "testName": "external-project-reality.test.js",
+      "path": "grg/test/external-project-reality.test.js",
+      "lines": 258,
+      "sizeBytes": 13550
+    },
+    {
+      "testName": "external-search-honest.test.js",
+      "path": "grg/test/external-search-honest.test.js",
+      "lines": 67,
+      "sizeBytes": 3171
+    },
+    {
+      "testName": "fabricated-response.test.js",
+      "path": "grg/test/fabricated-response.test.js",
+      "lines": 135,
+      "sizeBytes": 7891
+    },
+    {
+      "testName": "fenix-fabric.test.js",
+      "path": "grg/test/fenix-fabric.test.js",
+      "lines": 47,
+      "sizeBytes": 3916
+    },
+    {
+      "testName": "fenix-long-running-concurrency.test.js",
+      "path": "grg/test/fenix-long-running-concurrency.test.js",
+      "lines": 40,
+      "sizeBytes": 1958
+    },
+    {
+      "testName": "fenix-mind-e2e.test.js",
+      "path": "grg/test/fenix-mind-e2e.test.js",
+      "lines": 188,
+      "sizeBytes": 8332
+    },
+    {
+      "testName": "fenix-mission-job-api.test.js",
+      "path": "grg/test/fenix-mission-job-api.test.js",
+      "lines": 160,
+      "sizeBytes": 11566
+    },
+    {
+      "testName": "fenix-mission-lifecycle.e2e.test.js",
+      "path": "grg/test/fenix-mission-lifecycle.e2e.test.js",
+      "lines": 51,
+      "sizeBytes": 3201
+    },
+    {
+      "testName": "fenix-shell-discovery.test.js",
+      "path": "grg/test/fenix-shell-discovery.test.js",
+      "lines": 17,
+      "sizeBytes": 904
+    },
+    {
+      "testName": "fenix-worker-provider-truth.test.js",
+      "path": "grg/test/fenix-worker-provider-truth.test.js",
+      "lines": 48,
+      "sizeBytes": 2216
+    },
+    {
+      "testName": "file-system-service.test.js",
+      "path": "grg/test/file-system-service.test.js",
+      "lines": 25,
+      "sizeBytes": 878
+    },
+    {
+      "testName": "flow-api-connection.test.js",
+      "path": "grg/test/flow-api-connection.test.js",
+      "lines": 90,
+      "sizeBytes": 4198
+    },
+    {
+      "testName": "flow-api-platform.test.js",
+      "path": "grg/test/flow-api-platform.test.js",
+      "lines": 69,
+      "sizeBytes": 3446
+    },
+    {
+      "testName": "flow-context-builder.test.js",
+      "path": "grg/test/flow-context-builder.test.js",
+      "lines": 59,
+      "sizeBytes": 2618
+    },
+    {
+      "testName": "flow-digital-twin.test.js",
+      "path": "grg/test/flow-digital-twin.test.js",
+      "lines": 55,
+      "sizeBytes": 2720
+    },
+    {
+      "testName": "flow-execute-jobs.test.js",
+      "path": "grg/test/flow-execute-jobs.test.js",
+      "lines": 72,
+      "sizeBytes": 3214
+    },
+    {
+      "testName": "forensic-inspect-file.test.js",
+      "path": "grg/test/forensic-inspect-file.test.js",
+      "lines": 87,
+      "sizeBytes": 4070
+    },
+    {
+      "testName": "frontend-honesty.test.js",
+      "path": "grg/test/frontend-honesty.test.js",
+      "lines": 196,
+      "sizeBytes": 10825
+    },
+    {
+      "testName": "frontend-runtime-safety.test.js",
+      "path": "grg/test/frontend-runtime-safety.test.js",
+      "lines": 40,
+      "sizeBytes": 1760
+    },
+    {
+      "testName": "git-workspace-write.test.js",
+      "path": "grg/test/git-workspace-write.test.js",
+      "lines": 54,
+      "sizeBytes": 5176
+    },
+    {
+      "testName": "github-account-routes.test.js",
+      "path": "grg/test/github-account-routes.test.js",
+      "lines": 80,
+      "sizeBytes": 3132
+    },
+    {
+      "testName": "global-version-engine.test.js",
+      "path": "grg/test/global-version-engine.test.js",
+      "lines": 49,
+      "sizeBytes": 3478
+    },
+    {
+      "testName": "identity-provider.test.js",
+      "path": "grg/test/identity-provider.test.js",
+      "lines": 3,
+      "sizeBytes": 544
+    },
+    {
+      "testName": "integration-validation.test.js",
+      "path": "grg/test/integration-validation.test.js",
+      "lines": 77,
+      "sizeBytes": 4621
+    },
+    {
+      "testName": "intelligence-foundry.test.js",
+      "path": "grg/test/intelligence-foundry.test.js",
+      "lines": 201,
+      "sizeBytes": 12662
+    },
+    {
+      "testName": "intent-routing.test.js",
+      "path": "grg/test/intent-routing.test.js",
+      "lines": 26,
+      "sizeBytes": 1122
+    },
+    {
+      "testName": "jarvis-autonomous-orchestrator-e2e.test.js",
+      "path": "grg/test/jarvis-autonomous-orchestrator-e2e.test.js",
+      "lines": 134,
+      "sizeBytes": 6031
+    },
+    {
+      "testName": "job-engine.test.js",
+      "path": "grg/test/job-engine.test.js",
+      "lines": 97,
+      "sizeBytes": 6029
+    },
+    {
+      "testName": "job-governance-telemetry.test.js",
+      "path": "grg/test/job-governance-telemetry.test.js",
+      "lines": 102,
+      "sizeBytes": 5348
+    },
+    {
+      "testName": "job-result-budget.test.js",
+      "path": "grg/test/job-result-budget.test.js",
+      "lines": 87,
+      "sizeBytes": 4764
+    },
+    {
+      "testName": "keos-uios-coverage.test.js",
+      "path": "grg/test/keos-uios-coverage.test.js",
+      "lines": 71,
+      "sizeBytes": 3415
+    },
+    {
+      "testName": "keos-universal-cognitive-protocol.test.js",
+      "path": "grg/test/keos-universal-cognitive-protocol.test.js",
+      "lines": 73,
+      "sizeBytes": 4092
+    },
+    {
+      "testName": "kernel.test.js",
+      "path": "grg/test/kernel.test.js",
+      "lines": 56,
+      "sizeBytes": 1776
+    },
+    {
+      "testName": "knowledge-graph.test.js",
+      "path": "grg/test/knowledge-graph.test.js",
+      "lines": 46,
+      "sizeBytes": 3750
+    },
+    {
+      "testName": "knowledge-sqlite-persistence.test.js",
+      "path": "grg/test/knowledge-sqlite-persistence.test.js",
+      "lines": 48,
+      "sizeBytes": 1960
+    },
+    {
+      "testName": "legacy-project-file-guard.test.js",
+      "path": "grg/test/legacy-project-file-guard.test.js",
+      "lines": 26,
+      "sizeBytes": 1561
+    },
+    {
+      "testName": "level-10-agentic-os-e2e.test.js",
+      "path": "grg/test/level-10-agentic-os-e2e.test.js",
+      "lines": 151,
+      "sizeBytes": 7139
+    },
+    {
+      "testName": "live-chat-sse.test.js",
+      "path": "grg/test/live-chat-sse.test.js",
+      "lines": 270,
+      "sizeBytes": 12007
+    },
+    {
+      "testName": "live-chat-stream.test.js",
+      "path": "grg/test/live-chat-stream.test.js",
+      "lines": 164,
+      "sizeBytes": 7244
+    },
+    {
+      "testName": "live-mission-control-concurrent-jobs-e2e.test.js",
+      "path": "grg/test/live-mission-control-concurrent-jobs-e2e.test.js",
+      "lines": 234,
+      "sizeBytes": 9726
+    },
+    {
+      "testName": "living-city-machines.test.js",
+      "path": "grg/test/living-city-machines.test.js",
+      "lines": 27,
+      "sizeBytes": 1509
+    },
+    {
+      "testName": "living-runtime-heart.test.js",
+      "path": "grg/test/living-runtime-heart.test.js",
+      "lines": 371,
+      "sizeBytes": 12675
+    },
+    {
+      "testName": "llm-preflight.test.js",
+      "path": "grg/test/llm-preflight.test.js",
+      "lines": 204,
+      "sizeBytes": 8927
+    },
+    {
+      "testName": "login-oidc-ui.test.js",
+      "path": "grg/test/login-oidc-ui.test.js",
+      "lines": 19,
+      "sizeBytes": 947
+    },
+    {
+      "testName": "m1-core-event-bus.test.js",
+      "path": "grg/test/m1-core-event-bus.test.js",
+      "lines": 140,
+      "sizeBytes": 5091
+    },
+    {
+      "testName": "m10-preview-engine.test.js",
+      "path": "grg/test/m10-preview-engine.test.js",
+      "lines": 43,
+      "sizeBytes": 1548
+    },
+    {
+      "testName": "m11-m12-visual-mapper.test.js",
+      "path": "grg/test/m11-m12-visual-mapper.test.js",
+      "lines": 50,
+      "sizeBytes": 1678
+    },
+    {
+      "testName": "m13-github-engine.test.js",
+      "path": "grg/test/m13-github-engine.test.js",
+      "lines": 49,
+      "sizeBytes": 1747
+    },
+    {
+      "testName": "m14-software-factory.test.js",
+      "path": "grg/test/m14-software-factory.test.js",
+      "lines": 54,
+      "sizeBytes": 1966
+    },
+    {
+      "testName": "m15-golden-e2e-factory-validation.test.js",
+      "path": "grg/test/m15-golden-e2e-factory-validation.test.js",
+      "lines": 198,
+      "sizeBytes": 7682
+    },
+    {
+      "testName": "m2-agent-runtime.test.js",
+      "path": "grg/test/m2-agent-runtime.test.js",
+      "lines": 89,
+      "sizeBytes": 3907
+    },
+    {
+      "testName": "m3-task-engine.test.js",
+      "path": "grg/test/m3-task-engine.test.js",
+      "lines": 103,
+      "sizeBytes": 3871
+    },
+    {
+      "testName": "m4-development-observer.test.js",
+      "path": "grg/test/m4-development-observer.test.js",
+      "lines": 155,
+      "sizeBytes": 5402
+    },
+    {
+      "testName": "m5-skill-evolution-genome.test.js",
+      "path": "grg/test/m5-skill-evolution-genome.test.js",
+      "lines": 100,
+      "sizeBytes": 4261
+    },
+    {
+      "testName": "m6-project-understanding.test.js",
+      "path": "grg/test/m6-project-understanding.test.js",
+      "lines": 27,
+      "sizeBytes": 1025
+    },
+    {
+      "testName": "m7-reverse-engineering.test.js",
+      "path": "grg/test/m7-reverse-engineering.test.js",
+      "lines": 24,
+      "sizeBytes": 989
+    },
+    {
+      "testName": "m8-artifact-graph-function-inventory.test.js",
+      "path": "grg/test/m8-artifact-graph-function-inventory.test.js",
+      "lines": 59,
+      "sizeBytes": 2652
+    },
+    {
+      "testName": "m9-workspace-manager.test.js",
+      "path": "grg/test/m9-workspace-manager.test.js",
+      "lines": 52,
+      "sizeBytes": 1847
+    },
+    {
+      "testName": "master-agentic-loop-e2e.test.js",
+      "path": "grg/test/master-agentic-loop-e2e.test.js",
+      "lines": 119,
+      "sizeBytes": 4919
+    },
+    {
+      "testName": "master-avatar.test.js",
+      "path": "grg/test/master-avatar.test.js",
+      "lines": 35,
+      "sizeBytes": 2412
+    },
+    {
+      "testName": "math.test.js",
+      "path": "grg/test/math.test.js",
+      "lines": 10,
+      "sizeBytes": 344
+    },
+    {
+      "testName": "memory-engine.test.js",
+      "path": "grg/test/memory-engine.test.js",
+      "lines": 146,
+      "sizeBytes": 7974
+    },
+    {
+      "testName": "migration.test.js",
+      "path": "grg/test/migration.test.js",
+      "lines": 34,
+      "sizeBytes": 1485
+    },
+    {
+      "testName": "milestone-1-kernel.test.js",
+      "path": "grg/test/milestone-1-kernel.test.js",
+      "lines": 41,
+      "sizeBytes": 1504
+    },
+    {
+      "testName": "milestone-2-orchestrator.test.js",
+      "path": "grg/test/milestone-2-orchestrator.test.js",
+      "lines": 35,
+      "sizeBytes": 1600
+    },
+    {
+      "testName": "milestone-3-memory-evolution.test.js",
+      "path": "grg/test/milestone-3-memory-evolution.test.js",
+      "lines": 36,
+      "sizeBytes": 1552
+    },
+    {
+      "testName": "milestone-4-zoom-ui-and-twin.test.js",
+      "path": "grg/test/milestone-4-zoom-ui-and-twin.test.js",
+      "lines": 16,
+      "sizeBytes": 705
+    },
+    {
+      "testName": "mission-engine-flow.test.js",
+      "path": "grg/test/mission-engine-flow.test.js",
+      "lines": 147,
+      "sizeBytes": 5435
+    },
+    {
+      "testName": "mission-kernel.test.js",
+      "path": "grg/test/mission-kernel.test.js",
+      "lines": 69,
+      "sizeBytes": 8214
+    },
+    {
+      "testName": "mission-planner-ga.test.js",
+      "path": "grg/test/mission-planner-ga.test.js",
+      "lines": 57,
+      "sizeBytes": 5584
+    },
+    {
+      "testName": "mission-reconcile.test.js",
+      "path": "grg/test/mission-reconcile.test.js",
+      "lines": 206,
+      "sizeBytes": 10568
+    },
+    {
+      "testName": "mission-repair.test.js",
+      "path": "grg/test/mission-repair.test.js",
+      "lines": 36,
+      "sizeBytes": 1713
+    },
+    {
+      "testName": "mobile-remote-control-e2e.test.js",
+      "path": "grg/test/mobile-remote-control-e2e.test.js",
+      "lines": 205,
+      "sizeBytes": 8962
+    },
+    {
+      "testName": "nexus-unified-cognitive-core.test.js",
+      "path": "grg/test/nexus-unified-cognitive-core.test.js",
+      "lines": 50,
+      "sizeBytes": 1992
+    },
+    {
+      "testName": "npc-city-honest.test.js",
+      "path": "grg/test/npc-city-honest.test.js",
+      "lines": 85,
+      "sizeBytes": 4184
+    },
+    {
+      "testName": "observability-honest.test.js",
+      "path": "grg/test/observability-honest.test.js",
+      "lines": 76,
+      "sizeBytes": 3887
+    },
+    {
+      "testName": "observability-series.test.js",
+      "path": "grg/test/observability-series.test.js",
+      "lines": 233,
+      "sizeBytes": 13364
+    },
+    {
+      "testName": "oidc-verifier.test.js",
+      "path": "grg/test/oidc-verifier.test.js",
+      "lines": 5,
+      "sizeBytes": 1762
+    },
+    {
+      "testName": "omega-infinity-coverage.test.js",
+      "path": "grg/test/omega-infinity-coverage.test.js",
+      "lines": 86,
+      "sizeBytes": 3974
+    },
+    {
+      "testName": "omega-infinity-living-intelligence-kernel.test.js",
+      "path": "grg/test/omega-infinity-living-intelligence-kernel.test.js",
+      "lines": 54,
+      "sizeBytes": 2550
+    },
+    {
+      "testName": "omega-living-cognitive-operating-system.test.js",
+      "path": "grg/test/omega-living-cognitive-operating-system.test.js",
+      "lines": 64,
+      "sizeBytes": 2938
+    },
+    {
+      "testName": "omega-v2-collective-intelligence-cop.test.js",
+      "path": "grg/test/omega-v2-collective-intelligence-cop.test.js",
+      "lines": 45,
+      "sizeBytes": 2203
+    },
+    {
+      "testName": "onedeploy-autonomous-software-factory.test.js",
+      "path": "grg/test/onedeploy-autonomous-software-factory.test.js",
+      "lines": 84,
+      "sizeBytes": 5053
+    },
+    {
+      "testName": "operational-activation.test.js",
+      "path": "grg/test/operational-activation.test.js",
+      "lines": 60,
+      "sizeBytes": 5367
+    },
+    {
+      "testName": "operational-console-ui.test.js",
+      "path": "grg/test/operational-console-ui.test.js",
+      "lines": 63,
+      "sizeBytes": 3533
+    },
+    {
+      "testName": "orchestrator.test.js",
+      "path": "grg/test/orchestrator.test.js",
+      "lines": 56,
+      "sizeBytes": 2685
+    },
+    {
+      "testName": "organism-identity.test.js",
+      "path": "grg/test/organism-identity.test.js",
+      "lines": 71,
+      "sizeBytes": 3463
+    },
+    {
+      "testName": "portfolio.test.js",
+      "path": "grg/test/portfolio.test.js",
+      "lines": 67,
+      "sizeBytes": 3268
+    },
+    {
+      "testName": "postgres-store-retention.test.js",
+      "path": "grg/test/postgres-store-retention.test.js",
+      "lines": 104,
+      "sizeBytes": 5034
+    },
+    {
+      "testName": "product.test.js",
+      "path": "grg/test/product.test.js",
+      "lines": 85,
+      "sizeBytes": 5179
+    },
+    {
+      "testName": "production-deploy.test.js",
+      "path": "grg/test/production-deploy.test.js",
+      "lines": 44,
+      "sizeBytes": 3194
+    },
+    {
+      "testName": "project-absorption-reality.test.js",
+      "path": "grg/test/project-absorption-reality.test.js",
+      "lines": 211,
+      "sizeBytes": 11435
+    },
+    {
+      "testName": "project-git-routes.test.js",
+      "path": "grg/test/project-git-routes.test.js",
+      "lines": 81,
+      "sizeBytes": 4584
+    },
+    {
+      "testName": "project-mirror-operational-ui.test.js",
+      "path": "grg/test/project-mirror-operational-ui.test.js",
+      "lines": 43,
+      "sizeBytes": 2031
+    },
+    {
+      "testName": "project-mirror-routes.test.js",
+      "path": "grg/test/project-mirror-routes.test.js",
+      "lines": 84,
+      "sizeBytes": 4114
+    },
+    {
+      "testName": "project-mirror.test.js",
+      "path": "grg/test/project-mirror.test.js",
+      "lines": 180,
+      "sizeBytes": 7726
+    },
+    {
+      "testName": "project-workspace-routes.test.js",
+      "path": "grg/test/project-workspace-routes.test.js",
+      "lines": 56,
+      "sizeBytes": 3982
+    },
+    {
+      "testName": "prometheus-exporter.test.js",
+      "path": "grg/test/prometheus-exporter.test.js",
+      "lines": 4,
+      "sizeBytes": 1130
+    },
+    {
+      "testName": "prompt-compiler-e2e.test.js",
+      "path": "grg/test/prompt-compiler-e2e.test.js",
+      "lines": 122,
+      "sizeBytes": 5107
+    },
+    {
+      "testName": "reality-audit-zapai.test.js",
+      "path": "grg/test/reality-audit-zapai.test.js",
+      "lines": 318,
+      "sizeBytes": 14328
+    },
+    {
+      "testName": "reality-enforcement-e2e.test.js",
+      "path": "grg/test/reality-enforcement-e2e.test.js",
+      "lines": 154,
+      "sizeBytes": 6820
+    },
+    {
+      "testName": "reality-sync-audit.test.js",
+      "path": "grg/test/reality-sync-audit.test.js",
+      "lines": 94,
+      "sizeBytes": 4664
+    },
+    {
+      "testName": "repo-intel.test.js",
+      "path": "grg/test/repo-intel.test.js",
+      "lines": 88,
+      "sizeBytes": 4190
+    },
+    {
+      "testName": "runtime-full-status-truth.test.js",
+      "path": "grg/test/runtime-full-status-truth.test.js",
+      "lines": 47,
+      "sizeBytes": 2091
+    },
+    {
+      "testName": "runtime-lease.test.js",
+      "path": "grg/test/runtime-lease.test.js",
+      "lines": 4,
+      "sizeBytes": 879
+    },
+    {
+      "testName": "runtime-lifecycle.test.js",
+      "path": "grg/test/runtime-lifecycle.test.js",
+      "lines": 117,
+      "sizeBytes": 4035
+    },
+    {
+      "testName": "runtime-tick-http.test.js",
+      "path": "grg/test/runtime-tick-http.test.js",
+      "lines": 20,
+      "sizeBytes": 1058
+    },
+    {
+      "testName": "runtime-worker-bullmq.test.js",
+      "path": "grg/test/runtime-worker-bullmq.test.js",
+      "lines": 43,
+      "sizeBytes": 2264
+    },
+    {
+      "testName": "runtime.test.js",
+      "path": "grg/test/runtime.test.js",
+      "lines": 59,
+      "sizeBytes": 2689
+    },
+    {
+      "testName": "safe-development-pipeline.test.js",
+      "path": "grg/test/safe-development-pipeline.test.js",
+      "lines": 139,
+      "sizeBytes": 7979
+    },
+    {
+      "testName": "sandbox-execution.test.js",
+      "path": "grg/test/sandbox-execution.test.js",
+      "lines": 75,
+      "sizeBytes": 6642
+    },
+    {
+      "testName": "scos-software-creation-os.test.js",
+      "path": "grg/test/scos-software-creation-os.test.js",
+      "lines": 70,
+      "sizeBytes": 3211
+    },
+    {
+      "testName": "screen-function-map.test.js",
+      "path": "grg/test/screen-function-map.test.js",
+      "lines": 35,
+      "sizeBytes": 1673
+    },
+    {
+      "testName": "screen-readiness-report.test.js",
+      "path": "grg/test/screen-readiness-report.test.js",
+      "lines": 22,
+      "sizeBytes": 943
+    },
+    {
+      "testName": "screen-shell-assets.test.js",
+      "path": "grg/test/screen-shell-assets.test.js",
+      "lines": 33,
+      "sizeBytes": 1795
+    },
+    {
+      "testName": "security-governance.test.js",
+      "path": "grg/test/security-governance.test.js",
+      "lines": 106,
+      "sizeBytes": 5238
+    },
+    {
+      "testName": "self-development-ai-platform.test.js",
+      "path": "grg/test/self-development-ai-platform.test.js",
+      "lines": 247,
+      "sizeBytes": 12345
+    },
+    {
+      "testName": "self-hosting-e2e.test.js",
+      "path": "grg/test/self-hosting-e2e.test.js",
+      "lines": 169,
+      "sizeBytes": 7648
+    },
+    {
+      "testName": "server-port.test.js",
+      "path": "grg/test/server-port.test.js",
+      "lines": 18,
+      "sizeBytes": 744
+    },
+    {
+      "testName": "skill-registry.test.js",
+      "path": "grg/test/skill-registry.test.js",
+      "lines": 84,
+      "sizeBytes": 3498
+    },
+    {
+      "testName": "software-factory.test.js",
+      "path": "grg/test/software-factory.test.js",
+      "lines": 119,
+      "sizeBytes": 6102
+    },
+    {
+      "testName": "structured-logger.test.js",
+      "path": "grg/test/structured-logger.test.js",
+      "lines": 17,
+      "sizeBytes": 842
+    },
+    {
+      "testName": "system-analysis-capture.test.js",
+      "path": "grg/test/system-analysis-capture.test.js",
+      "lines": 41,
+      "sizeBytes": 4179
+    },
+    {
+      "testName": "system-analysis.test.js",
+      "path": "grg/test/system-analysis.test.js",
+      "lines": 86,
+      "sizeBytes": 7977
+    },
+    {
+      "testName": "token-economy-agentic-e2e.test.js",
+      "path": "grg/test/token-economy-agentic-e2e.test.js",
+      "lines": 317,
+      "sizeBytes": 14114
+    },
+    {
+      "testName": "uios-living-constitution-kos.test.js",
+      "path": "grg/test/uios-living-constitution-kos.test.js",
+      "lines": 58,
+      "sizeBytes": 2517
+    },
+    {
+      "testName": "universal-clients.test.js",
+      "path": "grg/test/universal-clients.test.js",
+      "lines": 39,
+      "sizeBytes": 1931
+    },
+    {
+      "testName": "universal-engineering-reciprocity.test.js",
+      "path": "grg/test/universal-engineering-reciprocity.test.js",
+      "lines": 422,
+      "sizeBytes": 17337
+    },
+    {
+      "testName": "v61-operation-genesis.test.js",
+      "path": "grg/test/v61-operation-genesis.test.js",
+      "lines": 128,
+      "sizeBytes": 5864
+    },
+    {
+      "testName": "v70-v71-production-activation.test.js",
+      "path": "grg/test/v70-v71-production-activation.test.js",
+      "lines": 133,
+      "sizeBytes": 7249
+    },
+    {
+      "testName": "voice-alexa-vision-computer-e2e.test.js",
+      "path": "grg/test/voice-alexa-vision-computer-e2e.test.js",
+      "lines": 271,
+      "sizeBytes": 11189
+    },
+    {
+      "testName": "vps-chat-contract.test.js",
+      "path": "grg/test/vps-chat-contract.test.js",
+      "lines": 67,
+      "sizeBytes": 3091
+    },
+    {
+      "testName": "workforce.test.js",
+      "path": "grg/test/workforce.test.js",
+      "lines": 108,
+      "sizeBytes": 5292
+    },
+    {
+      "testName": "zero-ai-certification.test.js",
+      "path": "grg/test/zero-ai-certification.test.js",
+      "lines": 211,
+      "sizeBytes": 9546
+    },
+    {
+      "testName": "zero-regression-runtime.test.js",
+      "path": "grg/test/zero-regression-runtime.test.js",
+      "lines": 76,
+      "sizeBytes": 4417
+    }
+  ],
+  "viewsFound": [
+    "view-command",
+    "view-ide",
+    "view-project",
+    "view-dna",
+    "view-metrics",
+    "view-city",
+    "view-projects",
+    "view-agents",
+    "view-operations",
+    "view-runtime",
+    "view-memory",
+    "view-knowledge",
+    "view-mcp",
+    "view-marketplace",
+    "view-browser",
+    "view-observability",
+    "view-terminal",
+    "view-flowgraph"
+  ],
+  "routes": [
+    "/api/system/boot-status",
+    "/api/runtime",
+    "/api/runtime/services",
+    "/api/runtime/capabilities",
+    "/api/test/event",
+    "/favicon.ico",
+    "/health",
+    "/api/oidc/config",
+    "/metrics",
+    "/api/v2/system/health",
+    "/api/system/health",
+    "/api/v2/api-platform/health",
+    "/api/api-platform/health",
+    "/runtime/ai/health",
+    "/api/runtime/ai/health",
+    "/runtime/ai/usage",
+    "/api/runtime/ai/usage",
+    "/api/providers",
+    "/api/plans",
+    "/api/estimates",
+    "/api/orchestrator",
+    "/api/v2/jobs",
+    "/api/login",
+    "/api/logout",
+    "/api/",
+    "/api/v2/autonomous",
+    "/api/v2/",
+    "/api/governance/production-readiness",
+    "/runtime/snapshot",
+    "/api/me",
+    "/api/avatar/message",
+    "/api/overview",
+    "/api/operations/activate",
+    "/api/operations/state",
+    "/api/operations/history",
+    "/api/operations/assurances",
+    "/api/operations/daily-intelligence",
+    "/api/operations/schedules",
+    "/api/operations/stability-report",
+    "/api/autonomous/cycle",
+    "/api/missions/reconcile",
+    "/api/missions/plan",
+    "/api/missions/plans",
+    "/api/fenix/missions",
+    "/api/fenix/mission-events",
+    "/api/fenix/providers",
+    "/api/fenix/memory/search",
+    "/api/fenix/memory/metrics",
+    "/api/fenix/memory/promote",
+    "/api/fenix/memory/reuse",
+    "/api/fenix/memory/invalidate",
+    "/api/fenix/jobs",
+    "/api/jobs",
+    "/api/approvals",
+    "/api/observability/live",
+    "/api/system/observability",
+    "/api/search",
+    "/api/fenix/projects",
+    "/api/missions",
+    "/api/missions/avatar-state",
+    "/api/projects",
+    "/api/repositories",
+    "/api/graph",
+    "/api/knowledge-graph/entities",
+    "/api/knowledge-graph/relationships",
+    "/api/knowledge-graph/path",
+    "/api/knowledge-graph/anomalies",
+    "/api/fabric/enroll",
+    "/api/fabric/enrollments",
+    "/api/registry",
+    "/api/events",
+    "/api/versions",
+    "/api/versions/diff",
+    "/api/rollbacks",
+    "/api/city",
+    "/api/city/rebuild",
+    "/api/runtime/jobs",
+    "/api/runtime/schedules",
+    "/api/runtime/tick",
+    "/api/runtime/work",
+    "/api/execution/tools",
+    "/api/execution/signers",
+    "/api/execution/scripts",
+    "/api/execution/sandbox",
+    "/api/inspections",
+    "/api/evolution-proposals",
+    "/api/capabilities",
+    "/api/skills",
+    "/api/skills/select",
+    "/api/cognitive/goals",
+    "/api/cognitive/cycle",
+    "/api/cognitive/context",
+    "/api/cognitive/dashboard",
+    "/api/cognitive/entities",
+    "/api/cognitive/access-grants",
+    "/api/cognitive/knowledge-sharing-policies",
+    "/api/digital-twin/operational",
+    "/api/cognitive/avatar/state",
+    "/api/cognitive/avatar/improvements",
+    "/api/agents/cycles",
+    "/api/agents/tasks",
+    "/api/agents/delegations",
+    "/api/agents/panel",
+    "/api/agents/knowledge-proposals",
+    "/api/cognitive/hypotheses",
+    "/api/discovery-network/scan",
+    "/api/discovery-network/inventory",
+    "/api/knowledge-federation/publish",
+    "/api/knowledge-federation/ingest",
+    "/api/knowledge-federation/publications",
+    "/api/heart/status",
+    "/api/heart/economy",
+    "/api/heart/timers",
+    "/api/heart/schedules",
+    "/api/heart/fast-lane",
+    "/api/heart/stream",
+    "/api/heart/recover",
+    "/api/ai/lanes",
+    "/api/ai/classify",
+    "/api/ai/cascade",
+    "/api/ai/handoff",
+    "/api/ai/telemetry",
+    "/api/orchestrator/mission/decompose",
+    "/api/orchestrator/mission/approve",
+    "/api/evolution/backlog",
+    "/api/digital-twin/city-state",
+    "/api/insights",
+    "/api/evolution",
+    "/api/memories",
+    "/api/memories/search",
+    "/api/memories/consolidate",
+    "/api/audit",
+    "/api/twins",
+    "/api/office",
+    "/api/workforces",
+    "/api/factory/generate",
+    "/api/orchestrate",
+    "/api/knowledge-genome/capsules",
+    "/api/hypotheses",
+    "/api/cross-project/analysis",
+    "/api/multimodal/ingest",
+    "/api/models/catalog",
+    "/api/models/execute",
+    "/api/agents/swarm",
+    "/api/agents/swarm/events",
+    "/api/ops/vps/servers",
+    "/api/ops/vps/plans",
+    "/api/ops/github/orgs",
+    "/api/ops/github/prs",
+    "/api/ops/github/issues",
+    "/api/factory/demands",
+    "/api/cognitive/background/run",
+    "/api/cognitive/search",
+    "/api/ops/master-node/status",
+    "/api/ops/master-node/self-deploy",
+    "/api/operations/deploys",
+    "/api/operations/deploys/rollback",
+    "/api/operations/observability/metrics",
+    "/api/performance/hot-memory",
+    "/api/performance/speed-score",
+    "/api/performance/predictive-prefetch",
+    "/api/optimization/distill",
+    "/api/optimization/never-repeat-check",
+    "/api/optimization/health-index",
+    "/api/plugins/marketplace",
+    "/api/plugins/install",
+    "/api/skills/evolution",
+    "/api/security/encryption/status",
+    "/api/security/encryption/tokenize",
+    "/api/city/npc/list",
+    "/api/city/npc/chat",
+    "/api/company/daily-analysis",
+    "/api/company/calendar",
+    "/api/omega/fabric/density",
+    "/api/omega/fabric/atoms",
+    "/api/omega/brains/list",
+    "/api/omega/brains/fuse",
+    "/api/omega/council/members",
+    "/api/omega/council/evaluate",
+    "/api/omega/economy/route-check",
+    "/api/omega/research/scan",
+    "/api/omega/v2/consensus/debate",
+    "/api/omega/v2/consensus/models",
+    "/api/omega/v2/recursive/refine",
+    "/api/omega/v2/context/expand",
+    "/api/omega/v2/human-twin/cop",
+    "/api/omega/v2/human-twin/autopilot",
+    "/api/omega-infinity/laws/verify",
+    "/api/omega-infinity/crystal/state",
+    "/api/omega-infinity/dna/compile",
+    "/api/omega-infinity/physics/universe",
+    "/api/omega-infinity/reality/feedback",
+    "/api/omega-infinity/meta/index",
+    "/api/uios/kos/manifest",
+    "/api/uios/kos/semantic-load",
+    "/api/uios/capos/list",
+    "/api/uios/capos/register",
+    "/api/uios/compiler/compile",
+    "/api/uios/world-model/state",
+    "/api/uios/factory/create",
+    "/api/keos/ucp/process",
+    "/api/keos/adapters/ai",
+    "/api/keos/adapters/tech",
+    "/api/keos/pipeline/promote",
+    "/api/keos/constitution/index",
+    "/api/keos/constitution/load-sparse",
+    "/api/workspace/mode",
+    "/api/workspace/eca/inbox",
+    "/api/workspace/eca/decision",
+    "/api/workspace/eca/daily-brief",
+    "/api/workspace/eca/evening-report",
+    "/api/workspace/presence/config",
+    "/api/nexus/ucc/status",
+    "/api/nexus/bus/emit",
+    "/api/nexus/timeline/feed",
+    "/api/nexus/command-center",
+    "/api/nexus/simulate-impact",
+    "/api/nexus/marketplace/list",
+    "/api/nexus/marketplace/publish",
+    "/api/scos/design-families/list",
+    "/api/scos/design-tokens",
+    "/api/scos/genome/structure",
+    "/api/scos/visual-reasoning",
+    "/api/scos/factory/generate-multi-design",
+    "/api/scos/factory/sync-contract",
+    "/api/scos/factory/slices",
+    "/api/scos/evolution/metrics",
+    "/api/onedeploy/run-pipeline",
+    "/api/onedeploy/scan-project",
+    "/api/onedeploy/analyzers/frontend",
+    "/api/onedeploy/analyzers/backend",
+    "/api/onedeploy/smoke-tests/run",
+    "/api/onedeploy/e2e/run",
+    "/api/onedeploy/continuous-improvement/idle-scan",
+    "/api/governance/simulation-audit",
+    "/api/governance/readiness-matrix",
+    "/api/governance/gatekeeper",
+    "/api/observability/metrics",
+    "/api/observability/series",
+    "/api/observability/series/sample",
+    "/api/connection",
+    "/api/connection/check",
+    "/api/context",
+    "/api/organism/identity",
+    "/api/connectors",
+    "/api/ai/router/select",
+    "/api/executive/programs",
+    "/api/executive/decompose",
+    "/api/chat",
+    "/api/chat/intent",
+    "/api/chat/",
+    "/api/memory/write",
+    "/api/memory/search",
+    "/api/memory/agent/",
+    "/api/memory/project/",
+    "/api/memory/consolidate",
+    "/api/dev/projects",
+    "/api/dev/tasks",
+    "/api/dev/jobs",
+    "/api/v2/company",
+    "/api/v2/company/telemetry",
+    "/api/v2/company/hierarchy",
+    "/api/v2/company/departments",
+    "/api/v2/company/departments/propose",
+    "/api/v2/company/ceo",
+    "/api/v2/company/ceo/chat",
+    "/api/v2/company/ceo/delegate",
+    "/api/v2/company/ceo/report",
+    "/api/v2/company/ceo/observe",
+    "/api/v2/company/subagents/promote",
+    "/api/v2/company/evolution/hypotheses",
+    "/api/v2/company/evolution/experiment",
+    "/api/v2/company/evolution/scientist",
+    "/api/v2/company/economy",
+    "/api/v2/company/projects/absorb",
+    "/api/v2/company/projects/",
+    "/api/v2/company/screens",
+    "/api/v2/company/learning-stats",
+    "/api/v2/company/reconstruct",
+    "/api/v2/company/learning-loop",
+    "/api/v2/conversation",
+    "/api/v2/queue/pause",
+    "/api/v2/queue/resume",
+    "/api/v2/queue/status",
+    "/api/v2/queue/clear-completed",
+    "/api/v2/chat/inspect-file",
+    "/api/v2/models",
+    "/api/v2/providers",
+    "/api/v2/tokens",
+    "/api/dev/",
+    "/api/dev/pipeline",
+    "/api/dev/small-task",
+    "/api/dev/projects/clone",
+    "/api/dev/fs",
+    "/api/dev/fs/file",
+    "/api/dev/fs/move",
+    "/api/dev/fs/mkdir",
+    "/api/dev/fs/delete",
+    "/api/dev/ai/transform-file",
+    "/api/dev/terminal",
+    "/api/v2/living-city/events/stream",
+    "/api/v2/living-city/events",
+    "/api/v2/living-city/projects",
+    "/api/v2/living-city/agent/",
+    "/api/v2/living-city/building/",
+    "/api/orchestration/",
+    "/api/orchestration/requests",
+    "/api/orchestration/requests/",
+    "/api/orchestration/missions/",
+    "/api/orchestration/events",
+    "/api/dashboard",
+    "/api/command",
+    "/api/missions/events",
+    "/api/agents",
+    "/api/evolution/generations",
+    "/api/experiments",
+    "/api/world-model",
+    "/api/v2/events/stream",
+    "/api/v2/onboarding/import",
+    "/api/v2/projects",
+    "/api/v2/vps-chat",
+    "/api/v2/proxy/vps-docs",
+    "/api/v2/proxy/vps-docs/",
+    "/api/v2/proxy/vps-health",
+    "/api/v2/visual/mutate",
+    "/api/v2/agents/orchestrate",
+    "/api/v2/factory/rebuild",
+    "/api/v2/cross-project/query",
+    "/api/v2/ai-platform/status",
+    "/api/v2/ai-platform/chat",
+    "/api/v2/city/state",
+    "/api/v2/test-fail",
+    "/api/v2/agentic/execute",
+    "/api/v2/compiler/compile",
+    "/api/v2/compiler/skills",
+    "/api/v2/reality/enforce",
+    "/api/v2/jarvis/daily-operations",
+    "/api/v2/jarvis/jobs",
+    "/api/v2/jarvis/jobs/submit",
+    "/api/v2/jarvis/jobs/queue",
+    "/api/v2/telemetry/full",
+    "/api/v2/projects/discovered",
+    "/api/v2/projects/discover/scan",
+    "/api/v2/projects/github",
+    "/api/v2/ai/providers",
+    "/api/v2/voice/desktop/ingest",
+    "/api/v2/devices/windows/screen/live",
+    "/api/v2/devices/GRG-WINDOWS-01/screen/live",
+    "/api/v2/jarvis/opportunities",
+    "/api/v2/jarvis/heartbeat/tick",
+    "/api/v2/agents/live-states",
+    "/api/v2/mind/ingest",
+    "/api/v2/mind/memory/conversations",
+    "/api/v2/mind/models",
+    "/api/v2/mind/research",
+    "/api/v2/mind/vision",
+    "/api/v2/voice/alexa",
+    "/api/v2/voice/alexa/status",
+    "/api/v2/voice/alexa/health",
+    "/api/v2/vision/inspect-element",
+    "/api/v2/vision/apply-visual-change",
+    "/api/v2/computer/execute-action",
+    "/api/v2/computer/audit-log",
+    "/api/v2/devices/register",
+    "/api/v2/devices/auth/challenge",
+    "/api/v2/devices/auth/verify",
+    "/api/v2/devices",
+    "/api/v2/devices/emergency-stop",
+    "/api/v2/devices/mobile/pairing/create",
+    "/api/v2/devices/mobile/pairing/claim",
+    "/api/v2/devices/mobile/groups",
+    "/api/v2/economy/report",
+    "/api/v2/economy/mode",
+    "/api/v2/economy/compress-context",
+    "/api/v2/economy/record-call",
+    "/api/v2/context/build",
+    "/api/v2/model-router/route",
+    "/api/v2/model-router/registry",
+    "/api/v2/frontend-reality/scan",
+    "/api/v2/frontend-reality/screens",
+    "/api/v2/frontend-reality/navigation-graph",
+    "/api/v2/frontend-reality/audit",
+    "/api/v2/frontend-reality/correlate",
+    "/api/v2/frontend-reality/click-test",
+    "/api/v2/frontend-reality/repair",
+    "/api/v2/frontend-reality/design-system",
+    "/api/v2/connections",
+    "/api/v2/connections/request",
+    "/api/v2/connections/oauth/callback",
+    "/api/v2/memory/development",
+    "/api/v2/memory/development/record",
+    "/api/v2/memory/development/retrieve",
+    "/api/v2/memory/development/patterns",
+    "/api/fenix/github/account",
+    "/api/fenix/github/connect",
+    "/api/fenix/github/disconnect",
+    "/api/fenix/github/repos",
+    "/api/fenix/github/repos/create",
+    "/api/fenix/github/repos/activate",
+    "/api/project-git/deploy",
+    "/api/fenix/projects/clone",
+    "/api/project-mirror/projects",
+    "/api/project-mirror/preview",
+    "/api/project-mirror/asset",
+    "/api/project-mirror",
+    "/api/project-mirror/screens",
+    "/api/project-mirror/source",
+    "/api/project-mirror/scan",
+    "/api/v2/projects-registry",
+    "/api/v2/runtime/full-status",
+    "/api/v2/jobs/run-batch",
+    "/api/workers",
+    "/api/v2/system/status",
+    "/api/v2/queue",
+    "/api/v2/chat",
+    "/api/v2/reality-operator/",
+    "/api/v2/reality/summary",
+    "/api/v2/reality/provenance",
+    "/api/v2/reality/audit",
+    "/api/v2/api-platform/test-chat",
+    "/api/v2/api-platform/deploy",
+    "/api/v2/telemetry/live",
+    "/api/v2/system-reconstruction/observe",
+    "/api/v2/system-reconstruction/video",
+    "/api/v2/system-reconstruction/screen-to-system",
+    "/api/v2/system-reconstruction/reconstruct",
+    "/api/v2/system-reconstruction/twin",
+    "/api/v2/system-reconstruction/visual-dna",
+    "/api/v2/system-reconstruction/compare",
+    "/api/v2/system-reconstruction/level",
+    "/api/v2/system-reconstruction/system-map",
+    "/api/v2/system-reconstruction/executors",
+    "/api/v2/system-reconstruction/chat",
+    "/api/v2/system-reconstruction/url-to-system",
+    "/api/v2/system-reconstruction/targets",
+    "/api/v2/system-reconstruction/export",
+    "/api/v2/system-reconstruction/visual-loop",
+    "/api/v2/engineering/reciprocity/verify",
+    "/api/v2/engineering/reciprocity/backend-to-frontend",
+    "/api/v2/engineering/reciprocity/frontend-to-backend",
+    "/api/v2/engineering/absorption/repository",
+    "/api/v2/engineering/absorption/visual",
+    "/api/v2/engineering/absorption/report",
+    "/api/v2/digital-twin/city-state",
+    "/api/v2/pages",
+    "/api/v2/apis",
+    "/api/v2/components",
+    "/api/v2/components/compatibility",
+    "/api/v2/github/repos",
+    "/api/v2/github/pull",
+    "/api/v2/github/push",
+    "/api/v2/github/pr",
+    "/api/v2/github/branches",
+    "/api/v2/github/commit",
+    "/api/v2/graph/stats",
+    "/api/v2/graph/data",
+    "/api/v2/graph/patterns",
+    "/api/v2/graph/learn",
+    "/api/v2/knowledge",
+    "/api/v2/knowledge/skills",
+    "/api/v2/patterns",
+    "/api/v2/agents",
+    "/api/v2/runtime/action",
+    "/api/v2/browser/inspect",
+    "/api/v2/browser/session/open",
+    "/api/v2/browser/session/action",
+    "/api/v2/browser/session/close",
+    "/api/v2/visual-qa/compare",
+    "/api/v2/visual-qa/results",
+    "/api/v2/autofix/run",
+    "/api/v2/autofix/",
+    "/api/v2/autofix/jobs",
+    "/api/v2/visual-qa/dashboard",
+    "/api/v2/visual-qa/screenshots",
+    "/api/v2/terminal/exec"
+  ]
+}

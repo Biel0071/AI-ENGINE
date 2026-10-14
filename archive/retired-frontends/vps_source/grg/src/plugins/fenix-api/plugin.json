@@ -1,0 +1,15 @@
+{
+  "id": "fenix-api",
+  "type": "provider",
+  "version": "1.0.0",
+  "capabilities": [
+    "Chat",
+    "Vision",
+    "Reasoning",
+    "Embeddings"
+  ],
+  "permissions": [
+    "network"
+  ],
+  "entry": "index.js"
+}

@@ -40,6 +40,58 @@ async function mask(page) {
   }, secrets);
 }
 function targetId(target) { return crypto.createHash('sha256').update(JSON.stringify([target.projectId, target.route, target.actions || []])).digest('hex').slice(0, 24); }
+async function observeStructure(page) {
+  return page.evaluate(() => {
+    const visible = node => {
+      const rect = node.getBoundingClientRect();
+      const style = getComputedStyle(node);
+      return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+    };
+    const label = node => {
+      const explicit = node.getAttribute('aria-label') || node.getAttribute('title');
+      const associated = node.labels ? Array.from(node.labels).map(item => item.innerText || item.textContent || '').join(' ') : '';
+      const text = node.matches('input,textarea,select') ? associated : (node.innerText || node.textContent || '');
+      return String(explicit || text || node.getAttribute('name') || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+    };
+    const selectors = 'main,nav,aside,header,footer,form,dialog,[role="main"],[role="navigation"],[role="dialog"],h1,h2,h3,button,a[href],input,select,textarea,[role="tab"],[role="button"],[tabindex]:not([tabindex="-1"])';
+    const all = Array.from(document.querySelectorAll(selectors)).filter(visible);
+    const safeHref = node => {
+      const raw = node.getAttribute('href');
+      if (!raw) return null;
+      try {
+        const url = new URL(raw, location.href);
+        return url.origin === location.origin ? `${url.pathname}${url.hash}`.slice(0, 240) : url.origin;
+      } catch { return null; }
+    };
+    const describe = node => {
+      const rect = node.getBoundingClientRect();
+      const tag = node.tagName.toLowerCase();
+      const role = node.getAttribute('role') || (tag === 'a' ? 'link' : tag === 'button' ? 'button' : tag === 'input' ? 'input' : null);
+      return {
+        tag,
+        id: node.id || null,
+        role,
+        name: label(node),
+        type: node.getAttribute('type') || null,
+        href: safeHref(node),
+        disabled: Boolean(node.disabled),
+        visible: true,
+        bounds: { width: Math.round(rect.width), height: Math.round(rect.height) }
+      };
+    };
+    const landmarkSelector = 'main,nav,aside,header,footer,form,dialog,[role="main"],[role="navigation"],[role="dialog"]';
+    const landmarks = Array.from(document.querySelectorAll(landmarkSelector)).filter(visible).slice(0, 100).map(describe);
+    const elements = all.slice(0, 250).map(describe);
+    return {
+      title: String(document.title || '').slice(0, 160),
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      landmarks,
+      elements,
+      elementCount: all.length,
+      truncated: all.length > elements.length
+    };
+  });
+}
 async function capture({ app, run, target, baseURL, directory, browserFactory = launchBrowser, source = null }) {
   const browser = await browserFactory();
   let token;
@@ -62,7 +114,24 @@ async function capture({ app, run, target, baseURL, directory, browserFactory = 
       await context.addInitScript(value => { localStorage.setItem('grg_token', value); localStorage.setItem('fenix_token', value); window.WebSocket = class { close() {} addEventListener() {} }; }, token);
     }
     const page = await context.newPage();
-    page.on('pageerror', e => errors.push(redact(e.message)));
+    const consoleErrors = [];
+    const networkRequests = [];
+    const requestRecords = new WeakMap();
+    page.on('pageerror', e => consoleErrors.push(redact(String(e.message || e).slice(0, 500))));
+    page.on('console', message => { if (message.type() === 'error') consoleErrors.push(redact(message.text().slice(0, 500))); });
+    page.on('request', request => {
+      const requestUrl = request.url();
+      let parsed;
+      try { parsed = new URL(requestUrl); } catch { return; }
+      if (parsed.origin !== origin || (!['fetch', 'xhr'].includes(request.resourceType()) && !parsed.pathname.startsWith('/api/'))) return;
+      const record = { method: request.method(), path: parsed.pathname.slice(0, 240), resourceType: request.resourceType(), status: null };
+      requestRecords.set(request, record);
+      if (networkRequests.length < 100) networkRequests.push(record);
+    });
+    page.on('response', response => {
+      const record = requestRecords.get(response.request());
+      if (record) record.status = response.status();
+    });
     await page.goto(new URL(target.route, baseURL).href, { waitUntil: 'domcontentloaded', timeout: 30000 });
     if (/login/i.test(new URL(page.url()).pathname)) throw new Error('Sessão de captura não alcançou a tela autenticada.');
     const view = target.view ? page.locator(`#view-${target.view}`) : null;
@@ -81,6 +150,7 @@ async function capture({ app, run, target, baseURL, directory, browserFactory = 
     }
     const fingerprint = crypto.createHash('sha256').update(JSON.stringify(discovered.filter(x => x.recordId).map(x => x.recordId).sort())).digest('hex');
     await mask(page);
+    const structure = await observeStructure(page);
     await fs.mkdir(path.join(directory, 'images'), { recursive: true });
     const images = [];
     const save = async suffix => { const name = `images/${target.id}${suffix}.png`; await page.screenshot({ path: path.join(directory, name), fullPage: true, timeout: 30000 }); images.push(name); };
@@ -93,7 +163,18 @@ async function capture({ app, run, target, baseURL, directory, browserFactory = 
       }
       await page.locator(`[data-analysis-scroll="${panel.id}"]`).evaluate(n => { n.scrollTop = 0; });
     }
-    return { status: 'capturado', capturedAt: new Date().toISOString(), images, discovered, fingerprint, errors, url: redact(page.url()) };
+    return {
+      status: 'capturado',
+      capturedAt: new Date().toISOString(),
+      images,
+      discovered,
+      fingerprint,
+      structure: redact(structure),
+      networkRequests: redact(networkRequests),
+      consoleErrors: consoleErrors.slice(0, 100),
+      errors: errors.slice(0, 100),
+      url: redact(page.url())
+    };
   } finally { await browser.close(); if (token && !source) await app.auth.logoutAsync(token); }
 }
-module.exports = { capture, targetId, launchBrowser, mask };
+module.exports = { capture, targetId, launchBrowser, mask, observeStructure };

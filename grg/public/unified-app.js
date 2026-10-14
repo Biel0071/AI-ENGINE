@@ -82,7 +82,7 @@ async function api(path, options = {}, retried = false) {
   if (res.status === 401) {
     localStorage.removeItem('grg_token');
     if (location.pathname !== '/GRG-login') {
-      try { sessionStorage.setItem('fenix_return_route', location.hash || '#command'); } catch {}
+      try { sessionStorage.setItem('fenix_return_route', location.hash || '#city'); } catch {}
       location.replace('/GRG-login');
     }
     throw new Error('sessao expirada');
@@ -140,9 +140,53 @@ function metric(label, value) {
 }
 
 function showView(name, push = true) {
-  // The shell owns routing. Legacy callers use this compatibility delegate.
-  if (typeof window.showView === 'function') window.showView(name, push);
+  // The shell owns routing. Legacy callers use this compatibility delegate without self-recursion.
+  if (typeof window.showView === 'function' && window.showView !== showView) {
+    window.showView(name, push);
+  }
 }
+
+window.fenixSelectEntity = function(type, id) {
+  // 1. Broadcast to all views via Central Bus
+  window.dispatchEvent(new CustomEvent('fenix-entity-selected', { detail: { type, id } }));
+  
+  // 2. Map generic entity types to specific legacy events
+  if (type === 'agent') {
+    document.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agentId: id } }));
+    window.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agentId: id } }));
+  } else if (type === 'mission') {
+    window.dispatchEvent(new CustomEvent('fenix-mission-selected', { detail: { missionId: id } }));
+  } else if (type === 'job') {
+    window.dispatchEvent(new CustomEvent('fenix-job-selected', { detail: { jobId: id } }));
+  }
+
+  // 3. Highlight tab / show view
+  const viewMap = {
+    'agent': 'agents',
+    'mission': 'operations',
+    'job': 'operations',
+    'project': 'projects',
+    'building': 'city'
+  };
+  const targetView = viewMap[type];
+  if (targetView) {
+    showView(targetView);
+  }
+
+  // 4. City specific integration: Pan to entity if city is loaded
+  if (window.fenixCity && typeof window.fenixCity.focusEntity === 'function') {
+    window.fenixCity.focusEntity(type, id);
+  } else if (window.fenixCity && type === 'agent' && typeof window.fenixCity.focusAgent === 'function') {
+    window.fenixCity.focusAgent(id);
+  } else if (window.fenixCity && type === 'building' && typeof window.fenixCity.panToDistrict === 'function') {
+    window.fenixCity.panToDistrict(id);
+  }
+  
+  // 5. Open right sidebar inspector if mascot sidebar is loaded
+  if (typeof window.openFenixInspector === 'function') {
+    window.openFenixInspector(type, id);
+  }
+};
 
 function bubble(message, who = 'bot') {
   const div = document.createElement('div');
@@ -215,7 +259,7 @@ async function refreshAll() {
   if (state.refreshing) return;
   state.refreshing = true;
   try {
-    const activeView = String(location.hash.slice(1) || 'command').split('?')[0] || 'command';
+      const activeView = String(location.hash.slice(1) || 'city').split('?')[0] || 'city';
     const essentialEntries = [
       ['health', () => publicJson('/health')],
       ['me', () => api('/me')],
@@ -267,6 +311,13 @@ async function refreshAll() {
         ['router', () => api('/ai/router/select')],
         ['tools', () => api('/execution/tools')],
       ],
+      city: [
+        ['agents', () => api('/agents/panel')],
+        ['missions', () => api('/missions')],
+        ['events', () => api('/events?limit=80')],
+        ['companies', () => api('/v2/company/list')],
+        ['city', () => api('/city')],
+      ],
     };
     // Command Center polls only operational data. The previous default loaded every
     // intelligence/governance/graph/deploy endpoint on each 15s tick; with an SSE tab
@@ -295,6 +346,8 @@ async function refreshAll() {
     state.repos = data.repositories?.repositories || [];
     state.office = data.office?.office || [];
     state.events = data.events?.events || [];
+    // Fênix Event Timeline Hook handled via fenix-live WebSocket stream
+
     const runtimeJobs = data.jobs?.jobs || [];
     const jarvisJobs = ['running', 'waiting', 'completed', 'failed', 'cancelled']
       .flatMap((key) => Array.isArray(data.jarvisQueue?.[key]) ? data.jarvisQueue[key] : []);
@@ -325,6 +378,7 @@ function renderAll() {
   renderDeploy();
   renderObservability();
   renderSecurity();
+  window.updateSidebarCounters(state.data || {});
   if (typeof window.renderCommandCenterPanels === 'function') window.renderCommandCenterPanels();
 }
 
@@ -339,17 +393,21 @@ function renderImplementationMemory() {
 
 function renderHeader() {
   const { health, me, overview, jobs, telemetry } = state.data;
-  const ok = health?.ok === true || health?.status === 'ready';
+  const healthStatus = String(health?.status || '').toLowerCase();
+  const ok = health?.ok === true || ['ready', 'online', 'healthy'].includes(healthStatus);
+  const degraded = !ok && (healthStatus === 'degraded' || health?.degraded === true);
+  const systemStatus = ok ? 'ONLINE' : degraded ? 'DEGRADED' : 'UNAVAILABLE';
   const statusDot = $('statusDot');
   if (statusDot) {
-    statusDot.style.background = ok ? 'var(--green)' : 'var(--rose)';
-    statusDot.style.boxShadow = `0 0 12px ${ok ? 'var(--green)' : 'var(--rose)'}`;
+    const color = ok ? 'var(--green)' : degraded ? 'var(--yellow)' : 'var(--rose)';
+    statusDot.style.background = color;
+    statusDot.style.boxShadow = `0 0 12px ${color}`;
   }
-  text('statusText', ok ? 'ONLINE' : 'DEGRADED');
+  text('statusText', systemStatus);
   text('statusSub', health?.environment || health?.service || 'runtime');
-  text('kpiSystem', ok ? 'READY' : 'DEGRADED');
-  text('systemHealthValue', ok ? 'ONLINE' : 'DEGRADED');
-  text('systemErrorValue', ok ? 'API ONLINE · runtime medido' : (health?.__error || 'runtime degradado'));
+  text('kpiSystem', ok ? 'READY' : systemStatus);
+  text('systemHealthValue', systemStatus);
+  text('systemErrorValue', ok ? 'API ONLINE · runtime medido' : (health?.__error || (degraded ? 'runtime degradado' : 'sem resposta da API')));
   text('actorName', me?.actorId || localStorage.getItem('grg_user') || 'usuario');
   text('actorRole', me?.tenantId || 'tenant');
   const metrics = overview?.metrics || {};
@@ -357,18 +415,20 @@ function renderHeader() {
   text('kpiRepos', metrics.repositories ?? state.repos.length);
   text('kpiCaps', metrics.capabilities ?? state.data.capabilities?.capabilities?.length);
   text('kpiJobs', state.jobs.length);
-  const agentSource = state.data.agents?.agents || state.data.swarm?.agents || [];
-  const agentList = Array.isArray(agentSource) ? agentSource : Object.values(agentSource || {});
-  const activeAgents = agentList.filter((agent) => ['ASSIGNED', 'ANALYZING', 'EXECUTING', 'TESTING', 'REPAIRING', 'RUNNING'].includes(String(agent.status || agent.state || '').toUpperCase())).length;
-  const totalAgents = agentList.length;
-  text('kpiAgents', totalAgents ? `${activeAgents}/${totalAgents}` : '0/0');
+  const directAgents = Array.isArray(state.data.agents?.agents) ? state.data.agents.agents
+    : Array.isArray(state.data.agents) ? state.data.agents
+      : Array.isArray(state.data.swarm?.agents) ? state.data.swarm.agents
+        : null;
+  const agentList = directAgents || (window.FENIX?.live?.agentsMeasured === true && Array.isArray(window.FENIX.live.agents) ? window.FENIX.live.agents : null);
+  const activeAgents = agentList?.filter((agent) => ['ASSIGNED', 'ANALYZING', 'EXECUTING', 'TESTING', 'REPAIRING', 'RUNNING'].includes(String(agent.status || agent.state || '').toUpperCase())).length;
+  text('kpiAgents', agentList === null ? '—' : `${activeAgents}/${agentList.length}`);
   text('kpiAi', telemetry?.calls ?? metrics.aiCalls);
   const agentTable = $('agentList');
   if (agentTable) {
-    agentTable.innerHTML = agentList.length ? agentList.map((agent, index) => {
+    agentTable.innerHTML = agentList === null ? '<tr><td colspan="4">Agentes indisponíveis nesta leitura.</td></tr>' : agentList.length ? agentList.map((agent, index) => {
       const id = agent.id || agent.agentId || agent.name || `agent-${index}`;
       return `<tr data-agent-id="${escapeHtml(String(id))}" tabindex="0" style="cursor:pointer"><td><strong>${escapeHtml(agent.name || id)}</strong></td><td>${escapeHtml(agent.role || agent.specialization || '—')}</td><td>${escapeHtml(agent.status || agent.state || 'UNKNOWN')}</td><td>${escapeHtml(agent.currentTask || agent.currentJob || 'Aguardando')}</td></tr>`;
-    }).join('') : '<tr><td colspan="4">Nenhum agente publicado pelo runtime.</td></tr>';
+    }).join('') : '<tr><td colspan="4">Nenhum agente publicado pela API.</td></tr>';
     agentTable.querySelectorAll('[data-agent-id]').forEach((row) => {
       row.addEventListener('click', () => { document.dispatchEvent(new CustomEvent('fenix-agent-selected', { detail: { agentId: row.dataset.agentId } })); });
       row.addEventListener('keydown', (event) => { if (event.key === 'Enter') row.click(); });
@@ -382,10 +442,17 @@ function renderCommand() {
   text('avatarPhrase', state.data.dailyBrief?.summary || 'Workspace unico: fronts de comando, office, CRM, AI City e developer reunidos aqui.');
   const telemetry = state.data.telemetry || {};
   text('activeModel', telemetry.lastModel || telemetry.model || (telemetry.calls ? 'IA medida' : 'sem chamada'));
-  text('eventCount', `${state.events.length} eventos`);
-  if ($('eventStream')) $('eventStream').innerHTML = state.events.length
-    ? state.events.slice(0, 48).map((event) => `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(event.summary || event.message || event.recordedAt || event.id)}</strong></div>`).join('')
-    : '<div class="empty-state" style="padding: 24px 0;"><span class="empty-icon">├ö├¬ÔöÉ</span>Sem eventos</div>';
+  const apiEvents = Array.isArray(state.data.events?.events) ? state.data.events.events
+    : Array.isArray(state.data.events) ? state.data.events
+      : null;
+  const liveEvents = window.FENIX?.live?.eventsMeasured === true && Array.isArray(window.FENIX.live.events) ? window.FENIX.live.events : null;
+  const events = apiEvents || liveEvents;
+  text('eventCount', events === null ? 'Eventos indisponíveis' : `${events.length} eventos`);
+  if ($('eventStream')) $('eventStream').innerHTML = events === null
+    ? '<div class="empty-state" style="padding:24px 0;">Eventos indisponíveis nesta leitura da API.</div>'
+    : events.length
+      ? events.slice(0, 48).map((event) => `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(event.summary || event.message || event.recordedAt || event.occurredAt || event.createdAt || event.id || 'Evento sem descrição')}</strong></div>`).join('')
+      : '<div class="empty-state" style="padding:24px 0;">Nenhum evento registrado pela API.</div>';
 }
 
 function renderRuntime() {
@@ -1104,7 +1171,7 @@ function init() {
       if (window.FENIX.live.events) {
         state.events = window.FENIX.live.events;
       }
-      if (window.FENIX.live.agents) {
+      if (window.FENIX.live.agentsMeasured === true && Array.isArray(window.FENIX.live.agents)) {
         if (!state.data) state.data = {};
         state.data.agents = { agents: window.FENIX.live.agents };
       }
@@ -1112,6 +1179,7 @@ function init() {
     renderMissions();
     renderHeader();
     renderCity();
+    if (typeof window.updateSidebarCounters === 'function') window.updateSidebarCounters(state.data || {});
   });
   if (typeof window.restoreRouteOnLoad === 'function') window.restoreRouteOnLoad();
   bubble('Workspace unico carregado. Eu consolidei comando, runtime, missoes, AI City, office, CRM, deploy, observabilidade e developer em uma tela.');
@@ -1822,7 +1890,7 @@ window.showSubView = function(viewId, subViewId) {
             for (let attempt = 0; attempt < 90; attempt += 1) {
               await new Promise((resolve) => setTimeout(resolve, 1000));
               try {
-                const missionState = await api(`/api/fenix/missions/${encodeURIComponent(missionId)}`);
+                const missionState = await api(`/api/missions/${encodeURIComponent(missionId)}`);
                 const currentStatus = String(missionState?.mission?.status || missionState?.status || '').toUpperCase();
                 const progress = missionState?.mission?.progress ?? missionState?.progress;
                 if (currentStatus) status.textContent = `MISSION ${currentStatus} · ${missionId}${progress != null ? ` · ${progress}%` : ''}`;
@@ -1948,7 +2016,8 @@ window.showSubView = function(viewId, subViewId) {
     const objective = String($('devAgentObjective')?.value || '').trim();
     if (!objective) return set('devAgentResult', 'Informe um objetivo.');
     set('devAgentResult', 'Criando missão e delegando aos agentes…');
-    try { set('devAgentResult', await api('/api/dev/pipeline', { method: 'POST', body: JSON.stringify({ prompt: objective }) })); await refreshAll(); }
+    try { set('devAgentResult', await api('/api/dev/pipeline', { method: 'POST', body: JSON.stringify({ prompt: objective }) })); await refreshAll();
+  window.refreshAll = refreshAll; }
     catch (error) { set('devAgentResult', `Falha: ${error.message}`); }
   }
   async function saveFile() {
@@ -1968,4 +2037,366 @@ window.showSubView = function(viewId, subViewId) {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true }); else bind();
 })();
+
+
+
+window.updateSidebarCounters = function(snapshot) {
+  const agentEl = document.getElementById('sidebarCountAgents');
+  const missionEl = document.getElementById('sidebarCountMissions');
+  const projectEl = document.getElementById('sidebarCountProjects');
+  const eventEl = document.getElementById('sidebarCountEvents');
+  const companyEl = document.getElementById('sidebarCountCompanies');
+  
+  const readList = (value) => {
+    if (Array.isArray(value)) return value;
+    if (!value || typeof value !== 'object' || value.__error || value.error) return null;
+    const values = Object.values(value);
+    if (!values.length || values.some((item) => !item || typeof item !== 'object' || item.__error || item.error)) return null;
+    return values;
+  };
+  const firstList = (...sources) => {
+    for (const source of sources) {
+      const list = readList(source);
+      if (list !== null) return list;
+    }
+    return null;
+  };
+  const liveList = (name) => window.FENIX?.live?.[`${name}Measured`] === true
+    ? firstList(window.FENIX.live[name])
+    : null;
+  const agentsList = firstList(
+    snapshot?.agents?.agents,
+    snapshot?.agents,
+    snapshot?.swarm?.agents
+  ) ?? liveList('agents');
+  const missionsList = firstList(snapshot?.missions?.missions, snapshot?.missions) ?? liveList('missions');
+  const projectsList = firstList(snapshot?.projects?.projects ?? snapshot?.projects) ?? liveList('projects');
+  const eventsList = firstList(snapshot?.events?.events ?? snapshot?.events) ?? liveList('events');
+  const companiesList = firstList(snapshot?.companies?.companies ?? snapshot?.companies);
+  const companiesCount = companiesList && snapshot?.companies?.count != null && Number.isFinite(Number(snapshot.companies.count))
+    ? Number(snapshot.companies.count)
+    : (companiesList ? companiesList.length : null);
+  const countText = (list) => list ? String(list.length) : '—';
+  
+  if (agentEl) agentEl.textContent = countText(agentsList);
+  if (missionEl) missionEl.textContent = countText(missionsList);
+  if (projectEl) projectEl.textContent = countText(projectsList);
+  if (eventEl) eventEl.textContent = countText(eventsList);
+  if (companyEl) companyEl.textContent = companiesCount === null ? '—' : `(${companiesCount})`;
+
+  // Also update topbar stat pills
+  const tbAgents = document.getElementById("topbarStatAgents");
+  const tbMissions = document.getElementById("topbarStatMissions");
+  const tbProjects = document.getElementById("topbarStatProjects");
+  const tbMeetings = document.getElementById("topbarStatMeetings");
+  const tbSystem = document.getElementById("topbarStatSystem");
+  if (tbAgents) tbAgents.textContent = countText(agentsList);
+  if (tbMissions) tbMissions.textContent = countText(missionsList);
+  if (tbProjects) tbProjects.textContent = countText(projectsList);
+  if (tbMeetings) tbMeetings.textContent = "—";
+  if (tbSystem) {
+    const health = snapshot?.health?.status || snapshot?.systemHealth || window.FENIX?.live?.health?.status;
+    tbSystem.textContent = health ? String(health).toUpperCase() : 'UNAVAILABLE';
+  }
+
+  // Master KPI Capsules (DS-WORLD-1.0)
+  const topKpiAgents = document.getElementById("topKpiAgentsVal");
+  const topKpiMissions = document.getElementById("topKpiMissionsVal");
+  const topKpiJobs = document.getElementById("topKpiJobsVal");
+  const topKpiSystem = document.getElementById("topKpiSystemVal");
+  if (topKpiAgents) {
+    const onlineStatuses = new Set(['ONLINE', 'AVAILABLE', 'IDLE', 'WORKING', 'BUSY', 'RUNNING']);
+    const onlineAgents = agentsList?.filter((agent) => agent?.online === true || agent?.isOnline === true || onlineStatuses.has(String(agent?.status || agent?.state || '').toUpperCase()));
+    topKpiAgents.textContent = countText(onlineAgents);
+  }
+  if (topKpiMissions) {
+    const activeStatuses = new Set(['ACTIVE', 'RUNNING', 'IN_PROGRESS', 'IN PROGRESS', 'EXECUTING', 'DISPATCHED']);
+    const activeMissions = missionsList?.filter((mission) => activeStatuses.has(String(mission?.status || mission?.state || '').toUpperCase()));
+    topKpiMissions.textContent = countText(activeMissions);
+  }
+  if (topKpiJobs) {
+    const snapshotJobs = Array.isArray(snapshot?.jobs)
+      ? snapshot.jobs
+      : (Array.isArray(snapshot?.jobs?.jobs) ? snapshot.jobs.jobs : null);
+    const measuredJobs = Array.isArray(snapshotJobs) ? snapshotJobs
+      : firstList(window.state?.data?.jobs?.jobs ?? window.state?.data?.jobs)
+        ?? liveList('jobs');
+    const jobsLoaded = Array.isArray(measuredJobs);
+    const jobsSource = jobsLoaded && Array.isArray(window.state?.jobs) ? window.state.jobs : measuredJobs;
+    if (!Array.isArray(jobsSource)) {
+      topKpiJobs.textContent = '—';
+    } else {
+      const activeStatuses = new Set(['RUNNING', 'ACTIVE', 'DISPATCHED']);
+      const activeJobs = jobsSource.filter((job) => activeStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
+      topKpiJobs.textContent = String(activeJobs.length);
+    }
+  }
+  if (topKpiSystem) {
+    const health = snapshot?.health?.status || snapshot?.systemHealth || window.FENIX?.live?.health?.status;
+    topKpiSystem.textContent = health ? String(health).toUpperCase() : 'UNAVAILABLE';
+  }
+  if (typeof window.renderSidebarCompanies === 'function') {
+    if (companiesList) window.renderSidebarCompanies(companiesList);
+  }
+  window.fenixRenderAlerts?.();
+};
+
+window.renderSidebarCompanies = function(companies) {
+  const listEl = document.getElementById('fenixSidebarCompaniesList');
+  const countEl = document.getElementById('sidebarCountCompanies');
+  if (!listEl) return;
+  const list = Array.isArray(companies) ? companies : [];
+  if (countEl) countEl.textContent = list.length > 0 ? `(${list.length})` : '—';
+  if (!list.length) {
+    listEl.innerHTML = '<div style="padding:6px 8px; font-size:11px; color:#64748B; font-style:italic;">Nenhuma empresa cadastrada</div>';
+    return;
+  }
+  const currentSel = window.GlobalSelectionStore?.selectedCompany?.id;
+  listEl.innerHTML = list.map(c => {
+    const id = c.companyId || c.id;
+    const name = c.name || id;
+    const isActive = currentSel === id;
+    const color = c.color || '#3B82F6';
+    const icon = c.icon || 'ph-buildings';
+    return `
+      <div class="fenix-sidebar-company-card ${isActive ? 'active' : ''}" data-company-id="${id}" onclick="window.fenixSelectCompany?.('${id}'); window.fenixOpenSystemInspector?.('${id}'); window.showView?.('city');" style="padding:5px 8px; border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:8px; color:${isActive ? '#F8FAFC' : '#94A3B8'}; ${isActive ? 'background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.5);' : ''}">
+        <i class="ph-bold ${icon}" style="color:${color}; font-size:13px;"></i>
+        <span style="font-size:11px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</span>
+      </div>
+    `;
+  }).join('');
+};
+
+window.fenixRefreshCompanies = async function() {
+  try {
+    const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+    const res = await fetch('/api/v2/company/list', {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+    });
+    if (res.ok) {
+      const data = await res.json();
+      window.renderSidebarCompanies(data.companies || []);
+    }
+  } catch (_) {}
+};
+
+window.fenixPromptCreateCompany = async function() {
+  const name = prompt('Nome da nova empresa:');
+  if (!name || !name.trim()) return;
+  try {
+    const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+    const res = await fetch('/api/v2/company', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      },
+      body: JSON.stringify({ name: name.trim() })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const comp = data.company || data;
+      if (window.GlobalSelectionStore) {
+        window.GlobalSelectionStore.select('company', comp.companyId || comp.id, comp);
+      }
+      if (typeof window.fenixRefreshCompanies === 'function') {
+        window.fenixRefreshCompanies();
+      }
+    } else {
+      alert('Falha ao cadastrar empresa.');
+    }
+  } catch (err) {
+    console.error('Erro ao cadastrar empresa:', err);
+  }
+};
+
+window.addEventListener('selection:changed', (e) => {
+  const currentCompanyId = e.detail?.type === 'company' ? e.detail.id : null;
+  const cards = document.querySelectorAll('#fenixSidebarCompaniesList .fenix-sidebar-company-card');
+  cards.forEach(card => {
+    const cid = card.getAttribute('data-company-id');
+    const isActive = cid === currentCompanyId;
+    card.classList.toggle('active', isActive);
+    card.style.color = isActive ? '#F8FAFC' : '#94A3B8';
+    card.style.background = isActive ? 'rgba(59,130,246,0.18)' : '';
+    card.style.border = isActive ? '1px solid rgba(59,130,246,0.5)' : '';
+  });
+});
+
+if (typeof window !== 'undefined') {
+  setTimeout(() => window.fenixRefreshCompanies?.(), 500);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 6 MASTER HUBS — UNIFIED SPATIAL CONTROLLER (FÊNIX OS 4.0)
+// ═════════════════════════════════════════════════════════════════════════════
+
+window.fenixToggleCityCockpit = function() {
+  const drawer = document.getElementById('fenixCityCockpitDrawer');
+  if (!drawer) return;
+  const isHidden = drawer.style.display === 'none' || !drawer.style.display;
+  if (isHidden) {
+    drawer.style.display = 'flex';
+    const content = document.getElementById('cityCockpitDrawerContent');
+    const stateData = window.state?.data || {};
+    const asList = (value) => Array.isArray(value) ? value : null;
+    const agentsList = asList(stateData.agents?.agents) || asList(stateData.agents) || (window.FENIX?.live?.agentsMeasured === true ? asList(window.FENIX.live.agents) : null);
+    const missionsList = asList(stateData.missions?.missions) || asList(stateData.missions) || (window.FENIX?.live?.missionsMeasured === true ? asList(window.FENIX.live.missions) : null);
+    const activeStatuses = new Set(['ACTIVE', 'RUNNING', 'IN_PROGRESS', 'EXECUTING', 'DISPATCHED']);
+    const activeMission = missionsList?.find((mission) => activeStatuses.has(String(mission?.status || mission?.state || '').toUpperCase()));
+    const activeMissionTitle = activeMission
+      ? (activeMission.title || activeMission.name || activeMission.id || 'Missão ativa')
+      : missionsList ? 'Nenhuma missão ativa publicada pela API' : 'Missões indisponíveis nesta leitura';
+    const onlineStatuses = new Set(['ONLINE', 'AVAILABLE', 'IDLE', 'WORKING', 'BUSY', 'RUNNING']);
+    const onlineAgents = agentsList?.filter((agent) => agent?.online === true || agent?.isOnline === true || onlineStatuses.has(String(agent?.status || agent?.state || '').toUpperCase())) || [];
+    const agentsStatusColor = !agentsList ? '#94A3B8' : onlineAgents.length ? '#10B981' : '#F59E0B';
+    if (content) {
+      content.innerHTML = `
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+          <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <strong style="color:#00D9FF; font-size:12px; text-transform:uppercase;">⚡ Missão do Runtime em Execução</strong>
+              <span style="background:rgba(0,217,255,0.15); color:#00D9FF; font-size:10px; padding:2px 8px; border-radius:10px; font-weight:700;">${activeMission ? 'EM EXECUÇÃO' : missionsList ? 'SEM MISSÃO ATIVA' : 'INDISPONÍVEL'}</span>
+            </div>
+            <div id="cityCockpitMissionTitle" style="font-size:13px; font-weight:700; color:#F8FAFC; margin-bottom:6px;">${escapeHtml(activeMissionTitle)}</div>
+            <div style="font-size:11px; color:#94A3B8; line-height:1.5;">${missionsList ? 'Estado recebido da lista de missões da API.' : 'Aguardando uma leitura válida da API.'}</div>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <button onclick="window.showView?.('command')" style="background:rgba(0,217,255,0.15); border:1px solid rgba(0,217,255,0.3); color:#00D9FF; padding:5px 12px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">Acompanhar Missão</button>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <strong style="color:#10B981; font-size:12px; text-transform:uppercase;">👥 Agentes do sistema</strong>
+              <span style="font-size:11px; color:${agentsStatusColor}; font-weight:700;">${agentsList ? `${onlineAgents.length} ONLINE` : 'INDISPONÍVEL'}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px; font-size:11px;">
+              ${agentsList?.length ? agentsList.slice(0, 4).map(ag => `
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:rgba(255,255,255,0.03); border-radius:6px;">
+                  <span style="color:#E2E8F0;">${escapeHtml(ag.name || ag.id || 'Agente')}</span>
+                  <span style="color:#10B981; font-weight:700;">${escapeHtml(ag.status || ag.state || 'Estado não publicado')}</span>
+                </div>
+              `).join('') : `
+                <div style="padding:10px; color:#64748B; font-style:italic;">${agentsList ? 'Nenhum agente publicado pela API.' : 'Agentes indisponíveis nesta leitura.'}</div>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  } else {
+    drawer.style.display = 'none';
+  }
+};
+
+window.fenixToggleCityOps = function() {
+  const drawer = document.getElementById('fenixCityOpsDrawer');
+  if (!drawer) return;
+  const isHidden = drawer.style.display === 'none' || !drawer.style.display;
+  if (isHidden) {
+    drawer.style.display = 'flex';
+    const content = document.getElementById('cityOpsDrawerContent');
+    const data = window.state?.data || {};
+    const jobs = Array.isArray(data.jobs?.jobs) ? data.jobs.jobs
+      : Array.isArray(data.jobs) ? data.jobs
+      : window.FENIX?.live?.jobsMeasured === true && Array.isArray(window.FENIX.live.jobs) ? window.FENIX.live.jobs
+      : null;
+    const health = data.health?.status ? data.health : window.FENIX?.live?.health?.status ? window.FENIX.live.health : null;
+    const systemStatus = health?.status ? String(health.status).toUpperCase() : 'INDISPONÍVEL';
+    const systemStatusColor = ['ONLINE', 'READY', 'HEALTHY'].includes(systemStatus) ? '#10B981' : systemStatus === 'INDISPONÍVEL' ? '#94A3B8' : '#F59E0B';
+    const activeStatuses = new Set(['ACTIVE', 'RUNNING', 'DISPATCHED', 'EXECUTING', 'IN_PROGRESS']);
+    const activeJobs = jobs?.filter((job) => activeStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
+    const events = Array.isArray(window.__fenixSystemEvents) ? window.__fenixSystemEvents
+      : Array.isArray(data.events?.events) ? data.events.events
+      : Array.isArray(data.events) ? data.events
+      : null;
+    const ignoredEventTypes = new Set(['snapshot', 'runtime.snapshot', 'status', 'ping', 'heartbeat']);
+    const incidentCount = events?.filter((event) => {
+      const type = String(event?.type || event?.event || event?.eventType || '').toLowerCase();
+      const severity = String(event?.severity || event?.level || event?.data?.severity || event?.data?.level || '');
+      return type && !ignoredEventTypes.has(type) && /critical|fatal|emergency|error|warn|degrad|stale/i.test(severity);
+    }).length;
+    const queueStatus = health?.queues?.status || health?.queue?.status || health?.queueStatus || '—';
+    const queueStatusColor = queueStatus === '—' ? '#94A3B8' : '#10B981';
+    if (content) {
+      content.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(0,0,0,0.3); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+            <span style="color:#CBD5E1; font-size:12px;">Estado do sistema</span>
+            <span style="color:${systemStatusColor}; font-weight:700; font-size:11px;">${escapeHtml(systemStatus)}</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
+            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#94A3B8;">JOBS EM EXECUÇÃO</div>
+              <div style="font-size:18px; font-weight:700; color:#00D9FF;">${activeJobs?.length ?? '—'}</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#94A3B8;">FILA</div>
+              <div style="font-size:18px; font-weight:700; color:${queueStatusColor};">${escapeHtml(queueStatus)}</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#94A3B8;">ALERTAS REGISTRADOS</div>
+              <div style="font-size:18px; font-weight:700; color:#A855F7;">${incidentCount ?? '—'}</div>
+            </div>
+          </div>
+          <button onclick="window.showView?.('operations')" style="align-self:flex-start; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); color:#10B981; padding:6px 14px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">Abrir Console de Operações Completo &rarr;</button>
+        </div>
+      `;
+    }
+  } else {
+    drawer.style.display = 'none';
+  }
+};
+
+// Hub 4: Cognitive Brain Unified Switcher (Memória + Conhecimento + Flow Graph)
+window.fenixSwitchBrainHub = function(mode) {
+  const memContainer = document.getElementById('fenixMemoryOperationalContainer');
+  const knowView = document.getElementById('view-knowledge');
+  const flowView = document.getElementById('view-flowgraph');
+  const tabs = document.querySelectorAll('#fenixBrainHubTabs button');
+  tabs.forEach(t => t.classList.remove('active'));
+
+  if (mode === 'memory') {
+    if (memContainer) memContainer.style.display = 'flex';
+    if (knowView) knowView.style.display = 'none';
+    if (flowView) flowView.style.display = 'none';
+    tabs[0]?.classList.add('active');
+  } else if (mode === 'knowledge') {
+    if (memContainer) memContainer.style.display = 'none';
+    if (knowView) {
+      knowView.style.display = 'flex';
+      if (typeof window.loadKnowledgeView === 'function') window.loadKnowledgeView();
+    }
+    if (flowView) flowView.style.display = 'none';
+    tabs[1]?.classList.add('active');
+  } else if (mode === 'flowgraph') {
+    if (memContainer) memContainer.style.display = 'none';
+    if (knowView) knowView.style.display = 'none';
+    if (flowView) {
+      flowView.style.display = 'flex';
+      if (typeof window.fenixOpenFlowGraph === 'function') window.fenixOpenFlowGraph();
+    }
+    tabs[2]?.classList.add('active');
+  }
+};
+
+// Hub 6: Control Cockpit Unified Switcher (Runtime + Terminal + Observabilidade + MCP)
+window.fenixSwitchControlTab = function(tabName) {
+  const tabs = document.querySelectorAll('#fenixControlCockpitTabs button');
+  tabs.forEach(t => t.classList.remove('active'));
+  const targets = {
+    'runtime': document.getElementById('view-runtime')?.querySelector('.workspace-view'),
+    'terminal': document.getElementById('view-terminal'),
+    'observability': document.getElementById('view-observability'),
+    'mcp': document.getElementById('view-mcp')
+  };
+  Object.keys(targets).forEach(k => {
+    if (targets[k]) targets[k].style.display = k === tabName ? 'flex' : 'none';
+  });
+  const activeTabIdx = ['runtime', 'terminal', 'observability', 'mcp'].indexOf(tabName);
+  if (activeTabIdx >= 0 && tabs[activeTabIdx]) tabs[activeTabIdx].classList.add('active');
+
+  if (tabName === 'terminal' && typeof window.loadTerminalView === 'function') window.loadTerminalView();
+  if (tabName === 'observability' && typeof window.loadObservabilityView === 'function') window.loadObservabilityView();
+  if (tabName === 'mcp' && typeof window.loadMcpView === 'function') window.loadMcpView();
+};
 

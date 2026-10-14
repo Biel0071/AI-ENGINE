@@ -16,3 +16,9 @@ test('OIDC login validates or refreshes an existing session instead of redirect 
   assert.match(login, /localStorage\.removeItem\('grg_token'\)/);
   assert.doesNotMatch(login, /if \(localStorage\.getItem\('grg_token'\)\) location\.href/);
 });
+
+test('a fresh or restored session opens the primary City workspace by default', () => {
+  const login = readFileSync(join(__dirname, '..', 'public', 'login.html'), 'utf8');
+  assert.equal(/fenix_return_route'\) \|\| '#command'/.test(login), false, 'login defaults must not reopen the Command Center');
+  assert.match(login, /fenix_return_route'\) \|\| '#city'/);
+});

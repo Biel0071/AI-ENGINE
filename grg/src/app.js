@@ -129,8 +129,15 @@ async function createApp(options = {}) {
       }))
     : (options.dataFile ? new FileStore(options.dataFile) : new MemoryStore()));
   const bus = new EventBus();
+  const { MediaSearchService } = require('./media/media-search-service');
+  const { WorldAssetRegistry } = require('./media/world-asset-registry');
+  const mediaSearch = options.mediaSearch || new MediaSearchService({
+    fetchImpl: options.fetchImpl,
+    cacheTtlMs: Number((options.env || process.env).FENIX_MEDIA_CACHE_TTL_MS || 300_000),
+  });
   const eventStore = new EventStore({ store });
   const fabricEvents = new FabricEventBus({ eventStore, liveBus: bus });
+  const worldAssetRegistry = options.worldAssetRegistry || new WorldAssetRegistry({ store, bus, events: fabricEvents });
   const controlPlane = await new ControlPlane({ store, bus }).initialize(options.master);
   const isTest = options.env?.NODE_ENV === 'test' || process.env.NODE_ENV === 'test' || process.argv[1]?.includes('test');
   if (options.bootstrap !== false && !isTest) { await controlPlane.ensureDefaultTenant({ id: 'grg', name: 'GRG FENIX', actorId: 'grg-admin' }); }
@@ -357,7 +364,7 @@ async function createApp(options = {}) {
   const capabilityMarketplace = new CapabilityMarketplace();
 
   // Phase 3: Storage & Knowledge Engine Initialization
-  const storageManager = new StorageManager();
+  const storageManager = new StorageManager({ eventBus: bus });
   await storageManager.boot();
   
   const knowledgeEngine = new KnowledgeEngine({ storageManager, eventBus: bus, aiRouter: aiGateway });
@@ -445,6 +452,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, memoryEngine: baseMemoryEngine, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
+    mediaSearch, worldAssetRegistry,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
     liveBootKernel, runtimeKernel, aiOrchestrator, aek, digitalTwinEngine, cognitiveMemory, capabilityMarketplace,
     storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine, gitRead, projectKernel, fullSystemBuilder, agentExecutionRuntime, engineeringMemory, workspaceRoot, auditRepositoryRoot, graphBrain, systemTwinEngine
@@ -502,6 +510,7 @@ async function createApp(options = {}) {
       }
       app.memoryConsolidator?.stop();
       if (app.analysisRecoveryTimer) clearInterval(app.analysisRecoveryTimer);
+      await app.heart?.stop?.();
       await app.livingRuntime?.stop?.();
       await app.runtimeKernel?.stop?.();
       await Promise.allSettled([
@@ -683,7 +692,9 @@ async function createApp(options = {}) {
   
   app.backgroundCognition = new BackgroundCognition({ store, bus, controlPlane, memory, digitalTwin, hypothesisEngine: app.hypothesisEngine, knowledgeGenome: app.knowledgeGenome });
   app.memoryConsolidator = new MemoryConsolidator(memory, bus);
-  app.memoryConsolidator.start(1000 * 60 * 30); // 30 minutes
+  if (runtimeEnv.FENIX_SMOKE_MODE !== '1') {
+    app.memoryConsolidator.start(1000 * 60 * 30); // 30 minutes
+  }
 
   app.projectFactory = new ProjectFactoryService({ store, bus, controlPlane, factory, missionPlanner, digitalTwin });
   // V11 — a unica saida para a internet aberta da plataforma: allowlist de dominios,
@@ -704,7 +715,7 @@ async function createApp(options = {}) {
   app.cognitiveOptimization = new CognitiveOptimizationEngine({ store, bus, controlPlane, knowledgeGenome: app.knowledgeGenome, digitalTwin });
   app.pluginSkills = new PluginSkillsEcosystem({ store, bus, controlPlane, approvals });
   app.cognitiveEncryption = new CognitiveEncryptionService({ store, bus, controlPlane });
-  app.npcCity = new NpcCityEngine({ store, bus, controlPlane, agentSwarm: app.agentSwarm, digitalTwin, eventStore });
+  app.npcCity = new NpcCityEngine({ store, bus, controlPlane, agentSwarm: app.agentSwarm, aiGateway, digitalTwin, eventStore });
   app.companyDailyAnalysis = new CompanyDailyAnalysisService({ store, bus, controlPlane, digitalTwin, knowledgeGenome: app.knowledgeGenome, masterNode: app.masterNode, agentSwarm: app.agentSwarm });
 
   // OMEGA Attachments
@@ -871,6 +882,75 @@ async function createApp(options = {}) {
   });
   app.analysisRecoveryTimer = setInterval(() => app.systemAnalyses.recover().catch(() => {}), 30000);
   app.analysisRecoveryTimer.unref?.();
+  const { FenixHeart } = require('./runtime/fenix-heart');
+  app.heart = new FenixHeart({ app, store, bus, controlPlane, aiGateway, aiRouter: app.aiRouter });
+  if (options.autoStartHeart !== false && runtimeEnv.FENIX_HEART_AUTOSTART !== '0') {
+    app.heart.start();
+  }
+
+  const { CompanyBrain } = require('./company/company-brain');
+  const { CeoAgent } = require('./company/ceo-agent');
+  const { EvolutionLab } = require('./evolution/evolution-lab');
+  const { TokenEconomyEngine } = require('./ai/token-economy-engine');
+  const { globalPatternLibrary } = require('./memory/pattern-library');
+  const { ProjectAbsorptionEngine } = require('./absorption/project-absorption-engine');
+  const { ScreenReconstructionEngine } = require('./reconstruction/screen-reconstruction-engine');
+
+  app.fenixHeart = app.heart;
+  app.patternLibrary = globalPatternLibrary;
+  app.graphBrain = graphBrain;
+  app.systemTwinEngine = systemTwinEngine;
+
+  app.tokenEconomy = new TokenEconomyEngine({
+    eventBus: bus,
+    storage: store
+  });
+
+  app.companyBrain = new CompanyBrain({
+    store, bus, controlPlane, projectKernel: app.projectKernel,
+    jobEngine: jobs, missionPlanner, missionKernel: missions,
+    fenixHeart: app.heart, agentRegistry: app.agentRegistry,
+    aiRouter: app.aiRouter, aiGateway, tokenEconomy: app.tokenEconomy
+  });
+
+  app.evolutionLab = new EvolutionLab({
+    store, bus, projectKernel: app.projectKernel, fenixHeart: app.heart
+  });
+
+  app.absorptionEngine = new ProjectAbsorptionEngine({
+    memoryFabric: app.memory,
+    patternLibrary: app.patternLibrary,
+    graphBrain: app.graphBrain,
+    tokenEconomy: app.tokenEconomy,
+    fenixHeart: app.heart,
+    companyBrain: app.companyBrain
+  });
+
+  app.reconstructionEngine = new ScreenReconstructionEngine({
+    patternLibrary: app.patternLibrary,
+    graphBrain: app.graphBrain,
+    tokenEconomy: app.tokenEconomy,
+    memoryFabric: app.memory,
+    absorptionEngine: app.absorptionEngine,
+    evolutionLab: app.evolutionLab
+  });
+
+  app.ceoAgent = new CeoAgent({
+    companyBrain: app.companyBrain,
+    store,
+    bus,
+    projectKernel: app.projectKernel,
+    jobEngine: jobs,
+    missionPlanner,
+    missionKernel: missions,
+    aiRouter: app.aiRouter,
+    aiGateway,
+    fenixHeart: app.heart,
+    absorptionEngine: app.absorptionEngine,
+    tokenEconomy: app.tokenEconomy,
+    patternLibrary: app.patternLibrary,
+    graphBrain: app.graphBrain
+  });
 
   return app;
 }

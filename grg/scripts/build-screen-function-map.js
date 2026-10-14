@@ -13,9 +13,28 @@ const assetDir = process.env.FENIX_ASSET_DIR || path.join(root, 'public');
 const html = fs.existsSync(htmlPath) ? fs.readFileSync(htmlPath, 'utf8') : '';
 const assets = fs.existsSync(assetDir) ? fs.readdirSync(assetDir).filter(name => /\.m?js$/i.test(name)).map(name => fs.readFileSync(path.join(assetDir, name), 'utf8')).join('\n') : '';
 
+let srcFilesContent = null;
+function getSrcContent() {
+  if (srcFilesContent !== null) return srcFilesContent;
+  const files = [];
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.m?js$/i.test(entry.name)) files.push(fs.readFileSync(full, 'utf8'));
+    }
+  }
+  try { walk(path.join(root, 'src')); } catch {}
+  srcFilesContent = files.join('\n');
+  return srcFilesContent;
+}
+
 function backendHas(endpoint) {
-  try { return !!execFileSync('rg', ['-l', '--fixed-strings', endpoint, path.join(root, 'src')], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); }
-  catch { return false; }
+  try {
+    const res = execFileSync('rg', ['-l', '--fixed-strings', endpoint, path.join(root, 'src')], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (res) return true;
+  } catch {}
+  return getSrcContent().includes(endpoint);
 }
 
 const domainByScreen = Object.fromEntries(Object.entries(manifest.domains).flatMap(([domain, screens]) => screens.map(screen => [screen, domain])));

@@ -1,0 +1,435 @@
+{
+  "url": "http://127.0.0.1:4400/app",
+  "startedAt": "2026-09-03T23:27:15.482Z",
+  "navigation": [
+    {
+      "view": "command",
+      "domain": "command",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app",
+      "after": "http://127.0.0.1:4400/app#command",
+      "visibleViews": [
+        "view-command"
+      ],
+      "activeNav": [
+        "command"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "operations",
+      "domain": "command",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#command",
+      "after": "http://127.0.0.1:4400/app#operations",
+      "visibleViews": [
+        "view-operations"
+      ],
+      "activeNav": [
+        "operations"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "runtime",
+      "domain": "command",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#operations",
+      "after": "http://127.0.0.1:4400/app#runtime",
+      "visibleViews": [
+        "view-runtime"
+      ],
+      "activeNav": [
+        "runtime"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "ide",
+      "domain": "build",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#runtime",
+      "after": "http://127.0.0.1:4400/app#ide",
+      "visibleViews": [
+        "view-ide"
+      ],
+      "activeNav": [
+        "ide"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "project",
+      "domain": "build",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#ide",
+      "after": "http://127.0.0.1:4400/app#project",
+      "visibleViews": [
+        "view-project"
+      ],
+      "activeNav": [
+        "project"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "projects",
+      "domain": "build",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#project",
+      "after": "http://127.0.0.1:4400/app#projects",
+      "visibleViews": [
+        "view-projects"
+      ],
+      "activeNav": [
+        "projects"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "agents",
+      "domain": "intelligence",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#projects",
+      "after": "http://127.0.0.1:4400/app#agents",
+      "visibleViews": [
+        "view-agents"
+      ],
+      "activeNav": [
+        "agents"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "memory",
+      "domain": "intelligence",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#agents",
+      "after": "http://127.0.0.1:4400/app#memory",
+      "visibleViews": [
+        "view-memory"
+      ],
+      "activeNav": [
+        "memory"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "knowledge",
+      "domain": "intelligence",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#memory",
+      "after": "http://127.0.0.1:4400/app#knowledge",
+      "visibleViews": [
+        "view-knowledge"
+      ],
+      "activeNav": [
+        "knowledge"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "mcp",
+      "domain": "infrastructure",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#knowledge",
+      "after": "http://127.0.0.1:4400/app#mcp",
+      "visibleViews": [
+        "view-mcp"
+      ],
+      "activeNav": [
+        "mcp"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "observability",
+      "domain": "infrastructure",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#mcp",
+      "after": "http://127.0.0.1:4400/app#observability",
+      "visibleViews": [
+        "view-observability"
+      ],
+      "activeNav": [
+        "observability"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "browser",
+      "domain": "validation",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#observability",
+      "after": "http://127.0.0.1:4400/app#browser",
+      "visibleViews": [
+        "view-browser"
+      ],
+      "activeNav": [
+        "browser"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "city",
+      "domain": "validation",
+      "ok": true,
+      "before": "http://127.0.0.1:4400/app#browser",
+      "after": "http://127.0.0.1:4400/app#city",
+      "visibleViews": [
+        "view-city"
+      ],
+      "activeNav": [
+        "city"
+      ],
+      "scrollTest": true
+    },
+    {
+      "view": "terminal",
+      "domain": "validation",
+      "ok": false,
+      "before": "http://127.0.0.1:4400/app#city",
+      "error": "locator.click: Timeout 2500ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-view=\"terminal\"], [data-nav=\"terminal\"]').first()\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"nav-item\" data-nav=\"terminal\" data-view=\"terminal\" data-fenix-navigation-bound=\"true\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - performing click action\u001b[22m\n"
+    }
+  ],
+  "controls": [
+    {
+      "view": "command",
+      "label": "−",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "command",
+      "label": "+",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "command",
+      "label": "RESET",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "command",
+      "label": "FILTROS",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "operations",
+      "label": "Decompor e criar",
+      "skipped": true
+    },
+    {
+      "view": "runtime",
+      "label": "Executar ciclo autônomo",
+      "skipped": true
+    },
+    {
+      "view": "runtime",
+      "label": "Executar tick",
+      "skipped": true
+    },
+    {
+      "view": "ide",
+      "label": "CHAT",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "ide",
+      "label": "AGENTS",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "ide",
+      "label": "JOBS",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "ide",
+      "label": "MEMÓRIA",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "project",
+      "label": "Scan Real",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "projects",
+      "label": "Contratar",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "mcp",
+      "label": "Verificar conexao",
+      "skipped": false,
+      "clicked": true
+    },
+    {
+      "view": "observability",
+      "label": "Coletar amostra",
+      "skipped": false,
+      "clicked": true
+    }
+  ],
+  "consoleErrors": [
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    }
+  ],
+  "failedRequests": [],
+  "title": "FÊNIX OS | Master Agentic IDE",
+  "initial": {
+    "hash": "",
+    "fenix": "object",
+    "runChat": "function",
+    "views": [
+      "view-command",
+      "view-ide",
+      "view-project",
+      "view-city",
+      "view-projects",
+      "view-agents",
+      "view-operations",
+      "view-runtime",
+      "view-memory",
+      "view-knowledge",
+      "view-mcp",
+      "view-browser",
+      "view-observability",
+      "view-terminal"
+    ],
+    "nav": [
+      {
+        "text": "DASHBOARD",
+        "view": "command"
+      },
+      {
+        "text": "MISSÕES",
+        "view": "operations"
+      },
+      {
+        "text": "AGENTES",
+        "view": "agents"
+      },
+      {
+        "text": "AI CITY",
+        "view": "city"
+      },
+      {
+        "text": "MEMÓRIA",
+        "view": "memory"
+      },
+      {
+        "text": "SKILLS",
+        "view": "knowledge"
+      },
+      {
+        "text": "TELEMETRY",
+        "view": "runtime"
+      },
+      {
+        "text": "OBSERVABILITY",
+        "view": "observability"
+      },
+      {
+        "text": "PROJECTS",
+        "view": "projects"
+      },
+      {
+        "text": "BROWSER QA",
+        "view": "browser"
+      },
+      {
+        "text": "IDE",
+        "view": "ide"
+      },
+      {
+        "text": "TERMINAL",
+        "view": "terminal"
+      },
+      {
+        "text": "MCP HUB",
+        "view": "mcp"
+      },
+      {
+        "text": "PROJECT MIRROR",
+        "view": "project"
+      },
+      {
+        "text": "CONFIGURAÇÕES",
+        "view": "terminal"
+      }
+    ]
+  },
+  "finishedAt": "2026-09-03T23:27:47.370Z",
+  "summary": {
+    "navTotal": 14,
+    "navPass": 13,
+    "controlTotal": 15,
+    "controlClicked": 12,
+    "controlSkipped": 3,
+    "consoleErrors": 8,
+    "failedRequests": 0,
+    "domains": {
+      "command": {
+        "total": 3,
+        "pass": 3
+      },
+      "build": {
+        "total": 3,
+        "pass": 3
+      },
+      "intelligence": {
+        "total": 3,
+        "pass": 3
+      },
+      "infrastructure": {
+        "total": 2,
+        "pass": 2
+      },
+      "validation": {
+        "total": 3,
+        "pass": 2
+      }
+    }
+  }
+}

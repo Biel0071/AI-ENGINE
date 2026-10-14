@@ -61,7 +61,7 @@
       jobs: { active: [], completed: [], failed: [], lastFetch: null },
       system: { status: "LOADING", cpu: null, ram: null, uptime: null, lastFetch: null },
       events: { recent: [], total: 0, lastFetch: null },
-      navigation: { currentView: "command", previousView: null },
+      navigation: { currentView: "city", previousView: null },
       errors: []
     };
   }
@@ -169,7 +169,7 @@
 })();
 </script>
   <script src="/fenix-request-guard.js"></script>
-  <script src="/fenix-core-controller.js?v=canonical-20260925"></script>
+  <script src="/fenix-core-controller.js?v=responsive-navigation-20261013"></script>
   <meta charset="UTF-8">
   <title>FENIX OS | Unified Workspace — Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -205,7 +205,7 @@
     <link rel="stylesheet" href="/fenix-v11-phase6.css?v=11">
     <link rel="stylesheet" href="/fenix-mascot-sidebar.css?v=1">
     <link rel="stylesheet" href="/unreal-world.css?v=17">
-    <link rel="stylesheet" href="/city-reality.css?v=canonical-20261002">
+    <link rel="stylesheet" href="/city-reality.css?v=canonical-20261013">
     <link rel="stylesheet" href="/fenix-master-world-ds.css?v=ds1.0">
     <link rel="stylesheet" href="/city-media-library.css?v=1">
 
@@ -1501,9 +1501,9 @@
           <span id="topbarStatProjects">—</span>
           <span id="topbarStatMeetings">—</span>
           <span id="topbarStatSystem">—</span>
-          <div id="v10WeatherWidget"><span id="v10WeatherText">São Paulo 24°C</span></div>
-          <div id="v10ClockDisplay"><span id="v10ClockDateText">Ter, 10 Dez 15:42</span></div>
-          <button id="notifIcon"><span id="notifCount">0</span></button>
+          <div id="v10WeatherWidget"><span id="v10WeatherText">—</span></div>
+          <div id="v10ClockDisplay"><span id="v10ClockDateText">—</span></div>
+          <button id="notifIcon"><span id="notifCount">—</span></button>
           <button id="themeToggleBtn"></button>
           <div id="userProfileBtn"></div>
         </div>
@@ -1585,21 +1585,6 @@
 
             <div style="margin-top:auto;"></div>
 
-            <!-- Minimap Widget (Bottom-Left) -->
-            <div class="fnx-sidebar-minimap" id="fnxSidebarMinimap">
-              <div class="fnx-minimap-header">
-                <span style="display:flex; align-items:center; gap:5px;"><i class="ph-bold ph-map-pin"></i> MAPA GLOBAL</span>
-                <button type="button" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:11px;" onclick="this.closest('.fnx-sidebar-minimap').style.display='none'">✕</button>
-              </div>
-              <div class="fnx-minimap-viewport">
-                <img src="/assets/fenix-city-canvas-hd.png" alt="Mapa Global Fênix" onerror="this.src='/favicon.ico'" />
-                <div class="fnx-minimap-controls">
-                  <button type="button" class="fnx-minimap-btn" onclick="window.fenixCity?.zoomIn?.()" title="Aproximar">+</button>
-                  <button type="button" class="fnx-minimap-btn" onclick="window.fenixCity?.zoomOut?.()" title="Afastar">-</button>
-                </div>
-              </div>
-            </div>
-
             <!-- User Profile Capsule (Bottom) -->
             <div class="fnx-user-capsule" id="fnxUserCapsule">
               <div class="fnx-user-avatar-wrap">
@@ -1617,18 +1602,12 @@
               <div class="fnx-user-actions-cluster">
                 <button class="fnx-user-badge-btn" id="fnxNotifBtn" title="Notificações" onclick="window.fenixShowAlertsModal?.()">
                   <i class="ph-bold ph-bell"></i>
-                  <span class="fnx-user-badge-num">2</span>
+                  <span class="fnx-user-badge-num" id="fnxNotifCount" hidden aria-hidden="true" style="display:none"></span>
                 </button>
                 <button class="fnx-user-badge-btn" title="Configurações" onclick="alert('Configurações do Fênix OS')">
                   <i class="ph-bold ph-gear"></i>
                 </button>
               </div>
-            </div>
-
-            <!-- Weather Pill -->
-            <div style="display:flex; align-items:center; gap:6px; font-size:10px; color:#cbd5e1; padding:4px 8px; margin-top:2px;">
-              <i class="ph-fill ph-sun" style="color:#f59e0b; font-size:12px;"></i>
-              <span>São Paulo 24°C</span>
             </div>
 
             <!-- Hidden Backward-Compatibility Elements for Legacy Test Selectors -->
@@ -2332,20 +2311,19 @@
               <div class="fnx-orbit-add-btn" title="Adicionar Provedor">+</div>
             </div>
 
-            <!-- Floating Mini Map Widget (Bottom-Left) -->
-            <div class="fenix-city-floating-minimap" id="fenixFloatingMinimap">
-              <div class="minimap-header">
-                <i class="ph-bold ph-map-trifold" style="color:#00D9FF;"></i>
-                <span>Mapa Global</span>
+            <section class="fenix-city-minimap" id="fenixWorldMinimap" aria-label="Mapa operacional ao vivo">
+              <div class="fenix-city-minimap-header">
+                <span><i class="ph-bold ph-map-trifold" aria-hidden="true"></i> MAPA OPERACIONAL</span>
+                <small id="fenixMinimapStatus">Aguardando Cidade</small>
               </div>
-              <div class="minimap-body">
-                <img src="/assets/fenix-city-canvas-hd.png" class="minimap-thumb" alt="Mini mapa da Ilha Fênix" />
-                <div class="minimap-zoom-controls">
-                  <button type="button" class="minimap-zoom-btn" onclick="window.fenixCity?.zoomIn?.()" title="Aproximar">+</button>
-                  <button type="button" class="minimap-zoom-btn" onclick="window.fenixCity?.zoomOut?.()" title="Afastar">-</button>
+              <div class="fenix-city-minimap-stage">
+                <canvas id="fenixMinimap" width="220" height="144" aria-label="Mapa esquemático dos distritos, edifícios e agentes em posições reais"></canvas>
+                <div class="fenix-city-minimap-controls" aria-label="Controles de aproximação">
+                  <button type="button" onclick="window.fenixCity?.zoomIn?.()" title="Aproximar">+</button>
+                  <button type="button" onclick="window.fenixCity?.zoomOut?.()" title="Afastar">−</button>
                 </div>
               </div>
-            </div>
+            </section>
 
             <!-- Floating Frosted-Glass Cockpit Drawer (Fase 16: City + Command Unified) -->
             <div id="fenixCityCockpitDrawer" class="fenix-city-cockpit-drawer" style="display:none; position:absolute; inset:12px; z-index:40; background:rgba(7, 11, 20, 0.94); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(0, 217, 255, 0.35); border-radius:14px; box-shadow:0 24px 64px rgba(0,0,0,0.85); flex-direction:column; overflow:hidden;">
@@ -2460,16 +2438,14 @@
               <!-- Main Content Area: 4-Column Grid View -->
               <div class="dock-content-panel">
                 <div class="dock-4grid-container" id="dock4GridContainer">
-                  <!-- Window 1: Mapa Global -->
+                  <!-- Window 1: Atalhos; o mapa ao vivo é único na Cidade -->
                   <div class="dock-card-window" id="dockWindowMap">
                     <div class="dock-card-header">
-                      <div class="dock-card-title"><i class="ph-bold ph-map-trifold" style="color:#00D9FF;"></i> Mapa Global</div>
-                      <span class="dock-card-tag" id="dockActiveDistrictTag">DISTRITO INDUSTRIAL</span>
+                      <div class="dock-card-title"><i class="ph-bold ph-map-trifold" style="color:#00D9FF;"></i> Navegar pela Cidade</div>
+                      <span class="dock-card-tag" id="dockActiveDistrictTag">DISTRITOS</span>
                     </div>
                     <div class="dock-card-content dock-map-content">
-                      <div class="dock-map-radar-preview" onclick="window.fenixPanToDistrict?.('ALL')">
-                        <canvas id="dockMiniMapCanvas" width="180" height="75" style="width:100%; height:75px; border-radius:6px; background:#050810; display:block;"></canvas>
-                      </div>
+                      <div class="dock-map-radar-preview" role="note" style="padding:10px; color:#94a3b8; font-size:10px;">Use o mapa operacional ao vivo na Cidade para ver agentes, edifícios e posição da câmera.</div>
                       <div class="dock-map-quick-pans">
                         <button type="button" class="dock-mini-btn" onclick="window.fenixPanToDistrict?.('industrial')">Industrial</button>
                         <button type="button" class="dock-mini-btn" onclick="window.fenixPanToDistrict?.('command-center')">Central</button>
@@ -2483,7 +2459,7 @@
                   <div class="dock-card-window" id="dockWindowAgents">
                     <div class="dock-card-header">
                       <div class="dock-card-title"><i class="ph-bold ph-users-three" style="color:#10B981;"></i> Agentes <span class="dock-counter" id="dockCardAgentsCount">—</span></div>
-                      <span class="dock-card-status-dot online"></span>
+                      <span class="dock-card-status-dot" id="dockAgentsStatusDot" data-state="unavailable" aria-label="Estado dos agentes indisponível"></span>
                     </div>
                     <div class="dock-card-content dock-scroll-list" id="dockCardAgentsList">
                       <!-- Renderizado dinamicamente pelo CityRealityEngine -->
@@ -3963,8 +3939,8 @@
   <script src="/city-return.js?v=2"></script>
   <script src="/runtime-health-badge.js?v=2"></script>
   <script src="/fenix-bootstrap.js?v=boot7"></script>
-  <script id="fenix-script--live-runtime-js" src="/live-runtime.js?v=12"></script>
-  <script src="/fenix-city-event-adapter.js?v=3"></script>
+  <script id="fenix-script--live-runtime-js" src="/live-runtime.js?v=13"></script>
+  <script src="/fenix-city-event-adapter.js?v=4"></script>
   <script>window.FENIX_WORLD_3D = true;</script>
 <script id= fenix-ide-dom-compat>window.$=window.$||((id)=>document.getElementById(id));</script>
   <script src="/dev-pipeline-client.js?v=small-task-1"></script>
@@ -4327,7 +4303,7 @@
 
     (function initCityEventStream() {
       let evtSource = null;
-      let allEvents = [];
+      let allEvents = null;
       let currentFilter = 'ALL';
 
       window.filterCityEvents = function(category, btn) {
@@ -4346,6 +4322,10 @@
       function renderCityEvents() {
         const container = document.getElementById('cityEventFeed');
         if (!container) return;
+        if (!Array.isArray(allEvents)) {
+          container.textContent = 'Eventos indisponíveis: a API não respondeu à consulta.';
+          return;
+        }
         const filtered = currentFilter === 'ALL'
           ? allEvents
           : allEvents.filter(ev => String(ev.category || ev.type || '').toUpperCase().includes(currentFilter));
@@ -4354,9 +4334,13 @@
           container.innerHTML = '<div style="color:#64748b; font-size:11px; padding:12px; text-align:center;">Nenhum evento registrado nesta categoria.</div>';
           return;
         }
+        const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
         container.innerHTML = filtered.slice(0, 50).map(ev => {
-          const time = ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : '';
+          const eventTime = ev.occurredAt || ev.timestamp || ev.createdAt;
+          const parsedTime = eventTime ? new Date(eventTime) : null;
+          const time = parsedTime && !Number.isNaN(parsedTime.getTime()) ? parsedTime.toLocaleTimeString('pt-BR') : '—';
           const cat = ev.category || 'INFO';
+          const description = ev.description || ev.message || ev.data?.message || 'A API registrou o evento sem descrição.';
           let icon = '⚡';
           let color = '#38bdf8';
           if (cat === 'ERRORS' || String(ev.type || '').includes('error')) { icon = '⚠️'; color = '#ef4444'; }
@@ -4367,22 +4351,31 @@
           
           return '<div class="city-feed-item" style="background:rgba(255,255,255,0.03); border-left:3px solid ' + color + '; padding:6px 8px; border-radius:4px; font-size:11px; line-height:1.4;">' +
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">' +
-            '  <span style="color:' + color + '; font-weight:700;">' + icon + ' ' + (ev.type || cat) + '</span>' +
-            '  <span style="color:#64748b; font-size:10px;">' + time + '</span>' +
+            '  <span style="color:' + color + '; font-weight:700;">' + icon + ' ' + escapeHtml(ev.type || cat) + '</span>' +
+            '  <span style="color:#64748b; font-size:10px;">' + escapeHtml(time) + '</span>' +
             '</div>' +
-            '<div style="color:#cbd5e1; word-break:break-word;">' + (ev.description || ev.message || JSON.stringify(ev.payload || {})) + '</div>' +
+            '<div style="color:#cbd5e1; word-break:break-word;">' + escapeHtml(description) + '</div>' +
             '</div>';
         }).join('');
       }
 
-      fetch('/api/v2/living-city/events?category=ALL&limit=30')
+      (window.fenixAuthedFetch || fetch)('/api/v2/events/history?limit=100', {
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(10000)
+      })
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (d?.events && Array.isArray(d.events)) {
-            allEvents = d.events;
+            const ignoredTypes = new Set(['snapshot', 'runtime.snapshot', 'status', 'ping', 'heartbeat', 'connected']);
+            allEvents = d.events.filter(ev => !ignoredTypes.has(String(ev?.type || '').toLowerCase()))
+              .sort((a, b) => (Date.parse(b?.occurredAt || b?.timestamp || b?.createdAt || '') || 0) - (Date.parse(a?.occurredAt || a?.timestamp || a?.createdAt || '') || 0));
+            renderCityEvents();
+          } else {
+            allEvents = null;
             renderCityEvents();
           }
-        }).catch(() => {});
+        }).catch(() => { allEvents = null; renderCityEvents(); });
 
       function connectSSE() {
         try {
@@ -4395,7 +4388,9 @@
           const handleCityRuntimeEvent = (e) => {
             try {
               const ev = JSON.parse(e.data);
-              if (ev && ev.type !== 'ping') {
+              const eventType = String(ev?.type || '').toLowerCase();
+              if (ev && !['ping', 'heartbeat', 'status', 'snapshot', 'runtime.snapshot', 'connected'].includes(eventType)) {
+                if (!Array.isArray(allEvents)) allEvents = [];
                 allEvents.unshift(ev);
                 if (allEvents.length > 100) allEvents.pop();
                 renderCityEvents();
@@ -4815,7 +4810,7 @@ window.__fenixSubmitIdeChat = async function () {
     </div>
   </dialog>
 <script src="/global-selection-store.js"></script>
-<script src="/unified-app.js?v=v12-reality-p5-kpi-20261008"></script>
+<script src="/unified-app.js?v=v13-live-truth-20261013"></script>
 <script src="/fenix-v8-ui.js"></script>
 <script src="/fenix-command-palette.js?v=1"></script>
 <script>
@@ -4915,7 +4910,7 @@ window.__fenixSubmitIdeChat = async function () {
   // Dynamic Breadcrumbs & Group Navigation (Section 4)
   // ════ FÊNIX OS — CANONICAL ROUTER & LIFECYCLE CONTROLLER (V13) ════
   window.__fenixState = window.__fenixState || {
-    currentRoute: 'command',
+    currentRoute: 'city',
     currentProject: 'fenix-os',
     activeWorkspace: null,
     activeTab: 'overview',
@@ -4988,8 +4983,8 @@ window.__fenixSubmitIdeChat = async function () {
   };
 
   window.showView = function(viewId, pushHistory = true) {
-    if (!viewId) viewId = 'command';
-    const rawTarget = String(viewId).replace(/^#\/?/, '').split('?')[0].split('/')[0] || 'command';
+    if (!viewId) viewId = 'city';
+    const rawTarget = String(viewId).replace(/^#\/?/, '').split('?')[0].split('/')[0] || 'city';
     viewId = rawTarget;
     if (ROUTE_ALIASES[viewId]) viewId = ROUTE_ALIASES[viewId];
     const isOfficeRequested = rawTarget === 'office' || rawTarget === 'living-office';
@@ -5002,7 +4997,7 @@ window.__fenixSubmitIdeChat = async function () {
     const targetEl = document.getElementById('view-' + viewId);
     if (!targetEl) {
       console.warn('[Router] View not found in DOM: view-' + viewId);
-      viewId = 'command';
+      viewId = 'city';
     }
 
     // Unmount previous lifecycle
@@ -5144,7 +5139,7 @@ window.__fenixSubmitIdeChat = async function () {
   window.handleHashChange = function() {
     const raw = (window.location.hash || '').replace(/^#\/?/, '').split('?')[0];
     const parts = raw.split('/');
-    const view = parts[0] || 'command';
+    const view = parts[0] || 'city';
     const sub = parts[1];
     window.showView(view, false);
     if (view === 'projects' && sub && typeof window.openProjectWorkspace === 'function') {
@@ -5153,24 +5148,16 @@ window.__fenixSubmitIdeChat = async function () {
   };
   window.addEventListener('hashchange', window.handleHashChange);
 
-  // Restore Route on Load (Precedence: URL Hash > localStorage > 'command')
+  // Restore an explicit URL route, otherwise start in the primary City workspace.
   window.restoreRouteOnLoad = function() {
     const raw = (window.location.hash || '').replace(/^#\/?/, '').split('?')[0];
     const parts = raw.split('/');
-    let target = window.__fenixPendingEarlyView || parts[0];
+    let target = window.__fenixPendingEarlyView || parts[0] || 'city';
     let sub = parts[1];
     if (ROUTE_ALIASES[target]) target = ROUTE_ALIASES[target];
 
-    if (!target || (!VIEW_META[target] && !document.getElementById('view-' + target))) {
-      try {
-        const saved = localStorage.getItem('fenix_v10_active_view');
-        if (saved && (VIEW_META[saved] || document.getElementById('view-' + saved))) {
-          target = saved;
-        }
-      } catch(e) {}
-    }
-
-    if (!target) target = 'city';
+    if (!VIEW_META[target] && !document.getElementById('view-' + target)) target = 'city';
+    if (!raw || target !== parts[0]) history.replaceState(null, '', '#' + target);
     window.__fenixPendingEarlyView = null;
     window.showView(target, false);
     if (target === 'projects' && sub && typeof window.openProjectWorkspace === 'function') {
@@ -5294,13 +5281,14 @@ window.__fenixSubmitIdeChat = async function () {
           const diskFill = document.getElementById('v10DiskFill');
           if (diskFill) diskFill.setAttribute('stroke-dasharray', `${diskPct}, 100`);
         }
-        if (ht.network && ht.network.trafficScore !== undefined) {
-          const netScore = ht.network.trafficScore;
-          const netEl = document.getElementById('v10GaugeNet');
-          if (netEl) netEl.textContent = netScore + '%';
-          const netFill = document.getElementById('v10NetFill');
-          if (netFill) netFill.setAttribute('stroke-dasharray', `${netScore}, 100`);
-        }
+        const netThroughputBps = Number.isFinite(ht.network?.throughputBps) ? ht.network.throughputBps : null;
+        const netEl = document.getElementById('v10GaugeNet');
+        const netFill = document.getElementById('v10NetFill');
+        const netLabel = netThroughputBps == null ? '—' : netThroughputBps >= 1_000_000
+          ? `${(netThroughputBps / 1_000_000).toFixed(1)} Mbps`
+          : `${(netThroughputBps / 1_000).toFixed(1)} Kbps`;
+        if (netEl) netEl.textContent = netLabel;
+        if (netFill) netFill.setAttribute('stroke-dasharray', '0, 100');
       }
 
       // 8. 24h Activity Distribution Chart (Dynamic based on real jobs & CPU load)
@@ -6570,7 +6558,7 @@ window.__fenixSubmitIdeChat = async function () {
 </script>
 <script src="observatory-client.js"></script>
 <script src="/project-hub-controller.js?v=1"></script>
-<script src="/fenix-operational-os.js?v=2.11-auth-cookie-fallback-20261008"></script>
+<script src="/fenix-operational-os.js?v=2.12-building-inspection-20261013"></script>
 <script src="/fenix-flow-graph.js?v=1.0"></script>
 <script src="/fenix-v11-interactions.js?v=14-agent-inspector-cache"></script>
 <link rel="stylesheet" href="/project-ide-live.css?v=2">
@@ -6580,25 +6568,26 @@ window.__fenixSubmitIdeChat = async function () {
 <script src="/project-hub-live.js?v=2"></script>
 <script src="/marketplace-live.js?v=1"></script>
 <link rel="stylesheet" href="/operations-live.css?v=5-jobengine-persisted-20261009">
-<script src="/operations-live.js?v=5-jobengine-persisted-20261009"></script>
+<script src="/operations-live.js?v=7-canonical-auth-20261014"></script>
 <link rel="stylesheet" href="/city-brief.css?v=2">
 <script src="/city-brief.js?v=3"></script>
 <link rel="stylesheet" href="/premium-world.css?v=2">
 <script src="/premium-world-live.js?v=8"></script>
 <script src="/vendor/three.min.js?v=1522"></script>
 <link rel="stylesheet" href="/fenix-world-3d.css?v=3">
-<script src="/fenix-city-machine-scene.js?v=2"></script>
-<script src="/fenix-world-3d.js?v=10"></script>
+<script src="/fenix-city-machine-scene.js?v=3-city-traffic-route-20261013"></script>
+<script src="/fenix-world-3d.js?v=13-city-district-labels-20261013"></script>
 <script src="/fenix-city-workflow.js?v=4"></script>
-<script src="/fenix-city-runtime-world.js?v=2"></script>
-<script src="/fenix-world-ui.js?v=5"></script>
+<script src="/fenix-city-runtime-world.js?v=3-building-inspector-20261013"></script>
+<script src="/fenix-world-ui.js?v=6-building-details-20261013"></script>
 <link rel="stylesheet" href="/memory-live.css?v=2">
 <script src="/memory-live.js?v=2"></script>
 <link rel="stylesheet" href="/inspector-measured.css?v=1">
 <link rel="stylesheet" href="/office.css?v=2">
+<link rel="stylesheet" href="/fenix-responsive.css?v=20261014-screen-fit-1">
 <script src="/fenix-pixel-engine.js?v=2"></script>
-<script src="/iso-city.js?v=2"></script>
-<script src="/office-live.js?v=3"></script>
+<script src="/iso-city.js?v=4"></script>
+<script src="/office-live.js?v=4-building-agents-truth-20261013"></script>
 <script src="/unreal-world-live.js?v=17"></script>
 <script src="/city-media-library.js?v=1"></script>
 
@@ -6616,7 +6605,7 @@ window.__fenixSubmitIdeChat = async function () {
           <div class="fenix-ticker-item"><i class="ph-bold ph-hard-drives"></i> HOST: <strong id="tickerHost">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-cpu"></i> CPU: <strong id="tickerCpu">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-memory"></i> RAM: <strong id="tickerRam">—</strong></div>
-          <div class="fenix-ticker-item"><i class="ph-bold ph-lightning"></i> FAST LANE: <strong id="tickerFastLane" style="color:var(--fenix-cyan, #22d3ee);">VERIFICANDO</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-lightning"></i> FAST LANE: <strong id="tickerFastLane" style="color:var(--fenix-cyan, #22d3ee);">NÃO MEDIDA</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-gear"></i> JOBS ATIVOS: <strong id="tickerJobs">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-clock"></i> UPTIME: <strong id="tickerUptime">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-git-branch"></i> EVENTOS: <strong id="tickerKernelStatus" style="color:var(--fenix-muted, #94a3b8);">AGUARDANDO EVENTOS</strong></div>
@@ -6624,7 +6613,7 @@ window.__fenixSubmitIdeChat = async function () {
           <div class="fenix-ticker-item"><i class="ph-bold ph-hard-drives"></i> HOST: <strong id="tickerHost2">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-cpu"></i> CPU: <strong id="tickerCpu2">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-memory"></i> RAM: <strong id="tickerRam2">—</strong></div>
-          <div class="fenix-ticker-item"><i class="ph-bold ph-lightning"></i> FAST LANE: <strong id="tickerFastLane2" style="color:var(--fenix-cyan, #22d3ee);">VERIFICANDO</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-lightning"></i> FAST LANE: <strong id="tickerFastLane2" style="color:var(--fenix-cyan, #22d3ee);">NÃO MEDIDA</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-gear"></i> JOBS ATIVOS: <strong id="tickerJobs2">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-clock"></i> UPTIME: <strong id="tickerUptime2">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-git-branch"></i> EVENTOS: <strong id="tickerKernelStatus2" style="color:var(--fenix-muted, #94a3b8);">AGUARDANDO EVENTOS</strong></div>
@@ -6638,9 +6627,9 @@ window.__fenixSubmitIdeChat = async function () {
         <div class="gauge-pill fnx-hardware-pill" title="Largura de Banda"><span class="gauge-lbl">REDE</span> <div class="gauge-bar"><div class="gauge-fill" id="gaugeNetFill" style="width:0%;"></div></div> <strong id="gaugeNetVal">—</strong></div>
       </div>
 
-      <div class="fenix-ticker-status fnx-real-100-pill">
-        <i class="ph-bold ph-check"></i>
-        <span class="fenix-footer-right">TELEMETRIA</span>
+      <div class="fenix-ticker-status" id="fenixTickerStatus" data-state="unavailable" title="Aguardando leitura da API">
+        <i class="ph-bold ph-plugs-connected"></i>
+        <span class="fenix-footer-right" id="fenixTickerState">INDISPONÍVEL</span>
       </div>
     </footer>
 
@@ -6654,7 +6643,7 @@ window.__fenixSubmitIdeChat = async function () {
             </div>
             <div>
               <h2 style="margin:0; font-size:15px; font-weight:700; color:#F8FAFC; letter-spacing:0.3px;">EVENTOS DO SISTEMA</h2>
-              <div style="font-size:11px; color:#94A3B8;">Eventos persistidos recebidos pela API do Fênix</div>
+              <div style="font-size:11px; color:#94A3B8;">Eventos registrados e disponibilizados pela API do Fênix</div>
             </div>
           </div>
           <button onclick="document.getElementById('fenixAlertsModal').style.display='none'" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:20px; padding:4px;"><i class="ph-bold ph-x"></i></button>
@@ -6675,7 +6664,7 @@ window.__fenixSubmitIdeChat = async function () {
 
         <!-- Footer -->
         <div style="padding:12px 22px; border-top:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.3); display:flex; justify-content:space-between; align-items:center;">
-          <div style="font-size:11px; color:#64748B;">Fonte: estado de eventos da API</div>
+          <div style="font-size:11px; color:#64748B;">Fonte: <code>/api/v2/events/history</code></div>
           <div style="display:flex; gap:8px;">
             <button onclick="document.getElementById('fenixAlertsModal').style.display='none'" style="background:#2563eb; color:#fff; border:none; padding:6px 18px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer;">Fechar</button>
           </div>
@@ -6756,8 +6745,8 @@ window.__fenixSubmitIdeChat = async function () {
       };
     </script>
     <div id="orchModalContainer"></div>
-    <script src="/fenix-mascot-sidebar.js?v=2-auth-cookie-fallback-20261008"></script>
-    <script src="/city-reality-engine.js?v=canonical-20261013-shared-snapshot"></script>
+    <script src="/fenix-mascot-sidebar.js?v=5-responsive-controls-20261013"></script>
+    <script src="/city-reality-engine.js?v=live-events-telemetry-20261013-b2"></script>
     <script id="fenix-v17-layout-controller">
       (function() {
         // ── 1. Left Sidebar Collapse / Expand ──

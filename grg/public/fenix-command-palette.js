@@ -16,22 +16,40 @@
 
   const CANONICAL_VIEWS = [
     { id: 'command', title: 'Command Center', sub: 'Painel operacional central e telemetria ao vivo', icon: 'ph-house', badge: 'Visão' },
-    { id: 'city', title: 'Living City 2.0', sub: 'Metrópole isométrica viva e simulação dos 7 distritos', icon: 'ph-buildings', badge: 'Visão' },
+    { id: 'city', title: 'Living City 2.0', sub: 'Metrópole isométrica viva e observabilidade visual dos distritos', icon: 'ph-buildings', badge: 'Visão' },
     { id: 'agents', title: 'Workforce de Agentes', sub: '15 agentes especialistas canônicos e estados em tempo real', icon: 'ph-robot', badge: 'Visão' },
     { id: 'operations', title: 'Operações e Tarefas', sub: 'Fila BullMQ, pipeline de execução e recuperação', icon: 'ph-check-square', badge: 'Visão' },
     { id: 'ide', title: 'Workflows & IDE', sub: 'Pipeline autônomo, chat interativo e orquestração de missões', icon: 'ph-git-fork', badge: 'Visão' },
     { id: 'terminal', title: 'Automação & Terminal', sub: 'Consoles de comando, execução e infraestrutura', icon: 'ph-sliders-horizontal', badge: 'Visão' },
-    { id: 'projects', title: 'Workspace Hub (IDE)', sub: '15 sub-abas de desenvolvimento e gêmeo digital', icon: 'ph-code', badge: 'Visão' },
+    { id: 'projects', title: 'Project Hub & Screen DNA', sub: 'Workspaces, Screen DNA, tokens e gêmeo digital de projetos', icon: 'ph-code', badge: 'Visão' },
     { id: 'memory', title: 'Memória & Estado', sub: 'Memória episódica, vetorial e aprendizado contínuo', icon: 'ph-brain', badge: 'Visão' },
     { id: 'knowledge', title: 'Skills & Conhecimento', sub: 'Catálogo de habilidades reutilizáveis e DNA do sistema', icon: 'ph-sparkle', badge: 'Visão' },
     { id: 'mcp', title: 'Providers & MCP', sub: 'Protocolos Model Context Protocol e integrações de IA', icon: 'ph-gear', badge: 'Visão' },
     { id: 'runtime', title: 'Monitoramento & Saúde', sub: 'Telemetria do host, gauges de CPU/RAM e containers', icon: 'ph-chart-line-up', badge: 'Visão' },
     { id: 'observability', title: 'Eventos & Observabilidade', sub: 'Stream SSE de eventos em tempo real e auditoria', icon: 'ph-list-dashes', badge: 'Visão' },
-    { id: 'project', title: 'Infraestrutura do Sistema', sub: 'Topologia de serviços PM2, Docker e banco de dados', icon: 'ph-hard-drives', badge: 'Visão' },
+    { id: 'flowgraph', title: 'Flow Graph & Pipeline', sub: 'Grafo de nós de execução, pipelines e dependências de missões', icon: 'ph-tree-structure', badge: 'Visão' },
     { id: 'browser', title: 'Runtime & QA Visual', sub: 'Headless browser e testes de realidade visual', icon: 'ph-eye', badge: 'Visão' }
   ];
 
   const QUICK_ACTIONS = [
+    {
+      title: 'Inspecionar Screen DNA de Projetos',
+      sub: 'Abrir catálogo de telas absorvidas, design tokens e comparador visual',
+      icon: 'ph-eye',
+      badge: 'Visual DNA',
+      handler: function() {
+        if (typeof window.showView === 'function') window.showView('projects');
+      }
+    },
+    {
+      title: 'Cockpit do CEO & Company Brain',
+      sub: 'Visualizar saúde executiva, metas, métricas e hipóteses de negócio',
+      icon: 'ph-crown',
+      badge: 'CEO',
+      handler: function() {
+        if (typeof window.showView === 'function') window.showView('command');
+      }
+    },
     {
       title: 'Sincronizar Cidade e Estado Real',
       sub: 'Forçar atualização imediata do modelo urbano e agentes via API',
@@ -115,8 +133,11 @@
   let specialistAgents = [];
 
   function fetchSpecialists() {
-    fetch('/api/v2/living-city/state')
-      .then(r => r.json())
+    const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+    const headers = { 'Accept': 'application/json' };
+    if (token && token !== 'null') headers['Authorization'] = 'Bearer ' + token;
+    fetch('/api/v2/living-city/state', { credentials: 'same-origin', headers })
+      .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data && Array.isArray(data.agents)) {
           specialistAgents = data.agents.map(a => ({

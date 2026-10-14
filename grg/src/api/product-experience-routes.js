@@ -1175,10 +1175,15 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
     if (typeof res.flushHeaders === 'function') res.flushHeaders();
 
     const sendSse = (evtName, data) => {
-      res.write(`event: ${evtName}\ndata: ${JSON.stringify(data)}\n\n`);
+      const serialized = JSON.stringify(data);
+      res.write(`event: ${evtName}\ndata: ${serialized}\n\n`);
+      // EventSource's onmessage handler only receives unnamed `message` events.
+      // Keep the named frame for existing addEventListener consumers and mirror
+      // the same payload as a default message for the City bridge.
+      res.write(`data: ${serialized}\n\n`);
     };
 
-    sendSse('connected', { status: 'CONNECTED', timestamp: new Date().toISOString() });
+    sendSse('connected', { type: 'connected', status: 'CONNECTED', timestamp: new Date().toISOString() });
     // Some Node/browser combinations buffer very small SSE frames even after
     // flushHeaders/flush. Padding the handshake forces the initial connection
     // event onto the wire without changing the event contract.
@@ -1190,6 +1195,9 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       const eventNames = [
         'job.created', 'job.started', 'job.progress', 'job.paused', 'job.resumed', 'job.completed', 'job.cancelled', 'job.failed',
         'agent.started', 'agent.thinking', 'agent.tool.called', 'agent.file.read', 'agent.file.modified', 'agent.test.started', 'agent.completed', 'agent.state.changed',
+        'mission.step.dispatched', 'mission.step.started', 'mission.step.completed',
+        'runtime.job.started', 'runtime.job.succeeded', 'runtime.job.cancelled', 'runtime.job.dead_letter',
+        'discovery.resource.detected', 'discovery.resource.changed', 'discovery.resource.missing',
         'ai.request.started', 'ai.request.completed',
         'approval.requested', 'approval.granted', 'approval.denied',
         'voice.command.received', 'voice.intent.detected',
@@ -1197,7 +1205,12 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
       ];
 
       eventNames.forEach(evt => {
-        const handler = (data) => sendSse(evt, { event: evt, timestamp: new Date().toISOString(), payload: data });
+        const handler = (data) => {
+          const payload = data?.payload || data;
+          const eventTenantId = payload?.tenantId || data?.tenantId;
+          if (eventTenantId && context.tenantId && eventTenantId !== context.tenantId) return;
+          sendSse(evt, { event: evt, type: evt, timestamp: new Date().toISOString(), data: payload, payload: data });
+        };
         eventBus.on(evt, handler);
         unsubList.push({ evt, handler });
       });
@@ -1523,7 +1536,13 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
         // Resolve those exact published records instead of returning a false
         // 404 or inventing a second agent.
         const liveAgents = jarvisOrchestrator?.getAgentStates?.().agents || [];
-        const liveAgent = liveAgents.find((item) => String(item.name || '').toLowerCase() === agentName.toLowerCase());
+        const agentKey = (value) => String(value || '').toLowerCase()
+          .replace(/^agent[-_]/, '')
+          .replace(/[-_\s]*agent$/, '')
+          .replace(/[^a-z0-9]/g, '');
+        const requestedAgentKey = agentKey(agentName);
+        const liveAgent = liveAgents.find((item) => [item.id, item.agentId, item.name]
+          .some((value) => agentKey(value) === requestedAgentKey));
         if (!liveAgent) {
           sendError(res, 404, `Agente "${agentName}" não encontrado`);
           return true;

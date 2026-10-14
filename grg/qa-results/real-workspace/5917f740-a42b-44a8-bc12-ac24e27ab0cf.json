@@ -1,0 +1,406 @@
+{
+  "mission": {
+    "id": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+    "tenantId": "grg",
+    "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+    "scopeId": null,
+    "title": "Workspace real: criar, executar e validar",
+    "displayName": "Workspace real criar executar e",
+    "objective": "Criar um arquivo de teste simples no workspace, executa-lo e validar a saida.",
+    "objectiveHash": "9b268749134f03e6e8638c12bb505babf96cc821e172621e268aad9197370b3c",
+    "status": "SUCCEEDED",
+    "priority": 0,
+    "policy": {
+      "maxTokens": null,
+      "maxCostUsd": null,
+      "deadline": null
+    },
+    "progress": 100,
+    "requestedBy": "grg-admin",
+    "createdAt": "2026-09-04T22:52:37.612Z",
+    "updatedAt": "2026-09-04T22:54:41.207Z",
+    "startedAt": "2026-09-04T22:53:06.620Z",
+    "completedAt": "2026-09-04T22:54:41.207Z",
+    "steps": [
+      {
+        "id": "dbf16b5a-e3cd-4054-968e-905ee5362ea3",
+        "tenantId": "grg",
+        "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+        "key": "write-test",
+        "type": "implement",
+        "agent": "developer",
+        "policyLevel": "YELLOW",
+        "jobType": "agent.workspace.execute",
+        "avatarState": "BUILDING",
+        "building": "factory",
+        "dependsOn": [],
+        "payload": {
+          "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+          "operations": [
+            {
+              "operation": "create",
+              "path": "mission-1788562357178.test.js",
+              "content": "const assert = require('node:assert/strict'); assert.equal(6 * 7, 42); console.log('FENIX_REAL_WORKSPACE_OK');\n"
+            }
+          ],
+          "tests": [
+            "node mission-1788562357178.test.js"
+          ],
+          "commit": false
+        },
+        "payloadHash": "6cff28ac065dd06a95e532947e23012664e0d204f2d408ebb707278203f369e0",
+        "validation": {
+          "testsPassed": true,
+          "risk": "low",
+          "impactKnown": true
+        },
+        "contextRefs": [],
+        "status": "SUCCEEDED",
+        "order": 0,
+        "approvalId": null,
+        "approvalConsumedAt": null,
+        "jobId": "a665a768-48db-4ef1-ab35-e97ff309a031",
+        "metrics": {
+          "durationMs": 23795,
+          "attempts": 1,
+          "tokens": null,
+          "costUsd": null
+        },
+        "createdAt": "2026-09-04T22:52:37.612Z",
+        "updatedAt": "2026-09-04T22:54:22.783Z",
+        "dispatchedAt": "2026-09-04T22:53:34.084Z",
+        "resultHash": "88c3c2ce2991b4342e3d1d4e76f980c67fe6031ba1b44b760a160ca3e73b801a"
+      }
+    ],
+    "events": [
+      {
+        "id": "77934d49-b281-4f9b-b218-a390f212ab6e",
+        "tenantId": "grg",
+        "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+        "stepId": null,
+        "stepKey": null,
+        "agent": "mission-kernel",
+        "type": "mission.created",
+        "status": "PLANNED",
+        "contextRefs": [],
+        "confidence": null,
+        "metrics": null,
+        "payloadHash": "b25a12ef6ac6d54b09d4fc0d564bebab93b48fb4c12ed06fe5fd3bb93c4fc75b",
+        "actorId": "grg-admin",
+        "createdAt": "2026-09-04T22:52:39.606Z"
+      },
+      {
+        "id": "af0b63ff-a1ba-42ee-9d4b-512f6c290b90",
+        "tenantId": "grg",
+        "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+        "stepId": null,
+        "stepKey": null,
+        "agent": "mission-kernel",
+        "type": "mission.started",
+        "status": "RUNNING",
+        "contextRefs": [],
+        "confidence": null,
+        "metrics": null,
+        "payloadHash": "8a320f75d49b24da756707eb933391ebbd38a94fbad259c43663a4626c585475",
+        "actorId": "grg-admin",
+        "createdAt": "2026-09-04T22:53:06.944Z"
+      },
+      {
+        "id": "4b205ff2-9904-4658-8923-2a717a6cffe5",
+        "tenantId": "grg",
+        "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+        "stepId": "dbf16b5a-e3cd-4054-968e-905ee5362ea3",
+        "stepKey": "write-test",
+        "agent": "developer",
+        "type": "mission.step.dispatched",
+        "status": "DISPATCHED",
+        "contextRefs": [],
+        "confidence": null,
+        "metrics": null,
+        "payloadHash": "a2c6bcb3d2301a373b81328e726e21d425ec44906af2b0cfedcf6c469d82853a",
+        "actorId": "grg-admin",
+        "createdAt": "2026-09-04T22:53:34.878Z"
+      },
+      {
+        "id": "a8a7e2a1-dea2-4525-ae9a-262fb7ac183b",
+        "tenantId": "grg",
+        "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+        "stepId": "dbf16b5a-e3cd-4054-968e-905ee5362ea3",
+        "stepKey": "write-test",
+        "agent": "developer",
+        "type": "mission.step.completed",
+        "status": "SUCCEEDED",
+        "contextRefs": [],
+        "confidence": null,
+        "metrics": {
+          "durationMs": 23795,
+          "attempts": 1,
+          "aiUnits": null,
+          "costUsd": null
+        },
+        "payloadHash": "89093099e25f7a00a7012e9fb4199b3a143a8eb690d0fa484b1f83e7b4f7198c",
+        "actorId": "fenix-runtime",
+        "createdAt": "2026-09-04T22:54:23.247Z"
+      }
+    ],
+    "contextRefs": [],
+    "summary": null,
+    "requestId": "ee32144a-4c82-4162-b397-eb9dec2ce225"
+  },
+  "job": {
+    "id": "a665a768-48db-4ef1-ab35-e97ff309a031",
+    "jobId": "a665a768-48db-4ef1-ab35-e97ff309a031",
+    "tenantId": "grg",
+    "sessionId": null,
+    "source": "api",
+    "type": "agent.workspace.execute",
+    "prompt": null,
+    "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+    "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+    "workspaceId": null,
+    "screenId": null,
+    "route": null,
+    "context": null,
+    "repository": null,
+    "workspace": null,
+    "branch": null,
+    "payload": {
+      "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+      "operations": [
+        {
+          "operation": "create",
+          "path": "mission-1788562357178.test.js",
+          "content": "const assert = require('node:assert/strict'); assert.equal(6 * 7, 42); console.log('FENIX_REAL_WORKSPACE_OK');\n"
+        }
+      ],
+      "tests": [
+        "node mission-1788562357178.test.js"
+      ],
+      "commit": false,
+      "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf"
+    },
+    "priority": 0,
+    "riskLevel": "MEDIUM",
+    "policy": {
+      "allowedPaths": [],
+      "blockedPaths": [],
+      "maxIterations": 5,
+      "maxTokens": 100000,
+      "maxRuntime": 300000,
+      "requireApproval": false,
+      "allowDeploy": false,
+      "allowRollback": true
+    },
+    "status": "SUCCEEDED",
+    "currentStage": "SUCCEEDED",
+    "progress": 100,
+    "attempts": 1,
+    "maxAttempts": 3,
+    "limits": {
+      "timeoutMs": 300000,
+      "memoryMb": 512,
+      "cpuUnits": 1000
+    },
+    "scheduledFor": "2026-09-04T22:53:10.885Z",
+    "createdBy": "grg-admin",
+    "createdAt": "2026-09-04T22:53:10.885Z",
+    "startedAt": "2026-09-04T22:53:53.289Z",
+    "completedAt": "2026-09-04T22:54:17.084Z",
+    "updatedAt": "2026-09-04T22:54:17.084Z",
+    "workerId": "fenix-local:183504",
+    "heartbeatAt": "2026-09-04T22:53:53.289Z",
+    "cancelRequestedAt": null,
+    "pauseRequestedAt": null,
+    "approvalId": null,
+    "result": {
+      "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+      "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+      "jobId": "a665a768-48db-4ef1-ab35-e97ff309a031",
+      "agentId": "Developer",
+      "filesChanged": [
+        "mission-1788562357178.test.js"
+      ],
+      "artifacts": [
+        {
+          "id": "3b6cf6b4-f648-4a7a-afc2-5b49eff3ac4b",
+          "type": "FENIX_AGENT_EXECUTION_REPORT",
+          "name": "AGENT_EXECUTION_REPORT.md"
+        }
+      ],
+      "tests": [
+        {
+          "command": "node mission-1788562357178.test.js",
+          "passed": true,
+          "stdout": "FENIX_REAL_WORKSPACE_OK\n",
+          "stderr": ""
+        }
+      ],
+      "diff": "",
+      "status": "## main\n?? cancel-proof.test.js\n?? control-proof.test.js\n?? mission-1788562357178.test.js\n?? tool-registry-proof.test.js\n",
+      "commit": null,
+      "testsPassed": true,
+      "validationPassed": false,
+      "result": "VALIDATED_NO_COMMIT",
+      "nextActions": []
+    },
+    "artifacts": [],
+    "tests": null,
+    "validation": null,
+    "rollback": null,
+    "error": null,
+    "queue": null,
+    "agent": {
+      "agentId": "Developer",
+      "name": "Developer Agent",
+      "role": "engineering",
+      "capabilities": [
+        "filesystem",
+        "code_editor",
+        "terminal_safe",
+        "ast_parser"
+      ],
+      "provider": "configured-runtime",
+      "model": null,
+      "status": "AVAILABLE",
+      "permissions": [
+        "fs:read",
+        "fs:write",
+        "terminal:safe"
+      ],
+      "context": {
+        "project": {
+          "id": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+          "tenantId": "grg",
+          "name": "Tool Registry Proof",
+          "repository": "local",
+          "workspace": "C:\\app\\workspaces\\fenix_registry_proof",
+          "branch": "main",
+          "baseCommit": null,
+          "currentCommit": null,
+          "lifecycle": "EVOLUTION",
+          "maturity": "IDEA",
+          "architecture": null,
+          "requirements": [],
+          "decisions": [],
+          "technicalDebt": [],
+          "createdBy": "grg-admin",
+          "createdAt": "2026-09-04T16:30:38.880Z",
+          "updatedAt": "2026-09-04T16:30:38.880Z"
+        },
+        "missionId": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+        "job": {
+          "type": "agent.workspace.execute",
+          "prompt": null,
+          "requiredCapabilities": []
+        },
+        "previousMissions": [
+          {
+            "id": "f5c48a1d-a9d6-44f8-a216-2d6c8de97a65",
+            "tenantId": "grg",
+            "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+            "scopeId": null,
+            "title": "Task Desk runtime proof",
+            "displayName": "Task Desk runtime proof",
+            "objective": "Executar descoberta e inspeção reais do runtime para validar a projeção de Tasks",
+            "objectiveHash": "f6c3da4d831df9832bc51ae835559085e14c70bb5f38a508b73cb42321094225",
+            "status": "SUCCEEDED",
+            "priority": 0,
+            "policy": {
+              "maxTokens": null,
+              "maxCostUsd": null,
+              "deadline": null
+            },
+            "progress": 100,
+            "requestedBy": "grg-admin",
+            "createdAt": "2026-09-04T18:58:21.630Z",
+            "updatedAt": "2026-09-04T18:59:42.789Z",
+            "startedAt": "2026-09-04T18:58:31.450Z",
+            "completedAt": "2026-09-04T18:59:42.789Z"
+          },
+          {
+            "id": "5917f740-a42b-44a8-bc12-ac24e27ab0cf",
+            "tenantId": "grg",
+            "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+            "scopeId": null,
+            "title": "Workspace real: criar, executar e validar",
+            "displayName": "Workspace real criar executar e",
+            "objective": "Criar um arquivo de teste simples no workspace, executa-lo e validar a saida.",
+            "objectiveHash": "9b268749134f03e6e8638c12bb505babf96cc821e172621e268aad9197370b3c",
+            "status": "RUNNING",
+            "priority": 0,
+            "policy": {
+              "maxTokens": null,
+              "maxCostUsd": null,
+              "deadline": null
+            },
+            "progress": 0,
+            "requestedBy": "grg-admin",
+            "createdAt": "2026-09-04T22:52:37.612Z",
+            "updatedAt": "2026-09-04T22:53:06.620Z",
+            "startedAt": "2026-09-04T22:53:06.620Z"
+          }
+        ],
+        "previousArtifacts": [
+          {
+            "id": "76d4eb1b-6c80-4965-bd6e-c14df53583e2",
+            "tenantId": "grg",
+            "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+            "missionId": null,
+            "jobId": "255b476b-ba02-4a0a-bf17-2fff27eb7886",
+            "type": "FENIX_AGENT_EXECUTION_REPORT",
+            "name": "AGENT_EXECUTION_REPORT.md",
+            "content": "# Agent Execution Report\nAgent: Developer\nTests passed: true\nCommit: none\n\n## Diff\n```text\n\n```\n\n## Status\n```text\n## main\n?? tool-registry-proof.test.js\n\n```",
+            "createdBy": "grg-admin",
+            "createdAt": "2026-09-04T16:43:04.513Z"
+          },
+          {
+            "id": "1b7cd5ca-363f-4f59-8561-7b3e54f420e6",
+            "tenantId": "grg",
+            "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+            "missionId": null,
+            "jobId": "b42fc3a1-3a26-47a2-95a2-b23a771159f7",
+            "type": "FENIX_AGENT_EXECUTION_REPORT",
+            "name": "AGENT_EXECUTION_REPORT.md",
+            "content": "# Agent Execution Report\nAgent: Developer\nTests passed: true\nCommit: none\n\n## Diff\n```text\n\n```\n\n## Status\n```text\n## main\n?? control-proof.test.js\n?? tool-registry-proof.test.js\n\n```",
+            "createdBy": "grg-admin",
+            "createdAt": "2026-09-04T17:26:51.757Z"
+          },
+          {
+            "id": "8271ccbb-4ae1-4b58-8a12-238b84fd5241",
+            "tenantId": "grg",
+            "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+            "missionId": null,
+            "jobId": "b42fc3a1-3a26-47a2-95a2-b23a771159f7",
+            "type": "FENIX_AGENT_EXECUTION_REPORT",
+            "name": "AGENT_EXECUTION_REPORT.md",
+            "content": "# Agent Execution Report\nAgent: Developer\nTests passed: true\nCommit: none\n\n## Diff\n```text\n\n```\n\n## Status\n```text\n## main\n?? control-proof.test.js\n?? tool-registry-proof.test.js\n\n```",
+            "createdBy": "grg-admin",
+            "createdAt": "2026-09-04T17:27:50.376Z"
+          },
+          {
+            "id": "d39a3375-fb65-4183-9aa5-e5ad6ee055e9",
+            "tenantId": "grg",
+            "projectId": "9ac49051-9ea5-401b-a85c-1b4a8061168e",
+            "missionId": null,
+            "jobId": "eda33d1d-8462-4098-a964-151795e74dc2",
+            "type": "FENIX_AGENT_EXECUTION_REPORT",
+            "name": "AGENT_EXECUTION_REPORT.md",
+            "content": "# Agent Execution Report\nAgent: Developer\nTests passed: true\nCommit: none\n\n## Diff\n```text\n\n```\n\n## Status\n```text\n## main\n?? cancel-proof.test.js\n?? control-proof.test.js\n?? tool-registry-proof.test.js\n\n```",
+            "createdBy": "grg-admin",
+            "createdAt": "2026-09-04T17:29:46.193Z"
+          }
+        ],
+        "relevantMemories": [],
+        "workspace": "C:\\app\\workspaces\\fenix_registry_proof",
+        "branch": "main",
+        "baseCommit": null,
+        "currentCommit": null
+      }
+    },
+    "lastWorkerId": "fenix-local:183504",
+    "requestId": "8d0a3b27-3c8b-44f4-b172-e06e665f25dd"
+  },
+  "file": "C:\\app\\workspaces\\fenix_registry_proof/mission-1788562357178.test.js",
+  "preflight": "FENIX_REAL_WORKSPACE_OK",
+  "fileMatches": true
+}

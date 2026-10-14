@@ -68,3 +68,20 @@ test('building inspector shows unavailable telemetry without inventing online he
   assert.match(body, /Não medida/);
   assert.doesNotMatch(body, /ONLINE|HEALTHY|100%|agent-orchestrator|agent-planner/);
 });
+
+test('building inspector includes agents assigned by district when no building id was published', async () => {
+  const building = { id: 'bld-ai-nexus', name: 'AI Nexus R&D', district: 'ai-district' };
+  const fixture = createInspectorFixture({
+    '/api/v2/living-city/building/bld-ai-nexus': { ok: true, data: { ok: true, building } },
+    '/api/v2/living-city/agents': { ok: true, data: { agents: [
+      { id: 'agent-ai-runtime', name: 'Agente de IA', district: 'ai-district', status: 'WORKING' },
+      { id: 'agent-other', name: 'Outro agente', district: 'dev-district', status: 'AVAILABLE' },
+    ] } },
+  });
+
+  await fixture.inspect({ id: 'bld-ai-nexus', name: 'AI Nexus' });
+
+  const body = fixture.inspectors.at(-1)[2];
+  assert.match(body, /Agente de IA/);
+  assert.doesNotMatch(body, /Outro agente/);
+});

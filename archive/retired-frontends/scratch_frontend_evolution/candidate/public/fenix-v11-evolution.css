@@ -1,0 +1,2424 @@
+﻿/* FENIX OS V11 — DESIGN LANGUAGE EVOLUTION
+   Premium AI Operating System Visual Identity
+   Transforms flat admin UI into living spatial OS */
+
+:root {
+  /* === V11 DEPTH SYSTEM (4 Levels) === */
+  --v11-depth-0: #040609;
+  --v11-depth-1: #080d16;
+  --v11-depth-2: #0d1521;
+  --v11-depth-3: #131e2f;
+  --v11-depth-4: #1a2940;
+
+  /* === V11 SURFACES === */
+  --v11-surface-ground: #060a11;
+  --v11-surface-workspace: rgba(10, 16, 26, 0.95);
+  --v11-surface-panel: rgba(14, 22, 36, 0.92);
+  --v11-surface-card: rgba(18, 28, 44, 0.88);
+  --v11-surface-elevated: rgba(24, 38, 58, 0.92);
+  --v11-surface-overlay: rgba(8, 13, 22, 0.97);
+
+  /* === V11 ACCENT PALETTE === */
+  --v11-fenix-green: #00E5A0;
+  --v11-fenix-green-dim: rgba(0, 229, 160, 0.15);
+  --v11-fenix-green-glow: rgba(0, 229, 160, 0.08);
+  --v11-cyan: #22D3EE;
+  --v11-cyan-dim: rgba(34, 211, 238, 0.12);
+  --v11-purple: #A78BFA;
+  --v11-purple-dim: rgba(167, 139, 250, 0.12);
+  --v11-amber: #FBBF24;
+  --v11-amber-dim: rgba(251, 191, 36, 0.12);
+  --v11-rose: #FB7185;
+  --v11-rose-dim: rgba(251, 113, 133, 0.12);
+  --v11-blue: #60A5FA;
+  --v11-blue-dim: rgba(96, 165, 250, 0.12);
+
+  /* === V11 TEXT HIERARCHY === */
+  --v11-text-title: #F1F5F9;
+  --v11-text-body: #CBD5E1;
+  --v11-text-secondary: #8493A8;
+  --v11-text-tertiary: #586B85;
+  --v11-text-ghost: #3D4F68;
+
+  /* === V11 BORDERS === */
+  --v11-border-subtle: rgba(255, 255, 255, 0.05);
+  --v11-border-default: rgba(255, 255, 255, 0.08);
+  --v11-border-hover: rgba(255, 255, 255, 0.14);
+  --v11-border-active: rgba(0, 229, 160, 0.3);
+  --v11-border-focus: rgba(34, 211, 238, 0.4);
+
+  /* === V11 SHADOWS & GLOWS === */
+  --v11-shadow-xs: 0 1px 3px rgba(0,0,0,0.4);
+  --v11-shadow-sm: 0 2px 8px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.3);
+  --v11-shadow-md: 0 8px 24px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.3);
+  --v11-shadow-lg: 0 20px 48px rgba(0,0,0,0.65), 0 8px 16px rgba(0,0,0,0.35);
+  --v11-shadow-xl: 0 32px 64px rgba(0,0,0,0.7), 0 16px 32px rgba(0,0,0,0.4);
+  --v11-glow-green: 0 0 20px rgba(0, 229, 160, 0.15), 0 0 6px rgba(0, 229, 160, 0.1);
+  --v11-glow-cyan: 0 0 20px rgba(34, 211, 238, 0.15), 0 0 6px rgba(34, 211, 238, 0.1);
+  --v11-glow-purple: 0 0 20px rgba(167, 139, 250, 0.15);
+
+  /* === V11 RADIUS === */
+  --v11-radius-xs: 4px;
+  --v11-radius-sm: 6px;
+  --v11-radius-md: 10px;
+  --v11-radius-lg: 14px;
+  --v11-radius-xl: 20px;
+  --v11-radius-pill: 9999px;
+
+  /* === V11 SPACING SCALE === */
+  --v11-space-1: 4px;
+  --v11-space-2: 8px;
+  --v11-space-3: 12px;
+  --v11-space-4: 16px;
+  --v11-space-5: 20px;
+  --v11-space-6: 24px;
+  --v11-space-8: 32px;
+  --v11-space-10: 40px;
+  --v11-space-12: 48px;
+
+  /* === V11 TYPOGRAPHY === */
+  --v11-font-display: 'Inter', system-ui, sans-serif;
+  --v11-font-body: 'Inter', system-ui, sans-serif;
+  --v11-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --v11-text-xs: 11px;
+  --v11-text-sm: 12px;
+  --v11-text-base: 13px;
+  --v11-text-md: 14px;
+  --v11-text-lg: 16px;
+  --v11-text-xl: 20px;
+  --v11-text-2xl: 24px;
+  --v11-text-3xl: 30px;
+  --v11-text-4xl: 36px;
+
+  /* === V11 MOTION === */
+  --v11-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --v11-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --v11-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --v11-duration-fast: 120ms;
+  --v11-duration-normal: 200ms;
+  --v11-duration-smooth: 300ms;
+  --v11-duration-slow: 500ms;
+
+  /* === V11 GLASS === */
+  --v11-glass-blur: blur(16px);
+  --v11-glass-heavy: blur(24px);
+  --v11-glass-light: blur(8px);
+}
+
+/* ==========================================================================
+   V11 — GLOBAL ATMOSPHERE & DEPTH
+   ========================================================================== */
+
+/* Level 0: Environment/Background — deepest void */
+.mesh-background {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 30% 20%, rgba(0, 229, 160, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 75% 15%, rgba(167, 139, 250, 0.03) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 60% at 10% 80%, rgba(34, 211, 238, 0.025) 0%, transparent 50%) !important;
+  background-color: var(--v11-depth-0) !important;
+  animation: v11-atmosphere 25s ease-in-out infinite alternate !important;
+}
+
+@keyframes v11-atmosphere {
+  0% { opacity: 0.85; }
+  50% { opacity: 1; }
+  100% { opacity: 0.9; }
+}
+
+/* Level 1: Shell chrome */
+html, body {
+  background: var(--v11-depth-0) !important;
+  color: var(--v11-text-body) !important;
+  font-family: var(--v11-font-body) !important;
+  font-size: var(--v11-text-base) !important;
+  letter-spacing: 0.01em;
+  line-height: 1.55;
+}
+
+/* ==========================================================================
+   V11 — TOPBAR EVOLUTION
+   ========================================================================== */
+.global-topbar, .orch-topbar {
+  background: var(--v11-surface-overlay) !important;
+  backdrop-filter: var(--v11-glass-heavy) !important;
+  -webkit-backdrop-filter: var(--v11-glass-heavy) !important;
+  border-bottom: 1px solid var(--v11-border-subtle) !important;
+  box-shadow: 0 1px 0 rgba(0,229,160,0.03), var(--v11-shadow-sm) !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  transition: background var(--v11-duration-smooth) var(--v11-ease-out) !important;
+}
+
+/* Topbar brand — refined */
+.brand-crest-electric, .orch-brand {
+  gap: 10px !important;
+}
+
+.orch-brand .brand-title, .brand-crest-electric span:first-child {
+  font-size: var(--v11-text-md) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--v11-text-title) !important;
+}
+
+.orch-brand .brand-subtitle {
+  font-size: 9px !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  color: var(--v11-fenix-green) !important;
+  opacity: 0.7 !important;
+}
+
+/* Status pill — refined */
+.status-pill-live {
+  background: rgba(0, 229, 160, 0.08) !important;
+  border: 1px solid rgba(0, 229, 160, 0.2) !important;
+  border-radius: var(--v11-radius-pill) !important;
+  padding: 4px 12px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--v11-fenix-green) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.status-pill-live:hover {
+  background: rgba(0, 229, 160, 0.14) !important;
+  box-shadow: var(--v11-glow-green) !important;
+}
+
+/* Quick-access bar in topbar */
+.topbar-quick-access button, .orch-topbar-quick button {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid var(--v11-border-subtle) !important;
+  border-radius: var(--v11-radius-sm) !important;
+  color: var(--v11-text-secondary) !important;
+  padding: 5px 12px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+.topbar-quick-access button:hover, .orch-topbar-quick button:hover {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: var(--v11-border-hover) !important;
+  color: var(--v11-text-title) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   V11 — SIDEBAR EVOLUTION
+   ========================================================================== */
+#mainSidebarNav, .sidebar-nav {
+  background: var(--v11-surface-ground) !important;
+  border-right: 1px solid var(--v11-border-subtle) !important;
+  width: 220px !important;
+  padding: var(--v11-space-3) var(--v11-space-2) !important;
+  transition: width var(--v11-duration-smooth) var(--v11-ease-out),
+              background var(--v11-duration-smooth) var(--v11-ease-out) !important;
+}
+
+/* Nav group headers — refined */
+.v10-nav-group-header {
+  padding: var(--v11-space-2) var(--v11-space-3) !important;
+  margin-top: var(--v11-space-3) !important;
+}
+
+.v10-group-title {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  color: var(--v11-text-ghost) !important;
+  text-transform: uppercase !important;
+  transition: color var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.v10-nav-group:hover .v10-group-title {
+  color: var(--v11-text-tertiary) !important;
+}
+
+/* Nav buttons — refined depth */
+.v10-nav-btn, .nav-item {
+  padding: 8px 12px !important;
+  border-radius: var(--v11-radius-sm) !important;
+  font-size: var(--v11-text-sm) !important;
+  font-weight: 500 !important;
+  color: var(--v11-text-secondary) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+  margin: 1px 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.v10-nav-btn:hover, .nav-item:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: var(--v11-text-title) !important;
+  transform: translateX(2px) !important;
+}
+
+/* Active nav item — green accent line, not full background fill */
+.v10-nav-btn.active, .nav-item.active {
+  background: rgba(0, 229, 160, 0.06) !important;
+  color: var(--v11-fenix-green) !important;
+  border-color: transparent !important;
+  font-weight: 600 !important;
+  box-shadow: inset 3px 0 0 var(--v11-fenix-green) !important;
+  border-radius: 0 var(--v11-radius-sm) var(--v11-radius-sm) 0 !important;
+}
+
+.v10-nav-btn.active i, .nav-item.active i {
+  color: var(--v11-fenix-green) !important;
+}
+
+/* Sidebar brand card — bottom */
+.v10-sidebar-brand-card {
+  background: var(--v11-surface-panel) !important;
+  border: 1px solid var(--v11-border-subtle) !important;
+  border-radius: var(--v11-radius-md) !important;
+  padding: var(--v11-space-3) !important;
+  margin: var(--v11-space-2) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.v10-sidebar-brand-card:hover {
+  border-color: var(--v11-border-hover) !important;
+  box-shadow: var(--v11-shadow-xs) !important;
+}
+
+/* ==========================================================================
+   V11 — CARDS & SURFACES — DEPTH HIERARCHY
+   ========================================================================== */
+
+/* Level 2: Panel surfaces */
+.fenix-card, .workspace-card, .fp-card, .v10-card, .v10-panel {
+  background: var(--v11-surface-card) !important;
+  backdrop-filter: var(--v11-glass-blur) !important;
+  -webkit-backdrop-filter: var(--v11-glass-blur) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  box-shadow: var(--v11-shadow-sm) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+  position: relative !important;
+}
+
+.fenix-card:hover, .workspace-card:hover, .fp-card:hover, .v10-card:hover {
+  border-color: var(--v11-border-hover) !important;
+  box-shadow: var(--v11-shadow-md) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Level 3: Focused/selected card */
+.fenix-card.selected, .workspace-card.selected, .v10-card.selected {
+  border-color: var(--v11-border-active) !important;
+  box-shadow: var(--v11-shadow-md), var(--v11-glow-green) !important;
+}
+
+/* ==========================================================================
+   V11 — WORKSPACE HEADERS — SPACE IDENTITY
+   ========================================================================== */
+.workspace-header, .workspace-view > header {
+  padding: var(--v11-space-6) var(--v11-space-8) var(--v11-space-5) !important;
+  border-bottom: 1px solid var(--v11-border-subtle) !important;
+  margin-bottom: var(--v11-space-5) !important;
+  position: relative !important;
+}
+
+.workspace-header h1, .workspace-view > header h1 {
+  font-size: var(--v11-text-2xl) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--v11-text-title) !important;
+  line-height: 1.2 !important;
+}
+
+.workspace-header small, .workspace-view > header small {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: var(--v11-fenix-green) !important;
+  opacity: 0.8 !important;
+}
+
+/* ==========================================================================
+   V11 — VIEW CONTAINERS — "SPACES" NOT "SCREENS"
+   ========================================================================== */
+.views-container {
+  background: var(--v11-depth-0) !important;
+}
+
+.view.active {
+  animation: v11-view-enter var(--v11-duration-smooth) var(--v11-ease-out) !important;
+}
+
+@keyframes v11-view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.998);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ==========================================================================
+   V11 — BUTTONS — REFINED INTERACTIONS
+   ========================================================================== */
+.fenix-btn, button.fenix-btn {
+  font-family: var(--v11-font-body) !important;
+  font-weight: 600 !important;
+  font-size: var(--v11-text-sm) !important;
+  border-radius: var(--v11-radius-sm) !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.fenix-btn:active, button:active {
+  transform: scale(0.97) !important;
+  transition-duration: 60ms !important;
+}
+
+/* Primary action — fenix green gradient */
+.fenix-btn-primary, button[style*="background:rgba(56,189,248"] {
+  background: linear-gradient(135deg, rgba(0,229,160,0.9) 0%, rgba(0,180,130,0.9) 100%) !important;
+  color: #030712 !important;
+  border: 1px solid rgba(0,229,160,0.4) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 12px rgba(0,229,160,0.2) !important;
+}
+
+.fenix-btn-primary:hover {
+  box-shadow: 0 4px 20px rgba(0,229,160,0.3), var(--v11-glow-green) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Ghost/secondary buttons */
+.fenix-btn-secondary {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  color: var(--v11-text-secondary) !important;
+}
+
+.fenix-btn-secondary:hover {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: var(--v11-border-hover) !important;
+  color: var(--v11-text-title) !important;
+}
+
+/* ==========================================================================
+   V11 — BADGES & STATUS — LIVING INDICATORS
+   ========================================================================== */
+.fenix-badge {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  padding: 3px 10px !important;
+  border-radius: var(--v11-radius-pill) !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+/* Status dot animation */
+@keyframes v11-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.8); }
+}
+
+.v11-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+}
+
+.v11-status-dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.4;
+  animation: v11-pulse 2.5s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   V11 — SCROLLBARS — INVISIBLE UNTIL HOVER
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08) !important;
+  border-radius: var(--v11-radius-pill) !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,229,160,0.25) !important;
+}
+
+/* ==========================================================================
+   V11 — TABLES — PREMIUM DATA DISPLAY
+   ========================================================================== */
+table, .workspace-card table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+table th {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: var(--v11-text-tertiary) !important;
+  padding: var(--v11-space-2) var(--v11-space-3) !important;
+  border-bottom: 1px solid var(--v11-border-default) !important;
+}
+
+table td {
+  padding: var(--v11-space-3) !important;
+  border-bottom: 1px solid var(--v11-border-subtle) !important;
+  font-size: var(--v11-text-sm) !important;
+  color: var(--v11-text-body) !important;
+  transition: background var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+table tr:hover td {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* ==========================================================================
+   V11 — COMMAND CENTER — "SALA DE COMANDO"
+   Mission Hero layout, not card grid
+   ========================================================================== */
+
+/* Command header hero — immersive mission banner */
+#view-command .fenix-orchestrator-layout {
+  background: linear-gradient(180deg, var(--v11-depth-1) 0%, var(--v11-depth-0) 100%) !important;
+}
+
+/* Welcome/hero banner — elevated with depth */
+.orch-welcome-banner, .cmd-hero-banner {
+  background: linear-gradient(135deg, var(--v11-surface-panel) 0%, rgba(0,229,160,0.04) 100%) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-lg) !important;
+  padding: var(--v11-space-8) !important;
+  box-shadow: var(--v11-shadow-md) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.orch-welcome-banner::before, .cmd-hero-banner::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 40% !important;
+  height: 100% !important;
+  background: radial-gradient(ellipse at 80% 50%, rgba(0,229,160,0.06) 0%, transparent 70%) !important;
+  pointer-events: none !important;
+}
+
+/* Title typography — command authority */
+.orch-welcome-banner h2, .cmd-hero-banner h2,
+#view-command h2:first-of-type {
+  font-size: var(--v11-text-3xl) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  color: var(--v11-text-title) !important;
+  line-height: 1.15 !important;
+  margin-bottom: var(--v11-space-2) !important;
+}
+
+/* Subtitle — mission context */
+.orch-welcome-banner p, .cmd-hero-banner p {
+  color: var(--v11-text-secondary) !important;
+  font-size: var(--v11-text-md) !important;
+  line-height: 1.5 !important;
+}
+
+/* KPI strip — horizontal metrics with visual weight */
+.orch-kpi-strip, .cmd-kpi-row {
+  display: flex !important;
+  gap: var(--v11-space-1) !important;
+  flex-wrap: wrap !important;
+}
+
+.orch-kpi-strip > div, .cmd-kpi-row > div,
+.orch-kpi-item {
+  background: var(--v11-surface-card) !important;
+  border: 1px solid var(--v11-border-subtle) !important;
+  border-radius: var(--v11-radius-sm) !important;
+  padding: var(--v11-space-3) var(--v11-space-4) !important;
+  flex: 1 !important;
+  min-width: 100px !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+.orch-kpi-strip > div:hover, .cmd-kpi-row > div:hover {
+  border-color: var(--v11-border-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* KPI label */
+.orch-kpi-item label, .orch-kpi-strip small,
+.cmd-kpi-row small {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: var(--v11-text-ghost) !important;
+  display: block !important;
+  margin-bottom: 2px !important;
+}
+
+/* KPI value */
+.orch-kpi-item b, .orch-kpi-strip b,
+.cmd-kpi-row b, .cmd-kpi-row strong {
+  font-size: var(--v11-text-lg) !important;
+  font-weight: 800 !important;
+  color: var(--v11-text-title) !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Action dock — refined button row */
+.orch-action-dock, .cmd-actions-row {
+  display: flex !important;
+  gap: var(--v11-space-2) !important;
+  flex-wrap: wrap !important;
+  padding: var(--v11-space-3) 0 !important;
+}
+
+.orch-action-dock button, .cmd-actions-row button {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-sm) !important;
+  padding: 8px 16px !important;
+  color: var(--v11-text-secondary) !important;
+  font-size: var(--v11-text-sm) !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+.orch-action-dock button:hover, .cmd-actions-row button:hover {
+  background: rgba(0,229,160,0.06) !important;
+  border-color: rgba(0,229,160,0.25) !important;
+  color: var(--v11-fenix-green) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* DAG cycle — subtle sophistication */
+.orch-dag-strip, .cmd-dag-row {
+  background: var(--v11-surface-card) !important;
+  border: 1px solid var(--v11-border-subtle) !important;
+  border-radius: var(--v11-radius-md) !important;
+  padding: var(--v11-space-3) var(--v11-space-4) !important;
+}
+
+/* Mission prompt — the primary action area */
+.orch-mission-prompt, .cmd-prompt-area {
+  background: var(--v11-surface-panel) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-lg) !important;
+  padding: var(--v11-space-6) !important;
+  box-shadow: var(--v11-shadow-sm) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.orch-mission-prompt:focus-within, .cmd-prompt-area:focus-within {
+  border-color: var(--v11-border-active) !important;
+  box-shadow: var(--v11-shadow-md), var(--v11-glow-green) !important;
+}
+
+/* ==========================================================================
+   V11 — UNIVERSAL INSPECTOR — LEVEL 3 SURFACE
+   ========================================================================== */
+.fenix-inspector-drawer, #fenixInspectorDrawer {
+  background: var(--v11-surface-overlay) !important;
+  backdrop-filter: var(--v11-glass-heavy) !important;
+  -webkit-backdrop-filter: var(--v11-glass-heavy) !important;
+  border-left: 1px solid var(--v11-border-default) !important;
+  box-shadow: var(--v11-shadow-xl) !important;
+  width: 400px !important;
+  transition: transform var(--v11-duration-smooth) var(--v11-ease-out),
+              opacity var(--v11-duration-smooth) var(--v11-ease-out) !important;
+}
+
+.fenix-inspector-drawer[open], .fenix-inspector-drawer.open,
+#fenixInspectorDrawer[open], #fenixInspectorDrawer.open {
+  animation: v11-drawer-enter var(--v11-duration-smooth) var(--v11-ease-out) !important;
+}
+
+@keyframes v11-drawer-enter {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Inspector header */
+.fenix-inspector-drawer header, #fenixInspectorDrawer header {
+  padding: var(--v11-space-5) var(--v11-space-5) var(--v11-space-4) !important;
+  border-bottom: 1px solid var(--v11-border-subtle) !important;
+}
+
+/* Inspector sections */
+.fenix-inspector-drawer section, #fenixInspectorDrawer section {
+  padding: var(--v11-space-4) var(--v11-space-5) !important;
+  border-bottom: 1px solid var(--v11-border-subtle) !important;
+}
+
+/* ==========================================================================
+   V11 — AGENTS VIEW — WORKFORCE VISUALIZATION
+   ========================================================================== */
+#view-agents {
+  background: linear-gradient(180deg, var(--v11-depth-1) 0%, var(--v11-depth-0) 100%) !important;
+}
+
+/* Agent cards — personality through depth */
+#view-agents .fenix-card, #agentCardsGrid > div {
+  background: var(--v11-surface-card) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  padding: var(--v11-space-5) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+  position: relative !important;
+}
+
+#view-agents .fenix-card:hover, #agentCardsGrid > div:hover {
+  border-color: var(--v11-border-hover) !important;
+  box-shadow: var(--v11-shadow-md) !important;
+  transform: translateY(-3px) !important;
+}
+
+/* Agent avatar area */
+#view-agents .fenix-card .agent-avatar,
+#agentCardsGrid > div img {
+  border-radius: var(--v11-radius-md) !important;
+  box-shadow: var(--v11-shadow-sm) !important;
+}
+
+/* ==========================================================================
+   V11 — PROJECTS VIEW — ARCHITECTURE WORKSPACE
+   ========================================================================== */
+#view-projects {
+  background: var(--v11-depth-0) !important;
+}
+
+/* Project cards — workspace depth */
+.fp-card, .project-card {
+  background: var(--v11-surface-card) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  overflow: hidden !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.fp-card:hover, .project-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: var(--v11-shadow-lg) !important;
+  border-color: var(--v11-border-hover) !important;
+}
+
+/* ==========================================================================
+   V11 — MEMORY VIEW — COGNITIVE MAP
+   ========================================================================== */
+#view-memory {
+  background: linear-gradient(180deg, var(--v11-depth-1) 0%, var(--v11-depth-0) 100%) !important;
+}
+
+/* Memory level badges */
+#view-memory .fenix-badge {
+  font-size: 10px !important;
+  padding: 3px 10px !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+#view-memory .fenix-badge:hover {
+  transform: scale(1.05) !important;
+}
+
+/* Memory metric cards */
+#memoryMetrics > div, #view-memory .metric-card {
+  background: var(--v11-surface-card) !important;
+  border: 1px solid var(--v11-border-subtle) !important;
+  border-radius: var(--v11-radius-sm) !important;
+  padding: var(--v11-space-3) var(--v11-space-4) !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+#memoryMetrics > div:hover {
+  border-color: var(--v11-border-hover) !important;
+}
+
+/* ==========================================================================
+   V11 — FLOWGRAPH — SYSTEM TOPOLOGY ROOM
+   ========================================================================== */
+#view-flowgraph {
+  background: var(--v11-depth-0) !important;
+}
+
+/* Flow graph nodes */
+.fg-node, .flowgraph-node {
+  background: var(--v11-surface-elevated) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  box-shadow: var(--v11-shadow-sm) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.fg-node:hover, .flowgraph-node:hover {
+  border-color: var(--v11-border-active) !important;
+  box-shadow: var(--v11-shadow-md), var(--v11-glow-green) !important;
+  transform: scale(1.02) !important;
+}
+
+/* ==========================================================================
+   V11 — TOAST NOTIFICATIONS — TRANSIENT LAYER (Level 4)
+   ========================================================================== */
+.fenix-toast {
+  background: var(--v11-surface-overlay) !important;
+  backdrop-filter: var(--v11-glass-heavy) !important;
+  -webkit-backdrop-filter: var(--v11-glass-heavy) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  box-shadow: var(--v11-shadow-lg) !important;
+  animation: v11-toast-in var(--v11-duration-smooth) var(--v11-ease-spring) !important;
+}
+
+@keyframes v11-toast-in {
+  from {
+    transform: translateX(40px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   V11 — DIALOG / MODAL — TRANSIENT LAYER (Level 4)
+   ========================================================================== */
+dialog, .fenix-dialog {
+  background: var(--v11-surface-overlay) !important;
+  backdrop-filter: var(--v11-glass-heavy) !important;
+  -webkit-backdrop-filter: var(--v11-glass-heavy) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-xl) !important;
+  box-shadow: var(--v11-shadow-xl) !important;
+  animation: v11-modal-enter var(--v11-duration-smooth) var(--v11-ease-out) !important;
+}
+
+dialog::backdrop {
+  background: rgba(2, 4, 8, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+@keyframes v11-modal-enter {
+  from {
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   V11 — REDUCED MOTION SUPPORT
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   V11 — RESPONSIVE REFINEMENTS
+   ========================================================================== */
+@media (max-width: 1250px) {
+  :root {
+    --v11-text-2xl: 22px;
+    --v11-text-3xl: 26px;
+  }
+}
+
+@media (max-width: 900px) {
+  #mainSidebarNav, .sidebar-nav {
+    width: 200px !important;
+  }
+  :root {
+    --v11-text-2xl: 20px;
+    --v11-text-3xl: 24px;
+    --v11-space-8: 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --v11-text-2xl: 18px;
+    --v11-text-3xl: 22px;
+    --v11-space-6: 16px;
+    --v11-space-8: 20px;
+  }
+}
+
+/* ==========================================================================
+   V11 PHASE 2 — DEEPER OVERRIDES FOR COMPOSITION & HIERARCHY
+   ========================================================================== */
+
+/* === SIDEBAR ACTIVE STATE — GREEN ACCENT LINE === */
+#mainSidebarNav .v10-nav-btn.active,
+.sidebar-nav .nav-item.active,
+.v10-nav-btn.active {
+  background: linear-gradient(90deg, rgba(0,229,160,0.08) 0%, rgba(0,229,160,0.02) 100%) !important;
+  border-left: 3px solid var(--v11-fenix-green) !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-radius: 0 var(--v11-radius-sm) var(--v11-radius-sm) 0 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  padding-left: 14px !important;
+  box-shadow: none !important;
+}
+
+#mainSidebarNav .v10-nav-btn.active i,
+.v10-nav-btn.active i {
+  color: var(--v11-fenix-green) !important;
+  filter: drop-shadow(0 0 4px rgba(0,229,160,0.3)) !important;
+}
+
+/* === HERO BANNER — COMMANDING PRESENCE === */
+.orch-welcome-banner,
+.cmd-hero-banner,
+#view-command > div > div:first-child {
+  position: relative !important;
+}
+
+/* AUTONOMOUS CONTROL PLANE label */
+.orch-welcome-banner [style*="letter-spacing"],
+#view-command small[style*="letter-spacing"] {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.2em !important;
+  color: var(--v11-fenix-green) !important;
+  text-shadow: 0 0 12px rgba(0,229,160,0.25) !important;
+}
+
+/* Hero title — Central de Operacoes */
+#view-command h2,
+.orch-welcome-banner h2 {
+  font-size: 32px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: #F8FAFC !important;
+  line-height: 1.15 !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+/* === KPI STRIP — DIFFERENTIATED VISUAL WEIGHT === */
+.orch-kpi-strip > div:first-child,
+.cmd-kpi-row > div:first-child,
+#view-command .fenix-card:first-child {
+  border-color: rgba(0,229,160,0.2) !important;
+  background: linear-gradient(135deg, var(--v11-surface-card) 0%, rgba(0,229,160,0.04) 100%) !important;
+}
+
+/* Error KPI — subtle red accent */
+.orch-kpi-strip > div:nth-child(8),
+.cmd-kpi-row > div:nth-child(8) {
+  border-color: rgba(251,113,133,0.15) !important;
+}
+
+/* === ACTION BUTTONS ROW — PRIMARY vs SECONDARY hierarchy === */
+#view-command button[style*="background:linear-gradient"],
+#view-command .fenix-btn-primary,
+button:has(> span:first-child) {
+  border-radius: var(--v11-radius-sm) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* "Criar Missao" — hero action */
+#view-command button:first-of-type[style*="linear-gradient"] {
+  box-shadow: 0 4px 16px rgba(0,229,160,0.25) !important;
+}
+
+/* === DAG CYCLE STRIP — VISUAL FLOW === */
+#view-command [style*="border-radius:8px"][style*="gap:4px"] {
+  background: var(--v11-surface-panel) !important;
+  border: 1px solid var(--v11-border-subtle) !important;
+  border-radius: var(--v11-radius-md) !important;
+  padding: 10px 16px !important;
+}
+
+/* === MISSION PROMPT AREA — ELEVATED FOCUS === */
+#view-command textarea,
+#view-command [contenteditable],
+.orch-mission-prompt textarea {
+  background: var(--v11-depth-1) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  color: var(--v11-text-body) !important;
+  font-size: var(--v11-text-md) !important;
+  padding: 14px 16px !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+#view-command textarea:focus,
+#view-command [contenteditable]:focus {
+  border-color: var(--v11-border-active) !important;
+  box-shadow: 0 0 0 3px rgba(0,229,160,0.08), var(--v11-shadow-sm) !important;
+  outline: none !important;
+}
+
+/* === AI CITY PREVIEW IN COMMAND CENTER — MORE PRESENCE === */
+#view-command h3[style*="AI City"],
+#view-command div:has(> canvas) h3 {
+  font-size: var(--v11-text-xl) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--v11-text-title) !important;
+}
+
+/* === TOPBAR — REFINED DEPTH === */
+.global-topbar {
+  position: relative !important;
+}
+
+.global-topbar::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent 0%, rgba(0,229,160,0.15) 30%, rgba(0,229,160,0.15) 70%, transparent 100%) !important;
+  pointer-events: none !important;
+}
+
+/* === CONTEXT BAR — SUBTLE BUT DISTINCT === */
+.workspace-context-bar {
+  background: rgba(6,10,17,0.95) !important;
+  backdrop-filter: var(--v11-glass-light) !important;
+  border-bottom: 1px solid var(--v11-border-subtle) !important;
+  padding: 6px 20px !important;
+}
+
+.workspace-context-bar a,
+.workspace-context-bar button {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  border-radius: var(--v11-radius-xs) !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+.workspace-context-bar a:hover,
+.workspace-context-bar button:hover {
+  background: rgba(255,255,255,0.05) !important;
+}
+
+/* === BREADCRUMB — NAVIGATION TRAIL === */
+.breadcrumb, [class*="breadcrumb"] {
+  font-size: 11px !important;
+  color: var(--v11-text-tertiary) !important;
+}
+
+.breadcrumb a, [class*="breadcrumb"] a {
+  color: var(--v11-text-secondary) !important;
+  text-decoration: none !important;
+  transition: color var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+.breadcrumb a:hover, [class*="breadcrumb"] a:hover {
+  color: var(--v11-fenix-green) !important;
+}
+
+/* === LIVE BADGE — PULSING INDICATOR === */
+[style*="LIVE"], .live-badge, .badge-live {
+  position: relative !important;
+}
+
+/* === FENIX LOGO/BRAND GLOW === */
+.orch-brand img, .brand-crest-electric img,
+#mainSidebarNav img, .sidebar-nav img {
+  filter: drop-shadow(0 0 6px rgba(0,229,160,0.2)) !important;
+  transition: filter var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.orch-brand:hover img, .brand-crest-electric:hover img {
+  filter: drop-shadow(0 0 10px rgba(0,229,160,0.35)) !important;
+}
+
+/* === SECTION DIVIDERS — SUBTLE HIERARCHY === */
+#view-command hr,
+#view-command > div > div + div {
+  border-color: var(--v11-border-subtle) !important;
+}
+
+/* === KEYBOARD SHORTCUT BADGE (Ctrl+K) === */
+kbd, .kbd, [style*="border:1px solid"][style*="border-radius:4px"] {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-xs) !important;
+  color: var(--v11-text-tertiary) !important;
+  font-size: 10px !important;
+  font-family: var(--v11-font-mono) !important;
+  padding: 2px 6px !important;
+}
+
+/* === SEARCH INPUT — REFINED === */
+.topbar-search input, input[placeholder*="Buscar"] {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid var(--v11-border-subtle) !important;
+  border-radius: var(--v11-radius-sm) !important;
+  color: var(--v11-text-body) !important;
+  font-size: var(--v11-text-sm) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.topbar-search input:focus, input[placeholder*="Buscar"]:focus {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: var(--v11-border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(34,211,238,0.08) !important;
+  outline: none !important;
+}
+
+/* === NOTIFICATION BADGE — ACCENT DOT === */
+.notification-badge, [style*="background:#ef4444"][style*="border-radius"] {
+  background: var(--v11-rose) !important;
+  box-shadow: 0 0 8px rgba(251,113,133,0.4) !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+}
+
+/* ==========================================================================
+   V11 PHASE 2 — AI CITY ATMOSPHERE
+   ========================================================================== */
+
+/* City container — immersive canvas */
+#view-city {
+  background: #030508 !important;
+  position: relative !important;
+}
+
+/* City HUD overlay bar — refined */
+#view-city .city-hud-bar,
+#view-city > div:first-child {
+  background: rgba(4,6,10,0.92) !important;
+  backdrop-filter: var(--v11-glass-heavy) !important;
+  border-bottom: 1px solid rgba(0,229,160,0.08) !important;
+}
+
+/* City HUD pills — refined weight */
+#view-city .city-hud-bar span,
+#view-city .city-hud-bar button,
+#view-city [style*="border-radius:12px"] {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid var(--v11-border-subtle) !important;
+  border-radius: var(--v11-radius-pill) !important;
+  padding: 4px 12px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--v11-text-secondary) !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+#view-city .city-hud-bar button:hover,
+#view-city [style*="border-radius:12px"]:hover {
+  background: rgba(0,229,160,0.08) !important;
+  border-color: rgba(0,229,160,0.2) !important;
+  color: var(--v11-fenix-green) !important;
+}
+
+/* City event sidebar — refined */
+#view-city aside,
+#view-city .city-events-panel,
+.city-sidebar {
+  background: rgba(4,6,10,0.95) !important;
+  backdrop-filter: var(--v11-glass-heavy) !important;
+  border-left: 1px solid var(--v11-border-subtle) !important;
+  box-shadow: var(--v11-shadow-lg) !important;
+}
+
+/* City event items */
+#view-city aside li,
+.city-events-panel li,
+.city-event-item {
+  padding: 8px 12px !important;
+  border-radius: var(--v11-radius-sm) !important;
+  border-bottom: 1px solid var(--v11-border-subtle) !important;
+  transition: background var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+#view-city aside li:hover,
+.city-event-item:hover {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+/* Canvas wrapper — ambient atmosphere */
+#view-city canvas {
+  border-radius: 0 !important;
+}
+
+/* ==========================================================================
+   V11 — AGENTS VIEW EVOLUTION — WORKFORCE ROOM
+   ========================================================================== */
+
+/* Agent grid — better spacing */
+#agentCardsGrid, .agents-grid {
+  gap: var(--v11-space-4) !important;
+  padding: var(--v11-space-4) !important;
+}
+
+/* Individual agent card — identity & role */
+#agentCardsGrid > div,
+.agent-card {
+  background: var(--v11-surface-card) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  padding: var(--v11-space-5) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+#agentCardsGrid > div:hover,
+.agent-card:hover {
+  border-color: rgba(0,229,160,0.2) !important;
+  box-shadow: var(--v11-shadow-md), 0 0 20px rgba(0,229,160,0.06) !important;
+  transform: translateY(-3px) !important;
+}
+
+/* Agent status indicator — top-right glow dot */
+#agentCardsGrid > div .fenix-badge-green,
+.agent-card .status-ready {
+  position: relative !important;
+}
+
+#agentCardsGrid > div .fenix-badge-green::before,
+.agent-card .status-ready::before {
+  content: "" !important;
+  position: absolute !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: var(--v11-fenix-green) !important;
+  box-shadow: 0 0 8px rgba(0,229,160,0.5) !important;
+  left: -2px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+/* Agent name */
+#agentCardsGrid > div h4,
+.agent-card h4 {
+  font-size: var(--v11-text-md) !important;
+  font-weight: 700 !important;
+  color: var(--v11-text-title) !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Agent role subtitle */
+#agentCardsGrid > div small,
+.agent-card .agent-role {
+  font-size: 11px !important;
+  color: var(--v11-text-tertiary) !important;
+  font-weight: 500 !important;
+}
+
+/* ==========================================================================
+   V11 — MEMORY VIEW — COGNITIVE MAP DEPTH
+   ========================================================================== */
+
+/* Memory stats row — visual weight differentiation */
+#memoryMetrics,
+.memory-stats-row {
+  gap: var(--v11-space-3) !important;
+}
+
+#memoryMetrics > div:first-child,
+.memory-stats-row > div:first-child {
+  border-color: rgba(0,229,160,0.15) !important;
+  background: linear-gradient(135deg, var(--v11-surface-card) 0%, rgba(0,229,160,0.03) 100%) !important;
+}
+
+/* Memory node cards */
+#view-memory .fenix-card,
+.memory-node-card {
+  background: var(--v11-surface-card) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+#view-memory .fenix-card:hover,
+.memory-node-card:hover {
+  border-color: rgba(167,139,250,0.2) !important;
+  box-shadow: var(--v11-shadow-md), var(--v11-glow-purple) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* ==========================================================================
+   V11 — FLOWGRAPH — TOPOLOGY ROOM
+   ========================================================================== */
+
+/* Flowgraph canvas area */
+#view-flowgraph > div:has(canvas),
+.flowgraph-canvas-wrapper {
+  background: radial-gradient(ellipse at 50% 50%, rgba(0,229,160,0.02) 0%, var(--v11-depth-0) 70%) !important;
+}
+
+/* Flowgraph toolbar */
+#view-flowgraph .flowgraph-toolbar,
+#view-flowgraph > div:first-child {
+  background: var(--v11-surface-overlay) !important;
+  backdrop-filter: var(--v11-glass-blur) !important;
+  border-bottom: 1px solid var(--v11-border-subtle) !important;
+}
+
+/* Flowgraph nodes — elevated presence */
+.fg-node {
+  background: var(--v11-surface-elevated) !important;
+  border: 1px solid var(--v11-border-default) !important;
+  border-radius: var(--v11-radius-md) !important;
+  box-shadow: var(--v11-shadow-md) !important;
+  transition: all var(--v11-duration-normal) var(--v11-ease-out) !important;
+}
+
+.fg-node.selected, .fg-node:focus {
+  border-color: var(--v11-fenix-green) !important;
+  box-shadow: var(--v11-shadow-lg), var(--v11-glow-green) !important;
+}
+
+/* ==========================================================================
+   V11 — OPERATIONS / RUNTIME — OPERATIONS FLOOR
+   ========================================================================== */
+#view-runtime {
+  background: var(--v11-depth-0) !important;
+}
+
+#view-runtime .fenix-card {
+  background: var(--v11-surface-card) !important;
+  border: 1px solid var(--v11-border-default) !important;
+}
+
+/* Runtime live indicator */
+#view-runtime [style*="animation: pulse"],
+.runtime-heartbeat {
+  color: var(--v11-fenix-green) !important;
+}
+
+/* ==========================================================================
+   V11 — IDE — ENGINEERING WORKSPACE
+   ========================================================================== */
+#view-ide {
+  background: var(--v11-depth-0) !important;
+}
+
+/* IDE editor area */
+#view-ide .editor-container,
+#view-ide pre, #view-ide code {
+  font-family: var(--v11-font-mono) !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+/* IDE file tree */
+#view-ide .file-tree,
+#view-ide aside {
+  background: var(--v11-surface-ground) !important;
+  border-right: 1px solid var(--v11-border-subtle) !important;
+}
+
+/* ==========================================================================
+   V11 — KNOWLEDGE — OBSERVATORY
+   ========================================================================== */
+#view-knowledge {
+  background: linear-gradient(180deg, var(--v11-depth-1) 0%, var(--v11-depth-0) 100%) !important;
+}
+
+/* ==========================================================================
+   V11 — PROJECTS — ARCHITECTURE WORKSPACE
+   ========================================================================== */
+
+/* Project sub-sidebar */
+#view-projects aside,
+.project-sub-sidebar {
+  background: var(--v11-surface-ground) !important;
+  border-right: 1px solid var(--v11-border-subtle) !important;
+}
+
+/* Project tab-like navigation */
+#view-projects .tab-nav button,
+.project-tabs button {
+  border-radius: var(--v11-radius-sm) var(--v11-radius-sm) 0 0 !important;
+  font-size: var(--v11-text-sm) !important;
+  font-weight: 600 !important;
+  transition: all var(--v11-duration-fast) var(--v11-ease-out) !important;
+}
+
+#view-projects .tab-nav button.active,
+.project-tabs button.active {
+  color: var(--v11-fenix-green) !important;
+  border-bottom: 2px solid var(--v11-fenix-green) !important;
+}
+
+/* ==========================================================================
+   V11 — TERMINAL — DEEP WORKSPACE
+   ========================================================================== */
+#view-terminal {
+  background: #020304 !important;
+}
+
+#view-terminal pre,
+#view-terminal .terminal-output {
+  font-family: var(--v11-font-mono) !important;
+  font-size: 12px !important;
+  line-height: 1.65 !important;
+  color: var(--v11-text-body) !important;
+}
+
+/* ==========================================================================
+   V11 PHASE 3 — INLINE STYLE OVERRIDES
+   These override the inline styles hardcoded in the HTML
+   ========================================================================== */
+
+/* === HERO BANNER — MISSION PRESENCE === */
+.v10-welcome-banner {
+  background: linear-gradient(135deg, rgba(6,10,17,0.98) 0%, rgba(10,22,38,0.95) 50%, rgba(0,229,160,0.04) 100%) !important;
+  border: 1px solid rgba(0,229,160,0.10) !important;
+  border-radius: 16px !important;
+  padding: 28px 32px !important;
+  margin-bottom: 16px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Hero subtle gradient accent edge */
+.v10-welcome-banner::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent 0%, rgba(0,229,160,0.3) 20%, rgba(0,229,160,0.5) 50%, rgba(0,229,160,0.3) 80%, transparent 100%) !important;
+  pointer-events: none !important;
+}
+
+/* AUTONOMOUS CONTROL PLANE label — always Verde Fênix */
+.v10-welcome-banner span[style*="letter-spacing:0.12em"],
+.v10-welcome-banner span[style*="color:#38bdf8"] {
+  color: var(--v11-fenix-green, #00E5A0) !important;
+  text-shadow: 0 0 12px rgba(0,229,160,0.2) !important;
+}
+
+/* Hero title */
+.v10-welcome-title {
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: #F8FAFC !important;
+  line-height: 1.2 !important;
+}
+
+/* === KPI STRIP — DISTINCT WEIGHTS === */
+.fenix-cmd-top-kpis {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+.fenix-kpi-chip {
+  background: var(--v11-surface-card, rgba(15,23,42,0.6)) !important;
+  border: 1px solid var(--v11-border-default, rgba(255,255,255,0.06)) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.fenix-kpi-chip:hover {
+  border-color: rgba(0,229,160,0.15) !important;
+  background: rgba(15,23,42,0.8) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+.fenix-kpi-chip small {
+  display: block !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: rgba(148,163,184,0.7) !important;
+  margin-bottom: 4px !important;
+}
+
+.fenix-kpi-chip strong {
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* First KPI (System Health) — green accent */
+.fenix-kpi-chip:first-child {
+  border-left: 3px solid rgba(16,185,129,0.4) !important;
+}
+
+/* Errors KPI — conditional */
+.fenix-kpi-chip:nth-child(7) strong[style*="color:#10b981"] {
+  color: var(--v11-fenix-green) !important;
+}
+
+/* === ACTION DOCK — REFINED HIERARCHY === */
+.fenix-cmd-actions-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 0 !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 8px !important;
+}
+
+.fenix-cmd-actions-row button {
+  border-radius: 10px !important;
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+}
+
+.fenix-cmd-actions-row button:first-child {
+  box-shadow: 0 4px 16px rgba(0,229,160,0.2) !important;
+}
+
+.fenix-cmd-actions-row button:not(:first-child) {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+.fenix-cmd-actions-row button:not(:first-child):hover {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: rgba(0,229,160,0.15) !important;
+  color: #f1f5f9 !important;
+}
+
+/* === DAG CYCLE STRIP — VISUAL PIPELINE === */
+.fenix-cmd-dag-cycle {
+  background: var(--v11-surface-panel, rgba(10,15,25,0.7)) !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  border-radius: 12px !important;
+  padding: 8px 16px !important;
+  margin-bottom: 12px !important;
+}
+
+.fenix-cmd-dag-cycle span {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Active DAG step */
+.fenix-cmd-dag-cycle span[style*="background:linear-gradient"],
+.fenix-cmd-dag-cycle .dag-step-active {
+  box-shadow: 0 2px 8px rgba(0,229,160,0.2) !important;
+  border-radius: 8px !important;
+}
+
+/* === MISSION PROMPT SECTION — ELEVATED === */
+.fenix-cmd-prompt-area {
+  background: var(--v11-surface-card, rgba(15,23,42,0.5)) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 14px !important;
+  padding: 20px !important;
+  margin-bottom: 16px !important;
+}
+
+.fenix-cmd-prompt-area h3,
+.fenix-cmd-prompt-area label {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #f1f5f9 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* The input field */
+.fenix-cmd-prompt-area input[type="text"],
+.fenix-cmd-prompt-area textarea,
+#orchMissionInput {
+  background: rgba(6,10,17,0.8) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 10px !important;
+  color: #e2e8f0 !important;
+  font-size: 14px !important;
+  padding: 12px 16px !important;
+  width: 100% !important;
+  transition: all 0.2s ease !important;
+}
+
+.fenix-cmd-prompt-area input:focus,
+.fenix-cmd-prompt-area textarea:focus,
+#orchMissionInput:focus {
+  border-color: rgba(0,229,160,0.3) !important;
+  box-shadow: 0 0 0 3px rgba(0,229,160,0.06) !important;
+  outline: none !important;
+}
+
+/* Prompt action buttons */
+.fenix-cmd-prompt-area button {
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  padding: 8px 16px !important;
+  transition: all 0.2s ease !important;
+}
+
+/* === FLOW GRAPH BUTTON IN TOPBAR — PREMIUM === */
+.v10-topbar-quick-btn[style*="Flow Graph"],
+button[style*="animation: fenixFlowGraphGlow"] {
+  border-radius: 10px !important;
+}
+
+/* === REALITY BADGE — PREMIUM SHINE === */
+.v12-reality-badge-btn {
+  background: rgba(0,229,160,0.08) !important;
+  border: 1px solid rgba(0,229,160,0.3) !important;
+  color: var(--v11-fenix-green, #00E5A0) !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+
+.v12-reality-badge-btn:hover {
+  background: rgba(0,229,160,0.12) !important;
+  box-shadow: 0 4px 16px rgba(0,229,160,0.15) !important;
+}
+
+/* === AI CITY PREVIEW SECTION IN COMMAND === */
+.fenix-cmd-city-preview {
+  background: linear-gradient(135deg, rgba(6,10,17,0.95) 0%, rgba(10,18,30,0.9) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  border-radius: 16px !important;
+  padding: 24px !important;
+  margin-top: 8px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* City preview title */
+.fenix-cmd-city-preview h3,
+#view-command h3 {
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #f1f5f9 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* City building pills in command */
+.city-building-pill {
+  background: rgba(15,23,42,0.7) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 10px !important;
+  padding: 8px 14px !important;
+  transition: all 0.2s ease !important;
+}
+
+.city-building-pill:hover {
+  border-color: rgba(0,229,160,0.15) !important;
+  background: rgba(15,23,42,0.9) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* === GENERAL OVERRIDES — TYPOGRAPHY CONSISTENCY === */
+#view-command strong[style*="color:#10b981"] {
+  color: var(--v11-fenix-green, #00E5A0) !important;
+}
+
+#view-command strong[style*="color:#38bdf8"] {
+  color: var(--v11-cyan, #22D3EE) !important;
+}
+
+/* === TOPBAR QUICK BUTTONS — CONSISTENT STYLE === */
+.v10-topbar-quick-btn {
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 5px 12px !important;
+  transition: all 0.15s ease !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+.v10-topbar-quick-btn:hover {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* === GLOBAL TOPBAR — GREEN ACCENT LINE BELOW === */
+.global-topbar,
+header.orch-topbar {
+  background: rgba(6,10,17,0.97) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+  border-bottom: none !important;
+}
+
+/* === SIDEBAR FOOTER BRAND — REFINED === */
+.orch-brand-card {
+  background: transparent !important;
+  border-top: 1px solid rgba(255,255,255,0.04) !important;
+  padding: 12px 16px !important;
+}
+
+/* Version badge */
+.orch-brand-card [style*="font-size:9px"],
+.orch-brand-card small {
+  color: rgba(148,163,184,0.5) !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   V11 PHASE 4 — INTERACTION CSS (for fenix-v11-interactions.js)
+   ========================================================================== */
+
+/* === RIPPLE EFFECT === */
+.v11-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0,229,160,0.15);
+  transform: scale(0);
+  animation: v11-ripple-anim 0.6s ease-out forwards;
+  pointer-events: none;
+  width: 100px;
+  height: 100px;
+  margin-left: -50px;
+  margin-top: -50px;
+}
+
+@keyframes v11-ripple-anim {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+/* === LIVE ACTIVITY FEED === */
+.v11-live-activity {
+  background: var(--v11-surface-card, rgba(15,23,42,0.5));
+  border: 1px solid var(--v11-border-default, rgba(255,255,255,0.06));
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.v11-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.v11-section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.v11-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.v11-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00E5A0;
+  box-shadow: 0 0 8px rgba(0,229,160,0.5);
+  animation: v11-pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes v11-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+
+.v11-ghost-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.v11-ghost-btn:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(0,229,160,0.15);
+  color: #e2e8f0;
+}
+
+.v11-activity-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.v11-activity-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  color: #475569;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Activity item */
+.v11-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.v11-activity-item:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.v11-activity-item .activity-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.v11-activity-item .activity-text {
+  flex: 1;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.v11-activity-item .activity-time {
+  font-size: 10px;
+  color: #475569;
+  font-family: var(--v11-font-mono, 'JetBrains Mono', monospace);
+}
+
+/* === SKELETON LOADING === */
+.v11-skeleton-line {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 100%);
+  background-size: 200% 100%;
+  animation: v11-skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes v11-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* === SYSTEM PULSE === */
+.v11-system-pulse {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+}
+
+.v11-pulse-core {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00E5A0;
+  top: 1px;
+  left: 1px;
+}
+
+.v11-pulse-ring {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,229,160,0.3);
+  animation: v11-pulse-ring 2s ease-out infinite;
+}
+
+@keyframes v11-pulse-ring {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+/* === AGENT CARD ROLE ACCENT — TOP BORDER COLORS === */
+#agentCardsGrid > div {
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
+  border-top-width: 2px !important;
+  border-top-style: solid !important;
+}
+
+/* === VIEW TRANSITION — SMOOTH ENTER/EXIT === */
+.view {
+  will-change: opacity, transform;
+}
+
+/* === SIDEBAR GROUP HEADERS — REFINED === */
+.nav-group-label,
+.sidebar-group-title {
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  color: rgba(148,163,184,0.4) !important;
+  padding: 16px 16px 6px !important;
+  user-select: none !important;
+}
+
+/* === SCROLLBAR REFINEMENT — THIN AND SLEEK === */
+::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08) !important;
+  border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.15) !important;
+}
+
+/* === FOCUS RING — CONSISTENT GREEN === */
+*:focus-visible {
+  outline: 2px solid rgba(0,229,160,0.3) !important;
+  outline-offset: 2px !important;
+}
+
+/* === GLOBAL SELECTION COLOR === */
+::selection {
+  background: rgba(0,229,160,0.2) !important;
+  color: #f8fafc !important;
+}
+
+/* === SIDEBAR COLLAPSE/EXPAND ANIMATION === */
+.main-sidebar {
+  transition: width 0.25s cubic-bezier(0.16,1,0.3,1) !important;
+}
+
+/* === ENHANCED BADGE STYLES === */
+.fenix-badge-green, [style*="ONLINE"] {
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+}
+
+/* === LOWER GRID CARDS — HOVER DEPTH === */
+.v10-card {
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
+}
+
+.v10-card:hover {
+  border-color: rgba(0,229,160,0.1) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,229,160,0.05) !important;
+}
+
+/* === BUILDING PILLS IN COMMAND — ENHANCED === */
+.v10-building-pill {
+  transition: all 0.2s cubic-bezier(0.16,1,0.3,1) !important;
+  border-radius: 10px !important;
+}
+
+.v10-building-pill:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3) !important;
+}
+
+.v10-building-pill .b-icon {
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1) !important;
+}
+
+.v10-building-pill:hover .b-icon {
+  transform: scale(1.1) !important;
+}
+
+/* === TOPBAR SEARCH — PREMIUM GLASS === */
+.topbar-search,
+.global-topbar input[type="text"] {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(8px) !important;
+  transition: all 0.2s ease !important;
+}
+
+.topbar-search:focus-within,
+.global-topbar input[type="text"]:focus {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(0,229,160,0.15) !important;
+  box-shadow: 0 0 0 3px rgba(0,229,160,0.05) !important;
+}
+
+/* === REDUCED MOTION — RESPECT USER PREFERENCE === */
+@media (prefers-reduced-motion: reduce) {
+  .v11-ripple,
+  .v11-pulse-dot,
+  .v11-pulse-ring,
+  .v11-skeleton-line {
+    animation: none !important;
+  }
+  .view, .fenix-card, .v10-card, .v10-building-pill, #agentCardsGrid > div {
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   V11 PHASE 5 — DEEP COMPOSITION OVERHAUL
+   Addressing: composition, hierarchy, spatial depth, contextual navigation
+   ========================================================================== */
+
+/* === AI CITY — ATMOSPHERIC IMMERSION === */
+#view-city {
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,229,160,0.02) 0%, transparent 50%),
+              linear-gradient(180deg, #020408 0%, #060A12 100%) !important;
+}
+
+/* City HUD bar — glass depth */
+#view-city .iso-city-hud-bar {
+  background: rgba(6,10,17,0.85) !important;
+  backdrop-filter: blur(16px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.4) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+}
+
+/* City camera buttons — refined */
+#view-city .iso-city-camera-btn,
+#view-city [class*="camera-btn"] {
+  background: rgba(15,23,42,0.7) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(8px) !important;
+  transition: all 0.15s ease !important;
+}
+
+#view-city .iso-city-camera-btn:hover,
+#view-city [class*="camera-btn"]:hover {
+  background: rgba(15,23,42,0.9) !important;
+  border-color: rgba(0,229,160,0.2) !important;
+}
+
+/* City district tabs */
+#view-city .district-tab,
+#view-city [class*="district"] {
+  transition: all 0.2s ease !important;
+}
+
+/* City event sidebar — evolved from raw JSON */
+#view-city .city-event-sidebar,
+#view-city [class*="event-stream"],
+#view-city [class*="event-sidebar"] {
+  background: rgba(6,10,17,0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  border-left: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* Event items — styled instead of raw JSON */
+#view-city .city-event-item,
+#view-city [class*="event-item"] {
+  padding: 8px 12px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+  transition: background 0.15s ease !important;
+  font-size: 11px !important;
+}
+
+#view-city .city-event-item:hover,
+#view-city [class*="event-item"]:hover {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* City status HUD pills */
+#view-city .hud-pill,
+#view-city [class*="hud-stat"] {
+  background: rgba(15,23,42,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 8px !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+/* City canvas container */
+#view-city canvas,
+#view-city [class*="canvas-container"] {
+  border-radius: 0 !important;
+}
+
+/* City bottom status bar */
+#view-city .city-bottom-bar,
+#view-city [class*="bottom-status"] {
+  background: rgba(6,10,17,0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  border-top: 1px solid rgba(255,255,255,0.04) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+}
+
+/* === OPERATIONS VIEW — OPERATIONS FLOOR === */
+#view-operations {
+  background: linear-gradient(180deg, #040810 0%, #080E18 100%) !important;
+}
+
+/* Operations header */
+#view-operations .ops-header,
+#view-operations > div:first-child {
+  padding: 20px 24px !important;
+}
+
+/* Operations mission cards */
+#view-operations .mission-card,
+#view-operations [class*="mission"] {
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+/* === TERMINAL VIEW — DEEP ENGINEERING WORKSPACE === */
+#view-terminal {
+  background: #020304 !important;
+}
+
+#view-terminal .terminal-container,
+#view-terminal [class*="terminal"] {
+  background: #020304 !important;
+  border-radius: 0 !important;
+}
+
+/* Terminal header */
+#view-terminal .terminal-header {
+  background: rgba(6,10,17,0.9) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* === IDE VIEW — ENGINEERING WORKSPACE === */
+#view-ide {
+  background: linear-gradient(180deg, #040810 0%, #060C16 100%) !important;
+}
+
+/* IDE file tree */
+#view-ide .file-tree,
+#view-ide [class*="file-tree"] {
+  background: rgba(6,10,17,0.7) !important;
+  border-right: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* IDE editor area */
+#view-ide .editor-area,
+#view-ide [class*="editor"] {
+  background: #060C16 !important;
+}
+
+/* === KNOWLEDGE VIEW — OBSERVATORY === */
+#view-knowledge {
+  background: linear-gradient(180deg, #040810 0%, #0A0E18 100%) !important;
+}
+
+/* === RUNTIME VIEW — SYSTEM COCKPIT === */
+#view-runtime {
+  background: linear-gradient(180deg, #040810 0%, #080E18 100%) !important;
+}
+
+/* Runtime nodes — system component cards */
+#view-runtime .runtime-node,
+#view-runtime [class*="node-card"] {
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+#view-runtime .runtime-node:hover,
+#view-runtime [class*="node-card"]:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important;
+}
+
+/* === OBSERVABILITY VIEW — MONITORING DASHBOARD === */
+#view-observability {
+  background: linear-gradient(180deg, #040810 0%, #080E18 100%) !important;
+}
+
+/* === MCP VIEW — PROVIDERS PANEL === */
+#view-mcp {
+  background: linear-gradient(180deg, #040810 0%, #080E18 100%) !important;
+}
+
+/* === BROWSER VIEW — QA VISUAL === */
+#view-browser {
+  background: linear-gradient(180deg, #040810 0%, #060C16 100%) !important;
+}
+
+/* === COMMAND CENTER — LOWER GRID RESTRUCTURE === */
+.v10-lower-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 16px !important;
+  margin-top: 16px !important;
+}
+
+.v10-lower-grid .v10-card {
+  background: var(--v11-surface-card, rgba(15,23,42,0.5)) !important;
+  border: 1px solid var(--v11-border-default, rgba(255,255,255,0.06)) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+.v10-lower-grid .v10-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 16px 20px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+.v10-lower-grid .v10-card-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #f1f5f9 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.v10-lower-grid .v10-card-link {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--v11-fenix-green, #00E5A0) !important;
+  text-decoration: none !important;
+  transition: opacity 0.15s ease !important;
+}
+
+.v10-lower-grid .v10-card-link:hover {
+  opacity: 0.8 !important;
+}
+
+/* Task list items */
+.v10-tasks-list > div {
+  padding: 10px 16px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+  transition: background 0.15s ease !important;
+}
+
+.v10-tasks-list > div:hover {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* === UNIVERSAL INSPECTOR DRAWER === */
+#fenixInspectorDrawer {
+  background: rgba(6,10,17,0.97) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+  border-left: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.5) !important;
+}
+
+/* Inspector header */
+#fenixInspectorDrawer .inspector-header,
+#fenixInspectorDrawer > div:first-child {
+  padding: 20px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* Inspector close button */
+#fenixInspectorDrawer .inspector-close,
+#fenixInspectorDrawer button[onclick*="close"] {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  color: #94a3b8 !important;
+  transition: all 0.15s ease !important;
+}
+
+#fenixInspectorDrawer .inspector-close:hover,
+#fenixInspectorDrawer button[onclick*="close"]:hover {
+  background: rgba(255,255,255,0.08) !important;
+  color: #e2e8f0 !important;
+}
+
+/* === CAPACITY WIDGET — ENHANCED GRID === */
+#fenixAgentCapacityWidget {
+  background: var(--v11-surface-card, rgba(15,23,42,0.5)) !important;
+  border-radius: 14px !important;
+}
+
+#fenixAgentCapacityWidget [style*="grid-template-columns"] > div {
+  background: rgba(255,255,255,0.02) !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  border-radius: 10px !important;
+  padding: 10px !important;
+  transition: all 0.15s ease !important;
+}
+
+#fenixAgentCapacityWidget [style*="grid-template-columns"] > div:hover {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* Capacity bar */
+#fenixAgentCapacityWidget .capacity-bar,
+#fenixAgentCapacityWidget [style*="height:6px"] {
+  border-radius: 3px !important;
+  overflow: hidden !important;
+}
+
+/* === GLOBAL: CARD SECTION HEADERS — CONSISTENT === */
+.v10-card h3,
+.fenix-card h3 {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* === BREADCRUMBS — SPATIAL CONTEXT === */
+.v10-breadcrumbs {
+  padding: 10px 16px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+  font-size: 12px !important;
+}
+
+.v10-bc-root {
+  color: #64748b !important;
+  cursor: pointer !important;
+  transition: color 0.15s ease !important;
+}
+
+.v10-bc-root:hover {
+  color: #94a3b8 !important;
+}
+
+.v10-bc-group {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  font-size: 11px !important;
+}
+
+.v10-bc-view.active {
+  color: var(--v11-fenix-green, #00E5A0) !important;
+  font-weight: 700 !important;
+}
+
+/* Breadcrumb caret arrows */
+.v10-breadcrumbs .ph-caret-right {
+  font-size: 10px !important;
+  color: #334155 !important;
+  margin: 0 4px !important;
+}
+
+/* === GLOBAL: SECTION DIVIDERS — SUBTLE === */
+.section-divider,
+hr {
+  border: none !important;
+  height: 1px !important;
+  background: rgba(255,255,255,0.04) !important;
+  margin: 16px 0 !important;
+}
+
+/* === NOTIFICATION BADGE — TOPBAR === */
+.notification-badge,
+[class*="notif-badge"] {
+  background: #ef4444 !important;
+  color: #fff !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* === DROPDOWN / SELECT — PREMIUM === */
+select {
+  background: rgba(6,10,17,0.8) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: border-color 0.15s ease !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 5l3 3 3-3'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  padding-right: 24px !important;
+}
+
+select:focus {
+  border-color: rgba(0,229,160,0.3) !important;
+  outline: none !important;
+}
+
+/* === TOOLTIP STYLE (global) === */
+[title]:hover::after {
+  font-size: 11px;
+  font-weight: 600;
+}

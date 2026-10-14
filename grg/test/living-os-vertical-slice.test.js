@@ -21,11 +21,6 @@ test('read-only audit chat flows through plan, mission, job, tool, artifact and 
   const previousWorkspaceRoot = process.env.FENIX_WORKSPACE_ROOT;
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'fenix-audit-workspaces-'));
   await fs.writeFile(path.join(workspaceRoot, 'README.md'), '# Isolated Fênix audit fixture\n');
-  execFileSync('git', ['init'], { cwd: workspaceRoot, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.name', 'Fênix Test'], { cwd: workspaceRoot, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.email', 'fenix-test@example.invalid'], { cwd: workspaceRoot, stdio: 'ignore' });
-  execFileSync('git', ['add', 'README.md'], { cwd: workspaceRoot, stdio: 'ignore' });
-  execFileSync('git', ['commit', '-m', 'Create isolated audit fixture'], { cwd: workspaceRoot, stdio: 'ignore' });
   process.env.FENIX_WORKSPACE_ROOT = workspaceRoot;
   let app;
 
@@ -72,12 +67,13 @@ test('read-only audit chat flows through plan, mission, job, tool, artifact and 
     assert.equal(mission.status, 'SUCCEEDED');
     assert.equal(job.status, 'SUCCEEDED');
     assert.equal(job.result.toolId, 'system.readonly.audit');
+    assert.equal(job.result.head, execFileSync('git', ['rev-parse', 'HEAD'], { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8' }).trim());
     assert.ok(toolEvents.includes('execution.tool.started'));
     assert.ok(toolEvents.includes('execution.tool.completed'));
     assert.ok(app.bus.history('mission.step.started').length > 0);
     assert.ok(app.bus.history('mission.step.completed').length > 0);
     assert.ok(app.bus.history('conversation.message.appended').length >= 3);
-    assert.ok(state.artifacts.some(item => item.id === job.result.result.artifactId));
+    assert.ok(state.artifacts.some(item => item.id === job.result.artifactId));
     assert.deepEqual(history.map(message => message.role), ['user', 'assistant', 'assistant']);
     assert.match(history.at(-1).content, /FENIX_ARCHITECTURE_ANALYSIS\.md/);
     assert.ok(state.memories.some(memory => memory.content === history.at(-1).content));

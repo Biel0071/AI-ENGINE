@@ -154,24 +154,61 @@ class JobQueueManager {
     return job;
   }
 
+  start() {
+    this.isPaused = false;
+    return this;
+  }
+
+  status() {
+    return {
+      state: this.isPaused ? 'PAUSED' : 'ACTIVE',
+      bullQueue: Boolean(this.bullQueue),
+      jobsCount: this.jobs.size,
+      paused: this.isPaused
+    };
+  }
+
+  async stop() {
+    this.isPaused = true;
+    if (this.bullQueue) {
+      try {
+        await this.bullQueue.close();
+      } catch (e) {}
+      this.bullQueue = null;
+    }
+    return this;
+  }
+
   async _dispatchToBull(job) {
+    if (process.env.FENIX_TEST_MODE === 'true' || process.env.NODE_ENV === 'test') {
+      // In test mode, do not keep open live BullMQ connections to external Redis
+      job._bullDispatched = false;
+      return null;
+    }
+
     try {
       var bullmq = require('bullmq');
       var Queue = bullmq.Queue;
       var q = this.bullQueue;
       if (!q) {
         var REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
-        var conn = { host: 'localhost', port: 6379 };
+        var conn = { host: 'localhost', port: 6379, maxRetriesPerRequest: 1, enableOfflineQueue: false, connectTimeout: 2000 };
         try {
           var u = new URL(REDIS_URL);
-          conn = { host: u.hostname || 'localhost', port: parseInt(u.port || '6379', 10) };
+          conn = {
+            host: u.hostname || 'localhost',
+            port: parseInt(u.port || '6379', 10),
+            maxRetriesPerRequest: 1,
+            enableOfflineQueue: false,
+            connectTimeout: 2000
+          };
         } catch (err) {}
         q = new Queue('fenix-jobs', { connection: conn });
         this.bullQueue = q;
       }
 
       var bullJobId = 'bull-' + job.id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
-      var bJob = await q.add('fenix-job', {
+      var addPromise = q.add('fenix-job', {
         jobId: job.id,
         type: job.type,
         projectId: job.projectId,
@@ -188,6 +225,12 @@ class JobQueueManager {
         removeOnFail: 50
       });
 
+      var timeoutPromise = new Promise(function(_, reject) {
+        setTimeout(function() { reject(new Error('BullMQ dispatch timeout (3000ms)')); }, 3000).unref();
+      });
+
+      var bJob = await Promise.race([addPromise, timeoutPromise]);
+
       job._bullJobId = bullJobId;
       job._bullDispatched = true;
       this.save();
@@ -195,7 +238,9 @@ class JobQueueManager {
       safeEmit('jobQueued', job);
       return bJob;
     } catch (e) {
-      console.error('[JobQueueManager] Failed to dispatch to BullMQ:', e.message);
+      console.warn('[JobQueueManager] BullMQ dispatch bypassed (Redis unreachable):', e.message);
+      job._bullDispatched = false;
+      this.save();
       return null;
     }
   }
@@ -283,6 +328,35 @@ class JobQueueManager {
     this.save();
 
     safeEmit('jobCancelled', { jobId: job.id });
+    return job;
+  }
+
+  async pauseJob(id) {
+    var job = this.jobs.get(String(id));
+    if (!job) throw new Error('Job #' + id + ' not found');
+    if (job.status === JOB_STATUSES.COMPLETED || job.status === JOB_STATUSES.CANCELLED) {
+      throw new Error('Cannot pause a finalized job');
+    }
+    job.status = JOB_STATUSES.PAUSED;
+    job.steps.push({ name: 'PAUSED', status: 'COMPLETED', timestamp: new Date().toISOString() });
+    this.save();
+    safeEmit('jobUpdated', job);
+    return job;
+  }
+
+  async resumeJob(id) {
+    var job = this.jobs.get(String(id));
+    if (!job) throw new Error('Job #' + id + ' not found');
+    if (job.status !== JOB_STATUSES.PAUSED) {
+      return job;
+    }
+    job.status = JOB_STATUSES.QUEUED;
+    job.steps.push({ name: 'RESUMED', status: 'COMPLETED', timestamp: new Date().toISOString() });
+    this.save();
+    safeEmit('jobQueued', job);
+    if (!this.isPaused && !job._bullDispatched) {
+      await this._dispatchToBull(job);
+    }
     return job;
   }
 

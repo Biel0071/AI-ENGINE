@@ -19,7 +19,7 @@ function withServer(fn) {
     });
     const port = server.address().port;
     const base = `http://127.0.0.1:${port}`;
-    try { await fn(base); }
+    try { await fn(base, server); }
     finally { server.close(); try { fs.unlinkSync(dataFile); } catch {} }
   };
 }
@@ -83,6 +83,23 @@ test('login then use bearer token works', withServer(async (base) => {
   assert.equal(ov.status, 200);
 }));
 
+test('login cookie survives a protected request without bearer header', withServer(async (base) => {
+  const response = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(ADMIN) });
+  assert.equal(response.status, 200);
+  const cookie = response.headers.get('set-cookie');
+  assert.match(cookie || '', /fenix_session=/);
+  const ov = await fetch(`${base}/api/overview`, { headers: { cookie: cookie.split(';')[0] } });
+  assert.equal(ov.status, 200);
+}));
+
+test('valid session cookie recovers a request carrying a stale bearer token', withServer(async (base) => {
+  const response = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(ADMIN) });
+  const cookie = response.headers.get('set-cookie')?.split(';')[0];
+  assert.ok(cookie);
+  const recovered = await fetch(`${base}/api/overview`, { headers: { cookie, authorization: 'Bearer expired-browser-token' } });
+  assert.equal(recovered.status, 200);
+}));
+
 test('universal v2 job contract persists real state, events, queue view and cancellation', withServer(async (base) => {
   const headers = await authHeaders(base);
   const submittedResponse = await fetch(`${base}/api/v2/jobs`, {
@@ -113,7 +130,8 @@ test('universal v2 job contract persists real state, events, queue view and canc
 
   const workers = await fetch(`${base}/api/workers`, { headers }).then((response) => response.json());
   assert.equal(workers.configured, false);
-  assert.deepEqual(workers.workers, []);
+  assert.ok(Array.isArray(workers.workers));
+  assert.ok(workers.workers.every((worker) => ['ONLINE', 'STALE'].includes(worker.status)), 'worker registry must expose measured statuses');
 }));
 
 test('full HTTP flow: orchestrate then overview reflects it', withServer(async (base) => {
@@ -128,6 +146,92 @@ test('full HTTP flow: orchestrate then overview reflects it', withServer(async (
   const ov = await fetch(`${base}/api/overview`, { headers }).then((x) => x.json());
   assert.ok(ov.metrics.projects >= 1);
   assert.ok(ov.metrics.deployments >= 1);
+}));
+
+test('agent orchestration submits a canonical job for a registered workspace', withServer(async (base) => {
+  const headers = await authHeaders(base);
+  const projectResponse = await fetch(`${base}/api/fenix/projects`, {
+    method: 'POST', headers,
+    body: JSON.stringify({ id: `agent-http-${crypto.randomUUID()}`, name: 'Agent HTTP', workspace: process.cwd() }),
+  });
+  assert.equal(projectResponse.status, 201);
+  const project = await projectResponse.json();
+  const response = await fetch(`${base}/api/v2/agents/orchestrate`, {
+    method: 'POST', headers,
+    body: JSON.stringify({ projectId: project.id, prompt: 'Inspect the current project', policy: { requireApproval: true } }),
+  });
+  assert.equal(response.status, 202);
+  const submitted = await response.json();
+  assert.ok(submitted.jobId);
+  const job = await fetch(`${base}/api/v2/jobs/${submitted.jobId}`, { headers }).then((item) => item.json());
+  assert.equal(job.type, 'agent.execute');
+  assert.equal(job.projectId, project.id);
+  assert.equal(job.status, 'AWAITING_APPROVAL');
+}));
+
+test('living city projects an assigned running agent and its persisted job events', withServer(async (base, server) => {
+  const headers = await authHeaders(base);
+  let release;
+  let started;
+  const startedSignal = new Promise((resolve) => { started = resolve; });
+  const releaseSignal = new Promise((resolve) => { release = resolve; });
+  server.app.jobs.register('city.probe', async () => { started(); await releaseSignal; return { verified: true }; });
+  const job = await server.app.jobs.submit('grg', 'test-admin', { type: 'city.probe', requiredCapabilities: ['backend'], maxAttempts: 1 });
+  const running = server.app.jobs.run('grg', job.id, 'city-test-worker');
+  try {
+    await startedSignal;
+    const response = await fetch(`${base}/api/v2/living-city/agents`, { headers });
+    assert.equal(response.status, 200);
+    const city = await response.json();
+    const agent = city.agents.find((item) => item.id === job.agent.agentId);
+    assert.equal(agent.status, 'WORKING');
+    assert.equal(agent.currentJob.id, job.id);
+    const stateResponse = await fetch(`${base}/api/v2/living-city/state`, { headers });
+    const state = await stateResponse.json();
+    assert.equal(state.metrics.runningJobs, 1);
+  } finally { release(); await running; }
+  const events = await server.app.jobs.eventsFor('grg', 'test-admin', job.id);
+  assert.deepEqual(events.filter((item) => item.type.startsWith('runtime.job.')).map((item) => item.type), ['runtime.job.queued', 'runtime.job.started', 'runtime.job.succeeded']);
+  assert.equal(events.find((item) => item.type === 'runtime.job.started').data.agentId, job.agent.agentId);
+}));
+
+test('HTTP creates additional project agents and City tracks an explicitly assigned job', withServer(async (base, server) => {
+  const headers = await authHeaders(base);
+  const entityResponse = await fetch(`${base}/api/cognitive/entities`, { method: 'POST', headers, body: JSON.stringify({ type: 'company', name: 'Dynamic Team' }) });
+  assert.equal(entityResponse.status, 201);
+  const entity = await entityResponse.json();
+  const firstResponse = await fetch(`${base}/api/cognitive/entities/${entity.id}/agents`, { method: 'POST', headers, body: JSON.stringify({ name: 'API Investigator', role: 'research' }) });
+  assert.equal(firstResponse.status, 201);
+  const first = await firstResponse.json();
+  const secondResponse = await fetch(`${base}/api/cognitive/entities/${entity.id}/agents`, { method: 'POST', headers, body: JSON.stringify({ name: 'Log Investigator', role: 'research' }) });
+  assert.equal(secondResponse.status, 201);
+  const second = await secondResponse.json();
+  assert.notEqual(first.id, second.id);
+  const listResponse = await fetch(`${base}/api/cognitive/entities/${entity.id}/agents`, { headers });
+  assert.equal(listResponse.status, 200);
+  const listed = await listResponse.json();
+  assert.ok(listed.agents.some((agent) => agent.id === first.id));
+  let started; let release;
+  const startedSignal = new Promise((resolve) => { started = resolve; });
+  const releaseSignal = new Promise((resolve) => { release = resolve; });
+  server.app.jobs.register('city.dynamic-probe', async () => { started(); await releaseSignal; return { verified: true }; });
+  const jobResponse = await fetch(`${base}/api/v2/jobs`, { method: 'POST', headers, body: JSON.stringify({ type: 'city.dynamic-probe', agentId: first.id, maxAttempts: 1 }) });
+  assert.equal(jobResponse.status, 202);
+  const submitted = await jobResponse.json();
+  const running = server.app.jobs.run('grg', submitted.jobId, 'dynamic-agent-worker');
+  try {
+    await startedSignal;
+    const cityResponse = await fetch(`${base}/api/v2/living-city/agents`, { headers });
+    assert.equal(cityResponse.status, 200);
+    const city = await cityResponse.json();
+    const agent = city.agents.find((item) => item.id === first.id);
+    assert.equal(agent.kind, 'cognitive');
+    assert.equal(agent.name, 'API Investigator');
+    assert.equal(agent.status, 'WORKING');
+    assert.equal(agent.currentJob.id, submitted.jobId);
+  } finally { release(); await running; }
+  const history = await server.app.jobs.eventsFor('grg', 'test-admin', submitted.jobId);
+  assert.equal(history.find((event) => event.type === 'runtime.job.started').data.agentId, first.id);
 }));
 
 test('adds security headers and request id', withServer(async (base) => {

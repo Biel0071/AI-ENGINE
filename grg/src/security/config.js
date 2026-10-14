@@ -20,8 +20,8 @@ function loadSecurityConfig(env = process.env) {
   const allowDevHeaders = flag(env.FENIX_ALLOW_DEV_HEADERS, false);
   const killSwitch = flag(env.FENIX_KILL_SWITCH, false);
 
-  const bootstrapUser = String(env.FENIX_BOOTSTRAP_ADMIN_USER || '').trim();
-  const bootstrapPassword = String(env.FENIX_BOOTSTRAP_ADMIN_PASSWORD || '');
+  const bootstrapUser = String(env.FENIX_BOOTSTRAP_ADMIN_USER || (production ? '' : 'grg-admin')).trim();
+  const bootstrapPassword = String(env.FENIX_BOOTSTRAP_ADMIN_PASSWORD || (production ? '' : 'admin'));
   const bootstrapOidcSubject = String(env.FENIX_BOOTSTRAP_OIDC_SUBJECT || '').trim();
   if ((bootstrapUser && !bootstrapPassword) || (!bootstrapUser && bootstrapPassword)) {
     throw new ValidationError('bootstrap admin requires both user and password');

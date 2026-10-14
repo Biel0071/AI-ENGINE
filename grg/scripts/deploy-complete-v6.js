@@ -6,7 +6,7 @@ const SSH_CONFIG = {
   host: '209.50.241.22',
   port: 22,
   username: 'root',
-  password: 'S53yi4RYq8j4DCGp',
+  password: process.env.VPS_SSH_PASSWORD || '',
   readyTimeout: 20000
 };
 

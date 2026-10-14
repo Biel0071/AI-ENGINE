@@ -1,283 +1,252 @@
 'use strict';
-/**
- * FÊNIX OS V11 — VIDEO SYSTEM DECODER
- * 
- * Pipeline:
- *   VIDEO (MP4, MOV, WebM, etc.)
- *   ↓
- *   FRAME EXTRACTION (Temporal keyframe sampling / Chromium canvas)
- *   ↓
- *   SCENE DETECTION (Visual distance thresholding)
- *   ↓
- *   KEYFRAME SELECTION
- *   ↓
- *   OCR & VISUAL ELEMENT ANALYSIS
- *   ↓
- *   ACTION DETECTION
- *   ↓
- *   SCREEN TRANSITION DETECTION
- *   ↓
- *   TIMELINE
- *   ↓
- *   SCREEN GRAPH & BEHAVIOR GRAPH
- * 
- * Epistemic Classification:
- *   OBSERVED: Witnessed screens, elements, detected text, transitions, palette.
- *   INFERRED: Probable backend routes, parameters, data models, auth state.
- *   UNKNOWN: Hidden cookies, database schema, server secrets, missing hardware decoders.
- */
 
-const fs = require('fs');
-const path = require('path');
-const { PageGraph, BehaviorGraph } = require('./graphs-engine');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
+
+const execFileAsync = promisify(execFile);
+const SUPPORTED_FORMATS = new Set(['.mp4', '.mov', '.webm', '.mkv', '.avi']);
+const MAX_VIDEO_BYTES = 250 * 1024 * 1024;
+const MAX_VIDEO_SECONDS = 6 * 60 * 60;
+const MAX_FRAME_COUNT = 24;
 
 class VideoSystemDecoder {
   constructor(options = {}) {
-    this.artifactsDir = options.artifactsDir || path.join(__dirname, '..', '.data', 'video_keyframes');
-    if (!fs.existsSync(this.artifactsDir)) {
-      fs.mkdirSync(this.artifactsDir, { recursive: true });
-    }
+    this.ffprobePath = options.ffprobePath || 'ffprobe';
+    this.ffmpegPath = options.ffmpegPath || 'ffmpeg';
+    this.runCommand = options.runCommand || runCommand;
+    this.artifactsDir = path.resolve(options.artifactsDir || path.join(__dirname, '..', '.data', 'reconstruction', 'videos'));
+    const defaultLibrary = path.join(__dirname, '..', '.data', 'references', 'videos');
+    this.allowedRoots = (options.allowedRoots || [defaultLibrary]).map((root) => path.resolve(root));
+    if (!options.allowedRoots) fs.mkdirSync(defaultLibrary, { recursive: true });
   }
 
-  /**
-   * Decodes a video file or test simulation into an exhaustive observation report
-   */
   async decodeVideo(videoInput, options = {}) {
-    const startTime = Date.now();
-    const videoSource = typeof videoInput === 'string' ? videoInput : (videoInput && videoInput.path ? videoInput.path : 'session_walkthrough.mp4');
-    const format = path.extname(videoSource).replace('.', '').toLowerCase() || 'mp4';
+    const inputPath = typeof videoInput === 'string' ? videoInput.trim() : videoInput?.path;
+    if (typeof inputPath !== 'string' || !inputPath.trim()) throw decoderError('VIDEO_SOURCE_REQUIRED', 'Informe o caminho de um vídeo enviado para a biblioteca de referências.', 400);
 
-    // Verify source if it's a specific file path and not a simulation
-    const isFileOnDisk = fs.existsSync(videoSource);
+    const extension = path.extname(inputPath).toLowerCase();
+    if (!SUPPORTED_FORMATS.has(extension)) {
+      throw decoderError('VIDEO_FORMAT_UNSUPPORTED', 'Formato de vídeo não suportado.', 415);
+    }
 
-    // 1. FRAME EXTRACTION & TEMPORAL SAMPLING
-    const frames = await this._extractFrames(videoSource, isFileOnDisk, options);
+    let sourcePath;
+    let stat;
+    try {
+      sourcePath = fs.realpathSync(inputPath);
+      stat = fs.statSync(sourcePath);
+    } catch {
+      throw decoderError('VIDEO_NOT_FOUND', 'O arquivo de vídeo informado não existe na biblioteca acessível ao Fênix.', 404);
+    }
+    if (!stat.isFile()) throw decoderError('VIDEO_NOT_FOUND', 'O caminho informado não aponta para um arquivo.', 404);
+    if (stat.size <= 0 || stat.size > MAX_VIDEO_BYTES) {
+      throw decoderError('VIDEO_SIZE_UNSUPPORTED', 'O vídeo precisa ter conteúdo e no máximo 250 MB.', 413);
+    }
+    if (!this._isAllowedPath(sourcePath)) {
+      throw decoderError('VIDEO_PATH_NOT_ALLOWED', 'O vídeo precisa estar dentro da biblioteca de referências autorizada.', 403);
+    }
 
-    // 2. SCENE DETECTION & KEYFRAME SELECTION
-    const keyframes = this._detectScenesAndSelectKeyframes(frames, options);
+    const sampleIntervalSeconds = boundedInteger(options.sampleIntervalSeconds, 10, 1, 600);
+    const maxFrames = boundedInteger(options.maxFrames, 12, 1, MAX_FRAME_COUNT);
+    const probe = await this._probe(sourcePath);
+    if (probe.durationSeconds > MAX_VIDEO_SECONDS) {
+      throw decoderError('VIDEO_DURATION_UNSUPPORTED', 'Vídeos acima de seis horas não podem ser processados.', 413);
+    }
 
-    // 3. OCR & VISUAL ELEMENT ANALYSIS ON KEYFRAMES
-    const analyzedKeyframes = keyframes.map((kf, idx) => this._analyzeKeyframe(kf, idx, options));
+    const sourceSha256 = await sha256File(sourcePath);
+    const artifactId = `video-${sourceSha256.slice(0, 12)}-${Date.now()}`;
+    const artifactPath = path.join(this.artifactsDir, artifactId);
+    const artifactUrl = `/api/v2/system-reconstruction/video/${artifactId}`;
+    fs.mkdirSync(artifactPath, { recursive: true });
+    const outputPattern = path.join(artifactPath, 'frame-%03d.jpg');
 
-    // 4. ACTION & TRANSITION DETECTION
-    const transitions = this._detectActionTransitions(analyzedKeyframes);
+    try {
+      await this.runCommand(this.ffmpegPath, [
+        '-hide_banner', '-loglevel', 'error', '-i', sourcePath,
+        '-map', '0:v:0', '-vf', `fps=1/${sampleIntervalSeconds},scale=640:960:force_original_aspect_ratio=decrease:force_divisible_by=2`,
+        '-frames:v', String(maxFrames), '-q:v', '3', '-y', outputPattern
+      ], { timeout: 120000, maxBuffer: 2 * 1024 * 1024, windowsHide: true });
+    } catch (error) {
+      fs.rmSync(artifactPath, { recursive: true, force: true });
+      if (error?.code === 'ENOENT') {
+        throw decoderError('VIDEO_TOOL_UNAVAILABLE', 'FFmpeg/FFprobe não estão instalados ou não estão acessíveis neste servidor.', 503);
+      }
+      throw decoderError('VIDEO_EXTRACTION_FAILED', 'FFmpeg não conseguiu extrair quadros válidos do vídeo.', 422);
+    }
 
-    // 5. TIMELINE COMPILATION
-    const timeline = this._buildTimeline(analyzedKeyframes, transitions);
+    const frameNames = fs.readdirSync(artifactPath)
+      .filter((name) => /^frame-\d{3}\.jpg$/i.test(name))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (!frameNames.length) {
+      fs.rmSync(artifactPath, { recursive: true, force: true });
+      throw decoderError('VIDEO_FRAMES_NOT_EXTRACTED', 'O vídeo foi lido, mas nenhum quadro pôde ser extraído.', 422);
+    }
 
-    // 6. COMPILE SCREEN GRAPH & BEHAVIOR GRAPH
-    const sysId = `video:${path.basename(videoSource).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-    const pageGraph = new PageGraph({ systemId: sysId });
-    const behaviorGraph = new BehaviorGraph({ systemId: sysId });
-
-    analyzedKeyframes.forEach((kf, idx) => {
-      const pageId = `screen:${kf.screenName.toLowerCase().replace(/[^a-z0-9]/g, '-') || `frame-${idx}`}`;
-      pageGraph.addPage({
-        id: pageId,
-        url: kf.inferredRoute || `/${kf.screenName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-        title: kf.screenTitle,
-        screenshot: kf.framePath,
-        components: kf.components,
-        actions: kf.actions,
-        apis: kf.inferredApis,
-        nextScreens: []
-      });
-    });
-
-    transitions.forEach(tr => {
-      pageGraph.addNavigationEdge(tr.fromScreenId, tr.toScreenId, {
-        action: tr.action,
-        selector: tr.targetElement,
-        label: `${tr.action} on ${tr.targetElement}`
-      });
-
-      behaviorGraph.recordTransition({
-        action: tr.action,
-        elementSelector: tr.targetElement,
-        elementCategory: tr.elementCategory,
-        elementText: tr.targetElementText,
-        fromScreen: tr.fromScreenId,
-        toScreen: tr.toScreenId,
-        resultType: tr.resultType,
-        apiCalled: tr.inferredApi
-      });
-    });
-
-    // 7. EPISTEMIC SEGREGATION: OBSERVED, INFERRED, UNKNOWN
-    const observedElements = [];
-    const inferredApis = [];
-    const inferredModels = [];
-
-    analyzedKeyframes.forEach(kf => {
-      kf.components.forEach(c => observedElements.push({ screen: kf.screenTitle, component: c }));
-      kf.inferredApis.forEach(a => inferredApis.push({ screen: kf.screenTitle, api: a }));
-      kf.inferredDataEntities.forEach(e => inferredModels.push({ entity: e }));
-    });
-
+    const keyframes = frameNames.slice(0, maxFrames).map((file, index) => ({
+      index,
+      requestedAtSeconds: index * sampleIntervalSeconds,
+      timestampEvidence: 'UNIFORM_SAMPLE_POSITION',
+      file,
+      url: `${artifactUrl}/frames/${file}`,
+      status: 'EXTRACTED'
+    }));
     const report = {
-      ok: true,
-      videoSource,
-      format,
-      isFileOnDisk,
-      durationSeconds: options.durationSeconds || Math.round(keyframes.length * 2.5),
-      processingLatencyMs: Date.now() - startTime,
-      metrics: {
-        totalFramesSampled: frames.length,
-        keyframesSelected: keyframes.length,
-        uniqueScreensDetected: analyzedKeyframes.length,
-        transitionsDetected: transitions.length,
-        componentsDiscovered: observedElements.length
-      },
-      timeline,
-      pageGraph: pageGraph.toJSON(),
-      behaviorGraph: behaviorGraph.toJSON(),
-      epistemicClassification: {
-        OBSERVED: {
-          screens: analyzedKeyframes.map(k => ({ title: k.screenTitle, timestamp: k.timestamp, visualDensity: k.visualDensity })),
-          components: observedElements,
-          actions: transitions.map(t => ({ action: t.action, target: t.targetElement, from: t.fromScreenId, to: t.toScreenId })),
-          palette: this._aggregatePalettes(analyzedKeyframes)
-        },
-        INFERRED: {
-          apis: inferredApis,
-          dataModels: inferredModels,
-          probableStack: {
-            frontend: 'Modern SPA / Web Components with Client Router',
-            backend: 'RESTful JSON API',
-            stateManagement: 'Client-side query cache / Global store'
-          }
-        },
-        UNKNOWN: {
-          databaseSchema: 'Direct SQL tables and indexes are not visible in video stream',
-          secretKeys: 'API tokens and private environment variables remain concealed',
-          toolchainStatus: isFileOnDisk ? 'Direct hardware decoding requiring FFmpeg/GStreamer omitted; using temporal browser sampling' : 'Simulated input frame sequence'
-        }
-      },
-      timestamp: new Date().toISOString()
+      artifactId,
+      artifactUrl,
+      status: 'FRAMES_EXTRACTED',
+      analysisStatus: 'NOT_VERIFIED',
+      createdAt: new Date().toISOString(),
+      source: { sha256: sourceSha256, byteLength: stat.size },
+      media: probe,
+      sampling: { method: 'FFMPEG_FPS_FILTER', intervalSeconds: sampleIntervalSeconds, requestedMaximumFrames: maxFrames },
+      keyframes,
+      sceneChanges: { status: 'NOT_MEASURED', items: [] },
+      observations: [],
+      interactionTimeline: { status: 'NOT_VERIFIED', items: [] },
+      limitations: [
+        'Quadros foram extraídos em intervalos uniformes; as posições registradas são pontos de amostragem, não timestamps exatos do frame original.',
+        'Nenhum conteúdo visual, ação ou estrutura da aplicação foi inferido sem um analisador de visão conectado.'
+      ]
     };
-
+    this._persistReport(artifactPath, report);
     return report;
   }
 
-  async _extractFrames(videoSource, isFileOnDisk, options = {}) {
-    // If frames are directly provided (e.g. from test or pre-extracted sequence)
-    if (Array.isArray(options.testFrames) && options.testFrames.length > 0) {
-      return options.testFrames;
-    }
-
-    // Temporal sampling: select representative timestamps across video duration
-    const duration = options.durationSeconds || 15;
-    const step = Math.max(1, duration / 6);
-    const intervals = [];
-    for (let t = 0; t <= duration; t += step) {
-      intervals.push(Number(t.toFixed(1)));
-    }
-
-    return intervals.map((timeSec, idx) => ({
-      frameIndex: idx,
-      timestamp: `${timeSec.toFixed(1)}s`,
-      timeSeconds: timeSec,
-      framePath: path.join(this.artifactsDir, `frame_${idx}.png`),
-      simulatedChangeScore: idx === 0 ? 100 : (idx % 2 === 1 ? 65 : 42)
-    }));
+  readArtifact(artifactId) {
+    const directory = this._artifactDirectory(artifactId);
+    let report;
+    try { report = JSON.parse(fs.readFileSync(path.join(directory, 'manifest.json'), 'utf8')); }
+    catch { throw decoderError('VIDEO_ARTIFACT_NOT_FOUND', 'Relatório de vídeo não encontrado.', 404); }
+    return report;
   }
 
-  _detectScenesAndSelectKeyframes(frames, options = {}) {
-    const threshold = options.sceneChangeThreshold || 40;
-    return frames.filter((f, idx) => idx === 0 || f.simulatedChangeScore >= threshold);
+  readFrame(artifactId, fileName) {
+    const directory = this._artifactDirectory(artifactId);
+    if (typeof fileName !== 'string' || !/^frame-\d{3}\.jpg$/i.test(fileName)) {
+      throw decoderError('VIDEO_FRAME_NOT_FOUND', 'Quadro não encontrado.', 404);
+    }
+    const framePath = path.join(directory, fileName);
+    try {
+      const realDirectory = fs.realpathSync(directory);
+      const realFramePath = fs.realpathSync(framePath);
+      if (!isWithinDirectory(realDirectory, realFramePath)) throw new Error('outside artifact directory');
+      const frame = fs.readFileSync(realFramePath);
+      if (frame.length < 3 || frame[0] !== 0xff || frame[1] !== 0xd8 || frame[2] !== 0xff) throw new Error('invalid jpeg');
+      return frame;
+    } catch {
+      throw decoderError('VIDEO_FRAME_NOT_FOUND', 'Quadro não encontrado.', 404);
+    }
   }
 
-  _analyzeKeyframe(kf, idx, options = {}) {
-    // Dynamic screen detection based on provided options or progressive user journeys
-    const screenNames = options.screenNames || [
-      'Cockpit Dashboard', 'Projects Directory', 'Project Workspace', 'Visual QA Lab', 'System Telemetry'
-    ];
-    const screenTitle = kf.title || screenNames[idx % screenNames.length];
-    const route = '/' + screenTitle.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  _artifactDirectory(artifactId) {
+    if (typeof artifactId !== 'string' || !/^video-[a-f0-9]{12}-\d{13}$/.test(artifactId)) {
+      throw decoderError('VIDEO_ARTIFACT_NOT_FOUND', 'Relatório de vídeo não encontrado.', 404);
+    }
+    const directory = path.resolve(this.artifactsDir, artifactId);
+    if (!isWithinDirectory(this.artifactsDir, directory)) throw decoderError('VIDEO_ARTIFACT_NOT_FOUND', 'Relatório de vídeo não encontrado.', 404);
+    try {
+      const realRoot = fs.realpathSync(this.artifactsDir);
+      const realDirectory = fs.realpathSync(directory);
+      if (!isWithinDirectory(realRoot, realDirectory) || !fs.statSync(realDirectory).isDirectory()) throw new Error('not directory');
+    } catch {
+      throw decoderError('VIDEO_ARTIFACT_NOT_FOUND', 'Relatório de vídeo não encontrado.', 404);
+    }
+    return directory;
+  }
 
-    const components = [
-      `${screenTitle.replace(/[^a-zA-Z]/g, '')}Header`,
-      'SidebarNav',
-      'ContentGrid',
-      'ActionToolbar'
-    ];
+  async _probe(sourcePath) {
+    let stdout;
+    try {
+      const result = await this.runCommand(this.ffprobePath, [
+        '-v', 'error', '-show_entries', 'format=duration,format_name:stream=codec_type,codec_name,width,height,avg_frame_rate,duration',
+        '-of', 'json', sourcePath
+      ], { timeout: 30000, maxBuffer: 1024 * 1024, windowsHide: true });
+      stdout = result?.stdout;
+    } catch (error) {
+      if (error?.code === 'ENOENT') throw decoderError('VIDEO_TOOL_UNAVAILABLE', 'FFprobe não está instalado ou não está acessível neste servidor.', 503);
+      throw decoderError('VIDEO_PROBE_FAILED', 'FFprobe não conseguiu ler os metadados do vídeo.', 422);
+    }
 
-    const actions = [
-      `CLICK #${screenTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}-action`,
-      'CLICK #nav-next'
-    ];
-
+    let metadata;
+    try { metadata = JSON.parse(stdout); } catch {
+      throw decoderError('VIDEO_PROBE_INVALID', 'FFprobe retornou metadados inválidos.', 422);
+    }
+    const stream = Array.isArray(metadata.streams) ? metadata.streams.find((item) => item.codec_type === 'video') : null;
+    const durationSeconds = finitePositive(metadata.format?.duration || stream?.duration);
+    if (!stream || !durationSeconds || !Number.isFinite(Number(stream.width)) || !Number.isFinite(Number(stream.height))) {
+      throw decoderError('VIDEO_METADATA_INCOMPLETE', 'O arquivo não expõe duração e dimensões de uma faixa de vídeo válidas.', 422);
+    }
     return {
-      frameIndex: kf.frameIndex,
-      timestamp: kf.timestamp,
-      framePath: kf.framePath,
-      screenName: screenTitle,
-      screenTitle,
-      inferredRoute: route,
-      visualDensity: 'HIGH',
-      components,
-      actions,
-      inferredApis: [`GET /api/v2${route}`, `POST /api/v2${route}/action`],
-      inferredDataEntities: [`${screenTitle.replace(/[^a-zA-Z]/g, '')}Record`],
-      detectedColors: ['#030712', '#0f172a', '#3b82f6', '#10b981', '#f8fafc']
+      durationSeconds,
+      width: Number(stream.width),
+      height: Number(stream.height),
+      codec: typeof stream.codec_name === 'string' ? stream.codec_name : null,
+      format: typeof metadata.format?.format_name === 'string' ? metadata.format.format_name : null,
+      framesPerSecond: parseFrameRate(stream.avg_frame_rate)
     };
   }
 
-  _detectActionTransitions(keyframes) {
-    const transitions = [];
-    for (let i = 0; i < keyframes.length - 1; i++) {
-      const current = keyframes[i];
-      const next = keyframes[i + 1];
-      const primaryAction = current.actions[0] || 'CLICK #action-btn';
-      const actionParts = primaryAction.split(' ');
-
-      transitions.push({
-        fromScreenId: `screen:${current.screenName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-        toScreenId: `screen:${next.screenName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-        action: actionParts[0] || 'CLICK',
-        targetElement: actionParts[1] || '#next-btn',
-        targetElementText: `Trigger ${next.screenTitle}`,
-        elementCategory: actionParts[0] === 'TYPE' ? 'INPUT' : 'BUTTON',
-        resultType: 'NAVIGATE',
-        inferredApi: current.inferredApis[0] || 'GET /api/next',
-        durationSec: 1.5
-      });
-    }
-    return transitions;
-  }
-
-  _buildTimeline(keyframes, transitions) {
-    const timeline = [];
-    keyframes.forEach((kf, idx) => {
-      timeline.push({
-        event: 'SCREEN_DISPLAY',
-        timestamp: kf.timestamp,
-        screen: kf.screenTitle,
-        route: kf.inferredRoute,
-        componentsCount: kf.components.length
-      });
-      if (transitions[idx]) {
-        timeline.push({
-          event: 'USER_INTERACTION',
-          action: transitions[idx].action,
-          target: transitions[idx].targetElement,
-          result: `Transition from ${transitions[idx].fromScreenId} to ${transitions[idx].toScreenId}`
-        });
-      }
+  _isAllowedPath(sourcePath) {
+    return this.allowedRoots.some((root) => {
+      try { return isWithinDirectory(fs.realpathSync(root), sourcePath); } catch { return false; }
     });
-    return timeline;
   }
 
-  _aggregatePalettes(keyframes) {
-    const colors = new Set();
-    keyframes.forEach(kf => (kf.detectedColors || []).forEach(c => colors.add(c)));
-    return Array.from(colors);
+  _persistReport(artifactPath, report) {
+    const finalPath = path.join(artifactPath, 'manifest.json');
+    const temporaryPath = `${finalPath}.tmp`;
+    fs.writeFileSync(temporaryPath, JSON.stringify(report, null, 2), 'utf8');
+    fs.renameSync(temporaryPath, finalPath);
   }
+}
+
+function runCommand(binary, args, options = {}) {
+  return execFileAsync(binary, args, options);
+}
+
+function boundedInteger(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(number)));
+}
+
+function finitePositive(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function parseFrameRate(value) {
+  if (typeof value !== 'string') return null;
+  const [numerator, denominator] = value.split('/').map(Number);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) return null;
+  const fps = numerator / denominator;
+  return Number.isFinite(fps) && fps > 0 ? Number(fps.toFixed(3)) : null;
+}
+
+async function sha256File(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
+function isWithinDirectory(rootPath, candidatePath) {
+  const relativePath = path.relative(rootPath, candidatePath);
+  return relativePath === '' || (relativePath !== '..' && !relativePath.startsWith(`..${path.sep}`) && !path.isAbsolute(relativePath));
+}
+
+function decoderError(code, message, status) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  return error;
 }
 
 const globalVideoSystemDecoder = new VideoSystemDecoder();
 
-module.exports = {
-  VideoSystemDecoder,
-  globalVideoSystemDecoder
-};
+module.exports = { VideoSystemDecoder, globalVideoSystemDecoder };

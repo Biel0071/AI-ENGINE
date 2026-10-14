@@ -7,21 +7,46 @@
     if (value !== undefined) el.textContent = String(value ?? '');
     return el;
   };
-  async function getJson(url) {
-    const response = await fetch(url, { credentials: 'same-origin', signal: AbortSignal.timeout(30000) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || `${url}: HTTP ${response.status}`);
+  async function requestJson(url, options = {}) {
+    const headers = { Accept: 'application/json', ...(options.headers || {}) };
+    if (typeof window.safeFetchJson === 'function') {
+      const result = await window.safeFetchJson(url, {
+        ...options,
+        credentials: 'same-origin',
+        headers,
+      }, 60000);
+      if (!result?.ok) throw new Error(result?.error || `${url}: HTTP ${result?.status ?? 'request failed'}`);
+      return result.data;
+    }
+    const requestOptions = {
+      ...options,
+      credentials: 'same-origin',
+      headers,
+      signal: options.signal || AbortSignal.timeout(60000),
+    };
+    let response = await fetch(url, requestOptions);
+    if (response.status === 401) {
+      const token = window.localStorage?.getItem('grg_token') || window.localStorage?.getItem('fenix_token');
+      if (token && token !== 'null') {
+        response = await fetch(url, {
+          ...requestOptions,
+          headers: { ...headers, Authorization: `Bearer ${token}` },
+        });
+      }
+    }
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.error || `${url}: HTTP ${response.status}`);
     return result;
   }
+  async function getJson(url) {
+    return requestJson(url);
+  }
   async function postJson(url, body = {}) {
-    const response = await fetch(url, {
+    return requestJson(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      credentials: 'same-origin',
-      signal: AbortSignal.timeout(30000)
     });
-    return response.json();
   }
   function shell() {
     const view = $('view-operations');

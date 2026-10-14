@@ -1,0 +1,572 @@
+{
+  "totalComponents": 47,
+  "components": [
+    {
+      "componentId": "city-brief",
+      "file": "city-brief.js",
+      "lines": 85,
+      "sizeBytes": 7249,
+      "hash": "6650b42c469481849d711493c6aa4035c6504180896f6e2e2b11c37c7c25ec8b",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "city-integration",
+      "file": "city-integration.js",
+      "lines": 762,
+      "sizeBytes": 34664,
+      "hash": "057ad3c284a38f1350b9063a53ec71f2e8acfb9d7e2dd61e074ed2073ff32eef",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "city-return",
+      "file": "city-return.js",
+      "lines": 29,
+      "sizeBytes": 1448,
+      "hash": "f9a872d78b23d072e70b95975695fcb9c3e30ec2eb84795ef1e3b90db084f98b",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "cockpit-app",
+      "file": "cockpit-app.js",
+      "lines": 60,
+      "sizeBytes": 2844,
+      "hash": "1d24f472dff4545ed7ea30594a8228f4aa735c263730249061feee1d8f71c7f5",
+      "calledApis": [
+        "/api/dev/tasks"
+      ],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "command-center",
+      "file": "command-center.js",
+      "lines": 4081,
+      "sizeBytes": 236593,
+      "hash": "29eedade2cba9edcfdba9a19d96bb3fa93be225a04a4ee0c1fc10c3c39403c3e",
+      "calledApis": [
+        "/api/v2/api-platform/deploy",
+        "/api/v2/api-platform/test-chat",
+        "/api/v2/api-platform/health",
+        "/health",
+        "/api/v2/conversation",
+        "/api/v2/ai-platform/chat",
+        "/api/chat/stream",
+        "/api/missions",
+        "/api/chat/intent",
+        "/api/chat"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "connections-panel",
+      "file": "connections-panel.js",
+      "lines": 264,
+      "sizeBytes": 10178,
+      "hash": "93316bb7b48131eddd5d40682ea1437651cadbdc3d781c5e947a6ac42060d8fc",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "dev-pipeline-client",
+      "file": "dev-pipeline-client.js",
+      "lines": 69,
+      "sizeBytes": 3853,
+      "hash": "9e13ca68eca4daa3a9439bc67f6d9897ade4cb3a2aa3b88e710c73703871e115",
+      "calledApis": [
+        "/api/dev/small-task",
+        "/api/dev/pipeline",
+        "/api/missions/"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-bootstrap",
+      "file": "fenix-bootstrap.js",
+      "lines": 148,
+      "sizeBytes": 5354,
+      "hash": "033a0c0d7200ad1c4ba036d1f55fbb5c504dd08a185e023b1ee02b862c888b2c",
+      "calledApis": [
+        "/api/oidc/config",
+        "/health"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-city-event-adapter",
+      "file": "fenix-city-event-adapter.js",
+      "lines": 193,
+      "sizeBytes": 11024,
+      "hash": "336aded4f5cb0b3c0fc36ddcdd48ce441c0aa910d2a876862eae1dcc45b0d5a9",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-city-workflow",
+      "file": "fenix-city-workflow.js",
+      "lines": 176,
+      "sizeBytes": 14228,
+      "hash": "ca17777b744f3aff750d75a0948e99e79adfe9db593b08b250dc80958ad72759",
+      "calledApis": [
+        "/api/chat/stream"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-command-bridge",
+      "file": "fenix-command-bridge.js",
+      "lines": 34,
+      "sizeBytes": 1629,
+      "hash": "986572239535fd8197ae7285d11919440fb0a01e4b2d707ecfba73ba73b47878",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "fenix-command-palette",
+      "file": "fenix-command-palette.js",
+      "lines": 540,
+      "sizeBytes": 21495,
+      "hash": "6d1e30b21eda7eb9be0f4602e78ba35b7118cd763a75e55d776b56d56b29afdf",
+      "calledApis": [
+        "/api/v2/living-city/state"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-core-controller",
+      "file": "fenix-core-controller.js",
+      "lines": 1035,
+      "sizeBytes": 60446,
+      "hash": "99722604081b64416c4707adf6b5020c461a0347bc7e87b17ac677c92f3baa97",
+      "calledApis": [
+        "/api/v2/living-city/agents",
+        "/api/v2/fenix/intelligence/agents",
+        "/api/v2/jobs",
+        "/api/v2/projects-registry",
+        "/api/v2/events/history",
+        "/api/v2/reality/score",
+        "/api/v2/reality/summary",
+        "/api/v2/agent-runtime/status",
+        "/api/v2/visual-qa/dashboard",
+        "/api/missions"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-evolve",
+      "file": "fenix-evolve.js",
+      "lines": 320,
+      "sizeBytes": 11744,
+      "hash": "f3861370403042cf24f9a6aa33dc78ec2c9278dcedcdd419fa379391015f9687",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-flow-graph",
+      "file": "fenix-flow-graph.js",
+      "lines": 2686,
+      "sizeBytes": 111778,
+      "hash": "763f3e90a5da1d0822a6b525c49cf9c5ed11e385b1b7a390dd75fecd78fad48d",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-mascot-sidebar",
+      "file": "fenix-mascot-sidebar.js",
+      "lines": 2523,
+      "sizeBytes": 114909,
+      "hash": "80ce58a3b0fe37bc6387cfb6f3c898869b4df0091ce241c5ded5d03f790fc5e9",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-operational-os",
+      "file": "fenix-operational-os.js",
+      "lines": 3902,
+      "sizeBytes": 232436,
+      "hash": "12977eb398260d8e56dfddb44af8c5b6d94cd1de5f423d5fb8f6d42728d3b795",
+      "calledApis": [
+        "/api/login",
+        "/api/v2/living-city/agents",
+        "/api/v2/runtime/tick",
+        "/api/v2/fenix/intelligence/missions",
+        "/api/v2/graph/data",
+        "/api/v2/memory/reborn",
+        "/api/v2/memory/reborn/consolidate",
+        "/api/v2/fenix/intelligence/mission",
+        "/api/v2/terminal/exec",
+        "/api/v2/conversation"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-pixel-engine",
+      "file": "fenix-pixel-engine.js",
+      "lines": 2420,
+      "sizeBytes": 84180,
+      "hash": "eea50078dec400099d77670145bbd583b57afbd6a113424ba296592e5da48630",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "fenix-v11-interactions",
+      "file": "fenix-v11-interactions.js",
+      "lines": 1920,
+      "sizeBytes": 91320,
+      "hash": "eb2fd8b41bb18411cf21c6f69c6f9d26f3885a8774c67390c2af1b7fa5b649d0",
+      "calledApis": [
+        "/api/v2/auth/login",
+        "/api/v2/chat/query"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-v8-ui",
+      "file": "fenix-v8-ui.js",
+      "lines": 618,
+      "sizeBytes": 28319,
+      "hash": "2ed877c96159e96b0adb6e0d346d824e883d3a0ec9f01ade8f9cb66f27c164f1",
+      "calledApis": [
+        "/api/v2/jobs/",
+        "/api/v2/queue/pause",
+        "/api/v2/queue/resume",
+        "/api/v2/queue/clear-completed",
+        "/api/v2/conversation",
+        "/api/v2/jobs",
+        "/api/v2/public/projects"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-visual-ide",
+      "file": "fenix-visual-ide.js",
+      "lines": 1280,
+      "sizeBytes": 68970,
+      "hash": "42cf252fd059642d400fdfc5d5b6c61426df070cd8bc9452fbe9bef71d2f8e28",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-world-3d",
+      "file": "fenix-world-3d.js",
+      "lines": 433,
+      "sizeBytes": 33039,
+      "hash": "0b1ca9d77a1b3c63567fef4c03355f97be36b185b2c54f379b04e5bfe2e534e1",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "fenix-world-ui",
+      "file": "fenix-world-ui.js",
+      "lines": 112,
+      "sizeBytes": 10131,
+      "hash": "0bb99c0652aae3fbe450d4310b50d79749b66d725a6a1012d4a4a8f835698b49",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "ide-enhancer",
+      "file": "ide-enhancer.js",
+      "lines": 460,
+      "sizeBytes": 19827,
+      "hash": "a063f2afc116cf67a9e6ffd1319e203bf351a0f10f887d34c9bc8aa07fda30b5",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "iso-city",
+      "file": "iso-city.js",
+      "lines": 4892,
+      "sizeBytes": 215239,
+      "hash": "96d537b9262eff801b9cf7ee41c00cdb5a20e90c830544c5aefc41333612ad02",
+      "calledApis": [
+        "/api/v2/living-city/agents",
+        "/runtime/snapshot",
+        "/api/v2/living-city/state",
+        "/api/v2/jobs",
+        "/api/v2/agents"
+      ],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "jobs-app",
+      "file": "jobs-app.js",
+      "lines": 70,
+      "sizeBytes": 2489,
+      "hash": "83ceb19d46a6d02d52a23bbf9c8d449fb62291ca8b9a8ba5d24545625fae13ee",
+      "calledApis": [
+        "/api/dev/jobs"
+      ],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "live-runtime",
+      "file": "live-runtime.js",
+      "lines": 420,
+      "sizeBytes": 14463,
+      "hash": "fe4936ca61869779e0613eb74f067bec2f48cb677aabef67c6af7eac8ac0f070",
+      "calledApis": [
+        "/runtime/snapshot"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "marketplace-live",
+      "file": "marketplace-live.js",
+      "lines": 30,
+      "sizeBytes": 2198,
+      "hash": "3d22131d5bed5e00bb581511b036e7515d97f0bebabfd1e882758c805635e8e7",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "memory-live",
+      "file": "memory-live.js",
+      "lines": 146,
+      "sizeBytes": 13894,
+      "hash": "2d94eecb72c3cc1ec47760520f5d4b6aea2cfdb49c5770f8191339f7de2802fc",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "observatory-client",
+      "file": "observatory-client.js",
+      "lines": 784,
+      "sizeBytes": 46957,
+      "hash": "75a13ac8a363b4af800355cf66f17549590e442be5d2145d8f682665c427433c",
+      "calledApis": [
+        "/api/v2/observatory/summary",
+        "/api/v2/observatory/twins/project",
+        "/api/v2/observatory/twins/screen",
+        "/api/v2/observatory/visual-dna",
+        "/api/v2/observatory/unknowns",
+        "/api/v2/observatory/gaps",
+        "/api/v2/observatory/evolution",
+        "/api/v2/graph/data",
+        "/api/v2/patterns",
+        "/api/v2/living-city/agents",
+        "/api/v2/knowledge",
+        "/api/v2/observatory/data-lineage",
+        "/api/v2/observatory/api-trace",
+        "/api/v2/observatory/query",
+        "/api/v2/observatory/audit",
+        "/api/v2/observatory/element-inspector/observe"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "operations-live",
+      "file": "operations-live.js",
+      "lines": 533,
+      "sizeBytes": 28929,
+      "hash": "64aedd312ff3520a9f49c03c1e2799d5eb3d96a7ad3f5a83f9f382fa1071d292",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "pixi-building-interior",
+      "file": "pixi-building-interior.js",
+      "lines": 1521,
+      "sizeBytes": 65471,
+      "hash": "184a0a1efc42d1c385c2964e4a54e5c9ee6b976e07a7bbc7fee4af5da521e088",
+      "calledApis": [
+        "/api/v2/proxy/vps-health",
+        "/api/v2/vps-chat",
+        "/api/v2/jobs"
+      ],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "pixi-character-system",
+      "file": "pixi-character-system.js",
+      "lines": 1230,
+      "sizeBytes": 43706,
+      "hash": "74d65e5eaeb29df12de8b1d633a82f837c744bb549ed7ba04b8c6430814c779c",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "pixi-city-renderer",
+      "file": "pixi-city-renderer.js",
+      "lines": 3039,
+      "sizeBytes": 113598,
+      "hash": "8598b709b2dc63a8eede21481506427e6b230a4bd668a52dbf13d874b1048e75",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "pixi-game-art-pipeline",
+      "file": "pixi-game-art-pipeline.js",
+      "lines": 1641,
+      "sizeBytes": 56236,
+      "hash": "21b3b0308d7c3530fd215950546a2f4091aaa4c18f793918a6d8f52832e4b6d9",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "pixi-interaction-engine",
+      "file": "pixi-interaction-engine.js",
+      "lines": 364,
+      "sizeBytes": 13652,
+      "hash": "6ee56519d5e24c7d50a427f08335db63c06910b597f14df34c08e11e0ca74148",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "pixi-semantic-zoom",
+      "file": "pixi-semantic-zoom.js",
+      "lines": 277,
+      "sizeBytes": 9617,
+      "hash": "9ede352acf0b5bdc27b3aebfbfb7b9df0058baaaebe4753278877d444c53ca6b",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "premium-world-live",
+      "file": "premium-world-live.js",
+      "lines": 120,
+      "sizeBytes": 7183,
+      "hash": "b587bdc416c48c8b6017927b8538c4375c158a5abdcec69548f3a80c78e0cdf4",
+      "calledApis": [
+        "/api/v2/living-city/state"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "project-hub-controller",
+      "file": "project-hub-controller.js",
+      "lines": 1954,
+      "sizeBytes": 121804,
+      "hash": "f82131de0bf81dc5f721a1eb17494d6009698cb0c2a5e6b914d3cfd022b97da5",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "project-hub-live",
+      "file": "project-hub-live.js",
+      "lines": 2069,
+      "sizeBytes": 93267,
+      "hash": "580e74d1f60f83d15fdd17c5b62c6364340f6d9526a10c72f6a741722e30900a",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "project-ide-live",
+      "file": "project-ide-live.js",
+      "lines": 539,
+      "sizeBytes": 22757,
+      "hash": "90aef9a459cb260a03f6ef41c3ad7eb26cef2b715f72a6366c6c9fc7a4e981ea",
+      "calledApis": [],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "runtime-cockpit",
+      "file": "runtime-cockpit.js",
+      "lines": 2063,
+      "sizeBytes": 104437,
+      "hash": "dc7e827d7faa160ac3633c5bc1cbd5a50ebea52ad65c732b98ffdd43cd9f77f6",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "runtime-health-badge",
+      "file": "runtime-health-badge.js",
+      "lines": 28,
+      "sizeBytes": 1693,
+      "hash": "6740b5b418fa52c309a35b4f662421873f9bb61f8f6584aaf71f7ab268707f3f",
+      "calledApis": [
+        "/api/system/boot-status"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "system-analysis",
+      "file": "system-analysis.js",
+      "lines": 55,
+      "sizeBytes": 5583,
+      "hash": "196db146f91e7292c8bfaeacbad5022b701a092c3d197b4d55dfce540a1403f1",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "task-creator",
+      "file": "task-creator.js",
+      "lines": 239,
+      "sizeBytes": 9668,
+      "hash": "e4f7991f19f6263cc9eef11e9ee4e2127563318492547b16187398bed5424344",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    },
+    {
+      "componentId": "unified-app",
+      "file": "unified-app.js",
+      "lines": 1974,
+      "sizeBytes": 97535,
+      "hash": "fa369153c11302a65c42faaa4a5e4e9d7c39afca50de8fde642de8c076b31edc",
+      "calledApis": [
+        "/api/oidc/config",
+        "/api/chat/stream",
+        "/api/v2/mind/ingest",
+        "/api/fenix/legacy-disabled"
+      ],
+      "isReferencedInShell": true,
+      "status": "ACTIVE"
+    },
+    {
+      "componentId": "visual-inspector",
+      "file": "visual-inspector.js",
+      "lines": 82,
+      "sizeBytes": 3349,
+      "hash": "719d10d6c523a6bb9c8f695be5e58ccaac2ebf51fa0e618676012d94e86d3a71",
+      "calledApis": [],
+      "isReferencedInShell": false,
+      "status": "STANDALONE_OR_MODULAR"
+    }
+  ]
+}

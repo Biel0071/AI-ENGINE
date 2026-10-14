@@ -244,7 +244,7 @@
 
   // The canonical IsoCityEngine owns the fleet and only accepts runtime snapshots.
   function ensureCityFleet() {
-    if (!window.fenixCity && typeof IsoCityEngine !== "undefined" && document.getElementById("cityCanvas")) {
+    if (!window.FENIX_WORLD_3D && !window.fenixCity && typeof IsoCityEngine !== "undefined" && document.getElementById("cityCanvas")) {
       window.fenixCity = new IsoCityEngine("cityCanvas");
     }
   }
@@ -643,6 +643,7 @@ module.exports = authRouter;`
       if (!agentsResponse.ok) throw new Error(`HTTP ${agentsResponse.status}`);
       const data = await agentsResponse.json();
       const agents = Array.isArray(data.agents) ? data.agents : [];
+      if (window.__fenixContext) window.__fenixContext.cachedAgents = agents;
       const metrics = stateResult?.metrics || {};
       const set = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = String(value); };
       set('fenixAgentRegisteredCount', agents.length);
@@ -2161,9 +2162,15 @@ window.fenixShowClusterMemories = function() {
   };
 
   window.fenixFocusAgentInCity = function() {
+    const agentId = document.getElementById('agentInspId')?.textContent?.trim();
     const district = document.getElementById('agentInspDistrict')?.textContent || 'command-center';
     window.showView('city');
-    setTimeout(() => { window.fenixPanToDistrict?.(district); }, 300);
+    setTimeout(() => {
+      const world = window.fenixWorld3D || window.fenixWorldEngine3D;
+      world?.syncRealData?.();
+      if (agentId) world?.focusAgent?.(agentId);
+      else window.fenixPanToDistrict?.(district);
+    }, 300);
   };
 
   window.fenixClearAgentMem = function() {
