@@ -198,13 +198,13 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
   }
   window.fenixSelectMemoryNode = (id) => choose(id, true);
   const memoryTagCatalog = [
+    { tag: '#project', query: 'project' },
+    { tag: '#agent', query: 'agent' },
+    { tag: '#api', query: 'api' },
     { tag: '#adr', query: 'adr' },
     { tag: '#architecture', query: 'architecture' },
     { tag: '#security', query: 'security' },
     { tag: '#governance', query: 'governance' },
-    { tag: '#activation', query: 'activation' },
-    { tag: '#checkpoint', query: 'checkpoint' },
-    { tag: '#zero-mock', query: 'zero-mock' },
     { tag: '#telemetry', query: 'telemetry' }
   ];
 
@@ -240,6 +240,10 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
         }
         renderList();
         renderTagCatalog();
+        const firstMatch = state.nodes.find(n => (state.type === 'all' || n.type === state.type) && (!state.query || [n.id, n.type, label(n), ...Object.values(n.properties || {})].some(v => String(v ?? '').toLowerCase().includes(state.query))));
+        if (firstMatch) {
+          choose(firstMatch.id);
+        }
         if (neuralBrainActive) init3DNeuralBrain();
       });
       tagStrip.appendChild(chip);
@@ -520,6 +524,9 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
     state.error = null;
     state.loading = getJson('/api/v2/graph/data?full=true').then((data) => {
       state.nodes = Array.isArray(data.nodes) ? data.nodes : []; state.edges = Array.isArray(data.edges) ? data.edges : [];
+      if (!state.selected && state.nodes.length > 0) {
+        state.selected = state.nodes[0].id;
+      }
       state.stats = data.stats || null;
       state.measuredAt = new Date().toISOString();
       const saved = (() => { try { return sessionStorage.getItem('fenix_memory_selected_node'); } catch (_) { return null; } })();
@@ -879,6 +886,41 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
     };
 
     window.fenixInit3DNeuralBrain = init3DNeuralBrain;
+    window.fenixSyncIncrementalMemory = async function() {
+      try {
+        const res = await fetch('/api/v2/memory-index/incremental-sync', { method: 'POST', credentials: 'same-origin' });
+        const data = await res.json();
+        await window.fenixRefreshFingerprintBadge?.();
+        return data;
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    };
+    window.fenixRefreshFingerprintBadge = async function() {
+      const host = $('fenixMemoryOperationalContainer') || $('view-memory');
+      if (!host) return null;
+      let badge = $('fmlFingerprintBadge');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'fmlFingerprintBadge';
+        badge.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 12px;margin:6px 0;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.28);border-radius:8px;font-size:11px;color:#cbd5e1;';
+        host.insertBefore(badge, host.firstChild);
+      }
+      try {
+        const res = await fetch('/api/v2/memory-index/fingerprints', { credentials: 'same-origin' });
+        const fp = await res.json();
+        const filesCount = fp.fingerprintedFilesCount ?? fp.trackedFiles ?? (Array.isArray(fp.fingerprints) ? fp.fingerprints.length : 0);
+        const hitsCount = fp.cacheHits ?? fp.stats?.cacheHits ?? 0;
+        const patternsCount = Array.isArray(fp.patternVersions) ? fp.patternVersions.length : (fp.trackedPatterns ?? 0);
+        badge.innerHTML = `
+          <span>🔐 <b>Incremental SHA-256 Index:</b> ${filesCount} arquivo(s) · Cache Hits: ${hitsCount} · Padrões Versionados: ${patternsCount}</span>
+          <button type="button" id="btnFmlIncrementalSync" onclick="window.fenixSyncIncrementalMemory()" style="background:rgba(16,185,129,0.18);border:1px solid rgba(16,185,129,0.45);color:#10b981;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;">⚡ Sync Incremental</button>
+        `;
+        return fp;
+      } catch (_) {
+        return null;
+      }
+    };
     window.addEventListener('resize', () => {
       if (neuralBrainActive && document.getElementById('fenixNeuralBrainCanvas')?.offsetParent) init3DNeuralBrain();
     }, { passive: true });
@@ -888,12 +930,18 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install, { once: true });
   if ($('view-memory')?.classList.contains('active')) {
     load();
-    setTimeout(() => window.fenixInit3DNeuralBrain?.(), 60);
+    setTimeout(() => {
+      window.fenixInit3DNeuralBrain?.();
+      window.fenixRefreshFingerprintBadge?.();
+    }, 60);
   }
   window.addEventListener('fenix:viewchanged', (event) => {
     if (event.detail?.viewId === 'memory') {
       load();
-      setTimeout(() => window.fenixInit3DNeuralBrain?.(), 60);
+      setTimeout(() => {
+        window.fenixInit3DNeuralBrain?.();
+        window.fenixRefreshFingerprintBadge?.();
+      }, 60);
     }
   });
 })();

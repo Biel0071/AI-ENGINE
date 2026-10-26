@@ -3337,13 +3337,16 @@
                 </button>
               </div>
 
-              <!-- Layout Mode Toggle (Stitch vs Miro) -->
+              <!-- Layout Mode Toggle (Stitch vs Miro vs Dagre) -->
               <div class="ffg-stitch-pill-group">
                 <button type="button" class="ffg-stitch-pill ${this.state.layoutMode === 'STITCH' ? 'active' : ''}" id="btnModeStitch" title="Jornada UX em Colunas (Google Stitch)">
                   📐 Jornada Stitch
                 </button>
                 <button type="button" class="ffg-stitch-pill ${this.state.layoutMode === 'MIRO' ? 'active' : ''}" id="btnModeMiro" title="Canvas Livre Infinito (Miro / FigJam)">
                   🕸️ Canvas Livre Miro
+                </button>
+                <button type="button" class="ffg-stitch-pill ${this.state.layoutMode === 'DAGRE' ? 'active' : ''}" id="btnModeDagre" title="Layout Hierárquico Topológico (Dagre DAG)">
+                  🌲 Dagre DAG
                 </button>
               </div>
 
@@ -3354,6 +3357,9 @@
                 </button>
                 <button type="button" class="ffg-stitch-pill ${this.state.cardDisplayMode === 'code' ? 'active' : ''}" id="btnDisplayCode" title="Exibir código-fonte, rotas e AST dos componentes">
                   💻 Código Real
+                </button>
+                <button type="button" class="ffg-stitch-pill" id="btnVisualPatternLibrary" title="Biblioteca de Padrões Visuais & Design Intelligence">
+                  🎨 Padrões Visuais
                 </button>
               </div>
             </div>
@@ -3379,6 +3385,9 @@
               </div>
             </div>
           </div>
+
+          <!-- VISUAL PATTERN LIBRARY DRAWER -->
+          <div id="ffgPatternLibraryDrawer" style="display:none; position:absolute; top:128px; right:16px; width:420px; max-height:calc(100% - 144px); overflow-y:auto; z-index:80; background:rgba(7,9,14,0.96); border:1px solid rgba(0,217,255,0.35); border-radius:12px; padding:14px; box-shadow:0 16px 40px rgba(0,0,0,0.75); color:#f8fafc;"></div>
 
           <!-- SPATIAL VIEWPORT -->
           <div class="ffg-stitch-canvas-viewport" id="stitchViewport">
@@ -3414,6 +3423,40 @@
       setTimeout(() => this.drawConnections(), 60);
     }
 
+    computeDagreHierarchicalLayout(nodes) {
+      const edges = this.state.graph?.edges || [];
+      const rankMap = new Map();
+      nodes.forEach((n) => rankMap.set(n.id, 0));
+      for (let pass = 0; pass < 4; pass++) {
+        edges.forEach((e) => {
+          if (rankMap.has(e.source) && rankMap.has(e.target)) {
+            const nextRank = Math.min(4, (rankMap.get(e.source) || 0) + 1);
+            if (nextRank > (rankMap.get(e.target) || 0)) {
+              rankMap.set(e.target, nextRank);
+            }
+          }
+        });
+      }
+      const columns = new Map();
+      nodes.forEach((node) => {
+        const r = rankMap.get(node.id) || 0;
+        if (!columns.has(r)) columns.set(r, []);
+        columns.get(r).push(node);
+      });
+      const coords = new Map();
+      Array.from(columns.keys()).sort((a, b) => a - b).forEach((rank) => {
+        const group = columns.get(rank);
+        group.forEach((node, idx) => {
+          coords.set(node.id, {
+            x: 80 + rank * 380,
+            y: 70 + idx * 275,
+            rank,
+          });
+        });
+      });
+      return coords;
+    }
+
     renderLayoutHtml(nodes) {
       if (this.state.layoutMode === 'STITCH') {
         const stages = [
@@ -3438,6 +3481,20 @@
                   <div style="display:flex; flex-direction:column; gap:22px;">
                     ${stageNodes.map(node => this.renderCardHtml(node)).join('')}
                   </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else if (this.state.layoutMode === 'DAGRE') {
+        const dagreCoords = this.computeDagreHierarchicalLayout(nodes);
+        return `
+          <div style="position:relative; width:4500px; height:3200px;" data-layout-engine="dagre-hierarchical">
+            ${nodes.map((node) => {
+              const pos = dagreCoords.get(node.id) || { x: 80, y: 80, rank: 0 };
+              return `
+                <div style="position:absolute; left:${pos.x}px; top:${pos.y}px; width:310px;" class="ffg-miro-draggable" data-node-id="${node.id}" data-dagre-rank="${pos.rank}">
+                  ${this.renderCardHtml(node)}
                 </div>
               `;
             }).join('')}
@@ -3711,14 +3768,18 @@
       // 2. Layout Mode Toggle
       const btnStitch = this.container.querySelector('#btnModeStitch');
       const btnMiro = this.container.querySelector('#btnModeMiro');
-      if (btnStitch) btnStitch.addEventListener('click', () => { this.state.layoutMode = 'STITCH'; this.render(); });
-      if (btnMiro) btnMiro.addEventListener('click', () => { this.state.layoutMode = 'MIRO'; this.render(); });
+      const btnDagre = this.container.querySelector('#btnModeDagre');
+      if (btnStitch) btnStitch.addEventListener('click', () => { this.setMode('STITCH'); });
+      if (btnMiro) btnMiro.addEventListener('click', () => { this.setMode('MIRO'); });
+      if (btnDagre) btnDagre.addEventListener('click', () => { this.setMode('DAGRE'); });
 
-      // 2.1 Card Display Mode Toggle (Global)
+      // 2.1 Card Display Mode Toggle (Global) & Pattern Library
       const btnScreens = this.container.querySelector('#btnDisplayScreens');
       const btnCode = this.container.querySelector('#btnDisplayCode');
+      const btnPatLib = this.container.querySelector('#btnVisualPatternLibrary');
       if (btnScreens) btnScreens.addEventListener('click', () => { this.state.cardDisplayMode = 'screens'; this.render(); });
       if (btnCode) btnCode.addEventListener('click', () => { this.state.cardDisplayMode = 'code'; this.render(); });
+      if (btnPatLib) btnPatLib.addEventListener('click', () => { this.openVisualPatternLibrary(); });
 
       // 2.2 Per-Card Flip Button (Individual Toggle)
       this.container.querySelectorAll('.ffg-card-flip-btn').forEach(btn => {
@@ -4030,6 +4091,67 @@
         }
       }
     }
+    setMode(mode) {
+      const m = String(mode || 'STITCH').toUpperCase();
+      this.state.layoutMode = ['STITCH', 'MIRO', 'DAGRE'].includes(m) ? m : 'STITCH';
+      this.render();
+      return this.state.layoutMode;
+    }
+
+    async openVisualPatternLibrary() {
+      let drawer = this.container.querySelector('#ffgPatternLibraryDrawer') || document.getElementById('ffgPatternLibraryDrawer');
+      if (!drawer) return null;
+      if (drawer.style.display === 'block') {
+        drawer.style.display = 'none';
+        return null;
+      }
+      drawer.style.display = 'block';
+      drawer.innerHTML = '<div style="font-size:12px;color:#00D9FF;font-weight:700;">Carregando Biblioteca de Padrões Visuais…</div>';
+      try {
+        const [patRes, anaRes] = await Promise.all([
+          fetch('/api/v2/rea/visual-patterns', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => ({ patterns: [] })),
+          fetch('/api/v2/rea/visual-analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ view: 'view-flowgraph' }),
+          }).then((r) => r.json()).catch(() => ({ dimensions: [] })),
+        ]);
+        const patterns = Array.isArray(patRes.patterns) ? patRes.patterns : [];
+        const dims = Array.isArray(anaRes.dimensions) ? anaRes.dimensions : [];
+        drawer.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;">
+            <span style="font-size:13px;font-weight:800;color:#00D9FF;">🎨 Biblioteca de Padrões Visuais (${patterns.length})</span>
+            <button type="button" onclick="document.getElementById('ffgPatternLibraryDrawer').style.display='none'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;">✕</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+            ${patterns.map((p) => `
+              <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#f8fafc;">
+                  <span>${esc(p.name)}</span>
+                  <span style="color:#10b981;">${esc(p.version)}</span>
+                </div>
+                <div style="font-size:10px;color:#94a3b8;margin-top:3px;">${esc(p.usageCriteria)}</div>
+                <div style="font-size:9px;color:#38bdf8;margin-top:4px;font-family:monospace;">Origem: ${esc(p.origin)}</div>
+              </div>
+            `).join('')}
+          </div>
+          <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:6px;">✓ Auditoria Design Intelligence (${dims.length} dimensões)</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            ${dims.map((d) => `
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:#cbd5e1;background:rgba(16,185,129,0.06);padding:4px 8px;border-radius:4px;">
+                <span>${esc(d.dimension)}</span>
+                <span style="color:#10b981;font-weight:700;">${esc(d.state)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        return { patterns, dimensions: dims };
+      } catch (err) {
+        drawer.innerHTML = `<div style="color:#ef4444;font-size:11px;">Falha ao carregar padrões: ${esc(err.message)}</div>`;
+        return null;
+      }
+    }
   }
 
   let activeScreenEngine = null;
@@ -4044,6 +4166,14 @@
       window._activeStitchEngine = activeScreenEngine;
       await activeScreenEngine.init();
       return activeScreenEngine;
+    },
+    setMode(mode) {
+      if (activeScreenEngine) return activeScreenEngine.setMode(mode);
+      return null;
+    },
+    openVisualPatternLibrary() {
+      if (activeScreenEngine) return activeScreenEngine.openVisualPatternLibrary();
+      return null;
     },
     NODE_TYPES,
     EDGE_TYPES,

@@ -174,6 +174,10 @@ async function createApp(options = {}) {
   });
   const path = require('node:path');
   const outputDir = options.outputDir || path.join(__dirname, '..', 'generated');
+  const { AgentAvatarRegistry } = require('./agents/agent-avatar-registry');
+  const agentAvatarRegistry = options.agentAvatarRegistry || new AgentAvatarRegistry(
+    options.agentAvatarFile || path.join(path.dirname(options.dataFile || path.join(__dirname, '..', '.data', 'state.json')), 'agent-avatars.json')
+  );
   const factory = new SoftwareFactory({ store, bus, controlPlane, aiGateway, outputDir });
   let deployProviders = options.deployProviders;
   if (!deployProviders && securityConfig.production && runtimeEnv.FENIX_DEPLOY_DRIVER === 'docker') deployProviders = { container: new DockerDeployAdapter({ generatedRoot: outputDir, publicBaseUrl: runtimeEnv.FENIX_DEPLOY_PUBLIC_BASE_URL || 'http://127.0.0.1', network: runtimeEnv.FENIX_DEPLOY_DOCKER_NETWORK || 'fenix-apps' }) };
@@ -299,8 +303,81 @@ async function createApp(options = {}) {
   const sandbox = new SandboxExecutionEngine({ store, controlPlane, tools, scripts, adapter: sandboxAdapter || { run: async () => { throw new Error('sandbox adapter is not configured'); } }, approvals, audit, events: fabricEvents, hierarchy });
   jobs.register('sandbox.execute', (payload, context) => sandbox.execute(context.tenantId, context.actorId, payload));
   const inspection = new CognitiveInspectionEngine({ store, controlPlane, sandbox, knowledgeGraph, memory, events: fabricEvents, hierarchy });
-  jobs.register('inspection.run', (payload, context) => inspection.inspect(context.tenantId, context.actorId, { workspacePath: '.', ...(payload || {}) }));
+  const ensureCognitiveInspectionScript = async (tenantId) => {
+    if (!tenantId) return;
+    await store.update((state) => {
+      if (!Array.isArray(state.toolDefinitions)) state.toolDefinitions = [];
+      if (!Array.isArray(state.scriptDefinitions)) state.scriptDefinitions = [];
+      const hasTool = state.toolDefinitions.some((item) => item.tenantId === tenantId && item.toolId === 'node-inspection' && item.status !== 'RETIRED');
+      if (!hasTool) {
+        state.toolDefinitions.push({
+          id: `tool-node-inspection-${tenantId}`,
+          tenantId,
+          toolId: 'node-inspection',
+          version: '1.0.0',
+          command: 'node',
+          image: `registry.fenix.local/node@sha256:${'a'.repeat(64)}`,
+          kind: 'native',
+          source: 'grg-native',
+          capabilities: ['inspect', 'analyze'],
+          permissions: ['workspace:read'],
+          requirements: [],
+          allowedNetworks: ['none'],
+          inputSchema: { type: 'object', additionalProperties: true },
+          timeoutMs: 300_000,
+          retryPolicy: { maxAttempts: 1, backoffMs: 250 },
+          audit: true,
+          status: 'HEALTHY',
+          createdBy: 'grg-admin',
+          createdAt: new Date().toISOString()
+        });
+      }
+      const hasScript = state.scriptDefinitions.some((item) => item.tenantId === tenantId && item.scriptId === 'cognitive-inspection' && item.status === 'ACTIVE');
+      if (!hasScript) {
+        state.scriptDefinitions.push({
+          id: `script-cognitive-inspection-${tenantId}`,
+          tenantId,
+          scriptId: 'cognitive-inspection',
+          version: '1.0.0',
+          manifest: {
+            id: 'cognitive-inspection',
+            version: '1.0.0',
+            toolId: 'node-inspection',
+            entrypoint: 'node',
+            args: ['--inspect-workspace'],
+            parameters: [],
+            description: 'Native read-only cognitive workspace inspection'
+          },
+          manifestHash: 'native-cognitive-inspection-v1',
+          signerId: 'fenix-native-signer',
+          signerFingerprint: 'native',
+          signature: 'native',
+          status: 'ACTIVE',
+          createdBy: 'grg-admin',
+          createdAt: new Date().toISOString()
+        });
+      }
+      return state;
+    });
+  };
+  jobs.register('inspection.run', async (payload, context) => {
+    await ensureCognitiveInspectionScript(context.tenantId);
+    return inspection.inspect(context.tenantId, context.actorId, {
+      ...(payload || {}),
+      workspacePath: payload?.workspacePath || payload?.projectPath || workspaceRoot || '.'
+    });
+  });
   const capabilityRegistry = new CapabilityRegistry({ store, controlPlane, registry, events: fabricEvents, bus }).attach();
+  if (options.bootstrap !== false && !isTest) {
+    try {
+      await ensureCognitiveInspectionScript('grg');
+      const curState = await store.read();
+      const hasGrgCaps = Array.isArray(curState.capabilityDefinitions) && curState.capabilityDefinitions.some((item) => item.tenantId === 'grg');
+      if (!hasGrgCaps) {
+        await capabilityRegistry.bootstrap('grg', 'grg-admin');
+      }
+    } catch (_) {}
+  }
   const cognitiveLearning = new CognitiveLearningProjection({ events: fabricEvents, memory, knowledgeGraph, actorResolver: async (tenantId, hypothesisId) => { const state = await store.read(); return state.cognitiveHypotheses.find((item) => item.tenantId === tenantId && item.id === hypothesisId)?.createdBy || 'grg-admin'; } }).attach();
   const cognitiveCore = new CognitiveCore({ store, controlPlane, eventStore, events: fabricEvents, policy, approvals, jobs, contextProviders: [{ name: 'platform', snapshot: async (tenantId) => { const state = await store.read(); const scoped = (items) => items.filter((item) => item.tenantId === tenantId); return { capabilities: scoped(state.capabilityDefinitions).map((item) => ({ id: item.capabilityId, version: item.version, health: item.health })), services: scoped(state.serviceRegistry).map((item) => ({ id: item.id, status: item.status, runtimeStatus: item.runtimeStatus || null })), runtime: { queued: scoped(state.runtimeJobs).filter((item) => item.status === 'QUEUED').length, running: scoped(state.runtimeJobs).filter((item) => item.status === 'RUNNING').length, deadLetters: scoped(state.deadLetters).length }, knowledge: { entities: scoped(state.knowledgeEntities).length }, memory: { active: scoped(state.memories).filter((item) => item.status === 'ACTIVE').length }, versions: scoped(state.resourceVersions).length }; } }] }).attach();
   const adminAvatar = new AdminAvatar({ store, controlPlane, cognitiveCore });
@@ -452,7 +529,7 @@ async function createApp(options = {}) {
     orchestrator, evolution, digitalTwin, github, portfolio, auth, security, securityConfig,
     audit, policy, approvals, idempotency, outbox, inbox, backup, health, redis, queues, objects,
     vectorStore, memory, memoryEngine: baseMemoryEngine, hierarchy, knowledgeGraph, eventStore, fabricEvents, registry, fabric, fabricProjection,
-    mediaSearch, worldAssetRegistry,
+    mediaSearch, worldAssetRegistry, agentAvatarRegistry,
     discoveryNetwork, discoveryProjection, federation, federationProjection, versionEngine, aiCity, jobs, tools, scripts, sandbox, inspection, capabilityRegistry, cognitiveLearning, cognitiveCore, adminAvatar, agentEcosystem, operationalActivation, missions, missionPlanner, metrics,
     liveBootKernel, runtimeKernel, aiOrchestrator, aek, digitalTwinEngine, cognitiveMemory, capabilityMarketplace,
     storageManager, knowledgeEngine, providerRegistry, fileSystemService, executionEngine, gitRead, projectKernel, fullSystemBuilder, agentExecutionRuntime, engineeringMemory, workspaceRoot, auditRepositoryRoot, graphBrain, systemTwinEngine
@@ -670,7 +747,18 @@ async function createApp(options = {}) {
   // no objeto `providers`, então nada é registrado como CONNECTED por configuração.
   for (const [name, provider] of Object.entries(providers)) {
     if (provider && (typeof provider.complete === 'function' || typeof provider.chat === 'function')) {
-      app.connectors.register(new AIProviderAdapter({ provider: { name, ...provider, complete: provider.complete?.bind(provider), chat: provider.chat?.bind(provider), available: provider.available?.bind(provider) }, store }));
+      app.connectors.register(new AIProviderAdapter({
+        provider: {
+          name,
+          ...provider,
+          ...(typeof provider.hasKey === 'boolean' ? { hasKey: provider.hasKey } : {}),
+          availableFast: provider.availableFast?.bind(provider),
+          complete: provider.complete?.bind(provider),
+          chat: provider.chat?.bind(provider),
+          available: provider.available?.bind(provider),
+        },
+        store,
+      }));
     }
   }
   // O AI Router: escolhe provider por evidência (saúde real + política local→grátis→pago),
@@ -953,6 +1041,11 @@ async function createApp(options = {}) {
     patternLibrary: app.patternLibrary,
     graphBrain: app.graphBrain
   });
+
+  const { globalProjectMemoryIndex } = require('./memory/project-memory-index');
+  const { globalReaIntelligenceEngine } = require('./services/rea-intelligence-engine');
+  app.projectMemoryIndex = globalProjectMemoryIndex;
+  app.reaIntelligence = globalReaIntelligenceEngine;
 
   return app;
 }

@@ -735,6 +735,11 @@
 
   // Mode switcher for AI City vs Living Agent Office vs Feed (Fase 15: Canvas is HERO)
   window.fenixSetCityMode = function(mode) {
+    const normalizedMode = String(mode || '').toLowerCase();
+    if (['operation', 'engineering', 'infrastructure', 'agents', 'dependencies', 'incidents'].includes(normalizedMode)) {
+      const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
+      return eng?.setVisualizationMode ? eng.setVisualizationMode(normalizedMode) : normalizedMode;
+    }
     const worldArea = document.getElementById('fenixCityWorldArea');
     const feedDrawer = document.getElementById('fenixWorldFeedDrawer');
     const inspector = document.getElementById('fenixWorldAgentInspector');

@@ -485,7 +485,11 @@
 
     // Refresh & Search
     document.getElementById('fenixIdeRefresh')?.addEventListener('click', () => loadTree());
-    document.getElementById('fenixIdeTreeSearch')?.addEventListener('input', (e) => filterTree(e.target.value));
+    const treeSearchEl = document.getElementById('fenixIdeTreeSearch');
+    treeSearchEl?.addEventListener('input', (e) => filterTree(e.target.value));
+    treeSearchEl?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') window.fenixSearchWorkspace?.(e.target.value);
+    });
 
     // Save, Diagnose and Revert buttons
     document.getElementById('fenixIdeLiveSave')?.addEventListener('click', saveFile);
@@ -1174,13 +1178,18 @@
       if (filesPane) filesPane.style.display = 'flex';
       if (gitPane) gitPane.style.display = 'none';
       if (qwenPane) qwenPane.style.display = 'none';
-      if (btnFiles) {
-        btnFiles.style.background = 'rgba(0,217,255,0.12)';
-        btnFiles.style.borderColor = 'rgba(0,217,255,0.25)';
-        btnFiles.style.color = '#00D9FF';
+      const activeLeftBtn = tab === 'search' ? btnSearch : btnFiles;
+      if (activeLeftBtn) {
+        activeLeftBtn.style.background = 'rgba(0,217,255,0.12)';
+        activeLeftBtn.style.borderColor = 'rgba(0,217,255,0.25)';
+        activeLeftBtn.style.color = '#00D9FF';
       }
       if (tab === 'search') {
-        document.getElementById('fenixIdeTreeSearch')?.focus();
+        const searchInput = document.getElementById('fenixIdeTreeSearch');
+        searchInput?.focus();
+        if (searchInput?.value && searchInput.value.trim().length >= 2) {
+          window.fenixSearchWorkspace?.(searchInput.value);
+        }
       }
     }
   };
@@ -2100,10 +2109,100 @@
     status(`Diagnóstico: Arquivo ${ext.toUpperCase()} pronto · sem erros detectados ✓`);
   };
 
+  window.fenixSearchWorkspace = async function(queryText) {
+    const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    if (!state.projectId) await window.loadIdeView();
+    const q = String(queryText ?? document.getElementById('fenixIdeTreeSearch')?.value ?? '').trim();
+    if (!q) {
+      status('Informe um termo para busca global no conteúdo do workspace', true);
+      return { ok: true, matches: [] };
+    }
+    status(`Buscando "${q}" no workspace ${state.projectId}…`);
+    try {
+      const res = await json(`${endpoint('/search')}?q=${encodeURIComponent(q)}`);
+      const matches = Array.isArray(res.matches) ? res.matches : [];
+      let panel = document.getElementById('fenixIdeSearchResultsPanel');
+      const tree = document.getElementById('fenixIdeLiveTree');
+      if (!panel && tree?.parentElement) {
+        panel = document.createElement('div');
+        panel.id = 'fenixIdeSearchResultsPanel';
+        panel.style.cssText = 'max-height:160px;overflow-y:auto;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(6,182,212,0.05);padding:6px;font-size:11px;';
+        tree.parentElement.insertBefore(panel, tree);
+      }
+      if (panel) {
+        if (!matches.length) {
+          panel.innerHTML = `<div style="color:#94A3B8;display:flex;justify-content:space-between;"><span>0 ocorrências para "${escapeHtml(q)}"</span><button type="button" onclick="this.parentElement.parentElement.style.display='none'" style="background:none;border:none;color:#64748B;cursor:pointer;">✕</button></div>`;
+          panel.style.display = 'block';
+        } else {
+          panel.style.display = 'block';
+          panel.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;color:#00D9FF;font-weight:700;">
+              <span>🔍 ${matches.length} resultado(s) no código</span>
+              <button type="button" onclick="document.getElementById('fenixIdeSearchResultsPanel').style.display='none'" style="background:none;border:none;color:#94A3B8;cursor:pointer;">✕</button>
+            </div>
+            ${matches.slice(0, 15).map((m) => `
+              <button type="button" onclick="window.fenixSelectIdeFile('${m.path.replace(/'/g, "\\'")}')" style="width:100%;text-align:left;background:transparent;border:none;border-radius:4px;padding:3px 4px;color:#E2E8F0;cursor:pointer;display:block;font-family:var(--fenix-font-mono);font-size:10px;">
+                <span style="color:#38BDF8;">${escapeHtml(m.path)}:${m.line}</span> — <span style="color:#94A3B8;">${escapeHtml(m.snippet.slice(0, 60))}</span>
+              </button>
+            `).join('')}
+          `;
+        }
+      }
+      status(`Busca concluída: ${matches.length} ocorrência(s) em ${state.projectId}`);
+      return res;
+    } catch (err) {
+      status(`Falha na busca: ${err.message}`, true);
+      return { ok: false, error: err.message, matches: [] };
+    }
+  };
+
+  window.fenixLoadFileCheckpoints = async function() {
+    if (!state.projectId) await window.loadIdeView();
+    try {
+      const res = await json(endpoint('/checkpoints'));
+      return res;
+    } catch (err) {
+      return { ok: false, error: err.message, checkpoints: [] };
+    }
+  };
+
+  window.fenixRollbackFileCheckpoint = async function(checkpointId) {
+    if (!state.projectId) await window.loadIdeView();
+    let targetId = checkpointId;
+    if (!targetId) {
+      const cpData = await window.fenixLoadFileCheckpoints();
+      const first = cpData?.checkpoints?.[0];
+      if (!first) {
+        status('Nenhum checkpoint SHA-256 registrado ainda para rollback neste projeto', true);
+        return { ok: false, error: 'NO_CHECKPOINTS' };
+      }
+      targetId = first.id;
+    }
+    status(`Restaurando checkpoint ${targetId}…`);
+    try {
+      const res = await json(endpoint('/rollback'), {
+        method: 'POST',
+        body: JSON.stringify({ checkpointId: targetId }),
+      });
+      if (res.ok && res.path) {
+        await openFile(res.path);
+        status(`Rollback aplicado: ${res.path} restaurado (${res.hash.slice(0, 8)})`);
+      }
+      return res;
+    } catch (err) {
+      status(`Erro no rollback: ${err.message}`, true);
+      return { ok: false, error: err.message };
+    }
+  };
+
   window.FenixProjectIDE = {
     selectProject: window.fenixSelectIdeProject,
     openFile: window.fenixSelectIdeFile,
     setPreviewTarget: window.fenixSetIdePreviewTarget,
+    setViewport: window.fenixSetIdeViewport,
+    searchWorkspace: window.fenixSearchWorkspace,
+    loadCheckpoints: window.fenixLoadFileCheckpoints,
+    rollbackCheckpoint: window.fenixRollbackFileCheckpoint,
     load: window.loadIdeView,
     getProjectRoot: (projectId) => state.projects.find((project) => project.id === projectId)?.workspace || state.projects.find((project) => project.id === projectId)?.localPath || null,
     openAgentWorkspace: window.fenixOpenAgentWorkspace,

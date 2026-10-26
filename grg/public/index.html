@@ -2100,6 +2100,7 @@
           <div style="display:flex; align-items:center; gap:6px; background:#050810; border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:3px 8px;">
             <i class="ph-bold ph-magnifying-glass" style="color:#64748B; font-size:12px;"></i>
             <input type="text" id="fenixIdeTreeSearch" placeholder="Filtrar arquivos..." style="flex:1; background:transparent; border:none; outline:none; color:#E2E8F0; font-size:11px; font-family:var(--fenix-font-mono);" />
+            <button id="fenixIdeSearchBtn" type="button" onclick="window.fenixSearchWorkspace?.()" title="Buscar no conteúdo do projeto" style="background:rgba(0,217,255,0.14); border:1px solid rgba(0,217,255,0.3); color:#00D9FF; border-radius:4px; padding:2px 6px; font-size:10px; font-weight:700; cursor:pointer;">Buscar</button>
           </div>
         </div>
         <!-- Live Tree Viewport -->
@@ -2147,6 +2148,15 @@
             <span id="ideStatusLines" style="font-family:var(--fenix-font-mono); font-size:10px; color:#64748B;">—</span>
             <button id="fenixIdeProposeEditBtn" type="button" onclick="window.fenixOpenEditProposal?.()" style="display:flex; align-items:center; gap:4px; background:rgba(0,217,255,0.12); border:1px solid rgba(0,217,255,0.35); border-radius:4px; color:#67E8F9; font-weight:700; font-size:11px; padding:3px 8px; cursor:pointer;">
               <i class="ph-bold ph-sparkle"></i> Propor edição
+            </button>
+            <button id="fenixIdeDiagnoseBtn" type="button" style="display:flex; align-items:center; gap:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; color:#CBD5E1; font-weight:700; font-size:11px; padding:3px 8px; cursor:pointer;" title="Diagnosticar integridade do arquivo">
+              <i class="ph-bold ph-check-circle"></i> Diagnosticar
+            </button>
+            <button id="fenixIdeRevertBtn" type="button" style="display:flex; align-items:center; gap:4px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:4px; color:#FCA5A5; font-weight:700; font-size:11px; padding:3px 8px; cursor:pointer;" title="Reverter alterações não salvas">
+              <i class="ph-bold ph-arrow-counter-clockwise"></i> Reverter
+            </button>
+            <button id="fenixIdeRollbackBtn" type="button" onclick="window.fenixRollbackFileCheckpoint?.()" style="display:flex; align-items:center; gap:4px; background:rgba(245,158,11,0.14); border:1px solid rgba(245,158,11,0.35); border-radius:4px; color:#FCD34D; font-weight:700; font-size:11px; padding:3px 8px; cursor:pointer;" title="Restaurar último checkpoint salvo (SHA-256)">
+              <i class="ph-bold ph-clock-counter-clockwise"></i> Rollback
             </button>
             <button id="fenixIdeLiveSave" type="button" style="display:flex; align-items:center; gap:4px; background:linear-gradient(135deg, #00e5a0, #0284c7); border:none; border-radius:4px; color:#04060a; font-weight:700; font-size:11px; padding:3px 10px; cursor:pointer;">
               <i class="ph-bold ph-floppy-disk"></i> Salvar

@@ -186,11 +186,11 @@
         ctx.fillStyle = '#343c46';
         ctx.fillRect(0, 0, w, h);
 
-        // Fine grain noise
+        // Fine grain noise (deterministic)
         for (let i = 0; i < 18000; i++) {
-          const x = Math.random() * w;
-          const y = Math.random() * h;
-          const shade = Math.floor(52 + Math.random() * 27);
+          const x = ((i * 73) % w);
+          const y = ((i * 137 + Math.floor(i / w) * 29) % h);
+          const shade = 52 + ((i * 19) % 27);
           ctx.fillStyle = `rgb(${shade},${shade + 2},${shade + 6})`;
           ctx.fillRect(x, y, 1.5, 1.5);
         }
@@ -479,7 +479,7 @@
         for (let y = 0; y < h; y += rowH) {
           const offset = (y % (rowH * 2) === 0) ? 0 : 16;
           for (let x = offset - 16; x < w + 16; x += 32) {
-            ctx.fillStyle = Math.random() > 0.3 ? '#991b1b' : '#7f1d1d';
+            ctx.fillStyle = ((x + y) % 64 === 0) ? '#7f1d1d' : '#991b1b';
             ctx.fillRect(x + 1, y + 1, 30, rowH - 2);
           }
         }
@@ -496,10 +496,10 @@
         ctx.strokeRect(0, 0, w, h);
         const colors = ['#64748b', '#94a3b8', '#334155', '#cbd5e1', '#b45309', '#0284c7'];
         for (let i = 0; i < 800; i++) {
-          const x = Math.random() * w;
-          const y = Math.random() * h;
-          const r = Math.random() * 2.2 + 0.6;
-          ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+          const x = (i * 53) % w;
+          const y = (i * 97 + Math.floor(i / 16) * 31) % h;
+          const r = 0.6 + ((i % 11) * 0.2);
+          ctx.fillStyle = colors[i % colors.length];
           ctx.beginPath();
           ctx.arc(x, y, r, 0, Math.PI * 2);
           ctx.fill();
@@ -520,7 +520,7 @@
             ctx.fillRect(x + 1, y + 1, tileSize - 2, tileSize - 2);
             ctx.fillStyle = alt ? 'rgba(56,189,248,0.08)' : 'rgba(148,163,184,0.08)';
             for (let i = 0; i < 90; i++) {
-              ctx.fillRect(x + Math.random() * tileSize, y + Math.random() * tileSize, 2, 1);
+              ctx.fillRect(x + ((i * 17) % tileSize), y + ((i * 29) % tileSize), 2, 1);
             }
           }
         }
@@ -561,10 +561,10 @@
         ctx.lineWidth = 1.5;
         for (let i = 0; i < 10; i++) {
           ctx.beginPath();
-          const startX = Math.random() * w;
-          const startY = Math.random() * h;
+          const startX = ((i * 47 + 19) % w);
+          const startY = ((i * 61 + 23) % h);
           ctx.moveTo(startX, startY);
-          ctx.lineTo(startX + (Math.random() - 0.5) * 70, startY + 35);
+          ctx.lineTo(startX + (((i % 5) - 2) * 14), startY + 35);
           ctx.stroke();
           ctx.fillStyle = '#00f0ff';
           ctx.beginPath();
@@ -623,7 +623,7 @@
         ctx.fillRect(w - 36, 24, 36, h - 24);
         ctx.fillStyle = 'rgba(88,166,255,0.4)';
         for (let m = 0; m < 14; m++) {
-          ctx.fillRect(w - 32, 28 + m * 14, Math.random() * 24 + 4, 3);
+          ctx.fillRect(w - 32, 28 + m * 14, ((m * 7) % 24) + 4, 3);
         }
       });
     }
@@ -2802,9 +2802,9 @@
           rack.add(beam);
         }
 
-        // Place Pallets on each tier bay
+        // Place Pallets on each tier bay (deterministic)
         for (let px = -length / 2 + uprightSpacing / 2; px < length / 2; px += uprightSpacing / 2) {
-          if (Math.random() > 0.15) {
+          if ((Math.floor(Math.abs(px * 5)) + t) % 6 !== 0) {
             const v = Math.floor(Math.abs(px * 3 + t)) % 4;
             const pallet = this._createPalletWithBoxes(0, v);
             pallet.position.set(px, beamY + 0.08, 0);
@@ -3084,7 +3084,7 @@
     _createPalletWithBoxes(stackLevel = 0, variant = null) {
       const group = new T.Group();
       group.name = 'EuroPalletLoaded';
-      const v = (variant !== null) ? variant : Math.floor(Math.random() * 4);
+      const v = (variant !== null) ? variant : (Math.floor(Math.abs(stackLevel * 3)) % 4);
 
       // ── Real EURO-Pallet Construction (Standard 1.4m x 1.4m Industrial) ──
       // 1. 3 Bottom Skid Boards (running along Z)
@@ -4623,7 +4623,7 @@
           const pktMesh = new T.Mesh(new T.BoxGeometry(0.18, 0.28, 0.18), pMat);
           const startY = podiumH + 0.6;
           const endY = podiumH + fH * 3.8;
-          const initialY = startY + Math.random() * (endY - startY);
+          const initialY = startY + ((p + 1) / 5) * (endY - startY);
           pktMesh.position.set(cx, initialY, -bD / 4 + 2.5);
           pktMesh.visible = this.activeRuntimeJobs > 0;
           bldGroup.add(pktMesh);
@@ -4635,9 +4635,9 @@
             startY,
             endY,
             currentY: initialY,
-            speed: 1.2 + Math.random() * 1.6,
+            speed: 1.2 + ((cIdx + p) % 4) * 0.4,
             dir: p % 2 === 0 ? 1 : -1,
-            phase: Math.random() * Math.PI * 2
+            phase: ((cIdx * 4 + p) % 8) * (Math.PI / 4)
           });
         }
       });
@@ -6011,8 +6011,8 @@
         });
         setTimeout(() => {
           if (this.apiDataPackets) {
-            this.apiDataPackets.forEach(pkt => {
-              pkt.speed = 1.2 + Math.random() * 1.6;
+            this.apiDataPackets.forEach((pkt, idx) => {
+              pkt.speed = 1.2 + (idx % 4) * 0.4;
             });
           }
         }, 2500);
@@ -6147,7 +6147,7 @@
         endPos,
         arcHeight: 2.5 + Math.min(6, startPos.distanceTo(endPos) * 0.15),
         progress: 0,
-        speed: 0.95 + Math.random() * 0.3,
+        speed: 1.1,
         fromAgentId,
         toAgentId,
         packetType,
@@ -7382,29 +7382,15 @@
             }
           }
 
-          // Autonomous 3D Ambient Patrol for Idle Agents
-          if (!agentRecord.telemetryTarget && !agentRecord.path && !agentRecord.isSeated && agentRecord.mesh) {
-            agentRecord._ambientPatrolTimer = (agentRecord._ambientPatrolTimer || 0) + delta;
-            if (!agentRecord._nextPatrolInterval) {
-              const idHash = (agentRecord.id || 'agent').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-              agentRecord._nextPatrolInterval = 8 + (idHash % 14);
-            }
-            if (agentRecord._ambientPatrolTimer >= agentRecord._nextPatrolInterval) {
-              agentRecord._ambientPatrolTimer = 0;
-              agentRecord._nextPatrolInterval = 12 + Math.random() * 16;
-              const curX = agentRecord.mesh.position.x;
-              const curZ = agentRecord.mesh.position.z;
-              const wanderX = curX + (Math.random() - 0.5) * 10;
-              const wanderZ = curZ + (Math.random() - 0.5) * 10;
-              if (Math.abs(wanderX) < 55 && Math.abs(wanderZ) < 55) {
-                agentRecord.telemetryTarget = { x: wanderX, z: wanderZ };
-                agentRecord.movementState = 'WALKING';
-              }
-            }
+          // Rule II & Phase 7: Idle agents remain at their stations without random idle wandering.
+          if (!agentIsWorking && !agentRecord.telemetryTarget && !agentRecord.path && agentRecord.movementState === 'WALKING') {
+            agentRecord.movementState = 'IDLE';
           }
 
+          const lodScale = this._densityLodScale || 1.0;
+
           // Kinematics LOD gating: distant agents skip subtle upper body animations
-          const allowSubtleAnim = inFrustum && camDist < 60 && (camDist < 30 || ((this._frameCounter + aIdx) % 2 === 0));
+          const allowSubtleAnim = inFrustum && camDist < (60 * lodScale) && (camDist < (30 * lodScale) || ((this._frameCounter + aIdx) % 2 === 0));
 
           // Work gestures only play for a measured WORKING job; queued/available agents rest.
           this._applyAgentActivityPose(agentRecord, ud, aTime, allowSubtleAnim);
@@ -7416,27 +7402,27 @@
           }
 
           // Overhead Emote / Role Badge floating bob
-          if (ud.emoteBadge && inFrustum && camDist < 70) {
+          if (ud.emoteBadge && inFrustum && camDist < (70 * lodScale)) {
             const baseY = ud.isSeated ? 1.15 + 1.28 : 1.45 + 1.28;
             ud.emoteBadge.position.y = baseY + (agentIsWorking ? Math.sin(aTime * 3.2) * 0.08 : 0);
           }
 
           // Smartwatch LED pulsing on left wrist (only when close)
-          if (agentIsWorking && ud.smartwatchLed && ud.smartwatchLed.material && inFrustum && camDist < 35) {
+          if (agentIsWorking && ud.smartwatchLed && ud.smartwatchLed.material && inFrustum && camDist < (35 * lodScale)) {
             const pulse = 0.55 + Math.sin(aTime * 5.5) * 0.45;
             ud.smartwatchLed.material.opacity = Math.max(0.3, pulse);
           }
 
           // Neural Halo for Sora AI Core
-          if (agentIsWorking && ud.neuralHalo && inFrustum && camDist < 70) {
+          if (agentIsWorking && ud.neuralHalo && inFrustum && camDist < (70 * lodScale)) {
             ud.neuralHalo.rotation.z += delta * 1.6;
             ud.neuralHalo.rotation.x = Math.PI / 2 + Math.sin(aTime * 2.2) * 0.14;
           }
 
-          // Distance-based Character LOD (distant > 60m silhouette, medium 25-60m body, close < 25m details, very close < 10m facial details)
-          const showFace = camDist < 12 && inFrustum;
-          const showDetails = camDist < 42 && inFrustum;
-          const showIdentityParts = camDist < 105 && inFrustum;
+          // Distance-based Character LOD (scaled by visualDensity)
+          const showFace = camDist < (12 * lodScale) && inFrustum;
+          const showDetails = camDist < (42 * lodScale) && inFrustum;
+          const showIdentityParts = camDist < (105 * lodScale) && inFrustum;
           if (ud.identityParts && Array.isArray(ud.identityParts)) {
             ud.identityParts.forEach(p => { if (p) p.visible = showIdentityParts; });
           }
@@ -7462,7 +7448,7 @@
       }
 
       // 5. Pipeline motion represents measured active jobs only; an idle map remains still.
-      if (this.activeRuntimeJobs > 0 && this.dataPulses) {
+      if (this.activeRuntimeJobs > 0 && this.dataPulses && this.visualDensity !== 'low') {
         this.dataPulses.forEach(dp => {
           dp.progress = (dp.progress + dp.speed) % 1.0;
           dp.mesh.position.lerpVectors(dp.start, dp.end, dp.progress);
@@ -7477,6 +7463,116 @@
         this._lastWorldMinimapRenderAt = now;
       }
       this.renderer.render(this.scene, this.camera);
+    }
+
+    setVisualizationMode(mode) {
+      const validModes = ['operation', 'engineering', 'infrastructure', 'agents', 'dependencies', 'incidents'];
+      const next = String(mode || 'operation').toLowerCase();
+      this.visualizationMode = validModes.includes(next) ? next : 'operation';
+      if (this.host) this.host.dataset.cityMode = this.visualizationMode;
+      const bar = document.getElementById('fenixCityModeBar');
+      if (bar) {
+        bar.querySelectorAll('[data-city-mode]').forEach((btn) => {
+          const isActive = btn.getAttribute('data-city-mode') === this.visualizationMode;
+          btn.style.background = isActive ? 'rgba(0,217,255,0.22)' : 'rgba(255,255,255,0.04)';
+          btn.style.color = isActive ? '#00D9FF' : '#94A3B8';
+          btn.style.borderColor = isActive ? 'rgba(0,217,255,0.5)' : 'rgba(255,255,255,0.08)';
+        });
+      }
+      const focusTargets = {
+        operation: { x: 0, z: 0, distance: 42, desc: 'Visão Global · 4 Distritos & Missões Ativas' },
+        engineering: { x: -16, z: -12, distance: 34, desc: 'Engenharia · Workstations & Pipelines' },
+        infrastructure: { x: 18, z: -14, distance: 34, desc: 'Infraestrutura · Servidores, Filas & Energia' },
+        agents: { x: 0, z: 4, distance: 30, desc: 'Agentes · Rosters, Estações & Ilha de Reunião' },
+        dependencies: { x: 0, z: 0, distance: 48, desc: 'Dependências · Conduítes & Acoplamento Entre Projetos' },
+        incidents: { x: 16, z: 14, distance: 34, desc: 'Incidentes · Alertas HITL, Segurança & SLA' },
+      };
+      const target = focusTargets[this.visualizationMode] || focusTargets.operation;
+      if (this.cameraState && this.cameraState.target) {
+        this.cameraState.target.x = target.x;
+        this.cameraState.target.z = target.z;
+        this.cameraState.distance = target.distance;
+      }
+      if (this.dataPulses && Array.isArray(this.dataPulses)) {
+        const showPulses = this.activeRuntimeJobs > 0 || this.visualizationMode === 'dependencies' || this.visualizationMode === 'infrastructure';
+        this.dataPulses.forEach((dp) => {
+          if (dp?.mesh) dp.mesh.visible = showPulses && this.visualDensity !== 'low';
+        });
+      }
+      if (this.serverRacksLeds && Array.isArray(this.serverRacksLeds)) {
+        const boostInfra = this.visualizationMode === 'infrastructure' || this.visualizationMode === 'incidents';
+        this.serverRacksLeds.forEach((led) => {
+          if (led?.material && led.material.emissiveIntensity !== undefined) {
+            led.material.emissiveIntensity = boostInfra ? 1.8 : 1.0;
+          }
+        });
+      }
+      const statusEl = document.getElementById('fenixCityModeStatus');
+      if (statusEl) statusEl.textContent = `[${this.visualizationMode.toUpperCase()}] ${target.desc}`;
+      return this.visualizationMode;
+    }
+
+    setVisualDensity(density) {
+      const valid = ['high', 'balanced', 'low'];
+      const next = String(density || 'balanced').toLowerCase();
+      this.visualDensity = valid.includes(next) ? next : 'balanced';
+      this._densityLodScale = this.visualDensity === 'low' ? 0.65 : (this.visualDensity === 'high' ? 1.35 : 1.0);
+      if (this.host) this.host.dataset.cityDensity = this.visualDensity;
+      if (this.renderer && typeof this.renderer.setPixelRatio === 'function') {
+        const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+        const targetRatio = this.visualDensity === 'low' ? 1 : (this.visualDensity === 'high' ? Math.min(dpr, 2) : Math.min(dpr, 1.5));
+        this.renderer.setPixelRatio(targetRatio);
+        if (this.renderer.shadowMap) {
+          this.renderer.shadowMap.enabled = this.visualDensity !== 'low';
+        }
+      }
+      const bar = document.getElementById('fenixCityModeBar');
+      if (bar) {
+        bar.querySelectorAll('[data-city-density]').forEach((btn) => {
+          const isActive = btn.getAttribute('data-city-density') === this.visualDensity;
+          btn.style.background = isActive ? 'rgba(16,185,129,0.22)' : 'rgba(255,255,255,0.04)';
+          btn.style.color = isActive ? '#10B981' : '#94A3B8';
+        });
+      }
+      return this.visualDensity;
+    }
+
+    _mountOperationalModeBar() {
+      const container = this.host || document.getElementById('cityCanvas');
+      if (!container || document.getElementById('fenixCityModeBar')) return;
+      this.visualizationMode = this.visualizationMode || 'operation';
+      this.visualDensity = this.visualDensity || 'balanced';
+      this._densityLodScale = 1.0;
+      const bar = document.createElement('div');
+      bar.id = 'fenixCityModeBar';
+      bar.style.cssText = 'position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:5px;white-space:nowrap;background:rgba(7,9,14,0.9);backdrop-filter:blur(12px);border:1px solid rgba(0,217,255,0.32);border-radius:10px;padding:5px 10px;box-shadow:0 8px 24px rgba(0,0,0,0.6);';
+      const modes = [
+        { id: 'operation', label: '⚡ Operação' },
+        { id: 'engineering', label: '🛠️ Engenharia' },
+        { id: 'infrastructure', label: '🖥️ Infra' },
+        { id: 'agents', label: '🤖 Agentes' },
+        { id: 'dependencies', label: '🕸️ Dependências' },
+        { id: 'incidents', label: '🚨 Incidentes' },
+      ];
+      const densities = [
+        { id: 'high', label: 'Alta' },
+        { id: 'balanced', label: 'Média' },
+        { id: 'low', label: 'Leve' },
+      ];
+      bar.innerHTML = `
+        <span style="font-size:10px;font-weight:800;color:#00D9FF;margin-right:4px;">MODO:</span>
+        ${modes.map((m) => `<button type="button" data-city-mode="${m.id}" style="background:${m.id === 'operation' ? 'rgba(0,217,255,0.22)' : 'rgba(255,255,255,0.04)'};border:1px solid ${m.id === 'operation' ? 'rgba(0,217,255,0.5)' : 'rgba(255,255,255,0.08)'};color:${m.id === 'operation' ? '#00D9FF' : '#94A3B8'};border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;">${m.label}</button>`).join('')}
+        <span style="font-size:10px;font-weight:800;color:#10B981;margin-left:6px;">DENSIDADE:</span>
+        ${densities.map((d) => `<button type="button" data-city-density="${d.id}" style="background:${d.id === 'balanced' ? 'rgba(16,185,129,0.22)' : 'rgba(255,255,255,0.04)'};border:1px solid rgba(255,255,255,0.08);color:${d.id === 'balanced' ? '#10B981' : '#94A3B8'};border-radius:6px;padding:3px 7px;font-size:10px;font-weight:700;cursor:pointer;">${d.label}</button>`).join('')}
+        <span id="fenixCityModeStatus" style="font-size:10px;color:#cbd5e1;margin-left:6px;padding-left:6px;border-left:1px solid rgba(255,255,255,0.12);">[OPERATION] Visão Global · Distritos &amp; Missões Ativas</span>
+      `;
+      bar.querySelectorAll('[data-city-mode]').forEach((btn) => {
+        btn.addEventListener('click', () => this.setVisualizationMode(btn.getAttribute('data-city-mode')));
+      });
+      bar.querySelectorAll('[data-city-density]').forEach((btn) => {
+        btn.addEventListener('click', () => this.setVisualDensity(btn.getAttribute('data-city-density')));
+      });
+      container.appendChild(bar);
     }
 
     dispose() {
@@ -7533,10 +7629,27 @@
 
   FenixWorld3DEngine.DISTRICTS = Object.freeze(DISTRICTS.map((district) => Object.freeze(district)));
   window.FenixWorld3DEngine = FenixWorld3DEngine;
+  const _prevFenixSetCityMode = window.fenixSetCityMode;
+  window.fenixSetCityMode = function(mode) {
+    const normalized = String(mode || '').toLowerCase();
+    const vizModes = ['operation', 'engineering', 'infrastructure', 'agents', 'dependencies', 'incidents'];
+    if (vizModes.includes(normalized)) {
+      const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
+      return eng?.setVisualizationMode ? eng.setVisualizationMode(normalized) : null;
+    }
+    if (typeof _prevFenixSetCityMode === 'function') return _prevFenixSetCityMode(mode);
+    const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
+    return eng?.setVisualizationMode ? eng.setVisualizationMode(normalized) : null;
+  };
+  window.fenixSetCityDensity = function(density) {
+    const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
+    return eng?.setVisualDensity ? eng.setVisualDensity(density) : null;
+  };
   window.initFenixWorld3D = function(container) {
     if (!window.fenixWorld3D && !window.fenixWorldEngine3D) {
       try {
         const eng = new FenixWorld3DEngine(container);
+        eng._mountOperationalModeBar?.();
         window.fenixWorldEngine3D = eng;
         window.fenixWorld3D = eng;
         window.fenixCity = eng;
