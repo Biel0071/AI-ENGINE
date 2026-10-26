@@ -37,19 +37,67 @@
 (() => {
   'use strict';
 
+  window.fenixActivateCity2DFallback = function(error) {
+    window.FENIX_WORLD_3D = false;
+    window.FENIX_CITY_RENDERER = 'canvas2d';
+    window.__FENIX_WORLD_3D_ERROR__ = error?.message || 'WebGL indisponível';
+    try {
+      if (typeof window.fenixSetCityMode === 'function') window.fenixSetCityMode('world');
+      else {
+        document.body.classList.remove('fenix-mode-3d');
+        document.body.classList.add('fenix-mode-2d');
+      }
+    } catch (_) {
+      document.body.classList.remove('fenix-mode-3d');
+      document.body.classList.add('fenix-mode-2d');
+    }
+
+    let city = window.fenixIsoCity || (window.IsoCityEngine && window.fenixCity instanceof window.IsoCityEngine ? window.fenixCity : null);
+    let cityError = null;
+    try {
+      if (!city && typeof window.IsoCityEngine === 'function') city = new window.IsoCityEngine('cityCanvas');
+      if (city) {
+        window.fenixIsoCity = city;
+        window.fenixCity = city;
+        city.resize?.();
+      }
+    } catch (fallbackError) {
+      cityError = fallbackError;
+    }
+
+    const notice = document.getElementById('cityRendererFallbackStatus');
+    const message = document.getElementById('cityRendererFallbackMessage');
+    const retry = document.getElementById('cityRendererFallbackRetry');
+    if (message) message.textContent = city
+      ? 'WebGL indisponível. Mapa 2D ativo; agentes e dados vêm do runtime.'
+      : `Renderização da Cidade indisponível${cityError ? ` · ${cityError.message}` : ''}.`;
+    if (notice) {
+      notice.hidden = false;
+      notice.style.display = 'flex';
+    }
+    if (retry) retry.onclick = () => window.location.reload();
+    const minimapStatus = document.getElementById('fenixMinimapStatus');
+    if (minimapStatus && city) minimapStatus.textContent = 'Mapa 2D · WebGL indisponível';
+    return city || null;
+  };
+
   if (typeof THREE === 'undefined') {
     console.warn('[FenixWorld3D] Three.js not found, fallback to 2.5D canvas.');
+    window.fenixActivateCity2DFallback(new Error('Three.js indisponível'));
     return;
   }
 
   const T = THREE;
-  const STORAGE_KEY = 'fenix_world_camera_v4';
-  const LEGACY_STORAGE_KEY = 'fenix_world_camera_v3';
-  const CITY_DEFAULT_DISTANCE = 225;
+  const STORAGE_KEY = 'fenix_world_camera_v5';
+  const LEGACY_STORAGE_KEY = 'fenix_world_camera_v4';
+  const CITY_DEFAULT_DISTANCE = 136;
+  const CITY_REFERENCE_ASPECT = 16 / 10;
+  const CITY_DEFAULT_FOV = 38;
+  const CITY_MAX_RESPONSIVE_FOV = 55;
   const EXPANSION_CHUNK_SIZE = 160;
   const EXPANSION_MAX_RADIUS = 2;
-  const PREVIOUS_CITY_DEFAULT_DISTANCE = 190;
-  const CITY_LAYOUT_VERSION = 2;
+  const PREVIOUS_CITY_DEFAULT_DISTANCE = 225;
+  const CITY_LAYOUT_VERSION = 3;
   const PREVIOUS_DISTRICT_CENTERS = {
     'command-center': { x: 0, z: 0 },
     logistics: { x: 26, z: -10 },
@@ -64,6 +112,18 @@
     const distance = Number(value);
     if (!Number.isFinite(distance) || distance <= 0) return CITY_DEFAULT_DISTANCE;
     return Math.max(8, Math.min(260, distance));
+  };
+  const responsiveCameraFov = (aspect) => {
+    const safeAspect = Math.max(0.4, Number(aspect) || CITY_REFERENCE_ASPECT);
+    const required = 2 * Math.atan(Math.tan(CITY_DEFAULT_FOV * Math.PI / 360) * CITY_REFERENCE_ASPECT / safeAspect) * 180 / Math.PI;
+    return Math.min(CITY_MAX_RESPONSIVE_FOV, required);
+  };
+  const responsiveCameraScale = (aspect) => {
+    const safeAspect = Math.max(0.4, Number(aspect) || CITY_REFERENCE_ASPECT);
+    const fov = responsiveCameraFov(safeAspect) * Math.PI / 360;
+    const baseFov = CITY_DEFAULT_FOV * Math.PI / 360;
+    const scale = (CITY_REFERENCE_ASPECT / safeAspect) * (Math.tan(baseFov) / Math.tan(fov));
+    return Math.max(0.65, Math.min(260 / CITY_DEFAULT_DISTANCE, scale));
   };
 
   // Canonical District Layout
@@ -123,14 +183,14 @@
     static createRoadTexture() {
       return this.create(512, 512, (ctx, w, h) => {
         // Base dark asphalt
-        ctx.fillStyle = '#181e29';
+        ctx.fillStyle = '#343c46';
         ctx.fillRect(0, 0, w, h);
 
         // Fine grain noise
         for (let i = 0; i < 18000; i++) {
           const x = Math.random() * w;
           const y = Math.random() * h;
-          const shade = Math.floor(25 + Math.random() * 30);
+          const shade = Math.floor(52 + Math.random() * 27);
           ctx.fillStyle = `rgb(${shade},${shade + 2},${shade + 6})`;
           ctx.fillRect(x, y, 1.5, 1.5);
         }
@@ -896,7 +956,13 @@
       ctx.fillStyle = '#f8fafc';
       ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
       ctx.textBaseline = 'middle';
-      const displayText = `${this.emoji} ${this.text}`;
+      const fullDisplayText = `${this.emoji} ${this.text}`;
+      const maxTextWidth = w - 40;
+      let displayText = fullDisplayText;
+      while (displayText.length > 2 && ctx.measureText(displayText).width > maxTextWidth) {
+        displayText = displayText.slice(0, displayText.length - 1);
+      }
+      if (displayText !== fullDisplayText) displayText = `${displayText.slice(0, -1)}…`;
       ctx.fillText(displayText, 20, (h - 24) / 2 + 8);
 
       this.texture.needsUpdate = true;
@@ -935,10 +1001,11 @@
       const savedDistance = normalizeCameraDistance(saved.distance);
       this.cameraState = {
         azimuth: saved.azimuth !== undefined ? saved.azimuth : Math.PI / 4,
-        elevation: Number.isFinite(Number(saved.elevation)) ? Number(saved.elevation) : 0.615,
+        elevation: Number.isFinite(Number(saved.elevation)) ? Number(saved.elevation) : 0.56,
         distance: savedDistance,
         target: savedTarget.clone(),
         targetDistance: savedDistance,
+        preferenceDistance: savedDistance,
         targetLookAt: savedTarget.clone(),
         targetAzimuth: null,
         targetElevation: null,
@@ -973,20 +1040,33 @@
       this.pathGraph = new PathGraph();
       this.livePackets = [];
       this.agents = new Map();
+      this.buildings = new Map();
+      this.dynamicBuildings = new Map();
       this.world = { agents: this.agents };
+      this.world.buildings = this.buildings;
       this.DISTRICTS = Object.fromEntries(DISTRICTS.map(district => [district.id, district]));
       this.state = { cityFilter: 'ALL', selectedCompanyId: null, labels: [] };
       this.districtLabels = new Map();
       this.vehicles = [];
       this.dataPulses = [];
+      this.activeRuntimeJobs = 0;
+      this.telemetryStatus = 'CONNECTING';
       this.expansionChunks = new Map();
       this._lastExpansionRegionKey = '';
       const forkliftStart = districtPoint('logistics', 0, 0.9, 18.5);
       this.forkliftState = { step: 0, timer: 0, strobeTimer: 0, x: 0, z: 8.5, carrying: true };
-      this.camilaState = { phase: 0, action: 'WORK', timer: 0, pos: districtPoint('logistics', -1.5, 0.8, 7.5) };
+      this.camilaState = { phase: 0, action: 'AVAILABLE', timer: 0, pos: districtPoint('logistics', -1.5, 0.8, 7.5) };
 
       this._initDOM();
-      this._initRenderer();
+      try {
+        this._initRenderer();
+      } catch (error) {
+        try { this._resizeObserver?.disconnect(); } catch (_) {}
+        try { this.renderer?.dispose?.(); } catch (_) {}
+        this.host?.remove();
+        this.host = null;
+        throw error;
+      }
       this._initLighting();
       this._initMaterials();
       this._initTerrain();
@@ -998,22 +1078,27 @@
       this._initAmbientCityFabric();
       this._initVehicles();
       this._initDataFlowPipelines();
+      this.dataPulses.forEach((pulse) => { if (pulse.mesh) pulse.mesh.visible = false; });
       this._bindEvents();
 
       // Start Render Loop with Visibility & View Throttling (Requirement 7)
       this._isMounted = true;
       this._isDisposed = false;
       this._animationFrameId = null;
+      this._animationTimerId = null;
+      this._worldRefreshTimer = null;
       this._animate = this._animate.bind(this);
       this._resumeAnimationLoop = this._resumeAnimationLoop.bind(this);
       this._resumeAnimationLoop();
 
-      document.addEventListener('visibilitychange', () => {
+      this._onVisibilityChange = () => {
         if (!document.hidden) this._resumeAnimationLoop();
-      });
-      window.addEventListener('fenix-view-changed', () => {
+      };
+      this._onViewChanged = () => {
         this._resumeAnimationLoop();
-      });
+      };
+      document.addEventListener('visibilitychange', this._onVisibilityChange);
+      window.addEventListener('fenix-view-changed', this._onViewChanged);
       // Expose globally as singleton (Requirement 2)
       window.FENIX_WORLD_3D = true;
       window.fenixWorld3D = this;
@@ -1023,39 +1108,200 @@
       window.__FENIX_SINGLETONS__?.register('threeRenderLoop', this);
       console.log('[FenixWorld3D] ✅ Fênix World Engine 3.0 (High-Fidelity Digital Twin) initialized.');
 
-      // Real Data Sync with WorldStateEngine (interval 15s instead of 4s, respect visibility)
+      // Expose a single world refresh owner even when this deferred script runs
+      // before premium-world-live.js. That publisher exits when cityWorld exists.
+      window.FENIX = window.FENIX || {};
+      if (!window.FENIX.cityWorld) {
+        window.FENIX.cityWorld = {
+          snapshot: null,
+          measuredAt: null,
+          error: null
+        };
+      }
+      const worldState = window.FENIX.cityWorld;
+      if (!('refreshPromise' in worldState)) worldState.refreshPromise = null;
+      if (typeof worldState.refresh !== 'function' || worldState.refreshOwner === 'world3d') {
+        worldState.refreshOwner = 'world3d';
+        worldState.refresh = () => {
+          if (worldState.refreshPromise) return worldState.refreshPromise;
+          worldState.refreshPromise = Promise.resolve()
+            .then(() => this.syncRealData())
+            .then(() => window.FENIX?.cityWorld?.snapshot || null)
+            .finally(() => { worldState.refreshPromise = null; });
+          return worldState.refreshPromise;
+        };
+        this._worldRefreshTimer = setInterval(() => {
+          const view = document.getElementById('view-city');
+          if (!document.hidden && view?.classList.contains('active')) worldState.refresh();
+        }, 15000);
+      }
+
+      // The registered world refresh owner supplies the initial measured snapshot.
       this.syncRealData = this.syncRealData.bind(this);
-      this.syncRealData();
-      this.syncInterval = setInterval(() => {
-        const cityView = document.getElementById('view-city');
-        const isCityActive = cityView && (cityView.classList.contains('active') || cityView.style.display !== 'none');
-        if (!document.hidden && isCityActive && !window.FENIX?.cityWorld) {
-          this.syncRealData();
-        }
-      }, 15000);
       window.addEventListener('fenix:city-world', this.syncRealData);
+      const worldRefresh = window.FENIX?.cityWorld?.refresh;
+      if (typeof worldRefresh === 'function') {
+        Promise.resolve(worldRefresh()).catch(() => this._showWorldReadFailure(null));
+      } else {
+        this.syncRealData();
+      }
     }
 
     _resumeAnimationLoop() {
       if (this._isDisposed || !this._isMounted) return;
       const cityView = document.getElementById('view-city');
       const isCityActive = cityView && cityView.classList.contains('active') && cityView.style.display !== 'none';
-      if (!document.hidden && isCityActive && !this._animationFrameId) {
-        this.resize();
-        this._animationFrameId = requestAnimationFrame(this._animate);
+      if (!document.hidden && isCityActive) {
+        if (!this._animationFrameId && !this._animationTimerId) {
+          this.clock?.getDelta?.();
+          this.resize();
+          if (this.renderer && this.scene && this.camera) {
+            try { this.renderer.render(this.scene, this.camera); } catch (_) {}
+          }
+          this._lastRenderAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          this._scheduleNextAnimationFrame();
+        }
       }
     }
 
-    async syncRealData() {
+    _getRenderFrameIntervalMs() {
+      const isHeadless = Boolean(navigator.webdriver) || /headless/i.test(navigator.userAgent || '') || Boolean(window.__FENIX_HEADLESS__);
+      if (isHeadless) return 100;
+      return this._isCompactViewport() ? 1000 / 16 : 1000 / 24;
+    }
+
+    _isCompactViewport() {
+      return Boolean(window.matchMedia?.('(max-width: 1280px)')?.matches)
+        || (Number(navigator.hardwareConcurrency) > 0 && Number(navigator.hardwareConcurrency) <= 4);
+    }
+
+    _scheduleNextAnimationFrame() {
+      if (this._isDisposed || this._animationTimerId || this._animationFrameId) return;
+      const interval = this._getRenderFrameIntervalMs();
+      const frameLead = Math.min(interval / 2, 1000 / 60);
+      this._animationTimerId = setTimeout(() => {
+        this._animationTimerId = null;
+        if (!this._isMounted || this._isDisposed) return;
+        this._animationFrameId = requestAnimationFrame(this._animate);
+      }, Math.max(0, interval - frameLead));
+    }
+
+    _shouldRenderFrame(now) {
+      const timestamp = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+      const interval = this._getRenderFrameIntervalMs();
+      if (Number.isFinite(this._lastRenderAt) && timestamp - this._lastRenderAt < interval) return false;
+      this._lastRenderAt = timestamp;
+      return true;
+    }
+
+    _resolveAgentActivity(agent = {}) {
+      const status = String(agent.status || agent.state || '').toUpperCase();
+      const task = String(agent.currentTask || agent.assignedTask || '').trim().slice(0, 42);
+      if (String(agent.movementState || '').toUpperCase() === 'WALKING') {
+        return { key: 'walking', text: task ? `A caminho · ${task}` : 'Em deslocamento', icon: '➜', color: '#38bdf8' };
+      }
+      const states = {
+        AVAILABLE: { key: 'available', text: 'Disponível', icon: '●', color: '#67e8f9' },
+        WORKING: { key: 'working', text: task || 'Em execução', icon: '⚙️', color: '#27d7c4' },
+        QUEUED: { key: 'queued', text: task ? `Na fila · ${task}` : 'Na fila', icon: '◷', color: '#e8b45d' },
+        WAITING_DEPENDENCY: { key: 'waiting', text: 'Aguardando dependência', icon: '⏳', color: '#e8b45d' },
+        BLOCKED: { key: 'blocked', text: 'Bloqueado', icon: '⏸', color: '#a78bfa' },
+        ERROR: { key: 'error', text: 'Falha reportada', icon: '⚠', color: '#f16a72' },
+        COMPLETED: { key: 'completed', text: 'Tarefa concluída', icon: '✓', color: '#34d399' },
+      };
+      return states[status] || {
+        key: 'unknown', text: status ? `Estado: ${status}` : 'Estado não informado', icon: '·', color: '#8d9aaa'
+      };
+    }
+
+    _hasExplicitCoordinates(coordinates) {
+      const valid = (value) => value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value));
+      return Boolean(coordinates && valid(coordinates.x) && (valid(coordinates.z) || valid(coordinates.y)));
+    }
+
+    _getAgentCoordinateSource(coordinates, agent = {}) {
+      if (!this._hasExplicitCoordinates(coordinates)) return 'ESTIMATED';
+      const x = Number(coordinates.x);
+      const depth = Number(coordinates.z ?? coordinates.y);
+      const atOrigin = Math.abs(x) < 0.001 && Math.abs(depth) < 0.001;
+      const buildingId = String(agent.buildingId || '').toLowerCase();
+      const districtId = String(agent.district || '').toLowerCase();
+      const workstationId = String(agent.workstationId || agent.stationId || '').toLowerCase();
+      const assignedOutsideHq = Boolean(buildingId || districtId || agent.department || agent.companyId || workstationId)
+        && !(/fenix-hq|command-center/.test(buildingId) || districtId === 'command-center' || workstationId.includes('hq'));
+      return atOrigin && assignedOutsideHq ? 'ESTIMATED' : 'MEASURED';
+    }
+
+    _applyAgentActivityPose(agent, userData, time, enabled) {
+      if (!enabled || agent.path?.length || agent.telemetryTarget) return false;
+      const isWorking = (agent.activity?.key || this._resolveAgentActivity(agent).key) === 'working';
+      const arms = [userData.armL, userData.armR].filter(Boolean);
+      if (!arms.length) return false;
+      if (!isWorking) {
+        const shoulderRest = userData.isSeated ? Math.PI / 3.5 : 0;
+        const idlePhase = time * 0.72;
+        if (userData.armL?.rotation) userData.armL.rotation.x = shoulderRest + Math.sin(idlePhase) * 0.035;
+        if (userData.armR?.rotation) userData.armR.rotation.x = shoulderRest + Math.sin(idlePhase + 1.7) * 0.035;
+        const forearmRest = userData.isSeated ? Math.PI / 2.2 : Math.PI / 6;
+        if (userData.forearmL?.rotation) userData.forearmL.rotation.x = forearmRest + Math.sin(idlePhase + 0.8) * 0.018;
+        if (userData.forearmR?.rotation) userData.forearmR.rotation.x = forearmRest + Math.sin(idlePhase + 2.2) * 0.018;
+        return false;
+      }
+
+      const phase = time * (userData.isSeated ? 8 : 3.2);
+      if (userData.isSeated) {
+        if (userData.armL?.rotation) userData.armL.rotation.x = Math.PI / 3.5 + Math.sin(phase) * 0.12;
+        if (userData.armR?.rotation) userData.armR.rotation.x = Math.PI / 3.5 + Math.cos(phase) * 0.12;
+        if (userData.forearmL?.rotation) userData.forearmL.rotation.x = Math.PI / 2.2 + Math.cos(phase) * 0.08;
+        if (userData.forearmR?.rotation) userData.forearmR.rotation.x = Math.PI / 2.2 + Math.sin(phase) * 0.08;
+      } else {
+        if (userData.armL?.rotation) userData.armL.rotation.x = 0.24 + Math.sin(phase) * 0.08;
+        if (userData.armR?.rotation) userData.armR.rotation.x = 0.34 + Math.cos(phase) * 0.08;
+        if (userData.forearmL?.rotation) userData.forearmL.rotation.x = Math.PI / 6 + Math.sin(phase + 0.4) * 0.08;
+        if (userData.forearmR?.rotation) userData.forearmR.rotation.x = Math.PI / 6 + Math.cos(phase + 0.4) * 0.08;
+      }
+      return true;
+    }
+
+    _syncCanonicalBuildings(buildings) {
+      if (!Array.isArray(buildings) || typeof this.buildings?.get !== 'function') return;
+      for (const payload of buildings) {
+        if (!payload?.id || !payload.coordinates) continue;
+        const building = this.buildings.get(payload.id);
+        if (!building) continue;
+        const x = Number(payload.coordinates.x);
+        const z = Number(payload.coordinates.z);
+        const y = Number(payload.coordinates.y ?? 0);
+        if (![x, y, z].every(Number.isFinite)) continue;
+        building.position = { x, y, z };
+        if (building.group?.position?.set) building.group.position.set(x, y, z);
+        if (payload.name) building.name = payload.name;
+        if (payload.status || payload.lifecycleState) building.status = payload.status || payload.lifecycleState;
+      }
+    }
+
+    async syncRealData(incomingEvent = null) {
+      if (this._syncingRealData) return;
+      this._syncingRealData = true;
+      let lastWorldReadStatus = null;
       try {
+        const eventPayload = incomingEvent && incomingEvent.detail && typeof incomingEvent.detail === 'object'
+          ? incomingEvent.detail
+          : null;
+        const fromCityWorldEvent = Boolean(incomingEvent && incomingEvent.type === 'fenix:city-world' && eventPayload);
         const token = window.fenixGetAuthToken?.() || localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || window.sessionStorage?.getItem('fenix_token') || window.sessionStorage?.getItem('grg_token') || '';
         const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
         const fetchFn = window.fenixAuthedFetch || window.fenixFetch || fetch;
         const requestState = async (endpoint) => {
-          const response = await fetchFn(endpoint, { credentials: 'same-origin', headers, signal: AbortSignal.timeout(10000) });
+          const sessionFetch = typeof window.fetch === 'function' ? window.fetch : fetchFn;
+          let response = await sessionFetch(endpoint, { credentials: 'same-origin', signal: AbortSignal.timeout(10000) });
+          if (response.status === 401 && token && sessionFetch !== fetchFn) {
+            response = await fetchFn(endpoint, { credentials: 'same-origin', headers, signal: AbortSignal.timeout(10000) });
+          }
+          lastWorldReadStatus = response.ok ? null : response.status;
           return response.ok ? response.json() : null;
         };
-        const sharedSnapshot = window.FENIX?.cityWorld?.snapshot || null;
+        const sharedSnapshot = eventPayload || null;
         const hasSharedAgentProjection = Array.isArray(sharedSnapshot?.agents);
         let data = hasSharedAgentProjection ? sharedSnapshot : null;
         if (!data) {
@@ -1076,17 +1322,15 @@
           }
         }
         if (!data) {
-          this.telemetryStatus = 'UNAVAILABLE';
-          if (this.emptyOverlay) {
-            this.emptyOverlay.style.display = 'flex';
-            this.emptyOverlay.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span> Agentes indisponíveis nesta leitura';
-          }
+          this.telemetryStatus = this.agents?.size ? 'STALE' : 'UNAVAILABLE';
+          this._showWorldReadFailure(lastWorldReadStatus);
           return;
         }
         if (!Array.isArray(data.agents)) {
-          this.telemetryStatus = 'PARTIAL';
-          this.lastCitySnapshot = data;
-          if (this.emptyOverlay) {
+          this.telemetryStatus = this.agents?.size ? 'STALE' : 'PARTIAL';
+          if (this.agents?.size) {
+            this._showWorldReadFailure(lastWorldReadStatus);
+          } else if (this.emptyOverlay) {
             this.emptyOverlay.style.display = 'flex';
             this.emptyOverlay.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span> Lista de agentes não publicada pela API';
           }
@@ -1094,6 +1338,29 @@
         }
         this.telemetryStatus = 'MEASURED';
         this.lastCitySnapshot = data;
+        this.lastCitySnapshotAt = Date.now();
+        const reportedRunningJobs = Number(data.metrics?.runningJobs);
+        this.activeRuntimeJobs = Number.isFinite(reportedRunningJobs)
+          ? Math.max(0, reportedRunningJobs)
+          : (Array.isArray(data.recentJobs)
+            ? data.recentJobs.filter((job) => String(job.status).toUpperCase() === 'RUNNING').length
+            : 0);
+        this.dataPulses?.forEach((pulse) => { if (pulse.mesh) pulse.mesh.visible = this.activeRuntimeJobs > 0; });
+        this.apiDataPackets?.forEach((packet) => { if (packet.mesh) packet.mesh.visible = this.activeRuntimeJobs > 0; });
+        window.FENIX = window.FENIX || {};
+        const cityWorld = window.FENIX.cityWorld || (window.FENIX.cityWorld = {});
+        cityWorld.snapshot = data;
+        cityWorld.measuredAt = new Date().toISOString();
+        cityWorld.error = null;
+        if (typeof cityWorld.refresh !== 'function') {
+          cityWorld.refresh = async () => {
+            await this.syncRealData();
+            return window.FENIX?.cityWorld?.snapshot || data;
+          };
+        }
+        if (!fromCityWorldEvent && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+          window.dispatchEvent(new CustomEvent('fenix:city-world', { detail: data }));
+        }
 
         // 1. Sync Live Agents & Empty State Overlay
         const agentList = data.agents;
@@ -1122,7 +1389,14 @@
             const id = String(a.id || a.agentId);
             const existing = this.agents.get(id);
             const stableIndex = Math.abs(Array.from(id).reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) | 0, 7));
-            const coordinates = this._normalizeAgentCoordinates(a.coordinates || a.homeCoordinates, stableIndex, a);
+            const coordinateInput = a.coordinates || a.homeCoordinates;
+            const coordinateSource = this._getAgentCoordinateSource(coordinateInput, a);
+            const coordinates = this._normalizeAgentCoordinates(coordinateInput, stableIndex, a);
+            const pathDestination = Array.isArray(a.path) && a.path.length ? a.path[a.path.length - 1] : null;
+            const targetRecord = this._hasExplicitCoordinates(a.targetCoordinates) ? a.targetCoordinates : pathDestination;
+            const targetCoordinates = this._hasExplicitCoordinates(targetRecord) ? this._normalizeAgentCoordinates(targetRecord, stableIndex, a) : null;
+            const canonicalMovementState = String(a.movementState || '').toUpperCase();
+            const isCanonicalWalking = canonicalMovementState === 'WALKING' && Boolean(targetCoordinates);
             if (existing && existing.mesh) {
               const lastTelemetry = existing.telemetryCoordinates || existing.coordinates || {
                 x: existing.mesh.position.x,
@@ -1130,15 +1404,36 @@
                 z: existing.mesh.position.z
               };
               const telemetryMoved = Math.hypot(coordinates.x - lastTelemetry.x, coordinates.z - lastTelemetry.z) >= 0.75;
-              if (telemetryMoved) {
+              const previousServerTarget = existing.serverMovementTarget;
+              if (isCanonicalWalking && !existing.isInteriorStationed) {
+                const targetMoved = !previousServerTarget
+                  || Math.hypot(targetCoordinates.x - previousServerTarget.x, targetCoordinates.z - previousServerTarget.z) >= 0.75;
+                if (targetMoved) {
+                  existing.path = null;
+                  existing.pathIndex = 0;
+                  existing.telemetryTarget = { ...targetCoordinates };
+                }
+                existing.serverMovementTarget = { ...targetCoordinates };
+              } else if (!isCanonicalWalking && previousServerTarget && !existing.isInteriorStationed) {
                 existing.path = null;
                 existing.pathIndex = 0;
-                existing.telemetryTarget = { ...coordinates };
+                existing.telemetryTarget = null;
+                existing.serverMovementTarget = null;
+                existing.mesh.position.set(coordinates.x, coordinates.y, coordinates.z);
+              } else if (telemetryMoved && !existing.isInteriorStationed) {
+                existing.path = null;
+                existing.pathIndex = 0;
+                existing.telemetryTarget = null;
+                existing.mesh.position.set(coordinates.x, coordinates.y, coordinates.z);
               }
               existing.telemetryCoordinates = { ...coordinates };
               existing.coordinates = coordinates;
-              existing.status = a.status;
-              existing.state = a.state;
+              existing.coordinateSource = coordinateSource;
+              existing.targetCoordinates = targetCoordinates;
+              existing.movementState = isCanonicalWalking ? 'WALKING' : null;
+              existing.status = a.status || existing.status;
+              existing.state = a.state || existing.status;
+              existing.activity = this._resolveAgentActivity({ ...a, movementState: existing.movementState });
               existing.currentTask = a.currentTask;
               existing.assignedTask = a.assignedTask;
               existing.memory = a.memory;
@@ -1147,36 +1442,32 @@
               existing.department = a.department || existing.department;
               existing.name = a.name || existing.name;
 
-              // Dynamically update 3D billboard thought bubble with real telemetry task
-              if (existing.thoughtBubble && (a.currentTask || a.assignedTask || a.status)) {
-                const bubbleText = a.currentTask || a.assignedTask || a.status;
-                const emoji = id === 'agent-ai-core' ? '🧠' :
-                  id === 'agent-security' ? '🛡️' :
-                  id === 'agent-infra' ? '🖥️' :
-                  id === 'agent-monitor' ? '📈' :
-                  id === 'agent-camila' ? '📦' :
-                  id === 'agent-expedicao' ? '🚛' :
-                  id === 'agent-andre' ? '📋' : '⚡';
-                existing.thoughtBubble.setText(bubbleText, emoji);
+              if (existing.thoughtBubble) {
+                const activity = existing.activity;
+                existing.thoughtBubble.setText(coordinateSource === 'ESTIMATED' ? `Posição estimada · ${activity.text}` : activity.text, activity.icon, activity.color);
               }
             } else {
               // Universal 3D Avatar Spawning for ALL active agents in the system
               this.spawnDynamicAgent({
                 ...a,
                 id,
-                coordinates
+                coordinates,
+                coordinateSource,
+                targetCoordinates,
+                movementState: isCanonicalWalking ? 'WALKING' : null
               });
             }
           }
           const camila = this.agents.get('agent-camila');
           if (camila && this.camilaGroup) {
-            this.camilaState.action = camila.status || 'WORKING';
+            this.camilaState.action = camila.status || 'AVAILABLE';
             this.camilaState.task = camila.currentTask;
             if (this.agentBadgeEl) {
               const label = camila.displayName || camila.name || 'Camila';
-              const status = camila.status === 'WORKING' ? 'WMS Inspeção 📦' : (camila.status || 'Ativa');
+              const status = camila.status === 'WORKING' && camila.currentTask ? camila.currentTask : (camila.status || 'Estado não informado');
               this.agentBadgeEl.textContent = `${label} · ${status}`;
             }
+            if (this.camilaScanBeam) this.camilaScanBeam.visible = camila.status === 'WORKING' && Boolean(camila.currentTask);
           }
         }
 
@@ -1193,6 +1484,7 @@
         // 4. Sync Dynamic Buildings from WorldStateEngine (Hot Mutation & Persistence)
         if (this.scene && data.buildings && typeof data.buildings === 'object') {
           const bldList = Array.isArray(data.buildings) ? data.buildings : Object.values(data.buildings);
+          this._syncCanonicalBuildings(bldList);
           const staticBldIds = new Set([
             'bld-deposito-mais', 'bld-deposito-wms', 'deposito-mais', 'logistics', 'bld-logistics',
             'bld-api-platform', 'api-platform', 'bld-fenix-hq', 'command-center',
@@ -1200,7 +1492,7 @@
           ]);
           for (const b of bldList) {
             if (!b || !b.id) continue;
-            const isStatic = staticBldIds.has(b.id);
+            const isStatic = staticBldIds.has(b.id) || this.buildings?.has(b.id);
             const isAlreadyDynamic = this.dynamicBuildings && this.dynamicBuildings.has(b.id);
             if (!isStatic && !isAlreadyDynamic) {
               this.spawnDynamicBuilding(b);
@@ -1208,26 +1500,56 @@
           }
         }
       } catch (err) {
-        // Degraded mode silently preserves previous frame state
+        this.telemetryStatus = this.agents?.size ? 'STALE' : 'UNAVAILABLE';
+        this._showWorldReadFailure(lastWorldReadStatus);
+      } finally {
+        this._syncingRealData = false;
       }
+    }
+
+    _showWorldReadFailure(status = null) {
+      if (!this.emptyOverlay) return;
+      const hasLastSnapshot = Boolean(this.agents?.size);
+      this.emptyOverlay.style.display = 'flex';
+      this.emptyOverlay.style.pointerEvents = hasLastSnapshot ? 'none' : 'auto';
+      this.emptyOverlay.replaceChildren();
+      const message = document.createElement('span');
+      message.style.cssText = 'color:#dbeafe;font:600 12px/1.35 system-ui,sans-serif;';
+      const lastRead = Number.isFinite(this.lastCitySnapshotAt)
+        ? new Date(this.lastCitySnapshotAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : 'horário não registrado';
+      message.textContent = hasLastSnapshot
+        ? `Cidade desatualizada · última leitura ${lastRead}${status ? ` · HTTP ${status}` : ''}`
+        : (status ? `Runtime indisponível · HTTP ${status}` : 'Falha ao carregar Cidade · verifique a conexão');
+      const retryButton = document.createElement('button');
+      retryButton.type = 'button';
+      retryButton.style.cssText = 'border:1px solid #0ea5e9;border-radius:8px;background:#082f49;color:#7dd3fc;padding:6px 10px;font:600 11px system-ui,sans-serif;cursor:pointer;';
+      retryButton.textContent = 'Tentar novamente';
+      retryButton.setAttribute('aria-label', 'Tentar carregar os dados da Cidade novamente');
+      retryButton.style.pointerEvents = 'auto';
+      retryButton.addEventListener('click', () => this.syncRealData());
+      this.emptyOverlay.append(message, retryButton);
     }
 
     _normalizeAgentCoordinates(coords, index = 0, agent = {}) {
       const x = Number(coords?.x);
       const z = Number(coords?.z);
       const y = Number(coords?.y);
-      const atOrigin = Math.abs(x) < 0.001 && Math.abs(z) < 0.001;
+      const depthVal = Number.isFinite(z) ? z : y;
+      const atOrigin = Math.abs(x) < 0.001 && Math.abs(depthVal) < 0.001;
       const buildingId = String(agent.buildingId || '').toLowerCase();
       const districtId = String(agent.district || '').toLowerCase();
       const workstationId = String(agent.workstationId || agent.stationId || '').toLowerCase();
       const explicitlyAtHeadquarters = /fenix-hq|command-center/.test(buildingId)
         || districtId === 'command-center'
         || workstationId.includes('hq');
-      const hasAssignedStation = Boolean(workstationId && workstationId !== 'st-general-1' && !workstationId.includes('general'));
-      if (Number.isFinite(x) && Number.isFinite(z) && (!atOrigin || explicitlyAtHeadquarters || hasAssignedStation)) {
+      const hasNonHqAffiliation = Boolean(
+        !explicitlyAtHeadquarters && (buildingId || districtId || agent.department || agent.companyId || workstationId)
+      );
+      if (Number.isFinite(x) && Number.isFinite(z) && (!atOrigin || explicitlyAtHeadquarters || !hasNonHqAffiliation)) {
         return { x, y: Number.isFinite(y) ? y : 0.8, z };
       }
-      if (Number.isFinite(x) && coords?.y !== undefined && coords?.y !== null && Number.isFinite(y) && !atOrigin) {
+      if (Number.isFinite(x) && coords?.y !== undefined && coords?.y !== null && Number.isFinite(y) && (!atOrigin || explicitlyAtHeadquarters || !hasNonHqAffiliation)) {
         return { x, y: 0.8, z: y };
       }
 
@@ -1265,6 +1587,21 @@
             if (!stored) continue;
             const state = JSON.parse(stored);
             if (key === LEGACY_STORAGE_KEY && Number(state.distance) === 85) state.distance = CITY_DEFAULT_DISTANCE;
+            if (key === STORAGE_KEY && Number(state.distance) === 92 && Math.abs(Number(state.target?.x || 0)) < 1 && Math.abs(Number(state.target?.z || 0)) < 1) {
+              state.distance = CITY_DEFAULT_DISTANCE;
+            }
+            // Boundary Guard: Prevent spawning into empty black void if target was dragged far away
+            if (state.target) {
+              const tx = Number(state.target.x);
+              const tz = Number(state.target.z);
+              if (!Number.isFinite(tx) || !Number.isFinite(tz) || Math.hypot(tx, tz) > 130) {
+                state.target = { x: 0, y: 0, z: 0 };
+                state.distance = CITY_DEFAULT_DISTANCE;
+              }
+            }
+            if (!Number.isFinite(Number(state.distance)) || Number(state.distance) < 20 || Number(state.distance) > 240) {
+              state.distance = CITY_DEFAULT_DISTANCE;
+            }
             return this._migrateCameraLayout(state);
           } catch {}
         }
@@ -1273,31 +1610,36 @@
     }
 
     _migrateCameraLayout(state) {
-      if (!state || Number(state.layoutVersion) >= CITY_LAYOUT_VERSION) return state || {};
-      const target = state.target;
-      if (target && [target.x, target.y, target.z].every((value) => Number.isFinite(Number(value)))) {
-        let closest = null;
-        let closestDistance = Infinity;
-        for (const district of DISTRICTS) {
-          const previous = PREVIOUS_DISTRICT_CENTERS[district.id];
-          if (!previous) continue;
-          const distance = Math.hypot(Number(target.x) - previous.x, Number(target.z) - previous.z);
-          if (distance < closestDistance) {
-            closest = { district, previous };
-            closestDistance = distance;
+      if (!state) return {};
+      const version = Number(state.layoutVersion) || 0;
+      if (version >= CITY_LAYOUT_VERSION) return state;
+      if (version < 2) {
+        const target = state.target;
+        if (target && [target.x, target.y, target.z].every((value) => Number.isFinite(Number(value)))) {
+          let closest = null;
+          let closestDistance = Infinity;
+          for (const district of DISTRICTS) {
+            const previous = PREVIOUS_DISTRICT_CENTERS[district.id];
+            if (!previous) continue;
+            const distance = Math.hypot(Number(target.x) - previous.x, Number(target.z) - previous.z);
+            if (distance < closestDistance) {
+              closest = { district, previous };
+              closestDistance = distance;
+            }
+          }
+          if (closest && closestDistance <= 14) {
+            state.target = {
+              x: closest.district.x + Number(target.x) - closest.previous.x,
+              y: Number(target.y),
+              z: closest.district.z + Number(target.z) - closest.previous.z
+            };
           }
         }
-        if (closest && closestDistance <= 14) {
-          state.target = {
-            x: closest.district.x + Number(target.x) - closest.previous.x,
-            y: Number(target.y),
-            z: closest.district.z + Number(target.z) - closest.previous.z
-          };
+        const previousDistance = Number(state.distance);
+        if (Number.isFinite(previousDistance) && previousDistance >= 175) {
+          state.distance = PREVIOUS_CITY_DEFAULT_DISTANCE;
+          state.elevation = 0.56;
         }
-      }
-      const previousDistance = Number(state.distance);
-      if (Number.isFinite(previousDistance) && previousDistance >= PREVIOUS_CITY_DEFAULT_DISTANCE - 10) {
-        state.distance = Math.max(previousDistance, CITY_DEFAULT_DISTANCE);
       }
       state.layoutVersion = CITY_LAYOUT_VERSION;
       return state;
@@ -1305,11 +1647,14 @@
 
     _saveState() {
       try {
+        const scale = responsiveCameraScale(this.camera?.aspect);
+        const preferenceDistance = normalizeCameraDistance(this.cameraState.targetDistance / scale);
+        this.cameraState.preferenceDistance = preferenceDistance;
         const serialized = JSON.stringify({
           layoutVersion: CITY_LAYOUT_VERSION,
           azimuth: this.cameraState.targetAzimuth ?? this.cameraState.azimuth,
           elevation: this.cameraState.targetElevation ?? this.cameraState.elevation,
-          distance: this.cameraState.targetDistance,
+          distance: preferenceDistance,
           target: {
             x: this.cameraState.targetLookAt.x,
             y: this.cameraState.targetLookAt.y,
@@ -1364,15 +1709,20 @@
         canvas: this.canvas,
         antialias: true,
         alpha: false,
-        preserveDrawingBuffer: true,
-        powerPreference: 'high-performance'
+        preserveDrawingBuffer: false,
+        powerPreference: 'low-power'
       });
       this.renderer.setSize(w, h, false);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      const compactViewport = this._isCompactViewport();
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, compactViewport ? 1 : 1.25);
+      this.renderer.setPixelRatio(pixelRatio);
+      this._lastRendererWidth = w;
+      this._lastRendererHeight = h;
+      this._lastRendererPixelRatio = pixelRatio;
       this.renderer.outputColorSpace = T.SRGBColorSpace;
       this.renderer.toneMapping = T.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 0.92;
-      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.enabled = !compactViewport;
       this.renderer.shadowMap.type = T.PCFSoftShadowMap;
       this.renderer.debug.checkShaderErrors = false;
 
@@ -1391,10 +1741,23 @@
       const w = Math.floor(rect.width || this.host.clientWidth || 0);
       const h = Math.floor(rect.height || this.host.clientHeight || 0);
       if (w > 0 && h > 0) {
-        this.camera.aspect = w / h;
+        const compactViewport = this._isCompactViewport();
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, compactViewport ? 1 : 1.25);
+        const aspect = w / h;
+        if (w === this._lastRendererWidth && h === this._lastRendererHeight
+          && pixelRatio === this._lastRendererPixelRatio && aspect === this.camera.aspect) return;
+        this.camera.aspect = aspect;
+        this.camera.fov = responsiveCameraFov(this.camera.aspect);
         this.camera.updateProjectionMatrix();
+        if (this.cameraState) {
+          const preferenceDistance = Number(this.cameraState.preferenceDistance) || CITY_DEFAULT_DISTANCE;
+          this.cameraState.targetDistance = normalizeCameraDistance(preferenceDistance * responsiveCameraScale(this.camera.aspect));
+        }
         this.renderer.setSize(w, h, false);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        this.renderer.setPixelRatio(pixelRatio);
+        this._lastRendererWidth = w;
+        this._lastRendererHeight = h;
+        this._lastRendererPixelRatio = pixelRatio;
       }
     }
 
@@ -1673,6 +2036,22 @@
       roadNS.receiveShadow = true;
       terrainGroup.add(roadNS);
 
+      // Raised concrete curbs define the road edge and leave the main junction open.
+      const roadEWCurbs = [-7.2, 7.2].flatMap(z => [-41, 41].map(x => ({ x, z, w: 68, d: 0.48 })));
+      roadEWCurbs.forEach(({ x, z, w, d }) => {
+        const curb = new T.Mesh(new T.BoxGeometry(w, 0.18, d), this.materials.sidewalk);
+        curb.position.set(x, 0.12, z);
+        curb.receiveShadow = true;
+        terrainGroup.add(curb);
+      });
+      const roadNSCurbs = [-7.2, 7.2].flatMap(x => [-36, 36].map(z => ({ x, z, w: 0.48, d: 58 })));
+      roadNSCurbs.forEach(({ x, z, w, d }) => {
+        const curb = new T.Mesh(new T.BoxGeometry(w, 0.18, d), this.materials.sidewalk);
+        curb.position.set(x, 0.12, z);
+        curb.receiveShadow = true;
+        terrainGroup.add(curb);
+      });
+
       // A short service road runs beside the warehouse apron and stays clear of its footprint.
       const roadLogistics = new T.Mesh(new T.BoxGeometry(8, 0.12, 40), this.materials.asphalt);
       roadLogistics.position.set(22, 0.06, -18);
@@ -1703,7 +2082,8 @@
       if (!this.terrainGroup || !this.expansionChunks) return;
       const centerX = Math.round((Number(targetX) || 0) / EXPANSION_CHUNK_SIZE);
       const centerZ = Math.round((Number(targetZ) || 0) / EXPANSION_CHUNK_SIZE);
-      const requestedRadius = radiusOverride ?? (this.cameraState?.targetDistance > 130 ? EXPANSION_MAX_RADIUS : 1);
+      // Keep the far decorative ring out of the startup scene; add it only when zoomed out.
+      const requestedRadius = radiusOverride ?? (this.cameraState?.targetDistance > 210 ? EXPANSION_MAX_RADIUS : 1);
       const isCompactViewport = typeof window !== 'undefined' && window.innerWidth > 0 && window.innerWidth < 760;
       const radius = Math.max(1, Math.min(isCompactViewport ? 1 : EXPANSION_MAX_RADIUS, Number(requestedRadius) || 1));
       const regionKey = `${centerX},${centerZ},${radius}`;
@@ -2155,6 +2535,8 @@
     _initWarehouseInterior(hub, whW, whD, apronH) {
       const interior = new T.Group();
       interior.name = 'WarehouseInterior';
+      interior.visible = false;
+      this.warehouseInteriorGroup = interior;
 
       // 1. High-Bay UFO Industrial LED Pendant Lights
       const lightZ = [-whD / 4, 0, whD / 4];
@@ -2206,6 +2588,16 @@
       // 4. Packing / Workstation Desks with Dual Monitors & Barcode Scanner
       const desk = new T.Mesh(new T.BoxGeometry(3.6, 0.9, 1.4), this.materials.sidewalk);
       desk.position.set(8, apronH + 0.45, 6);
+      desk.userData = {
+        type: 'workstation',
+        id: 'station-logistics-01',
+        name: 'Estação Central · Despacho & WMS',
+        assignedAgentId: 'agent-camila',
+        assignedAgentName: 'Camila Warehouse Lead',
+        department: 'Depósito Mais',
+        floorNum: 0
+      };
+      this.interactiveMeshes.push(desk);
       interior.add(desk);
 
       const monitor1 = new T.Mesh(new T.BoxGeometry(1.0, 0.7, 0.08), this.materials.codeScreen);
@@ -2845,6 +3237,8 @@
       const scanBeam = new T.Mesh(new T.ConeGeometry(0.42, 1.1, 8), this.materials.fastLaneGlow);
       scanBeam.position.set(0, 0.62, 0.75);
       scanBeam.rotation.x = Math.PI / 3.5;
+      scanBeam.visible = false;
+      this.camilaScanBeam = scanBeam;
       camila.add(scanBeam);
 
       // Interactive Click Target
@@ -2859,21 +3253,22 @@
 
       this.camilaGroup = camila;
       this.scene.add(camila);
-      const camilaBubble = new AgentThoughtBubble(camila, 'WMS: Inspeção Lote #4410', '#f97316', '📦');
+      const camilaBubble = new AgentThoughtBubble(camila, 'Disponível', '#67e8f9', '●');
       this.agents.set('agent-camila', {
         id: 'agent-camila',
         name: 'Supervisora Camila',
         role: 'Supervisora de Qualidade & Embalagem WMS',
         department: 'LOGISTICA',
-        status: 'WORKING',
-        state: 'WORKING',
+        status: 'AVAILABLE',
+        state: 'AVAILABLE',
         height: 1.76,
         mesh: camila,
         thoughtBubble: camilaBubble,
+        isInteriorStationed: true,
         path: null,
         pathIndex: 0
       });
-      this._createAgentStatusBadge('Camila · WMS Inspeção', camila.position);
+      this._createAgentStatusBadge('Camila · Estado não informado', camila.position);
     }
 
     _initWorkforceAgents() {
@@ -2977,6 +3372,7 @@
       if (!this.labelLayer) return;
       const el = document.createElement('div');
       el.className = 'fw3-agent-badge';
+      el.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none;padding:3px 8px;border-radius:6px;background:rgba(10,15,28,0.88);border:1px solid rgba(249,115,22,0.45);color:#f8fafc;font-size:11px;font-weight:600;white-space:nowrap;display:none;z-index:4;';
       el.textContent = label;
       this.labelLayer.appendChild(el);
       this.agentBadgeEl = el;
@@ -2988,16 +3384,129 @@
        (Chunky Proportions · Expressive Voxel Eyes · Volumetric Hair · Smartwatch
         Tactical Uniforms · Dual-Tone Sneakers · Floating Emote Badge · Living Poses)
     ══════════════════════════════════════════════════════════════════════════ */
-    _createCyberHumanoid({ id, name, role, department, pos, shirtMat, hairColor, accessory = 'none', isSeated = false }) {
+    _createAvatarOutfitDetails(visualProfile, torsoY, fallbackMaterial) {
+      const T = THREE;
+      const outfit = visualProfile?.outfit || 'suit';
+      const group = new T.Group();
+      group.name = `AvatarOutfit_${outfit}`;
+      group.userData.ownedMaterials = [];
+      const accent = new T.MeshStandardMaterial({ color: visualProfile?.accentColor || '#22d3ee', roughness: 0.55, metalness: 0.16 });
+      const light = new T.MeshStandardMaterial({ color: '#dce7e9', roughness: 0.86 });
+      const dark = new T.MeshStandardMaterial({ color: '#263642', roughness: 0.68, metalness: 0.1 });
+      group.userData.ownedMaterials.push(accent, light, dark);
+      const addBox = (size, x, y, z, material) => {
+        const mesh = new T.Mesh(new T.BoxGeometry(...size), material);
+        mesh.position.set(x, y, z);
+        mesh.castShadow = true;
+        group.add(mesh);
+        return mesh;
+      };
+
+      if (outfit === 'suit') {
+        addBox([0.18, 0.28, 0.025], -0.10, torsoY + 0.10, 0.205, light);
+        addBox([0.18, 0.28, 0.025], 0.10, torsoY + 0.10, 0.205, light);
+      } else if (outfit === 'hoodie') {
+        const hood = new T.Mesh(new T.SphereGeometry(0.19, 12, 9), fallbackMaterial);
+        hood.scale.set(1, 0.78, 0.55);
+        hood.position.set(0, torsoY + 0.38, -0.17);
+        group.add(hood);
+        addBox([0.30, 0.12, 0.035], 0, torsoY - 0.14, 0.215, dark);
+        addBox([0.025, 0.20, 0.025], -0.04, torsoY + 0.08, 0.23, light);
+        addBox([0.025, 0.20, 0.025], 0.04, torsoY + 0.08, 0.23, light);
+      } else if (outfit === 'labcoat') {
+        addBox([0.13, 0.45, 0.025], -0.22, torsoY, 0.202, light);
+        addBox([0.13, 0.45, 0.025], 0.22, torsoY, 0.202, light);
+        addBox([0.05, 0.22, 0.035], 0.13, torsoY - 0.08, 0.225, accent);
+      } else if (outfit === 'armor') {
+        addBox([0.64, 0.12, 0.20], 0, torsoY + 0.24, 0, dark);
+        addBox([0.48, 0.30, 0.045], 0, torsoY + 0.02, 0.21, dark);
+        addBox([0.055, 0.27, 0.025], 0, torsoY + 0.02, 0.24, accent);
+      } else if (outfit === 'cyber') {
+        addBox([0.10, 0.13, 0.24], -0.34, torsoY + 0.22, 0, dark);
+        addBox([0.10, 0.13, 0.24], 0.34, torsoY + 0.22, 0, dark);
+        addBox([0.42, 0.035, 0.025], 0, torsoY - 0.13, 0.21, accent);
+      } else if (outfit === 'casual') {
+        // Distinguish the everyday jacket from the base shirt at City scale.
+        addBox([0.055, 0.34, 0.035], -0.27, torsoY + 0.04, 0.205, accent);
+        addBox([0.055, 0.34, 0.035], 0.27, torsoY + 0.04, 0.205, accent);
+        const pocket = new T.Mesh(new T.BoxGeometry(0.14, 0.12, 0.04), light);
+        pocket.position.set(0.14, torsoY - 0.12, 0.22);
+        pocket.castShadow = true;
+        group.add(pocket);
+      }
+
+      const badge = visualProfile?.badge;
+      const badgeColors = { bronze: '#b77948', silver: '#c7d2da', gold: '#f4c95d', diamond: '#69d8ef', master: '#ed697c' };
+      if (badgeColors[badge]) {
+        const badgeMaterial = new T.MeshStandardMaterial({ color: badgeColors[badge], metalness: 0.35, roughness: 0.35 });
+        group.userData.ownedMaterials.push(badgeMaterial);
+        const badgeMesh = new T.Mesh(new T.OctahedronGeometry(0.075, 0), badgeMaterial);
+        badgeMesh.position.set(-0.20, torsoY + 0.13, 0.235);
+        group.add(badgeMesh);
+      }
+      return group;
+    }
+
+    _createAvatarAccessoryDetails(accessory, torsoY) {
+      const T = THREE;
+      const group = new T.Group();
+      group.name = `AvatarAccessory_${accessory || 'none'}`;
+      const metal = this.materials.truckChrome;
+      const dark = this.materials.dockBumper;
+      const glow = this.materials.fastLaneGlow;
+      if (accessory === 'glasses') {
+        const glasses = new T.Mesh(new T.BoxGeometry(0.34, 0.10, 0.06), metal);
+        glasses.position.set(0, torsoY + 0.49, 0.19);
+        group.add(glasses);
+      } else if (accessory === 'headset') {
+        const band = new T.Mesh(new T.TorusGeometry(0.22, 0.025, 6, 16, Math.PI), dark);
+        band.position.set(0, torsoY + 0.65, 0);
+        band.rotation.x = Math.PI;
+        const earpiece = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, 0.06, 8), metal);
+        earpiece.rotation.z = Math.PI / 2;
+        earpiece.position.set(0.21, torsoY + 0.48, 0);
+        const mic = new T.Mesh(new T.BoxGeometry(0.03, 0.03, 0.18), dark);
+        mic.position.set(0.18, torsoY + 0.42, 0.12);
+        group.add(band, earpiece, mic);
+      } else if (accessory === 'visor') {
+        const visor = new T.Mesh(new T.BoxGeometry(0.40, 0.11, 0.14), glow);
+        visor.position.set(0, torsoY + 0.50, 0.18);
+        group.add(visor);
+      } else if (accessory === 'halo') {
+        const halo = new T.Mesh(new T.TorusGeometry(0.25, 0.025, 8, 20), this.materials.neuralPurple);
+        halo.position.set(0, torsoY + 0.72, 0);
+        halo.rotation.x = Math.PI / 2;
+        group.add(halo);
+      } else if (accessory === 'badge') {
+        const badgePin = new T.Mesh(new T.OctahedronGeometry(0.07, 0), this.materials.fastLaneGlow);
+        badgePin.position.set(-0.20, torsoY + 0.13, 0.235);
+        group.add(badgePin);
+      }
+      return group;
+    }
+
+    _createCyberHumanoid({ id, name, role, department, pos, shirtMat, hairColor, accessory = 'none', isSeated = false, visualProfile = null }) {
       const agent = new T.Group();
       agent.name = 'Agent_' + id;
       agent.position.copy(pos);
-      agent.scale.set(1.0, 1.0, 1.0);
+      const displayScale = Number(visualProfile?.displayScale) || 1;
+      const bodyType = ['compact', 'standard', 'tall'].includes(visualProfile?.bodyType) ? visualProfile.bodyType : 'standard';
+      const bodyShape = { compact: { x: 1.08, z: 1.06 }, standard: { x: 1, z: 1 }, tall: { x: 0.94, z: 0.96 } }[bodyType];
+      const calibratedScale = Math.max(1, Math.min(1.9, displayScale));
+      agent.scale.set(calibratedScale * bodyShape.x, calibratedScale, calibratedScale * bodyShape.z);
+      const skinMaterial = new T.MeshStandardMaterial({
+        color: visualProfile?.skinColor || '#d4a17f',
+        roughness: 0.82,
+      });
+      const pantsMaterial = this.materials.workWear?.clone?.() || new T.MeshStandardMaterial({ color: '#344458', roughness: 0.8 });
+      pantsMaterial.color?.set?.(visualProfile?.pantsColor || '#344458');
+      const shoeMaterial = this.materials.dockBumper?.clone?.() || new T.MeshStandardMaterial({ color: '#090d16', roughness: 0.8 });
+      shoeMaterial.color?.set?.(visualProfile?.shoesColor || '#090d16');
 
       // 0. Interactive Status Ground Halo / Aura Ring
       const haloGeo = new T.RingGeometry(0.44, 0.60, 24);
       const haloMat = new T.MeshBasicMaterial({
-        color: id === 'agent-ai-core' ? 0xc084fc : id === 'agent-security' ? 0xef4444 : id === 'agent-infra' ? 0x22c55e : 0x00f0ff,
+        color: visualProfile?.accentColor || (id === 'agent-ai-core' ? 0xc084fc : id === 'agent-security' ? 0xef4444 : id === 'agent-infra' ? 0x22c55e : 0x00f0ff),
         side: T.DoubleSide,
         transparent: true,
         opacity: 0.75
@@ -3008,7 +3517,7 @@
       agent.add(halo);
 
       // 1. Pelvis / Hips Base (Calibrated for exact 1.76m standing character height)
-      const hips = new T.Mesh(new T.BoxGeometry(0.52, 0.20, 0.36), this.materials.workWear);
+      const hips = new T.Mesh(new T.BoxGeometry(0.52, 0.20, 0.36), pantsMaterial);
       hips.position.y = isSeated ? 0.50 : 0.73;
       hips.castShadow = true;
       agent.add(hips);
@@ -3027,22 +3536,22 @@
       torso.castShadow = true;
       agent.add(torso);
 
+      // Outfit details follow the saved avatar profile and remain readable at City scale.
+      const outfitDetails = this._createAvatarOutfitDetails(visualProfile, torsoY, shirtMat);
+      agent.add(outfitDetails);
+
       // Role-Specific Tactical Armor or Lapel
-      if (id === 'agent-security') {
+      if (id === 'agent-security' && (!visualProfile?.outfit || visualProfile.outfit === 'armor')) {
         const armorPlate = new T.Mesh(new T.BoxGeometry(0.56, 0.44, 0.14), this.materials.dockBumper);
         armorPlate.position.set(0, torsoY + 0.02, 0.19);
         const badgeShield = new T.Mesh(new T.BoxGeometry(0.14, 0.16, 0.04), this.materials.truckChrome);
         badgeShield.position.set(-0.16, torsoY + 0.10, 0.27);
         agent.add(armorPlate, badgeShield);
-      } else {
-        const lapel = new T.Mesh(new T.BoxGeometry(0.20, 0.28, 0.40), this.materials.ceramicWhite);
-        lapel.position.set(0, torsoY + 0.12, 0.01);
-        agent.add(lapel);
       }
 
       // Lanyard & Security ID Badge
-      const lanyard = new T.Mesh(new T.BoxGeometry(0.28, 0.38, 0.40), this.materials.hazardStripe);
-      lanyard.position.set(0, torsoY + 0.06, 0.02);
+      const lanyard = new T.Mesh(new T.BoxGeometry(0.05, 0.38, 0.035), this.materials.hazardStripe);
+      lanyard.position.set(0, torsoY + 0.06, 0.215);
       const idBadge = new T.Mesh(new T.BoxGeometry(0.18, 0.24, 0.04), this.materials.silverReflective);
       idBadge.position.set(0, torsoY - 0.12, 0.22);
       const idPhoto = new T.Mesh(new T.BoxGeometry(0.14, 0.10, 0.02), this.materials.fastLaneGlow);
@@ -3050,11 +3559,12 @@
       agent.add(lanyard, idBadge, idPhoto);
 
       // 3. Neck & Anatomical Head
-      const neck = new T.Mesh(new T.CylinderGeometry(0.11, 0.13, 0.10, 8), this.materials.skinTone);
+      const neck = new T.Mesh(new T.CylinderGeometry(0.11, 0.13, 0.10, 8), skinMaterial);
       neck.position.y = torsoY + 0.30;
       agent.add(neck);
 
-      const head = new T.Mesh(new T.BoxGeometry(0.38, 0.34, 0.36), this.materials.skinTone);
+      const head = new T.Mesh(new T.SphereGeometry(1, 16, 12), skinMaterial);
+      head.scale.set(0.20, 0.18, 0.18);
       head.position.y = torsoY + 0.48;
       head.castShadow = true;
       agent.add(head);
@@ -3082,18 +3592,46 @@
 
       // 3c. Hair Layering
       const hairMat = new T.MeshStandardMaterial({ color: hairColor, roughness: 0.75 });
-      const hairTop = new T.Mesh(new T.BoxGeometry(0.40, 0.06, 0.38), hairMat);
-      hairTop.position.set(0, 1.73, -0.01);
-      const hairBack = new T.Mesh(new T.BoxGeometry(0.40, 0.30, 0.12), hairMat);
-      hairBack.position.set(0, torsoY + 0.47, -0.19);
+      const hairTop = new T.Mesh(new T.SphereGeometry(1, 16, 12), hairMat);
+      hairTop.scale.set(0.21, 0.11, 0.19);
+      hairTop.position.set(0, torsoY + 0.62, -0.01);
+      const hairBack = new T.Mesh(new T.SphereGeometry(1, 12, 10), hairMat);
+      hairBack.scale.set(0.19, 0.16, 0.09);
+      hairBack.position.set(0, torsoY + 0.47, -0.17);
       const hairSideL = new T.Mesh(new T.BoxGeometry(0.06, 0.24, 0.34), hairMat);
       hairSideL.position.set(-0.20, torsoY + 0.49, 0.01);
       const hairSideR = new T.Mesh(new T.BoxGeometry(0.06, 0.24, 0.34), hairMat);
       hairSideR.position.set(0.20, torsoY + 0.49, 0.01);
       const hairFringe = new T.Mesh(new T.BoxGeometry(0.36, 0.08, 0.08), hairMat);
       hairFringe.position.set(0, torsoY + 0.57, 0.15);
+      const hairSpikes = [];
 
-      agent.add(hairTop, hairBack, hairSideL, hairSideR, hairFringe);
+      if (visualProfile?.hairStyle === 'buzz') {
+        hairTop.scale.set(0.205, 0.055, 0.185);
+        hairBack.scale.set(0.18, 0.11, 0.08);
+        hairSideL.scale.y = hairSideR.scale.y = 0.55;
+        hairFringe.visible = false;
+      } else if (visualProfile?.hairStyle === 'long') {
+        hairBack.scale.set(0.20, 0.22, 0.10);
+        hairBack.position.y = torsoY + 0.39;
+      } else if (visualProfile?.hairStyle === 'bob') {
+        hairSideL.scale.y = hairSideR.scale.y = 1.35;
+        hairSideL.position.y = hairSideR.position.y = torsoY + 0.43;
+      } else if (visualProfile?.hairStyle === 'crest') {
+        hairTop.scale.set(0.16, 0.19, 0.15);
+      } else if (visualProfile?.hairStyle === 'slick') {
+        hairTop.position.z = -0.04;
+        hairFringe.visible = false;
+      } else if (visualProfile?.hairStyle === 'spiky') {
+        [-0.10, 0, 0.10].forEach((x, index) => {
+          const spike = new T.Mesh(new T.ConeGeometry(0.075, 0.18, 5), hairMat);
+          spike.position.set(x, torsoY + 0.70, -0.015);
+          spike.rotation.z = index === 0 ? -0.28 : index === 2 ? 0.28 : 0;
+          hairSpikes.push(spike);
+        });
+      }
+
+      agent.add(hairTop, hairBack, hairSideL, hairSideR, hairFringe, ...hairSpikes);
 
       // Neural Halo for Sora AI Core
       let neuralHaloMesh = null;
@@ -3106,29 +3644,8 @@
       }
 
       // 4. Role-Specific Eyewear / Headgear / Access Devices
-      let extraAccessory = null;
-      if (accessory === 'glasses') {
-        const glasses = new T.Mesh(new T.BoxGeometry(0.34, 0.10, 0.06), this.materials.truckChrome);
-        glasses.position.set(0, torsoY + 0.49, 0.19);
-        agent.add(glasses);
-        extraAccessory = glasses;
-      } else if (accessory === 'headset') {
-        const band = new T.Mesh(new T.TorusGeometry(0.22, 0.025, 6, 16, Math.PI), this.materials.dockBumper);
-        band.position.set(0, torsoY + 0.65, 0);
-        band.rotation.x = Math.PI;
-        const earpiece = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, 0.06, 8), this.materials.truckChrome);
-        earpiece.rotation.z = Math.PI / 2;
-        earpiece.position.set(0.21, torsoY + 0.48, 0);
-        const mic = new T.Mesh(new T.BoxGeometry(0.03, 0.03, 0.18), this.materials.dockBumper);
-        mic.position.set(0.18, torsoY + 0.42, 0.12);
-        agent.add(band, earpiece, mic);
-        extraAccessory = earpiece;
-      } else if (accessory === 'visor') {
-        const visor = new T.Mesh(new T.BoxGeometry(0.40, 0.11, 0.14), this.materials.fastLaneGlow);
-        visor.position.set(0, torsoY + 0.50, 0.18);
-        agent.add(visor);
-        extraAccessory = visor;
-      }
+      const accessoryDetails = this._createAvatarAccessoryDetails(accessory, torsoY);
+      agent.add(accessoryDetails);
 
       // 4b. Overhead Habbo Floating Emote / Role Badge
       const emoteBadge = new T.Mesh(new T.BoxGeometry(0.46, 0.22, 0.06), this.materials.emoteBgMat);
@@ -3142,16 +3659,16 @@
       const forearmGeo = new T.BoxGeometry(0.13, 0.34, 0.14);
       const handGeo = new T.BoxGeometry(0.11, 0.11, 0.11);
 
-      let armL, forearmL, handL, armR, forearmR, handR, smartwatchLed;
+      let armL, forearmL, handL, armR, forearmR, handR, smartwatchLed, extraAccessory = null;
 
       if (isSeated) {
         armL = new T.Mesh(armGeo, shirtMat);
         armL.position.set(-0.36, torsoY + 0.08, 0.11);
         armL.rotation.x = Math.PI / 3.5;
-        forearmL = new T.Mesh(forearmGeo, this.materials.skinTone);
+        forearmL = new T.Mesh(forearmGeo, skinMaterial);
         forearmL.position.set(-0.36, torsoY - 0.06, 0.30);
         forearmL.rotation.x = Math.PI / 2.2;
-        handL = new T.Mesh(handGeo, this.materials.skinTone);
+        handL = new T.Mesh(handGeo, skinMaterial);
         handL.position.set(-0.36, torsoY - 0.06, 0.46);
 
         const watchBand = new T.Mesh(new T.BoxGeometry(0.15, 0.06, 0.16), this.materials.dockBumper);
@@ -3164,10 +3681,10 @@
         armR = new T.Mesh(armGeo, shirtMat);
         armR.position.set(0.36, torsoY + 0.08, 0.11);
         armR.rotation.x = Math.PI / 3.5;
-        forearmR = new T.Mesh(forearmGeo, this.materials.skinTone);
+        forearmR = new T.Mesh(forearmGeo, skinMaterial);
         forearmR.position.set(0.36, torsoY - 0.06, 0.30);
         forearmR.rotation.x = Math.PI / 2.2;
-        handR = new T.Mesh(handGeo, this.materials.skinTone);
+        handR = new T.Mesh(handGeo, skinMaterial);
         handR.position.set(0.36, torsoY - 0.06, 0.46);
 
         agent.add(armL, forearmL, handL, watchBand, smartwatchLed, armR, forearmR, handR);
@@ -3181,7 +3698,7 @@
       } else {
         armL = new T.Mesh(armGeo, shirtMat);
         armL.position.set(-0.36, torsoY + 0.06, 0.03);
-        forearmL = new T.Mesh(forearmGeo, this.materials.skinTone);
+        forearmL = new T.Mesh(forearmGeo, skinMaterial);
         forearmL.position.set(-0.36, torsoY - 0.22, 0.09);
         forearmL.rotation.x = Math.PI / 6;
 
@@ -3192,7 +3709,7 @@
 
         armR = new T.Mesh(armGeo, shirtMat);
         armR.position.set(0.36, torsoY + 0.06, 0.03);
-        forearmR = new T.Mesh(forearmGeo, this.materials.skinTone);
+        forearmR = new T.Mesh(forearmGeo, skinMaterial);
         forearmR.position.set(0.36, torsoY - 0.22, 0.09);
         forearmR.rotation.x = Math.PI / 6;
 
@@ -3221,24 +3738,24 @@
         const shoeSoleGeo = new T.BoxGeometry(0.22, 0.05, 0.34);
         const shoeUpperGeo = new T.BoxGeometry(0.20, 0.11, 0.30);
 
-        const thighL = new T.Mesh(thighGeo, this.materials.workWear);
+        const thighL = new T.Mesh(thighGeo, pantsMaterial);
         thighL.position.set(-0.15, 0.46, 0.20);
-        const thighR = new T.Mesh(thighGeo, this.materials.workWear);
+        const thighR = new T.Mesh(thighGeo, pantsMaterial);
         thighR.position.set(0.15, 0.46, 0.20);
 
-        const calfL = new T.Mesh(calfGeo, this.materials.workWear);
+        const calfL = new T.Mesh(calfGeo, pantsMaterial);
         calfL.position.set(-0.15, 0.22, 0.41);
-        const calfR = new T.Mesh(calfGeo, this.materials.workWear);
+        const calfR = new T.Mesh(calfGeo, pantsMaterial);
         calfR.position.set(0.15, 0.22, 0.41);
 
         const shoeSoleL = new T.Mesh(shoeSoleGeo, this.materials.sneakerWhite);
         shoeSoleL.position.set(-0.15, 0.025, 0.44);
-        const shoeUpperL = new T.Mesh(shoeUpperGeo, this.materials.dockBumper);
+        const shoeUpperL = new T.Mesh(shoeUpperGeo, shoeMaterial);
         shoeUpperL.position.set(-0.15, 0.09, 0.44);
 
         const shoeSoleR = new T.Mesh(shoeSoleGeo, this.materials.sneakerWhite);
         shoeSoleR.position.set(0.15, 0.025, 0.44);
-        const shoeUpperR = new T.Mesh(shoeUpperGeo, this.materials.dockBumper);
+        const shoeUpperR = new T.Mesh(shoeUpperGeo, shoeMaterial);
         shoeUpperR.position.set(0.15, 0.09, 0.44);
 
         agent.add(thighL, thighR, calfL, calfR, shoeSoleL, shoeUpperL, shoeSoleR, shoeUpperR);
@@ -3247,21 +3764,21 @@
         const shoeSoleGeo = new T.BoxGeometry(0.24, 0.05, 0.36);
         const shoeUpperGeo = new T.BoxGeometry(0.22, 0.10, 0.32);
 
-        const legL = new T.Mesh(legGeo, this.materials.workWear);
+        const legL = new T.Mesh(legGeo, pantsMaterial);
         legL.position.set(-0.15, 0.35, 0);
         legL.castShadow = true;
-        const legR = new T.Mesh(legGeo, this.materials.workWear);
+        const legR = new T.Mesh(legGeo, pantsMaterial);
         legR.position.set(0.15, 0.35, 0);
         legR.castShadow = true;
 
         const shoeSoleL = new T.Mesh(shoeSoleGeo, this.materials.sneakerWhite);
         shoeSoleL.position.set(-0.15, 0.025, 0.05);
-        const shoeUpperL = new T.Mesh(shoeUpperGeo, this.materials.dockBumper);
+        const shoeUpperL = new T.Mesh(shoeUpperGeo, shoeMaterial);
         shoeUpperL.position.set(-0.15, 0.09, 0.05);
 
         const shoeSoleR = new T.Mesh(shoeSoleGeo, this.materials.sneakerWhite);
         shoeSoleR.position.set(0.15, 0.025, 0.05);
-        const shoeUpperR = new T.Mesh(shoeUpperGeo, this.materials.dockBumper);
+        const shoeUpperR = new T.Mesh(shoeUpperGeo, shoeMaterial);
         shoeUpperR.position.set(0.15, 0.09, 0.05);
 
         agent.add(legL, legR, shoeSoleL, shoeUpperL, shoeSoleR, shoeUpperR);
@@ -3287,6 +3804,8 @@
         name,
         role,
         department,
+        visualProfile,
+        avatarMaterials: { skin: skinMaterial, hair: hairMat, shirt: shirtMat, pants: pantsMaterial, shoes: shoeMaterial, outfitDetails, accessoryDetails },
         type: 'humanoid',
         height: 1.76,
         totalHeight: 1.76,
@@ -3297,10 +3816,12 @@
         forearmR,
         head,
         emoteBadge,
+        emoteIcon,
         smartwatchLed,
         halo,
         neuralHalo: neuralHaloMesh,
         faceParts: [eyeL, eyeR, specL, specR, browL, browR, mouth],
+        identityParts: accessoryDetails.children,
         detailParts: detailParts
       };
 
@@ -3326,6 +3847,7 @@
         height: 1.76,
         mesh: agent,
         thoughtBubble,
+        isInteriorStationed: Boolean(isSeated || department === 'API PLATFORM'),
         path: null,
         pathIndex: 0
       });
@@ -3559,6 +4081,16 @@
 
         const dTop = new T.Mesh(new T.BoxGeometry(3.8, 0.08, 1.6), this.materials.acousticDark);
         dTop.position.set(0, 0.94, 0);
+        dTop.userData = {
+          type: 'workstation',
+          id: `station-api-0${idx + 1}`,
+          name: idx === 0 ? 'Estação Alpha · Gateway & Routing' : 'Estação Beta · Integration & Schemas',
+          assignedAgentId: idx === 0 ? 'agent-api-ops' : 'agent-integration',
+          assignedAgentName: idx === 0 ? 'Alex Ops Lead' : 'Elena Architect',
+          department: 'API PLATFORM',
+          floorNum: 1
+        };
+        this.interactiveMeshes.push(dTop);
         const dCableSnake = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, 0.9, 8), this.materials.dockBumper);
         dCableSnake.position.set(-1.5, 0.45, -0.4);
         deskPod.add(dLegL, dLegR, dFootL, dFootR, dTop, dCableSnake);
@@ -3889,6 +4421,7 @@
           const endY = podiumH + fH * 3.8;
           const initialY = startY + Math.random() * (endY - startY);
           pktMesh.position.set(cx, initialY, -bD / 4 + 2.5);
+          pktMesh.visible = this.activeRuntimeJobs > 0;
           bldGroup.add(pktMesh);
 
           this.apiDataPackets.push({
@@ -4120,6 +4653,21 @@
       dish.position.set(5.5, 3.6, -3);
       obsGroup.add(dish);
       this.scene.add(obsGroup);
+
+      this.buildings = this.buildings || new Map();
+      const canonicalBuildings = [
+        { id: 'bld-fenix-hq', districtId: 'command-center', name: 'FÊNIX HQ Tower', floors: 7, group: hqGroup, position: districtOrigin('command-center'), status: 'ONLINE' },
+        { id: 'bld-api-platform', districtId: 'api-platform', name: 'API Platform Complex', floors: 4, group: this.apiPlatformComplex, position: districtOrigin('api-platform'), status: 'ONLINE' },
+        { id: 'bld-deposito-mais', districtId: 'logistics', name: 'Depósito Mais WMS Hub', floors: 2, group: this.warehouseGroup || null, position: districtOrigin('logistics'), status: 'ONLINE' },
+        { id: 'bld-ai-nexus', districtId: 'ai-district', name: 'AI Nexus Quantum Dome', floors: 3, group: aiGroup, position: districtOrigin('ai-district'), status: 'ONLINE' },
+        { id: 'bld-dev-loft', districtId: 'dev-district', name: 'Dev Loft Engineering', floors: 3, group: devGroup, position: districtOrigin('dev-district'), status: 'ONLINE' },
+        { id: 'bld-project-forge', districtId: 'project-district', name: 'Project Forge Plant', floors: 2, group: forgeGroup, position: districtOrigin('project-district'), status: 'ONLINE' },
+        { id: 'bld-memory-vault', districtId: 'data-center', name: 'Memory Vault Data Bunker', floors: 2, group: vaultGroup, position: districtOrigin('data-center'), status: 'ONLINE' },
+        { id: 'bld-observatory', districtId: 'observatory', name: 'Observatório 24/7', floors: 2, group: obsGroup, position: districtOrigin('observatory'), status: 'ONLINE' }
+      ];
+      for (const bld of canonicalBuildings) {
+        this.buildings.set(bld.id, bld);
+      }
     }
 
     _initDistrictInteractionLabels() {
@@ -4196,7 +4744,7 @@
       const now = window.performance?.now?.() || Date.now();
       const cachedLayout = this._districtLabelLayoutCache;
       if (!cachedLayout || cachedLayout.width !== width || cachedLayout.height !== height || now - cachedLayout.measuredAt > 250) {
-        const obstacles = [...document.querySelectorAll('.fw3-control-hint, .fw3-identity, .fw3-nav, .fw3-context, .fw3-pulse, #fenixWorldMinimap, #fenixCityNavPill, #fenixProviderOrbit')]
+        const obstacles = [...document.querySelectorAll('.fw3-control-hint, .fw3-identity, .fw3-nav, .fw3-context, .fw3-pulse, #fenixWorldMinimap, #fenixCityNavPill, #fnxProviderOrbit, #fenixProviderOrbit, #cityRuntimeLoadStatus')]
           .map((node) => {
             const style = getComputedStyle(node), rect = node.getBoundingClientRect();
             if (style.display === 'none' || style.visibility === 'hidden' || rect.width <= 0 || rect.height <= 0) return null;
@@ -4216,6 +4764,7 @@
         label.element.hidden = !visible;
         if (!visible) continue;
 
+          const measured = label.element.getBoundingClientRect?.() || { width: 0, height: 0 };
           const defaultWidth = 140;
           const defaultHeight = 34;
           label.layoutSize = {
@@ -4260,16 +4809,16 @@
       fabric.name = 'AmbientCityFabric';
       fabric.userData = { type: 'city-scenery', interactive: false };
 
-      AMBIENT_CITY_LOTS.forEach((lot) => {
+      AMBIENT_CITY_LOTS.forEach((lot, lotIdx) => {
         const block = new T.Group();
         block.name = 'AmbientBlock_' + lot.id;
         block.position.set(lot.x, 0, lot.z);
         block.userData = { type: 'scenery', liveEntity: false, selectable: false };
 
-        const floorHeight = 3.1;
+        const floorHeight = 3.2;
         const height = lot.floors * floorHeight;
         const plinth = new T.Mesh(
-          new T.BoxGeometry(lot.width + 0.8, 0.42, lot.depth + 0.8),
+          new T.BoxGeometry(lot.width + 1.4, 0.42, lot.depth + 1.4),
           this.materials.sidewalk
         );
         plinth.position.y = 0.21;
@@ -4290,22 +4839,71 @@
         roof.position.y = height + 0.63;
         roof.castShadow = true;
 
-        block.add(plinth, body, roof);
+        // Parapet trim along roof edge
+        const parapet = new T.Mesh(
+          new T.BoxGeometry(lot.width + 0.85, 0.22, lot.depth + 0.85),
+          this.materials.cyberMullion
+        );
+        parapet.position.y = height + 0.92;
+
+        // Entrance canopy on street-facing side
+        const canopy = new T.Mesh(
+          new T.BoxGeometry(Math.min(4.8, lot.width * 0.42), 0.18, 1.4),
+          this.materials.brushedTitanium
+        );
+        canopy.position.set(0, 2.75, lot.depth / 2 + 0.65);
+
+        block.add(plinth, body, roof, parapet, canopy);
+
+        const winMatFront = (lotIdx % 2 === 0) ? this.materials.officeGlass : this.materials.clearGlass;
         for (let floor = 0; floor < lot.floors; floor += 1) {
-          const band = new T.Mesh(
-            new T.BoxGeometry(lot.width - 1.2, 0.72, 0.08),
+          const yPos = 1.95 + floor * floorHeight;
+          const frontBand = new T.Mesh(
+            new T.BoxGeometry(lot.width - 1.2, 0.95, 0.08),
+            winMatFront
+          );
+          frontBand.position.set(0, yPos, lot.depth / 2 + 0.05);
+          const backBand = new T.Mesh(
+            new T.BoxGeometry(lot.width - 1.2, 0.95, 0.08),
+            winMatFront
+          );
+          backBand.position.set(0, yPos, -lot.depth / 2 - 0.05);
+          const leftBand = new T.Mesh(
+            new T.BoxGeometry(0.08, 0.95, lot.depth - 1.4),
             this.materials.clearGlass
           );
-          band.position.set(0, 1.9 + floor * floorHeight, lot.depth / 2 + 0.05);
-          block.add(band);
+          leftBand.position.set(-lot.width / 2 - 0.05, yPos, 0);
+          const rightBand = new T.Mesh(
+            new T.BoxGeometry(0.08, 0.95, lot.depth - 1.4),
+            this.materials.clearGlass
+          );
+          rightBand.position.set(lot.width / 2 + 0.05, yPos, 0);
+          block.add(frontBand, backBand, leftBand, rightBand);
         }
 
         const roofUnit = new T.Mesh(
-          new T.BoxGeometry(Math.max(1.6, lot.width * 0.28), 0.8, Math.max(1.6, lot.depth * 0.25)),
+          new T.BoxGeometry(Math.max(1.8, lot.width * 0.28), 0.85, Math.max(1.8, lot.depth * 0.25)),
           this.materials.brushedTitanium
         );
-        roofUnit.position.set(-lot.width * 0.22, height + 1.22, -lot.depth * 0.18);
+        roofUnit.position.set(-lot.width * 0.22, height + 1.25, -lot.depth * 0.18);
         block.add(roofUnit);
+
+        if (this.materials.solarPanel) {
+          const solarArray = new T.Mesh(
+            new T.BoxGeometry(Math.max(2.4, lot.width * 0.36), 0.12, Math.max(2.0, lot.depth * 0.32)),
+            this.materials.solarPanel
+          );
+          solarArray.position.set(lot.width * 0.18, height + 0.92, lot.depth * 0.14);
+          block.add(solarArray);
+        }
+
+        if (typeof this._createDetailedTree === 'function' && typeof T.CylinderGeometry === 'function') {
+          const treeType = ['deciduous', 'flowering', 'pine'][lotIdx % 3];
+          const tree = this._createDetailedTree(treeType);
+          tree.position.set(lot.width / 2 + 1.8, 0, lot.depth / 2 + 1.2);
+          block.add(tree);
+        }
+
         fabric.add(block);
       });
 
@@ -4345,22 +4943,25 @@
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       DATA FLOW PIPELINES: FAST LANE & JOB LANE
+       DATA FLOW PIPELINES: FAST LANE & JOB LANE (Ground-Level Optical Conduits)
     ══════════════════════════════════════════════════════════════════════════ */
     _initDataFlowPipelines() {
       const pGroup = new T.Group();
-      const hq = districtPoint('command-center', 0, 10, 0);
-      const depot = districtPoint('logistics', 0, 10, 0);
-      const platform = districtPoint('api-platform', 0, 10, 0);
+      const hq = districtPoint('command-center', 0, 0.28, 0);
+      const depot = districtPoint('logistics', 0, 0.28, 0);
+      const platform = districtPoint('api-platform', 0, 0.28, 0);
 
-      // Elevated Overhead Cable Gantry Truss between HQ and Depósito Mais
+      // Ground-level optical fiber trench between HQ and Depósito Mais
       const depotLength = hq.distanceTo(depot);
-      const conduit = new T.Mesh(new T.BoxGeometry(depotLength, 0.3, 0.3), this.materials.dockBumper);
-      conduit.position.set((hq.x + depot.x) / 2, 10, (hq.z + depot.z) / 2);
+      const conduit = new T.Mesh(
+        new T.BoxGeometry(depotLength, 0.08, 0.36),
+        this.materials.opticalConduitGlass || this.materials.cyberMullion
+      );
+      conduit.position.set((hq.x + depot.x) / 2, 0.06, (hq.z + depot.z) / 2);
       conduit.rotation.y = Math.atan2(hq.z - depot.z, depot.x - hq.x);
       pGroup.add(conduit);
 
-      // Fast Lane: High-Speed Cyan Optical Pulses
+      // Fast Lane: High-Speed Cyan Optical Pulses along ground conduit
       for (let i = 0; i < 6; i++) {
         const pulse = new T.Mesh(new T.SphereGeometry(0.24, 8, 8), this.materials.fastLaneGlow);
         pGroup.add(pulse);
@@ -4373,10 +4974,13 @@
         });
       }
 
-      // Optical conduit between the API Platform and the central HQ.
+      // Ground-level optical fiber trench between API Platform and central HQ
       const apiLength = hq.distanceTo(platform);
-      const apiConduit = new T.Mesh(new T.BoxGeometry(apiLength, 0.28, 0.28), this.materials.cyberMullion);
-      apiConduit.position.set((hq.x + platform.x) / 2, 10, (hq.z + platform.z) / 2);
+      const apiConduit = new T.Mesh(
+        new T.BoxGeometry(apiLength, 0.08, 0.32),
+        this.materials.opticalConduitGlass || this.materials.cyberMullion
+      );
+      apiConduit.position.set((hq.x + platform.x) / 2, 0.06, (hq.z + platform.z) / 2);
       apiConduit.rotation.y = Math.atan2(hq.z - platform.z, platform.x - hq.x);
       pGroup.add(apiConduit);
 
@@ -4393,20 +4997,23 @@
         });
       }
 
-      // Job Lane: Amber Volumetric Payload Capsules
+      // Job Lane: Amber Volumetric Payload Capsules along ground corridor
       for (let j = 0; j < 3; j++) {
-        const capsule = new T.Mesh(new T.BoxGeometry(0.8, 0.6, 1.2), this.materials.jobLaneGlow);
+        const capsule = new T.Mesh(new T.BoxGeometry(0.8, 0.45, 1.2), this.materials.jobLaneGlow);
         pGroup.add(capsule);
         this.dataPulses.push({
           mesh: capsule,
-          start: districtPoint('logistics', 0, 0.5, 14),
-          end: districtPoint('command-center', 0, 0.5, 0),
+          start: districtPoint('logistics', 0, 0.35, 14),
+          end: districtPoint('command-center', 0, 0.35, 0),
           progress: j / 3,
           speed: 0.003
         });
       }
 
       this.scene.add(pGroup);
+      this.dataPulses.forEach((pulse) => {
+        if (pulse.mesh) pulse.mesh.visible = false;
+      });
     }
 
     _bindEvents() {
@@ -4523,7 +5130,7 @@
       const hits = this.raycaster.intersectObjects(this.interactiveMeshes, false);
       if (hits.length > 0) {
         this.canvas.style.cursor = 'pointer';
-        const priority = (hit) => ({ agent: 0, project: 1, machine: 1, building: 2, company: 2, district: 3 }[hit.object.userData?.type] ?? 4);
+        const priority = (hit) => ({ agent: 0, workstation: 1, station: 1, project: 2, machine: 2, building: 3, company: 3, district: 4 }[hit.object.userData?.type] ?? 5);
         this.hoveredObject = hits.slice().sort((left, right) => priority(left) - priority(right) || left.distance - right.distance)[0].object;
       } else {
         this.canvas.style.cursor = 'default';
@@ -4532,7 +5139,25 @@
     }
 
     _handleCanvasClick(e) {
-      if (!this.hoveredObject) return;
+      // FÊNIX 3D RTS MOVE COMMAND: If an agent is selected and user clicks on ground/terrain, command agent to walk there
+      if (this.selectedAgentId && (!this.hoveredObject || this.hoveredObject.userData?.type === 'ground')) {
+        const groundHits = this.raycaster.intersectObjects(this.terrainGroup ? this.terrainGroup.children : [], true);
+        if (groundHits.length > 0) {
+          const pt = groundHits[0].point;
+          const agentRecord = this.agents.get(this.selectedAgentId);
+          if (agentRecord && agentRecord.mesh) {
+            agentRecord.telemetryTarget = { x: pt.x, z: pt.z };
+            agentRecord.movementState = 'WALKING';
+            this._spawnDestinationBeacon(pt.x, pt.z);
+            return;
+          }
+        }
+      }
+
+      if (!this.hoveredObject) {
+        this.selectedAgentId = null;
+        return;
+      }
       const data = this.hoveredObject.userData;
       if (!data) return;
 
@@ -4548,7 +5173,9 @@
         }
       } else if (data.type === 'agent') {
         const targetPos = this.hoveredObject.parent ? this.hoveredObject.parent.position : this.hoveredObject.position;
-        this.focusEntity(targetPos, 8);
+        // Keep the selected avatar readable with its nearby district in view.
+        this.focusEntity(targetPos, 44);
+        this.selectedAgentId = data.agentId;
 
         const liveAgent = this.agents.get(data.agentId) || {
           id: data.agentId,
@@ -4560,9 +5187,45 @@
         if (typeof window.fenixShowWorldAgentInspector === 'function') {
           window.fenixShowWorldAgentInspector(liveAgent);
         }
+      } else if (data.type === 'workstation' || data.type === 'station') {
+        const targetPos = this.hoveredObject.parent ? this.hoveredObject.parent.position : this.hoveredObject.position;
+        this.focusEntity(targetPos, 7);
+        if (typeof window.fenixShowWorkstationInspector === 'function') {
+          window.fenixShowWorkstationInspector(data);
+        } else if (data.assignedAgentId && typeof window.fenixShowWorldAgentInspector === 'function') {
+          const liveAgent = this.agents.get(data.assignedAgentId) || { id: data.assignedAgentId, name: data.assignedAgentName || data.assignedAgentId };
+          window.fenixShowWorldAgentInspector(liveAgent);
+        }
       } else if (data.type === 'building') {
         this.selectBuilding(data.id || data.buildingId);
       }
+    }
+
+
+    _spawnDestinationBeacon(x, z) {
+      if (!this.scene) return;
+      const beaconGroup = new T.Group();
+      const ringGeo = new T.RingGeometry(0.35, 0.55, 32);
+      const ringMat = new T.MeshBasicMaterial({ color: 0x00f0ff, side: T.DoubleSide, transparent: true, opacity: 0.9 });
+      const ring = new T.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(x, 0.08, z);
+      beaconGroup.add(ring);
+      this.scene.add(beaconGroup);
+
+      let age = 0;
+      const animInterval = setInterval(() => {
+        age += 0.05;
+        const scale = 1 + age * 1.8;
+        ring.scale.set(scale, scale, 1);
+        ringMat.opacity = Math.max(0, 0.9 - age * 0.65);
+        if (age >= 1.4) {
+          clearInterval(animInterval);
+          this.scene.remove(beaconGroup);
+          ringGeo.dispose();
+          ringMat.dispose();
+        }
+      }, 50);
     }
 
     _updateCameraPosition(instant = false, elapsedMs = 1000 / 60) {
@@ -4583,9 +5246,11 @@
         this.cameraState.target.copy(this.cameraState.targetLookAt);
         if (this.cameraState.targetAzimuth !== null) {
           this.cameraState.azimuth = this.cameraState.targetAzimuth;
+          this.cameraState.targetAzimuth = null;
         }
         if (this.cameraState.targetElevation !== null) {
           this.cameraState.elevation = this.cameraState.targetElevation;
+          this.cameraState.targetElevation = null;
         }
       } else {
         const elapsed = Math.min(250, Math.max(0, Number(elapsedMs) || 0));
@@ -4627,8 +5292,16 @@
       this.cameraMode = mode;
       if (mode === 'city' || mode === 'orbit') {
         this.followingAgentId = null;
-        this.cameraState.targetDistance = CITY_DEFAULT_DISTANCE;
+        this.cameraState.preferenceDistance = CITY_DEFAULT_DISTANCE;
+        this.cameraState.targetDistance = CITY_DEFAULT_DISTANCE * responsiveCameraScale(this.camera?.aspect);
         this.cameraState.targetLookAt.set(0, 0, 0);
+        this.cameraState.targetAzimuth = Math.PI / 4;
+        this.cameraState.targetElevation = 0.56;
+        if (Boolean(navigator.webdriver) || Boolean(window.__FENIX_HEADLESS__)) {
+          this._updateCameraPosition(true);
+          this._updateDistrictLabels?.();
+          this.renderer?.render?.(this.scene, this.camera);
+        }
       } else if (mode === 'interior') {
         this.focusBuilding('api-platform');
       }
@@ -4682,16 +5355,25 @@
 
     focusEntity(worldPos, targetDist = 28, targetAzimuth = null, targetElevation = null) {
       this.cameraState.targetLookAt.copy(worldPos);
-      this.cameraState.targetDistance = targetDist;
+      this.cameraState.targetDistance = targetDist * responsiveCameraScale(this.camera?.aspect);
       if (targetAzimuth !== null) this.cameraState.targetAzimuth = targetAzimuth;
       if (targetElevation !== null) this.cameraState.targetElevation = targetElevation;
+      if (Boolean(navigator.webdriver) || Boolean(window.__FENIX_HEADLESS__)) {
+        this._updateCameraPosition(true);
+        this._updateDistrictLabels?.();
+        this.renderer?.render?.(this.scene, this.camera);
+      }
       this._saveState();
     }
 
     focusDistrict(districtId) {
       const d = DISTRICTS.find(item => item.id === districtId);
       if (d) {
-        this.focusEntity(new T.Vector3(d.x, 0, d.z), d.isHero ? 42 : 55);
+        if (this.activeApiFloor !== null && this.activeApiFloor !== undefined) {
+          this.focusFloor(null);
+        }
+        const yOffset = d.id === 'command-center' ? 5 : 3;
+        this.focusEntity(new T.Vector3(d.x, yOffset, d.z), d.isHero ? 48 : 54, Math.PI / 4, 0.56);
         return true;
       }
       return false;
@@ -4721,7 +5403,10 @@
     setZoom(zoomFactor) {
       const zoom = Number(zoomFactor);
       if (!Number.isFinite(zoom) || zoom <= 0) return false;
-      this.cameraState.targetDistance = Math.max(8, Math.min(260, CITY_DEFAULT_DISTANCE / zoom));
+      this.cameraState.targetDistance = Math.max(8, Math.min(260, CITY_DEFAULT_DISTANCE * responsiveCameraScale(this.camera?.aspect) / zoom));
+      if (Boolean(navigator.webdriver) || Boolean(window.__FENIX_HEADLESS__)) {
+        this._updateCameraPosition(true);
+      }
       this._saveState();
       return true;
     }
@@ -4731,6 +5416,9 @@
       if (!Number.isFinite(steps) || steps === 0) return false;
       const factor = steps > 0 ? Math.pow(0.82, steps) : Math.pow(1.22, -steps);
       this.cameraState.targetDistance = Math.max(8, Math.min(260, this.cameraState.targetDistance * factor));
+      if (Boolean(navigator.webdriver) || Boolean(window.__FENIX_HEADLESS__)) {
+        this._updateCameraPosition(true);
+      }
       this._saveState();
       return true;
     }
@@ -4749,13 +5437,122 @@
       return true;
     }
 
+    clearSelection() {
+      if (this.state) {
+        this.state.selected = null;
+        this.state.level = 'world';
+        this.state.history = [];
+      }
+      this.selectedBuilding = null;
+      this.selectedAgent = null;
+      return true;
+    }
+
     resetCamera() {
-      this.cameraState.targetLookAt.set(0, 0, 0);
-      this.cameraState.targetDistance = CITY_DEFAULT_DISTANCE;
-      this.cameraState.targetAzimuth = Math.PI / 4;
-      this.cameraState.targetElevation = 0.615;
       this.stopFollowing();
+      this.cameraMode = 'orbit';
+      const resetDistance = CITY_DEFAULT_DISTANCE * responsiveCameraScale(this.camera?.aspect);
+      this.cameraState.azimuth = Math.PI / 4;
+      this.cameraState.elevation = 0.56;
+      this.cameraState.distance = resetDistance;
+      this.cameraState.preferenceDistance = CITY_DEFAULT_DISTANCE;
+      this.cameraState.target.set(0, 0, 0);
+      this.cameraState.targetLookAt.set(0, 0, 0);
+      this.cameraState.targetDistance = resetDistance;
+      this.cameraState.targetAzimuth = null;
+      this.cameraState.targetElevation = null;
+      if (this.state) {
+        this.state.selected = null;
+        this.state.level = 'world';
+        this.state.history = [];
+      }
+      this.selectedBuilding = null;
+      this.selectedAgent = null;
+      this.activeApiFloor = null;
+      this.apiFloorGroups?.forEach((floor) => { if (floor) floor.visible = true; });
+      if (this.apiRoofGroup) this.apiRoofGroup.visible = true;
+      if (this.cutawayState) {
+        this.cutawayState.manual = false;
+        this.cutawayState.progress = 0;
+        this.cutawayState.target = 0;
+      }
+      if (this.warehouseRoofGroup) {
+        this.warehouseRoofGroup.position.y = 11.9;
+        this.warehouseRoofGroup.visible = true;
+      }
+      if (this.warehouseInteriorGroup) this.warehouseInteriorGroup.visible = false;
+      this._updateCameraPosition(true);
+      this._updateDistrictLabels?.();
+      this.renderer?.render?.(this.scene, this.camera);
       this._saveState();
+      return true;
+    }
+
+    setSemanticLevel(mode) {
+      const normMode = String(mode || '').toLowerCase();
+      this.stopFollowing();
+
+      if (normMode === 'universe') {
+        this.cameraState.targetLookAt.set(0, 0, 0);
+        this.cameraState.targetDistance = 210 * responsiveCameraScale(this.camera?.aspect);
+        this.cameraState.targetElevation = 0.78;
+        if (this.state) this.state.level = 'universe';
+      } else if (normMode === 'island') {
+        this.cameraState.targetLookAt.set(0, 0, 0);
+        this.cameraState.targetDistance = 75 * responsiveCameraScale(this.camera?.aspect);
+        this.cameraState.targetElevation = 0.56;
+        if (this.state) this.state.level = 'island';
+      } else if (normMode === 'agent') {
+        let targetPos = null;
+        const selectedAgentId = this.selectedAgent?.id || this.followingAgentId;
+        const selectedRecord = selectedAgentId && (this.agents?.get(selectedAgentId) || (this.selectedAgent?.id === selectedAgentId ? this.selectedAgent : null));
+        const selectedMesh = selectedRecord?.mesh || (selectedAgentId && this.agentMeshes?.get(selectedAgentId));
+        const worldPositionOf = (object) => {
+          if (!object?.position) return null;
+          const position = new T.Vector3();
+          return typeof object.getWorldPosition === 'function' ? object.getWorldPosition(position) : position.copy(object.position);
+        };
+        if (selectedAgentId && selectedAgentId === 'agent-camila' && this.camilaGroup) {
+          targetPos = worldPositionOf(this.camilaGroup);
+        } else if (selectedMesh?.position) {
+          targetPos = worldPositionOf(selectedMesh);
+        } else if (selectedAgentId && Number.isFinite(Number(selectedRecord?.coordinates?.x)) && Number.isFinite(Number(selectedRecord?.coordinates?.z))) {
+          const coordinates = selectedRecord.coordinates;
+          targetPos = new T.Vector3(Number(coordinates.x), Number(coordinates.y) || 0.8, Number(coordinates.z));
+        } else if (!selectedAgentId && this.camilaGroup) {
+          targetPos = worldPositionOf(this.camilaGroup);
+        } else if (!selectedAgentId && this.agents && this.agents.size > 0) {
+          const firstAgent = this.agents.values().next().value;
+          if (firstAgent?.mesh) targetPos = worldPositionOf(firstAgent.mesh);
+        } else if (!selectedAgentId && this.agentMeshes && this.agentMeshes.size > 0) {
+          const firstEntry = this.agentMeshes.values().next().value;
+          if (firstEntry) targetPos = firstEntry.position;
+        }
+        if (!targetPos && selectedAgentId) {
+          window.FenixToast?.show?.('Não foi possível localizar a posição 3D do agente selecionado. Sincronize a Cidade e tente novamente.', 'warning');
+          return false;
+        } else if (targetPos) {
+          this.cameraState.targetLookAt.set(targetPos.x, (targetPos.y || 0) + 1.2, targetPos.z);
+        } else {
+          this.cameraState.targetLookAt.set(0, 1.2, 0);
+        }
+        this.cameraState.targetDistance = 32 * responsiveCameraScale(this.camera?.aspect);
+        this.cameraState.targetElevation = 0.38;
+        if (this.state) this.state.level = 'agent';
+      }
+
+      this._updateCameraPosition(true);
+      this._updateDistrictLabels?.();
+      this.renderer?.render?.(this.scene, this.camera);
+      this._saveState();
+
+      // Synchronize HUD button active states
+      const activeName = normMode === 'agent' ? 'Agent' : (normMode === 'island' ? 'Island' : 'Universe');
+      ['Universe', 'Island', 'Agent'].forEach(lvl => {
+        const btn = document.getElementById(`btnHud${lvl}`);
+        if (btn) btn.classList.toggle('active', lvl === activeName);
+      });
+
       return true;
     }
 
@@ -4787,27 +5584,33 @@
         const dyn = this.dynamicBuildings.get(buildingId);
         const pos = dyn.group ? dyn.group.position : (dyn.position || null);
         if (pos) {
-          this.focusEntity(new T.Vector3(pos.x, 2.0, pos.z), 26);
+          this.focusEntity(new T.Vector3(pos.x, 4.0, pos.z), 46, Math.PI / 4, 0.54);
           return;
         }
       }
       if (buildingId === 'bld-deposito-mais' || buildingId === 'deposito-mais' || buildingId === 'logistics' || buildingId === 'bld-logistics') {
-        this.focusEntity(districtPoint('logistics'), 38);
+        this.focusEntity(districtPoint('logistics', 0, 4.5, 0), 56, Math.PI / 4, 0.54);
       } else if (buildingId === 'bld-api-platform' || buildingId === 'api-platform') {
         this.focusFloor(null);
-        this.focusEntity(districtPoint('api-platform', 0, 9.0, 0), 34, 1.62, 0.28);
+        this.focusEntity(districtPoint('api-platform', 0, 6.5, 0), 56, Math.PI / 4, 0.52);
       } else if (buildingId === 'bld-fenix-hq' || buildingId === 'command-center') {
-        this.focusEntity(new T.Vector3(0, 0, 0), 55);
+        this.focusEntity(new T.Vector3(0, 8, 0), 58, Math.PI / 4, 0.54);
       } else if (buildingId === 'bld-dev-loft' || buildingId === 'dev-district') {
-        this.focusEntity(districtPoint('dev-district'), 42);
+        this.focusEntity(districtPoint('dev-district', 0, 4.0, 0), 52, Math.PI / 4, 0.54);
       } else if (buildingId === 'bld-ai-nexus' || buildingId === 'ai-district') {
-        this.focusEntity(districtPoint('ai-district'), 42);
+        this.focusEntity(districtPoint('ai-district', 0, 4.0, 0), 52, Math.PI / 4, 0.54);
+      } else if (buildingId === 'bld-project-forge' || buildingId === 'project-district') {
+        this.focusEntity(districtPoint('project-district', 0, 4.0, 0), 52, Math.PI / 4, 0.54);
+      } else if (buildingId === 'bld-memory-vault' || buildingId === 'bld-data-center' || buildingId === 'data-center') {
+        this.focusEntity(districtPoint('data-center', 0, 4.0, 0), 52, Math.PI / 4, 0.54);
+      } else if (buildingId === 'bld-observatory' || buildingId === 'observatory') {
+        this.focusEntity(districtPoint('observatory', 0, 4.0, 0), 52, Math.PI / 4, 0.54);
       } else {
         const mesh = this.interactiveMeshes.find(m => m.userData?.id === buildingId || m.userData?.buildingId === buildingId);
         if (mesh) {
           const wPos = new T.Vector3();
           mesh.getWorldPosition(wPos);
-          this.focusEntity(wPos, 28);
+          this.focusEntity(new T.Vector3(wPos.x, Math.max(3.5, wPos.y), wPos.z), 46, Math.PI / 4, 0.54);
         }
       }
     }
@@ -4815,18 +5618,25 @@
     selectBuilding(buildingId) {
       if (!buildingId) return;
       this.focusBuilding(buildingId);
+      let bld = this.dynamicBuildings?.get(buildingId);
       if (typeof window.fenixShowBuildingDetails === 'function') {
-        let bld = this.dynamicBuildings?.get(buildingId);
         window.fenixShowBuildingDetails(bld || { id: buildingId, name: buildingId });
+      }
+      if (window.GlobalSelectionStore) {
+        window.GlobalSelectionStore.select('building', buildingId, bld || { id: buildingId }, 'city');
       }
     }
 
     selectAgent(agentId) {
       if (!agentId) return;
-      this.focusAgent(agentId);
       const ag = this.agents.get(agentId) || { id: agentId, name: agentId };
+      this.selectedAgent = ag;
+      this.focusAgent(agentId);
       if (typeof window.fenixShowWorldAgentInspector === 'function') {
         window.fenixShowWorldAgentInspector(ag);
+      }
+      if (window.GlobalSelectionStore) {
+        window.GlobalSelectionStore.select('agent', agentId, ag, 'city');
       }
     }
 
@@ -4837,7 +5647,7 @@
           this.apiFloorGroups.forEach(fg => { if (fg) fg.visible = true; });
         }
         if (this.apiRoofGroup) this.apiRoofGroup.visible = true;
-        this.focusEntity(districtPoint('api-platform', 0, 9.0, 0), 34, 1.62, 0.28);
+        this.focusEntity(districtPoint('api-platform', 0, 6.5, 0), 56, Math.PI / 4, 0.52);
         return;
       }
 
@@ -4859,7 +5669,7 @@
       const fH = 4.0;
       const fY = podiumH + f * fH;
       // Position camera directly into floor f interior with calibrated clearance
-      this.focusEntity(districtPoint('api-platform', 0, fY + 1.8, 0), 13.5, 1.62, 0.22);
+      this.focusEntity(districtPoint('api-platform', 0, fY + 1.8, 0), 28.0, Math.PI / 4, 0.48);
     }
 
     focusCompany(companyId) {
@@ -4868,38 +5678,67 @@
 
     focusAgent(agentId) {
       if (!agentId) return;
-      const ag = this.agents.get(agentId);
-      if (ag && ag.mesh) {
-        this.focusEntity(ag.mesh.position, 10);
+      const selectedAgent = this.agents?.get(agentId);
+      if (selectedAgent) this.selectedAgent = selectedAgent;
+      const runtimeAgent = selectedAgent || (this.selectedAgent?.id === agentId ? this.selectedAgent : null);
+      const runtimeMesh = runtimeAgent?.mesh || this.agentMeshes?.get(agentId);
+      if (runtimeMesh?.position) {
+        if (this.activeApiFloor !== null && this.activeApiFloor !== undefined) this.focusFloor(null);
+        const wPos = new T.Vector3();
+        if (typeof runtimeMesh.getWorldPosition === 'function') {
+          runtimeMesh.getWorldPosition(wPos);
+        } else {
+          wPos.set(runtimeMesh.position.x || 0, runtimeMesh.position.y || 0.8, runtimeMesh.position.z || 0);
+        }
+        this.focusEntity(new T.Vector3(wPos.x, Math.max(2.4, (wPos.y || 0.8) + 1.4), wPos.z), 44, Math.PI / 4, 0.54);
+        return;
+      }
+      const coordinates = runtimeAgent?.coordinates;
+      if (coordinates && Number.isFinite(Number(coordinates.x)) && Number.isFinite(Number(coordinates.z))) {
+        if (this.activeApiFloor !== null && this.activeApiFloor !== undefined) this.focusFloor(null);
+        const y = Number(coordinates.y) || 0.8;
+        this.focusEntity(new T.Vector3(Number(coordinates.x), Math.max(2.4, y + 1.4), Number(coordinates.z)), 44, Math.PI / 4, 0.54);
         return;
       }
       if (agentId === 'agent-camila' || (agentId && agentId.includes('camila'))) {
-        if (this.camilaGroup) this.focusEntity(this.camilaGroup.position, 8);
-      } else if (agentId === 'agent-andre' || (agentId && agentId.includes('andre'))) {
-        this.focusEntity(districtPoint('logistics', 2.5, 0.8, 3.5), 8);
-      } else if (agentId === 'agent-expedicao' || (agentId && agentId.includes('carlos'))) {
-        this.focusEntity(districtPoint('logistics', -4, 0.8, 11), 10);
+        if (this.camilaGroup) {
+          const p = this.camilaGroup.position;
+          this.focusEntity(new T.Vector3(p.x, Math.max(2.4, p.y + 1.4), p.z), 30, Math.PI / 4, 0.54);
+          return;
+        }
       } else if (agentId === 'agent-api-ops' || (agentId && agentId.includes('alex'))) {
         this.focusFloor(1);
-        this.focusEntity(districtPoint('api-platform', -4.5, 5.4, 2.2), 8.5, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', -4.5, 5.4, 2.2), 26.0, Math.PI / 4, 0.48);
+        return;
       } else if (agentId === 'agent-integration' || (agentId && agentId.includes('elena'))) {
         this.focusFloor(1);
-        this.focusEntity(districtPoint('api-platform', 4.5, 5.4, 2.2), 8.5, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', 4.5, 5.4, 2.2), 26.0, Math.PI / 4, 0.48);
+        return;
       } else if (agentId === 'agent-infra' || (agentId && agentId.includes('lucas'))) {
         this.focusFloor(2);
-        this.focusEntity(districtPoint('api-platform', -2.2, 9.8, 3.2), 8.5, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', -2.2, 9.8, 3.2), 26.0, Math.PI / 4, 0.48);
+        return;
       } else if (agentId === 'agent-monitor' || (agentId && agentId.includes('maya'))) {
         this.focusFloor(2);
-        this.focusEntity(districtPoint('api-platform', 2.2, 9.8, 3.2), 8.5, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', 2.2, 9.8, 3.2), 26.0, Math.PI / 4, 0.48);
+        return;
       } else if (agentId === 'agent-security' || (agentId && agentId.includes('victor'))) {
         this.focusFloor(2);
-        this.focusEntity(districtPoint('api-platform', -8.2, 9.8, -1.2), 8.5, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', -8.2, 9.8, -1.2), 26.0, Math.PI / 4, 0.48);
+        return;
       } else if (agentId === 'agent-ai-core' || (agentId && agentId.includes('sora'))) {
         this.focusFloor(3);
-        this.focusEntity(districtPoint('api-platform', 0, 14.8, 2.8), 9.5, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', 0, 14.8, 2.8), 26.0, Math.PI / 4, 0.48);
+        return;
       } else if (agentId === 'agent-support' || (agentId && agentId.includes('gabriel'))) {
         this.focusFloor(0);
-        this.focusEntity(districtPoint('api-platform', 0, 1.4, 1.2), 9.0, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', 0, 2.2, 1.2), 26.0, Math.PI / 4, 0.48);
+        return;
+      }
+      if (agentId === 'agent-andre' || (agentId && agentId.includes('andre'))) {
+        this.focusEntity(districtPoint('logistics', 2.5, 2.4, 3.5), 30, Math.PI / 4, 0.54);
+      } else if (agentId === 'agent-expedicao' || (agentId && agentId.includes('carlos'))) {
+        this.focusEntity(districtPoint('logistics', -4, 2.4, 11), 30, Math.PI / 4, 0.54);
       }
     }
 
@@ -5034,9 +5873,9 @@
       const points = this.pathGraph ? this.pathGraph.findPath(agent.mesh.position, targetVec) : [targetVec];
       agent.path = points;
       agent.pathIndex = 0;
-      agent.state = 'WALKING';
+      agent.localNavigationActive = true;
       if (agent.thoughtBubble) {
-        agent.thoughtBubble.setText('Em deslocamento...', '🚶', '#38bdf8');
+        agent.thoughtBubble.setText('Movimento local · não sincronizado', '🚶', '#38bdf8');
       }
       return points;
     }
@@ -5217,17 +6056,16 @@
       bldGroup.add(foundationMesh);
 
       // Floor levels
-      const wallMat = new T.MeshStandardMaterial({ color: 0x273542, roughness: 0.72, metalness: 0.22 });
+      const wallMat = this.materials.cyberWall || new T.MeshStandardMaterial({ color: 0x273542, roughness: 0.72, metalness: 0.22 });
+      const coreMat = this.materials.urbanFacadeGlass || new T.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.35 });
       const accentMat = new T.MeshStandardMaterial({
         color: new T.Color(color), emissive: new T.Color(color), emissiveIntensity: 0.16,
         roughness: 0.46, metalness: 0.38
       });
-      const glassMat = this.materials.glassModern || new T.MeshPhysicalMaterial({
-        color: 0x93c5fd,
-        transparent: true,
-        opacity: 0.55,
-        roughness: 0.1,
-        metalness: 0.1
+      const glassMat = this.materials.officeGlass || this.materials.glass || new T.MeshStandardMaterial({
+        color: 0x38bdf8,
+        roughness: 0.18,
+        metalness: 0.55
       });
 
       for (let f = 0; f < floors; f++) {
@@ -5238,9 +6076,18 @@
         slab.position.y = floorY + 0.15;
         bldGroup.add(slab);
 
+        // Solid architectural core so the building has visual volume
+        const coreVolume = new T.Mesh(new T.BoxGeometry(Math.max(2, width - 1.4), floorH - 0.32, Math.max(2, depth - 1.4)), coreMat);
+        coreVolume.position.y = floorY + (floorH / 2);
+        coreVolume.castShadow = true;
+        coreVolume.receiveShadow = true;
+        bldGroup.add(coreVolume);
+
         // Glass curtain envelope
         const glassCurtain = new T.Mesh(new T.BoxGeometry(width - 0.2, floorH - 0.3, depth - 0.2), glassMat);
         glassCurtain.position.y = floorY + (floorH / 2);
+        glassCurtain.castShadow = true;
+        glassCurtain.receiveShadow = true;
         bldGroup.add(glassCurtain);
 
         // Thin facade band keeps project identity visible without tinting the whole structure.
@@ -5344,7 +6191,7 @@
       this.interactiveMeshes.push(hitBox);
 
       this.scene.add(bldGroup);
-      this.dynamicBuildings.set(id, {
+      const bldRecord = {
         id,
         name,
         projectId: payload.projectId || null,
@@ -5359,10 +6206,202 @@
         floors,
         beacon,
         hitBox
-      });
+      };
+      this.dynamicBuildings.set(id, bldRecord);
+      this.buildings?.set?.(id, bldRecord);
 
       console.log(`[FenixWorld3D] ✅ Dynamic Building instantiated: ${name} (${id}) at (${coords.x}, ${coords.z})`);
       return { ok: true, id, name, position: coords, floors };
+    }
+
+    createAvatarPreview(canvas, options = {}) {
+      if (!canvas || !this.renderer || typeof T.WebGLRenderer !== 'function') return null;
+      let renderer;
+      try {
+        renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' });
+      } catch (error) {
+        console.warn('[FenixWorld3D] Avatar preview unavailable; editor fallback remains active.', error);
+        return null;
+      }
+
+      const scene = new T.Scene();
+      scene.background = new T.Color('#0b1219');
+      scene.add(new T.HemisphereLight(0xddeeff, 0x24313a, 2.1));
+      const keyLight = new T.DirectionalLight(0xffffff, 2.6);
+      keyLight.position.set(3, 5, 4);
+      scene.add(keyLight);
+      const fillLight = new T.DirectionalLight(0x55d6c2, 0.8);
+      fillLight.position.set(-3, 2, -2);
+      scene.add(fillLight);
+      const ground = new T.Mesh(new T.CircleGeometry(0.78, 40), new T.MeshStandardMaterial({ color: '#13232b', roughness: 0.92 }));
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.015;
+      scene.add(ground);
+      const camera = new T.PerspectiveCamera(31, 1, 0.1, 30);
+      camera.position.set(2.7, 1.8, 3.9);
+      const focusCenter = new T.Vector3(0, 0.96, 0);
+      const previewFrameSize = new T.Vector3(2, 3.6, 2);
+      camera.lookAt(focusCenter);
+
+      const sharedMaterials = new Set(Object.values(this.materials || {}).flatMap((material) => Array.isArray(material) ? material : [material]));
+      const previewBuilder = Object.create(this);
+      previewBuilder.agents = new Map();
+      previewBuilder.interactiveMeshes = [];
+      let avatar = null;
+      let state = 'idle';
+      let yaw = 0;
+      let frame = 0;
+      let animationId = 0;
+      let resizeObserver = null;
+      let disposed = false;
+      let pointerX = null;
+      const onPointerDown = (event) => { pointerX = event.clientX; canvas.setPointerCapture?.(event.pointerId); };
+      const onPointerMove = (event) => {
+        if (pointerX === null) return;
+        yaw += (event.clientX - pointerX) * 0.012;
+        pointerX = event.clientX;
+      };
+      const onPointerUp = () => { pointerX = null; };
+      canvas.style.touchAction = 'pan-y';
+      canvas.addEventListener('pointerdown', onPointerDown);
+      canvas.addEventListener('pointermove', onPointerMove);
+      canvas.addEventListener('pointerup', onPointerUp);
+      canvas.addEventListener('pointercancel', onPointerUp);
+
+      const removeAvatar = () => {
+        if (!avatar) return;
+        scene.remove(avatar);
+        avatar.traverse((node) => {
+          node.geometry?.dispose?.();
+          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          materials.forEach((material) => {
+            if (material && !sharedMaterials.has(material)) {
+              material.map?.dispose?.();
+              material.dispose?.();
+            }
+          });
+        });
+        avatar.userData?.thoughtBubble?.texture?.dispose?.();
+        avatar = null;
+      };
+
+      const fitCamera = () => {
+        const verticalFov = camera.fov * Math.PI / 180;
+        const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(0.25, camera.aspect));
+        const verticalDistance = (previewFrameSize.y / 2) / Math.tan(verticalFov / 2);
+        const horizontalDistance = Math.max(previewFrameSize.x, previewFrameSize.z) / (2 * Math.tan(horizontalFov / 2));
+        const distance = Math.max(verticalDistance, horizontalDistance, 2) * 1.2;
+        camera.position.set(focusCenter.x + distance * 0.28, focusCenter.y + distance * 0.18, focusCenter.z + distance);
+        camera.lookAt(focusCenter);
+      };
+
+      const update = (next = {}) => {
+        if (disposed) return;
+        options = { ...options, ...next };
+        removeAvatar();
+        const id = String(options.id || 'avatar-preview');
+        const avatarConfig = options.avatar || {};
+        const visualProfile = window.fenixCityAgentVisualProfile?.({
+          id, name: options.name, role: options.role, department: options.department, avatar: avatarConfig
+        }) || { displayScale: 1.3, skinColor: '#d4a17f', hairColor: 0x282521, shirtColor: '#087f8c', accessory: 'none' };
+        const shirtMat = this.materials.workWear?.clone?.() || new T.MeshStandardMaterial({ color: visualProfile.shirtColor || '#087f8c', roughness: 0.76 });
+        shirtMat.color?.set?.(visualProfile.shirtColor || '#087f8c');
+        avatar = this._createCyberHumanoid.call(previewBuilder, {
+          id, name: options.name || 'Agente', role: options.role || 'Especialista',
+          department: options.department || '', pos: new T.Vector3(0, 0, 0), shirtMat,
+          hairColor: visualProfile.hairColor, accessory: visualProfile.accessory || 'none',
+          visualProfile, isSeated: false
+        });
+        const thoughtBubble = avatar.userData?.thoughtBubble;
+        if (thoughtBubble?.sprite) {
+          thoughtBubble.sprite.parent?.remove(thoughtBubble.sprite);
+          thoughtBubble.sprite.material?.map?.dispose?.();
+          thoughtBubble.sprite.material?.dispose?.();
+          thoughtBubble.sprite = null;
+        }
+        [avatar.userData?.emoteBadge, avatar.userData?.emoteIcon].forEach((badge) => {
+          if (!badge) return;
+          badge.parent?.remove?.(badge);
+          badge.geometry?.dispose?.();
+        });
+        const bounds = new T.Box3().setFromObject(avatar);
+        bounds.getCenter(focusCenter);
+        fitCamera();
+        avatar.rotation.y = yaw;
+        scene.add(avatar);
+        state = next.state || state;
+      };
+
+      const resize = () => {
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1, Math.floor(rect.width || 320));
+        const height = Math.max(1, Math.floor(rect.height || 360));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        fitCamera();
+      };
+      const render = () => {
+        if (disposed) return;
+        animationId = requestAnimationFrame(render);
+        frame += 0.035;
+        if (avatar) {
+          avatar.rotation.y = yaw + (state === 'working' ? Math.sin(frame) * 0.035 : 0);
+          avatar.position.y = state === 'idle' ? Math.sin(frame * 1.3) * 0.018 : state === 'error' ? Math.sin(frame * 3) * 0.012 : 0;
+          const { armL, armR } = avatar.userData || {};
+          if (armL && armR) {
+            const swing = state === 'walk' ? Math.sin(frame * 4) * 0.42 : state === 'working' ? Math.sin(frame * 3) * 0.16 : 0;
+            armL.rotation.x = swing;
+            armR.rotation.x = -swing;
+          }
+          if (state === 'error') avatar.rotation.z = Math.sin(frame * 3) * 0.025;
+          else avatar.rotation.z = 0;
+        }
+        renderer.render(scene, camera);
+      };
+
+      try {
+        update(options);
+      } catch (error) {
+        console.warn('[FenixWorld3D] Avatar model preview failed; editor fallback remains active.', error);
+        canvas.removeEventListener('pointerdown', onPointerDown);
+        canvas.removeEventListener('pointermove', onPointerMove);
+        canvas.removeEventListener('pointerup', onPointerUp);
+        canvas.removeEventListener('pointercancel', onPointerUp);
+        ground.geometry.dispose();
+        ground.material.dispose();
+        renderer.dispose();
+        return null;
+      }
+      resize();
+      if (typeof ResizeObserver === 'function') {
+        resizeObserver = new ResizeObserver(resize);
+        resizeObserver.observe(canvas);
+      }
+      animationId = requestAnimationFrame(render);
+
+      return {
+        update,
+        rotate(direction = 1) { yaw += (direction < 0 ? -1 : 1) * Math.PI / 2; },
+        setState(nextState) { state = String(nextState || 'idle'); },
+        dispose() {
+          if (disposed) return;
+          disposed = true;
+          cancelAnimationFrame(animationId);
+          resizeObserver?.disconnect?.();
+          canvas.removeEventListener('pointerdown', onPointerDown);
+          canvas.removeEventListener('pointermove', onPointerMove);
+          canvas.removeEventListener('pointerup', onPointerUp);
+          canvas.removeEventListener('pointercancel', onPointerUp);
+          removeAvatar();
+          scene.traverse((node) => {
+            if (node !== avatar) node.geometry?.dispose?.();
+          });
+          ground.material.dispose();
+          renderer.dispose();
+        }
+      };
     }
 
     spawnDynamicAgent(payload) {
@@ -5371,13 +6410,53 @@
       const role = payload.role || 'Especialista Fênix';
       const department = payload.department || 'OPERATIONS';
       const coords = payload.coordinates || { x: -28.0, y: 0.8, z: 18.0 };
+      const coordinateSource = ['MEASURED', 'ESTIMATED'].includes(payload.coordinateSource)
+        ? payload.coordinateSource
+        : this._getAgentCoordinateSource(payload.coordinates, payload);
+      const visualProfile = window.fenixCityAgentVisualProfile?.({ id, role, department, avatar: payload.avatar }) || null;
 
       if (this.agents && this.agents.has(id)) {
         const existing = this.agents.get(id);
         if (existing && existing.mesh) {
           existing.mesh.position.set(coords.x, coords.y || 0.8, coords.z);
+          existing.coordinateSource = coordinateSource;
+          if (visualProfile) {
+            const materials = existing.mesh.userData.avatarMaterials || {};
+            existing.mesh.userData.visualProfile = visualProfile;
+            existing.mesh.userData.avatarMaterials?.shirt?.color?.set?.(visualProfile.shirtColor);
+            existing.mesh.userData.avatarMaterials?.skin?.color?.set?.(visualProfile.skinColor);
+            existing.mesh.userData.avatarMaterials?.hair?.color?.set?.(visualProfile.hairColor);
+            existing.mesh.userData.avatarMaterials?.pants?.color?.set?.(visualProfile.pantsColor || '#344458');
+            existing.mesh.userData.avatarMaterials?.shoes?.color?.set?.(visualProfile.shoesColor || '#090d16');
+            existing.mesh.userData.halo?.material?.color?.set?.(visualProfile.accentColor || '#22d3ee');
+            const replaceDetails = (key, next) => {
+              const previous = materials[key];
+              if (previous) {
+                existing.mesh.remove(previous);
+                const usedMaterials = new Set([...Object.values(this.materials), ...Object.values(materials)]);
+                const disposeMaterials = new Set();
+                previous.traverse?.((part) => {
+                  part.geometry?.dispose?.();
+                  for (const material of Array.isArray(part.material) ? part.material : [part.material]) {
+                    if (material && !usedMaterials.has(material)) disposeMaterials.add(material);
+                  }
+                });
+                for (const material of previous.userData?.ownedMaterials || []) {
+                  if (material && !usedMaterials.has(material)) disposeMaterials.add(material);
+                }
+                disposeMaterials.forEach((material) => material.dispose?.());
+              }
+              existing.mesh.add(next);
+              materials[key] = next;
+            };
+            const torsoY = existing.mesh.userData.isSeated ? 0.85 : 1.08;
+            replaceDetails('outfitDetails', this._createAvatarOutfitDetails(visualProfile, torsoY, materials?.shirt));
+            replaceDetails('accessoryDetails', this._createAvatarAccessoryDetails(visualProfile.accessory, torsoY));
+            existing.visualProfile = visualProfile;
+          }
           if (existing.thoughtBubble) {
-            existing.thoughtBubble.setText(payload.taskName || 'Ativo · Reposicionado', '📍');
+            const activityText = payload.taskName || 'Ativo · Reposicionado';
+            existing.thoughtBubble.setText(coordinateSource === 'ESTIMATED' ? `Posição estimada · ${activityText}` : activityText, visualProfile?.icon || '📍');
           }
           return { ok: true, id, updated: true, agent: existing };
         }
@@ -5385,6 +6464,12 @@
 
       this.agents = this.agents || new Map();
       const pos = new T.Vector3(coords.x, coords.y !== undefined ? coords.y : 0.8, coords.z);
+      const resolvedVisualProfile = visualProfile || {
+        key: 'specialist', source: 'role-derived', displayScale: 1.75, shirtColor: '#344458', hairColor: 0x282521, accessory: 'tablet', icon: '👤'
+      };
+      const shirtMat = this.materials.workWear?.clone?.() || new T.MeshStandardMaterial({ color: resolvedVisualProfile.shirtColor, roughness: 0.76, metalness: 0.03 });
+      shirtMat.color?.set?.(resolvedVisualProfile.shirtColor);
+      shirtMat.name = `CityAgentShirt_${id}`;
 
       const agentMesh = this._createCyberHumanoid({
         id,
@@ -5392,13 +6477,17 @@
         role,
         department,
         pos,
-        shirtMat: this.materials.devNavy || this.materials.hazardStripe,
-        hairColor: 0x3b82f6,
-        accessory: 'tablet',
-        isSeated: false
+        shirtMat,
+        hairColor: resolvedVisualProfile.hairColor,
+        accessory: resolvedVisualProfile.accessory,
+        visualProfile: resolvedVisualProfile,
+        isSeated: false,
       });
 
-      const bubble = new AgentThoughtBubble(agentMesh, payload.currentTask || 'Pronto para operações', '#38bdf8', '🤖');
+      const activity = this._resolveAgentActivity(payload);
+      const bubble = agentMesh.userData?.thoughtBubble;
+      bubble?.setText(coordinateSource === 'ESTIMATED' ? `Posição estimada · ${activity.text}` : activity.text, activity.icon, activity.color);
+      agentMesh.userData.coordinateSource = coordinateSource;
 
       this.scene.add(agentMesh);
       const agentRecord = {
@@ -5410,9 +6499,16 @@
         mesh: agentMesh,
         thoughtBubble: bubble,
         status: payload.status || 'AVAILABLE',
+        activity,
+        coordinateSource,
+        visualProfile: resolvedVisualProfile,
         state: payload.state || 'IDLE',
         coordinates: { ...coords, y: coords.y !== undefined ? coords.y : 0.8 },
         telemetryCoordinates: { ...coords, y: coords.y !== undefined ? coords.y : 0.8 },
+        movementState: String(payload.movementState || '').toUpperCase() === 'WALKING' ? 'WALKING' : null,
+        targetCoordinates: payload.targetCoordinates || null,
+        serverMovementTarget: String(payload.movementState || '').toUpperCase() === 'WALKING' && payload.targetCoordinates ? { ...payload.targetCoordinates } : null,
+        telemetryTarget: String(payload.movementState || '').toUpperCase() === 'WALKING' && payload.targetCoordinates ? { ...payload.targetCoordinates } : null,
         path: [],
         pathIndex: 0
       };
@@ -5465,7 +6561,7 @@
       this.navigateAgent(agentId, targetVec);
 
       if (ag.thoughtBubble) {
-        ag.thoughtBubble.setText('Deslocamento em curso...', '🚶', '#38bdf8');
+        ag.thoughtBubble.setText('Movimento local · não sincronizado', '🚶', '#38bdf8');
       }
 
       console.log(`[FenixWorld3D] 🚶 Agent ${agentId} moving to (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`);
@@ -5563,7 +6659,7 @@
         if (x < 0 || x > width || y < 0 || y > height) continue;
         visibleAgents++;
         const status = String(agent.status || agent.state || '').toUpperCase();
-        ctx.fillStyle = /FAIL|ERROR|OFFLINE/.test(status) ? '#fb7185' : /WORK|BUSY|RUNNING/.test(status) ? '#fbbf24' : '#67e8f9';
+        ctx.fillStyle = /FAIL|ERROR|OFFLINE/.test(status) ? '#fb7185' : /QUEUE|WAIT|BLOCK/.test(status) ? '#fbbf24' : /WORK|BUSY|RUNNING/.test(status) ? '#27d7c4' : '#67e8f9';
         ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
       }
 
@@ -5574,9 +6670,11 @@
       ctx.beginPath(); ctx.moveTo(markerX - 9, markerY); ctx.lineTo(markerX + 9, markerY); ctx.moveTo(markerX, markerY - 9); ctx.lineTo(markerX, markerY + 9); ctx.stroke();
 
       const status = document.getElementById('fenixMinimapStatus');
+      const measuredBuildingsCount = (this.buildings instanceof Map ? this.buildings.size : 0) || buildings.length;
       if (status) status.textContent = this.telemetryStatus === 'MEASURED'
-        ? `${visibleAgents} agentes · ${buildings.length} prédios medidos`
-        : this.telemetryStatus === 'PARTIAL' ? 'Leitura parcial da API' : 'Telemetria indisponível';
+        ? `${visibleAgents} no mapa · ${measuredBuildingsCount} prédios medidos`
+        : this.telemetryStatus === 'PARTIAL' ? 'Leitura parcial da API'
+          : this.telemetryStatus === 'CONNECTING' ? 'Sincronizando telemetria…' : 'Telemetria indisponível';
 
       if (!canvas.dataset.fenixPanBound) {
         canvas.dataset.fenixPanBound = '1';
@@ -5689,37 +6787,34 @@
        ANIMATION LOOP & CUTAWAY INTERPOLATION
     ══════════════════════════════════════════════════════════════════════════ */
     _animate() {
+      this._animationFrameId = null;
       if (!this._isMounted || this._isDisposed) {
-        this._animationFrameId = null;
         return;
       }
       const cityView = document.getElementById('view-city');
       const isCityActive = cityView && cityView.classList.contains('active') && cityView.style.display !== 'none';
       if (document.hidden || !isCityActive) {
-        this._animationFrameId = null;
         return;
       }
-      this._animationFrameId = requestAnimationFrame(this._animate);
+      this._scheduleNextAnimationFrame();
 
-      // In headless / test environments without GPU, throttle rendering to max 10 FPS to preserve CPU
-      const isHeadless = Boolean(navigator.webdriver) || (typeof navigator !== 'undefined' && /headless/i.test(navigator.userAgent)) || Boolean(window.__FENIX_HEADLESS__);
-      if (isHeadless) {
-        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-        if (this._lastFrameTime && (now - this._lastFrameTime < 100)) {
-          return;
-        }
-        this._lastFrameTime = now;
-      }
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      if (!this._shouldRenderFrame(now)) return;
 
-      const delta = this.clock.getDelta();
+      const elapsedDelta = this.clock.getDelta();
+      const delta = Number.isFinite(elapsedDelta) ? Math.min(Math.max(elapsedDelta, 0), 0.05) : 0;
       const time = this.clock.getElapsedTime();
+      const hasMeasuredRuntimeWork = this.activeRuntimeJobs > 0;
 
       // 1. Dynamic Automatic Warehouse Roof Cutaway System
       if (this.warehouseRoofGroup) {
         const distToDep = this.cameraState.targetLookAt.distanceTo(districtPoint('logistics'));
-        const shouldCutaway = (this.cameraState.distance < 48 && distToDep < 32) || this.cutawayState.manual;
+        const shouldCutaway = (this.cameraState.distance < 60 && distToDep < 32) || this.cutawayState.manual;
         this.cutawayState.target = shouldCutaway ? 1.0 : 0.0;
         this.cutawayState.progress += (this.cutawayState.target - this.cutawayState.progress) * 0.12;
+        if (this.warehouseInteriorGroup) {
+          this.warehouseInteriorGroup.visible = shouldCutaway || this.cutawayState.progress > 0.05;
+        }
 
         // Smoothly elevate the roof and skylights upward
         this.warehouseRoofGroup.position.y = 11.9 + this.cutawayState.progress * 32;
@@ -5727,7 +6822,7 @@
       }
 
       // 2. Active Multi-Step Logistics Forklift Operational Cycle (Doca 2 <-> Rua B Staging/Racking)
-      if (this.forkliftGroup) {
+      if (this.forkliftGroup && this.forkliftState?.jobId) {
         const fs = this.forkliftState;
         const logistics = districtOrigin('logistics');
         fs.timer = (fs.timer || 0) + delta;
@@ -5852,35 +6947,33 @@
         }
       }
 
-      // 3. Camila Breathing & Work Cycle
-      if (this.camilaGroup) {
+      // 3. Camila Breathing & Work Cycle follows her measured runtime state.
+      if (this.camilaGroup && String(this.camilaState?.action || '').toUpperCase() === 'WORKING') {
         this.camilaState.timer += delta;
         this.camilaGroup.position.y = this.camilaState.pos.y + Math.sin(time * 3) * 0.03;
+      } else if (this.camilaGroup) {
+        this.camilaGroup.position.y = this.camilaState.pos.y;
       }
 
-      // 3b. API Platform Floor 3 Neural Core & Server LED animations
-      if (this.apiNeuralCore) {
-        this.apiNeuralCore.rotation.y = time * 0.8;
-        this.apiNeuralCore.rotation.x = Math.sin(time * 0.5) * 0.2;
-      }
-      if (this.apiNeuralRing) {
-        this.apiNeuralRing.rotation.z = time * 1.2;
-      }
-      if (this.apiNeuralRing2) {
-        this.apiNeuralRing2.rotation.x = -time * 0.9;
-      }
-      if (this.apiNeuralRing3) {
-        this.apiNeuralRing3.rotation.y = time * 1.5;
-      }
-      if (this.serverRacksLeds && this.serverRacksLeds.length > 0) {
-        const step = Math.floor(time * 6) % 3;
-        this.serverRacksLeds.forEach((led, i) => {
-          led.visible = (i % 3 === step) ? (Math.sin(time * 12 + i) > -0.4) : true;
-        });
+      // 3b. API activity effects are active only while the runtime reports work.
+      if (hasMeasuredRuntimeWork) {
+        if (this.apiNeuralCore) {
+          this.apiNeuralCore.rotation.y = time * 0.8;
+          this.apiNeuralCore.rotation.x = Math.sin(time * 0.5) * 0.2;
+        }
+        if (this.apiNeuralRing) this.apiNeuralRing.rotation.z = time * 1.2;
+        if (this.apiNeuralRing2) this.apiNeuralRing2.rotation.x = -time * 0.9;
+        if (this.apiNeuralRing3) this.apiNeuralRing3.rotation.y = time * 1.5;
+        if (this.serverRacksLeds && this.serverRacksLeds.length > 0) {
+          const step = Math.floor(time * 6) % 3;
+          this.serverRacksLeds.forEach((led, i) => {
+            led.visible = (i % 3 === step) ? (Math.sin(time * 12 + i) > -0.4) : true;
+          });
+        }
       }
 
       // 3c. Inter-Floor Optical Data Conduits & Animated Token Packets
-      if (this.apiDataPackets && this.apiDataPackets.length > 0) {
+      if (hasMeasuredRuntimeWork && this.apiDataPackets && this.apiDataPackets.length > 0) {
         this.apiDataPackets.forEach(pkt => {
           pkt.currentY += pkt.speed * pkt.dir * delta * 2.4;
           if (pkt.currentY > pkt.endY) {
@@ -5922,9 +7015,9 @@
           }
 
           const aTime = time + aIdx * 1.35;
+          const agentIsWorking = (agentRecord.activity?.key || this._resolveAgentActivity(agentRecord).key) === 'working';
           // Dynamic Waypoint Navigation along PathGraph
           if (agentRecord.path && agentRecord.path.length > 0) {
-            agentRecord.state = 'WALKING';
             const targetWp = agentRecord.path[agentRecord.pathIndex];
             if (targetWp) {
               this._tempMoveDir.copy(targetWp).sub(agentRecord.mesh.position);
@@ -5935,9 +7028,9 @@
                 if (agentRecord.pathIndex >= agentRecord.path.length) {
                   agentRecord.path = null;
                   agentRecord.pathIndex = 0;
-                  agentRecord.state = 'WORKING';
+                  agentRecord.localNavigationActive = false;
                   if (agentRecord.thoughtBubble) {
-                    agentRecord.thoughtBubble.setText(agentRecord.assignedTask || agentRecord.currentTask || 'Operando no Posto', '✅', '#10b981');
+                    agentRecord.thoughtBubble.setText('Movimento local concluído · não sincronizado', '✓', '#8d9aaa');
                   }
                   if (ud.legL) ud.legL.rotation.x = 0;
                   if (ud.legR) ud.legR.rotation.x = 0;
@@ -5972,43 +7065,64 @@
             }
           }
 
+          // Autonomous 3D Ambient Patrol for Idle Agents
+          if (!agentRecord.telemetryTarget && !agentRecord.path && !agentRecord.isSeated && agentRecord.mesh) {
+            agentRecord._ambientPatrolTimer = (agentRecord._ambientPatrolTimer || 0) + delta;
+            if (!agentRecord._nextPatrolInterval) {
+              const idHash = (agentRecord.id || 'agent').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+              agentRecord._nextPatrolInterval = 8 + (idHash % 14);
+            }
+            if (agentRecord._ambientPatrolTimer >= agentRecord._nextPatrolInterval) {
+              agentRecord._ambientPatrolTimer = 0;
+              agentRecord._nextPatrolInterval = 12 + Math.random() * 16;
+              const curX = agentRecord.mesh.position.x;
+              const curZ = agentRecord.mesh.position.z;
+              const wanderX = curX + (Math.random() - 0.5) * 10;
+              const wanderZ = curZ + (Math.random() - 0.5) * 10;
+              if (Math.abs(wanderX) < 55 && Math.abs(wanderZ) < 55) {
+                agentRecord.telemetryTarget = { x: wanderX, z: wanderZ };
+                agentRecord.movementState = 'WALKING';
+              }
+            }
+          }
+
           // Kinematics LOD gating: distant agents skip subtle upper body animations
           const allowSubtleAnim = inFrustum && camDist < 60 && (camDist < 30 || ((this._frameCounter + aIdx) % 2 === 0));
 
-          // Seated typing animation for Alex, Elena, Maya (when not walking)
-          if (!agentRecord.path && ud.isSeated && ud.armL && ud.armR && allowSubtleAnim) {
-            ud.armL.rotation.x = Math.PI / 3.5 + Math.sin(aTime * 8) * 0.12;
-            ud.armR.rotation.x = Math.PI / 3.5 + Math.cos(aTime * 8) * 0.12;
-            if (ud.forearmL) ud.forearmL.rotation.x = Math.PI / 2.2 + Math.cos(aTime * 8) * 0.08;
-            if (ud.forearmR) ud.forearmR.rotation.x = Math.PI / 2.2 + Math.sin(aTime * 8) * 0.08;
-          }
+          // Work gestures only play for a measured WORKING job; queued/available agents rest.
+          this._applyAgentActivityPose(agentRecord, ud, aTime, allowSubtleAnim);
 
-          // Standing idle breathing & subtle head turn for Gabriel, Lucas, Victor, Sora
+          // A small idle glance gives nearby agents presence without implying work or travel.
           if (!ud.isSeated && ud.head && allowSubtleAnim) {
-            ud.head.rotation.y = Math.sin(aTime * 0.6) * 0.18;
+            const idleHeadTurn = agentIsWorking ? 0.18 : 0.07;
+            ud.head.rotation.y = Math.sin(aTime * 0.6) * idleHeadTurn;
           }
 
           // Overhead Emote / Role Badge floating bob
           if (ud.emoteBadge && inFrustum && camDist < 70) {
             const baseY = ud.isSeated ? 1.15 + 1.28 : 1.45 + 1.28;
-            ud.emoteBadge.position.y = baseY + Math.sin(aTime * 3.2) * 0.08;
+            ud.emoteBadge.position.y = baseY + (agentIsWorking ? Math.sin(aTime * 3.2) * 0.08 : 0);
           }
 
           // Smartwatch LED pulsing on left wrist (only when close)
-          if (ud.smartwatchLed && ud.smartwatchLed.material && inFrustum && camDist < 35) {
+          if (agentIsWorking && ud.smartwatchLed && ud.smartwatchLed.material && inFrustum && camDist < 35) {
             const pulse = 0.55 + Math.sin(aTime * 5.5) * 0.45;
             ud.smartwatchLed.material.opacity = Math.max(0.3, pulse);
           }
 
           // Neural Halo for Sora AI Core
-          if (ud.neuralHalo && inFrustum && camDist < 70) {
+          if (agentIsWorking && ud.neuralHalo && inFrustum && camDist < 70) {
             ud.neuralHalo.rotation.z += delta * 1.6;
             ud.neuralHalo.rotation.x = Math.PI / 2 + Math.sin(aTime * 2.2) * 0.14;
           }
 
           // Distance-based Character LOD (distant > 60m silhouette, medium 25-60m body, close < 25m details, very close < 10m facial details)
           const showFace = camDist < 12 && inFrustum;
-          const showDetails = camDist < 28 && inFrustum;
+          const showDetails = camDist < 42 && inFrustum;
+          const showIdentityParts = camDist < 105 && inFrustum;
+          if (ud.identityParts && Array.isArray(ud.identityParts)) {
+            ud.identityParts.forEach(p => { if (p) p.visible = showIdentityParts; });
+          }
           if (ud.faceParts && Array.isArray(ud.faceParts)) {
             ud.faceParts.forEach(p => { if (p) p.visible = showFace; });
           }
@@ -6027,22 +7141,11 @@
         const sx = (p.x * hw) + hw;
         const sy = -(p.y * hh) + hh;
         this.agentBadgeEl.style.transform = `translate(-50%, -50%) translate(${sx}px, ${sy}px)`;
-        this.agentBadgeEl.style.display = (p.z < 1) ? 'block' : 'none';
+        this.agentBadgeEl.style.display = (p.z < 1 && this.cameraState.distance <= 55) ? 'block' : 'none';
       }
 
-      // 5. Traffic Movement along Arteries
-      if (this.trafficVehicle) {
-        const tv = this.trafficVehicle;
-        const next = window.FenixCityMachineScene?.advanceLaneTraffic(tv, delta);
-        if (next) {
-          Object.assign(tv, next);
-          tv.mesh.position.set(next.x, 0, next.z);
-          tv.mesh.rotation.y = next.rotationY;
-        }
-      }
-
-      // 6. Fast Lane & Job Lane Data Pulses
-      if (this.dataPulses) {
+      // 5. Pipeline motion represents measured active jobs only; an idle map remains still.
+      if (this.activeRuntimeJobs > 0 && this.dataPulses) {
         this.dataPulses.forEach(dp => {
           dp.progress = (dp.progress + dp.speed) % 1.0;
           dp.mesh.position.lerpVectors(dp.start, dp.end, dp.progress);
@@ -6052,7 +7155,10 @@
       // 7. Camera Smoothing & Render
       this._updateCameraPosition(false, delta * 1000);
       this._updateDistrictLabels();
-      this._renderWorldMinimap(time);
+      if (!Number.isFinite(this._lastWorldMinimapRenderAt) || now - this._lastWorldMinimapRenderAt >= 250) {
+        this._renderWorldMinimap(time);
+        this._lastWorldMinimapRenderAt = now;
+      }
       this.renderer.render(this.scene, this.camera);
     }
 
@@ -6063,10 +7169,20 @@
         cancelAnimationFrame(this._animationFrameId);
         this._animationFrameId = null;
       }
+      if (this._animationTimerId) {
+        clearTimeout(this._animationTimerId);
+        this._animationTimerId = null;
+      }
       if (this.syncInterval) {
         clearInterval(this.syncInterval);
         this.syncInterval = null;
       }
+      if (this._worldRefreshTimer) {
+        clearInterval(this._worldRefreshTimer);
+        this._worldRefreshTimer = null;
+      }
+      if (this._onVisibilityChange) document.removeEventListener('visibilitychange', this._onVisibilityChange);
+      if (this._onViewChanged) window.removeEventListener('fenix-view-changed', this._onViewChanged);
       window.removeEventListener('fenix:city-world', this.syncRealData);
       if (this.scene) {
         this.scene.traverse((obj) => {
@@ -6102,11 +7218,24 @@
   window.FenixWorld3DEngine = FenixWorld3DEngine;
   window.initFenixWorld3D = function(container) {
     if (!window.fenixWorld3D && !window.fenixWorldEngine3D) {
-      const eng = new FenixWorld3DEngine(container);
-      window.fenixWorldEngine3D = eng;
-      window.fenixWorld3D = eng;
-      window.__FENIX_SINGLETONS__?.register('worldEngine', eng);
-      window.__FENIX_SINGLETONS__?.register('threeRenderLoop', eng);
+      try {
+        const eng = new FenixWorld3DEngine(container);
+        window.fenixWorldEngine3D = eng;
+        window.fenixWorld3D = eng;
+        window.fenixCity = eng;
+        window.FENIX_WORLD_3D = true;
+        window.FENIX_CITY_RENDERER = 'webgl';
+        const fallbackNotice = document.getElementById('cityRendererFallbackStatus');
+        if (fallbackNotice) {
+          fallbackNotice.hidden = true;
+          fallbackNotice.style.removeProperty('display');
+        }
+        window.__FENIX_SINGLETONS__?.register('worldEngine', eng);
+        window.__FENIX_SINGLETONS__?.register('threeRenderLoop', eng);
+      } catch (error) {
+        console.warn('[FenixWorld3D] WebGL renderer unavailable; using measured 2D City.', error);
+        return window.fenixActivateCity2DFallback?.(error) || null;
+      }
     }
     return window.fenixWorld3D || window.fenixWorldEngine3D;
   };
@@ -6116,7 +7245,6 @@
     const world = window.initFenixWorld3D?.();
     world?.resize?.();
     world?._resumeAnimationLoop?.();
-    world?.syncRealData?.();
   });
 
   // Hot World Command Event Listener (SSE / Operator Commands)

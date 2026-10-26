@@ -931,12 +931,21 @@ class PixelAvatarRenderer {
 
     if (isFront) {
       const eyeDir = facing === 'SE' ? 1 : -1;
-      if (accessory === 'visor' || isMaster) {
+      if (accessory === 'visor' || isMaster || !accessory || accessory === 'none') {
+        // High-Tech Cyber Visor with animated scanlines and specular flare
         ctx.save();
-        ctx.fillStyle = isMaster ? '#ef4444' : '#06b6d4';
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 10 * zoom;
-        ctx.fillRect(px - headR * 0.65, headY - headR * 0.15, headR * 1.3, headR * 0.32);
+        const visorCol = isMaster ? '#ef4444' : (color || '#00D9FF');
+        ctx.fillStyle = visorCol;
+        ctx.shadowColor = visorCol;
+        ctx.shadowBlur = 12 * zoom;
+        ctx.fillRect(px - headR * 0.68, headY - headR * 0.18, headR * 1.36, headR * 0.36);
+        // Specular flare
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.fillRect(px - headR * 0.55, headY - headR * 0.14, headR * 0.45, headR * 0.12);
+        // Holographic scanline sweep
+        const scanOffset = (Math.sin(time * 6) * 0.5 + 0.5) * headR * 0.3;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(px - headR * 0.65, headY - headR * 0.16 + scanOffset, headR * 1.3, 1 * zoom);
         ctx.restore();
       } else {
         ctx.fillStyle = '#0f172a';
@@ -1780,6 +1789,33 @@ class IsoCityEngine {
         }
         return;
       }
+      // FÊNIX RTS DIRECT MOVE COMMAND: If an agent is selected, clicking on ground directs agent to walk there!
+      if (this.state.selectedAgent) {
+        const cx = rect.width / 2 + this.state.camera.x;
+        const cy = rect.height / 2 + this.state.camera.y;
+        const dest = this.toWorld(mx, my, cx, cy, this.state.camera.zoom);
+        const agent = this.state.selectedAgent;
+        const dist = Math.hypot(dest.x - (agent.x || 0), dest.y - (agent.y || 0));
+        if (dist > 0.35 && Math.abs(dest.x) < 28 && Math.abs(dest.y) < 28) {
+          agent.tx = dest.x;
+          agent.ty = dest.y;
+          agent._moving = true;
+          agent.routeActive = true;
+          agent._userMoveTarget = true;
+          agent.thoughtBubble = { text: '🚶 A caminho do ponto...', life: 4.0, isWork: false };
+          if (this.world && this.world.particles) {
+            this.world.particles.push({
+              x: dest.x, y: dest.y, z: 0.15,
+              type: 'target_beacon',
+              life: 1.5, decay: 1.0, color: '#00e5a0',
+              size: 20
+            });
+          }
+          this.updateBreadcrumbs();
+          return;
+        }
+      }
+
       this.state.selectedAgent = null;
       if (typeof window.closeSpatialChat === 'function') window.closeSpatialChat();
       if (typeof window.closeStationPreview === 'function') window.closeStationPreview();
@@ -2925,6 +2961,21 @@ class IsoCityEngine {
     }
   }
 
+  toWorld(screenX, screenY, cx, cy, zoom) {
+    const tw = (this.state.tileSize || 32) * zoom;
+    const th = ((this.state.tileSize || 32) / 2) * zoom;
+    const dx = screenX - cx;
+    const dy = screenY - cy;
+    const rx = ((dx / (tw || 1)) + (dy / (th || 1))) / 2;
+    const ry = ((dy / (th || 1)) - (dx / (tw || 1))) / 2;
+    switch (this.rotationQuarter) {
+      case 1: return { x: ry, y: -rx };
+      case 2: return { x: -rx, y: -ry };
+      case 3: return { x: -ry, y: rx };
+      default: return { x: rx, y: ry };
+    }
+  }
+
   saveCamera() {
     try { localStorage.setItem('fenix_city_camera', JSON.stringify({ ...this.state.targetCamera, rotationQuarter: this.rotationQuarter })); } catch (_) {}
   }
@@ -3089,10 +3140,10 @@ class IsoCityEngine {
     // Update particles
     this.world.particles = this.world.particles.filter(p => p.life > 0);
     for (const p of this.world.particles) {
-      p.x += p.vx * delta;
-      p.y += p.vy * delta;
-      p.z += p.vz * delta;
-      p.life -= delta * p.decay;
+      if (p.vx) p.x += p.vx * delta;
+      if (p.vy) p.y += p.vy * delta;
+      if (p.vz) p.z += p.vz * delta;
+      p.life -= delta * (p.decay || 1.0);
     }
   }
 
@@ -3136,6 +3187,38 @@ class IsoCityEngine {
       }
     }
 
+    // ── Fênix Autonomous Ambient Living Life for Idle Agents ──
+    if (!isWorking && !agent._moving && !agent._userMoveTarget) {
+      agent._ambientTimer = (agent._ambientTimer || 0) + delta;
+      if (!agent._nextAmbientInterval) {
+        const idHash = (agent.id || 'agent').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        agent._nextAmbientInterval = 8 + (idHash % 16);
+      }
+      if (agent._ambientTimer >= agent._nextAmbientInterval) {
+        agent._ambientTimer = 0;
+        agent._nextAmbientInterval = 14 + _pseudoRandom() * 18;
+
+        const POIS = [
+          { x: agent.homeX || 0, y: agent.homeY || 0, desc: '💻 Estação de trabalho' },
+          { x: 0, y: -1.2, desc: '☕ Pausa para café' },
+          { x: 2.8, y: 1.4, desc: '📊 Inspecionando Métricas' },
+          { x: -2.6, y: 1.6, desc: '🏛️ Hub de Arquitetura' },
+          { x: 4.2, y: -2.0, desc: '⚡ Servidores API Platform' },
+          { x: -3.5, y: -2.2, desc: '💬 Lounge de Operações' },
+          { x: (agent.homeX || 0) + (_pseudoRandom() - 0.5) * 2.6, y: (agent.homeY || 0) + (_pseudoRandom() - 0.5) * 2.6, desc: '🚶 Circulando no distrito' }
+        ];
+        const dest = POIS[Math.floor(_pseudoRandom() * POIS.length)];
+        const distToDest = Math.hypot(dest.x - (agent.x || 0), dest.y - (agent.y || 0));
+        if (distToDest > 0.4) {
+          agent.tx = dest.x;
+          agent.ty = dest.y;
+          agent.routeActive = true;
+          agent._moving = true;
+          agent.thoughtBubble = { text: dest.desc, life: 4.5, isWork: false };
+        }
+      }
+    }
+
     // Walk animation
     agent.walkTimer = (agent.walkTimer || 0) + delta;
     if (agent.walkTimer > 0.14) {
@@ -3168,8 +3251,11 @@ class IsoCityEngine {
       } else {
         agent.facing = dy > 0 ? 'SW' : 'NE';
       }
-      if (dist <= 0.12 && agent.path && agent.pathIndex < agent.path.length - 1) {
-        agent.pathIndex++;
+      if (dist <= 0.12) {
+        agent._userMoveTarget = false;
+        if (agent.path && agent.pathIndex < agent.path.length - 1) {
+          agent.pathIndex++;
+        }
       }
       if (!agent.trail) agent.trail = [];
       agent.trail.push({ x: agent.x, y: agent.y, life: 0.6 });
@@ -3242,6 +3328,7 @@ class IsoCityEngine {
     this._drawProjectLots(ctx, cx, cy, zoom);
     this._drawHandoff(ctx, cx, cy, zoom);
     this._drawEnvelopes(ctx, cx, cy, zoom);
+    this._drawParticles(ctx, cx, cy, zoom);
     this._drawMasterWorldNeonSigns(ctx, cx, cy, zoom);
 
     // HUD and Overlays (hidden in Photo Mode for pure Art Director Gate visual)
@@ -5695,6 +5782,47 @@ class IsoCityEngine {
       role: agent.role || agent.id,
       agent
     });
+
+    // Floating Cyber Thought / Chat Balloon (Living Simulation)
+    if (agent.thoughtBubble && agent.thoughtBubble.life > 0) {
+      ctx.save();
+      const bText = String(agent.thoughtBubble.text || '');
+      const bEffZoom = Math.min(1.2, Math.max(0.85, zoom * 0.85));
+      ctx.font = `700 ${Math.round(10.5 * bEffZoom)}px 'JetBrains Mono', monospace`;
+      const tw = ctx.measureText(bText).width + 18 * bEffZoom;
+      const th = 22 * bEffZoom;
+      const bx = sc.x - tw / 2;
+      const by = sc.y - (56 + (agent.thoughtBubble.isWork ? 12 : 0)) * zoom;
+
+      // Bubble glow & backdrop
+      ctx.shadowColor = agent.thoughtBubble.isWork ? '#00e5a0' : (color || '#00D9FF');
+      ctx.shadowBlur = 10 * bEffZoom;
+      ctx.fillStyle = 'rgba(6, 12, 24, 0.92)';
+      ctx.strokeStyle = agent.thoughtBubble.isWork ? 'rgba(0, 229, 160, 0.65)' : 'rgba(0, 217, 255, 0.55)';
+      ctx.lineWidth = 1.2 * bEffZoom;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, tw, th, 6 * bEffZoom);
+      ctx.fill();
+      ctx.stroke();
+
+      // Tail
+      ctx.fillStyle = 'rgba(6, 12, 24, 0.92)';
+      ctx.beginPath();
+      ctx.moveTo(sc.x - 4 * bEffZoom, by + th);
+      ctx.lineTo(sc.x, by + th + 6 * bEffZoom);
+      ctx.lineTo(sc.x + 4 * bEffZoom, by + th);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Text
+      ctx.fillStyle = '#f8fafc';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowBlur = 0;
+      ctx.fillText(bText, sc.x, by + th / 2);
+      ctx.restore();
+    }
 
     // Floating Next-Gen Agent Head Pin with Multi-Tier Badging (Videos 7 & 9)
     const headY = sc.y - 36 * zoom;
