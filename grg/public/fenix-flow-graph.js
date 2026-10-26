@@ -3962,9 +3962,9 @@
                 style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#cbd5e1; padding:8px 16px; border-radius:6px; font-size:12px; cursor:pointer;">
                 Fechar
               </button>
-              <button type="button" onclick="window.showView?.('ide'); document.getElementById('stitchHdModal').style.display='none';"
+              <button type="button" id="btnStitchOpenInIde"
                 style="background:linear-gradient(135deg, rgba(0,217,255,0.25), rgba(56,189,248,0.25)); border:1px solid rgba(0,217,255,0.5); color:#00D9FF; padding:8px 18px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
-                💻 Abrir Arquivo no Visual IDE
+                💻 Abrir no Visual IDE &amp; Preview
               </button>
             </div>
           </div>
@@ -3972,6 +3972,38 @@
       `;
 
       modal.style.display = 'flex';
+      const btnIde = modal.querySelector('#btnStitchOpenInIde');
+      if (btnIde) {
+        btnIde.onclick = () => {
+          modal.style.display = 'none';
+          this.openInIdeWithPreview(screen.file, screen.project, screen.route);
+        };
+      }
+    }
+
+    openInIdeWithPreview(filePath, project, route) {
+      if (typeof window.showView === 'function') {
+        window.showView('ide');
+        if (typeof window.fenixSetIdeMode === 'function') {
+          window.fenixSetIdeMode('split');
+        }
+        if (filePath && typeof window.fenixOpenFile === 'function') {
+          setTimeout(() => window.fenixOpenFile(filePath, project), 300);
+        }
+        if (route) {
+          setTimeout(() => {
+            const frame = document.getElementById('fenixIdeLiveFrame');
+            if (frame) {
+              const previewUrl = route.startsWith('/') ? route : '/' + route;
+              if (project && !route.startsWith('/api/')) {
+                frame.src = '/api/project-mirror/preview/' + project + previewUrl;
+              } else {
+                frame.src = previewUrl;
+              }
+            }
+          }, 350);
+        }
+      }
     }
 
     openInIde(filePath, project) {

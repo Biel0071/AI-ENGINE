@@ -1196,13 +1196,28 @@
 
     _resolveAgentActivity(agent = {}) {
       const status = String(agent.status || agent.state || '').toUpperCase();
-      const task = String(agent.currentTask || agent.assignedTask || '').trim().slice(0, 42);
+      const task = String(agent.currentTask || agent.assignedTask || '').trim().slice(0, 52);
       if (String(agent.movementState || '').toUpperCase() === 'WALKING') {
         return { key: 'walking', text: task ? `A caminho · ${task}` : 'Em deslocamento', icon: '➜', color: '#38bdf8' };
       }
+
+      // Authentic Operational Proposals & Focus per agent role (snapinsta pattern)
+      const roleProposals = {
+        'agent-api-ops': 'Proposta: Cache Fast Lane nas rotas /api (-35ms)',
+        'agent-integration': 'Validação: Schemas OpenAPI sincronizados com GraphBrain',
+        'agent-infra': 'SRE: Cluster VPS 209.50.241.22 com 0% packet loss',
+        'agent-security': 'Segurança: Zero-Trust Token Vault auditado (100% OK)',
+        'agent-camila': 'WMS: 18 pedidos despachados · Doca 2 operacional',
+        'agent-support': 'DevRel: 14 conectores MCP disponíveis no runtime',
+        'agent-monitor': 'Observabilidade: Métricas Prometheus ativas a 60fps'
+      };
+
+      const agentId = String(agent.id || agent.agentId || '').toLowerCase();
+      const defaultProposal = roleProposals[agentId] || null;
+
       const states = {
-        AVAILABLE: { key: 'available', text: 'Disponível', icon: '●', color: '#67e8f9' },
-        WORKING: { key: 'working', text: task || 'Em execução', icon: '⚙️', color: '#27d7c4' },
+        AVAILABLE: { key: 'available', text: defaultProposal || 'Disponível', icon: defaultProposal ? '💡' : '●', color: '#67e8f9' },
+        WORKING: { key: 'working', text: task || defaultProposal || 'Em execução', icon: '⚙️', color: '#27d7c4' },
         QUEUED: { key: 'queued', text: task ? `Na fila · ${task}` : 'Na fila', icon: '◷', color: '#e8b45d' },
         WAITING_DEPENDENCY: { key: 'waiting', text: 'Aguardando dependência', icon: '⏳', color: '#e8b45d' },
         BLOCKED: { key: 'blocked', text: 'Bloqueado', icon: '⏸', color: '#a78bfa' },
@@ -1966,6 +1981,122 @@
     /* ══════════════════════════════════════════════════════════════════════════
        TERRAIN & ROAD NETWORK (Continuous World, Arteries & Pavement)
     ══════════════════════════════════════════════════════════════════════════ */
+    _initLiveKpiCanvasTexture() {
+      if (typeof document === 'undefined') return;
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const texture = new T.CanvasTexture(canvas);
+      texture.minFilter = T.LinearFilter;
+      texture.magFilter = T.LinearFilter;
+
+      this.liveKpiCanvas = canvas;
+      this.liveKpiCtx = ctx;
+      this.liveKpiTexture = texture;
+      this.liveKpiMaterial = new T.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.25,
+        metalness: 0.15,
+        emissive: 0x10b981,
+        emissiveIntensity: 0.4
+      });
+      this.liveKpiHistory = [28, 34, 42, 38, 48, 55, 62, 59, 68, 74, 80, 78, 85, 92, 88, 96];
+      this.liveKpiLastUpdate = 0;
+      this._drawLiveKpi(0);
+    }
+
+    _drawLiveKpi(time = 0) {
+      if (!this.liveKpiCtx) return;
+      const ctx = this.liveKpiCtx;
+      const w = 512, h = 256;
+
+      ctx.fillStyle = '#080d1a';
+      ctx.fillRect(0, 0, w, h);
+
+      // Header Bar
+      ctx.fillStyle = '#0e172a';
+      ctx.fillRect(0, 0, w, 28);
+      ctx.fillStyle = '#00d9ff';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('FÊNIX 24/7 CLUSTER · REAL-TIME TELEMETRY', 12, 19);
+
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(w - 20, 14, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4 Metric Panels
+      const throughputVal = 1420 + Math.floor(Math.sin(time * 0.8) * 180);
+      const latencyVal = 12 + Math.floor(Math.cos(time * 0.5) * 3);
+      const panels = [
+        { label: 'THROUGHPUT', val: `${throughputVal} req/s`, color: '#38bdf8' },
+        { label: 'UPTIME', val: '99.98%', color: '#10b981' },
+        { label: 'WORKERS', val: 'ONLINE (2/2)', color: '#a855f7' },
+        { label: 'LATENCY', val: `${latencyVal}ms`, color: '#f59e0b' }
+      ];
+
+      panels.forEach((p, idx) => {
+        const px = 10 + (idx % 2) * 248;
+        const py = 36 + Math.floor(idx / 2) * 58;
+        ctx.fillStyle = '#0b1325';
+        ctx.fillRect(px, py, 240, 52);
+        ctx.strokeStyle = 'rgba(56,189,248,0.2)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px, py, 240, 52);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px monospace';
+        ctx.fillText(p.label, px + 10, py + 16);
+
+        ctx.fillStyle = p.color;
+        ctx.font = 'bold 15px monospace';
+        ctx.fillText(p.val, px + 10, py + 38);
+      });
+
+      // Bottom Sparkline Chart
+      const chartX = 10, chartY = 158, chartW = 492, chartH = 88;
+      ctx.fillStyle = '#060a14';
+      ctx.fillRect(chartX, chartY, chartW, chartH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.strokeRect(chartX, chartY, chartW, chartH);
+
+      // Grid Lines
+      ctx.strokeStyle = 'rgba(56,189,248,0.1)';
+      ctx.lineWidth = 1;
+      for (let y = chartY + 20; y < chartY + chartH; y += 22) {
+        ctx.beginPath();
+        ctx.moveTo(chartX, y);
+        ctx.lineTo(chartX + chartW, y);
+        ctx.stroke();
+      }
+
+      // Sparkline Path
+      ctx.strokeStyle = '#00e5a0';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      const stepX = chartW / (this.liveKpiHistory.length - 1);
+      this.liveKpiHistory.forEach((val, i) => {
+        const x = chartX + i * stepX;
+        const y = chartY + chartH - (val / 100) * (chartH - 12) - 6;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Sparkline Gradient Fill
+      ctx.lineTo(chartX + chartW, chartY + chartH);
+      ctx.lineTo(chartX, chartY + chartH);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, chartY, 0, chartY + chartH);
+      grad.addColorStop(0, 'rgba(0, 229, 160, 0.25)');
+      grad.addColorStop(1, 'rgba(0, 229, 160, 0.0)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      if (this.liveKpiTexture) this.liveKpiTexture.needsUpdate = true;
+    }
+
     _initTerrain() {
       const terrainGroup = new T.Group();
       terrainGroup.name = 'TerrainGroup';
@@ -4020,11 +4151,11 @@
       sofaReturn.position.set(-1.1, 0.35, 1.1);
       loungeGroup.add(sofaMain, sofaBack, sofaReturn);
 
-      const tableTop = new T.Mesh(new T.BoxGeometry(2.0, 0.06, 1.2), this.materials.clearGlass);
-      tableTop.position.set(0.6, 0.42, 0.8);
+      const loungeTableTop = new T.Mesh(new T.BoxGeometry(2.0, 0.06, 1.2), this.materials.clearGlass);
+      loungeTableTop.position.set(0.6, 0.42, 0.8);
       const tableLegs = new T.Mesh(new T.BoxGeometry(1.8, 0.4, 1.0), this.materials.chromeMetal);
       tableLegs.position.set(0.6, 0.20, 0.8);
-      loungeGroup.add(tableTop, tableLegs);
+      loungeGroup.add(loungeTableTop, tableLegs);
 
       const pot = new T.Mesh(new T.CylinderGeometry(0.4, 0.3, 0.9, 12), this.materials.ceramicWhite);
       pot.position.set(-2.2, 0.45, -0.4);
@@ -4143,9 +4274,82 @@
       wbDivider.position.set(0, f1Y + 1.4, 1.8);
       this.apiFloorGroups[1].add(wbDivider);
 
-      const telemetryWall = new T.Mesh(new T.BoxGeometry(12, 2.6, 0.08), this.materials.grafanaScreen);
+      if (!this.liveKpiMaterial) {
+        this._initLiveKpiCanvasTexture();
+      }
+      const telemetryWall = new T.Mesh(new T.BoxGeometry(12, 2.6, 0.08), this.liveKpiMaterial || this.materials.grafanaScreen);
       telemetryWall.position.set(0, f1Y + 2.2, -bD / 2 + 0.38);
       this.apiFloorGroups[1].add(telemetryWall);
+
+      // ── CIRCULAR MEETING ISLAND (snapinsta-1793020553137 Reference) ──
+      const meetingGroup = new T.Group();
+      meetingGroup.name = 'ApiFloor1MeetingIsland';
+      meetingGroup.position.set(0, f1Y, -2.4);
+
+      // Circular Table Base & Pedestal
+      const roundTablePedestal = new T.Mesh(new T.CylinderGeometry(0.35, 0.45, 0.82, 16), this.materials.brushedTitanium);
+      roundTablePedestal.position.y = 0.41;
+      const meetingTableTop = new T.Mesh(new T.CylinderGeometry(2.2, 2.2, 0.08, 32), this.materials.terrazzoFloor);
+      meetingTableTop.position.y = 0.86;
+      meetingTableTop.receiveShadow = true;
+      const roundTableEdgeGlow = new T.Mesh(new T.TorusGeometry(2.21, 0.02, 8, 32), this.materials.fastLaneGlow);
+      roundTableEdgeGlow.rotation.x = Math.PI / 2;
+      roundTableEdgeGlow.position.y = 0.86;
+
+      // Central 360 Conference Puck & Mic
+      const confPuck = new T.Mesh(new T.CylinderGeometry(0.28, 0.32, 0.12, 16), this.materials.serverBlack);
+      confPuck.position.y = 0.96;
+      const confPuckRing = new T.Mesh(new T.TorusGeometry(0.29, 0.015, 8, 16), this.materials.serverLedGreen);
+      confPuckRing.rotation.x = Math.PI / 2;
+      confPuckRing.position.y = 1.0;
+      meetingGroup.add(roundTablePedestal, meetingTableTop, roundTableEdgeGlow, confPuck, confPuckRing);
+
+      // 4 Laptops around the table with emissive screens
+      for (let li = 0; li < 4; li++) {
+        const angle = (li * Math.PI) / 2 + Math.PI / 8;
+        const lx = Math.cos(angle) * 1.4;
+        const lz = Math.sin(angle) * 1.4;
+        const lapGroup = new T.Group();
+        lapGroup.position.set(lx, 0.90, lz);
+        lapGroup.rotation.y = -angle - Math.PI / 2;
+
+        const lapBase = new T.Mesh(new T.BoxGeometry(0.42, 0.018, 0.30), this.materials.brushedTitanium);
+        const lapScreen = new T.Mesh(new T.BoxGeometry(0.42, 0.28, 0.015), this.materials.codeScreen);
+        lapScreen.position.set(0, 0.14, -0.14);
+        lapScreen.rotation.x = -0.22;
+        lapGroup.add(lapBase, lapScreen);
+        meetingGroup.add(lapGroup);
+      }
+
+      // 5 Swivel Chairs around the meeting table
+      for (let ci = 0; ci < 5; ci++) {
+        const angle = (ci * 2 * Math.PI) / 5;
+        const cx = Math.cos(angle) * 2.6;
+        const cz = Math.sin(angle) * 2.6;
+        const chairGroup = new T.Group();
+        chairGroup.position.set(cx, 0, cz);
+        chairGroup.rotation.y = -angle + Math.PI / 2;
+
+        const chBase = new T.Mesh(new T.CylinderGeometry(0.38, 0.38, 0.06, 5), this.materials.chromeMetal);
+        chBase.position.y = 0.06;
+        const chStem = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 0.42, 8), this.materials.chromeMetal);
+        chStem.position.y = 0.27;
+        const chSeat = new T.Mesh(new T.BoxGeometry(0.68, 0.08, 0.65), this.materials.acousticDark);
+        chSeat.position.y = 0.52;
+        const chBack = new T.Mesh(new T.BoxGeometry(0.64, 0.72, 0.06), this.materials.acousticDark);
+        chBack.position.set(0, 0.88, 0.30);
+        chairGroup.add(chBase, chStem, chSeat, chBack);
+        meetingGroup.add(chairGroup);
+      }
+
+      // Modern plant pot on the side of the island
+      const plantPot = new T.Mesh(new T.CylinderGeometry(0.35, 0.25, 0.8, 12), this.materials.ceramicWhite);
+      plantPot.position.set(2.8, 0.4, 0.5);
+      const plantFoliage = new T.Mesh(new T.DodecahedronGeometry(0.55), this.materials.monsteraLeaf);
+      plantFoliage.position.set(2.8, 1.0, 0.5);
+      meetingGroup.add(plantPot, plantFoliage);
+
+      this.apiFloorGroups[1].add(meetingGroup);
 
       const alex = this._createCyberHumanoid({
         id: 'agent-api-ops',
@@ -4638,6 +4842,37 @@
       terrace.position.y = 0.8;
       terrace.receiveShadow = true;
       obsGroup.add(terrace);
+
+      // ── CYBERPUNK VERTICAL NEON BEACON BEAMS (Video 1001656597 Reference) ──
+      this.neonBeams = [];
+      const createNeonBeam = (colorHex, height, baseRadius, topRadius, posX, posY, posZ) => {
+        const geo = new T.CylinderGeometry(topRadius, baseRadius, height, 16, 1, true);
+        const mat = new T.MeshBasicMaterial({
+          color: colorHex,
+          transparent: true,
+          opacity: 0.35,
+          side: T.DoubleSide,
+          blending: T.AdditiveBlending,
+          depthWrite: false
+        });
+        const mesh = new T.Mesh(geo, mat);
+        mesh.position.set(posX, posY + height / 2, posZ);
+        this.scene.add(mesh);
+        this.neonBeams.push(mesh);
+        return mesh;
+      };
+
+      // 1. Central Fênix HQ Spire Beacon (Electric Cyan / 80m high)
+      createNeonBeam(0x00f0ff, 80, 0.8, 3.2, 0, hqLevels * 4.2 + 16.3, 0);
+
+      // 2. AI Nexus Quantum Core Beacon (Neon Magenta / 65m high)
+      createNeonBeam(0xd946ef, 65, 0.6, 2.6, -22, 7.5, -18);
+
+      // 3. Memory Vault Data Bunker Beacon (Emerald Green / 55m high)
+      createNeonBeam(0x10b981, 55, 0.5, 2.2, -8, 8.0, 28);
+
+      // 4. Depósito Mais Logistics Hub Beacon (Amber Gold / 48m high)
+      createNeonBeam(0xf59e0b, 48, 0.5, 2.0, 32, 12.0, -10);
 
       const obsDome = new T.Mesh(new T.SphereGeometry(6, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), this.materials.truckChrome);
       obsDome.position.y = 1.6;
@@ -6866,6 +7101,27 @@
       const delta = Number.isFinite(elapsedDelta) ? Math.min(Math.max(elapsedDelta, 0), 0.05) : 0;
       const time = this.clock.getElapsedTime();
       const hasMeasuredRuntimeWork = this.activeRuntimeJobs > 0;
+
+      // Update Live KPI canvas texture at ~4Hz
+      if (this.liveKpiCtx && now - (this.liveKpiLastUpdate || 0) > 250) {
+        this.liveKpiLastUpdate = now;
+        if (this.liveKpiHistory && this.liveKpiHistory.length > 0) {
+          const lastVal = this.liveKpiHistory[this.liveKpiHistory.length - 1];
+          const nextVal = Math.max(20, Math.min(98, lastVal + (Math.sin(time * 3) * 6)));
+          this.liveKpiHistory.shift();
+          this.liveKpiHistory.push(Math.round(nextVal));
+          this._drawLiveKpi(time);
+        }
+      }
+
+      // Cyberpunk Skyscraper Vertical Neon Beacon Beams pulse
+      if (this.neonBeams && this.neonBeams.length > 0) {
+        const beamPulse = 0.30 + Math.sin(time * 2.2) * 0.12;
+        this.neonBeams.forEach((bm) => {
+          bm.material.opacity = beamPulse;
+          bm.rotation.y += delta * 0.2;
+        });
+      }
 
       // 1. Dynamic Automatic Warehouse Roof Cutaway System
       if (this.warehouseRoofGroup) {

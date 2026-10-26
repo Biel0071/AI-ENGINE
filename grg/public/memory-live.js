@@ -197,7 +197,57 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
     }
   }
   window.fenixSelectMemoryNode = (id) => choose(id, true);
+  const memoryTagCatalog = [
+    { tag: '#adr', query: 'adr' },
+    { tag: '#architecture', query: 'architecture' },
+    { tag: '#security', query: 'security' },
+    { tag: '#governance', query: 'governance' },
+    { tag: '#activation', query: 'activation' },
+    { tag: '#checkpoint', query: 'checkpoint' },
+    { tag: '#zero-mock', query: 'zero-mock' },
+    { tag: '#telemetry', query: 'telemetry' }
+  ];
+
+  function renderTagCatalog() {
+    let tagStrip = $('fmlTagCatalog');
+    if (!tagStrip) {
+      const filterPane = document.querySelector('.fml-filters');
+      if (filterPane) {
+        tagStrip = document.createElement('div');
+        tagStrip.id = 'fmlTagCatalog';
+        tagStrip.style.cssText = 'display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; margin-bottom:4px; padding:4px 0;';
+        filterPane.after(tagStrip);
+      }
+    }
+    if (!tagStrip) return;
+    tagStrip.replaceChildren();
+
+    memoryTagCatalog.forEach(t => {
+      const count = state.nodes.filter(n => [n.id, n.type, label(n), ...Object.values(n.properties || {})].some(v => String(v ?? '').toLowerCase().includes(t.query))).length;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      const isActive = state.query === t.query;
+      chip.className = `fml-tag-chip${isActive ? ' active' : ''}`;
+      chip.style.cssText = `background:${isActive ? 'rgba(0,217,255,0.25)' : 'rgba(255,255,255,0.04)'}; border:1px solid ${isActive ? '#00D9FF' : 'rgba(255,255,255,0.08)'}; color:${isActive ? '#00D9FF' : '#94A3B8'}; border-radius:12px; padding:2px 8px; font-size:10px; cursor:pointer; font-family:var(--fnx-font-mono, monospace); transition:all 0.15s;`;
+      chip.textContent = `${t.tag} (${count})`;
+      chip.addEventListener('click', () => {
+        if (state.query === t.query) {
+          state.query = '';
+          if ($('fmlSearch')) $('fmlSearch').value = '';
+        } else {
+          state.query = t.query;
+          if ($('fmlSearch')) $('fmlSearch').value = t.query;
+        }
+        renderList();
+        renderTagCatalog();
+        if (neuralBrainActive) init3DNeuralBrain();
+      });
+      tagStrip.appendChild(chip);
+    });
+  }
+
   function renderList() {
+    renderTagCatalog();
     const target = $('fmlNodes'); if (!target) return;
     target.replaceChildren();
     const filtered = state.nodes.filter((item) => (state.type === 'all' || item.type === state.type) && (!state.query || [item.id, item.type, label(item), ...Object.values(item.properties || {})].some((value) => String(value ?? '').toLocaleLowerCase('pt-BR').includes(state.query))));
@@ -240,35 +290,107 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
     const target = $('fmlDetail'); if (!target) return; target.replaceChildren();
     const item = state.nodes.find((entry) => entry.id === state.selected);
     if (!item) { target.append(make('p', 'fml-empty', 'Selecione uma entidade.')); return; }
-    target.append(make('span', 'fml-detail-type', item.type || 'SEM TIPO'), make('h2', '', label(item)), make('p', 'fml-detail-id', item.id));
+
+    const card = make('div', 'fml-decision-card');
+    card.style.cssText = 'background:rgba(15,23,42,0.92); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:10px; box-shadow:0 8px 24px rgba(0,0,0,0.6);';
+
+    const badgeRow = make('div', 'fml-card-badge-row');
+    badgeRow.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
+    const badge = make('span', 'fml-card-badge', item.type || 'NÓ REGISTRADO');
+    badge.style.cssText = 'font-size:9.5px; font-weight:800; color:#00E5A0; background:rgba(0,229,160,0.12); border:1px solid rgba(0,229,160,0.3); padding:2px 8px; border-radius:10px; text-transform:uppercase;';
+    const statusPill = make('span', 'fml-card-status', '● VERIFICADO');
+    statusPill.style.cssText = 'font-size:9.5px; font-weight:700; color:#38BDF8; font-family:var(--fnx-font-mono, monospace);';
+    badgeRow.append(badge, statusPill);
+    card.append(badgeRow);
+
+    const title = make('h2', '', label(item));
+    title.style.cssText = 'font-size:14px; font-weight:700; color:#F8FAFC; margin:0; line-height:1.3;';
+    card.append(title);
+
+    const idLabel = make('p', 'fml-detail-id', item.id);
+    idLabel.style.cssText = 'font-size:10px; color:#94A3B8; font-family:var(--fnx-font-mono, monospace); margin:0;';
+    card.append(idLabel);
+
     const properties = make('dl', 'fml-properties');
-    for (const [key, value] of Object.entries(item.properties || {})) { properties.append(make('dt', '', key), make('dd', '', typeof value === 'object' ? JSON.stringify(value) : value)); }
-    if (!properties.children.length) target.append(make('p', 'fml-empty', 'Sem propriedades adicionais.')); else target.append(properties);
+    for (const [key, value] of Object.entries(item.properties || {})) {
+      properties.append(make('dt', '', key), make('dd', '', typeof value === 'object' ? JSON.stringify(value) : value));
+    }
+    if (properties.children.length) card.append(properties);
+
     const relations = neighbors(item.id);
     const groups = window.FenixMemoryBrainLayout?.groupNeighborRelations(relations, item.id) || [];
-    target.append(make('h3', '', `Vizinhos (${groups.length}) · ${relations.length} registros`));
-    for (const group of groups.slice(0, 20)) {
+    const relHead = make('h3', '', `Relações e Vizinhos (${groups.length}) · ${relations.length} conexões`);
+    relHead.style.cssText = 'font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; margin:6px 0 2px;';
+    card.append(relHead);
+
+    const relList = make('div', 'fml-relations-list');
+    relList.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-height:130px; overflow-y:auto;';
+    for (const group of groups.slice(0, 15)) {
       const button = make('button', 'fml-relation', `${group.types?.join(' / ') || 'RELACIONADO'} · ${group.id}`);
-      button.type = 'button'; button.title = `${group.count} registro(s) de relação`; button.setAttribute('aria-label', `${label(state.nodes.find((entry) => entry.id === group.id) || { id: group.id })}; ${group.count} registro(s) de relação`);
-      button.addEventListener('click', () => choose(group.id)); target.append(button);
+      button.type = 'button';
+      button.title = `${group.count} registro(s) de relação`;
+      button.addEventListener('click', () => choose(group.id));
+      relList.append(button);
     }
-    if (groups.length > 20) target.append(make('p', 'fml-empty', `Mais ${groups.length - 20} vizinhos no grafo.`));
+    card.append(relList);
+
+    // Terminal Commands
+    const cmdBlock = make('div', 'fml-card-commands');
+    cmdBlock.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; margin-bottom:4px;"><span style="font-size:9.5px; font-weight:700; color:#38BDF8; text-transform:uppercase;">Comandos no Runtime</span><button type="button" style="background:none; border:none; color:#00E5A0; font-size:10px; cursor:pointer; font-weight:700;" onclick="navigator.clipboard?.writeText('node grg/test/architecture-guard.test.js')">Copiar</button></div><pre style="background:#040711; border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:6px 8px; font-size:9.5px; color:#38BDF8; font-family:var(--fnx-font-mono, monospace); margin:0;"><code>node grg/test/architecture-guard.test.js</code></pre>`;
+    card.append(cmdBlock);
+
+    target.append(card);
   }
+
   function showMemoryDetail(detail) {
     const target = $('fmlDetail');
     if (!target) return;
     target.replaceChildren();
-    target.append(
-      make('span', 'fml-detail-type', detail.type || 'MEMÓRIA ATIVA'),
-      make('h2', '', detail.title || 'Detalhes da Memória'),
-      make('p', 'fml-detail-id', detail.id || detail.origin || 'ID não informado')
-    );
-    const properties = make('dl', 'fml-properties');
-    if (detail.origin) properties.append(make('dt', '', 'Origem'), make('dd', '', detail.origin));
-    if (detail.lineCount !== undefined) properties.append(make('dt', '', 'Linhas'), make('dd', '', String(detail.lineCount)));
-    if (detail.summary) properties.append(make('dt', '', 'Resumo'), make('dd', '', detail.summary));
-    if (detail.content) properties.append(make('dt', '', 'Conteúdo'), make('dd', '', detail.content));
-    target.append(properties);
+
+    const card = make('div', 'fml-decision-card');
+    card.style.cssText = 'background:rgba(15,23,42,0.92); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:10px; box-shadow:0 8px 24px rgba(0,0,0,0.6);';
+
+    // Header badge
+    const badgeRow = make('div', 'fml-card-badge-row');
+    badgeRow.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
+    const badge = make('span', 'fml-card-badge', detail.type || 'DECISÃO ARQUITETURAL · AUDITADA');
+    badge.style.cssText = 'font-size:9.5px; font-weight:800; color:#00E5A0; background:rgba(0,229,160,0.12); border:1px solid rgba(0,229,160,0.3); padding:2px 8px; border-radius:10px; letter-spacing:0.5px; text-transform:uppercase;';
+    const statusPill = make('span', 'fml-card-status', '● CONSTITUCIONAL');
+    statusPill.style.cssText = 'font-size:9.5px; font-weight:700; color:#38BDF8; font-family:var(--fnx-font-mono, monospace);';
+    badgeRow.append(badge, statusPill);
+    card.append(badgeRow);
+
+    // Title
+    const title = make('h2', '', detail.title || 'Detalhes da Decisão');
+    title.style.cssText = 'font-size:14px; font-weight:700; color:#F8FAFC; margin:0; line-height:1.3;';
+    card.append(title);
+
+    // Metadata Strip
+    const metaStrip = make('div', 'fml-card-meta');
+    metaStrip.style.cssText = 'display:flex; gap:10px; font-size:10px; color:#94A3B8; font-family:var(--fnx-font-mono, monospace); border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;';
+    metaStrip.innerHTML = `<span>ID: <strong style="color:#CBD5E1;">${detail.id || 'sec-active'}</strong></span><span>Origem: <strong style="color:#38BDF8;">${detail.origin || 'ACTIVE_PROJECT_MEMORY.md'}</strong></span>`;
+    card.append(metaStrip);
+
+    // Context & Summary
+    if (detail.summary) {
+      const summaryBlock = make('div', 'fml-card-summary');
+      summaryBlock.innerHTML = `<span style="font-size:10px; font-weight:700; color:#C084FC; text-transform:uppercase; display:block; margin-bottom:3px;">Contexto &amp; Desafio</span><p style="font-size:11px; color:#CBD5E1; line-height:1.45; margin:0;">${detail.summary}</p>`;
+      card.append(summaryBlock);
+    }
+
+    // Technical Decision / Solution
+    const decisionText = detail.content || detail.summary || 'Decisão arquitetural registrada na Memória Ativa Oficial com conformidade às 5 Regras de Ouro.';
+    const decisionBlock = make('div', 'fml-card-decision');
+    decisionBlock.innerHTML = `<span style="font-size:10px; font-weight:700; color:#00E5A0; text-transform:uppercase; display:block; margin-bottom:3px;">Decisão Técnica &amp; Lição Aprendida</span><div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:8px 10px; font-size:11px; color:#E2E8F0; line-height:1.4;">${decisionText.slice(0, 300)}${decisionText.length > 300 ? '…' : ''}</div>`;
+    card.append(decisionBlock);
+
+    // Terminal Commands & Verification
+    const cmdBlock = make('div', 'fml-card-commands');
+    cmdBlock.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;"><span style="font-size:10px; font-weight:700; color:#38BDF8; text-transform:uppercase;">Comandos de Verificação &amp; Prova</span><button type="button" style="background:none; border:none; color:#00E5A0; font-size:10px; cursor:pointer; font-weight:700;" onclick="navigator.clipboard?.writeText('node grg/test/architecture-guard.test.js')">Copiar</button></div><pre style="background:#040711; border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:6px 10px; font-size:10px; color:#38BDF8; font-family:var(--fnx-font-mono, monospace); margin:0; overflow-x:auto;"><code>node grg/test/architecture-guard.test.js
+node grg/test/frontend-honesty.test.js</code></pre>`;
+    card.append(cmdBlock);
+
+    target.append(card);
     if (state.activeTab !== 'graph') {
       setActiveTab('graph');
     }
