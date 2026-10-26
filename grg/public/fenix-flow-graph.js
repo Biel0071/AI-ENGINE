@@ -14,6 +14,7 @@
   // ═══════════════════════════════════════════════════════════════════════════
   const NODE_TYPES = Object.freeze({
     SCREEN: 'SCREEN',
+    COMPONENT: 'COMPONENT',
     AGENT: 'AGENT',
     JOB: 'JOB',
     MISSION: 'MISSION',
@@ -53,8 +54,25 @@
     SUPERSEDES: 'SUPERSEDES'
   });
 
+  function resolveAbsorbedSelectionScreenId(selection, projectId, screens, screenNodes) {
+    if (selection?.projectId !== projectId || typeof screenNodes?.get !== 'function' || !Array.isArray(screens)) return null;
+    const selectionScreenId = typeof selection.screenId === 'string' ? selection.screenId.trim() : '';
+    const exactScreen = selectionScreenId ? screenNodes.get(selectionScreenId) : null;
+    if (exactScreen) return exactScreen;
+
+    const route = typeof selection.route === 'string' ? selection.route.trim() : '';
+    if (!route) return null;
+    const matchingScreens = [...new Set(screens
+      .filter((screen) => typeof screen?.route === 'string' && screen.route === route)
+      .map((screen) => String(screen.screenId || screen.id || screen.route || '').trim())
+      .map((screenId) => screenNodes.get(screenId))
+      .filter(Boolean))];
+    return matchingScreens.length === 1 ? matchingScreens[0] : null;
+  }
+
   const TYPE_META = {
     SCREEN: { label: 'Screen', icon: 'ph-browsers', color: '#38bdf8' },
+    COMPONENT: { label: 'UI Component', icon: 'ph-layout', color: '#22d3ee' },
     AGENT: { label: 'Agent', icon: 'ph-robot', color: '#10b981' },
     JOB: { label: 'Job', icon: 'ph-gear-six', color: '#f59e0b' },
     MISSION: { label: 'Mission', icon: 'ph-target', color: '#a855f7' },
@@ -153,8 +171,8 @@
         safeFetch('/api/v2/jobs'),
         safeFetch('/api/missions'),
         safeFetch('/api/v2/projects').then(p => p || safeFetch('/api/fenix/projects')),
-        safeFetch('/api/v2/graph/data'),
-        safeFetch('/api/v2/reality/summary')
+        safeFetch('/api/fenix/memory/graph'),
+        safeFetch('/api/v2/observatory/summary')
       ]);
 
       if (agentsData && (agentsData.agents || Array.isArray(agentsData))) {
@@ -183,8 +201,108 @@
       return this.cache;
     }
 
+    async fetchProjectEvidence(projectId) {
+      const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
+      const headers = { Accept: 'application/json' };
+      if (token && token !== 'null') headers.Authorization = 'Bearer ' + token;
+      try {
+        const response = await fetch(`/api/v2/rea/evidence/${encodeURIComponent(projectId)}`, {
+          headers, credentials: 'same-origin', signal: AbortSignal.timeout(3000)
+        });
+        if (!response.ok) return null;
+        const evidence = await response.json();
+        return evidence?.ok && evidence?.projectId === projectId ? evidence : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async fetchProjectPlans(projectId) {
+      const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
+      const query = new URLSearchParams({ q: 'Plano REA', kind: 'project', projectId, limit: '30' });
+      try {
+        const response = await fetch(`/api/memories/search?${query}`, {
+          headers: { Accept: 'application/json', ...(token && token !== 'null' ? { Authorization: `Bearer ${token}` } : {}) },
+          credentials: 'same-origin', signal: AbortSignal.timeout(3000)
+        });
+        if (!response.ok) return [];
+        const result = await response.json();
+        return (result.results || []).map((item) => item.memory || item).filter((memory) => {
+          if (!memory?.id || memory.projectId !== projectId || !memory.stableKey?.startsWith(`rea-plan:${projectId}:`) || !memory.content) return false;
+          try {
+            const plan = JSON.parse(memory.content);
+            return plan.version === 1 && plan.projectId === projectId && typeof plan.objective === 'string' && typeof plan.analysis === 'string';
+          } catch { return false; }
+        }).slice(0, 12).map((memory) => ({ memory, plan: JSON.parse(memory.content) }));
+      } catch (_) {
+        return [];
+      }
+    }
+
+    async fetchProjectReferences(projectId) {
+      const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
+      try {
+        const response = await fetch(`/api/memory/project/${encodeURIComponent(projectId)}`, {
+          headers: { Accept: 'application/json', ...(token && token !== 'null' ? { Authorization: `Bearer ${token}` } : {}) },
+          credentials: 'same-origin', signal: AbortSignal.timeout(3000)
+        });
+        if (!response.ok) return [];
+        const result = await response.json();
+        return (result.results || []).map((item) => item.memory || item).filter((memory) => {
+          if (memory?.projectId !== projectId || !memory.stableKey?.startsWith(`project-reference:${projectId}:`) || !memory.content) return false;
+          try {
+            const record = JSON.parse(memory.content);
+            return record.version === 1 && record.projectId === projectId && /^[\w.-]{1,100}$/.test(String(record.spec?.referenceId || '')) && record.spec?.analysisStatus;
+          } catch { return false; }
+        }).slice(0, 20).map((memory) => ({ memory, record: JSON.parse(memory.content) }));
+      } catch (_) { return []; }
+    }
+
+    async fetchProjectAnnotations(projectId) {
+      if (!window.FenixProjectScreenAnnotations) return [];
+      const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
+      try {
+        const response = await fetch(`/api/memory/project/${encodeURIComponent(projectId)}`, {
+          headers: { Accept: 'application/json', ...(token && token !== 'null' ? { Authorization: `Bearer ${token}` } : {}) },
+          credentials: 'same-origin', signal: AbortSignal.timeout(3000)
+        });
+        if (!response.ok) return [];
+        const result = await response.json();
+        return (result.results || []).map((item) => item.memory || item)
+          .map((memory) => ({ memory, record: window.FenixProjectScreenAnnotations.fromMemory(memory, projectId) }))
+          .filter(({ record }) => Boolean(record)).slice(0, 30);
+      } catch (_) { return []; }
+    }
+
+    async fetchProjectDrafts(projectId) {
+      const token = localStorage.getItem('grg_token') || localStorage.getItem('fenix_token');
+      try {
+        const response = await fetch(`/api/fenix/projects/${encodeURIComponent(projectId)}/drafts`, {
+          headers: { Accept: 'application/json', ...(token && token !== 'null' ? { Authorization: `Bearer ${token}` } : {}) },
+          credentials: 'same-origin', signal: AbortSignal.timeout(3000)
+        });
+        if (!response.ok) return [];
+        const result = await response.json();
+        return (Array.isArray(result?.drafts) ? result.drafts : []).filter((draft) =>
+          draft?.projectId === projectId && /^[\w-]{1,100}$/.test(String(draft.draftId || '')) &&
+          typeof draft.path === 'string' && draft.path.length <= 500 && Number.isFinite(Date.parse(draft.expiresAt))
+        ).slice(0, 20).map((draft) => ({
+          draftId: draft.draftId, projectId, path: draft.path.replace(/\\/g, '/'),
+          summary: typeof draft.summary === 'string' ? draft.summary.slice(0, 300) : '',
+          baseHash: /^[a-f0-9]{64}$/i.test(String(draft.baseHash || '')) ? draft.baseHash : null,
+          nextHash: /^[a-f0-9]{64}$/i.test(String(draft.nextHash || '')) ? draft.nextHash : null,
+          createFile: draft.createFile === true, added: Number.isFinite(draft.added) ? draft.added : null,
+          removed: Number.isFinite(draft.removed) ? draft.removed : null,
+          evidenceId: /^rea_ev_[a-f0-9]{12}$/i.test(String(draft.evidenceId || '')) ? draft.evidenceId : null,
+          sourcePlanMemoryId: /^[\w.-]{1,120}$/.test(String(draft.sourcePlanMemoryId || '')) ? draft.sourcePlanMemoryId : null,
+          referenceIds: Array.isArray(draft.referenceIds) ? draft.referenceIds.filter((id) => /^[\w.-]{1,100}$/.test(String(id))).slice(0, 5) : [],
+          expiresAt: draft.expiresAt
+        }));
+      } catch (_) { return []; }
+    }
+
     // Resolves graph based on context: GLOBAL, SCREEN, PROJECT, AGENT, MISSION, JOB, MEMORY
-    async resolveContext(context = 'GLOBAL', entityId = null) {
+    async resolveContext(context = 'GLOBAL', entityId = null, contextData = {}) {
       const data = await this.fetchAllRealData();
       const nodesMap = new Map();
       const edgesList = [];
@@ -217,13 +335,13 @@
           to,
           type,
           label: label || type,
-          active: !!properties.active,
+          active: typeof properties.active === 'boolean' ? properties.active : null,
           properties: {
-            event: properties.event || `${type.toLowerCase()}.event`,
-            condition: properties.condition || 'default',
-            createdBy: properties.createdBy || 'Fênix Kernel',
-            lastExecuted: properties.lastExecuted || 'Tempo real',
-            executions: properties.executions || '1',
+            event: properties.event ?? null,
+            condition: properties.condition ?? null,
+            createdBy: properties.createdBy ?? null,
+            lastExecuted: properties.lastExecuted ?? null,
+            executions: properties.executions ?? null,
             ...properties
           }
         });
@@ -671,46 +789,412 @@
       } else if (context === 'PROJECT') {
         const projectId = (entityId || 'fenix-os').replace(/^project:/, '');
         const pNodeId = 'project:' + projectId;
+        const absorptionReport = contextData?.absorptionReport?.projectId === projectId
+          ? contextData.absorptionReport
+          : null;
         const prj = (data.projects || []).find(p => (p.id || p.projectId) === projectId);
+        const [reaEvidence, projectPlans, designProfile, globalDesignProfile, projectReferences, projectDrafts, projectAnnotations] = await Promise.all([
+          this.fetchProjectEvidence(projectId),
+          this.fetchProjectPlans(projectId),
+          window.FenixDesignReference?.read(projectId, { refresh: true }),
+          window.FenixDesignReference?.readGlobal({ refresh: true }),
+          this.fetchProjectReferences(projectId),
+          this.fetchProjectDrafts(projectId),
+          this.fetchProjectAnnotations(projectId)
+        ]);
+        const activeDesignProfile = designProfile && !designProfile.error ? designProfile
+          : globalDesignProfile && !globalDesignProfile.error ? globalDesignProfile : null;
+        const projectDesignPreferences = activeDesignProfile
+          ? (window.FenixDesignReference?.normalizePreferences(activeDesignProfile.preferences || {}) || null)
+          : null;
 
         // Project Root Node
         addNode({
           id: pNodeId,
           type: NODE_TYPES.PROJECT,
           title: prj?.name || prj?.displayName || projectId,
-          subtitle: prj?.repository || prj?.localPath || 'Projeto Fênix Ativo',
-          status: 'ONLINE',
-          metadata: { stack: prj?.frontend?.framework || 'Full-Stack', id: projectId },
-          properties: { projectId, ...(prj || {}) }
+          subtitle: prj?.repository || prj?.localPath || (reaEvidence ? `REA · ${reaEvidence.evidenceId}` : 'Análise REA não executada'),
+          status: prj?.status || (reaEvidence ? 'OBSERVED' : 'NOT_ANALYZED'),
+          metadata: { stack: prj?.frontend?.framework || prj?.stack || [], id: projectId, evidenceId: reaEvidence?.evidenceId || null },
+          properties: { projectId, ...(prj || {}), evidenceId: reaEvidence?.evidenceId || null, subjectSha256: reaEvidence?.subjectSha256 || null }
         });
 
-        // Project Services / Modules
-        const services = [
-          { id: 'module:frontend', title: 'SPA Frontend & Views', desc: 'Interface Canônica' },
-          { id: 'module:backend', title: 'Fastify API & Kernel', desc: 'Rotas e Gateways' },
-          { id: 'module:agents', title: 'Workforce Runtime', desc: 'Agentes e Processos' }
-        ];
-        services.forEach(s => {
+        // Only modules, packages, routes, and relationships observed by REA are added.
+        const observedIds = new Set([pNodeId]);
+        const savedPlanNodes = [];
+        const pendingVisualSelections = [];
+        const evidenceNodeId = reaEvidence?.evidenceId ? `evidence:${projectId}:${reaEvidence.evidenceId}` : null;
+        if (evidenceNodeId) {
           addNode({
-            id: s.id,
-            type: NODE_TYPES.ACTION,
-            title: s.title,
-            subtitle: s.desc,
-            status: 'ONLINE',
-            metadata: { parentProject: projectId },
-            properties: { moduleId: s.id }
+            id: evidenceNodeId, type: NODE_TYPES.MEMORY,
+            title: `Evidência REA · ${reaEvidence.evidenceId}`,
+            subtitle: `SHA ${reaEvidence.subjectSha256 || 'não informado'} · ${reaEvidence.analyzedAt || 'data não informada'}`,
+            status: 'OBSERVED_EVIDENCE',
+            metadata: { parentProject: projectId, source: 'REA', evidenceId: reaEvidence.evidenceId },
+            properties: { projectId, evidenceId: reaEvidence.evidenceId, subjectSha256: reaEvidence.subjectSha256 || null, analyzedAt: reaEvidence.analyzedAt || null, metrics: reaEvidence.metrics || null }
           });
-          addEdge(pNodeId, EDGE_TYPES.PARENT, s.id, 'Submódulo', {
-            event: 'project.init_module',
-            condition: 'path.valid == true',
-            createdBy: 'ProjectRegistry'
+          observedIds.add(evidenceNodeId);
+          addEdge(pNodeId, EDGE_TYPES.READS, evidenceNodeId, 'Evidência estrutural registrada pelo REA', { source: 'REA', evidenceId: reaEvidence.evidenceId });
+        }
+        for (const { memory, plan } of projectPlans) {
+          const planId = `plan:${projectId}:${memory.id}`;
+          const source = (reaEvidence?.applicationGraph?.nodes || []).find((node) => node.path === plan.filePath);
+          const sameEvidence = Boolean(plan.evidenceId && plan.evidenceId === reaEvidence?.evidenceId);
+          const fullHashMatch = Boolean(sameEvidence && source?.sha256?.length === 64 && source.sha256 === plan.fileSha256);
+          const prefixHashMatch = Boolean(sameEvidence && source?.sha256?.length >= 16 && source.sha256.length < 64 && plan.fileSha256?.startsWith(source.sha256));
+          addNode({
+            id: planId, type: NODE_TYPES.MEMORY,
+            title: `Plano REA · ${plan.objective.slice(0, 70)}`,
+            subtitle: `${plan.scope === 'PROJECT' ? 'Plano do projeto' : plan.provider || 'Provider não informado'} / ${plan.model || 'Modelo não informado'} · ${new Date(plan.createdAt || memory.createdAt).toLocaleString()}`,
+            status: plan.scope === 'PROJECT' ? 'PROJECT_PLAN' : fullHashMatch ? 'SAVED_PLAN' : prefixHashMatch ? 'HASH_PREFIX_MATCH' : source ? 'STALE_PLAN' : 'PLAN_NOT_REMEASURED',
+            metadata: { parentProject: projectId, memoryId: memory.id, evidenceId: plan.evidenceId || null, source: 'project-memory' },
+            properties: { projectId, scope: plan.scope || 'FILE', memoryId: memory.id, stableKey: memory.stableKey, filePath: plan.filePath || null, fileSha256: plan.fileSha256 || null, objective: plan.objective, analysis: plan.analysis, evidenceId: plan.evidenceId || null, referenceIds: Array.isArray(plan.referenceIds) ? plan.referenceIds.filter((id) => /^[\w.-]{1,100}$/.test(String(id))).slice(0, 5) : [], provider: plan.provider || null, model: plan.model || null, selectionContext: plan.selectionContext || null, createdAt: plan.createdAt || memory.createdAt }
           });
-        });
+          observedIds.add(planId);
+          savedPlanNodes.push({ id: planId, memoryId: memory.id, filePath: plan.filePath || null, scope: plan.scope || 'FILE', referenceIds: Array.isArray(plan.referenceIds) ? plan.referenceIds.filter((id) => /^[\w.-]{1,100}$/.test(String(id))).slice(0, 5) : [], evidenceId: plan.evidenceId || null });
+          addEdge(pNodeId, EDGE_TYPES.USES, planId, 'Plano REA salvo na memória do projeto', {
+            event: 'project-memory.rea-plan', condition: plan.evidenceId || 'Plano sem evidência REA persistida', createdBy: 'MemoryEngine', memoryId: memory.id
+          });
+          if (evidenceNodeId && sameEvidence) {
+            addEdge(planId, EDGE_TYPES.READS, evidenceNodeId, 'Plano usa esta evidência REA', { source: 'ProjectMemory', evidenceId: reaEvidence.evidenceId });
+          }
+          const selection = plan.selectionContext;
+          if (selection?.projectId === projectId && (selection.screenId || selection.route || selection.element?.selector)) {
+            const selectionId = `visual-selection:${projectId}:${memory.id}`;
+            const subject = selection.element?.selector || selection.screenId || selection.route;
+            addNode({
+              id: selectionId, type: NODE_TYPES.SCREEN,
+              title: `Seleção no preview · ${String(subject).slice(0, 70)}`,
+              subtitle: [selection.screenId, selection.route].filter(Boolean).join(' · ') || 'Elemento observado no preview',
+              status: 'OBSERVED_CONTEXT',
+              metadata: { parentProject: projectId, memoryId: memory.id, evidenceId: plan.evidenceId || null, source: 'project-mirror-preview' },
+              properties: { ...selection, projectId, observed: true, source: 'project-mirror-preview' }
+            });
+            observedIds.add(selectionId);
+            addEdge(planId, EDGE_TYPES.READS, selectionId, 'Plano vinculado à seleção observada no preview', {
+              event: 'rea-plan.visual-selection', condition: plan.evidenceId || 'Sem evidência REA anexada', createdBy: 'ProjectMirror', memoryId: memory.id
+            });
+            pendingVisualSelections.push({ selectionId, selection, memoryId: memory.id });
+          }
+        }
+        if (activeDesignProfile) {
+          const designId = `design-reference:${projectId}`;
+          addNode({
+            id: designId,
+            type: NODE_TYPES.PROJECT_DNA,
+            title: designProfile && !designProfile.error ? 'Perfil visual do projeto' : 'Perfil visual universal',
+            subtitle: `Memória ${designProfile && !designProfile.error ? 'configurada' : 'herdada'} · versão ${activeDesignProfile.version}`,
+            status: designProfile && !designProfile.error ? 'CONFIGURED' : 'INHERITED',
+            metadata: { parentProject: projectId, source: designProfile && !designProfile.error ? 'project-memory' : 'global-memory', memoryId: activeDesignProfile.memoryId || null, preferences: projectDesignPreferences },
+            properties: { projectId, memoryId: activeDesignProfile.memoryId || null, profile: {
+              version: activeDesignProfile.version,
+              title: activeDesignProfile.title,
+              projectName: activeDesignProfile.projectName || null,
+              preferences: projectDesignPreferences
+            } }
+          });
+          observedIds.add(designId);
+          addEdge(pNodeId, EDGE_TYPES.USES, designId, designProfile && !designProfile.error ? 'Aplica o perfil visual salvo na memória do projeto' : 'Herdeia o perfil visual salvo na memória universal', {
+            event: designProfile && !designProfile.error ? 'project-memory.design-reference' : 'global-memory.design-reference', condition: 'Preferência registrada pelo operador', createdBy: 'MemoryEngine'
+          });
+          for (const plan of savedPlanNodes.filter((item) => item.scope === 'PROJECT')) {
+            addEdge(plan.id, EDGE_TYPES.READS, designId, 'Plano de projeto consulta o perfil de design selecionado', {
+              event: 'project-plan.design-profile', condition: projectDesignPreferences?.designGoal || 'Perfil de design registrado', createdBy: 'DesignIntelligence'
+            });
+          }
+          const knownReferences = window.FenixDesignReference?.profile?.referenceCatalog || [];
+          const savedSourceIds = Array.isArray(activeDesignProfile.preferences?.referenceSources)
+            ? new Set(projectDesignPreferences?.referenceSources || []) : null;
+          for (const source of knownReferences.filter((item) => !savedSourceIds || savedSourceIds.has(item.id))) {
+            if (!source?.id || !source.url) continue;
+            const referenceId = `reference:${projectId}:${source.id}`;
+            addNode({
+              id: referenceId,
+              type: NODE_TYPES.TOOL,
+              title: source.name || source.id,
+              subtitle: 'Fonte de design · referência manual',
+              status: 'REFERENCE_ONLY',
+              metadata: { parentProject: projectId, sourceType: source.sourceType || 'USER_REFERENCE', integration: 'MANUAL_READ_ONLY' },
+              properties: { projectId, sourceId: source.id, url: source.url, sourceType: source.sourceType || 'USER_REFERENCE', integration: 'MANUAL_READ_ONLY', observed: source.observed || '', applied: source.applied || '' }
+            });
+            observedIds.add(referenceId);
+            addEdge(designId, EDGE_TYPES.DERIVED_FROM, referenceId, 'Fonte de design observada', {
+              event: 'design-reference.catalog', condition: 'Referência manual, sem conexão com API externa', createdBy: 'FenixDesignReference', integration: 'MANUAL_READ_ONLY'
+            });
+            const productBySource = { 'lovable-editor': 'Lovable', 'miro-dashboard': 'Miro', 'google-stitch-canvas': 'Stitch' };
+            const productCapabilities = (window.FenixDesignReference?.profile?.capabilityMap || [])
+              .filter((item) => item?.product === productBySource[source.id]
+                && typeof item.capability === 'string'
+                && ['PARTIAL', 'BACKLOG', 'AVAILABLE'].includes(item.status));
+            productCapabilities.forEach((item, index) => {
+              const capabilityId = `design-capability:${projectId}:${source.id}:${index}`;
+              addNode({
+                id: capabilityId,
+                type: NODE_TYPES.TOOL,
+                title: item.capability,
+                subtitle: `${item.product} · ${item.status}`,
+                status: item.status,
+                metadata: {
+                  parentProject: projectId,
+                  sourceId: source.id,
+                  integration: 'MANUAL_READ_ONLY',
+                  capability: item.capability,
+                  status: item.status,
+                  fenix: typeof item.fenix === 'string' ? item.fenix.slice(0, 700) : 'Adaptação no Fênix não documentada.',
+                  evidence: typeof item.evidence === 'string' ? item.evidence.slice(0, 500) : 'Fonte não informada.'
+                },
+                properties: { projectId, sourceId: source.id, capability: item.capability, status: item.status, action: item.action || null }
+              });
+              observedIds.add(capabilityId);
+              addEdge(referenceId, EDGE_TYPES.DERIVED_FROM, capabilityId, 'Capacidade mapeada da referência', {
+                event: 'design-reference.capability-map', condition: `${item.product} · ${item.status}`, createdBy: 'FenixDesignReference', integration: 'MANUAL_READ_ONLY'
+              });
+            });
+          }
+        }
+        for (const { memory, record } of projectReferences) {
+          const spec = record.spec;
+          const sourceUrl = (() => {
+            try {
+              const url = new URL(String(record.url || ''));
+              return ['http:', 'https:'].includes(url.protocol) ? `${url.protocol}//${url.host}${url.pathname}`.slice(0, 180) : '';
+            } catch { return ''; }
+          })();
+          const capabilities = (spec.knowledge?.functional?.coreCapabilities || [])
+            .filter((value) => typeof value === 'string' && /^[A-Z][A-Z0-9_]{0,39}$/.test(value)).slice(0, 8);
+          const visual = spec.knowledge?.visual?.observations || {};
+          const visualSummary = typeof visual.layout === 'string' ? visual.layout.slice(0, 300) : null;
+          const visualComponents = (Array.isArray(visual.visibleComponents) ? visual.visibleComponents : []).slice(0, 12).map((item) => ({
+            label: typeof item?.label === 'string' ? item.label.slice(0, 120) : '',
+            category: typeof item?.category === 'string' ? item.category.slice(0, 60) : '',
+            apparentState: typeof item?.apparentState === 'string' ? item.apparentState.slice(0, 120) : '',
+          })).filter((item) => item.label || item.category);
+          const imageAnalysis = spec.imageAnalysis && typeof spec.imageAnalysis === 'object' ? spec.imageAnalysis : null;
+          const title = imageAnalysis
+            ? `Captura ${String(imageAnalysis.mimeType || 'visual').slice(0, 40)} · ${String(imageAnalysis.model || 'modelo não informado').slice(0, 80)}`
+            : sourceUrl || `Referência ${spec.type || 'externa'}`;
+          const referenceId = `project-reference:${projectId}:${spec.referenceId}`;
+          addNode({
+            id: referenceId, type: NODE_TYPES.TOOL,
+            title,
+            subtitle: `${imageAnalysis?.provider ? `${String(imageAnalysis.provider).slice(0, 80)} · ` : ''}REA ${spec.analysisStatus} · ${spec.type || 'tipo não informado'}`,
+            status: spec.analysisStatus,
+            metadata: { parentProject: projectId, source: imageAnalysis ? 'project-memory-image-analysis' : 'project-memory', memoryId: memory.id, referenceId: spec.referenceId },
+            properties: {
+              projectId, memoryId: memory.id, referenceId: spec.referenceId, url: sourceUrl || null,
+              sourceType: spec.type || null, analysisStatus: spec.analysisStatus, functionalHints: capabilities,
+              limitations: (spec.evidence?.limitations || []).filter((value) => typeof value === 'string').slice(0, 5),
+              ...(imageAnalysis ? { capture: { mimeType: imageAnalysis.mimeType || null, imageSha256: imageAnalysis.imageSha256 || null, provider: imageAnalysis.provider || null, model: imageAnalysis.model || null, durationMs: Number.isFinite(imageAnalysis.durationMs) ? imageAnalysis.durationMs : null }, visualSummary, visualComponents } : {})
+            }
+          });
+          observedIds.add(referenceId);
+          addEdge(pNodeId, EDGE_TYPES.DERIVED_FROM, referenceId, 'Referência externa vinculada à memória deste projeto', {
+            event: 'project-reference.intake', condition: spec.referenceId, createdBy: 'ReferenceAcquisitionEngine', memoryId: memory.id
+          });
+          visualComponents.forEach((component, index) => {
+            const componentId = `reference-component:${projectId}:${spec.referenceId}:${index}`;
+            addNode({
+              id: componentId,
+              type: NODE_TYPES.COMPONENT,
+              title: component.label || `Componente aparente ${index + 1}`,
+              subtitle: [component.category, component.apparentState, 'Não verificado'].filter(Boolean).join(' · '),
+              status: 'MODEL_OBSERVATIONS_REQUIRES_VALIDATION',
+              metadata: { parentProject: projectId, source: 'model-visual-observation', memoryId: memory.id, referenceId: spec.referenceId },
+              properties: { projectId, referenceId: spec.referenceId, captureNodeId: referenceId, ...component, requiresValidation: true },
+            });
+            observedIds.add(componentId);
+            addEdge(referenceId, EDGE_TYPES.DERIVED_FROM, componentId, 'Componente aparente descrito pelo modelo, ainda não validado', {
+              event: 'reference-image.component-observation', condition: spec.analysisStatus, createdBy: 'ReferenceImageAnalysis', memoryId: memory.id,
+            });
+          });
+        }
+        for (const plan of savedPlanNodes.filter((item) => item.scope === 'PROJECT')) {
+          for (const referenceId of plan.referenceIds) {
+            const referenceNodeId = `project-reference:${projectId}:${referenceId}`;
+            if (!observedIds.has(referenceNodeId)) continue;
+            addEdge(plan.id, EDGE_TYPES.READS, referenceNodeId, 'Plano consulta referência salva no mesmo projeto', {
+              event: 'project-plan.reference', condition: referenceId, createdBy: 'ProjectReferenceMemory'
+            });
+          }
+        }
+        for (const observed of reaEvidence?.applicationGraph?.nodes || []) {
+          const type = observed.kind === 'package' ? NODE_TYPES.TOOL : NODE_TYPES.ACTION;
+          addNode({
+            id: observed.id,
+            type,
+            title: observed.path || observed.id,
+            subtitle: observed.kind === 'module' ? `${observed.lines ?? '—'} linhas · SHA ${observed.sha256 || '—'}` : 'Pacote referenciado no código',
+            status: 'OBSERVED',
+            metadata: { parentProject: projectId, evidenceId: reaEvidence.evidenceId, source: observed.path || observed.id },
+            properties: { ...observed, projectId, evidenceId: reaEvidence.evidenceId }
+          });
+          observedIds.add(observed.id);
+        }
+        const absorbedScreenNodes = new Map();
+        const absorbedScreens = (Array.isArray(absorptionReport?.screens) ? absorptionReport.screens : []).slice(0, 120);
+        for (const screen of absorbedScreens) {
+          const rawScreenId = String(screen?.screenId || screen?.id || screen?.route || '').trim();
+          if (!rawScreenId) continue;
+          const screenNodeId = `screen:${projectId}:${encodeURIComponent(rawScreenId).slice(0, 120)}`;
+          const sourceFile = typeof screen.sourceFile === 'string' ? screen.sourceFile.trim().replace(/\\/g, '/') : '';
+          const sourceNode = sourceFile
+            ? (reaEvidence?.applicationGraph?.nodes || []).find((node) => node.path === sourceFile)
+            : null;
+          const captureStatus = String(screen.captureStatus || 'NOT_CAPTURED').slice(0, 48);
+          const sourceStatus = String(screen.discoveryStatus || screen.source || 'SOURCE_NOT_RECORDED').slice(0, 48);
+          addNode({
+            id: screenNodeId,
+            type: NODE_TYPES.SCREEN,
+            title: String(screen.title || screen.name || screen.route || rawScreenId).slice(0, 120),
+            subtitle: [screen.route, sourceFile || 'Arquivo de origem não registrado'].filter(Boolean).join(' · ').slice(0, 180),
+            status: captureStatus === 'CAPTURED' ? 'CAPTURED' : sourceStatus,
+            metadata: { parentProject: projectId, source: 'ProjectAbsorptionEngine', evidenceId: reaEvidence?.evidenceId || null },
+            properties: {
+              projectId,
+              screenId: rawScreenId,
+              route: typeof screen.route === 'string' ? screen.route.slice(0, 180) : null,
+              sourceFile: sourceFile || null,
+              source: typeof screen.source === 'string' ? screen.source.slice(0, 48) : 'ProjectAbsorptionEngine',
+              discoveryStatus: sourceStatus,
+              captureStatus,
+              domInspectionStatus: String(screen.domInspectionStatus || 'NOT_INSPECTED').slice(0, 48),
+              evidenceId: reaEvidence?.evidenceId || null,
+              absorptionProjectId: absorptionReport.projectId,
+              navigationEdges: Array.isArray(screen.navigationEdges) ? screen.navigationEdges.slice(0, 40) : []
+            }
+          });
+          observedIds.add(screenNodeId);
+          absorbedScreenNodes.set(rawScreenId, screenNodeId);
+          addEdge(pNodeId, EDGE_TYPES.ROUTES_TO, screenNodeId, 'Tela descoberta na absorção do workspace', {
+            event: 'project.absorption.screen-discovered',
+            condition: `${sourceStatus} · ${captureStatus}`,
+            createdBy: 'ProjectAbsorptionEngine',
+            evidenceId: reaEvidence?.evidenceId || null
+          });
+          if (sourceNode && observedIds.has(sourceNode.id)) {
+            addEdge(screenNodeId, EDGE_TYPES.DERIVED_FROM, sourceNode.id, 'Arquivo de origem coincide com evidência REA', {
+              event: 'project.absorption.screen-source',
+              condition: sourceFile,
+              createdBy: 'ProjectAbsorptionEngine + REA',
+              evidenceId: reaEvidence?.evidenceId || null
+            });
+          }
+        }
+        for (const { selectionId, selection, memoryId } of pendingVisualSelections) {
+          const screenNodeId = resolveAbsorbedSelectionScreenId(selection, projectId, absorbedScreens, absorbedScreenNodes);
+          if (!screenNodeId) continue;
+          addEdge(selectionId, EDGE_TYPES.DERIVED_FROM, screenNodeId, 'Seleção visual observada nesta tela do projeto', {
+            event: 'rea-plan.visual-selection-screen',
+            condition: selection.screenId ? `screenId=${selection.screenId}` : `route=${selection.route}`,
+            createdBy: 'ProjectMirror + ProjectAbsorptionEngine',
+            memoryId,
+            screenId: selection.screenId || null,
+            route: selection.route || null
+          });
+        }
+        for (const screen of absorbedScreens) {
+          const sourceId = absorbedScreenNodes.get(String(screen?.screenId || screen?.id || screen?.route || '').trim());
+          if (!sourceId) continue;
+          for (const navigation of (Array.isArray(screen.navigationEdges) ? screen.navigationEdges : []).slice(0, 40)) {
+            const targetId = absorbedScreenNodes.get(String(navigation.targetScreenId || '').trim());
+            if (!targetId || sourceId === targetId) continue;
+            addEdge(sourceId, EDGE_TYPES.NAVIGATION, targetId, navigation.action || 'Navegação declarada no controle', {
+              event: 'project.absorption.static-navigation',
+              condition: 'Controle e destino encontrados no mesmo arquivo-fonte',
+              createdBy: 'ProjectAbsorptionEngine static source inspection',
+              evidenceSource: navigation.evidenceSource || 'STATIC_SOURCE',
+              verificationStatus: navigation.verificationStatus || 'NOT_VERIFIED',
+              sourceFile: navigation.sourceFile || null,
+              sourceLine: Number.isInteger(navigation.sourceLine) ? navigation.sourceLine : null,
+              selector: navigation.selector || null,
+              action: navigation.action || null
+            });
+          }
+        }
+        for (const savedPlan of savedPlanNodes) {
+          const source = (reaEvidence?.applicationGraph?.nodes || []).find((node) => node.path === savedPlan.filePath);
+          if (source && observedIds.has(source.id)) {
+            const savedPlanNode = nodesMap.get(savedPlan.id);
+            addEdge(savedPlan.id, EDGE_TYPES.READS, source.id, savedPlanNode?.status === 'SAVED_PLAN' ? 'Hash integral do arquivo corresponde ao plano' : savedPlanNode?.status === 'HASH_PREFIX_MATCH' ? 'Prefixo de hash corresponde; verificação integral indisponível' : 'Arquivo-alvo observado novamente; plano pode estar desatualizado', {
+              event: 'rea-plan.source-file', condition: `${savedPlanNode?.properties?.evidenceId || 'sem evidência'} → ${reaEvidence.evidenceId}`, createdBy: 'REA'
+            });
+          }
+        }
+        for (const route of reaEvidence?.routes || []) {
+          const routeId = `route:${route.path}`;
+          if (!observedIds.has(routeId)) {
+            addNode({ id: routeId, type: NODE_TYPES.ACTION, title: route.path, subtitle: `Rota observada · ${route.file}`, status: 'OBSERVED', metadata: { parentProject: projectId, evidenceId: reaEvidence.evidenceId }, properties: { ...route, projectId, evidenceId: reaEvidence.evidenceId } });
+            observedIds.add(routeId);
+          }
+        }
+        for (const edge of reaEvidence?.applicationGraph?.edges || []) {
+          if (!observedIds.has(edge.from) || !observedIds.has(edge.to)) continue;
+          const type = edge.kind === 'imports' ? EDGE_TYPES.DEPENDS_ON : EDGE_TYPES.CALLS;
+          addEdge(edge.from, type, edge.to, edge.kind === 'imports' ? 'Import observado' : 'Referência de rota observada', {
+            event: 'REA source evidence', condition: reaEvidence.evidenceId, createdBy: 'REA'
+          });
+        }
+
+        for (const { memory, record } of projectAnnotations) {
+          const annotationId = `project-annotation:${projectId}:${record.annotationId}`;
+          addNode({
+            id: annotationId,
+            type: NODE_TYPES.MEMORY,
+            title: `Anotação · ${record.screenName || record.screenId}`,
+            subtitle: `${record.route || record.screenId} · ${record.element.selector}`,
+            status: 'OPERATOR_NOTE',
+            metadata: { parentProject: projectId, source: 'operator-preview-annotation', memoryId: memory.id, screenId: record.screenId },
+            properties: {
+              projectId, memoryId: memory.id, annotationId: record.annotationId, screenId: record.screenId,
+              route: record.route, element: record.element, note: record.note, createdAt: record.createdAt,
+              source: 'operator-preview-annotation', verificationStatus: 'OPERATOR_NOTE'
+            }
+          });
+          observedIds.add(annotationId);
+          const screenNodeId = absorbedScreenNodes.get(record.screenId)
+            || `screen:${projectId}:${encodeURIComponent(record.screenId).slice(0, 120)}`;
+          if (observedIds.has(screenNodeId)) {
+            addEdge(annotationId, EDGE_TYPES.DERIVED_FROM, screenNodeId, 'Anotação vinculada à tela selecionada no preview', {
+              source: 'operator-preview-annotation', memoryId: memory.id, verificationStatus: 'OPERATOR_NOTE'
+            });
+          } else {
+            addEdge(pNodeId, EDGE_TYPES.USES, annotationId, 'Anotação de interface salva pelo operador', {
+              source: 'operator-preview-annotation', memoryId: memory.id, screenId: record.screenId, verificationStatus: 'OPERATOR_NOTE'
+            });
+          }
+        }
+
+        for (const draft of projectDrafts) {
+          const draftId = `draft:${projectId}:${draft.draftId}`;
+          const source = (reaEvidence?.applicationGraph?.nodes || []).find((node) => node.path === draft.path);
+          addNode({
+            id: draftId, type: NODE_TYPES.STATE,
+            title: `${draft.createFile ? 'Novo arquivo' : 'Diff pendente'} · ${draft.path}`.slice(0, 140),
+            subtitle: `${draft.summary || 'Proposta aguardando revisão'} · +${draft.added ?? '—'} / −${draft.removed ?? '—'} linhas · expira ${new Date(draft.expiresAt).toLocaleString()}`,
+            status: 'PENDING_REVIEW',
+            metadata: { parentProject: projectId, source: 'ProjectWorkspaceDraftStore', evidenceId: draft.evidenceId },
+            properties: { projectId, draftId: draft.draftId, path: draft.path, summary: draft.summary, baseHash: draft.baseHash, nextHash: draft.nextHash, createFile: draft.createFile, added: draft.added, removed: draft.removed, evidenceId: draft.evidenceId, sourcePlanMemoryId: draft.sourcePlanMemoryId, referenceIds: draft.referenceIds, expiresAt: draft.expiresAt, applied: false }
+          });
+          observedIds.add(draftId);
+          addEdge(pNodeId, EDGE_TYPES.CREATES, draftId, 'Proposta persistida aguardando revisão', { source: 'ProjectWorkspaceDraftStore' });
+          const sourcePlan = savedPlanNodes.find((item) => item.memoryId === draft.sourcePlanMemoryId && (!draft.evidenceId || item.evidenceId === draft.evidenceId));
+          if (sourcePlan) addEdge(sourcePlan.id, EDGE_TYPES.CREATES, draftId, 'Plano revisado originou este diff pendente', { source: 'ProjectWorkspaceDraftStore', evidenceId: draft.evidenceId, memoryId: sourcePlan.memoryId });
+          for (const referenceId of draft.referenceIds) {
+            const referenceNodeId = `project-reference:${projectId}:${referenceId}`;
+            if (observedIds.has(referenceNodeId)) addEdge(draftId, EDGE_TYPES.READS, referenceNodeId, 'Proposta conserva a referência selecionada', { source: 'ProjectWorkspaceDraftStore', referenceId });
+          }
+          if (source && observedIds.has(source.id)) {
+            const hashMatches = Boolean(draft.baseHash && source.sha256 === draft.baseHash);
+            addEdge(draftId, EDGE_TYPES.DERIVED_FROM, source.id, hashMatches ? 'Hash-base do diff corresponde ao arquivo observado pelo REA' : 'Caminho coincide; hash-base não corresponde à evidência REA', { source: 'ProjectWorkspaceDraftStore + REA', baseHash: draft.baseHash, observedHash: source.sha256 || null, verified: hashMatches });
+          }
+          if (evidenceNodeId && draft.evidenceId === reaEvidence.evidenceId) {
+            addEdge(draftId, EDGE_TYPES.READS, evidenceNodeId, 'Proposta referencia esta evidência REA', { source: 'ProjectWorkspaceDraftStore', evidenceId: draft.evidenceId });
+          }
+        }
 
         // Connected Jobs
         const projectJobs = (data.jobs || []).filter(j => j.projectId === projectId).slice(0, 6);
-        const fallbackJobs = projectJobs.length > 0 ? projectJobs : (data.jobs || []).slice(0, 3);
-        fallbackJobs.forEach(j => {
+        projectJobs.forEach(j => {
           const jId = 'job:' + (j.id || j.jobId);
           addNode({
             id: jId,
@@ -727,42 +1211,6 @@
             createdBy: 'MissionKernel'
           });
         });
-
-        // Output Bundle Artifact
-        addNode({
-          id: 'output:project_build',
-          type: NODE_TYPES.OUTPUT,
-          title: 'Artefato de Build & Dist',
-          subtitle: 'Bundle Fênix OS • Produção',
-          status: 'SUCCESS',
-          metadata: { target: 'public/' },
-          properties: { outputId: 'dist_build' }
-        });
-        addEdge(pNodeId, EDGE_TYPES.SUCCESS, 'output:project_build', 'Build Gerado', {
-          event: 'build.success',
-          condition: 'tests.passed == true',
-          createdBy: 'DevPipeline'
-        });
-
-        // Patterns linked to this project
-        if (data.brain?.nodes) {
-          data.brain.nodes.slice(0, 5).forEach(patNode => {
-            addNode({
-              id: patNode.id,
-              type: NODE_TYPES.MEMORY,
-              title: patNode.properties?.title || patNode.id,
-              subtitle: patNode.properties?.domain || 'Padrão Canônico',
-              status: 'ONLINE',
-              metadata: patNode.properties || {},
-              properties: { ...patNode.properties }
-            });
-            addEdge(pNodeId, EDGE_TYPES.REMEMBERS, patNode.id, 'DNA do Projeto', {
-              event: 'dna.link',
-              condition: 'confidence > 0.9',
-              createdBy: 'GraphBrain'
-            });
-          });
-        }
 
       // ───────────────────────────────────────────────────────────────────────
       // CONTEXT: AGENT (Agent + tools + models + memory + jobs)
@@ -1228,14 +1676,32 @@
         if (source) source.outDegree++;
       });
 
-      // Assign topological ranks using BFS
+      // Assign deterministic semantic base rank by node type so flow always moves strictly left-to-right
+      const TYPE_BASE_RANK = {
+        SCREEN: 0,
+        EVENT: 0,
+        DECISION: 1,
+        STATE: 1,
+        AGENT: 2,
+        MISSION: 3,
+        PROJECT: 3,
+        JOB: 3,
+        TOOL: 4,
+        ACTION: 4,
+        MEMORY: 4,
+        REBORN_MEMORY: 4,
+        PROJECT_DNA: 4,
+        OUTPUT: 4
+      };
+
       const roots = Array.from(nodeMap.values()).filter(n => n.inDegree === 0);
       if (roots.length === 0 && visibleNodes.length > 0) {
-        nodeMap.get(visibleNodes[0].id).rank = 0;
         roots.push(nodeMap.get(visibleNodes[0].id));
       }
 
-      roots.forEach(r => r.rank = 0);
+      roots.forEach(r => {
+        r.rank = TYPE_BASE_RANK[r.type] ?? 0;
+      });
       const queue = [...roots];
       const visited = new Set(roots.map(r => r.id));
 
@@ -1246,7 +1712,8 @@
         outgoing.forEach(e => {
           const target = nodeMap.get(e.to);
           if (target) {
-            target.rank = Math.max(target.rank, current.rank + 1);
+            const semanticRank = TYPE_BASE_RANK[target.type] ?? (current.rank + 1);
+            target.rank = Math.max(target.rank, semanticRank, Math.min(4, current.rank + 1));
             if (!visited.has(target.id)) {
               visited.add(target.id);
               queue.push(target);
@@ -1255,9 +1722,13 @@
         });
       }
 
-      // Assign remaining unranked nodes
+      // Assign remaining unranked nodes to their semantic column instead of dumping in column 0
       nodeMap.forEach(n => {
-        if (!visited.has(n.id)) n.rank = 0;
+        if (!visited.has(n.id)) {
+          n.rank = TYPE_BASE_RANK[n.type] ?? 2;
+        } else if (TYPE_BASE_RANK[n.type] !== undefined) {
+          n.rank = Math.max(n.rank, TYPE_BASE_RANK[n.type]);
+        }
       });
 
       // Group nodes by rank
@@ -1267,26 +1738,34 @@
         ranks.get(n.rank).push(n);
       });
 
-      // Sort ranks and position nodes
+      // Sort ranks and position nodes in a compact multi-column grid (max 6 rows per sub-column)
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
       const sortedRanks = Array.from(ranks.keys()).sort((a, b) => a - b);
+      const maxRowsPerCol = 6;
+      const subColWidth = this.nodeWidth + 56;
+      let currentRankX = 48;
 
       sortedRanks.forEach(rank => {
         const columnNodes = ranks.get(rank);
-        columnNodes.sort((a, b) => (a.type || '').localeCompare(b.type || ''));
+        columnNodes.sort((a, b) => (a.type || '').localeCompare(b.type || '') || (a.title || '').localeCompare(b.title || ''));
 
-        const totalHeight = columnNodes.length * this.nodeSpacing;
-        const startY = -(totalHeight / 2);
+        const numSubCols = Math.max(1, Math.ceil(columnNodes.length / maxRowsPerCol));
+        const rowsInFirstCol = Math.min(maxRowsPerCol, columnNodes.length);
+        const startY = 44 + Math.max(0, (maxRowsPerCol - rowsInFirstCol) * (this.nodeSpacing * 0.35));
 
         columnNodes.forEach((node, idx) => {
-          node.x = rank * this.rankSpacing + 50;
-          node.y = startY + (idx * this.nodeSpacing);
+          const subCol = Math.floor(idx / maxRowsPerCol);
+          const row = idx % maxRowsPerCol;
+          node.x = currentRankX + (subCol * subColWidth);
+          node.y = startY + (row * this.nodeSpacing);
 
           minX = Math.min(minX, node.x);
           maxX = Math.max(maxX, node.x + this.nodeWidth);
           minY = Math.min(minY, node.y);
           maxY = Math.max(maxY, node.y + this.nodeHeight);
         });
+
+        currentRankX += (numSubCols * subColWidth) + 72;
       });
 
       return {
@@ -1330,7 +1809,9 @@
         zoom: 0.9,
         pan: { x: 100, y: 300 },
         isPanning: false,
-        dragStart: { x: 0, y: 0 }
+        dragStart: { x: 0, y: 0 },
+        manualPositions: {},
+        nodeDrag: null
       };
 
       this.initDom();
@@ -1397,6 +1878,9 @@
               </div>
               <button type="button" class="ffg-btn" id="ffgFitBtn" title="Ajustar ao Canvas (Ctrl+0)">
                 <i class="ph-bold ph-arrows-out"></i>
+              </button>
+              <button type="button" class="ffg-btn" id="ffgResetLayoutBtn" title="Restaurar disposição automática do projeto" aria-label="Restaurar disposição automática">
+                <i class="ph-bold ph-layout"></i>
               </button>
               ${this.options.isOverlay ? `
                 <button type="button" class="ffg-btn ffg-btn-close" id="ffgCloseBtn" title="Fechar (Esc)">
@@ -1501,6 +1985,7 @@
         breadcrumbsBar: this.container.querySelector('#ffgBreadcrumbsBar'),
         crumbList: this.container.querySelector('#ffgCrumbList'),
         fitBtn: this.container.querySelector('#ffgFitBtn'),
+        resetLayoutBtn: this.container.querySelector('#ffgResetLayoutBtn'),
         zoomInBtn: this.container.querySelector('#ffgZoomInBtn'),
         zoomOutBtn: this.container.querySelector('#ffgZoomOutBtn'),
         resetBtn: this.container.querySelector('#ffgResetBtn'),
@@ -1521,7 +2006,7 @@
     }
 
     attachEvents() {
-      const { body, contextSelect, modeSwitcher, searchInput, filterPills, fitBtn, zoomInBtn, zoomOutBtn, resetBtn, closeBtn, crumbList } = this.dom;
+      const { body, contextSelect, modeSwitcher, searchInput, filterPills, fitBtn, resetLayoutBtn, zoomInBtn, zoomOutBtn, resetBtn, closeBtn, crumbList } = this.dom;
 
       // Mouse Pan & Drag
       body.addEventListener('mousedown', (e) => {
@@ -1631,6 +2116,7 @@
         this.applyTransform();
       });
       fitBtn.addEventListener('click', () => this.fitView());
+      resetLayoutBtn?.addEventListener('click', () => this.resetManualLayout());
 
       // Close Overlay
       if (closeBtn) {
@@ -1768,14 +2254,17 @@
       if (height < 250) height = Math.max(600, window.innerHeight - 160);
       const b = this.state.bounds;
 
-      const padding = 60;
-      const scaleX = (width - padding * 2) / Math.max(b.width, 100);
-      const scaleY = (height - padding * 2) / Math.max(b.height, 100);
-      const targetZoom = Math.min(1.15, Math.max(0.4, Math.min(scaleX, scaleY)));
+      const padding = 36;
+      const minimapReserveX = 210;
+      const usableWidth = Math.max(400, width - padding * 2 - minimapReserveX);
+      const usableHeight = Math.max(300, height - padding * 2);
+      const scaleX = usableWidth / Math.max(b.width, 100);
+      const scaleY = usableHeight / Math.max(b.height, 100);
+      const targetZoom = Math.min(0.95, Math.max(0.52, Math.min(scaleX, scaleY)));
 
       this.state.zoom = targetZoom;
-      this.state.pan.x = Math.max(40, (width / 2) - ((b.minX + b.width / 2) * targetZoom));
-      this.state.pan.y = Math.max(40, (height / 2) - ((b.minY + b.height / 2) * targetZoom));
+      this.state.pan.x = Math.max(24, padding + Math.max(0, (usableWidth - b.width * targetZoom) * 0.35) - (b.minX * targetZoom));
+      this.state.pan.y = Math.max(20, (height / 2) - ((b.minY + b.height / 2) * targetZoom));
 
       this.applyTransform();
     }
@@ -1794,21 +2283,131 @@
       this.dom.edgesGroup.innerHTML = '';
       this.dom.labelsGroup.innerHTML = '';
 
-      const resolved = await this.resolver.resolveContext(context, entityId);
+      const resolved = await this.resolver.resolveContext(context, entityId, {
+        absorptionReport: context === 'PROJECT' ? this.options.absorptionReport : null
+      });
       this.state.allNodes = resolved.nodes;
       this.state.allEdges = resolved.edges;
+      this.state.manualPositions = this.readManualPositions();
       const layout = this.layoutEngine.computeLayout(this.state.allNodes, this.state.allEdges, this.state.collapsedNodeIds);
 
-      this.state.nodes = layout.nodes;
+      this.state.nodes = this.applyManualPositions(layout.nodes);
       this.state.edges = layout.edges;
-      this.state.bounds = layout.bounds;
+      this.state.bounds = this.measureBounds(this.state.nodes);
 
       if (this.dom.liveText) {
         this.dom.liveText.textContent = `● LIVE (${resolved.meta.totalAgents} Agentes • ${resolved.meta.totalJobs} Jobs • Score ${resolved.meta.realityScore}%)`;
       }
 
       this.render();
-      setTimeout(() => this.fitView(), 60);
+      setTimeout(() => {
+        this.fitView();
+        if (this.options.focusNodeId && this.state.nodes.some((node) => node.id === this.options.focusNodeId)) {
+          this.focusNode(this.options.focusNodeId);
+        }
+      }, 60);
+    }
+
+    manualLayoutKey() {
+      const entityId = String(this.state.entityId || 'root').slice(0, 180);
+      return `fenix-flow-graph-layout:v1:${this.state.context}:${encodeURIComponent(entityId)}`;
+    }
+
+    readManualPositions() {
+      try {
+        const raw = localStorage.getItem(this.manualLayoutKey());
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+        return Object.fromEntries(Object.entries(parsed).slice(0, 500).filter(([, point]) =>
+          point && Number.isFinite(point.x) && Number.isFinite(point.y)
+          && Math.abs(point.x) <= 50000 && Math.abs(point.y) <= 50000
+        ));
+      } catch (_) { return {}; }
+    }
+
+    applyManualPositions(nodes) {
+      return nodes.map((node) => {
+        const point = this.state.manualPositions?.[node.id];
+        return point ? { ...node, x: point.x, y: point.y } : node;
+      });
+    }
+
+    measureBounds(nodes) {
+      const width = this.layoutEngine.nodeWidth;
+      const height = this.layoutEngine.nodeHeight;
+      if (!nodes.length) return { minX: 0, maxX: 500, minY: 0, maxY: 400, width: 500, height: 400 };
+      const minX = Math.min(...nodes.map((node) => node.x));
+      const minY = Math.min(...nodes.map((node) => node.y));
+      const maxX = Math.max(...nodes.map((node) => node.x + width));
+      const maxY = Math.max(...nodes.map((node) => node.y + height));
+      return { minX, maxX, minY, maxY, width: Math.max(100, maxX - minX), height: Math.max(100, maxY - minY) };
+    }
+
+    saveManualPositions() {
+      try {
+        localStorage.setItem(this.manualLayoutKey(), JSON.stringify(this.state.manualPositions));
+        return true;
+      } catch (_) { return false; }
+    }
+
+    resetManualLayout() {
+      try { localStorage.removeItem(this.manualLayoutKey()); } catch (_) { /* storage may be unavailable */ }
+      this.state.manualPositions = {};
+      const layout = this.layoutEngine.computeLayout(this.state.allNodes || [], this.state.allEdges || [], this.state.collapsedNodeIds);
+      this.state.nodes = layout.nodes;
+      this.state.edges = layout.edges;
+      this.state.bounds = layout.bounds;
+      this.render();
+      this.fitView();
+      if (this.dom.liveText) this.dom.liveText.textContent = '● Disposição automática restaurada';
+    }
+
+    renderEdges() {
+      const { edgesGroup, labelsGroup } = this.dom;
+      edgesGroup.innerHTML = '';
+      labelsGroup.innerHTML = '';
+      const nodeMap = new Map(this.state.nodes.map((node) => [node.id, node]));
+      this.state.edges.forEach((edge) => {
+        const source = nodeMap.get(edge.from);
+        const target = nodeMap.get(edge.to);
+        if (!source || !target) return;
+        const x1 = source.x + 230;
+        const y1 = source.y + 45;
+        const x2 = target.x;
+        const y2 = target.y + 45;
+        const dx = Math.max(40, (x2 - x1) * 0.5);
+        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`);
+        pathEl.setAttribute('class', `ffg-edge edge-type-${edge.type.toLowerCase()} ${edge.active ? 'active' : ''}`);
+        pathEl.setAttribute('data-edge-id', edge.id);
+        pathEl.setAttribute('data-from', edge.from);
+        pathEl.setAttribute('data-to', edge.to);
+        const marker = edge.type === 'SUCCESS' ? 'url(#ffg-arrow-success)'
+          : edge.type === 'FAILURE' ? 'url(#ffg-arrow-failure)'
+            : edge.active ? 'url(#ffg-arrow-active)' : 'url(#ffg-arrow-default)';
+        pathEl.setAttribute('marker-end', marker);
+        pathEl.addEventListener('click', (e) => { e.stopPropagation(); this.inspectEdge(edge, source, target); });
+        edgesGroup.appendChild(pathEl);
+        if (!edge.label) return;
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'ffg-edge-label-group');
+        g.setAttribute('data-edge-id', edge.id);
+        g.setAttribute('transform', `translate(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`);
+        const textWidth = Math.max(50, edge.label.length * 6.5 + 14);
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', -textWidth / 2);
+        rect.setAttribute('y', -8);
+        rect.setAttribute('width', textWidth);
+        rect.setAttribute('height', 16);
+        rect.setAttribute('class', `ffg-edge-label-bg type-${edge.type.toLowerCase()}`);
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('class', 'ffg-edge-label-text');
+        text.textContent = edge.label;
+        g.append(rect, text);
+        g.addEventListener('click', (e) => { e.stopPropagation(); this.inspectEdge(edge, source, target); });
+        labelsGroup.appendChild(g);
+      });
     }
 
     render() {
@@ -1828,74 +2427,7 @@
         return;
       }
 
-      // 1. Render Edges (SVG cubic bezier paths)
-      const nodeMap = new Map(this.state.nodes.map(n => [n.id, n]));
-
-      this.state.edges.forEach(edge => {
-        const source = nodeMap.get(edge.from);
-        const target = nodeMap.get(edge.to);
-        if (!source || !target) return;
-
-        const x1 = source.x + 230;
-        const y1 = source.y + 45;
-        const x2 = target.x;
-        const y2 = target.y + 45;
-
-        const dx = Math.max(40, (x2 - x1) * 0.5);
-        const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-
-        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        pathEl.setAttribute('d', pathData);
-        pathEl.setAttribute('class', `ffg-edge edge-type-${edge.type.toLowerCase()} ${edge.active ? 'active' : ''}`);
-        pathEl.setAttribute('data-edge-id', edge.id);
-        pathEl.setAttribute('data-from', edge.from);
-        pathEl.setAttribute('data-to', edge.to);
-
-        let marker = 'url(#ffg-arrow-default)';
-        if (edge.type === 'SUCCESS') marker = 'url(#ffg-arrow-success)';
-        else if (edge.type === 'FAILURE') marker = 'url(#ffg-arrow-failure)';
-        else if (edge.active) marker = 'url(#ffg-arrow-active)';
-        pathEl.setAttribute('marker-end', marker);
-
-        pathEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.inspectEdge(edge, source, target);
-        });
-
-        edgesGroup.appendChild(pathEl);
-
-        // Edge Label Pill
-        if (edge.label) {
-          const midX = (x1 + x2) / 2;
-          const midY = (y1 + y2) / 2;
-
-          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-          g.setAttribute('class', 'ffg-edge-label-group');
-          g.setAttribute('transform', `translate(${midX}, ${midY})`);
-
-          const textWidth = Math.max(50, edge.label.length * 6.5 + 14);
-          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-          rect.setAttribute('x', -textWidth / 2);
-          rect.setAttribute('y', -8);
-          rect.setAttribute('width', textWidth);
-          rect.setAttribute('height', 16);
-          rect.setAttribute('class', `ffg-edge-label-bg type-${edge.type.toLowerCase()}`);
-
-          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          text.setAttribute('class', 'ffg-edge-label-text');
-          text.textContent = edge.label;
-
-          g.appendChild(rect);
-          g.appendChild(text);
-
-          g.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.inspectEdge(edge, source, target);
-          });
-
-          labelsGroup.appendChild(g);
-        }
-      });
+      this.renderEdges();
 
       // 2. Render Nodes (Rich HTML Cards)
       this.state.nodes.forEach(node => {
@@ -1907,8 +2439,11 @@
         el.id = 'ffg-node-' + node.id.replace(/[^a-zA-Z0-9-_]/g, '_');
         el.setAttribute('data-id', node.id);
         el.setAttribute('data-type', node.type);
+        el.tabIndex = 0;
+        el.setAttribute('aria-label', `${meta.label}: ${node.title}. Arraste para reorganizar; setas movem o cartão.`);
         el.style.left = `${node.x}px`;
         el.style.top = `${node.y}px`;
+        if (this.state.manualPositions?.[node.id]) el.dataset.layoutSaved = 'true';
 
         let badgesHtml = '';
         if (node.metadata) {
@@ -1952,6 +2487,63 @@
           });
         }
 
+        el.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0 || e.target.closest('button, input, a')) return;
+          e.preventDefault();
+          el.setPointerCapture?.(e.pointerId);
+          this.state.nodeDrag = {
+            id: node.id, element: el, pointerId: e.pointerId,
+            startX: e.clientX, startY: e.clientY, originX: node.x, originY: node.y,
+            moved: false
+          };
+        });
+        el.addEventListener('pointermove', (e) => {
+          const drag = this.state.nodeDrag;
+          if (!drag || drag.id !== node.id || drag.pointerId !== e.pointerId) return;
+          const dx = (e.clientX - drag.startX) / Math.max(this.state.zoom, 0.18);
+          const dy = (e.clientY - drag.startY) / Math.max(this.state.zoom, 0.18);
+          if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+          drag.moved = true;
+          el.classList.add('is-dragging');
+          node.x = Math.max(-50000, Math.min(50000, drag.originX + dx));
+          node.y = Math.max(-50000, Math.min(50000, drag.originY + dy));
+          el.style.left = `${node.x}px`;
+          el.style.top = `${node.y}px`;
+          this.updateConnectedEdges(node.id);
+        });
+        const finishNodeDrag = (e) => {
+          const drag = this.state.nodeDrag;
+          if (!drag || drag.id !== node.id || drag.pointerId !== e.pointerId) return;
+          el.classList.remove('is-dragging');
+          this.state.nodeDrag = null;
+          if (!drag.moved) return;
+          this.state.manualPositions[node.id] = { x: node.x, y: node.y };
+          const saved = this.saveManualPositions();
+          el.dataset.layoutSaved = saved ? 'true' : 'unsaved';
+          this.state.bounds = this.measureBounds(this.state.nodes);
+          this.renderMinimap();
+          if (this.dom.liveText) this.dom.liveText.textContent = saved
+            ? '● Disposição deste projeto salva neste navegador'
+            : '● Disposição alterada; armazenamento local indisponível';
+        };
+        el.addEventListener('pointerup', finishNodeDrag);
+        el.addEventListener('pointercancel', finishNodeDrag);
+        el.addEventListener('keydown', (e) => {
+          const delta = e.shiftKey ? 24 : 8;
+          const movement = { ArrowLeft: [-delta, 0], ArrowRight: [delta, 0], ArrowUp: [0, -delta], ArrowDown: [0, delta] }[e.key];
+          if (!movement) return;
+          e.preventDefault();
+          node.x += movement[0];
+          node.y += movement[1];
+          this.state.manualPositions[node.id] = { x: node.x, y: node.y };
+          el.style.left = `${node.x}px`;
+          el.style.top = `${node.y}px`;
+          el.dataset.layoutSaved = this.saveManualPositions() ? 'true' : 'unsaved';
+          this.state.bounds = this.measureBounds(this.state.nodes);
+          this.updateConnectedEdges(node.id);
+          this.renderMinimap();
+        });
+
         // Single Click: Select (or Multi-Select with Shift/Ctrl)
         el.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1991,6 +2583,26 @@
       this.renderMinimap();
     }
 
+    updateConnectedEdges(nodeId) {
+      const nodeMap = new Map(this.state.nodes.map((node) => [node.id, node]));
+      for (const edge of this.state.edges) {
+        if (edge.from !== nodeId && edge.to !== nodeId) continue;
+        const source = nodeMap.get(edge.from);
+        const target = nodeMap.get(edge.to);
+        if (!source || !target) continue;
+        const x1 = source.x + 230;
+        const y1 = source.y + 45;
+        const x2 = target.x;
+        const y2 = target.y + 45;
+        const dx = Math.max(40, (x2 - x1) * 0.5);
+        const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+        const path = Array.from(this.dom.edgesGroup.children).find((item) => item.dataset.edgeId === edge.id);
+        if (path) path.setAttribute('d', pathData);
+        const label = Array.from(this.dom.labelsGroup.children).find((item) => item.dataset.edgeId === edge.id);
+        if (label) label.setAttribute('transform', `translate(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`);
+      }
+    }
+
     toggleCollapse(nodeId) {
       if (this.state.collapsedNodeIds.has(nodeId)) {
         this.state.collapsedNodeIds.delete(nodeId);
@@ -2000,9 +2612,9 @@
 
       // Recompute layout and re-render
       const layout = this.layoutEngine.computeLayout(this.state.allNodes || this.state.nodes, this.state.allEdges || this.state.edges, this.state.collapsedNodeIds);
-      this.state.nodes = layout.nodes;
+      this.state.nodes = this.applyManualPositions(layout.nodes);
       this.state.edges = layout.edges;
-      this.state.bounds = layout.bounds;
+      this.state.bounds = this.measureBounds(this.state.nodes);
       this.render();
     }
 
@@ -2193,6 +2805,7 @@
 
       let actionLabel = 'Abrir Recurso no Fênix ↗';
       if (node.type === NODE_TYPES.SCREEN) actionLabel = `Navegar para Tela [${node.title}] ↗`;
+      else if (node.type === NODE_TYPES.COMPONENT) actionLabel = 'Abrir Projeto da Referência 📁';
       else if (node.type === NODE_TYPES.AGENT) actionLabel = `Inspecionar Agente [${node.title}] 🤖`;
       else if (node.type === NODE_TYPES.JOB) actionLabel = `Ver Job na Fila BullMQ 📋`;
       else if (node.type === NODE_TYPES.MISSION) actionLabel = `Inspecionar Missão 🎯`;
@@ -2265,18 +2878,19 @@
             <tr><td class="key">TIPO</td><td class="val" style="color:#38bdf8; font-weight:700;">${esc(edge.type)}</td></tr>
             <tr><td class="key">ORIGEM</td><td class="val">${esc(source?.title || edge.from)}</td></tr>
             <tr><td class="key">DESTINO</td><td class="val">${esc(target?.title || edge.to)}</td></tr>
-            <tr><td class="key">EVENTO</td><td class="val" style="color:#f43f5e; font-family:monospace;">${esc(props.event || 'default.event')}</td></tr>
-            <tr><td class="key">CONDIÇÃO</td><td class="val" style="color:#f59e0b; font-family:monospace;">${esc(props.condition || 'none')}</td></tr>
-            <tr><td class="key">SUBSISTEMA</td><td class="val" style="color:#10b981;">${esc(props.createdBy || 'Fênix Core')}</td></tr>
-            <tr><td class="key">ÚLTIMA EXEC.</td><td class="val">${esc(props.lastExecuted || 'Recente')}</td></tr>
-            <tr><td class="key">EXECUÇÕES</td><td class="val">${esc(props.executions || '1')}</td></tr>
+            <tr><td class="key">ATIVIDADE</td><td class="val">${edge.active === true ? 'Ativa · estado informado' : edge.active === false ? 'Inativa · estado informado' : 'Não medida'}</td></tr>
+            <tr><td class="key">EVENTO</td><td class="val" style="color:#f43f5e; font-family:monospace;">${esc(props.event || 'Não registrado')}</td></tr>
+            <tr><td class="key">CONDIÇÃO DECLARADA</td><td class="val" style="color:#f59e0b; font-family:monospace;">${esc(props.condition || 'Não registrada')}</td></tr>
+            <tr><td class="key">SUBSISTEMA DECLARADO</td><td class="val" style="color:#10b981;">${esc(props.createdBy || 'Não informado')}</td></tr>
+            <tr><td class="key">ÚLTIMA EXEC.</td><td class="val">${esc(props.lastExecuted || 'Não medida')}</td></tr>
+            <tr><td class="key">EXECUÇÕES</td><td class="val">${esc(props.executions ?? 'Não medidas')}</td></tr>
           </table>
         </div>
 
         <div class="ffg-inspector-section">
           <div class="ffg-inspector-label">EXPLICAÇÃO DA RAMIFICAÇÃO</div>
           <div class="ffg-edge-explain-box">
-            A conexão <b>${esc(edge.label || edge.type)}</b> foi estabelecida pelo <b>${esc(props.createdBy || 'Kernel')}</b> quando o evento <code>${esc(props.event || 'event')}</code> foi disparado com a regra <code>${esc(props.condition || 'true')}</code>.
+            O mapa registra a relação <b>${esc(edge.label || edge.type)}</b> entre <b>${esc(source?.title || edge.from)}</b> e <b>${esc(target?.title || edge.to)}</b>. Esta relação estrutural não confirma que houve execução. Eventos e telemetria só aparecem quando registrados explicitamente.
           </div>
         </div>
 
@@ -2352,9 +2966,11 @@
         } else if (action === 'open') {
           this.openRealResource(node);
         } else if (action === 'drilldown') {
-          const newContext = node.type === 'AGENT' ? 'AGENT' : (node.type === 'PROJECT' ? 'PROJECT' : (node.type === 'JOB' ? 'JOB' : 'SCREEN'));
-          this.pushBreadcrumb(node.title, newContext, node.id);
-          this.setContext(newContext, node.id);
+          const componentProject = node.type === NODE_TYPES.COMPONENT ? node.metadata?.parentProject : null;
+          const newContext = node.type === 'AGENT' ? 'AGENT' : (node.type === 'PROJECT' || componentProject ? 'PROJECT' : (node.type === 'JOB' ? 'JOB' : 'SCREEN'));
+          const contextEntityId = componentProject || node.id;
+          this.pushBreadcrumb(node.title, newContext, contextEntityId);
+          this.setContext(newContext, contextEntityId);
         } else if (action === 'collapse') {
           this.toggleCollapse(node.id);
         } else if (action === 'highlight') {
@@ -2410,6 +3026,15 @@
         }
       } else if (node.type === NODE_TYPES.PROJECT) {
         const projectId = node.properties?.projectId || node.id.replace(/^project:/, '');
+        if (typeof window.openProjectWorkspace === 'function') {
+          window.openProjectWorkspace(projectId);
+        } else if (typeof window.fenixNavigateWithContext === 'function') {
+          window.fenixNavigateWithContext('projects', { projectId });
+        } else if (typeof window.showView === 'function') {
+          window.showView('projects');
+        }
+      } else if (node.type === NODE_TYPES.COMPONENT) {
+        const projectId = node.properties?.projectId || node.metadata?.parentProject;
         if (typeof window.openProjectWorkspace === 'function') {
           window.openProjectWorkspace(projectId);
         } else if (typeof window.fenixNavigateWithContext === 'function') {
@@ -2562,7 +3187,768 @@
   let activeOverlay = null;
   let activeRenderer = null;
 
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 4.5 STITCH & MIRO SPATIAL SCREEN FLOW ENGINE (Google Stitch / Miro Parity)
+  // ═══════════════════════════════════════════════════════════════════════════
+  class StitchMiroScreenEngine {
+    constructor(container, options = {}) {
+      this.container = container;
+      this.options = options;
+      this.state = {
+        project: options.project || 'ALL',
+        layoutMode: 'STITCH', // 'STITCH' (journey columns) or 'MIRO' (freeform canvas)
+        searchQuery: '',
+        zoom: 0.85,
+        pan: { x: 30, y: 20 },
+        isPanning: false,
+        dragStart: { x: 0, y: 0 },
+        selectedScreenId: null,
+        hoveredScreenId: null,
+        nodeDrag: null,
+        positions: {},
+        graph: null
+      };
+
+      try {
+        const saved = localStorage.getItem('fenix_stitch_positions');
+        if (saved) this.state.positions = JSON.parse(saved);
+      } catch (_) {}
+    }
+
+    async init() {
+      await this.loadData();
+      this.render();
+    }
+
+    async loadData() {
+      try {
+        const res = await fetch('/api/v2/pages?withEdges=true', { credentials: 'same-origin', signal: AbortSignal.timeout(4000) });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.pages && data.edges) {
+            this.state.graph = {
+              nodes: data.pages,
+              edges: data.edges,
+              stages: data.stages || {},
+              projects: data.projects || []
+            };
+            return this.state.graph;
+          }
+        }
+      } catch (err) {
+        console.warn('[StitchMiro] Failed fetching from API, using fallback catalog', err);
+      }
+
+      // Safe fallback catalog
+      this.state.graph = {
+        nodes: [
+          { id: 'zapai-dashboard', project: 'zapai-crm', projectName: 'ZapAI CRM', projectColor: '#10b981', route: '/dashboard', title: 'Dashboard Operacional & KPIs', component: 'Dashboard', file: 'frontend-official/src/pages/Dashboard.tsx', stage: 'DASHBOARD', layoutType: 'dashboard', status: 'ONLINE', navigationEdges: [{ targetId: 'zapai-inbox', label: 'Acessar Inbox' }, { targetId: 'zapai-contacts', label: 'Leads' }] },
+          { id: 'zapai-inbox', project: 'zapai-crm', projectName: 'ZapAI CRM', projectColor: '#10b981', route: '/inbox', title: 'Inbox Omnichannel & Chat', component: 'Inbox', file: 'frontend-official/src/pages/Inbox.tsx', stage: 'OPERATIONS', layoutType: 'inbox', status: 'ONLINE', navigationEdges: [{ targetId: 'zapai-contacts', label: 'Lead Drawer' }] },
+          { id: 'zapai-flows', project: 'zapai-crm', projectName: 'ZapAI CRM', projectColor: '#10b981', route: '/flows', title: 'Construtor Visual de Fluxos', component: 'Flows', file: 'frontend-official/src/pages/Flows.tsx', stage: 'BUILDER', layoutType: 'builder', status: 'ONLINE', navigationEdges: [{ targetId: 'ap-workflows', label: 'Acoplar API Platform', type: 'CROSS_PROJECT' }] },
+          { id: 'ap-overview', project: 'api-platform', projectName: 'API Platform', projectColor: '#f59e0b', route: '/', title: 'API Platform Overview', component: 'OverviewGrid', file: 'apps/dashboard/public/index.html', stage: 'DASHBOARD', layoutType: 'dashboard', status: 'ONLINE', navigationEdges: [{ targetId: 'ap-providers', label: 'Provedores IA' }] },
+          { id: 'ap-providers', project: 'api-platform', projectName: 'API Platform', projectColor: '#f59e0b', route: '/providers', title: 'AI Providers & Routing', component: 'ProvidersManager', file: 'apps/dashboard/public/app.js', stage: 'OPERATIONS', layoutType: 'grid', status: 'ONLINE', navigationEdges: [{ targetId: 'ap-workflows', label: 'Pipeline' }, { targetId: 'fenix-mcp', label: 'Fênix MCP Hub', type: 'CROSS_PROJECT' }] },
+          { id: 'ap-workflows', project: 'api-platform', projectName: 'API Platform', projectColor: '#f59e0b', route: '/workflows', title: 'Multi-Step AI Workflows', component: 'WorkflowBuilder', file: 'apps/dashboard/public/app.js', stage: 'BUILDER', layoutType: 'builder', status: 'ONLINE', navigationEdges: [{ targetId: 'ap-observability', label: 'Tracing' }] },
+          { id: 'fenix-command-center', project: 'fenix-os', projectName: 'Fênix OS', projectColor: '#00d9ff', route: '/app#command', title: 'Central de Comando & Fast Lane', component: 'CommandCenter', file: 'grg/public/command-center.js', stage: 'DASHBOARD', layoutType: 'dashboard', status: 'ONLINE', navigationEdges: [{ targetId: 'fenix-ai-city', label: 'Cidade 3D' }, { targetId: 'fenix-visual-ide', label: 'Visual IDE' }] },
+          { id: 'fenix-ai-city', project: 'fenix-os', projectName: 'Fênix OS', projectColor: '#00d9ff', route: '/app#city', title: 'AI Living City 3D & Workstations', component: 'IsometricCity', file: 'grg/public/iso-city.js', stage: 'OPERATIONS', layoutType: 'spatial', status: 'ONLINE', navigationEdges: [{ targetId: 'fenix-agents', label: 'Workforce' }] },
+          { id: 'fenix-visual-ide', project: 'fenix-os', projectName: 'Fênix OS', projectColor: '#00d9ff', route: '/app#ide', title: 'Visual IDE Studio Lovable Split View', component: 'VisualIDE', file: 'grg/public/project-ide-live.js', stage: 'BUILDER', layoutType: 'editor', status: 'ONLINE', navigationEdges: [{ targetId: 'zapai-flows', label: 'Editar Fluxos', type: 'CROSS_PROJECT' }, { targetId: 'fenix-browser', label: 'QA' }] },
+          { id: 'fenix-projects', project: 'fenix-os', projectName: 'Fênix OS', projectColor: '#00d9ff', route: '/app#projects', title: 'Universal Project Registry', component: 'ProjectsView', file: 'grg/public/project-hub-live.js', stage: 'DASHBOARD', layoutType: 'grid', status: 'ONLINE', navigationEdges: [{ targetId: 'zapai-dashboard', label: 'Abrir ZapAI', type: 'CROSS_PROJECT' }, { targetId: 'ap-overview', label: 'Abrir API Platform', type: 'CROSS_PROJECT' }] },
+          { id: 'fenix-memory', project: 'fenix-os', projectName: 'Fênix OS', projectColor: '#00d9ff', route: '/app#memory', title: 'Memória Viva & Constelação 3D', component: 'MemoryView', file: 'grg/public/memory-live.js', stage: 'OPERATIONS', layoutType: 'spatial', status: 'ONLINE', navigationEdges: [{ targetId: 'fenix-knowledge', label: 'RAG' }] },
+          { id: 'fenix-mcp', project: 'fenix-os', projectName: 'Fênix OS', projectColor: '#00d9ff', route: '/app#mcp', title: 'Hub de Provedores & Servidores MCP', component: 'McpView', file: 'grg/public/unified-app.js', stage: 'GOVERNANCE', layoutType: 'grid', status: 'ONLINE', navigationEdges: [{ targetId: 'ap-providers', label: 'Provedores', type: 'CROSS_PROJECT' }] }
+        ],
+        edges: [
+          { source: 'zapai-dashboard', target: 'zapai-inbox', label: 'Acessar Inbox' },
+          { source: 'zapai-flows', target: 'ap-workflows', label: 'Acoplar Pipeline API Platform', crossProject: true },
+          { source: 'ap-overview', target: 'ap-providers', label: 'Provedores IA' },
+          { source: 'ap-providers', target: 'fenix-mcp', label: 'Conectar Fênix MCP Hub', crossProject: true },
+          { source: 'fenix-command-center', target: 'fenix-ai-city', label: 'Cidade 3D' },
+          { source: 'fenix-command-center', target: 'fenix-visual-ide', label: 'Visual IDE' },
+          { source: 'fenix-projects', target: 'zapai-dashboard', label: 'Abrir Portal ZapAI', crossProject: true },
+          { source: 'fenix-projects', target: 'ap-overview', label: 'Abrir API Platform', crossProject: true },
+          { source: 'fenix-visual-ide', target: 'zapai-flows', label: 'Editar Fluxos ZapAI', crossProject: true }
+        ],
+        stages: {
+          AUTH: { id: 'AUTH', label: '1. Entrada & Auth', color: '#6366f1' },
+          DASHBOARD: { id: 'DASHBOARD', label: '2. Dashboards & Visão Geral', color: '#38bdf8' },
+          OPERATIONS: { id: 'OPERATIONS', label: '3. Módulos Centrais & Operação', color: '#10b981' },
+          BUILDER: { id: 'BUILDER', label: '4. Construtores & IDE', color: '#f59e0b' },
+          GOVERNANCE: { id: 'GOVERNANCE', label: '5. Governança, Filas & Logs', color: '#ec4899' }
+        },
+        projects: [
+          { id: 'zapai-crm', name: 'ZapAI CRM', color: '#10b981', count: 13 },
+          { id: 'api-platform', name: 'API Platform', color: '#f59e0b', count: 6 },
+          { id: 'fenix-os', name: 'Fênix OS', color: '#00d9ff', count: 15 }
+        ]
+      };
+      return this.state.graph;
+    }
+
+    getFilteredData() {
+      if (!this.state.graph) return { nodes: [], edges: [] };
+      const q = (this.state.searchQuery || '').toLowerCase().trim();
+      let nodes = this.state.graph.nodes || [];
+      if (this.state.project !== 'ALL') {
+        nodes = nodes.filter(n => n.project === this.state.project);
+      }
+      if (q) {
+        nodes = nodes.filter(n =>
+          (n.title && n.title.toLowerCase().includes(q)) ||
+          (n.route && n.route.toLowerCase().includes(q)) ||
+          (n.component && n.component.toLowerCase().includes(q)) ||
+          (n.projectName && n.projectName.toLowerCase().includes(q))
+        );
+      }
+      const nodeIds = new Set(nodes.map(n => n.id));
+      const edges = (this.state.graph.edges || []).filter(e =>
+        nodeIds.has(e.source) && (nodeIds.has(e.target) || this.state.project === 'ALL')
+      );
+      return { nodes, edges };
+    }
+
+    render() {
+      const { nodes, edges } = this.getFilteredData();
+      const crossEdgesCount = edges.filter(e => e.crossProject).length;
+
+      this.container.innerHTML = `
+        <div class="ffg-stitch-board" id="ffgStitchBoard">
+          <!-- TOP TOOLBAR -->
+          <div class="ffg-stitch-toolbar">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <div style="font-size:12px; font-weight:800; color:#00D9FF; letter-spacing:0.8px; display:flex; align-items:center; gap:6px;">
+                <i class="ph-bold ph-browsers" style="font-size:15px;"></i>
+                <span>SPATIAL SCREEN FLOW</span>
+              </div>
+              
+              <!-- Project Selector Pills -->
+              <div class="ffg-stitch-pill-group">
+                <button type="button" class="ffg-stitch-pill ${this.state.project === 'ALL' ? 'active' : ''}" data-project="ALL">
+                  🌐 Todos (${this.state.graph?.nodes?.length || 34})
+                </button>
+                <button type="button" class="ffg-stitch-pill ${this.state.project === 'zapai-crm' ? 'active' : ''}" data-project="zapai-crm">
+                  📱 ZapAI CRM (${(this.state.graph?.nodes || []).filter(n => n.project === 'zapai-crm').length})
+                </button>
+                <button type="button" class="ffg-stitch-pill ${this.state.project === 'api-platform' ? 'active' : ''}" data-project="api-platform">
+                  ⚡ API Platform (${(this.state.graph?.nodes || []).filter(n => n.project === 'api-platform').length})
+                </button>
+                <button type="button" class="ffg-stitch-pill ${this.state.project === 'fenix-os' ? 'active' : ''}" data-project="fenix-os">
+                  🔥 Fênix OS (${(this.state.graph?.nodes || []).filter(n => n.project === 'fenix-os').length})
+                </button>
+              </div>
+
+              <!-- Layout Mode Toggle (Stitch vs Miro) -->
+              <div class="ffg-stitch-pill-group">
+                <button type="button" class="ffg-stitch-pill ${this.state.layoutMode === 'STITCH' ? 'active' : ''}" id="btnModeStitch" title="Jornada UX em Colunas (Google Stitch)">
+                  📐 Jornada Stitch
+                </button>
+                <button type="button" class="ffg-stitch-pill ${this.state.layoutMode === 'MIRO' ? 'active' : ''}" id="btnModeMiro" title="Canvas Livre Infinito (Miro / FigJam)">
+                  🕸️ Canvas Livre Miro
+                </button>
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <!-- Search Box -->
+              <div style="position:relative; display:flex; align-items:center;">
+                <input type="text" id="stitchSearchInput" placeholder="Buscar telas, rotas..." value="${this.state.searchQuery}"
+                  style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#f8fafc; font-size:11px; padding:4px 26px 4px 10px; width:180px;" />
+                <i class="ph-bold ph-magnifying-glass" style="position:absolute; right:8px; color:#64748b; font-size:12px; pointer-events:none;"></i>
+              </div>
+
+              <!-- Stats Badge -->
+              <span style="font-size:11px; font-weight:700; color:#38bdf8; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); padding:3px 10px; border-radius:12px;">
+                ${nodes.length} Telas &bull; ${edges.length} Rotas &bull; ${crossEdgesCount} Pontes Acopladas
+              </span>
+
+              <!-- Zoom Controls -->
+              <div style="display:flex; gap:4px;">
+                <button type="button" class="ffg-stitch-pill" id="btnStitchZoomIn" title="Aumentar Zoom">+</button>
+                <button type="button" class="ffg-stitch-pill" id="btnStitchZoomOut" title="Diminuir Zoom">-</button>
+                <button type="button" class="ffg-stitch-pill" id="btnStitchReset" title="Resetar Visualização">🎯</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SPATIAL VIEWPORT -->
+          <div class="ffg-stitch-canvas-viewport" id="stitchViewport">
+            <div class="ffg-stitch-world" id="stitchWorld" style="transform: translate(${this.state.pan.x}px, ${this.state.pan.y}px) scale(${this.state.zoom});">
+              
+              <!-- SVG Bézier Splines Layer -->
+              <svg class="ffg-stitch-svg-layer" id="stitchSvgLayer" width="10000" height="10000">
+                <defs>
+                  <marker id="stitchArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8" />
+                  </marker>
+                  <marker id="stitchArrowCross" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1 L 9 5 L 0 9 z" fill="#ec4899" />
+                  </marker>
+                  <marker id="stitchArrowActive" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M 0 1 L 9 5 L 0 9 z" fill="#00e5a0" />
+                  </marker>
+                </defs>
+                <g id="stitchEdgesGroup"></g>
+              </svg>
+
+              <!-- Screens Content Layer -->
+              <div id="stitchContentLayer">
+                ${this.renderLayoutHtml(nodes)}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Attach interactive events and draw SVG connections
+      this.attachEvents();
+      setTimeout(() => this.drawConnections(), 60);
+    }
+
+    renderLayoutHtml(nodes) {
+      if (this.state.layoutMode === 'STITCH') {
+        const stages = [
+          { id: 'AUTH', label: '1. Entrada & Auth', color: '#6366f1' },
+          { id: 'DASHBOARD', label: '2. Dashboards & Visão Geral', color: '#38bdf8' },
+          { id: 'OPERATIONS', label: '3. Módulos Centrais & Operação', color: '#10b981' },
+          { id: 'BUILDER', label: '4. Construtores & IDE', color: '#f59e0b' },
+          { id: 'GOVERNANCE', label: '5. Governança, Filas & Logs', color: '#ec4899' }
+        ];
+
+        return `
+          <div class="ffg-stitch-stages-wrapper">
+            ${stages.map(st => {
+              const stageNodes = nodes.filter(n => (n.stage || 'OPERATIONS') === st.id);
+              if (stageNodes.length === 0) return '';
+              return `
+                <div class="ffg-stitch-stage-col" data-stage="${st.id}">
+                  <div class="ffg-stitch-stage-header" style="border-left: 3px solid ${st.color}; color:${st.color};">
+                    <span>${st.label}</span>
+                    <span style="background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:10px; font-size:10px;">${stageNodes.length}</span>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:22px;">
+                    ${stageNodes.map(node => this.renderCardHtml(node)).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else {
+        // Freeform Miro Mode
+        let defaultX = 60, defaultY = 60;
+        return `
+          <div style="position:relative; width:4500px; height:3200px;">
+            ${nodes.map((node, idx) => {
+              const savedPos = this.state.positions[node.id];
+              const col = idx % 5;
+              const row = Math.floor(idx / 5);
+              const x = savedPos ? savedPos.x : (defaultX + col * 350);
+              const y = savedPos ? savedPos.y : (defaultY + row * 290);
+              return `
+                <div style="position:absolute; left:${x}px; top:${y}px; width:310px;" class="ffg-miro-draggable" data-node-id="${node.id}">
+                  ${this.renderCardHtml(node)}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    }
+
+    renderCardHtml(screen) {
+      const pColor = screen.projectColor || '#38bdf8';
+      const previewHtml = this.generateMiniUiHtml(screen);
+
+      return `
+        <div class="ffg-stitch-screen-card" id="card-${screen.id}" data-id="${screen.id}" data-project="${screen.project}">
+          <!-- Input Pin (Left) -->
+          <div class="ffg-card-pin pin-input" title="Entrada de Navegação"></div>
+
+          <!-- Window Top Bar -->
+          <div class="ffg-card-window-bar">
+            <div class="ffg-card-traffic-dots">
+              <span class="dot-red"></span>
+              <span class="dot-yellow"></span>
+              <span class="dot-green"></span>
+            </div>
+            <span class="ffg-card-project-badge" style="color:${pColor}; border:1px solid ${pColor}40;">
+              ${screen.projectName || screen.project}
+            </span>
+            <span class="ffg-card-route-pill" title="${screen.route}">${screen.route}</span>
+            <span style="font-size:9px; color:#10b981; font-weight:800;">● ONLINE</span>
+          </div>
+
+          <!-- Title Bar -->
+          <div class="ffg-card-title-bar">
+            <div class="ffg-card-screen-title" title="${screen.title}">${screen.title}</div>
+            <div class="ffg-card-screen-comp">${screen.component || 'Screen'} &bull; ${screen.file ? screen.file.split('/').pop() : ''}</div>
+          </div>
+
+          <!-- Authentic Mini-UI Preview -->
+          <div class="ffg-card-preview-viewport">
+            <div class="ffg-mini-sidebar">
+              <div class="ffg-mini-sidebar-dot active"></div>
+              <div class="ffg-mini-sidebar-dot"></div>
+              <div class="ffg-mini-sidebar-dot"></div>
+              <div class="ffg-mini-sidebar-dot"></div>
+            </div>
+            <div class="ffg-mini-content">
+              ${previewHtml}
+            </div>
+          </div>
+
+          <!-- Footer Action Toolbar -->
+          <div class="ffg-card-footer">
+            <button type="button" class="ffg-card-action-btn btn-hd" data-id="${screen.id}">
+              <i class="ph-bold ph-eye"></i> Preview HD
+            </button>
+            <button type="button" class="ffg-card-action-btn btn-ide" data-file="${screen.file || ''}" data-project="${screen.project}">
+              <i class="ph-bold ph-code"></i> Abrir na IDE
+            </button>
+            <button type="button" class="ffg-card-action-btn btn-route" data-route="${screen.route}">
+              <i class="ph-bold ph-arrow-square-out"></i> Rota
+            </button>
+          </div>
+
+          <!-- Output Pin (Right) -->
+          <div class="ffg-card-pin pin-output" title="Saída de Navegação"></div>
+        </div>
+      `;
+    }
+
+    generateMiniUiHtml(screen) {
+      const type = screen.layoutType || 'dashboard';
+
+      if (type === 'inbox') {
+        return `
+          <div style="font-size:8px; font-weight:700; color:#38bdf8; margin-bottom:2px;">Chat Ativo &bull; WhatsApp Online</div>
+          <div class="ffg-mini-chat-bubble ffg-mini-chat-in">Olá! Gostaria de uma cotação para o CRM...</div>
+          <div class="ffg-mini-chat-bubble ffg-mini-chat-out">Com certeza! Temos planos corporativos...</div>
+          <div style="margin-top:auto; height:12px; background:rgba(255,255,255,0.06); border-radius:3px; border:1px solid rgba(255,255,255,0.1); font-size:7px; color:#64748b; padding-left:4px; display:flex; align-items:center;">Digite uma mensagem...</div>
+        `;
+      } else if (type === 'dashboard' || type === 'analytics') {
+        return `
+          <div class="ffg-mini-kpi-row">
+            <div class="ffg-mini-kpi-box"><div style="font-size:7px; color:#94a3b8;">Sessões</div><div class="ffg-mini-kpi-val">1.4K</div></div>
+            <div class="ffg-mini-kpi-box"><div style="font-size:7px; color:#94a3b8;">Taxa Conv</div><div class="ffg-mini-kpi-val" style="color:#10b981;">98%</div></div>
+            <div class="ffg-mini-kpi-box"><div style="font-size:7px; color:#94a3b8;">P95 Lat</div><div class="ffg-mini-kpi-val" style="color:#f59e0b;">180ms</div></div>
+          </div>
+          <div style="flex:1; display:flex; align-items:flex-end; gap:3px; padding-top:6px;">
+            <div style="flex:1; height:35%; background:#38bdf8; border-radius:1px;"></div>
+            <div style="flex:1; height:65%; background:#38bdf8; border-radius:1px;"></div>
+            <div style="flex:1; height:85%; background:#10b981; border-radius:1px;"></div>
+            <div style="flex:1; height:45%; background:#38bdf8; border-radius:1px;"></div>
+            <div style="flex:1; height:95%; background:#00e5a0; border-radius:1px;"></div>
+          </div>
+        `;
+      } else if (type === 'editor') {
+        return `
+          <div class="ffg-mini-code-split">
+            <div class="ffg-mini-code-left">
+              <div class="ffg-mini-code-line" style="background:#38bdf8; width:70%;"></div>
+              <div class="ffg-mini-code-line" style="background:#10b981; width:90%;"></div>
+              <div class="ffg-mini-code-line" style="background:#f59e0b; width:50%;"></div>
+              <div class="ffg-mini-code-line" style="background:#94a3b8; width:80%;"></div>
+              <div class="ffg-mini-code-line" style="background:#ec4899; width:60%;"></div>
+            </div>
+            <div class="ffg-mini-code-right">
+              <span>Preview Live</span>
+            </div>
+          </div>
+        `;
+      } else if (type === 'builder') {
+        return `
+          <div class="ffg-mini-flow-nodes">
+            <div class="ffg-mini-node-box">Trigger</div>
+            <span style="color:#64748b; font-size:8px;">➔</span>
+            <div class="ffg-mini-node-box" style="border-color:#10b981; color:#34d399;">LLM AI</div>
+            <span style="color:#64748b; font-size:8px;">➔</span>
+            <div class="ffg-mini-node-box" style="border-color:#38bdf8; color:#38bdf8;">Send</div>
+          </div>
+        `;
+      } else if (type === 'spatial') {
+        return `
+          <div style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:radial-gradient(circle, rgba(0,217,255,0.15) 0%, transparent 70%); border-radius:4px;">
+            <div style="font-size:16px;">🏙️</div>
+            <div style="font-size:8px; color:#00d9ff; font-weight:700;">Living City & Workstations</div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="ffg-mini-table-row"><span>Lead #1820</span><span style="color:#10b981;">Qualificado</span></div>
+          <div class="ffg-mini-table-row"><span>Lead #1821</span><span style="color:#38bdf8;">Em Atendimento</span></div>
+          <div class="ffg-mini-table-row"><span>Lead #1822</span><span style="color:#f59e0b;">Aguardando</span></div>
+          <div class="ffg-mini-table-row"><span>Lead #1823</span><span style="color:#10b981;">Finalizado</span></div>
+        `;
+      }
+    }
+
+    drawConnections() {
+      const g = document.getElementById('stitchEdgesGroup');
+      if (!g) return;
+      g.innerHTML = '';
+
+      const { nodes, edges } = this.getFilteredData();
+      const nodeMap = new Map();
+      nodes.forEach(n => nodeMap.set(n.id, n));
+
+      const world = document.getElementById('stitchWorld');
+      if (!world) return;
+      const worldRect = world.getBoundingClientRect();
+
+      edges.forEach((edge, idx) => {
+        const sourceCard = document.getElementById('card-' + edge.source);
+        const targetCard = document.getElementById('card-' + edge.target);
+        if (!sourceCard || !targetCard) return;
+
+        const sRect = sourceCard.getBoundingClientRect();
+        const tRect = targetCard.getBoundingClientRect();
+
+        // Calculate positions relative to the scaled/translated stitchWorld
+        const x1 = (sRect.right - worldRect.left) / this.state.zoom;
+        const y1 = (sRect.top + sRect.height / 2 - worldRect.top) / this.state.zoom;
+        const x2 = (tRect.left - worldRect.left) / this.state.zoom;
+        const y2 = (tRect.top + tRect.height / 2 - worldRect.top) / this.state.zoom;
+
+        const dx = Math.max(Math.abs(x2 - x1) * 0.45, 60);
+        const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', pathData);
+        pathEl.setAttribute('class', `ffg-stitch-spline ${edge.crossProject ? 'cross-project' : ''}`);
+        pathEl.setAttribute('marker-end', edge.crossProject ? 'url(#stitchArrowCross)' : 'url(#stitchArrow)');
+        pathEl.setAttribute('data-source', edge.source);
+        pathEl.setAttribute('data-target', edge.target);
+        g.appendChild(pathEl);
+
+        // Optional mid-point text label pill
+        if (edge.label && Math.abs(x2 - x1) > 120) {
+          const mx = (x1 + x2) / 2;
+          const my = (y1 + y2) / 2;
+          const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          textGroup.setAttribute('transform', `translate(${mx}, ${my})`);
+
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', '-40');
+          rect.setAttribute('y', '-10');
+          rect.setAttribute('width', '80');
+          rect.setAttribute('height', '18');
+          rect.setAttribute('rx', '4');
+          rect.setAttribute('fill', edge.crossProject ? 'rgba(236,72,153,0.85)' : 'rgba(15,23,42,0.88)');
+          rect.setAttribute('stroke', edge.crossProject ? '#ec4899' : '#38bdf8');
+          rect.setAttribute('stroke-width', '1');
+
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', '0');
+          text.setAttribute('y', '3');
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('fill', '#ffffff');
+          text.setAttribute('font-size', '8px');
+          text.setAttribute('font-weight', '700');
+          text.textContent = edge.label.slice(0, 16);
+
+          textGroup.appendChild(rect);
+          textGroup.appendChild(text);
+          g.appendChild(textGroup);
+        }
+      });
+    }
+
+    attachEvents() {
+      // 1. Project Filter Switcher
+      this.container.querySelectorAll('.ffg-stitch-pill[data-project]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          this.state.project = btn.getAttribute('data-project');
+          this.render();
+        });
+      });
+
+      // 2. Layout Mode Toggle
+      const btnStitch = this.container.querySelector('#btnModeStitch');
+      const btnMiro = this.container.querySelector('#btnModeMiro');
+      if (btnStitch) btnStitch.addEventListener('click', () => { this.state.layoutMode = 'STITCH'; this.render(); });
+      if (btnMiro) btnMiro.addEventListener('click', () => { this.state.layoutMode = 'MIRO'; this.render(); });
+
+      // 3. Search Filter
+      const searchInput = this.container.querySelector('#stitchSearchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          this.state.searchQuery = e.target.value;
+          this.render();
+        });
+      }
+
+      // 4. Zoom Buttons
+      const btnZoomIn = this.container.querySelector('#btnStitchZoomIn');
+      const btnZoomOut = this.container.querySelector('#btnStitchZoomOut');
+      const btnReset = this.container.querySelector('#btnStitchReset');
+
+      if (btnZoomIn) btnZoomIn.addEventListener('click', () => this.setZoom(this.state.zoom + 0.15));
+      if (btnZoomOut) btnZoomOut.addEventListener('click', () => this.setZoom(this.state.zoom - 0.15));
+      if (btnReset) btnReset.addEventListener('click', () => { this.state.zoom = 0.85; this.state.pan = { x: 30, y: 20 }; this.applyTransform(); });
+
+      // 5. Pan via Canvas Drag
+      const viewport = this.container.querySelector('#stitchViewport');
+      if (viewport) {
+        viewport.addEventListener('mousedown', (e) => {
+          if (e.target.closest('.ffg-stitch-screen-card') || e.target.closest('button, input')) return;
+          this.state.isPanning = true;
+          this.state.dragStart = { x: e.clientX - this.state.pan.x, y: e.clientY - this.state.pan.y };
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          if (!this.state.isPanning) return;
+          this.state.pan.x = e.clientX - this.state.dragStart.x;
+          this.state.pan.y = e.clientY - this.state.dragStart.y;
+          this.applyTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+          this.state.isPanning = false;
+        });
+
+        // Mouse Wheel Zoom
+        viewport.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.08 : -0.08;
+          this.setZoom(this.state.zoom + delta);
+        }, { passive: false });
+      }
+
+      // 6. Card Hover Highlighting
+      this.container.querySelectorAll('.ffg-stitch-screen-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+          const id = card.getAttribute('data-id');
+          this.highlightConnections(id, true);
+        });
+        card.addEventListener('mouseleave', () => {
+          const id = card.getAttribute('data-id');
+          this.highlightConnections(id, false);
+        });
+      });
+
+      // 7. Footer Action Buttons
+      this.container.querySelectorAll('.btn-hd').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          this.openHdPreview(id);
+        });
+      });
+
+      this.container.querySelectorAll('.btn-ide').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const file = btn.getAttribute('data-file');
+          const project = btn.getAttribute('data-project');
+          this.openInIde(file, project);
+        });
+      });
+
+      this.container.querySelectorAll('.btn-route').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const route = btn.getAttribute('data-route');
+          this.navigateToRoute(route);
+        });
+      });
+
+      // 8. Miro Freeform Draggable Cards
+      if (this.state.layoutMode === 'MIRO') {
+        this.container.querySelectorAll('.ffg-miro-draggable').forEach(wrap => {
+          wrap.addEventListener('mousedown', (e) => {
+            if (e.target.closest('button, input, a')) return;
+            const nodeId = wrap.getAttribute('data-node-id');
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const curLeft = parseInt(wrap.style.left || '0', 10);
+            const curTop = parseInt(wrap.style.top || '0', 10);
+
+            const onMouseMove = (moveEv) => {
+              const dx = (moveEv.clientX - startX) / this.state.zoom;
+              const dy = (moveEv.clientY - startY) / this.state.zoom;
+              wrap.style.left = (curLeft + dx) + 'px';
+              wrap.style.top = (curTop + dy) + 'px';
+              this.state.positions[nodeId] = { x: curLeft + dx, y: curTop + dy };
+              this.drawConnections();
+            };
+
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+              try {
+                localStorage.setItem('fenix_stitch_positions', JSON.stringify(this.state.positions));
+              } catch (_) {}
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          });
+        });
+      }
+    }
+
+    setZoom(val) {
+      this.state.zoom = Math.max(0.3, Math.min(2.2, val));
+      this.applyTransform();
+    }
+
+    applyTransform() {
+      const world = this.container.querySelector('#stitchWorld');
+      if (world) {
+        world.style.transform = `translate(${this.state.pan.x}px, ${this.state.pan.y}px) scale(${this.state.zoom})`;
+      }
+      this.drawConnections();
+    }
+
+    highlightConnections(nodeId, enable) {
+      const splines = this.container.querySelectorAll('.ffg-stitch-spline');
+      splines.forEach(spline => {
+        const s = spline.getAttribute('data-source');
+        const t = spline.getAttribute('data-target');
+        if (s === nodeId || t === nodeId) {
+          if (enable) {
+            spline.classList.add('highlighted');
+            spline.setAttribute('marker-end', 'url(#stitchArrowActive)');
+          } else {
+            spline.classList.remove('highlighted');
+            const isCross = spline.classList.contains('cross-project');
+            spline.setAttribute('marker-end', isCross ? 'url(#stitchArrowCross)' : 'url(#stitchArrow)');
+          }
+        }
+      });
+      const card = this.container.querySelector('#card-' + nodeId);
+      if (card) {
+        if (enable) card.classList.add('highlighted');
+        else card.classList.remove('highlighted');
+      }
+    }
+
+    openHdPreview(screenId) {
+      const screen = (this.state.graph?.nodes || []).find(n => n.id === screenId);
+      if (!screen) return;
+
+      let modal = document.getElementById('stitchHdModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'stitchHdModal';
+        modal.className = 'ffg-hd-preview-backdrop';
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+
+      const pColor = screen.projectColor || '#38bdf8';
+      const wire = screen.wireframe || {};
+
+      modal.innerHTML = `
+        <div class="ffg-hd-preview-modal">
+          <div class="ffg-hd-preview-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:18px;">🖥️</span>
+              <div>
+                <div style="font-weight:800; color:#f8fafc; font-size:15px; display:flex; align-items:center; gap:8px;">
+                  <span>${screen.title}</span>
+                  <span style="font-size:10px; color:${pColor}; border:1px solid ${pColor}40; padding:1px 6px; border-radius:4px;">
+                    ${screen.projectName || screen.project}
+                  </span>
+                </div>
+                <div style="font-size:11px; color:#94a3b8; font-family:monospace;">
+                  Rota: ${screen.route} &bull; Componente: ${screen.component} &bull; Arquivo: ${screen.file || '--'}
+                </div>
+              </div>
+            </div>
+            <button type="button" onclick="document.getElementById('stitchHdModal').style.display='none'"
+              style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+          </div>
+          
+          <div class="ffg-hd-preview-body">
+            <!-- Mockup Canvas -->
+            <div style="background:#060a14; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:16px; min-height:220px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px; margin-bottom:12px;">
+                <div style="font-weight:700; color:#00D9FF; font-size:13px;">${wire.header || screen.title}</div>
+                <span style="font-size:11px; color:#10b981; font-weight:700;">● SISTEMA OPERACIONAL ATIVO</span>
+              </div>
+              
+              <div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px;">
+                <div>
+                  <h4 style="font-size:11px; text-transform:uppercase; color:#94a3b8; margin:0 0 8px;">Estrutura do Componente</h4>
+                  <div style="background:rgba(255,255,255,0.03); border-radius:6px; padding:12px; font-size:12px; color:#cbd5e1; line-height:1.6;">
+                    <div><strong>Componente Raiz:</strong> <code>${screen.component}</code></div>
+                    <div><strong>Sub-Componentes:</strong> ${(screen.subComponents || []).join(', ') || 'Monolítico'}</div>
+                    <div style="margin-top:8px;"><strong>Ações do Usuário:</strong> ${(screen.actions || []).join(', ') || 'Nenhuma'}</div>
+                    <div style="margin-top:8px;"><strong>Dependências de API:</strong> ${(screen.apiDependencies || []).join(', ') || 'Nenhuma'}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 style="font-size:11px; text-transform:uppercase; color:#94a3b8; margin:0 0 8px;">Rotas Conectadas</h4>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    ${(screen.navigationEdges || []).map(e => `
+                      <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:6px 10px; font-size:11px; display:flex; justify-content:space-between;">
+                        <span style="color:#38bdf8;">${e.label}</span>
+                        <span style="color:#64748b; font-family:monospace;">➔ ${e.targetId}</span>
+                      </div>
+                    `).join('') || '<span style="color:#64748b; font-size:11px;">Nenhuma transição direta</span>'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px;">
+              <button type="button" onclick="document.getElementById('stitchHdModal').style.display='none'"
+                style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#cbd5e1; padding:8px 16px; border-radius:6px; font-size:12px; cursor:pointer;">
+                Fechar
+              </button>
+              <button type="button" onclick="window.showView?.('ide'); document.getElementById('stitchHdModal').style.display='none';"
+                style="background:linear-gradient(135deg, rgba(0,217,255,0.25), rgba(56,189,248,0.25)); border:1px solid rgba(0,217,255,0.5); color:#00D9FF; padding:8px 18px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
+                💻 Abrir Arquivo no Visual IDE
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modal.style.display = 'flex';
+    }
+
+    openInIde(filePath, project) {
+      if (typeof window.showView === 'function') {
+        window.showView('ide');
+        if (filePath && typeof window.fenixOpenFile === 'function') {
+          setTimeout(() => window.fenixOpenFile(filePath), 300);
+        }
+      }
+    }
+
+    navigateToRoute(route) {
+      if (!route) return;
+      if (route.startsWith('/app#') || route.startsWith('#')) {
+        const v = route.replace('/app#', '').replace('#', '');
+        if (typeof window.showView === 'function') window.showView(v);
+      } else {
+        // Open preview inside IDE split view
+        if (typeof window.showView === 'function') {
+          window.showView('ide');
+          if (typeof window.fenixSetIdeMode === 'function') window.fenixSetIdeMode('split');
+          const frame = document.getElementById('fenixIdeLiveFrame');
+          if (frame) frame.src = route;
+        }
+      }
+    }
+  }
+
+  let activeScreenEngine = null;
+
   window.FenixFlowGraph = {
+    async mountScreenFlow(containerId, options = {}) {
+      let container = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
+      if (!container) return null;
+      const sub = container.querySelector ? container.querySelector('#fenixFlowGraphDynamicMesh') : null;
+      if (sub) container = sub;
+      activeScreenEngine = new StitchMiroScreenEngine(container, options);
+      window._activeStitchEngine = activeScreenEngine;
+      await activeScreenEngine.init();
+      return activeScreenEngine;
+    },
     NODE_TYPES,
     EDGE_TYPES,
     TYPE_META,
@@ -2644,6 +4030,11 @@
       return activeRenderer.state.nodes.find(n => n.id === nodeId);
     },
 
+    findEdges(fromNodeId, toNodeId) {
+      if (!activeRenderer) return [];
+      return activeRenderer.state.edges.filter((edge) => edge.from === fromNodeId && edge.to === toNodeId);
+    },
+
     openRealResource(node) {
       if (activeRenderer) activeRenderer.openRealResource(node);
     },
@@ -2668,6 +4059,14 @@
   window.fenixToggleFlowGraphPanel = async function (options = {}) {
     return await window.FenixFlowGraph.openSidepanel(options);
   };
+
+  window.addEventListener('FENIX_PROJECT_SCREEN_ANNOTATION_SAVED', (event) => {
+    const renderer = activeRenderer;
+    const projectId = event.detail?.projectId;
+    if (!renderer || renderer.state.context !== 'PROJECT' || !projectId
+      || String(renderer.state.entityId || '').replace(/^project:/, '') !== projectId) return;
+    renderer.setContext('PROJECT', renderer.state.entityId);
+  });
 
   // Global Keyboard Shortcut: Ctrl+G or Cmd+G to toggle Flow Graph
   window.addEventListener('keydown', (e) => {
