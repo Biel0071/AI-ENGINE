@@ -129,11 +129,14 @@
       } catch { return false; }
     }) || frontendBindings[0];
     if (frontendBinding) return frontendBinding.url;
-    if (projectId === 'fenix-os' && Array.isArray(deployment.bindings) && deployment.bindings.length > 0) {
-      const fenixBinding = deployment.bindings.find(binding => binding?.url && /fenix|gateway|principal/i.test(binding.label || ''));
+    if (projectId === 'fenix-os') {
+      const fenixBinding = (deployment.bindings || []).find(binding => binding?.url && /fenix|gateway|principal/i.test(binding.label || ''));
       return fenixBinding?.url || '/login.html?preview=1';
     }
-    return '';
+    if (projectId) {
+      return `/api/project-mirror/preview/${projectId}`;
+    }
+    return '/login.html?preview=1';
   }
 
   function getPreviewUrlForScreen(project, screen) {
