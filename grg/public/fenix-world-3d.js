@@ -7573,6 +7573,217 @@
         btn.addEventListener('click', () => this.setVisualDensity(btn.getAttribute('data-city-density')));
       });
       container.appendChild(bar);
+      this._mountAutonomousRoleStrip(container);
+      this.syncAutonomousCityState().catch(() => {});
+    }
+
+    _mountAutonomousRoleStrip(container) {
+      if (!container || document.getElementById('fenixCityAutonomousRoster')) return;
+      const strip = document.createElement('div');
+      strip.id = 'fenixCityAutonomousRoster';
+      strip.style.cssText = 'position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;justify-content:center;background:rgba(7,9,14,0.92);backdrop-filter:blur(12px);border:1px solid rgba(16,185,129,0.32);border-radius:10px;padding:4px 10px;box-shadow:0 8px 24px rgba(0,0,0,0.65);max-width:96%;white-space:nowrap;';
+      strip.innerHTML = `<span style="font-size:10px;font-weight:800;color:#10B981;letter-spacing:0.06em;">7 PAPÉIS AUTÔNOMOS:</span><span id="fenixCityAutonomousRolesList" style="display:flex;gap:5px;flex-wrap:nowrap;">—</span>`;
+      container.appendChild(strip);
+
+      const inspector = document.createElement('div');
+      inspector.id = 'fenixCityRoleInspector';
+      inspector.style.cssText = 'position:absolute;top:96px;right:68px;z-index:28;width:320px;display:none;background:rgba(7,9,14,0.96);backdrop-filter:blur(16px);border:1px solid rgba(0,217,255,0.4);border-radius:12px;padding:12px;color:#e2e8f0;box-shadow:0 12px 32px rgba(0,0,0,0.75);font-size:11px;';
+      container.appendChild(inspector);
+    }
+
+    async syncAutonomousCityState(providedState = null) {
+      let state = providedState;
+      if (!state) {
+        try {
+          const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const res = await fetch('/api/v2/autonomous/city-state', { headers });
+          if (res.ok) {
+            const data = await res.json();
+            state = data.cityState || data;
+          }
+        } catch (_) {}
+      }
+      if (!state || !Array.isArray(state.agents)) return null;
+      this.autonomousCityState = state;
+
+      const stateColors = {
+        SCANNING: '#38bdf8',
+        PLANNING: '#a855f7',
+        CODING: '#00d9ff',
+        TESTING: '#f59e0b',
+        REVIEWING: '#6366f1',
+        BLOCKED: '#f97316',
+        COMPLETED: '#10b981',
+        FAILED: '#ef4444',
+        IDLE: '#64748b'
+      };
+
+      const stationCoords = {
+        QA_LAB: { x: -18, z: 12 },
+        ARCHITECTURE_DESK: { x: 0, z: -4 },
+        DEV_WORKSTATION: { x: -16, z: -12 },
+        TEST_ARENA: { x: -8, z: 14 },
+        VISUAL_STUDIO: { x: 14, z: 12 },
+        INTEGRATION_HUB: { x: 18, z: -12 },
+        RELEASE_GATE: { x: 6, z: -16 }
+      };
+
+      // Atualiza avatares 3D existentes com os 9 estados reais da engenharia autônoma
+      for (const roleAgent of state.agents) {
+        const engState = String(roleAgent.engineeringState || 'IDLE').toUpperCase();
+        const colorHex = stateColors[engState] || '#64748b';
+        if (Array.isArray(this.agents)) {
+          const matchAvatar = this.agents.find((av) =>
+            av.id === roleAgent.agentId ||
+            av.roleId === roleAgent.roleId ||
+            String(av.name || '').toLowerCase().includes(String(roleAgent.role || '').toLowerCase())
+          );
+          if (matchAvatar) {
+            matchAvatar.engineeringState = engState;
+            matchAvatar.autonomousRole = roleAgent.role;
+            matchAvatar.missionId = roleAgent.missionId;
+            matchAvatar.projectId = roleAgent.projectId;
+            matchAvatar.targetFile = roleAgent.targetFile;
+            matchAvatar.toolOrModel = roleAgent.toolOrModel;
+            matchAvatar.thought = `[${engState}] ${roleAgent.thought || roleAgent.role}`;
+            const coords = stationCoords[roleAgent.station];
+            if (coords && engState !== 'IDLE' && matchAvatar.targetPos) {
+              matchAvatar.targetPos.x = coords.x;
+              matchAvatar.targetPos.z = coords.z;
+            }
+          }
+        }
+      }
+
+      const escapeCityHtml = (val) => String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+      const listEl = document.getElementById('fenixCityAutonomousRolesList');
+      if (listEl) {
+        listEl.innerHTML = state.agents.map((ag) => {
+          const st = escapeCityHtml(String(ag.engineeringState || 'IDLE').toUpperCase());
+          const col = stateColors[st] || '#64748b';
+          const roleLabel = escapeCityHtml(ag.role);
+          const roleIdAttr = escapeCityHtml(ag.roleId);
+          return `<button type="button" data-city-role-id="${roleIdAttr}" style="background:rgba(15,23,42,0.85);border:1px solid ${col};color:#f8fafc;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block;"></span>
+            <span>${roleLabel}</span>
+            <span style="color:${col};font-family:'JetBrains Mono',monospace;font-size:9px;">[${st}]</span>
+          </button>`;
+        }).join('');
+
+        listEl.querySelectorAll('[data-city-role-id]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            this.inspectEngineeringRole(btn.getAttribute('data-city-role-id'));
+          });
+        });
+      }
+
+      if (this._inspectedRoleId) {
+        this.inspectEngineeringRole(this._inspectedRoleId, true);
+      }
+
+      return state;
+    }
+
+    inspectEngineeringRole(roleId, keepOpen = false) {
+      const inspector = document.getElementById('fenixCityRoleInspector');
+      if (!inspector || !this.autonomousCityState?.agents) return null;
+      const agent = this.autonomousCityState.agents.find(
+        (a) => a.roleId === roleId || a.agentId === roleId || a.role === roleId
+      );
+      if (!agent) return null;
+
+      if (!keepOpen && this._inspectedRoleId === agent.roleId && inspector.style.display === 'block') {
+        inspector.style.display = 'none';
+        this._inspectedRoleId = null;
+        return null;
+      }
+
+      const esc = (val) => String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+      this._inspectedRoleId = agent.roleId;
+      inspector.style.display = 'block';
+      const recentHtml = (agent.recentEvents || []).slice(0, 4).map((ev) =>
+        `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:10px;color:#94a3b8;">
+          <strong style="color:#38bdf8;">[${esc(ev.state)}]</strong> ${esc(ev.thought || '—')}
+        </div>`
+      ).join('') || '<div style="color:#64748b;font-size:10px;">Sem eventos recentes</div>';
+
+      const blockersText = Array.isArray(agent.blockers) && agent.blockers.length > 0
+        ? agent.blockers.join(', ')
+        : (agent.engineeringState === 'BLOCKED' ? (agent.thought || 'Bloqueio ativo') : 'Nenhum');
+      const progressVal = typeof agent.progress === 'number' ? `${agent.progress}%` : '—';
+      const costTokensVal = `${agent.tokensUsed ?? 0} tok · $${Number(agent.costUsd || 0).toFixed(4)}`;
+
+      inspector.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.1);">
+          <div>
+            <div style="font-size:12px;font-weight:800;color:#00D9FF;">${esc(agent.role)}</div>
+            <div style="font-size:10px;color:#94a3b8;">${esc(agent.agentName)} · Estação: ${esc(agent.station)}</div>
+          </div>
+          <button type="button" id="fenixCloseCityRoleInspector" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:14px;">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;font-size:10px;">
+          <div style="background:rgba(255,255,255,0.03);padding:5px;border-radius:6px;">
+            <div style="color:#64748b;">ESTADO CANÔNICO</div>
+            <div style="font-weight:800;color:#10b981;font-family:'JetBrains Mono',monospace;">${esc(agent.engineeringState)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:5px;border-radius:6px;">
+            <div style="color:#64748b;">PROJETO ATUAL</div>
+            <div style="font-weight:700;color:#f8fafc;">${esc(agent.projectId || '—')}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:5px;border-radius:6px;">
+            <div style="color:#64748b;">MISSÃO / BUG</div>
+            <div style="font-weight:700;color:#f8fafc;font-family:'JetBrains Mono',monospace;">${esc(agent.missionId || agent.bugId || '—')}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:5px;border-radius:6px;">
+            <div style="color:#64748b;">MODELO / TOOL</div>
+            <div style="font-weight:700;color:#38bdf8;">${esc(agent.toolOrModel || '—')}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:5px;border-radius:6px;">
+            <div style="color:#64748b;">PROGRESSO REAL</div>
+            <div style="font-weight:700;color:#f8fafc;font-family:'JetBrains Mono',monospace;">${esc(progressVal)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:5px;border-radius:6px;">
+            <div style="color:#64748b;">TOKENS / CUSTO</div>
+            <div style="font-weight:700;color:#f8fafc;font-family:'JetBrains Mono',monospace;">${esc(costTokensVal)}</div>
+          </div>
+        </div>
+        <div style="font-size:10px;margin-bottom:6px;">
+          <span style="color:#64748b;">Arquivo Alvo:</span>
+          <span style="color:#e2e8f0;font-family:'JetBrains Mono',monospace;">${esc(agent.targetFile || '—')}</span>
+        </div>
+        <div style="font-size:10px;margin-bottom:6px;">
+          <span style="color:#64748b;">Bloqueios:</span>
+          <span style="color:#f87171;">${esc(blockersText)}</span>
+        </div>
+        <div style="font-size:10px;margin-bottom:8px;">
+          <span style="color:#64748b;">Atividade:</span>
+          <span style="color:#cbd5e1;">${esc(agent.thought || '—')}</span>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:4px;">HISTÓRICO RECENTE:</div>
+        <div>${recentHtml}</div>
+      `;
+
+      const closeBtn = document.getElementById('fenixCloseCityRoleInspector');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          inspector.style.display = 'none';
+          this._inspectedRoleId = null;
+        });
+      }
+      return agent;
     }
 
     dispose() {
@@ -7644,6 +7855,14 @@
   window.fenixSetCityDensity = function(density) {
     const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
     return eng?.setVisualDensity ? eng.setVisualDensity(density) : null;
+  };
+  window.fenixSyncCityAutonomousState = function(statePayload) {
+    const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
+    return eng?.syncAutonomousCityState ? eng.syncAutonomousCityState(statePayload) : null;
+  };
+  window.fenixInspectCityRole = function(roleId) {
+    const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
+    return eng?.inspectEngineeringRole ? eng.inspectEngineeringRole(roleId) : null;
   };
   window.initFenixWorld3D = function(container) {
     if (!window.fenixWorld3D && !window.fenixWorldEngine3D) {

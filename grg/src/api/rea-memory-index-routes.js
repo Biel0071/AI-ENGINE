@@ -251,6 +251,55 @@ async function handleReaMemoryIndexRoutes(req, res, url, sendJson, readJson, ide
       const statusCode = out?.ok ? 200 : (out?.error === 'Orchestration not found' ? 404 : 400);
       return sendJson(res, statusCode, out);
     }
+
+    // ── PHASE 54: GRG UNIVERSAL ENGINEERING HUB ROUTES ─────────────────────
+    if (pathname.startsWith('/api/v2/rea/universal-hub/')) {
+      const tenantId = identity?.tenantId || 'grg';
+      const actorId = identity?.actorId || 'grg-admin';
+      if (app?.controlPlane?.authorize) {
+        const perm = method === 'GET' ? 'runtime:read' : 'runtime:admin';
+        await app.controlPlane.authorize(tenantId, actorId, perm);
+      }
+
+      if (method === 'GET' && pathname === '/api/v2/rea/universal-hub/inventory') {
+        return sendJson(res, 200, reaEngine.getUniversalProjectInventory(app));
+      }
+
+      if (method === 'GET' && pathname === '/api/v2/rea/universal-hub/adapters') {
+        return sendJson(res, 200, reaEngine.getUniversalToolAdapterRegistry(app));
+      }
+
+      if (method === 'POST' && pathname === '/api/v2/rea/universal-hub/adapters/test') {
+        const body = await readJson(req).catch(() => ({}));
+        const adapterId = body.adapterId || body.id;
+        if (!adapterId) {
+          return sendJson(res, 400, { ok: false, error: 'adapterId é obrigatório' });
+        }
+        const resTest = reaEngine.testUniversalAdapter(adapterId, { ...body, actorId, tenantId }, app);
+        return sendJson(res, resTest.ok ? 200 : 400, resTest);
+      }
+
+      if (method === 'POST' && pathname === '/api/v2/rea/universal-hub/dispatch') {
+        const body = await readJson(req).catch(() => ({}));
+        const adapterId = body.adapterId || 'node-test-runner';
+        const dispatched = await reaEngine.dispatchUniversalAdapterTask(adapterId, { ...body, actorId, tenantId }, app);
+        const code = dispatched.code === 'PERMISSION_DENIED_BY_ADAPTER_SCOPE' ? 403 : (dispatched.ok ? 200 : 400);
+        return sendJson(res, code, dispatched);
+      }
+
+      if (method === 'POST' && pathname === '/api/v2/rea/universal-hub/propagate') {
+        const body = await readJson(req).catch(() => ({}));
+        const sourceProjectId = body.sourceProjectId || body.projectId || 'api-platform';
+        const prop = reaEngine.propagateCrossProjectChange(sourceProjectId, { ...body, actorId, tenantId }, app);
+        return sendJson(res, 200, prop);
+      }
+
+      if (method === 'POST' && pathname === '/api/v2/rea/universal-hub/proof') {
+        const body = await readJson(req).catch(() => ({}));
+        const proof = await reaEngine.runCrossToolAndProjectProof({ ...body, actorId, tenantId }, app);
+        return sendJson(res, proof.ok ? 200 : 500, proof);
+      }
+    }
   }
 
   return false;

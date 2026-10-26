@@ -128,6 +128,30 @@ class EvolutionMemory {
   }
 
   /**
+   * Busca memórias evolutivas similares a um problema ou prompt antes de invocar modelos externos.
+   */
+  async findSimilar(query = '') {
+    const q = String(query || '').toLowerCase().trim();
+    if (q.length < 8) return [];
+    const tokens = q.split(/[^a-z0-9à-ú_-]+/i).filter((t) => t.length >= 4);
+    if (tokens.length === 0) return [];
+    const all = await this.list({ limit: 100 });
+    const scored = [];
+    for (const rec of all) {
+      const hay = `${rec.problem || ''} ${rec.lesson || ''} ${rec.pattern || ''}`.toLowerCase();
+      let hits = 0;
+      for (const tok of tokens) {
+        if (hay.includes(tok)) hits += 1;
+      }
+      if (hits >= Math.min(3, tokens.length)) {
+        scored.push({ rec, hits });
+      }
+    }
+    scored.sort((a, b) => b.hits - a.hits);
+    return scored.map((s) => s.rec);
+  }
+
+  /**
    * Retorna resumo de aprendizado e padrões consolidados.
    */
   async getSummary() {
