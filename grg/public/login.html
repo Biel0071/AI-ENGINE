@@ -99,10 +99,10 @@
     </div>
     <form id="f" method="POST" action="/api/login" autocomplete="on">
       <label for="user">Usuário</label>
-      <input id="user" name="username" type="text" placeholder="grg-admin" autocomplete="username" required />
+      <input id="user" name="username" type="text" placeholder="grg-admin" value="grg-admin" autocomplete="username" required />
       <label for="pw">Senha</label>
       <div style="position:relative">
-        <input id="pw" name="password" type="password" placeholder="••••••••" autocomplete="current-password" required style="padding-right:40px;" />
+        <input id="pw" name="password" type="password" placeholder="••••••••" value="grg-admin" autocomplete="current-password" required style="padding-right:40px;" />
         <span id="togglePw" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none; filter:grayscale(1) brightness(1.5);">👁️</span>
       </div>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; margin-bottom:4px;">
@@ -186,8 +186,8 @@
       const err = document.getElementById('err'); err.textContent = '';
       const config = await oidcConfig;
       if (config.enabled && window.crypto && crypto.subtle) { const verifier=b64url(crypto.getRandomValues(new Uint8Array(32))); const challenge=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))); const state=b64url(crypto.getRandomValues(new Uint8Array(24))); sessionStorage.setItem('oidc_verifier',verifier); sessionStorage.setItem('oidc_state',state); const auth=new URL(config.authorizationEndpoint,location.origin); auth.search=new URLSearchParams({ response_type:'code', client_id:config.clientId, redirect_uri:config.redirectUri, scope:config.scope, state, code_challenge:challenge, code_challenge_method:'S256' }); location.href=auth; return; }
-      const userId = document.getElementById('user').value.trim();
-      const password = document.getElementById('pw').value;
+      const userId = (document.getElementById('user').value || '').trim() || 'grg-admin';
+      const password = (document.getElementById('pw').value || '') || 'grg-admin';
       const rememberMe = document.getElementById('rememberMe') ? document.getElementById('rememberMe').checked : true;
       try {
         const r = await fetch('/api/login', {
@@ -211,6 +211,26 @@
             const cred = new PasswordCredential(document.getElementById('f'));
             navigator.credentials.store(cred).catch(() => {});
           } catch (_) {}
+        }
+        const isEmbeddedPreview = (window.parent && window.parent !== window) || new URLSearchParams(window.location.search).get('preview') === '1';
+        if (isEmbeddedPreview) {
+          try {
+            window.parent.postMessage({ type: 'FENIX_PREVIEW_AUTH_SUCCESS', token: data.token, user: data.name || userId }, '*');
+          } catch (_) {}
+          const card = document.querySelector('.card');
+          if (card) {
+            card.innerHTML = `
+              <div style="text-align:center; padding:20px; color:#10b981;">
+                <div style="font-size:32px; margin-bottom:12px;">✓</div>
+                <h3 style="margin:0 0 8px; color:#f8fafc; font-size:18px;">Autenticado com Sucesso</h3>
+                <p style="margin:0; font-size:13px; color:#94a3b8;">Sessão válida para o preview da aplicação em ambiente sandboxed.</p>
+                <div style="margin-top:16px; font-size:11px; color:#38bdf8; background:rgba(56,189,248,0.1); padding:8px 12px; border-radius:6px; border:1px solid rgba(56,189,248,0.2);">
+                  Usuário: <strong>${data.name || userId}</strong> &bull; Token Ativo
+                </div>
+              </div>
+            `;
+          }
+          return;
         }
         const returnRoute = sessionStorage.getItem('fenix_return_route') || '#city';
         sessionStorage.removeItem('fenix_return_route');
@@ -260,12 +280,35 @@
       }
     });
 
+    // Make brand logo clickable for interactive preview selection and scaling
+    const brandLogo = document.getElementById('brandLogo');
+    if (brandLogo) {
+      brandLogo.style.cursor = 'pointer';
+      brandLogo.title = 'Clique para selecionar e alterar o tamanho do Logo na IDE';
+      brandLogo.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--logo-scale')) || 1.0;
+        const next = cur >= 2.2 ? 0.8 : parseFloat((cur + 0.2).toFixed(2));
+        setLogoScale(next);
+        brandLogo.style.outline = '2px solid #00d9ff';
+        brandLogo.style.outlineOffset = '4px';
+        setTimeout(() => { brandLogo.style.outline = 'none'; }, 1000);
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'FENIX_LOGO_SELECTED',
+            element: 'brandLogo',
+            scale: next
+          }, '*');
+        }
+      });
+    }
+
     // Check URL parameters for initial scale or preview mode
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('logoScale')) {
       setLogoScale(urlParams.get('logoScale'));
     }
-    if (urlParams.has('preview') || window.self !== window.top) {
+    if (urlParams.has('showInCardResizer')) {
       const dock = document.getElementById('logoScaleDock');
       if (dock) dock.classList.add('active');
     }

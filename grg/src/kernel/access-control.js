@@ -25,6 +25,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     'memory:read', 'memory:write', 'member:read', 'ai:invoke', 'governance:read', 'graph:read', 'fabric:read', 'registry:read', 'event:read', 'discovery:read', 'runtime:read',
   ],
   employee: ['project:read', 'repo:read', 'capability:read', 'memory:read', 'graph:read'],
+  viewer: ['project:read', 'runtime:read', 'memory:read', 'graph:read', 'capability:read', 'event:read', 'discovery:read'],
 });
 
 function permissionsFor(role) {

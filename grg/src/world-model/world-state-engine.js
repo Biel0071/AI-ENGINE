@@ -305,8 +305,8 @@ class WorldStateEngine {
           this.vehicles = { ...CANONICAL_VEHICLES_DATA, ...(parsed.vehicles || {}) };
           this.constructions = { ...CANONICAL_CONSTRUCTIONS_DATA, ...(parsed.constructions || {}) };
           this.worldBlueprints = { ...(parsed.worldBlueprints || {}) };
-          this.mutationLog = Array.isArray(parsed.mutationLog) ? parsed.mutationLog.slice(-100) : [];
           this.isInitialized = true;
+          this.recoverPendingMissions();
           return;
         }
       }
@@ -315,6 +315,7 @@ class WorldStateEngine {
     }
 
     this.isInitialized = true;
+    this.recoverPendingMissions();
     this.schedulePersist();
   }
 
@@ -822,6 +823,8 @@ class WorldStateEngine {
         ag.assignedTask = task;
         ag.currentTask = typeof task === 'string' ? task : (task?.taskName || task?.name || (job ? job.name : 'Tarefa atribuída'));
         if (job) ag.currentJob = job;
+        ag.missionId = payload.missionId || job?.missionId || ag.missionId || null;
+        ag.parentGoal = payload.objective || job?.objective || (typeof task === 'object' ? task.objective : null) || ag.currentTask;
         ag.state = payload.state || 'RECEIVING_TASK';
         ag.status = 'WORKING';
         ag.memory.push({
@@ -839,6 +842,8 @@ class WorldStateEngine {
         const finishedTask = ag.currentTask || ag.assignedTask || 'Tarefa em andamento';
         ag.assignedTask = null;
         ag.currentJob = null;
+        ag.missionId = null;
+        ag.parentGoal = null;
         ag.currentTask = 'Standby operacional · Pronto para novas diretivas';
         ag.status = 'AVAILABLE';
         ag.state = 'IDLE';
@@ -850,6 +855,54 @@ class WorldStateEngine {
           agentId: ag.id,
           task: finishedTask,
           result,
+          timestamp
+        });
+        break;
+      }
+
+      case 'FAIL_TASK': {
+        const agentId = payload.agentId || payload.id;
+        const ag = this.findAgent(agentId);
+        if (!ag) throw new Error(`Agent not found for task failure: ${agentId}`);
+        const errorReason = payload.error || payload.reason || 'Falha na execução da tarefa';
+        const failedTask = ag.currentTask || ag.assignedTask || 'Tarefa em andamento';
+        ag.assignedTask = null;
+        ag.currentJob = null;
+        ag.currentTask = `Falha na tarefa [${failedTask}]: ${errorReason}`;
+        ag.status = 'ERROR';
+        ag.state = 'ERROR';
+        ag.memory.push({
+          timestamp,
+          content: `Falha na tarefa [${failedTask}]: ${errorReason}`
+        });
+        globalBus.emit('world.agent.task_failed', {
+          agentId: ag.id,
+          task: failedTask,
+          error: errorReason,
+          timestamp
+        });
+        break;
+      }
+
+      case 'RECOVER_TASK': {
+        const agentId = payload.agentId || payload.id;
+        const ag = this.findAgent(agentId);
+        if (!ag) throw new Error(`Agent not found for task recovery: ${agentId}`);
+        const note = payload.note || payload.reason || 'Agente recuperado operacionalmente';
+        ag.assignedTask = null;
+        ag.currentJob = null;
+        ag.missionId = null;
+        ag.parentGoal = null;
+        ag.currentTask = 'Recuperado · Pronto para novas diretivas';
+        ag.status = 'AVAILABLE';
+        ag.state = 'AVAILABLE';
+        ag.memory.push({
+          timestamp,
+          content: `Agente recuperado operacionalmente: ${note}`
+        });
+        globalBus.emit('world.agent.task_recovered', {
+          agentId: ag.id,
+          note,
           timestamp
         });
         break;
@@ -940,6 +993,39 @@ class WorldStateEngine {
         break;
       }
 
+      case 'SET_AGENT_STATUS': {
+        const { agentId, status, reason } = payload;
+        const ag = this.findAgent(agentId);
+        if (ag) {
+          ag.status = status;
+          ag.state = status;
+          ag.lastUpdated = timestamp;
+          ag.memory.push({
+            timestamp,
+            content: `Status alterado para ${status}: ${reason || 'Diretiva operacional'}`
+          });
+        }
+        break;
+      }
+
+      case 'MISSION_DELIVERED': {
+        const { agentId, missionId, objective, evidenceId } = payload;
+        const ag = this.findAgent(agentId);
+        if (ag) {
+          ag.status = 'COMPLETED';
+          ag.state = 'COMPLETED';
+          ag.lastUpdated = timestamp;
+          ag.memory.push({
+            timestamp,
+            type: 'MISSION_DELIVERED',
+            missionId,
+            objective,
+            evidenceId
+          });
+        }
+        break;
+      }
+
       case 'COMPANY_EVENT': {
         // Record company event directly in mutation log
         break;
@@ -959,34 +1045,113 @@ class WorldStateEngine {
     return record;
   }
 
-  async chatWithAgent(agentId, message) {
+  async chatWithAgent(agentId, message, opts = {}) {
     const ag = this.findAgent(agentId);
     if (!ag) throw new Error(`Agente '${agentId}' não encontrado no mundo.`);
 
+    const defaultToolsByRole = {
+      'agent-api-ops': ['http_client', 'api_contract_validator', 'sse_streamer', 'open_telemetry_tracer'],
+      'agent-integration': ['webhook_verifier', 'schema_validator', 'payload_mapper', 'jwt_authenticator'],
+      'agent-infra': ['bullmq_manager', 'redis_client', 'postgres_migrator', 'service_health_probe'],
+      'agent-monitor': ['metrics_collector', 'anomaly_detector', 'prometheus_exporter', 'alert_dispatcher'],
+      'agent-security': ['zero_trust_guard', 'token_firewall', 'ast_security_auditor', 'permission_checker'],
+      'agent-ai-core': ['ollama_caller', 'qwen_router', 'project_memory_indexer', 'rag_embedder'],
+      'agent-support': ['sdk_verifier', 'doc_generator', 'endpoint_tester'],
+      'agent-camila': ['wms_freight_scanner', 'pallet_inspector', 'manifest_generator', 'dispatch_router'],
+      'agent-andre': ['barcode_validator', 'sku_inventory_tracker', 'dock_scheduler', 'wms_db_client'],
+      'agent-expedicao': ['forklift_telemetry', 'dock_manifest_checker', 'pallet_load_balancer']
+    };
+    if (!ag.tools || ag.tools.length === 0) {
+      ag.tools = defaultToolsByRole[ag.id] || ['task_execution', 'telemetry_monitoring'];
+    }
+
     const now = new Date().toISOString();
-    const isCamila = ag.id === 'agent-camila' || (ag.name && ag.name.toLowerCase().includes('camila'));
+    const app = opts.app || null;
+    const tenantId = opts.tenantId || 'grg';
+    const actorId = opts.actorId || 'operator';
+
+    // Map agent to its canonical project context
+    let projectId = 'fenix-os';
+    if (ag.companyId === 'api-platform' || ag.id === 'agent-api-ops' || ag.department === 'APIs & Gateways') {
+      projectId = 'api-platform';
+    } else if (ag.companyId === 'zapai-crm' || ag.id === 'agent-integration' || (ag.name && ag.name.includes('ZapAI'))) {
+      projectId = 'zapai-crm';
+    } else if (ag.companyId === 'deposito-mais' || ag.id === 'agent-camila' || (ag.name && ag.name.toLowerCase().includes('camila'))) {
+      projectId = 'deposito-mais';
+    }
+
+    // Retrieve real indexed context from ProjectMemoryIndex
+    let contextPack = null;
+    let relevantFiles = [];
+    let relevantRoutes = [];
+    try {
+      const { globalProjectMemoryIndex } = require('../memory/project-memory-index');
+      contextPack = globalProjectMemoryIndex.getContextPack(message, projectId);
+      relevantFiles = (contextPack.relevantFiles || []).slice(0, 3);
+      relevantRoutes = (contextPack.relevantRoutes || []).slice(0, 2);
+    } catch (_) {}
 
     let reply = '';
-    if (ag.id === 'agent-api-ops') {
-      reply = `[Alex - API Operations]: Conexão estabelecida com Gateway Fastify 3001 na VPS. Latência atual: 14ms. Endpoints REST respondendo 200 OK. Sobre "${message}": despachando requisição via Fast Lane com streaming ativo!`;
-    } else if (ag.id === 'agent-integration') {
-      reply = `[Elena - Integrações]: Contratos OpenAPI e Webhooks validados. Conexões ativas com Depósito Mais e ZapAI CRM. Sobre "${message}": evento mapeado e payload verificado no schema.`;
-    } else if (ag.id === 'agent-infra') {
-      reply = `[Lucas - Infra & Queues]: Filas BullMQ e réplicas Redis operacionais na porta 6380, Postgres 16 na porta 5433. Sobre "${message}": enfileirando job na Job Lane assíncrona.`;
-    } else if (ag.id === 'agent-monitor') {
-      reply = `[Maya - SRE]: Uptime do cluster mantido em 99.98%. Traces OpenTelemetry e métricas coletadas sem anomalias. Sobre "${message}": registrando no painel de observabilidade.`;
-    } else if (ag.id === 'agent-security') {
-      reply = `[Victor - Segurança Zero-Trust]: Sandbox ativo, firewall de tokens criptográficos verificado. Sobre "${message}": autorização concedida sem violações de segurança.`;
-    } else if (ag.id === 'agent-ai-core') {
-      reply = `[Sora - AI Core]: Cluster Ollama ativo com Qwen 2.5 3B e DeepSeek R1. Temperatura ajustada e RAG indexado no Memory Fabric. Sobre "${message}": inferência gerada com raciocínio sintético.`;
-    } else if (ag.id === 'agent-support') {
-      reply = `[Gabriel - Suporte Dev]: SDKs Node.js e Python prontos, documentação interativa sincronizada. Sobre "${message}": suporte registrado no histórico!`;
-    } else if (isCamila) {
-      reply = `[Supervisora Camila - Depósito Mais]: Olá! Estou supervisionando o empacotamento e inspeção WMS no andar 2. Nossa conformidade hoje está em 100%, com 140 paletes inspecionados e docas fluindo normalmente. Sobre "${message}": solicitação registrada no manifesto e integrada ao fluxo de expedição!`;
-    } else if (ag.role.includes('CEO')) {
-      reply = `[CEO Agent]: Diretiva executiva recebida: "${message}". A telemetria empresarial do Fênix reporta 100% de integridade nos distritos industriais e de tecnologia. Despachando alinhamento para os agentes responsáveis.`;
-    } else {
-      reply = `[${ag.name} (${ag.role})]: Recebi sua mensagem: "${message}". Minha estação (${ag.workstationId}) está operacional e minha missão atual é: ${ag.currentTask || 'pronto para tarefas'}.`;
+    let usedAI = false;
+    let providerUsed = 'cognitive-project-memory';
+
+    // Primary: Call local ModelRouter with Qwen 2.5 3B (with concurrency & timeout control)
+    let tokenStats = null;
+    let modelName = 'qwen2.5:3b';
+    try {
+      const modelRouter = require('../routing/model-router');
+      const sysPrompt = `Você é o agente ${ag.name} (${ag.role}) alocado na estação ${ag.workstationId || 'HQ'} da empresa ${ag.company || ag.department || 'Fênix Enterprise'}.
+Status atual: ${ag.status}.
+Ferramentas disponíveis: ${(ag.tools || []).join(', ') || 'análise de código, telemetria'}.
+Contexto do projeto ${projectId}: ${relevantFiles.map(f => f.id).join(', ')}.
+Responda diretamente em português como o agente operacional em primeira pessoa, fornecendo status factual e assistência técnica objetiva.`;
+
+      const inf = await modelRouter.executeInference({
+        messages: [
+          { role: 'system', content: sysPrompt },
+          { role: 'user', content: message }
+        ],
+        temperature: 0.3,
+        maxTokens: 300,
+        timeoutMs: 30000
+      });
+      if (inf && inf.ok && inf.text) {
+        reply = inf.text.trim();
+        usedAI = true;
+        providerUsed = 'ollama';
+        modelName = inf.model;
+        tokenStats = { prompt: inf.promptTokens, completion: inf.completionTokens, total: inf.totalTokens, latencyMs: inf.latencyMs };
+      }
+    } catch (err) {
+      // Fallback: Try AIRouter if available
+      if (app && app.aiRouter && typeof app.aiRouter.route === 'function') {
+        try {
+          const routed = await app.aiRouter.route(tenantId, actorId, {
+            lane: 'fast',
+            taskType: 'agent_chat',
+            prompt: `Agente ${ag.name} (${ag.role}): "${message}"`,
+            temperature: 0.4
+          });
+          if (routed && routed.ok && routed.result && routed.result.text) {
+            reply = routed.result.text.trim();
+            usedAI = true;
+            providerUsed = routed.provider || 'ai-router';
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!reply) {
+      // Dynamic Cognitive Index response based on real indexed project memory and agent state
+      const filesStr = relevantFiles.map(f => `\`${f.id}\``).join(', ') || 'módulos operacionais do núcleo';
+      const routesStr = relevantRoutes.map(r => `\`${r.id}\``).join(', ');
+      const taskStr = ag.currentTask || 'em prontidão para novas diretivas';
+      const toolsStr = (ag.tools || []).slice(0, 4).join(', ') || 'ast_analyzer, system_telemetry';
+
+      reply = `[${ag.name} · ${ag.role}]: Recebi sua diretiva "${message}". Estação [${ag.workstationId || 'HQ'}] ativa com status ${ag.status}. ` +
+        `Contexto do projeto (${projectId}): analisando ${filesStr}. ` +
+        (routesStr ? `Superfície de API monitorada: ${routesStr}. ` : '') +
+        `Ferramentas alocadas: [${toolsStr}]. Tarefa ativa: "${taskStr}".`;
     }
 
     this.applyMutation({
@@ -994,9 +1159,11 @@ class WorldStateEngine {
       payload: {
         agentId: ag.id,
         userMessage: message,
-        reply
+        reply,
+        provider: providerUsed,
+        model: modelName
       },
-      issuer: 'operator'
+      issuer: actorId
     });
 
     return {
@@ -1011,9 +1178,83 @@ class WorldStateEngine {
       status: ag.status,
       userMessage: message,
       reply,
+      usedAI,
+      provider: providerUsed,
+      model: modelName,
+      tokens: tokenStats,
+      tools: ag.tools || [],
+      context: {
+        projectId,
+        relevantFiles: relevantFiles.map(f => f.id),
+        relevantRoutes: relevantRoutes.map(r => r.id)
+      },
       timestamp: now,
       recentMemories: ag.memory.slice(-4)
     };
+  }
+
+  cancelMission(missionId, reason = 'Cancelado pelo operador') {
+    const timestamp = new Date().toISOString();
+    let affectedAgent = null;
+    for (const ag of Object.values(this.agents)) {
+      if (ag.missionId === missionId) {
+        ag.status = 'AVAILABLE';
+        ag.state = 'AVAILABLE';
+        ag.missionId = null;
+        ag.currentTask = 'Pronto para novas diretivas';
+        ag.lastUpdated = timestamp;
+        ag.memory.push({
+          timestamp,
+          type: 'MISSION_CANCELLED',
+          missionId,
+          reason
+        });
+        affectedAgent = ag;
+        break;
+      }
+    }
+
+    try {
+      const modelRouter = require('../routing/model-router');
+      modelRouter.cancelInference(missionId);
+    } catch (_) {}
+
+    const record = {
+      type: 'MISSION_CANCELLED',
+      payload: {
+        missionId,
+        reason,
+        agentId: affectedAgent?.id || null
+      },
+      timestamp
+    };
+
+    this.mutationLog.push(record);
+    globalBus.emit('world.agent.mission_cancelled', record.payload);
+    this.schedulePersist();
+    return { ok: true, missionId, status: 'CANCELLED', reason, affectedAgent: affectedAgent?.id || null };
+  }
+
+  recoverPendingMissions() {
+    const now = new Date().toISOString();
+    let recoveredCount = 0;
+    for (const ag of Object.values(this.agents)) {
+      if (ag.status === 'WORKING' && ag.missionId) {
+        ag.status = 'AVAILABLE';
+        ag.state = 'AVAILABLE';
+        ag.lastUpdated = now;
+        ag.memory.push({
+          timestamp: now,
+          type: 'MISSION_RECOVERED_ON_BOOT',
+          missionId: ag.missionId,
+          note: 'Recuperado após reinício do runtime sem duplicar passos'
+        });
+        ag.missionId = null;
+        ag.currentTask = 'Pronto para novas diretivas';
+        recoveredCount++;
+      }
+    }
+    return recoveredCount;
   }
 }
 

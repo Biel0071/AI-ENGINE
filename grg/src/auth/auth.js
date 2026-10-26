@@ -96,6 +96,36 @@ class AuthService {
     return { token, userId, tenantId, role: membership.role, name: user.name, rememberMe };
   }
 
+  async createPreviewSession({ tenantId = 'grg', userId = 'preview-user', ttlMs = 15 * 60 * 1000 } = {}) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(token);
+    const session = {
+      id: uuid(),
+      tokenHash,
+      userId,
+      tenantId,
+      role: 'viewer',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + ttlMs).toISOString(),
+      revokedAt: null,
+      readOnly: true,
+      isPreview: true,
+    };
+    await this.store.update((s) => {
+      if (!Array.isArray(s.sessions)) s.sessions = [];
+      s.sessions.push(session);
+      if (Array.isArray(s.users) && !s.users.some((u) => u.id === userId)) {
+        s.users.push({ id: userId, name: 'Preview Developer', status: 'active', createdAt: new Date().toISOString() });
+      }
+      if (Array.isArray(s.memberships) && !s.memberships.some((m) => m.tenantId === tenantId && m.userId === userId)) {
+        s.memberships.push({ tenantId, userId, role: 'viewer', status: 'active', createdAt: new Date().toISOString() });
+      }
+      return s;
+    });
+    this.sessions.set(token, { ...session, exp: Date.parse(session.expiresAt) });
+    return { token, session };
+  }
+
   verify(token) {
     const s = this.sessions.get(token);
     if (!s) return null;
@@ -163,13 +193,13 @@ class AuthService {
   async contextFromAsync(headers, { allowDevHeaders = false } = {}) {
     const auth = String(headers['authorization'] || '');
     const bearerToken = auth.match(/^Bearer\s+(.+)$/i)?.[1] || '';
-    const encodedCookieToken = String(headers.cookie || '').match(/(?:^|;\s*)(?:fenix_session|fenix_token|grg_token)=([^;]+)/i)?.[1] || '';
+    const encodedCookieToken = String(headers.cookie || '').match(/(?:^|;\s*)(?:fenix_session|fenix_preview_session|fenix_token|grg_token)=([^;]+)/i)?.[1] || '';
     let cookieToken = '';
     try { cookieToken = encodedCookieToken ? decodeURIComponent(encodedCookieToken) : ''; } catch { cookieToken = ''; }
     const tokens = [...new Set([bearerToken, cookieToken].filter(Boolean))];
     for (const token of tokens) {
       const session = await this.verifyPersistent(token);
-      if (session) return { tenantId: session.tenantId, actorId: session.userId, authed: true, sessionId: session.id, readOnly: session.readOnly === true, analysisId: session.analysisId };
+      if (session) return { tenantId: session.tenantId, actorId: session.userId, authed: true, sessionId: session.id, role: session.role || 'viewer', readOnly: session.readOnly === true, isPreview: session.isPreview === true, analysisId: session.analysisId };
       if (this.externalVerifier) { try { const identity = await this.externalVerifier.verify(token); if (identity?.tenantId && identity?.userId) return { tenantId: identity.tenantId, actorId: identity.userId, authed: true, sessionId: null, external: true }; } catch { /* try the next same-origin credential */ } }
     }
     if (allowDevHeaders) {

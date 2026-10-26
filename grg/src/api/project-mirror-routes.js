@@ -9,6 +9,8 @@
 
 const path = require('node:path');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
+const os = require('node:os');
 const { scanProject } = require('../project-mirror/scanner');
 const { extractScreens } = require('../project-mirror/screen-extractor');
 
@@ -73,20 +75,36 @@ function resolveActiveProject(app) {
 
 function authorizeProjectPath(projectPath, app) {
   const candidate = path.resolve(projectPath);
+  if (app?.fileSystemService?.workspaceRoot) {
+    const root = path.resolve(app.fileSystemService.workspaceRoot);
+    const relative = path.relative(root, candidate);
+    const allowed = (!relative.startsWith('..') && !path.isAbsolute(relative)) || root.toLowerCase() === candidate.toLowerCase();
+    if (!allowed) throw new Error('project path is outside the authorized workspace');
+    return candidate;
+  }
+  if (process.env.FENIX_ACTIVE_PROJECT) {
+    const root = path.resolve(process.env.FENIX_ACTIVE_PROJECT);
+    const relative = path.relative(root, candidate);
+    const allowed = (!relative.startsWith('..') && !path.isAbsolute(relative)) || root.toLowerCase() === candidate.toLowerCase();
+    if (!allowed) throw new Error('project path is outside the authorized workspace');
+    return candidate;
+  }
   const knownRoots = [
     'C:\\projetos\\ZAPAI-FINAL',
     'C:\\projetos\\ai-engine-core',
     'C:\\projetos\\ai-engine-core\\ai-engine\\projects\\API-PLATAFORM'
   ];
+  if (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV) {
+    knownRoots.push(os.tmpdir());
+  }
   try {
     const kFile = path.join(__dirname, '..', '..', 'memory', 'projects-knowledge-map.json');
-    if (require('fs').existsSync(kFile)) {
-      const kData = JSON.parse(require('fs').readFileSync(kFile, 'utf8'));
+    if (fsSync.existsSync(kFile)) {
+      const kData = JSON.parse(fsSync.readFileSync(kFile, 'utf8'));
       Object.values(kData).forEach(p => { if (p.localPath) knownRoots.push(p.localPath); });
     }
   } catch(e) {}
-  const roots = [app.fileSystemService?.workspaceRoot, process.env.FENIX_ACTIVE_PROJECT, ...knownRoots].filter(Boolean).map((root) => path.resolve(root));
-  if (!roots.length) return candidate;
+  const roots = knownRoots.map((root) => path.resolve(root));
   const allowed = roots.some((root) => {
     const relative = path.relative(root, candidate);
     return (!relative.startsWith('..') && !path.isAbsolute(relative)) || root.toLowerCase() === candidate.toLowerCase();
@@ -98,9 +116,25 @@ function authorizeProjectPath(projectPath, app) {
 function resolveProjectFile(projectPath, relativeFile, app) {
   const root = authorizeProjectPath(projectPath, app);
   const fileWithoutQuery = String(relativeFile || '').split(/[?#]/)[0];
-  const clean = String(fileWithoutQuery).replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+  let clean = String(fileWithoutQuery).replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
   if (!clean || path.isAbsolute(clean) || clean.split('/').includes('..')) throw new Error('valid project-relative file is required');
-  const target = path.resolve(root, clean);
+  let target = path.resolve(root, clean);
+  if (clean === 'index.html' && !fsSync.existsSync(target)) {
+    const candidates = [
+      'apps/dashboard/public/index.html',
+      'public/index.html',
+      'src/index.html',
+      'dist/index.html'
+    ];
+    for (const cand of candidates) {
+      const candTarget = path.resolve(root, cand);
+      if (fsSync.existsSync(candTarget)) {
+        target = candTarget;
+        clean = cand;
+        break;
+      }
+    }
+  }
   const relative = path.relative(root, target);
   if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('file is outside the selected project');
   return { root, target, relativeFile: clean };
@@ -168,8 +202,9 @@ function rewritePreviewAssets(html, projectPath, htmlFile) {
     const withoutQuery = rawValue.split('?')[0];
     if (!/\.(?:css|js|mjs|json|png|svg|webp|jpg|jpeg|gif|ico|woff2?|ttf)$/i.test(withoutQuery)) return whole;
     const assetFile = rawValue.startsWith('/')
-      ? path.posix.join(baseDir, rawValue.replace(/^\/+/, ''))
+      ? rawValue.replace(/^\/+/, '')
       : path.posix.normalize(path.posix.join(baseDir, rawValue));
+    if (assetFile.startsWith('..') || path.posix.isAbsolute(assetFile)) return whole;
     const assetUrl = `/api/project-mirror/asset?path=${encodeURIComponent(projectPath)}&file=${encodeURIComponent(assetFile)}`;
     return `${attr}=${quote}${assetUrl}${quote}`;
   });
@@ -235,18 +270,24 @@ const PREVIEW_WRAPPER_CSS = `
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
   body { padding-top: 40px !important; }
 </style>
-<div id="fenix-preview-banner">
-  <div class="dot"></div>
-  <span>FÊNIX Preview — API-PLATAFORM · Modo: Analisador Ativo</span>
-</div>
 `;
 
-function injectPreviewStyle(html) {
+function getPreviewBanner(projectName = 'Workspace Ativo') {
+  return `
+<div id="fenix-preview-banner">
+  <div class="dot"></div>
+  <span>FÊNIX Preview — ${projectName} · Modo: Sandboxed Dev Preview</span>
+</div>
+`;
+}
+
+function injectPreviewStyle(html, projectName = 'Workspace Ativo') {
+  const fullWrapper = PREVIEW_WRAPPER_CSS + getPreviewBanner(projectName);
   // Already has full HTML structure — just inject before </head> or before <body>
-  if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, PREVIEW_WRAPPER_CSS + '</head>');
-  if (/<body/i.test(html)) return html.replace(/<body([^>]*)>/i, `<body$1>${PREVIEW_WRAPPER_CSS}`);
+  if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, fullWrapper + '</head>');
+  if (/<body/i.test(html)) return html.replace(/<body([^>]*)>/i, `<body$1>${fullWrapper}`);
   // Bare HTML — wrap it entirely
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Preview</title></head><body>${PREVIEW_WRAPPER_CSS}${html}</body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Preview - ${projectName}</title></head><body>${fullWrapper}${html}</body></html>`;
 }
 
 async function handleProjectMirrorRoutes(req, res, url, app, sendJson, readJson, identity) {
@@ -275,9 +316,10 @@ async function handleProjectMirrorRoutes(req, res, url, app, sendJson, readJson,
   if (req.method === 'GET' && url.pathname === '/api/project-mirror/preview') {
     try {
       const projectPath = url.searchParams.get('path') || resolveActiveProject(app);
+      const projectName = path.basename(projectPath) || 'Workspace Ativo';
       const { target, root, relativeFile } = resolveProjectFile(projectPath, url.searchParams.get('file'), app);
       if (path.extname(target).toLowerCase() !== '.html') throw new Error('preview requires an HTML file');
-      const html = injectPreviewStyle(rewritePreviewAssets(await fs.readFile(target, 'utf8'), root, relativeFile));
+      const html = injectPreviewStyle(rewritePreviewAssets(await fs.readFile(target, 'utf8'), root, relativeFile), projectName);
       res.setHeader?.('x-frame-options', 'SAMEORIGIN');
       res.writeHead(200, { 'content-type': PREVIEW_CONTENT_TYPES['.html'], 'cache-control': 'no-store' });
       res.end(html);

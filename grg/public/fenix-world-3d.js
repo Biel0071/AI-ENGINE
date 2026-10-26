@@ -5989,6 +5989,10 @@
           return this.assignDynamicMission(payload);
         case 'COMPLETE_TASK':
           return this.completeDynamicTask(payload);
+        case 'FAIL_TASK':
+          return this.failDynamicTask(payload);
+        case 'RECOVER_TASK':
+          return this.recoverDynamicAgent(payload);
         case 'CHANGE_ENVIRONMENT':
           return this.setEnvironment(payload);
         case 'REMOVE_ENTITY':
@@ -6720,6 +6724,63 @@
       return { ok: true, agentId, status: 'AVAILABLE' };
     }
 
+    failDynamicTask(payload) {
+      const agentId = payload.agentId || payload.id;
+      const errorMsg = payload.error || payload.reason || 'Falha na tarefa';
+      const ag = this.agents ? this.agents.get(agentId) : null;
+      if (ag) {
+        ag.status = 'ERROR';
+        ag.currentTask = `Erro: ${errorMsg}`;
+        if (ag.thoughtBubble) {
+          ag.thoughtBubble.setText(errorMsg.slice(0, 24), '❌', '#ef4444');
+        }
+      }
+      return { ok: true, agentId, status: 'ERROR' };
+    }
+
+    recoverDynamicAgent(payload) {
+      const agentId = payload.agentId || payload.id;
+      const ag = this.agents ? this.agents.get(agentId) : null;
+      if (ag) {
+        ag.status = 'AVAILABLE';
+        ag.currentTask = 'Recuperado · Pronto para novas diretivas';
+        if (ag.thoughtBubble) {
+          ag.thoughtBubble.setText('Recuperado', '🔄', '#00d9ff');
+        }
+      }
+      return { ok: true, agentId, status: 'AVAILABLE' };
+    }
+
+    handleCityEvent(event) {
+      if (!event) return;
+      const type = String(event.type || '').toLowerCase();
+      const payload = event.payload || {};
+      const agentId = payload.agentId || payload.agentName || event.subject;
+      const taskText = payload.task || payload.taskName || payload.name || payload.objective || payload.job?.name || payload.title || '';
+
+      if (['agent.assigned', 'mission.started', 'mission.step.started', 'job.started', 'runtime.job.started'].includes(type)) {
+        if (agentId) {
+          this.assignDynamicMission({ agentId, taskName: taskText || 'Executando tarefa...' });
+        }
+      } else if (['agent.completed', 'mission.completed', 'mission.step.completed', 'job.completed', 'runtime.job.succeeded', 'world.agent.task_completed'].includes(type)) {
+        if (agentId) {
+          this.completeDynamicTask({ agentId });
+        }
+      } else if (['agent.failed', 'mission.failed', 'job.failed', 'runtime.job.failed', 'world.agent.task_failed'].includes(type)) {
+        if (agentId) {
+          this.failDynamicTask({ agentId, error: payload.error || payload.reason || 'Falha na tarefa' });
+        }
+      } else if (['agent.recovered', 'mission.repaired', 'mission.recovered', 'world.agent.task_recovered'].includes(type)) {
+        if (agentId) {
+          this.recoverDynamicAgent({ agentId, note: payload.note || payload.reason || 'Recuperado' });
+        }
+      } else if (['agent.navigating', 'agent.walking'].includes(type)) {
+        if (agentId && (payload.destination || payload.location)) {
+          this.moveDynamicAgent(agentId, payload.destination || payload.location);
+        }
+      }
+    }
+
     setEnvironment(payload) {
       const hasTimeOfDay = payload.timeOfDay === 'NIGHT' || payload.timeOfDay === 'DAY';
       const hasNightFlag = typeof payload.isNight === 'boolean';
@@ -7253,6 +7314,16 @@
       const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
       if (eng && typeof eng.applyWorldCommand === 'function') {
         eng.applyWorldCommand(e.detail);
+      }
+    }
+  });
+
+  // Hot City Event Listener (SSE / Mission Events -> 3D Living Avatars)
+  document.addEventListener('fenix-city-event', (e) => {
+    if (e && e.detail) {
+      const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
+      if (eng && typeof eng.handleCityEvent === 'function') {
+        eng.handleCityEvent(e.detail);
       }
     }
   });

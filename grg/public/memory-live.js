@@ -1,7 +1,9 @@
 (() => {
   'use strict';
   const state = { nodes: [], edges: [], selected: null, query: '', type: 'all', loading: null, error: null, measuredAt: null, activeTab: 'graph' };
-  let neuralBrainActive = true;
+  let neuralBrainActive = (() => {
+    try { return localStorage.getItem('fenix_neural_brain_active') !== 'false'; } catch { return true; }
+  })();
   let init3DNeuralBrain = () => {};
     let neuralBrainWebglRenderer = null;
   const $ = (id) => document.getElementById(id);
@@ -252,6 +254,26 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
     }
     if (groups.length > 20) target.append(make('p', 'fml-empty', `Mais ${groups.length - 20} vizinhos no grafo.`));
   }
+  function showMemoryDetail(detail) {
+    const target = $('fmlDetail');
+    if (!target) return;
+    target.replaceChildren();
+    target.append(
+      make('span', 'fml-detail-type', detail.type || 'MEMÓRIA ATIVA'),
+      make('h2', '', detail.title || 'Detalhes da Memória'),
+      make('p', 'fml-detail-id', detail.id || detail.origin || 'ID não informado')
+    );
+    const properties = make('dl', 'fml-properties');
+    if (detail.origin) properties.append(make('dt', '', 'Origem'), make('dd', '', detail.origin));
+    if (detail.lineCount !== undefined) properties.append(make('dt', '', 'Linhas'), make('dd', '', String(detail.lineCount)));
+    if (detail.summary) properties.append(make('dt', '', 'Resumo'), make('dd', '', detail.summary));
+    if (detail.content) properties.append(make('dt', '', 'Conteúdo'), make('dd', '', detail.content));
+    target.append(properties);
+    if (state.activeTab !== 'graph') {
+      setActiveTab('graph');
+    }
+  }
+
   function render() {
     shell();
     renderProvenanceLegend();
@@ -314,10 +336,62 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
       target.append(badge);
     }
   }
-  function renderInitialMemories() {
+  async function renderInitialMemories() {
     const target = $('fmlMemoryResults');
     if (!target || target.dataset.searched === 'true') return;
-    target.textContent = 'Entidades do Graph Brain não são registros de memória persistida. Use a busca para consultar /api/memories/search.';
+    target.innerHTML = '<div style="color:var(--text3); font-size:12px; padding:8px 0;">Carregando seções da Memória Ativa viva…</div>';
+    try {
+      const res = await getJson('/api/v2/memory-index/active-memory');
+      if (target.dataset.searched === 'true') return;
+      target.replaceChildren();
+      const sections = res?.activeMemory?.sections || [];
+      if (!sections.length) {
+        target.innerHTML = '<div style="color:var(--text3); font-size:12px;">Nenhuma seção ativa indexada. Use a busca acima para consultar memórias persistidas.</div>';
+        return;
+      }
+
+      const head = make('div', 'fml-active-head');
+      head.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.06);';
+      head.innerHTML = `<span style="font-size:12px; font-weight:700; color:var(--accent);">Memória Ativa Oficial (SSOT)</span><span style="font-size:11px; color:var(--text3); font-family:monospace;">${sections.length} seções indexadas</span>`;
+      target.append(head);
+
+      const list = make('div', 'fml-active-list');
+      list.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
+      target.append(list);
+
+      for (const sec of sections.slice(0, 30)) {
+        const card = make('article', 'fml-memory-result');
+        card.style.cssText = 'background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:10px 12px; cursor:pointer;';
+        const title = make('strong', '', sec.title || 'Seção');
+        title.style.cssText = 'color:#F8FAFC; font-size:12px; display:block; margin-bottom:4px;';
+        card.append(title);
+
+        const meta = make('small', '', `${sec.id} · ${sec.lineCount || 0} linhas · nível ${sec.level || 1}`);
+        meta.style.cssText = 'color:var(--accent); font-family:monospace; font-size:10px; display:block; margin-bottom:6px;';
+        card.append(meta);
+
+        const summary = make('p', '', (sec.summary || 'Sem resumo disponível.').slice(0, 180) + (sec.summary && sec.summary.length > 180 ? '…' : ''));
+        summary.style.cssText = 'color:var(--text2); font-size:11px; line-height:1.4; margin:0;';
+        card.append(summary);
+
+        card.addEventListener('click', () => {
+          showMemoryDetail({
+            type: 'SEÇÃO ATIVA',
+            title: sec.title || 'Seção',
+            id: sec.id || 'sec-active',
+            origin: 'ACTIVE_PROJECT_MEMORY.md',
+            lineCount: sec.lineCount,
+            summary: sec.summary,
+            content: sec.summary || sec.title
+          });
+        });
+
+        list.append(card);
+      }
+    } catch (e) {
+      if (target.dataset.searched === 'true') return;
+      target.innerHTML = `<div style="color:var(--text3); font-size:12px;">Índice ativo em standby. Use a busca acima para consultar memórias persistidas.</div>`;
+    }
   }
   function load(force = false) {
     shell(); if (state.loading) return state.loading; if (state.measuredAt && !force) { render(); return Promise.resolve(); }
@@ -634,6 +708,7 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
       const btn = document.getElementById('btnToggle3DNeuralBrain');
       if (!canvas) return;
       neuralBrainActive = !neuralBrainActive;
+      try { localStorage.setItem('fenix_neural_brain_active', String(neuralBrainActive)); } catch (_) {}
       if (neuralBrainActive) {
         canvas.style.display = 'block';
         if (webglCanvas) webglCanvas.style.display = neuralBrainWebglRenderer ? 'block' : 'none';

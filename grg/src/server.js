@@ -20,6 +20,7 @@ const { handleOrchestrationRoutes } = require('./api/orchestration-routes');
 const { handleUniversalSystemRoutes } = require('./api/universal-system-routes');
 const { handleLivingCityRoutes } = require('./api/living-city-routes');
 const { handleProjectWorkspaceRoutes } = require('./api/project-workspace-routes');
+const { handleLocalProjectManagementRoutes, broadcastProjectStatus } = require('./api/local-project-management-routes');
 const { handleProjectGitRoutes } = require('./api/project-git-routes');
 const { handleProductApiRoutes } = require('./api/product-api-routes');
 const { handleCompanyBrainRoutes } = require('./api/company-brain-routes');
@@ -30,6 +31,8 @@ const { handleIntentRoutes } = require('./api/intent-routes');
 const { FenixAutonomousLoop } = require('./evolution/fenix-autonomous-loop');
 const { handleAutonomousLoopRoutes } = require('./api/autonomous-loop-routes');
 const { handleMediaRoutes } = require('./api/media-routes');
+const { handleQwenOrchestratorRoutes } = require('./api/qwen-orchestrator-routes');
+const { handleDynamicPoolRoutes } = require('./api/dynamic-pool-routes');
 
 process.on('uncaughtException', (err) => console.error('[Server uncaughtException]', err));
 process.on('unhandledRejection', (reason) => console.error('[Server unhandledRejection]', reason));
@@ -40,14 +43,24 @@ const PUBLIC = path.join(__dirname, '..', 'public');
 
 function sendJson(res, code, payload, requestId = null) {
   if (res.headersSent) return true;
-  res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(requestId ? { ...payload, requestId } : payload));
+  const serializeStart = Date.now();
+  const json = JSON.stringify(requestId ? { ...payload, requestId } : payload);
+  const serializeMs = Date.now() - serializeStart;
+  const totalServerMs = res._reqStartedAt ? Math.max(0, Date.now() - res._reqStartedAt) : 0;
+  res.writeHead(code, {
+    'content-type': 'application/json; charset=utf-8',
+    'x-response-time-ms': String(totalServerMs),
+    'server-timing': `app;dur=${totalServerMs}, serialize;dur=${serializeMs}`,
+  });
+  res.end(json);
   return true;
 }
 async function readJson(req) {
+  if (req._parsedBody !== undefined) return req._parsedBody;
   let body = '';
   for await (const chunk of req) { body += chunk; if (body.length > 2_000_000) throw new Error('body too large'); }
-  return body ? JSON.parse(body) : {};
+  req._parsedBody = body ? JSON.parse(body) : {};
+  return req._parsedBody;
 }
 function withHealthDeadline(check, timeoutMs = Number(process.env.FENIX_HEALTH_RESPONSE_TIMEOUT_MS || 15_000)) {
   let timer;
@@ -181,12 +194,29 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     }
     return healthCache.pending;
   }
+  app.apiTraces = Array.isArray(app.apiTraces) ? app.apiTraces : [];
   const server = http.createServer(async (req, res) => {
+    const reqStartedAt = Date.now();
+    res._reqStartedAt = reqStartedAt;
     let requestId = null;
     let correlationId = null;
     let routePath = null;
     let tenantId = null;
     let actorId = null;
+    res.once('finish', () => {
+      if (routePath && routePath.startsWith('/api/')) {
+        app.apiTraces.unshift({
+          screen: req.headers['x-fenix-view'] || capabilityFromPath(routePath),
+          method: req.method,
+          path: routePath,
+          service: capabilityFromPath(routePath),
+          status: res.statusCode,
+          latencyMs: Date.now() - reqStartedAt,
+          recordedAt: new Date().toISOString(),
+        });
+        if (app.apiTraces.length > 100) app.apiTraces.length = 100;
+      }
+    });
     try {
       const url = new URL(req.url, 'http://localhost');
       routePath = url.pathname;
@@ -285,6 +315,24 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           activation: global.FENIX_KERNEL ? 'COMPLETED' : 'LEGACY'
         }, requestId);
       }
+
+      // Distinct Health Probes: Models, Tools, Backend (Unauthenticated for Monitoring & Probes)
+      if (req.method === 'GET' && ['/api/v2/health/models', '/api/health/models'].includes(url.pathname)) {
+        const modelRouter = require('./routing/model-router');
+        const modelsHealth = await modelRouter.checkModelsHealth();
+        return sendJson(res, modelsHealth.ok ? 200 : 503, modelsHealth, requestId);
+      }
+      if (req.method === 'GET' && ['/api/v2/health/tools', '/api/health/tools'].includes(url.pathname)) {
+        const modelRouter = require('./routing/model-router');
+        const toolsHealth = modelRouter.checkToolsHealth();
+        return sendJson(res, 200, toolsHealth, requestId);
+      }
+      if (req.method === 'GET' && ['/api/v2/health/backend', '/api/health/backend'].includes(url.pathname)) {
+        const modelRouter = require('./routing/model-router');
+        const backendHealth = await modelRouter.checkBackendHealth(app);
+        return sendJson(res, 200, backendHealth, requestId);
+      }
+
       if (req.method === 'GET' && url.pathname === '/api/oidc/config') return sendJson(res, 200, {
         enabled: securityConfig.production && !!env.FENIX_OIDC_AUTHORIZATION_ENDPOINT,
         authorizationEndpoint: env.FENIX_OIDC_AUTHORIZATION_ENDPOINT || null,
@@ -521,6 +569,23 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         res.setHeader('set-cookie', 'fenix_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
         return sendJson(res, 200, { ok: true }, requestId);
       }
+      if (req.method === 'POST' && url.pathname === '/api/v2/preview/dev-session') {
+        const b = await readJson(req).catch(() => ({}));
+        const safeUserId = String(b.userId || 'preview-user').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'preview-user';
+        const safeTenantId = String(b.tenantId || 'grg').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'grg';
+        const previewSess = await app.auth.createPreviewSession({
+          tenantId: safeTenantId,
+          userId: safeUserId,
+          ttlMs: 15 * 60 * 1000,
+        });
+        res.setHeader('set-cookie', `fenix_preview_session=${encodeURIComponent(previewSess.token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=900`);
+        return sendJson(res, 200, {
+          ok: true,
+          token: previewSess.token,
+          session: previewSess.session,
+          expiresInSeconds: 900,
+        }, requestId);
+      }
 
       if (!url.pathname.startsWith('/api/') && url.pathname !== '/runtime/snapshot') return serveStatic(url.pathname, res);
 
@@ -551,6 +616,16 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
 
+      if (req.method === 'GET' && url.pathname === '/api/me') {
+        return sendJson(res, 200, {
+          ok: true,
+          userId: actorId,
+          tenantId,
+          role: cx.role || 'master_admin',
+          name: cx.name || actorId
+        }, requestId);
+      }
+
       if (await handleMediaRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
 
       if (await require('./api/system-analysis-routes').handleSystemAnalysisRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
@@ -576,8 +651,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // Universal routes use the same authenticated identity and domain runtime
       // as every other API. Never fabricate an administrator context here.
       if (await handleLivingCityRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+      if (await handleDynamicPoolRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
       if (await handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+      if (await handleLocalProjectManagementRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
       if (await handleProjectGitRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
+      if (await handleQwenOrchestratorRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
 
       if (url.pathname.startsWith('/api/v2/autonomous')) {
         const loopHandled = await handleAutonomousLoopRoutes(req, res, {
@@ -637,9 +715,15 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const events = (state.missionEvents || []).filter((event) => event.tenantId === tenantId).slice(-80);
         const registeredList = app.agentRegistry ? app.agentRegistry.list() : [];
         const savedProfiles = state.agentProfiles || [];
+        const savedProfileFor = (id, name) => {
+          const matches = savedProfiles.filter((profile) =>
+            String(profile.id || '').toLowerCase() === String(id || '').toLowerCase()
+            || (name && String(profile.name || '').toLowerCase() === String(name).toLowerCase()));
+          return matches.find((profile) => profile.tenantId === tenantId) || matches.find((profile) => !profile.tenantId) || null;
+        };
         const registeredAgents = registeredList.map((agent) => {
           const activeJob = jobs.find((j) => (j.status === 'RUNNING' || j.status === 'DISPATCHED') && (j.agent?.agentId === agent.id || j.agentId === agent.id || j.agent?.name === agent.name));
-          const profile = savedProfiles.find((p) => String(p.id).toLowerCase() === String(agent.id).toLowerCase() || String(p.name).toLowerCase() === String(agent.name).toLowerCase());
+          const profile = savedProfileFor(agent.id, agent.name);
           return {
             id: agent.id,
             agentId: agent.id,
@@ -659,7 +743,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         // Include custom agents from store if not already in registeredList
         for (const custom of (state.agents || [])) {
           if (custom && !registeredAgents.some((a) => String(a.id).toLowerCase() === String(custom.id).toLowerCase())) {
-            const profile = savedProfiles.find((p) => String(p.id).toLowerCase() === String(custom.id).toLowerCase());
+            const profile = savedProfileFor(custom.id, custom.name);
             registeredAgents.push({
               id: custom.id,
               agentId: custom.id,
@@ -679,7 +763,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         }
         const baseAgents = (agentPanel.agents && agentPanel.agents.length) ? agentPanel.agents : registeredAgents;
         const agents = baseAgents.map((ag) => {
-          const profile = savedProfiles.find((p) => String(p.id).toLowerCase() === String(ag.id || ag.agentId || '').toLowerCase() || String(p.name).toLowerCase() === String(ag.name || '').toLowerCase());
+          const profile = savedProfileFor(ag.id || ag.agentId, ag.name);
           if (profile) {
             return {
               ...ag,
@@ -796,6 +880,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'POST' && fenixProviderTest) { const body = await readJson(req); const started = Date.now(); try { const result = await app.aiGateway.invoke(tenantId, actorId, { taskType: 'default', prompt: body.prompt || 'Respond with PROVIDER_READY.', provider: fenixProviderTest[1], model: body.model || null }); return sendJson(res, 200, { provider: result.provider, model: result.model, reachable: true, latencyMs: Date.now() - started, status: 'READY' }, requestId); } catch (error) { return sendJson(res, 503, { provider: fenixProviderTest[1], reachable: false, latencyMs: Date.now() - started, status: 'PROVIDER_ERROR', error: String(error.message || error).slice(0, 500) }, requestId); } }
       if (url.pathname === '/api/fenix/memory/search' && req.method === 'GET') return sendJson(res, 200, { memories: await app.engineeringMemory.search(tenantId, actorId, { q: url.searchParams.get('q') || '', limit: url.searchParams.get('limit') || 10 }) }, requestId);
       if (url.pathname === '/api/fenix/memory/metrics' && req.method === 'GET') return sendJson(res, 200, await app.engineeringMemory.metrics(tenantId, actorId), requestId);
+      if (url.pathname === '/api/fenix/memory/graph' && req.method === 'GET') {
+        await app.controlPlane.authorize(tenantId, actorId, 'memory:read');
+        const gb = app.graphBrain || require('./brain/graph-brain').globalGraphBrain;
+        const nodes = gb?.nodes ? Array.from(gb.nodes.values()) : [];
+        const edges = Array.isArray(gb?.edges) ? gb.edges : [];
+        return sendJson(res, 200, { ok: true, status: 'MEASURED', source: 'graph-brain', nodes, edges, stats: gb?.getStats ? gb.getStats() : { totalNodes: nodes.length, totalEdges: edges.length } }, requestId);
+      }
       const fenixMemory = url.pathname.match(/^\/api\/fenix\/memory\/([^/]+)$/);
       if (req.method === 'GET' && fenixMemory) return sendJson(res, 200, await app.engineeringMemory.get(tenantId, actorId, fenixMemory[1]), requestId);
       if (req.method === 'POST' && url.pathname === '/api/fenix/memory/promote') return sendJson(res, 201, await app.engineeringMemory.promote(tenantId, actorId, await readJson(req)), requestId);
@@ -1552,7 +1643,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && /^\/api\/connectors\/[^/]+\/health$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.health(tenantId, actorId, url.pathname.split('/')[3]), requestId);
       if (req.method === 'POST' && /^\/api\/connectors\/[^/]+\/selftest$/.test(url.pathname)) return sendJson(res, 200, await app.connectors.selfTest(tenantId, actorId, url.pathname.split('/')[3]), requestId);
       // MISSION-1003 — AI Router: qual provider seria escolhido agora, por evidência.
-      if (req.method === 'GET' && url.pathname === '/api/ai/router/select') return sendJson(res, 200, await app.aiRouter.select(tenantId, actorId, { preferTier: url.searchParams.get('tier') || null }), requestId);
+      if (['GET', 'POST'].includes(req.method) && url.pathname === '/api/ai/router/select') {
+        const body = req.method === 'POST' ? await readJson(req) : {};
+        return sendJson(res, 200, await app.aiRouter.select(tenantId, actorId, { preferTier: url.searchParams.get('tier') || body.tier || body.preferTier || null }), requestId);
+      }
       // Executive Brain: objetivo -> Programa de missões (decompõe + delega ao planner).
       if (req.method === 'GET' && url.pathname === '/api/executive/programs') return sendJson(res, 200, { programs: await app.executiveBrain.list(tenantId, actorId) }, requestId);
       if (req.method === 'POST' && url.pathname === '/api/executive/decompose') { const b = await readJson(req); return sendJson(res, 200, await app.executiveBrain.decompose(tenantId, actorId, b.objective), requestId); }
@@ -1627,6 +1721,22 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   app.systemAnalyses.recover().catch(error => logger.error({ event: 'system-analysis.recovery.failed', error }));
 
   wss = new WebSocketServer({ noServer: true });
+  app.wss = wss;
+  server.wss = wss;
+  const localScanner = require('./projects/local-project-status-scanner');
+  let lastProjectScanHash = '';
+  const projectHeartbeatTimer = setInterval(async () => {
+    try {
+      const statuses = await localScanner.scanAll(true);
+      const hash = Object.values(statuses).map((s) => `${s.id}:${s.online}:${(s.listeningPorts || []).join(',')}`).join('|');
+      if (hash !== lastProjectScanHash) {
+        lastProjectScanHash = hash;
+        broadcastProjectStatus(app, statuses);
+      }
+    } catch (_) {}
+  }, 15000);
+  projectHeartbeatTimer.unref();
+  server.on('close', () => { clearInterval(projectHeartbeatTimer); });
   server.on('upgrade', async (request, socket, head) => {
     const upgradeUrl = new URL(request.url || '/', 'http://localhost');
     if (upgradeUrl.pathname !== '/events') return socket.destroy();
@@ -1652,6 +1762,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     // Send initial connection event
     // Keep the wire event aligned with the frontend live-runtime contract.
     ws.send(JSON.stringify({ type: 'runtime.connected', payload: { status: 'ok' } }));
+    localScanner.scanAll().then((statuses) => {
+      if (ws.readyState === 1) {
+        ws.send(JSON.stringify({ type: 'project.status.updated', timestamp: Date.now(), data: statuses }));
+      }
+    }).catch(() => {});
     
     // Handle client ping/pong, replay requests, and Unreal Engine world bridge events
     ws.on('message', (raw) => {
