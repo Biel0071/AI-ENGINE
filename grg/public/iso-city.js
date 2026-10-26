@@ -12,6 +12,7 @@ function _pseudoRandom() {
  */
 
 const AGENT_ROLES = [
+  { id: 'agent-zai',       name: 'ZAI Mascote & Copilot', role: 'Autonomous AI Companion & Copilot', district: 'command-center', emoji: '🦅', color: '#00d9ff' },
   { id: 'agent.ceo',       name: 'CEO Agent', role: 'Chief Executive Officer', district: 'command-center', emoji: '👔', color: '#ffd700' },
   { id: 'agent-architect', name: 'Arquiteto', role: 'System Architecture', district: 'command-center', emoji: '📐', color: '#f97316' },
   { id: 'agent-planner',   name: 'Planejador', role: 'Mission Planning', district: 'command-center', emoji: '🎯', color: '#ef4444' },
@@ -45,36 +46,36 @@ const CANONICAL_DISTRICTS = Object.freeze({
     buildings: ['HQ Tower', 'Mission Control', 'War Room']
   },
   'project-district': {
-    id: 'project-district', key: 'project-district', name: 'Project District', label: 'PROJECT DISTRICT',
+    id: 'project-district', key: 'project-district', name: 'Torre dos Projetos', label: 'TORRE DOS PROJETOS',
     color: '#06b6d4', emoji: '📁', x: 9.0, y: -7.5, w: 3, h: 3,
-    buildingType: 'workshop_complex',
+    buildingType: 'projects_tower',
     department: 'Gerenciamento de Projetos e Workspaces Ativos',
     capabilities: ['Project Hub', 'Code Forge', 'Deploy Bay'],
-    buildings: ['Project Hub', 'Code Forge', 'Deploy Bay']
+    buildings: ['Torre dos Projetos', 'Code Forge', 'Deploy Bay']
   },
   'ai-district': {
-    id: 'ai-district', key: 'ai-district', name: 'AI District', label: 'AI DISTRICT',
-    color: '#a855f7', emoji: '🧠', x: 8.0, y: -5.5, w: 3, h: 3,
-    buildingType: 'knowledge_library',
+    id: 'ai-district', key: 'ai-district', name: 'Oficina de Skills', label: 'OFICINA DE SKILLS',
+    color: '#f97316', emoji: '🛠️', x: 8.0, y: -5.5, w: 3, h: 3,
+    buildingType: 'skills_workshop',
     department: 'Inteligência Artificial, Modelos Cognitivos e RAG',
     capabilities: ['Neural Nexus', 'Cognitive Core', 'Model Registry'],
-    buildings: ['Neural Nexus', 'Cognitive Core', 'Model Registry']
+    buildings: ['Oficina de Skills', 'Cognitive Core', 'Model Registry']
   },
   'creative-district': {
-    id: 'creative-district', key: 'creative-district', name: 'Creative District', label: 'CREATIVE DISTRICT',
-    color: '#ec4899', emoji: '🎨', x: -8.5, y: -1.0, w: 3, h: 3,
-    buildingType: 'creative_studio',
+    id: 'creative-district', key: 'creative-district', name: 'Laboratório de Aplicativos', label: 'LABORATÓRIO DE APPS',
+    color: '#ec4899', emoji: '🚀', x: -8.5, y: -1.0, w: 3, h: 3,
+    buildingType: 'apps_laboratory',
     department: 'Design System, Interfaces, UX e Componentes Visuais',
     capabilities: ['Canvas Pavilion', 'Design Tokens', 'User Experience'],
-    buildings: ['Design Studio', 'UI Pavilion', 'UX Lab']
+    buildings: ['Central de Apps', 'UI Pavilion', 'UX Lab']
   },
   'dev-district': {
-    id: 'dev-district', key: 'dev-district', name: 'Dev District & Engineering', label: 'ENGINEERING & APIS',
-    color: '#10b981', emoji: '💻', x: -6.5, y: 3.5, w: 3, h: 3,
-    buildingType: 'command_tower',
+    id: 'dev-district', key: 'dev-district', name: 'Torre dos Agentes', label: 'TORRE DOS AGENTES',
+    color: '#ef4444', emoji: '🤖', x: -6.5, y: 3.5, w: 3, h: 3,
+    buildingType: 'agents_tower',
     department: 'Engenharia de Software, APIs, Runtime e Qualidade',
     capabilities: ['Code Synthesis', 'API Endpoints', 'QA Automation'],
-    buildings: ['Backend Tower', 'QA Radar', 'Doc Center']
+    buildings: ['Torre dos Agentes', 'QA Radar', 'Doc Center']
   },
   'data-center': {
     id: 'data-center', key: 'data-center', name: 'Data Center', label: 'DATA CENTER',
@@ -85,28 +86,28 @@ const CANONICAL_DISTRICTS = Object.freeze({
     buildings: ['Database Silo', 'Memory Vault', 'Security Citadel']
   },
   'observatory': {
-    id: 'observatory', key: 'observatory', name: 'Observatory', label: 'OBSERVATORY',
-    color: '#6366f1', emoji: '🔭', x: 0, y: -11.0, w: 3, h: 3,
-    buildingType: 'observatory_dome',
+    id: 'observatory', key: 'observatory', name: 'Trading Floor & Observatório', label: 'TRADING FLOOR 3D',
+    color: '#6366f1', emoji: '📈', x: 0, y: -11.0, w: 3, h: 3,
+    buildingType: 'trading_floor',
     department: 'Telemetria, Observabilidade, Traces e CI/CD',
     capabilities: ['Telemetry Radar', 'Trace Analyzer', 'CI/CD Pipeline'],
-    buildings: ['Observatory Dome', 'Metrics Station', 'Launch Pad']
+    buildings: ['Trading Arena', 'Mesa de Operações', 'Telão de Curva']
   },
   'industrial': {
-    id: 'industrial', key: 'industrial', name: 'Distrito Industrial', label: 'DEPÓSITO MAIS HUB',
-    color: '#f59e0b', emoji: '📦', x: 6.0, y: -2.5, w: 4, h: 4,
-    buildingType: 'warehouse_hub',
+    id: 'industrial', key: 'industrial', name: 'Estação das Automações', label: 'ESTAÇÃO DAS AUTOMAÇÕES',
+    color: '#10b981', emoji: '🚂', x: 6.0, y: -2.5, w: 4, h: 4,
+    buildingType: 'automations_station',
     department: 'Logística de Armazenagem, WMS & Distribuição',
-    capabilities: ['Depósito Mais Hub', 'Docas de Expedição', 'Gestão de Estoque'],
-    buildings: ['Depósito Mais HQ', 'Doca 01', 'Armazém Central']
+    capabilities: ['Estação de Automação', 'Ferrovia BullMQ', 'Gestão de Fila'],
+    buildings: ['Estação Central', 'Terminal de Cargas', 'Hangar de Jobs']
   },
   'porto': {
-    id: 'porto', key: 'porto', name: 'Porto Digital', label: 'PORTO DIGITAL',
-    color: '#0284c7', emoji: '🚢', x: 12.0, y: -4.0, w: 3, h: 3,
-    buildingType: 'port_terminal',
+    id: 'porto', key: 'porto', name: 'Ponte das Integrações', label: 'PONTE DAS INTEGRAÇÕES',
+    color: '#0284c7', emoji: '🌉', x: 12.0, y: -4.0, w: 3, h: 3,
+    buildingType: 'integrations_bridge',
     department: 'Integrações Externas, Webhooks & Exportação',
     capabilities: ['API Gateway Marítimo', 'Conteinerização', 'Terminal de Cargas'],
-    buildings: ['Terminal de Carga', 'Doca Seca', 'Farol de Conexão']
+    buildings: ['Ponte Central', 'Doca Seca', 'Farol de Conexão']
   },
   'research': {
     id: 'research', key: 'research', name: 'P&D & Bio-Inovação', label: 'RESEARCH & LABS',
@@ -623,18 +624,44 @@ class CityAudioEngine {
 
 function getAgentAvatarConfig(agent) {
   const isMaster = agent && (agent.id === 'Orchestrator' || String(agent.role || '').toLowerCase().includes('orchestrator') || agent.id === 'master');
+  const isZai = agent && (/^(?:agent-)?zai(?:-agent)?$/i.test(String(agent.id || '')) || String(agent.name || '').toLowerCase() === 'zai');
+  if (agent?.avatar?.appearance && window.fenixCityAgentVisualProfile) {
+    const visual = window.fenixCityAgentVisualProfile({
+      id: agent.id, name: agent.name, role: agent.role, department: agent.department, avatar: agent.avatar,
+    });
+    const hairHex = `#${Number(visual.hairColor).toString(16).padStart(6, '0')}`;
+    const hairColor = Object.entries(AVATAR_PALETTES.hairColors).find(([, color]) => color.toLowerCase() === hairHex.toLowerCase())?.[0]
+      || (isZai ? 'cyan' : 'black');
+    const skin = Object.entries(AVATAR_PALETTES.skins).find(([, palette]) => palette.base.toLowerCase() === visual.skinColor.toLowerCase())?.[0]
+      || (isZai ? 'cyber_cyan' : 'light');
+    return {
+      skin,
+      hairStyle: visual.hairStyle || (isZai ? 'crest' : 'spiky'),
+      hairColor,
+      outfit: visual.outfit || (isZai ? 'cyber' : 'suit'),
+      shirtColor: visual.shirtColor,
+      pantsColor: visual.pantsColor || (isZai ? '#12323a' : '#1e293b'),
+      shoesColor: visual.shoesColor || '#090d16',
+      accessory: visual.accessory || (isZai ? 'visor' : 'none'),
+      badge: visual.badge || (isMaster ? 'master' : isZai ? 'diamond' : 'none'),
+      bodyType: visual.displayScale <= 1.6 ? 'compact' : visual.displayScale >= 1.8 ? 'tall' : 'standard',
+      outfitColor: visual.shirtColor,
+      accentColor: visual.accentColor,
+    };
+  }
   if (agent && agent.avatar && typeof agent.avatar === 'object') {
     return {
-      skin: agent.avatar.skin || 'light',
-      hairStyle: agent.avatar.hairStyle || 'spiky',
-      hairColor: agent.avatar.hairColor || 'black',
-      outfit: agent.avatar.outfit || 'suit',
-      shirtColor: agent.avatar.shirtColor || agent.avatar.outfitColor || agent.color || '#3b82f6',
-      pantsColor: agent.avatar.pantsColor || '#1e293b',
+      skin: agent.avatar.skin || (isZai ? 'cyber_cyan' : 'light'),
+      hairStyle: agent.avatar.hairStyle || (isZai ? 'crest' : 'spiky'),
+      hairColor: agent.avatar.hairColor || (isZai ? 'cyan' : 'black'),
+      outfit: agent.avatar.outfit || (isZai ? 'cyber' : 'suit'),
+      shirtColor: agent.avatar.shirtColor || agent.avatar.outfitColor || agent.color || (isZai ? '#087f8c' : '#3b82f6'),
+      pantsColor: agent.avatar.pantsColor || (isZai ? '#12323a' : '#1e293b'),
       shoesColor: agent.avatar.shoesColor || '#090d16',
-      accessory: agent.avatar.accessory || 'none',
-      badge: agent.avatar.badge || (isMaster ? 'master' : 'none'),
-      outfitColor: agent.avatar.shirtColor || agent.avatar.outfitColor || agent.color || '#3b82f6'
+      accessory: agent.avatar.accessory || (isZai ? 'visor' : 'none'),
+      badge: agent.avatar.badge || (isMaster ? 'master' : isZai ? 'diamond' : 'none'),
+      bodyType: agent.avatar.bodyType || 'standard',
+      outfitColor: agent.avatar.shirtColor || agent.avatar.outfitColor || agent.color || (isZai ? '#087f8c' : '#3b82f6')
     };
   }
   const idStr = String((agent && (agent.id || agent.name)) || 'agent');
@@ -646,28 +673,32 @@ function getAgentAvatarConfig(agent) {
   const hairColorKeys = Object.keys(AVATAR_PALETTES.hairColors);
 
   return {
-    skin: isMaster ? 'synth_gold' : skinKeys[hash % skinKeys.length],
-    hairStyle: isMaster ? 'crest' : AVATAR_PALETTES.hairStyles[(hash >> 2) % AVATAR_PALETTES.hairStyles.length],
-    hairColor: isMaster ? 'red' : hairColorKeys[(hash >> 4) % hairColorKeys.length],
-    outfit: isMaster ? 'armor' : AVATAR_PALETTES.outfits[(hash >> 6) % AVATAR_PALETTES.outfits.length],
-    shirtColor: (agent && agent.color) || '#3b82f6',
-    pantsColor: isMaster ? '#0f172a' : '#1e293b',
+    skin: isMaster ? 'synth_gold' : isZai ? 'cyber_cyan' : skinKeys[hash % skinKeys.length],
+    hairStyle: isMaster || isZai ? 'crest' : AVATAR_PALETTES.hairStyles[(hash >> 2) % AVATAR_PALETTES.hairStyles.length],
+    hairColor: isMaster ? 'red' : isZai ? 'cyan' : hairColorKeys[(hash >> 4) % hairColorKeys.length],
+    outfit: isMaster ? 'armor' : isZai ? 'cyber' : AVATAR_PALETTES.outfits[(hash >> 6) % AVATAR_PALETTES.outfits.length],
+    shirtColor: (agent && agent.color) || (isZai ? '#087f8c' : '#3b82f6'),
+    pantsColor: isMaster || isZai ? '#12323a' : '#1e293b',
     shoesColor: '#090d16',
-    accessory: isMaster ? 'halo' : AVATAR_PALETTES.accessories[(hash >> 8) % AVATAR_PALETTES.accessories.length],
-    badge: isMaster ? 'master' : 'none',
-    outfitColor: (agent && agent.color) || '#3b82f6'
+    bodyType: 'standard',
+    accessory: isMaster ? 'halo' : isZai ? 'visor' : AVATAR_PALETTES.accessories[(hash >> 8) % AVATAR_PALETTES.accessories.length],
+    badge: isMaster ? 'master' : isZai ? 'diamond' : 'none',
+    outfitColor: (agent && agent.color) || (isZai ? '#087f8c' : '#3b82f6')
   };
 }
 
 class PixelAvatarRenderer {
   static drawAvatar(ctx, opts) {
-    if (window.FenixPixelEngine && window.FenixPixelEngine.drawPixelCharacter) {
+    if (opts.renderMode === 'retro_pixel' && window.FenixPixelEngine && window.FenixPixelEngine.drawPixelCharacter) {
       const profile = window.FenixPixelEngine.getProfileForAgent(opts.agent || opts.config || opts);
       window.FenixPixelEngine.drawPixelCharacter(ctx, {
         ...opts,
         profile: {
           ...profile,
-          ...(opts.config || {})
+          ...(opts.config || {}),
+          skin: AVATAR_PALETTES.skins[opts.config?.skin]?.base || opts.config?.skin || profile.skin,
+          hairColor: AVATAR_PALETTES.hairColors[opts.config?.hairColor] || opts.config?.hairColor || profile.hairColor,
+          outfitColor: opts.config?.shirtColor || opts.config?.outfitColor || profile.outfitColor,
         },
         role: opts.role || (opts.agent && opts.agent.role) || profile.role || 'developer'
       });
@@ -914,6 +945,14 @@ class PixelAvatarRenderer {
         ctx.fill();
         ctx.beginPath();
         ctx.arc(px + headR * 0.35 + eyeDir * 0.4 * zoom, headY - headR * 0.1, headR * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+        // ZAI Specular Eye Highlights
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(px - headR * 0.32 + eyeDir * 0.4 * zoom, headY - headR * 0.13, Math.max(0.6, headR * 0.05), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + headR * 0.38 + eyeDir * 0.4 * zoom, headY - headR * 0.13, Math.max(0.6, headR * 0.05), 0, Math.PI * 2);
         ctx.fill();
 
         if (accessory === 'glasses') {
@@ -1316,13 +1355,7 @@ class IsoCityEngine {
       if (!document.hidden && document.getElementById('view-city')?.classList.contains('active')) this.startLoop();
     });
     
-    // Sync with real API every 3s and on live events
-    this._syncInterval = setInterval(() => {
-      const active = document.querySelector('.view.active')?.id;
-      if (active === 'view-command' || active === 'view-city') this.syncRealData();
-    }, 3000);
-    window.addEventListener('fenix-live', () => this.syncRealData());
-    window.addEventListener('fenix:data', () => this.syncRealData());
+    // The canonical city-world producer owns polling; renderers only consume snapshots.
     window.addEventListener('fenix:city-world', () => this.syncRealData());
     window.addEventListener('fenix-city-event', (event) => {
       this.lastCityEvent = event.detail || null;
@@ -1893,6 +1926,19 @@ class IsoCityEngine {
     if (lbl) {
       lbl.textContent = `${Math.round(z * 100)}% · ${badge}`;
     }
+
+    // Sync Universe Explorer HUD buttons
+    if (z <= 0.75) {
+      document.querySelectorAll('.fuh-level-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('btnHudUniverse')?.classList.add('active');
+    } else if (z < 2.20) {
+      document.querySelectorAll('.fuh-level-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('btnHudIsland')?.classList.add('active');
+    } else {
+      document.querySelectorAll('.fuh-level-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('btnHudAgent')?.classList.add('active');
+    }
+
     this.updateBreadcrumbs();
   }
 
@@ -2898,19 +2944,14 @@ class IsoCityEngine {
         this._loopRunning = false;
         return;
       }
+      if (!this._shouldDrawFrame(t)) {
+        requestAnimationFrame(loop);
+        return;
+      }
+
       const delta = Math.min((t - this.state.lastTime) / 1000, 0.1);
       this.state.lastTime = t;
       this.time = t / 1000;
-
-      const isHeadless = Boolean(navigator.webdriver) || (typeof navigator !== 'undefined' && /headless/i.test(navigator.userAgent)) || Boolean(window.__FENIX_HEADLESS__);
-      if (isHeadless) {
-        if (this._lastDrawTime && (t - this._lastDrawTime < 100)) {
-          requestAnimationFrame(loop);
-          return;
-        }
-        this._lastDrawTime = t;
-      }
-
       this.update(delta);
       this.draw();
       requestAnimationFrame(loop);
@@ -2919,6 +2960,21 @@ class IsoCityEngine {
       this._loopRunning = true;
       requestAnimationFrame(loop);
     }
+  }
+
+  _getRenderFrameIntervalMs() {
+    const isHeadless = Boolean(navigator.webdriver) || /headless/i.test(navigator.userAgent || '') || Boolean(window.__FENIX_HEADLESS__);
+    if (isHeadless) return 100;
+    const isCompact = window.matchMedia?.('(max-width: 1280px)')?.matches
+      || (Number(navigator.hardwareConcurrency) > 0 && Number(navigator.hardwareConcurrency) <= 4);
+    return isCompact ? 1000 / 24 : 1000 / 30;
+  }
+
+  _shouldDrawFrame(timestamp) {
+    const interval = this._getRenderFrameIntervalMs();
+    if (Number.isFinite(this._lastDrawTime) && timestamp - this._lastDrawTime < interval) return false;
+    this._lastDrawTime = timestamp;
+    return true;
   }
 
   update(delta) {
@@ -3062,35 +3118,21 @@ class IsoCityEngine {
       }
       if (!agent._moving && (!agent.thoughtBubble || agent.thoughtBubble.life <= 0)) {
         const job = agent.currentJob || agent.currentJobId;
-        const taskDesc = typeof job === 'string' ? job : (job?.name || job?.type || agent.role || 'Compilando e executando');
-        agent.thoughtBubble = { text: '⚡ ' + taskDesc, life: 5.5, isWork: true };
-      }
-    } else if (!isError) {
-      // Idle agent autonomous routine (coffee, water cooler, whiteboard, war room)
-      agent.routineTimer = (agent.routineTimer || 0) + delta;
-      const seed = (agent.id.charCodeAt(agent.id.length - 1) || 0) + (agent.id.charCodeAt(0) || 0);
-      const interval = 16 + (seed % 14);
-      if (agent.routineTimer > interval && !agent._moving && !agent.routeActive) {
-        agent.routineTimer = 0;
-        const portalList = typeof CANONICAL_BUILDING_PORTALS !== 'undefined' ? Object.values(CANONICAL_BUILDING_PORTALS) : [];
-        const randomPortal = portalList.length ? portalList[Math.floor(_pseudoRandom() * portalList.length)] : null;
-        const routineChoices = [
-          MUNDER_DIFFLIN_WAYPOINTS.COFFEE_BAR,
-          MUNDER_DIFFLIN_WAYPOINTS.WATER_COOLER,
-          MUNDER_DIFFLIN_WAYPOINTS.WHITEBOARD,
-          MUNDER_DIFFLIN_WAYPOINTS.CONFERENCE_TABLE,
-          MUNDER_DIFFLIN_WAYPOINTS.CENTRAL_HALL,
-          ...(randomPortal ? [
-            { x: randomPortal.door.x, y: randomPortal.door.y, thought: randomPortal.exitThought },
-            { x: randomPortal.interior.x, y: randomPortal.interior.y, thought: randomPortal.enterThought }
-          ] : []),
-          { x: agent.homeX, y: agent.homeY, thought: 'Retornando à estação de trabalho 💻' }
-        ];
-        const choice = routineChoices[Math.floor(_pseudoRandom() * routineChoices.length)];
-        agent.tx = choice.x;
-        agent.ty = choice.y;
-        agent.routeActive = true;
-        agent.thoughtBubble = { text: choice.thought, life: 5.0, isWork: false };
+        let taskDesc = typeof job === 'string' ? job : (job?.name || job?.type || agent.role || 'Compilando e executando');
+        if (agent.currentAction) {
+          taskDesc = agent.currentAction;
+        } else if (agent.stationState === 'reading' || agent.status === 'READING') {
+          taskDesc = '📖 Lendo arquivo...';
+        } else if (agent.stationState === 'testing' || agent.status === 'TESTING') {
+          taskDesc = '🧪 Executando testes...';
+        } else if (agent.stationState === 'waiting' || agent.status === 'WAITING' || agent.status === 'DEPENDENCY_WAIT') {
+          taskDesc = '⏳ Aguardando dependência...';
+        } else if (agent.status === 'BLOCKED' || isError) {
+          taskDesc = '🚨 Bloqueado / Erro';
+        } else if (!taskDesc.startsWith('⚡ ') && !taskDesc.startsWith('📖 ') && !taskDesc.startsWith('🧪 ') && !taskDesc.startsWith('⏳ ') && !taskDesc.startsWith('🚨 ')) {
+          taskDesc = '⚡ ' + taskDesc;
+        }
+        agent.thoughtBubble = { text: taskDesc, life: 6.0, isWork: true };
       }
     }
 
@@ -3135,49 +3177,6 @@ class IsoCityEngine {
     } else {
       if (agent.path && agent.pathIndex >= agent.path.length - 1) {
         agent.routeActive = false;
-        // After arrival, if idle, randomly pause to think or communicate
-        if (!isWorking && !isError && !agent.animDuration) {
-          const roll = _pseudoRandom();
-          if (roll < 0.25) {
-            agent.ambientState = 'think';
-            agent.animDuration = 3.5 + _pseudoRandom() * 2.5;
-          } else if (roll < 0.50) {
-            agent.ambientState = 'communicate';
-            agent.animDuration = 3.0 + _pseudoRandom() * 2.0;
-          } else {
-            agent.ambientState = 'idle';
-          }
-        }
-      }
-      // Spontaneous social group conversation when near idle colleagues
-      if (!isWorking && !isError && !agent._moving && (!agent.bubble || agent.bubble.life <= 0)) {
-        agent.socialTimer = (agent.socialTimer || 0) + delta;
-        if (agent.socialTimer > 8) {
-          agent.socialTimer = 0;
-          for (const peer of this.world.agents.values()) {
-            if (peer === agent || peer._moving || peer.status === 'OFFLINE') continue;
-            const pdist = Math.hypot(peer.x - agent.x, peer.y - agent.y);
-            if (pdist < 1.35) {
-              const pdx = peer.x - agent.x;
-              const pdy = peer.y - agent.y;
-              agent.facing = Math.abs(pdx) > Math.abs(pdy) ? (pdx > 0 ? 'SE' : 'NW') : (pdy > 0 ? 'SW' : 'NE');
-              peer.facing = Math.abs(pdx) > Math.abs(pdy) ? (pdx > 0 ? 'NW' : 'SE') : (pdy > 0 ? 'NE' : 'SW');
-              agent.ambientState = 'communicate';
-              agent.animDuration = 4.0;
-              peer.ambientState = 'communicate';
-              peer.animDuration = 4.0;
-              const chatTopics = [
-                'Alinhando sprint com ' + (peer.displayName || peer.name) + ' 💬',
-                'Contratos e testes 100% verificados ✅',
-                'Otimizando latência do barramento ⚡',
-                'Diagramas de arquitetura atualizados 📐',
-                'Sincronizando memória ativa do cluster 🧠'
-              ];
-              agent.bubble = { text: chatTopics[Math.floor(_pseudoRandom() * chatTopics.length)], life: 5.0 };
-              break;
-            }
-          }
-        }
       }
       if (!agent.facing) agent.facing = 'SE';
     }
@@ -4946,7 +4945,7 @@ class IsoCityEngine {
   }
 
   _drawGrid(ctx, cx, cy, zoom) {
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.04)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let i = -16; i <= 16; i++) {
@@ -4957,6 +4956,15 @@ class IsoCityEngine {
       p = this.toScreen( 16,i,0,cx,cy,zoom); ctx.lineTo(p.x,p.y);
     }
     ctx.stroke();
+
+    // Cyber-Obsidian grid intersection crosshairs (Video 1001656597 & snapinsta Pattern)
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+    for (let i = -16; i <= 16; i += 4) {
+      for (let j = -16; j <= 16; j += 4) {
+        const p = this.toScreen(i, j, 0, cx, cy, zoom);
+        ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3);
+      }
+    }
   }
 
   _drawDistrict(ctx, d, cx, cy, zoom) {
@@ -5037,6 +5045,13 @@ class IsoCityEngine {
     switch (type) {
       case 'core_spire':         this._drawCoreSpire(ctx, d, cx, cy, zoom, dep); break;
       case 'command_tower':      this._drawCommandTower(ctx, d, cx, cy, zoom, dep); break;
+      case 'apps_laboratory':    this._drawAppsLaboratory(ctx, d, cx, cy, zoom, dep); break;
+      case 'projects_tower':     this._drawProjectsTower(ctx, d, cx, cy, zoom, dep); break;
+      case 'agents_tower':       this._drawAgentsTower(ctx, d, cx, cy, zoom, dep); break;
+      case 'skills_workshop':    this._drawSkillsWorkshop(ctx, d, cx, cy, zoom, dep); break;
+      case 'trading_floor':      this._drawTradingFloor(ctx, d, cx, cy, zoom, dep); break;
+      case 'automations_station':this._drawAutomationsStation(ctx, d, cx, cy, zoom, dep); break;
+      case 'integrations_bridge':this._drawIntegrationsBridge(ctx, d, cx, cy, zoom, dep); break;
       case 'workshop_complex':   this._drawWorkshopComplex(ctx, d, cx, cy, zoom, dep); break;
       case 'canvas_pavilion':    this._drawCanvasPavilion(ctx, d, cx, cy, zoom, dep); break;
       case 'server_monoliths':   this._drawServerMonoliths(ctx, d, cx, cy, zoom, dep); break;
@@ -5111,6 +5126,26 @@ class IsoCityEngine {
     ctx.fill();
   }
 
+  _drawTowerChargeBeam(ctx, x, y, z, height, color, cx, cy, zoom) {
+    const pulse = 0.5 + 0.5 * Math.sin(this.time * 4.5);
+    const top = this.toScreen(x, y, z + height, cx, cy, zoom);
+    const bot = this.toScreen(x, y, z, cx, cy, zoom);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(2, (2.5 + 2 * pulse) * zoom);
+    ctx.globalAlpha = 0.35 + 0.45 * pulse;
+    ctx.beginPath();
+    ctx.moveTo(bot.x, bot.y);
+    ctx.lineTo(top.x, top.y);
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.75 + 0.25 * pulse;
+    ctx.beginPath();
+    ctx.arc(top.x, top.y, (3.5 + 2 * pulse) * zoom, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   _drawCoreSpire(ctx, d, cx, cy, zoom, dep) {
     [-0.9, 0.9].forEach(ox => {
       [-0.9, 0.9].forEach(oy => {
@@ -5119,6 +5154,7 @@ class IsoCityEngine {
     });
     this._drawBlock(ctx, d.x, d.y, dep, 0.85, '#ef4444', cx, cy, zoom, 0.35, 0.35);
     this._drawPylon(ctx, d.x, d.y, dep + 0.85, 0.45, '#f87171', cx, cy, zoom);
+    this._drawTowerChargeBeam(ctx, d.x, d.y, dep + 1.3, 1.6, '#ef4444', cx, cy, zoom);
   }
 
   _drawCommandTower(ctx, d, cx, cy, zoom, dep) {
@@ -5217,6 +5253,13 @@ class IsoCityEngine {
     ctx.beginPath();
     ctx.arc(top.x, top.y, 8 * zoom, 0, Math.PI * 2);
     ctx.stroke();
+    // THE VAULT Core Glow & Energy Beam (Padrão Vídeo 2 - 1001656597.mp4)
+    const vaultPulse = 0.6 + 0.4 * Math.sin(this.time * 3.5);
+    ctx.fillStyle = `rgba(0, 217, 255, ${0.4 * vaultPulse})`;
+    ctx.beginPath();
+    ctx.arc(top.x, top.y, (14 * vaultPulse) * zoom, 0, Math.PI * 2);
+    ctx.fill();
+    this._drawTowerChargeBeam(ctx, d.x, d.y, dep + 0.65, 2.0, '#00d9ff', cx, cy, zoom);
   }
 
   _drawKnowledgeLibrary(ctx, d, cx, cy, zoom, dep) {
@@ -5254,6 +5297,316 @@ class IsoCityEngine {
     this._drawBlock(ctx, d.x - 0.3, d.y, dep, 0.35, d.color, cx, cy, zoom, 0.28, 0.28);
     this._drawBlock(ctx, d.x + 0.3, d.y, dep, 0.35, d.color, cx, cy, zoom, 0.28, 0.28);
     this._drawBlock(ctx, d.x, d.y, dep + 0.35, 0.35, d.color, cx, cy, zoom, 0.28, 0.28);
+  }
+
+  _drawAppsLaboratory(ctx, d, cx, cy, zoom, dep) {
+    // Central Octagonal Lab Core (Video 1 - Ilha de Apps)
+    this._drawBlock(ctx, d.x, d.y, dep, 0.45, '#06b6d4', cx, cy, zoom, 0.6, 0.6);
+    this._drawCylinder(ctx, d.x, d.y, dep + 0.45, 0.35, 0.36, '#22d3ee', cx, cy, zoom);
+    this._drawTowerChargeBeam(ctx, d.x, d.y, dep + 0.8, 1.6, '#06b6d4', cx, cy, zoom);
+
+    // 6 App Satellite Pods (ZAPAI, API-PLATFORM, DVIEW, TASK-BOARD, MF-ATACADO, FENIX-CORE)
+    const apps = [
+      { name: 'ZAPAI', ox: -0.95, oy: -0.95, color: '#22c55e', icon: '💬' },
+      { name: 'API-PLATFORM', ox: 0.95, oy: -0.95, color: '#3b82f6', icon: '⚡' },
+      { name: 'DVIEW', ox: -0.95, oy: 0.95, color: '#8b5cf6', icon: '📊' },
+      { name: 'TASK-BOARD', ox: 0.95, oy: 0.95, color: '#f59e0b', icon: '📋' },
+      { name: 'MF-ATACADO', ox: 0, oy: 1.25, color: '#ec4899', icon: '📦' },
+      { name: 'FENIX-CORE', ox: 0, oy: -1.25, color: '#ef4444', icon: '🦅' }
+    ];
+
+    const centerSc = this.toScreen(d.x, d.y, dep + 0.2, cx, cy, zoom);
+    for (const app of apps) {
+      const podSc = this.toScreen(d.x + app.ox, d.y + app.oy, dep + 0.15, cx, cy, zoom);
+      // Circuit trace to pod
+      ctx.save();
+      ctx.strokeStyle = app.color + '66';
+      ctx.lineWidth = Math.max(1, 1.5 * zoom);
+      ctx.setLineDash([4 * zoom, 4 * zoom]);
+      ctx.beginPath();
+      ctx.moveTo(centerSc.x, centerSc.y);
+      ctx.lineTo(podSc.x, podSc.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // Mini pod block
+      this._drawBlock(ctx, d.x + app.ox, d.y + app.oy, dep, 0.25, app.color, cx, cy, zoom, 0.22, 0.22);
+
+      // App pill badge if zoom is sufficient
+      if (zoom >= 0.85) {
+        ctx.save();
+        ctx.font = `700 ${Math.max(7, 8 * zoom)}px 'JetBrains Mono',monospace`;
+        ctx.textAlign = 'center';
+        const label = `${app.icon} ${app.name}`;
+        const lw = ctx.measureText(label).width + 8 * zoom;
+        const lh = 14 * zoom;
+        const topSc = this.toScreen(d.x + app.ox, d.y + app.oy, dep + 0.45, cx, cy, zoom);
+        ctx.fillStyle = 'rgba(8, 14, 28, 0.88)';
+        ctx.strokeStyle = app.color + 'aa';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(topSc.x - lw / 2, topSc.y - lh / 2, lw, lh, 3);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(label, topSc.x, topSc.y + 3 * zoom);
+        ctx.restore();
+      }
+    }
+  }
+
+  _drawProjectsTower(ctx, d, cx, cy, zoom, dep) {
+    // Multi-tiered Corporate Glass Skyscraper (Video 1 & 2)
+    this._drawBlock(ctx, d.x, d.y, dep, 0.55, d.color, cx, cy, zoom, 0.70, 0.70);
+    this._drawBlock(ctx, d.x, d.y, dep + 0.55, 0.65, '#0ea5e9', cx, cy, zoom, 0.48, 0.48);
+    this._drawBlock(ctx, d.x, d.y, dep + 1.20, 0.50, '#38bdf8', cx, cy, zoom, 0.28, 0.28);
+    this._drawPylon(ctx, d.x, d.y, dep + 1.70, 0.60, '#06b6d4', cx, cy, zoom);
+    this._drawTowerChargeBeam(ctx, d.x, d.y, dep + 2.30, 1.8, '#06b6d4', cx, cy, zoom);
+
+    // Strobe beacon
+    const strobe = Math.floor(this.time * 5) % 2 === 0;
+    if (strobe) {
+      const top = this.toScreen(d.x, d.y, dep + 2.30, cx, cy, zoom);
+      ctx.save();
+      ctx.fillStyle = '#f59e0b';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10 * zoom;
+      ctx.beginPath();
+      ctx.arc(top.x, top.y, 4 * zoom, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  _drawAgentsTower(ctx, d, cx, cy, zoom, dep) {
+    // Signature Helical Spiral Tower (Video 1: Torre dos Agentes com escadas e passarelas helicoidais)
+    // Central core spire
+    this._drawCylinder(ctx, d.x, d.y, dep, 1.6, 0.30, '#8b5cf6', cx, cy, zoom);
+
+    // Ascending helical stepped terraces (0°, 90°, 180°, 270°)
+    const spiralSteps = [
+      { ox: 0.65, oy: 0,    h: 0.25, bh: 0.20, c: '#a855f7' },
+      { ox: 0,    oy: 0.65, h: 0.60, bh: 0.20, c: '#c084fc' },
+      { ox: -0.65, oy: 0,   h: 0.95, bh: 0.20, c: '#a855f7' },
+      { ox: 0,    oy: -0.65, h: 1.30, bh: 0.20, c: '#c084fc' }
+    ];
+
+    let prevPoint = null;
+    for (const step of spiralSteps) {
+      this._drawBlock(ctx, d.x + step.ox, d.y + step.oy, dep + step.h, step.bh, step.c, cx, cy, zoom, 0.24, 0.24);
+      const currPoint = this.toScreen(d.x + step.ox, d.y + step.oy, dep + step.h + step.bh, cx, cy, zoom);
+      if (prevPoint) {
+        // Spiral catwalk railing line connecting adjacent steps
+        ctx.save();
+        ctx.strokeStyle = 'rgba(216, 180, 254, 0.65)';
+        ctx.lineWidth = Math.max(1.5, 2 * zoom);
+        ctx.beginPath();
+        ctx.moveTo(prevPoint.x, prevPoint.y);
+        ctx.lineTo(currPoint.x, currPoint.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+      prevPoint = currPoint;
+    }
+
+    // Spire beacon
+    this._drawPylon(ctx, d.x, d.y, dep + 1.60, 0.65, '#f43f5e', cx, cy, zoom);
+    this._drawTowerChargeBeam(ctx, d.x, d.y, dep + 2.25, 2.0, '#a855f7', cx, cy, zoom);
+  }
+
+  _drawSkillsWorkshop(ctx, d, cx, cy, zoom, dep) {
+    // Industrial Cyber Forge Structure (Video 1: Oficina de Skills)
+    this._drawBlock(ctx, d.x, d.y, dep, 0.50, d.color, cx, cy, zoom, 0.75, 0.60);
+    // Glowing forge core
+    const forgePulse = 0.6 + 0.4 * Math.sin(this.time * 4);
+    this._drawBlock(ctx, d.x - 0.25, d.y, dep + 0.50, 0.22, '#fbbf24', cx, cy, zoom, 0.32, 0.32);
+    // Twin exhaust stacks
+    this._drawCylinder(ctx, d.x + 0.45, d.y - 0.22, dep + 0.50, 0.45, 0.12, '#ea580c', cx, cy, zoom);
+    this._drawCylinder(ctx, d.x + 0.45, d.y + 0.22, dep + 0.50, 0.45, 0.12, '#ea580c', cx, cy, zoom);
+
+    // Articulated robotic arm
+    const armBase = this.toScreen(d.x - 0.3, d.y - 0.35, dep + 0.50, cx, cy, zoom);
+    const armAngle = Math.sin(this.time * 3) * 0.4;
+    const elbowX = armBase.x + Math.cos(armAngle - 0.6) * 16 * zoom;
+    const elbowY = armBase.y + Math.sin(armAngle - 0.6) * 12 * zoom;
+    const wristX = elbowX + Math.cos(armAngle + 0.4) * 14 * zoom;
+    const wristY = elbowY + Math.sin(armAngle + 0.4) * 10 * zoom;
+
+    ctx.save();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = Math.max(2, 2.5 * zoom);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(armBase.x, armBase.y);
+    ctx.lineTo(elbowX, elbowY);
+    ctx.lineTo(wristX, wristY);
+    ctx.stroke();
+
+    // Welding spark at tip
+    ctx.fillStyle = forgePulse > 0.8 ? '#ffffff' : '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(wristX, wristY, (2 + 2 * forgePulse) * zoom, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  _drawTradingFloor(ctx, d, cx, cy, zoom, dep) {
+    // Open Trading Pit Pavilion (Video 9 & Video 2)
+    this._drawBlock(ctx, d.x, d.y, dep, 0.20, '#0f172a', cx, cy, zoom, 0.90, 0.80);
+    // Trading desk stations with mini screens
+    const desks = [
+      { ox: -0.45, oy: -0.40 }, { ox: 0.45, oy: -0.40 },
+      { ox: -0.45, oy: 0.40 },  { ox: 0.45, oy: 0.40 }
+    ];
+    for (const dk of desks) {
+      this._drawBlock(ctx, d.x + dk.ox, d.y + dk.oy, dep + 0.20, 0.15, '#1e293b', cx, cy, zoom, 0.20, 0.15);
+      const scr = this.toScreen(d.x + dk.ox, d.y + dk.oy, dep + 0.35, cx, cy, zoom);
+      ctx.save();
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(scr.x - 4 * zoom, scr.y - 3 * zoom, 8 * zoom, 4 * zoom);
+      ctx.restore();
+    }
+
+    // Suspended Jumbo Holographic Curve Screen (Video 9)
+    const centerScreen = this.toScreen(d.x, d.y, dep + 0.70, cx, cy, zoom);
+    const sw = 56 * zoom;
+    const sh = 24 * zoom;
+    ctx.save();
+    ctx.fillStyle = 'rgba(10, 20, 35, 0.92)';
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(centerScreen.x - sw / 2, centerScreen.y - sh / 2, sw, sh, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Undulating profit curve
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = Math.max(1, 1.5 * zoom);
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+      const px = centerScreen.x - sw / 2 + 4 * zoom + (i / 10) * (sw - 8 * zoom);
+      const py = centerScreen.y + Math.sin(this.time * 3 + i * 0.7) * 4 * zoom + 2 * zoom;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // Profit ticker label
+    if (zoom >= 0.85) {
+      ctx.font = `700 ${Math.max(6, 7.5 * zoom)}px 'JetBrains Mono',monospace`;
+      ctx.fillStyle = '#22c55e';
+      ctx.textAlign = 'center';
+      ctx.fillText('+14.8% PROFIT', centerScreen.x, centerScreen.y - sh / 2 + 8 * zoom);
+    }
+    ctx.restore();
+  }
+
+  _drawAutomationsStation(ctx, d, cx, cy, zoom, dep) {
+    // Hyperloop Station Terminal (Video 1: Estação das Automações com Trem)
+    this._drawBlock(ctx, d.x - 0.40, d.y, dep, 0.40, '#1e293b', cx, cy, zoom, 0.65, 0.50);
+    this._drawCylinder(ctx, d.x - 0.70, d.y, dep + 0.40, 0.18, 0.30, '#10b981', cx, cy, zoom);
+
+    // Parallel guideway rail tracks
+    const rStart = this.toScreen(d.x - 1.6, d.y + 0.45, dep + 0.10, cx, cy, zoom);
+    const rEnd   = this.toScreen(d.x + 1.6, d.y + 0.45, dep + 0.10, cx, cy, zoom);
+    ctx.save();
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = Math.max(2, 3 * zoom);
+    ctx.beginPath();
+    ctx.moveTo(rStart.x, rStart.y);
+    ctx.lineTo(rEnd.x, rEnd.y);
+    ctx.stroke();
+    // Glowing center power rail
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = Math.max(1, 1.2 * zoom);
+    ctx.beginPath();
+    ctx.moveTo(rStart.x, rStart.y - 1);
+    ctx.lineTo(rEnd.x, rEnd.y - 1);
+    ctx.stroke();
+    ctx.restore();
+
+    // Moving BullMQ High-Speed Automation Train!
+    this._drawAutomationTrain(ctx, d.x, d.y + 0.45, dep + 0.12, cx, cy, zoom);
+  }
+
+  _drawAutomationTrain(ctx, trackX, trackY, z, cx, cy, zoom) {
+    // Train oscillates smoothly back and forth along track
+    const trainOffset = Math.sin(this.time * 1.6) * 1.1;
+    const tx = trackX + trainOffset;
+    const ty = trackY;
+    const sc = this.toScreen(tx, ty, z, cx, cy, zoom);
+
+    ctx.save();
+    const tw = 28 * zoom;
+    const th = 12 * zoom;
+
+    // Train Body (Aerodynamic capsule)
+    ctx.fillStyle = '#064e3b';
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(sc.x - tw / 2, sc.y - th / 2, tw, th, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Cyan glowing windows
+    ctx.fillStyle = '#34d399';
+    ctx.fillRect(sc.x - tw / 2 + 4 * zoom, sc.y - 2 * zoom, 5 * zoom, 4 * zoom);
+    ctx.fillRect(sc.x - tw / 2 + 11 * zoom, sc.y - 2 * zoom, 5 * zoom, 4 * zoom);
+    ctx.fillRect(sc.x - tw / 2 + 18 * zoom, sc.y - 2 * zoom, 5 * zoom, 4 * zoom);
+
+    // Front/Rear Lights
+    const dir = Math.cos(this.time * 1.6) >= 0 ? 1 : -1;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(sc.x + (dir * (tw / 2)), sc.y, 2.5 * zoom, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Overhead queue pill
+    if (zoom >= 0.80) {
+      ctx.font = `700 ${Math.max(6, 7 * zoom)}px 'JetBrains Mono',monospace`;
+      ctx.fillStyle = '#10b981';
+      ctx.textAlign = 'center';
+      ctx.fillText('🚂 BULLMQ EXPRESS', sc.x, sc.y - th / 2 - 3 * zoom);
+    }
+    ctx.restore();
+  }
+
+  _drawIntegrationsBridge(ctx, d, cx, cy, zoom, dep) {
+    // Luminous Neon Suspension Bridge (Video 1: Ponte das Integrações)
+    // Twin towers
+    this._drawBlock(ctx, d.x - 0.70, d.y, dep, 0.95, '#0284c7', cx, cy, zoom, 0.16, 0.16);
+    this._drawBlock(ctx, d.x + 0.70, d.y, dep, 0.95, '#0284c7', cx, cy, zoom, 0.16, 0.16);
+
+    // Bridge deck
+    this._drawBlock(ctx, d.x, d.y, dep + 0.20, 0.10, '#0369a1', cx, cy, zoom, 0.85, 0.22);
+
+    const t1 = this.toScreen(d.x - 0.70, d.y, dep + 0.95, cx, cy, zoom);
+    const t2 = this.toScreen(d.x + 0.70, d.y, dep + 0.95, cx, cy, zoom);
+    const deckMid = this.toScreen(d.x, d.y, dep + 0.25, cx, cy, zoom);
+
+    // Glowing suspension cables
+    ctx.save();
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+    ctx.lineWidth = Math.max(1, 1.5 * zoom);
+    ctx.beginPath();
+    ctx.moveTo(t1.x, t1.y);
+    ctx.quadraticCurveTo(deckMid.x, deckMid.y + 6 * zoom, t2.x, t2.y);
+    ctx.stroke();
+
+    // Data packet flow across bridge deck
+    const numPackets = 4;
+    for (let i = 0; i < numPackets; i++) {
+      const progress = ((this.time * 0.8 + i / numPackets) % 1);
+      const px = t1.x + (t2.x - t1.x) * progress;
+      const py = deckMid.y - 2 * zoom;
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5 * zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   _drawDefaultDistrictBlocks(ctx, d, cx, cy, zoom, dep) {
@@ -5343,58 +5696,109 @@ class IsoCityEngine {
       agent
     });
 
-    // Floating Nameplate with Level-Of-Detail (LOD)
+    // Floating Next-Gen Agent Head Pin with Multi-Tier Badging (Videos 7 & 9)
     const headY = sc.y - 36 * zoom;
     const tagY = headY - 6 * zoom;
-    // Strict LOD: Tier 0 (zoom < 1.30) never displays agent text, Tier 1 only displays hovered/selected
-    const shouldShowLabel = (zoom >= 1.30) && (isHovered || isSelected || (Boolean(this.state.showAllLabels) && zoom >= 1.90));
+    const shouldShowLabel = (zoom >= 0.85) || isHovered || isSelected || Boolean(this.state.showAllLabels);
     if (!this.state.photoMode && shouldShowLabel) {
       ctx.save();
       const displayName = agent.displayName || agent.name;
-      const effZoom = Math.min(1.25, Math.max(0.85, zoom * 0.45));
-      const fontSize = Math.min(11, Math.max(9, 10 * effZoom));
+      const roleText = String(agent.role || 'ESPECIALISTA').toUpperCase().slice(0, 22);
+      const effZoom = Math.min(1.20, Math.max(0.80, zoom * 0.42));
+      const fontSize = Math.min(11, Math.max(8.5, 9.5 * effZoom));
       ctx.font = `700 ${fontSize}px 'Inter',sans-serif`;
       ctx.textAlign = 'center';
-      const tw = ctx.measureText(displayName).width;
-      const boxH = Math.min(20, Math.max(16, 17 * effZoom));
 
-      ctx.fillStyle = 'rgba(8, 12, 24, 0.90)';
-      ctx.strokeStyle = (isMaster ? '#ef4444' : agent.color) + '99';
+      const twName = ctx.measureText(displayName).width;
+      const roleFont = `700 ${Math.max(6.5, 7.5 * effZoom)}px 'JetBrains Mono',monospace`;
+      ctx.font = roleFont;
+      const twRole = ctx.measureText(roleText).width;
+      const tw = Math.max(twName, twRole) + 16 * effZoom;
+      const boxH = Math.min(18, Math.max(15, 16 * effZoom));
+
+      // Connecting Pin Needle
+      ctx.strokeStyle = (isMaster ? '#ef4444' : agent.color || '#38bdf8') + '88';
+      ctx.lineWidth = Math.max(1, 1.2 * effZoom);
+      ctx.beginPath();
+      ctx.moveTo(sc.x, headY + 4 * zoom);
+      ctx.lineTo(sc.x, tagY);
+      ctx.stroke();
+
+      // Top Role Capsule Pill (Video 7 & 9)
+      const roleY = tagY - boxH - 12 * effZoom;
+      ctx.fillStyle = (isMaster ? 'rgba(239, 68, 68, 0.25)' : 'rgba(56, 189, 248, 0.20)');
+      ctx.strokeStyle = (isMaster ? '#ef4444' : agent.color || '#38bdf8') + 'aa';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(sc.x - tw / 2 - 8, tagY - boxH, tw + 16, boxH, 4);
+      ctx.roundRect(sc.x - twRole / 2 - 6 * effZoom, roleY - 9 * effZoom, twRole + 12 * effZoom, 11 * effZoom, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = isMaster ? '#fca5a5' : '#7dd3fc';
+      ctx.font = roleFont;
+      ctx.fillText(roleText, sc.x, roleY - 1 * effZoom);
+
+      // Nameplate Box
+      ctx.fillStyle = 'rgba(8, 12, 24, 0.92)';
+      ctx.strokeStyle = (isMaster ? '#ef4444' : agent.color || '#38bdf8') + 'cc';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(sc.x - tw / 2, tagY - boxH, tw, boxH, 4);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
+      ctx.font = `700 ${fontSize}px 'Inter',sans-serif`;
       ctx.fillText((agent.emoji ? agent.emoji + ' ' : '') + displayName, sc.x, tagY - boxH / 2 + 3.5);
 
-      if (isSelected || isHovered) {
-        ctx.font = `600 8px 'JetBrains Mono',monospace`;
-        let tagColor = agent.color || '#38bdf8';
-        let tagText = `[${agent.status || 'AVAILABLE'}]`;
-        if (agent.status === 'IN_CONVERSATION') { tagColor = '#f59e0b'; tagText = '[CONVERSANDO 💬]'; }
-        else if (agent.status === 'IN_MEETING') { tagColor = '#a855f7'; tagText = '[REUNIÃO 🤝]'; }
-        else if (agent.status === 'WAR_ROOM') { tagColor = '#ef4444'; tagText = '[WAR ROOM 🚨]'; }
-        else if (isWorking) {
-          tagColor = '#00d9ff';
-          const jobText = agent.currentJobId ? `JOB #${agent.currentJobId}` : (agent.missionId ? `MIS #${agent.missionId}` : 'OPERANDO ⚡');
-          tagText = `[${jobText}]`;
-        }
-        ctx.fillStyle = tagColor;
-        ctx.fillText(tagText, sc.x, tagY + 11);
+      // Bottom runtime metric / task status for agents with measured activity.
+      let profitText = null;
+      let profitColor = '#22c55e';
+      if (agent.profit != null || agent.profitPill != null) {
+        profitText = agent.profitPill || (agent.profit >= 0 ? `+$${Number(agent.profit).toFixed(2)}` : `-$${Math.abs(Number(agent.profit)).toFixed(2)}`);
+        profitColor = (agent.profit >= 0 || !String(profitText).startsWith('-')) ? '#22c55e' : '#ef4444';
+      } else if (isWorking) {
+        profitText = agent.currentJobId ? `⚡ JOB #${agent.currentJobId}` : '⚡ OPERANDO';
+        profitColor = '#00d9ff';
+      } else if (isSelected || isHovered) {
+        profitText = agent.status === 'IN_CONVERSATION' ? '💬 CONVERSANDO' : (agent.status === 'WAR_ROOM' ? '🚨 WAR ROOM' : `[${agent.status || 'ONLINE'}]`);
+        profitColor = agent.status === 'IN_CONVERSATION' ? '#f59e0b' : '#38bdf8';
+      }
 
-        // Mission indicator chip above nameplate
-        if (agent.currentMission || agent.currentJobId || agent.missionId) {
-          const misId = agent.currentJobId ? `JOB #${agent.currentJobId}` : `MIS #${agent.missionId || agent.currentMission?.id || 'ACT'}`;
-          ctx.font = `700 8px 'JetBrains Mono',monospace`;
-          ctx.fillStyle = '#00d9ff';
-          ctx.textAlign = 'center';
-          ctx.fillText(`⚡ ${misId}`, sc.x, tagY - boxH - 4);
-        }
+      if (profitText) {
+        ctx.font = `700 ${Math.max(6.5, 7.5 * effZoom)}px 'JetBrains Mono',monospace`;
+        const pw = ctx.measureText(profitText).width + 8 * effZoom;
+        const py = tagY + 11 * effZoom;
+        ctx.fillStyle = 'rgba(10, 16, 30, 0.94)';
+        ctx.strokeStyle = profitColor + 'aa';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(sc.x - pw / 2, py - 8 * effZoom, pw, 10 * effZoom, 2.5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = profitColor;
+        ctx.fillText(profitText, sc.x, py - 0.5 * effZoom);
+      }
+
+      // Video 7: Approval Pending Badge (⚠️ APROVAÇÃO PENDENTE)
+      if (agent.needsApproval || agent.pendingApproval || agent.status === 'WAITING_APPROVAL') {
+        const pulse = 0.6 + 0.4 * Math.sin(this.time * 5);
+        ctx.font = `800 ${Math.max(7, 8 * effZoom)}px 'Inter',sans-serif`;
+        const appText = '⚠️ APROVAÇÃO PENDENTE';
+        const aw = ctx.measureText(appText).width + 12 * effZoom;
+        const ay = roleY - 18 * effZoom;
+        ctx.fillStyle = `rgba(239, 68, 68, ${0.85 * pulse})`;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(sc.x - aw / 2, ay - 9 * effZoom, aw, 13 * effZoom, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(appText, sc.x, ay);
       }
       ctx.restore();
-    } else if (!this.state.photoMode && zoom < 1.30) {
+    } else if (!this.state.photoMode && zoom < 0.85) {
       ctx.save();
       ctx.fillStyle = agent.color || '#38bdf8';
       ctx.beginPath();
@@ -5403,33 +5807,40 @@ class IsoCityEngine {
       ctx.restore();
     }
 
-    // Speech bubble (Clamped scaling to prevent screen clutter at deep zoom)
-    const shouldShowBubble = isHovered || isSelected || (zoom >= 1.5 && zoom < 2.5 && (agent.bubble?.isImportant || agent.status === 'IN_CONVERSATION' || agent.status === 'IN_MEETING'));
+    // Speech bubble (High-contrast Neon HQ glass pill, visible at all close zooms)
+    const shouldShowBubble = isHovered || isSelected || (zoom >= 1.2 && (agent.bubble?.isImportant || agent.status === 'IN_CONVERSATION' || agent.status === 'IN_MEETING' || (agent.bubble && agent.bubble.life > 0)));
     if (!this.state.photoMode && agent.bubble && agent.bubble.life > 0 && shouldShowBubble) {
       const bAlpha = Math.min(1, agent.bubble.life);
       ctx.save();
       ctx.globalAlpha = bAlpha;
-      const bText = String(agent.bubble.text || '').slice(0, 36);
-      const effZoom = Math.min(1.2, Math.max(0.85, zoom * 0.45));
-      ctx.font = `600 ${Math.min(11, Math.max(8, 9.5 * effZoom))}px 'Inter',sans-serif`;
+      const bText = String(agent.bubble.text || '').slice(0, 48);
+      const effZoom = Math.min(1.4, Math.max(0.85, zoom * 0.45));
+      ctx.font = `600 ${Math.min(12, Math.max(8, 10 * effZoom))}px 'Inter',sans-serif`;
       ctx.textAlign = 'center';
-      const bw = ctx.measureText(bText).width + 16;
-      const bh = Math.min(22, 18 * effZoom);
+      const bw = ctx.measureText(bText).width + 20;
+      const bh = Math.min(24, 20 * effZoom);
       const bx = sc.x - bw / 2;
       const by = tagY - bh - 6 * effZoom;
 
-      ctx.fillStyle = (agent.color || '#38bdf8') + 'e6';
+      // Dark obsidian background with vibrant agent border
+      ctx.fillStyle = 'rgba(11, 16, 26, 0.94)';
+      ctx.strokeStyle = agent.color || '#38bdf8';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.roundRect(bx, by, bw, bh, 6);
       ctx.fill();
+      ctx.stroke();
 
-      // Tail
+      // Bubble arrow tail pointing to agent
+      ctx.fillStyle = 'rgba(11, 16, 26, 0.94)';
+      ctx.strokeStyle = agent.color || '#38bdf8';
       ctx.beginPath();
       ctx.moveTo(sc.x - 4, by + bh);
       ctx.lineTo(sc.x + 4, by + bh);
       ctx.lineTo(sc.x, by + bh + 4);
       ctx.closePath();
       ctx.fill();
+      ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
       ctx.fillText(bText, sc.x, by + bh * 0.65);
@@ -5812,9 +6223,12 @@ class IsoCityEngine {
   _drawWorkstations(ctx, d, cx, cy, zoom, dep) {
     if (!d || d.id === 'CENTRAL') return;
     const hw = d.w / 2, hh = d.h / 2;
+    // 4-Station Modern Cyber Pod with Dual Monitors (snapinsta & wa_1 Pattern)
     const stations = [
-      { ox: -hw * 0.55, oy: hh * 0.45 },
-      { ox: hw * 0.55, oy: hh * 0.45 }
+      { ox: -hw * 0.50, oy: -hh * 0.20, color: '#38bdf8' },
+      { ox:  hw * 0.50, oy: -hh * 0.20, color: '#10b981' },
+      { ox: -hw * 0.50, oy:  hh * 0.40, color: '#a855f7' },
+      { ox:  hw * 0.50, oy:  hh * 0.40, color: '#f59e0b' }
     ];
 
     for (let sIdx = 0; sIdx < stations.length; sIdx++) {
@@ -5834,27 +6248,48 @@ class IsoCityEngine {
       ctx.fill();
       ctx.stroke();
 
-      const monX = deskPos.x;
-      const monY = deskPos.y - 6 * zoom;
-      const mw = 10 * zoom;
+      const mw = 9 * zoom;
       const mh = 7 * zoom;
-
+      // Left Monitor: Code Syntax Screen
+      const mon1X = deskPos.x - mw * 0.55;
+      const mon1Y = deskPos.y - 7 * zoom;
       ctx.fillStyle = '#020617';
       ctx.strokeStyle = d.color || '#38bdf8';
       ctx.lineWidth = Math.max(1, zoom);
-      ctx.strokeRect(monX - mw / 2, monY - mh, mw, mh);
-      ctx.fillRect(monX - mw / 2, monY - mh, mw, mh);
-
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-      ctx.fillRect(monX - mw / 2 + 1, monY - mh + 1, mw - 2, mh - 2);
-
+      ctx.strokeRect(mon1X - mw / 2, mon1Y - mh, mw, mh);
+      ctx.fillRect(mon1X - mw / 2, mon1Y - mh, mw, mh);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
+      ctx.fillRect(mon1X - mw / 2 + 1, mon1Y - mh + 1, mw - 2, mh - 2);
       ctx.fillStyle = d.color || '#38bdf8';
-      const flicker = Math.sin(this.time * 8 + sIdx * 3) > -0.3 ? 1 : 0.4;
-      ctx.globalAlpha = flicker;
+      const flicker1 = Math.sin(this.time * 8 + sIdx * 3) > -0.3 ? 0.95 : 0.5;
+      ctx.globalAlpha = flicker1;
       for (let li = 0; li < 3; li++) {
-        const lineW = (4 + ((li + sIdx) % 3) * 2) * zoom;
-        ctx.fillRect(monX - mw / 2 + 2, monY - mh + 2 + li * 2 * zoom, lineW, Math.max(1, zoom));
+        const lineW = (3 + ((li + sIdx) % 3) * 1.8) * zoom;
+        ctx.fillRect(mon1X - mw / 2 + 2, mon1Y - mh + 2 + li * 2 * zoom, lineW, Math.max(1, zoom));
       }
+      // Right Monitor: Telemetry / Waveform Screen
+      const mon2X = deskPos.x + mw * 0.55;
+      const mon2Y = deskPos.y - 7 * zoom;
+      ctx.fillStyle = '#020617';
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = Math.max(1, zoom);
+      ctx.strokeRect(mon2X - mw / 2, mon2Y - mh, mw, mh);
+      ctx.fillRect(mon2X - mw / 2, mon2Y - mh, mw, mh);
+      ctx.fillStyle = 'rgba(6, 78, 59, 0.3)';
+      ctx.fillRect(mon2X - mw / 2 + 1, mon2Y - mh + 1, mw - 2, mh - 2);
+      ctx.fillStyle = '#10b981';
+      for (let bi = 0; bi < 4; bi++) {
+        const barH = (2 + Math.abs(Math.sin(this.time * 6 + sIdx + bi * 1.2)) * 3) * zoom;
+        ctx.fillRect(mon2X - mw / 2 + 1.5 + bi * 2 * zoom, mon2Y - 1 - barH, 1.2 * zoom, barH);
+      }
+      // Ergonomic Mesh Chair
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = Math.max(1, zoom);
+      ctx.beginPath();
+      ctx.ellipse(deskPos.x, deskPos.y + 4.5 * zoom, 4.5 * zoom, 2.5 * zoom, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
       ctx.restore();
     }
   }
@@ -6201,6 +6636,8 @@ class IsoCityEngine {
     let previewState = 'idle';
     let previewAnimFrame = 0;
     let previewAnimTimer = null;
+    let preview3d = null;
+    let draftRole = agent.role || 'developer';
 
     const facings = ['SE', 'SW', 'NW', 'NE'];
     const animStates = ['idle', 'walk', 'working', 'error'];
@@ -6210,12 +6647,14 @@ class IsoCityEngine {
     backdrop.innerHTML = `
       <div class="fenix-avatar-modal">
         <div class="fenix-avatar-modal-head">
-          <h3>🎨 EDITOR DE AVATAR — ${agent.displayName || agent.name}</h3>
+          <h3>🎨 AVATAR STUDIO — ${agent.displayName || agent.name}</h3>
           <button class="fenix-avatar-preview-btn" id="btnAvModalClose">✕</button>
         </div>
         <div class="fenix-avatar-modal-body">
           <div class="fenix-avatar-preview-pane">
-            <canvas class="fenix-avatar-preview-canvas" id="avPreviewCanvas" width="180" height="220"></canvas>
+            <canvas class="fenix-avatar-preview-canvas fenix-avatar-3d-canvas" id="avPreview3dCanvas" aria-label="Prévia 3D do avatar"></canvas>
+            <canvas class="fenix-avatar-preview-canvas fenix-avatar-2d-fallback" id="avPreviewFallback" width="180" height="220" aria-label="Prévia alternativa do avatar" hidden></canvas>
+            <div id="avPreviewMode" class="fenix-avatar-preview-mode" role="status">Preparando prévia 3D…</div>
             <div class="fenix-avatar-preview-controls">
               <button class="fenix-avatar-preview-btn" id="btnAvRotLeft" title="Girar Esquerda">↺</button>
               <button class="fenix-avatar-preview-btn" id="btnAvRotRight" title="Girar Direita">↻</button>
@@ -6224,7 +6663,25 @@ class IsoCityEngine {
             <div id="avAnimLabel" style="font-size: 10px; color: #38bdf8; margin-top: 6px; font-family: monospace;">ESTADO: IDLE</div>
           </div>
           <div class="fenix-avatar-controls-pane">
-            <div class="fenix-avatar-section-title">IDENTIDADE & CARGO</div>
+            <nav class="fenix-avatar-category-nav" aria-label="Categorias do avatar">
+              <button type="button" data-avatar-target="avIdentitySection" aria-controls="avIdentitySection" aria-current="location">Identidade</button>
+              <button type="button" data-avatar-target="avFaceSection" aria-controls="avFaceSection" aria-current="false">Rosto</button>
+              <button type="button" data-avatar-target="avHairSection" aria-controls="avHairSection" aria-current="false">Cabelo</button>
+              <button type="button" data-avatar-target="avOutfitSection" aria-controls="avOutfitSection" aria-current="false">Traje</button>
+              <button type="button" data-avatar-target="avAccessorySection" aria-controls="avAccessorySection" aria-current="false">Acessórios</button>
+            </nav>
+            <section class="fenix-avatar-presets" aria-label="Visuais prontos">
+              <div class="fenix-avatar-presets-heading"><strong>VISUAIS PRONTOS</strong><span>Escolha uma base e personalize</span></div>
+              <div class="fenix-avatar-preset-buttons">
+                ${Object.entries(window.FENIX_AVATAR_PRESETS || {}).map(([key, preset]) => `
+                  <button type="button" class="fenix-avatar-preset" data-avatar-preset="${key}" aria-label="Usar visual ${preset.label}" aria-pressed="false">
+                    <span class="fenix-avatar-preset-swatch" style="--preset-color:${preset.config.shirtColor}"></span>
+                    <span><strong>${preset.label}</strong><small>${preset.description}</small></span>
+                  </button>
+                `).join('')}
+              </div>
+            </section>
+            <div class="fenix-avatar-section-title" id="avIdentitySection">IDENTIDADE & CARGO</div>
             <div class="fenix-avatar-field-row">
               <label>NOME:</label>
               <input type="text" id="avDisplayNameInput" class="fenix-avatar-input" value="${agent.displayName || agent.name}" />
@@ -6234,17 +6691,17 @@ class IsoCityEngine {
               <input type="text" id="avRoleInput" class="fenix-avatar-input" value="${agent.role || 'developer'}" />
             </div>
 
-            <div class="fenix-avatar-section-title">PELE & TOM</div>
+            <div class="fenix-avatar-section-title" id="avFaceSection">ROSTO & TOM DE PELE</div>
             <div class="fenix-avatar-field-row">
               <label>TOM DE PELE:</label>
               <div class="fenix-palette-swatches" id="skinSwatches">
                 ${Object.entries(AVATAR_PALETTES.skins).map(([k, s]) => `
-                  <div class="fenix-swatch ${k === currentConfig.skin ? 'active' : ''}" data-skin="${k}" style="background: ${s.base};" title="${k}"></div>
+                  <button class="fenix-swatch ${k === currentConfig.skin ? 'active' : ''}" type="button" data-skin="${k}" style="background: ${s.base};" title="${k}" aria-label="Tom de pele ${k}" aria-pressed="${k === currentConfig.skin}"></button>
                 `).join('')}
               </div>
             </div>
 
-            <div class="fenix-avatar-section-title">CABELO</div>
+            <div class="fenix-avatar-section-title" id="avHairSection">CABELO</div>
             <div class="fenix-avatar-field-row">
               <label>ESTILO:</label>
               <select id="avHairStyleSelect" class="fenix-avatar-select">
@@ -6255,16 +6712,24 @@ class IsoCityEngine {
               <label>COR DO CABELO:</label>
               <div class="fenix-palette-swatches" id="hairColorSwatches">
                 ${Object.entries(AVATAR_PALETTES.hairColors).map(([k, c]) => `
-                  <div class="fenix-swatch ${k === currentConfig.hairColor ? 'active' : ''}" data-hair-color="${k}" style="background: ${c};" title="${k}"></div>
+                  <button class="fenix-swatch ${k === currentConfig.hairColor ? 'active' : ''}" type="button" data-hair-color="${k}" style="background: ${c};" title="${k}" aria-label="Cor de cabelo ${k}" aria-pressed="${k === currentConfig.hairColor}"></button>
                 `).join('')}
               </div>
             </div>
 
-            <div class="fenix-avatar-section-title">TRAJE & VESTIMENTA</div>
+            <div class="fenix-avatar-section-title" id="avOutfitSection">TRAJE & VESTIMENTA</div>
             <div class="fenix-avatar-field-row">
               <label>TIPO DE TRAJE:</label>
               <select id="avOutfitSelect" class="fenix-avatar-select">
                 ${AVATAR_PALETTES.outfits.map(o => `<option value="${o}" ${o === currentConfig.outfit ? 'selected' : ''}>${o.toUpperCase()}</option>`).join('')}
+              </select>
+            </div>
+            <div class="fenix-avatar-field-row">
+              <label>PORTE:</label>
+              <select id="avBodyTypeSelect" class="fenix-avatar-select">
+                <option value="compact" ${currentConfig.bodyType === 'compact' ? 'selected' : ''}>COMPACTO</option>
+                <option value="standard" ${currentConfig.bodyType === 'standard' ? 'selected' : ''}>PADRÃO</option>
+                <option value="tall" ${currentConfig.bodyType === 'tall' ? 'selected' : ''}>ALTO</option>
               </select>
             </div>
             <div class="fenix-avatar-field-row">
@@ -6280,7 +6745,7 @@ class IsoCityEngine {
               <input type="color" id="avShoesColorInput" value="${currentConfig.shoesColor || '#090d16'}" class="fenix-avatar-input" style="height: 28px; padding: 2px 4px;" />
             </div>
 
-            <div class="fenix-avatar-section-title">ACESSÓRIOS & BADGES</div>
+            <div class="fenix-avatar-section-title" id="avAccessorySection">ACESSÓRIOS & BADGES</div>
             <div class="fenix-avatar-field-row">
               <label>ACESSÓRIO:</label>
               <select id="avAccessorySelect" class="fenix-avatar-select">
@@ -6301,6 +6766,7 @@ class IsoCityEngine {
           </div>
         </div>
         <div class="fenix-avatar-modal-footer">
+          <span id="avSaveStatus" role="status" aria-live="polite"></span>
           <button class="fenix-avatar-preview-btn" id="btnAvCancel">Cancelar</button>
           <button class="fenix-avatar-preview-btn" id="btnAvSave" style="background: rgba(239, 68, 68, 0.25); border-color: #ef4444; color: #fff; font-weight: 800;">Salvar Avatar</button>
         </div>
@@ -6309,39 +6775,48 @@ class IsoCityEngine {
 
     document.body.appendChild(backdrop);
 
-    const prevCanvas = backdrop.querySelector('#avPreviewCanvas');
+    const prevCanvas = backdrop.querySelector('#avPreviewFallback');
     const pCtx = prevCanvas?.getContext('2d');
+    const previewCanvas3d = backdrop.querySelector('#avPreview3dCanvas');
 
     const renderPreview = () => {
-      if (!pCtx) return;
-      pCtx.clearRect(0, 0, 180, 220);
-      const isMaster = agent.id === 'Orchestrator' || String(agent.role || '').toLowerCase().includes('orchestrator') || agent.id === 'master';
-
-      PixelAvatarRenderer.drawAvatar(pCtx, {
-        x: 90,
-        y: 160,
-        zoom: 2.8,
-        facing: previewFacing,
-        frame: previewAnimFrame,
-        state: previewState,
-        config: currentConfig,
-        color: currentConfig.outfitColor || agent.color,
-        isMaster,
-        time: performance.now() / 1000
-      });
+      if (pCtx && !preview3d) {
+        pCtx.clearRect(0, 0, 180, 220);
+        const isMaster = agent.id === 'Orchestrator' || String(draftRole).toLowerCase().includes('orchestrator') || agent.id === 'master';
+        PixelAvatarRenderer.drawAvatar(pCtx, {
+          x: 90, y: 160, zoom: 2.8, facing: previewFacing, frame: previewAnimFrame,
+          state: previewState, config: currentConfig, color: currentConfig.outfitColor || agent.color,
+          isMaster, time: performance.now() / 1000
+        });
+      }
+      preview3d?.update?.({ name: backdrop.querySelector('#avDisplayNameInput')?.value || agent.name, role: draftRole, avatar: { ...currentConfig }, state: previewState });
     };
+    preview3d = window.fenixWorld3D?.createAvatarPreview?.(previewCanvas3d, {
+      id: agent.id, name: agent.displayName || agent.name, role: draftRole,
+      department: agent.department, avatar: { ...currentConfig }, state: previewState
+    }) || null;
+    if (preview3d) {
+      previewCanvas3d.hidden = false;
+      prevCanvas.hidden = true;
+      backdrop.querySelector('#avPreviewMode').textContent = 'MODELO 3D DA CIDADE';
+    } else {
+      previewCanvas3d.hidden = true;
+      prevCanvas.hidden = false;
+      backdrop.querySelector('#avPreviewMode').textContent = 'Prévia 3D indisponível · usando visão 2D';
+    }
 
     let animTime = 0;
     const loop = () => {
       animTime += 0.04;
       previewAnimFrame = Math.floor(animTime * 4) % 4;
-      renderPreview();
+      if (!preview3d) renderPreview();
       previewAnimTimer = requestAnimationFrame(loop);
     };
     previewAnimTimer = requestAnimationFrame(loop);
 
     const close = () => {
       if (previewAnimTimer) cancelAnimationFrame(previewAnimTimer);
+      preview3d?.dispose?.();
       backdrop.remove();
     };
 
@@ -6351,25 +6826,67 @@ class IsoCityEngine {
     backdrop.querySelector('#btnAvRotLeft')?.addEventListener('click', () => {
       const idx = facings.indexOf(previewFacing);
       previewFacing = facings[(idx + 1) % facings.length];
+      preview3d?.rotate?.(1);
       renderPreview();
     });
     backdrop.querySelector('#btnAvRotRight')?.addEventListener('click', () => {
       const idx = facings.indexOf(previewFacing);
       previewFacing = facings[(idx - 1 + facings.length) % facings.length];
+      preview3d?.rotate?.(-1);
       renderPreview();
     });
     backdrop.querySelector('#btnAvAnimCycle')?.addEventListener('click', () => {
       const idx = animStates.indexOf(previewState);
       previewState = animStates[(idx + 1) % animStates.length];
+      preview3d?.setState?.(previewState);
       const lbl = backdrop.querySelector('#avAnimLabel');
       if (lbl) lbl.textContent = `ESTADO: ${previewState.toUpperCase()}`;
       renderPreview();
     });
 
+    backdrop.querySelectorAll('[data-avatar-target]').forEach((button) => {
+      button.addEventListener('click', () => {
+        backdrop.querySelectorAll('[data-avatar-target]').forEach((item) => item.setAttribute('aria-current', String(item === button ? 'location' : 'false')));
+        backdrop.querySelector(`#${button.dataset.avatarTarget}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    backdrop.querySelectorAll('[data-avatar-preset]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const preset = window.FENIX_AVATAR_PRESETS?.[button.dataset.avatarPreset];
+        if (!preset) return;
+        Object.assign(currentConfig, preset.config);
+        backdrop.querySelector('#avHairStyleSelect').value = currentConfig.hairStyle;
+        backdrop.querySelector('#avOutfitSelect').value = currentConfig.outfit;
+        backdrop.querySelector('#avBodyTypeSelect').value = currentConfig.bodyType;
+        backdrop.querySelector('#avOutfitColorInput').value = currentConfig.shirtColor;
+        backdrop.querySelector('#avPantsColorInput').value = currentConfig.pantsColor;
+        backdrop.querySelector('#avShoesColorInput').value = currentConfig.shoesColor;
+        backdrop.querySelector('#avAccessorySelect').value = currentConfig.accessory;
+        backdrop.querySelector('#avBadgeSelect').value = currentConfig.badge;
+        backdrop.querySelectorAll('#skinSwatches [data-skin]').forEach((swatch) => {
+          const selected = swatch.dataset.skin === currentConfig.skin;
+          swatch.classList.toggle('active', selected);
+          swatch.setAttribute('aria-pressed', String(selected));
+        });
+        backdrop.querySelectorAll('#hairColorSwatches [data-hair-color]').forEach((swatch) => {
+          const selected = swatch.dataset.hairColor === currentConfig.hairColor;
+          swatch.classList.toggle('active', selected);
+          swatch.setAttribute('aria-pressed', String(selected));
+        });
+        backdrop.querySelectorAll('[data-avatar-preset]').forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+        renderPreview();
+      });
+    });
+
     backdrop.querySelectorAll('#skinSwatches [data-skin]').forEach(sw => {
       sw.addEventListener('click', () => {
-        backdrop.querySelectorAll('#skinSwatches .fenix-swatch').forEach(s => s.classList.remove('active'));
+        backdrop.querySelectorAll('#skinSwatches .fenix-swatch').forEach(s => {
+          s.classList.remove('active');
+          s.setAttribute('aria-pressed', 'false');
+        });
         sw.classList.add('active');
+        sw.setAttribute('aria-pressed', 'true');
         currentConfig.skin = sw.getAttribute('data-skin');
         renderPreview();
       });
@@ -6382,19 +6899,29 @@ class IsoCityEngine {
 
     backdrop.querySelectorAll('#hairColorSwatches [data-hair-color]').forEach(sw => {
       sw.addEventListener('click', () => {
-        backdrop.querySelectorAll('#hairColorSwatches .fenix-swatch').forEach(s => s.classList.remove('active'));
+        backdrop.querySelectorAll('#hairColorSwatches .fenix-swatch').forEach(s => {
+          s.classList.remove('active');
+          s.setAttribute('aria-pressed', 'false');
+        });
         sw.classList.add('active');
+        sw.setAttribute('aria-pressed', 'true');
         currentConfig.hairColor = sw.getAttribute('data-hair-color');
         renderPreview();
       });
     });
 
     backdrop.querySelector('#avRoleInput')?.addEventListener('input', (e) => {
-      agent.role = e.target.value;
+      draftRole = e.target.value;
+      renderPreview();
     });
 
     backdrop.querySelector('#avOutfitSelect')?.addEventListener('change', (e) => {
       currentConfig.outfit = e.target.value;
+      renderPreview();
+    });
+
+    backdrop.querySelector('#avBodyTypeSelect')?.addEventListener('change', (e) => {
+      currentConfig.bodyType = e.target.value;
       renderPreview();
     });
 
@@ -6424,28 +6951,45 @@ class IsoCityEngine {
       renderPreview();
     });
 
-    backdrop.querySelector('#btnAvSave')?.addEventListener('click', async () => {
+    backdrop.querySelector('#btnAvSave')?.addEventListener('click', async (event) => {
+      const saveButton = event.currentTarget;
+      const status = backdrop.querySelector('#avSaveStatus');
       const newDisplayName = backdrop.querySelector('#avDisplayNameInput')?.value?.trim() || agent.name;
       const newRole = backdrop.querySelector('#avRoleInput')?.value?.trim() || agent.role;
       const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
       const headers = { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
 
-      await fetch(`/api/v2/agents/${encodeURIComponent(agent.id)}/profile`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          displayName: newDisplayName,
-          role: newRole,
-          avatar: currentConfig
-        })
-      }).catch(() => {});
+      saveButton.disabled = true;
+      if (status) status.textContent = 'Salvando…';
+      try {
+        const response = await fetch(`/api/v2/agents/${encodeURIComponent(agent.id)}/profile`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ displayName: newDisplayName, role: newRole, avatar: currentConfig })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.ok !== true) throw new Error(result.error || `Falha ao salvar (${response.status})`);
 
-      agent.displayName = newDisplayName;
-      agent.name = newDisplayName;
-      agent.role = newRole;
-      agent.avatar = { ...currentConfig };
-      this.syncRealData();
-      close();
+        agent.displayName = newDisplayName;
+        agent.name = newDisplayName;
+        agent.role = newRole;
+        agent.avatar = { ...(result.profile?.avatar || currentConfig) };
+        this.syncRealData();
+        const world3d = window.fenixWorld3D;
+        const runtimeAgent = world3d?.agents?.get?.(agent.id);
+        if (runtimeAgent?.mesh && typeof world3d.spawnDynamicAgent === 'function') {
+          world3d.spawnDynamicAgent({
+            id: agent.id, name: newDisplayName, role: newRole, department: agent.department,
+            avatar: agent.avatar, coordinates: { x: runtimeAgent.mesh.position.x, y: runtimeAgent.mesh.position.y, z: runtimeAgent.mesh.position.z },
+            taskName: runtimeAgent.currentTask || runtimeAgent.status,
+          });
+        }
+        close();
+      } catch (error) {
+        if (status) status.textContent = error.message || 'Falha ao salvar o perfil.';
+      } finally {
+        if (saveButton.isConnected) saveButton.disabled = false;
+      }
     });
   }
 
@@ -7066,6 +7610,15 @@ class IsoCityEngine {
 }
 
 window.IsoCityEngine = IsoCityEngine;
+window.openFenixAvatarStudio = function (agent) {
+  const openEditor = IsoCityEngine.prototype._openAvatarEditorModal;
+  const runtime = window.fenixCity;
+  if (!agent || !agent.id || typeof openEditor !== 'function' || !runtime || typeof runtime.syncRealData !== 'function') {
+    return false;
+  }
+  openEditor.call(runtime, agent);
+  return true;
+};
 
 // Workstation Modal and IDE Binding Helpers
 window.openStationPreview = function (station, agentId) {
@@ -7214,6 +7767,34 @@ window.askSpatialAgentQuick = async function (topic) {
 };
 
 function bootIsoCity() {
+  // The WebGL engine prevents IsoCity construction, but shared HUD controls still need its camera API.
+  const getWorld3D = () => window.fenixWorld3D || window.fenixWorldEngine3D || window.__fenixWorld3D;
+  const syncZoomLabel = (world = getWorld3D()) => {
+    const distance = Number(world?.cameraState?.targetDistance);
+    const zoomLabel = document.getElementById('fenixCityZoomLevel');
+    if (zoomLabel && Number.isFinite(distance) && distance > 0) zoomLabel.textContent = `${(136 / distance).toFixed(2)}x`;
+  };
+  window.fenixCitySemanticZoom = (mode) => {
+    const world = getWorld3D();
+    const changed = typeof world?.setSemanticLevel === 'function' && world.setSemanticLevel(mode);
+    if (changed) syncZoomLabel(world);
+    return Boolean(changed);
+  };
+  window.fenixCityZoom = (direction) => {
+    const world = getWorld3D();
+    const changed = typeof world?.zoomStep === 'function' && world.zoomStep(direction === 'in' ? 1 : -1);
+    if (changed) syncZoomLabel(world);
+    return Boolean(changed);
+  };
+  window.fenixCityRotate = () => getWorld3D()?.rotateCamera?.() || false;
+  window.fenixCityResetCamera = () => {
+    const world = getWorld3D();
+    const changed = world?.resetCamera?.() || false;
+    if (changed) syncZoomLabel(world);
+    return Boolean(changed);
+  };
+  window.fenixToggleDayNight = () => getWorld3D()?.toggleDayNight?.() || false;
+  syncZoomLabel();
   if (window.FENIX_WORLD_3D) return;
   if (document.getElementById('cityCanvas')) {
     if (!window.fenixCity || !(window.fenixCity instanceof IsoCityEngine)) {
@@ -7223,6 +7804,51 @@ function bootIsoCity() {
     window.fenixPanToDistrict = (dist) => window.fenixCity?.panToDistrict(dist);
     window.fenixToggleDayNight = () => window.fenixCity?.toggleDayNight();
     window.fenixCityZoom = (dir) => window.fenixCity?.zoomStep(dir === 'in' ? 1 : -1);
+    window.fenixCitySemanticZoom = (mode) => {
+      // 1. Prioridade para o Motor Three.js 3D Oficial
+      const world3d = window.fenixWorld3D || window.__fenixWorld3D;
+      if (world3d && typeof world3d.setSemanticLevel === 'function') {
+        world3d.setSemanticLevel(mode);
+      }
+
+      // 2. Sincronização com o Motor 2D IsoCity
+      const city = window.fenixCity;
+      if (city && city.state && city.state.targetCamera) {
+        if (mode === 'universe') {
+          city.state.targetCamera.zoom = 0.45;
+          city.state.targetCamera.x = 0;
+          city.state.targetCamera.y = 0;
+          city.state.targetBuilding = null;
+          city.state.activeFloor = null;
+        } else if (mode === 'island') {
+          const dKey = city.activeDistrict || 'dev-district';
+          const dist = (typeof CANONICAL_DISTRICTS !== 'undefined' ? CANONICAL_DISTRICTS[dKey] : null) || { x: 0, y: 0 };
+          const p = city.toScreen ? city.toScreen(dist.x, dist.y, 0, 0, 0, 1.35) : { x: 0, y: 0 };
+          city.state.targetCamera.x = -Math.round(p.x);
+          city.state.targetCamera.y = -Math.round(p.y);
+          city.state.targetCamera.zoom = 1.35;
+        } else if (mode === 'agent') {
+          const ag = city.state.selectedAgent || (city.agents && city.agents[0]);
+          if (ag) {
+            const ax = (typeof ag.x === 'number' && !isNaN(ag.x)) ? ag.x : 0;
+            const ay = (typeof ag.y === 'number' && !isNaN(ag.y)) ? ag.y : 0;
+            const p = city.toScreen ? city.toScreen(ax, ay, 0, 0, 0, 2.80) : { x: 0, y: 0 };
+            city.state.targetCamera.x = -Math.round(p.x);
+            city.state.targetCamera.y = -Math.round(p.y);
+            city.state.targetCamera.zoom = 2.80;
+          }
+        }
+        city._updateZoomDisplay?.();
+      }
+
+      // 3. Sincronizar classes ativas dos botões do Universe HUD
+      const normMode = String(mode || '').toLowerCase();
+      const activeName = normMode === 'agent' ? 'Agent' : (normMode === 'island' ? 'Island' : 'Universe');
+      ['Universe', 'Island', 'Agent'].forEach(lvl => {
+        const btn = document.getElementById(`btnHud${lvl}`);
+        if (btn) btn.classList.toggle('active', lvl === activeName);
+      });
+    };
     window.refreshCityState = () => window.fenixCity?.syncRealData();
     if (window.fenixCity && typeof window.fenixCity.resize === 'function') {
       window.fenixCity.resize();
@@ -7374,21 +8000,15 @@ if (typeof document !== 'undefined') {
       viewCity.appendChild(minimap);
 
       let minimapLoopRunning = false;
-      let lastMinimapTime = 0;
-      const renderMinimap = (now = 0) => {
+      const renderMinimap = () => {
         if (!viewCity || !viewCity.classList.contains('active') || viewCity.style.display === 'none' || document.hidden) {
           minimapLoopRunning = false;
           return;
         }
         if (!window.fenixCity) {
-          requestAnimationFrame(renderMinimap);
+          window.setTimeout(renderMinimap, 500);
           return;
         }
-        if (now && lastMinimapTime && (now - lastMinimapTime < 500)) {
-          requestAnimationFrame(renderMinimap);
-          return;
-        }
-        lastMinimapTime = now || performance.now();
         const city = window.fenixCity;
         const ctx = minimap.getContext('2d');
         const mw = 180, mh = 120;
@@ -7425,9 +8045,20 @@ if (typeof document !== 'undefined') {
           ctx.strokeRect(vPx, vPy, 20, 14);
         }
         
-        requestAnimationFrame(renderMinimap);
+        window.setTimeout(renderMinimap, 500);
       };
-      renderMinimap();
+      const startMinimapLoop = () => {
+        if (minimapLoopRunning) return;
+        minimapLoopRunning = true;
+        renderMinimap();
+      };
+      window.addEventListener('fenix:viewchanged', (event) => {
+        if (event.detail?.viewId === 'city') startMinimapLoop();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && viewCity.classList.contains('active')) startMinimapLoop();
+      });
+      startMinimapLoop();
 
       minimap.addEventListener('click', (e) => {
         if (!window.fenixCity) return;
@@ -7459,31 +8090,15 @@ if (typeof document !== 'undefined') {
     if (viewCity && !document.getElementById('fenix-city-event-timeline')) {
       const timeline = document.createElement('div');
       timeline.id = 'fenix-city-event-timeline';
-      timeline.style.position = 'absolute';
-      timeline.style.bottom = '20px';
-      timeline.style.left = '50%';
-      timeline.style.transform = 'translateX(-50%)';
-      timeline.style.width = '80%';
-      timeline.style.maxWidth = '800px';
-      timeline.style.height = '40px';
-      timeline.style.background = 'rgba(15, 23, 42, 0.8)';
-      timeline.style.backdropFilter = 'blur(8px)';
-      timeline.style.border = '1px solid rgba(255,255,255,0.1)';
-      timeline.style.borderRadius = '20px';
-      timeline.style.display = 'flex';
-      timeline.style.alignItems = 'center';
-      timeline.style.padding = '0 16px';
-      timeline.style.gap = '8px';
-      timeline.style.overflowX = 'auto';
-      timeline.style.zIndex = '10';
-      timeline.style.scrollbarWidth = 'none';
+      timeline.style.cssText = 'display:none !important;'; // Eventos direcionados para logs; barra flutuante ocultada da tela da Cidade
+      timeline.hidden = true;
       viewCity.appendChild(timeline);
       
       // Listen for incoming events to populate
       document.addEventListener('fenix-live', (e) => {
         const ev = e.detail;
         const eventType = String(ev?.type || '').toLowerCase();
-        if (!ev || ['ping', 'heartbeat', 'status', 'snapshot', 'runtime.snapshot'].includes(eventType)) return;
+        if (!ev || /heartbeat|ping|pong|snapshot|checked|tick|status/i.test(eventType)) return;
         const evNode = document.createElement('div');
         evNode.style.flex = '0 0 auto';
         evNode.style.padding = '4px 12px';
