@@ -2420,14 +2420,15 @@
 
               <!-- Mode Switcher -->
               <div class="fenix-pill-tabs" id="fenixCityModeTabs">
-                <button class="fenix-pill-tab active" id="btnCityModeWorld3D" onclick="window.fenixSetCityMode('world3d')"><i class="ph-bold ph-cube"></i> Mundo 3D WebGL</button>
-                <button class="fenix-pill-tab" id="btnCityModeWorld" onclick="window.fenixSetCityMode('world')"><i class="ph-bold ph-globe"></i> Mundo 2.5D</button>
+                <button class="fenix-pill-tab active" id="btnCityModeWorld3D" onclick="window.fenixSetCityMode('world3d')"><i class="ph-bold ph-cube"></i> Cidade 3D & Escritório</button>
                 <button class="fenix-pill-tab" id="btnCityModeCockpit" onclick="window.fenixToggleCityCockpit?.()"><i class="ph-bold ph-squares-four"></i> Cockpit Operacional</button>
-                <button class="fenix-pill-tab" id="btnCityModeOps" onclick="window.fenixToggleCityOps?.()"><i class="ph-bold ph-lightning"></i> Painel de Operações</button>
                 <button class="fenix-pill-tab" id="btnCityModeNetwork" onclick="window.fenixCityReality?.setMode('network')"><i class="ph-bold ph-tree-structure"></i> Rede Cognitiva</button>
-                <button class="fenix-pill-tab" id="btnCityModeOffice" onclick="window.fenixSetCityMode('office')"><i class="ph-bold ph-door-open"></i> Living Office</button>
-                <button class="fenix-pill-tab" id="btnCityModeFeed" onclick="window.fenixSetCityMode('feed')"><i class="ph-bold ph-broadcast"></i> Feed</button>
-                <button class="fenix-pill-tab" id="btnCityModeUnreal" onclick="window.fenixSetCityMode('unreal'); if(!window.fenixWorldEngine) window.fenixWorldEngine = new FenixWorldEngine(document.getElementById('view-city'));"><i class="ph-bold ph-cube"></i> Unreal 3D</button>
+                <!-- Compatibility hidden aliases for DOM contracts -->
+                <button class="fenix-pill-tab" id="btnCityModeWorld" style="display:none;" onclick="window.fenixSetCityMode('world')"></button>
+                <button class="fenix-pill-tab" id="btnCityModeOps" style="display:none;" onclick="window.fenixToggleCityOps?.()"></button>
+                <button class="fenix-pill-tab" id="btnCityModeOffice" style="display:none;" onclick="window.fenixSetCityMode('office')"></button>
+                <button class="fenix-pill-tab" id="btnCityModeFeed" style="display:none;" onclick="window.fenixSetCityMode('feed')"></button>
+                <button class="fenix-pill-tab" id="btnCityModeUnreal" style="display:none;" onclick="window.fenixSetCityMode('unreal')"></button>
               </div>
 
               <!-- Fênix Operating Mode: LIVE / OBSERVATION / DEBUG -->
@@ -2482,7 +2483,7 @@
             </div>
 
             <!-- Miro-Style Contextual Action Pill (Quick actions on selected Agent/Building) -->
-            <div class="fenix-miro-action-pill" id="fenixMiroEntityActionPill" style="display:none;" role="toolbar" aria-label="Ações rápidas contextuais">
+            <div class="fenix-miro-action-pill" id="fenixMiroEntityActionPill" style="display:none !important;" role="toolbar" aria-label="Ações rápidas contextuais">
               <div class="entity-title" id="fenixMiroPillTitle">
                 <i class="ph-bold ph-cpu" id="fenixMiroPillIcon" style="color:#00D9FF;"></i>
                 <span id="fenixMiroPillName">Central Core</span>

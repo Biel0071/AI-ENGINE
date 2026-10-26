@@ -987,16 +987,27 @@ body { background: var(--bg-app); color: var(--text-main); font-family: var(--fo
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
+  flex: 1 1 0;
+  min-height: 240px;
 }
 
 .fenix-stream-console {
   background: rgba(10, 16, 28, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  height: 250px;
+  min-height: 240px;
+  height: 100%;
+}
+
+.fenix-stream-console .fenix-activity-list {
+  flex: 1 1 0;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .stream-console-header {
@@ -1035,15 +1046,30 @@ body { background: var(--bg-app); color: var(--text-main); font-family: var(--fo
 
 /* ── Right Context Inspector Panel ── */
 .fenix-cockpit-inspector {
-  width: 320px;
+  width: 340px;
   flex-shrink: 0;
   background: rgba(8, 12, 22, 0.95);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(0, 229, 255, 0.15);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.03);
   display: flex;
   flex-direction: column;
   padding: 16px;
   overflow-y: auto;
   gap: 14px;
+}
+
+.inspector-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+.inspector-content .insp-section:last-child {
+  margin-top: auto;
 }
 
 .inspector-header {
@@ -1387,13 +1413,27 @@ body { background: var(--bg-app); color: var(--text-main); font-family: var(--fo
   .fenix-cockpit-workspace,
   .fenix-workforce-layout {
     flex-direction: column !important;
+    height: auto !important;
+    min-height: 100% !important;
     overflow-y: auto !important;
+  }
+  .fenix-cockpit-main {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow-y: visible !important;
+    width: 100% !important;
   }
   .fenix-cockpit-inspector,
   #fenixAgentDeepInspector {
+    flex: 0 0 auto !important;
     width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
     border-left: none !important;
     border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding-bottom: 80px !important;
   }
 }
 
@@ -1409,4 +1449,478 @@ body { background: var(--bg-app); color: var(--text-main); font-family: var(--fo
   font-size: 11px;
   font-weight: 700;
   font-family: var(--fenix-font-mono, monospace);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CANONICAL MODAL & DIALOG POLISH — 2026 OBSIDIAN GLASS SPEC
+   ══════════════════════════════════════════════════════════════════════ */
+@keyframes fenixModalEntry {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+#fenixAlertsModal > div,
+#fenixDeployModal > div,
+#cmdDialog,
+.flo-job-modal,
+.office-modal-card,
+.flp-inspector-dialog,
+.flp-modal-dialog {
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 30px rgba(0, 229, 255, 0.1) !important;
+  border: 1px solid rgba(0, 229, 255, 0.25) !important;
+  border-radius: 14px !important;
+  animation: fenixModalEntry 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#fenixDeployModal > div {
+  width: 640px !important;
+  max-width: 94vw !important;
+  max-height: 90vh !important;
+}
+
+/* Modal Responsive Adaptability */
+@media (max-width: 768px) {
+  .fenix-cockpit-dual-stream {
+    grid-template-columns: 1fr !important;
+  }
+  #fenixDeployModal [style*="grid-template-columns:1fr 1fr 1fr"],
+  #fenixDeployModal [style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  #fenixAlertsModal > div,
+  #fenixDeployModal > div,
+  #cmdDialog,
+  .flo-job-modal,
+  .office-modal-card,
+  .flp-inspector-dialog,
+  .flp-modal-dialog {
+    max-width: 96vw !important;
+    max-height: 92vh !important;
+  }
+}
+    max-height: 92vh !important;
+  }
+}
+
+
+
+/* ==========================================================================
+   REA REVERSE ENGINEERING SYNTHESIS: STITCH · MIRO · LOVABLE ADAPTATIONS
+   Design System Standards, Micro-adjusters, Spatial HUD & Studio Viewports
+   ========================================================================== */
+
+/* 1. Stitch Button Hierarchy & Design Tokens */
+.fnx-btn-pill,
+.btn-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 3px 12px !important;
+  border-radius: 9999px !important;
+  font-family: var(--fenix-font-mono, 'JetBrains Mono', monospace) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #94A3B8 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  white-space: nowrap !important;
+}
+
+.fnx-btn-pill:hover,
+.btn-pill:hover {
+  background: rgba(0, 217, 255, 0.12) !important;
+  border-color: rgba(0, 217, 255, 0.35) !important;
+  color: #00D9FF !important;
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.25) !important;
+  transform: translateY(-1px) !important;
+}
+
+.fnx-btn-pill:active,
+.btn-pill:active {
+  transform: scale(0.97) !important;
+}
+
+.fnx-btn-pill.active,
+.btn-pill.active {
+  background: rgba(0, 217, 255, 0.18) !important;
+  border-color: #00D9FF !important;
+  color: #00D9FF !important;
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.3) !important;
+}
+
+.fnx-btn-action,
+.btn-studio {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 5px 14px !important;
+  border-radius: 8px !important;
+  font-family: var(--fenix-font-sans, 'Inter', sans-serif) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #E2E8F0 !important;
+  cursor: pointer !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  white-space: nowrap !important;
+}
+
+.fnx-btn-action:hover,
+.btn-studio:hover {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(0, 217, 255, 0.4) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3), 0 0 12px rgba(0, 217, 255, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+.fnx-btn-action:active,
+.btn-studio:active {
+  transform: scale(0.97) !important;
+}
+
+.fnx-btn-hero {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 8px 18px !important;
+  border-radius: 10px !important;
+  font-family: var(--fenix-font-sans, 'Inter', sans-serif) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.2), rgba(0, 217, 255, 0.2)) !important;
+  border: 1px solid rgba(37, 211, 102, 0.4) !important;
+  color: #25D366 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+.fnx-btn-hero:hover {
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.3), rgba(0, 217, 255, 0.3)) !important;
+  border-color: #25D366 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.35) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+.fnx-btn-hero:active {
+  transform: scale(0.97) !important;
+}
+
+/* Pulsing Status Dot (Lovable Style) */
+.fnx-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #25D366;
+  box-shadow: 0 0 0 rgba(37, 211, 102, 0.7);
+  animation: fnxPulseGlow 2s infinite;
+}
+
+@keyframes fnxPulseGlow {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(37, 211, 102, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+  }
+}
+
+/* 2. Lovable Device Preview Framing & Transitions */
+#fenixDeviceFrame {
+  transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-radius 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative !important;
+  background: #000000 !important;
+  overflow: hidden !important;
+}
+
+#fenixDeviceFrame.vp-tablet {
+  max-width: 768px !important;
+  width: 100% !important;
+  height: 92% !important;
+  border-radius: 18px !important;
+  border: 10px solid #131B2E !important;
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  margin: auto !important;
+}
+
+#fenixDeviceFrame.vp-mobile {
+  max-width: 380px !important;
+  width: 100% !important;
+  height: 90% !important;
+  border-radius: 32px !important;
+  border: 12px solid #131B2E !important;
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  margin: auto !important;
+}
+
+#fenixDeviceFrame.vp-desktop {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+/* 3. Miro Spatial Canvas HUD */
+.fenix-miro-spatial-hud {
+  position: absolute !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 50 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 8px !important;
+  background: rgba(7, 11, 20, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(0, 217, 255, 0.22) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 217, 255, 0.12) !important;
+  user-select: none !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+}
+
+.fenix-miro-hud-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  background: transparent !important;
+  border: none !important;
+  color: #94A3B8 !important;
+  border-radius: 50% !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.fenix-miro-hud-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #00D9FF !important;
+  transform: scale(1.08) !important;
+}
+
+.fenix-miro-hud-btn:active {
+  transform: scale(0.92) !important;
+}
+
+.fenix-miro-zoom-badge {
+  font-family: var(--fenix-font-mono, 'JetBrains Mono', monospace) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #CBD5E1 !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.fenix-miro-zoom-badge:hover {
+  background: rgba(0, 217, 255, 0.15) !important;
+  color: #00D9FF !important;
+}
+
+.fenix-miro-hud-divider {
+  width: 1px !important;
+  height: 16px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  margin: 0 2px !important;
+}
+
+/* 4. Miro Contextual Action Pill (Quick actions on selection) */
+.fenix-miro-action-pill {
+  position: absolute !important;
+  top: 18px !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(0) !important;
+  z-index: 60 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 14px !important;
+  background: rgba(8, 13, 24, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(0, 217, 255, 0.35) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 217, 255, 0.2) !important;
+  animation: fenixMiroPillPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none !important;
+}
+
+@keyframes fenixMiroPillPop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.fenix-miro-action-pill .entity-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-family: var(--fenix-font-sans, 'Inter', sans-serif) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  padding-right: 8px !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.fenix-miro-action-pill .pill-action-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #CBD5E1 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  border-radius: 9999px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.fenix-miro-action-pill .pill-action-btn:hover {
+  background: rgba(0, 217, 255, 0.15) !important;
+  border-color: rgba(0, 217, 255, 0.4) !important;
+  color: #00D9FF !important;
+  transform: translateY(-1px) !important;
+}
+
+.fenix-miro-action-pill .pill-close-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #64748B !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+  transition: all 0.15s ease !important;
+}
+
+.fenix-miro-action-pill .pill-close-btn:hover {
+  color: #EF4444 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CYBER-OBSIDIAN MASTER THEME & VIEWPORT PARALLELISM TOKENS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.view {
+  background: radial-gradient(ellipse 75% 45% at 50% -10%, rgba(0, 217, 255, 0.05), transparent 70%),
+              radial-gradient(ellipse 50% 35% at 85% 90%, rgba(168, 85, 247, 0.04), transparent 60%),
+              #050810 !important;
+}
+
+/* Glassmorphic Cyber Surfaces */
+.v10-card, .workspace-card, .fenix-cockpit-inspector {
+  background: rgba(11, 16, 26, 0.84) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.v10-card:hover, .workspace-card:hover {
+  border-color: rgba(56, 189, 248, 0.3) !important;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.6), 0 0 16px rgba(56, 189, 248, 0.12);
+}
+
+/* Topbar HUD Premium Glass */
+#topbar, .topbar {
+  background: rgba(8, 12, 20, 0.88) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Sleek Cyber Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(5, 8, 16, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.45);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STITCH & MIRO DUAL MODE (TELAS / CÓDIGO) & LOVABLE IDE ELEVATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ffg-card-flip-btn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ffg-card-flip-btn:hover {
+  background: rgba(56, 189, 248, 0.18) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  color: #38bdf8 !important;
+  transform: translateY(-1px);
+}
+
+.ffg-mini-code-container {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace !important;
+}
+
+#fenixIdeNativePreviewSurface {
+  background: linear-gradient(180deg, #090e1a 0%, #040711 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  border-radius: 8px;
+  animation: fenixFadeIn 0.25s ease-out;
+}
+
+@keyframes fenixFadeIn {
+  from { opacity: 0; transform: scale(0.99); }
+  to { opacity: 1; transform: scale(1); }
 }

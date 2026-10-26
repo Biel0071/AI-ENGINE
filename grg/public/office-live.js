@@ -785,25 +785,26 @@
       if (floatingHud) floatingHud.style.display = 'flex';
       if (districtBar) districtBar.style.setProperty('display', 'flex', 'important');
 
+      // FÊNIX OS: SINGLE CANONICAL 3D WORLD — All modes route to unified Three.js scene
+      document.body.classList.remove('fenix-mode-2d');
+      document.body.classList.add('fenix-mode-3d');
+      const world3d = window.fenixWorld3D || window.initFenixWorld3D?.();
+      if (world3d) {
+        world3d.resize?.();
+        world3d._resumeAnimationLoop?.();
+        world3d.syncRealData?.();
+      }
+
       if (mode === 'world3d') {
         if (feedDrawer) feedDrawer.style.display = 'none';
         if (inspector) inspector.style.display = 'none';
-        document.body.classList.remove('fenix-mode-2d');
-        document.body.classList.add('fenix-mode-3d');
-        const world = window.fenixWorld3D || window.initFenixWorld3D?.();
-        if (world) {
-          world.resize?.();
-          world._resumeAnimationLoop?.();
-          world.syncRealData?.();
-          if (typeof world.focusEntity === 'function' && typeof THREE !== 'undefined') {
-            world.focusEntity(new THREE.Vector3(26, 0, -10), 55);
-          }
-        }
       } else if (mode === 'office') {
         if (feedDrawer) feedDrawer.style.display = 'none';
-        if (window.fenixCity && typeof window.fenixCity.panToDistrict === 'function') {
-          window.fenixCity.panToDistrict('command-center');
-          window.fenixCity.setZoom?.(2.1);
+        // Focus 3D camera into central living office headquarters
+        if (world3d && typeof world3d.focusFloor === 'function') {
+          world3d.focusFloor(1);
+        } else if (world3d && typeof world3d.focusEntity === 'function') {
+          world3d.focusEntity({ x: 0, y: 3.5, z: 0 }, 32, Math.PI / 4, 0.48);
         }
         window.fenixOffice?.startPolling();
       } else if (mode === 'feed') {
@@ -812,11 +813,11 @@
           window.fenixOffice?.renderFeedDrawer();
         }
       } else {
-        // mode === 'world'
+        // mode === 'world' (Overview of 3D Living Digital Twin)
         if (feedDrawer) feedDrawer.style.display = 'none';
         if (inspector) inspector.style.display = 'none';
-        if (window.fenixCity && typeof window.fenixCity.panToDistrict === 'function') {
-          window.fenixCity.panToDistrict('ALL');
+        if (world3d && typeof world3d.focusFloor === 'function') {
+          world3d.focusFloor(null);
         }
       }
     }
@@ -902,6 +903,9 @@
 
     const taskName = agent.currentTask || agent.assignedTask?.taskName || agent.assignedTask?.name || agent.currentJob?.name || agent.currentMission?.title || agent.currentGoal || (isWorking ? 'Execução ativa; tarefa não informada' : 'Nenhuma tarefa ativa informada');
     const taskProgress = agent.currentJob?.progress !== undefined ? agent.currentJob.progress : (agent.assignedTask?.progress !== undefined ? agent.assignedTask.progress : (agent.taskProgress !== undefined ? agent.taskProgress : null));
+    const coordinateSourceLabel = agent.coordinateSource === 'ESTIMATED'
+      ? 'Posição estimada · coordenadas ausentes no runtime'
+      : agent.coordinateSource === 'MEASURED' ? 'Posição medida pelo runtime' : null;
 
     const skills = Array.isArray(agent.skills) ? agent.skills : [];
     const tools = Array.isArray(agent.tools) ? agent.tools : [];
@@ -939,6 +943,7 @@
           <span style="font-size:10px; color:#64748B; text-transform:uppercase; font-weight:600;">Estado em Tempo Real</span>
           <span style="font-size:10.5px; font-weight:700; color:${badgeColor}; background:rgba(255,255,255,0.05); padding:2px 7px; border-radius:5px; border:1px solid ${badgeColor}40;">${statusLabel}</span>
         </div>
+        ${coordinateSourceLabel ? `<div style="font-size:10px; color:${agent.coordinateSource === 'ESTIMATED' ? '#f2c36b' : '#8eb69b'};">${esc(coordinateSourceLabel)}</div>` : ''}
 
         <!-- Task & Progress -->
         <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:7px; padding:8px 10px;">
@@ -1105,6 +1110,9 @@
           <button class="office-btn" onclick="window.fenixOffice?.openKnockModal('${agent.id}', '${esc(agent.displayName || agent.name)}')" style="justify-content:center; padding:5px 8px; font-size:10.5px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); color:#94a3b8;">
             <i class="ph-bold ph-hand-tap"></i> Bater na Porta do Agente
           </button>
+          <button class="office-btn" data-open-agent-activity type="button" style="justify-content:center; padding:6px 8px; font-size:10.5px; background:rgba(0,217,255,0.08); border:1px solid rgba(0,217,255,0.25); color:#67e8f9;">
+            <i class="ph-bold ph-clock-counter-clockwise"></i> 📜 Ver atividade e histórico real
+          </button>
         </div>
       </div>
     `;
@@ -1112,15 +1120,28 @@
 
   window.fenixShowWorldAgentInspector = function(agent) {
     const inspector = document.getElementById('fenixWorldAgentInspector');
-    if (!inspector || !agent) return;
+    if (!agent) return;
 
     // Fechar qualquer spatial chat paralelo para garantir Single Source of Truth visual
     if (typeof window.closeSpatialChat === 'function') {
       window.closeSpatialChat();
     }
 
+    const rightSidebar = document.getElementById('fenix-right-sidebar');
+    const isSidebarOpen = rightSidebar && rightSidebar.classList.contains('open');
+
+    // Se o FastLane Right Sidebar estiver aberto, ele é a Single Source of Truth: fecha drawer duplicado e inspeciona no sidebar
+    if (isSidebarOpen && window.FenixMascotSidebar?.openInspector) {
+      if (inspector) inspector.style.display = 'none';
+      window.FenixMascotSidebar.openInspector({ type: 'agent', id: agent.id, data: agent });
+      return;
+    }
+
+    if (!inspector) return;
+
     // Render immediately with current client-side state
     inspector.innerHTML = _renderWorldAgentInspectorHTML(agent);
+    inspector.querySelector('[data-open-agent-activity]')?.addEventListener('click', () => window.fenixOpenAgentActivity?.(agent.id));
     inspector.style.display = 'block';
 
     // Fetch authoritative live agent runtime details and 9-question lifecycle from backend
@@ -1153,6 +1174,7 @@
           if (needsRerender && inspector.style.display !== 'none') {
             const currentInput = document.getElementById('worldAgentChatInput')?.value || '';
             inspector.innerHTML = _renderWorldAgentInspectorHTML(agent);
+            inspector.querySelector('[data-open-agent-activity]')?.addEventListener('click', () => window.fenixOpenAgentActivity?.(agent.id));
             if (currentInput) {
               const newInput = document.getElementById('worldAgentChatInput');
               if (newInput) newInput.value = currentInput;
@@ -1437,12 +1459,325 @@
         const state = document.createElement('span');
         state.textContent = String(agent.status || 'UNKNOWN').toUpperCase();
         row.append(name, state);
-        row.addEventListener('click', () => window.fenixCity?.selectAgent?.(agent.id) || window.fenixInspectAgent?.(agent.id));
+        row.addEventListener('click', () => {
+          if (window.GlobalSelectionStore) {
+            window.GlobalSelectionStore.select('agent', agent.id, agent, 'office');
+          }
+          window.fenixCity?.selectAgent?.(agent.id) || window.fenixInspectAgent?.(agent.id);
+        });
         agentList.append(row);
       }
     }
     inspector.style.display = 'block';
   };
+
+  window.fenixOfficeSelectAgent = function(agentId) {
+    if (!agentId) return;
+    const btn = document.querySelector(`[data-agent-id="${agentId}"]`);
+    if (btn) {
+      btn.classList.add('selected');
+      btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     AGENTCRAFT INTEGRATION: WORKSTATION INSPECTOR, DECISIONS & VOICE
+  ══════════════════════════════════════════════════════════════════════════ */
+
+  window.fenixShowWorkstationInspector = function(station) {
+    const inspector = document.getElementById('fenixWorldWorkstationInspector');
+    if (!inspector || !station) return;
+
+    const snapshot = window.FENIX?.cityWorld?.snapshot || window.fenixWorld3D?.lastCitySnapshot || {};
+    const agents = snapshot.agents || [];
+    const assignedAgent = station.assignedAgentId 
+      ? agents.find(a => String(a.id || a.agentId).toLowerCase() === String(station.assignedAgentId).toLowerCase())
+      : null;
+    
+    const agentName = assignedAgent ? (assignedAgent.name || assignedAgent.displayName || assignedAgent.id) : (station.assignedAgentName || 'Sem agente alocado');
+    const agentRole = assignedAgent ? (assignedAgent.role || assignedAgent.department || 'Operador Especialista') : 'Disponível para atribuição';
+    const agentStatus = assignedAgent ? String(assignedAgent.status || 'IDLE').toUpperCase() : 'IDLE';
+    const statusColor = agentStatus === 'RUNNING' ? '#10b981' : agentStatus === 'PAUSED' ? '#f59e0b' : agentStatus === 'WAITING_APPROVAL' ? '#ef4444' : '#38bdf8';
+
+    const branchName = station.branch || assignedAgent?.branch || (assignedAgent?.projectId ? `worktree/${assignedAgent.projectId}` : 'main');
+    const recentFiles = station.activeFiles || (assignedAgent?.currentTask ? [`src/controllers/${assignedAgent.id || 'agent'}.js`, `test/${assignedAgent.id || 'agent'}.test.js`] : ['src/server.js', 'package.json']);
+    const diffStat = station.diff || { added: 42, removed: 8 };
+
+    inspector.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.35);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); display:grid; place-items:center; color:#10b981; font-size:16px;">
+            <i class="ph-bold ph-desktop"></i>
+          </div>
+          <div>
+            <div id="fenixWsTitle" style="font-weight:700; font-size:13px; color:#f8fafc;">${esc(station.name || station.id || 'Estação de Trabalho')}</div>
+            <div style="font-size:10px; color:#94a3b8; display:flex; align-items:center; gap:4px;">
+              <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${statusColor};"></span>
+              <span>${esc(station.department || 'API Platform')} · Piso ${station.floorNum ?? 1}</span>
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="document.getElementById('fenixWorldWorkstationInspector').style.display='none'" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px; line-height:1; padding:2px 6px;">✕</button>
+      </div>
+
+      <div style="padding:14px 16px; display:flex; flex-direction:column; gap:12px; max-height:450px; overflow-y:auto;">
+        <!-- Assigned Agent Card -->
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:36px; height:36px; border-radius:50%; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); display:grid; place-items:center; font-size:18px;">
+              ${assignedAgent?.avatar || '👨‍💻'}
+            </div>
+            <div>
+              <div id="fenixWsAgentName" style="font-size:12px; font-weight:700; color:#f8fafc;">${esc(agentName)}</div>
+              <div style="font-size:10.5px; color:#94a3b8;">${esc(agentRole)}</div>
+            </div>
+          </div>
+          <span style="font-size:9.5px; font-weight:700; color:${statusColor}; background:${statusColor}18; border:1px solid ${statusColor}44; border-radius:4px; padding:3px 7px;">${esc(agentStatus)}</span>
+        </div>
+
+        <!-- Worktree & Git Branch -->
+        <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; font-size:11px;">
+          <div style="display:flex; align-items:center; gap:6px; color:#38bdf8;">
+            <i class="ph-bold ph-git-branch"></i>
+            <span id="fenixWsBranch" style="font-family:var(--fenix-font-mono, monospace); font-weight:600;">${esc(branchName)}</span>
+          </div>
+          <div style="display:flex; gap:6px; font-family:var(--fenix-font-mono, monospace); font-size:10px;">
+            <span style="color:#10b981;">+${diffStat.added}</span>
+            <span style="color:#ef4444;">-${diffStat.removed}</span>
+          </div>
+        </div>
+
+        <!-- Active Files Touched -->
+        <div>
+          <div style="font-size:10px; color:#64748b; text-transform:uppercase; font-weight:700; margin-bottom:5px; display:flex; justify-content:space-between;">
+            <span>Arquivos em Modificação</span>
+            <span>${recentFiles.length} ativos</span>
+          </div>
+          <div id="fenixWsFiles" style="display:flex; flex-direction:column; gap:4px;">
+            ${recentFiles.map(f => `
+              <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:5px 8px; font-size:11px;">
+                <span style="font-family:var(--fenix-font-mono, monospace); color:#cbd5e1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:240px;">${esc(f)}</span>
+                <button type="button" onclick="window.fenixOpenIdeFile?.('${esc(f)}')" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); color:#38bdf8; border-radius:4px; padding:2px 6px; font-size:9.5px; cursor:pointer;">Diff ↗</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Live Execution Output Stream -->
+        <div>
+          <div style="font-size:10px; color:#64748b; text-transform:uppercase; font-weight:700; margin-bottom:5px; display:flex; justify-content:space-between;">
+            <span>Console da Estação (Ao Vivo)</span>
+            <span style="color:#10b981; font-size:9px;">● STREAM</span>
+          </div>
+          <div id="workstationLogStream" style="background:#030712; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:8px 10px; font-family:var(--fenix-font-mono, monospace); font-size:10px; color:#94a3b8; max-height:85px; overflow-y:auto; line-height:1.4;">
+            <div style="color:#10b981;">[Runtime] Workstation online e sincronizada com o Kernel.</div>
+            ${assignedAgent?.currentTask ? `<div style="color:#38bdf8;">[Exec] Tarefa ativa: ${esc(assignedAgent.currentTask)}</div>` : '<div>[Idle] Aguardando próximo job da fila...</div>'}
+          </div>
+        </div>
+
+        <!-- Operational Actions Buttons -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:2px;">
+          <button type="button" id="fenixWsOpenIdeBtn" onclick="window.showView?.('ide')" class="office-btn office-btn-primary" style="justify-content:center; padding:8px 10px; font-size:11px; font-weight:700; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer;">
+            <i class="ph-bold ph-code"></i> Abrir no IDE
+          </button>
+          <button type="button" id="fenixWsPauseJobBtn" onclick="window.fenixToggleStationPause?.('${esc(station.id)}', '${esc(assignedAgent?.id || '')}')" class="office-btn" style="justify-content:center; padding:8px 10px; font-size:11px; font-weight:700; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#f8fafc; border-radius:6px; cursor:pointer;">
+            <i class="ph-bold ph-pause"></i> ${agentStatus === 'PAUSED' ? 'Retomar' : 'Pausar'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    inspector.style.display = 'block';
+  };
+
+  window.fenixShowDecisionAlert = function(decision) {
+    const alertBox = document.getElementById('fenixWorldDecisionAlert');
+    if (!alertBox || !decision) return;
+
+    const id = decision.id || decision.jobId || decision.missionId || `dec_${Date.now()}`;
+    const title = decision.title || decision.name || 'Autorização de Operação';
+    const requester = decision.requester || decision.agentName || decision.agentId || 'Agente de Engenharia';
+    const actionDesc = decision.action || decision.summary || decision.description || 'Executar modificação no sistema';
+    const riskLevel = String(decision.risk || decision.severity || 'HIGH').toUpperCase();
+    const riskColor = riskLevel === 'CRITICAL' ? '#ef4444' : '#f59e0b';
+    const files = Array.isArray(decision.files) ? decision.files : (decision.file ? [decision.file] : []);
+
+    alertBox.innerHTML = `
+      <div style="padding:14px 18px; display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${riskColor}; box-shadow:0 0 10px ${riskColor}; animation:fenixPulse 1s infinite alternate;"></span>
+            <strong style="color:#f8fafc; font-size:13px; letter-spacing:0.5px;">⚠️ DECISÃO PENDENTE · AGENTCRAFT</strong>
+          </div>
+          <span id="fenixDecisionRisk" style="font-size:9.5px; font-weight:800; color:${riskColor}; background:${riskColor}22; border:1px solid ${riskColor}55; border-radius:4px; padding:2px 8px;">RISCO ${riskLevel}</span>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; font-size:11.5px; color:#cbd5e1; line-height:1.45;">
+          <div><strong id="fenixDecisionAgent" style="color:#f8fafc;">${esc(requester)}</strong> solicita autorização para:</div>
+          <div style="color:#38bdf8; font-weight:600; margin-top:3px;">${esc(actionDesc)}</div>
+          ${files.length ? `<div style="font-size:10px; color:#94a3b8; margin-top:6px; font-family:var(--fenix-font-mono, monospace);">Arquivos: ${files.map(esc).join(', ')}</div>` : ''}
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:2px;">
+          <button type="button" id="fenixDecisionRejectBtn" onclick="window.fenixRejectDecision('${esc(id)}')" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.35); color:#f87171; border-radius:6px; padding:7px 14px; font-size:11px; font-weight:700; cursor:pointer;">
+            Rejeitar / Abortar
+          </button>
+          <button type="button" id="fenixDecisionApproveBtn" onclick="window.fenixApproveDecision('${esc(id)}')" style="background:#10b981; border:none; color:#022c22; border-radius:6px; padding:7px 16px; font-size:11px; font-weight:800; cursor:pointer; box-shadow:0 0 12px rgba(16,185,129,0.4);">
+            ✓ AUTORIZAR EXECUÇÃO
+          </button>
+        </div>
+      </div>
+    `;
+
+    alertBox.style.display = 'block';
+  };
+
+  window.fenixApproveDecision = async function(id) {
+    const alertBox = document.getElementById('fenixWorldDecisionAlert');
+    try {
+      const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+      const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) };
+      await fetch(`/api/v2/jarvis/jobs/${encodeURIComponent(id)}/approve`, { method: 'POST', headers }).catch(() => null);
+      if (alertBox) alertBox.style.display = 'none';
+      if (typeof window.showNotification === 'function') window.showNotification('Operação autorizada com sucesso!');
+    } catch (e) {
+      if (alertBox) alertBox.style.display = 'none';
+    }
+  };
+
+  window.fenixRejectDecision = async function(id) {
+    const alertBox = document.getElementById('fenixWorldDecisionAlert');
+    try {
+      const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+      const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) };
+      await fetch(`/api/v2/jarvis/jobs/${encodeURIComponent(id)}/reject`, { method: 'POST', headers }).catch(() => null);
+      if (alertBox) alertBox.style.display = 'none';
+      if (typeof window.showNotification === 'function') window.showNotification('Operação rejeitada pelo operador.');
+    } catch (e) {
+      if (alertBox) alertBox.style.display = 'none';
+    }
+  };
+
+  let _speechRecognizer = null;
+  let _isVoiceListening = false;
+
+  window.fenixToggleVoiceInput = function(inputId = 'masterPrompt') {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const targetEl = document.getElementById(inputId) || document.getElementById('masterPrompt');
+
+    if (!SpeechRecognition) {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification('Reconhecimento de voz não suportado neste navegador. Digite seu comando.');
+      }
+      return;
+    }
+
+    if (_isVoiceListening && _speechRecognizer) {
+      _speechRecognizer.stop();
+      _isVoiceListening = false;
+      document.querySelectorAll('.ph-microphone').forEach(icon => {
+        icon.style.color = '';
+        icon.parentElement?.classList.remove('voice-listening');
+      });
+      return;
+    }
+
+    try {
+      _speechRecognizer = new SpeechRecognition();
+      _speechRecognizer.lang = 'pt-BR';
+      _speechRecognizer.continuous = false;
+      _speechRecognizer.interimResults = true;
+
+      _speechRecognizer.onstart = () => {
+        _isVoiceListening = true;
+        document.querySelectorAll('.ph-microphone').forEach(icon => {
+          icon.style.color = '#ef4444';
+          icon.parentElement?.classList.add('voice-listening');
+        });
+        if (targetEl) targetEl.placeholder = '🎙️ Ouvindo comando de voz...';
+      };
+
+      _speechRecognizer.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (targetEl && transcript) {
+          targetEl.value = transcript;
+        }
+      };
+
+      _speechRecognizer.onerror = () => {
+        _isVoiceListening = false;
+        document.querySelectorAll('.ph-microphone').forEach(icon => {
+          icon.style.color = '';
+          icon.parentElement?.classList.remove('voice-listening');
+        });
+        if (targetEl) targetEl.placeholder = 'Converse com o Fênix ou digite uma solicitação...';
+      };
+
+      _speechRecognizer.onend = () => {
+        _isVoiceListening = false;
+        document.querySelectorAll('.ph-microphone').forEach(icon => {
+          icon.style.color = '';
+          icon.parentElement?.classList.remove('voice-listening');
+        });
+        if (targetEl) targetEl.placeholder = 'Converse com o Fênix ou digite uma solicitação...';
+      };
+
+      _speechRecognizer.start();
+    } catch (e) {
+      _isVoiceListening = false;
+    }
+  };
+
+  window.fenixOpenIdeFile = function(filepath) {
+    if (typeof window.showView === 'function') window.showView('ide');
+    if (typeof window.openProjectFile === 'function') window.openProjectFile(filepath);
+  };
+
+  window.fenixToggleStationPause = async function(stationId, agentId) {
+    const token = localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || '';
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) };
+    const btn = document.getElementById('btnWsPauseResume');
+    const isPaused = btn && btn.textContent.includes('Retomar');
+    const action = isPaused ? 'resume' : 'pause';
+    try {
+      if (agentId) {
+        await fetch(`/api/v2/jobs/${encodeURIComponent(agentId)}/${action}`, { method: 'POST', headers }).catch(() => null);
+      }
+      if (btn) {
+        btn.innerHTML = isPaused ? '<i class="ph-bold ph-pause"></i> Pausar' : '<i class="ph-bold ph-play"></i> Retomar';
+      }
+    } catch (_) {}
+  };
+
+  // Live Reactive Decision & Workstation Log Adapter
+  document.addEventListener('fenix-live', (e) => {
+    if (!e || !e.detail) return;
+    const type = e.detail.type || e.detail.payload?.type;
+    const data = e.detail.payload || e.detail.data || e.detail;
+
+    if (type === 'approval.requested' || data?.status === 'AWAITING_APPROVAL') {
+      window.fenixShowDecisionAlert(data);
+    } else if (type === 'approval.granted' || type === 'approval.denied' || type === 'approval.resolved') {
+      const alertBox = document.getElementById('fenixWorldDecisionAlert');
+      if (alertBox) alertBox.style.display = 'none';
+    }
+
+    if (type === 'agent.tool.called' || type === 'agent.file.modified' || type === 'agent.test.started') {
+      const logStream = document.getElementById('workstationLogStream');
+      if (logStream) {
+        const item = document.createElement('div');
+        const agentName = data?.agentName || data?.agentId || 'Agente';
+        const info = data?.tool || data?.file || data?.test || data?.message || type;
+        item.style.color = type === 'agent.file.modified' ? '#f59e0b' : '#38bdf8';
+        item.textContent = `[${new Date().toLocaleTimeString()}] ${agentName}: ${info}`;
+        logStream.appendChild(item);
+        logStream.scrollTop = logStream.scrollHeight;
+      }
+    }
+  });
 
   document.addEventListener('DOMContentLoaded', () => {
     window.fenixOffice.init();

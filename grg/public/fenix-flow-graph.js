@@ -3198,6 +3198,8 @@
       this.state = {
         project: options.project || 'ALL',
         layoutMode: 'STITCH', // 'STITCH' (journey columns) or 'MIRO' (freeform canvas)
+        cardDisplayMode: 'screens', // 'screens' (authentic mini-UI) or 'code' (syntax-highlighted source/AST)
+        perCardDisplayMode: {},
         searchQuery: '',
         zoom: 0.85,
         pan: { x: 30, y: 20 },
@@ -3344,6 +3346,16 @@
                   🕸️ Canvas Livre Miro
                 </button>
               </div>
+
+              <!-- Card Display Mode Toggle (Telas Reais vs Código Real) -->
+              <div class="ffg-stitch-pill-group">
+                <button type="button" class="ffg-stitch-pill ${this.state.cardDisplayMode !== 'code' ? 'active' : ''}" id="btnDisplayScreens" title="Exibir visual das telas da aplicação">
+                  🖼️ Telas Reais
+                </button>
+                <button type="button" class="ffg-stitch-pill ${this.state.cardDisplayMode === 'code' ? 'active' : ''}" id="btnDisplayCode" title="Exibir código-fonte, rotas e AST dos componentes">
+                  💻 Código Real
+                </button>
+              </div>
             </div>
 
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -3455,7 +3467,10 @@
 
     renderCardHtml(screen) {
       const pColor = screen.projectColor || '#38bdf8';
-      const previewHtml = this.generateMiniUiHtml(screen);
+      const isCardCode = this.state.perCardDisplayMode && this.state.perCardDisplayMode[screen.id]
+        ? this.state.perCardDisplayMode[screen.id] === 'code'
+        : this.state.cardDisplayMode === 'code';
+      const previewHtml = isCardCode ? this.generateCodeSnippetHtml(screen) : this.generateMiniUiHtml(screen);
 
       return `
         <div class="ffg-stitch-screen-card" id="card-${screen.id}" data-id="${screen.id}" data-project="${screen.project}">
@@ -3474,6 +3489,9 @@
             </span>
             <span class="ffg-card-route-pill" title="${screen.route}">${screen.route}</span>
             <span style="font-size:9px; color:#10b981; font-weight:800;">● ONLINE</span>
+            <button type="button" class="ffg-card-flip-btn" data-id="${screen.id}" title="${isCardCode ? 'Exibir Tela' : 'Exibir Código'}" style="margin-left:auto; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#94a3b8; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px; display:flex; align-items:center; gap:3px;">
+              <i class="ph-bold ${isCardCode ? 'ph-image' : 'ph-code'}"></i> <span>${isCardCode ? 'Tela' : 'Cod'}</span>
+            </button>
           </div>
 
           <!-- Title Bar -->
@@ -3510,6 +3528,35 @@
 
           <!-- Output Pin (Right) -->
           <div class="ffg-card-pin pin-output" title="Saída de Navegação"></div>
+        </div>
+      `;
+    }
+
+    generateCodeSnippetHtml(screen) {
+      const comp = screen.component || 'ScreenComponent';
+      const file = screen.file || 'Component.tsx';
+      const route = screen.route || '/';
+      return `
+        <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; line-height:1.45; color:#cbd5e1; background:#04060a; padding:6px; border-radius:4px; height:100%; overflow:hidden; display:flex; flex-direction:column; box-sizing:border-box;">
+          <div style="color:#64748b; font-size:7.5px; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:2px; display:flex; justify-content:space-between;">
+            <span style="color:#00d9ff;">// ${file}</span>
+            <span style="color:#10b981;">Route: ${route}</span>
+          </div>
+          <div style="flex:1; overflow:hidden;">
+            <span style="color:#ec4899;">import</span> { useEffect, useState } <span style="color:#ec4899;">from</span> <span style="color:#34d399;">'react'</span>;<br>
+            <span style="color:#ec4899;">export default function</span> <span style="color:#38bdf8; font-weight:700;">${comp}</span>() {<br>
+            &nbsp;&nbsp;<span style="color:#f59e0b;">const</span> [data, setData] = <span style="color:#38bdf8;">useState</span>(<span style="color:#a78bfa;">null</span>);<br>
+            &nbsp;&nbsp;<span style="color:#38bdf8;">useEffect</span>(() => {<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#38bdf8;">fetch</span>(<span style="color:#34d399;">'/api${route.startsWith('/') ? route : '/' + route}'</span>)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.<span style="color:#38bdf8;">then</span>(r => r.<span style="color:#38bdf8;">json</span>())<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.<span style="color:#38bdf8;">then</span>(d => <span style="color:#38bdf8;">setData</span>(d));<br>
+            &nbsp;&nbsp;}, []);<br>
+            &nbsp;&nbsp;<span style="color:#ec4899;">return</span> &lt;<span style="color:#38bdf8; font-weight:700;">div</span> className=<span style="color:#34d399;">"page-layout"</span>&gt;<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span style="color:#38bdf8;">Header</span> title=<span style="color:#34d399;">"${screen.title}"</span> /&gt;<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span style="color:#38bdf8;">ContentGrid</span> live={<span style="color:#a78bfa;">true</span>} /&gt;<br>
+            &nbsp;&nbsp;&lt;/<span style="color:#38bdf8; font-weight:700;">div</span>&gt;;<br>
+            }
+          </div>
         </div>
       `;
     }
@@ -3666,6 +3713,23 @@
       const btnMiro = this.container.querySelector('#btnModeMiro');
       if (btnStitch) btnStitch.addEventListener('click', () => { this.state.layoutMode = 'STITCH'; this.render(); });
       if (btnMiro) btnMiro.addEventListener('click', () => { this.state.layoutMode = 'MIRO'; this.render(); });
+
+      // 2.1 Card Display Mode Toggle (Global)
+      const btnScreens = this.container.querySelector('#btnDisplayScreens');
+      const btnCode = this.container.querySelector('#btnDisplayCode');
+      if (btnScreens) btnScreens.addEventListener('click', () => { this.state.cardDisplayMode = 'screens'; this.render(); });
+      if (btnCode) btnCode.addEventListener('click', () => { this.state.cardDisplayMode = 'code'; this.render(); });
+
+      // 2.2 Per-Card Flip Button (Individual Toggle)
+      this.container.querySelectorAll('.ffg-card-flip-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          const current = this.state.perCardDisplayMode[id] || this.state.cardDisplayMode || 'screens';
+          this.state.perCardDisplayMode[id] = current === 'code' ? 'screens' : 'code';
+          this.render();
+        });
+      });
 
       // 3. Search Filter
       const searchInput = this.container.querySelector('#stitchSearchInput');
