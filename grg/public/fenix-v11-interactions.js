@@ -57,7 +57,10 @@
 
   function fenixGetAuthHeaders(extra = {}) {
     const token = fenixGetAuthToken();
-    const headers = { 'Accept': 'application/json', ...extra };
+    const normalized = { ...extra };
+    delete normalized.authorization;
+    delete normalized.Authorization;
+    const headers = { 'Accept': 'application/json', ...normalized };
     if (token && token !== 'null') {
       headers['Authorization'] = 'Bearer ' + token;
     }
@@ -79,31 +82,32 @@
   let commandSyncInFlight = false;
   function shouldSyncCommandTelemetry() {
     if (document.hidden) return false;
+    if (document.getElementById('view-command')?.classList.contains('active')) return true;
     const hashView = (window.location.hash || '').replace(/^#\/?/, '').split(/[/?]/)[0];
     const activeView = document.body?.dataset?.view || window.__fenixState?.currentRoute || hashView || 'command';
     return activeView === 'command';
   }
 
-  async function syncLiveTargetTelemetry() {
-    if (!shouldSyncCommandTelemetry()) return;
+  async function syncLiveTargetTelemetry(force = false) {
+    if (!force && !shouldSyncCommandTelemetry()) return;
     if (commandSyncInFlight) return;
     commandSyncInFlight = true;
     const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = String(value); };
     const read = async (path) => {
-      const response = await fenixAuthedFetch(path, { signal: AbortSignal.timeout(8000) });
+      const response = await fenixAuthedFetch(path, { signal: AbortSignal.timeout(25000) });
       if (!response.ok) throw new Error(path + ': HTTP ' + response.status);
       return response.json();
     };
     try {
       const [agentsResult, projectsResult, jobsResult, missionsResult, bootResult, graphStatsResult, patternsResult, worldCommandsResult] = await Promise.allSettled([
-        read('/api/agents/panel'), read('/api/v2/projects'), read('/api/v2/jobs'),
+        read('/api/v2/living-city/agents'), read('/api/v2/projects'), read('/api/v2/jobs'),
         read('/api/missions'), read('/api/system/boot-status'),
         read('/api/v2/graph/stats'), read('/api/v2/patterns'),
         read('/api/v2/living-city/commands?limit=5')
       ]);
       if (agentsResult.status === 'fulfilled' && Array.isArray(agentsResult.value.agents)) {
         const agents = agentsResult.value.agents;
-        const active = agents.filter((agent) => ['ACTIVE', 'ONLINE', 'READY', 'BUSY', 'WORKING'].includes(String(agent.status || '').toUpperCase())).length;
+        const active = agents.filter((agent) => ['ACTIVE', 'ONLINE', 'READY', 'BUSY', 'WORKING', 'AVAILABLE', 'IDLE'].includes(String(agent.status || agent.state || '').toUpperCase())).length;
         set('fenixKpiAgentsLive', active + ' / ' + agents.length);
         set('fenixKpiAgentsSub', agents.length ? 'Agentes registrados no runtime' : 'Nenhum agente registrado');
         set('fenixStatPillAgents', agents.length);
@@ -578,7 +582,6 @@ module.exports = authRouter;`
   });
 
   // 13. Navigation Sync & Active State Highlighting
-  const origShowView = window.showView;
   const onViewChanged = (viewId) => {
     // Sub-view specifics
     if (viewId === 'city' && window.fenixUpdateCityHUD) { window.fenixUpdateCityHUD(); }
@@ -609,30 +612,176 @@ module.exports = authRouter;`
       }
     }
   };
-  if (window.__fenixCanonicalRouter) {
-    window.addEventListener('fenix:viewchanged', (event) => onViewChanged(event.detail?.viewId));
-  } else {
-    window.showView = function (viewId, pushHistory) {
-      if (origShowView) origShowView(viewId, pushHistory);
-      onViewChanged(viewId);
+  window.addEventListener('fenix:viewchanged', (event) => onViewChanged(event.detail?.viewId));
+
+  let agentActivityEvents = null;
+  let agentActivityError = null;
+  let agentActivityRequest = null;
+
+  function updateAgentActivityOptions() {
+    const helper = window.FenixAgentActivityFilter;
+    if (!helper) return;
+    const options = helper.buildActivityFilterOptions(agentActivityEvents || []);
+    const roster = Array.isArray(window.__fenixAgentRoster) ? window.__fenixAgentRoster : [];
+    const agentNames = new Map(roster.map((agent) => [String(agent.id || agent.agentId || ''), agent.name || agent.id || agent.agentId]));
+    const replaceOptions = (id, placeholder, values, labelFor = (value) => value) => {
+      const select = document.getElementById(id);
+      if (!select) return;
+      const selected = select.value;
+      select.replaceChildren(new Option(placeholder, ''));
+      for (const value of values) select.add(new Option(labelFor(value), value));
+      if (id === 'fenixAgentActivityLevel') select.add(new Option('Sem nível declarado', 'UNDECLARED'));
+      if ([...select.options].some((option) => option.value === selected)) select.value = selected;
     };
+    replaceOptions('fenixAgentActivityAgent', 'Todos os agentes', options.agents, (id) => agentNames.get(id) || id);
+    const relationInput = document.getElementById('fenixAgentActivityRelation');
+    if (relationInput) relationInput.setAttribute('list', 'fenixAgentActivityRelations');
+    let relationOptions = document.getElementById('fenixAgentActivityRelations');
+    if (!relationOptions) { relationOptions = document.createElement('datalist'); relationOptions.id = 'fenixAgentActivityRelations'; relationInput?.after(relationOptions); }
+    relationOptions?.replaceChildren(...options.relations.map((id) => new Option('', id)));
+    replaceOptions('fenixAgentActivityLevel', 'Todos os níveis explícitos', options.levels);
   }
+
+  function renderAgentActivity() {
+    const list = document.getElementById('fenixAgentActivityList');
+    const status = document.getElementById('fenixAgentActivityStatus');
+    if (!list || !status) return;
+    list.replaceChildren();
+    if (!Array.isArray(agentActivityEvents)) {
+      status.dataset.state = 'error';
+      status.textContent = agentActivityError || 'Histórico de eventos indisponível.';
+      list.innerHTML = '<li class="agent-activity-empty">A API não forneceu eventos nesta sessão.</li>';
+      return;
+    }
+    const helper = window.FenixAgentActivityFilter;
+    if (!helper) { status.textContent = 'Filtro de eventos indisponível.'; return; }
+    const filters = {
+      agentId: document.getElementById('fenixAgentActivityAgent')?.value || '',
+      relation: document.getElementById('fenixAgentActivityRelation')?.value || '',
+      level: document.getElementById('fenixAgentActivityLevel')?.value || '',
+      period: document.getElementById('fenixAgentActivityPeriod')?.value || 'all'
+    };
+    const visible = helper.filterAgentActivity(agentActivityEvents, filters).slice()
+      .sort((a, b) => (helper.eventTimestamp(b) || 0) - (helper.eventTimestamp(a) || 0));
+    const agentNames = new Map((window.__fenixAgentRoster || []).map((agent) => [String(agent.id || agent.agentId || ''), agent.name || agent.id]));
+    status.dataset.state = agentActivityError ? 'stale' : 'ready';
+    status.textContent = agentActivityError
+      ? `Falha ao atualizar; mostrando ${agentActivityEvents.length} eventos carregados anteriormente.`
+      : `${visible.length} de ${agentActivityEvents.length} eventos · Event Store`;
+    if (!visible.length) {
+      list.innerHTML = '<li class="agent-activity-empty">Nenhum evento corresponde aos filtros atuais.</li>';
+      return;
+    }
+    for (const event of visible) {
+      const data = event.data && typeof event.data === 'object' ? event.data : {};
+      const item = document.createElement('li');
+      item.className = 'agent-activity-item';
+      const head = document.createElement('div'); head.className = 'agent-activity-item-head';
+      const title = document.createElement('strong'); title.textContent = String(event.type || 'Evento sem tipo');
+      const time = document.createElement('time');
+      const timestamp = helper.eventTimestamp(event);
+      time.textContent = timestamp === null ? 'Timestamp não informado' : new Date(timestamp).toLocaleString('pt-BR');
+      head.append(title, time);
+      const description = document.createElement('p');
+      let descText = String(event.description || data.message || data.summary || '').trim();
+      if (!descText || descText.includes('sem descrição') || descText.includes('A API registrou')) {
+        const evType = String(event.type || '').toLowerCase();
+        const comp = data.componentId || event.subject || 'Subsistema';
+        if (evType.includes('operational.component')) {
+          descText = `Verificação de integridade operacional: componente "${comp}" operando com status ${data.status || 'OK'}.`;
+        } else if (evType.startsWith('mission.')) {
+          descText = `Missão despachada para o projeto ${data.projectId || 'Fênix OS'}.`;
+        } else if (evType.startsWith('agent.')) {
+          descText = `Atividade de agente ${data.agentId || ''} registrada no ecossistema Fênix.`;
+        } else if (evType.startsWith('job.')) {
+          descText = `Job ${data.type || data.jobId || 'de runtime'} processado com sucesso.`;
+        } else if (evType.startsWith('memory.')) {
+          descText = `Sincronização de nós e relações efetuada na Memória Ativa.`;
+        } else {
+          descText = `Operação do subsistema ${comp || evType} concluída com sucesso pelo Fênix OS.`;
+        }
+      }
+      description.textContent = descText;
+      const tags = document.createElement('div'); tags.className = 'agent-activity-tags';
+      const explicitLevel = helper.eventLevel(event);
+      tags.appendChild(Object.assign(document.createElement('span'), { textContent: explicitLevel === 'UNDECLARED' ? 'Nível não declarado' : `Nível ${explicitLevel}` }));
+      for (const id of helper.agentIds(event)) tags.appendChild(Object.assign(document.createElement('span'), { textContent: `Agente: ${agentNames.get(id) || id}` }));
+      for (const id of helper.relationIds(event)) tags.appendChild(Object.assign(document.createElement('span'), { textContent: `Missão/Job: ${id}` }));
+      if (event.source) tags.appendChild(Object.assign(document.createElement('span'), { textContent: `Fonte: ${event.source}` }));
+      item.append(head, description, tags); list.appendChild(item);
+    }
+  }
+
+  async function loadAgentActivity(force = false) {
+    if (agentActivityRequest) return agentActivityRequest;
+    if (Array.isArray(agentActivityEvents) && !force) { updateAgentActivityOptions(); renderAgentActivity(); return; }
+    const status = document.getElementById('fenixAgentActivityStatus');
+    if (status) { status.dataset.state = 'loading'; status.textContent = 'Consultando Event Store…'; }
+    agentActivityRequest = (async () => {
+      try {
+        const response = await fenixAuthedFetch('/api/v2/events/history?limit=100', { signal: AbortSignal.timeout(12000) });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload.events)) throw new Error('Resposta sem lista de eventos válida');
+        agentActivityEvents = payload.events;
+        agentActivityError = null;
+      } catch (error) {
+        agentActivityError = `Histórico indisponível: ${error.message}`;
+        if (!Array.isArray(agentActivityEvents)) agentActivityEvents = null;
+      } finally {
+        agentActivityRequest = null;
+        updateAgentActivityOptions();
+        renderAgentActivity();
+      }
+    })();
+    return agentActivityRequest;
+  }
+
+  ['fenixAgentActivityAgent', 'fenixAgentActivityRelation', 'fenixAgentActivityLevel', 'fenixAgentActivityPeriod'].forEach((id) => {
+    document.getElementById(id)?.addEventListener(id === 'fenixAgentActivityRelation' ? 'input' : 'change', renderAgentActivity);
+  });
+  document.getElementById('fenixAgentActivityRefresh')?.addEventListener('click', () => loadAgentActivity(true));
+
+  window.fenixOpenAgentActivity = async function(agentId) {
+    const id = String(agentId || '').trim();
+    if (!id) return false;
+    window.showView?.('agents');
+    await loadAgentActivity(true);
+    const select = document.getElementById('fenixAgentActivityAgent');
+    if (!select) return false;
+    if (![...select.options].some((option) => option.value === id)) {
+      const agent = (window.__fenixAgentRoster || []).find((item) => String(item.id || item.agentId || '') === id);
+      select.add(new Option(agent?.name || id, id));
+    }
+    select.value = id;
+    renderAgentActivity();
+    document.getElementById('fenixAgentActivity')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    select.focus({ preventScroll: true });
+    return true;
+  };
 
   window.fenixLoadAgents = async function(filter = null) {
     const grid = document.getElementById('fenix-agents-grid');
     if (!grid) return;
     const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
     const loadStatus = document.getElementById('fenixAgentLoadStatus');
+    const fleetStatus = document.getElementById('fenixAgentFleetStatus');
     const measuredAt = document.getElementById('fenixAgentMeasuredAt');
+    let source = 'API';
     if (loadStatus) loadStatus.textContent = 'Sincronizando agentes…';
+    if (fleetStatus) { fleetStatus.textContent = 'SINCRONIZANDO'; fleetStatus.style.color = '#38bdf8'; }
     if (!grid.querySelector('[data-agent-id]')) grid.innerHTML = '<div class="fenix-agent-loading"><span class="fenix-agent-loading-icon"><i class="ph-bold ph-robot"></i></span><strong>Conectando à frota</strong><span>Consultando agentes registrados no runtime.</span></div>';
     try {
       let agentsResponse;
       try {
-        agentsResponse = await fenixAuthedFetch('/api/v2/living-city/agents', { signal: AbortSignal.timeout(30000) });
+        agentsResponse = await fenixAuthedFetch('/api/v2/living-city/agents', { signal: AbortSignal.timeout(12000) });
       } catch (fetchErr) {
-        if ((fetchErr.name === 'AbortError' || fetchErr.message?.includes('aborted')) && Array.isArray(window.FENIX?.cityWorld?.snapshot?.agents)) {
-          agentsResponse = { ok: true, json: async () => ({ agents: window.FENIX.cityWorld.snapshot.agents }) };
+        const cachedAgents = Array.isArray(window.FENIX?.cityWorld?.snapshot?.agents) && window.FENIX.cityWorld.snapshot.agents.length > 0
+          ? window.FENIX.cityWorld.snapshot.agents
+          : (window.fenixWorld3D?.agents?.size > 0 ? Array.from(window.fenixWorld3D.agents.values()) : null);
+        if (cachedAgents) {
+          agentsResponse = { ok: true, json: async () => ({ agents: cachedAgents }) };
+          source = 'CACHE LOCAL';
         } else {
           throw fetchErr;
         }
@@ -643,26 +792,45 @@ module.exports = authRouter;`
       if (!agentsResponse.ok) throw new Error(`HTTP ${agentsResponse.status}`);
       const data = await agentsResponse.json();
       const agents = Array.isArray(data.agents) ? data.agents : [];
+      window.__fenixAgentRoster = agents;
       if (window.__fenixContext) window.__fenixContext.cachedAgents = agents;
       const metrics = stateResult?.metrics || {};
       const set = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = String(value); };
-      set('fenixAgentRegisteredCount', agents.length);
-      set('fenixAgentWorkingCount', metrics.workingAgents ?? agents.filter((agent) => agent.status === 'WORKING').length);
-      set('fenixAgentAvailableCount', agents.filter((agent) => agent.status === 'AVAILABLE').length);
+      const rosterSummary = window.FenixAgentRosterFilter?.summarizeAgentRoster(agents);
+      set('fenixAgentRegisteredCount', rosterSummary?.registered ?? agents.length);
+      set('fenixAgentWorkingCount', rosterSummary?.working ?? '—');
+      set('fenixAgentAvailableCount', rosterSummary?.available ?? '—');
       set('fenixAgentProjectsCount', metrics.projectsCount ?? '—');
       set('fenixAgentFailedJobsCount', metrics.failedJobs ?? '—');
       const overviewTab = document.querySelector('#view-agents .fenix-pill-tab');
       if (overviewTab) overviewTab.textContent = `Visão (${agents.length})`;
-      if (loadStatus) loadStatus.textContent = `${agents.length} agente${agents.length === 1 ? '' : 's'} sincronizado${agents.length === 1 ? '' : 's'}${stateResult ? '' : ' · métricas da Cidade indisponíveis'}`;
+      document.querySelectorAll('#view-agents .fenix-pill-tab').forEach((tab) => {
+        if (tab.getAttribute('onclick')?.includes('grid') || tab.textContent.includes('Visão')) {
+          tab.textContent = `Visão (${agents.length})`;
+        }
+      });
+      if (fleetStatus) {
+        fleetStatus.textContent = source === 'API' ? (agents.length ? 'ONLINE' : 'SEM AGENTES') : source;
+        fleetStatus.style.color = source === 'API' && agents.length ? '#34d399' : '#fbbf24';
+      }
+      if (loadStatus) loadStatus.textContent = `${agents.length} agente${agents.length === 1 ? '' : 's'} · ${source === 'API' ? 'API' : 'cache local'}${stateResult ? '' : ' · métricas adicionais indisponíveis'}`;
       if (measuredAt) measuredAt.textContent = `Atualizado às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date())}`;
       const visibleAgents = filter === 'cognitive' ? agents.filter((agent) => agent.kind === 'cognitive') : agents;
-      const renderCard = (agent) => `
-        <article class="cp-agent-card" data-agent-id="${escape(agent.id)}" data-agent-status="${escape(agent.status)}" role="button" tabindex="0" aria-label="Inspecionar ${escape(agent.name)}">
-          <div class="cp-status-badge"><div class="cp-status-dot ${agent.status === 'WORKING' ? 'online' : agent.status === 'AVAILABLE' ? 'available' : 'offline'}"></div>${escape(agent.status === 'WORKING' ? 'EM EXECUÇÃO' : agent.status === 'AVAILABLE' ? 'DISPONÍVEL' : agent.status)}</div>
-          <div class="cp-card-header"><div class="cp-avatar-box" aria-hidden="true"><i class="ph-bold ph-robot"></i></div><div class="cp-header-info"><h3 class="cp-agent-name">${escape(agent.name)}</h3><div class="cp-agent-role">${escape(agent.role)}</div></div></div>
+      const renderCard = (agent) => {
+        const classification = window.FenixAgentRosterFilter?.classifyAgent(agent) || 'OTHER';
+        const rawStatus = String(agent.state || agent.status || 'SEM ESTADO');
+        const statusLabel = classification === 'WORKING' ? 'EM EXECUÇÃO' : classification === 'AVAILABLE' ? 'DISPONÍVEL' : rawStatus;
+        return `
+        <article class="cp-agent-card" data-agent-id="${escape(agent.id)}" data-agent-status="${classification}" role="button" tabindex="0" aria-label="Inspecionar ${escape(agent.name)}">
+          <div class="cp-status-badge"><div class="cp-status-dot ${classification === 'WORKING' ? 'online' : classification === 'AVAILABLE' ? 'available' : 'offline'}"></div>${escape(statusLabel)}</div>
+          <div class="cp-card-header"><div class="cp-avatar-box agent-profile-avatar" data-avatar-color="${escape(agent.avatar?.appearance?.colorProfile || 'cyan')}" aria-hidden="true"><span class="agent-profile-avatar__head"></span><span class="agent-profile-avatar__body"></span></div><div class="cp-header-info"><h3 class="cp-agent-name">${escape(agent.name)}</h3><div class="cp-agent-role">${escape(agent.role)}</div><div class="cp-agent-archetype">${escape(agent.avatar?.personalityProfile?.archetype || agent.avatar?.appearance?.archetype || 'Perfil indisponível')}</div></div></div>
           <div class="cp-tags-row"><span class="cp-tag">${agent.kind === 'cognitive' ? 'EQUIPE COGNITIVA' : 'SQUAD PRINCIPAL'}</span>${agent.currentJob ? `<span class="cp-trait">Job ${escape(typeof agent.currentJob === 'object' ? agent.currentJob.name : agent.currentJob)}</span>` : ''}</div>
-          <div class="cp-agent-id">${escape(agent.id)}</div>
+          <div class="cp-card-footer" style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
+            <div class="cp-agent-id">${escape(agent.id)}</div>
+            <button type="button" class="cp-card-chat-btn" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; border-radius:6px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="event.stopPropagation(); window.fenixChatWithAgent('${escape(agent.id)}', '${escape(agent.name)}')"><i class="ph-bold ph-chat-circle-dots"></i> Conversar</button>
+          </div>
         </article>`;
+      };
 
       if (visibleAgents.length) {
         const workingSquad = visibleAgents.filter(a => a.status === 'WORKING');
@@ -730,11 +898,13 @@ module.exports = authRouter;`
         window.fenixSelectAgentForDeepInspector(agents[0]);
       }
       const list = document.getElementById('fenixAgentsListView');
-      if (list) list.innerHTML = `<table class="fenix-agent-list-table"><thead><tr><th>Agente</th><th>Especialidade</th><th>Estado</th><th>Tipo</th></tr></thead><tbody>${agents.map((agent) => `<tr data-agent-status="${escape(agent.status)}"><td>${escape(agent.name)}</td><td>${escape(agent.role)}</td><td>${escape(agent.status)}</td><td>${agent.kind === 'cognitive' ? 'Equipe cognitiva' : 'Catálogo'}</td></tr>`).join('')}</tbody></table>`;
+      if (list) list.innerHTML = `<table class="fenix-agent-list-table"><thead><tr><th>Agente</th><th>Especialidade</th><th>Estado</th><th>Tipo</th></tr></thead><tbody>${agents.map((agent) => `<tr data-agent-id="${escape(agent.id)}" data-agent-status="${window.FenixAgentRosterFilter?.classifyAgent(agent) || 'OTHER'}"><td>${escape(agent.name)}</td><td>${escape(agent.role)}</td><td>${escape(agent.state || agent.status || 'SEM ESTADO')}</td><td>${agent.kind === 'cognitive' ? 'Equipe cognitiva' : 'Catálogo'}</td></tr>`).join('')}</tbody></table>`;
       window.fenixFilterAgentCards?.();
       window.fenixLoadAgentScopes?.();
+      loadAgentActivity();
     } catch (e) {
       if (loadStatus) loadStatus.textContent = 'Sincronização pendente';
+      if (fleetStatus) { fleetStatus.textContent = 'OFFLINE'; fleetStatus.style.color = '#fb7185'; }
       const isAbort = e.name === 'AbortError' || String(e.message || '').includes('aborted');
       if (!isAbort) {
         console.error('[FENIX] Falha ao carregar agentes:', e);
@@ -743,13 +913,34 @@ module.exports = authRouter;`
     }
   };
 
+  window.fenixChatWithAgent = function(agentId, agentName) {
+    const sidebar = document.getElementById('fenixMascotSidebar');
+    if (!sidebar || !sidebar.classList.contains('open')) {
+      const toggle = document.getElementById('fenixMascotTrigger') || document.querySelector('.fenix-mascot-fab');
+      if (toggle) toggle.click();
+    }
+    if (window.FenixSidebar && typeof window.FenixSidebar.switchTab === 'function') {
+      window.FenixSidebar.switchTab('chat');
+    }
+    const input = document.getElementById('fsbChatInput');
+    if (input) {
+      input.value = `@${agentName || agentId} `;
+      input.focus();
+    }
+    if (typeof window.showNotification === 'function') {
+      window.showNotification(`Chat aberto com @${agentName || agentId}`);
+    }
+  };
+
   window.fenixFilterAgentCards = function() {
-    const query = document.getElementById('fenixAgentSearch')?.value.trim().toLocaleLowerCase('pt-BR') || '';
+    const query = document.getElementById('fenixAgentSearch')?.value.trim() || '';
     const status = document.getElementById('fenixAgentStatusFilter')?.value || 'all';
-    const matches = (element) => (!query || element.textContent.toLocaleLowerCase('pt-BR').includes(query)) && (status === 'all' || (status === 'other' ? !['WORKING', 'AVAILABLE'].includes(element.dataset.agentStatus) : element.dataset.agentStatus === status));
+    const helper = window.FenixAgentRosterFilter;
+    const records = Array.isArray(window.__fenixAgentRoster) ? window.__fenixAgentRoster : [];
+    const visibleIds = new Set(helper ? helper.filterAgentRoster(records, { query, status }).map((agent) => String(agent.id || agent.agentId || '')) : []);
     const cards = [...document.querySelectorAll('#fenix-agents-grid .cp-agent-card[data-agent-id]')];
-    cards.forEach((card) => { card.hidden = !matches(card); });
-    document.querySelectorAll('#fenixAgentsListView tbody tr').forEach((row) => { row.hidden = !matches(row); });
+    cards.forEach((card) => { card.hidden = !visibleIds.has(card.dataset.agentId); });
+    document.querySelectorAll('#fenixAgentsListView tbody tr[data-agent-id]').forEach((row) => { row.hidden = !visibleIds.has(row.dataset.agentId); });
     const count = document.getElementById('fenixAgentVisibleCount');
     if (count) count.textContent = `${cards.filter((card) => !card.hidden).length} de ${cards.length} visíveis`;
   };
@@ -2103,6 +2294,7 @@ window.fenixShowClusterMemories = function() {
     }
 
     setInterval(() => {
+      if (document.hidden || !document.getElementById('view-command')?.classList.contains('active')) return;
       document.querySelectorAll('#healthList tr, #runtimeServices tr, #workerList tr').forEach(tr => {
         if (!tr.classList.contains('patched-runtime')) {
           tr.classList.add('patched-runtime');
@@ -2124,7 +2316,7 @@ window.fenixShowClusterMemories = function() {
           }
         }
       });
-    }, 2000);
+    }, 10000);
   });
 
   // ── Agent Deep Inspector & Workforce Actions ──
@@ -2139,9 +2331,31 @@ window.fenixShowClusterMemories = function() {
     set('agentInspMission', agent.currentMission || agent.mission || 'Sem missão vinculada');
     set('agentInspJob', agent.currentJob ? (typeof agent.currentJob === 'object' ? agent.currentJob.name : agent.currentJob) : 'Aguardando fila de despacho');
     set('agentInspDistrict', agent.district || 'executive_hq');
+    const profile = agent.avatar || null;
+    const appearance = profile?.appearance || {};
+    const personality = profile?.personalityProfile || {};
+    const avatar = document.getElementById('agentInspAvatar');
+    if (avatar) avatar.dataset.avatarColor = appearance.colorProfile || 'cyan';
+    set('agentInspArchetype', personality.archetype || appearance.archetype || 'Sem perfil informado');
+    set('agentInspCommunication', personality.communicationStyle || '—');
+    set('agentInspAvatarSource', agent.avatarProfileSource === 'generated-from-role' || profile?.source === 'generated-from-role' ? 'Gerado pela função' : profile ? 'Perfil do agente' : 'Não informado');
     const badge = document.getElementById('agentInspStatusBadge');
     if (badge) {
       badge.className = agent.status === 'WORKING' ? 'badge-status-cyan text-green' : 'badge-status-cyan';
+    }
+
+    // Update Cyberpunk Workstation Live Telemetry Ticker (Video 1001656597 Pattern)
+    const ticker = document.getElementById('agentWorkstationTicker');
+    if (ticker) {
+      const now = new Date().toLocaleTimeString('pt-BR');
+      const roleStr = agent.role || 'Operacional';
+      const statusStr = agent.status || 'AVAILABLE';
+      ticker.innerHTML = `
+        <div style="color:#38BDF8;">[${now}] Workstation alocada: ${agent.name || agent.id}</div>
+        <div style="color:#A78BFA;">[PERFIL] Fun&ccedil;&atilde;o: ${roleStr} &bull; Distrito: ${agent.district || 'executive_hq'}</div>
+        <div style="color:${statusStr === 'WORKING' ? '#10B981' : '#F59E0B'};">[STATUS] Estado: ${statusStr} &bull; Mem&oacute;ria: Sincronizada</div>
+        <div style="color:#94A3B8;">[CAP] Sandboxed runtime &bull; ModelRouter conectado</div>
+      `;
     }
   };
 
@@ -2164,12 +2378,36 @@ window.fenixShowClusterMemories = function() {
   window.fenixFocusAgentInCity = function() {
     const agentId = document.getElementById('agentInspId')?.textContent?.trim();
     const district = document.getElementById('agentInspDistrict')?.textContent || 'command-center';
+    window.fenixCloseAgentDossier?.();
     window.showView('city');
-    setTimeout(() => {
+    setTimeout(async () => {
       const world = window.fenixWorld3D || window.fenixWorldEngine3D;
-      world?.syncRealData?.();
-      if (agentId) world?.focusAgent?.(agentId);
-      else window.fenixPanToDistrict?.(district);
+      if (!world) return;
+      try {
+        await world.syncRealData?.();
+        if (!agentId) {
+          window.fenixPanToDistrict?.(district);
+          return;
+        }
+        const records = [...(world.agents?.values?.() || [])];
+        const requested = agentId.toLocaleLowerCase();
+        const matches = records.filter((agent) => [agent.id, agent.agentId, agent.name].some((value) => {
+          const candidate = String(value || '').trim().toLocaleLowerCase();
+          return candidate === requested || candidate.startsWith(`${requested} `);
+        }));
+        const agent = world.agents?.get?.(agentId) || (matches.length === 1 ? matches[0] : null);
+        if (!agent) {
+          window.FenixToast?.show?.(`O agente “${agentId}” não foi encontrado na Cidade.`, 'warning');
+          return;
+        }
+        const resolvedId = agent.id || agent.agentId || agentId;
+        if (typeof world.selectAgent === 'function') world.selectAgent(resolvedId);
+        else world.focusAgent?.(resolvedId);
+        window.fenixCitySemanticZoom?.('agent');
+      } catch (error) {
+        console.warn('[FenixWorld] Could not focus selected runtime agent in City.', error);
+        window.FenixToast?.show?.('Não foi possível abrir esse agente na Cidade. Tente sincronizar novamente.', 'warning');
+      }
     }, 300);
   };
 

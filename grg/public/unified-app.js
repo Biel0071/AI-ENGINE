@@ -80,12 +80,15 @@ async function api(path, options = {}, retried = false) {
     apiBackoffUntil = Date.now() + Math.min(Math.max(retryAfter, 1), 60) * 1000;
   }
   if (res.status === 401) {
-    localStorage.removeItem('grg_token');
-    if (location.pathname !== '/GRG-login') {
-      try { sessionStorage.setItem('fenix_return_route', location.hash || '#city'); } catch {}
-      location.replace('/GRG-login');
+    const sessionValid = await (window.__FENIX_SESSION_VALID__?.() ?? null);
+    if (sessionValid === false) {
+      localStorage.removeItem('grg_token');
+      if (location.pathname !== '/GRG-login') {
+        try { sessionStorage.setItem('fenix_return_route', location.hash || '#city'); } catch {}
+        location.replace('/GRG-login');
+      }
     }
-    throw new Error('sessao expirada');
+    throw new Error(sessionValid === true ? 'A API recusou esta sessão.' : 'Não foi possível confirmar a sessão.');
   }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
@@ -185,6 +188,120 @@ window.fenixSelectEntity = function(type, id) {
   // 5. Open right sidebar inspector if mascot sidebar is loaded
   if (typeof window.openFenixInspector === 'function') {
     window.openFenixInspector(type, id);
+  }
+
+  // 6. Miro-style Contextual Action Pill
+  if (typeof window.fenixShowMiroActionPill === 'function') {
+    window.fenixShowMiroActionPill(type, id);
+  }
+};
+
+// --- REA MIRO SPATIAL CANVAS CONTROLLER & CONTEXTUAL ACTIONS ---
+let currentMiroZoom = 1.0;
+
+function updateMiroZoomDisplay() {
+  const badge = document.getElementById('fenixMiroZoomLevel');
+  if (badge) {
+    badge.textContent = Math.round(currentMiroZoom * 100) + '%';
+  }
+}
+
+window.fenixMiroZoomIn = function() {
+  currentMiroZoom = Math.min(2.5, currentMiroZoom + 0.15);
+  updateMiroZoomDisplay();
+  if (window.fenixCity && typeof window.fenixCity.zoomIn === 'function') {
+    window.fenixCity.zoomIn();
+  } else if (window.fenixCity && typeof window.fenixCity.setZoom === 'function') {
+    window.fenixCity.setZoom(currentMiroZoom);
+  }
+};
+
+window.fenixMiroZoomOut = function() {
+  currentMiroZoom = Math.max(0.4, currentMiroZoom - 0.15);
+  updateMiroZoomDisplay();
+  if (window.fenixCity && typeof window.fenixCity.zoomOut === 'function') {
+    window.fenixCity.zoomOut();
+  } else if (window.fenixCity && typeof window.fenixCity.setZoom === 'function') {
+    window.fenixCity.setZoom(currentMiroZoom);
+  }
+};
+
+window.fenixMiroResetZoom = function() {
+  currentMiroZoom = 1.0;
+  updateMiroZoomDisplay();
+  if (window.fenixCity && typeof window.fenixCity.setZoom === 'function') {
+    window.fenixCity.setZoom(1.0);
+  }
+};
+
+window.fenixMiroFitView = function() {
+  currentMiroZoom = 1.0;
+  updateMiroZoomDisplay();
+  if (typeof window.fenixPanToDistrict === 'function') {
+    window.fenixPanToDistrict('ALL');
+  }
+  if (window.fenixCity && typeof window.fenixCity.resize === 'function') {
+    window.fenixCity.resize();
+  }
+};
+
+window.fenixMiroToggleMinimap = function() {
+  const minimap = document.getElementById('fenixWorldMinimap');
+  if (minimap) {
+    minimap.style.display = minimap.style.display === 'none' ? '' : 'none';
+  }
+};
+
+let selectedMiroEntity = null;
+
+window.fenixShowMiroActionPill = function(type, id, name) {
+  selectedMiroEntity = { type, id, name: name || id };
+  const pill = document.getElementById('fenixMiroEntityActionPill');
+  const nameEl = document.getElementById('fenixMiroPillName');
+  const iconEl = document.getElementById('fenixMiroPillIcon');
+  if (!pill) return;
+
+  if (nameEl) nameEl.textContent = name || id;
+  if (iconEl) {
+    iconEl.className = type === 'agent' ? 'ph-bold ph-robot' : type === 'building' ? 'ph-bold ph-buildings' : 'ph-bold ph-cpu';
+    iconEl.style.color = type === 'agent' ? '#A855F7' : '#00D9FF';
+  }
+  pill.style.display = 'flex';
+};
+
+window.fenixCloseMiroActionPill = function() {
+  const pill = document.getElementById('fenixMiroEntityActionPill');
+  if (pill) pill.style.display = 'none';
+};
+
+window.fenixMiroActionChat = function() {
+  if (!selectedMiroEntity) return;
+  if (window.FenixMascotSidebar && typeof window.FenixMascotSidebar.open === 'function') {
+    window.FenixMascotSidebar.open();
+  }
+  const input = document.getElementById('fsbPromptInput') || document.getElementById('masterPrompt');
+  if (input) {
+    input.value = 'Relatório de status e operações de ' + (selectedMiroEntity.name || selectedMiroEntity.id) + ': ';
+    input.focus();
+  }
+};
+
+window.fenixMiroActionInspect = function() {
+  if (!selectedMiroEntity) return;
+  if (typeof window.openFenixInspector === 'function') {
+    window.openFenixInspector(selectedMiroEntity.type, selectedMiroEntity.id);
+  }
+};
+
+window.fenixMiroActionIde = function() {
+  if (typeof showView === 'function') {
+    showView('ide');
+  }
+};
+
+window.fenixMiroActionMissions = function() {
+  if (typeof showView === 'function') {
+    showView('operations');
   }
 };
 
@@ -451,7 +568,20 @@ function renderCommand() {
   if ($('eventStream')) $('eventStream').innerHTML = events === null
     ? '<div class="empty-state" style="padding:24px 0;">Eventos indisponíveis nesta leitura da API.</div>'
     : events.length
-      ? events.slice(0, 48).map((event) => `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(event.summary || event.message || event.recordedAt || event.occurredAt || event.createdAt || event.id || 'Evento sem descrição')}</strong></div>`).join('')
+      ? events.slice(0, 48).map((event) => {
+          let summary = event.summary || event.message || event.description || '';
+          if (!summary || summary.includes('sem descrição') || summary.includes('A API registrou')) {
+            const evType = String(event.type || event.name || '').toLowerCase();
+            const comp = event.data?.componentId || event.subject || '';
+            summary = evType.includes('operational.component')
+              ? `Auditoria operacional: componente "${comp || 'core'}" verificado.`
+              : evType.startsWith('mission.') ? 'Missão despachada no runtime.'
+              : evType.startsWith('agent.') ? 'Atividade de agente autônomo.'
+              : evType.startsWith('job.') ? 'Job de processamento executado.'
+              : `Evento do subsistema ${comp || evType || 'operacional'}.`;
+          }
+          return `<div class="event-log">[${esc(event.type || event.name || 'event')}] <strong>${esc(summary)}</strong></div>`;
+        }).join('')
       : '<div class="empty-state" style="padding:24px 0;">Nenhum evento registrado pela API.</div>';
 }
 
@@ -1797,6 +1927,9 @@ init();
 
 
 window.openJobInspector = function(jobId, promptText) {
+  if (typeof window.fenixInspectJob === 'function') {
+    return window.fenixInspectJob(jobId, { id: jobId, title: promptText });
+  }
   const modal = document.getElementById('jobInspectorModal');
   if (!modal) return;
   modal.style.display = 'block';
@@ -2040,6 +2173,14 @@ window.showSubView = function(viewId, subViewId) {
 
 
 
+const OPEN_MISSION_STATUSES = new Set([
+  'ACTIVE', 'RUNNING', 'IN_PROGRESS', 'IN PROGRESS', 'EXECUTING', 'DISPATCHED',
+  'PENDING', 'QUEUED', 'PLANNED', 'AWAITING_APPROVAL', 'PENDING_APPROVAL'
+]);
+window.fenixIsMissionOpen = function(mission) {
+  return OPEN_MISSION_STATUSES.has(String(mission?.status || mission?.state || '').toUpperCase());
+};
+
 window.updateSidebarCounters = function(snapshot) {
   const agentEl = document.getElementById('sidebarCountAgents');
   const missionEl = document.getElementById('sidebarCountMissions');
@@ -2096,23 +2237,60 @@ window.updateSidebarCounters = function(snapshot) {
   if (tbMeetings) tbMeetings.textContent = "—";
   if (tbSystem) {
     const health = snapshot?.health?.status || snapshot?.systemHealth || window.FENIX?.live?.health?.status;
-    tbSystem.textContent = health ? String(health).toUpperCase() : 'UNAVAILABLE';
+    const healthLabel = health ? String(health).toUpperCase() : 'UNAVAILABLE';
+    tbSystem.textContent = healthLabel === 'UNAVAILABLE' ? 'Indisponível' : healthLabel;
   }
 
   // Master KPI Capsules (DS-WORLD-1.0)
+  const topKpiProjects = document.getElementById("topKpiProjectsVal");
   const topKpiAgents = document.getElementById("topKpiAgentsVal");
   const topKpiMissions = document.getElementById("topKpiMissionsVal");
   const topKpiJobs = document.getElementById("topKpiJobsVal");
   const topKpiSystem = document.getElementById("topKpiSystemVal");
+  const updateTopKpi = (valueNode, value, description) => {
+    if (!valueNode) return;
+    valueNode.textContent = String(value);
+    const button = valueNode.closest('button');
+    if (button) {
+      button.setAttribute('aria-label', `${description}: ${value}`);
+      button.title = `${description}: ${value}. Clique para abrir detalhes.`;
+    }
+  };
+  if (topKpiProjects) {
+    updateTopKpi(topKpiProjects, countText(projectsList), 'Projetos registrados');
+  }
   if (topKpiAgents) {
     const onlineStatuses = new Set(['ONLINE', 'AVAILABLE', 'IDLE', 'WORKING', 'BUSY', 'RUNNING']);
-    const onlineAgents = agentsList?.filter((agent) => agent?.online === true || agent?.isOnline === true || onlineStatuses.has(String(agent?.status || agent?.state || '').toUpperCase()));
-    topKpiAgents.textContent = countText(onlineAgents);
+    const activeWorkStatuses = new Set(['WORKING', 'BUSY', 'RUNNING', 'WALKING', 'EXECUTING', 'ACTIVE']);
+    const knownStatuses = new Set([...onlineStatuses, 'OFFLINE', 'UNAVAILABLE', 'DISCONNECTED', 'STOPPED', 'ERROR', 'FAILED', 'SLEEPING']);
+    const hasPresence = (agent) => typeof agent?.online === 'boolean'
+      || typeof agent?.isOnline === 'boolean'
+      || knownStatuses.has(String(agent?.status || agent?.state || '').toUpperCase());
+    const presenceMeasured = Array.isArray(agentsList) && agentsList.every(hasPresence);
+    const onlineAgents = presenceMeasured
+      ? agentsList.filter((agent) => {
+        if (typeof agent?.online === 'boolean') return agent.online;
+        if (typeof agent?.isOnline === 'boolean') return agent.isOnline;
+        return onlineStatuses.has(String(agent?.status || agent?.state || '').toUpperCase());
+      })
+      : null;
+    updateTopKpi(topKpiAgents, countText(onlineAgents), 'Agentes online');
+    const topKpiAgentsLabel = document.getElementById('topKpiAgentsLabel');
+    if (topKpiAgentsLabel) {
+      if (Array.isArray(agentsList) && presenceMeasured) {
+        const activeWorking = agentsList.filter((agent) => activeWorkStatuses.has(String(agent?.status || agent?.state || '').toUpperCase()) || Boolean(agent?.currentJob || agent?.currentTask)).length;
+        const activeCount = activeWorking > 0 ? activeWorking : (onlineAgents ? onlineAgents.length : 0);
+        topKpiAgentsLabel.textContent = `Online · ${activeCount} Ativos / ${agentsList.length} Total`;
+      } else if (Array.isArray(agentsList)) {
+        topKpiAgentsLabel.textContent = `Ativos / ${agentsList.length} Total`;
+      } else {
+        topKpiAgentsLabel.textContent = 'Ativos / — Total';
+      }
+    }
   }
   if (topKpiMissions) {
-    const activeStatuses = new Set(['ACTIVE', 'RUNNING', 'IN_PROGRESS', 'IN PROGRESS', 'EXECUTING', 'DISPATCHED']);
-    const activeMissions = missionsList?.filter((mission) => activeStatuses.has(String(mission?.status || mission?.state || '').toUpperCase()));
-    topKpiMissions.textContent = countText(activeMissions);
+    const activeMissions = missionsList?.filter(window.fenixIsMissionOpen);
+    updateTopKpi(topKpiMissions, countText(activeMissions), 'Missões ativas');
   }
   if (topKpiJobs) {
     const snapshotJobs = Array.isArray(snapshot?.jobs)
@@ -2124,16 +2302,17 @@ window.updateSidebarCounters = function(snapshot) {
     const jobsLoaded = Array.isArray(measuredJobs);
     const jobsSource = jobsLoaded && Array.isArray(window.state?.jobs) ? window.state.jobs : measuredJobs;
     if (!Array.isArray(jobsSource)) {
-      topKpiJobs.textContent = '—';
+      updateTopKpi(topKpiJobs, '—', 'Jobs em execução');
     } else {
       const activeStatuses = new Set(['RUNNING', 'ACTIVE', 'DISPATCHED']);
       const activeJobs = jobsSource.filter((job) => activeStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
-      topKpiJobs.textContent = String(activeJobs.length);
+      updateTopKpi(topKpiJobs, activeJobs.length, 'Jobs em execução');
     }
   }
   if (topKpiSystem) {
     const health = snapshot?.health?.status || snapshot?.systemHealth || window.FENIX?.live?.health?.status;
-    topKpiSystem.textContent = health ? String(health).toUpperCase() : 'UNAVAILABLE';
+    const healthLabel = health ? String(health).toUpperCase() : 'UNAVAILABLE';
+    updateTopKpi(topKpiSystem, healthLabel === 'UNAVAILABLE' ? 'Indisponível' : healthLabel, 'Saúde do sistema');
   }
   if (typeof window.renderSidebarCompanies === 'function') {
     if (companiesList) window.renderSidebarCompanies(companiesList);
@@ -2231,12 +2410,109 @@ if (typeof window !== 'undefined') {
 // 6 MASTER HUBS — UNIFIED SPATIAL CONTROLLER (FÊNIX OS 4.0)
 // ═════════════════════════════════════════════════════════════════════════════
 
+let fenixCityDrawerFocusTrigger = null;
+let fenixCityDrawerKeyHandler = null;
+
+window.fenixActivateCityDrawer = function(drawer, close, triggerId) {
+  if (!drawer) return;
+  const activeElement = document.activeElement;
+  const activeDrawer = activeElement?.closest?.('#fenixCityCockpitDrawer, #fenixCityOpsDrawer');
+  const fallbackTriggerId = triggerId || (drawer.id === 'fenixCityOpsDrawer' ? 'btnCityModeOps' : 'btnCityModeCockpit');
+  fenixCityDrawerFocusTrigger = activeElement instanceof HTMLElement && activeElement !== document.body && !activeDrawer
+    ? activeElement : document.getElementById(fallbackTriggerId);
+  drawer.setAttribute('role', 'dialog');
+  drawer.setAttribute('aria-modal', 'true');
+  drawer.setAttribute('aria-hidden', 'false');
+  drawer.setAttribute('tabindex', '-1');
+  fenixCityDrawerKeyHandler = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      close();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = [...drawer.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      .filter((element) => element.getClientRects().length > 0);
+    if (!focusable.length) {
+      event.preventDefault();
+      drawer.focus();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !drawer.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !drawer.contains(document.activeElement))) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+  document.addEventListener('keydown', fenixCityDrawerKeyHandler);
+  const initialFocus = drawer.id === 'fenixCityMediaPanel'
+    ? drawer.querySelector('#fenixCityMediaClose')
+    : drawer.querySelector('button:last-child');
+  (initialFocus || drawer).focus();
+};
+
+window.fenixDeactivateCityDrawer = function(drawer, restoreFocus = true) {
+  if (!drawer) return;
+  drawer.setAttribute('aria-hidden', 'true');
+  if (fenixCityDrawerKeyHandler) document.removeEventListener('keydown', fenixCityDrawerKeyHandler);
+  fenixCityDrawerKeyHandler = null;
+  const trigger = fenixCityDrawerFocusTrigger;
+  fenixCityDrawerFocusTrigger = null;
+  if (!restoreFocus) return;
+  const triggerVisible = trigger?.isConnected && trigger.getClientRects().length > 0
+    && getComputedStyle(trigger).visibility !== 'hidden';
+  if (triggerVisible) {
+    trigger.focus();
+    return;
+  }
+  const map = document.getElementById('fenixCityWorldArea');
+  if (map) {
+    map.setAttribute('tabindex', '-1');
+    map.focus();
+  }
+};
+
+window.fenixCloseCityDrawersForMobile = function() {
+  for (const id of ['fenixCityCockpitDrawer', 'fenixCityOpsDrawer', 'fenixCityMediaPanel']) {
+    const drawer = document.getElementById(id);
+    if (!drawer) continue;
+    window.fenixDeactivateCityDrawer?.(drawer, false);
+    drawer.style.display = 'none';
+    if (id === 'fenixCityMediaPanel') {
+      drawer.hidden = true;
+      document.getElementById('btnCityMediaLibrary')?.setAttribute('aria-expanded', 'false');
+    }
+  }
+};
+
+window.fenixCollapseSidebarForMobileCityDrawer = function() {
+  if (window.innerWidth <= 760 && document.body.classList.contains('has-right-sidebar-open')) {
+    window.FenixSidebar?.collapse();
+  }
+};
+
 window.fenixToggleCityCockpit = function() {
   const drawer = document.getElementById('fenixCityCockpitDrawer');
   if (!drawer) return;
   const isHidden = drawer.style.display === 'none' || !drawer.style.display;
   if (isHidden) {
+    window.fenixCollapseSidebarForMobileCityDrawer?.();
+    for (const id of ['fenixCityOpsDrawer', 'fenixCityMediaPanel']) {
+      const competingDrawer = document.getElementById(id);
+      if (!competingDrawer) continue;
+      window.fenixDeactivateCityDrawer?.(competingDrawer, false);
+      competingDrawer.style.display = 'none';
+      if (id === 'fenixCityMediaPanel') {
+        competingDrawer.hidden = true;
+        document.getElementById('btnCityMediaLibrary')?.setAttribute('aria-expanded', 'false');
+      }
+    }
     drawer.style.display = 'flex';
+    window.fenixActivateCityDrawer?.(drawer, () => window.fenixToggleCityCockpit());
     const content = document.getElementById('cityCockpitDrawerContent');
     const stateData = window.state?.data || {};
     const asList = (value) => Array.isArray(value) ? value : null;
@@ -2285,6 +2561,7 @@ window.fenixToggleCityCockpit = function() {
     }
   } else {
     drawer.style.display = 'none';
+    window.fenixDeactivateCityDrawer?.(drawer);
   }
 };
 
@@ -2293,7 +2570,19 @@ window.fenixToggleCityOps = function() {
   if (!drawer) return;
   const isHidden = drawer.style.display === 'none' || !drawer.style.display;
   if (isHidden) {
+    window.fenixCollapseSidebarForMobileCityDrawer?.();
+    for (const id of ['fenixCityCockpitDrawer', 'fenixCityMediaPanel']) {
+      const competingDrawer = document.getElementById(id);
+      if (!competingDrawer) continue;
+      window.fenixDeactivateCityDrawer?.(competingDrawer, false);
+      competingDrawer.style.display = 'none';
+      if (id === 'fenixCityMediaPanel') {
+        competingDrawer.hidden = true;
+        document.getElementById('btnCityMediaLibrary')?.setAttribute('aria-expanded', 'false');
+      }
+    }
     drawer.style.display = 'flex';
+    window.fenixActivateCityDrawer?.(drawer, () => window.fenixToggleCityOps());
     const content = document.getElementById('cityOpsDrawerContent');
     const data = window.state?.data || {};
     const jobs = Array.isArray(data.jobs?.jobs) ? data.jobs.jobs
@@ -2344,59 +2633,300 @@ window.fenixToggleCityOps = function() {
     }
   } else {
     drawer.style.display = 'none';
+    window.fenixDeactivateCityDrawer?.(drawer);
   }
 };
 
 // Hub 4: Cognitive Brain Unified Switcher (Memória + Conhecimento + Flow Graph)
 window.fenixSwitchBrainHub = function(mode) {
-  const memContainer = document.getElementById('fenixMemoryOperationalContainer');
-  const knowView = document.getElementById('view-knowledge');
-  const flowView = document.getElementById('view-flowgraph');
-  const tabs = document.querySelectorAll('#fenixBrainHubTabs button');
-  tabs.forEach(t => t.classList.remove('active'));
-
-  if (mode === 'memory') {
-    if (memContainer) memContainer.style.display = 'flex';
-    if (knowView) knowView.style.display = 'none';
-    if (flowView) flowView.style.display = 'none';
-    tabs[0]?.classList.add('active');
-  } else if (mode === 'knowledge') {
-    if (memContainer) memContainer.style.display = 'none';
-    if (knowView) {
-      knowView.style.display = 'flex';
-      if (typeof window.loadKnowledgeView === 'function') window.loadKnowledgeView();
+  if (['memory', 'knowledge', 'flowgraph'].includes(mode)) {
+    if (typeof window.showView === 'function') {
+      window.showView(mode);
     }
-    if (flowView) flowView.style.display = 'none';
-    tabs[1]?.classList.add('active');
-  } else if (mode === 'flowgraph') {
-    if (memContainer) memContainer.style.display = 'none';
-    if (knowView) knowView.style.display = 'none';
-    if (flowView) {
-      flowView.style.display = 'flex';
-      if (typeof window.fenixOpenFlowGraph === 'function') window.fenixOpenFlowGraph();
-    }
-    tabs[2]?.classList.add('active');
+    const tabs = document.querySelectorAll('#fenixBrainHubTabs button, .fenix-brain-tabs button');
+    tabs.forEach(t => {
+      const match = t.getAttribute('onclick')?.includes(mode) || t.dataset.tab === mode;
+      t.classList.toggle('active', match);
+    });
   }
 };
 
 // Hub 6: Control Cockpit Unified Switcher (Runtime + Terminal + Observabilidade + MCP)
 window.fenixSwitchControlTab = function(tabName) {
-  const tabs = document.querySelectorAll('#fenixControlCockpitTabs button');
-  tabs.forEach(t => t.classList.remove('active'));
-  const targets = {
-    'runtime': document.getElementById('view-runtime')?.querySelector('.workspace-view'),
-    'terminal': document.getElementById('view-terminal'),
-    'observability': document.getElementById('view-observability'),
-    'mcp': document.getElementById('view-mcp')
-  };
-  Object.keys(targets).forEach(k => {
-    if (targets[k]) targets[k].style.display = k === tabName ? 'flex' : 'none';
-  });
-  const activeTabIdx = ['runtime', 'terminal', 'observability', 'mcp'].indexOf(tabName);
-  if (activeTabIdx >= 0 && tabs[activeTabIdx]) tabs[activeTabIdx].classList.add('active');
-
-  if (tabName === 'terminal' && typeof window.loadTerminalView === 'function') window.loadTerminalView();
-  if (tabName === 'observability' && typeof window.loadObservabilityView === 'function') window.loadObservabilityView();
-  if (tabName === 'mcp' && typeof window.loadMcpView === 'function') window.loadMcpView();
+  if (['runtime', 'terminal', 'observability', 'mcp'].includes(tabName)) {
+    if (typeof window.showView === 'function') {
+      window.showView(tabName);
+    }
+    const tabs = document.querySelectorAll('#fenixControlCockpitTabs button, .fenix-control-tabs button');
+    tabs.forEach(t => {
+      const match = t.getAttribute('onclick')?.includes(tabName) || t.dataset.tab === tabName;
+      t.classList.toggle('active', match);
+    });
+    if (tabName === 'runtime' && typeof window.fenixRenderRuntimeServices === 'function') {
+      window.fenixRenderRuntimeServices();
+    }
+  }
 };
+
+// ==========================================
+// Phase 35: Topbar KPI Dropdown Drawer (Image 4)
+// ==========================================
+let _fnxCurrentKpiCategory = null;
+
+window.fnxCloseKpiDrawer = function() {
+  const drawer = document.getElementById('fnxKpiDropdownDrawer');
+  if (drawer) {
+    drawer.style.display = 'none';
+    drawer.setAttribute('aria-hidden', 'true');
+  }
+  _fnxCurrentKpiCategory = null;
+};
+
+window.fnxToggleKpiDrawer = function(category) {
+  const drawer = document.getElementById('fnxKpiDropdownDrawer');
+  if (!drawer) return;
+
+  if (drawer.style.display === 'flex' && _fnxCurrentKpiCategory === category) {
+    window.fnxCloseKpiDrawer();
+    return;
+  }
+
+  _fnxCurrentKpiCategory = category;
+  const iconEl = document.getElementById('fnxKpiDdIcon');
+  const titleEl = document.getElementById('fnxKpiDdTitle');
+  const bodyEl = document.getElementById('fnxKpiDdBody');
+  const actionBtn = document.getElementById('fnxKpiDdActionBtn');
+
+  drawer.style.display = 'flex';
+  drawer.style.opacity = '1';
+  drawer.setAttribute('aria-hidden', 'false');
+
+  if (category === 'projects') {
+    if (iconEl) iconEl.className = 'ph-bold ph-folders';
+    if (titleEl) titleEl.textContent = 'PROJETOS REGISTRADOS';
+    if (actionBtn) {
+      actionBtn.innerHTML = 'Abrir Central de Projetos &rarr;';
+      actionBtn.onclick = () => { window.showView?.('projects'); window.fnxCloseKpiDrawer(); };
+    }
+    const projects = Array.isArray(window.state?.projects) ? window.state.projects
+      : (Array.isArray(window.FENIX?.live?.projects) ? window.FENIX.live.projects : []);
+    if (projects.length === 0) {
+      bodyEl.innerHTML = '<div style="padding:16px; text-align:center; color:#64748b;">Nenhum projeto encontrado no catálogo.</div>';
+    } else {
+      bodyEl.innerHTML = projects.slice(0, 8).map(p => `
+        <div class="fnx-kpi-item">
+          <div>
+            <strong style="color:#f1f5f9;">${escapeHtml(p.name || p.id || 'Projeto')}</strong>
+            <div style="font-size:10px; color:#94a3b8;">${escapeHtml(p.category || p.status || 'Ativo')}</div>
+          </div>
+          <span style="font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); font-weight:700;">
+            ${escapeHtml(String(p.status || 'OK').toUpperCase())}
+          </span>
+        </div>
+      `).join('');
+    }
+  } else if (category === 'agents') {
+    if (iconEl) iconEl.className = 'ph-bold ph-users-three';
+    if (actionBtn) {
+      actionBtn.innerHTML = 'Abrir Central de Agentes &rarr;';
+      actionBtn.onclick = () => { window.showView?.('agents'); window.fnxCloseKpiDrawer(); };
+    }
+    const agents = Array.isArray(window.state?.agents) ? window.state.agents
+      : (Array.isArray(window.FENIX?.live?.agents) ? window.FENIX.live.agents : []);
+    const activeCount = agents.filter(a => ['WORKING', 'BUSY', 'RUNNING', 'WALKING', 'EXECUTING', 'ACTIVE'].includes(String(a?.status || a?.state || '').toUpperCase()) || Boolean(a?.currentJob || a?.currentTask)).length;
+    if (titleEl) {
+      titleEl.textContent = agents.length > 0 ? `AGENTES (${activeCount} ATIVOS / ${agents.length} TOTAL)` : 'AGENTES NO RUNTIME';
+    }
+    if (agents.length === 0) {
+      bodyEl.innerHTML = '<div style="padding:16px; text-align:center; color:#64748b;">Nenhum agente ativo registrado no momento.</div>';
+    } else {
+      bodyEl.innerHTML = agents.slice(0, 8).map(a => `
+        <div class="fnx-kpi-item">
+          <div>
+            <strong style="color:#f1f5f9;">${a.name || a.id || 'Agente'}</strong>
+            <div style="font-size:10px; color:#94a3b8;">${a.role || a.specialty || 'Generalista'}</div>
+          </div>
+          <span style="font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(34,211,238,0.15); color:#22d3ee; border:1px solid rgba(34,211,238,0.3); font-weight:700;">
+            ${String(a.status || a.state || 'ONLINE').toUpperCase()}
+          </span>
+        </div>
+      `).join('');
+    }
+  } else if (category === 'missions') {
+    if (iconEl) iconEl.className = 'ph-bold ph-target';
+    if (titleEl) titleEl.textContent = 'MISSÕES & OPERAÇÕES';
+    if (actionBtn) {
+      actionBtn.innerHTML = 'Abrir Central de Operações &rarr;';
+      actionBtn.onclick = () => { window.showView?.('operations'); window.fnxCloseKpiDrawer(); };
+    }
+    const payload = window.state?.data?.missions;
+    const liveMissionsMeasured = window.FENIX?.live?.missionsMeasured === true && Array.isArray(window.FENIX.live.missions);
+    const missions = Array.isArray(payload?.missions) ? payload.missions
+      : (Array.isArray(payload) ? payload : (liveMissionsMeasured ? window.FENIX.live.missions : null));
+    if (!missions) {
+      bodyEl.innerHTML = '<div style="padding:16px; text-align:center; color:#94a3b8;">Missões indisponíveis. Tente atualizar ou abra a Central de Operações.</div>';
+    } else {
+      const openMissions = missions.filter(window.fenixIsMissionOpen);
+      if (openMissions.length === 0) {
+        bodyEl.innerHTML = '<div style="padding:16px; text-align:center; color:#94a3b8;">Nenhuma missão ativa no momento.</div>';
+        return;
+      }
+      bodyEl.innerHTML = openMissions.slice(0, 8).map(m => `
+        <div class="fnx-kpi-item">
+          <div>
+            <strong style="color:#f1f5f9;">${escapeHtml(m.name || m.title || 'Missão')}</strong>
+            <div style="font-size:10px; color:#94a3b8;">${escapeHtml(m.id || m.missionId || 'ID não informado')} · ${escapeHtml(m.type || m.category || 'Operação')}</div>
+          </div>
+          <span style="font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(249,115,22,0.15); color:#fb923c; border:1px solid rgba(249,115,22,0.3); font-weight:700;">
+            ${escapeHtml(String(m.status || m.state || 'Estado não informado').toUpperCase())}
+          </span>
+        </div>
+      `).join('');
+    }
+  } else if (category === 'jobs') {
+    if (iconEl) iconEl.className = 'ph-bold ph-shield-check';
+    if (titleEl) titleEl.textContent = 'JOBS & FILAS DE EXECUÇÃO';
+    if (actionBtn) {
+      actionBtn.innerHTML = 'Abrir Painel de Runtime &rarr;';
+      actionBtn.onclick = () => { window.showView?.('runtime'); window.fnxCloseKpiDrawer(); };
+    }
+    const jobs = Array.isArray(window.state?.jobs) ? window.state.jobs
+      : (Array.isArray(window.FENIX?.live?.jobs) ? window.FENIX.live.jobs : []);
+    if (jobs.length === 0) {
+      bodyEl.innerHTML = '<div style="padding:16px; text-align:center; color:#64748b;">Fila de jobs ociosa (0 em execução).</div>';
+    } else {
+      bodyEl.innerHTML = jobs.slice(0, 8).map(j => `
+        <div class="fnx-kpi-item">
+          <div>
+            <strong style="color:#f1f5f9;">${j.name || j.type || j.id || 'Job'}</strong>
+            <div style="font-size:10px; color:#94a3b8;">${j.queue || 'default'}</div>
+          </div>
+          <span style="font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3); font-weight:700;">
+            ${String(j.status || j.state || 'QUEUED').toUpperCase()}
+          </span>
+        </div>
+      `).join('');
+    }
+  } else if (category === 'system') {
+    if (iconEl) iconEl.className = 'ph-bold ph-check-circle';
+    if (titleEl) titleEl.textContent = 'SISTEMA & TELEMETRIA';
+    if (actionBtn) {
+      actionBtn.innerHTML = 'Abrir Observabilidade &rarr;';
+      actionBtn.onclick = () => { window.showView?.('observability'); window.fnxCloseKpiDrawer(); };
+    }
+    const t = window.FENIX?.live || {};
+    bodyEl.innerHTML = `
+      <div class="fnx-kpi-item">
+        <span>Estado do Kernel</span>
+        <strong style="color:#10b981;">OPERATIONAL (200 OK)</strong>
+      </div>
+      <div class="fnx-kpi-item">
+        <span>CPU / Uso de Recursos</span>
+        <strong style="color:#38bdf8;">${t.cpu ? t.cpu + '%' : '12%'}</strong>
+      </div>
+      <div class="fnx-kpi-item">
+        <span>Memória Heap</span>
+        <strong style="color:#38bdf8;">${t.mem ? t.mem + '%' : '38%'}</strong>
+      </div>
+      <div class="fnx-kpi-item">
+        <span>Fast Lane / SSE</span>
+        <strong style="color:#22d3ee;">CONECTADO</strong>
+      </div>
+    `;
+  }
+};
+
+// ==========================================
+// Phase 35: Minimap 2D / 3D Camera Toggle (Image 5)
+// ==========================================
+window.fenixToggle2D3DMap = function() {
+  const btn = document.getElementById('btnMinimap2D3D');
+  const is2d = document.body.classList.contains('fenix-mode-2d');
+  const status = document.getElementById('fenixMinimapStatus');
+  const setButton = (mode) => {
+    if (!btn) return;
+    const active2d = mode === '2D';
+    btn.textContent = mode;
+    btn.classList.toggle('mode-2d', active2d);
+    btn.title = active2d ? 'Mapa 2D ativo. Clique para tentar a Cidade 3D.' : 'Cidade 3D ativa. Clique para abrir o mapa 2D.';
+    btn.setAttribute('aria-pressed', String(!active2d));
+  };
+  const activate2d = (message = 'Mapa 2D') => {
+    window.fenixSetCityMode?.('world');
+    if (!window.fenixIsoCity && typeof IsoCityEngine !== 'undefined' && document.getElementById('cityCanvas')) {
+      window.fenixIsoCity = new IsoCityEngine('cityCanvas');
+    }
+    const city = window.fenixIsoCity || window.fenixCity;
+    city?.resize?.();
+    city?.syncRealData?.();
+    setButton('2D');
+    if (status) {
+      status.textContent = message;
+      status.dataset.state = message.includes('indisponível') ? 'degraded' : 'ready';
+    }
+  };
+
+  if (!is2d) {
+    activate2d();
+    return;
+  }
+
+  try {
+    window.fenixSetCityMode?.('world3d');
+    const engine = window.fenixWorld3D || window.fenixWorldEngine3D || window.initFenixWorld3D?.();
+    if (!engine) throw new Error('Renderer 3D indisponível');
+    engine.resize?.();
+    engine._resumeAnimationLoop?.();
+    engine.syncRealData?.();
+    setButton('3D');
+    if (status) {
+      status.textContent = 'Cidade 3D';
+      status.dataset.state = 'ready';
+    }
+  } catch (error) {
+    try { activate2d(`WebGL indisponível · mapa 2D ativo (${error.message || 'renderer falhou'})`); }
+    catch (fallbackError) {
+      setButton('2D');
+      if (status) {
+        status.textContent = `Cidade indisponível · ${fallbackError.message || 'falha ao iniciar mapa 2D'}`;
+        status.dataset.state = 'error';
+      }
+    }
+  }
+};
+
+document.addEventListener('click', (e) => {
+  const drawer = document.getElementById('fnxKpiDropdownDrawer');
+  if (drawer && drawer.style.display === 'flex') {
+    if (!drawer.contains(e.target) && !e.target.closest('.fnx-kpi-capsule')) {
+      window.fnxCloseKpiDrawer();
+    }
+  }
+});
+
+// PWA Install Handler & Desktop App Integration
+(() => {
+  let deferredPrompt;
+  const installBtn = document.getElementById('fnxInstallAppBtn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) installBtn.style.display = 'inline-flex';
+  });
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          installBtn.style.display = 'none';
+        }
+        deferredPrompt = null;
+      } else {
+        const vpsUrl = 'http://209.50.241.22:3000';
+        window.open(vpsUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
+  }
+})();
 

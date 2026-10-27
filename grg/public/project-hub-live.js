@@ -1,9 +1,31 @@
 (() => {
   'use strict';
+  const CATALOG_PREFS_KEY = 'fenix_project_catalog_preferences_v1';
+  function readCatalogPreferences() {
+    try {
+      const value = JSON.parse(localStorage.getItem(CATALOG_PREFS_KEY) || '{}');
+      return {
+        favorites: Array.isArray(value.favorites) ? value.favorites.filter((id) => typeof id === 'string').slice(0, 300) : [],
+        recents: Array.isArray(value.recents) ? value.recents.filter((item) => typeof item?.id === 'string' && Number.isFinite(item.openedAt)).slice(0, 24) : [],
+        layout: value.layout === 'list' ? 'list' : 'grid',
+      };
+    } catch { return { favorites: [], recents: [], layout: 'grid' }; }
+  }
+  const catalogPreferences = readCatalogPreferences();
   const state = {
     projects: [],
     details: new Map(),
+    detailLoads: new Map(),
+    detailErrors: new Map(),
+    workspaceTrees: new Map(),
+    workspaceTreeLoading: new Set(),
+    workspaceTreeErrors: new Map(),
     analyses: new Map(),
+    reaAnalyses: new Map(),
+    registeredScreens: new Map(),
+    registeredScreensLoading: new Set(),
+    registeredScreensErrors: new Map(),
+    absorptionLoading: new Set(),
     systemObservations: new Map(),
     systemObservationTimers: new Map(),
     git: new Map(),
@@ -27,11 +49,77 @@
     githubFilter: 'all',
     githubQuery: '',
     hubViewMode: 'fenix',
-    selectedGitHubRepo: null
+    catalogReturnSelection: null,
+    selectedGitHubRepo: null,
+    portfolioQuery: '',
+    portfolioCaptureFilter: 'all',
+    expandedPortfolioProjects: new Set(),
+    shellScreenMap: null,
+    shellScreenMapLoading: false,
+    shellScreenMapError: null,
+    shellScreenMapExpanded: false,
+    catalogScope: 'all',
+    catalogCategory: 'all',
+    catalogStatusFilter: 'all',
+    projectStatuses: {},
+    catalogFavorites: new Set(catalogPreferences.favorites),
+    catalogRecents: catalogPreferences.recents,
+    catalogLayout: catalogPreferences.layout,
+    designDrafts: new Map(),
+    multiSelectedProjects: new Set(),
+    multiViewActive: false,
+    launcherFullGrid: false,
+    multiViewPreviews: new Set(),
+    projectDecisions: new Map()
   };
   const $ = (id) => document.getElementById(id);
+  const legacyShellRoutes = new Set(['#command', '#dna', '#metrics']);
   const text = (value, fallback = '—') => value == null || value === '' ? fallback : String(value);
   const date = (value) => value ? new Date(value).toLocaleString('pt-BR') : '—';
+  function operationalStatus(project) {
+    const rawId = project?.catalogId || (String(project?.id || '').startsWith('local-') ? project.id.slice(6) : project?.id);
+    const liveStatus = state.projectStatuses[rawId] || state.projectStatuses[project?.id] || null;
+    return { liveStatus, status: typeof liveStatus?.online === 'boolean' ? (liveStatus.online ? 'online' : 'offline') : 'unknown' };
+  }
+  const workspaceIsAvailable = (project) => project?.workspaceAvailable === true || (project?.workspaceAvailable !== false && Boolean(project?.workspace));
+  const normalizeProjectKey = (value) => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  function findVpsCounterpart(localProject) {
+    if (localProject?.source !== 'LOCAL_PROJECT_CATALOG') return null;
+    const catalogId = String(localProject.catalogId || localProject.id || '').replace(/^local-/, '');
+    const localName = normalizeProjectKey(localProject.name);
+    const localRepository = String(localProject.repository || '').trim().replace(/\.git$/i, '').replace(/\/$/, '').toLocaleLowerCase();
+    const ranked = state.projects.filter((project) => project.source !== 'LOCAL_PROJECT_CATALOG').map((project) => {
+      const aliases = Array.isArray(project.aliases) ? project.aliases : [];
+      const idMatch = normalizeProjectKey(project.id) === normalizeProjectKey(catalogId);
+      const aliasMatch = aliases.some((alias) => normalizeProjectKey(alias) === normalizeProjectKey(catalogId) || normalizeProjectKey(alias) === localName);
+      const nameMatch = normalizeProjectKey(project.name || project.displayName) === localName;
+      const repository = String(project.repository || '').trim().replace(/\.git$/i, '').replace(/\/$/, '').toLocaleLowerCase();
+      const repositoryMatch = Boolean(localRepository && repository && localRepository === repository);
+      const score = idMatch ? 4 : repositoryMatch ? 3 : aliasMatch ? 2 : nameMatch ? 1 : 0;
+      return { project, score, reason: idMatch ? 'ID do catálogo' : repositoryMatch ? 'repositório igual' : aliasMatch ? 'alias registrado' : 'nome exato' };
+    }).filter((item) => item.score > 0).sort((left, right) => right.score - left.score);
+    if (!ranked.length || ranked[1]?.score === ranked[0].score) return null;
+    return ranked[0];
+  }
+  function projectPortSummary(project) {
+    if (project?.source === 'LOCAL_PROJECT_CATALOG') {
+      return [
+        Number.isInteger(project.localPort) ? `PC local · UI ${project.localPort}` : null,
+        Number.isInteger(project.apiPort) ? `PC local · API ${project.apiPort}` : null,
+      ].filter(Boolean).join(' · ');
+    }
+    const uiPort = Number.isInteger(project?.frontend?.port) ? project.frontend.port : null;
+    const apiPort = Number.isInteger(project?.backend?.port) ? project.backend.port : null;
+    const knownPorts = new Set([uiPort, apiPort].filter(Number.isInteger));
+    const entryPorts = [...new Set((Array.isArray(project?.deployment?.bindings) ? project.deployment.bindings : [])
+      .map((binding) => Number(binding?.port))
+      .filter((port) => Number.isInteger(port) && port >= 1 && port <= 65535 && !knownPorts.has(port)))];
+    return [
+      ...entryPorts.map((port) => `VPS: ${port}`),
+      uiPort !== null ? `UI: ${uiPort}` : null,
+      apiPort !== null ? `API: ${apiPort}` : null,
+    ].filter(Boolean).join(' · ');
+  }
   
   function authToken() {
     return (typeof window.fenixGetAuthToken === 'function')
@@ -40,6 +128,15 @@
   }
 
   async function json(url, options = {}) {
+    if (typeof window.FENIX?.api === 'function') {
+      try {
+        return await window.FENIX.api(url, options);
+      } catch (error) {
+        const normalized = new Error(error?.message || error?.error || `HTTP ${error?.status || 'indisponível'}`);
+        normalized.status = error?.status;
+        throw normalized;
+      }
+    }
     const token = authToken();
     const headers = {
       ...(token && token !== 'null' ? { Authorization: `Bearer ${token}` } : {}),
@@ -62,6 +159,110 @@
     return node;
   }
 
+  async function loadCatalogStatus(force = false) {
+    try {
+      const data = await json('/api/v2/projects/catalog-status');
+      if (data && data.projects) {
+        state.projectStatuses = data.projects;
+        renderMetrics();
+        renderCards();
+        if (state.selected) renderDetail();
+      }
+    } catch (err) {
+      console.warn('[ProjectHub] Falha ao carregar status do catálogo:', err);
+    }
+  }
+
+  async function checkProjectStatus(projectId) {
+    const rawId = String(projectId || '').replace(/^local-/, '');
+    try {
+      const res = await json(`/api/v2/projects/${encodeURIComponent(rawId)}/check`, { method: 'POST', body: '{}' });
+      if (res && res.status) {
+        state.projectStatuses[rawId] = res.status;
+        renderMetrics();
+        renderCards();
+        if (state.selected === projectId || state.selected === `local-${rawId}` || state.selected === rawId) {
+          renderDetail();
+        }
+      }
+      return res?.status;
+    } catch (err) {
+      console.warn(`[ProjectHub] Erro ao retestar status do projeto ${rawId}:`, err);
+    }
+  }
+
+  async function startProjectService(projectId, project) {
+    const rawId = String(projectId || '').replace(/^local-/, '');
+    if ($('flpMeasured')) $('flpMeasured').textContent = `Iniciando serviço ${project?.name || rawId}…`;
+    try {
+      const res = await json(`/api/v2/projects/${encodeURIComponent(rawId)}/start`, { method: 'POST', body: '{}' });
+      if ($('flpMeasured')) $('flpMeasured').textContent = res.message || `Serviço ${project?.name || rawId} iniciado em background!`;
+      setTimeout(async () => {
+        await checkProjectStatus(rawId);
+      }, 2500);
+      return res;
+    } catch (err) {
+      if ($('flpMeasured')) $('flpMeasured').textContent = `Erro ao iniciar serviço: ${err.message}`;
+    }
+  }
+
+  async function openProjectFolderDirect(projectId, project) {
+    const rawId = String(projectId || '').replace(/^local-/, '');
+    try {
+      const res = await json(`/api/v2/projects/${encodeURIComponent(rawId)}/open-folder`, { method: 'POST', body: '{}' });
+      if ($('flpMeasured')) $('flpMeasured').textContent = `Pasta aberta no Explorer: ${project?.workspace || rawId}`;
+      return res;
+    } catch (err) {
+      if ($('flpMeasured')) $('flpMeasured').textContent = `Erro ao abrir pasta: ${err.message}`;
+    }
+  }
+
+  async function loadProjectLogs(projectId, container) {
+    const rawId = String(projectId || '').replace(/^local-/, '');
+    if (!container) return;
+    container.textContent = 'Carregando logs do serviço…';
+    try {
+      const data = await json(`/api/v2/projects/${encodeURIComponent(rawId)}/logs`);
+      container.textContent = data.content || (Array.isArray(data.lines) && data.lines.length ? data.lines.join('\n') : 'Nenhum log gravado ainda para este serviço.');
+    } catch (err) {
+      container.textContent = `Erro ao carregar logs: ${err.message}`;
+    }
+  }
+
+  function setupStatusWebSocket() {
+    if (window.__FENIX_STATUS_WS_INITIALIZED__) return;
+    window.__FENIX_STATUS_WS_INITIALIZED__ = true;
+
+    const handleStatusPayload = (type, payload) => {
+      if (type === 'project.status.updated' && payload) {
+        const { id, online, activeUrl, port, latencyMs, timestamp } = payload;
+        state.projectStatuses[id] = { id, online, activeUrl, port, latencyMs, checkedAt: timestamp };
+        renderMetrics();
+        renderCards();
+        if (state.selected === id || state.selected === `local-${id}`) {
+          renderDetail();
+        }
+      } else if (type === 'project.status.all' && payload) {
+        state.projectStatuses = { ...state.projectStatuses, ...payload };
+        renderMetrics();
+        renderCards();
+        if (state.selected) renderDetail();
+      }
+    };
+
+    document.addEventListener('fenix-live', (e) => {
+      if (e.detail?.type?.startsWith('project.status.')) {
+        handleStatusPayload(e.detail.type, e.detail.payload || e.detail);
+      }
+    });
+
+    document.addEventListener('fenix-ws', (e) => {
+      if (e.detail?.type?.startsWith('project.status.')) {
+        handleStatusPayload(e.detail.type, e.detail.payload);
+      }
+    });
+  }
+
   function renderShell() {
     const view = $('view-projects');
     if (!view || view.dataset.liveProjects === 'true') return;
@@ -74,6 +275,10 @@
           <p>Workspaces, jobs, Screen DNA e repositórios GitHub gerenciados no Fênix OS.</p>
         </div>
         <div class="flp-header-actions" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <a href="http://209.50.241.22:3000" target="_blank" rel="noopener noreferrer" id="flpVpsCloudBtn" class="flp-button flp-button-vps" title="Abrir Fênix OS na Nuvem (VPS 209.50.241.22:3000)">
+            <i class="ph-bold ph-cloud-arrow-up" style="font-size:16px;"></i>
+            <span>Fênix VPS Live ↗</span>
+          </a>
           <button type="button" id="flpGitHubAccountBtn" class="flp-button flp-button-soft" style="display:inline-flex; align-items:center; gap:6px;">
             <i class="ph-bold ph-github-logo" style="font-size:16px; color:#38bdf8;"></i>
             <span id="flpGitHubAccountLabel">GitHub: —</span>
@@ -96,20 +301,60 @@
         <span id="flpCloneStatus" role="status"></span>
       </form>
       <div class="flp-metrics">
-        <div><span>Projetos registrados</span><strong id="flpTotal">—</strong></div>
-        <div><span>Workspaces vinculados</span><strong id="flpWorkspaces">—</strong></div>
-        <div><span>Jobs em execução</span><strong id="flpRunning">—</strong></div>
-        <div><span>Jobs com falha</span><strong id="flpFailed">—</strong></div>
+        <div><span>Total de Projetos</span><strong id="flpTotal">—</strong></div>
+        <div><span>Serviços Online</span><strong id="flpRunning" style="color:#00E5A0;">—</strong></div>
+        <div><span>Serviços Offline</span><strong id="flpFailed" style="color:#94a3b8;">—</strong></div>
+        <div><span>Portas Mapeadas</span><strong id="flpWorkspaces" style="color:#38bdf8;">—</strong></div>
       </div>
       <div class="flp-body">
         <aside class="flp-sidebar">
           <div class="flp-hub-mode-tabs" style="display:flex; border-bottom:1px solid rgba(133,179,215,.14); margin-bottom:14px; gap:4px;">
-            <button type="button" id="flpModeFenix" class="flp-hub-mode-tab active">PROJETOS FÊNIX</button>
+            <button type="button" id="flpModeFenix" class="flp-hub-mode-tab active" aria-label="PROJETOS FÊNIX">PROJETOS FÊNIX</button>
+            <button type="button" id="flpModeLocal" class="flp-hub-mode-tab" aria-label="MEUS PROJETOS">MEUS PROJETOS</button>
+            <button type="button" id="flpModeScreens" class="flp-hub-mode-tab">TELAS &amp; DNA</button>
             <button type="button" id="flpModeGitHub" class="flp-hub-mode-tab">PORTFÓLIO GITHUB</button>
+            <button type="button" id="flpModeQwen" class="flp-hub-mode-tab">QWEN STUDIO</button>
           </div>
           <div id="flpFenixSidebarView">
             <label for="flpSearch">Encontrar projeto</label>
-            <input id="flpSearch" type="search" placeholder="Nome, ID ou workspace" autocomplete="off">
+            <input id="flpSearch" type="search" placeholder="Nome, ID, porta ou grupo…" autocomplete="off">
+            <div class="flp-category-filters" role="tablist">
+              <button type="button" class="flp-cat-filter-btn active" data-category="all"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-squares-four"></i></span> Todos <span class="cat-badge" id="flpCatCountAll">—</span></button>
+              <button type="button" class="flp-cat-filter-btn" data-category="Lovable"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-sparkle"></i></span> Lovable <span class="cat-badge" id="flpCatCountLovable">—</span></button>
+              <button type="button" class="flp-cat-filter-btn" data-category="CRM &amp; WhatsApp"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-chats-circle"></i></span> CRM &amp; WA <span class="cat-badge" id="flpCatCountCrm">—</span></button>
+              <button type="button" class="flp-cat-filter-btn" data-category="Fênix &amp; Core"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-cpu"></i></span> Fênix <span class="cat-badge" id="flpCatCountFenix">—</span></button>
+              <button type="button" class="flp-cat-filter-btn" data-category="Automação"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-lightning"></i></span> Auto <span class="cat-badge" id="flpCatCountAuto">—</span></button>
+              <button type="button" class="flp-cat-filter-btn" data-category="Ferramentas &amp; IA"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-wrench"></i></span> Ferramentas <span class="cat-badge" id="flpCatCountTools">—</span></button>
+            </div>
+            <div class="flp-status-filters" role="group">
+              <button type="button" class="flp-status-pill-btn active" data-status-filter="all">Todos</button>
+              <button type="button" class="flp-status-pill-btn" data-status-filter="online"><span class="fnx-mono3d-dot online"></span> Online (<span id="flpOnlineCountBadge">—</span>)</button>
+              <button type="button" class="flp-status-pill-btn" data-status-filter="offline"><span class="fnx-mono3d-dot offline"></span> Offline (<span id="flpOfflineCountBadge">—</span>)</button>
+              <button type="button" class="flp-status-pill-btn" data-status-filter="unknown"><span class="fnx-mono3d-dot unknown"></span> Não verificado (<span id="flpUnknownCountBadge">—</span>)</button>
+              <button type="button" id="flpQuickStatusRefresh" class="fnx-mono3d-btn" title="Retestar todas as portas agora" style="margin-left:auto;"><i class="ph-bold ph-arrows-clockwise"></i> Scan</button>
+            </div>
+            <div class="flp-launcher-multiview-bar" role="group" aria-label="Grade Iniciar Projetos e Visualização Simultânea">
+              <button type="button" id="flpFullLauncherGridBtn" class="flp-launcher-mode-btn" aria-pressed="false" title="Expandir Grade Iniciar Projetos em tela cheia (todos os 40 projetos)">
+                <span class="fnx-mono3d-glyph"><i class="ph-bold ph-grid-four"></i></span>
+                <span>Iniciar Projetos (Grade Ampla)</span>
+              </button>
+              <button type="button" id="flpMultiViewToggleBtn" class="flp-multiview-mode-btn" aria-pressed="false" title="Visualizar vários projetos simultaneamente lado a lado">
+                <span class="fnx-mono3d-glyph"><i class="ph-bold ph-columns"></i></span>
+                <span>Multi-View Simultâneo (<strong id="flpMultiViewCount">0</strong>)</span>
+              </button>
+              <button type="button" id="flpMultiViewClearBtn" class="flp-multiview-clear-btn" hidden title="Limpar seleção simultânea">✕</button>
+            </div>
+            <div class="flp-project-recovery-controls" role="group" aria-label="Organização do catálogo de projetos">
+              <div class="flp-project-scopes">
+                <button type="button" data-project-scope="all" aria-pressed="true">Todos</button>
+                <button type="button" data-project-scope="recent" aria-pressed="false">Recentes</button>
+                <button type="button" data-project-scope="favorites" aria-pressed="false">Favoritos</button>
+              </div>
+              <div class="flp-project-layouts">
+                <button type="button" data-project-layout="grid" aria-label="Grade" title="Grade" aria-pressed="true">▦</button>
+                <button type="button" data-project-layout="list" aria-label="Lista" title="Lista" aria-pressed="false">☷</button>
+              </div>
+            </div>
             <div id="flpCards" class="flp-cards"></div>
           </div>
           <div id="flpGitHubSidebarView" style="display:none;">
@@ -121,6 +366,11 @@
               <button type="button" class="flp-gh-filter-btn" data-filter="not_activated" style="font-size:10px; padding:3px 8px; border-radius:12px; background:transparent; border:1px solid rgba(255,255,255,0.08); color:#94a3b8; cursor:pointer;">Não Ativados</button>
             </div>
             <div id="flpGitHubCards" class="flp-cards"></div>
+          </div>
+          <div id="flpQwenSidebarView" style="display:none;">
+            <label for="flpQwenSearch">Projetos Qwen Coder</label>
+            <input id="flpQwenSearch" type="search" placeholder="Buscar projeto Qwen…" autocomplete="off">
+            <div id="flpQwenCards" class="flp-cards" style="margin-top:8px;"></div>
           </div>
         </aside>
         <main id="flpDetail" class="flp-detail" aria-live="polite"></main>
@@ -138,23 +388,81 @@
 
     $('flpModeFenix').addEventListener('click', () => {
       state.hubViewMode = 'fenix';
+      if (state.catalogReturnSelection) state.selected = state.catalogReturnSelection;
+      state.catalogReturnSelection = null;
       $('flpModeFenix').classList.add('active');
+      $('flpModeScreens').classList.remove('active');
       $('flpModeGitHub').classList.remove('active');
+      $('flpModeQwen')?.classList.remove('active');
+      $('flpModeLocal')?.classList.remove('active');
       $('flpFenixSidebarView').style.display = 'block';
       $('flpGitHubSidebarView').style.display = 'none';
+      if ($('flpQwenSidebarView')) $('flpQwenSidebarView').style.display = 'none';
       renderCards();
       renderDetail();
+      renderMetrics();
+    });
+
+    $('flpModeLocal').addEventListener('click', () => {
+      if (state.hubViewMode !== 'local') state.catalogReturnSelection = state.selected;
+      state.hubViewMode = 'local';
+      state.catalogLayout = 'grid';
+      $('flpModeLocal').classList.add('active');
+      $('flpModeScreens').classList.remove('active');
+      $('flpModeFenix').classList.remove('active');
+      $('flpModeGitHub').classList.remove('active');
+      $('flpModeQwen')?.classList.remove('active');
+      $('flpFenixSidebarView').style.display = 'block';
+      $('flpGitHubSidebarView').style.display = 'none';
+      if ($('flpQwenSidebarView')) $('flpQwenSidebarView').style.display = 'none';
+      const first = state.projects.find((project) => project.source === 'LOCAL_PROJECT_CATALOG');
+      if (first) selectProject(first.id);
+      else { state.selected = null; renderCards(); renderDetail(); }
+      renderMetrics();
     });
 
     $('flpModeGitHub').addEventListener('click', () => {
       state.hubViewMode = 'github';
       $('flpModeGitHub').classList.add('active');
+      $('flpModeScreens').classList.remove('active');
       $('flpModeFenix').classList.remove('active');
+      $('flpModeQwen')?.classList.remove('active');
+      $('flpModeLocal')?.classList.remove('active');
       $('flpFenixSidebarView').style.display = 'none';
       $('flpGitHubSidebarView').style.display = 'block';
+      if ($('flpQwenSidebarView')) $('flpQwenSidebarView').style.display = 'none';
       renderGitHubCards();
       renderGitHubPortfolioView($('flpDetail'));
       if (!state.githubRepos.length) loadGitHubRepos();
+    });
+
+    $('flpModeQwen')?.addEventListener('click', () => {
+      state.hubViewMode = 'qwen';
+      $('flpModeQwen').classList.add('active');
+      $('flpModeScreens').classList.remove('active');
+      $('flpModeFenix').classList.remove('active');
+      $('flpModeGitHub').classList.remove('active');
+      $('flpModeLocal')?.classList.remove('active');
+      $('flpFenixSidebarView').style.display = 'none';
+      $('flpGitHubSidebarView').style.display = 'none';
+      if ($('flpQwenSidebarView')) $('flpQwenSidebarView').style.display = 'block';
+      if (window.fenixQwenOrchestrator) {
+        window.fenixQwenOrchestrator.renderSidebarCards?.($('flpQwenCards'));
+        window.fenixQwenOrchestrator.renderStudio($('flpDetail'));
+      }
+    });
+
+    $('flpModeScreens').addEventListener('click', () => {
+      state.hubViewMode = 'screens';
+      $('flpModeScreens').classList.add('active');
+      $('flpModeFenix').classList.remove('active');
+      $('flpModeGitHub').classList.remove('active');
+      $('flpModeQwen')?.classList.remove('active');
+      $('flpModeLocal')?.classList.remove('active');
+      $('flpFenixSidebarView').style.display = 'none';
+      $('flpGitHubSidebarView').style.display = 'none';
+      if ($('flpQwenSidebarView')) $('flpQwenSidebarView').style.display = 'none';
+      renderScreenPortfolio($('flpDetail'));
     });
 
     $('flpCloneToggle').addEventListener('click', (event) => {
@@ -167,6 +475,61 @@
       state.query = event.target.value.trim().toLowerCase();
       renderCards();
     });
+    view.querySelectorAll('.flp-cat-filter-btn').forEach((button) => button.addEventListener('click', () => {
+      view.querySelectorAll('.flp-cat-filter-btn').forEach((b) => b.classList.remove('active'));
+      button.classList.add('active');
+      state.catalogCategory = button.dataset.category || 'all';
+      renderCards();
+    }));
+    view.querySelectorAll('.flp-status-pill-btn').forEach((button) => button.addEventListener('click', () => {
+      view.querySelectorAll('.flp-status-pill-btn').forEach((b) => b.classList.remove('active'));
+      button.classList.add('active');
+      state.catalogStatusFilter = button.dataset.statusFilter || 'all';
+      renderCards();
+    }));
+    $('flpQuickStatusRefresh')?.addEventListener('click', () => {
+      loadCatalogStatus(true);
+    });
+    $('flpFullLauncherGridBtn')?.addEventListener('click', () => {
+      state.launcherFullGrid = !state.launcherFullGrid;
+      if (state.launcherFullGrid) state.catalogLayout = 'grid';
+      syncMultiViewToolbar();
+      renderCards();
+    });
+    $('flpMultiViewToggleBtn')?.addEventListener('click', () => {
+      if (!state.multiViewActive && state.multiSelectedProjects.size === 0) {
+        const defaults = [];
+        if (state.selected) defaults.push(state.selected);
+        for (const p of state.projects) {
+          if (defaults.length >= 3) break;
+          if (!defaults.includes(p.id)) defaults.push(p.id);
+        }
+        defaults.forEach((id) => state.multiSelectedProjects.add(id));
+      }
+      state.multiViewActive = !state.multiViewActive;
+      if (state.multiViewActive && state.launcherFullGrid) state.launcherFullGrid = false;
+      syncMultiViewToolbar();
+      renderCards();
+      renderDetail();
+    });
+    $('flpMultiViewClearBtn')?.addEventListener('click', () => {
+      state.multiSelectedProjects.clear();
+      state.multiViewActive = false;
+      syncMultiViewToolbar();
+      renderCards();
+      renderDetail();
+    });
+    view.querySelectorAll('[data-project-scope]').forEach((button) => button.addEventListener('click', () => {
+      state.catalogScope = button.dataset.projectScope;
+      view.querySelectorAll('[data-project-scope]').forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+      renderCards();
+    }));
+    view.querySelectorAll('[data-project-layout]').forEach((button) => button.addEventListener('click', () => {
+      state.catalogLayout = button.dataset.projectLayout === 'grid' ? 'grid' : 'list';
+      persistCatalogPreferences();
+      view.querySelectorAll('[data-project-layout]').forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+      renderCards();
+    }));
     $('flpGitHubSearch').addEventListener('input', (event) => {
       state.githubQuery = event.target.value.trim().toLowerCase();
       renderGitHubCards();
@@ -219,17 +582,77 @@
   }
 
   function renderMetrics() {
-    const details = [...state.details.values()];
-    const complete = details.length === state.projects.length && details.every(Boolean);
-    $('flpTotal').textContent = String(state.projects.length);
-    $('flpWorkspaces').textContent = String(state.projects.filter((project) => project.workspace).length);
-    $('flpRunning').textContent = complete ? String(details.reduce((sum, item) => sum + (item.progress?.running || 0), 0)) : '—';
-    $('flpFailed').textContent = complete ? String(details.reduce((sum, item) => sum + (item.progress?.failed || 0), 0)) : '—';
-    $('flpMeasured').textContent = state.error ? `Falha ao atualizar: ${state.error}` : `Atualizado ${date(state.measuredAt)} · ${state.projects.length} projeto(s)`;
+    const isLocal = state.hubViewMode === 'local';
+    const localProjects = state.projects.filter((p) => p.source === 'LOCAL_PROJECT_CATALOG');
+    const catalogUnavailable = Boolean(state.error && !state.measuredAt);
+    const statusCounts = state.projects.reduce((counts, project) => {
+      counts[operationalStatus(project).status] += 1;
+      return counts;
+    }, { online: 0, offline: 0, unknown: 0 });
+    const { online: onlineCount, offline: offlineCount, unknown: unknownCount } = statusCounts;
+    const mappedPorts = new Set(state.projects.map((p) => p.localPort).filter(Boolean)).size;
+
+    const metricLabels = document.querySelectorAll('#view-projects .flp-metrics > div > span');
+    const labels = isLocal
+      ? ['Projetos no catálogo local', 'Pastas disponíveis', 'URLs locais configuradas', 'Logos cadastrados']
+      : ['Total de Projetos', 'Serviços Online', 'Serviços Offline', 'Portas Mapeadas'];
+    metricLabels.forEach((label, index) => { label.textContent = labels[index] || ''; });
+    const allCategoryButton = document.querySelector('#view-projects .flp-cat-filter-btn[data-category="all"]');
+    if (allCategoryButton) {
+      const badge = allCategoryButton.querySelector('.cat-badge');
+      if (badge) badge.textContent = catalogUnavailable ? '—' : String(state.projects.length);
+    }
+
+    // Dynamic Category Counts
+    const sourcePool = isLocal ? localProjects : state.projects;
+    const catCounts = {
+      all: sourcePool.length,
+      lovable: sourcePool.filter(p => /lovable/i.test(p.catalogGroup || '')).length,
+      crm: sourcePool.filter(p => /crm|whatsapp|zapai/i.test(p.catalogGroup || '')).length,
+      fenix: sourcePool.filter(p => /f[eê]nix|core/i.test(p.catalogGroup || '') || /f[eê]nix/i.test(p.name || p.id)).length,
+      auto: sourcePool.filter(p => /automa[cç][aã]o|auto/i.test(p.catalogGroup || '')).length,
+      tools: sourcePool.filter(p => /ferramenta|ia|ai|tool/i.test(p.catalogGroup || '')).length
+    };
+    if ($('flpCatCountAll')) $('flpCatCountAll').textContent = catalogUnavailable ? '—' : String(catCounts.all);
+    if ($('flpCatCountLovable')) $('flpCatCountLovable').textContent = catalogUnavailable ? '—' : String(catCounts.lovable);
+    if ($('flpCatCountCrm')) $('flpCatCountCrm').textContent = catalogUnavailable ? '—' : String(catCounts.crm);
+    if ($('flpCatCountFenix')) $('flpCatCountFenix').textContent = catalogUnavailable ? '—' : String(catCounts.fenix);
+    if ($('flpCatCountAuto')) $('flpCatCountAuto').textContent = catalogUnavailable ? '—' : String(catCounts.auto);
+    if ($('flpCatCountTools')) $('flpCatCountTools').textContent = catalogUnavailable ? '—' : String(catCounts.tools);
+
+    if (catalogUnavailable) {
+      ['flpTotal', 'flpRunning', 'flpFailed', 'flpWorkspaces', 'flpOnlineCountBadge', 'flpOfflineCountBadge', 'flpUnknownCountBadge']
+        .forEach((id) => { if ($(id)) $(id).textContent = '—'; });
+      $('flpMeasured').textContent = `Catálogo de projetos indisponível · ${text(state.error, 'erro não informado')}`;
+      $('flpMeasured').dataset.error = 'true';
+      return;
+    }
+
+    if (isLocal) {
+      $('flpTotal').textContent = String(localProjects.length);
+      $('flpRunning').textContent = String(localProjects.filter((p) => p.workspaceAvailable).length);
+      $('flpFailed').textContent = String(localProjects.filter((p) => Boolean(p.localUrl)).length);
+      $('flpWorkspaces').textContent = String(localProjects.filter((p) => Boolean(p.logoUrl)).length);
+    } else {
+      $('flpTotal').textContent = String(state.projects.length);
+      $('flpRunning').textContent = String(onlineCount);
+      $('flpFailed').textContent = String(offlineCount);
+      $('flpWorkspaces').textContent = String(mappedPorts);
+    }
+    if ($('flpOnlineCountBadge')) $('flpOnlineCountBadge').textContent = String(onlineCount);
+    if ($('flpOfflineCountBadge')) $('flpOfflineCountBadge').textContent = String(offlineCount);
+    if ($('flpUnknownCountBadge')) $('flpUnknownCountBadge').textContent = String(unknownCount);
+
+    $('flpMeasured').textContent = state.error
+      ? `Falha ao atualizar · exibindo leitura de ${date(state.measuredAt)}`
+      : isLocal
+        ? `Catálogo Local · ${localProjects.length} projeto(s) registrado(s)`
+        : `Catálogo Fênix Ativo · ${state.projects.length} sistemas monitorados (${onlineCount} ativos)`;
     $('flpMeasured').dataset.error = String(Boolean(state.error));
   }
 
   function renderCards() {
+    document.querySelector('#view-projects .flp-body')?.setAttribute('data-project-source', state.hubViewMode === 'local' ? 'local' : 'kernel');
     if (state.hubViewMode === 'github') {
       renderGitHubCards();
       return;
@@ -237,32 +660,704 @@
     const container = $('flpCards');
     if (!container) return;
     container.replaceChildren();
-    const projects = state.projects.filter((project) => [project.name, project.id, project.workspace].some((value) => String(value || '').toLowerCase().includes(state.query)));
+
+    // 1. Base Source Filtering: In 'local' mode show only local catalogue; in 'fenix' mode show all 43 systems!
+    const sourceProjects = state.hubViewMode === 'local'
+      ? state.projects.filter((project) => project.source === 'LOCAL_PROJECT_CATALOG')
+      : state.projects;
+
+    // 2. Category Filtering (Lovable, CRM & WA, Fênix, Automação, Ferramentas)
+    const categoryProjects = state.catalogCategory === 'all'
+      ? sourceProjects
+      : sourceProjects.filter((project) => {
+          const group = String(project.catalogGroup || '').trim();
+          if (state.catalogCategory === 'Lovable') return /lovable/i.test(group);
+          if (state.catalogCategory === 'CRM & WhatsApp') return /crm|whatsapp|zapai/i.test(group);
+          if (state.catalogCategory === 'Fênix & Core') return /f[eê]nix|core/i.test(group) || /f[eê]nix/i.test(project.name || project.id);
+          if (state.catalogCategory === 'Automação') return /automa[cç][aã]o|auto/i.test(group);
+          if (state.catalogCategory === 'Ferramentas & IA') return /ferramenta|ia|ai|tool/i.test(group);
+          return group.toLowerCase() === state.catalogCategory.toLowerCase();
+        });
+
+    // 3. Status Filtering (all / online / offline)
+    const statusFilteredProjects = state.catalogStatusFilter === 'all'
+      ? categoryProjects
+      : categoryProjects.filter((project) => {
+          return operationalStatus(project).status === state.catalogStatusFilter;
+        });
+
+    // 4. Query Search
+    const matchingProjects = statusFilteredProjects.filter((project) => [
+      project.name,
+      project.id,
+      project.workspace,
+      project.catalogGroup,
+      project.versionRole,
+      String(project.localPort || ''),
+      String(project.apiPort || '')
+    ].some((value) => String(value || '').toLowerCase().includes(state.query)));
+
+    const recentOrder = new Map(state.catalogRecents.map((item, index) => [item.id, item.openedAt || -index]));
+    const projects = matchingProjects.filter((project) => state.catalogScope === 'favorites'
+      ? state.catalogFavorites.has(project.id)
+      : state.catalogScope === 'recent' ? recentOrder.has(project.id) : true);
+    if (state.catalogScope === 'recent') projects.sort((left, right) => (recentOrder.get(right.id) || 0) - (recentOrder.get(left.id) || 0));
+
+    container.dataset.layout = state.catalogLayout;
     if (!projects.length) {
-      container.appendChild(element('p', 'flp-empty', state.projects.length ? 'Nenhum projeto corresponde à busca.' : 'Nenhum projeto registrado no Project Kernel.'));
+      if (state.error && !state.measuredAt) {
+        container.appendChild(element('p', 'flp-empty', 'Catálogo indisponível nesta leitura.'));
+      } else {
+        container.appendChild(element('p', 'flp-empty', state.catalogScope === 'favorites'
+          ? 'Nenhum projeto favoritado neste navegador.'
+          : state.catalogScope === 'recent'
+            ? 'Os projetos abertos aparecerão aqui.'
+            : (state.projects.length ? 'Nenhum projeto corresponde aos filtros selecionados.' : 'Nenhum projeto registrado no Project Kernel.')));
+      }
       return;
     }
+
     for (const project of projects) {
-      const card = element('button', `flp-card${state.selected === project.id ? ' active' : ''}`);
-      card.type = 'button';
+      const { liveStatus, status } = operationalStatus(project);
+      const isOnline = status === 'online';
+      const activeUrl = liveStatus?.activeUrl || project.localUrl || (project.localPort ? `http://localhost:${project.localPort}` : null);
+
+      const card = element('article', `flp-card flp-card-with-logo${state.selected === project.id ? ' active' : ''}`);
       card.dataset.projectId = project.id;
       const isAbsorbed = state.absorptions.has(project.id) || project.id === 'api-platform-live';
-      card.append(element('span', 'flp-card-kicker', isAbsorbed ? 'ABSORBED · SCREEN DNA' : (project.workspace ? 'WORKSPACE CONECTADO' : 'SEM WORKSPACE')));
-      card.append(element('strong', 'flp-card-title', project.name || project.id));
-      card.append(element('span', 'flp-card-path', project.workspace || 'Adicione um workspace para usar a IDE'));
+
+      // Logo
+      const logo = element('span', 'flp-card-logo');
+      if (project.logoUrl) {
+        const image = document.createElement('img');
+        image.src = project.logoUrl;
+        image.alt = '';
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        const fallback = element('span', 'flp-card-logo-fallback', project.icon || String(project.name || project.id || '?').trim().slice(0, 1).toUpperCase());
+        fallback.hidden = true;
+        image.addEventListener('error', () => { image.hidden = true; fallback.hidden = false; }, { once: true });
+        logo.append(image, fallback);
+      } else {
+        logo.append(element('span', 'flp-card-logo-fallback', project.icon || String(project.name || project.id || '?').trim().slice(0, 1).toUpperCase()));
+      }
+
+      const content = element('span', 'flp-card-content');
+
+      // Kicker with Live Status Pill + Port Pill + Group/Role
+      const kicker = element('span', 'flp-card-kicker');
+      const statusPill = element('span', `flp-card-status-pill ${status}`);
+      const liveDot = element('span', `flp-live-dot ${isOnline ? 'pulse' : ''}`);
+      statusPill.append(liveDot, document.createTextNode(status === 'online' ? ' ONLINE' : status === 'offline' ? ' OFFLINE' : ' NÃO VERIFICADO'));
+      kicker.appendChild(statusPill);
+
+      const port = liveStatus?.port || project.localPort;
+      if (port) {
+      const portPill = element('span', `flp-card-port-pill ${isOnline ? 'port-online' : ''}`, `:${port}`);
+        kicker.appendChild(portPill);
+      }
+
+      if (project.catalogGroup) {
+        kicker.appendChild(element('span', '', project.catalogGroup));
+      }
+      if (project.versionRole && project.versionRole !== 'Principal') {
+        kicker.appendChild(element('span', 'flp-card-role-pill', project.versionRole));
+      }
+      content.appendChild(kicker);
+
+      // Title row with name and version
+      const titleRow = element('span', 'flp-card-title-row');
+      titleRow.append(element('strong', 'flp-card-title', project.name || project.id));
+      const version = project.projectVersion || project.currentVersion;
+      if (version) titleRow.append(element('span', 'flp-card-version', `v${version}`));
+      content.append(titleRow);
+
+      // Path
+      content.append(element('span', 'flp-card-path', project.workspace || project.listedPath || 'Workspace Fênix'));
+      const portSummary = projectPortSummary(project);
+      if (portSummary) content.append(element('span', 'flp-card-ports', portSummary));
       const detail = state.details.get(project.id);
-      const absorption = state.absorptions.get(project.id);
-      const screensCount = absorption?.screens?.length || (project.id === 'api-platform-live' ? 1 : 0);
-      card.append(element('span', 'flp-card-foot', detail ? `${detail.progress?.totalJobs || 0} job(s) · ${screensCount} tela(s) DNA` : 'Estado aguardando leitura'));
-      card.addEventListener('click', () => selectProject(project.id));
+      const screensCount = getProjectScreens(project).length;
+      const measuredJobs = Number.isFinite(detail?.progress?.totalJobs) ? detail.progress.totalJobs : project.totalJobs;
+      const cardFoot = project.source === 'LOCAL_PROJECT_CATALOG' && !project.workspaceAvailable
+        ? 'Verifique o caminho cadastrado'
+        : project.source === 'LOCAL_PROJECT_CATALOG' && !Number.isFinite(measuredJobs)
+          ? 'Pasta disponível · selecione para abrir'
+          : Number.isFinite(measuredJobs)
+            ? `${measuredJobs} job(s) · ${screensCount} tela(s) DNA`
+            : detail ? 'Estado carregado · sem contadores' : 'Estado aguardando leitura';
+      content.append(element('span', 'flp-card-foot', cardFoot));
+
+      // Quick Actions Bar
+      const quickBar = element('div', 'flp-card-quick-actions');
+      if (isOnline && activeUrl) {
+        const openUrlBtn = element('button', 'flp-quick-action-btn btn-open-url', '🚀 Abrir URL ↗');
+        openUrlBtn.type = 'button';
+        openUrlBtn.title = `Abrir ${activeUrl} em nova aba`;
+        openUrlBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.open(activeUrl, '_blank', 'noopener,noreferrer');
+        });
+        quickBar.appendChild(openUrlBtn);
+      } else {
+        const startBtn = element('button', 'flp-quick-action-btn btn-start', '⚡ Iniciar');
+        startBtn.type = 'button';
+        startBtn.title = 'Iniciar serviço em background';
+        startBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          startBtn.disabled = true;
+          startBtn.textContent = 'Iniciando…';
+          startProjectService(rawId, project).finally(() => {
+            startBtn.disabled = false;
+            startBtn.textContent = '⚡ Iniciar';
+          });
+        });
+        quickBar.appendChild(startBtn);
+
+        const folderBtn = element('button', 'flp-quick-action-btn btn-folder', '📁 Pasta');
+        folderBtn.type = 'button';
+        folderBtn.title = 'Abrir pasta no Explorer';
+        folderBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openProjectFolderDirect(rawId, project);
+        });
+        quickBar.appendChild(folderBtn);
+
+        const checkBtn = element('button', 'flp-quick-action-btn btn-check', '🔄');
+        checkBtn.type = 'button';
+        checkBtn.title = 'Retestar porta agora';
+        checkBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          checkBtn.style.opacity = '0.5';
+          checkProjectStatus(rawId).finally(() => { checkBtn.style.opacity = '1'; });
+        });
+        quickBar.appendChild(checkBtn);
+      }
+      content.appendChild(quickBar);
+
+      // Open button wrapper for card interaction
+      const openButton = element('button', 'flp-project-open');
+      openButton.type = 'button';
+      openButton.setAttribute('aria-label', `Abrir projeto ${project.name || project.id}`);
+      openButton.append(logo, content);
+
+      // Multi-view simultaneous comparison toggle
+      const isMultiSelected = state.multiSelectedProjects.has(project.id);
+      if (isMultiSelected) card.classList.add('is-multiview-selected');
+      const multiToggle = element('button', `flp-project-multiview-toggle${isMultiSelected ? ' active' : ''}`, isMultiSelected ? '✓' : '⊞');
+      multiToggle.type = 'button';
+      multiToggle.dataset.projectId = project.id;
+      multiToggle.setAttribute('aria-label', isMultiSelected ? 'Remover da visualização simultânea' : 'Adicionar à visualização simultânea');
+      multiToggle.title = `${multiToggle.getAttribute('aria-label')}: ${project.name || project.id}`;
+      multiToggle.setAttribute('aria-pressed', String(isMultiSelected));
+      multiToggle.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleMultiViewProject(project.id);
+      });
+
+      // Favorite toggle
+      const favorite = element('button', `flp-project-favorite${state.catalogFavorites.has(project.id) ? ' active' : ''}`, state.catalogFavorites.has(project.id) ? '★' : '☆');
+      favorite.type = 'button';
+      favorite.dataset.projectId = project.id;
+      favorite.setAttribute('aria-label', state.catalogFavorites.has(project.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
+      favorite.title = `${favorite.getAttribute('aria-label')}: ${project.name || project.id}`;
+      favorite.setAttribute('aria-pressed', String(state.catalogFavorites.has(project.id)));
+      favorite.addEventListener('click', () => toggleProjectFavorite(project.id));
+
+      card.append(multiToggle, openButton, favorite);
+      card.addEventListener('click', (event) => {
+        if (!event.target.closest('.flp-project-favorite') && !event.target.closest('.flp-project-multiview-toggle') && !event.target.closest('.flp-quick-action-btn')) {
+          if (state.launcherFullGrid) {
+            state.launcherFullGrid = false;
+            syncMultiViewToolbar();
+          }
+          selectProject(project.id);
+        }
+      });
       container.appendChild(card);
     }
+    syncMultiViewToolbar();
+  }
+
+  function syncMultiViewToolbar() {
+    const bodyEl = document.querySelector('#view-projects .flp-body');
+    if (bodyEl) {
+      bodyEl.classList.toggle('is-grid-full-view', Boolean(state.launcherFullGrid));
+      bodyEl.classList.toggle('is-multiview-active', Boolean(state.multiViewActive));
+    }
+    const fullGridBtn = $('flpFullLauncherGridBtn');
+    if (fullGridBtn) {
+      fullGridBtn.classList.toggle('active', Boolean(state.launcherFullGrid));
+      fullGridBtn.setAttribute('aria-pressed', String(Boolean(state.launcherFullGrid)));
+    }
+    const multiBtn = $('flpMultiViewToggleBtn');
+    if (multiBtn) {
+      multiBtn.classList.toggle('active', Boolean(state.multiViewActive));
+      multiBtn.setAttribute('aria-pressed', String(Boolean(state.multiViewActive)));
+    }
+    const countEl = $('flpMultiViewCount');
+    if (countEl) countEl.textContent = String(state.multiSelectedProjects.size);
+    const clearBtn = $('flpMultiViewClearBtn');
+    if (clearBtn) clearBtn.hidden = state.multiSelectedProjects.size === 0;
+  }
+
+  function toggleMultiViewProject(projectId) {
+    if (!projectId) return;
+    if (state.multiSelectedProjects.has(projectId)) {
+      state.multiSelectedProjects.delete(projectId);
+      if (state.multiSelectedProjects.size === 0) state.multiViewActive = false;
+    } else {
+      if (state.multiSelectedProjects.size >= 4) {
+        const oldest = state.multiSelectedProjects.values().next().value;
+        if (oldest) state.multiSelectedProjects.delete(oldest);
+      }
+      state.multiSelectedProjects.add(projectId);
+      if (state.multiSelectedProjects.size >= 2) {
+        state.multiViewActive = true;
+        state.launcherFullGrid = false;
+      }
+    }
+    syncMultiViewToolbar();
+    renderCards();
+    renderDetail();
   }
 
   function row(label, value) {
     const line = element('div', 'flp-fact');
-    line.append(element('span', '', label), element('strong', '', value));
+    line.append(element('span', '', label), element('strong', '', text(value)));
     return line;
+  }
+
+  function renderVpsBindings(project, runtime) {
+    const bindings = Array.isArray(project.deployment?.bindings) ? project.deployment.bindings : [];
+    if (!bindings.length) return;
+    const section = element('section', 'flp-vps-bindings');
+    section.append(element('h4', '', 'Portas e rotas mapeadas na VPS'));
+    section.append(element('p', 'flp-vps-bindings-note', 'Cadastro de destinos. A disponibilidade só é atual quando vier de uma sondagem ao vivo.'));
+    const list = element('div', 'flp-vps-binding-list');
+    for (const binding of bindings) {
+      const port = Number(binding?.port);
+      if (!Number.isInteger(port) || port < 1 || port > 65535) continue;
+      const item = element('article', 'flp-vps-binding');
+      item.append(element('strong', '', String(binding.label || 'Serviço VPS')));
+      item.append(element('span', '', `${String(binding.address || '—')}:${port} → ${String(binding.target || 'Destino não mapeado')}`));
+      const observedAt = typeof binding.observedAt === 'string' ? binding.observedAt : '';
+      const observedMs = Date.parse(observedAt);
+      const hasObservation = Number.isFinite(observedMs) && observedMs <= Date.now();
+      const isFresh = hasObservation && Date.now() - observedMs <= 120_000 && binding.evidenceSource === 'RUNTIME_PROBE';
+      const state = isFresh
+        ? `${String(binding.status || 'Resposta recebida')} · verificado ${observedAt}`
+        : hasObservation
+          ? `Registro histórico: ${String(binding.status || 'sem resultado')} · ${observedAt}`
+          : 'Disponibilidade não medida';
+      item.append(element('small', '', state));
+      if (typeof binding.url === 'string') {
+        try {
+          const parsed = new URL(binding.url, window.location.href);
+          if (['http:', 'https:'].includes(parsed.protocol)) {
+            const link = element('a', '', binding.url);
+            link.href = parsed.toString();
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            item.append(link);
+          }
+        } catch {}
+      }
+      list.appendChild(item);
+    }
+    if (list.childElementCount) {
+      section.appendChild(list);
+      runtime.appendChild(section);
+    }
+  }
+
+  async function triggerProjectFunnelAction(project, actionType, statusEl = null) {
+    if (!project) return;
+    const rawId = project.catalogId || (String(project.id || '').startsWith('local-') ? project.id.slice(6) : project.id);
+    const { liveStatus } = operationalStatus(project);
+    const activeUrl = liveStatus?.activeUrl || project.localUrl || project.remoteUrl || (project.localPort ? `http://localhost:${project.localPort}` : null);
+    const setMsg = (msg) => {
+      if (statusEl) statusEl.textContent = msg;
+      if ($('flpMeasured')) $('flpMeasured').textContent = msg;
+    };
+
+    if (actionType === 'run-local') {
+      setMsg(`⚡ Iniciando execução local para ${project.name || rawId}…`);
+      const res = await startProjectService(rawId, project);
+      if (res?.message) setMsg(`✅ ${res.message}`);
+      return;
+    }
+    if (actionType === 'run-vps') {
+      setMsg(`☁️ Acionando execução / sincronização na VPS (209.50.241.22) para ${project.name || rawId}…`);
+      const vpsCounterpart = findVpsCounterpart(project);
+      try {
+        await json('/api/v2/universal-jobs/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: 'project-decision-funnel',
+            projectId: vpsCounterpart?.project?.id || project.id,
+            title: `Execução VPS · ${project.name || project.id}`,
+            intent: `Verificar e ativar runtime VPS para o projeto ${project.name || project.id} (${project.projectVersion || 'v1.0.0'})`,
+            command: '/goal',
+            status: 'RUNNING'
+          })
+        });
+      } catch (_) {}
+      const vpsUrl = project.remoteUrl || (vpsCounterpart?.project?.frontend?.port ? `http://209.50.241.22:${vpsCounterpart.project.frontend.port}` : null);
+      setMsg(`✅ Missão de execução VPS despachada para ${project.name || rawId}${vpsUrl ? ` · Endpoint: ${vpsUrl}` : ' no cluster 209.50.241.22'}.`);
+      return;
+    }
+    if (actionType === 'test-project') {
+      setMsg(`🧪 Executando bateria de verificação & health probe em ${project.name || rawId}…`);
+      const probe = await checkProjectStatus(rawId);
+      try {
+        await json('/api/v2/universal-jobs/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: 'project-qa-funnel',
+            projectId: project.id,
+            title: `Teste & Health Probe · ${project.name || project.id}`,
+            intent: `Executar verificação de portas, contrato HTTP e saúde de ${project.name || project.id}`,
+            command: '/browser',
+            status: 'COMPLETED'
+          })
+        });
+      } catch (_) {}
+      setMsg(`🧪 Teste concluído para ${project.name || rawId}: Status=${probe?.online ? 'ONLINE' : 'OFFLINE'} · Porta=${probe?.localPort || project.localPort || '—'}`);
+      return;
+    }
+    if (actionType === 'use-app') {
+      if (activeUrl) {
+        setMsg(`🌐 Abrindo aplicação ${project.name || rawId} em ${activeUrl}…`);
+        window.open(activeUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        setMsg(`🌐 Abrindo Browser QA para inspecionar ${project.name || rawId}…`);
+        window.showView?.('browser');
+      }
+      return;
+    }
+    if (actionType === 'open-ide') {
+      setMsg(`💻 Abrindo código e estrutura de ${project.name || rawId} no IDE…`);
+      openProjectInIde(project);
+    }
+  }
+
+  function getProjectDecisions(project) {
+    const key = `fenix_project_decisions_${project.id}`;
+    if (state.projectDecisions.has(project.id)) return state.projectDecisions.get(project.id);
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || 'null');
+      if (Array.isArray(saved) && saved.length) {
+        state.projectDecisions.set(project.id, saved);
+        return saved;
+      }
+    } catch (_) {}
+    const vpsMatch = findVpsCounterpart(project);
+    const defaults = [
+      {
+        id: 'dec-target-env',
+        category: 'RUNTIME',
+        title: `Alvo de Execução Principal (${project.versionRole || 'Principal'})`,
+        choice: vpsMatch || project.remoteUrl ? 'Híbrido (Local + VPS 209.50.241.22)' : 'Workstation Local + Túnel Fênix',
+        status: 'ACTIVE'
+      },
+      {
+        id: 'dec-version-gate',
+        category: 'VERSÃO',
+        title: `Governança de Versão (${project.projectVersion ? 'v' + project.projectVersion : 'v1.0.0'})`,
+        choice: project.versionRole === 'Principal' ? 'Branch Canônica (SSOT Produção)' : `Variante Especializada (${project.versionRole || 'Evolução'})`,
+        status: 'VERIFIED'
+      },
+      {
+        id: 'dec-qa-policy',
+        category: 'QUALIDADE',
+        title: 'Gate de Testes & Monitoramento de Porta',
+        choice: project.localPort ? `Sondagem TCP/HTTP contínua na porta :${project.localPort}` : 'Verificação sob demanda via Mission Kernel',
+        status: 'ACTIVE'
+      }
+    ];
+    state.projectDecisions.set(project.id, defaults);
+    return defaults;
+  }
+
+  function renderDecisionFunnel(target, project, liveStatus, status) {
+    if (!target || !project) return;
+    const funnel = element('section', 'flp-decision-funnel');
+    funnel.id = 'flpDecisionFunnel';
+    funnel.setAttribute('aria-label', 'Funil de Decisões e Operação Total do Projeto');
+
+    const head = element('div', 'flp-funnel-head');
+    const titleWrap = element('div', 'flp-funnel-title-wrap');
+    titleWrap.append(
+      element('span', 'flp-eyebrow', 'FUNIL DE DECISÃO & ESCOLHA TOTAL · WORKFLOW PROGRESSIVO'),
+      element('h3', 'flp-funnel-heading', `Central de Decisão: ${project.name || project.id}`),
+      element('p', 'flp-funnel-sub', '1. Verifique a versão e diagnóstico ➔ 2. Escolha onde rodar, testar, usar ou abrir o código ➔ 3. Afunile as decisões arquiteturais do projeto.')
+    );
+
+    const compareBtn = element('button', `flp-button flp-button-soft${state.multiSelectedProjects.has(project.id) ? ' active' : ''}`, state.multiSelectedProjects.has(project.id) ? '✓ Em Multi-View Simultâneo' : '⊞ Comparar Lado a Lado');
+    compareBtn.type = 'button';
+    compareBtn.addEventListener('click', () => toggleMultiViewProject(project.id));
+    head.append(titleWrap, compareBtn);
+    funnel.appendChild(head);
+
+    // Stage 1: Version & Environment Strip
+    const stage1 = element('div', 'flp-funnel-stage-strip');
+    const vpsMatch = findVpsCounterpart(project);
+    const stripItems = [
+      ['1. Versão & Papel', `v${project.projectVersion || project.currentVersion || '1.0.0'} · ${project.versionRole || 'Principal'}`],
+      ['2. Ambiente & Host', vpsMatch ? `Local + VPS (${vpsMatch.project.id})` : (project.source === 'LOCAL_PROJECT_CATALOG' ? 'Catálogo Local + Bridge VPS' : 'Cluster Fênix VPS')],
+      ['3. Portas & Saúde', `${projectPortSummary(project) || 'Sob demanda'} · ${status === 'online' ? 'ONLINE' : status === 'offline' ? 'OFFLINE' : 'PRONTO'}`]
+    ];
+    for (const [lbl, val] of stripItems) {
+      const chip = element('div', 'flp-funnel-strip-item');
+      chip.append(element('span', 'flp-funnel-strip-label', lbl), element('strong', 'flp-funnel-strip-val', val));
+      stage1.appendChild(chip);
+    }
+    funnel.appendChild(stage1);
+
+    // Stage 2: 5 Direct Action Choices (Rodar na VPS, Rodar Local, Testar, Usar, Abrir Código)
+    const statusOut = element('div', 'flp-funnel-exec-status', 'Pronto: escolha uma operação abaixo para executar no projeto selecionado.');
+    statusOut.id = 'flpFunnelExecutionStatus';
+
+    const actionGrid = element('div', 'flp-funnel-actions-grid');
+    const actionSpecs = [
+      { id: 'run-vps', icon: 'ph-cloud-arrow-up', label: 'Rodar na VPS', sub: 'Deploy / Ativar em 209.50.241.22' },
+      { id: 'run-local', icon: 'ph-lightning', label: 'Rodar Local', sub: project.localPort ? `Iniciar serviço (:${project.localPort})` : 'Executar processo local' },
+      { id: 'test-project', icon: 'ph-flask', label: 'Testar Sistema', sub: 'Sondar portas, saúde e QA' },
+      { id: 'use-app', icon: 'ph-globe-hemisphere-west', label: 'Usar / Abrir App', sub: 'Abrir interface em execução' },
+      { id: 'open-ide', icon: 'ph-code', label: 'Abrir Código (IDE)', sub: 'Explorar arquivos e árvore' }
+    ];
+    for (const spec of actionSpecs) {
+      const btn = element('button', 'flp-funnel-action-btn');
+      btn.type = 'button';
+      btn.dataset.funnelAction = spec.id;
+      btn.innerHTML = `
+        <span class="fnx-mono3d-icon"><i class="ph-bold ${spec.icon}"></i></span>
+        <span class="flp-funnel-action-text">
+          <strong>${spec.label}</strong>
+          <small>${spec.sub}</small>
+        </span>
+      `;
+      btn.addEventListener('click', () => triggerProjectFunnelAction(project, spec.id, statusOut));
+      actionGrid.appendChild(btn);
+    }
+    funnel.append(actionGrid, statusOut);
+
+    // Stage 3: Project Decisions List & Quick Decision Dispatch
+    const decisionsBox = element('div', 'flp-funnel-decisions-box');
+    const decHead = element('div', 'flp-funnel-decisions-head');
+    decHead.append(
+      element('h4', '', '3. Decisões Ativas do Projeto (Arquitetura, Versão & Missões)'),
+      element('span', 'flp-funnel-decisions-badge', `${getProjectDecisions(project).length} decisões registradas`)
+    );
+    decisionsBox.appendChild(decHead);
+
+    const decList = element('div', 'flp-funnel-decisions-list');
+    decList.id = 'flpProjectDecisionsList';
+    for (const dec of getProjectDecisions(project)) {
+      const item = element('div', 'flp-funnel-decision-item');
+      item.append(
+        element('span', 'flp-funnel-dec-cat', dec.category),
+        element('strong', 'flp-funnel-dec-title', dec.title),
+        element('span', 'flp-funnel-dec-choice', dec.choice),
+        element('span', 'flp-funnel-dec-status', dec.status)
+      );
+      decList.appendChild(item);
+    }
+    decisionsBox.appendChild(decList);
+
+    const decForm = element('div', 'flp-funnel-decision-form');
+    const decInput = document.createElement('input');
+    decInput.type = 'text';
+    decInput.id = 'flpNewDecisionInput';
+    decInput.className = 'flp-funnel-decision-input';
+    decInput.placeholder = `Registrar nova decisão ou diretriz para ${project.name || project.id} (ex: Migrar API para porta dedicada, Priorizar versão v2)…`;
+    const decSubmit = element('button', 'flp-button flp-button-primary', '➕ Registrar & Despachar Decisão');
+    decSubmit.type = 'button';
+    decSubmit.id = 'flpNewDecisionSubmitBtn';
+    decSubmit.addEventListener('click', async () => {
+      const val = decInput.value.trim();
+      if (!val) return;
+      const list = getProjectDecisions(project);
+      const newEntry = {
+        id: `dec-${Date.now()}`,
+        category: 'DIRETRIZ',
+        title: val,
+        choice: `Aprovado em ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+        status: 'DISPATCHED'
+      };
+      list.unshift(newEntry);
+      state.projectDecisions.set(project.id, list);
+      try {
+        localStorage.setItem(`fenix_project_decisions_${project.id}`, JSON.stringify(list.slice(0, 20)));
+      } catch (_) {}
+      decInput.value = '';
+      renderDetail();
+      try {
+        await json('/api/v2/universal-jobs/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: 'project-decision-ledger',
+            projectId: project.id,
+            title: `Decisão: ${val.slice(0, 64)}`,
+            intent: val,
+            command: '/plan',
+            status: 'RUNNING'
+          })
+        });
+      } catch (_) {}
+    });
+    decForm.append(decInput, decSubmit);
+    decisionsBox.appendChild(decForm);
+    funnel.appendChild(decisionsBox);
+
+    target.appendChild(funnel);
+  }
+
+  function renderMultiProjectArena(target) {
+    if (!state.multiViewActive || state.multiSelectedProjects.size === 0) return;
+    const selectedIds = [...state.multiSelectedProjects];
+    const selectedProjects = selectedIds.map((id) => state.projects.find((p) => p.id === id)).filter(Boolean);
+    if (!selectedProjects.length) return;
+
+    const arena = element('section', 'flp-multiview-arena');
+    arena.id = 'flpMultiProjectArena';
+    arena.setAttribute('aria-label', 'Visualização Simultânea de Projetos');
+
+    const head = element('div', 'flp-multiview-head');
+    const titleWrap = element('div', 'flp-multiview-title-wrap');
+    titleWrap.append(
+      element('span', 'flp-eyebrow', 'ARENA MULTI-PROJETO · COMPARAÇÃO & OPERAÇÃO SIMULTÂNEA'),
+      element('h3', 'flp-multiview-heading', `Visualização Simultânea (${selectedProjects.length} Projetos Lado a Lado)`),
+      element('p', 'flp-multiview-sub', 'Compare versão, portas, saúde e opere múltiplos projetos ao mesmo tempo antes de afunilar suas decisões.')
+    );
+
+    const actionsWrap = element('div', 'flp-multiview-head-actions');
+    const addMoreBtn = element('button', 'flp-button flp-button-soft', '+ Adicionar Projeto (até 4)');
+    addMoreBtn.type = 'button';
+    addMoreBtn.disabled = selectedProjects.length >= 4;
+    addMoreBtn.addEventListener('click', () => {
+      const next = state.projects.find((p) => !state.multiSelectedProjects.has(p.id));
+      if (next) toggleMultiViewProject(next.id);
+    });
+
+    const scanSelectedBtn = element('button', 'flp-button flp-button-soft', '🔄 Testar Selecionados');
+    scanSelectedBtn.type = 'button';
+    scanSelectedBtn.addEventListener('click', async () => {
+      scanSelectedBtn.disabled = true;
+      await Promise.all(selectedProjects.map((p) => checkProjectStatus(p.catalogId || p.id)));
+      scanSelectedBtn.disabled = false;
+      renderDetail();
+    });
+
+    const closeArenaBtn = element('button', 'flp-button flp-button-soft', '✕ Fechar Multi-View');
+    closeArenaBtn.type = 'button';
+    closeArenaBtn.addEventListener('click', () => {
+      state.multiViewActive = false;
+      syncMultiViewToolbar();
+      renderDetail();
+    });
+
+    actionsWrap.append(addMoreBtn, scanSelectedBtn, closeArenaBtn);
+    head.append(titleWrap, actionsWrap);
+    arena.appendChild(head);
+
+    const grid = element('div', 'flp-multiview-grid');
+    grid.dataset.columns = String(Math.min(4, Math.max(2, selectedProjects.length)));
+
+    for (const p of selectedProjects) {
+      const rawId = p.catalogId || (String(p.id || '').startsWith('local-') ? p.id.slice(6) : p.id);
+      const { liveStatus, status } = operationalStatus(p);
+      const isOnline = status === 'online';
+      const activeUrl = liveStatus?.activeUrl || p.localUrl || p.remoteUrl || (p.localPort ? `http://localhost:${p.localPort}` : null);
+      const col = element('article', `flp-multiview-card${state.selected === p.id ? ' is-focused' : ''}`);
+      col.dataset.projectId = p.id;
+
+      const cardTop = element('div', 'flp-multiview-card-top');
+      const titleGroup = element('div', 'flp-multiview-card-title');
+      titleGroup.append(
+        element('strong', '', p.name || p.id),
+        element('span', 'flp-card-version', `v${p.projectVersion || p.currentVersion || '1.0.0'}`)
+      );
+      const removeBtn = element('button', 'flp-multiview-remove', '✕');
+      removeBtn.type = 'button';
+      removeBtn.title = 'Remover da visualização simultânea';
+      removeBtn.addEventListener('click', () => toggleMultiViewProject(p.id));
+      cardTop.append(titleGroup, removeBtn);
+
+      const metaRow = element('div', 'flp-multiview-meta');
+      metaRow.append(
+        element('span', `flp-card-status-pill ${status}`, status === 'online' ? 'ONLINE' : status === 'offline' ? 'OFFLINE' : 'NÃO VERIFICADO'),
+        element('span', 'flp-multiview-chip', p.catalogGroup || 'Core Fênix'),
+        element('span', 'flp-multiview-chip', p.versionRole || 'Principal'),
+        element('span', 'flp-multiview-chip', projectPortSummary(p) || 'Sem porta fixa')
+      );
+
+      const pathLine = element('div', 'flp-multiview-path', p.workspace || p.listedPath || p.vpsPath || 'Workspace gerenciado');
+
+      const previewBox = element('div', 'flp-multiview-preview');
+      if (state.multiViewPreviews.has(p.id) && activeUrl) {
+        const iframe = document.createElement('iframe');
+        iframe.className = 'flp-multiview-iframe';
+        iframe.src = activeUrl;
+        iframe.title = `Preview ${p.name || p.id}`;
+        previewBox.appendChild(iframe);
+      } else {
+        const previewInfo = element('div', 'flp-multiview-preview-placeholder');
+        previewInfo.append(
+          element('span', '', isOnline ? `🟢 Endpoint Ativo: ${activeUrl || 'Porta aberta'}` : `⚪ Aguardando inicialização (${p.mode || 'web'})`),
+          element('small', '', ` Saúde: ${liveStatus?.latencyMs != null ? liveStatus.latencyMs + 'ms' : 'sob demanda'}`)
+        );
+        if (activeUrl) {
+          const togglePrev = element('button', 'flp-quick-action-btn btn-open-url', '👁️ Preview Inline');
+          togglePrev.type = 'button';
+          togglePrev.addEventListener('click', () => {
+            state.multiViewPreviews.add(p.id);
+            renderDetail();
+          });
+          previewInfo.appendChild(togglePrev);
+        }
+        previewBox.appendChild(previewInfo);
+      }
+
+      const btnGrid = element('div', 'flp-multiview-actions');
+      const bVps = element('button', 'flp-quick-action-btn btn-start', '☁️ VPS');
+      bVps.type = 'button';
+      bVps.addEventListener('click', () => triggerProjectFunnelAction(p, 'run-vps'));
+
+      const bLocal = element('button', 'flp-quick-action-btn btn-start', '⚡ Local');
+      bLocal.type = 'button';
+      bLocal.addEventListener('click', () => triggerProjectFunnelAction(p, 'run-local'));
+
+      const bTest = element('button', 'flp-quick-action-btn btn-check', '🧪 Testar');
+      bTest.type = 'button';
+      bTest.addEventListener('click', () => triggerProjectFunnelAction(p, 'test-project'));
+
+      const bIde = element('button', 'flp-quick-action-btn btn-folder', '💻 Código');
+      bIde.type = 'button';
+      bIde.addEventListener('click', () => triggerProjectFunnelAction(p, 'open-ide'));
+
+      const bFocus = element('button', 'flp-quick-action-btn btn-open-url', '🎯 Afunilar Decisões');
+      bFocus.type = 'button';
+      bFocus.addEventListener('click', () => {
+        state.selected = p.id;
+        state.multiViewActive = false;
+        syncMultiViewToolbar();
+        renderCards();
+        renderDetail();
+        setTimeout(() => $('flpDecisionFunnel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      });
+
+      btnGrid.append(bVps, bLocal, bTest, bIde, bFocus);
+      col.append(cardTop, metaRow, pathLine, previewBox, btnGrid);
+      grid.appendChild(col);
+    }
+
+    arena.appendChild(grid);
+    target.appendChild(arena);
   }
 
   function renderDetail() {
@@ -273,19 +1368,64 @@
       renderGitHubPortfolioView(target);
       return;
     }
+    if (state.error && !state.measuredAt) {
+      const notice = element('section', 'flp-unavailable flp-load-state');
+      notice.setAttribute('role', 'alert');
+      notice.append(element('strong', '', 'Catálogo de projetos indisponível'), element('p', '', 'Não recebemos uma resposta válida do Project Kernel. Os totais ficam indisponíveis até a próxima leitura.'));
+      const details = element('details', 'flp-unavailable-details');
+      details.append(element('summary', '', 'Detalhes técnicos'), element('pre', '', state.error));
+      const retry = element('button', 'flp-button flp-button-soft flp-unavailable-retry', '↻ Tentar novamente');
+      retry.type = 'button';
+      retry.addEventListener('click', () => load(true));
+      notice.append(details, retry);
+      target.appendChild(notice);
+      return;
+    }
+    if (state.hubViewMode === 'screens') {
+      renderScreenPortfolio(target);
+      return;
+    }
+    if (state.multiViewActive && state.multiSelectedProjects.size > 0) {
+      renderMultiProjectArena(target);
+    }
     const project = state.projects.find((item) => item.id === state.selected);
     if (!project) {
-      target.appendChild(element('p', 'flp-empty', 'Selecione um projeto para inspecionar seu estado.'));
+      target.appendChild(element('p', 'flp-empty', state.hubViewMode === 'local'
+        ? 'O catálogo local é lido na máquina que executa o Fênix. Esta VPS não acessa pastas C:\\ do seu PC.'
+        : 'Selecione um projeto para inspecionar seu estado.'));
       return;
     }
     const detail = state.details.get(project.id);
+    if (!detail && state.detailLoads.has(project.id)) {
+      target.appendChild(element('p', 'flp-project-state-loading', 'Carregando estado do projeto…'));
+    }
+    const detailError = state.detailErrors.get(project.id);
+    if (!detail && detailError) {
+      const notice = element('section', 'flp-project-state-error');
+      notice.setAttribute('role', 'alert');
+      notice.append(element('p', '', 'Não foi possível carregar o estado deste projeto. Os dados de runtime permanecem indisponíveis.'));
+      const retry = element('button', 'flp-button flp-button-soft', 'Tentar novamente');
+      retry.type = 'button';
+      retry.addEventListener('click', () => {
+        state.detailErrors.delete(project.id);
+        renderDetail();
+        loadProjectState(project.id);
+      });
+      notice.appendChild(retry);
+      target.appendChild(notice);
+    }
     const absorption = state.absorptions.get(project.id);
     const git = state.git.get(project.id);
+    const isLocalCatalogProject = project.source === 'LOCAL_PROJECT_CATALOG';
+    const currentOperationalStatus = operationalStatus(project).status;
+
+    // 0. QUICK SWITCHER BAR (TROCA RÁPIDA ENTRE PROJETOS)
+    renderQuickSwitcher(target, project);
 
     // 1. PROJECT HEADER (Section 7)
     const heading = element('div', 'flp-detail-head');
     const titleBox = element('div');
-    titleBox.append(element('span', 'flp-eyebrow', 'PROJECT KERNEL & GENOME TWIN'));
+    titleBox.append(element('span', 'flp-eyebrow', isLocalCatalogProject ? 'CATÁLOGO LOCAL · PROJECT HUB' : 'PROJECT KERNEL & GENOME TWIN'));
     const h2Wrap = element('div', '', '');
     h2Wrap.style.display = 'flex';
     h2Wrap.style.alignItems = 'center';
@@ -297,7 +1437,11 @@
 
     const isAbsorbed = Boolean(absorption);
     const statusBadge = element('span', `flp-badge ${isAbsorbed ? 'flp-badge-green' : 'flp-badge-gray'}`, isAbsorbed ? 'DNA REGISTRADO' : 'SEM DNA');
-    const healthBadge = element('span', 'flp-badge flp-badge-gray', project.status || 'STATUS NÃO INFORMADO');
+    const healthBadge = element('span', 'flp-badge flp-badge-gray', isLocalCatalogProject
+      ? (project.workspaceAvailable ? 'LOCAL · DISPONÍVEL' : 'CAMINHO INDISPONÍVEL')
+      : currentOperationalStatus === 'online' ? 'SERVIÇO ONLINE'
+        : currentOperationalStatus === 'offline' ? 'SERVIÇO OFFLINE'
+          : 'SERVIÇO NÃO VERIFICADO');
     h2Wrap.append(statusBadge, healthBadge);
 
     // Framework/Tech badges
@@ -355,16 +1499,18 @@
     // Primary Action: OPEN PROJECT / WORKSPACE
     const wsBtn = element('button', 'flp-button flp-button-primary', 'Abrir Workspace');
     wsBtn.type = 'button';
-    wsBtn.disabled = !project.workspace;
-    wsBtn.addEventListener('click', () => {
-      state.workspaceTab = state.workspaceTab === 'screens' ? 'overview' : 'screens';
-      renderDetail();
-    });
+    wsBtn.disabled = !workspaceIsAvailable(project);
+    wsBtn.addEventListener('click', () => openProjectInIde(project));
+    const openSystem = project.localUrl ? element('button', 'flp-button flp-button-soft', 'Abrir sistema') : null;
+    if (openSystem) {
+      openSystem.type = 'button';
+      openSystem.addEventListener('click', () => window.open(project.localUrl, '_blank', 'noopener,noreferrer'));
+    }
 
     // Secondary Actions: MAP, ABSORB, SCREEN DNA, RUN/IDE, BROWSER, MEMORY, DEPLOY
     const mapBtn = element('button', 'flp-button flp-button-soft', 'Mapear Sistema');
     mapBtn.type = 'button';
-    mapBtn.disabled = !project.workspace;
+    mapBtn.disabled = !workspaceIsAvailable(project) || Boolean(project.entryFile);
     mapBtn.addEventListener('click', async () => {
       state.workspaceTab = 'intelligence';
       renderDetail();
@@ -373,7 +1519,7 @@
 
     const absorbBtn = element('button', 'flp-button flp-button-soft', 'Absorver DNA');
     absorbBtn.type = 'button';
-    absorbBtn.disabled = !project.workspace;
+    absorbBtn.disabled = !workspaceIsAvailable(project) || Boolean(project.entryFile);
     absorbBtn.addEventListener('click', async () => {
       absorbBtn.disabled = true;
       $('flpMeasured').textContent = `Absorvendo Screen DNA do projeto ${project.name}…`;
@@ -400,21 +1546,9 @@
     const screenDnaBtn = element('button', 'flp-button flp-button-soft', 'Screen DNA');
     screenDnaBtn.type = 'button';
     screenDnaBtn.addEventListener('click', () => {
-      const screens = getProjectScreens(project);
-      if (screens.length > 0) {
-        openInspector(screens[0], project);
-      } else {
-        state.workspaceTab = 'screens';
-        renderDetail();
-      }
-    });
-
-    const ide = element('button', 'flp-button flp-button-soft', 'Abrir na IDE');
-    ide.type = 'button';
-    ide.disabled = !project.workspace;
-    ide.addEventListener('click', async () => {
-      window.showView?.('ide');
-      await window.fenixSelectIdeProject?.(project.id);
+      state.workspaceTab = 'screens';
+      renderDetail();
+      loadRegisteredScreens(project);
     });
 
     const browserBtn = element('button', 'flp-button flp-button-soft', 'Browser QA');
@@ -445,7 +1579,9 @@
       window.FenixSidebar?.openInspector?.({ type: 'project', id: project.id, data: project });
     });
 
-    actions.append(wsBtn, inspBtn, worldBtn, mapBtn, absorbBtn, screenDnaBtn, ide, browserBtn, memoryBtn);
+    actions.append(wsBtn);
+    if (openSystem) actions.append(openSystem);
+    actions.append(inspBtn, worldBtn, mapBtn, absorbBtn, browserBtn, memoryBtn);
 
     if (project.id === 'api-platform-live') {
       const dashboard = element('a', 'flp-button flp-button-soft', 'Abrir Painel da API');
@@ -455,27 +1591,274 @@
       actions.append(dashboard);
     }
 
+    const primaryActions = element('div', 'flp-actions-primary');
+    primaryActions.append(wsBtn, screenDnaBtn);
+    if (openSystem) primaryActions.append(openSystem);
+    const additionalActions = [...actions.children].filter((action) => action !== wsBtn && action !== screenDnaBtn && action !== openSystem);
+    const moreActions = element('details', 'flp-project-actions-menu');
+    moreActions.append(element('summary', 'flp-button flp-button-soft', `Mais ações (${additionalActions.length})`));
+    const menuPanel = element('div', 'flp-project-actions-panel');
+    menuPanel.append(...additionalActions);
+    moreActions.appendChild(menuPanel);
+    actions.replaceChildren(primaryActions, moreActions);
+
     heading.append(titleBox, actions);
     target.appendChild(heading);
+
+    // LIVE STATUS BANNER & DIRECT ACTIONS
+    const rawId = project.catalogId || (project.id.startsWith('local-') ? project.id.slice(6) : project.id);
+    const { liveStatus, status } = operationalStatus(project);
+    const isOnline = status === 'online';
+    const activeUrl = liveStatus?.activeUrl || project.localUrl || (project.localPort ? `http://localhost:${project.localPort}` : null);
+
+    const statusBanner = element('div', `flp-detail-status-banner ${status}`);
+    const bannerInfo = element('div');
+    if (isOnline) {
+      const port = liveStatus?.port || project.localPort || project.apiPort || '—';
+      const checkedAt = liveStatus?.checkedAt ? date(liveStatus.checkedAt) : 'horário indisponível';
+      bannerInfo.innerHTML = `<strong><span class="flp-live-dot pulse"></span> SERVIÇO RESPONDEU NA CHECAGEM · PORTA :${port}</strong><p>Latência: ${liveStatus?.latencyMs != null ? `${liveStatus.latencyMs} ms` : 'não medida'} · Checado: ${checkedAt}</p>`;
+      if (activeUrl) {
+        const directOpen = element('button', 'flp-btn-open-direct', '🚀 Abrir Sistema Agora ↗');
+        directOpen.type = 'button';
+        directOpen.addEventListener('click', () => window.open(activeUrl, '_blank', 'noopener,noreferrer'));
+        statusBanner.append(bannerInfo, directOpen);
+      } else statusBanner.appendChild(bannerInfo);
+    } else if (status === 'offline') {
+      bannerInfo.innerHTML = `
+        <strong><span class="flp-live-dot"></span> SERVIÇO SEM RESPOSTA NA ÚLTIMA CHECAGEM (Porta :${liveStatus?.port || project.localPort || project.apiPort || '—'})</strong>
+        <p>Checado: ${liveStatus?.checkedAt ? date(liveStatus.checkedAt) : 'horário indisponível'}. Você pode tentar iniciar o serviço ou explorar a pasta.</p>
+      `;
+      const bannerActions = element('div');
+      bannerActions.style.cssText = 'display:flex; gap:8px; align-items:center; flex-wrap:wrap;';
+      const bStart = element('button', 'flp-quick-action-btn btn-start', '⚡ Iniciar Serviço');
+      bStart.type = 'button';
+      bStart.addEventListener('click', () => {
+        bStart.disabled = true;
+        bStart.textContent = 'Iniciando…';
+        startProjectService(rawId, project).finally(() => {
+          bStart.disabled = false;
+          bStart.textContent = '⚡ Iniciar Serviço';
+        });
+      });
+      const bFolder = element('button', 'flp-quick-action-btn btn-folder', '📁 Abrir Pasta');
+      bFolder.type = 'button';
+      bFolder.addEventListener('click', () => openProjectFolderDirect(rawId, project));
+      const bCheck = element('button', 'flp-quick-action-btn btn-check', '🔄 Retestar');
+      bCheck.type = 'button';
+      bCheck.addEventListener('click', () => {
+        bCheck.disabled = true;
+        checkProjectStatus(rawId).finally(() => { bCheck.disabled = false; });
+      });
+      bannerActions.append(bStart, bFolder, bCheck);
+      statusBanner.append(bannerInfo, bannerActions);
+    } else {
+      bannerInfo.innerHTML = '<strong><span class="flp-live-dot"></span> STATUS NÃO VERIFICADO</strong><p>O catálogo não forneceu uma checagem recente de porta ou health para este projeto.</p>';
+      statusBanner.appendChild(bannerInfo);
+    }
+    target.appendChild(statusBanner);
+
+    // 2.5 PROGRESSIVE DECISION & ACTION FUNNEL (Escolha Total do Projeto)
+    renderDecisionFunnel(target, project, liveStatus, status);
 
     // 3. COMPREHENSIVE PROJECT FACTS (Section 6)
     const screens = getProjectScreens(project);
     const facts = element('div', 'flp-facts');
-    facts.append(
-      row('Status', text(project.status, 'Não informado pela API')),
-      row('Health', Number.isFinite(project.health) ? `${project.health}%` : 'Não medido'),
-      row('Tecnologia', frameworks.join(', ') || 'Ainda não mapeada'),
-      row('Última Atividade', date(project.updatedAt)),
-      row('Agentes Vinculados', Array.isArray(detail?.activeAgents) ? String(detail.activeAgents.length) : 'Não informado'),
-      row('Jobs Registrados', Number.isFinite(detail?.progress?.totalJobs) ? String(detail.progress.totalJobs) : 'Não medido'),
-      row('Telas (Screen DNA)', String(screens.length)),
-      row('APIs Mapeadas', state.analyses.get(project.id)?.report ? String(state.analyses.get(project.id).report.routes.length) : 'Ainda não mapeadas'),
-      row('Memória Ativa', 'Não verificada nesta análise'),
-      row('Versão do Genome', 'Não medida'),
-      row('Economia de Tokens', absorption?.accumulatedSavings?.tokensSaved ? `${absorption.accumulatedSavings.tokensSaved} tokens` : '—'),
-      row('Repositório', text(project.repository || git?.remote, 'Local Workspace'))
-    );
+    const mappedAgents = Array.isArray(detail?.activeAgents) ? detail.activeAgents.length
+      : Array.isArray(project.agents) ? project.agents.length
+        : Number.isFinite(project.agentCount) ? project.agentCount : null;
+    const mappedJobs = Number.isFinite(detail?.progress?.totalJobs) ? detail.progress.totalJobs
+      : Number.isFinite(project.totalJobs) ? project.totalJobs : null;
+    const mappedRoutes = state.analyses.get(project.id)?.report?.routes?.length ?? project.routesCount;
+    const technology = frameworks.length ? frameworks.join(', ') : [project.technology, project.framework, project.tech, project.type].filter(Boolean).join(', ');
+    const memory = project.activeMemory || null;
+    const genome = project.genomeVersion || null;
+    const tokenSavings = absorption?.accumulatedSavings?.tokensSaved;
+    const repository = project.repository || git?.remote;
+    const screensKnown = screens.length > 0 || Number.isFinite(project.screenCount);
+    const factEntries = [
+      ['Status', isLocalCatalogProject
+        ? (project.workspaceAvailable ? 'Workspace disponível' : 'Caminho indisponível')
+        : (project.runtimeStatus && project.runtimeStatus !== 'UNKNOWN' ? text(project.runtimeStatus) : 'Não verificado'), true],
+      ['Health', Number.isFinite(project.health) && project.healthMeasuredAt && project.healthSource ? `${project.health}% · ${text(project.healthSource)}` : 'Não medido', true],
+      ['Tecnologia', technology || 'Não mapeada', Boolean(technology) || !isLocalCatalogProject],
+      ...(!isLocalCatalogProject ? [] : [
+        ['Grupo', text(project.catalogGroup), Boolean(project.catalogGroup)],
+        ['Tipo', text(project.versionRole), Boolean(project.versionRole)],
+        ['Caminho local', project.listedPath || project.workspace || 'Indisponível', true],
+        ...(project.entryFile ? [['Arquivo de entrada', project.entryFile, true]] : []),
+      ]),
+      ['Última Atividade', project.updatedAt ? date(project.updatedAt) : 'Não informada', Boolean(project.updatedAt) || !isLocalCatalogProject],
+      ['Agentes Vinculados', mappedAgents === null ? 'Não informado' : String(mappedAgents), mappedAgents !== null || !isLocalCatalogProject],
+      ['Jobs Registrados', mappedJobs === null ? 'Não informado' : String(mappedJobs), mappedJobs !== null || !isLocalCatalogProject],
+      ['Telas (Screen DNA)', screens.length ? `${screens.length} tela(s)` : (Number.isFinite(project.screenCount) ? String(project.screenCount) : (isLocalCatalogProject ? 'Ainda não absorvido' : 'Não medido')), screensKnown || !isLocalCatalogProject],
+      ['APIs Mapeadas', Number.isFinite(mappedRoutes) ? `${mappedRoutes} rotas` : 'Não medido', Number.isFinite(mappedRoutes) || !isLocalCatalogProject],
+      ['Memória Ativa', memory || 'Não medida', Boolean(memory) || !isLocalCatalogProject],
+      ['Versão do Genome', genome || 'Não informada', Boolean(genome) || !isLocalCatalogProject],
+      ['Economia de Tokens', tokenSavings ? `${tokenSavings} tokens` : '—', Boolean(tokenSavings) || !isLocalCatalogProject],
+      ['Repositório', repository || 'Não informado', Boolean(repository) || !isLocalCatalogProject],
+    ];
+    const unmappedFacts = [];
+    for (const [label, value, known] of factEntries) {
+      if (isLocalCatalogProject && !known) unmappedFacts.push(label);
+      else facts.appendChild(row(label, value));
+    }
     target.appendChild(facts);
+    if (unmappedFacts.length) {
+      const disclosure = element('details', 'flp-unmapped-facts');
+      const summary = element('summary', '', `Dados ainda não mapeados (${unmappedFacts.length})`);
+      const list = element('ul', '');
+      for (const label of unmappedFacts) list.appendChild(element('li', 'flp-unmapped-fact', `${label} · Ainda não mapeado`));
+      disclosure.append(summary, list);
+      target.appendChild(disclosure);
+    }
+    if (isLocalCatalogProject) {
+      const runtime = element('details', 'flp-project-runtime');
+      runtime.appendChild(element('summary', '', 'Portas e versões do projeto'));
+      runtime.appendChild(element('p', 'flp-runtime-unverified', 'Portas configuradas no host do catálogo · disponibilidade não verificada'));
+      if (liveStatus) {
+        const statusNote = liveStatus.online
+          ? `🟢 Porta :${liveStatus.port || project.localPort} ATIVA e respondendo (${liveStatus.latencyMs != null ? liveStatus.latencyMs + 'ms' : 'imediato'})`
+          : `⚪ Porta :${project.localPort || '—'} OFFLINE`;
+        const statusNoteEl = element('p', liveStatus.online ? 'flp-card-ports' : 'flp-runtime-unverified', statusNote);
+        if (liveStatus.online) statusNoteEl.style.cssText = 'margin:4px 0 8px; color:#00E5A0; font-weight:700; font-size:11.5px;';
+        runtime.appendChild(statusNoteEl);
+      }
+      const runtimeGrid = element('div', 'flp-project-runtime-grid');
+      const ports = [
+        Number.isInteger(project.localPort) ? `PC local · UI: ${project.localPort}` : null,
+        Number.isInteger(project.apiPort) ? `PC local · API: ${project.apiPort}` : null,
+      ].filter(Boolean);
+      const runtimeRows = [
+        ['Versão', project.projectVersion || 'Não declarada'],
+        ['Modo', project.mode || 'Não informado'],
+        ['Portas', ports.join(' · ') || 'Não cadastradas'],
+        ['Pasta', project.workspace || project.listedPath || 'Indisponível'],
+      ];
+      for (const [label, value] of runtimeRows) {
+        const item = element('div', 'flp-runtime-item');
+        item.append(element('span', '', label), element('strong', '', value));
+        runtimeGrid.appendChild(item);
+      }
+      for (const [label, value] of [
+        ['Abrir URL local', project.localUrl],
+        ['Abrir URL VPS', project.remoteUrl],
+        ['Health check cadastrado', project.healthUrl || project.remoteHealthUrl],
+      ]) {
+        if (!value) continue;
+        let safeUrl;
+        try {
+          const parsed = new URL(value, window.location.href);
+          if (!['http:', 'https:'].includes(parsed.protocol)) continue;
+          safeUrl = parsed.toString();
+        } catch { continue; }
+        const item = element('div', 'flp-runtime-item');
+        const link = element('a', '', value);
+        link.href = safeUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        item.append(element('span', '', label), link);
+        runtimeGrid.appendChild(item);
+      }
+      runtime.appendChild(runtimeGrid);
+      target.appendChild(runtime);
+
+      // Live service logs viewer
+      const logContainer = element('div', 'flp-log-container');
+      logContainer.style.cssText = 'margin:12px 0;';
+      const logToggle = element('button', 'flp-button flp-button-soft', '📜 Ver Logs / Output do Serviço');
+      logToggle.type = 'button';
+      const logViewer = element('pre', 'flp-log-viewer');
+      logViewer.hidden = true;
+      logToggle.addEventListener('click', () => {
+        logViewer.hidden = !logViewer.hidden;
+        if (!logViewer.hidden) loadProjectLogs(rawId, logViewer);
+      });
+      logContainer.append(logToggle, logViewer);
+      target.appendChild(logContainer);
+    } else if (project.frontend || project.backend) {
+      const runtime = element('details', 'flp-project-runtime');
+      runtime.appendChild(element('summary', '', 'Runtime cadastrado'));
+      runtime.appendChild(element('p', 'flp-runtime-unverified', 'Portas cadastradas · listener e health não verificados'));
+      const runtimeGrid = element('div', 'flp-project-runtime-grid');
+      const frontendPort = Number.isInteger(project.frontend?.port) ? project.frontend.port : null;
+      const backendPort = Number.isInteger(project.backend?.port) ? project.backend.port : null;
+      const runtimeRows = [
+        ['Versão', project.projectVersion || project.currentVersion || 'Não informada'],
+        ['Portas', [frontendPort !== null ? `UI: ${frontendPort}` : null, backendPort !== null ? `API: ${backendPort}` : null].filter(Boolean).join(' · ') || 'Não cadastradas'],
+        ['Frontend', [project.frontend?.framework, project.frontend?.entry].filter(Boolean).join(' · ') || 'Não informado'],
+        ['Backend', [project.backend?.runtime, project.backend?.pm2Name ? `PM2: ${project.backend.pm2Name}` : null, project.backend?.serviceManager ? `systemd: ${project.backend.serviceManager}` : null].filter(Boolean).join(' · ') || 'Não informado'],
+        ['Pasta VPS', project.vpsPath || project.productionPath || 'Não cadastrada'],
+        ['Pasta do frontend', project.frontend?.path || 'Não cadastrada'],
+        ['Pasta da API', project.backend?.path || 'Não cadastrada'],
+      ];
+      for (const [label, value] of runtimeRows) {
+        const item = element('div', 'flp-runtime-item');
+        item.append(element('span', '', label), element('strong', '', value));
+        runtimeGrid.appendChild(item);
+      }
+      runtime.appendChild(runtimeGrid);
+      renderVpsBindings(project, runtime);
+      target.appendChild(runtime);
+    }
+
+    if (isLocalCatalogProject && project.catalogGroup && project.catalogGroup.toLocaleLowerCase() !== 'outros') {
+      const family = state.projects
+        .filter((item) => item.source === 'LOCAL_PROJECT_CATALOG'
+          && item.catalogGroup === project.catalogGroup)
+        .sort((left, right) => {
+          const primary = (item) => item.versionRole === 'Principal' ? 0 : 1;
+          return primary(left) - primary(right) || String(left.name || left.id).localeCompare(String(right.name || right.id), 'pt-BR');
+        });
+      if (family.length > 1) {
+        const section = element('section', 'flp-project-family');
+        section.setAttribute('aria-label', `Projetos da família ${project.catalogGroup}`);
+        const head = element('div', 'flp-project-family-head');
+        head.append(element('div', '', `Família · ${project.catalogGroup}`), element('span', '', `${family.length} projetos relacionados no catálogo local`));
+        const cards = element('div', 'flp-project-family-grid');
+        for (const related of family) {
+          const card = element('button', `flp-project-family-card${related.id === project.id ? ' active' : ''}`);
+          card.type = 'button';
+          card.setAttribute('aria-current', related.id === project.id ? 'true' : 'false');
+          card.append(element('strong', '', related.name || related.id));
+          card.append(element('span', '', [related.versionRole, related.projectVersion ? `v${related.projectVersion}` : null].filter(Boolean).join(' · ') || 'Função não mapeada'));
+          const ports = projectPortSummary(related);
+          card.append(element('small', '', ports || 'Portas não cadastradas · host local'));
+          card.addEventListener('click', () => selectProject(related.id));
+          cards.appendChild(card);
+        }
+        section.append(head, cards);
+        target.appendChild(section);
+      }
+    }
+
+    if (isLocalCatalogProject) {
+      const match = findVpsCounterpart(project);
+      const section = element('section', 'flp-project-counterpart');
+      section.setAttribute('aria-label', 'Projeto correspondente na VPS');
+      const heading = element('div', 'flp-project-counterpart-head');
+      heading.append(element('strong', '', 'Correspondência na VPS'), element('span', '', 'Catálogo local ↔ Project Kernel'));
+      section.appendChild(heading);
+      if (!match) {
+        section.appendChild(element('p', 'flp-empty', 'Nenhum vínculo inequívoco encontrado. O projeto continua separado até haver ID, alias, nome exato ou repositório correspondente.'));
+      } else {
+        const remote = match.project;
+        const card = element('article', 'flp-project-counterpart-card');
+        const summary = element('div', 'flp-project-counterpart-summary');
+        summary.append(element('strong', '', remote.name || remote.displayName || remote.id), element('small', '', `Correspondência por ${match.reason} · workspace VPS ${remote.vpsPath || remote.productionPath || remote.workspace || 'não cadastrado'}`));
+        card.appendChild(summary);
+        renderVpsBindings(remote, card);
+        const openRemote = element('button', 'flp-button flp-button-soft', 'Abrir ficha VPS');
+        openRemote.type = 'button';
+        openRemote.addEventListener('click', () => {
+          $('flpModeFenix').click();
+          state.workspaceTab = 'overview';
+          selectProject(remote.id);
+        });
+        card.appendChild(openRemote);
+        section.appendChild(card);
+      }
+      target.appendChild(section);
+    }
 
     // 4. PROJECT WORKSPACE SUB-TABS (Section 7)
     const wsNav = element('nav', 'flp-ws-nav');
@@ -495,11 +1878,16 @@
     for (const t of tabs) {
       const tabBtn = element('button', `flp-ws-tab${state.workspaceTab === t.id ? ' active' : ''}`);
       tabBtn.type = 'button';
+      tabBtn.dataset.workspaceTab = t.id;
       tabBtn.innerHTML = `<i class="ph-bold ${t.icon}"></i> ${t.label}`;
       tabBtn.addEventListener('click', () => {
         state.workspaceTab = t.id;
         renderDetail();
-        if (t.id === 'intelligence' && !state.analyses.has(project.id)) loadProjectAnalysis(project.id);
+        if (t.id === 'screens') loadRegisteredScreens(project);
+        if (t.id === 'intelligence') {
+          if (!state.analyses.has(project.id)) loadProjectAnalysis(project.id);
+          if (!state.reaAnalyses.has(project.id)) loadReaEvidence(project, false);
+        }
       });
       wsNav.appendChild(tabBtn);
     }
@@ -509,7 +1897,7 @@
     const wsContent = element('div', 'flp-ws-content');
 
     if (state.workspaceTab === 'overview') {
-      if (project.workspace) renderGit(wsContent, project);
+      if (workspaceIsAvailable(project)) renderGit(wsContent, project);
       if (detail) renderExecutionPanels(wsContent, detail);
     } else if (state.workspaceTab === 'company') {
       renderCompanyTab(wsContent, project, detail);
@@ -532,64 +1920,407 @@
     }
 
     target.appendChild(wsContent);
+    keepActiveWorkspaceTabVisible(target);
+  }
+
+  function keepActiveWorkspaceTabVisible(container) {
+    const nav = container.querySelector('.flp-ws-nav');
+    const activeTab = nav?.querySelector('.flp-ws-tab.active');
+    if (!nav || !activeTab) return;
+    const navBounds = nav.getBoundingClientRect();
+    const tabBounds = activeTab.getBoundingClientRect();
+    if (tabBounds.right > navBounds.right) nav.scrollLeft += tabBounds.right - navBounds.right;
+    else if (tabBounds.left < navBounds.left) nav.scrollLeft -= navBounds.left - tabBounds.left;
   }
 
   function getProjectScreens(project) {
     const absorption = state.absorptions.get(project.id);
-    if (absorption?.screens?.length) return absorption.screens;
-    return [];
+    const sources = [
+      absorption?.screens,
+      project.screens,
+      project.screenDna,
+      project.dna?.screens,
+      state.registeredScreens.get(project.id)
+    ];
+    const unique = new Map();
+    for (const screen of sources.flatMap((items) => Array.isArray(items) ? items : [])) {
+      const route = String(screen.route || '').trim().replace(/\/$/, '').toLowerCase();
+      const applicationId = String(screen.applicationId || '').trim().toLowerCase();
+      let key = route ? `route:${route}` : String(screen.screenId || screen.id || screen.name || '').trim().toLowerCase();
+      if (route && applicationId) key = `app:${applicationId}:${route}`;
+      else if (route) {
+        const scopedMatches = [...unique.entries()].filter(([candidate, value]) => candidate.startsWith('app:') && String(value.route || '').trim().replace(/\/$/, '').toLowerCase() === route);
+        if (scopedMatches.length === 1) key = scopedMatches[0][0];
+      }
+      if (!key) continue;
+      const current = unique.get(key) || {};
+      unique.set(key, { ...current, ...screen,
+        screenshotPath: screen.screenshotPath || current.screenshotPath,
+        screenshotFreshness: screen.screenshotFreshness || current.screenshotFreshness,
+        sourceFile: screen.sourceFile || current.sourceFile
+      });
+    }
+    const screens = [...unique.values()];
+    const routeCounts = new Map();
+    for (const screen of screens) {
+      const normalizedRoute = String(screen.route || '').trim().replace(/\/$/, '').toLowerCase();
+      if (normalizedRoute) routeCounts.set(normalizedRoute, (routeCounts.get(normalizedRoute) || 0) + 1);
+    }
+    return screens.map((screen) => {
+      const normalizedRoute = String(screen.route || '').trim().replace(/\/$/, '').toLowerCase();
+      return { ...screen, showApplicationScope: Boolean(normalizedRoute && routeCounts.get(normalizedRoute) > 1) };
+    });
+  }
+
+  function renderScreenPortfolio(container) {
+    if (!container) return;
+    container.replaceChildren();
+    const screens = state.projects.flatMap((project) => getProjectScreens(project).map((screen) => ({ project, screen })));
+    const head = element('header', 'flp-screen-portfolio-head');
+    head.append(element('span', 'flp-eyebrow', 'PROJECT HUB · CATÁLOGO VISUAL'), element('h2', '', 'Telas dos projetos'), element('p', '', 'Rotas, componentes e capturas registradas. Capturas históricas e telas sem medição ficam identificadas pela origem.'));
+    const summary = element('div', 'flp-screen-portfolio-summary');
+    const captured = screens.filter(({ screen }) => Boolean(screen.screenshotPath)).length;
+    const historical = screens.filter(({ screen }) => screen.screenshotFreshness === 'ARCHIVED').length;
+    const unmeasured = screens.filter(({ screen }) => !screen.screenshotPath).length;
+    summary.append(
+      element('strong', '', `${screens.length} telas registradas`),
+      element('span', '', `${state.projects.length} projetos`),
+      element('span', '', `${captured} com captura`),
+      element('span', '', `${historical} históricas`),
+      element('span', '', `${unmeasured} sem captura`)
+    );
+    const controls = element('div', 'flp-screen-portfolio-controls');
+    const searchLabel = element('label', 'flp-screen-portfolio-search-label', 'Buscar');
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.setAttribute('aria-label', 'Filtrar telas por nome ou rota');
+    search.placeholder = 'Nome do projeto, tela ou rota';
+    search.value = state.portfolioQuery;
+    search.addEventListener('input', () => {
+      state.portfolioQuery = search.value;
+      renderScreenPortfolio(container);
+      const nextSearch = container.querySelector('[aria-label="Filtrar telas por nome ou rota"]');
+      nextSearch?.focus();
+      nextSearch?.setSelectionRange(state.portfolioQuery.length, state.portfolioQuery.length);
+    });
+    searchLabel.appendChild(search);
+    const filterLabel = element('label', 'flp-screen-portfolio-filter-label', 'Estado da captura');
+    const filter = document.createElement('select');
+    filter.setAttribute('aria-label', 'Estado da captura');
+    for (const [value, label] of [['all', 'Todos os estados'], ['captured', 'Com captura'], ['historical', 'Históricas'], ['unmeasured', 'Sem captura']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      filter.appendChild(option);
+    }
+    filter.value = state.portfolioCaptureFilter;
+    filter.addEventListener('change', () => {
+      state.portfolioCaptureFilter = filter.value;
+      renderScreenPortfolio(container);
+    });
+    filterLabel.appendChild(filter);
+    controls.append(searchLabel, filterLabel);
+    container.append(head, summary, controls);
+    renderSystemScreenMap(container);
+    if (!state.shellScreenMap && !state.shellScreenMapLoading && !state.shellScreenMapError) loadSystemScreenMap();
+
+    const grid = element('div', 'flp-screen-portfolio-grid');
+    for (const project of state.projects) {
+      const allProjectScreens = getProjectScreens(project);
+      if (!state.registeredScreens.has(project.id) && !state.registeredScreensLoading.has(project.id)) loadRegisteredScreens(project);
+      const query = state.portfolioQuery.trim().toLocaleLowerCase();
+      const projectScreens = allProjectScreens.filter((screen) => {
+        const matchesQuery = !query || [project.name, screen.name, screen.title, screen.route, screen.sourceFile].some((value) => String(value || '').toLocaleLowerCase().includes(query));
+        const hasCapture = Boolean(screen.screenshotPath);
+        const matchesCapture = state.portfolioCaptureFilter === 'all'
+          || (state.portfolioCaptureFilter === 'historical' && screen.screenshotFreshness === 'ARCHIVED')
+          || (state.portfolioCaptureFilter === 'captured' && hasCapture && screen.screenshotFreshness !== 'ARCHIVED')
+          || (state.portfolioCaptureFilter === 'unmeasured' && !hasCapture);
+        return matchesQuery && matchesCapture;
+      });
+      if ((query || state.portfolioCaptureFilter !== 'all') && !projectScreens.length) continue;
+      const card = element('section', 'flp-screen-portfolio-project');
+      const title = element('div', 'flp-screen-portfolio-project-title');
+      title.append(element('div', '', project.name || project.id), element('small', '', `${projectScreens.length} de ${allProjectScreens.length} tela(s) · ${project.workspace || 'workspace não vinculado'}`));
+      const open = element('button', 'flp-button flp-button-soft', 'Abrir projeto e telas');
+      open.type = 'button';
+      open.addEventListener('click', () => {
+        state.hubViewMode = 'fenix';
+        state.workspaceTab = 'screens';
+        $('flpModeFenix').classList.add('active');
+        $('flpModeScreens').classList.remove('active');
+        $('flpFenixSidebarView').style.display = 'block';
+        selectProject(project.id);
+        loadRegisteredScreens(project);
+      });
+      title.appendChild(open);
+      card.appendChild(title);
+      if (!projectScreens.length) {
+        const empty = element('p', 'flp-empty', state.registeredScreensLoading.has(project.id)
+          ? 'Consultando registros de telas…'
+          : 'Nenhuma tela registrada. Abra o projeto para mapear seu workspace.');
+        card.appendChild(empty);
+      } else {
+        const previews = element('div', 'flp-screen-portfolio-previews');
+        const expanded = state.expandedPortfolioProjects.has(project.id);
+        for (const screen of (expanded ? projectScreens : projectScreens.slice(0, 4))) {
+          const preview = element('article', 'flp-screen-portfolio-preview');
+          const screenLabel = screen.name || screen.title || screen.screenId || screen.route || 'Tela sem nome';
+          const media = element('div', 'flp-screen-preview-media');
+          const showUnavailable = (label) => {
+            media.classList.add('is-unavailable');
+            media.replaceChildren(element('span', 'flp-screen-preview-glyph', '▧'), element('span', 'flp-screen-preview-label', label));
+          };
+          if (screen.screenshotPath) {
+            const image = document.createElement('img');
+            image.src = screen.screenshotPath;
+            image.alt = `Captura registrada: ${screenLabel}`;
+            image.loading = 'lazy';
+            image.onload = () => {
+              if (image.naturalWidth < 64 || image.naturalHeight < 36) showUnavailable('Captura em baixa resolução');
+            };
+            image.onerror = () => showUnavailable('Captura indisponível');
+            media.appendChild(image);
+          } else {
+            preview.classList.add('no-capture');
+            showUnavailable('Prévia não medida');
+          }
+          preview.append(media, element('strong', '', screenLabel), element('code', '', screen.route || 'Rota não registrada'));
+          if (screen.showApplicationScope && screen.applicationId) {
+            preview.appendChild(element('small', 'flp-screen-app-scope', `Aplicação: ${screen.applicationName || screen.applicationId}`));
+          }
+          if (screen.screenshotFreshness === 'ARCHIVED') preview.append(element('small', '', `Histórica · ${screen.screenshotCapturedOn || 'data não informada'}`));
+          const inspect = element('button', 'flp-screen-inspect', `Inspecionar ${screenLabel}`);
+          inspect.type = 'button';
+          inspect.addEventListener('click', () => openInspector(screen, project));
+          preview.appendChild(inspect);
+          previews.appendChild(preview);
+        }
+        card.appendChild(previews);
+        if (projectScreens.length > 4) {
+          const expand = element('button', 'flp-button flp-button-soft flp-screen-expand', expanded ? 'Recolher telas' : `Ver todas as ${projectScreens.length} telas`);
+          expand.type = 'button';
+          expand.addEventListener('click', () => {
+            if (expanded) state.expandedPortfolioProjects.delete(project.id);
+            else state.expandedPortfolioProjects.add(project.id);
+            renderScreenPortfolio(container);
+          });
+          card.appendChild(expand);
+        }
+      }
+      grid.appendChild(card);
+    }
+    if (grid.childElementCount === 1 && grid.firstElementChild.classList.contains('flp-screen-portfolio-project')) grid.classList.add('is-single-project');
+    if (!state.projects.length) grid.appendChild(element('p', 'flp-empty', 'O Project Kernel não retornou projetos nesta sessão.'));
+    else if (!grid.childElementCount) grid.appendChild(element('p', 'flp-empty', 'Nenhuma tela corresponde aos filtros. Limpe a busca ou selecione outro estado de captura.'));
+    container.appendChild(grid);
+  }
+
+  function renderSystemScreenMap(container) {
+    const panel = element('section', 'flp-shell-screen-map');
+    panel.setAttribute('role', 'region');
+    panel.setAttribute('aria-label', 'Mapa de telas do GRG SPACE');
+    const head = element('div', 'flp-shell-screen-map-head');
+    const title = element('div');
+    title.append(element('span', 'flp-eyebrow', 'FÊNIX · MAPA DO SHELL'), element('h3', '', 'Telas do GRG SPACE'));
+    title.append(element('p', '', 'Rotas encontradas no HTML da aplicação. A descoberta estática não comprova que a tela ou seus controles funcionem em runtime.'));
+    const refresh = element('button', 'flp-button flp-button-soft', state.shellScreenMapLoading ? 'Atualizando…' : 'Atualizar mapa');
+    refresh.type = 'button';
+    refresh.disabled = state.shellScreenMapLoading;
+    refresh.addEventListener('click', () => loadSystemScreenMap(true));
+    head.append(title, refresh);
+    panel.appendChild(head);
+
+    const map = state.shellScreenMap;
+    if (state.shellScreenMapLoading && !map) panel.appendChild(element('p', 'flp-empty', 'Lendo o catálogo real de rotas…'));
+    else if (state.shellScreenMapError && !map) {
+      const error = element('p', 'flp-empty', `Mapa indisponível: ${state.shellScreenMapError}`);
+      panel.appendChild(error);
+    } else if (!map?.screens?.length) panel.appendChild(element('p', 'flp-empty', 'A API não retornou telas para o shell.'));
+    else {
+      const evidence = element('div', 'flp-shell-screen-map-evidence');
+      evidence.append(element('strong', '', `${map.totalScreens ?? map.screens.length} rotas canônicas`), element('span', '', 'Inventário do HTML'), element('span', '', 'Runtime não verificado'));
+      if (map.legacyRouteCount) evidence.append(element('span', '', `${map.legacyRouteCount} aliases legados ocultos`));
+      const list = element('div', 'flp-shell-screen-map-list');
+      const visibleScreens = state.shellScreenMapExpanded ? map.screens : map.screens.slice(0, 4);
+      const domainLabels = { command: 'Comando', build: 'Construção', intelligence: 'Inteligência', infrastructure: 'Infraestrutura', validation: 'Validação' };
+      const groups = new Map();
+      for (const screen of visibleScreens) {
+        const domain = domainLabels[screen.domain] ? screen.domain : 'other';
+        if (!groups.has(domain)) groups.set(domain, []);
+        groups.get(domain).push(screen);
+      }
+      for (const [domain, domainScreens] of groups) {
+        const group = element('section', 'flp-shell-screen-domain');
+        const groupHead = element('header', 'flp-shell-screen-domain-head');
+        groupHead.append(element('h4', '', domainLabels[domain] || 'Sem domínio mapeado'), element('span', '', `${domainScreens.length} ${domainScreens.length === 1 ? 'tela' : 'telas'}`));
+        const domainList = element('div', 'flp-shell-screen-domain-items');
+        for (const screen of domainScreens) {
+          const item = element('article', 'flp-shell-screen-map-item');
+          const label = element('div', 'flp-shell-screen-map-label');
+          label.append(element('strong', '', screen.title || screen.screenId || 'Tela sem nome'), element('code', '', screen.route || 'Rota não registrada'));
+          if (screen.purpose) label.append(element('small', 'flp-shell-screen-map-purpose', screen.purpose));
+          const source = element('small', '', `${screen.relPath || 'Origem não informada'} · ${screen.verificationStatus === 'VERIFIED' ? 'verificada' : 'não verificada'}`);
+          const contractParts = [];
+          const readCount = Array.isArray(screen.readEndpoints) ? screen.readEndpoints.length : 0;
+          const actionCount = Array.isArray(screen.actionEndpoints) ? screen.actionEndpoints.length : 0;
+          if (readCount) contractParts.push(`${readCount} ${readCount === 1 ? 'leitura' : 'leituras'}`);
+          if (actionCount) contractParts.push(`${actionCount} ${actionCount === 1 ? 'ação declarada' : 'ações declaradas'}`);
+          const contract = contractParts.length
+            ? element('small', 'flp-shell-screen-map-contract', contractParts.join(' · '))
+            : null;
+          const route = String(screen.route || '').trim();
+          const button = element('button', 'flp-screen-open-route', 'Abrir tela');
+          button.type = 'button';
+          button.disabled = !/^#?[a-z0-9_-]+$/i.test(route.replace(/^#/, ''));
+          button.setAttribute('aria-label', `Abrir tela ${screen.title || screen.screenId || ''}`);
+          button.addEventListener('click', () => {
+            const viewId = route.replace(/^#/, '').replace(/^\//, '');
+            if (!/^[a-z0-9_-]+$/i.test(viewId)) return;
+            if (typeof window.showView === 'function') window.showView(viewId);
+            else window.location.hash = `#${viewId}`;
+          });
+          item.append(label, source, button);
+          if (contract) item.appendChild(contract);
+          domainList.appendChild(item);
+        }
+        group.append(groupHead, domainList);
+        list.appendChild(group);
+      }
+      panel.append(evidence, list);
+      if (map.screens.length > 4) {
+        const expand = element('button', 'flp-button flp-button-soft flp-shell-screen-map-expand', state.shellScreenMapExpanded ? 'Recolher mapa' : `Ver todas as ${map.screens.length} telas`);
+        expand.type = 'button';
+        expand.addEventListener('click', () => {
+          state.shellScreenMapExpanded = !state.shellScreenMapExpanded;
+          renderScreenPortfolio(container);
+        });
+        panel.appendChild(expand);
+      }
+      if (state.shellScreenMapError) panel.appendChild(element('small', 'flp-shell-screen-map-stale', `Atualização falhou; exibindo o último mapa carregado. ${state.shellScreenMapError}`));
+    }
+    container.appendChild(panel);
+  }
+
+  async function loadSystemScreenMap(force = false) {
+    if (state.shellScreenMapLoading || (!force && state.shellScreenMap)) return;
+    state.shellScreenMapLoading = true;
+    state.shellScreenMapError = null;
+    const container = $('flpDetail');
+    if (state.hubViewMode === 'screens' && container) renderScreenPortfolio(container);
+    try {
+      const [result, manifest] = await Promise.all([
+        json('/api/v2/frontend-reality/screens?projectId=fenix_enterprise&mode=shell'),
+        json('/project-screen-manifest.json?v=1').catch(() => null)
+      ]);
+      const discovered = Array.isArray(result.screens) ? result.screens : [];
+      const screens = discovered
+        .filter((screen) => !legacyShellRoutes.has(String(screen.route || '').toLowerCase()))
+        .map((screen) => {
+          const routeKey = String(screen.route || '').split('#').pop().split('?')[0].replace(/^\/+/, '').toLowerCase();
+          const spec = manifest?.screens?.[routeKey];
+          const domain = Object.entries(manifest?.domains || {}).find(([, members]) => Array.isArray(members) && members.includes(routeKey))?.[0];
+          return {
+            ...screen,
+            domain: screen.domain || domain || null,
+            purpose: screen.purpose || spec?.purpose || null,
+            readEndpoints: Array.isArray(screen.readEndpoints) ? screen.readEndpoints : (spec?.readEndpoints || []),
+            actionEndpoints: Array.isArray(screen.actionEndpoints) ? screen.actionEndpoints : (spec?.actionEndpoints || [])
+          };
+        });
+      state.shellScreenMap = { screens, totalScreens: screens.length, legacyRouteCount: discovered.length - screens.length, status: result.status, verificationStatus: result.verificationStatus };
+    } catch (error) {
+      state.shellScreenMapError = error.message;
+    } finally {
+      state.shellScreenMapLoading = false;
+      if (state.hubViewMode === 'screens' && container) renderScreenPortfolio(container);
+    }
+  }
+
+  async function loadRegisteredScreens(project) {
+    if (!project || state.registeredScreens.has(project.id) || state.registeredScreensLoading.has(project.id)) return;
+    const registryId = project.id === 'api-platform-live' ? 'api-platform' : project.id;
+    state.registeredScreensLoading.add(project.id);
+    try {
+      const result = await json(`/api/v2/pages?projectId=${encodeURIComponent(registryId)}`);
+      const captures = (Array.isArray(result.pages) ? result.pages : [])
+        .filter((page) => page.screenshot && page.screenshotFreshness === 'ARCHIVED')
+        .map((page) => ({
+          screenId: page.id,
+          name: page.title,
+          route: page.route,
+          screenshotPath: page.screenshot,
+          screenshotFreshness: page.screenshotFreshness,
+          screenshotCapturedOn: page.screenshotCapturedOn,
+          components: page.component ? [page.component] : [],
+          source: 'PageRegistry'
+        }));
+      state.registeredScreens.set(project.id, captures);
+    } catch (error) {
+      state.registeredScreens.set(project.id, []);
+      state.registeredScreensErrors.set(project.id, error.message);
+    } finally {
+      state.registeredScreensLoading.delete(project.id);
+      if (state.hubViewMode === 'screens') renderScreenPortfolio($('flpDetail'));
+      else if (state.selected === project.id && state.workspaceTab === 'screens') renderDetail();
+    }
+  }
+
+  async function loadProjectAbsorption(project) {
+    if (!project || !workspaceIsAvailable(project) || project.entryFile || state.absorptions.has(project.id) || state.absorptionLoading.has(project.id)) return;
+    state.absorptionLoading.add(project.id);
+    try {
+      const report = await json(`/api/v2/company/projects/${encodeURIComponent(project.id)}/absorption`, { signal: AbortSignal.timeout(120000) });
+      if (report && Array.isArray(report.screens)) {
+        state.absorptions.set(project.id, report);
+        state.registeredScreensErrors.delete(project.id);
+      }
+    } catch (error) {
+      if (error.status !== 404) state.registeredScreensErrors.set(project.id, error.message);
+    } finally {
+      state.absorptionLoading.delete(project.id);
+      if (state.selected === project.id && state.workspaceTab === 'screens') renderDetail();
+    }
   }
 
   function renderCompanyTab(container, project, detail) {
-    const compName = project.companyName || project.companyId || 'Empresa Operacional';
     const panel = element('section', 'flp-panel');
-    panel.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
-        <div style="display:flex; gap:12px; align-items:center;">
-          <div style="width:44px; height:44px; border-radius:10px; background:rgba(0,217,255,0.15); border:1px solid #00D9FF; display:flex; align-items:center; justify-content:center; color:#00D9FF; font-size:24px;">
-            <i class="ph-bold ph-buildings"></i>
-          </div>
-          <div>
-            <div style="font-size:11px; color:#94A3B8; text-transform:uppercase;">Empresa Vinculada ao Projeto</div>
-            <h3 style="margin:2px 0; color:#F8FAFC; font-size:16px;">${compName}</h3>
-            <span style="font-size:10px; color:#10B981; font-weight:700;">● OPERACIONAL RUNTIME</span>
-          </div>
-        </div>
-        <div style="display:flex; gap:8px;">
-          <button type="button" class="flp-button flp-button-soft" onclick="window.showView?.('city'); window.GlobalSelectionStore?.select('company', '${project.companyId}');">
-            🏙️ Ver no World 3D
-          </button>
-          <button type="button" class="flp-button flp-button-primary" onclick="window.fenixOpenSystemInspector?.('${project.companyId}')">
-            ⚡ Inspetor Executivo
-          </button>
-        </div>
-      </div>
-      <div class="flp-facts" style="margin-bottom:14px;">
-        <div class="flp-fact"><span>Estrutura Corporativa</span><strong>SaaS Multi-Tenant / Fastify / BullMQ</strong></div>
-        <div class="flp-fact"><span>SLA de Latência</span><strong>&lt; 200ms (P95)</strong></div>
-        <div class="flp-fact"><span>Taxa de Autonomia</span><strong>Nível 4 (Autonomous Execution)</strong></div>
-        <div class="flp-fact"><span>Esquadrão Alocado</span><strong>${detail?.activeAgents?.length || 4} Agentes Ativos</strong></div>
-      </div>
-      <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px;">
-        <h4 style="margin:0 0 8px 0; font-size:12px; color:#38BDF8; display:flex; align-items:center; gap:6px;">
-          <i class="ph-bold ph-target"></i> Metas & OKRs em Execução
-        </h4>
-        <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px; color:#E2E8F0;">
-          <div style="display:flex; justify-content:space-between; padding:6px; background:rgba(255,255,255,0.02); border-radius:4px;">
-            <span>Inferência de Modelos Locais na VPS (Qwen 2.5 + DeepSeek R1)</span>
-            <span style="color:#10B981; font-weight:700;">100% ATIVO</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; padding:6px; background:rgba(255,255,255,0.02); border-radius:4px;">
-            <span>Paridade Dual de Webroot & Zero-Mock Telemetry</span>
-            <span style="color:#10B981; font-weight:700;">100% PASS</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; padding:6px; background:rgba(255,255,255,0.02); border-radius:4px;">
-            <span>Fila Persistente de Background Workers (BullMQ Redis)</span>
-            <span style="color:#00D9FF; font-weight:700;">ONLINE (:6380)</span>
-          </div>
-        </div>
-      </div>
-    `;
+    const head = element('div', 'flp-dna-board-head');
+    const identity = element('div');
+    identity.append(
+      element('span', 'flp-eyebrow', 'EMPRESA · DADOS DO PROJETO'),
+      element('h3', '', project.companyName || project.companyId || project.name || project.id),
+      element('p', '', 'Os valores abaixo vêm do cadastro e do runtime; campos sem evidência aparecem como não medidos.')
+    );
+    const actions = element('div', 'flp-dna-actions');
+    if (project.companyId) {
+      const world = element('button', 'flp-button flp-button-soft', 'Ver no World');
+      world.type = 'button';
+      world.addEventListener('click', () => {
+        window.showView?.('city');
+        window.GlobalSelectionStore?.select('company', project.companyId);
+      });
+      const inspector = element('button', 'flp-button flp-button-primary', 'Abrir inspetor');
+      inspector.type = 'button';
+      inspector.addEventListener('click', () => window.fenixOpenSystemInspector?.(project.companyId));
+      actions.append(world, inspector);
+    }
+    head.append(identity, actions);
+    panel.appendChild(head);
+
+    const metrics = element('div', 'flp-facts');
+    const stack = [project.framework, project.technology, project.stack].find(Boolean);
+    const latency = project.metrics?.latencyP95Ms ?? project.latencyP95Ms;
+    const autonomy = project.autonomyLevel;
+    const agents = detail?.activeAgents;
+    metrics.append(
+      row('Status informado', text(project.status, 'Não informado pela API')),
+      row('Tecnologia', text(stack, 'Não mapeada')),
+      row('Latência p95', Number.isFinite(latency) ? `${latency} ms` : 'Não medida'),
+      row('Autonomia', autonomy == null ? 'Não informada' : text(autonomy)),
+      row('Agentes vinculados', Array.isArray(agents) ? String(agents.length) : 'Não informado pelo runtime')
+    );
+    panel.appendChild(metrics);
     container.appendChild(panel);
   }
 
@@ -628,93 +2359,709 @@
     container.appendChild(panel);
   }
 
+  function groupScreensByBranch(screens) {
+    const branches = new Map();
+    for (const screen of screens) {
+      const route = String(screen.route || '').trim().split(/[?#]/, 1)[0].replace(/\\/g, '/');
+      const sourceFile = String(screen.sourceFile || '').trim().replace(/\\/g, '/');
+      const routeParts = route.split('/').filter(Boolean);
+      const fileParts = sourceFile.split('/').filter(Boolean);
+      const fromFile = routeParts.length === 0 && fileParts.length > 1;
+      const key = fromFile ? `arquivo:${fileParts[0]}` : routeParts.length ? `rota:/${routeParts[0]}` : 'sem-ramo';
+      const label = fromFile ? `Arquivo · ${fileParts[0]}` : routeParts.length ? `/${routeParts[0]}` : 'Sem rota ou arquivo';
+      const group = branches.get(key) || { key, label, inferredFromFile: fromFile, screens: [] };
+      group.screens.push(screen);
+      branches.set(key, group);
+    }
+    return [...branches.values()];
+  }
+
   function renderScreensTab(container, project, screens) {
-    const panel = element('section', 'flp-panel');
-    panel.append(element('h3', '', 'Screen DNA · Catálogo de Telas Absorvidas'));
-    
+    if (!state.absorptions.has(project.id) && !state.absorptionLoading.has(project.id)) loadProjectAbsorption(project);
+    const panel = element('section', 'flp-panel flp-dna-board');
+    const head = element('div', 'flp-dna-board-head');
+    const heading = element('div');
+    const registryOnly = screens.length > 0 && screens.every((screen) => screen.source === 'PageRegistry');
+    const loading = state.registeredScreensLoading.has(project.id) || state.absorptionLoading.has(project.id);
+    const error = state.registeredScreensErrors.get(project.id);
+    heading.append(element('span', 'flp-eyebrow', 'SCREEN DNA · WORKSPACE VISUAL'));
+    heading.append(element('h3', '', project.name || project.id));
+    heading.append(element('p', '', registryOnly
+      ? `${screens.length} capturas históricas · não representam o runtime atual`
+      : `${screens.length} tela(s) no catálogo · descoberta de código e capturas são identificadas separadamente`));
+    const mapScreens = element('button', 'flp-button flp-button-primary', state.absorptions.has(project.id) ? 'Atualizar mapa de telas' : 'Mapear telas do projeto');
+    mapScreens.type = 'button';
+    mapScreens.disabled = !workspaceIsAvailable(project) || Boolean(project.entryFile);
+    mapScreens.addEventListener('click', async () => {
+      mapScreens.disabled = true;
+      mapScreens.textContent = 'Mapeando…';
+      try {
+        const report = await json('/api/v2/company/projects/absorb', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId: project.id, projectName: project.name, workspacePath: project.workspace })
+        });
+        state.absorptions.set(project.id, report);
+        state.registeredScreens.delete(project.id);
+        state.registeredScreensErrors.delete(project.id);
+        renderDetail();
+      } catch (error) {
+        mapScreens.disabled = false;
+        mapScreens.textContent = `Falha ao mapear · tentar novamente`;
+        mapScreens.title = error.message;
+      }
+    });
+    const openIde = element('button', 'flp-button flp-button-soft', 'Abrir workspace');
+    openIde.type = 'button';
+    openIde.disabled = !workspaceIsAvailable(project);
+    openIde.addEventListener('click', () => openProjectInIde(project));
+    const actions = element('div', 'flp-dna-actions');
+    actions.append(mapScreens, openIde);
+    head.append(heading, actions);
+    panel.appendChild(head);
+
     if (!screens.length) {
-      const empty = element('div', 'flp-empty', 'Nenhuma tela absorvida ainda para este projeto. Clique em "Absorver DNA" acima para mapear telas com Playwright.');
+      const message = loading
+          ? 'Consultando o mapa de telas e as capturas registradas do projeto…'
+        : error
+          ? `Não foi possível consultar as telas: ${error}`
+          : project.entryFile
+            ? 'Projeto de arquivo individual. A IDE pode ler somente o arquivo listado; análise de pasta e captura de runtime não são aplicáveis.'
+            : 'Este projeto ainda não tem telas no catálogo. Mapeie o workspace para descobrir rotas e arquivos de interface; isso não cria capturas nem mede a tela em execução.';
+      const empty = element('div', 'flp-dna-empty', message);
       panel.appendChild(empty);
       container.appendChild(panel);
       return;
     }
 
-    const grid = element('div', 'flp-screens-grid');
-    for (const screen of screens) {
-      const card = element('div', 'flp-screen-card');
-      const thumb = element('div', 'flp-screen-thumb');
+    const boardPrefsKey = `fenix_screen_dna_preferences:${project.id}`;
+    let boardPrefs = { layout: 'grid', captureFilter: 'all' };
+    try {
+      const saved = JSON.parse(localStorage.getItem(boardPrefsKey) || '{}');
+      if (saved.layout === 'list') boardPrefs.layout = 'list';
+      if (['captured', 'unmeasured', 'historical'].includes(saved.captureFilter)) boardPrefs.captureFilter = saved.captureFilter;
+    } catch { /* Ignore malformed local board preferences. */ }
+    const toolbar = element('div', 'flp-dna-toolbar');
+    const searchLabel = element('label', 'flp-dna-search-label', 'Buscar tela');
+    const searchInput = element('input', 'flp-input flp-dna-search');
+    searchInput.id = 'flpDnaSearch';
+    searchInput.type = 'search';
+    searchInput.placeholder = 'Nome, rota ou arquivo';
+    searchInput.setAttribute('aria-label', 'Buscar tela por nome, rota ou arquivo');
+    searchLabel.appendChild(searchInput);
+    const captureLabel = element('label', 'flp-dna-capture-label', 'Captura');
+    const captureFilter = element('select', 'flp-input flp-dna-capture-filter');
+    captureFilter.id = 'flpDnaCaptureFilter';
+    captureFilter.setAttribute('aria-label', 'Filtrar telas pelo estado da captura');
+    for (const [value, label] of [['all', 'Todas'], ['captured', 'Com captura'], ['unmeasured', 'Sem captura'], ['historical', 'Históricas']]) {
+      const option = element('option', '', label);
+      option.value = value;
+      captureFilter.appendChild(option);
+    }
+    captureFilter.value = boardPrefs.captureFilter;
+    captureLabel.appendChild(captureFilter);
+    const layoutControl = element('div', 'flp-dna-layout-control');
+    layoutControl.setAttribute('role', 'group');
+    layoutControl.setAttribute('aria-label', 'Layout do catálogo de telas');
+    const layoutButtons = [];
+    for (const [layout, label] of [['grid', 'Grade'], ['list', 'Lista']]) {
+      const button = element('button', 'flp-button flp-button-soft', label);
+      button.type = 'button';
+      button.dataset.dnaLayout = layout;
+      button.setAttribute('aria-pressed', String(boardPrefs.layout === layout));
+      button.addEventListener('click', () => {
+        boardPrefs.layout = layout;
+        board.classList.toggle('is-list', layout === 'list');
+        for (const item of layoutButtons) item.setAttribute('aria-pressed', String(item === button));
+        try { localStorage.setItem(boardPrefsKey, JSON.stringify(boardPrefs)); } catch { /* Layout still works for this render. */ }
+      });
+      layoutButtons.push(button);
+      layoutControl.appendChild(button);
+    }
+    const resultCount = element('span', 'flp-dna-result-count');
+    toolbar.append(searchLabel, captureLabel, layoutControl, resultCount);
+    panel.appendChild(toolbar);
+
+    const board = element('div', 'flp-dna-canvas');
+    board.classList.toggle('is-list', boardPrefs.layout === 'list');
+    board.setAttribute('role', 'region');
+    board.setAttribute('aria-label', `Telas observadas do projeto ${project.name || project.id}`);
+    const projectNode = element('div', 'flp-dna-project-node');
+    const projectIdentity = element('div', 'flp-dna-project-identity');
+    const projectLogo = element('span', 'flp-dna-project-logo');
+    if (project.logoUrl) {
+      const logoImage = document.createElement('img');
+      logoImage.src = project.logoUrl;
+      logoImage.alt = '';
+      logoImage.loading = 'lazy';
+      logoImage.onerror = () => { logoImage.remove(); projectLogo.textContent = String(project.name || project.id || '?').trim().slice(0, 1).toUpperCase(); };
+      projectLogo.appendChild(logoImage);
+    } else projectLogo.textContent = String(project.name || project.id || '?').trim().slice(0, 1).toUpperCase();
+    projectIdentity.append(projectLogo, element('strong', '', project.name || project.id));
+    const projectVersion = project.projectVersion || project.currentVersion;
+    if (projectVersion) projectIdentity.append(element('span', 'flp-card-version', `v${projectVersion}`));
+    projectNode.append(element('span', '', 'PROJETO'), projectIdentity, element('small', '', project.workspace || 'Workspace não vinculado'));
+    const orderKey = `fenix_screen_dna_order:${project.id}`;
+    const screenId = (screen) => String(screen.screenId || screen.id || screen.route || screen.name || 'screen');
+    const orderStatus = element('span', 'flp-dna-board-order-status', 'Quadro do projeto');
+    const orderControls = element('div', 'flp-dna-board-order-controls');
+    const resetOrder = element('button', 'flp-button flp-button-soft', 'Restaurar ordem');
+    resetOrder.type = 'button';
+    resetOrder.addEventListener('click', () => {
+      try { localStorage.removeItem(orderKey); } catch { /* Browser storage can be disabled. */ }
+      renderDetail();
+    });
+    orderControls.append(orderStatus, resetOrder);
+    panel.appendChild(orderControls);
+    const noResults = element('p', 'flp-dna-no-results', 'Nenhuma tela corresponde aos filtros.');
+    noResults.hidden = true;
+    noResults.setAttribute('role', 'status');
+    let applyFilters = () => {};
+    captureFilter.addEventListener('change', () => {
+      boardPrefs.captureFilter = captureFilter.value;
+      try { localStorage.setItem(boardPrefsKey, JSON.stringify(boardPrefs)); } catch { /* Filter still works for this render. */ }
+      applyFilters();
+    });
+    searchInput.addEventListener('input', () => applyFilters());
+    let storedOrder = [];
+    try {
+      const value = JSON.parse(localStorage.getItem(orderKey) || '[]');
+      if (Array.isArray(value)) storedOrder = value.filter((id) => typeof id === 'string');
+    } catch { /* Ignore malformed browser-local board preferences. */ }
+    const rank = new Map(storedOrder.map((id, index) => [id, index]));
+    let orderedScreens = [...screens].sort((left, right) =>
+      (rank.get(screenId(left)) ?? Number.MAX_SAFE_INTEGER) - (rank.get(screenId(right)) ?? Number.MAX_SAFE_INTEGER));
+    const batchSize = 48;
+    let screenLimit = batchSize;
+    let filteredScreens = orderedScreens;
+    let draggedCard = null;
+    const loadMore = element('button', 'flp-button flp-button-soft flp-dna-load-more', 'Carregar mais telas');
+    loadMore.type = 'button';
+    loadMore.hidden = true;
+    loadMore.addEventListener('click', () => {
+      screenLimit = Math.min(filteredScreens.length, screenLimit + batchSize);
+      renderScreenBoard();
+      updateScreenResultCount();
+    });
+    const updateScreenResultCount = () => {
+      const shown = Math.min(screenLimit, filteredScreens.length);
+      resultCount.textContent = `${shown} exibida(s) de ${filteredScreens.length} tela(s) · ${screens.length} registradas`;
+      loadMore.hidden = shown >= filteredScreens.length;
+      if (!loadMore.hidden) loadMore.textContent = `Carregar mais telas (${filteredScreens.length - shown} restantes)`;
+      noResults.hidden = filteredScreens.length > 0;
+    };
+    const saveBoardOrder = () => {
+      try {
+        const visibleIds = [...board.querySelectorAll('.flp-dna-node')].map((card) => card.dataset.screenId);
+        const visibleSet = new Set(visibleIds);
+        const fullOrder = orderedScreens.map(screenId);
+        let visibleIndex = 0;
+        const mergedOrder = fullOrder.map((id) => visibleSet.has(id) ? visibleIds[visibleIndex++] : id);
+        storedOrder = mergedOrder;
+        const nextRank = new Map(storedOrder.map((id, index) => [id, index]));
+        orderedScreens.sort((left, right) => (nextRank.get(screenId(left)) ?? Number.MAX_SAFE_INTEGER) - (nextRank.get(screenId(right)) ?? Number.MAX_SAFE_INTEGER));
+        localStorage.setItem(orderKey, JSON.stringify(mergedOrder));
+        orderStatus.textContent = 'Ordem salva neste navegador';
+      } catch {
+        orderStatus.textContent = 'Ordem válida somente nesta sessão';
+      }
+    };
+    const renderScreenBoard = () => {
+      board.replaceChildren(projectNode);
+      for (const branch of groupScreensByBranch(filteredScreens.slice(0, screenLimit))) {
+      const branchSection = element('section', 'flp-dna-branch');
+      const branchHead = element('div', 'flp-dna-branch-head');
+      branchHead.append(element('strong', '', branch.label), element('span', '', `${branch.screens.length} carregada(s)`));
+      if (branch.inferredFromFile) branchHead.append(element('small', '', 'Grupo inferido pelo arquivo · rota não registrada'));
+      branchSection.appendChild(branchHead);
+      const grid = element('div', 'flp-dna-nodes');
+      for (const screen of branch.screens) {
+      const screenLabel = screen.name || screen.title || screen.screenId || screen.route || 'Tela sem nome registrado';
+      const card = element('article', 'flp-dna-node');
+      card.draggable = true;
+      card.dataset.screenId = screenId(screen);
+      card.dataset.search = normalizeProjectKey([screenLabel, screen.route, screen.sourceFile, screen.source].filter(Boolean).join(' '));
+      card.dataset.captureState = screen.screenshotFreshness === 'ARCHIVED' ? 'historical'
+        : screen.captureStatus === 'CAPTURED' || screen.screenshotPath ? 'captured' : 'unmeasured';
+      card.addEventListener('dragstart', () => { draggedCard = card; card.classList.add('is-dragging'); });
+      card.addEventListener('dragend', () => { card.classList.remove('is-dragging'); draggedCard = null; });
+      card.addEventListener('dragover', (event) => event.preventDefault());
+      card.addEventListener('drop', (event) => {
+        event.preventDefault();
+        if (draggedCard && draggedCard !== card) {
+          grid.insertBefore(draggedCard, card);
+          saveBoardOrder();
+        }
+      });
+      const thumb = element('div', 'flp-dna-preview');
       if (screen.screenshotPath) {
         const img = document.createElement('img');
         img.src = screen.screenshotPath;
-        img.alt = screen.name || 'Captura da tela observada';
-        img.onerror = () => { img.remove(); thumb.appendChild(element('span', 'flp-empty', 'Captura indisponível')); };
+        img.alt = `Captura registrada: ${screenLabel}`;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.onload = () => {
+          if (img.naturalWidth < 64 || img.naturalHeight < 36) {
+            img.remove();
+            thumb.classList.add('is-empty');
+            thumb.appendChild(element('span', 'flp-dna-no-preview', 'Captura em baixa resolução'));
+          }
+        };
+        img.onerror = () => { img.remove(); thumb.classList.add('is-empty'); thumb.appendChild(element('span', 'flp-dna-no-preview', 'Captura indisponível')); };
         thumb.appendChild(img);
       } else {
-        thumb.appendChild(element('span', 'flp-empty', 'Captura não registrada'));
+        thumb.classList.add('is-empty');
+        const emptyState = element('div', 'flp-dna-unmeasured');
+        emptyState.append(element('span', 'flp-dna-unmeasured-icon', '⌘'), element('span', 'flp-dna-no-preview', 'Ainda sem captura visual'));
+        thumb.appendChild(emptyState);
       }
 
-      const body = element('div', 'flp-screen-body');
-      body.append(element('div', 'flp-screen-title', screen.name));
-      body.append(element('div', 'flp-screen-route', screen.route || '/'));
-
-      const meta = element('div', 'flp-screen-meta');
-      meta.append(
-        element('span', '', Number.isFinite(screen.domSummary?.totalNodes) ? `${screen.domSummary.totalNodes} nós DOM` : 'DOM não medido'),
-        element('span', '', Array.isArray(screen.components) ? `${screen.components.length} componentes` : 'Componentes não medidos'),
-        element('span', '', 'Origem: observação registrada')
-      );
+      const body = element('div', 'flp-dna-node-body');
+      body.append(element('strong', 'flp-dna-node-title', screenLabel));
+      body.append(element('code', 'flp-dna-node-route', screen.route || 'Rota não registrada'));
+      const meta = element('div', 'flp-dna-node-meta');
+      const domNodes = Number(screen.domSummary?.totalNodes);
+      const hasMeasuredDom = screen.domSummary?.totalNodes != null && Number.isFinite(domNodes);
+      if (screen.screenshotFreshness === 'ARCHIVED') meta.append(element('span', 'flp-dna-archived', `Captura histórica · ${screen.screenshotCapturedOn || 'data não registrada'} · não é tela ao vivo`));
+      meta.append(element('span', '', screen.captureStatus === 'CAPTURED' || screen.screenshotPath ? 'Captura registrada' : screen.captureStatus === 'CAPTURE_FAILED' ? 'Captura falhou' : 'Sem captura visual'));
+      meta.append(element('span', '', hasMeasuredDom ? `${domNodes} nós DOM medidos` : screen.domInspectionStatus === 'INSPECTED' ? 'DOM inspecionado' : 'DOM não medido'));
+      if (screen.showApplicationScope && screen.applicationId) meta.append(element('span', '', `Aplicação: ${screen.applicationId}`));
+      meta.append(element('span', '', screen.sourceFile ? `Arquivo: ${screen.sourceFile}` : (screen.source || 'Origem não registrada')));
       body.appendChild(meta);
-
-      const inspBtn = element('button', 'flp-button flp-button-primary', 'Inspecionar Screen DNA');
+      if (Array.isArray(screen.componentEvidence) && screen.componentEvidence.length) {
+        const components = element('div', 'flp-dna-components');
+        for (const component of screen.componentEvidence.slice(0, 8)) components.append(element('span', '', component));
+        body.appendChild(components);
+      }
+      const inspBtn = element('button', 'flp-button flp-button-primary', 'Abrir tela');
       inspBtn.type = 'button';
-      inspBtn.style.marginTop = '8px';
       inspBtn.addEventListener('click', () => openInspector(screen, project));
       body.appendChild(inspBtn);
+      const sourceFile = typeof screen.sourceFile === 'string' ? screen.sourceFile.trim() : '';
+      const openSource = element('button', 'flp-button flp-button-soft', sourceFile ? 'Abrir arquivo na IDE' : 'Arquivo de origem não registrado');
+      openSource.type = 'button';
+      openSource.disabled = !sourceFile || !workspaceIsAvailable(project);
+      if (sourceFile) openSource.title = `Abrir ${sourceFile} no workspace deste projeto`;
+      openSource.addEventListener('click', () => openProjectInIde(project, sourceFile, screen));
+      body.appendChild(openSource);
+      const openGraph = element('button', 'flp-button flp-button-soft', 'Ver relações no Flow Graph');
+      openGraph.type = 'button';
+      const graphScreenId = String(screen.screenId || screen.id || screen.route || '').trim();
+      openGraph.addEventListener('click', () => window.fenixOpenFlowGraph?.({
+        context: 'PROJECT', entityId: `project:${project.id}`, absorptionReport: state.absorptions.get(project.id) || null,
+        focusNodeId: graphScreenId ? `screen:${project.id}:${encodeURIComponent(graphScreenId).slice(0, 120)}` : null
+      }));
+      body.appendChild(openGraph);
 
       card.append(thumb, body);
       grid.appendChild(card);
+      }
+      branchSection.appendChild(grid);
+      board.appendChild(branchSection);
     }
-    panel.appendChild(grid);
+    };
+    applyFilters = () => {
+      const query = normalizeProjectKey(searchInput.value);
+      filteredScreens = orderedScreens.filter((screen) => {
+        const label = screen.name || screen.title || screen.screenId || screen.route || '';
+        const searchText = normalizeProjectKey([label, screen.route, screen.sourceFile, screen.source].filter(Boolean).join(' '));
+        const matchesQuery = !query || searchText.includes(query);
+        const hasCapture = screen.captureStatus === 'CAPTURED' || Boolean(screen.screenshotPath);
+        const captureState = screen.screenshotFreshness === 'ARCHIVED' ? 'historical' : hasCapture ? 'captured' : 'unmeasured';
+        return matchesQuery && (boardPrefs.captureFilter === 'all' || captureState === boardPrefs.captureFilter);
+      });
+      screenLimit = batchSize;
+      renderScreenBoard();
+      updateScreenResultCount();
+    };
+    applyFilters();
+    panel.appendChild(noResults);
+    panel.appendChild(board);
+    panel.appendChild(loadMore);
     container.appendChild(panel);
   }
 
+  async function openProjectInIde(project, filePath, screen = null) {
+    const file = String(filePath || '').replace(/\\/g, '/').trim();
+    if ((file && (/^(?:[a-zA-Z]:|\/)/.test(file) || file.split('/').includes('..'))) || !workspaceIsAvailable(project)) return false;
+    try {
+      if (typeof window.fenixSelectIdeProject !== 'function' || typeof window.fenixSelectIdeFile !== 'function') {
+        throw new Error('A IDE não está disponível nesta sessão');
+      }
+      if (typeof window.fenixPrepareIdeNavigation === 'function' && !window.fenixPrepareIdeNavigation()) return false;
+      window.showView?.('ide');
+      await window.fenixSelectIdeProject(project.id);
+      if (screen && typeof window.fenixSetIdePreviewTarget === 'function') {
+        const previewReady = await window.fenixSetIdePreviewTarget(project.id, screen);
+        if (previewReady === false) throw new Error('A prévia não aceitou a tela selecionada deste projeto');
+      }
+      if (file) {
+        const opened = await window.fenixSelectIdeFile(file);
+        if (opened === false) throw new Error(`A IDE não abriu o arquivo ${file}`);
+      }
+      return true;
+    } catch (error) {
+      const status = $('flpMeasured');
+      if (status) {
+        status.textContent = `Não foi possível abrir ${file} na IDE: ${error.message}`;
+        status.dataset.error = 'true';
+      }
+      return false;
+    }
+  }
+
+  const openProjectFileInIde = openProjectInIde;
+
   function renderFilesTab(container, project) {
     const panel = element('section', 'flp-panel');
-    panel.append(element('h3', '', 'Estrutura de Arquivos do Projeto'));
-    const report = state.analyses.get(project.id)?.report;
-    const files = report?.files || [];
-    if (!files.length) {
-      panel.append(element('p', 'flp-empty', 'Nenhum inventário estrutural registrado. Use “Mapear Sistema” para ler o workspace conectado.'));
+    const heading = element('div', 'flp-file-browser-head');
+    heading.append(element('div', '', 'Estrutura de arquivos'), element('small', '', project.workspace || 'Workspace não vinculado'));
+    const actions = element('div', 'flp-file-browser-actions');
+    const refresh = element('button', 'flp-button flp-button-soft', 'Atualizar');
+    refresh.type = 'button';
+    refresh.disabled = state.workspaceTreeLoading.has(project.id);
+    refresh.addEventListener('click', () => {
+      state.workspaceTrees.delete(project.id);
+      state.workspaceTreeErrors.delete(project.id);
+      loadWorkspaceTree(project);
+    });
+    const openIde = element('button', 'flp-button flp-button-primary', 'Abrir na IDE');
+    openIde.type = 'button';
+    openIde.disabled = !workspaceIsAvailable(project);
+    openIde.addEventListener('click', () => openProjectInIde(project));
+    actions.append(refresh, openIde);
+    heading.appendChild(actions);
+    panel.appendChild(heading);
+
+    if (!workspaceIsAvailable(project)) {
+      panel.append(element('p', 'flp-empty', 'O caminho deste projeto não está disponível neste computador.'));
       container.appendChild(panel);
       return;
     }
-    const list = element('div', 'flp-git-changes');
-    for (const f of files) {
-      const item = element('div', 'flp-git-file');
-      item.append(element('span', '', `📄 ${f.path} · ${f.size} bytes`));
-      list.appendChild(item);
+
+    if (!state.workspaceTrees.has(project.id)) {
+      const error = state.workspaceTreeErrors.get(project.id);
+      panel.append(element('p', 'flp-empty', error ? `Falha ao ler a pasta: ${error}` : 'Lendo pastas e arquivos…'));
+      if (!state.workspaceTreeLoading.has(project.id)) loadWorkspaceTree(project);
+      container.appendChild(panel);
+      return;
     }
-    panel.appendChild(list);
+
+    const tree = state.workspaceTrees.get(project.id);
+    const summary = element('p', 'flp-file-browser-summary', `${tree.fileCount} arquivos visíveis · listagem limitada a 3 níveis por segurança`);
+    const list = element('div', 'flp-file-browser-tree');
+    for (const node of tree.items) list.appendChild(renderWorkspaceNode(node, project, 0));
+    if (!tree.items.length) list.appendChild(element('p', 'flp-empty', 'Nenhum arquivo ou pasta visível neste workspace.'));
+    panel.append(summary, list);
     container.appendChild(panel);
+  }
+
+  async function loadWorkspaceTree(project) {
+    if (!project?.id || state.workspaceTreeLoading.has(project.id)) return;
+    state.workspaceTreeLoading.add(project.id);
+    try {
+      const response = await json(`/api/fenix/projects/${encodeURIComponent(project.id)}/tree`);
+      const items = Array.isArray(response.tree) ? response.tree : [];
+      const countFiles = (nodes) => nodes.reduce((total, node) => total + (node.type === 'file' ? 1 : countFiles(Array.isArray(node.children) ? node.children : [])), 0);
+      state.workspaceTrees.set(project.id, { items, fileCount: countFiles(items) });
+      state.workspaceTreeErrors.delete(project.id);
+    } catch (error) {
+      state.workspaceTreeErrors.set(project.id, error.message);
+    } finally {
+      state.workspaceTreeLoading.delete(project.id);
+      if (state.selected === project.id && state.workspaceTab === 'files') renderDetail();
+    }
+  }
+
+  function renderWorkspaceNode(node, project, depth) {
+    const row = element('div', `flp-file-browser-row${node.type === 'directory' ? ' is-directory' : ''}`);
+    row.style.setProperty('--depth', String(Math.min(depth, 8)));
+    if (node.type === 'directory') {
+      const details = document.createElement('details');
+      details.open = depth === 0;
+      const summary = document.createElement('summary');
+      summary.append(element('span', 'flp-file-browser-icon', '▸'), element('span', '', node.name));
+      details.appendChild(summary);
+      const children = element('div', 'flp-file-browser-children');
+      for (const child of Array.isArray(node.children) ? node.children : []) children.appendChild(renderWorkspaceNode(child, project, depth + 1));
+      if (!children.childElementCount) children.appendChild(element('span', 'flp-file-browser-empty', 'Pasta vazia ou além do limite de leitura'));
+      details.appendChild(children);
+      row.appendChild(details);
+      return row;
+    }
+    const open = element('button', 'flp-file-browser-open', node.name);
+    open.type = 'button';
+    open.title = `Abrir ${node.path} na IDE`;
+    open.addEventListener('click', async () => {
+      await openProjectInIde(project, node.path);
+    });
+    row.append(element('span', 'flp-file-browser-icon', '•'), open);
+    return row;
+  }
+
+  function renderQuickSwitcher(target, currentProject) {
+    if (!state.projects.length) return;
+    const bar = element('nav', 'flp-quick-switcher-bar');
+    bar.setAttribute('role', 'tablist');
+    bar.setAttribute('aria-label', 'Troca rápida de projetos');
+
+    const label = element('div', '', '');
+    label.style.cssText = 'display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:750; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em; margin-right:4px; flex-shrink:0;';
+    label.innerHTML = '<i class="ph-bold ph-arrows-left-right"></i> TROCA RÁPIDA:';
+    bar.appendChild(label);
+
+    const list = state.catalogCategory === 'all'
+      ? state.projects
+      : state.projects.filter((p) => {
+          const group = String(p.catalogGroup || '').trim();
+          if (state.catalogCategory === 'Lovable') return /lovable/i.test(group);
+          if (state.catalogCategory === 'CRM & WhatsApp') return /crm|whatsapp|zapai/i.test(group);
+          if (state.catalogCategory === 'Fênix & Core') return /f[eê]nix|core/i.test(group) || /f[eê]nix/i.test(p.name || p.id);
+          if (state.catalogCategory === 'Automação') return /automa[cç][aã]o|auto/i.test(group);
+          if (state.catalogCategory === 'Ferramentas & IA') return /ferramenta|ia|ai|tool/i.test(group);
+          return group.toLowerCase() === state.catalogCategory.toLowerCase();
+        });
+
+    for (const p of list) {
+      const isSelected = p.id === currentProject.id;
+      const { liveStatus, status } = operationalStatus(p);
+      const isOnline = status === 'online';
+      const itemBtn = element('div', `flp-qs-item${isSelected ? ' active' : ''}`);
+      itemBtn.setAttribute('role', 'tab');
+      itemBtn.setAttribute('tabindex', '0');
+      itemBtn.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+      itemBtn.setAttribute('aria-label', `Alternar para ${p.name || p.id}`);
+      itemBtn.title = `${p.name || p.id} (${p.catalogGroup || 'Sem grupo'})${p.localPort ? ` · Porta :${p.localPort}` : ''}`;
+
+      if (p.logoUrl) {
+        const logoImg = document.createElement('img');
+        logoImg.src = p.logoUrl;
+        logoImg.alt = '';
+        logoImg.className = 'flp-qs-logo';
+        logoImg.loading = 'lazy';
+        logoImg.onerror = () => { logoImg.style.display = 'none'; };
+        itemBtn.appendChild(logoImg);
+      }
+
+      const dot = element('span', `flp-qs-dot${isOnline ? ' online' : ''}`);
+      itemBtn.appendChild(dot);
+
+      const nameSpan = element('span', '', p.name || p.id);
+      nameSpan.style.maxWidth = '130px';
+      nameSpan.style.overflow = 'hidden';
+      nameSpan.style.textOverflow = 'ellipsis';
+      nameSpan.style.whiteSpace = 'nowrap';
+      itemBtn.appendChild(nameSpan);
+
+      const port = liveStatus?.port || p.localPort;
+      if (port) {
+        const portSpan = element('small', '', `:${port}`);
+        portSpan.style.cssText = 'color:#38bdf8; font-family:ui-monospace,monospace; font-size:9.5px; opacity:0.85;';
+        itemBtn.appendChild(portSpan);
+      }
+
+      itemBtn.addEventListener('click', () => {
+        selectProject(p.id);
+      });
+      itemBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectProject(p.id);
+        }
+      });
+
+      bar.appendChild(itemBtn);
+    }
+
+    target.appendChild(bar);
   }
 
   function renderCodeTab(container, project) {
     const panel = element('section', 'flp-panel');
-    panel.append(element('h3', '', 'Visualização de Código Fonte'));
-    panel.append(element('p', 'flp-empty', 'O Project Hub não reconstrói código por estimativa. Abra o workspace na IDE para ler e editar os arquivos reais.'));
-    const ide = element('button', 'flp-button flp-button-primary', 'Abrir workspace na IDE');
+    panel.append(element('h3', '', 'Visualização de Código Fonte & IDE'));
+
+    const info = element('div', '', '');
+    info.style.cssText = 'display:flex; flex-direction:column; gap:8px; margin:10px 0 16px;';
+
+    const pathRow = element('div', '', '');
+    pathRow.style.cssText = 'display:flex; align-items:center; gap:8px; font-family:ui-monospace,monospace; font-size:11.5px; background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);';
+    pathRow.innerHTML = `<i class="ph-bold ph-folder" style="color:#38bdf8;"></i> <span style="color:#94a3b8;">Workspace:</span> <strong style="color:#f8fafc; overflow-wrap:anywhere;">${project.workspace || project.listedPath || 'Workspace não vinculado'}</strong>`;
+    info.appendChild(pathRow);
+
+    if (project.repository) {
+      const repoRow = element('div', '', '');
+      repoRow.style.cssText = 'display:flex; align-items:center; gap:8px; font-family:ui-monospace,monospace; font-size:11.5px; background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);';
+      repoRow.innerHTML = `<i class="ph-bold ph-github-logo" style="color:#00e5a0;"></i> <span style="color:#94a3b8;">Repositório:</span> <a href="${project.repository}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8; text-decoration:none;">${project.repository} ↗</a>`;
+      info.appendChild(repoRow);
+    }
+
+    panel.appendChild(info);
+
+    const actions = element('div', '', '');
+    actions.style.cssText = 'display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px;';
+
+    const ide = element('button', 'flp-button flp-button-primary', '⚡ Abrir no Visual IDE do Fênix');
     ide.type = 'button';
-    ide.disabled = !project.workspace;
-    ide.addEventListener('click', async () => { window.showView?.('ide'); await window.fenixSelectIdeProject?.(project.id); });
-    panel.appendChild(ide);
+    ide.disabled = !workspaceIsAvailable(project);
+    ide.addEventListener('click', () => openProjectInIde(project));
+    actions.appendChild(ide);
+
+    const filesBtn = element('button', 'flp-button flp-button-soft', '📂 Ver Arquivos');
+    filesBtn.type = 'button';
+    filesBtn.addEventListener('click', () => {
+      state.workspaceTab = 'files';
+      renderDetail();
+    });
+    actions.appendChild(filesBtn);
+
+    const folderBtn = element('button', 'flp-button flp-button-soft', '📁 Abrir no Explorer');
+    folderBtn.type = 'button';
+    const rawId = project.catalogId || (project.id.startsWith('local-') ? project.id.slice(6) : project.id);
+    folderBtn.addEventListener('click', () => openProjectFolderDirect(rawId, project));
+    actions.appendChild(folderBtn);
+
+    panel.appendChild(actions);
     container.appendChild(panel);
   }
 
   function renderBrowserTab(container, project) {
-    const panel = element('section', 'flp-panel');
-    panel.append(element('h3', '', 'Runtime Preview / Headless Browser'));
-    panel.append(element('p', 'flp-empty', 'Não há uma sessão de navegador observada vinculada a este projeto. As capturas só aparecem depois de uma execução real do Browser QA.'));
-    container.appendChild(panel);
+    const rawId = project.catalogId || (project.id.startsWith('local-') ? project.id.slice(6) : project.id);
+    const { liveStatus, status } = operationalStatus(project);
+    const isOnline = status === 'online';
+    const activeUrl = liveStatus?.activeUrl || project.localUrl || (project.localPort ? `http://127.0.0.1:${project.localPort}` : project.remoteUrl || null);
+
+    const box = element('div', 'flp-live-preview-box');
+
+    // 1. Toolbar
+    const toolbar = element('div', 'flp-preview-toolbar');
+
+    const urlBar = element('div', 'flp-preview-url-bar');
+    urlBar.innerHTML = `<i class="ph-bold ph-globe" style="color:${isOnline ? '#00e5a0' : '#94a3b8'};"></i> <span style="user-select:all;">${activeUrl || 'Sem URL configurada'}</span>`;
+
+    const actions = element('div', 'flp-preview-actions');
+
+    const statusBadge = element('span', `flp-card-status-pill ${status}`, isOnline ? `🟢 ONLINE :${liveStatus?.port || project.localPort}` : '⚪ OFFLINE');
+    actions.appendChild(statusBadge);
+
+    let frameRef = null;
+
+    if (activeUrl) {
+      const vpDesktop = element('button', 'flp-preview-viewport-btn active', '🖥️ Desktop');
+      const vpTablet = element('button', 'flp-preview-viewport-btn', '💻 Tablet');
+      const vpMobile = element('button', 'flp-preview-viewport-btn', '📱 Mobile');
+
+      vpDesktop.addEventListener('click', () => {
+        vpDesktop.classList.add('active');
+        vpTablet.classList.remove('active');
+        vpMobile.classList.remove('active');
+        if (frameRef) frameRef.className = 'flp-preview-frame';
+      });
+      vpTablet.addEventListener('click', () => {
+        vpTablet.classList.add('active');
+        vpDesktop.classList.remove('active');
+        vpMobile.classList.remove('active');
+        if (frameRef) frameRef.className = 'flp-preview-frame viewport-tablet';
+      });
+      vpMobile.addEventListener('click', () => {
+        vpMobile.classList.add('active');
+        vpDesktop.classList.remove('active');
+        vpTablet.classList.remove('active');
+        if (frameRef) frameRef.className = 'flp-preview-frame viewport-mobile';
+      });
+
+      actions.append(vpDesktop, vpTablet, vpMobile);
+
+      const reloadBtn = element('button', 'flp-preview-viewport-btn', '🔄');
+      reloadBtn.title = 'Recarregar Preview';
+      reloadBtn.addEventListener('click', () => {
+        if (frameRef) {
+          const currentSrc = frameRef.src;
+          frameRef.src = 'about:blank';
+          setTimeout(() => { frameRef.src = currentSrc; }, 80);
+        }
+      });
+      actions.appendChild(reloadBtn);
+
+      const extBtn = element('button', 'flp-quick-action-btn btn-open-url', '🚀 Abrir Aba ↗');
+      extBtn.type = 'button';
+      extBtn.title = 'Abrir sistema em nova aba';
+      extBtn.addEventListener('click', () => window.open(activeUrl, '_blank', 'noopener,noreferrer'));
+      actions.appendChild(extBtn);
+    }
+
+    toolbar.append(urlBar, actions);
+    box.appendChild(toolbar);
+
+    // 2. Viewport / Frame wrap
+    const frameWrap = element('div', 'flp-preview-frame-wrap');
+
+    if (isOnline && activeUrl) {
+      const iframe = document.createElement('iframe');
+      iframe.className = 'flp-preview-frame';
+      iframe.src = activeUrl;
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals');
+      iframe.title = `Preview ao vivo de ${project.name}`;
+      frameWrap.appendChild(iframe);
+      frameRef = iframe;
+    } else {
+      const emptyState = element('div', '', '');
+      emptyState.style.cssText = 'display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:48px 24px; gap:16px; color:#94a3b8; max-width:540px; margin:auto;';
+      const icon = element('div', '', '');
+      icon.style.cssText = 'width:64px; height:64px; border-radius:18px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09); display:flex; align-items:center; justify-content:center; font-size:28px; color:#38bdf8;';
+      icon.innerHTML = '<i class="ph-bold ph-plugs-connected"></i>';
+      emptyState.appendChild(icon);
+
+      const h4 = element('h4', '', isOnline ? 'Visualização Web Indisponível' : `Serviço Offline na Porta :${project.localPort || project.apiPort || '—'}`);
+      h4.style.cssText = 'color:#f8fafc; font-size:16px; margin:0;';
+      emptyState.appendChild(h4);
+
+      const desc = element('p', '', isOnline
+        ? 'O serviço está ativo, mas não há URL local mapeada para renderização no navegador.'
+        : `O serviço local não está em escuta no momento. Você pode inicializá-lo em segundo plano ou abrir a pasta no Explorer.`);
+      desc.style.cssText = 'font-size:12.5px; line-height:1.5; margin:0;';
+      emptyState.appendChild(desc);
+
+      const btnGroup = element('div', '', '');
+      btnGroup.style.cssText = 'display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; margin-top:8px;';
+
+      const startBtn = element('button', 'flp-quick-action-btn btn-start', '⚡ Iniciar Serviço');
+      startBtn.type = 'button';
+      startBtn.addEventListener('click', () => {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Iniciando…';
+        startProjectService(rawId, project).finally(() => {
+          startBtn.disabled = false;
+          startBtn.textContent = '⚡ Iniciar Serviço';
+        });
+      });
+      btnGroup.appendChild(startBtn);
+
+      const folderBtn = element('button', 'flp-quick-action-btn btn-folder', '📁 Abrir Pasta');
+      folderBtn.type = 'button';
+      folderBtn.addEventListener('click', () => openProjectFolderDirect(rawId, project));
+      btnGroup.appendChild(folderBtn);
+
+      const checkBtn = element('button', 'flp-quick-action-btn btn-check', '🔄 Retestar Status');
+      checkBtn.type = 'button';
+      checkBtn.addEventListener('click', () => {
+        checkBtn.disabled = true;
+        checkProjectStatus(rawId).finally(() => { checkBtn.disabled = false; });
+      });
+      btnGroup.appendChild(checkBtn);
+
+      if (activeUrl) {
+        const directLink = element('button', 'flp-quick-action-btn btn-open-url', '↗ Tentar Abrir URL');
+        directLink.type = 'button';
+        directLink.addEventListener('click', () => window.open(activeUrl, '_blank', 'noopener,noreferrer'));
+        btnGroup.appendChild(directLink);
+      }
+
+      emptyState.appendChild(btnGroup);
+      frameWrap.appendChild(emptyState);
+    }
+
+    box.appendChild(frameWrap);
+    container.appendChild(box);
   }
 
   async function loadProjectAnalysis(projectId, run = false) {
@@ -818,10 +3165,10 @@
     const run = observation.run;
     const start = element('button', 'flp-button flp-button-primary', observation.starting ? 'Enfileirando análise…' : 'Iniciar análise visual e estrutural');
     start.type = 'button';
-    start.disabled = !project.workspace || observation.loading || systemRunActive(run);
+    start.disabled = !workspaceIsAvailable(project) || observation.loading || systemRunActive(run);
     const runTests = document.createElement('input');
     runTests.type = 'checkbox';
-    runTests.disabled = !project.workspace || observation.loading || systemRunActive(run);
+    runTests.disabled = !workspaceIsAvailable(project) || observation.loading || systemRunActive(run);
     runTests.setAttribute('aria-label', 'Executar testes apenas se houver executor isolado configurado');
     const testChoice = element('label', 'flp-observation-test-option');
     testChoice.append(runTests, document.createTextNode('Executar testes de código se houver executor isolado configurado'));
@@ -975,6 +3322,8 @@
 
   function renderSystemIntelligenceTab(container, project) {
     const panel = element('section', 'flp-panel flp-intelligence');
+    renderDesignReference(panel, project);
+    renderReaEvidence(panel, project);
     panel.append(element('h3', '', 'Mapa estrutural com evidências'));
     const result = state.analyses.get(project.id);
     if (result?.loading) {
@@ -998,7 +3347,7 @@
         : 'Carregando a última análise registrada, se existir.'));
       const map = element('button', 'flp-button flp-button-primary', 'Mapear este sistema');
       map.type = 'button';
-      map.disabled = !project.workspace;
+      map.disabled = !workspaceIsAvailable(project);
       map.addEventListener('click', () => loadProjectAnalysis(project.id, true));
       panel.appendChild(map);
       container.appendChild(panel);
@@ -1051,16 +3400,561 @@
     const actions = element('div', 'flp-intelligence-actions');
     const refresh = element('button', 'flp-button flp-button-soft', 'Atualizar mapa');
     refresh.type = 'button';
-    refresh.disabled = !project.workspace;
+    refresh.disabled = !workspaceIsAvailable(project);
     refresh.addEventListener('click', () => loadProjectAnalysis(project.id, true));
     const ide = element('button', 'flp-button flp-button-primary', 'Abrir workspace na IDE');
     ide.type = 'button';
-    ide.disabled = !project.workspace;
-    ide.addEventListener('click', async () => { window.showView?.('ide'); await window.fenixSelectIdeProject?.(project.id); });
+    ide.disabled = !workspaceIsAvailable(project);
+    ide.addEventListener('click', () => openProjectInIde(project));
     actions.append(refresh, ide);
     panel.appendChild(actions);
     container.appendChild(panel);
     renderSystemObservation(container, project);
+  }
+
+  function renderDesignReference(container, project) {
+    const section = element('section', 'flp-intelligence-section flp-design-reference');
+    section.append(element('h4', '', 'Referências visuais e regras de interface'));
+    section.append(element('p', 'flp-intelligence-note', 'Perfil contextual por projeto, salvo na memória autenticada do Fênix. Usa padrões de fluxo observados nas referências e os separa de medições reais do código.'));
+    const list = element('ul', 'flp-intelligence-list');
+    for (const source of window.FenixDesignReference?.profile?.provenance || []) list.appendChild(element('li', '', source));
+    section.appendChild(list);
+    const profile = window.FenixDesignReference?.profile;
+    let designInputs = null;
+    let surface = null;
+    let direction = null;
+    if (profile) {
+      const references = element('div', 'flp-design-reference-catalog');
+      for (const source of profile.referenceCatalog || []) {
+        const card = element('article', 'flp-design-reference-card');
+        const link = element('a', '', source.name);
+        link.href = source.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        card.append(link, element('p', '', source.observed), element('p', 'flp-design-reference-applied', source.applied));
+        const mode = element('span', 'flp-design-reference-mode', 'Referência manual · somente leitura');
+        card.appendChild(mode);
+        references.appendChild(card);
+      }
+      if (references.childElementCount) section.appendChild(references);
+      designInputs = element('div', 'flp-design-inputs');
+      designInputs.appendChild(element('h5', '', 'Direção deste projeto'));
+      const goalLabel = element('label', 'flp-design-input-label', 'Objetivo e fluxo principal (até 500 caracteres)');
+      const goal = element('textarea', 'flp-design-textarea');
+      goal.id = 'flpDesignGoal'; goal.maxLength = 500; goal.rows = 3;
+      goal.placeholder = 'O que este projeto precisa permitir ao usuário?';
+      goalLabel.appendChild(goal);
+      designInputs.appendChild(goalLabel);
+      const surfaceLabel = element('label', 'flp-design-input-label', 'Formato');
+      surface = element('select', 'flp-design-select');
+      surface.id = 'flpDesignSurface';
+      for (const [value, label] of [['web', 'Web'], ['app', 'Aplicativo']]) {
+        const option = element('option', '', label); option.value = value; surface.appendChild(option);
+      }
+      surfaceLabel.appendChild(surface);
+      const directionLabel = element('label', 'flp-design-input-label', 'Direção visual');
+      direction = element('select', 'flp-design-select');
+      direction.id = 'flpDesignDirection';
+      for (const [value, label] of [
+        ['brand-preserving', 'Preservar identidade atual'],
+        ['hig-adaptive', 'Apple HIG adaptativo à marca'],
+        ['data-dense', 'Painel operacional, alta densidade legível'],
+        ['touch-first', 'Priorizar toque e mobile']
+      ]) { const option = element('option', '', label); option.value = value; direction.appendChild(option); }
+      directionLabel.appendChild(direction);
+      designInputs.append(surfaceLabel, directionLabel);
+
+      const sourceGroup = element('fieldset', 'flp-design-choice-group');
+      sourceGroup.appendChild(element('legend', '', 'Referências para este projeto'));
+      for (const source of profile.referenceCatalog || []) {
+        const choice = element('label', 'flp-design-choice');
+        const input = document.createElement('input');
+        input.type = 'checkbox'; input.dataset.designSource = source.id;
+        choice.append(input, document.createTextNode(source.name.replace(/ ·.*/, '')));
+        sourceGroup.appendChild(choice);
+      }
+      designInputs.appendChild(sourceGroup);
+
+      const viewportGroup = element('fieldset', 'flp-design-choice-group');
+      viewportGroup.appendChild(element('legend', '', 'Validar nestas larguras'));
+      for (const width of [375, 768, 1280, 1920]) {
+        const choice = element('label', 'flp-design-choice');
+        const input = document.createElement('input');
+        input.type = 'checkbox'; input.dataset.designViewport = String(width); input.checked = true;
+        choice.append(input, document.createTextNode(`${width} px`));
+        viewportGroup.appendChild(choice);
+      }
+      designInputs.appendChild(viewportGroup);
+
+      const intake = element('div', 'flp-design-inputs flp-reference-intake');
+      intake.appendChild(element('h5', '', 'Analisar referência externa neste projeto'));
+      intake.appendChild(element('p', 'flp-intelligence-note', 'Informe uma URL e/ou cole conteúdo autorizado. O Fênix não acessa a URL sozinho; sem captura, a análise fica explicitamente pendente ou inferida.'));
+      const sourceUrl = element('input', 'flp-design-select');
+      sourceUrl.type = 'url'; sourceUrl.id = 'flpReferenceUrl'; sourceUrl.maxLength = 500;
+      sourceUrl.placeholder = 'https://exemplo.com/tela';
+      sourceUrl.setAttribute('aria-label', 'URL da referência');
+      const sourceContent = element('textarea', 'flp-design-textarea');
+      sourceContent.id = 'flpReferenceContent'; sourceContent.maxLength = 8000; sourceContent.rows = 4;
+      sourceContent.placeholder = 'Cole notas, especificação ou conteúdo capturado de forma autorizada (até 8.000 caracteres).';
+      sourceContent.setAttribute('aria-label', 'Notas ou conteúdo capturado da referência');
+      const imageInput = element('input', 'flp-design-select');
+      imageInput.type = 'file'; imageInput.id = 'flpReferenceImage'; imageInput.accept = 'image/png,image/jpeg,image/webp';
+      imageInput.setAttribute('aria-label', 'Captura de interface para análise visual');
+      const intakeStatus = element('p', 'flp-design-reference-status', 'Nenhuma referência externa adicionada nesta sessão.');
+      intakeStatus.setAttribute('role', 'status');
+      const intakeList = element('div', 'flp-design-reference-catalog');
+      const addReference = element('button', 'flp-button flp-button-primary', 'Analisar entrada e salvar no projeto');
+      addReference.type = 'button';
+      const renderIntakeRecord = (record) => {
+        const spec = record.spec || {};
+        const card = element('article', 'flp-design-reference-card');
+        const title = record.url || (record.visualAnalysis ? `Captura ${record.captureMimeType || 'visual'} · ${spec.imageAnalysis?.model || 'modelo não informado'}` : `Referência ${spec.referenceId || ''}`);
+        if (/^https?:\/\//i.test(title)) {
+          const link = element('a', '', title);
+          link.href = title; link.target = '_blank'; link.rel = 'noopener noreferrer';
+          card.appendChild(link);
+        } else card.appendChild(element('strong', '', title));
+        card.append(
+          element('p', '', `Estado REA: ${spec.analysisStatus || 'UNKNOWN'} · tipo: ${spec.type || 'UNKNOWN'}`),
+          element('p', '', (spec.evidence?.limitations || []).join(' ')),
+          element('span', 'flp-design-reference-mode', 'Entrada vinculada à memória deste projeto')
+        );
+        const capabilities = spec.knowledge?.functional?.coreCapabilities || [];
+        if (capabilities.length) card.appendChild(element('p', '', `Pistas inferidas: ${capabilities.join(', ')}`));
+        if (record.visualAnalysis) {
+          card.append(
+            element('p', '', `Observação do modelo: ${record.visualAnalysis.layout}`),
+            element('p', '', `${record.visualAnalysis.visibleComponents.length} componente(s) aparente(s) · ${record.visualAnalysis.visibleText.length} texto(s) lido(s) · ${record.visualAnalysis.inferredInteractions.length} hipótese(s) de interação.`),
+            element('p', '', `SHA-256: ${spec.imageAnalysis?.imageSha256 || 'não informado'} · ${spec.imageAnalysis?.provider || 'provider não informado'} · ${spec.imageAnalysis?.durationMs ?? '—'} ms`)
+          );
+        }
+        intakeList.prepend(card);
+      };
+      const saveIntakeRecord = async (record) => {
+        await json('/api/memory/write', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ kind: 'project', classification: 'internal', confidence: record.visualAnalysis ? 0.45 : record.spec.analysisStatus === 'PARTIALLY_ANALYZED' ? 0.5 : 0.3, projectId: project.id, stableKey: `project-reference:${project.id}:${record.spec.referenceId}`, title: `Referência de design · ${project.name || project.id}`, content: JSON.stringify(record), tags: ['design-reference-intake', 'rea', 'project-design'], provenance: { type: 'operator-provided-reference', reference: record.url || record.spec.referenceId, evidence: [record.spec.referenceId, ...(record.spec.imageAnalysis?.imageSha256 ? [record.spec.imageAnalysis.imageSha256] : [])], projectId: project.id } })
+        });
+        renderIntakeRecord(record);
+      };
+      addReference.addEventListener('click', async () => {
+        const urlValue = sourceUrl.value.trim();
+        const contentValue = sourceContent.value.trim();
+        if (!urlValue && !contentValue) { intakeStatus.textContent = 'Informe uma URL ou conteúdo autorizado para analisar.'; return; }
+        if (urlValue) {
+          try {
+            const parsed = new URL(urlValue);
+            if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('protocolo');
+            parsed.username = ''; parsed.password = ''; parsed.hash = '';
+            sourceUrl.value = parsed.href;
+          }
+          catch { intakeStatus.textContent = 'Use uma URL HTTP ou HTTPS válida.'; return; }
+        }
+        const normalizedUrl = sourceUrl.value.trim();
+        addReference.disabled = true;
+        intakeStatus.textContent = 'Analisando estrutura fornecida; nenhum site está sendo acessado automaticamente…';
+        try {
+          const result = await json('/api/v2/intent/ingest-reference', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ type: normalizedUrl ? 'URL_WEBSITE' : 'USER_DESCRIPTION', url: normalizedUrl, text: contentValue, source: `project-hub:${project.id}`, targetFenixViews: ['projects', 'ide', 'flow-graph'] })
+          });
+          const spec = result.referenceSpec;
+          if (!spec?.referenceId || !spec.analysisStatus) throw new Error('O REA não retornou um estado de análise rastreável.');
+          const record = { version: 1, projectId: project.id, url: normalizedUrl, submittedContent: contentValue, spec, savedAt: new Date().toISOString() };
+          await saveIntakeRecord(record);
+          sourceContent.value = '';
+          intakeStatus.textContent = spec.analysisStatus === 'NEEDS_CAPTURE'
+            ? 'Referência vinculada. A URL não foi acessada; adicione captura ou conteúdo autorizado para medir a interface.'
+            : `Referência vinculada · ${spec.analysisStatus}. Pistas textuais ainda precisam de validação.`;
+        } catch (error) { intakeStatus.textContent = `Não foi possível vincular a referência: ${error.message}`; }
+        finally { addReference.disabled = false; }
+      });
+      const analyzeImage = element('button', 'flp-button flp-button-primary', 'Analisar captura com modelo de visão');
+      analyzeImage.type = 'button';
+      analyzeImage.addEventListener('click', async () => {
+        const file = imageInput.files?.[0];
+        if (!file) { intakeStatus.textContent = 'Selecione uma captura PNG, JPEG ou WebP.'; return; }
+        if (file.size > 1024 * 1024) { intakeStatus.textContent = 'A captura deve ter até 1 MiB.'; return; }
+        analyzeImage.disabled = true;
+        intakeStatus.textContent = 'Enviando captura ao provider visual configurado…';
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          let binary = '';
+          for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+          const result = await json('/api/v2/intent/analyze-reference-image', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ projectId: project.id, imageBase64: btoa(binary) })
+          });
+          const spec = result.referenceSpec;
+          if (!spec?.referenceId || spec.analysisStatus !== 'MODEL_OBSERVATIONS_REQUIRES_VALIDATION' || !result.analysis) throw new Error('O provider não retornou uma análise visual rastreável.');
+          const record = { version: 1, projectId: project.id, url: '', submittedContent: '', captureMimeType: spec.imageAnalysis?.mimeType || file.type, spec, visualAnalysis: result.analysis, savedAt: new Date().toISOString() };
+          await saveIntakeRecord(record);
+          imageInput.value = '';
+          intakeStatus.textContent = `Observações de ${spec.imageAnalysis?.provider || 'provider'} / ${spec.imageAnalysis?.model || 'modelo'} vinculadas. Valide os itens no preview antes de implementar.`;
+        } catch (error) { intakeStatus.textContent = `Análise visual indisponível: ${error.message}`; }
+        finally { analyzeImage.disabled = false; }
+      });
+      intake.append(sourceUrl, sourceContent, addReference, imageInput, analyzeImage, intakeStatus, intakeList);
+      designInputs.appendChild(intake);
+      json(`/api/memory/project/${encodeURIComponent(project.id)}`).then((result) => {
+        const records = (result.results || []).map((item) => item.memory || item).filter((memory) =>
+          memory?.projectId === project.id && memory.stableKey?.startsWith(`project-reference:${project.id}:`) && memory.content
+        ).map((memory) => { try { return JSON.parse(memory.content); } catch { return null; } })
+          .filter((record) => record?.version === 1 && record.projectId === project.id && /^[\w.-]{1,100}$/.test(String(record.spec?.referenceId || '')));
+        intakeList.replaceChildren();
+        records.forEach(renderIntakeRecord);
+        if (records.length) intakeStatus.textContent = `${records.length} referência(s) externa(s) recuperada(s) da memória do projeto.`;
+      }).catch((error) => { intakeStatus.textContent = `Referências salvas não puderam ser carregadas: ${error.message}`; });
+
+      const savedDraft = state.designDrafts.get(project.id);
+      if (savedDraft) {
+        goal.value = savedDraft.designGoal || '';
+        surface.value = savedDraft.surface || 'web';
+        direction.value = savedDraft.visualDirection || 'brand-preserving';
+        designInputs.querySelectorAll('[data-design-source]').forEach((input) => { input.checked = savedDraft.referenceSources.includes(input.dataset.designSource); });
+        designInputs.querySelectorAll('[data-design-viewport]').forEach((input) => { input.checked = savedDraft.targetViewports.includes(Number(input.dataset.designViewport)); });
+      }
+      const rememberDesignDraft = () => state.designDrafts.set(project.id, {
+        designGoal: goal.value,
+        surface: surface.value,
+        visualDirection: direction.value,
+        referenceSources: [...designInputs.querySelectorAll('[data-design-source]:checked')].map((input) => input.dataset.designSource),
+        targetViewports: [...designInputs.querySelectorAll('[data-design-viewport]:checked')].map((input) => Number(input.dataset.designViewport))
+      });
+      designInputs.addEventListener('input', rememberDesignDraft);
+      designInputs.addEventListener('change', rememberDesignDraft);
+      section.appendChild(designInputs);
+      const targets = element('p', 'flp-intelligence-note', `Alvos do design system · controles ${profile.controls.compact}/${profile.controls.standard}/${profile.controls.touch} px · espaçamento ${profile.controls.spacing.join('/')} px. ${profile.controlNote}`);
+      section.appendChild(targets);
+      const details = element('details', 'flp-design-contract');
+      details.appendChild(element('summary', '', 'Ver entradas, regras de interação e entregáveis'));
+      for (const [title, items] of [
+        ['Entradas do projeto', profile.intake],
+        ['Comportamento dos controles', profile.interactionRules],
+        ['Entregáveis conectados', profile.deliverables]
+      ]) {
+        if (!Array.isArray(items) || !items.length) continue;
+        details.appendChild(element('h5', '', title));
+        const list = element('ul', 'flp-intelligence-list');
+        for (const item of items) list.appendChild(element('li', '', item));
+        details.appendChild(list);
+      }
+      details.appendChild(element('h5', '', 'Matriz de capacidades e adaptação no Fênix'));
+      const capabilityList = element('div', 'flp-reference-capabilities');
+      for (const capability of profile.capabilityMap || []) {
+        const card = element('article', 'flp-reference-capability');
+        card.dataset.status = capability.status;
+        card.append(
+          element('span', 'flp-reference-product', capability.product),
+          element('strong', '', capability.capability),
+          element('span', `flp-reference-status is-${String(capability.status || '').toLowerCase()}`, capability.status),
+          element('p', '', capability.fenix),
+          element('small', '', `Evidência/localização: ${capability.evidence}`)
+        );
+        if (capability.action) {
+          const open = element('button', 'flp-button flp-button-soft', capability.actionLabel || 'Abrir no Fênix');
+          open.type = 'button';
+          open.dataset.referenceAction = capability.action;
+          open.addEventListener('click', () => openDesignCapability(capability.action, project));
+          card.appendChild(open);
+        }
+        capabilityList.appendChild(card);
+      }
+      details.appendChild(capabilityList);
+      section.appendChild(details);
+    }
+    const status = element('p', 'flp-design-reference-status', 'Consultando memória do projeto…');
+    status.setAttribute('role', 'status');
+    section.appendChild(status);
+    const apply = element('button', 'flp-button flp-button-primary', 'Aplicar fluxo de design ao projeto');
+    apply.type = 'button';
+    apply.addEventListener('click', async () => {
+      apply.disabled = true;
+      status.textContent = 'Salvando perfil na memória autenticada…';
+      try {
+          const preferences = surface && direction && designInputs ? {
+            designGoal: designInputs.querySelector('#flpDesignGoal')?.value || '',
+            surface: surface.value,
+            visualDirection: direction.value,
+            referenceSources: [...designInputs.querySelectorAll('[data-design-source]:checked')].map((input) => input.dataset.designSource),
+            targetViewports: [...designInputs.querySelectorAll('[data-design-viewport]:checked')].map((input) => Number(input.dataset.designViewport))
+          } : {};
+          const saved = await window.FenixDesignReference.apply(project, preferences);
+        status.textContent = saved.universalMemorySaved
+          ? 'Preferências deste projeto salvas na memória; padrões gerais salvos na memória visual universal.'
+          : `Preferências salvas no projeto; memória universal não atualizada: ${saved.universalMemoryError || 'indisponível'}.`;
+        apply.textContent = 'Atualizar fluxo de design';
+        section.dataset.profileState = 'configured';
+      } catch (error) {
+        status.textContent = `Não foi possível salvar o perfil: ${error.message}`;
+        section.dataset.profileState = 'error';
+      } finally { apply.disabled = false; }
+    });
+    section.appendChild(apply);
+    const designDocStatus = element('p', 'flp-design-reference-status', 'Gere um DESIGN.md rastreável com objetivo, referências e a última análise REA do workspace.');
+    designDocStatus.setAttribute('role', 'status');
+    designDocStatus.dataset.designDocumentStatus = 'true';
+    const designDocPreview = element('section', 'flp-design-import-preview');
+    designDocPreview.hidden = true;
+    let pendingDesignImport = null;
+    const generateDesignDoc = element('button', 'flp-button flp-button-primary', 'Gerar DESIGN.md com REA');
+    generateDesignDoc.type = 'button';
+    generateDesignDoc.disabled = !workspaceIsAvailable(project);
+    generateDesignDoc.addEventListener('click', async () => {
+      generateDesignDoc.disabled = true;
+      designDocStatus.textContent = 'Confirmando evidência REA do workspace…';
+      try {
+        let analysis = state.reaAnalyses.get(project.id);
+        if (!analysis?.evidence) {
+          await loadReaEvidence(project, true);
+          analysis = state.reaAnalyses.get(project.id);
+        }
+        if (!analysis?.evidence) throw new Error(analysis?.error || 'O REA não retornou evidência persistida.');
+        const preferences = window.FenixDesignReference.normalizePreferences({
+          designGoal: designInputs?.querySelector('#flpDesignGoal')?.value || '',
+          surface: surface?.value || 'web',
+          visualDirection: direction?.value || 'brand-preserving',
+          referenceSources: [...(designInputs?.querySelectorAll('[data-design-source]:checked') || [])].map((input) => input.dataset.designSource),
+          targetViewports: [...(designInputs?.querySelectorAll('[data-design-viewport]:checked') || [])].map((input) => Number(input.dataset.designViewport))
+        });
+        const evidence = analysis.evidence;
+        const selectedReferences = (profile.referenceCatalog || []).filter((source) => preferences.referenceSources.includes(source.id));
+        const lines = [
+          `# ${project.name || project.id} — Design System`, '',
+          '> Gerado pelo Fênix com perfil de design e evidência REA do workspace. Referências externas são guias documentais; não representam integrações.', '',
+          '## Contexto',
+          `- Projeto: ${project.name || project.id} (${project.id})`,
+          `- Workspace: ${project.workspace || 'caminho não informado'}`,
+          `- Objetivo: ${preferences.designGoal || 'Ainda não definido pelo operador.'}`,
+          `- Superfície: ${preferences.surface}; direção: ${preferences.visualDirection}`,
+          `- Viewports alvo: ${preferences.targetViewports.length ? preferences.targetViewports.map((width) => `${width}px`).join(', ') : 'nenhum selecionado'}`,
+          '', '## Evidência observada no código',
+          `- ID REA: ${evidence.evidenceId || 'não informado'}`,
+          `- SHA-256 do alvo: ${evidence.subjectSha256 || 'não informado'}`,
+          `- Arquivos analisados: ${evidence.metrics?.scannedFilesCount ?? 'não informado'}`,
+          `- Rotas detectadas: ${evidence.metrics?.routesDetected ?? 'não informado'}`,
+          `- Persistência da análise: ${evidence.persistence?.status || 'não informada'}`,
+          '- Componentes/telas, espaçamentos e cores não são medidos por esta análise, salvo evidência explícita abaixo.', '',
+          '## Referências selecionadas',
+          ...(selectedReferences.length ? selectedReferences.flatMap((source) => [`- [${source.name}](${source.url}) — ${source.observed}`]) : ['- Nenhuma referência selecionada.']),
+          '', '## Regras de interação', ...profile.interactionRules.map((rule) => `- ${rule}`),
+          '', '## Alvos de controles Fênix (não medidos no projeto)',
+          `- compacto: ${profile.controls.compact}px; padrão: ${profile.controls.standard}px; toque: ${profile.controls.touch}px. ${profile.controlNote}`,
+          `- Espaçamento alvo: ${profile.controls.spacing.join(', ')}px.`,
+          '', '## Limites e próximos passos',
+          '- Trate qualquer decisão visual sem medição como hipótese até validar no preview e nos viewports selecionados.',
+          '- Revise rotas, estados de loading/vazio/erro/sucesso, acessibilidade e desempenho antes de concluir.',
+          `- Origem rastreável: REA ${evidence.evidenceId || 'sem ID'} · projeto ${project.id} · gerado ${new Date().toISOString()}.`, ''
+        ];
+        const content = lines.join('\n');
+        if (!await openProjectInIde(project)) throw new Error('A navegação para a IDE foi cancelada ou bloqueada. Nenhum arquivo foi gravado.');
+        const fileUrl = `/api/fenix/projects/${encodeURIComponent(project.id)}/file?path=${encodeURIComponent('DESIGN.md')}`;
+        let existing = null;
+        try { existing = await json(fileUrl); } catch (error) { if (error.status !== 404) throw error; }
+        const draft = await json(`/api/fenix/projects/${encodeURIComponent(project.id)}/drafts`, {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ path: 'DESIGN.md', content, createFile: !existing, expectedHash: existing?.hash ?? null, summary: `DESIGN.md baseado na evidência ${evidence.evidenceId || 'REA'}`, evidenceId: evidence.evidenceId })
+        });
+        if (!window.FenixProjectIDE?.reviewWorkspaceDraft?.(draft)) throw new Error('Não foi possível abrir o diff da IDE. O arquivo permanece sem alteração.');
+        designDocStatus.textContent = `${draft.path} pronto para revisão · ${draft.added} linhas adicionadas · evidência ${evidence.evidenceId || 'REA sem ID'}. Nenhum arquivo foi gravado.`;
+      } catch (error) {
+        designDocStatus.textContent = `Não foi possível gerar o preview: ${error.message}`;
+      } finally { generateDesignDoc.disabled = !workspaceIsAvailable(project); }
+    });
+    const importDesignDoc = element('button', 'flp-button flp-button-soft', 'Carregar DESIGN.md existente');
+    importDesignDoc.type = 'button';
+    importDesignDoc.disabled = !workspaceIsAvailable(project);
+    importDesignDoc.addEventListener('click', async () => {
+      importDesignDoc.disabled = true;
+      designDocStatus.textContent = 'Lendo DESIGN.md do workspace…';
+      designDocPreview.hidden = true;
+      try {
+        const path = 'DESIGN.md';
+        const document = await json(`/api/fenix/projects/${encodeURIComponent(project.id)}/file?path=${encodeURIComponent(path)}`);
+        if (typeof document.content !== 'string') throw new Error('A API não retornou texto para DESIGN.md.');
+        const parsed = window.FenixDesignDocument.parse(document.content);
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(document.content));
+        const sha256 = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+        pendingDesignImport = { path, content: document.content, parsed, sha256 };
+        designDocPreview.replaceChildren();
+        const summary = element('p', 'flp-design-reference-status', `Prévia sem gravação · objetivo: ${parsed.preferences.designGoal || 'não definido'} · ${parsed.preferences.surface} / ${parsed.preferences.visualDirection} · ${parsed.preferences.targetViewports.join(', ') || 'viewports não definidos'} · REA ${parsed.evidence.evidenceId || 'sem ID'} · SHA-256 ${sha256.slice(0, 16)}…`);
+        summary.setAttribute('role', 'status');
+        const disclosure = element('details', 'flp-design-import-source');
+        disclosure.append(element('summary', '', 'Ver Markdown original (não será enviado ao modelo)'));
+        const source = element('pre', '', document.content.slice(0, 12000));
+        source.textContent = document.content.slice(0, 12000);
+        disclosure.appendChild(source);
+        const confirmImport = element('button', 'flp-button flp-button-primary', 'Confirmar importação no perfil do projeto');
+        confirmImport.type = 'button';
+        confirmImport.addEventListener('click', async () => {
+          if (!pendingDesignImport) return;
+          confirmImport.disabled = true;
+          try {
+            const imported = await window.FenixDesignReference.importDocument(project, pendingDesignImport.parsed, { path: pendingDesignImport.path, sha256: pendingDesignImport.sha256 });
+            designDocStatus.textContent = `Preferências estruturadas importadas para este projeto · ${imported.importedDocument.status} · SHA-256 ${imported.importedDocument.sha256.slice(0, 16)}… O Markdown original não foi armazenado nem enviado ao modelo.`;
+            pendingDesignImport = null;
+            designDocPreview.hidden = true;
+          } catch (error) {
+            designDocStatus.textContent = `Não foi possível salvar a importação: ${error.message}`;
+            confirmImport.disabled = false;
+          }
+        });
+        const cancelImport = element('button', 'flp-button flp-button-soft', 'Cancelar');
+        cancelImport.type = 'button';
+        cancelImport.addEventListener('click', () => { pendingDesignImport = null; designDocPreview.hidden = true; designDocStatus.textContent = 'Importação cancelada; nenhuma preferência foi gravada.'; });
+        designDocPreview.append(summary, disclosure, confirmImport, cancelImport);
+        designDocPreview.hidden = false;
+        designDocStatus.textContent = 'Revise os campos extraídos. Nada será gravado até confirmar.';
+      } catch (error) {
+        designDocStatus.textContent = `Não foi possível carregar DESIGN.md: ${error.message}`;
+      } finally { importDesignDoc.disabled = !workspaceIsAvailable(project); }
+    });
+    section.append(generateDesignDoc, importDesignDoc, designDocStatus, designDocPreview);
+    container.appendChild(section);
+    Promise.all([
+      window.FenixDesignReference?.read(project.id),
+      window.FenixDesignReference?.readGlobal()
+    ]).then(([saved, universal]) => {
+      if (!status.isConnected) return;
+      if (saved?.error) {
+        status.textContent = `Memória indisponível: ${saved.error}`;
+        section.dataset.profileState = 'unavailable';
+      } else if (saved) {
+        status.textContent = `Ativo na memória do projeto · versão ${saved.version} · salvo ${date(saved.updatedAt)}.`;
+        apply.textContent = 'Atualizar fluxo de design';
+        section.dataset.profileState = 'configured';
+        if (!state.designDrafts.has(project.id)) {
+          const preferences = window.FenixDesignReference.normalizePreferences(saved.preferences || {});
+          const savedGoal = designInputs.querySelector('#flpDesignGoal');
+          if (savedGoal) savedGoal.value = preferences.designGoal;
+          surface.value = preferences.surface;
+          direction.value = preferences.visualDirection;
+          designInputs.querySelectorAll('[data-design-source]').forEach((input) => { input.checked = preferences.referenceSources.includes(input.dataset.designSource); });
+          designInputs.querySelectorAll('[data-design-viewport]').forEach((input) => { input.checked = preferences.targetViewports.includes(Number(input.dataset.designViewport)); });
+        }
+      } else if (universal && !universal.error) {
+        status.textContent = `Memória visual universal ativa · versão ${universal.version}. Este projeto ainda não tem uma configuração específica.`;
+        apply.textContent = 'Aplicar também a este projeto';
+        section.dataset.profileState = 'inherited';
+      } else if (universal?.error) {
+        status.textContent = `Perfil do projeto não encontrado; memória universal indisponível: ${universal.error}`;
+        section.dataset.profileState = 'unavailable';
+      } else {
+        status.textContent = 'Ainda não aplicado a este projeto.';
+        section.dataset.profileState = 'not-configured';
+      }
+    }).catch((error) => { if (status.isConnected) status.textContent = `Memória indisponível: ${error.message}`; });
+  }
+
+  function openDesignCapability(action, project) {
+    if (!project?.id) return false;
+    if (action === 'projects' || action === 'screens' || action === 'intelligence') {
+      state.hubViewMode = 'fenix';
+      state.workspaceTab = action === 'projects' ? 'overview' : action;
+      $('flpModeFenix')?.classList.add('active');
+      $('flpModeScreens')?.classList.remove('active');
+      if ($('flpFenixSidebarView')) $('flpFenixSidebarView').style.display = 'block';
+      selectProject(project.id);
+      if (action === 'screens') loadRegisteredScreens(project);
+      if (action === 'intelligence') {
+        if (!state.analyses.has(project.id)) loadProjectAnalysis(project.id);
+        if (!state.reaAnalyses.has(project.id)) loadReaEvidence(project, false);
+      }
+      return true;
+    }
+    if (action === 'ide') {
+      return openProjectInIde(project);
+    }
+    return false;
+  }
+
+  function renderReaEvidence(container, project) {
+    const section = element('section', 'flp-intelligence-section flp-rea-evidence');
+    const result = state.reaAnalyses.get(project.id);
+    section.append(element('h4', '', 'REA · evidência e padrões do projeto'));
+    section.append(element('p', 'flp-intelligence-note', 'Leitura do workspace selecionado. O resultado registra hash, rotas, módulos e limites observados; não altera arquivos nem inicia jobs.'));
+    if (result?.loading) {
+      section.append(element('p', 'flp-empty', 'REA está lendo o workspace real…'));
+    } else if (result?.error) {
+      section.append(element('p', 'flp-intelligence-error', `A análise REA falhou: ${result.error}`));
+    } else if (result?.evidence) {
+      const evidence = result.evidence;
+      const metrics = element('div', 'flp-intelligence-summary');
+      for (const [label, value] of [
+        ['Evidência', evidence.evidenceId],
+        ['SHA-256', evidence.subjectSha256],
+        ['Módulos lidos', evidence.metrics?.scannedFilesCount],
+        ['Rotas', evidence.metrics?.routesDetected],
+        ['Fronteiras', evidence.metrics?.ipcBoundariesCount],
+        ['Persistência', evidence.persistence?.status || 'Não confirmada']
+      ]) metrics.appendChild(row(label, value));
+      section.appendChild(metrics);
+      section.append(element('p', 'flp-intelligence-note', `Analisado em ${date(evidence.analyzedAt)} · ${text(evidence.durationMs)} ms · ${evidence.metrics?.graphNodesCount ?? 0} nós e ${evidence.metrics?.graphEdgesCount ?? 0} relações.`));
+      const evidenceList = element('ul', 'flp-intelligence-list');
+      const observedRoutes = (evidence.routes || []).slice(0, 8);
+      for (const route of observedRoutes) {
+        const item = element('li', 'flp-rea-route-item');
+        item.appendChild(element('span', '', `Rota observada: ${route.path} · ${route.file || 'arquivo não informado'}`));
+        const openFile = element('button', 'flp-button flp-button-soft', route.file ? `Abrir ${route.file} na IDE` : 'Arquivo não informado');
+        openFile.type = 'button';
+        openFile.disabled = !route.file || !workspaceIsAvailable(project);
+        openFile.title = route.file ? 'Abre o workspace analisado e seleciona o arquivo citado pelo REA' : 'O REA não informou um arquivo de origem para esta rota';
+        openFile.addEventListener('click', () => openProjectFileInIde(project, route.file));
+        item.appendChild(openFile);
+        evidenceList.appendChild(item);
+      }
+      const findings = [
+        ...(evidence.ipcBoundaries || []).slice(0, 5).map((boundary) => `Fronteira observada: ${boundary.protocol} · ${boundary.file}`),
+        ...(evidence.storageSchemas || []).slice(0, 5).map((schema) => `Persistência observada: ${schema.engine} · ${schema.table} · ${schema.file}`),
+        ...(evidence.unknowns || []).slice(0, 5).map((unknown) => `Não resolvido: ${unknown.reason} · ${unknown.file}`)
+      ];
+      if (!findings.length) findings.push('REA não encontrou rotas, fronteiras ou schemas nos arquivos lidos.');
+      for (const finding of findings) evidenceList.appendChild(element('li', '', finding));
+      section.appendChild(evidenceList);
+    } else {
+      section.append(element('p', 'flp-empty', 'Ainda não há evidência REA salva para este projeto.'));
+    }
+
+    const actions = element('div', 'flp-intelligence-actions');
+    const analyze = element('button', 'flp-button flp-button-primary', result?.evidence ? 'Atualizar análise REA' : 'Analisar com REA');
+    analyze.type = 'button';
+    analyze.disabled = !workspaceIsAvailable(project) || Boolean(result?.loading);
+    analyze.addEventListener('click', () => loadReaEvidence(project, true));
+    actions.appendChild(analyze);
+    if (result?.evidence) {
+      const graph = element('button', 'flp-button flp-button-soft', 'Abrir Flow Graph');
+      graph.type = 'button';
+      graph.addEventListener('click', () => window.fenixOpenFlowGraph?.({ context: 'PROJECT', entityId: `project:${project.id}` }));
+      const ide = element('button', 'flp-button flp-button-soft', 'Abrir IDE');
+      ide.type = 'button';
+      ide.addEventListener('click', () => openProjectInIde(project));
+      actions.append(graph, ide);
+    }
+    section.appendChild(actions);
+    container.appendChild(section);
+  }
+
+  async function loadReaEvidence(project, run = true) {
+    const existing = state.reaAnalyses.get(project.id);
+    if (existing?.loading) return;
+    state.reaAnalyses.set(project.id, { loading: true, error: null, evidence: existing?.evidence || null });
+    if (state.selected === project.id && state.workspaceTab === 'intelligence') renderDetail();
+    try {
+      const evidence = run
+        ? await json('/api/v2/rea/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId: project.id })
+          })
+        : await json(`/api/v2/rea/evidence/${encodeURIComponent(project.id)}`);
+      state.reaAnalyses.set(project.id, { loading: false, evidence });
+      if (run) $('flpMeasured').textContent = `REA persistido · ${evidence.evidenceId} · ${evidence.metrics?.scannedFilesCount ?? 0} módulos · ${evidence.metrics?.routesDetected ?? 0} rotas`;
+    } catch (error) {
+      const notFound = !run && error.status === 404;
+      state.reaAnalyses.set(project.id, { loading: false, error: notFound ? null : error.message, evidence: null });
+      if (!notFound) $('flpMeasured').textContent = `Falha na análise REA: ${error.message}`;
+    }
+    if (state.selected === project.id && state.workspaceTab === 'intelligence') renderDetail();
   }
 
   function renderGraphTab(container, project) {
@@ -1082,18 +3976,25 @@
   function renderExecutionPanels(container, detail) {
     const progress = element('section', 'flp-panel');
     progress.append(element('h3', '', 'Execução do Projeto'));
-    const counts = element('div', 'flp-job-counts');
-    for (const [label, key] of [['Concluídos', 'completed'], ['Executando', 'running'], ['Na fila', 'queued'], ['Falhas', 'failed']]) {
-      const item = element('div');
-      item.append(element('strong', '', detail.progress?.[key] || 0), element('span', '', label));
-      counts.appendChild(item);
+    const progressFields = [['Concluídos', 'completed'], ['Executando', 'running'], ['Na fila', 'queued'], ['Falhas', 'failed']];
+    if (progressFields.some(([, key]) => Number.isFinite(detail.progress?.[key]))) {
+      const counts = element('div', 'flp-job-counts');
+      for (const [label, key] of progressFields) {
+        const item = element('div');
+        item.append(element('strong', '', Number.isFinite(detail.progress?.[key]) ? String(detail.progress[key]) : '—'), element('span', '', label));
+        counts.appendChild(item);
+      }
+      progress.appendChild(counts);
+    } else {
+      progress.append(element('p', 'flp-empty', 'Métricas de execução ainda não mapeadas.'));
     }
-    progress.appendChild(counts);
     container.appendChild(progress);
 
     const artifacts = element('section', 'flp-panel');
     artifacts.append(element('h3', '', 'Artefatos Registrados'));
-    if (!detail.artifacts?.length) {
+    if (!Array.isArray(detail.artifacts)) {
+      artifacts.append(element('p', 'flp-empty', 'Estado dos artefatos ainda não mapeado.'));
+    } else if (!detail.artifacts.length) {
       artifacts.append(element('p', 'flp-empty', 'Nenhum artefato registrado para este projeto.'));
     } else {
       for (const artifact of detail.artifacts.slice(-6).reverse()) {
@@ -1105,23 +4006,12 @@
     container.appendChild(artifacts);
   }
 
-  // 6. VISUAL SCREEN INSPECTOR MODAL (Section 8)
+  // Screen inspector shows only data measured during project absorption.
   function openInspector(screen, project) {
-    if (!project) project = state.projects.find(p => p.id === state.selected) || { id: 'api-platform-live', name: 'API-PLATAFORM' };
-    if (!screen) {
-      const screens = getProjectScreens(project);
-      screen = screens[0] || {
-        name: 'Tela Principal (Login & Auth)',
-        route: '#login',
-        domSummary: { buttonsCount: 2, inputsCount: 2, cardsCount: 1, totalNodes: 28 },
-        screenshotPath: '/screenshots/prj_api_plataform_real_screen.png',
-        reconstructedScreenshot: '/screenshots/api_platform_reconstructed_login.png',
-        components: ['LoginForm', 'EmailInput', 'PasswordInput', 'SubmitButton', 'BrandLogo'],
-        tokens: { primary: '#00E5A0', background: '#070B12', surface: '#0C1420', radius: '8px' }
-      };
-    }
+    project = project || state.projects.find((item) => item.id === state.selected);
+    if (!screen || !project) return;
     state.inspectorScreen = screen;
-    state.inspectorTab = 'live';
+    state.inspectorTab = 'preview';
     let container = $('flpInspectorContainer');
     if (!container) {
       container = document.createElement('div');
@@ -1129,52 +4019,48 @@
       document.body.appendChild(container);
     }
 
-    container.innerHTML = `
-      <div class="flp-inspector-backdrop" id="flpInspectorBackdrop">
-        <div class="flp-inspector-dialog" role="dialog" aria-modal="true">
-          <div class="flp-inspector-head">
-            <div>
-              <span class="flp-eyebrow">SCREEN DNA · VISUAL INSPECTOR</span>
-              <h2 style="margin:4px 0; font-size:20px; color:#F8FAFC;">${screen.name}</h2>
-              <span style="font:11px ui-monospace,monospace; color:#94A3B8;">Rota: ${screen.route} &bull; ${project.name || project.id} &bull; ${screen.domSummary?.totalNodes || 28} nós DOM</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span class="flp-badge flp-badge-green">98.5% PARIDADE VISUAL</span>
-              <button type="button" class="flp-button flp-button-soft" id="flpCloseInspector">✕ Fechar (ESC)</button>
-            </div>
-          </div>
-          <div class="flp-inspector-tabs">
-            <button class="flp-insp-tab active" data-tab="live">1. LIVE</button>
-            <button class="flp-insp-tab" data-tab="screenshot">2. SCREENSHOT</button>
-            <button class="flp-insp-tab" data-tab="dom">3. DOM</button>
-            <button class="flp-insp-tab" data-tab="components">4. COMPONENTS</button>
-            <button class="flp-insp-tab" data-tab="code">5. CODE</button>
-            <button class="flp-insp-tab" data-tab="api">6. API</button>
-            <button class="flp-insp-tab" data-tab="dna">7. DESIGN DNA</button>
-            <button class="flp-insp-tab" data-tab="interactions">8. INTERACTIONS</button>
-            <button class="flp-insp-tab" data-tab="compare">9. COMPARE</button>
-          </div>
-          <div class="flp-inspector-content" id="flpInspectorBody"></div>
-        </div>
-      </div>
-    `;
-
-    const close = () => { container.innerHTML = ''; };
-    $('flpCloseInspector')?.addEventListener('click', close);
-    $('flpInspectorBackdrop')?.addEventListener('click', (e) => {
-      if (e.target.id === 'flpInspectorBackdrop') close();
+    const close = () => container.replaceChildren();
+    const backdrop = element('div', 'flp-inspector-backdrop');
+    backdrop.id = 'flpInspectorBackdrop';
+    const dialog = element('div', 'flp-inspector-dialog');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    const header = element('header', 'flp-inspector-head');
+    const identity = element('div');
+    identity.append(element('span', 'flp-eyebrow', 'SCREEN DNA · CAPTURA DO PROJETO'));
+    identity.append(element('h2', '', screen.name || screen.title || screen.screenId || 'Tela observada'));
+    identity.append(element('code', '', `${project.name || project.id} · ${screen.route || 'Rota não registrada'}`));
+    const actions = element('div', 'flp-inspector-actions');
+    const openIde = element('button', 'flp-button flp-button-primary', 'Abrir na IDE');
+    openIde.type = 'button';
+    openIde.disabled = !workspaceIsAvailable(project);
+    openIde.addEventListener('click', async () => {
+      if (await openProjectInIde(project, null, screen)) close();
     });
+    const closeButton = element('button', 'flp-button flp-button-soft', 'Fechar');
+    closeButton.type = 'button';
+    closeButton.addEventListener('click', close);
+    actions.append(openIde, closeButton);
+    header.append(identity, actions);
 
-    const tabs = container.querySelectorAll('.flp-insp-tab');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        state.inspectorTab = tab.dataset.tab;
+    const tabs = element('div', 'flp-inspector-tabs');
+    for (const [id, label] of [['preview', 'Prévia'], ['evidence', 'Dados observados']]) {
+      const button = element('button', `flp-insp-tab${state.inspectorTab === id ? ' active' : ''}`, label);
+      button.type = 'button';
+      button.dataset.tab = id;
+      button.addEventListener('click', () => {
+        state.inspectorTab = id;
+        tabs.querySelectorAll('.flp-insp-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === id));
         renderInspectorContent(screen, project);
       });
-    });
-
+      tabs.appendChild(button);
+    }
+    const content = element('div', 'flp-inspector-content');
+    content.id = 'flpInspectorBody';
+    dialog.append(header, tabs, content);
+    backdrop.appendChild(dialog);
+    backdrop.addEventListener('click', (event) => { if (event.target === backdrop) close(); });
+    container.replaceChildren(backdrop);
     renderInspectorContent(screen, project);
   }
 
@@ -1182,367 +4068,46 @@
     const body = $('flpInspectorBody');
     if (!body) return;
     body.replaceChildren();
-
-    // 1. LIVE VIEW
-    if (state.inspectorTab === 'live') {
-      const wrap = element('div');
-      wrap.style.cssText = 'display:flex; flex-direction:column; gap:12px; align-items:center; width:100%;';
-
-      const toolbar = element('div');
-      toolbar.style.cssText = 'display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:space-between; width:100%;';
-      toolbar.innerHTML = `
-        <div style="display:flex; gap:6px; align-items:center;">
-          <span style="font-size:11px; color:#94A3B8; font-weight:700;">Viewport:</span>
-          <button type="button" class="flp-button flp-button-soft" id="flpLiveDesktop" style="font-size:10.5px; padding:3px 8px;">🖥️ Desktop (1280px)</button>
-          <button type="button" class="flp-button flp-button-soft" id="flpLiveTablet" style="font-size:10.5px; padding:3px 8px;">📱 Tablet (768px)</button>
-          <button type="button" class="flp-button flp-button-soft" id="flpLiveMobile" style="font-size:10.5px; padding:3px 8px;">📱 Mobile (375px)</button>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span class="flp-badge flp-badge-green">● RUNTIME CONECTADO</span>
-          <span style="font-size:11px; color:#94A3B8;">Host: <code>http://209.50.241.22:8081${screen.route || ''}</code></span>
-        </div>
-      `;
-      wrap.appendChild(toolbar);
-
-      const frame = element('div');
-      frame.id = 'flpLiveFrame';
-      frame.style.cssText = 'width:100%; max-height:65vh; overflow:auto; background:#050912; border:1px solid rgba(255,255,255,0.08); border-radius:10px; display:flex; justify-content:center; padding:16px; transition:width 0.2s ease;';
-
-      const img = document.createElement('img');
-      img.src = screen.screenshotPath || '/screenshots/prj_api_plataform_real_screen.png';
-      img.style.maxWidth = '100%';
-      img.style.height = 'auto';
-      img.style.borderRadius = '8px';
-      img.style.boxShadow = '0 12px 36px rgba(0,0,0,0.6)';
-      frame.appendChild(img);
-
-      wrap.appendChild(frame);
-      body.appendChild(wrap);
-
-      $('flpLiveDesktop')?.addEventListener('click', () => { frame.style.maxWidth = '100%'; });
-      $('flpLiveTablet')?.addEventListener('click', () => { frame.style.maxWidth = '768px'; });
-      $('flpLiveMobile')?.addEventListener('click', () => { frame.style.maxWidth = '375px'; });
-
-    // 2. SCREENSHOT VIEW
-    } else if (state.inspectorTab === 'screenshot') {
-      const wrap = element('div');
-      wrap.style.cssText = 'display:flex; flex-direction:column; gap:12px; width:100%;';
-
-      const bar = element('div');
-      bar.style.cssText = 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;';
-      bar.innerHTML = `
-        <div style="font-size:11.5px; color:#94A3B8;">
-          <strong style="color:#F8FAFC;">Captura Factual:</strong> Playwright Headless Chromium &bull; Resolução: 1280x800 @ 2x DPR &bull; Formato: PNG
-        </div>
-        <div style="display:flex; gap:6px;">
-          <a href="${screen.screenshotPath || '/screenshots/prj_api_plataform_real_screen.png'}" target="_blank" class="flp-button flp-button-soft" style="font-size:10.5px;">🔍 Abrir em Nova Aba</a>
-        </div>
-      `;
-      wrap.appendChild(bar);
-
-      const frame = element('div');
-      frame.style.cssText = 'width:100%; max-height:65vh; overflow:auto; background:#070B12; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; display:flex; justify-content:center;';
-      const img = document.createElement('img');
-      img.src = screen.screenshotPath || '/screenshots/prj_api_plataform_real_screen.png';
-      img.style.maxWidth = '100%';
-      img.style.borderRadius = '6px';
-      frame.appendChild(img);
-      wrap.appendChild(frame);
-      body.appendChild(wrap);
-
-    // 3. DOM TREE VIEW
-    } else if (state.inspectorTab === 'dom') {
-      const metrics = element('div', 'flp-facts');
-      const dom = screen.domSummary || { buttonsCount: 2, inputsCount: 2, cardsCount: 1, totalNodes: 28 };
-      metrics.append(
-        row('Total de Elementos DOM', String(dom.totalNodes || 28)),
-        row('Botões Mapeados', String(dom.buttonsCount || 2)),
-        row('Inputs Interativos', String(dom.inputsCount || 2)),
-        row('Cards / Containers', String(dom.cardsCount || 1))
-      );
-      body.appendChild(metrics);
-
-      const box = element('div', 'flp-code-box');
-      box.textContent = `HTML DOM TREE (Playwright Ingested Snapshot)
-<!DOCTYPE html>
-<html lang="pt-BR">
-  <head>
-    <title>${screen.name || 'API Platform'}</title>
-  </head>
-  <body class="bg-slate-950 text-slate-100 antialiased">
-    <div id="root">
-      <header class="app-header h-14 border-b border-slate-800 flex items-center px-4">
-        <div class="logo-wrap flex items-center gap-2">
-          <img src="/logo.svg" alt="Logo" class="w-8 h-8 rounded" />
-          <span class="font-bold text-sm text-cyan-400">API Platform</span>
-        </div>
-      </header>
-      <main class="auth-container flex items-center justify-center min-h-[calc(100vh-56px)] p-6">
-        <form id="authForm" class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl">
-          <h2 class="text-xl font-bold mb-4 text-white">Acessar Console</h2>
-          <div class="field-group mb-3">
-            <label for="email" class="text-xs text-slate-400 block mb-1">E-mail Corporativo</label>
-            <input id="email" type="email" placeholder="admin@fenix.local" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm" required />
-          </div>
-          <div class="field-group mb-4">
-            <label for="password" class="text-xs text-slate-400 block mb-1">Senha</label>
-            <input id="password" type="password" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm" required />
-          </div>
-          <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded transition">
-            Entrar
-          </button>
-        </form>
-      </main>
-    </div>
-  </body>
-</html>`;
-      body.appendChild(box);
-
-    // 4. COMPONENTS VIEW
-    } else if (state.inspectorTab === 'components') {
-      const box = element('div', 'flp-code-box');
-      box.textContent = `HIERARQUIA DE COMPONENTES REATIVOS
-└── [Screen: ${screen.name || 'Login Screen'}] (Rota: ${screen.route || '#login'})
-    ├── [AppHeader]
-    │   ├── [BrandLogo] (img.logo) -> props: { src: '/logo.svg', alt: 'API Platform' }
-    │   └── [NavTitle] ("API Platform Auth")
-    │
-    └── [AuthContainer]
-        └── [Card: LoginForm] (form#authForm) -> state: { email: '', password: '', loading: false }
-            ├── [InputGroup: Email]
-            │   ├── [Label] ("E-mail Corporativo")
-            │   └── [Input: EmailInput] (type="email", validation="required|email")
-            │
-            ├── [InputGroup: Password]
-            │   ├── [Label] ("Senha de Acesso")
-            │   └── [Input: PasswordInput] (type="password", validation="required|min:6")
-            │
-            └── [ActionDock]
-                ├── [Button: SubmitButton] (label="Entrar", variant="emerald", state="idle|loading")
-                └── [Link: ForgotPassword] ("Esqueceu sua senha?")`;
-      body.appendChild(box);
-
-    // 5. CODE VIEW (With File Mapping & Visual IDE Direct Link)
-    } else if (state.inspectorTab === 'code') {
-      const fileBar = element('div');
-      fileBar.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#080E1A; border:1px solid rgba(0,217,255,0.2); border-radius:8px; padding:10px 14px; margin-bottom:12px;';
-      fileBar.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px;">
-          <i class="ph-bold ph-file-code" style="color:#00D9FF; font-size:18px;"></i>
-          <div>
-            <div style="font-size:10px; color:#94A3B8; text-transform:uppercase;">Arquivo de Origem Mapeado</div>
-            <code style="color:#F8FAFC; font-size:12px; font-weight:700;">${project.workspace || 'projects/API-PLATAFORM'}/apps/dashboard/src/pages/Login.tsx:14</code>
-          </div>
-        </div>
-        <button type="button" class="flp-button flp-button-primary" id="flpOpenInIdeBtn">
-          ⚡ Abrir na Visual IDE
-        </button>
-      `;
-      body.appendChild(fileBar);
-
-      $('flpOpenInIdeBtn')?.addEventListener('click', async () => {
-        window.showView?.('ide');
-        await window.fenixSelectIdeProject?.(project.id);
-        const container = $('flpInspectorContainer');
-        if (container) container.innerHTML = '';
-      });
-
-      const box = element('div', 'flp-code-box');
-      box.textContent = `// Reconstructed Production Component: ${screen.name}
-// Source: ${project.workspace || 'projects/API-PLATAFORM'}/apps/dashboard/src/pages/Login.tsx
-import React, { useState } from 'react';
-
-export function ReconstructedLoginForm({ onSubmit }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await onSubmit?.({ email, password });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="auth-card" style={{ background: '#0C1420', borderRadius: 8, padding: 24, border: '1px solid rgba(255,255,255,0.08)' }}>
-      <h2 style={{ color: '#F8FAFC', marginBottom: 16 }}>Entrar na Plataforma</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', color: '#94A3B8', fontSize: 12, marginBottom: 4 }}>E-mail</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ width: '100%', padding: '8px 12px', background: '#070B12', border: '1px solid #1E293B', color: '#fff', borderRadius: 6 }}
-            required
-          />
-        </div>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', color: '#94A3B8', fontSize: 12, marginBottom: 4 }}>Senha</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: '100%', padding: '8px 12px', background: '#070B12', border: '1px solid #1E293B', color: '#fff', borderRadius: 6 }}
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ width: '100%', padding: '10px 16px', background: '#00E5A0', color: '#070B12', fontWeight: 700, border: 'none', borderRadius: 6, cursor: 'pointer' }}
-        >
-          {loading ? 'Validando credenciais...' : 'Acessar'}
-        </button>
-      </form>
-    </div>
-  );
-}`;
-      body.appendChild(box);
-
-    // 6. API VIEW
-    } else if (state.inspectorTab === 'api') {
-      const panel = element('div');
-      panel.innerHTML = `
-        <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-          <h3 style="margin:0; font-size:14px; color:#F8FAFC;">Endpoints Consumidos por Esta Tela</h3>
-          <span class="flp-badge flp-badge-cyan">4 ROTAS MAPEADAS</span>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <div style="padding:10px 14px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="background:#3B82F6; color:#fff; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px;">POST</span>
-              <code style="color:#00D9FF; font-size:12.5px; font-weight:700;">/api/v1/auth/login</code>
-              <span style="color:#10B981; font-size:10.5px; font-weight:700;">● 200 OK (85ms)</span>
-            </div>
-            <div style="margin-top:6px; font-size:11px; color:#94A3B8;">
-              Payload: <code>{ email: string, password: string }</code> &bull; Retorno: <code>{ token: string, user: object }</code>
-            </div>
-          </div>
-          <div style="padding:10px 14px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="background:#10B981; color:#fff; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px;">GET</span>
-              <code style="color:#00D9FF; font-size:12.5px; font-weight:700;">/api/v1/auth/me</code>
-              <span style="color:#10B981; font-size:10.5px; font-weight:700;">● 200 OK (42ms)</span>
-            </div>
-            <div style="margin-top:6px; font-size:11px; color:#94A3B8;">
-              Headers: <code>Authorization: Bearer &lt;JWT&gt;</code> &bull; Retorno: <code>{ id, role, tenantId, permissions }</code>
-            </div>
-          </div>
-          <div style="padding:10px 14px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="background:#10B981; color:#fff; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px;">GET</span>
-              <code style="color:#00D9FF; font-size:12.5px; font-weight:700;">/api/v1/workspaces</code>
-              <span style="color:#10B981; font-size:10.5px; font-weight:700;">● 200 OK (110ms)</span>
-            </div>
-            <div style="margin-top:6px; font-size:11px; color:#94A3B8;">
-              Retorno: <code>{ workspaces: Array&lt;Workspace&gt; }</code>
-            </div>
-          </div>
-        </div>
-      `;
-      body.appendChild(panel);
-
-    // 7. DESIGN DNA VIEW
-    } else if (state.inspectorTab === 'dna') {
-      const wrap = element('div', 'flp-tokens-wrap');
-      const tokens = [
-        { label: 'Primary Accent', val: '#00E5A0', color: '#00E5A0' },
-        { label: 'Surface Background', val: '#0C1420', color: '#0C1420' },
-        { label: 'Deep Root', val: '#070B12', color: '#070B12' },
-        { label: 'Text Bright', val: '#F8FAFC', color: '#F8FAFC' },
-        { label: 'Border Subtle', val: 'rgba(255,255,255,0.08)', color: '#334155' },
-        { label: 'Radius', val: '8px (Medium Rounded)' },
-        { label: 'Typography', val: 'Inter, JetBrains Mono, system-ui' },
-        { label: 'Shadow', val: '0 8px 24px rgba(0,0,0,0.5)' }
-      ];
-
-      for (const t of tokens) {
-        const card = element('div', 'flp-token-card');
-        if (t.color) {
-          const swatch = element('div', 'flp-color-swatch');
-          swatch.style.background = t.color;
-          card.appendChild(swatch);
-        }
-        const info = element('div');
-        info.append(element('div', '', t.label), element('strong', '', t.val));
-        card.appendChild(info);
-        wrap.appendChild(card);
+    if (state.inspectorTab === 'preview') {
+      const preview = element('div', 'flp-dna-inspector-preview');
+      if (screen.screenshotPath) {
+        const image = document.createElement('img');
+        image.src = screen.screenshotPath;
+        image.alt = `Captura observada: ${screen.name || screen.title || screen.route || 'tela sem nome'}`;
+        image.onerror = () => {
+          image.remove();
+          preview.appendChild(element('p', 'flp-dna-empty', 'A captura registrada não está acessível neste servidor.'));
+        };
+        preview.appendChild(image);
+      } else {
+        preview.appendChild(element('p', 'flp-dna-empty', 'Este registro não contém uma captura de tela.'));
       }
-      body.appendChild(wrap);
-
-    // 8. INTERACTIONS VIEW
-    } else if (state.inspectorTab === 'interactions') {
-      const box = element('div', 'flp-code-box');
-      box.textContent = `MAPA DE INTERAÇÕES E FLUXO DE EVENTOS
-1. Evento: DOMContentLoaded
-   └── Ação: Executa verificação de token residual em localStorage ('fenix_token')
-       └── Se presente: Redireciona para /#dashboard
-       └── Se ausente: Foca o campo 'email' com transição suave
-
-2. Evento: Input Change (#email)
-   └── Validação: Teste de regex RFC 5322
-   └── Feedback: Borda azul cyan ao focar; borda vermelha suave se formato inválido
-
-3. Evento: Form Submit (#authForm) ou Tecla Enter
-   └── Prevenção: e.preventDefault()
-   └── Loading State: Botão exibe spinner e desabilita novas submissões
-   └── Disparo: POST /api/v1/auth/login via fetch() seguro com credenciais
-   └── Sucesso (200): Salva token JWT e redireciona para workspace
-   └── Erro (401/403): Ativa animação 'shake' no card e exibe toast de erro honesto`;
-      body.appendChild(box);
-
-    // 9. COMPARE VIEW (Visual Diff Similarity)
-    } else if (state.inspectorTab === 'compare') {
-      const banner = element('div');
-      banner.style.cssText = 'background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;';
-      banner.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px;">
-          <i class="ph-bold ph-check-circle" style="color:#10B981; font-size:20px;"></i>
-          <div>
-            <strong style="color:#F8FAFC; font-size:13px;">Auditoria Visual Playwright Realizada</strong>
-            <div style="font-size:11px; color:#94A3B8;">Comparativo de layout, geometria de caixas e computed styles</div>
-          </div>
-        </div>
-        <span class="flp-badge flp-badge-green" style="font-size:12px; padding:4px 10px;">98.5% SIMILARIDADE FACTUAL</span>
-      `;
-      body.appendChild(banner);
-
-      const grid = element('div', 'flp-compare-grid');
-
-      // Left Column: Original Screen
-      const colOriginal = element('div', 'flp-compare-col');
-      colOriginal.innerHTML = `
-        <div class="flp-compare-title">
-          <span>ORIGINAL (SCREEN DNA PLAYWRIGHT)</span>
-          <span class="flp-badge flp-badge-cyan">100% REAL</span>
-        </div>
-        <div class="flp-compare-preview">
-          <img src="${screen.screenshotPath || '/screenshots/prj_api_plataform_real_screen.png'}" alt="Original" />
-        </div>
-      `;
-
-      // Right Column: Reconstructed Screen
-      const colReconstructed = element('div', 'flp-compare-col');
-      colReconstructed.innerHTML = `
-        <div class="flp-compare-title">
-          <span>RECONSTRUÇÃO (AUTONOMOUS SANDBOX)</span>
-          <span class="flp-badge flp-badge-green">98.5% FIDELIDADE</span>
-        </div>
-        <div class="flp-compare-preview">
-          <img src="${screen.reconstructedScreenshot || '/screenshots/api_platform_reconstructed_login.png'}" alt="Reconstruction" />
-        </div>
-      `;
-
-      grid.append(colOriginal, colReconstructed);
-      body.appendChild(grid);
+      body.appendChild(preview);
+      return;
     }
-  }
 
+    const evidence = element('div', 'flp-dna-evidence');
+    const domNodes = Number(screen.domSummary?.totalNodes);
+    const hasMeasuredDom = screen.domSummary?.totalNodes != null && Number.isFinite(domNodes);
+    const measuredComponents = Array.isArray(screen.componentEvidence) ? screen.componentEvidence : null;
+    evidence.append(
+      row('Projeto', project.name || project.id),
+      row('Rota declarada', screen.route || 'Não registrada'),
+      row('Elementos DOM', hasMeasuredDom ? String(domNodes) : screen.domInspectionStatus === 'INSPECTED' ? 'Inspecionados; contagem indisponível' : 'Não medidos'),
+      row('Captura visual', screen.captureStatus === 'CAPTURED' || screen.screenshotPath ? 'Capturada' : screen.captureStatus === 'CAPTURE_FAILED' ? 'Falhou' : 'Não capturada'),
+      row('Confiança', screen.confidenceStatus === 'BROWSER_OBSERVED' && Number.isFinite(Number(screen.confidence)) ? `Observação real (${screen.confidence})` : 'Não pontuada'),
+      row('Layout', screen.layoutEvidenceStatus === 'INFERRED_FROM_ROUTE' ? 'Inferido pela rota; não medido' : (screen.layout || 'Não informado')),
+      row('Componentes identificados', measuredComponents ? String(measuredComponents.length) : 'Não medidos'),
+      row('Arquivo de origem', screen.sourceFile || 'Não registrado'),
+      row('Origem', screen.source || screen.captureSource || 'Origem não registrada')
+    );
+    if (measuredComponents?.length) {
+      const list = element('ul', 'flp-dna-component-list');
+      for (const component of measuredComponents) list.appendChild(element('li', '', component));
+      evidence.appendChild(list);
+    }
+    body.appendChild(evidence);
+  }
   function renderGit(target, project) {
     const panel = element('section', 'flp-panel');
     panel.append(element('h3', '', 'Git · Versão e Publicação'));
@@ -1852,13 +4417,16 @@ export function ReconstructedLoginForm({ onSubmit }) {
     }
     if (state.selected === id) renderDetail();
 
-    try {
-      const absReport = await json(`/api/v2/company/projects/${encodeURIComponent(id)}/absorption`, { signal: AbortSignal.timeout(10000) });
-      if (absReport) state.absorptions.set(id, absReport);
-    } catch (e) {
-      // Not absorbed yet is normal
+    const proj = state.projects.find((p) => p.id === id);
+    if (proj?.absorbed || state.absorptions.has(id)) {
+      try {
+        const absReport = await json(`/api/v2/company/projects/${encodeURIComponent(id)}/absorption`, { signal: AbortSignal.timeout(10000) });
+        if (absReport) state.absorptions.set(id, absReport);
+      } catch (e) {
+        // Not absorbed yet is normal
+      }
+      if (state.selected === id) renderDetail();
     }
-    if (state.selected === id) renderDetail();
 
     if (id === 'api-platform-live') loadDeploy(id);
   }
@@ -1866,6 +4434,7 @@ export function ReconstructedLoginForm({ onSubmit }) {
   function selectProject(id) {
     clearTimeout(state.deployTimer);
     state.selected = id;
+    recordProjectOpen(id);
     localStorage.setItem('fenix_project_hub_selected', id);
     const proj = state.projects.find((p) => p.id === id);
     if (window.GlobalSelectionStore && typeof window.GlobalSelectionStore.select === 'function') {
@@ -1873,18 +4442,64 @@ export function ReconstructedLoginForm({ onSubmit }) {
     }
     renderCards();
     renderDetail();
-    loadGit(id);
+    loadProjectState(id);
+    if (workspaceIsAvailable(proj)) loadGit(id);
+  }
+
+  function persistCatalogPreferences() {
+    try {
+      localStorage.setItem(CATALOG_PREFS_KEY, JSON.stringify({ favorites: [...state.catalogFavorites], recents: state.catalogRecents.slice(0, 24), layout: state.catalogLayout }));
+    } catch { /* Local convenience only; project records remain server-authoritative. */ }
+  }
+
+  function recordProjectOpen(projectId) {
+    if (!projectId) return;
+    state.catalogRecents = [{ id: projectId, openedAt: Date.now() }, ...state.catalogRecents.filter((item) => item.id !== projectId)].slice(0, 24);
+    persistCatalogPreferences();
+  }
+
+  function toggleProjectFavorite(projectId) {
+    if (state.catalogFavorites.has(projectId)) state.catalogFavorites.delete(projectId);
+    else state.catalogFavorites.add(projectId);
+    persistCatalogPreferences();
+    renderCards();
   }
   window.fenixSelectProject = selectProject;
 
+  async function loadProjectState(id) {
+    if (!id || state.details.has(id) || state.detailLoads.has(id)) return state.detailLoads.get(id);
+    const request = json(`/api/fenix/projects/${encodeURIComponent(id)}/state`, { signal: AbortSignal.timeout(10000) })
+      .then((detail) => { state.details.set(id, detail); state.detailErrors.delete(id); })
+      .catch((error) => { state.detailErrors.set(id, error.message); })
+      .finally(() => {
+        state.detailLoads.delete(id);
+        if (state.selected === id) {
+          renderMetrics();
+          renderCards();
+          renderDetail();
+        }
+      });
+    state.detailLoads.set(id, request);
+    return request;
+  }
+
   async function load(force = false) {
     renderShell();
-    loadGitHubAccount();
     if (state.loading) return state.loading;
     if (state.projects.length && !force) {
       renderCards();
       renderDetail();
       return;
+    }
+    loadGitHubAccount();
+    loadCatalogStatus(force);
+    setupStatusWebSocket();
+    if (!window.__FENIX_PROJECT_STATUS_POLL_INTERVAL__) {
+      window.__FENIX_PROJECT_STATUS_POLL_INTERVAL__ = setInterval(() => {
+        if (isProjectsRoute() && document.querySelector('.view.active')?.id === 'view-projects') {
+          loadCatalogStatus();
+        }
+      }, 12000);
     }
     state.loading = (async () => {
       state.error = null;
@@ -1899,15 +4514,17 @@ export function ReconstructedLoginForm({ onSubmit }) {
                           state.projects[0];
         state.selected = preferred?.id || null;
         state.requestedProjectId = null;
+        recordProjectOpen(state.selected);
         if (state.selected) loadGit(state.selected);
+        await loadCatalogStatus(force);
         renderMetrics();
         renderCards();
         renderDetail();
-        const details = await Promise.allSettled(state.projects.map((project) => json(`/api/fenix/projects/${encodeURIComponent(project.id)}/state`, { signal: AbortSignal.timeout(60000) })));
-        state.details.clear();
-        details.forEach((result, index) => {
-          if (result.status === 'fulfilled') state.details.set(state.projects[index].id, result.value);
-        });
+        if (force) {
+          state.details.clear();
+          state.detailErrors.clear();
+        }
+        await loadProjectState(state.selected);
       } catch (error) {
         state.error = error.message;
       }
@@ -2709,6 +5326,71 @@ export function ReconstructedLoginForm({ onSubmit }) {
     }
     await load();
   };
+  window.openProjectScreenDNA = async (projectId) => {
+    const alias = projectId === 'api-platform' ? 'api-platform-live' : projectId;
+    window.showView?.('projects');
+    if (!state.projects.length) await load();
+    if (!state.projects.some((project) => project.id === alias)) {
+      state.requestedProjectId = alias;
+      await load(true);
+    }
+    if (!state.projects.some((project) => project.id === alias)) return false;
+    selectProject(alias);
+    state.workspaceTab = 'screens';
+    renderDetail();
+    loadRegisteredScreens(state.projects.find((project) => project.id === alias));
+    return true;
+  };
+  window.fenixOpenProjectReaAnalysis = async (projectId) => {
+    const alias = projectId === 'api-platform' ? 'api-platform-live' : projectId;
+    window.showView?.('projects');
+    if (!state.projects.length) await load();
+    if (!state.projects.some((project) => project.id === alias)) {
+      state.requestedProjectId = alias;
+      await load(true);
+    }
+    const project = state.projects.find((item) => item.id === alias);
+    if (!project) return false;
+    selectProject(alias);
+    state.workspaceTab = 'intelligence';
+    renderDetail();
+    await loadReaEvidence(project, true);
+    return true;
+  };
+  window.fenixOpenProjectDesignReference = async (projectId) => {
+    const alias = projectId === 'api-platform' ? 'api-platform-live' : projectId;
+    window.showView?.('projects');
+    if (!state.projects.length) await load();
+    if (!state.projects.some((project) => project.id === alias)) {
+      state.requestedProjectId = alias;
+      await load(true);
+    }
+    if (!state.projects.some((project) => project.id === alias)) return false;
+    selectProject(alias);
+    state.workspaceTab = 'intelligence';
+    renderDetail();
+    return true;
+  };
+
+  // The Project Hub is expensive enough to load only when its route is active.
+  const isProjectsRoute = () => /^#projects(?:\/|\?|$)/i.test(window.location.hash || '');
+  const startProjectHub = () => {
+    if (!isProjectsRoute()) return;
+    renderShell();
+    load();
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startProjectHub, { once: true });
+  } else {
+    startProjectHub();
+  }
+  window.addEventListener('fenix:viewchanged', (e) => {
+    if (e.detail?.viewId === 'projects') {
+      renderShell();
+      load();
+    }
+  });
+  window.addEventListener('hashchange', startProjectHub);
 
   // Keyboard navigation for Modals (ESC to close)
   document.addEventListener('keydown', (e) => {

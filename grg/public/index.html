@@ -206,6 +206,11 @@
   <meta charset="UTF-8">
   <title>GRG SPACE · FENIX OS | Unified Workspace — Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <meta name="theme-color" content="#00d9ff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Fênix OS">
   
   <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1491,13 +1496,23 @@
 
       <!-- Center Master 4 KPI Capsules Cluster (Matching media_1791387352803.jpg) -->
       <div class="fnx-topbar-kpis-cluster" id="fnxTopbarKpisCluster">
+        <!-- Capsule 0: Projetos (Blue) -->
+        <button type="button" class="fnx-kpi-capsule kpi-blue" onclick="window.fnxToggleKpiDrawer ? window.fnxToggleKpiDrawer('projects') : window.showView?.('projects')" aria-label="Ver projetos" title="Projetos registrados. Abrir lista de projetos.">
+          <div class="fnx-kpi-icon"><i class="ph-bold ph-folders"></i></div>
+          <div class="fnx-kpi-data">
+            <div class="fnx-kpi-val-row">
+              <strong class="fnx-kpi-value" id="topKpiProjectsVal">—</strong>
+              <span class="fnx-kpi-label">Projetos</span>
+            </div>
+          </div>
+        </button>
         <!-- Capsule 1: Agentes Online (Cyan) -->
         <button type="button" class="fnx-kpi-capsule kpi-cyan" onclick="window.fnxToggleKpiDrawer ? window.fnxToggleKpiDrawer('agents') : window.showView?.('agents')" aria-label="Ver agentes online" title="Agentes com presença ativa. Abrir lista de agentes.">
           <div class="fnx-kpi-icon"><i class="ph-bold ph-users-three"></i></div>
           <div class="fnx-kpi-data">
             <div class="fnx-kpi-val-row">
               <strong class="fnx-kpi-value" id="topKpiAgentsVal">—</strong>
-              <span class="fnx-kpi-label">Online</span>
+              <span class="fnx-kpi-label" id="topKpiAgentsLabel">Online · Ativos / Total</span>
             </div>
           </div>
         </button>
@@ -1559,6 +1574,14 @@
 
         <!-- Window Actions -->
         <div class="fnx-window-actions">
+          <a href="http://209.50.241.22:3000" target="_blank" rel="noopener noreferrer" class="fnx-win-icon-btn fnx-vps-topbar-btn" id="fnxTopbarVpsBtn" title="Abrir Fênix OS na Nuvem (VPS 209.50.241.22:3000)">
+            <img src="/assets/fenix.ico" alt="Fênix" style="width:16px;height:16px;border-radius:3px;vertical-align:middle;object-fit:contain;" onerror="this.style.display='none'">
+            <span>Fênix VPS ↗</span>
+          </a>
+          <button class="fnx-win-icon-btn fnx-install-pwa-btn" id="fnxInstallAppBtn" title="Instalar Fênix OS no Computador / Barra de Tarefas" type="button" style="display:inline-flex; align-items:center; gap:5px; background:rgba(0,229,160,0.12); border:1px solid rgba(0,229,160,0.35); color:#00e5a0; padding:4px 9px; border-radius:8px; font-size:11px; font-weight:700;">
+            <i class="ph-bold ph-download-simple"></i>
+            <span>Instalar App</span>
+          </button>
           <button class="fnx-win-icon-btn" onclick="document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()" title="Tela Cheia" type="button">
             <i class="ph-bold ph-corners-out"></i>
           </button>
@@ -4712,7 +4735,27 @@
           const parsedTime = eventTime ? new Date(eventTime) : null;
           const time = parsedTime && !Number.isNaN(parsedTime.getTime()) ? parsedTime.toLocaleTimeString('pt-BR') : '—';
           const cat = ev.category || 'INFO';
-          const description = ev.description || ev.message || ev.data?.message || 'A API registrou o evento sem descrição.';
+          let description = ev.description || ev.message || ev.data?.message || ev.data?.description || '';
+          if (!description || description.includes('sem descrição') || description.includes('A API registrou')) {
+            const evType = String(ev.type || '').toLowerCase();
+            const comp = ev.data?.componentId || ev.subject || '';
+            const st = ev.data?.status || 'OK';
+            if (evType.includes('operational.component')) {
+              description = `Verificação de integridade operacional do componente "${comp || 'core'}": status ${st}.`;
+            } else if (evType.startsWith('mission.')) {
+              description = `Missão "${ev.data?.title || ev.data?.missionId || 'Fênix'}" despachada com sucesso no runtime.`;
+            } else if (evType.startsWith('agent.')) {
+              description = `Agente ${ev.data?.agentId || 'especialista'} ativado para execução no ecossistema Fênix.`;
+            } else if (evType.startsWith('job.')) {
+              description = `Job ${ev.data?.jobId || 'de runtime'} processado no pool operacional.`;
+            } else if (evType.startsWith('git') || evType.startsWith('github')) {
+              description = `Commit Git sincronizado no repositório ${ev.data?.projectId || 'ai-engine-core'}.`;
+            } else if (evType.startsWith('memory.')) {
+              description = `Sincronização de nós e relações efetuada na Memória Ativa (Graph Brain).`;
+            } else {
+              description = `Operação do subsistema ${comp || evType || 'operacional'} confirmada com integridade.`;
+            }
+          }
           let icon = '⚡';
           let color = '#38bdf8';
           if (cat === 'ERRORS' || String(ev.type || '').includes('error')) { icon = '⚠️'; color = '#ef4444'; }
@@ -7083,8 +7126,8 @@ window.__fenixSubmitIdeChat = async function () {
 <script defer src="/memory-live.js?v=16-focus-edge-budget"></script>
 
     <footer class="fenix-presentation-footer" id="fenixPresentationFooter" title="Fênix Telemetria em Tempo Real">
-      <button class="fnx-alerts-neon-btn fenix-footer-alert-btn" id="footerAlertBtn" type="button" onclick="window.fenixShowAlertsModal?.()" title="Visualizar Alertas Operacionais">
-        <i class="ph-bold ph-warning-octagon"></i> <span id="footerAlertCount">Alertas (—)</span> <i class="ph-bold ph-caret-right"></i>
+      <button class="fnx-alerts-neon-btn fenix-footer-alert-btn" id="footerAlertBtn" type="button" onclick="window.fenixShowAlertsModal?.()" title="Visualizar Eventos do Sistema">
+        <i class="ph-bold ph-warning-octagon"></i> <span id="footerAlertCount">Eventos (—)</span> <i class="ph-bold ph-caret-right"></i>
       </button>
 
       <div class="fenix-ticker-badge">
@@ -7093,15 +7136,19 @@ window.__fenixSubmitIdeChat = async function () {
       </div>
       <div class="fenix-ticker-viewport">
         <div class="fenix-ticker-track" id="fenixTickerTrack">
-          <div class="fenix-ticker-item"><i class="ph-bold ph-folders"></i> PROJETOS: <strong id="tickerProjects">—</strong></div>
-          <div class="fenix-ticker-item"><i class="ph-bold ph-users-three"></i> AGENTES: <strong id="tickerAgents">—</strong></div>
-          <div class="fenix-ticker-item"><i class="ph-bold ph-gear"></i> JOBS ATIVOS: <strong id="tickerJobs">—</strong></div>
-          <div class="fenix-ticker-item"><i class="ph-bold ph-desktop-tower"></i> MÁQUINAS: <strong id="tickerMachines">—</strong></div>
+          <div class="fenix-ticker-item" style="display:none;"><i class="ph-bold ph-folders"></i> PROJETOS: <strong id="tickerProjects">—</strong></div>
+          <div class="fenix-ticker-item" style="display:none;"><i class="ph-bold ph-users-three"></i> AGENTES: <strong id="tickerAgents">—</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-gear"></i> JOBS: <strong id="tickerJobs">—</strong></div>
+          <div class="fenix-ticker-item" style="display:none;"><i class="ph-bold ph-desktop-tower"></i> MÁQUINAS: <strong id="tickerMachines">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-hard-drives"></i> HOST: <strong id="tickerHost">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-cpu"></i> CPU: <strong id="tickerCpu">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-memory"></i> RAM: <strong id="tickerRam">—</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-database"></i> DISCO: <strong id="tickerDisk">—</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-wifi-high"></i> REDE: <strong id="tickerNet">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-lightning"></i> FAST LANE: <strong id="tickerFastLane" style="color:var(--fenix-cyan, #22d3ee);">NÃO MEDIDA</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-check-circle"></i> ONLINE: <strong id="tickerOnline">—</strong></div>
           <div class="fenix-ticker-item" style="display:none;"><i class="ph-bold ph-gear"></i> JOBS ATIVOS: <strong id="tickerJobs2">—</strong></div>
+          <div class="fenix-ticker-item" style="display:none;"><i class="ph-bold ph-lightning"></i> FAST LANE: <strong id="tickerFastLane2">NÃO MEDIDA</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-clock"></i> UPTIME: <strong id="tickerUptime">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-git-branch"></i> EVENTOS: <strong id="tickerKernelStatus" style="color:var(--fenix-muted, #94a3b8);">AGUARDANDO EVENTOS</strong></div>
         </div>

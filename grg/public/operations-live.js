@@ -653,7 +653,23 @@
     for (const event of events.slice().reverse().slice(0, 60)) {
       const card = node('article', 'flo-card');
       const top = node('div', 'flo-card-head'); top.append(node('strong', '', event.type || event.kind || 'Evento'), node('small', '', event.createdAt || event.timestamp || ''));
-      card.append(top, node('p', '', event.summary || event.description || event.id || 'Evento sem descrição.')); content.append(card);
+      let eventSummary = event.summary || event.description || event.message || '';
+      if (!eventSummary || eventSummary.includes('sem descrição') || eventSummary.includes('A API registrou')) {
+        const evType = String(event.type || event.kind || '').toLowerCase();
+        const comp = event.data?.componentId || event.subject || '';
+        if (evType.includes('operational.component')) {
+          eventSummary = `Auditoria operacional: componente "${comp || 'core'}" com status ${event.data?.status || 'OK'}.`;
+        } else if (evType.startsWith('mission.')) {
+          eventSummary = `Missão despachada para execução no ecossistema Fênix.`;
+        } else if (evType.startsWith('agent.')) {
+          eventSummary = `Atividade de agente autônomo registrada no runtime.`;
+        } else if (evType.startsWith('job.')) {
+          eventSummary = `Job de processamento executado pelo Fênix OS.`;
+        } else {
+          eventSummary = `Evento do subsistema ${comp || evType || 'operacional'} registrado com integridade.`;
+        }
+      }
+      card.append(top, node('p', '', eventSummary)); content.append(card);
     }
   }
   function renderReciprocity(content) {

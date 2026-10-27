@@ -10,10 +10,11 @@
   const SKIN_COLORS = ['#FEE3D4', '#F5D5C0', '#E8C4A0', '#D4A373', '#C8956C', '#8D5B38', '#55331C', '#E0B89C'];
   const HAIR_COLORS = ['#18181B', '#3B2314', '#5D3A1A', '#9A3412', '#D97706', '#94A3B8', '#0284C7', '#7C3AED'];
   const SHIRT_COLORS = ['#2563EB', '#059669', '#3B82F6', '#6366F1', '#DB2777', '#16A34A', '#D97706', '#EF4444'];
+  const isChatWindow = new URLSearchParams(window.location.search).get('assistantWindow') === '1';
 
   // ── Estado Global do Componente ──
   const state = {
-    isOpen: localStorage.getItem('fenix_sidebar_state') === 'open',
+    isOpen: isChatWindow || localStorage.getItem('fenix_sidebar_state') === 'open',
     isDocked: localStorage.getItem('fenix_sidebar_docked') !== 'false',
     activeTab: 'chat',
     mascotMood: 'idle', // 'idle' | 'thinking' | 'working' | 'success' | 'error'
@@ -30,7 +31,16 @@
       vpsStatus: '—',
       activeJobs: '—'
     },
-    activeInspectAgent: null
+    memoryIndex: {
+      files: '—',
+      symbols: '—',
+      routes: '—',
+      memorySections: '—',
+      reaVersion: '—'
+    },
+    activeInspectAgent: null,
+    chatExecutionMode: 'fast',
+    chatErrors: []
   };
 
   // ── Elementos do DOM ──
@@ -93,6 +103,7 @@
       sb.className = state.isOpen ? 'open' : 'state-closed collapsed';
       sb.innerHTML = `
         <div class="fsb-resize-handle" id="fsbResizeHandle" title="Arrastar para ajustar largura do chat"></div>
+        <div class="fsb-height-resize-handle" id="fsbHeightResizeHandle" title="Arrastar para ajustar altura do chat" role="separator" aria-orientation="horizontal" tabindex="0"></div>
         <div class="fsb-header">
           <div class="fsb-header-left">
             <div class="fsb-avatar-wrap" id="fsbHeaderAvatar" style="width:28px; height:28px; min-width:28px;">
@@ -114,16 +125,17 @@
             </div>
           </div>
           <div class="fsb-header-actions">
-            <button class="fsb-icon-btn" id="fsbCompactBtn" title="Modo Compacto (64px)" type="button"><i class="ph-bold ph-arrows-in-line-horizontal"></i></button>
-            <button class="fsb-icon-btn" id="fsbExpandBtn" title="Expandir Copilot (480px)" type="button"><i class="ph-bold ph-arrows-out-line-horizontal"></i></button>
-            <button class="fsb-dock-toggle-btn active" id="fsbDockBtn" title="Alternar Split Screen / Flutuante" style="display:none;"><i class="ph-bold ph-columns"></i> <span id="fsbDockBtnText">Split</span></button>
-            <button class="fsb-icon-btn" id="fsbClearBtn" title="Limpar Chat" type="button"><i class="ph-bold ph-trash"></i></button>
-            <button class="fsb-icon-btn" id="fsbCollapseBtn" title="Recolher Copilot [>]" type="button"><i class="ph-bold ph-caret-right"></i></button>
-            <button class="fsb-icon-btn" id="fsbMinimizeBtn" title="Minimizar para Mascote" style="display:none;" type="button"><i class="ph-bold ph-caret-right"></i></button>
+            <button class="fsb-icon-btn" id="fsbCompactBtn" title="Recolher conversa em uma faixa compacta" aria-label="Alternar modo compacto" type="button"><i class="ph-bold ph-corners-in"></i></button>
+            <button class="fsb-icon-btn" id="fsbExpandBtn" title="Alternar largura" aria-label="Alternar largura" type="button"><i class="ph-bold ph-corners-out"></i></button>
+            <button class="fsb-icon-btn" id="fsbUndockBtn" title="Abrir conversa em janela independente" aria-label="Abrir conversa em janela independente" type="button"><i class="ph-bold ph-arrow-square-out"></i></button>
+            <button class="fsb-icon-btn" id="fsbClearBtn" title="Limpar Conversa" type="button"><i class="ph-bold ph-trash"></i></button>
+            <button class="fsb-icon-btn" id="fsbCollapseBtn" title="Fechar Lateral" type="button"><i class="ph-bold ph-x"></i></button>
           </div>
         </div>
 
-        <!-- Universal Context Bar (Fênix V15) -->
+        <details class="fsb-context-tools" id="fsbContextTools">
+          <summary><span>Contexto e ferramentas</span></summary>
+          <!-- Universal Context Bar (Fênix V15) -->
         <div class="fsb-context-bar" id="fsbContextBar">
           <div class="fsb-ctx-item" title="Projeto Ativo"><i class="ph-bold ph-folder"></i> <span id="fsbCtxProject">—</span></div>
           <div class="fsb-ctx-item" title="Arquivo Aberto"><i class="ph-bold ph-file-code"></i> <span id="fsbCtxFile">—</span></div>
@@ -131,13 +143,28 @@
           <div class="fsb-ctx-item" title="Agente / Personagem Focado"><i class="ph-bold ph-user-circle"></i> <span id="fsbCtxAgent">—</span></div>
         </div>
 
-        <div class="fsb-tabs">
-          <button class="fsb-tab-btn active" data-tab="chat"><i class="ph-bold ph-chat-teardrop-text"></i> Chat</button>
-          <button class="fsb-tab-btn" data-tab="telemetry"><i class="ph-bold ph-activity"></i> Telemetria</button>
-          <button class="fsb-tab-btn" data-tab="providers" id="fsbTabProviders"><i class="ph-bold ph-plugs-connected"></i> Providers</button>
-          <button class="fsb-tab-btn" data-tab="logs"><i class="ph-bold ph-scroll"></i> Logs</button>
-          <button class="fsb-tab-btn" data-tab="terminal"><i class="ph-bold ph-terminal-window"></i> Terminal</button>
-          <button class="fsb-tab-btn" data-tab="inspector" id="fsbTabInspector"><i class="ph-bold ph-cpu"></i> Inspetor</button>
+        <!-- Active Memory & Project INDEX + REA Intelligence Strip -->
+        <div class="fsb-memory-index-strip" id="fsbMemoryIndexStrip">
+          <div class="fsb-mis-top">
+            <span class="fsb-mis-pill" title="Project Memory Index O(1) (<1ms)"><i class="ph-bold ph-database"></i> INDEX: <strong id="fsbIdxFilesCount">—</strong> arqs · <strong id="fsbIdxSymbolsCount">—</strong> símb · <strong id="fsbIdxRoutesCount">—</strong> rotas</span>
+            <span class="fsb-mis-pill rea" title="REA Engine & Active Project Memory"><i class="ph-bold ph-brain"></i> MEM: <strong id="fsbIdxMemoryCount">—</strong> · <span id="fsbReaVersionBadge">REA</span></span>
+          </div>
+          <div class="fsb-mis-actions">
+            <button type="button" class="fsb-mis-btn" id="fsbQuickReaBtn" title="Executar Análise Forense & Arquitetural REA no Projeto Ativo"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-detective"></i></span> REA Analyze</button>
+            <button type="button" class="fsb-mis-btn" id="fsbQuickBlueprintBtn" title="Gerar Blueprint Full-Stack (Regra VII) com REA"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-compass-tool"></i></span> Blueprint</button>
+            <button type="button" class="fsb-mis-btn" id="fsbQuickIndexBtn" title="Consultar Project Memory Index & ACTIVE_PROJECT_MEMORY.md"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-database"></i></span> Index</button>
+            <button type="button" class="fsb-mis-btn accent" id="fsbQuickDelegateBtn" title="Delegar Tarefa Diretamente para a Fila de API 24/7"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-rocket-launch"></i></span> Delegar API</button>
+          </div>
+        </div>
+        </details>
+
+        <div class="fsb-tabs fnx-mono3d-tabs" role="group" aria-label="Áreas da sidebar Fênix">
+          <button type="button" class="fsb-tab-btn active" data-tab="chat" title="Chat / Assistente" aria-label="Chat" aria-pressed="true"><span class="fsb-tab-emoji fnx-mono3d-tab-icon"><i class="ph-bold ph-chat-centered-text"></i></span></button>
+          <button type="button" class="fsb-tab-btn" data-tab="telemetry" title="Telemetria em Tempo Real" aria-label="Telemetria" aria-pressed="false"><span class="fsb-tab-emoji fnx-mono3d-tab-icon"><i class="ph-bold ph-chart-bar"></i></span></button>
+          <button type="button" class="fsb-tab-btn" data-tab="providers" id="fsbTabProviders" title="Provedores e Modelos de IA" aria-label="Provedores e modelos" aria-pressed="false"><span class="fsb-tab-emoji fnx-mono3d-tab-icon"><i class="ph-bold ph-cpu"></i></span></button>
+          <button type="button" class="fsb-tab-btn" data-tab="logs" title="Logs e Auditoria do Sistema" aria-label="Logs e auditoria" aria-pressed="false"><span class="fsb-tab-emoji fnx-mono3d-tab-icon"><i class="ph-bold ph-scroll"></i></span></button>
+          <button type="button" class="fsb-tab-btn" data-tab="terminal" title="Terminal Interativo" aria-label="Terminal" aria-pressed="false"><span class="fsb-tab-emoji fnx-mono3d-tab-icon"><i class="ph-bold ph-terminal-window"></i></span></button>
+          <button type="button" class="fsb-tab-btn" data-tab="inspector" id="fsbTabInspector" title="Inspetor de Contexto e Agentes" aria-label="Inspetor de contexto e agentes" aria-pressed="false"><span class="fsb-tab-emoji fnx-mono3d-tab-icon"><i class="ph-bold ph-magnifying-glass"></i></span></button>
         </div>
 
         <!-- Painel Chat -->
@@ -151,9 +178,11 @@
             </div>
           </div>
 
-          <div class="fsb-conv-toolbar">
-            <button type="button" class="fsb-conv-btn primary" id="fsbNewChatBtn" title="Iniciar Nova Conversa"><i class="ph-bold ph-plus"></i> Nova Conversa</button>
+          <div class="fsb-conv-toolbar" style="flex-wrap:wrap; gap:6px;">
+            <button type="button" class="fsb-conv-btn primary" id="fsbNewChatBtn" title="Iniciar Nova Conversa"><i class="ph-bold ph-plus"></i> Nova</button>
             <button type="button" class="fsb-conv-btn" id="fsbHistoryBtn" title="Ver Histórico de Conversas"><i class="ph-bold ph-clock-counter-clockwise"></i> Histórico (<span id="fsbHistoryCount">0</span>)</button>
+            <button type="button" class="fsb-conv-btn fsb-errors-btn" id="fsbSavedErrorsBtn" title="Histórico Persistente de Erros e Alertas do Chat"><i class="ph-bold ph-warning-octagon"></i> Erros (<span id="fsbSavedErrorsCount">0</span>)</button>
+            <button type="button" class="fsb-conv-btn" id="fsbExecModeToggleBtn" data-mode="fast" title="Alternar entre Canal Rápido (Conversa Imediata + Memória) e API Profunda + Fila (Alto Limite de Tokens)" style="border-color:rgba(0,217,255,0.35); color:#00D9FF;"><i class="ph-bold ph-lightning"></i> Canal Rápido</button>
           </div>
 
           <!-- Diff Proposal Container (Human-in-the-loop) -->
@@ -180,56 +209,61 @@
             <div class="fsb-history-list" id="fsbHistoryList"></div>
           </div>
 
+          <!-- Persistent Chat Error & Alert History Drawer -->
+          <div class="fsb-history-drawer fsb-errors-drawer" id="fsbSavedErrorsDrawer" style="display:none;">
+            <div class="fsb-history-header">
+              <span><i class="ph-bold ph-warning-octagon" style="color:#f59e0b; margin-right:6px;"></i> Histórico de Erros & Alertas</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <button type="button" class="fsb-conv-btn" id="fsbClearSavedErrorsBtn" title="Limpar Histórico de Erros" style="padding:2px 8px; font-size:10px;">Limpar</button>
+                <button type="button" class="fsb-icon-btn" id="fsbCloseSavedErrorsBtn" title="Fechar Histórico de Erros"><i class="ph-bold ph-x"></i></button>
+              </div>
+            </div>
+            <div class="fsb-history-list" id="fsbSavedErrorsList"></div>
+          </div>
+
           <div class="fsb-messages" id="fsbChatMessages">
             <div class="fsb-msg bot">
               <div class="fsb-msg-sender"><i class="ph-bold ph-robot"></i> Mascote Fênix</div>
-              <div class="fsb-bubble" style="background:transparent; border:none; padding:0; box-shadow:none;">
-                <!-- Quick Actions Grid -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 0 12px;">
-                  <button onclick="window.fenixSidebarAction?.('create-agent')" style="display:flex; align-items:center; gap:6px; padding:8px 10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#E2E8F0; font-size:11px; font-weight:600; cursor:pointer; text-align:left;">
-                    <i class="ph-bold ph-robot" style="color:#10B981; font-size:14px;"></i> Criar agente
-                  </button>
-                  <button onclick="window.fenixSidebarAction?.('new-mission')" style="display:flex; align-items:center; gap:6px; padding:8px 10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#E2E8F0; font-size:11px; font-weight:600; cursor:pointer; text-align:left;">
-                    <i class="ph-bold ph-crosshair" style="color:#A855F7; font-size:14px;"></i> Nova missão
-                  </button>
-                  <button onclick="window.fenixSidebarAction?.('open-project')" style="display:flex; align-items:center; gap:6px; padding:8px 10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#E2E8F0; font-size:11px; font-weight:600; cursor:pointer; text-align:left;">
-                    <i class="ph-bold ph-folder-open" style="color:#3B82F6; font-size:14px;"></i> Abrir projeto
-                  </button>
-                  <button onclick="window.fenixSidebarAction?.('start-meeting')" style="display:flex; align-items:center; gap:6px; padding:8px 10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#E2E8F0; font-size:11px; font-weight:600; cursor:pointer; text-align:left;">
-                    <i class="ph-bold ph-video-camera" style="color:#F59E0B; font-size:14px;"></i> Iniciar reunião
-                  </button>
-                </div>
-
-                <!-- Suggestions Section -->
-                <div style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:10px;">
-                  <div style="font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:4px;">
-                    <i class="ph-bold ph-lightbulb" style="color:#FCD34D;"></i> Sugestões para hoje
-                  </div>
-                  <div style="display:flex; flex-direction:column; gap:6px;">
-                    <div style="display:flex; align-items:center; gap:8px; padding:6px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.03);">
-                      <div style="width:6px; height:6px; border-radius:50%; background:#EF4444;"></div>
-                      <div style="flex:1; font-size:11px; color:#E2E8F0;">—</div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px; padding:6px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.03);">
-                      <div style="width:6px; height:6px; border-radius:50%; background:#F59E0B;"></div>
-                      <div style="flex:1; font-size:11px; color:#E2E8F0;">—</div>
-                    </div>
-                  </div>
-                </div>
+              <div class="fsb-bubble fsb-welcome-state" data-fsb-welcome>
+                <strong>Olá, GRG.</strong>
+                <p>Converse normalmente. Se pedir uma ação, eu mostro o plano para você revisar antes de confirmar.</p>
               </div>
             </div>
           </div>
+          <details class="fsb-command-disclosure" id="fsbCommandDisclosure">
+            <summary><span>Ações rápidas</span><span class="fsb-command-count" id="fsbCommandCount">—</span></summary>
+          <div class="fsb-quick-actions-head"><span>Ações rápidas</span><button type="button" id="fsbQuickActionsCustomizeBtn" aria-expanded="false">⚙ Personalizar</button></div>
+          <div class="fsb-quick-actions-editor" id="fsbQuickActionsEditor" hidden></div>
           <div class="fsb-chips-row" id="fsbChipsRow">
+            <button class="fsb-chip" data-cmd="/rea"><i class="ph-bold ph-magnifying-glass-plus"></i> /rea</button>
+            <button class="fsb-chip" data-cmd="/blueprint"><i class="ph-bold ph-compass-tool"></i> /blueprint</button>
+            <button class="fsb-chip" data-cmd="/index"><i class="ph-bold ph-database"></i> /index</button>
+            <button class="fsb-chip" data-cmd="/delegate"><i class="ph-bold ph-rocket-launch"></i> /delegate</button>
+            <button class="fsb-chip" data-cmd="/goal"><i class="ph-bold ph-lightning"></i> /goal</button>
+            <button class="fsb-chip" data-cmd="/plan"><i class="ph-bold ph-kanban"></i> /plan</button>
             <button class="fsb-chip" data-cmd="/vps-status"><i class="ph-bold ph-hard-drives"></i> Status VPS</button>
             <button class="fsb-chip" data-cmd="/health"><i class="ph-bold ph-shield-check"></i> Integridade</button>
             <button class="fsb-chip" data-cmd="/memory"><i class="ph-bold ph-brain"></i> Memória</button>
             <button class="fsb-chip" data-cmd="/agents"><i class="ph-bold ph-users-three"></i> Agentes</button>
           </div>
+          <div class="fsb-slash-workflows-row" id="fsbSlashWorkflowsRow" style="display:flex; flex-wrap:wrap; gap:5px; padding:4px 10px 8px;">
+            <button type="button" class="fsb-slash-pill" data-cmd="/goal" style="font-size:10px; padding:3px 7px; border-radius:6px; background:rgba(0,217,255,0.1); border:1px solid rgba(0,217,255,0.28); color:#00D9FF; cursor:pointer;">⚡ /goal</button>
+            <button type="button" class="fsb-slash-pill" data-cmd="/browser" style="font-size:10px; padding:3px 7px; border-radius:6px; background:rgba(0,217,255,0.1); border:1px solid rgba(0,217,255,0.28); color:#00D9FF; cursor:pointer;">🌐 /browser</button>
+            <button type="button" class="fsb-slash-pill" data-cmd="/plan" style="font-size:10px; padding:3px 7px; border-radius:6px; background:rgba(0,217,255,0.1); border:1px solid rgba(0,217,255,0.28); color:#00D9FF; cursor:pointer;">📐 /plan</button>
+            <button type="button" class="fsb-slash-pill" data-cmd="/grill-me" style="font-size:10px; padding:3px 7px; border-radius:6px; background:rgba(0,217,255,0.1); border:1px solid rgba(0,217,255,0.28); color:#00D9FF; cursor:pointer;">🔥 /grill-me</button>
+            <button type="button" class="fsb-slash-pill" data-cmd="/teamwork-preview" style="font-size:10px; padding:3px 7px; border-radius:6px; background:rgba(0,217,255,0.1); border:1px solid rgba(0,217,255,0.28); color:#00D9FF; cursor:pointer;">🤝 /teamwork-preview</button>
+            <button type="button" class="fsb-slash-pill" data-cmd="/learn" style="font-size:10px; padding:3px 7px; border-radius:6px; background:rgba(0,217,255,0.1); border:1px solid rgba(0,217,255,0.28); color:#00D9FF; cursor:pointer;">🧠 /learn</button>
+            <button type="button" class="fsb-slash-pill" data-cmd="/boost" style="font-size:10px; padding:3px 7px; border-radius:6px; background:rgba(0,217,255,0.1); border:1px solid rgba(0,217,255,0.28); color:#00D9FF; cursor:pointer;">🚀 /boost</button>
+            <button type="button" class="fsb-slash-pill" data-cmd="/spawn-agent" style="font-size:10px; padding:3px 7px; border-radius:6px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.32); color:#10B981; cursor:pointer;">➕ /spawn-agent</button>
+          </div>
+          </details>
           <div class="fsb-input-wrap" id="fsbInputArea">
             <input type="file" id="fsbFileInput" style="display:none;" multiple>
             <button type="button" class="fsb-attach-btn" id="fsbAttachBtn" title="Anexar qualquer arquivo (APK, IPA, PDF, DOCX, ZIP, Imagens, Vídeos, Binários...)"><i class="ph-bold ph-paperclip"></i></button>
-            <textarea class="fsb-input" id="fsbChatInput" rows="1" placeholder="Envie uma mensagem ou anexe arquivos…"></textarea>
-            <button class="fsb-send-btn" id="fsbSendBtn" title="Enviar"><i class="ph-bold ph-paper-plane-right"></i></button>
+            <textarea class="fsb-input" id="fsbChatInput" rows="1" placeholder="Converse com o Fênix. Para executar, descreva a tarefa e revise o plano."></textarea>
+            <button type="button" class="fsb-delegate-btn" id="fsbDelegateBtn" title="Preparar uma tarefa para revisão e confirmação"><i class="ph-bold ph-rocket-launch"></i></button>
+            <button type="button" class="fsb-chat-input-btn" id="fsbVoiceBtn" title="Gravar uma mensagem de voz"><i class="ph-bold ph-microphone"></i></button>
+            <button class="fsb-send-btn" id="fsbSendBtn" title="Enviar (FastLane)"><i class="ph-bold ph-paper-plane-right"></i></button>
           </div>
         </div>
 
@@ -499,12 +533,20 @@
     setCopilotState(mode) {
       state.copilotState = mode;
       state.isOpen = (mode === 'open' || mode === 'expanded' || mode === 'compact');
-      try {
-        localStorage.setItem('fenix_sidebar_state', state.isOpen ? 'open' : 'minimized');
-        localStorage.setItem('fenix.ui.copilotState', mode);
-      } catch (_) {}
+      if (!isChatWindow) {
+        try {
+          localStorage.setItem('fenix_sidebar_state', state.isOpen ? 'open' : 'minimized');
+          localStorage.setItem('fenix.ui.copilotState', mode);
+        } catch (_) {}
+      }
 
       document.body.classList.toggle('has-right-sidebar-open', state.isOpen);
+
+      if (state.isOpen) {
+        if (window.innerWidth <= 760) window.fenixCloseCityDrawersForMobile?.();
+        const worldInspector = document.getElementById('fenixWorldAgentInspector');
+        if (worldInspector) worldInspector.style.display = 'none';
+      }
 
       if (!sidebarEl) sidebarEl = document.getElementById('fenix-right-sidebar');
       if (!sidebarEl) return;
@@ -526,6 +568,10 @@
         sidebarEl.classList.add('open');
         mascotEl?.classList.add('hidden');
         document.getElementById('fsbChatInput')?.focus();
+      }
+      const expandIcon = document.querySelector('#fsbExpandBtn i');
+      if (expandIcon) {
+        expandIcon.className = mode === 'expanded' ? 'ph-bold ph-corners-in' : 'ph-bold ph-corners-out';
       }
       setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
     },
@@ -692,23 +738,38 @@
       ];
     } else if (m === 'world') {
       chips = [
-        { label: 'API Platform', icon: 'ph-buildings', cmd: 'Abra o projeto api-platform' },
-        { label: 'ZapAI CRM', icon: 'ph-whatsapp-logo', cmd: 'Abra o projeto zapai-crm' },
-        { label: 'Focar Camila', icon: 'ph-user-circle', cmd: 'Qual o status da Camila?' },
-        { label: 'Focar Alex', icon: 'ph-user-circle', cmd: 'Qual o status do Alex?' }
+        { label: 'Stand-up Diário', icon: 'ph-lightning', cmd: 'Executar o daily stand-up com status de todos os 39 agentes e bloqueios ativos.' },
+        { label: 'Resumo Pipeline', icon: 'ph-chart-bar', cmd: 'Resumo executivo do pipeline de missões e entregas pendentes.' },
+        { label: 'Central Core', icon: 'ph-buildings', cmd: 'Status operacional detalhado do Central Core.' },
+        { label: 'Laboratório Dev', icon: 'ph-code', cmd: 'Qual o status e tarefas do Laboratório Dev?' }
       ];
     } else {
       chips = [
+        { label: 'Stand-up Diário', icon: 'ph-lightning', cmd: 'Executar o daily stand-up com status de todos os 39 agentes.' },
+        { label: 'Resumo Pipeline', icon: 'ph-chart-bar', cmd: 'Resumo executivo do pipeline de missões e entregas pendentes.' },
         { label: 'Status VPS', icon: 'ph-hard-drives', cmd: '/vps-status' },
-        { label: 'Integridade', icon: 'ph-shield-check', cmd: '/health' },
-        { label: 'Memória', icon: 'ph-brain', cmd: '/memory' },
-        { label: 'Agentes', icon: 'ph-users-three', cmd: '/agents' }
+        { label: 'Integridade', icon: 'ph-shield-check', cmd: '/health' }
       ];
     }
 
+    const contextKey = `fenix.chat.quickActions.${m || 'global'}`;
+    try {
+      const saved = JSON.parse(localStorage.getItem(contextKey) || 'null');
+      if (Array.isArray(saved)) chips = saved.filter(item => item && typeof item.label === 'string' && typeof item.cmd === 'string').slice(0, 8);
+    } catch (_) {}
     chipsRow.innerHTML = chips.map(c => `
-      <button class="fsb-chip" data-cmd="${c.cmd}" onclick="window.fenixCopilot?.sendMessage(this.dataset.cmd)"><i class="ph-bold ${c.icon}"></i> ${c.label}</button>
+      <button class="fsb-chip" data-cmd="${SidebarController.escapeHTML(c.cmd)}" onclick="window.fenixCopilot?.sendMessage(this.dataset.cmd)"><i class="ph-bold ${SidebarController.escapeHTML(c.icon || 'ph-lightning')}"></i> ${SidebarController.escapeHTML(c.label)}</button>
     `).join('');
+    const count = document.getElementById('fsbCommandCount');
+    if (count) count.textContent = String(chips.length);
+    SidebarController.renderQuickActionsEditor(chips, contextKey);
+  }
+
+  function renderQuickActionsEditor(chips, contextKey) {
+    const editor = document.getElementById('fsbQuickActionsEditor');
+    if (!editor) return;
+    editor.dataset.storageKey = contextKey;
+    editor.innerHTML = `${chips.map((item, index) => `<div class="fsb-quick-action-edit-row"><span>${SidebarController.escapeHTML(item.label)}</span><button type="button" data-action="up" data-index="${index}" aria-label="Mover ação para cima">↑</button><button type="button" data-action="down" data-index="${index}" aria-label="Mover ação para baixo">↓</button><button type="button" data-action="remove" data-index="${index}" aria-label="Remover ação">×</button></div>`).join('')}<form class="fsb-quick-action-add"><input name="label" maxlength="32" placeholder="Nome da ação" aria-label="Nome da ação"><input name="command" maxlength="240" placeholder="Pergunta ou comando" aria-label="Pergunta ou comando"><button type="submit">Adicionar</button></form>`;
   }
 
   function showDiffProposal(diffCode, filePath, newContent) {
@@ -751,18 +812,85 @@
 
   // ── Controlador da Sidebar Direita ──
   const SidebarController = {
-    initEvents() {
-      // Toggle / Minimize / Collapse / Compact / Expand
-      document.getElementById('fsbMinimizeBtn')?.addEventListener('click', () => MascotController.toggle());
-      document.getElementById('fsbCollapseBtn')?.addEventListener('click', () => MascotController.setCopilotState('closed'));
-      document.getElementById('fsbCompactBtn')?.addEventListener('click', () => MascotController.setCopilotState(state.copilotState === 'compact' ? 'open' : 'compact'));
-      document.getElementById('fsbExpandBtn')?.addEventListener('click', () => MascotController.setCopilotState(state.copilotState === 'expanded' ? 'open' : 'expanded'));
-      document.getElementById('fsbClearBtn')?.addEventListener('click', () => this.clearChat());
+    renderQuickActionsEditor,
+    toggleQuickActionsEditor() {
+      const editor = document.getElementById('fsbQuickActionsEditor');
+      const button = document.getElementById('fsbQuickActionsCustomizeBtn');
+      if (!editor || !button) return;
+      editor.hidden = !editor.hidden;
+      button.setAttribute('aria-expanded', String(!editor.hidden));
+    },
 
-      // Multi-Conversation History
+    handleQuickActionsEdit(event) {
+      const editor = event.currentTarget;
+      const key = editor.dataset.storageKey;
+      if (!key) return;
+      const chips = [...document.querySelectorAll('#fsbChipsRow .fsb-chip')].map(button => ({ label: button.textContent.trim(), cmd: button.dataset.cmd }));
+      if (event.type === 'submit') {
+        event.preventDefault();
+        const label = event.target.elements.label.value.trim();
+        const command = event.target.elements.command.value.trim();
+        if (!label || !command || chips.length >= 8) return;
+        chips.push({ label, cmd: command });
+      } else {
+        const index = Number(event.target.dataset.index);
+        const action = event.target.dataset.action;
+        if (!Number.isInteger(index) || !chips[index]) return;
+        if (action === 'remove') chips.splice(index, 1);
+        else if (action === 'up' && index > 0) [chips[index - 1], chips[index]] = [chips[index], chips[index - 1]];
+        else if (action === 'down' && index < chips.length - 1) [chips[index + 1], chips[index]] = [chips[index], chips[index + 1]];
+        else return;
+      }
+      localStorage.setItem(key, JSON.stringify(chips));
+      const mode = copilotContext.mode || 'global';
+      renderContextualChips(mode);
+      document.querySelector('#fsbQuickActionsEditor form')?.reset();
+    },
+
+    _pendingChatMessages: [],
+    _pendingChatResolvers: [],
+    _chatBatchTimer: null,
+    _conversationRequestTail: Promise.resolve(),
+
+    initEvents() {
+      // Toggle / Expand / Collapse
+      document.getElementById('fsbCollapseBtn')?.addEventListener('click', () => MascotController.setCopilotState('closed'));
+      document.getElementById('fsbCompactBtn')?.addEventListener('click', () => {
+        MascotController.setCopilotState(state.copilotState === 'compact' ? 'open' : 'compact');
+      });
+      document.getElementById('fsbExpandBtn')?.addEventListener('click', () => {
+        const next = state.copilotState === 'expanded' ? 'open' : 'expanded';
+        MascotController.setCopilotState(next);
+      });
+      document.getElementById('fsbClearBtn')?.addEventListener('click', () => this.clearChat());
+      document.getElementById('fsbUndockBtn')?.addEventListener('click', () => {
+        if (isChatWindow) { window.close(); return; }
+        const url = new URL(window.location.href);
+        url.searchParams.set('assistantWindow', '1');
+        const chatWindow = window.open(url.href, 'fenix-chat-window', 'popup=yes,width=480,height=820,resizable=yes,scrollbars=no');
+        if (chatWindow) chatWindow.focus();
+        else window.dispatchEvent(new CustomEvent('fenix:toast', { detail: { message: 'O navegador bloqueou a janela. Permita pop-ups para este site.', type: 'warning' } }));
+      });
+
+      // Multi-Conversation History, Persistent Error Ledger & Execution Mode Toggle
       document.getElementById('fsbNewChatBtn')?.addEventListener('click', () => this.startNewConversation());
       document.getElementById('fsbHistoryBtn')?.addEventListener('click', () => this.toggleHistoryDrawer());
       document.getElementById('fsbCloseHistoryBtn')?.addEventListener('click', () => this.toggleHistoryDrawer(false));
+      document.getElementById('fsbSavedErrorsBtn')?.addEventListener('click', () => this.toggleErrorsDrawer());
+      document.getElementById('fsbCloseSavedErrorsBtn')?.addEventListener('click', () => this.toggleErrorsDrawer(false));
+      document.getElementById('fsbClearSavedErrorsBtn')?.addEventListener('click', () => this.clearSavedErrors());
+      document.getElementById('fsbExecModeToggleBtn')?.addEventListener('click', () => this.toggleExecutionMode());
+
+      // Slash Workflow Pills
+      document.querySelectorAll('.fsb-slash-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          const cmd = pill.dataset.cmd;
+          if (!cmd) return;
+          const proj = copilotContext.projectId || state.activeInspectCompanyId || 'fenix-os';
+          const fullCmd = cmd === '/spawn-agent' ? `/spawn-agent ${proj}` : `${cmd} ${proj}`;
+          window.fenixCopilot?.sendMessage(fullCmd);
+        });
+      });
 
       // Tabs
       document.querySelectorAll('.fsb-tab-btn').forEach(btn => {
@@ -776,13 +904,43 @@
       document.querySelectorAll('.fsb-chip').forEach(chip => {
         chip.addEventListener('click', () => {
           const cmd = chip.dataset.cmd;
+          if (cmd === '/goal' || cmd === '/plan' || cmd === '/browser' || cmd === '/blueprint' || cmd === '/index' || cmd === '/delegate') {
+            const chatInput = document.getElementById('fsbChatInput');
+            if (chatInput) {
+              if (cmd === '/blueprint' && !chatInput.value.trim()) {
+                this.runReaBlueprint();
+                return;
+              }
+              if (cmd === '/index' && !chatInput.value.trim()) {
+                this.openMemoryIndexPrompt();
+                return;
+              }
+              if (cmd === '/delegate' && !chatInput.value.trim()) {
+                this.delegateInputTask();
+                return;
+              }
+              chatInput.value = cmd + ' ';
+              chatInput.focus();
+              return;
+            }
+          }
           this.handleCommand(cmd);
         });
       });
 
+      // Quick REA + Memory Index + API Delegation Strip Buttons
+      document.getElementById('fsbQuickReaBtn')?.addEventListener('click', () => this.runReaAnalysis());
+      document.getElementById('fsbQuickBlueprintBtn')?.addEventListener('click', () => this.runReaBlueprint());
+      document.getElementById('fsbQuickIndexBtn')?.addEventListener('click', () => this.openMemoryIndexPrompt());
+      document.getElementById('fsbQuickDelegateBtn')?.addEventListener('click', () => this.delegateInputTask());
+      document.getElementById('fsbQuickActionsCustomizeBtn')?.addEventListener('click', () => this.toggleQuickActionsEditor());
+      document.getElementById('fsbQuickActionsEditor')?.addEventListener('click', (event) => this.handleQuickActionsEdit(event));
+      document.getElementById('fsbQuickActionsEditor')?.addEventListener('submit', (event) => this.handleQuickActionsEdit(event));
+
       // Chat Input
       const chatInput = document.getElementById('fsbChatInput');
       const sendBtn = document.getElementById('fsbSendBtn');
+      const delegateBtn = document.getElementById('fsbDelegateBtn');
       chatInput?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
@@ -790,6 +948,8 @@
         }
       });
       sendBtn?.addEventListener('click', () => this.sendChatMessage());
+      delegateBtn?.addEventListener('click', () => this.delegateInputTask());
+      document.getElementById('fsbVoiceBtn')?.addEventListener('click', () => this.toggleVoiceCapture());
 
       // Universal File Attachment & Drag and Drop
       const fileInput = document.getElementById('fsbFileInput');
@@ -824,9 +984,10 @@
           }
         });
         panelChat.addEventListener('paste', (e) => {
-          if (e.clipboardData?.files?.length > 0) {
+          const pastedFiles = this.getClipboardFiles(e.clipboardData);
+          if (pastedFiles.some((file) => file.type?.startsWith('image/'))) {
             e.preventDefault();
-            this.handleIncomingFiles(e.clipboardData.files);
+            this.handleIncomingFiles(pastedFiles);
           }
         });
       }
@@ -878,6 +1039,31 @@
         window.addEventListener('pointercancel', stopResize);
       }
 
+      const heightHandle = document.getElementById('fsbHeightResizeHandle');
+      if (heightHandle) {
+        let resizingHeight = false;
+        heightHandle.addEventListener('pointerdown', (event) => {
+          resizingHeight = true;
+          document.getElementById('fenix-right-sidebar')?.classList.add('fsb-height-resized');
+          heightHandle.setPointerCapture?.(event.pointerId);
+          document.body.classList.add('fsb-resizing-height');
+          event.preventDefault();
+        });
+        heightHandle.addEventListener('pointermove', (event) => {
+          if (!resizingHeight) return;
+          const minHeight = Math.min(320, window.innerHeight - 24);
+          const height = Math.max(minHeight, Math.min(window.innerHeight - 24, window.innerHeight - event.clientY));
+          document.documentElement.style.setProperty('--fsb-height', `${height}px`);
+          try { localStorage.setItem('fenix.ui.rightCopilotHeight', String(height)); } catch (_) {}
+        });
+        const stopHeightResize = () => {
+          resizingHeight = false;
+          document.body.classList.remove('fsb-resizing-height');
+        };
+        heightHandle.addEventListener('pointerup', stopHeightResize);
+        heightHandle.addEventListener('pointercancel', stopHeightResize);
+      }
+
       // Docked Mode Toggle (Lovable Split Screen)
       const dockBtn = document.getElementById('fsbDockBtn');
       const updateDockBtn = () => {
@@ -909,12 +1095,48 @@
           `;
         }
       });
+
+      // Spatial & City Agent Connection: Chat immediately focuses and opens for clicked agent
+      window.addEventListener('fenix-agent-selected', (e) => {
+        const agent = e.detail?.agent;
+        if (!agent) return;
+        const worldInspector = document.getElementById('fenixWorldAgentInspector');
+        if (worldInspector) worldInspector.style.display = 'none';
+
+        const agName = agent.displayName || agent.name || agent.id;
+        const agRole = agent.role || 'Especialista';
+        state.focusedAgent = agent;
+        const agentEl = document.getElementById('fsbCtxAgent');
+        if (agentEl) agentEl.textContent = `${agent.emoji || '🤖'} ${agName}`;
+        const headerCtx = document.getElementById('fsbHeaderContextName');
+        if (headerCtx) headerCtx.textContent = `${agent.emoji || '🤖'} ${agName}`;
+
+        // Ensure sidebar opens
+        if (!state.isOpen) MascotController.setCopilotState('open');
+
+        // Greeting / handover from agent
+        if (state.lastGreetedAgentId !== agent.id) {
+          state.lastGreetedAgentId = agent.id;
+          this.appendMessage('bot', `🎯 **Conexão Direta**: ${agName} (${agRole})\n` +
+            `Olá! Estou alocado neste setor da cidade. Você pode conversar comigo no FastLane ou delegar tarefas para a API 24/7. O que deseja executar?`, agName);
+        }
+      });
+
+      // Project Connection: Updates sidebar context when a project is selected
+      window.addEventListener('fenix-project-selected', (e) => {
+        const projId = e.detail?.projectId || e.detail?.id;
+        if (!projId) return;
+        const projEl = document.getElementById('fsbCtxProject');
+        if (projEl) projEl.textContent = projId;
+        copilotContext.projectId = projId;
+      });
     },
 
     switchTab(tab) {
       state.activeTab = tab;
       document.querySelectorAll('.fsb-tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
+        btn.setAttribute('aria-pressed', String(btn.dataset.tab === tab));
       });
       document.querySelectorAll('.fsb-panel').forEach(p => p.classList.remove('active'));
       const activePanel = document.getElementById(`fsbPanel${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
@@ -1032,20 +1254,20 @@
           </div>
 
           <div class="fsb-company-res-grid" style="grid-template-columns: 1fr; gap: 8px; margin-top: 14px;">
+            <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.FenixSidebar?.runReaAnalysis?.('${project.id || project.slug}')">
+              <i class="ph-bold ph-shield-check" style="color: #00D9FF;"></i> REA Engineering &amp; Evidência Forense
+            </button>
+            <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.FenixSidebar?.runReaBlueprint?.('${project.id || project.slug}')">
+              <i class="ph-bold ph-blueprint" style="color: #A855F7;"></i> REA Dev Blueprint (Regra VII)
+            </button>
             <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.fenixOpenProjectWorkspace ? window.fenixOpenProjectWorkspace('${project.id || project.slug}') : window.showView?.('ide')">
-              <i class="ph-bold ph-terminal-window" style="color: #00D9FF;"></i> Abrir Workspace
+              <i class="ph-bold ph-terminal-window" style="color: #38BDF8;"></i> Abrir Workspace
             </button>
             <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.showView?.('city'); window.GlobalSelectionStore?.select('world_entity', '${project.id}');">
-              <i class="ph-bold ph-buildings" style="color: #10B981;"></i> Ver no World
-            </button>
-            <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.showView?.('ide')">
-              <i class="ph-bold ph-git-fork" style="color: #F59E0B;"></i> Ver Git
-            </button>
-            <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.showView?.('agents')">
-              <i class="ph-bold ph-users" style="color: #8B5CF6;"></i> Ver Agentes
+              <i class="ph-bold ph-buildings" style="color: #10B981;"></i> Ver no World 3D (Tower Charge)
             </button>
             <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.showView?.('operations')">
-              <i class="ph-bold ph-crosshair" style="color: #EC4899;"></i> Ver Missões
+              <i class="ph-bold ph-crosshair" style="color: #EC4899;"></i> Ver Missões &amp; Delegar Tarefa
             </button>
           </div>
         </div>
@@ -1055,20 +1277,31 @@
     async renderAgentInspector(container, target) {
       const agentId = typeof target === 'object' ? target.id : target;
       let agent = typeof target === 'object' && target.data ? target.data : null;
-      if (!agent) {
-        try {
-          const res = await authedFetch(`/api/v2/agents/${encodeURIComponent(agentId)}`);
-          if (res.ok) {
-            const data = await res.json();
-            agent = data.agent || data;
-          }
-        } catch (e) {
-          console.warn('[FenixSidebar] Falha ao buscar agente:', e);
+      let queueStatus = null;
+      try {
+        const [agentRes, queueRes] = await Promise.all([
+          !agent ? authedFetch(`/api/v2/agents/${encodeURIComponent(agentId)}`).catch(() => null) : Promise.resolve(null),
+          authedFetch('/api/v2/queue/status').catch(() => null)
+        ]);
+        if (agentRes && agentRes.ok) {
+          const data = await agentRes.json();
+          agent = data.agent || data;
         }
+        if (queueRes && queueRes.ok) {
+          queueStatus = await queueRes.json();
+        }
+      } catch (e) {
+        console.warn('[FenixSidebar] Falha ao buscar agente:', e);
       }
       if (!agent) {
         agent = { id: agentId, name: (typeof target === 'object' ? target.name : null) || agentId, role: 'Agente', status: 'IDLE' };
       }
+
+      const isWorking = (agent.runtimeStatus || agent.status) === 'WORKING';
+      const activeJobsCount = Number(queueStatus?.active || 0);
+      const completedJobsCount = Number(queueStatus?.completed || 0);
+      const chargePct = isWorking ? 85 : (activeJobsCount > 0 ? 65 : 25);
+      const nowTime = new Date().toLocaleTimeString('pt-BR');
 
       container.innerHTML = `
         <div class="fsb-company-inspector-view fsb-agent-inspector-view">
@@ -1094,20 +1327,51 @@
             </div>
           </div>
 
-          <div class="fsb-company-info-block" style="margin-top: 12px;">
-            <div class="fsb-company-segment-text">Missão Atual: <strong>${agent.currentMissionId || 'Nenhuma'}</strong></div>
-            <div class="fsb-company-location-text">Memória: <strong>${agent.memoryId || '—'}</strong></div>
+          <!-- Estação 3 Monitores Internos da Torre (Padrão Video 2 - 1001656597.mp4) -->
+          <div class="fsb-workstation-3mon" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+            <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(0,217,255,0.28); border-radius:8px; padding:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; font-weight:800; color:#00d9ff; margin-bottom:6px;">
+                <span><i class="ph-bold ph-Broadcast"></i> [MON 1] SIGNAL SCANNER &amp; THOUGHTS</span>
+                <span style="font-family:var(--fnx-font-mono, monospace); color:#10b981;">${chargePct}% CHARGED</span>
+              </div>
+              <div style="width:100%; height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; margin-bottom:6px;">
+                <div style="width:${chargePct}%; height:100%; background:linear-gradient(90deg, #00d9ff, #10b981);"></div>
+              </div>
+              <div style="font-family:var(--fnx-font-mono, monospace); font-size:10px; color:#cbd5e1; line-height:1.45;">
+                <div>[${nowTime}] Index O(1) sincronizado (${agent.memoryId || 'ACTIVE_PROJECT_MEMORY.md'})</div>
+                <div>[${nowTime}] Missão atual: <strong style="color:#f8fafc;">${agent.currentMissionId || 'Standby na Torre 3D'}</strong></div>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.24); border-radius:8px; padding:9px;">
+                <div style="font-size:9.5px; font-weight:800; color:#38bdf8; margin-bottom:4px;">[MON 2] EXEC CURVE</div>
+                <svg width="100%" height="36" viewBox="0 0 120 36" preserveAspectRatio="none">
+                  <polyline fill="none" stroke="#00d9ff" stroke-width="2" points="0,30 20,24 45,26 70,14 95,18 120,6" />
+                </svg>
+                <div style="font-size:9.5px; color:#94a3b8; display:flex; justify-content:space-between;">
+                  <span>Fila BullMQ</span>
+                  <strong style="color:#f8fafc;">${activeJobsCount} ativos</strong>
+                </div>
+              </div>
+
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(16,185,129,0.24); border-radius:8px; padding:9px;">
+                <div style="font-size:9.5px; font-weight:800; color:#10b981; margin-bottom:4px;">[MON 3] THE VAULT OPS</div>
+                <div style="font-size:16px; font-weight:800; color:#f8fafc; font-family:var(--fnx-font-mono, monospace);">${completedJobsCount} OPS</div>
+                <div style="font-size:9.5px; color:#94a3b8; margin-top:2px;">Memória Unificada Ativa</div>
+              </div>
+            </div>
           </div>
 
-          <div class="fsb-company-res-grid" style="grid-template-columns: 1fr; gap: 8px; margin-top: 14px;">
+          <div class="fsb-company-res-grid" style="grid-template-columns: 1fr; gap: 8px; margin-top: 12px;">
+            <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.FenixSidebar?.send?.('/delegate Orquestrar missão técnica com o agente ${agent.name || agent.id}')">
+              <i class="ph-bold ph-rocket-launch" style="color: #00D9FF;"></i> Delegar Tarefa via API (FastLane ➔ Job)
+            </button>
             <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.showView?.('city'); window.GlobalSelectionStore?.select('world_entity', '${agent.id}');">
-              <i class="ph-bold ph-map-pin" style="color: #10B981;"></i> Ver no World
+              <i class="ph-bold ph-map-pin" style="color: #10B981;"></i> Ver na Torre 3D (Cybernetic City)
             </button>
             <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.showView?.('memory');">
-              <i class="ph-bold ph-brain" style="color: #8B5CF6;"></i> Inspecionar Memória
-            </button>
-            <button class="fsb-company-nav-btn" style="justify-content: flex-start; padding: 8px 12px;" onclick="window.showView?.('operations');">
-              <i class="ph-bold ph-crosshair" style="color: #F59E0B;"></i> Atribuir Missão
+              <i class="ph-bold ph-brain" style="color: #8B5CF6;"></i> Inspecionar Cérebro 3D &amp; Memória
             </button>
           </div>
         </div>
@@ -1277,7 +1541,7 @@
             <div class="fsb-chat-input-row">
               <input type="text" placeholder="Digite um comando ou fale com o Fênix..." id="fsbCompanyChatInput" onkeydown="if(event.key==='Enter') window.fenixSendCompanyChat?.()" />
               <button type="button" class="fsb-chat-input-btn" title="Anexar Arquivo"><i class="ph-bold ph-paperclip"></i></button>
-              <button type="button" class="fsb-chat-input-btn" title="Comando de Voz"><i class="ph-bold ph-microphone"></i></button>
+              <button type="button" class="fsb-chat-input-btn" title="Comando de Voz (Whisper)" onclick="window.fenixToggleVoiceInput?.('fsbCompanyChatInput')"><i class="ph-bold ph-microphone"></i></button>
               <button type="button" class="fsb-chat-send-btn" title="Enviar" onclick="window.fenixSendCompanyChat?.()"><i class="ph-fill ph-paper-plane-right"></i></button>
             </div>
             <div class="fsb-chips-cluster">
@@ -1361,18 +1625,17 @@
         <div class="fsb-msg-sender"><i class="ph-bold ph-robot"></i> Mascote Fênix</div>
         <div class="fsb-bubble fsb-loading-bubble">
           <div class="fsb-loading-dots"><span></span><span></span><span></span></div>
-          <span class="fsb-loading-timer"><i class="ph-bold ph-hourglass-high"></i> Processando resposta… <strong id="fsbLiveTimerValue">0.0s</strong></span>
+          <span class="fsb-loading-timer"><i class="ph-bold ph-hourglass-high"></i> Processando resposta… <strong id="fsbLiveTimerValue">0s</strong></span>
         </div>
       `;
       container.appendChild(loadingEl);
       container.scrollTop = container.scrollHeight;
 
-      let elapsedSec = 0;
+      this._liveTimerStartedAt = Date.now();
       this._liveTimerInterval = setInterval(() => {
-        elapsedSec += 0.1;
         const timerVal = document.getElementById('fsbLiveTimerValue');
-        if (timerVal) timerVal.textContent = elapsedSec.toFixed(1) + 's';
-      }, 100);
+        if (timerVal) timerVal.textContent = `${Math.floor((Date.now() - this._liveTimerStartedAt) / 1000)}s`;
+      }, 250);
     },
 
     stopLoadingTimer() {
@@ -1412,6 +1675,21 @@
       html = html.replace(/^[•\-]\s+(.+)$/gm, '<li class="fsb-list-item">$1</li>');
       html = html.replace(/((?:<li class="fsb-list-item">.*?<\/li>\s*)+)/g, '<ul class="fsb-list">$1</ul>');
 
+      // Imagens Markdown ![alt](url)
+      html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
+        const cleanUrl = url.trim();
+        return `<div class="fsb-chat-image-card" style="margin:10px 0; border-radius:10px; overflow:hidden; border:1px solid rgba(0,217,255,0.3); background:#060a14; box-shadow:0 8px 24px rgba(0,0,0,0.6);">
+          <img src="${cleanUrl}" alt="${alt}" loading="lazy" style="width:100%; max-height:220px; object-fit:cover; display:block; cursor:pointer;" onclick="window.open('${cleanUrl}','_blank')" />
+          <div style="padding:6px 10px; font-size:11px; color:#CBD5E1; background:rgba(8,12,20,0.92); border-top:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:600; color:#00D9FF; display:flex; align-items:center; gap:5px;"><i class="ph-bold ph-image"></i> ${alt || 'Tela Capturada'}</span>
+            <a href="${cleanUrl}" target="_blank" style="color:#25D366; text-decoration:none; font-weight:700; font-size:10px; display:flex; align-items:center; gap:4px;"><i class="ph-bold ph-arrow-square-out"></i> Abrir Imagem</a>
+          </div>
+        </div>`;
+      });
+
+      // Links Markdown [texto](url)
+      html = html.replace(/(^|[^!])\[([^\]]+)\]\(([^)]+)\)/g, '$1<a href="$3" target="_blank" style="color:#00D9FF; text-decoration:underline;">$2</a>');
+
       // Parágrafos e quebras
       html = html.replace(/\n\n+/g, '</p><p>');
       html = html.replace(/\n/g, '<br>');
@@ -1421,6 +1699,7 @@
 
     // ── Multi-Conversation & Evolutionary Memory System ──
     initConversations() {
+      this.initChatErrorHistory();
       let stored = [];
       try {
         stored = JSON.parse(localStorage.getItem('fenix_chat_conversations') || '[]');
@@ -1431,13 +1710,7 @@
           title: 'Sessão Inicial · Fênix OS',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          messages: [{
-            type: 'text',
-            role: 'bot',
-            text: 'Olá, operador! Estou conectado ao Fênix Kernel. O que deseja executar hoje?',
-            senderName: 'Mascote Fênix',
-            timestamp: new Date().toISOString()
-          }]
+          messages: []
         }];
       }
       state.conversations = stored;
@@ -1445,6 +1718,70 @@
       state.activeConversationId = (activeId && stored.some(c => c.id === activeId)) ? activeId : stored[0].id;
       this.updateConversationCount();
       this.renderActiveConversation();
+      this.loadServerConversations();
+      this.loadServerChatErrors();
+    },
+
+    async loadServerConversations() {
+      try {
+        const response = await authedFetch('/api/chat/conversations', { method: 'GET' });
+        if (!response.ok) return;
+        const payload = await response.json();
+        const rows = Array.isArray(payload.conversations) ? payload.conversations : [];
+        const activeId = this.getActiveConversation()?.serverConversationId;
+        state.conversations = rows.map((row) => ({
+          id: `server_${row.id}`,
+          serverConversationId: row.id,
+          title: row.title || 'Conversa',
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+          projectId: row.projectId || null,
+          messages: [],
+        }));
+        if (rows.length) {
+          const selected = state.conversations.find((item) => item.serverConversationId === activeId) || state.conversations[0];
+          state.activeConversationId = selected.id;
+          await this.loadServerConversationMessages(selected);
+        }
+        this.saveConversations();
+        this.renderActiveConversation();
+      } catch (_) { /* Cache local continua disponível se a API estiver offline. */ }
+    },
+
+    async loadServerConversationMessages(conversation) {
+      if (!conversation?.serverConversationId) return;
+      const response = await authedFetch(`/api/chat/conversations/${encodeURIComponent(conversation.serverConversationId)}`, { method: 'GET' });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const rawMsgs = Array.isArray(payload.messages) ? payload.messages : [];
+      let prevUserText = '';
+      conversation.messages = rawMsgs.map((message) => {
+        const content = String(message.content || '');
+        if (message.role !== 'assistant') prevUserText = content;
+        const isLegacyProviderErr = message.role === 'assistant' && (content.includes('AI_PROVIDER_UNAVAILABLE') || content.includes('O canal de conversa não concluiu a solicitação'));
+        if (isLegacyProviderErr) {
+          const errRec = this.recordPersistentChatError({
+            code: 'AI_PROVIDER_UNAVAILABLE',
+            message: content,
+            prompt: prevUserText || conversation.title || 'Mensagem anterior',
+            timestamp: message.createdAt,
+            lane: 'HISTÓRICO_SERVIDOR'
+          }, { syncServer: false, silentUI: true });
+          return {
+            type: 'error',
+            errorRecord: errRec,
+            prompt: prevUserText || '',
+            timestamp: message.createdAt
+          };
+        }
+        return {
+          type: 'text',
+          role: message.role === 'assistant' ? 'bot' : 'user',
+          text: content,
+          senderName: message.role === 'assistant' ? 'Mascote Fênix' : 'Operador',
+          timestamp: message.createdAt,
+        };
+      });
     },
 
     updateConversationCount() {
@@ -1465,12 +1802,37 @@
     renderActiveConversation() {
       const container = document.getElementById('fsbChatMessages');
       if (!container) return;
+      this.releaseChatPreviewUrls();
       container.innerHTML = '';
       const conv = this.getActiveConversation();
       if (!conv || !Array.isArray(conv.messages)) return;
+      if (conv.messages.length === 0) {
+        const welcome = document.createElement('div');
+        welcome.className = 'fsb-msg bot';
+        const sender = document.createElement('div');
+        sender.className = 'fsb-msg-sender';
+        sender.textContent = 'Fênix';
+        const bubble = document.createElement('div');
+        bubble.className = 'fsb-bubble fsb-welcome-state';
+        bubble.dataset.fsbWelcome = '';
+        const title = document.createElement('strong');
+        title.textContent = 'Olá, GRG.';
+        const prompt = document.createElement('p');
+        prompt.textContent = 'Converse normalmente. Se pedir uma ação, eu mostro o plano para você revisar antes de confirmar.';
+        bubble.append(title, prompt);
+        welcome.append(sender, bubble);
+        container.appendChild(welcome);
+        return;
+      }
       conv.messages.forEach(m => {
-        if (m.type === 'job') {
-          this.renderJobMessageInDOM(m.data, m.prompt, m.elapsedMs);
+        if (m.type === 'error' && m.errorRecord) {
+          this.renderErrorMessageInDOM(m.errorRecord);
+        } else if (m.type === 'job') {
+          if (m.data?.lane === 'MISSION_LANE' || m.data?.mission) {
+            this.renderBotMessageInDOM(m.data, m.prompt, m.elapsedMs);
+          } else {
+            this.renderJobMessageInDOM(m.data, m.prompt, m.elapsedMs);
+          }
         } else if (m.type === 'bot') {
           this.renderBotMessageInDOM(m.data, m.prompt, m.elapsedMs);
         } else if (m.type === 'forensic') {
@@ -1488,13 +1850,7 @@
         title: 'Nova Conversa',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        messages: [{
-          type: 'text',
-          role: 'bot',
-          text: 'Nova sessão iniciada. O contexto cognitivo está ativo e pronto para registrar evolução. O que vamos programar ou executar?',
-          senderName: 'Mascote Fênix',
-          timestamp: new Date().toISOString()
-        }]
+        messages: []
       };
       state.conversations.unshift(newConv);
       state.activeConversationId = newConv.id;
@@ -1503,6 +1859,15 @@
       this.toggleHistoryDrawer(false);
       this.logActivity('CONV', 'Nova sessão de conversa iniciada.');
       this.recordEvolutionaryCheckpoint('NEW_CONVERSATION', { convId: newConv.id });
+      authedFetch('/api/chat/conversations', { method: 'POST', body: JSON.stringify({ title: 'Nova conversa' }) })
+        .then((response) => response.ok ? response.json() : null)
+        .then((record) => {
+          if (!record?.id) return;
+          newConv.serverConversationId = record.id;
+          newConv.id = `server_${record.id}`;
+          state.activeConversationId = newConv.id;
+          this.saveConversations();
+        }).catch(() => {});
     },
 
     switchConversation(id) {
@@ -1562,6 +1927,193 @@
           </div>
         `;
       }).join('');
+    },
+
+    // ── Persistent Chat Error & Alert History System ──
+    initChatErrorHistory() {
+      let saved = [];
+      try {
+        saved = JSON.parse(localStorage.getItem('fenix_chat_error_history_v1') || '[]');
+      } catch (_) {}
+      state.chatErrors = Array.isArray(saved) ? saved : [];
+      this.updateSavedErrorsCount();
+    },
+
+    async loadServerChatErrors() {
+      try {
+        const res = await authedFetch('/api/v2/conversation/errors?limit=40', { method: 'GET' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const serverErrors = Array.isArray(data.errors) ? data.errors : [];
+        const existingIds = new Set(state.chatErrors.map(e => e.id));
+        serverErrors.forEach(err => {
+          if (err && err.id && !existingIds.has(err.id)) {
+            state.chatErrors.push(err);
+            existingIds.add(err.id);
+          }
+        });
+        state.chatErrors.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
+        state.chatErrors = state.chatErrors.slice(0, 80);
+        try {
+          localStorage.setItem('fenix_chat_error_history_v1', JSON.stringify(state.chatErrors));
+        } catch (_) {}
+        this.updateSavedErrorsCount();
+      } catch (_) {}
+    },
+
+    updateSavedErrorsCount() {
+      const countEl = document.getElementById('fsbSavedErrorsCount');
+      const btnEl = document.getElementById('fsbSavedErrorsBtn');
+      const count = Array.isArray(state.chatErrors) ? state.chatErrors.length : 0;
+      if (countEl) countEl.textContent = String(count);
+      if (btnEl) {
+        btnEl.classList.toggle('has-errors', count > 0);
+      }
+    },
+
+    recordPersistentChatError(errInput = {}, options = {}) {
+      const record = {
+        id: errInput.id || ('chat_err_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
+        code: String(errInput.code || errInput.error || 'CHAT_RUNTIME_WARNING'),
+        message: String(errInput.message || errInput.response || 'Evento de alerta ou erro registrado no chat'),
+        prompt: String(errInput.prompt || '').slice(0, 240),
+        projectId: errInput.projectId || copilotContext.projectId || 'fenix-os',
+        lane: String(errInput.lane || 'FAST_LANE'),
+        provider: errInput.provider || null,
+        model: errInput.model || null,
+        status: errInput.status || null,
+        latencyMs: errInput.latencyMs || null,
+        timestamp: errInput.timestamp || new Date().toISOString()
+      };
+      const isDuplicate = state.chatErrors.some(e => e.code === record.code && e.prompt === record.prompt && Math.abs(new Date(e.timestamp).getTime() - new Date(record.timestamp).getTime()) < 5000);
+      if (!isDuplicate) {
+        state.chatErrors.unshift(record);
+        state.chatErrors = state.chatErrors.slice(0, 80);
+        try {
+          localStorage.setItem('fenix_chat_error_history_v1', JSON.stringify(state.chatErrors));
+        } catch (_) {}
+      }
+      this.updateSavedErrorsCount();
+
+      if (options.appendToConversation === true) {
+        const conv = this.getActiveConversation();
+        if (conv) {
+          if (!conv.messages) conv.messages = [];
+          conv.messages.push({
+            type: 'error',
+            errorRecord: record,
+            prompt: record.prompt,
+            timestamp: record.timestamp
+          });
+          conv.updatedAt = new Date().toISOString();
+          this.saveConversations();
+        }
+        if (!options.silentUI) {
+          this.renderErrorMessageInDOM(record);
+        }
+      }
+
+      if (options.syncServer !== false) {
+        try {
+          authedFetch('/api/v2/conversation/errors', {
+            method: 'POST',
+            body: JSON.stringify(record)
+          }).catch(() => {});
+        } catch (_) {}
+      }
+      return record;
+    },
+
+    renderErrorMessageInDOM(errRecord) {
+      const container = document.getElementById('fsbChatMessages');
+      if (!container || !errRecord) return;
+      const msg = document.createElement('div');
+      msg.className = 'fsb-msg bot fsb-msg-error-entry';
+      const timeStr = errRecord.timestamp ? new Date(errRecord.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+      const safePrompt = this.escapeHTML(errRecord.prompt || '');
+      msg.innerHTML = `
+        <div class="fsb-msg-sender"><i class="ph-bold ph-warning-octagon" style="color:#f59e0b;"></i> Mascote Fênix · Registro de Diagnóstico</div>
+        <div class="fsb-bubble fsb-error-card" data-error-code="${this.escapeHTML(errRecord.code)}">
+          <div class="fsb-error-card-head">
+            <span class="fsb-error-code-badge"><i class="ph-bold ph-warning"></i> ${this.escapeHTML(errRecord.code)}</span>
+            <span class="fsb-error-time"><i class="ph-bold ph-clock"></i> ${this.escapeHTML(timeStr)}</span>
+          </div>
+          <div class="fsb-error-card-body">${this.escapeHTML(errRecord.message)}</div>
+          <details class="fsb-msg-diagnostics">
+            <summary>Detalhes técnicos & auditoria</summary>
+            <div>
+              <span>ID: ${this.escapeHTML(errRecord.id || '—')}</span>
+              <span>Canal: ${this.escapeHTML(errRecord.lane || '—')}</span>
+              <span>Projeto: ${this.escapeHTML(errRecord.projectId || 'GLOBAL')}</span>
+              ${errRecord.prompt ? `<span>Prompt: ${safePrompt}</span>` : ''}
+            </div>
+          </details>
+          <div class="fsb-error-card-actions">
+            ${errRecord.prompt ? `<button type="button" class="fsb-action-btn" data-retry-prompt="${safePrompt}" onclick="window.FenixSidebar.retryErrorPrompt(this.dataset.retryPrompt)"><i class="ph-bold ph-arrows-clockwise"></i> Reenviar no Canal Rápido</button>` : ''}
+            <button type="button" class="fsb-action-btn" onclick="window.FenixSidebar.toggleErrorsDrawer(true)"><i class="ph-bold ph-list-magnifying-glass"></i> Ver Histórico de Erros</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+    },
+
+    toggleErrorsDrawer(forceState) {
+      const drawer = document.getElementById('fsbSavedErrorsDrawer');
+      if (!drawer) return;
+      const shouldShow = typeof forceState === 'boolean' ? forceState : (drawer.style.display === 'none');
+      if (shouldShow) this.toggleHistoryDrawer(false);
+      drawer.style.display = shouldShow ? 'flex' : 'none';
+      if (shouldShow) this.renderErrorsDrawerList();
+    },
+
+    renderErrorsDrawerList() {
+      const list = document.getElementById('fsbSavedErrorsList');
+      if (!list) return;
+      if (!Array.isArray(state.chatErrors) || state.chatErrors.length === 0) {
+        list.innerHTML = `<div class="fsb-history-empty"><i class="ph-bold ph-check-circle" style="font-size:24px; color:#10b981; margin-bottom:8px; display:inline-block;"></i><br>Nenhum erro pendente registrado nesta sessão.</div>`;
+        return;
+      }
+      list.innerHTML = state.chatErrors.map((err) => {
+        const dateStr = err.timestamp ? new Date(err.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+        const safePrompt = this.escapeHTML(err.prompt || '');
+        return `
+          <div class="fsb-history-item fsb-error-drawer-item" style="flex-direction:column; align-items:stretch; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+              <span class="fsb-error-code-badge"><i class="ph-bold ph-warning-octagon"></i> ${this.escapeHTML(err.code || 'ERRO')}</span>
+              <span style="font-size:10px; color:#94a3b8;">${this.escapeHTML(dateStr)}</span>
+            </div>
+            <div style="font-size:11.5px; color:#e2e8f0; line-height:1.35;">${this.escapeHTML(err.message || '')}</div>
+            ${err.prompt ? `<div style="font-size:10.5px; color:#94a3b8;">Prompt: <code>${safePrompt}</code></div>` : ''}
+            <div style="display:flex; gap:6px; margin-top:2px;">
+              ${err.prompt ? `<button type="button" class="fsb-conv-btn" style="padding:3px 8px; font-size:10px;" data-retry-prompt="${safePrompt}" onclick="window.FenixSidebar.retryErrorPrompt(this.dataset.retryPrompt)"><i class="ph-bold ph-arrows-clockwise"></i> Reenviar</button>` : ''}
+              <button type="button" class="fsb-conv-btn" style="padding:3px 8px; font-size:10px;" onclick="navigator.clipboard?.writeText(${this.escapeHTML(JSON.stringify(JSON.stringify(err)))})"><i class="ph-bold ph-copy"></i> Copiar JSON</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    },
+
+    clearSavedErrors() {
+      state.chatErrors = [];
+      try {
+        localStorage.setItem('fenix_chat_error_history_v1', '[]');
+      } catch (_) {}
+      this.updateSavedErrorsCount();
+      this.renderErrorsDrawerList();
+      try {
+        authedFetch('/api/v2/conversation/errors', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'clear' })
+        }).catch(() => {});
+      } catch (_) {}
+    },
+
+    retryErrorPrompt(promptText) {
+      if (!promptText) return;
+      this.toggleErrorsDrawer(false);
+      this.toggleExecutionMode('fast');
+      this.sendChatMessage({ overrideMessage: promptText });
     },
 
     recordEvolutionaryCheckpoint(eventType, payload) {
@@ -1627,13 +2179,32 @@
       const bodyHtml = this.renderMarkdown(responseText);
 
       const latencyMs = Number(elapsedMs || data.latencyMs || 0);
-      const timeFormatted = latencyMs > 0 ? (latencyMs >= 1000 ? (latencyMs / 1000).toFixed(2) + 's' : latencyMs + 'ms') : '—';
+      const timeFormatted = latencyMs > 0 ? `${Math.ceil(latencyMs / 1000)}s` : '—';
       const lane = data.lane || '—';
       const model = data.model || data.selectedModel?.model || null;
+      const provider = data.provider || data.providerId || data.selectedModel?.provider || null;
       const tokens = data.tokens != null ? data.tokens : (data.classification?.estimated_tokens != null ? data.classification.estimated_tokens : null);
+      const diagnostics = [provider && `Provedor: ${provider}`, model && `Modelo: ${model}`, Number.isFinite(latencyMs) && latencyMs > 0 && `Duração: ${timeFormatted}`, tokens != null && `Tokens: ${tokens}`, data.error && `Erro: ${data.error}`].filter(Boolean);
+      const diagnosticsHtml = diagnostics.length ? `<details class="fsb-msg-diagnostics"><summary>Detalhes técnicos</summary><div>${diagnostics.map(item => `<span>${this.escapeHTML(item)}</span>`).join('')}</div></details>` : '';
+      const mission = data.mission && typeof data.mission === 'object' ? data.mission : null;
+      const missionId = mission?.id || mission?.missionId || null;
+      const missionStatus = mission?.status || mission?.state || 'Estado não informado';
+      const missionTitle = mission?.title || mission?.name || mission?.objective || prompt || 'Objetivo não informado';
+      const missionHtml = mission ? `
+        <section class="fsb-mission-card" aria-label="Detalhes da missão"${missionId ? ` data-mission-id="${this.escapeHTML(missionId)}"` : ''}>
+          <div class="fsb-mission-header">
+            <span class="fsb-mission-badge">MISSÃO${missionId ? ` · ${this.escapeHTML(missionId)}` : ''}</span>
+            <span class="fsb-mission-status">${this.escapeHTML(missionStatus)}</span>
+          </div>
+          <div class="fsb-mission-title">${this.escapeHTML(missionTitle)}</div>
+          ${!missionId ? '<div class="fsb-mission-id-missing">Identificador da missão não informado; ações de confirmação indisponíveis.</div>' : ''}
+        </section>` : '';
 
       let actionsHtml = '';
-      const actions = Array.isArray(data.actions) ? data.actions : [];
+      const actions = (Array.isArray(data.actions) ? data.actions : []).filter((act) => {
+        if (typeof act === 'string' || act?.type !== 'confirm_mission') return true;
+        return Boolean(missionId && String(act.missionId || '') === String(missionId));
+      });
       if (actions.length > 0) {
         actionsHtml = `<div class="fsb-msg-actions">` + actions.map(act => {
           if (typeof act === 'string') {
@@ -1648,6 +2219,7 @@
         <div class="fsb-msg-sender"><i class="ph-bold ph-robot"></i> Mascote Fênix</div>
         <div class="fsb-bubble">
           ${bodyHtml}
+          ${missionHtml}
           ${actionsHtml}
           <div class="fsb-msg-meta">
             <span class="fsb-meta-tag time"><i class="ph-bold ph-timer"></i> ${timeFormatted}</span>
@@ -1655,6 +2227,7 @@
             ${model ? `<span class="fsb-meta-tag model"><i class="ph-bold ph-cpu"></i> ${this.escapeHTML(model)}</span>` : ''}
             ${tokens != null ? `<span class="fsb-meta-tag tokens"><i class="ph-bold ph-coins"></i> ${tokens} tokens</span>` : ''}
           </div>
+          ${diagnosticsHtml}
         </div>
       `;
       container.appendChild(msg);
@@ -1975,6 +2548,16 @@
     },
 
     appendJobMessage(data, prompt, elapsedMs = 0) {
+      const jobId = data?.job?.id || data?.job?.jobId;
+      if (!jobId) {
+        const response = data?.response || 'O canal identificou uma solicitação de execução.';
+        this.appendBotMessage({
+          response: `${response}\n\nA execução não trouxe um ID de job real; nenhum job foi registrado ou colocado na fila.`,
+          lane: 'INCONSISTENTE',
+        }, prompt, elapsedMs);
+        this.logActivity('JOB', 'Execução sem ID de job real; cartão e ações de job não foram criados.');
+        return;
+      }
       this.renderJobMessageInDOM(data, prompt, elapsedMs);
       const conv = this.getActiveConversation();
       if (conv) {
@@ -1988,11 +2571,143 @@
     },
 
     // ── Universal Forensic & Reverse Engineering Engine ──
+    getClipboardFiles(clipboardData) {
+      if (!clipboardData) return [];
+      const files = Array.from(clipboardData.files || []);
+      for (const item of Array.from(clipboardData.items || [])) {
+        if (item.kind !== 'file') continue;
+        const file = item.getAsFile?.();
+        if (file) files.push(file);
+      }
+      const seen = new Set();
+      return files.filter((file) => {
+        const key = `${file.name || ''}:${file.size}:${file.lastModified || 0}:${file.type || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    },
+
+    appendImagePreview(file) {
+      const container = document.getElementById('fsbChatMessages');
+      const bubble = container?.querySelector('.fsb-msg.user:last-child .fsb-bubble');
+      if (!bubble || !file?.type?.startsWith('image/') || typeof URL.createObjectURL !== 'function') return;
+      const url = URL.createObjectURL(file);
+      this._chatPreviewUrls ||= new Set();
+      this._chatPreviewUrls.add(url);
+      const figure = document.createElement('figure');
+      figure.className = 'fsb-pasted-image-preview';
+      figure.style.cssText = 'margin:10px 0 0;max-width:min(100%,360px);overflow:hidden;border:1px solid rgba(0,217,255,.35);border-radius:10px;background:#08111d;';
+      const image = document.createElement('img');
+      image.src = url;
+      image.alt = `Prévia local da imagem ${file.name || 'colada'}`;
+      image.loading = 'lazy';
+      image.style.cssText = 'display:block;width:100%;max-height:320px;object-fit:contain;background:#050810;';
+      const caption = document.createElement('figcaption');
+      caption.textContent = `Imagem recebida · ${file.name || 'imagem colada'} · prévia local`;
+      caption.style.cssText = 'padding:6px 8px;color:#94a3b8;font-size:10px;overflow-wrap:anywhere;';
+      figure.append(image, caption);
+      bubble.append(figure);
+    },
+
+    releaseChatPreviewUrls() {
+      for (const url of this._chatPreviewUrls || []) URL.revokeObjectURL(url);
+      this._chatPreviewUrls?.clear();
+    },
+
     async handleIncomingFiles(fileList) {
       if (!fileList || fileList.length === 0) return;
       for (let i = 0; i < fileList.length; i++) {
         await this.processSingleFile(fileList[i]);
       }
+    },
+
+    async computeSha256(buffer) {
+      const slice = buffer.slice(0, 32 * 1024 * 1024);
+      if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle && typeof window.crypto.subtle.digest === 'function') {
+        try {
+          const hashBuffer = await window.crypto.subtle.digest('SHA-256', slice);
+          return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (_) {}
+      }
+      return this.sha256Fallback(new Uint8Array(slice));
+    },
+
+    sha256Fallback(bytes) {
+      function rightRotate(value, amount) {
+        return (value >>> amount) | (value << (32 - amount));
+      }
+      let i;
+      let result = '';
+      const words = [];
+      const asciiBitLength = bytes.length * 8;
+      const hash = [
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+      ];
+      const k = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+      ];
+
+      const wordsLength = (asciiBitLength + 64 >>> 9 << 4) + 16;
+      for (i = 0; i < wordsLength; i++) words[i] = 0;
+      for (i = 0; i < bytes.length; i++) {
+        words[i >>> 2] |= bytes[i] << (24 - (i % 4) * 8);
+      }
+      words[bytes.length >>> 2] |= 0x80 << (24 - (bytes.length % 4) * 8);
+      words[wordsLength - 2] = Math.floor(asciiBitLength / 0x100000000);
+      words[wordsLength - 1] = asciiBitLength >>> 0;
+
+      for (let j = 0; j < wordsLength; j += 16) {
+        const w = words.slice(j, j + 16);
+        let a = hash[0], b = hash[1], c = hash[2], d = hash[3];
+        let e = hash[4], f = hash[5], g = hash[6], h = hash[7];
+
+        for (let i = 0; i < 64; i++) {
+          if (i >= 16) {
+            const s0 = rightRotate(w[i - 15], 7) ^ rightRotate(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+            const s1 = rightRotate(w[i - 2], 17) ^ rightRotate(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+            w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+          }
+
+          const s1 = rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25);
+          const ch = (e & f) ^ ((~e) & g);
+          const temp1 = (h + s1 + ch + k[i] + w[i]) | 0;
+          const s0 = rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22);
+          const maj = (a & b) ^ (a & c) ^ (b & c);
+          const temp2 = (s0 + maj) | 0;
+
+          h = g;
+          g = f;
+          f = e;
+          e = (d + temp1) | 0;
+          d = c;
+          c = b;
+          b = a;
+          a = (temp1 + temp2) | 0;
+        }
+
+        hash[0] = (hash[0] + a) | 0;
+        hash[1] = (hash[1] + b) | 0;
+        hash[2] = (hash[2] + c) | 0;
+        hash[3] = (hash[3] + d) | 0;
+        hash[4] = (hash[4] + e) | 0;
+        hash[5] = (hash[5] + f) | 0;
+        hash[6] = (hash[6] + g) | 0;
+        hash[7] = (hash[7] + h) | 0;
+      }
+
+      for (let i = 0; i < 8; i++) {
+        result += (hash[i] >>> 0).toString(16).padStart(8, '0');
+      }
+      return result;
     },
 
     async processSingleFile(file) {
@@ -2003,6 +2718,7 @@
 
       // User Bubble showing file attachment
       this.appendMessage('user', `📎 Anexo para Análise Forense & Engenharia Reversa:\n**${fileName}** (${formattedSize})`);
+      if (file.type?.startsWith('image/')) this.appendImagePreview(file);
 
       // Start Loading indicator
       this.startLoadingTimer();
@@ -2012,10 +2728,8 @@
         const buffer = await file.arrayBuffer();
         const uint8 = new Uint8Array(buffer);
 
-        // 1. Calculate SHA-256
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer.slice(0, 32 * 1024 * 1024));
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const sha256 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        // 1. Calculate SHA-256 (supports WebCrypto and fallback for non-secure HTTP contexts)
+        const sha256 = await this.computeSha256(buffer);
 
         // 2. Calculate Shannon Entropy
         const sampleLen = Math.min(uint8.length, 262144);
@@ -2568,6 +3282,13 @@
           this.logActivity('IDE', `Abrindo arquivo: ${act.path}`);
           break;
 
+        case 'open_url':
+          if (act.url) {
+            window.open(act.url, '_blank');
+            this.logActivity('DOC', `Abrindo documento: ${act.url}`);
+          }
+          break;
+
         case 'city_focus':
           if (typeof window.switchView === 'function') {
             window.switchView('view-city');
@@ -2578,6 +3299,10 @@
 
         case 'confirm_job':
           this.confirmJob(act.jobId);
+          break;
+
+        case 'confirm_mission':
+          this.confirmMission(act.missionId);
           break;
 
         case 'send_command':
@@ -2597,6 +3322,22 @@
             this.handleCommand(act.label);
           }
           break;
+      }
+    },
+
+    async confirmMission(missionId) {
+      if (!missionId || !window.confirm('Iniciar esta missão? Etapas com risco alto ainda podem pedir aprovação própria.')) return;
+      try {
+        const response = await authedFetch(`/api/missions/${encodeURIComponent(missionId)}/start`, { method: 'POST', body: '{}' });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+        this.appendBotMessage({
+          response: `Missão ${result.id || missionId} recebeu confirmação de início. Estado atual: ${result.status || 'indisponível'}. Etapas sujeitas a aprovação continuam bloqueadas até essa aprovação.`,
+          lane: 'MISSION_LANE', mission: result,
+          actions: [{ type: 'switch_view', view: 'view-city', label: 'Acompanhar na Cidade' }],
+        }, 'Confirmação da missão', 0);
+      } catch (error) {
+        this.appendBotMessage({ response: `A missão não foi iniciada: ${error.message}`, lane: 'INDISPONÍVEL' }, 'Confirmação da missão', 0);
       }
     },
 
@@ -2704,21 +3445,44 @@
       logsContainer.scrollTop = logsContainer.scrollHeight;
     },
 
-    async sendChatMessage() {
+    async sendChatMessage(options = {}) {
       const input = document.getElementById('fsbChatInput');
-      const text = input?.value.trim();
+      const text = (options.overrideMessage != null ? String(options.overrideMessage) : (input?.value || '')).trim();
       if (!text) return;
-      input.value = '';
+      if (!options.flushQueued && options.overrideMessage == null && !options.delegateTask && options.source !== 'voice' && !text.startsWith('/')) {
+        if (input) input.value = '';
+        this.appendMessage('user', text);
+        this._pendingChatMessages.push(text);
+        const queued = new Promise(resolve => this._pendingChatResolvers.push(resolve));
+        clearTimeout(this._chatBatchTimer);
+        this._chatBatchTimer = setTimeout(async () => {
+          const messages = this._pendingChatMessages.splice(0);
+          const resolvers = this._pendingChatResolvers.splice(0);
+          this._chatBatchTimer = null;
+          try {
+            await this.sendChatMessage({ overrideMessage: messages.join('\n'), flushQueued: true, suppressUserMessage: true });
+            resolvers.forEach(resolve => resolve());
+          } catch (error) {
+            resolvers.forEach(resolve => resolve(error));
+          }
+        }, 320);
+        return queued;
+      }
+      if (input && options.overrideMessage == null) input.value = '';
+      const delegateTask = Boolean(options.delegateTask);
 
-      this.appendMessage('user', text);
+      if (!options.suppressUserMessage) this.appendMessage('user', delegateTask ? `⚡ [DELEGAR API] ${text}` : text);
       MascotController.setMood('working');
 
       // Comandos especiais
-      if (text.startsWith('/')) {
+      if (text.startsWith('/') && !delegateTask) {
         await this.handleCommand(text);
         return;
       }
 
+      // Legacy local shortcuts stay available only when explicitly opted into; normal chat
+      // must be answered by the configured provider, never by a hardcoded local response.
+      if (options.routeLocally === true) {
       // NLU Workspace & Copilot Interceptor (Fênix V17)
       const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
@@ -2930,6 +3694,24 @@
         return;
       }
 
+      // 9.1 Pedidos de Imagens / Screenshots das Telas da API
+      const isImageRequest = (lower.includes('imagem') || lower.includes('imagens') || lower.includes('print') || lower.includes('prints') || lower.includes('foto') || lower.includes('fotos') || lower.includes('screenshot') || lower.includes('screenshots') || lower.includes('tela') || lower.includes('telas'));
+      const isApiPlatform = (lower.includes('api') || lower.includes('plataform') || lower.includes('platform'));
+
+      if (isImageRequest && isApiPlatform) {
+        MascotController.setMood('working');
+        const apiImagesResponse = `🖼️ **Galeria de Telas & Screenshots da API Platform (Porta 3001 / Fastify + Qwen 2.5):**\n\nAqui estão as telas e componentes visuais registrados e capturados da **API Platform**:\n\n1. **Dashboard & Overview Central da API**\n![Dashboard Overview](/screenshots/api-platform_screenshot.png)\n*Rota:* \`/overview\` · *Métricas:* Uptime, requisições por segundo, provedores ativos e consumo de tokens.\n\n2. **Tela Real em Execução no Ecossistema**\n![API Platform Real Screen](/screenshots/prj_api_plataform_real_screen.png)\n*Status:* Conectada ao Fênix OS · *Docker Container:* \`api-platform-api-1\` · *Porta:* \`3001\`\n\n3. **Portal de Autenticação & Chaves da API (Login Reconstruído)**\n![Portal de Acesso e Chaves](/screenshots/api_platform_reconstructed_login.png)\n*Rota:* \`/login\` · *Segurança:* Tokens JWT Bearer & RBAC\n\n4. **Componente de Transferência & Webhook de Dados**\n![Componente de Transferência](/screenshots/api_platform_transfer_component.png)\n*Serviços:* BullMQ Workers, Qwen Bridge e Webhook Dispatcher\n\n💡 *Dica:* Você pode abrir e editar qualquer uma dessas telas diretamente pela aba **IDE** (Split Mode) ou pedir ao mascote para abrir no Preview.`;
+
+        this.appendBotMessage({
+          response: apiImagesResponse,
+          lane: 'FAST_LANE',
+          model: 'api-platform-screens'
+        }, text, 35);
+        MascotController.setMood('success');
+        this.logActivity('MEDIA', 'Exibidas 4 capturas visuais da API Platform');
+        return;
+      }
+
       // 10. Split Mode / Workspace Modes ("coloque em split", "mostre o código", "abra preview", etc.)
       if (lower === 'coloque em split' || lower === 'modo split' || lower.includes('em split')) {
         let proj = 'api-platform';
@@ -2997,8 +3779,8 @@
         }
       }
 
-      // 2. Modo do Workspace (Code, Preview, Split, World)
-      if (lower.includes('modo') || lower.includes('preview') || lower.includes('split') || lower.includes('cidade') || lower.includes('mundo')) {
+      // 2. Modo do Workspace (Code, Preview, Split, World) - Apenas comandos explícitos de modo
+      if (/^(?:modo|entrar no modo|mudar para modo)\s+(?:preview|split|codigo|editor|code|mundo|cidade|3d)$/i.test(text) || /^(?:preview|split|modo split|modo preview|modo codigo|modo mundo)$/i.test(text)) {
         let targetMode = null;
         if (lower.includes('preview') || lower.includes('visualizar')) targetMode = 'preview';
         else if (lower.includes('split') || (lower.includes('codigo') && lower.includes('preview'))) targetMode = 'split';
@@ -3043,6 +3825,12 @@
         }
       }
 
+      }
+
+      const previousRequest = this._conversationRequestTail;
+      let releaseRequest;
+      this._conversationRequestTail = new Promise(resolve => { releaseRequest = resolve; });
+      await previousRequest;
       const startTime = Date.now();
       this.startLoadingTimer();
 
@@ -3053,11 +3841,18 @@
 
       // The canonical conversation endpoint owns both fast responses and durable job dispatch.
       try {
+        const isDeepQueue = state.chatExecutionMode === 'deep_queue';
         const res = await authedFetch('/api/v2/conversation', {
           method: 'POST',
           body: JSON.stringify({
             message: text,
             agent: state.selectedAgent,
+            delegateTask: delegateTask,
+            mascotFastLane: !isDeepQueue && !delegateTask,
+            executionMode: state.chatExecutionMode,
+            queueDeepApi: isDeepQueue,
+            maxTokens: isDeepQueue ? 16384 : 2048,
+            source: options.source === 'voice' ? 'voice' : 'text',
             conversationId: activeConversation?.serverConversationId || null,
             projectId,
             agentId,
@@ -3079,22 +3874,51 @@
           this.saveConversations();
         }
 
+        if (data.workflow || data.agent) {
+          try { window.fenixWorld3D?.syncRealData?.(); } catch (_) {}
+          try { window.FenixCityReality?.syncLiveReality?.(); } catch (_) {}
+        }
+
         if (!res.ok) {
-          const detail = data.error || `HTTP ${res.status}`;
+          const detail = data.error || `HTTP_${res.status}`;
+          this.recordPersistentChatError({
+            code: detail,
+            message: data.response || `Resposta HTTP ${res.status} (${detail}) no canal de conversa.`,
+            prompt: text,
+            projectId,
+            lane: isDeepQueue ? 'JOB_LANE' : 'FAST_LANE',
+            provider: data.provider || data.providerId || null,
+            model: data.model || data.selectedModel?.model || null,
+            status: res.status,
+            latencyMs: elapsedMs
+          }, { appendToConversation: true, silentUI: false });
+
+          if (!isDeepQueue && !delegateTask) {
+            const fallbackData = this.buildLocalMemoryFastFallback(text);
+            this.appendBotMessage(fallbackData, text, elapsedMs);
+            MascotController.setMood('success');
+            setTimeout(() => MascotController.setMood('idle'), 2500);
+            this.logActivity('CHAT', `Mensagem atendida via Memória Operacional Local [FAST_LANE] (Alerta registrado: ${detail})`);
+            return;
+          }
           this.appendBotMessage({
             response: data.response || `O canal de conversa não concluiu a solicitação (${detail}). Confira o serviço antes de tentar novamente.`,
             lane: 'INDISPONÍVEL',
+            error: detail,
+            provider: data.provider || data.providerId || null,
+            model: data.model || data.selectedModel?.model || null,
           }, text, elapsedMs);
           MascotController.setMood('error');
           this.logActivity('CHAT', `Canal de conversa indisponível (${detail})`);
           return;
         }
 
-        if (data.lane === 'JOB_LANE' || data.lane === 'MISSION_LANE') {
+        if (data.lane === 'JOB_LANE') {
           this.appendJobMessage(data, text, elapsedMs);
           MascotController.setMood('working');
         } else {
           this.appendBotMessage(data, text, elapsedMs);
+          if (options.speak === true && data.response) this.speakResponse(data.response);
           MascotController.setMood('success');
           setTimeout(() => MascotController.setMood('idle'), 2500);
         }
@@ -3103,12 +3927,143 @@
       } catch (err) {
         this.stopLoadingTimer();
         const elapsedMs = Date.now() - startTime;
+        this.recordPersistentChatError({
+          code: 'NETWORK_OR_TIMEOUT_ERROR',
+          message: err?.message || 'Falha de rede no canal de conversa',
+          prompt: text,
+          projectId,
+          lane: state.chatExecutionMode === 'deep_queue' ? 'JOB_LANE' : 'FAST_LANE',
+          latencyMs: elapsedMs
+        }, { appendToConversation: true, silentUI: false });
+
+        if (state.chatExecutionMode !== 'deep_queue' && !delegateTask) {
+          const fallbackData = this.buildLocalMemoryFastFallback(text);
+          this.appendBotMessage(fallbackData, text, elapsedMs);
+          MascotController.setMood('success');
+          setTimeout(() => MascotController.setMood('idle'), 2500);
+          return;
+        }
         this.appendBotMessage({
           response: 'Não foi possível confirmar a resposta do canal de conversa. A mensagem foi mantida no histórico local; verifique o estado do serviço antes de reenviá-la.',
           lane: 'INDISPONÍVEL',
         }, text, elapsedMs);
         MascotController.setMood('error');
         this.logActivity('CHAT', `Falha de rede no canal de conversa: ${err.message}`);
+      } finally {
+        releaseRequest();
+      }
+    },
+
+    toggleExecutionMode(forceMode) {
+      const next = forceMode || (state.chatExecutionMode === 'deep_queue' ? 'fast' : 'deep_queue');
+      state.chatExecutionMode = next;
+      const btn = document.getElementById('fsbExecModeToggleBtn');
+      const sendBtn = document.getElementById('fsbSendBtn');
+      const input = document.getElementById('fsbChatInput');
+      if (btn) {
+        btn.dataset.mode = next;
+        if (next === 'deep_queue') {
+          btn.innerHTML = '<i class="ph-bold ph-rocket-launch"></i> 🚀 API + Fila (16k)';
+          btn.style.borderColor = 'rgba(168,85,247,0.55)';
+          btn.style.color = '#C084FC';
+          btn.style.background = 'rgba(168,85,247,0.14)';
+        } else {
+          btn.innerHTML = '<i class="ph-bold ph-lightning"></i> ⚡ Canal Rápido';
+          btn.style.borderColor = 'rgba(0,217,255,0.35)';
+          btn.style.color = '#00D9FF';
+          btn.style.background = '';
+        }
+      }
+      if (sendBtn) {
+        sendBtn.title = next === 'deep_queue' ? 'Enviar para API Profunda + Fila (16k Tokens)' : 'Enviar (Canal Rápido + Memória)';
+      }
+      if (input) {
+        input.placeholder = next === 'deep_queue'
+          ? 'Modo API Profunda + Fila ativo (até 16k tokens). Descreva a execução longa...'
+          : 'Converse com o Fênix (Canal Rápido com Memória). Use /goal, /plan, /browser...';
+      }
+      return next;
+    },
+
+    buildLocalMemoryFastFallback(queryText) {
+      const wState = window.__FENIX_WORLD_STATE__ || {};
+      const agentsArr = Array.isArray(wState.agents) ? wState.agents : Object.values(wState.agents || {});
+      const activeSet = new Set(['working', 'running', 'moving', 'walking', 'thinking', 'talking']);
+      const activeCount = agentsArr.filter(a => activeSet.has(String(a?.state || a?.status || '').toLowerCase())).length;
+      const companiesArr = Array.isArray(wState.companies) ? wState.companies : Object.values(wState.companies || {});
+      return {
+        ok: true,
+        lane: 'FAST_LANE',
+        model: 'fenix-local-memory-index@v15',
+        provider: 'fenix-active-memory',
+        tokens: 180,
+        response: `⚡ **Fênix OS — Canal Rápido (Memória Operacional Ativa)**\n` +
+          `Recebi sua mensagem: *"${String(queryText || '').slice(0, 120)}"*\n\n` +
+          `• **Contexto Atual:** \`${copilotContext.project || 'GLOBAL'}\` (\`${copilotContext.contextType || 'GLOBAL'}\`)\n` +
+          `• **Agentes no Mundo Vivo:** \`${activeCount} Ativos / ${agentsArr.length} Total\`\n` +
+          `• **Empresas / Sistemas Monitorados:** \`${companiesArr.length}\`\n` +
+          `• **Memória Indexada:** \`${state.memoryIndex.files}\` arquivos · \`${state.memoryIndex.symbols}\` símbolos · \`${state.memoryIndex.routes}\` rotas\n` +
+          `• **Dica:** Para execuções longas com alto limite de tokens na fila, ative **🚀 API + Fila (16k)** no topo do chat ou use \`/goal\`, \`/plan\`, \`/browser\`, \`/spawn-agent\`.`
+      };
+    },
+
+    async toggleVoiceCapture() {
+      const button = document.getElementById('fsbVoiceBtn');
+      if (this.voicePlayer && !this.voicePlayer.paused) {
+        this.voicePlayer.pause();
+        this.voicePlayer.currentTime = 0;
+        this.voicePlayer = null;
+        return;
+      }
+      if (this.voiceRecorder?.state === 'recording') { this.voiceRecorder.stop(); return; }
+      if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+        this.appendBotMessage({ response: 'Gravação de voz indisponível neste navegador. Você ainda pode enviar mensagens por texto.', lane: 'INDISPONÍVEL' }, '', 0);
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        const chunks = [];
+        recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+        recorder.onstop = async () => {
+          stream.getTracks().forEach((track) => track.stop());
+          button?.classList.remove('recording');
+          if (button) button.title = 'Gravar uma mensagem de voz';
+          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          try {
+            const dataUri = await new Promise((resolve, reject) => {
+              const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob);
+            });
+            const response = await authedFetch('/api/chat/voice/transcribe', { method: 'POST', body: JSON.stringify({ data: dataUri, language: 'pt' }) });
+            const payload = await response.json().catch(() => ({}));
+            const transcript = payload.result?.text?.trim();
+            if (!response.ok || !transcript) throw new Error(payload.message || payload.error || 'A transcrição não retornou texto.');
+            await this.sendChatMessage({ overrideMessage: transcript, source: 'voice', speak: true });
+          } catch (error) {
+            this.appendBotMessage({ response: `Voz indisponível: ${error.message}. O chat por texto continua disponível.`, lane: 'INDISPONÍVEL' }, '', 0);
+          }
+        };
+        this.voiceRecorder = recorder;
+        recorder.start();
+        button?.classList.add('recording');
+        if (button) button.title = 'Gravando. Clique para transcrever e enviar.';
+      } catch (error) {
+        this.appendBotMessage({ response: `Não foi possível acessar o microfone: ${error.message}`, lane: 'INDISPONÍVEL' }, '', 0);
+      }
+    },
+
+    async speakResponse(text) {
+      try {
+        const response = await authedFetch('/api/chat/voice/speak', { method: 'POST', body: JSON.stringify({ text: String(text).slice(0, 4000) }) });
+        const payload = await response.json().catch(() => ({}));
+        const audio = payload.result?.audio;
+        if (!response.ok || !audio) throw new Error(payload.message || payload.error || 'TTS indisponível.');
+        const mimeType = payload.result?.metadata?.mimeType || 'audio/mpeg';
+        const player = new Audio(`data:${mimeType};base64,${audio}`);
+        this.voicePlayer = player;
+        await player.play();
+      } catch (error) {
+        this.appendBotMessage({ response: `Resposta por voz indisponível; a resposta escrita foi mantida. ${error.message}`, lane: 'INDISPONÍVEL' }, '', 0);
       }
     },
 
@@ -3156,6 +4111,85 @@
           this.appendMessage('bot', '📋 Fila de jobs consultada. Nenhum job bloqueado no momento.');
         }
         MascotController.setMood('idle');
+      } else if (clean.startsWith('/rea')) {
+        const parts = clean.split(/\s+/);
+        const targetProj = parts[1] || copilotContext.projectId || 'fenix-os';
+        await this.runReaAnalysis(targetProj);
+      } else if (clean.startsWith('/blueprint')) {
+        const parts = clean.split(/\s+/);
+        const targetProj = parts[1] || copilotContext.projectId || 'fenix-os';
+        await this.runReaBlueprint(targetProj);
+      } else if (clean.startsWith('/index') || clean.startsWith('/memory-index')) {
+        const query = clean.replace(/^\/(?:index|memory-index)\s*/, '').trim();
+        if (query) {
+          try {
+            const res = await authedFetch(`/api/v2/memory-index/query?q=${encodeURIComponent(query)}&limit=6`);
+            const data = await res.json();
+            if (data.ok && data.results) {
+              const count = data.results.length;
+              let txt = `🔍 **Busca O(1) no Index de Memória** ("${query}" - ${count} resultado(s)):\n\n`;
+              txt += data.results.map(r => `• **${r.name || r.path || r.key}** [${r.type}]\n  *${r.location || r.project || ''}*`).join('\n');
+              this.appendBotMessage({ response: txt, lane: 'FAST_LANE', model: 'fenix-index-o1' }, clean, 15);
+              MascotController.setMood('success');
+            } else {
+              this.appendBotMessage({ response: `Nenhum item localizado no Index para "${query}".`, lane: 'FAST_LANE' }, clean, 10);
+            }
+          } catch (e) {
+            this.appendBotMessage({ response: `Falha ao consultar Index: ${e.message}`, lane: 'INDISPONÍVEL' }, clean, 10);
+          }
+        } else {
+          await this.syncMemoryIndexStatus();
+          this.appendBotMessage({
+            response: `📚 **Index O(1) de Memória Ativo**\n• Para pesquisar arquivos ou rotas digite: \`/index <termo>\`\n• Exemplo: \`/index conversation\` ou \`/index zapai\``,
+            lane: 'FAST_LANE',
+            model: 'fenix-memory-index'
+          }, clean, 10);
+        }
+      } else if (clean === '/couplings') {
+        try {
+          const res = await authedFetch('/api/v2/rea/couplings');
+          const data = await res.json();
+          if (data.ok && data.couplings) {
+            let txt = `🔗 **Matriz de Acoplamento do Ecossistema Fênix (7 Projetos):**\n\n`;
+            txt += `• **Total de Arestas / Conexões:** ${data.couplings.totalEdges || '—'}\n`;
+            txt += `• **APIs REST / SSE:** ${data.couplings.apiEdges || '—'}\n`;
+            txt += `• **Shared Database / Redis:** ${data.couplings.databaseEdges || '—'}\n`;
+            txt += `• **Orquestração de Agentes:** ${data.couplings.agentEdges || '—'}\n\n`;
+            txt += `*Dica: Abra a aba Projetos para visualizar o grafo completo de acoplamentos.*`;
+            this.appendBotMessage({ response: txt, lane: 'FAST_LANE', model: 'rea-coupling-engine' }, clean, 25);
+            MascotController.setMood('success');
+          }
+        } catch (e) {
+          this.appendBotMessage({ response: `Falha ao consultar acoplamentos: ${e.message}`, lane: 'INDISPONÍVEL' }, clean, 10);
+        }
+      } else if (clean === '/screens') {
+        try {
+          const res = await authedFetch('/api/v2/rea/screens');
+          const data = await res.json();
+          if (data.ok && Array.isArray(data.projectsScreensSummary)) {
+            const screenCount = Number.isFinite(data.totalEcosystemScreens) ? data.totalEcosystemScreens : 0;
+            let txt = `🖥️ **Telas registradas no ecossistema Fênix (${screenCount}):**\n\n`;
+            data.projectsScreensSummary.forEach((project) => {
+              txt += `• **${project.name || project.projectId}** (${project.projectId}): ${project.pagesCount || 0} telas/views\n`;
+            });
+            this.appendBotMessage({ response: txt, lane: 'FAST_LANE', model: 'rea-screen-engine' }, clean, 25);
+            MascotController.setMood('success');
+          }
+        } catch (e) {
+          this.appendBotMessage({ response: `Falha ao consultar telas: ${e.message}`, lane: 'INDISPONÍVEL' }, clean, 10);
+        }
+      } else if (clean.startsWith('/delegate')) {
+        const taskText = clean.replace(/^\/delegate\s*/, '').trim();
+        if (taskText) {
+          const input = document.getElementById('fsbChatInput');
+          if (input) input.value = taskText;
+          await this.sendChatMessage({ delegateTask: true });
+        } else {
+          this.appendBotMessage({
+            response: `🎯 **Delegação de Tarefas via API (FastLane ➔ BullMQ)**\nDigite o que deseja construir ou delegar após o comando.\nExemplo: \`/delegate Criar nova rota de telemetria no api-platform e conectar na sidebar\``,
+            lane: 'FAST_LANE'
+          }, clean, 10);
+        }
       } else if (['/fast', '/qwen', '/auto'].includes(clean)) {
         try {
           const cRes = await authedFetch('/api/v2/conversation', {
@@ -3168,9 +4202,142 @@
           this.appendMessage('bot', `Modo de inferência alternado para: ${clean.slice(1).toUpperCase()}`);
         }
         MascotController.setMood('success');
+      } else if (
+        clean.startsWith('/goal') ||
+        clean.startsWith('/plan') ||
+        clean.startsWith('/browser') ||
+        clean.startsWith('/boost') ||
+        clean.startsWith('/learn') ||
+        clean.startsWith('/grill-me') ||
+        clean.startsWith('/teamwork-preview')
+      ) {
+        try {
+          const qRes = await authedFetch('/api/v2/qwen-orchestrator/command', {
+            method: 'POST',
+            body: JSON.stringify({ command: clean })
+          });
+          const qData = qRes.ok ? await qRes.json() : null;
+          if (qData?.reply) {
+            this.appendMessage('bot', qData.reply);
+          } else {
+            this.appendMessage('bot', 'Comando executado com sucesso no Qwen Project Orchestrator.');
+          }
+          if (qData?.project) {
+            if (window.showView) window.showView('projects');
+            const qwenTab = document.getElementById('flpModeQwen');
+            if (qwenTab) qwenTab.click();
+          }
+        } catch (err) {
+          this.appendMessage('bot', `⚠️ Falha ao comunicar com Qwen Orchestrator: ${err.message}`);
+        }
+        MascotController.setMood('success');
       } else {
-        this.appendMessage('bot', `Comando desconhecido: ${clean}. Tente /vps-status, /health, /memory, /agents, /jobs, /fast ou /qwen.`);
+        this.appendMessage('bot', `Comando desconhecido: ${clean}. Tente /rea, /blueprint, /index, /couplings, /screens, /delegate, /vps-status, /health, /memory, /agents, /jobs, /fast ou /qwen.`);
         MascotController.setMood('idle');
+      }
+    },
+
+    async syncMemoryIndexStatus() {
+      try {
+        const res = await authedFetch('/api/v2/memory-index/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.status) {
+            const st = data.status;
+            this.setDOMText('fsbIdxFilesCount', String(st.totalIndexedFiles || '—'));
+            this.setDOMText('fsbIdxSymbolsCount', String(st.totalSymbols || '—'));
+            this.setDOMText('fsbIdxRoutesCount', String(st.totalRoutes || '—'));
+            this.setDOMText('fsbIdxMemoryCount', String(st.totalMemorySections || '—'));
+            const badge = document.getElementById('fsbReaVersionBadge');
+            if (badge && st.reaVersion) badge.textContent = `REA ${st.reaVersion}`;
+          }
+        }
+      } catch (e) {
+        console.warn('[FenixSidebar] Falha ao sincronizar index de memória:', e);
+      }
+    },
+
+    async runReaAnalysis(projectId = copilotContext.projectId || 'fenix-os') {
+      MascotController.setMood('working');
+      this.appendMessage('system', `🔬 Analisando o workspace de **${projectId}** e registrando a evidência REA...`);
+      try {
+        const res = await authedFetch('/api/v2/rea/analyze', {
+          method: 'POST',
+          body: JSON.stringify({ projectId })
+        });
+        const data = await res.json();
+        if (data.ok && data.evidenceId && data.metrics) {
+          const an = data;
+          let txt = `🔬 **Análise REA — ${an.projectName || an.projectId}**\n\n`;
+          txt += `• **Evidência:** \`${an.evidenceId}\` · SHA-256 \`${(an.subjectSha256 || '').slice(0, 16)}…\`\n`;
+          txt += `• **Arquivos lidos:** ${an.metrics.scannedFilesCount} de até ${an.metrics.fileLimit}${an.metrics.filesTruncated ? ' (amostra truncada)' : ''}\n`;
+          txt += `• **Grafo:** ${an.metrics.graphNodesCount} módulos · ${an.metrics.graphEdgesCount} relações\n`;
+          txt += `• **Rotas encontradas:** ${an.metrics.routesDetected}${an.metrics.routeEvidenceTruncated ? ' (evidência truncada)' : ''}\n`;
+          txt += `• **Schemas SQL observados:** ${an.metrics.storageSchemasCount} · **incógnitas:** ${an.metrics.unknownsCount}\n`;
+          txt += `• **Persistência:** ${data.persistence?.status || 'não informada'}\n`;
+          txt += `\nOs achados refletem somente os arquivos lidos; itens não observados não foram presumidos.`;
+          this.appendBotMessage({ response: txt, lane: 'FAST_LANE', model: 'rea-agents-6.5.0' }, `/rea ${projectId}`, 45);
+          MascotController.setMood('success');
+        } else {
+          this.appendBotMessage({ response: `A análise REA não foi concluída: ${data.error || data.code || 'resposta sem evidência válida'}`, lane: 'INDISPONÍVEL' }, `/rea ${projectId}`, 20);
+        }
+      } catch (err) {
+        this.appendBotMessage({ response: `Falha na Análise REA: ${err.message}`, lane: 'INDISPONÍVEL' }, `/rea ${projectId}`, 20);
+        MascotController.setMood('error');
+      }
+    },
+
+    async runReaBlueprint(projectId = copilotContext.projectId || 'fenix-os') {
+      MascotController.setMood('working');
+      const input = document.getElementById('fsbChatInput');
+      const objective = (input?.value || '').trim();
+      if (!objective) {
+        this.appendBotMessage({ response: 'Descreva o objetivo do blueprint no campo da conversa. A proposta será baseada na última evidência REA salva do projeto.', lane: 'FAST_LANE' }, `/blueprint ${projectId}`, 10);
+        return;
+      }
+      this.appendMessage('system', `📐 Montando uma proposta a partir da evidência REA de **${projectId}**...`);
+      try {
+        const res = await authedFetch('/api/v2/rea/blueprint', {
+          method: 'POST',
+          body: JSON.stringify({ projectId, objective })
+        });
+        const data = await res.json();
+        if (data.ok && data.blueprintId && data.evidenceRef) {
+          const bp = data;
+          let txt = `📐 **Proposta de engenharia · ${bp.projectName || projectId}**\n\n`;
+          txt += `🎯 **Objetivo:** ${bp.objective}\n`;
+          txt += `🔎 **Base:** ${bp.evidenceRef.evidenceId} · SHA-256 \`${bp.evidenceRef.subjectSha256.slice(0, 16)}…\`\n`;
+          txt += `📦 **Módulos observados:** ${bp.evidenceRef.graphNodesCount} · **Rotas relacionadas:** ${bp.fullstackContract.apiContracts.length}\n`;
+          txt += `🗄️ **Persistência:** ${bp.fullstackContract.persistenceLayer.status === 'OBSERVED_BY_REA' ? `${bp.fullstackContract.persistenceLayer.observedSchemas.length} schemas SQL observados` : 'não observada pela análise'}\n\n`;
+          txt += bp.executionSteps.map((step) => `${step.step}. ${step.title} — ${step.status}`).join('\n');
+          txt += `\n\n🧪 Validação: pendente. Esta proposta não criou missão, job ou alteração de arquivo. Revise o escopo antes de delegar.`;
+          this.appendBotMessage({ response: txt, lane: 'FAST_LANE' }, `/blueprint ${projectId}`, 50);
+          MascotController.setMood('success');
+        } else {
+          this.appendBotMessage({ response: `Falha ao gerar blueprint: ${data.error || 'Erro desconhecido'}`, lane: 'INDISPONÍVEL' }, `/blueprint ${projectId}`, 20);
+        }
+      } catch (err) {
+        this.appendBotMessage({ response: `Falha na requisição de Blueprint: ${err.message}`, lane: 'INDISPONÍVEL' }, `/blueprint ${projectId}`, 20);
+        MascotController.setMood('error');
+      }
+    },
+
+    openMemoryIndexPrompt() {
+      const input = document.getElementById('fsbChatInput');
+      if (input) {
+        input.value = '/index ';
+        input.focus();
+      }
+    },
+
+    delegateInputTask() {
+      const input = document.getElementById('fsbChatInput');
+      const val = (input?.value || '').trim();
+      if (!val) {
+        input?.focus();
+        if (input) input.placeholder = 'Descreva o que deseja que o Fênix prepare para execução…';
+      } else {
+        this.sendChatMessage({ delegateTask: true });
       }
     },
 
@@ -3205,6 +4372,9 @@
         this.setDOMText('fsbTelemApiPlatform', apiPlatform);
         this.setDOMText('fsbTelemJobs', jobs);
         this.setDOMText('fsbTelemKernelState', sysData?.status || '—');
+
+        // Sincronizar dados do Index de Memória
+        this.syncMemoryIndexStatus();
 
         // Atualizar Letreiro Inferior Contínuo (Live Marquee Ticker)
         this.setDOMText('tickerHost', host);
@@ -4223,7 +5393,7 @@
       }
     },
 
-    sendDirectMessage() {
+    async sendDirectMessage() {
       const input = document.getElementById('fadDirectInput');
       const text = input?.value.trim();
       if (!text) return;
@@ -4236,19 +5406,41 @@
       userMsg.className = 'fsb-msg user';
       userMsg.innerHTML = `<div class="fsb-bubble">${SidebarController.escapeHTML(text)}</div>`;
       container.appendChild(userMsg);
+      container.scrollTop = container.scrollHeight;
 
-      setTimeout(() => {
-        const agentName = state.activeInspectAgent?.name || 'Agente';
+      const targetAgentId = state.activeInspectAgent?.id || 'agent-api-ops';
+      const typingMsg = document.createElement('div');
+      typingMsg.className = 'fsb-msg bot';
+      typingMsg.innerHTML = `<div class="fsb-bubble" style="opacity:0.6;"><i class="ph-bold ph-spinner" style="animation:spin 1s linear infinite;"></i> Consultando memória e contexto...</div>`;
+      container.appendChild(typingMsg);
+      container.scrollTop = container.scrollHeight;
+
+      try {
+        const res = await authedFetch(`/api/v2/living-city/agent/${encodeURIComponent(targetAgentId)}/chat`, {
+          method: 'POST',
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        typingMsg.remove();
+
         const botMsg = document.createElement('div');
         botMsg.className = 'fsb-msg bot';
-        botMsg.innerHTML = `<div class="fsb-bubble"><strong>[${agentName}]</strong> Entendido! Processando diretiva no contexto do projeto.</div>`;
+        const replyText = data.reply || data.response || 'Sem resposta do agente.';
+        botMsg.innerHTML = `<div class="fsb-bubble"><strong>[${SidebarController.escapeHTML(data.agentName || targetAgentId)}]</strong> ${SidebarController.escapeHTML(replyText)}</div>`;
         container.appendChild(botMsg);
         container.scrollTop = container.scrollHeight;
-      }, 500);
+      } catch (err) {
+        typingMsg.remove();
+        const errMsg = document.createElement('div');
+        errMsg.className = 'fsb-msg bot error';
+        errMsg.innerHTML = `<div class="fsb-bubble" style="color:#f87171;"><strong>[Erro]</strong> Falha na comunicação: ${SidebarController.escapeHTML(err.message)}</div>`;
+        container.appendChild(errMsg);
+        container.scrollTop = container.scrollHeight;
+      }
     },
 
     hookAgentCards() {
-      // Quando os cards de agentes forem clicados na view-agents, intercepta e abre o Dossiê
+      // Keep the canonical runtime Inspector as the single selection surface.
       document.addEventListener('click', (e) => {
         const card = e.target.closest('#fenix-agents-grid .cp-agent-card[data-agent-id]');
         if (card) {
@@ -4256,11 +5448,20 @@
           const name = card.querySelector('.cp-agent-name')?.textContent || id;
           const role = card.querySelector('.cp-agent-role')?.textContent || 'Specialist';
           const status = card.dataset.agentStatus || 'AVAILABLE';
-          AgentRosterRPG.openModal(id, { id, name, role, status });
+          setTimeout(() => {
+            const inspector = document.getElementById('fenixInspectorDrawer');
+            if (inspector?.classList.contains('open')) {
+              AgentRosterRPG.closeModal();
+              return;
+            }
+            AgentRosterRPG.openModal(id, { id, name, role, status });
+          }, 0);
         }
       });
     }
   };
+
+  window.fenixCloseAgentDossier = () => AgentRosterRPG.closeModal();
 
   // ── Inicialização Geral ao Carregar o DOM ──
   function init() {
@@ -4277,20 +5478,26 @@
     SidebarController.initConversations();
     AgentRosterRPG.init();
 
-    // Telemetria inteligente: só busca se aberto e visível
-    if (state.isOpen && !document.hidden) {
-      SidebarController.fetchTelemetry();
-    }
+    // Telemetria contínua do Ticker Inferior e Sidebar
+    SidebarController.fetchTelemetry();
     const copilotTelemTimer = setInterval(() => {
-      if (state.isOpen && !document.hidden) {
+      if (!document.hidden) {
         SidebarController.fetchTelemetry();
       }
-    }, 20000);
+    }, 15000);
     window.__FENIX_SINGLETONS__?.register('copilotTelemetryTimer', copilotTelemTimer);
 
     // Restaurar largura e modo docked (Lovable Split Screen)
-    const savedWidth = localStorage.getItem('fenix_sidebar_width') || '380px';
+    document.body.classList.toggle('fenix-chat-window', isChatWindow);
+    const rawSavedW = localStorage.getItem('fenix.ui.rightCopilotWidth') || localStorage.getItem('fenix_sidebar_width') || '400px';
+    const parsedW = parseInt(rawSavedW, 10);
+    const savedWidth = (!isNaN(parsedW) && parsedW >= 320) ? `${parsedW}px` : '400px';
     document.documentElement.style.setProperty('--fsb-width', savedWidth);
+    const savedHeight = Number(localStorage.getItem('fenix.ui.rightCopilotHeight'));
+    if (Number.isFinite(savedHeight) && savedHeight >= 320) {
+      document.documentElement.style.setProperty('--fsb-height', `${Math.min(savedHeight, window.innerHeight - 24)}px`);
+      document.getElementById('fenix-right-sidebar')?.classList.add('fsb-height-resized');
+    }
     state.isDocked = localStorage.getItem('fenix_sidebar_docked') !== 'false';
     document.body.classList.toggle('fsb-docked', state.isDocked);
     const dockBtnEl = document.getElementById('fsbDockBtn');
@@ -4393,10 +5600,19 @@
           SidebarController.sendChatMessage();
         }
       },
+      sendChatMessage: (opts) => SidebarController.sendChatMessage(opts),
+      toggleErrorsDrawer: (force) => SidebarController.toggleErrorsDrawer(force),
+      retryErrorPrompt: (prompt) => SidebarController.retryErrorPrompt(prompt),
+      recordPersistentChatError: (record, opts) => SidebarController.recordPersistentChatError(record, opts),
       setMood: (mood) => MascotController.setMood(mood),
       fetchTelemetry: (m) => SidebarController.fetchTelemetry(m),
       fetchProviders: (m) => SidebarController.fetchProviders(m),
       testProviderConnection: (id, b) => SidebarController.testProviderConnection(id, b),
+      syncMemoryIndexStatus: () => SidebarController.syncMemoryIndexStatus(),
+      runReaAnalysis: (p) => SidebarController.runReaAnalysis(p),
+      runReaBlueprint: (p) => SidebarController.runReaBlueprint(p),
+      openMemoryIndexPrompt: () => SidebarController.openMemoryIndexPrompt(),
+      delegateInputTask: () => SidebarController.delegateInputTask(),
       openInspector: (comp) => SidebarController.openInspector(comp),
       switchTab: (tab) => SidebarController.switchTab(tab),
       applyStudioChip: (text) => SidebarController.applyStudioChip(text),
@@ -4404,7 +5620,8 @@
       exportStudioPsd: (btn) => SidebarController.exportStudioPsd(btn),
       exportStudioPremiereXml: (btn) => SidebarController.exportStudioPremiereXml(btn),
       loadStudioHistory: () => SidebarController.loadStudioHistory(),
-      useImageInMFAtacadista: (url) => SidebarController.useImageInMFAtacadista(url)
+      useImageInMFAtacadista: (url) => SidebarController.useImageInMFAtacadista(url),
+      toggleExecutionMode: (m) => SidebarController.toggleExecutionMode(m)
     };
 
     window.fenixOpenSystemInspector = (companyId) => {
@@ -4413,6 +5630,69 @@
 
     window.fenixChatAboutCompany = (companyName) => {
       window.FenixSidebar?.send?.(`Fênix, analise a operação, rotas e gargalos do sistema ${companyName || 'API Platform'} e sugira melhorias imediatas.`);
+    };
+
+    window.fenixSidebarAction = async (action) => {
+      const companyId = state.activeInspectCompanyId || copilotContext.projectId || 'fenix-os';
+      if (action === 'create-agent') {
+        try {
+          const res = await authedFetch(`/api/v2/living-city/company/${encodeURIComponent(companyId)}/agents/spawn`, {
+            method: 'POST',
+            body: JSON.stringify({
+              companyId,
+              role: 'Company Task Specialist',
+              currentTask: `Executar tarefas operacionais de ${companyId}`
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (data.ok && data.agent) {
+            const kpiAgentsEl = document.getElementById('kpiAgents');
+            if (kpiAgentsEl && data.companyAgentsCount != null) {
+              kpiAgentsEl.textContent = `${data.companyActiveAgentsCount} / ${data.companyAgentsCount}`;
+            }
+            try { window.fenixWorld3D?.syncRealData?.(); } catch (_) {}
+            try { window.fenixWorld3D?.focusAgent?.(data.agent.id); } catch (_) {}
+            try { window.FenixCityReality?.syncLiveReality?.(); } catch (_) {}
+            SidebarController.switchTab('chat');
+            SidebarController.appendBotMessage({
+              ok: true,
+              lane: 'FAST_LANE',
+              model: 'fenix-agent-spawner@1.0',
+              provider: 'fenix-living-world',
+              response: `🤖 **Novo Agente Criado para \`${companyId}\`!**\n` +
+                `• **Agente:** \`${data.agent.name}\` (\`${data.agent.id}\`)\n` +
+                `• **Distrito 3D:** \`${data.agent.district}\` · **Rota:** \`${(data.agent.routineWaypoints || []).length}\` waypoints\n` +
+                `• **Equipe da Empresa:** \`${data.companyActiveAgentsCount} Ativos / ${data.companyAgentsCount} Total\`\n` +
+                `• **Total no Ecossistema:** \`${data.activeAgentsCount} Ativos / ${data.totalAgentsCount} Total\``
+            }, `/spawn-agent ${companyId}`, 18);
+          }
+        } catch (err) {
+          console.warn('[FENIX SIDEBAR] create-agent error:', err);
+        }
+        return;
+      }
+      if (action === 'new-mission') {
+        window.fenixCopilot?.sendMessage(`/goal Evoluir operação e tarefas da empresa ${companyId}`);
+        return;
+      }
+      if (action === 'full-analysis') {
+        SidebarController.switchTab('chat');
+        SidebarController.runReaAnalysis(companyId);
+      }
+    };
+
+    window.fenixSendCompanyChat = () => {
+      const input = document.getElementById('fsbCompanyChatInput');
+      if (!input || !input.value.trim()) return;
+      const msg = input.value.trim();
+      input.value = '';
+      window.fenixCopilot?.sendMessage(msg);
+    };
+
+    window.fenixChatChip = (text) => {
+      if (!text) return;
+      const companyId = state.activeInspectCompanyId || copilotContext.projectId || 'fenix-os';
+      window.fenixCopilot?.sendMessage(`${text} (${companyId})`);
     };
 
     window.fenixOpenProjectFromInspector = (projectId) => {
@@ -4439,8 +5719,12 @@
       },
       proposeDiff: (diff, filePath, newContent) => showDiffProposal(diff, filePath, newContent),
       applyDiff: () => applyCurrentDiff(),
-      rejectDiff: () => rejectCurrentDiff()
+      rejectDiff: () => rejectCurrentDiff(),
+      recordPersistentChatError: (payload) => SidebarController.recordPersistentChatError(payload),
+      openSavedErrorsDrawer: () => SidebarController.openSavedErrorsDrawer()
     };
+    window.FenixMascotSidebar = SidebarController;
+    window.FenixMascotController = MascotController;
     updateCopilotContext();
 
     window.addEventListener('copilot:context-changed', (e) => {

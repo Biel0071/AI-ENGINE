@@ -96,15 +96,15 @@
       const coreSphereGeo = new THREE.SphereGeometry(1, 16, 12);
       const haloSphereGeo = new THREE.SphereGeometry(1, 14, 10);
 
-      // Orbital Spatial Rings (Constellation Reference Guides)
+      // Orbital Spatial Rings (Constellation Reference Guides - Softened)
       const ringMat = new THREE.MeshBasicMaterial({
         color: 0x38bdf8,
         transparent: true,
-        opacity: 0.04,
+        opacity: 0.012,
         side: THREE.DoubleSide
       });
-      for (const rad of [180, 260, 340]) {
-        const ringGeo = new THREE.RingGeometry(rad, rad + 1.2, 48);
+      for (const rad of [200, 320]) {
+        const ringGeo = new THREE.RingGeometry(rad, rad + 0.8, 64);
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
         ringMesh.rotation.x = Math.PI / 2;
         graph.add(ringMesh);
@@ -170,9 +170,10 @@
         nodeMeshes.push(nodeGroup);
       }
 
-      // Build 3D Curved Bezier Splines & Pulses for Links
+      // Build 3D Curved Bezier Splines & Pulses for Links (Focus + Bridge Edges, Max 60)
       const pulseCurves = [];
-      for (const edge of links) {
+      const renderEdges = (Array.isArray(links) ? links : []).slice(0, 60);
+      for (const edge of renderEdges) {
         const from = byId.get(edge.from);
         const to = byId.get(edge.to);
         if (!from || !to) continue;
@@ -194,7 +195,7 @@
         const lineMat = new THREE.LineBasicMaterial({
           color: isHighlight ? 0x00f0ff : 0x38bdf8,
           transparent: true,
-          opacity: isHighlight ? 0.75 : 0.22,
+          opacity: isHighlight ? 0.85 : 0.08,
           blending: THREE.AdditiveBlending,
           depthWrite: false
         });
