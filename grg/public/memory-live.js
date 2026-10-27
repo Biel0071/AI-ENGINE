@@ -1,9 +1,8 @@
 (() => {
   'use strict';
   const state = { nodes: [], edges: [], selected: null, query: '', type: 'all', loading: null, error: null, measuredAt: null, activeTab: 'graph' };
-  let neuralBrainActive = (() => {
-    try { return localStorage.getItem('fenix_neural_brain_active') !== 'false'; } catch { return true; }
-  })();
+  let neuralBrainActive = true;
+  try { if (localStorage.getItem('fenix_neural_brain_active') === 'false') neuralBrainActive = false; } catch (_) {}
   let init3DNeuralBrain = () => {};
     let neuralBrainWebglRenderer = null;
   const $ = (id) => document.getElementById(id);
@@ -30,9 +29,15 @@
     const view = $('view-memory');
     if (!view || view.dataset.liveMemory === 'true') return;
     view.dataset.liveMemory = 'true';
-    view.replaceChildren();
-    const main = make('main', 'fml-root');
-    main.id = 'fenixMemoryOperationalContainer';
+    let main = view.querySelector('#fenixMemoryOperationalContainer');
+    if (!main) {
+      view.replaceChildren();
+      main = make('main', 'fml-root');
+      main.id = 'fenixMemoryOperationalContainer';
+    } else {
+      main.classList.add('fml-root');
+      main.replaceChildren();
+    }
     main.innerHTML = `
       <header class="fml-header">
         <div>
@@ -105,7 +110,7 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
         <button type="button" class="fml-button fml-error-action" id="fmlMemoryRetry">Tentar novamente</button>
       </div>
       <div id="fmlStatus" class="fml-status" role="status">Carregando grafo…</div>
-      <section id="fenixMemoryLayers" class="fml-layer-strip" aria-label="Camadas de memória" role="group" hidden>
+      <section id="${view.querySelector('#fenixMemoryLayers') ? 'fmlOperationalLayers' : 'fenixMemoryLayers'}" class="fml-layer-strip" aria-label="Camadas de memória" role="group" hidden>
         <button type="button" class="fenix-mem-layer active" data-layer="1" aria-pressed="true" onclick="window.fenixSelectMemoryLayer(1)"><span>L1 Working</span><strong id="fmlLayer1">—</strong></button>
         <button type="button" class="fenix-mem-layer" data-layer="2" aria-pressed="false" onclick="window.fenixSelectMemoryLayer(2)"><span>L2 Episodic</span><strong id="fmlLayer2">—</strong></button>
         <button type="button" class="fenix-mem-layer" data-layer="3" aria-pressed="false" onclick="window.fenixSelectMemoryLayer(3)"><span>L3 Semantic</span><strong id="fmlLayer3">—</strong></button>
@@ -323,7 +328,7 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
 
     const relations = neighbors(item.id);
     const groups = window.FenixMemoryBrainLayout?.groupNeighborRelations(relations, item.id) || [];
-    const relHead = make('h3', '', `Relações e Vizinhos (${groups.length}) · ${relations.length} conexões`);
+    const relHead = make('h3', '', `Vizinhos (${groups.length}) · ${relations.length} registros`);
     relHead.style.cssText = 'font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; margin:6px 0 2px;';
     card.append(relHead);
 
@@ -419,6 +424,22 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
       if ($('fmlLayer5')) $('fmlLayer5').textContent = String(totalNodes);
       if ($('fmlLayer6')) $('fmlLayer6').textContent = String(totalEdges);
       if ($('fmlLayer7')) $('fmlLayer7').textContent = String(types.length);
+      const countsL = {
+        0: (byT('API') || 0),
+        1: ((byT('TASK') || 0) + (byT('JOB') || 0)),
+        2: ((byT('PROJECT') || 0) + (byT('PAGE') || 0)),
+        3: (byT('TEST') || 0),
+        4: ((byT('ERROR') || 0) + (byT('FIX') || 0)),
+        5: ((byT('SERVICE') || 0) + (byT('COMPONENT') || 0)),
+        6: ((byT('PATTERN') || 0) + (byT('MODEL') || 0) + (byT('TOOL') || 0))
+      };
+      const maxL = Math.max(...Object.values(countsL), 1);
+      for (let i = 0; i <= 6; i++) {
+        const cEl = document.getElementById('memCountL' + i);
+        if (cEl) cEl.textContent = countsL[i] + ' nós';
+        const bEl = document.getElementById('memBarL' + i);
+        if (bEl) bEl.style.width = Math.max(14, Math.round((countsL[i] / maxL) * 100)) + '%';
+      }
     }
     const errNotice = $('fenixMemoryErrorNotice');
     if (errNotice) {
@@ -437,7 +458,7 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
     for (const type of types) select.add(new Option(`${type} · ${state.nodes.filter((item) => item.type === type).length}`, type)); select.value = value;
     const status = $('fmlStatus'); status.hidden = Boolean(state.error); status.textContent = state.loading ? 'Sincronizando Graph Brain…' : state.error ? '' : state.measuredAt ? `Medido às ${new Date(state.measuredAt).toLocaleTimeString('pt-BR')} · fonte: /api/v2/graph/data (${state.nodes.length}/${totalNodes} nós carregados)` : 'Aguardando dados'; status.dataset.error = String(Boolean(state.error));
     const graphMeasured = Boolean(state.measuredAt);
-    $('fenixMemoryLayers').hidden = !graphMeasured;
+    const _layersEl = $('fenixMemoryLayers'); if (_layersEl && !_layersEl.querySelector('[data-layer="0"]')) { _layersEl.hidden = !graphMeasured; }
     $('fmlGraphSummary').hidden = !graphMeasured;
     $('fmlWorkspace').hidden = !graphMeasured;
     renderList(); renderMap(); renderDetail();
@@ -560,16 +581,37 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
     if (installed) return;
     installed = true;
     window.loadMemoryView = load;
-    window.fenixSyncMemoryGraph = load;
-    window.fenixMountMemoryView = () => load();
-    window.fenixSelectMemoryCluster = () => {};
+    const _origSync = window.fenixSyncMemoryGraph;
+    window.fenixSyncMemoryGraph = (force) => {
+      if (typeof _origSync === 'function' && _origSync !== load) {
+        try { _origSync(force); } catch (e) { console.warn('[FENIX] origSync error:', e); }
+      }
+      return load(force);
+    };
+    const _origMount = window.fenixMountMemoryView;
+    window.fenixMountMemoryView = (tabName) => {
+      if (tabName && typeof _origMount === 'function') {
+        return _origMount(tabName);
+      }
+      return load();
+    };
+    const _origCluster = window.fenixSelectMemoryCluster;
+    window.fenixSelectMemoryCluster = (clusterKey) => {
+      if (typeof _origCluster === 'function') {
+        try { _origCluster(clusterKey); } catch (_) {}
+      }
+    };
+    const _origLayer = window.fenixSelectMemoryLayer;
     window.fenixSelectMemoryLayer = (layerIdx) => {
+      if (typeof _origLayer === 'function') {
+        try { _origLayer(layerIdx); } catch (_) {}
+      }
       document.querySelectorAll('.fenix-mem-layer').forEach((el) => {
         const isMatch = el.getAttribute('data-layer') === String(layerIdx);
         el.classList.toggle('active', isMatch);
         el.setAttribute('aria-pressed', String(isMatch));
       });
-      const layerTypeMap = { 1: 'TASK', 2: 'ERROR', 3: 'PROJECT', 4: 'API', 5: 'all', 6: 'all', 7: 'all' };
+      const layerTypeMap = { 0: 'telemetry', 1: 'TASK', 2: 'ERROR', 3: 'PROJECT', 4: 'API', 5: 'all', 6: 'all', 7: 'all' };
       const mapped = layerTypeMap[Number(layerIdx)] || 'all';
       if ($('fmlType')) {
         state.type = mapped === 'all' || Array.from($('fmlType').options).some((o) => o.value === mapped) ? mapped : 'all';

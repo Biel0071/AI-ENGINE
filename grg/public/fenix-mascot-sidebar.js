@@ -5723,7 +5723,16 @@
       recordPersistentChatError: (payload) => SidebarController.recordPersistentChatError(payload),
       openSavedErrorsDrawer: () => SidebarController.openSavedErrorsDrawer()
     };
-    window.FenixMascotSidebar = SidebarController;
+    SidebarController.MascotController = MascotController;
+    SidebarController.SidebarController = SidebarController;
+    window.FenixMascotSidebar = Object.assign(SidebarController, {
+      MascotController,
+      SidebarController,
+      AgentRosterRPG,
+      setMood: (m) => MascotController.setMood(m),
+      toggle: () => MascotController.toggle(),
+      openAgentDossier: (id) => AgentRosterRPG.openModal(id)
+    });
     window.FenixMascotController = MascotController;
     updateCopilotContext();
 

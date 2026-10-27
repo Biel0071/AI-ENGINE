@@ -1128,7 +1128,7 @@ module.exports = authRouter;`
         opCont.style.display = 'block';
         let btns = opCont.querySelectorAll('.fenix-mem-tab-btn');
         let cards = opCont.querySelectorAll('.fenix-mem-card');
-        if (btns.length < 5 || cards.length === 0) {
+        if (!opCont.querySelector('.fml-header') && (btns.length < 5 || cards.length === 0)) {
           opCont.innerHTML = `
             <div class="fenix-cognitive-pipeline" style="display:flex; align-items:center; justify-content:space-between; background:#0b1120; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px 16px; margin-top:16px; margin-bottom:12px; overflow-x:auto; gap:8px;">
               <span style="font-size:9px; font-weight:800; color:#64748b;">L0: RAW</span>

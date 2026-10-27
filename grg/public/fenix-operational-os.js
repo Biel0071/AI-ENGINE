@@ -29,6 +29,8 @@
   const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
+  const honestVal = val => (val !== undefined && val !== null && val !== '' ? String(val) : '—');
+  window.fenixHonestVal = honestVal;
 
   window.fenixGetContext = function () {
     return { ...ctx };
@@ -301,6 +303,22 @@
         ? agent.capabilities
         : [];
       const recentRuns = Array.isArray(agent.recentRuns) ? agent.recentRuns : [];
+      let activityEvents = [];
+      try {
+        const eventsResponse = window.fenixAuthedFetch
+          ? await window.fenixAuthedFetch('/api/v2/living-city/events?limit=100', { signal: AbortSignal.timeout(3000) })
+          : await fetch('/api/v2/living-city/events?limit=100', { credentials: 'same-origin', signal: AbortSignal.timeout(3000) });
+        if (eventsResponse.ok) {
+          const eventData = await eventsResponse.json();
+          activityEvents = (Array.isArray(eventData.events) ? eventData.events : []).filter((event) => {
+            const payload = event?.payload || {};
+            const eventAgentId = payload.agentId || payload.agentID || payload.agent?.id || payload.agent?.agentId;
+            return String(eventAgentId || '') === String(agent.id || agentId);
+          }).slice(-8).reverse();
+        }
+      } catch (_) {
+        activityEvents = [];
+      }
 
       // Check real capabilities
       const hasExecuteTick = capabilities.some(c => String(c).toLowerCase().includes('exec') || String(c).toLowerCase().includes('tick'));
@@ -342,6 +360,11 @@
         <div class="fenix-insp-section">
           <h5>Recent Runs (Execuções Recentes)</h5>
           ${recentRuns.length ? recentRuns.slice(0, 5).map(run => `<div style="font-size:11px; color:#94a3b8; background:#0b1120; padding:10px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); margin-bottom:6px;">${esc(run.title || run.id || 'Execução')} · ${esc(run.status || 'NÃO MEDIDO')}</div>`).join('') : '<p style="font-size:11px; color:#94a3b8;">Nenhuma execução recente informada pelo runtime.</p>'}
+        </div>
+
+        <div class="fenix-insp-section">
+          <h5>🧾 Atividade registrada · EventBus</h5>
+          ${activityEvents.length ? activityEvents.map((event) => `<div style="font-size:11px; color:#cbd5e1; background:#0b1120; padding:9px 11px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); margin-bottom:6px;"><strong>${esc(event.type || 'Evento')}</strong><div>${esc(event.description || 'Sem descrição')}</div><time style="color:#64748b;">${esc(event.timestamp || 'Horário não informado')}</time></div>`).join('') : '<p style="font-size:11px; color:#94a3b8;">Nenhum evento deste agente encontrado no EventBus nesta leitura.</p>'}
         </div>
       `;
 
@@ -1104,6 +1127,7 @@
   // 8.5 BRAIN VIEW 2.0 (Interactive HTML5 Canvas Neural Network Engine)
   // ═══════════════════════════════════════════════════════════════════════════
   let __brainAnimFrame = null;
+  let __brainLifecycle = null;
   let __brainPhysicsActive = true;
   let __brainFilter = 'ALL';
 
@@ -1124,10 +1148,10 @@
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    if (__brainAnimFrame) {
-      cancelAnimationFrame(__brainAnimFrame);
-      __brainAnimFrame = null;
-    }
+    __brainLifecycle?.dispose();
+    __brainLifecycle = null;
+    if (__brainAnimFrame) cancelAnimationFrame(__brainAnimFrame);
+    __brainAnimFrame = null;
 
     container.innerHTML = `
       <div style="position:relative; width:100%; height:580px; background:#050811; border:1px solid rgba(255,255,255,0.08); border-radius:10px; overflow:hidden;">
@@ -1174,6 +1198,26 @@
     const canvas = document.getElementById('fenixBrainCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    let disposed = false;
+    let graphReady = false;
+    let resumeBrainRender = () => {};
+    const isBrainCanvasVisible = () => !disposed && !document.hidden && canvas.isConnected
+      && canvas.getClientRects().length > 0 && canvas.clientWidth > 0 && canvas.clientHeight > 0;
+    const onBrainVisibilityChange = () => resumeBrainRender();
+    const onBrainViewChanged = () => resumeBrainRender();
+    const lifecycle = {
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        document.removeEventListener('visibilitychange', onBrainVisibilityChange);
+        window.removeEventListener('fenix-view-changed', onBrainViewChanged);
+        if (__brainAnimFrame) cancelAnimationFrame(__brainAnimFrame);
+        __brainAnimFrame = null;
+      }
+    };
+    __brainLifecycle = lifecycle;
+    document.addEventListener('visibilitychange', onBrainVisibilityChange);
+    window.addEventListener('fenix-view-changed', onBrainViewChanged);
 
     // Resize canvas to match display size with HiDPI support
     function resizeCanvas() {
@@ -1209,9 +1253,11 @@
       fetch('/api/v2/graph/data').then(r => r.ok ? r.json() : { nodes: [], edges: [] }),
       fetch('/api/v2/memory/reborn').then(r => r.ok ? r.json() : { memories: [] })
     ]).then(([graphData, rebornData]) => {
+      if (disposed || __brainLifecycle !== lifecycle) return;
       const gNodes = graphData.nodes || [];
       const gEdges = graphData.edges || [];
       const memories = rebornData.memories || [];
+      const visibleMemories = memories.slice(0, 120);
 
       // Construct simulation nodes
       const nodeMap = new Map();
@@ -1235,7 +1281,7 @@
       });
 
       // Reborn Memory Nodes
-      memories.forEach((m, idx) => {
+      visibleMemories.forEach((m, idx) => {
         const cfg = getLevelConfig(m.level ?? 6);
         nodeMap.set(m.id, {
           id: m.id,
@@ -1262,7 +1308,7 @@
 
         // Add edges to supportedBy
         if (Array.isArray(m.supportedBy)) {
-          m.supportedBy.forEach(sId => {
+          m.supportedBy.slice(0, 3).forEach(sId => {
             edges.push({
               source: m.id,
               target: sId,
@@ -1307,7 +1353,7 @@
       // Update stats HUD
       const statsEl = document.getElementById('fenixBrainStats');
       if (statsEl) {
-        statsEl.textContent = `${nodes.length} nós neurais • ${edges.length} sinapses ativas`;
+        statsEl.textContent = `${nodes.length} nós exibidos • memórias ${visibleMemories.length}/${memories.length}`;
       }
 
       // Initialize particles along edges
@@ -1323,13 +1369,23 @@
       }
 
       // Start animation loop
-      requestAnimationFrame(renderBrain);
+      graphReady = true;
+      requestBrainFrame();
     }).catch(err => {
       console.warn("Brain View load error:", err);
     });
 
     // Physics & Render Loop
+    function requestBrainFrame() {
+      if (!graphReady || !isBrainCanvasVisible() || __brainAnimFrame) return;
+      __brainAnimFrame = requestAnimationFrame(renderBrain);
+    }
+
+    resumeBrainRender = requestBrainFrame;
+
     function renderBrain() {
+      __brainAnimFrame = null;
+      if (!isBrainCanvasVisible()) return;
       const cw = canvas.clientWidth;
       const ch = canvas.clientHeight;
       ctx.clearRect(0, 0, cw, ch);
@@ -1467,7 +1523,7 @@
 
       ctx.restore();
 
-      __brainAnimFrame = requestAnimationFrame(renderBrain);
+      requestBrainFrame();
     }
 
     // Mouse Interaction
@@ -1635,6 +1691,10 @@
       opContainer.className = 'fenix-mem-op-container';
       const main = memView.querySelector('main') || memView;
       main.appendChild(opContainer);
+    }
+
+    if (opContainer.querySelector('.fml-header')) {
+      return;
     }
 
     opContainer.innerHTML = `
@@ -2129,6 +2189,26 @@
     const displayName = building?.name || entity.name || info.name;
     const displayDistrict = building?.district || entity.district || normKey;
     const buildingError = buildingResult.ok ? '' : (buildingResult.error || `HTTP ${buildingResult.status || 'indisponível'}`);
+    const floorCount = Number.isInteger(Number(building?.floors)) ? Math.max(0, Math.min(20, Number(building.floors))) : 0;
+    const registeredRooms = Array.isArray(building?.rooms) ? building.rooms : [];
+    const modeledFloorCount = Number(window.fenixInteriorFloorCount?.(building?.id)) || 0;
+    const floorLabel = (floorNum) => floorNum === 0 ? 'Térreo' : `${floorNum}º andar`;
+    const floorsMarkup = floorCount
+      ? Array.from({ length: floorCount }, (_, index) => {
+          const floorNum = index;
+          const rooms = registeredRooms.filter((room) => Number(room?.floorNum) === floorNum);
+          const floorAction = floorNum < modeledFloorCount
+            ? `<button class="fenix-action-btn" type="button" data-building-id="${esc(building.id)}" onclick="window.fenixCity?.enterBuilding?.(this.dataset.buildingId, ${floorNum})" aria-label="Focar ${floorLabel(floorNum)}">↗</button>`
+            : '<span class="fenix-insp-empty" title="Planta sem modelo visual neste build">Planta 3D não modelada</span>';
+          const roomMarkup = rooms.length
+            ? rooms.map((room) => `<li><strong>${esc(room.name || room.id || 'Sala sem nome')}</strong>${room.function ? ` · ${esc(room.function)}` : ''}</li>`).join('')
+            : '<li class="fenix-insp-empty">Sem salas cadastradas</li>';
+          return `<article style="min-width:150px; flex:1 1 150px; padding:10px; border:1px solid #263347; border-radius:8px; background:#0d1420;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;"><strong>🏢 ${floorLabel(floorNum)}</strong>${floorAction}</div>
+            <ul style="margin:8px 0 0; padding-left:18px;">${roomMarkup}</ul>
+          </article>`;
+        }).join('')
+      : '<p class="fenix-insp-empty">Andares não informados pelo registro do edifício.</p>';
     const agentsMarkup = buildingAgents === null
       ? `<p class="fenix-insp-empty">${esc(agentsResult.error || 'Agentes indisponíveis nesta leitura.')}</p>`
       : buildingAgents.length
@@ -2162,6 +2242,11 @@
           <div><small>Distrito urbano</small><p><strong>${esc(displayDistrict)}</strong></p></div>
           ${building?.measuredAt ? `<div><small>Medido em</small><p>${esc(building.measuredAt)}</p></div>` : ''}
         </div>
+      </div>
+
+      <div class="fenix-insp-section">
+        <h5>Estrutura do edifício · ${floorCount || '—'} andares · ${registeredRooms.length} ${registeredRooms.length === 1 ? 'sala registrada' : 'salas registradas'}</h5>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${building ? floorsMarkup : '<p class="fenix-insp-empty">Estrutura indisponível sem registro canônico.</p>'}</div>
       </div>
 
       <div class="fenix-insp-section">
@@ -3615,8 +3700,7 @@
     });
   };
 
-  // Hook into showView
-  const prevShowView = window.showView;
+  // Hook into canonical viewchanged event
   let lastView = document.querySelector('.view.active')?.id?.replace(/^view-/, '') || null;
   const onViewChanged = (route) => {
     if (route !== lastView) window.fenixCloseInspector();
@@ -3626,14 +3710,7 @@
     }
     setTimeout(() => wireInteractiveEnhancements(route), 80);
   };
-  if (window.__fenixCanonicalRouter) {
-    window.addEventListener('fenix:viewchanged', (event) => onViewChanged(event.detail?.viewId));
-  } else {
-    window.showView = function (route, push = true) {
-      if (typeof prevShowView === 'function') prevShowView(route, push);
-      onViewChanged(route);
-    };
-  }
+  window.addEventListener('fenix:viewchanged', (event) => onViewChanged(event.detail?.viewId));
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => wireInteractiveEnhancements());
