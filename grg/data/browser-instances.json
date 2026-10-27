@@ -1,0 +1,152 @@
+[
+  {
+    "id": "inst-mvr5ukvw-rxju",
+    "kind": "browser",
+    "name": "UI-AdsPower-mvr5uklj",
+    "group": "Geral",
+    "config": {
+      "urls": [],
+      "extensions": [],
+      "locale": "pt-BR",
+      "timezone": "America/Sao_Paulo",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.6834.110 Safari/537.36",
+      "viewport": {
+        "width": 1536,
+        "height": 864
+      },
+      "fingerprint": {
+        "os": "windows",
+        "browserVersion": "132",
+        "canvas": "noise",
+        "webgl": "noise",
+        "webglVendor": "Google Inc. (Intel)",
+        "webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "audio": "noise",
+        "webrtc": "proxy",
+        "hardwareConcurrency": 8,
+        "deviceMemory": 16,
+        "doNotTrack": false
+      },
+      "account": {
+        "platform": "Personalizado",
+        "username": "",
+        "password": "",
+        "twoFactorKey": "",
+        "notes": ""
+      },
+      "cookies": "[\n  {\n    \"name\": \"__Secure-STRP\",\n    \"value\": \"ABNhA6iRzLtuAWWSsS3gmdiz32Zrp8TFj4CPFizqinbaJZiC61K4LXuJ6xU1ABsQmjUu4EbVDgd0dVy3FxHdpKrcI0qwYcGP-HXh\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1793134577.204527,\n    \"httpOnly\": false,\n    \"secure\": true,\n    \"sameSite\": \"Strict\"\n  },\n  {\n    \"name\": \"SEARCH_SAMESITE\",\n    \"value\": \"CgQIkaIB\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808686277.204786,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Strict\"\n  },\n  {\n    \"name\": \"AEC\",\n    \"value\": \"Aaa9EJossOrJd0fiPTYAwcgS2CPNG3ICUOcMiHJesjpWQCy_wSmek_LwRds\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808686277.204901,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"NID\",\n    \"value\": \"CvMBCAESpQEBM9Agl4EVzMqScOfMJBwmdwwEUIZ4DswRjEEYmj8lZxaESR4YXZYylxAUPM7y-BpxZcpK_gxyf2juj4ZlGNTU2cPt4HOiB-oeCt2ItnNpTQwpJU--c6HRwQvfbuyRqW9C99bL_RPoQ2J4AX1LFfMJDjMV4_DNJzCCP4tZ2rLrBh7znMeR-53tmMEItbsb2rUMNXQ-V-Sg3B1NpLCyhJBqWjD2JEMoATJFAdKsB8_Iecz35fCXKMI3lMMMecN6xHAccRF2jx3oR1AWBDmf65Q3qoDx5faBryL5VgS5zjfgiucgbnLRC8IIm9n-fdUG\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808945477.204998,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  }\n]"
+    },
+    "state": "stopped",
+    "createdAt": "2026-10-27T20:51:14.108Z"
+  },
+  {
+    "id": "inst-adspower-01",
+    "kind": "browser",
+    "name": "FB-Matriz-AdsPower-01",
+    "group": "AdsPower-Operacao",
+    "config": {
+      "urls": [
+        "https://facebook.com"
+      ],
+      "engine": "chromium",
+      "headless": false,
+      "locale": "pt-BR",
+      "timezone": "America/Sao_Paulo",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "extensions": [],
+      "cookies": "[\n  {\n    \"name\": \"SNID\",\n    \"value\": \"ANBxh3jl6UcnG_L61lMq0Vo0_zD0IN7fbWISxclNCYG2UU1ZtYiSqn-mcr7IwFgoPTBp1QBZ91MgK3g12ryg0-A5KhtcJc56nw\",\n    \"domain\": \".google.com\",\n    \"path\": \"/verify\",\n    \"expires\": 1808936755,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"datr\",\n    \"value\": \"u-Tgap7zpqCfWRxLEnS1jqBI\",\n    \"domain\": \".facebook.com\",\n    \"path\": \"/\",\n    \"expires\": 1827683514,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  },\n  {\n    \"name\": \"sb\",\n    \"value\": \"u-Tgai-SlaKvjwIVLobW3Fvz\",\n    \"domain\": \".facebook.com\",\n    \"path\": \"/\",\n    \"expires\": 1827683514,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  },\n  {\n    \"name\": \"SEARCH_SAMESITE\",\n    \"value\": \"CgQIkaIB\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808677555,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Strict\"\n  },\n  {\n    \"name\": \"AEC\",\n    \"value\": \"Aaa9EJrzsDq4JibnIihzf40gDn_xJb6GkiUssdE_nnLFSz1SQk3nBJYJoc4\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808677555,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"ps_l\",\n    \"value\": \"1\",\n    \"domain\": \".facebook.com\",\n    \"path\": \"/\",\n    \"expires\": 1827690824,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"ps_n\",\n    \"value\": \"1\",\n    \"domain\": \".facebook.com\",\n    \"path\": \"/\",\n    \"expires\": 1827690824,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  },\n  {\n    \"name\": \"NID\",\n    \"value\": \"CoQCCAEStgEBM9Agl23pdo8ncTUTOcm9CVNPdl0QP8r3EfQUWrw49ZeTDeHP6U3OmDNRaicMMWQWMGFYIta0CXcfN9Uod3q7-JU7SJJK1AzX3IrryKyyjXuriWXFwpBooX49bT3DMF7N7PGxSmlyR1hdSXYI4J9whFlvGcahOAOjaT8Xaa0m-6fIqiZrh-g_tdzML7R7JMWTfDAtryYqfjF1ZNBPTN6VpFdeMPn_J3uHPz5upfpFqAfG-ctw9CgBMkUBcEpCz_VkPcNYCUMlstvXbrrfnPtGm2foZERHKqNBn-P1wqhHsqHIBT3bjkPGaVSMYDP2v3GxSsCq7yf1PlD23h1MKAM\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808936755,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  },\n  {\n    \"name\": \"fr\",\n    \"value\": \"0ICjbz0EzHPSVvep8..Bq4OS7..AAA.0.0.Bq4Q6W.AWddo3xSVkbDOoqmcVqYhDdBwbU\",\n    \"domain\": \".facebook.com\",\n    \"path\": \"/\",\n    \"expires\": 1800910228,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  },\n  {\n    \"name\": \"wd\",\n    \"value\": \"3440x1303\",\n    \"domain\": \".facebook.com\",\n    \"path\": \"/\",\n    \"expires\": 1793739031,\n    \"httpOnly\": false,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"__Secure-STRP\",\n    \"value\": \"ABNhA6iE5cTYXX_stfBt09z8dV5-W_UFKTTQ8l7gNC_aOg64AicmP-NipT09X5on85Jxxe081nebhBRkgSkXynfJgon8Ae-tebga\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1793134571.611041,\n    \"httpOnly\": false,\n    \"secure\": true,\n    \"sameSite\": \"Strict\"\n  }\n]"
+    },
+    "state": "stopped"
+  },
+  {
+    "id": "inst-google-02",
+    "kind": "browser",
+    "name": "Google-Ads-Manager-02",
+    "group": "Google-Operacao",
+    "config": {
+      "urls": [
+        "https://ads.google.com"
+      ],
+      "engine": "chromium",
+      "headless": false,
+      "locale": "en-US",
+      "timezone": "America/New_York",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "extensions": [],
+      "cookies": "[\n  {\n    \"name\": \"S\",\n    \"value\": \"adwords-frontend-express=p0gK1SadgYuVB5UWky4_sWgzCNtzkjV-FU_5_DSCnTQ\",\n    \"domain\": \".ads.google.com\",\n    \"path\": \"/aw_express/management\",\n    \"expires\": -1,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"_GRECAPTCHA\",\n    \"value\": \"09AKhCRwiTTmts1Kgxt--x6SXOl02StOoGvtK7GTF63PfKCMurwY9e6pgVCW10SqBEbaPWRHcl4noVMdVDUzNAur8\",\n    \"domain\": \"www.google.com\",\n    \"path\": \"/recaptcha\",\n    \"expires\": 1808682463.425222,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  },\n  {\n    \"name\": \"S\",\n    \"value\": \"acx-adwords-navigation-frontend=3oDlldLiu83EbaFFNo85vEdmmvoHnMEn50Jz7jJI9pc\",\n    \"domain\": \".ads.google.com\",\n    \"path\": \"/\",\n    \"expires\": -1,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"NID\",\n    \"value\": \"CuUBCAESlwEBM9AglxVRnfW8sWyIX6Lz5AJ-fWweRXMiqzSWGiTuEWW4RhObOWVxpcrRq1IlWEHrSK852e-iD2mH4ZcgAF4sVfA6i0gpLuzTIIpT_LSg_YHvPsK_PES802McQ7mZJCuyXf76SNEwF6QzWc3Lc_ZTNZJMp3cUE7BoHncc6u9cpdUlCvOx9e8pILrUjdcVGwS_h9fZsr_rKAEyRQFwSkLP5fgcGYeDBQC8hzmLPhexVZiTbQiUm4c3z34bNHJuTmac0Byhx9n22rah2OgVcoqdCFgX9nylil8oUSIieFKkBA\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808941648.354067,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  },\n  {\n    \"name\": \"SID\",\n    \"value\": \"AQICAHg7...\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1824666449,\n    \"httpOnly\": false,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"HSID\",\n    \"value\": \"AXYZ7890...\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1824666449,\n    \"httpOnly\": false,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"ADS_VISITOR_ID\",\n    \"value\": \"d98b0ebb-7e16-4f3e-9c20-ade4dd528ec4\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1800906452.413327,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"_ga\",\n    \"value\": \"GA1.1.1965880688.1793130454\",\n    \"domain\": \".business.google.com\",\n    \"path\": \"/\",\n    \"expires\": 1827694238.661489,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"_gcl_au\",\n    \"value\": \"1.1.2116299885.1793130452.-.-.1793130454.528505890.1793130455.1793130454\",\n    \"domain\": \".business.google.com\",\n    \"path\": \"/\",\n    \"expires\": 1800906452,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"_ga_J51Y85KVRZ\",\n    \"value\": \"GS2.1.s1793134238$o2$g1$t1793134238$j60$l0$h0\",\n    \"domain\": \".business.google.com\",\n    \"path\": \"/\",\n    \"expires\": 1827694238.520949,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"_ga_V9K47ZG8NP\",\n    \"value\": \"GS2.1.s1793134238$o2$g1$t1793134238$j60$l0$h0\",\n    \"domain\": \".business.google.com\",\n    \"path\": \"/\",\n    \"expires\": 1827694238.71521,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Lax\"\n  }\n]"
+    },
+    "state": "stopped"
+  },
+  {
+    "id": "inst-nova-mvr4ynd5",
+    "kind": "browser",
+    "name": "Nova Instancia Teste Real",
+    "group": "Novas Operacoes",
+    "config": {
+      "urls": [
+        "https://www.google.com"
+      ],
+      "engine": "chromium",
+      "headless": false,
+      "locale": "pt-BR",
+      "timezone": "America/Sao_Paulo",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "extensions": [],
+      "cookies": "[\n  {\n    \"name\": \"__Secure-STRP\",\n    \"value\": \"ABNhA6gxL7K_leU78JWqKaylWP9N85u5GJDQBWcGH8R2VPl5t1eKLSb-kEp91ix9rznectf2MnWwReZ0HlHM1Yb1Bjl3ccaYpg\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1793133087.756639,\n    \"httpOnly\": false,\n    \"secure\": true,\n    \"sameSite\": \"Strict\"\n  },\n  {\n    \"name\": \"SEARCH_SAMESITE\",\n    \"value\": \"CgQIkaIB\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808684787.756976,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Strict\"\n  },\n  {\n    \"name\": \"AEC\",\n    \"value\": \"Aaa9EJqc4oM0drLx7SIdRroY2FMeW-q-foUm8s4t9ILPY5Sc-BMgSi5sZQ8\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808684787.757097,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"NID\",\n    \"value\": \"CvUBCAESpwEBOxGDSEKa2NlQYnJiGEcKhelR09kO3HNm-X9QbZp0y1TTIqmauBC1uV-OXGMWWEKf3nLaKUa-TabFmzQYHifqswJx52W4DObEAzhEzkT9WxD4bM82ho9AozOFbNt8pieaX37x1Nz6T0znaoVGjVsGRVLy_87hx-CtEd7GiuAmsOmad1UmQfvL1FUeWOhnaFWG__fTf-IO8HMOPUwBPkQZqJaRqvE81igBMkUB0qwHz4hswTe2VleL8BOTbCdy7xZcwAiKBICKjF4dT3s4VGjWc18b85RKdcTxzeO4C38h0h9poGVgyeqTkE_aaJOX7gg\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808943987.757259,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  }\n]"
+    },
+    "state": "stopped"
+  },
+  {
+    "id": "inst-nova-mvr5hk27",
+    "kind": "browser",
+    "name": "Nova Instancia Teste Real",
+    "group": "Novas Operacoes",
+    "config": {
+      "urls": [
+        "https://www.google.com"
+      ],
+      "engine": "chromium",
+      "headless": false,
+      "locale": "pt-BR",
+      "timezone": "America/Sao_Paulo",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "extensions": [],
+      "cookies": "[\n  {\n    \"name\": \"SEARCH_SAMESITE\",\n    \"value\": \"CgQIkaIB\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808685669.273865,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Strict\"\n  },\n  {\n    \"name\": \"AEC\",\n    \"value\": \"Aaa9EJqmaFf_36h4i-ej0Zgc3ubZOL-uE3OZ7XfRuXOKYKrkbMclLtiXn2E\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808685669.274022,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"NID\",\n    \"value\": \"CvMBCAESpQEBM9Agl4-whoaOafJ0T1lrd5hz0jdr80TZB3xVMzeT86eZTqUkRaz7eP9-jvILjxWTcp31opAnY4Ixmc85xnIINVmc26BLJwQCrTR2_BpK56t-cQ_pOYmB5ur-fZq5d4e9uzXr4Tkd-mEC7UmED-f1gyLOzLYZCNVXBpGkjtThK5JpZZl9-A2aFmh0HvjuzV57Jl4qvBbETiGy9OD8p7TZ4zTa_WwoATJFAXBKQs-_NqV-_wR6LVvhb-4TCCR0qfTTX6dMKsdi7LDO5YuMYCns95dn46FSmAiJuWyFK0by1iV8LZnR0VqJ5UaePdgI\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808944869.74459,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  },\n  {\n    \"name\": \"__Secure-STRP\",\n    \"value\": \"ABNhA6h3g6Os4LKA2UqxDSGwUeCiCc5C0vzu825_MST91xpubpX-sdoBAUKFZHcbRNz1bkTzFrDcVN6iu18dgS9o6bYRMNzDFXY5\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1793133970.938911,\n    \"httpOnly\": false,\n    \"secure\": true,\n    \"sameSite\": \"Strict\"\n  }\n]"
+    },
+    "state": "stopped"
+  },
+  {
+    "id": "inst-nova-mvr5ttpe",
+    "kind": "browser",
+    "name": "Nova Instancia Teste Real",
+    "group": "Novas Operacoes",
+    "config": {
+      "urls": [
+        "https://www.google.com"
+      ],
+      "engine": "chromium",
+      "headless": false,
+      "locale": "pt-BR",
+      "timezone": "America/Sao_Paulo",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "extensions": [],
+      "cookies": "[\n  {\n    \"name\": \"SEARCH_SAMESITE\",\n    \"value\": \"CgQIkaIB\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808686240.676578,\n    \"httpOnly\": false,\n    \"secure\": false,\n    \"sameSite\": \"Strict\"\n  },\n  {\n    \"name\": \"AEC\",\n    \"value\": \"Aaa9EJplJmhPqIcmFM2AWhGKq7RcjL_iWyNLG2c4g_t7UFqOOjzlZYcwfA\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808686240.676638,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"Lax\"\n  },\n  {\n    \"name\": \"__Secure-STRP\",\n    \"value\": \"ABNhA6gxWXep14A3RwP0Sky0NeFvcSqTNjJpsJyTX9e6eQncYreY7m8BytcXTj1lC3lEa4RNHVd6piSNf0zVBa-xNlm2aluX7_ie\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1793134542.067634,\n    \"httpOnly\": false,\n    \"secure\": true,\n    \"sameSite\": \"Strict\"\n  },\n  {\n    \"name\": \"NID\",\n    \"value\": \"CvMBCAESpQEBM9AglzCP4t3wv0aVEVWn70JUNfS3Aro65UGLXn06rjDDQgVZfO61I_wWebXQ4YNpoAfbcG-yYNoj-K5NoeMAeMV-y_G3J-ryWASlcxZnxNQn0jQ-GOHOVdsimsy4HkJGa77KbL9gjI0B947PP8bNvRPbCVTAz3jGHd8L9N6lVN5lQWLdZuNRip27BXT5FEolZuKa4gAQOvPJz6EOBPmoaMZy4XAoATJFAXBKQs8221qP6YERXMIJoITAxfE0PH-8hCLwVBNbGMV8pCnsq8AnXw_YQgkIuPZoGV2_5IYinrl20RgZyHGxxay4GEAO\",\n    \"domain\": \".google.com\",\n    \"path\": \"/\",\n    \"expires\": 1808945442.067855,\n    \"httpOnly\": true,\n    \"secure\": true,\n    \"sameSite\": \"None\"\n  }\n]"
+    },
+    "state": "stopped"
+  }
+]

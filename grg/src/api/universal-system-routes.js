@@ -455,9 +455,9 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
   };
   const getTwins = () => systemTwinEngine.getAllTwins().filter((twin) => !twin.tenantId || twin.tenantId === identity?.tenantId);
 
-  if (pathname.startsWith('/api/v2/browser/instance/')) {
+  if (pathname.startsWith('/api/v2/browser/instance') || pathname === '/api/v2/browser/instances' || pathname === '/api/v2/browser/flows' || pathname.startsWith('/api/v2/browser/flow/') || pathname === '/api/v2/browser/stats' || pathname === '/api/v2/browser/navigate' || pathname === '/api/v2/browser/fingerprint' || pathname === '/api/v2/browser/proxy/test' || pathname === '/api/v2/browser/logs') {
     const { handleBaiInstanceRoutes } = require('./bai-instance-routes');
-    const handled = await handleBaiInstanceRoutes(req, res, url, sendJson, app);
+    const handled = await handleBaiInstanceRoutes(req, res, url, sendJson, readJson, identity, app);
     if (handled) return true;
   }
 

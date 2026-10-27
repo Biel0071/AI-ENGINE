@@ -242,6 +242,7 @@
 
   <link rel="stylesheet" href="/city-return.css?v=1">
   <link rel="stylesheet" href="/runtime-health-badge.css?v=1">
+  <link rel="stylesheet" href="/fenix-bai-browser.css?v=20261027-1">
   <link rel="stylesheet" href="/unified.css?v=fenix4">
   <link rel="stylesheet" href="/fenix-ide-v2.css?v=fenix3">
   <link rel="stylesheet" href="/command-center.css?v=fenix3">
@@ -4172,20 +4173,221 @@
         </div>
 
         <!-- VIEW BROWSER QA -->
-        <div id="view-browser" class="view" style="flex-direction:column; width:100%; height:100%; background-color:#050810 !important;">
-          <main class="workspace-view">
-            <section class="workspace-card" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
-              <div>
-                <strong style="color:#e2e8f0;">Browser Agent Instance (BAI)</strong>
-                <p id="baiConnectionState" role="status" aria-live="polite" style="margin:6px 0 0;color:#94a3b8;">Conexão ainda não consultada.</p>
-                <small id="baiCapabilities" style="display:block;margin-top:5px;color:#718096;">Executor, instâncias e jobs só serão mostrados quando a API do BAI os expuser.</small>
+        <div id="view-browser" class="view bai-shell" style="flex-direction:column; width:100%; height:100%; background-color:#050810 !important;">
+          <!-- BAI Topbar & Governance Header -->
+          <header class="bai-topbar">
+            <div class="bai-brand">
+              <span class="bai-brand-title"><i class="ph-bold ph-globe"></i> Browser Agent Instance (BAI)</span>
+              <span style="font-size:11px;color:#64748b;font-weight:600;">/</span>
+              <span style="font-size:11px;color:#94a3b8;font-weight:600;">Gerenciador de Navegadores &amp; Agentes Web</span>
+            </div>
+
+            <div class="bai-gov-badges">
+              <div class="bai-gov-badge" title="Contas Conectadas">
+                <i class="ph ph-user-check"></i> <span>Contas:</span> <strong id="baiGovAccountsVal">—</strong>
               </div>
-              <button id="baiRefreshBtn" type="button" class="fp-btn" style="padding:8px 12px;">Verificar BAI</button>
+              <div class="bai-gov-badge" title="Sessões com Cookies Ativos">
+                <i class="ph ph-cookie"></i> <span>Cookies:</span> <strong id="baiGovCookiesVal">—</strong>
+              </div>
+              <div class="bai-gov-badge" title="Proxies Dedicados Configurados">
+                <i class="ph ph-network"></i> <span>Proxies:</span> <strong id="baiGovProxiesVal">—</strong>
+              </div>
+              <div class="bai-gov-badge" title="Taxa de Prontidão Operacional">
+                <i class="ph ph-shield-check"></i> <span>Prontidão:</span> <strong id="baiGovReadinessVal">—</strong>
+              </div>
+              <div class="bai-gov-badge" style="background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.25);" title="Instâncias em Execução">
+                <span class="status-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-right:4px;"></span>
+                <strong id="baiRunningVal" style="color:#10b981;">—</strong> <span style="color:#a7f3d0;">ativas</span>
+              </div>
+              <button id="baiRefreshBtn" type="button" class="fp-btn" style="padding:5px 12px;font-size:11px;margin-left:6px;">
+                <i class="ph ph-arrows-clockwise"></i> Verificar BAI
+              </button>
+            </div>
+          </header>
+
+          <!-- BAI Connection Status Card (Contract Preserved) -->
+          <div style="padding:10px 18px 0;background:#050810;">
+            <section class="workspace-card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 16px;margin-bottom:8px;background:#0c121e;border:1px solid rgba(255,255,255,0.07);border-radius:6px;">
+              <div>
+                <strong style="color:#e2e8f0;font-size:12px;"><i class="ph ph-cpu" style="color:#38bdf8;"></i> Status do Motor BAI Playwright:</strong>
+                <span id="baiConnectionState" role="status" aria-live="polite" style="margin-left:8px;color:#94a3b8;font-size:12px;">Conexão ainda não consultada.</span>
+                <small id="baiCapabilities" style="display:block;margin-top:3px;color:#718096;font-size:11px;">Executor, instâncias e jobs só serão mostrados quando a API do BAI os expuser.</small>
+              </div>
             </section>
-            <header class="workspace-header">
+          </div>
+
+          <!-- BAI Sub-Tabs Rail -->
+          <nav class="bai-tabs-rail">
+            <button type="button" class="bai-tab-btn active" data-tab="live" onclick="window.switchBaiSubTab('live')">
+              <i class="ph-bold ph-compass"></i> Navegador Ativo (Live Session)
+            </button>
+            <button type="button" class="bai-tab-btn" data-tab="instances" onclick="window.switchBaiSubTab('instances')">
+              <i class="ph-bold ph-browsers"></i> Perfis &amp; Instâncias BAI
+            </button>
+            <button type="button" class="bai-tab-btn" data-tab="flows" onclick="window.switchBaiSubTab('flows')">
+              <i class="ph-bold ph-lightning"></i> Automações &amp; Fluxos
+            </button>
+            <button type="button" class="bai-tab-btn" data-tab="fingerprint" onclick="window.switchBaiSubTab('fingerprint')">
+              <i class="ph-bold ph-shield-check"></i> Anti-Detect &amp; Fingerprint
+            </button>
+            <button type="button" class="bai-tab-btn" data-tab="qa" onclick="window.switchBaiSubTab('qa')">
+              <i class="ph-bold ph-check-circle"></i> Certificação Visual Playwright
+            </button>
+          </nav>
+
+          <!-- PANE 1: LIVE BROWSER SESSION -->
+          <div id="baiPane-live" class="bai-tab-pane active">
+            <!-- Navigation Toolbar -->
+            <div class="bai-nav-bar">
+              <button type="button" class="bai-nav-btn" title="Voltar" onclick="history.back()"><i class="ph ph-arrow-left"></i></button>
+              <button type="button" class="bai-nav-btn" title="Avançar" onclick="history.forward()"><i class="ph ph-arrow-right"></i></button>
+              <button type="button" class="bai-nav-btn" title="Recarregar" onclick="window.baiNavigateTo && window.baiNavigateTo()"><i class="ph ph-arrows-clockwise"></i></button>
+
+              <div class="bai-url-container">
+                <i class="ph ph-lock-key"></i>
+                <input type="text" id="baiAddressBar" class="bai-url-input" value="http://127.0.0.1:3000/app" spellcheck="false" onkeydown="if(event.key==='Enter')window.baiNavigateTo && window.baiNavigateTo(this.value)">
+                <span id="baiLatencyChip" style="font-size:11px;color:#10b981;font-weight:700;font-family:monospace;">⚡ —</span>
+              </div>
+
+              <button type="button" class="bai-nav-go-btn" onclick="window.baiNavigateTo && window.baiNavigateTo(document.getElementById('baiAddressBar').value)">
+                <i class="ph-bold ph-arrow-fat-line-right"></i> Navegar
+              </button>
+
+              <div style="display:flex;align-items:center;gap:4px;margin-left:6px;border-left:1px solid rgba(255,255,255,0.1);padding-left:8px;">
+                <button type="button" class="bai-nav-btn" title="Desktop 1920x1080" onclick="window.setBaiViewport('100%')"><i class="ph ph-desktop"></i></button>
+                <button type="button" class="bai-nav-btn" title="Laptop 1440x900" onclick="window.setBaiViewport(1440, 900)"><i class="ph ph-laptop"></i></button>
+                <button type="button" class="bai-nav-btn" title="Mobile 390x844" onclick="window.setBaiViewport(390, 844)"><i class="ph ph-device-mobile"></i></button>
+              </div>
+            </div>
+
+            <!-- Quick Bookmarks -->
+            <div class="bai-bookmarks-bar">
+              <button type="button" class="bai-bookmark-pill" onclick="window.baiBookmark('http://127.0.0.1:3000/app')">
+                <i class="ph ph-house"></i> Fênix Local :3000
+              </button>
+              <button type="button" class="bai-bookmark-pill" onclick="window.baiBookmark('http://209.50.241.22:3000/app')">
+                <i class="ph ph-cloud"></i> Fênix VPS :3000
+              </button>
+              <button type="button" class="bai-bookmark-pill" onclick="window.baiBookmark('http://127.0.0.1:8890/health')">
+                <i class="ph ph-cube"></i> API Platform :8890
+              </button>
+              <button type="button" class="bai-bookmark-pill" onclick="window.baiBookmark('http://127.0.0.1:4173')">
+                <i class="ph ph-storefront"></i> MF Atacadista :4173
+              </button>
+              <button type="button" class="bai-bookmark-pill" onclick="window.baiBookmark('https://www.google.com')">
+                <i class="ph ph-magnifying-glass"></i> Google Search
+              </button>
+              <button type="button" class="bai-bookmark-pill" onclick="window.baiBookmark('https://github.com')">
+                <i class="ph ph-git-branch"></i> GitHub
+              </button>
+            </div>
+
+            <!-- Web Viewport Display -->
+            <div class="bai-viewport-wrapper">
+              <div class="bai-viewport-header">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span class="status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;"></span>
+                  <span id="baiPageTitle" style="color:#f8fafc;font-weight:700;">Fênix OS — Unified Living Shell</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;font-size:11px;">
+                  <span><i class="ph ph-shield-check" style="color:#10b981;"></i> Sessão Segura Sandbox</span>
+                  <span>Motor: Chromium 132</span>
+                </div>
+              </div>
+              <iframe id="baiViewportFrame" class="bai-viewport-frame" src="/app" title="BAI Live Session Preview"></iframe>
+            </div>
+          </div>
+
+          <!-- PANE 2: PROFILES & INSTANCES -->
+          <div id="baiPane-instances" class="bai-tab-pane">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;">
+              <div>
+                <h2 style="font-size:16px;font-weight:800;color:#f8fafc;margin:0;">Perfis Anti-Detect &amp; Instâncias Locais BAI</h2>
+                <p style="font-size:12px;color:#94a3b8;margin:2px 0 0;">Navegadores isolados com perfis persistentes, cookies, proxies e spoofing de fingerprint.</p>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button type="button" class="fp-btn fp-btn-primary" onclick="alert('Criar novo perfil: utilize os presets AdsPower ou crie via API')">
+                  <i class="ph ph-plus"></i> Novo Perfil
+                </button>
+              </div>
+            </div>
+            <div id="baiInstancesGrid" class="bai-instances-grid">
+              <p class="muted" style="grid-column:1/-1;padding:20px;text-align:center;">Carregando instâncias do BAI…</p>
+            </div>
+          </div>
+
+          <!-- PANE 3: FLOWS & AUTOMATIONS -->
+          <div id="baiPane-flows" class="bai-tab-pane">
+            <div style="margin-bottom:14px;">
+              <h2 style="font-size:16px;font-weight:800;color:#f8fafc;margin:0;">Catálogo de Automações &amp; Agentes Web</h2>
+              <p style="font-size:12px;color:#94a3b8;margin:2px 0 0;">Pipelines determinísticos executados pelo Playwright Engine em segundo plano.</p>
+            </div>
+
+            <div id="baiFlowsGrid" class="bai-flows-grid">
+              <p class="muted" style="grid-column:1/-1;padding:20px;text-align:center;">Carregando fluxos de automação…</p>
+            </div>
+
+            <div style="background:#0c121e;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <strong style="color:#f8fafc;font-size:13px;"><i class="ph ph-terminal-window" style="color:#00d9ff;"></i> Console de Execução do Fluxo</strong>
+                <div style="width:200px;background:rgba(255,255,255,0.05);height:6px;border-radius:3px;overflow:hidden;">
+                  <div id="baiFlowProgress" style="width:0%;height:100%;background:#00d9ff;transition:width 0.3s ease;"></div>
+                </div>
+              </div>
+              <div id="baiFlowConsole" class="bai-flow-console">
+                <span class="muted">Selecione um fluxo acima e clique em "Executar" para iniciar o ciclo de automação.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANE 4: FINGERPRINT & ANTI-DETECT AUDIT -->
+          <div id="baiPane-fingerprint" class="bai-tab-pane">
+            <div style="margin-bottom:14px;">
+              <h2 style="font-size:16px;font-weight:800;color:#f8fafc;margin:0;">Auditoria de Fingerprints &amp; Proteção Anti-Detect</h2>
+              <p style="font-size:12px;color:#94a3b8;margin:2px 0 0;">Parâmetros de hardware, canvas, webgl e rede injetados nas instâncias do navegador.</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:14px;">
+              <div class="workspace-card" style="background:#0c121e;border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex;align-items:center;gap:8px;color:#00d9ff;font-weight:700;font-size:13px;margin-bottom:8px;">
+                  <i class="ph ph-paint-brush"></i> Canvas Noise Injection
+                </div>
+                <p style="font-size:12px;color:#94a3b8;margin:0;">Perturbação estocástica sutil de pixels no Canvas 2D para impedir identificação por hash criptográfico.</p>
+                <div style="margin-top:10px;font-size:11px;color:#10b981;font-weight:700;">STATUS: ATIVO (Ruído calibrado)</div>
+              </div>
+
+              <div class="workspace-card" style="background:#0c121e;border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex;align-items:center;gap:8px;color:#00d9ff;font-weight:700;font-size:13px;margin-bottom:8px;">
+                  <i class="ph ph-cube"></i> WebGL Vendor Spoofing
+                </div>
+                <p style="font-size:12px;color:#94a3b8;margin:0;">Emulação ANGLE Direct3D11 com adaptador Intel Iris Xe / NVIDIA RTX para consistência de telemetria.</p>
+                <div style="margin-top:10px;font-size:11px;color:#10b981;font-weight:700;">VENDOR: Google Inc. (Intel)</div>
+              </div>
+
+              <div class="workspace-card" style="background:#0c121e;border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex;align-items:center;gap:8px;color:#00d9ff;font-weight:700;font-size:13px;margin-bottom:8px;">
+                  <i class="ph ph-speaker-high"></i> AudioContext Protection
+                </div>
+                <p style="font-size:12px;color:#94a3b8;margin:0;">Variação controlada na resposta de frequência do oscilador de áudio sintético.</p>
+                <div style="margin-top:10px;font-size:11px;color:#10b981;font-weight:700;">STATUS: PROTEGIDO</div>
+              </div>
+
+              <div class="workspace-card" style="background:#0c121e;border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex;align-items:center;gap:8px;color:#00d9ff;font-weight:700;font-size:13px;margin-bottom:8px;">
+                  <i class="ph ph-shield"></i> WebRTC Leak Prevention
+                </div>
+                <p style="font-size:12px;color:#94a3b8;margin:0;">Bloqueio de vazamento de IP local via candidatos ICE; apenas tráfego via proxy é anunciado.</p>
+                <div style="margin-top:10px;font-size:11px;color:#10b981;font-weight:700;">POLÍTICA: PROXY_ONLY</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANE 5: PLAYWRIGHT VISUAL CERTIFICATION (Original QA Preserved) -->
+          <div id="baiPane-qa" class="bai-tab-pane">
+            <header class="workspace-header" style="margin-bottom:12px;">
               <div>
                 <small style="color:#10b981; font-weight:800; letter-spacing:0.1em; text-transform:uppercase;">VALIDAÇÃO VISUAL PLAYWRIGHT</small>
-                <h1 style="font-size:22px; font-weight:800; color:#f8fafc; margin:4px 0 0;">Browser QA & Visual Certification</h1>
+                <h1 style="font-size:20px; font-weight:800; color:#f8fafc; margin:4px 0 0;">Browser QA &amp; Visual Certification</h1>
               </div>
               <div class="qa-header" style="display:flex; gap:10px; margin:0;">
                 <button id="qaRefreshBtn" class="fp-btn fp-btn-primary" onclick="window.loadVisualQaDashboard && window.loadVisualQaDashboard()" style="background:linear-gradient(135deg, rgba(0,217,255,0.2), rgba(68,136,255,0.2)); color:#00d9ff; border:1px solid rgba(0,217,255,0.4); padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(0,217,255,0.15); transition:all 0.18s;">
@@ -4202,9 +4404,8 @@
                 <div class="qa-gallery" id="qaGallery" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px;"></div>
               </div>
             </section>
-          </main>
+          </div>
         </div>
-
 
         <div id="view-observability" class="view" style="flex-direction:column; width:100%; height:100%; background-color:#050810 !important;">
           <div class="fenix-module-header" style="background:#0B1018; padding:10px 20px; border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0;">
@@ -7527,6 +7728,7 @@ window.__fenixSubmitIdeChat = async function () {
     </div>
     <script defer src="/fenix-screen-adaptive.js?v=20261020-responsive-layout-2"></script>
     <script defer src="/bai-connector.js?v=1"></script>
+    <script defer src="/fenix-bai-browser.js?v=20261027-1"></script>
     <script defer src="/fenix-task-modal.js?v=20261021-task-id-guard-1"></script>
     <script defer src="/fenix-dynamic-agent-hud.js?v=20261022-pool-count-1"></script>
 </body>

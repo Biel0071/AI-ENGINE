@@ -1,0 +1,51 @@
+[
+  {
+    "id": "flow-fenix-e2e-audit",
+    "name": "Auditoria Visual Fênix OS E2E",
+    "description": "Navega pelos distritos da Cidade 3D, IDE e Cockpit capturando métricas visuais",
+    "timeoutMs": 30000,
+    "steps": [
+      { "type": "navigate", "url": "http://127.0.0.1:3000/app", "label": "Abrir Fênix OS Shell" },
+      { "type": "wait", "milliseconds": 1500, "label": "Aguardar carregamento do Kernel e WebGL" },
+      { "type": "click", "selector": "#viewTab-city", "label": "Focar Distrito da Cidade 3D" },
+      { "type": "wait", "milliseconds": 1000, "label": "Estabilizar renderização tridimensional" },
+      { "type": "screenshot", "label": "Capturar evidência visual da Cidade" },
+      { "type": "click", "selector": "#viewTab-ide", "label": "Abrir Visual IDE" },
+      { "type": "wait", "milliseconds": 1000, "label": "Carregar árvore de arquivos do projeto" },
+      { "type": "screenshot", "label": "Capturar evidência do código no Monaco Editor" }
+    ]
+  },
+  {
+    "id": "flow-vps-health-check",
+    "name": "Monitoramento de Métricas da VPS (209.50.241.22)",
+    "description": "Verifica integridade do gateway, backend PM2 e portas operacionais",
+    "timeoutMs": 15000,
+    "steps": [
+      { "type": "navigate", "url": "http://209.50.241.22:3000/health", "label": "Consultar endpoint de saúde do Gateway" },
+      { "type": "wait", "milliseconds": 800, "label": "Aguardar resposta JSON da telemetria" },
+      { "type": "screenshot", "label": "Registrar status HTTP 200 do cluster" }
+    ]
+  },
+  {
+    "id": "flow-adspower-session-check",
+    "name": "Validação de Sessão & Cookies FB AdsPower",
+    "description": "Testa injeção de cookies e integridade de fingerprint anti-detect",
+    "timeoutMs": 20000,
+    "steps": [
+      { "type": "navigate", "url": "https://facebook.com", "label": "Navegar com perfil AdsPower-01" },
+      { "type": "wait", "milliseconds": 2000, "label": "Injetar sessão e validar cookies ativos" },
+      { "type": "screenshot", "label": "Verificar tela inicial sem challenge de checkpoint" }
+    ]
+  },
+  {
+    "id": "flow-google-ads-manager",
+    "name": "Inspeção de Contas Google Ads Manager",
+    "description": "Acessa painel de anúncios com spoofing de timezone America/New_York",
+    "timeoutMs": 25000,
+    "steps": [
+      { "type": "navigate", "url": "https://ads.google.com", "label": "Conectar com credenciais gerenciadas" },
+      { "type": "wait", "milliseconds": 2500, "label": "Validar cookies NID, SID e HSID" },
+      { "type": "screenshot", "label": "Capturar dashboard de campanhas" }
+    ]
+  }
+]
