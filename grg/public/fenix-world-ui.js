@@ -13,10 +13,10 @@
   const list=make('button','fw3-list','Projetos'); list.type='button'; list.addEventListener('click',()=>window.showView?.('projects'));
   const refresh=make('button','fw3-refresh','↻'); refresh.type='button'; refresh.setAttribute('aria-label','Atualizar dados do mundo'); refresh.addEventListener('click',()=>engine.refresh());
   nav.append(back,list,refresh); top.append(identity,nav); chrome.append(top);
-  const pulse=make('div','fw3-pulse'); chrome.append(pulse);
   const context=make('aside','fw3-context'); context.hidden=true; context.setAttribute('aria-label','Detalhes da seleção'); chrome.append(context);
+  const close=make('button','fw3-context-close','×'); close.type='button'; close.setAttribute('aria-label','Fechar detalhes'); close.addEventListener('click',()=>engine.back());
   const routeSelect=make('select','fw3-route'); routeSelect.setAttribute('aria-label','Ir para bairro');
-  const routes=[['ALL','Mundo completo'],['command-center','Fênix HQ'],['dev-district','Dev Workshop'],['project-district','Projetos'],['ai-district','Mission Kernel'],['creative-district','Design Lab'],['data-center','Memory Vault'],['observatory','Observatório']];
+  const routes = [['command-center', 'Central de Comando'], ['software-house', 'Fábrica de Software'], ['intelligence', 'Inteligência'], ['operations', 'Operações']];
   for (const [id,name] of routes) { const option=document.createElement('option'); option.value=id; option.textContent=name; routeSelect.append(option); }
   routeSelect.addEventListener('change',()=>window.fenixPanToDistrict?.(routeSelect.value));
   document.querySelector('#view-city .fenix-module-title-area')?.append(routeSelect);
@@ -47,16 +47,18 @@
     const sync=identity.querySelector('.fw3-sync');
     sync.dataset.state=error?'error':age>90000?'stale':live?'live':'measured';
     sync.textContent=error?`Atualização falhou · leitura ${time}`:data?`${live?'● Canal conectado':'◌ Leitura da API'} · ${time}${age>90000?' · dados antigos':''}`:'Carregando telemetria…';
-    pulse.replaceChildren();
     if (data) {
-      const metrics=[['PROJETOS',data.metrics?.projectsCount ?? data.projects?.length],['AGENTES',data.metrics?.registeredAgents ?? data.agents?.length],['JOBS ATIVOS',data.metrics?.runningJobs],['MÁQUINAS',data.machines?.length],['FALHAS',data.metrics?.failedJobs]];
-      for (const [label,value] of metrics) { const card=make('div','fw3-pulse-item'); card.append(make('small','',label),make('strong','',value ?? '—')); pulse.append(card); }
-    } else pulse.append(make('span','fw3-pulse-empty',error?'Telemetria indisponível. Use Atualizar.':'Conectando ao Project Kernel…'));
-    back.hidden=!selected;
+      const setTicker=(id,val)=>{ const el=document.getElementById(id); if (el) el.textContent=String(val ?? '—'); };
+      setTicker('tickerProjects',data.metrics?.projectsCount ?? data.projects?.length);
+      setTicker('tickerAgents',data.metrics?.registeredAgents ?? data.agents?.length);
+      setTicker('tickerJobs',data.metrics?.runningJobs);
+      setTicker('tickerMachines',data.machines?.length);
+    }
+    const showBack=Boolean(engine.state.level==='interior');
+    back.hidden=!showBack;
     back.textContent=engine.state.level==='interior'?'← Voltar ao prédio':'← Voltar ao mundo';
     context.replaceChildren(); context.hidden=!selected;
     if (!selected) return;
-    const close=make('button','fw3-context-close','×'); close.type='button'; close.setAttribute('aria-label','Fechar detalhes'); close.addEventListener('click',()=>engine.back());
     const kicker=make('span','fw3-context-kicker',selected.kind==='district'?'BAIRRO':selected.kind==='building'?'EDIFÍCIO · RUNTIME':selected.kind==='project'?'PROJETO · PROJECT KERNEL':selected.kind==='machine'?'MÁQUINA · RUNTIME':'AGENTE · RUNTIME');
     context.append(close,kicker);
     if (!data && !['district','building'].includes(selected.kind)) { context.append(make('h2','','Restaurando seleção'),make('p','','Aguardando a leitura do Project Kernel para mostrar os dados e ações.')); return; }
@@ -127,6 +129,7 @@
       action(actions,'Conversar com agente',()=>window.fenixCityWorkflow?.openChat(selected.id,currentProject),true);
       action(actions,'Criar tarefa',()=>window.fenixCityWorkflow?.openTask(selected.id,currentProject));
       if (agent?.currentJob?.id) action(actions,'Acompanhar job',()=>window.fenixCityWorkflow?.openJob(agent.currentJob.id));
+      action(actions,'Personalizar avatar',()=>window.openFenixAvatarStudio?.(agent));
       action(actions,'Abrir perfil ↗',()=>{ if (typeof window.fenixInspectAgent==='function') window.fenixInspectAgent(selected.id); else window.showView?.('agents'); },true);
       action(actions,'Ver tarefas',()=>window.showView?.('operations'));
     }

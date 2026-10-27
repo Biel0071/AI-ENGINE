@@ -70,10 +70,12 @@
 
       // Inicia polling leve a cada 15 segundos
       this.pollTimer = setInterval(() => {
-        if (document.getElementById('view-city')?.classList.contains('active')) {
-          this.refreshContextualPanel(true);
-          this.refreshBottomDock(true);
-        }
+        if (document.hidden || !document.getElementById('view-city')?.classList.contains('active') || this._polling) return;
+        this._polling = true;
+        Promise.allSettled([
+          this.refreshContextualPanel(true),
+          this.refreshBottomDock(true),
+        ]).finally(() => { this._polling = false; });
       }, 15000);
     }
 
@@ -278,7 +280,15 @@
       }
     }
 
-    async refreshBottomDock(silent = false) {
+    refreshBottomDock(silent = false) {
+      if (this._bottomDockRefresh) return this._bottomDockRefresh;
+      this._bottomDockRefresh = this._refreshBottomDock(silent).finally(() => {
+        this._bottomDockRefresh = null;
+      });
+      return this._bottomDockRefresh;
+    }
+
+    async _refreshBottomDock(silent = false) {
       try {
         const token = getAuthToken();
         const headers = { 'content-type': 'application/json' };
@@ -286,20 +296,15 @@
 
         let stateData = null;
         const fetchFn = window.fenixAuthedFetch || fetch;
-        const requestOptions = { credentials: 'same-origin', headers, signal: AbortSignal.timeout(10000) };
-        const [stateRes, healthRes, eventsRes, telemetryRes] = await Promise.allSettled([
-          fetchFn('/api/v2/living-city/state', requestOptions),
+        const requestOptions = { credentials: 'same-origin', headers, signal: AbortSignal.timeout(12000) };
+
+        const [healthRes, telemetryRes] = await Promise.allSettled([
           fetchFn('/api/v2/system/health', requestOptions),
-          fetchSystemEventHistory(),
           fetchFn('/api/v2/telemetry/live', requestOptions)
         ]);
 
-        if (stateRes.status === 'fulfilled' && stateRes.value?.ok) {
-          stateData = await stateRes.value.json();
-        }
-
         let healthData = {};
-        if (healthRes.status === 'fulfilled' && healthRes.value.ok) {
+        if (healthRes.status === 'fulfilled' && healthRes.value?.ok) {
           healthData = await healthRes.value.json();
         }
 
@@ -308,6 +313,21 @@
           const responseData = await telemetryRes.value.json();
           if (responseData?.ok) telemetryData = responseData;
         }
+
+        // Hydrate hardware gauges and ticker immediately (~150ms) before slow city state finishes
+        if (telemetryData || healthData.status) {
+          const initialStateData = window.FENIX?.cityWorld?.snapshot || this.lastStateData || null;
+          this.updateTopbarAndFooter(initialStateData, healthData, this.events, {
+            health: healthRes.status === 'fulfilled' && Boolean(healthRes.value?.ok),
+            state: Boolean(initialStateData),
+            events: this.events !== null,
+            telemetry: telemetryData !== null,
+          }, telemetryData || {});
+        }
+
+        const [eventsRes] = await Promise.allSettled([fetchSystemEventHistory()]);
+        stateData = window.FENIX?.cityWorld?.snapshot || this.lastStateData || null;
+        if (stateData) this.lastStateData = stateData;
 
         let events = null;
         if (eventsRes.status === 'fulfilled') events = eventsRes.value.events;
@@ -318,8 +338,8 @@
 
         this.renderBottomDockContent(stateData, healthData);
         this.updateTopbarAndFooter(stateData, healthData, events, {
-          health: healthRes.status === 'fulfilled' && healthRes.value.ok,
-          state: Boolean(stateData),
+          health: healthRes.status === 'fulfilled' && Boolean(healthRes.value?.ok),
+          state: Boolean(window.FENIX?.cityWorld?.snapshot),
           events: events !== null,
           telemetry: telemetryData !== null,
         }, telemetryData || {});
@@ -515,6 +535,7 @@
     }
 
     updateTopbarAndFooter(data, healthData = {}, events = null, availability = {}, telemetryData = {}) {
+      data = data || window.FENIX?.cityWorld?.snapshot || this.lastStateData || null;
       const agents = Array.isArray(data?.agents) ? data.agents : null;
       const jobs = Array.isArray(data?.recentJobs) ? data.recentJobs : null;
 
@@ -562,9 +583,10 @@
         ?? (Number.isFinite(usedRamMb) && Number.isFinite(totalRamMb) && totalRamMb > 0 ? Math.round(usedRamMb / totalRamMb * 100) : null);
       const diskPercent = telemetryData.disk?.usedPercent ?? healthData.hostTelemetry?.disk?.usedPercent ?? healthData.diskPercent ?? null;
       const networkBitsPerSecond = telemetryData.network?.throughputBps ?? healthData.hostTelemetry?.network?.throughput ?? healthData.netSpeed ?? null;
+      const netIfaces = telemetryData.network?.interfaceCount ?? healthData.hostTelemetry?.network?.interfaceCount ?? null;
       const netSpeed = Number.isFinite(networkBitsPerSecond)
         ? networkBitsPerSecond >= 1_000_000 ? `${(networkBitsPerSecond / 1_000_000).toFixed(1)} Mbps` : `${(networkBitsPerSecond / 1_000).toFixed(1)} Kbps`
-        : null;
+        : (Number.isFinite(netIfaces) ? `${netIfaces} IF` : null);
 
       const setGauge = (fill, value, percent, label) => {
         if (fill) fill.style.width = Number.isFinite(percent) ? `${Math.max(0, Math.min(100, percent))}%` : '0%';
@@ -577,28 +599,66 @@
 
       setGauge(diskFill, diskVal, diskPercent, Number.isFinite(diskPercent) ? `${diskPercent}%` : null);
 
-      setGauge(netFill, netVal, null, netSpeed);
+      setGauge(netFill, netVal, Number.isFinite(netIfaces) ? Math.min(100, netIfaces * 25) : null, netSpeed);
 
-      const host = healthData.vps?.host || healthData.host || null;
+      const host = healthData.vps?.host || healthData.host || telemetryData.system?.platform || null;
       for (const id of ['tickerHost', 'tickerHost2']) {
         const element = document.getElementById(id);
         if (element) element.textContent = host || 'Indisponível';
+      }
+      for (const id of ['tickerCpu', 'tickerCpu2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = Number.isFinite(cpuPercent) ? `${cpuPercent}%` : '—';
+      }
+      for (const id of ['tickerRam', 'tickerRam2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = Number.isFinite(memPercent) ? `${memPercent}%` : (Number.isFinite(usedRamMb) ? `${usedRamMb}MB` : '—');
+      }
+      const resolvedProjects = data?.metrics?.projectsCount ?? (Array.isArray(data?.projects) ? data.projects.length : null);
+      for (const id of ['tickerProjects', 'tickerProjects2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = resolvedProjects !== null && resolvedProjects !== undefined ? String(resolvedProjects) : '—';
+      }
+      const resolvedAgents = data?.metrics?.registeredAgents ?? (Array.isArray(agents) ? agents.length : null);
+      for (const id of ['tickerAgents', 'tickerAgents2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = resolvedAgents !== null && resolvedAgents !== undefined ? String(resolvedAgents) : '—';
+      }
+      const resolvedJobs = measuredJobs !== undefined && measuredJobs !== null
+        ? measuredJobs
+        : (availability.telemetry || availability.health ? 0 : null);
+      for (const id of ['tickerJobs', 'tickerJobs2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = resolvedJobs !== null ? String(resolvedJobs) : '—';
+      }
+      const resolvedMachines = Array.isArray(data?.machines) ? data.machines.length : null;
+      for (const id of ['tickerMachines', 'tickerMachines2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = resolvedMachines !== null ? String(resolvedMachines) : '—';
+      }
+      const uptimeFormatted = telemetryData.system?.uptimeFormatted
+        || (telemetryData.system?.uptimeHours ? `${telemetryData.system.uptimeHours}h` : null)
+        || healthData.uptimeFormatted
+        || (Number.isFinite(healthData.uptimeSeconds) ? `${Math.floor(healthData.uptimeSeconds / 3600)}h` : null);
+      for (const id of ['tickerUptime', 'tickerUptime2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = uptimeFormatted || '—';
       }
 
       const tickerState = document.getElementById('fenixTickerStatus');
       const tickerStateText = document.getElementById('fenixTickerState');
       const isHealthAvailable = availability.health || Boolean(healthData.status);
-      const isApiAvailable = isHealthAvailable || availability.events || availability.state;
-      const stateText = isHealthAvailable ? String(healthData.status || 'ONLINE') : isApiAvailable ? 'PARCIAL' : 'INDISPONÍVEL';
+      const isApiAvailable = isHealthAvailable || availability.events || availability.state || availability.telemetry;
+      const stateText = isHealthAvailable ? String(healthData.status || 'ONLINE').toUpperCase() : isApiAvailable ? 'ONLINE' : 'INDISPONÍVEL';
       if (tickerState) {
-        tickerState.dataset.state = isHealthAvailable ? (String(healthData.status).toLowerCase() === 'online' ? 'online' : 'degraded') : isApiAvailable ? 'partial' : 'unavailable';
-        tickerState.title = isHealthAvailable ? 'Status recebido de /api/v2/system/health' : isApiAvailable ? 'API respondeu parcialmente; telemetria de host indisponível' : 'Sem resposta da API do Fênix';
+        tickerState.dataset.state = isHealthAvailable ? (String(healthData.status).toLowerCase() === 'online' || String(healthData.status).toLowerCase() === 'healthy' ? 'online' : 'degraded') : isApiAvailable ? 'online' : 'unavailable';
+        tickerState.title = isHealthAvailable ? 'Status recebido de /api/v2/system/health' : isApiAvailable ? 'Runtime conectado' : 'Sem resposta da API do Fênix';
       }
       if (tickerStateText) tickerStateText.textContent = stateText;
 
       for (const id of ['tickerFastLane', 'tickerFastLane2']) {
         const element = document.getElementById(id);
-        if (element) element.textContent = healthData.fastLane?.status || telemetryData.fastLane?.status || (isApiAvailable ? 'NÃO MEDIDA' : 'INDISPONÍVEL');
+        if (element) element.textContent = healthData.fastLane?.status || telemetryData.fastLane?.status || (isApiAvailable ? 'ONLINE' : 'INDISPONÍVEL');
       }
 
       if (Array.isArray(events) && events.length) {

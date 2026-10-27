@@ -1432,69 +1432,243 @@
   color: #fbbf24;
 }
 
-/* ─── FLOATING BOTTOM NAVIGATION PILL (Distritos | Prédios | Andares) ─── */
-.fenix-city-floating-pill {
-  position: absolute;
-  bottom: 22px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 25;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(11, 16, 26, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 30px;
-  padding: 4px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 217, 255, 0.1);
+/* ─── FLOATING 5 MONOCHROMATIC ICONS DOCKED DIRECTLY ABOVE MINIMAP ─── */
+.fenix-city-floating-pill,
+#view-city #fenixCityNavPill,
+.fenix-city-floating-pill#fenixCityNavPill {
+  position: absolute !important;
+  left: 8px !important;
+  bottom: calc(8px + 174px) !important;
+  width: 236px !important;
+  transform: none !important;
+  z-index: 30 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 3px !important;
+  background: rgba(7, 13, 23, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(34, 211, 238, 0.28) !important;
+  border-bottom: none !important;
+  border-radius: 9px 9px 0 0 !important;
+  padding: 4px 6px !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5) !important;
+  box-sizing: border-box !important;
 }
 
 .fenix-city-pill-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 20px;
-  padding: 6px 16px;
-  color: #94A3B8;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
+  flex: 1 !important;
+  height: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 6px !important;
+  color: #94A3B8 !important;
+  font-size: 15px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none !important;
+}
+
+.fenix-city-pill-btn .pill-emoji {
+  font-size: 15px !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 0.15s ease !important;
+}
+
+.fenix-city-pill-btn .pill-emoji.fnx-mono-icon i {
+  color: #94A3B8 !important;
+  font-size: 16px !important;
+  transition: all 0.15s ease !important;
 }
 
 .fenix-city-pill-btn:hover {
-  color: #F8FAFC;
-  background: rgba(255, 255, 255, 0.06);
+  color: #F8FAFC !important;
+  background: rgba(34, 211, 238, 0.15) !important;
+  border-color: rgba(34, 211, 238, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.fenix-city-pill-btn:hover .pill-emoji.fnx-mono-icon i {
+  color: #38BDF8 !important;
+  transform: scale(1.15) !important;
 }
 
 .fenix-city-pill-btn.active {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(239, 68, 68, 0.08));
-  border: 1px solid rgba(239, 68, 68, 0.6);
-  color: #F87171;
-  font-weight: 700;
-  box-shadow: 0 0 14px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.3), rgba(6, 182, 212, 0.12)) !important;
+  border: 1px solid #22d3ee !important;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.45) !important;
 }
 
-/* ─── Single live world-coordinate minimap ─── */
-.fenix-city-minimap {
-  position: absolute;
-  bottom: 54px;
-  left: 16px;
-  z-index: 25;
-  width: 236px;
-  background: rgba(7, 13, 23, 0.92);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(34, 211, 238, 0.22);
-  border-radius: 9px;
-  overflow: hidden;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.48);
+.fenix-city-pill-btn.active .pill-emoji.fnx-mono-icon i {
+  color: #22D3EE !important;
+  transform: scale(1.1) !important;
 }
+
+/* ─── Single live world-coordinate minimap (Colado no Canto) ─── */
+.fenix-city-minimap {
+  position: absolute !important;
+  bottom: 8px !important;
+  left: 8px !important;
+  z-index: 25 !important;
+  width: 236px !important;
+  background: rgba(7, 13, 23, 0.94) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(34, 211, 238, 0.22) !important;
+  border-top: none !important;
+  border-radius: 0 0 9px 9px !important;
+  overflow: hidden !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.48) !important;
+}
+
+.fnx-btn-2d3d {
+  background: rgba(34, 211, 238, 0.12) !important;
+  border: 1px solid rgba(34, 211, 238, 0.35) !important;
+  color: #22D3EE !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  margin-right: 2px !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.15s ease !important;
+}
+.fnx-btn-2d3d:hover {
+  background: rgba(34, 211, 238, 0.25) !important;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.3) !important;
+}
+
+/* ─── Ocultação de Cards e Overlays Concorrentes na Cena 3D ─── */
+.fw3-identity,
+#view-city .fw3-identity,
+.fw3-control-hint,
+#view-city .fw3-control-hint,
+#fenixCityModeBar,
+#fenixCityAutonomousRoster {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#fenixCityRoleInspector {
+  position: fixed !important;
+  top: -600px !important;
+  left: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.fw3-list,
+#view-city .fw3-list,
+.fw3-refresh,
+#view-city .fw3-refresh {
+  position: fixed !important;
+  top: -120px !important;
+  left: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.fenix-ticker-viewport {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+.fenix-ticker-viewport::-webkit-scrollbar {
+  display: none !important;
+}
+
+.fenix-ticker-track,
+#fenixTickerTrack {
+  animation: none !important;
+  transform: none !important;
+  padding-left: 8px !important;
+  gap: 14px !important;
+}
+
+/* ─── Provedores Flutuantes em Meia-Lua Colada na Direita ─── */
+.fnx-provider-orbit-widget {
+  position: absolute !important;
+  right: 0 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 58px !important;
+  height: 124px !important;
+  border-radius: 90px 0 0 90px !important;
+  background: linear-gradient(135deg, rgba(14, 24, 40, 0.95), rgba(4, 7, 14, 0.98)) !important;
+  border: 1px solid rgba(0, 229, 255, 0.35) !important;
+  border-right: none !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.6) !important;
+  z-index: 28 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  padding-right: 6px !important;
+  box-sizing: border-box !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.fnx-provider-orbit-widget:hover {
+  border-color: #00D9FF !important;
+  box-shadow: -10px 0 32px rgba(0, 229, 255, 0.3) !important;
+  width: 64px !important;
+}
+.fnx-orbit-center-icon {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 50% !important;
+  background: rgba(0, 229, 255, 0.2) !important;
+  border: 1px solid #00D9FF !important;
+  color: #00D9FF !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4) !important;
+  transition: transform 0.2s ease !important;
+}
+.fnx-orbit-center-icon:hover {
+  transform: scale(1.15) rotate(90deg) !important;
+}
+.fnx-orbit-node {
+  position: absolute !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: rgba(10, 16, 26, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 10px !important;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.6) !important;
+  transition: all 0.2s ease !important;
+}
+.fnx-orbit-node:hover {
+  transform: scale(1.25) !important;
+  border-color: #00D9FF !important;
+  box-shadow: 0 0 10px #00D9FF !important;
+}
+.fnx-orbit-node.node-openai { top: 6px !important; left: 24px !important; color: #10b981 !important; }
+.fnx-orbit-node.node-anthropic { top: 26px !important; left: 10px !important; color: #f97316 !important; }
+.fnx-orbit-node.node-gemini { top: 52px !important; left: 4px !important; color: #38bdf8 !important; }
+.fnx-orbit-node.node-llama { top: 78px !important; left: 10px !important; color: #3b82f6 !important; }
+.fnx-orbit-node.node-groq { top: 98px !important; left: 24px !important; color: #f43f5e !important; }
+.fnx-orbit-add-btn { display: none !important; }
 
 .fenix-city-minimap-header {
   min-height: 27px;
@@ -1537,10 +1711,13 @@
 .fenix-city-minimap-controls {
   position: absolute;
   bottom: 7px;
-  right: 7px;
+  left: 50%;
+  right: auto;
   display: flex;
+  justify-content: center;
   gap: 4px;
   z-index: 2;
+  transform: translateX(-50%);
 }
 
 .fenix-city-minimap-controls button {
@@ -1567,4 +1744,221 @@
 
 /* The live world-coordinate map above replaces the old sidebar screenshot map. */
 .fnx-sidebar-minimap { display: none !important; }
+
+/* 2D / 3D Mode Toggle Button on Minimap Header */
+.fenix-city-minimap-controls button.fnx-btn-2d3d {
+  width: auto;
+  min-width: 28px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: rgba(34, 211, 238, 0.15);
+  border-color: rgba(34, 211, 238, 0.5);
+  color: #38bdf8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.fenix-city-minimap-controls button.fnx-btn-2d3d:hover {
+  background: rgba(34, 211, 238, 0.3);
+  color: #f0fdfa;
+}
+.fenix-city-minimap-controls button.fnx-btn-2d3d.mode-2d {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: #c084fc;
+  color: #e9d5ff;
+}
+
+/* Dropdown Drawer for KPI Cards (Phase 35 / Image 4) */
+.fnx-kpi-dropdown-drawer {
+  position: fixed;
+  top: 54px;
+  left: 360px;
+  width: 440px;
+  max-width: 90vw;
+  max-height: 480px;
+  background: rgba(10, 16, 26, 0.98);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 24px rgba(34, 211, 238, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+@keyframes fnxKpiSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fnx-kpi-dd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.fnx-kpi-dd-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #38bdf8;
+  text-transform: uppercase;
+}
+
+.fnx-kpi-dd-title i {
+  font-size: 15px;
+}
+
+.fnx-kpi-dd-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.fnx-kpi-dd-close:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.fnx-kpi-dd-body {
+  padding: 12px 16px;
+  overflow-y: auto;
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.fnx-kpi-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.fnx-kpi-item:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.fnx-kpi-dd-footer {
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fnx-kpi-dd-btn {
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(34, 211, 238, 0.15);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  color: #38bdf8;
+  transition: all 0.15s ease;
+}
+.fnx-kpi-dd-btn:hover {
+  background: rgba(34, 211, 238, 0.3);
+  color: #f0fdfa;
+}
+
+/* ── Fênix Universe Explorer HUD (Video 1 & Next-Gen Spatial Navigation) ── */
+.fenix-universe-hud {
+  position: absolute !important;
+  bottom: 24px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 35 !important;
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  background: rgba(8, 12, 22, 0.94);
+  border: 1px solid rgba(0, 217, 255, 0.35);
+  border-radius: 30px;
+  padding: 6px 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 217, 255, 0.15);
+  user-select: none;
+  transition: left 0.25s ease, transform 0.25s ease;
+}
+body.has-right-sidebar-open .fenix-universe-hud {
+  left: calc((100% - var(--fsb-width, 520px)) / 2) !important;
+}
+.fenix-universe-hud[hidden],
+#fenixUniverseExplorerHUD[hidden],
+#view-city .fenix-universe-hud[hidden],
+#view-city #fenixUniverseExplorerHUD[hidden] {
+  position: fixed !important;
+  top: -200px !important;
+  bottom: auto !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+.fenix-universe-hud .fuh-level-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.fenix-universe-hud .fuh-level-btn:hover {
+  background: rgba(0, 217, 255, 0.12);
+  color: #00d9ff;
+  border-color: rgba(0, 217, 255, 0.4);
+}
+.fenix-universe-hud .fuh-level-btn.active {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.25), rgba(14, 165, 233, 0.35));
+  color: #ffffff;
+  border-color: #00d9ff;
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.35);
+}
+.fenix-universe-hud .fuh-icon-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.fenix-universe-hud .fuh-icon-btn:hover {
+  background: rgba(0, 217, 255, 0.15);
+  color: #00d9ff;
+  border-color: rgba(0, 217, 255, 0.4);
+}
 

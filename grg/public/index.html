@@ -2784,7 +2784,7 @@
             </div>
 
             <!-- Fênix Universe Explorer HUD (Video 1 & Next-Gen Spatial Navigation) -->
-            <div id="fenixUniverseExplorerHUD" class="fenix-universe-hud">
+            <div id="fenixUniverseExplorerHUD" class="fenix-universe-hud" hidden aria-hidden="true">
               <!-- Semantic Zoom Level Buttons -->
               <button type="button" id="btnHudUniverse" class="fuh-level-btn active" onclick="window.fenixCitySemanticZoom?.('universe')" title="Visão Global do Universo (z: 0.45x)"><i class="ph-bold ph-planet"></i> <span>Universo</span></button>
               <button type="button" id="btnHudIsland" class="fuh-level-btn" onclick="window.fenixCitySemanticZoom?.('island')" title="Foco na Ilha / Edifício (z: 1.35x)"><i class="ph-bold ph-buildings"></i> <span>Ilha</span></button>
@@ -7093,11 +7093,15 @@ window.__fenixSubmitIdeChat = async function () {
       </div>
       <div class="fenix-ticker-viewport">
         <div class="fenix-ticker-track" id="fenixTickerTrack">
+          <div class="fenix-ticker-item"><i class="ph-bold ph-folders"></i> PROJETOS: <strong id="tickerProjects">—</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-users-three"></i> AGENTES: <strong id="tickerAgents">—</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-gear"></i> JOBS ATIVOS: <strong id="tickerJobs">—</strong></div>
+          <div class="fenix-ticker-item"><i class="ph-bold ph-desktop-tower"></i> MÁQUINAS: <strong id="tickerMachines">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-hard-drives"></i> HOST: <strong id="tickerHost">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-cpu"></i> CPU: <strong id="tickerCpu">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-memory"></i> RAM: <strong id="tickerRam">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-lightning"></i> FAST LANE: <strong id="tickerFastLane" style="color:var(--fenix-cyan, #22d3ee);">NÃO MEDIDA</strong></div>
-          <div class="fenix-ticker-item"><i class="ph-bold ph-gear"></i> JOBS ATIVOS: <strong id="tickerJobs">—</strong></div>
+          <div class="fenix-ticker-item" style="display:none;"><i class="ph-bold ph-gear"></i> JOBS ATIVOS: <strong id="tickerJobs2">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-clock"></i> UPTIME: <strong id="tickerUptime">—</strong></div>
           <div class="fenix-ticker-item"><i class="ph-bold ph-git-branch"></i> EVENTOS: <strong id="tickerKernelStatus" style="color:var(--fenix-muted, #94a3b8);">AGUARDANDO EVENTOS</strong></div>
         </div>

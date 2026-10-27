@@ -1165,14 +1165,16 @@
     }
 
     _getRenderFrameIntervalMs() {
-      const isHeadless = Boolean(navigator.webdriver) || /headless/i.test(navigator.userAgent || '') || Boolean(window.__FENIX_HEADLESS__);
+      const nav = typeof navigator !== 'undefined' ? navigator : window?.navigator;
+      const isHeadless = Boolean(nav?.webdriver) || /headless/i.test(nav?.userAgent || '') || Boolean(window.__FENIX_HEADLESS__);
       if (isHeadless) return 100;
       return this._isCompactViewport() ? 1000 / 16 : 1000 / 24;
     }
 
     _isCompactViewport() {
+      const nav = typeof navigator !== 'undefined' ? navigator : window?.navigator;
       return Boolean(window.matchMedia?.('(max-width: 1280px)')?.matches)
-        || (Number(navigator.hardwareConcurrency) > 0 && Number(navigator.hardwareConcurrency) <= 4);
+        || (Number(nav?.hardwareConcurrency) > 0 && Number(nav?.hardwareConcurrency) <= 4);
     }
 
     _scheduleNextAnimationFrame() {
@@ -7545,7 +7547,9 @@
       this._densityLodScale = 1.0;
       const bar = document.createElement('div');
       bar.id = 'fenixCityModeBar';
-      bar.style.cssText = 'position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:5px;white-space:nowrap;background:rgba(7,9,14,0.9);backdrop-filter:blur(12px);border:1px solid rgba(0,217,255,0.32);border-radius:10px;padding:5px 10px;box-shadow:0 8px 24px rgba(0,0,0,0.6);';
+      bar.hidden = true;
+      bar.setAttribute('aria-hidden', 'true');
+      bar.style.cssText = 'position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:26;display:none !important;pointer-events:none;align-items:center;gap:5px;white-space:nowrap;background:rgba(7,9,14,0.9);backdrop-filter:blur(12px);border:1px solid rgba(0,217,255,0.32);border-radius:10px;padding:5px 10px;box-shadow:0 8px 24px rgba(0,0,0,0.6);';
       const modes = [
         { id: 'operation', label: '⚡ Operação' },
         { id: 'engineering', label: '🛠️ Engenharia' },
@@ -7581,7 +7585,9 @@
       if (!container || document.getElementById('fenixCityAutonomousRoster')) return;
       const strip = document.createElement('div');
       strip.id = 'fenixCityAutonomousRoster';
-      strip.style.cssText = 'position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;justify-content:center;background:rgba(7,9,14,0.92);backdrop-filter:blur(12px);border:1px solid rgba(16,185,129,0.32);border-radius:10px;padding:4px 10px;box-shadow:0 8px 24px rgba(0,0,0,0.65);max-width:96%;white-space:nowrap;';
+      strip.hidden = true;
+      strip.setAttribute('aria-hidden', 'true');
+      strip.style.cssText = 'position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:26;display:none !important;pointer-events:none;align-items:center;gap:6px;flex-wrap:nowrap;justify-content:center;background:rgba(7,9,14,0.92);backdrop-filter:blur(12px);border:1px solid rgba(16,185,129,0.32);border-radius:10px;padding:4px 10px;box-shadow:0 8px 24px rgba(0,0,0,0.65);max-width:96%;white-space:nowrap;';
       strip.innerHTML = `<span style="font-size:10px;font-weight:800;color:#10B981;letter-spacing:0.06em;">7 PAPÉIS AUTÔNOMOS:</span><span id="fenixCityAutonomousRolesList" style="display:flex;gap:5px;flex-wrap:nowrap;">—</span>`;
       container.appendChild(strip);
 

@@ -1,0 +1,234 @@
+/* Final composition layer: loaded after the legacy and HIG rules. */
+#view-city {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep the legacy entity Inspector proportional to the available screen. */
+#fenixInspectorDrawer.fenix-inspector-drawer {
+  top: var(--topbar-height, 64px) !important;
+  right: 0 !important;
+  bottom: var(--bottom-dock-height, 36px) !important;
+  left: auto !important;
+  width: clamp(320px, 34vw, 420px) !important;
+  max-width: calc(100vw - 88px) !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  border-radius: 14px 0 0 14px !important;
+  background: var(--fenix-ui-surface, #17181c) !important;
+  border-left: 1px solid var(--fenix-ui-border, rgba(255,255,255,.1)) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .32) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+#fenixInspectorDrawer .fenix-drawer-header,
+#fenixInspectorDrawer .fenix-drawer-nav-tabs,
+#fenixInspectorDrawer .fenix-drawer-footer {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+
+#fenixInspectorDrawer .fenix-drawer-header { padding: 12px 16px !important; }
+#fenixInspectorDrawer .fenix-drawer-nav-tabs { gap: 6px !important; overflow-x: auto; overscroll-behavior-x: contain; }
+#fenixInspectorDrawer .fenix-dr-tab { min-height: 40px; flex: 0 0 auto; padding: 8px 10px !important; border-radius: 8px !important; white-space: nowrap; }
+#fenixInspectorDrawer .fenix-drawer-close { width: 40px; height: 40px; flex: 0 0 40px; }
+#fenixInspectorDrawer .fenix-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px !important;
+  gap: 10px;
+  overscroll-behavior: contain;
+}
+#fenixInspectorDrawer .fenix-insp-section {
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--fenix-ui-radius, 12px);
+  background: var(--fenix-ui-surface-raised, #1d1e23);
+  border-color: var(--fenix-ui-border, rgba(255,255,255,.1));
+}
+#fenixInspectorDrawer .fenix-insp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+#fenixInspectorDrawer .fenix-insp-grid > div { min-width: 0; overflow-wrap: anywhere; }
+#fenixInspectorDrawer .fenix-insp-grid code { overflow-wrap: anywhere; }
+#fenixInspectorDrawer .fenix-drawer-footer { flex-wrap: wrap; gap: 8px; padding: 10px 12px !important; }
+#fenixInspectorDrawer .fenix-drawer-footer .fenix-action-btn { min-height: 40px; }
+
+@media (max-width: 760px) {
+  #fenixInspectorDrawer.fenix-inspector-drawer {
+    top: calc(var(--topbar-height, 56px) + 8px) !important;
+    right: 8px !important;
+    bottom: calc(var(--bottom-dock-height, 32px) + 8px) !important;
+    left: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    border: 1px solid var(--fenix-ui-border, rgba(255,255,255,.1)) !important;
+    border-radius: 16px !important;
+  }
+}
+
+#view-city .fenix-city-canvas-area {
+  flex: 1 1 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+#view-city .fenix-world-3d,
+#view-city #cityCanvas {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+#view-city .fw3-context,
+#view-city .fcw-panel {
+  max-width: min(360px, calc(100% - 24px)) !important;
+  max-height: min(58dvh, calc(100% - 120px)) !important;
+  box-sizing: border-box !important;
+  overflow: auto !important;
+}
+
+#view-city #fenixUniverseExplorerHUD,
+#view-city .fenix-universe-hud,
+#view-city #fenixCityNavPill {
+  box-sizing: border-box !important;
+  max-width: calc(100% - 16px) !important;
+}
+
+#view-city .fenix-city-minimap {
+  box-sizing: border-box !important;
+  max-width: min(240px, calc(100% - 16px)) !important;
+  max-height: min(30dvh, 220px) !important;
+}
+
+/* Keep all minimap actions centered as a single control group. */
+#view-city #fenixWorldMinimap .fenix-city-minimap-controls {
+  left: 50% !important;
+  right: auto !important;
+  width: max-content !important;
+  justify-content: center !important;
+  transform: translateX(-50%) !important;
+}
+
+#view-city #fenixWorldMinimap .fenix-city-minimap-controls button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+/* City navigation uses one monochrome icon treatment, with theme color on focus. */
+#view-city #fenixCityNavPill .pill-emoji,
+#view-city #fenixCityNavPill .pill-emoji i {
+  color: currentColor !important;
+  font-style: normal !important;
+}
+#view-city #fenixCityNavPill .fenix-city-pill-btn { color: #93a4b8 !important; }
+#view-city #fenixCityNavPill .fenix-city-pill-btn.active,
+#view-city #fenixCityNavPill .fenix-city-pill-btn:hover { color: #22d3ee !important; }
+
+/* The chat is docked beside the map, so center the camera controls in the map itself. */
+@media (min-width: 761px) {
+  /* Keep modal city panels inside the exposed map when the chat is docked. */
+  body.has-right-sidebar-open #view-city #fenixCityOpsDrawer,
+  body.has-right-sidebar-open #view-city #fenixCityCockpitDrawer {
+    right: max(12px, calc(clamp(320px, 42vw, 440px) + 12px)) !important;
+  }
+
+  #view-city #fenixCityNavPill {
+    left: 8px !important;
+    right: auto !important;
+    bottom: calc(100px + min(30dvh, 220px) + 12px) !important;
+    max-width: calc(100% - 16px) !important;
+    transform: none !important;
+  }
+
+  body.has-right-sidebar-open #view-city #fenixCityNavPill {
+    left: 8px !important;
+    right: auto !important;
+    bottom: calc(100px + min(30dvh, 220px) + 12px) !important;
+    max-width: calc(100% - 16px) !important;
+    transform: none !important;
+  }
+
+  body.has-right-sidebar-open #view-city #fenixUniverseExplorerHUD {
+    left: 50% !important;
+    right: auto !important;
+    bottom: 24px !important;
+    width: max-content !important;
+    max-width: calc(100% - 16px) !important;
+    transform: translateX(-50%) !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin;
+    touch-action: pan-x;
+  }
+}
+
+/* Focus mode: recover the map controls as soon as the agent inspector closes. */
+#view-city:has(.fw3-context:not([hidden])) #fenixWorldMinimap,
+#view-city:has(.fw3-context:not([hidden])) #fnxProviderOrbit {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  #view-city .fenix-city-canvas-area {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  #view-city .fenix-city-minimap {
+    width: min(196px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: min(29dvh, 220px) !important;
+  }
+
+  #view-city .fw3-context,
+  #view-city .fcw-panel {
+    max-height: min(48dvh, calc(100dvh - var(--topbar-height, 56px) - var(--bottom-dock-height, 32px) - 24px)) !important;
+  }
+
+  #view-city .fw3-context {
+    left: auto !important;
+    right: 8px !important;
+    width: min(294px, calc(100% - 20px)) !important;
+    max-width: calc(100% - 20px) !important;
+  }
+
+  #view-city .fcw-panel {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  #view-city #fenixUniverseExplorerHUD,
+  #view-city .fenix-universe-hud {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+}
+
+#view-city #fenixUniverseExplorerHUD[hidden],
+#view-city .fenix-universe-hud[hidden],
+body.has-right-sidebar-open #view-city #fenixUniverseExplorerHUD[hidden],
+body.has-right-sidebar-open #view-city .fenix-universe-hud[hidden] {
+  position: fixed !important;
+  top: -200px !important;
+  bottom: auto !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
