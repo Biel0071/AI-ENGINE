@@ -242,6 +242,36 @@ const CANONICAL_BUILDINGS_DATA = {
     floors: 4,
     coordinates: { x: -22.0, y: 0, z: -18.0 },
     color: '#8b5cf6'
+  },
+  'bld-mf-atacadista': {
+    id: 'bld-mf-atacadista',
+    name: 'MF Atacadista Centro de Distribuição & Atacado',
+    label: 'MF ATACADISTA',
+    companyId: 'mf-atacadista',
+    district: 'logistics',
+    floors: 3,
+    coordinates: { x: 38.0, y: 0, z: 14.0 },
+    color: '#f59e0b'
+  },
+  'bld-zapai-crm': {
+    id: 'bld-zapai-crm',
+    name: 'ZapAI CRM & Atendimento Omnichannel',
+    label: 'ZAPAI CRM',
+    companyId: 'zapai-crm',
+    district: 'commerce-district',
+    floors: 3,
+    coordinates: { x: 20.0, y: 0, z: 14.0 },
+    color: '#10b981'
+  },
+  'bld-fortlev-quote': {
+    id: 'bld-fortlev-quote',
+    name: 'Fortlev Quote Commerce & Orçamentos B2B',
+    label: 'FORTLEV QUOTE',
+    companyId: 'fortlev-quote',
+    district: 'commerce-district',
+    floors: 3,
+    coordinates: { x: 56.0, y: 0, z: 14.0 },
+    color: '#0284c7'
   }
 };
 const CANONICAL_WORKSTATIONS_DATA = {};
@@ -307,6 +337,7 @@ class WorldStateEngine {
           this.worldBlueprints = { ...(parsed.worldBlueprints || {}) };
           this.isInitialized = true;
           this.recoverPendingMissions();
+          this.ensureAgentTaskRoutes();
           return;
         }
       }
@@ -316,6 +347,7 @@ class WorldStateEngine {
 
     this.isInitialized = true;
     this.recoverPendingMissions();
+    this.ensureAgentTaskRoutes();
     this.schedulePersist();
   }
 
@@ -1255,6 +1287,382 @@ Responda diretamente em português como o agente operacional em primeira pessoa,
       }
     }
     return recoveredCount;
+  }
+
+  _resolveCompanyDistrict(companyOrAgent = {}) {
+    const hint = [
+      companyOrAgent.buildingId,
+      companyOrAgent.companyId,
+      companyOrAgent.company,
+      companyOrAgent.department,
+      companyOrAgent.district,
+      companyOrAgent.role,
+      companyOrAgent.id
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if (/mf-atacad|atacadista/.test(hint)) {
+      return {
+        district: 'logistics',
+        buildingId: 'bld-mf-atacadista',
+        companyId: companyOrAgent.companyId || 'mf-atacadista',
+        companyName: companyOrAgent.company || 'MF Atacadista',
+        waypoints: [
+          { x: 38, y: 14, task: '/goal · Gestão de Atacado & Pedidos B2B' },
+          { x: 30, y: 14, task: '/browser · Catálogo de Produtos & Estoque' },
+          { x: 34, y: 22, task: '/plan · Planejamento de Carga & Distribuição' },
+          { x: 42, y: 22, task: '/boost · Faturamento Expresso & NF-e' },
+          { x: 46, y: 14, task: '/learn · Auditoria de Inventário Atacadista' }
+        ]
+      };
+    }
+    if (/zapai|zapflow|whatsapp-crm/.test(hint)) {
+      return {
+        district: 'commerce-district',
+        buildingId: 'bld-zapai-crm',
+        companyId: companyOrAgent.companyId || 'zapai-crm',
+        companyName: companyOrAgent.company || 'ZapAI CRM',
+        waypoints: [
+          { x: 20, y: 14, task: '/goal · Atendimento Omnichannel & CRM 24/7' },
+          { x: 14, y: 14, task: '/browser · Gestão de Conversas WhatsApp' },
+          { x: 26, y: 14, task: '/plan · Pipeline de Leads & Funil de Vendas' },
+          { x: 20, y: 22, task: '/boost · Automação de Disparo & Webhooks' }
+        ]
+      };
+    }
+    if (/fortlev|quote|commerce-core/.test(hint)) {
+      return {
+        district: 'commerce-district',
+        buildingId: 'bld-fortlev-quote',
+        companyId: companyOrAgent.companyId || 'fortlev-quote',
+        companyName: companyOrAgent.company || 'Fortlev Quote',
+        waypoints: [
+          { x: 56, y: 14, task: '/goal · Motor de Orçamentos & Regras Comerciais' },
+          { x: 50, y: 14, task: '/browser · Tabela de Preços & Frete Dinâmico' },
+          { x: 62, y: 14, task: '/plan · Simulação de Pedidos em Lote' }
+        ]
+      };
+    }
+    if (/deposito|wms|logistic|industrial|expedicao|motorista|patio|camila|andre|marcos|silva/.test(hint)) {
+      return {
+        district: 'logistics',
+        buildingId: 'bld-deposito-mais',
+        companyId: companyOrAgent.companyId || 'deposito-mais',
+        companyName: companyOrAgent.company || 'Depósito Mais',
+        waypoints: [
+          { x: 56, y: -28, task: '/goal · Supervisão de Expedição & WMS' },
+          { x: 43, y: -24, task: '/browser · Inspeção de Manifesto Doca 1' },
+          { x: 52, y: -24, task: '/teamwork-preview · Coordenação de Carga Doca 2' },
+          { x: 46, y: -38, task: '/plan · Auditoria de Paletes Corredor B' },
+          { x: 61, y: -24, task: '/boost · Despacho Expresso Doca 3' },
+          { x: 62, y: -30, task: '/learn · Consolidação de Telemetria WMS' }
+        ]
+      };
+    }
+    if (/api-platform|api-ops|fastify|gateway|webhook|integration|infra|security|monitor|alex|elena|lucas|maya|victor|gabriel/.test(hint)) {
+      return {
+        district: 'api-platform',
+        buildingId: 'bld-api-platform',
+        companyId: companyOrAgent.companyId || 'api-platform',
+        companyName: companyOrAgent.company || 'API Platform',
+        waypoints: [
+          { x: -46, y: -22, task: '/goal · Orquestração Fastify Gateway 24/7' },
+          { x: -56, y: -24, task: '/grill-me · Auditoria Zero-Trust & Contratos REST' },
+          { x: -52, y: -35, task: '/boost · Escalonamento de Filas BullMQ & Workers' },
+          { x: -42, y: -28, task: '/browser · Verificação de Rotas & Webhooks' },
+          { x: -48, y: -18, task: '/learn · Indexação de Telemetria OpenTelemetry' }
+        ]
+      };
+    }
+    if (/ai-nexus|ai-core|ai-district|sora|cognitive|llm|rag|research/.test(hint)) {
+      return {
+        district: 'ai-district',
+        buildingId: 'bld-ai-nexus',
+        companyId: companyOrAgent.companyId || 'ai-core',
+        companyName: companyOrAgent.company || 'AI Nexus R&D',
+        waypoints: [
+          { x: -16, y: -54, task: '/learn · Evolução GraphBrain & Memória Ativa' },
+          { x: -26, y: -58, task: '/goal · Inferência Multi-Modelo & Roteamento IA' },
+          { x: -21, y: -65, task: '/boost · Otimização de Contexto & Token Economy' },
+          { x: -15, y: -62, task: '/grill-me · Validação Adversarial de Prompts' }
+        ]
+      };
+    }
+    if (/dev-loft|dev-core|dev-district|engineering|frontend|backend|prometheus|qa/.test(hint)) {
+      return {
+        district: 'dev-district',
+        buildingId: 'bld-dev-loft',
+        companyId: companyOrAgent.companyId || 'dev-core',
+        companyName: companyOrAgent.company || 'Dev District Forge',
+        waypoints: [
+          { x: -48, y: 50, task: '/plan · Especificação & Arquitetura Full-Stack' },
+          { x: -58, y: 54, task: '/browser · Testes Visuais Playwright & DOM' },
+          { x: -52, y: 62, task: '/grill-me · Code Review & Regra VII Check' },
+          { x: -44, y: 56, task: '/boost · Deploy Canônico & Sincronia VPS' }
+        ]
+      };
+    }
+    return {
+      district: 'command-center',
+      buildingId: 'bld-fenix-hq',
+      companyId: companyOrAgent.companyId || 'fenix-enterprise',
+      companyName: companyOrAgent.company || 'Fênix Enterprise HQ',
+      waypoints: [
+        { x: -8, y: 10, task: '/goal · Governança Executiva Fênix OS' },
+        { x: 8, y: 10, task: '/plan · Planejamento de Missões Multi-Empresa' },
+        { x: 10, y: -8, task: '/teamwork-preview · Sincronização de Enxame 3D' },
+        { x: -8, y: -10, task: '/learn · Atualização ACTIVE_PROJECT_MEMORY' },
+        { x: 0, y: 14, task: '/grill-me · Auditoria de Qualidade & SLA' }
+      ]
+    };
+  }
+
+  ensureAgentTaskRoutes() {
+    const entries = Object.values(this.agents || {});
+    entries.forEach((ag, index) => {
+      if (!ag || !ag.id) return;
+      const hub = this._resolveCompanyDistrict(ag);
+      if (!ag.buildingId) ag.buildingId = hub.buildingId;
+      if (!ag.district) ag.district = hub.district;
+      if (!ag.companyId) ag.companyId = hub.companyId;
+      if (!ag.company) ag.company = hub.companyName;
+
+      const angleOffset = ((index % 7) / 7) * Math.PI * 2;
+      const radiusOffset = 1.6 + (index % 3) * 1.1;
+      const waypoints = hub.waypoints.map((wp, wpIdx) => ({
+        x: Number((wp.x + Math.cos(angleOffset + wpIdx * 1.1) * radiusOffset).toFixed(2)),
+        y: Number((wp.y + Math.sin(angleOffset + wpIdx * 1.1) * radiusOffset).toFixed(2)),
+        task: wp.task
+      }));
+
+      ag.routineWaypoints = waypoints;
+      const startIdx = index % waypoints.length;
+      const nextIdx = (startIdx + 1) % waypoints.length;
+      ag.waypointIndex = nextIdx;
+
+      const hasValidCoords = ag.coordinates
+        && Number.isFinite(Number(ag.coordinates.x))
+        && Number.isFinite(Number(ag.coordinates.y))
+        && Math.abs(Number(ag.coordinates.x)) <= 120
+        && Math.abs(Number(ag.coordinates.y)) <= 120;
+
+      if (!hasValidCoords) {
+        ag.coordinates = { x: waypoints[startIdx].x, y: waypoints[startIdx].y };
+      }
+      ag.homeCoordinates = ag.homeCoordinates || { x: waypoints[0].x, y: waypoints[0].y };
+      ag.x = ag.coordinates.x;
+      ag.y = ag.coordinates.y;
+      ag.targetCoordinates = { x: waypoints[nextIdx].x, y: waypoints[nextIdx].y };
+      ag.targetX = ag.targetCoordinates.x;
+      ag.targetY = ag.targetCoordinates.y;
+      ag.path = waypoints.map((w) => ({ x: w.x, y: w.y }));
+      ag.speed = Number.isFinite(ag.speed) && ag.speed >= 0.8 ? ag.speed : 1.85;
+      if (ag.state !== 'RECEIVING_TASK') {
+        ag.state = 'WALKING';
+      }
+      ag.status = 'WORKING';
+      if (!ag.currentTask || ag.currentTask === 'Ronda preventiva e verificação de integridade operacional' || ag.currentTask === 'Pronto para novas diretivas') {
+        ag.currentTask = waypoints[nextIdx].task;
+      }
+      if (!ag.assignedTask) {
+        ag.assignedTask = {
+          id: `routine-${ag.id}`,
+          taskName: ag.currentTask,
+          source: 'company-routine'
+        };
+      }
+    });
+  }
+
+  spawnCompanyAgent(companyOrPayload = {}, maybePayload = {}) {
+    const payload = typeof companyOrPayload === 'string'
+      ? { ...maybePayload, companyId: companyOrPayload }
+      : (companyOrPayload || {});
+    const rawCompanyId = String(payload.companyId || payload.projectId || payload.company || 'fenix-os').trim();
+    const hub = this._resolveCompanyDistrict({
+      companyId: rawCompanyId,
+      company: payload.companyName || payload.company || rawCompanyId,
+      buildingId: payload.buildingId,
+      department: payload.department,
+      role: payload.role
+    });
+    const slug = rawCompanyId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'fenix';
+    const shortId = Math.random().toString(36).slice(2, 6);
+    const id = payload.id || `agent-${slug}-${shortId}`;
+    const role = payload.role || 'Especialista de Operações';
+    const name = payload.name || `${role} · ${hub.companyName}`;
+    const workflowCmd = payload.command && String(payload.command).startsWith('/') ? String(payload.command).trim() : '/goal';
+    const taskLabel = payload.task || payload.taskTitle || payload.currentTask || `${workflowCmd} · Executar diretiva operacional em ${hub.companyName}`;
+    const agentCount = Object.keys(this.agents).length;
+    const angle = (agentCount % 8) * (Math.PI / 4);
+    const waypoints = hub.waypoints.map((wp, idx) => ({
+      x: Number((wp.x + Math.cos(angle + idx) * 2.2).toFixed(2)),
+      y: Number((wp.y + Math.sin(angle + idx) * 2.2).toFixed(2)),
+      task: idx === 0 ? taskLabel : wp.task
+    }));
+    const startCoord = { x: waypoints[0].x, y: waypoints[0].y };
+    const targetCoord = { x: waypoints[1 % waypoints.length].x, y: waypoints[1 % waypoints.length].y };
+    const timestamp = new Date().toISOString();
+
+    const newAgent = {
+      id,
+      agentId: id,
+      sourceId: rawCompanyId,
+      sourceType: 'COMPANY_SPAWN',
+      name,
+      displayName: name,
+      role,
+      department: payload.department || hub.district.toUpperCase(),
+      company: hub.companyName,
+      companyId: rawCompanyId,
+      projectId: payload.projectId || rawCompanyId,
+      buildingId: payload.buildingId || hub.buildingId,
+      district: hub.district,
+      workstationId: payload.workstationId || `st-${slug}-${shortId}`,
+      stationId: payload.workstationId || `st-${slug}-${shortId}`,
+      status: 'WORKING',
+      state: 'WALKING',
+      coordinates: startCoord,
+      homeCoordinates: { ...startCoord },
+      targetCoordinates: targetCoord,
+      x: startCoord.x,
+      y: startCoord.y,
+      targetX: targetCoord.x,
+      targetY: targetCoord.y,
+      path: waypoints.map((w) => ({ x: w.x, y: w.y })),
+      routineWaypoints: waypoints,
+      waypointIndex: 1 % waypoints.length,
+      speed: 2.2,
+      facing: 'SE',
+      currentTask: taskLabel,
+      assignedTask: {
+        id: `task-${shortId}`,
+        taskName: taskLabel,
+        command: workflowCmd,
+        companyId: rawCompanyId,
+        createdAt: timestamp
+      },
+      skills: payload.skills || ['autonomous-execution', 'company-operations', workflowCmd.slice(1)],
+      tools: payload.tools || ['task_runner', 'telemetry_client', 'memory_index'],
+      memory: [
+        {
+          timestamp,
+          content: `Agente criado dinamicamente pela empresa ${hub.companyName} para executar: ${taskLabel}`
+        }
+      ],
+      createdAt: timestamp,
+      lastUpdated: timestamp
+    };
+
+    this.agents[id] = newAgent;
+    if (this.companies[rawCompanyId]) {
+      const comp = this.companies[rawCompanyId];
+      comp.agents = Array.isArray(comp.agents) ? [...new Set([...comp.agents, id])] : [id];
+      if (comp.telemetry) {
+        comp.telemetry.agentsCount = comp.agents.length;
+      }
+    }
+
+    const record = {
+      id: `mut-spawn-${Date.now()}-${shortId}`,
+      success: true,
+      type: 'SPAWN_COMPANY_AGENT',
+      payload: { companyId: rawCompanyId, agent: newAgent },
+      issuer: payload.issuer || 'company-brain',
+      timestamp
+    };
+    this.mutationLog.push(record);
+    if (this.mutationLog.length > 300) this.mutationLog.shift();
+    this.schedulePersist();
+
+    try {
+      globalBus.emit('world.agent.spawned', { companyId: rawCompanyId, agent: newAgent, timestamp });
+      globalBus.emit('world.mutation', record);
+    } catch (_) {}
+
+    return newAgent;
+  }
+
+  dispatchWorkflowCommand(command, argsOrPayload = {}, maybePayload = {}) {
+    const payload = typeof argsOrPayload === 'string'
+      ? { ...maybePayload, objective: argsOrPayload || maybePayload.objective }
+      : (argsOrPayload || {});
+    const cleanCmd = String(command || '/goal').trim().split(/\s+/)[0].toLowerCase();
+    const companyId = payload.companyId || payload.projectId || 'fenix-os';
+    const objective = payload.objective || payload.prompt || payload.message || `Execução de workflow ${cleanCmd}`;
+    const taskLabel = `${cleanCmd} · ${objective.slice(0, 68)}`;
+    const hub = this._resolveCompanyDistrict({ companyId });
+
+    const matchingAgents = Object.values(this.agents).filter((a) =>
+      String(a.companyId || '').toLowerCase() === String(companyId).toLowerCase()
+      || String(a.buildingId || '').toLowerCase() === String(hub.buildingId).toLowerCase()
+    );
+
+    let targetAgent = matchingAgents[0] || Object.values(this.agents)[0] || null;
+    if (!targetAgent || cleanCmd === '/boost' || payload.spawnNewAgent === true) {
+      targetAgent = this.spawnCompanyAgent({
+        companyId,
+        role: cleanCmd === '/browser' ? 'Engenheiro de Browser QA'
+          : cleanCmd === '/plan' ? 'Arquiteto de Planejamento'
+            : cleanCmd === '/grill-me' ? 'Auditor Adversarial'
+              : cleanCmd === '/learn' ? 'Curador de Memória & GraphBrain'
+                : cleanCmd === '/fenix-global-engineering' ? 'Arquiteto Global Fênix'
+                  : cleanCmd === '/teamwork-preview' ? 'Coordenador Multi-Agente'
+                    : cleanCmd === '/automation' ? 'Engenheiro de Automação'
+                      : 'Executor Autônomo',
+        command: cleanCmd,
+        task: taskLabel,
+        issuer: payload.issuer || 'workflow-dispatcher'
+      });
+    } else {
+      const wpList = Array.isArray(targetAgent.routineWaypoints) && targetAgent.routineWaypoints.length > 1
+        ? targetAgent.routineWaypoints
+        : hub.waypoints;
+      const nextIdx = ((targetAgent.waypointIndex || 0) + 1) % wpList.length;
+      targetAgent.waypointIndex = nextIdx;
+      targetAgent.targetCoordinates = { x: wpList[nextIdx].x, y: wpList[nextIdx].y };
+      targetAgent.targetX = targetAgent.targetCoordinates.x;
+      targetAgent.targetY = targetAgent.targetCoordinates.y;
+      targetAgent.state = 'WALKING';
+      targetAgent.status = 'WORKING';
+      targetAgent.currentTask = taskLabel;
+      targetAgent.assignedTask = {
+        id: `wf-${Date.now()}`,
+        taskName: taskLabel,
+        command: cleanCmd
+      };
+      targetAgent.memory = Array.isArray(targetAgent.memory) ? targetAgent.memory : [];
+      targetAgent.memory.push({
+        timestamp: new Date().toISOString(),
+        content: `Workflow ${cleanCmd} acionado: ${objective}`
+      });
+      this.schedulePersist();
+    }
+
+    const allAgents = Object.values(this.agents);
+    const activeSet = new Set(['working', 'running', 'moving', 'walking', 'thinking', 'talking', 'active']);
+    const activeAgentsCount = allAgents.filter((a) =>
+      activeSet.has(String(a.state || '').toLowerCase()) || activeSet.has(String(a.status || '').toLowerCase())
+    ).length;
+    const dispatchedAgents = targetAgent ? [{
+      id: targetAgent.id,
+      name: targetAgent.name,
+      role: targetAgent.role,
+      task: taskLabel,
+      waypointsCount: Array.isArray(targetAgent.routineWaypoints) ? targetAgent.routineWaypoints.length : 0
+    }] : [];
+
+    return {
+      ok: true,
+      command: cleanCmd,
+      companyId,
+      companyName: hub.companyName,
+      agent: targetAgent,
+      dispatchedAgents,
+      agentsMoved: dispatchedAgents,
+      activeAgentsCount,
+      totalAgentsCount: allAgents.length,
+      task: taskLabel
+    };
   }
 }
 

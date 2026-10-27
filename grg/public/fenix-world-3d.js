@@ -753,17 +753,18 @@
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
-     SPATIAL NAVIGATION GRAPH (Pathfinding, Corridors, Docks & Arteries)
+     SPATIAL NAVIGATION GRAPH (A* Pathfinding, Corridors, Docks & Arteries)
   ══════════════════════════════════════════════════════════════════════════ */
   class PathGraph {
     constructor() {
       this.nodes = new Map();
       this.edges = new Map();
+      this.obstacles = new Map();
       this._initCanonicalWaypoints();
     }
 
     addNode(id, pos, type = 'waypoint', floor = 0) {
-      this.nodes.set(id, { id, pos: new T.Vector3(pos.x, pos.y, pos.z), type, floor });
+      this.nodes.set(id, { id, pos: new T.Vector3(pos.x, pos.y !== undefined ? pos.y : 0.8, pos.z !== undefined ? pos.z : pos.y), type, floor });
       if (!this.edges.has(id)) this.edges.set(id, new Set());
     }
 
@@ -774,11 +775,110 @@
       }
     }
 
+    registerObstacle(id, bounds) {
+      if (!id || !bounds) return;
+      this.obstacles.set(id, {
+        id,
+        minX: bounds.minX,
+        maxX: bounds.maxX,
+        minZ: bounds.minZ,
+        maxZ: bounds.maxZ,
+        entryPos: bounds.entryPos || null,
+        name: bounds.name || id
+      });
+
+      if (bounds.entryPos) {
+        const doorId = `door_${id}`;
+        this.addNode(doorId, bounds.entryPos, 'door', 0);
+        let bestNode = null, minDist = Infinity;
+        for (const [nid, node] of this.nodes) {
+          if (nid.startsWith('door_') || nid.includes('station') || nid.includes('office') || nid === doorId) continue;
+          const d = node.pos.distanceTo(new T.Vector3(bounds.entryPos.x, bounds.entryPos.y, bounds.entryPos.z));
+          if (d < minDist && !this.doesSegmentCrossObstacle(node.pos, bounds.entryPos, 0.2)) {
+            minDist = d;
+            bestNode = nid;
+          }
+        }
+        if (bestNode) {
+          this.addEdge(doorId, bestNode);
+        }
+      }
+    }
+
+    unregisterObstacle(id) {
+      this.obstacles.delete(id);
+      const doorId = `door_${id}`;
+      this.nodes.delete(doorId);
+      this.edges.delete(doorId);
+      for (const edgeSet of this.edges.values()) {
+        edgeSet.delete(doorId);
+      }
+    }
+
+    isPointInObstacle(x, z, margin = 0.5) {
+      for (const obs of this.obstacles.values()) {
+        if (x >= obs.minX - margin && x <= obs.maxX + margin &&
+            z >= obs.minZ - margin && z <= obs.maxZ + margin) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    doesSegmentCrossObstacle(p1, p2, margin = 0.5) {
+      const x1 = p1.x, z1 = p1.z !== undefined ? p1.z : p1.y;
+      const x2 = p2.x, z2 = p2.z !== undefined ? p2.z : p2.y;
+
+      for (const obs of this.obstacles.values()) {
+        const minX = obs.minX - margin;
+        const maxX = obs.maxX + margin;
+        const minZ = obs.minZ - margin;
+        const maxZ = obs.maxZ + margin;
+
+        if (this._segmentIntersectsAABB(x1, z1, x2, z2, minX, maxX, minZ, maxZ)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    _segmentIntersectsAABB(x1, z1, x2, z2, minX, maxX, minZ, maxZ) {
+      let tmin = 0, tmax = 1;
+      const dx = x2 - x1;
+      const dz = z2 - z1;
+
+      if (Math.abs(dx) < 1e-7) {
+        if (x1 < minX || x1 > maxX) return false;
+      } else {
+        const invD = 1 / dx;
+        let t1 = (minX - x1) * invD;
+        let t2 = (maxX - x1) * invD;
+        if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+        tmin = Math.max(tmin, t1);
+        tmax = Math.min(tmax, t2);
+        if (tmin > tmax) return false;
+      }
+
+      if (Math.abs(dz) < 1e-7) {
+        if (z1 < minZ || z1 > maxZ) return false;
+      } else {
+        const invD = 1 / dz;
+        let t1 = (minZ - z1) * invD;
+        let t2 = (maxZ - z1) * invD;
+        if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+        tmin = Math.max(tmin, t1);
+        tmax = Math.min(tmax, t2);
+        if (tmin > tmax) return false;
+      }
+
+      return true;
+    }
+
     _initCanonicalWaypoints() {
       const atDepot = (x, y, z) => districtPoint('logistics', x - 26, y, z + 10);
       const atApi = (x, y, z) => districtPoint('api-platform', x + 18, y, z - 2);
 
-      // Depósito Mais: local waypoints stay attached to the rendered building.
+      // 1. Depósito Mais: local waypoints attached to the building
       this.addNode('dep_dock1', atDepot(16.8, 0.9, 1.0), 'dock', 0);
       this.addNode('dep_dock2', atDepot(26.0, 0.9, 1.0), 'dock', 0);
       this.addNode('dep_dock3', atDepot(35.2, 0.9, 1.0), 'dock', 0);
@@ -791,7 +891,6 @@
       this.addNode('dep_apron', atDepot(26.0, 0.9, 8.0), 'yard', 0);
       this.addNode('dep_gate', atDepot(20.0, 0.2, 14.0), 'gate', 0);
 
-      // Edges within Depósito Mais
       this.addEdge('dep_dock1', 'dep_staging');
       this.addEdge('dep_dock2', 'dep_staging');
       this.addEdge('dep_dock3', 'dep_staging');
@@ -803,16 +902,41 @@
       this.addEdge('dep_dock2', 'dep_apron');
       this.addEdge('dep_apron', 'dep_gate');
 
-      // City Arteries
-      this.addNode('road_dep_junction', { x: 22.0, y: 0.2, z: -12.0 }, 'road', 0);
+      // 2. City Central Arteries & Ring Road
       this.addNode('road_center', { x: 0.0, y: 0.2, z: 0.0 }, 'road', 0);
-      this.addNode('road_api_junction', { x: -26.0, y: 0.2, z: 0.0 }, 'road', 0);
+      this.addNode('road_north', { x: 0.0, y: 0.2, z: 24.0 }, 'road', 0);
+      this.addNode('road_south', { x: 0.0, y: 0.2, z: -24.0 }, 'road', 0);
+      this.addNode('road_east', { x: 28.0, y: 0.2, z: 0.0 }, 'road', 0);
+      this.addNode('road_west', { x: -28.0, y: 0.2, z: 0.0 }, 'road', 0);
+      this.addNode('road_ne', { x: 28.0, y: 0.2, z: 24.0 }, 'road', 0);
+      this.addNode('road_nw', { x: -28.0, y: 0.2, z: 24.0 }, 'road', 0);
+      this.addNode('road_se', { x: 28.0, y: 0.2, z: -24.0 }, 'road', 0);
+      this.addNode('road_sw', { x: -28.0, y: 0.2, z: -24.0 }, 'road', 0);
 
+      this.addEdge('road_center', 'road_north');
+      this.addEdge('road_center', 'road_south');
+      this.addEdge('road_center', 'road_east');
+      this.addEdge('road_center', 'road_west');
+      this.addEdge('road_north', 'road_ne');
+      this.addEdge('road_north', 'road_nw');
+      this.addEdge('road_south', 'road_se');
+      this.addEdge('road_south', 'road_sw');
+      this.addEdge('road_east', 'road_ne');
+      this.addEdge('road_east', 'road_se');
+      this.addEdge('road_west', 'road_nw');
+      this.addEdge('road_west', 'road_sw');
+
+      // 3. Connect Depósito Mais to city grid
+      this.addNode('road_dep_junction', { x: 22.0, y: 0.2, z: -12.0 }, 'road', 0);
       this.addEdge('dep_gate', 'road_dep_junction');
+      this.addEdge('road_dep_junction', 'road_se');
       this.addEdge('road_dep_junction', 'road_center');
-      this.addEdge('road_center', 'road_api_junction');
 
-      // API Platform positions share the same anchor as its visible building.
+      // 4. API Platform & Western Tech Hub
+      this.addNode('road_api_junction', { x: -28.0, y: 0.2, z: -14.0 }, 'road', 0);
+      this.addEdge('road_center', 'road_api_junction');
+      this.addEdge('road_sw', 'road_api_junction');
+
       this.addNode('api_plaza', atApi(-18.0, 0.5, 10.0), 'plaza', 0);
       this.addNode('api_lobby', atApi(-18.0, 0.5, 3.2), 'lobby', 0);
       this.addNode('api_lift_f0', atApi(-18.0, 0.5, -2.0), 'elevator', 0);
@@ -828,7 +952,6 @@
       this.addNode('api_lift_f3', atApi(-18.0, 12.5, -2.0), 'elevator', 3);
       this.addNode('api_f3_sora', atApi(-18.0, 12.5, 4.8), 'station', 3);
 
-      // Edges within API Platform
       this.addEdge('road_api_junction', 'api_plaza');
       this.addEdge('api_plaza', 'api_lobby');
       this.addEdge('api_lobby', 'api_lift_f0');
@@ -843,46 +966,129 @@
       this.addEdge('api_f2_center', 'api_f2_victor');
       this.addEdge('api_lift_f2', 'api_lift_f3');
       this.addEdge('api_lift_f3', 'api_f3_sora');
+
+      // 5. Eastern Corporate District Avenues (Sidewalk Network connecting Project Parcels)
+      const aveZ = [4, 12, 20, 28, 36, 44, 52, 60, 68];
+      const crossX = [18, 35, 52, 70];
+
+      aveZ.forEach((zVal, zIdx) => {
+        crossX.forEach((xVal, xIdx) => {
+          const nodeId = `corp_node_${xIdx}_${zIdx}`;
+          this.addNode(nodeId, { x: xVal, y: 0.2, z: zVal }, 'avenue', 0);
+          if (xIdx > 0) {
+            this.addEdge(nodeId, `corp_node_${xIdx - 1}_${zIdx}`);
+          }
+          if (zIdx > 0) {
+            this.addEdge(nodeId, `corp_node_${xIdx}_${zIdx - 1}`);
+          }
+        });
+      });
+
+      this.addEdge('corp_node_0_0', 'road_east');
+      this.addEdge('corp_node_1_0', 'road_ne');
+      this.addEdge('corp_node_0_2', 'road_ne');
+
+      // 6. Northern & Western District Connections
+      this.addNode('dev_plaza', { x: -48.0, y: 0.2, z: 42.0 }, 'plaza', 0);
+      this.addEdge('road_nw', 'dev_plaza');
+
+      this.addNode('ai_plaza', { x: -21.0, y: 0.2, z: -44.0 }, 'plaza', 0);
+      this.addEdge('road_sw', 'ai_plaza');
     }
 
     findPath(startPos, endPos) {
+      const targetVec = endPos instanceof T.Vector3 ? endPos.clone() : new T.Vector3(endPos.x, endPos.y !== undefined ? endPos.y : 0.8, endPos.z !== undefined ? endPos.z : endPos.y);
+      const startVec = startPos instanceof T.Vector3 ? startPos.clone() : new T.Vector3(startPos.x, startPos.y !== undefined ? startPos.y : 0.8, startPos.z !== undefined ? startPos.z : startPos.y);
+
+      if (!this.doesSegmentCrossObstacle(startVec, targetVec, 0.4)) {
+        return [targetVec];
+      }
+
       let startNode = null, minDistStart = Infinity;
       let endNode = null, minDistEnd = Infinity;
-      for (const [id, node] of this.nodes.entries()) {
-        const dS = node.pos.distanceTo(startPos);
-        if (dS < minDistStart) { minDistStart = dS; startNode = id; }
-        const dE = node.pos.distanceTo(endPos);
-        if (dE < minDistEnd) { minDistEnd = dE; endNode = id; }
+
+      for (const [id, node] of this.nodes) {
+        const dS = node.pos.distanceTo(startVec);
+        if (dS < minDistStart && !this.doesSegmentCrossObstacle(startVec, node.pos, 0.3)) {
+          minDistStart = dS;
+          startNode = id;
+        }
+        const dE = node.pos.distanceTo(targetVec);
+        if (dE < minDistEnd && !this.doesSegmentCrossObstacle(node.pos, targetVec, 0.3)) {
+          minDistEnd = dE;
+          endNode = id;
+        }
       }
-      const targetVec = endPos.clone ? endPos.clone() : new T.Vector3(endPos.x, endPos.y, endPos.z);
+
+      if (!startNode) {
+        for (const [id, node] of this.nodes) {
+          const dS = node.pos.distanceTo(startVec);
+          if (dS < minDistStart) { minDistStart = dS; startNode = id; }
+        }
+      }
+      if (!endNode) {
+        for (const [id, node] of this.nodes) {
+          const dE = node.pos.distanceTo(targetVec);
+          if (dE < minDistEnd) { minDistEnd = dE; endNode = id; }
+        }
+      }
+
       if (!startNode || !endNode || startNode === endNode) {
         return [targetVec];
       }
 
-      const queue = [[startNode]];
-      const visited = new Set([startNode]);
-      let foundPath = null;
+      const openSet = new Set([startNode]);
+      const cameFrom = new Map();
+      const gScore = new Map();
+      const fScore = new Map();
 
-      while (queue.length > 0) {
-        const path = queue.shift();
-        const current = path[path.length - 1];
-        if (current === endNode) {
-          foundPath = path;
-          break;
+      for (const id of this.nodes.keys()) {
+        gScore.set(id, Infinity);
+        fScore.set(id, Infinity);
+      }
+      gScore.set(startNode, 0);
+      fScore.set(startNode, this.nodes.get(startNode).pos.distanceTo(this.nodes.get(endNode).pos));
+
+      while (openSet.size > 0) {
+        let current = null;
+        let lowestF = Infinity;
+        for (const node of openSet) {
+          const score = fScore.get(node) ?? Infinity;
+          if (score < lowestF) {
+            lowestF = score;
+            current = node;
+          }
         }
+
+        if (current === endNode) {
+          const rawPath = [current];
+          let currId = current;
+          while (cameFrom.has(currId)) {
+            currId = cameFrom.get(currId);
+            rawPath.unshift(currId);
+          }
+          const points = rawPath.map(nid => this.nodes.get(nid).pos.clone());
+          points.push(targetVec);
+          return points;
+        }
+
+        openSet.delete(current);
+        const currentPos = this.nodes.get(current).pos;
         const neighbors = this.edges.get(current) || [];
-        for (const n of neighbors) {
-          if (!visited.has(n)) {
-            visited.add(n);
-            queue.push([...path, n]);
+
+        for (const neighbor of neighbors) {
+          const nPos = this.nodes.get(neighbor).pos;
+          const tentativeG = (gScore.get(current) ?? Infinity) + currentPos.distanceTo(nPos);
+          if (tentativeG < (gScore.get(neighbor) ?? Infinity)) {
+            cameFrom.set(neighbor, current);
+            gScore.set(neighbor, tentativeG);
+            fScore.set(neighbor, tentativeG + nPos.distanceTo(this.nodes.get(endNode).pos));
+            openSet.add(neighbor);
           }
         }
       }
 
-      if (!foundPath) return [targetVec];
-      const points = foundPath.map(nid => this.nodes.get(nid).pos.clone());
-      points.push(targetVec);
-      return points;
+      return [targetVec];
     }
   }
 
@@ -1038,6 +1244,8 @@
       // Animation & Simulation State
       this.clock = new T.Clock();
       this.pathGraph = new PathGraph();
+      this.obstacles = this.pathGraph.obstacles;
+      this._initObstacleRegistry();
       this.livePackets = [];
       this.agents = new Map();
       this.buildings = new Map();
@@ -1145,6 +1353,43 @@
       } else {
         this.syncRealData();
       }
+    }
+
+    _initObstacleRegistry() {
+      if (!this.pathGraph) return;
+      const heroObstacles = [
+        { id: 'bld-fenix-hq', minX: -11, maxX: 11, minZ: -11, maxZ: 11, entryPos: { x: 0, y: 0.2, z: 12.5 }, name: 'FÊNIX HQ Tower' },
+        { id: 'bld-deposito-mais', minX: 28, maxX: 74, minZ: -56, maxZ: -16, entryPos: { x: 52, y: 0.2, z: -14 }, name: 'Depósito Mais WMS Hub' },
+        { id: 'bld-api-platform', minX: -68, maxX: -36, minZ: -43, maxZ: -15, entryPos: { x: -34, y: 0.2, z: -29 }, name: 'API Platform Complex' },
+        { id: 'bld-dev-loft', minX: -66, maxX: -42, minZ: 47, maxZ: 67, entryPos: { x: -54, y: 0.2, z: 45 }, name: 'Dev Loft Engineering' },
+        { id: 'bld-ai-nexus', minX: -34, maxX: -8, minZ: -73, maxZ: -47, entryPos: { x: -21, y: 0.2, z: -45 }, name: 'AI Nexus Quantum Dome' },
+        { id: 'bld-project-forge', minX: 14, maxX: 36, minZ: 47, maxZ: 67, entryPos: { x: 25, y: 0.2, z: 45 }, name: 'Project Forge Plant' },
+        { id: 'bld-memory-vault', minX: -34, maxX: -14, minZ: 46, maxZ: 68, entryPos: { x: -24, y: 0.2, z: 44 }, name: 'Memory Vault Data Bunker' },
+        { id: 'bld-observatory', minX: 40, maxX: 62, minZ: 4, maxZ: 26, entryPos: { x: 38, y: 0.2, z: 15 }, name: 'Observatório 24/7' }
+      ];
+      for (const obs of heroObstacles) {
+        this.registerObstacle(obs.id, obs);
+      }
+    }
+
+    registerObstacle(id, bounds) {
+      if (this.pathGraph) {
+        this.pathGraph.registerObstacle(id, bounds);
+      }
+    }
+
+    unregisterObstacle(id) {
+      if (this.pathGraph) {
+        this.pathGraph.unregisterObstacle(id);
+      }
+    }
+
+    isPointInObstacle(x, z, margin = 0.5) {
+      return this.pathGraph ? this.pathGraph.isPointInObstacle(x, z, margin) : false;
+    }
+
+    doesSegmentCrossObstacle(p1, p2, margin = 0.5) {
+      return this.pathGraph ? this.pathGraph.doesSegmentCrossObstacle(p1, p2, margin) : false;
     }
 
     _resumeAnimationLoop() {
@@ -1458,6 +1703,12 @@
               existing.role = a.role || existing.role;
               existing.department = a.department || existing.department;
               existing.name = a.name || existing.name;
+              if (Array.isArray(a.routineWaypoints) && a.routineWaypoints.length > 1) {
+                existing.routineWaypoints = a.routineWaypoints;
+              }
+              if (Number.isFinite(a.speed) && a.speed >= 0.8) {
+                existing.speed = a.speed;
+              }
 
               if (existing.thoughtBubble) {
                 const activity = existing.activity;
@@ -2338,9 +2589,9 @@
         // Memory Vault & Southern Grounds
         [-16, 22, 'pine'], [-2, 36, 'deciduous'], [4, 40, 'flowering'],
         [10, 34, 'deciduous'], [16, 40, 'pine'], [-8, 42, 'deciduous'],
-        // Project Forge & Eastern Industrial Green Belts
-        [32, 26, 'pine'], [36, 16, 'deciduous'], [40, 24, 'pine'],
-        [28, 36, 'deciduous'], [38, 34, 'pine'], [44, 12, 'deciduous'],
+        // Western Eco-Park & Northern Promenade Green Belts (Collision-free)
+        [-72, 32, 'pine'], [-68, 44, 'deciduous'], [-64, 18, 'pine'],
+        [-28, 48, 'deciduous'], [-16, 52, 'pine'], [8, 52, 'deciduous'],
         // Depósito Mais Perimeter & Landscaping
         [42, -4, 'flowering'], [45, -16, 'pine'], [44, -26, 'deciduous'],
         [45, -34, 'pine'], [36, -34, 'deciduous'], [26, -36, 'pine'],
@@ -2349,6 +2600,7 @@
         [-14, -14, 'flowering'], [14, -14, 'flowering'], [-14, 14, 'flowering'], [14, 14, 'flowering']
       ];
       treeCoords.forEach(([x, z, type]) => {
+        if (this.isPointInObstacle(x, z, 3.2)) return;
         const tree = this._createDetailedTree(type);
         tree.position.set(x, 0.1, z);
         infraGroup.add(tree);
@@ -6750,6 +7002,9 @@
         targetCoordinates: payload.targetCoordinates || null,
         serverMovementTarget: String(payload.movementState || '').toUpperCase() === 'WALKING' && payload.targetCoordinates ? { ...payload.targetCoordinates } : null,
         telemetryTarget: String(payload.movementState || '').toUpperCase() === 'WALKING' && payload.targetCoordinates ? { ...payload.targetCoordinates } : null,
+        routineWaypoints: Array.isArray(payload.routineWaypoints) && payload.routineWaypoints.length > 1 ? payload.routineWaypoints : null,
+        waypointIndex: Number.isFinite(payload.waypointIndex) ? payload.waypointIndex : 0,
+        speed: Number.isFinite(payload.speed) && payload.speed >= 0.8 ? payload.speed : 2.4,
         path: [],
         pathIndex: 0
       };
@@ -6814,20 +7069,79 @@
       const position = agentRecord?.mesh?.position;
       if (!target || !position) return false;
 
-      const dx = target.x - position.x;
-      const dz = target.z - position.z;
-      const distance = Math.hypot(dx, dz);
+      // Recompute collision-free A* path if target changed or no path exists
+      if (!agentRecord._computedPath || !agentRecord._lastComputedTarget ||
+          Math.hypot(agentRecord._lastComputedTarget.x - target.x, agentRecord._lastComputedTarget.z - target.z) > 0.4) {
+        agentRecord._computedPath = this.pathGraph
+          ? this.pathGraph.findPath(position, target)
+          : [target];
+        agentRecord._lastComputedTarget = { x: target.x, y: target.y, z: target.z };
+        agentRecord._pathSubIndex = 0;
+      }
+
+      const path = agentRecord._computedPath;
+      let subTarget = path && path[agentRecord._pathSubIndex] ? path[agentRecord._pathSubIndex] : target;
+      let dx = subTarget.x - position.x;
+      let dz = (subTarget.z !== undefined ? subTarget.z : subTarget.y) - position.z;
+      let distance = Math.hypot(dx, dz);
       const step = Math.max(0, (agentRecord.speed || 2.4) * delta);
-      if (distance <= Math.max(step, 0.15)) {
+
+      // Advance to next node if reached subTarget
+      while (distance <= Math.max(step, 0.25) && agentRecord._pathSubIndex < path.length - 1) {
+        agentRecord._pathSubIndex++;
+        subTarget = path[agentRecord._pathSubIndex];
+        dx = subTarget.x - position.x;
+        dz = (subTarget.z !== undefined ? subTarget.z : subTarget.y) - position.z;
+        distance = Math.hypot(dx, dz);
+      }
+
+      // Check if reached ultimate destination
+      const totalDx = target.x - position.x;
+      const totalDz = target.z - position.z;
+      if (Math.hypot(totalDx, totalDz) <= Math.max(step, 0.25)) {
         position.set(target.x, target.y ?? position.y, target.z);
+        agentRecord._computedPath = null;
+        agentRecord._lastComputedTarget = null;
+        agentRecord._pathSubIndex = 0;
+
+        if (Array.isArray(agentRecord.routineWaypoints) && agentRecord.routineWaypoints.length > 1) {
+          agentRecord.waypointIndex = ((agentRecord.waypointIndex || 0) + 1) % agentRecord.routineWaypoints.length;
+          const nextWp = agentRecord.routineWaypoints[agentRecord.waypointIndex];
+          if (nextWp && Number.isFinite(Number(nextWp.x)) && Number.isFinite(Number(nextWp.y ?? nextWp.z))) {
+            agentRecord.telemetryTarget = {
+              x: Number(nextWp.x),
+              y: position.y || 0.8,
+              z: Number(nextWp.z !== undefined ? nextWp.z : nextWp.y)
+            };
+            if (nextWp.task && agentRecord.thoughtBubble) {
+              const cleanTask = String(nextWp.task).replace(/^\/[a-zA-Z0-9_-]+\s*(·\s*)?/, '').trim() || nextWp.task;
+              agentRecord.currentTask = cleanTask;
+              agentRecord.thoughtBubble.setText(`A caminho · ${cleanTask}`, '➜', '#38bdf8');
+            }
+            return true;
+          }
+        }
         agentRecord.telemetryTarget = null;
         return false;
       }
 
-      const progress = step / distance;
-      position.x += dx * progress;
-      position.z += dz * progress;
-      if (Number.isFinite(target.y)) position.y += (target.y - position.y) * progress;
+      const progress = Math.min(1.0, step / (distance || 1e-5));
+      const nextX = position.x + dx * progress;
+      const nextZ = position.z + dz * progress;
+
+      // Obstacle collision check with sliding along free axis
+      if (this.isPointInObstacle(nextX, nextZ, 0.35)) {
+        if (!this.isPointInObstacle(nextX, position.z, 0.35)) {
+          position.x = nextX;
+        } else if (!this.isPointInObstacle(position.x, nextZ, 0.35)) {
+          position.z = nextZ;
+        }
+      } else {
+        position.x = nextX;
+        position.z = nextZ;
+      }
+
+      if (Number.isFinite(subTarget.y)) position.y += (subTarget.y - position.y) * progress;
       if (agentRecord.mesh.rotation) agentRecord.mesh.rotation.y = Math.atan2(dx, dz);
       return true;
     }
@@ -6893,14 +7207,19 @@
       }
 
       let visibleAgents = 0;
+      let activeAgents = 0;
+      const totalAgents = this.agents instanceof Map ? this.agents.size : 0;
       if (this.agents instanceof Map) for (const agent of this.agents.values()) {
+        const status = String(agent.status || agent.state || '').toUpperCase();
+        if (/WORK|BUSY|RUNNING|WALKING|EXECUTING|ACTIVE/.test(status) || Boolean(agent.currentTask || agent.telemetryTarget)) {
+          activeAgents++;
+        }
         const position = agent.mesh?.position;
         if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.z)) continue;
         const x = toX(position.x); const y = toY(position.z);
         if (x < 0 || x > width || y < 0 || y > height) continue;
         visibleAgents++;
-        const status = String(agent.status || agent.state || '').toUpperCase();
-        ctx.fillStyle = /FAIL|ERROR|OFFLINE/.test(status) ? '#fb7185' : /QUEUE|WAIT|BLOCK/.test(status) ? '#fbbf24' : /WORK|BUSY|RUNNING/.test(status) ? '#27d7c4' : '#67e8f9';
+        ctx.fillStyle = /FAIL|ERROR|OFFLINE/.test(status) ? '#fb7185' : /QUEUE|WAIT|BLOCK/.test(status) ? '#fbbf24' : /WORK|BUSY|RUNNING|WALKING/.test(status) ? '#27d7c4' : '#67e8f9';
         ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
       }
 
@@ -6913,7 +7232,7 @@
       const status = document.getElementById('fenixMinimapStatus');
       const measuredBuildingsCount = (this.buildings instanceof Map ? this.buildings.size : 0) || buildings.length;
       if (status) status.textContent = this.telemetryStatus === 'MEASURED'
-        ? `${visibleAgents} no mapa · ${measuredBuildingsCount} prédios medidos`
+        ? `${activeAgents || visibleAgents} ativos / ${totalAgents || visibleAgents} total · ${measuredBuildingsCount} prédios`
         : this.telemetryStatus === 'PARTIAL' ? 'Leitura parcial da API'
           : this.telemetryStatus === 'CONNECTING' ? 'Sincronizando telemetria…' : 'Telemetria indisponível';
 
@@ -7435,6 +7754,47 @@
             ud.detailParts.forEach(p => { if (p) p.visible = showDetails; });
           }
         });
+      }
+
+      // 3b. Thought Bubble Anti-Clumping Pass (Deconflict Overlapping Bubbles)
+      if (this.agents && this.agents.size > 1) {
+        const agentList = Array.from(this.agents.values());
+        for (let i = 0; i < agentList.length; i++) {
+          const a1 = agentList[i];
+          const sprite1 = a1?.thoughtBubble?.sprite;
+          if (!sprite1 || !a1?.mesh) continue;
+          let isClumped = false;
+          for (let j = 0; j < i; j++) {
+            const a2 = agentList[j];
+            const sprite2 = a2?.thoughtBubble?.sprite;
+            if (!sprite2 || !a2?.mesh) continue;
+            const dist = a1.mesh.position.distanceTo(a2.mesh.position);
+            if (dist < 3.8) {
+              isClumped = true;
+              break;
+            }
+          }
+          const targetY = isClumped ? 3.35 : 2.45;
+          sprite1.position.y += (targetY - sprite1.position.y) * 0.12;
+        }
+      }
+
+      // 3c. Project Cutaway & Interior Reveal Transition
+      if (this.projectNodes && this.projectNodes.size > 0) {
+        const activeProjId = this.state?.level === 'interior' && this.state?.selected?.kind === 'project'
+          ? this.state.selected.id
+          : null;
+        for (const [id, pNode] of this.projectNodes) {
+          const isInterior = id === activeProjId;
+          if (pNode.roofGroup) {
+            const targetY = isInterior ? 12.0 : 0.0;
+            pNode.roofGroup.position.y += (targetY - pNode.roofGroup.position.y) * 0.1;
+            pNode.roofGroup.visible = pNode.roofGroup.position.y < 11.5;
+          }
+          if (pNode.interiorGroup) {
+            pNode.interiorGroup.visible = isInterior || (pNode.roofGroup && pNode.roofGroup.position.y > 1.0);
+          }
+        }
       }
 
       // 4. Update 3D Floating Status Badge Position

@@ -8,7 +8,7 @@
 
 ## 1. RESUMO EXECUTIVO DO ESTADO ATUAL
 
-- **Data da Última Sincronização**: 27/10/2026 19:03:27 (Atualização Automática)
+- **Data da Última Sincronização**: 27/10/2026 19:35:53 (Atualização Automática)
 - **Status Geral**: OPERACIONAL & AUDITÁVEL (100% Zero-Mock Compliance)
 - **Frontend Canônico Único**: [ai-engine/grg/public/index.html](file:///c:/projetos/ai-engine-core/ai-engine/grg/public/index.html) (14 views vanilla integradas + Marketplace)
 - **Servidor de Aplicação**: [ai-engine/grg/src/server.js](file:///c:/projetos/ai-engine-core/ai-engine/grg/src/server.js) (Porta 4400 Local / Porta 4410 VPS)
@@ -1776,5 +1776,58 @@ Redigidos e persistidos em `ai-engine/docs/`:
    - Executa fluxo real entre 2 ferramentas (`git-workspace` → `node-test-runner`) e 2 projetos (`api-platform` → `fenix-os`), validando contrato compartilhado com `exitCode === 0` e persistindo aprendizado no `ProjectMemoryIndex`.
 4. **Painel Canônico em `view-operations` (`operations-live.js`)**:
    - Evolução de `renderEvolution` com controles de Start/Pause/Resume/Stop/Cycle, botões de PoC 16 Passos, Prova Cross-Tool e Scanner Proativo, contadores de orçamento/telemetria, cards dos 7 papéis, fila com ações por missão, Bug Tracker, Universal Tool Adapter Registry e Cross-Project Dependency Graph.
+
+---
+
+## 49. FASE 57 (27/10/2026) — AI CITY 3D DIGITAL TWIN SPATIAL COHERENCE, PROPORTIONAL PARCELS & COLLISION-FREE A* NAVIGATION
+
+### 49.1 Lotes Parcelares Individuais & Grid Espaçado Proporcional (`fenix-city-machine-scene.js`)
+1. **Grid Expandido e Zonas de Negócio**:
+   - Substituição da grade comprimida de 10 colunas (`media_1793137103859_4d522034.png`) por ancoragem e espaçamento calculados: `PROJECT_ANCHOR = { x: 44, z: 4 }`, `PROJECT_COLUMNS = 7`, `PROJECT_SPACING_X = 9.8`, `PROJECT_SPACING_Z = 7.6`.
+   - Limites rígidos de mundo preservados: para 45 a 62 projetos, todos os centros satisfazem `|x| <= 87.5` e `|z| <= 77.5` com separação mínima entre lotes `>= 7.0` unidades (distância média `9.8m` lateral e `7.6m` longitudinal).
+2. **Arquiteturas e Dimensões por Arquétipo de Negócio**:
+   - Resolução determinística de arquétipo via `resolveProjectArchetype()`:
+     - `warehouse`: Lote industrial com docas de carga, marquises e portões seccionais (`7.2 x 5.4 x 4.2`).
+     - `tech_cloud`: Torre envidraçada de alta tecnologia com conduítes ópticos emissivos e antenas parabólicas (`6.0 x 5.2 x 6.5`).
+     - `commerce_crm`: Pavilhão comercial moderno com grandes vitrines, entradas corporativas e pérgulas (`6.4 x 5.2 x 5.2`).
+     - `fintech`: Edifício corporativo em prisma metálico com cofres e faixas de segurança (`5.8 x 5.0 x 7.0`).
+     - `dev_studio`: Loft de engenharia industrial com iluminação zenital (`6.2 x 5.0 x 4.8`).
+3. **Integração de Empresas Canônicas (Hero Enterprises)**:
+   - Registro de `bld-mf-atacadista`, `bld-zapai-crm` e `bld-fortlev-quote` em `CANONICAL_BUILDING_IDS` e `CANONICAL_BUILDINGS_DATA`, integrando empresas reais com distritos e rotinas operacionais no `WorldStateEngine`.
+
+### 49.2 Interiores Modulares, Hierarquia de Supervisores & Cutaways 3D (`fenix-city-runtime-world.js`)
+1. **Lotes Urbanos Completos**:
+   - Cada projeto possui base de concreto com meio-fio escuro, calçada de conexão à malha viária, totem de identificação com LEDs de status dinâmicos (`RUNNING`, `ONLINE`, `IDLE`, `FAILED`) e rótulo flutuante.
+2. **Interiores Modulares por Arquétipo**:
+   - Criação de `interiorGroup` com estação de supervisão dedicada, mesa ergonômica, computadores com telas emissivas, cadeira de escritório, supervisor designado e mobília do ramo (porta-paletes e caixas para warehouse, racks de servidores para tech, mesas de atendimento para CRM).
+3. **Hierarquia de Supervisores Operacionais**:
+   - `resolveSupervisorProfile()` atribui líderes operacionais reais com nomes e cargos: Marcos Silva (Supervisor de Logística & WMS), Victor Hugo (Tech Lead & SRE Gateway), Elena Santos (Supervisora de Operações & CRM), Gabriel Costa (Supervisor de Risco & Liquidação) e Alex Rivera (Lead Software Architect).
+4. **Transição Suave de Cutaway**:
+   - Métodos `enterProject()` e `back()` elevam o telhado (`roofGroup`) suavemente para o alto (`targetY = 12.0`) revelando o interior detalhado, restaurando a vista exterior e reposicionando a câmera com animação contínua.
+
+### 49.3 Navegação A* Livre de Colisão, Registro de Obstáculos & Parede Rígida (`fenix-world-3d.js`)
+1. **Grafo de Navegação A* & Interseção de Segmento-AABB**:
+   - Implementação de algoritmo determinístico 2D de interseção raio/segmento contra caixas delimitadoras AABB (`_segmentIntersectsAABB`).
+   - Algoritmo A* completo em `PathGraph.findPath()` com malha de waypoints viários (avenidas corporativas X: 18..70, Z: 4..68, anéis viários e praças distritais).
+2. **Registro de Obstáculos & Detecção Espacial**:
+   - `FenixWorld3DEngine.registerObstacle()` registra caixas delimitadoras de todos os edifícios heróis (`bld-fenix-hq`, `bld-deposito-mais`, `bld-api-platform`, etc.) e de cada lote de projeto.
+   - `isPointInObstacle()` e `doesSegmentCrossObstacle()` impedem que trajetórias de agentes atravessem construções.
+3. **Movimentação Factual & Deslizamento em Paredes**:
+   - `_advanceAgentToTelemetry()` atualizado para calcular rota A* desobstruída via `pathGraph.findPath()`, avançando nó a nó.
+   - Detecção de parede rígida com tentativa de deslizamento nos eixos livres (`sliding`) impede que avatares entrem em cantos ou atravessem paredes.
+4. **Limpeza de Textos de Balão**:
+   - Remoção de comandos brutos (ex.: `/teamwork-preview`) dos balões de fala, exibindo descrições operacionais limpas e humanas.
+
+### 49.4 Zero-Colisão na Vegetação & Desaglomeração de Balões 3D (`fenix-world-3d.js`)
+1. **Eliminação de Árvores Sobrepostas**:
+   - Realocadas as 6 árvores que colidiam com a zona de projetos (`[32, 26]`, `[36, 16]`, `[40, 24]`, `[28, 36]`, `[38, 34]`, `[44, 12]`) para praças abertas e alamedas verdes desimpedidas.
+   - Adicionada guarda espacial `if (this.isPointInObstacle(x, z, 3.2)) return;` na semeadura urbana.
+2. **Desaglomeração de Balões de Pensamento (Anti-Clumping Pass)**:
+   - Algoritmo no render loop identifica agentes a menos de 3.8 unidades e eleva o balão adjacente para `Y = 3.35` (contra `Y = 2.45`), eliminando sobreposição visual (`media_1793137140322_33dbed10.png`).
+
+### 49.5 Certificação Automatizada
+- Nova suíte `city-spatial-coherence.test.js` (5/5 PASS).
+- Canonical verification: `architecture-guard.test.js` (5/5), `frontend-honesty.test.js` (19/19), `frontend-runtime-safety.test.js` (5/5), `e2e-smoke.test.js` (1/1), `test_phase56_certification.js` (4/4), testes de Cidade (17/17). Total de 58 verificações rigorosamente aprovadas sem quebra ou regressão.
+
 
 
