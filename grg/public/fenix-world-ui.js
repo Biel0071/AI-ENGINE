@@ -49,8 +49,12 @@
     sync.textContent=error?`Atualização falhou · leitura ${time}`:data?`${live?'● Canal conectado':'◌ Leitura da API'} · ${time}${age>90000?' · dados antigos':''}`:'Carregando telemetria…';
     if (data) {
       const setTicker=(id,val)=>{ const el=document.getElementById(id); if (el) el.textContent=String(val ?? '—'); };
+      const totalAgents = data.metrics?.registeredAgents ?? data.agents?.length;
+      const activeAgents = Array.isArray(data.agents)
+        ? data.agents.filter(a => ['WORKING', 'BUSY', 'RUNNING', 'WALKING', 'EXECUTING', 'ACTIVE'].includes(String(a?.status || a?.state || '').toUpperCase()) || Boolean(a?.currentJob || a?.currentTask)).length
+        : (data.metrics?.workingAgents ?? totalAgents);
       setTicker('tickerProjects',data.metrics?.projectsCount ?? data.projects?.length);
-      setTicker('tickerAgents',data.metrics?.registeredAgents ?? data.agents?.length);
+      setTicker('tickerAgents', totalAgents != null ? `${activeAgents ?? 0} ATIVOS / ${totalAgents} TOTAL` : '—');
       setTicker('tickerJobs',data.metrics?.runningJobs);
       setTicker('tickerMachines',data.machines?.length);
     }
@@ -75,10 +79,22 @@
     } else if (selected.kind==='project') {
       const project=data?.projects?.find(item=>item.id===selected.id);
       const jobs=(data?.recentJobs||[]).filter(job=>job.projectId===selected.id);
+      const archetype=window.FenixCityMachineScene?.resolveProjectArchetype(project || { id: selected.id }) || 'dev_studio';
+      const supervisor=window.FenixCityMachineScene?.resolveSupervisorProfile(project || { id: selected.id }, archetype);
       context.append(make('h2','',project?.name || selected.id),make('p','',project?.workspace?'Workspace conectado ao Project Kernel.':'Workspace indisponível nesta leitura.'));
-      row(context,'Projeto',selected.id); row(context,'Jobs em execução',jobs.filter(job=>jobState(job)==='RUNNING').length);
+      row(context,'Projeto',selected.id);
+      row(context,'Setor Corporativo',archetype.toUpperCase());
+      if (supervisor) {
+        row(context,'Supervisor 3D',`${supervisor.name} · ${supervisor.role}`);
+        row(context,'Departamento',supervisor.dept);
+      }
+      row(context,'Jobs em execução',jobs.filter(job=>jobState(job)==='RUNNING').length);
       row(context,'Falhas recentes',jobs.filter(job=>['FAILED','DEAD_LETTER'].includes(jobState(job))).length);
-      if (engine.state.level!=='interior') action(actions,'Entrar no espaço 3D',()=>engine.enterProject(selected.id));
+      if (engine.state.level==='interior') {
+        action(actions,'← Voltar à Cidade',()=>engine.back(),true);
+      } else {
+        action(actions,'Entrar no espaço 3D (Cutaway)',()=>engine.enterProject(selected.id));
+      }
       action(actions,'Abrir projeto ↗',()=>navigateProject(selected.id),true);
       action(actions,'Abrir IDE ↗',()=>window.fenixCityWorkflow?.openIde(selected.id));
       action(actions,'Ver jobs',()=>window.showView?.('operations'));
@@ -139,6 +155,53 @@
   window.addEventListener('fenix:world-selection',render);
   document.addEventListener('fenix-live',event=>{ if (event.detail?.type==='status') render(); });
   setInterval(()=>{ if (document.getElementById('view-city')?.classList.contains('active')) render(); },30000);
+    window.fenixShowBuildingDetails = function(building) {
+    const existing = document.getElementById('fenixBuildingDetailsModal');
+    if (existing) existing.remove();
+
+    const id = String(building?.id || 'bld-unknown').toLowerCase();
+    const isApi = id.includes('api') || id.includes('platform');
+    const isWarehouse = id.includes('deposito') || id.includes('logistics') || id.includes('mais') || id.includes('atacadista');
+    const isHq = id.includes('hq') || id.includes('command');
+
+    const name = building?.name && !building.name.startsWith('bld-') ? building.name : (isApi ? 'API Platform Corporation' : isWarehouse ? 'Depósito Mais / MF Atacadista' : isHq ? 'Fênix OS Executive HQ' : 'Edifício Corporativo');
+    const department = isApi ? 'Infraestrutura de APIs, Gateway Reverso & Model Providers' : isWarehouse ? 'Centro de Distribuição & Logística Atacadista' : isHq ? 'Comando Central & Governança de Agentes' : 'Departamento Operacional';
+    const projectTarget = isApi ? 'API-PLATAFORM' : isWarehouse ? 'DEPOSITO-MAIS-V2' : 'FENIX-CORE';
+
+    const modal = document.createElement('div');
+    modal.id = 'fenixBuildingDetailsModal';
+    modal.className = 'v14-city-agent-modal';
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(90vw,540px);background:#0c121e;border:1px solid rgba(0,217,255,0.4);border-radius:12px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.8),0 0 30px rgba(0,217,255,0.15);z-index:99999;color:#f8fafc;font-family:system-ui,-apple-system,sans-serif;';
+
+    modal.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:12px;">
+        <div>
+          <span style="font-size:10px;font-weight:800;letter-spacing:1px;color:#00d9ff;text-transform:uppercase;">DADOS DA EMPRESA · COMPLEXO 3D</span>
+          <h2 style="font-size:18px;font-weight:800;color:#f8fafc;margin:4px 0 0;">${name}</h2>
+          <p style="font-size:12px;color:#94a3b8;margin:3px 0 0;">${department}</p>
+        </div>
+        <button type="button" onclick="document.getElementById('fenixBuildingDetailsModal')?.remove()" style="background:transparent;border:none;color:#94a3b8;font-size:20px;cursor:pointer;padding:4px;">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;font-size:12px;">
+        <div><span style="color:#64748b;">Distrito:</span> <strong style="color:#e2e8f0;">${isApi ? 'Developer / API' : isWarehouse ? 'Logística / Varejo' : 'Executivo'}</strong></div>
+        <div><span style="color:#64748b;">Status:</span> <strong style="color:#10b981;">● OPERACIONAL 24/7</strong></div>
+        <div><span style="color:#64748b;">Estações Ativas:</span> <strong style="color:#e2e8f0;">${isApi ? '8 Workstations' : isWarehouse ? '12 Estações' : '6 Terminais'}</strong></div>
+        <div><span style="color:#64748b;">Agente Responsável:</span> <strong style="color:#38bdf8;">${isApi ? 'Alex Ops Lead' : isWarehouse ? 'Camila Warehouse Lead' : 'CEO Agent'}</strong></div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="fp-btn" onclick="document.getElementById('fenixBuildingDetailsModal')?.remove();window.fenixWorld3D?.resetCamera?.()" style="padding:8px 14px;background:rgba(255,255,255,0.05);color:#cbd5e1;border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;font-size:12px;">
+          ← Voltar para Cidade
+        </button>
+        <button type="button" class="fp-btn fp-btn-primary" onclick="document.getElementById('fenixBuildingDetailsModal')?.remove();window.showView?.('ide');if(typeof window.fenixSetCurrentProject==='function')window.fenixSetCurrentProject('${projectTarget}');" style="padding:8px 16px;background:linear-gradient(135deg,rgba(0,217,255,0.25),rgba(59,130,246,0.25));color:#00d9ff;border:1px solid rgba(0,217,255,0.4);border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;">
+          Abrir na IDE ↗
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  };
+
   render();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });

@@ -322,6 +322,36 @@
       cabinet.position.set(-dim.width / 2 + 0.8, 1.0, -0.6);
       interiorGroup.add(cabinet);
     }
+
+    // 7b. Supervisor 3D Humanoid seated at workstation
+    const supFigure = new T.Group();
+    supFigure.name = 'SupervisorFigure';
+    supFigure.position.set(0, 0.48, 0.35);
+
+    const supBodyMat = new T.MeshStandardMaterial({
+      color: archetype === 'warehouse' ? 0xd97706 : archetype === 'tech_cloud' ? 0x0284c7 : archetype === 'commerce_crm' ? 0x059669 : archetype === 'fintech' ? 0x7c3aed : 0x475569,
+      metalness: 0.3,
+      roughness: 0.6
+    });
+    const supHeadMat = new T.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.8 });
+    const torso = new T.Mesh(new T.BoxGeometry(0.38, 0.44, 0.22), supBodyMat);
+    torso.position.y = 0.38;
+    const head = new T.Mesh(new T.SphereGeometry(0.14, 10, 8), supHeadMat);
+    head.position.y = 0.72;
+    const armL = new T.Mesh(new T.BoxGeometry(0.09, 0.32, 0.09), supBodyMat);
+    armL.position.set(-0.24, 0.38, -0.1);
+    armL.rotation.x = Math.PI / 4;
+    const armR = new T.Mesh(new T.BoxGeometry(0.09, 0.32, 0.09), supBodyMat);
+    armR.position.set(0.24, 0.38, -0.1);
+    armR.rotation.x = Math.PI / 4;
+    supFigure.add(torso, head, armL, armR);
+
+    // Floating Role Badge above Supervisor
+    const supLabel = spriteLabel(`★ ${site.supervisor?.name || 'Supervisor'}`, '#38bdf8');
+    supLabel.scale.set(3.2, 0.65, 1);
+    supLabel.position.set(0, 1.15, 0);
+    supFigure.add(supLabel);
+    interiorGroup.add(supFigure);
     group.add(interiorGroup);
 
     // 8. Architectural Brand Totem Pylon & Status LED
@@ -366,7 +396,8 @@
       label,
       site,
       roofGroup,
-      interiorGroup
+      interiorGroup,
+      body
     };
   }
 
@@ -496,6 +527,10 @@
     if (node) {
       if (node.roofGroup) node.roofGroup.visible = false;
       if (node.interiorGroup) node.interiorGroup.visible = true;
+      if (node.body?.material) {
+        node.body.material.transparent = true;
+        node.body.material.opacity = 0.22;
+      }
       const targetPos = typeof THREE !== 'undefined' && typeof THREE.Vector3 === 'function' && node.group?.position?.clone
         ? node.group.position.clone().add(new THREE.Vector3(0, 1.4, 0))
         : { x: node.group?.position?.x || 0, y: 1.4, z: node.group?.position?.z || 0 };
@@ -535,6 +570,10 @@
         const isCurrent = id === activeProjId;
         if (pNode.roofGroup) pNode.roofGroup.visible = !isCurrent;
         if (pNode.interiorGroup) pNode.interiorGroup.visible = isCurrent;
+        if (pNode.body?.material) {
+          pNode.body.material.transparent = isCurrent;
+          pNode.body.material.opacity = isCurrent ? 0.22 : 1.0;
+        }
       }
     }
     saveNavigation(this);

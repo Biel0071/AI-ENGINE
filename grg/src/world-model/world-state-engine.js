@@ -250,7 +250,7 @@ const CANONICAL_BUILDINGS_DATA = {
     companyId: 'mf-atacadista',
     district: 'logistics',
     floors: 3,
-    coordinates: { x: 38.0, y: 0, z: 14.0 },
+    coordinates: { x: 29.0, y: 0, z: 14.0 },
     color: '#f59e0b'
   },
   'bld-zapai-crm': {
@@ -270,7 +270,7 @@ const CANONICAL_BUILDINGS_DATA = {
     companyId: 'fortlev-quote',
     district: 'commerce-district',
     floors: 3,
-    coordinates: { x: 56.0, y: 0, z: 14.0 },
+    coordinates: { x: 22.0, y: 0, z: 24.0 },
     color: '#0284c7'
   }
 };
@@ -1307,11 +1307,11 @@ Responda diretamente em português como o agente operacional em primeira pessoa,
         companyId: companyOrAgent.companyId || 'mf-atacadista',
         companyName: companyOrAgent.company || 'MF Atacadista',
         waypoints: [
-          { x: 38, y: 14, task: '/goal · Gestão de Atacado & Pedidos B2B' },
-          { x: 30, y: 14, task: '/browser · Catálogo de Produtos & Estoque' },
-          { x: 34, y: 22, task: '/plan · Planejamento de Carga & Distribuição' },
-          { x: 42, y: 22, task: '/boost · Faturamento Expresso & NF-e' },
-          { x: 46, y: 14, task: '/learn · Auditoria de Inventário Atacadista' }
+          { x: 29, y: 14, task: '/goal · Gestão de Atacado & Pedidos B2B' },
+          { x: 26, y: 14, task: '/browser · Catálogo de Produtos & Estoque' },
+          { x: 32, y: 14, task: '/plan · Planejamento de Carga & Distribuição' },
+          { x: 29, y: 18, task: '/boost · Faturamento Expresso & NF-e' },
+          { x: 32, y: 18, task: '/learn · Auditoria de Inventário Atacadista' }
         ]
       };
     }
@@ -1323,9 +1323,9 @@ Responda diretamente em português como o agente operacional em primeira pessoa,
         companyName: companyOrAgent.company || 'ZapAI CRM',
         waypoints: [
           { x: 20, y: 14, task: '/goal · Atendimento Omnichannel & CRM 24/7' },
-          { x: 14, y: 14, task: '/browser · Gestão de Conversas WhatsApp' },
-          { x: 26, y: 14, task: '/plan · Pipeline de Leads & Funil de Vendas' },
-          { x: 20, y: 22, task: '/boost · Automação de Disparo & Webhooks' }
+          { x: 17, y: 14, task: '/browser · Gestão de Conversas WhatsApp' },
+          { x: 23, y: 14, task: '/plan · Pipeline de Leads & Funil de Vendas' },
+          { x: 20, y: 18, task: '/boost · Automação de Disparo & Webhooks' }
         ]
       };
     }
@@ -1336,9 +1336,10 @@ Responda diretamente em português como o agente operacional em primeira pessoa,
         companyId: companyOrAgent.companyId || 'fortlev-quote',
         companyName: companyOrAgent.company || 'Fortlev Quote',
         waypoints: [
-          { x: 56, y: 14, task: '/goal · Motor de Orçamentos & Regras Comerciais' },
-          { x: 50, y: 14, task: '/browser · Tabela de Preços & Frete Dinâmico' },
-          { x: 62, y: 14, task: '/plan · Simulação de Pedidos em Lote' }
+          { x: 22, y: 24, task: '/goal · Motor de Orçamentos & Regras Comerciais' },
+          { x: 19, y: 24, task: '/browser · Tabela de Preços & Frete Dinâmico' },
+          { x: 25, y: 24, task: '/plan · Simulação de Pedidos em Lote' },
+          { x: 22, y: 28, task: '/boost · Políticas de Desconto & Margem' }
         ]
       };
     }

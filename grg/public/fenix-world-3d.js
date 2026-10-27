@@ -902,8 +902,11 @@
       this.addEdge('dep_dock2', 'dep_apron');
       this.addEdge('dep_apron', 'dep_gate');
 
-      // 2. City Central Arteries & Ring Road
-      this.addNode('road_center', { x: 0.0, y: 0.2, z: 0.0 }, 'road', 0);
+      // 2. City Central Arteries & Fênix HQ Perimeter Ring Road (Detour around HQ)
+      this.addNode('road_hq_n', { x: 0.0, y: 0.2, z: 16.0 }, 'road', 0);
+      this.addNode('road_hq_s', { x: 0.0, y: 0.2, z: -16.0 }, 'road', 0);
+      this.addNode('road_hq_e', { x: 16.0, y: 0.2, z: 0.0 }, 'road', 0);
+      this.addNode('road_hq_w', { x: -16.0, y: 0.2, z: 0.0 }, 'road', 0);
       this.addNode('road_north', { x: 0.0, y: 0.2, z: 24.0 }, 'road', 0);
       this.addNode('road_south', { x: 0.0, y: 0.2, z: -24.0 }, 'road', 0);
       this.addNode('road_east', { x: 28.0, y: 0.2, z: 0.0 }, 'road', 0);
@@ -913,10 +916,18 @@
       this.addNode('road_se', { x: 28.0, y: 0.2, z: -24.0 }, 'road', 0);
       this.addNode('road_sw', { x: -28.0, y: 0.2, z: -24.0 }, 'road', 0);
 
-      this.addEdge('road_center', 'road_north');
-      this.addEdge('road_center', 'road_south');
-      this.addEdge('road_center', 'road_east');
-      this.addEdge('road_center', 'road_west');
+      // Perimeter Ring around HQ
+      this.addEdge('road_hq_n', 'road_hq_e');
+      this.addEdge('road_hq_e', 'road_hq_s');
+      this.addEdge('road_hq_s', 'road_hq_w');
+      this.addEdge('road_hq_w', 'road_hq_n');
+
+      // Connect perimeter ring to cardinal arteries
+      this.addEdge('road_hq_n', 'road_north');
+      this.addEdge('road_hq_s', 'road_south');
+      this.addEdge('road_hq_e', 'road_east');
+      this.addEdge('road_hq_w', 'road_west');
+
       this.addEdge('road_north', 'road_ne');
       this.addEdge('road_north', 'road_nw');
       this.addEdge('road_south', 'road_se');
@@ -930,11 +941,11 @@
       this.addNode('road_dep_junction', { x: 22.0, y: 0.2, z: -12.0 }, 'road', 0);
       this.addEdge('dep_gate', 'road_dep_junction');
       this.addEdge('road_dep_junction', 'road_se');
-      this.addEdge('road_dep_junction', 'road_center');
+      this.addEdge('road_dep_junction', 'road_hq_e');
 
       // 4. API Platform & Western Tech Hub
       this.addNode('road_api_junction', { x: -28.0, y: 0.2, z: -14.0 }, 'road', 0);
-      this.addEdge('road_center', 'road_api_junction');
+      this.addEdge('road_hq_w', 'road_api_junction');
       this.addEdge('road_sw', 'road_api_junction');
 
       this.addNode('api_plaza', atApi(-18.0, 0.5, 10.0), 'plaza', 0);
@@ -968,25 +979,41 @@
       this.addEdge('api_lift_f3', 'api_f3_sora');
 
       // 5. Eastern Corporate District Avenues (Sidewalk Network connecting Project Parcels)
-      const aveZ = [4, 12, 20, 28, 36, 44, 52, 60, 68];
-      const crossX = [18, 35, 52, 70];
+      const aveZ = [30, 38, 46, 54, 62, 70];
+      const crossX = [38, 50, 62, 74, 84];
 
       aveZ.forEach((zVal, zIdx) => {
         crossX.forEach((xVal, xIdx) => {
+          if (typeof this.isPointInObstacle === 'function' && this.isPointInObstacle(xVal, zVal, 1.2)) return;
           const nodeId = `corp_node_${xIdx}_${zIdx}`;
           this.addNode(nodeId, { x: xVal, y: 0.2, z: zVal }, 'avenue', 0);
-          if (xIdx > 0) {
-            this.addEdge(nodeId, `corp_node_${xIdx - 1}_${zIdx}`);
+          if (xIdx > 0 && this.nodes) {
+            const leftId = `corp_node_${xIdx - 1}_${zIdx}`;
+            const noCross = typeof this.doesSegmentCrossObstacle === 'function'
+              ? !this.doesSegmentCrossObstacle(this.nodes.get(leftId)?.pos, { x: xVal, y: 0.2, z: zVal }, 0.35)
+              : true;
+            if (this.nodes.has(leftId) && noCross) {
+              this.addEdge(nodeId, leftId);
+            }
           }
-          if (zIdx > 0) {
-            this.addEdge(nodeId, `corp_node_${xIdx}_${zIdx - 1}`);
+          if (zIdx > 0 && this.nodes) {
+            const downId = `corp_node_${xIdx}_${zIdx - 1}`;
+            const noCross = typeof this.doesSegmentCrossObstacle === 'function'
+              ? !this.doesSegmentCrossObstacle(this.nodes.get(downId)?.pos, { x: xVal, y: 0.2, z: zVal }, 0.35)
+              : true;
+            if (this.nodes.has(downId) && noCross) {
+              this.addEdge(nodeId, downId);
+            }
           }
         });
       });
 
-      this.addEdge('corp_node_0_0', 'road_east');
-      this.addEdge('corp_node_1_0', 'road_ne');
-      this.addEdge('corp_node_0_2', 'road_ne');
+      if (this.nodes?.has('corp_node_0_0')) {
+        this.addEdge('corp_node_0_0', 'road_ne');
+      }
+      if (this.nodes?.has('corp_node_1_0')) {
+        this.addEdge('corp_node_1_0', 'road_ne');
+      }
 
       // 6. Northern & Western District Connections
       this.addNode('dev_plaza', { x: -48.0, y: 0.2, z: 42.0 }, 'plaza', 0);
@@ -999,6 +1026,17 @@
     findPath(startPos, endPos) {
       const targetVec = endPos instanceof T.Vector3 ? endPos.clone() : new T.Vector3(endPos.x, endPos.y !== undefined ? endPos.y : 0.8, endPos.z !== undefined ? endPos.z : endPos.y);
       const startVec = startPos instanceof T.Vector3 ? startPos.clone() : new T.Vector3(startPos.x, startPos.y !== undefined ? startPos.y : 0.8, startPos.z !== undefined ? startPos.z : startPos.y);
+
+      // If target is inside an obstacle, route to its accessible entrance doorway
+      for (const obs of this.obstacles.values()) {
+        if (targetVec.x >= obs.minX - 0.2 && targetVec.x <= obs.maxX + 0.2 &&
+            targetVec.z >= obs.minZ - 0.2 && targetVec.z <= obs.maxZ + 0.2) {
+          if (obs.entryPos) {
+            targetVec.set(obs.entryPos.x, targetVec.y, obs.entryPos.z);
+          }
+          break;
+        }
+      }
 
       if (!this.doesSegmentCrossObstacle(startVec, targetVec, 0.4)) {
         return [targetVec];
@@ -1078,6 +1116,7 @@
 
         for (const neighbor of neighbors) {
           const nPos = this.nodes.get(neighbor).pos;
+          if (this.doesSegmentCrossObstacle(currentPos, nPos, 0.35)) continue;
           const tentativeG = (gScore.get(current) ?? Infinity) + currentPos.distanceTo(nPos);
           if (tentativeG < (gScore.get(neighbor) ?? Infinity)) {
             cameFrom.set(neighbor, current);
@@ -1365,7 +1404,10 @@
         { id: 'bld-ai-nexus', minX: -34, maxX: -8, minZ: -73, maxZ: -47, entryPos: { x: -21, y: 0.2, z: -45 }, name: 'AI Nexus Quantum Dome' },
         { id: 'bld-project-forge', minX: 14, maxX: 36, minZ: 47, maxZ: 67, entryPos: { x: 25, y: 0.2, z: 45 }, name: 'Project Forge Plant' },
         { id: 'bld-memory-vault', minX: -34, maxX: -14, minZ: 46, maxZ: 68, entryPos: { x: -24, y: 0.2, z: 44 }, name: 'Memory Vault Data Bunker' },
-        { id: 'bld-observatory', minX: 40, maxX: 62, minZ: 4, maxZ: 26, entryPos: { x: 38, y: 0.2, z: 15 }, name: 'Observatório 24/7' }
+        { id: 'bld-observatory', minX: 40, maxX: 62, minZ: 4, maxZ: 26, entryPos: { x: 38, y: 0.2, z: 15 }, name: 'Observatório 24/7' },
+        { id: 'bld-mf-atacadista', minX: 25, maxX: 33, minZ: 10, maxZ: 18, entryPos: { x: 29, y: 0.2, z: 19 }, name: 'MF Atacadista Centro de Distribuição & Atacado' },
+        { id: 'bld-zapai-crm', minX: 16, maxX: 24, minZ: 10, maxZ: 18, entryPos: { x: 20, y: 0.2, z: 19 }, name: 'ZapAI CRM & Atendimento Omnichannel' },
+        { id: 'bld-fortlev-quote', minX: 18, maxX: 26, minZ: 20, maxZ: 28, entryPos: { x: 22, y: 0.2, z: 29 }, name: 'Fortlev Quote Commerce & Orçamentos B2B' }
       ];
       for (const obs of heroObstacles) {
         this.registerObstacle(obs.id, obs);
@@ -1441,9 +1483,34 @@
       return true;
     }
 
+    _cleanAgentTask(raw) {
+      if (!raw) return '';
+      const s = String(raw).trim();
+      const slashMatch = s.match(/^\/([a-zA-Z0-9_-]+)(?:\s*·\s*(.*))?$/);
+      if (slashMatch) {
+        const cmd = slashMatch[1];
+        const rest = slashMatch[2] ? slashMatch[2].trim() : '';
+        if (rest) return rest;
+        const cmdMap = {
+          'teamwork-preview': 'Sincronização de Enxame 3D',
+          'goal': 'Execução de Meta Autônoma',
+          'plan': 'Planejamento Arquitetural',
+          'browser': 'Navegação & Inspeção Web',
+          'grill-me': 'Auditoria Crítica de Qualidade',
+          'boost': 'Otimização & Deploy Canônico',
+          'learn': 'Consolidação de Memória Ativa',
+          'automation': 'Fluxo Operacional Automatizado',
+          'schedule': 'Agendamento de Rotinas'
+        };
+        return cmdMap[cmd] || `Operação · ${cmd}`;
+      }
+      return s;
+    }
+
     _resolveAgentActivity(agent = {}) {
       const status = String(agent.status || agent.state || '').toUpperCase();
-      const task = String(agent.currentTask || agent.assignedTask || '').trim().slice(0, 52);
+      const rawTask = String(agent.currentTask || agent.assignedTask || '').trim();
+      const task = this._cleanAgentTask(rawTask).slice(0, 52);
       if (String(agent.movementState || '').toUpperCase() === 'WALKING') {
         return { key: 'walking', text: task ? `A caminho · ${task}` : 'Em deslocamento', icon: '➜', color: '#38bdf8' };
       }
@@ -2577,27 +2644,18 @@
       const infraGroup = new T.Group();
       infraGroup.name = 'UrbanInfraGroup';
 
-      // 1. High-Detail Multi-Tier Urban & District Landscaping (45+ Trees & Hedges)
+      // 1. High-Detail Multi-Tier Urban & District Landscaping (Zero-collision parks)
       const treeCoords = [
-        // AI Nexus & Northern Parks
-        [-20, -32, 'deciduous'], [-28, -36, 'pine'], [-35, -28, 'flowering'],
-        [-14, -28, 'flowering'], [-32, -20, 'pine'], [-16, -38, 'deciduous'],
-        // Dev Loft & Western Boulevards
-        [-36, 12, 'deciduous'], [-34, 22, 'pine'], [-38, 4, 'flowering'],
-        [-22, 28, 'deciduous'], [-32, 34, 'pine'], [-28, 42, 'deciduous'],
-        [-16, 36, 'flowering'], [-12, 42, 'deciduous'], [-38, 28, 'pine'],
-        // Memory Vault & Southern Grounds
-        [-16, 22, 'pine'], [-2, 36, 'deciduous'], [4, 40, 'flowering'],
-        [10, 34, 'deciduous'], [16, 40, 'pine'], [-8, 42, 'deciduous'],
-        // Western Eco-Park & Northern Promenade Green Belts (Collision-free)
-        [-72, 32, 'pine'], [-68, 44, 'deciduous'], [-64, 18, 'pine'],
-        [-28, 48, 'deciduous'], [-16, 52, 'pine'], [8, 52, 'deciduous'],
-        // Depósito Mais Perimeter & Landscaping
-        [42, -4, 'flowering'], [45, -16, 'pine'], [44, -26, 'deciduous'],
-        [45, -34, 'pine'], [36, -34, 'deciduous'], [26, -36, 'pine'],
-        [14, -36, 'flowering'], [12, -26, 'deciduous'], [8, -34, 'pine'],
-        // Central Civic Plaza Greenery
-        [-14, -14, 'flowering'], [14, -14, 'flowering'], [-14, 14, 'flowering'], [14, 14, 'flowering']
+        [-46, -48, 'pine'], [-52, -50, 'deciduous'], [-40, -54, 'pine'],
+        [-48, -54, 'flowering'], [-54, -46, 'deciduous'], [-38, -50, 'flowering'],
+        [-38, 22, 'deciduous'], [-44, 26, 'pine'], [-38, 34, 'flowering'],
+        [-48, 22, 'deciduous'], [-46, 32, 'pine'], [-52, 26, 'flowering'],
+        [-42, 38, 'flowering'], [-48, 38, 'deciduous'], [-36, 40, 'pine'],
+        [-74, 18, 'pine'], [-76, 28, 'flowering'], [-72, 36, 'deciduous'],
+        [-74, -20, 'pine'], [-76, -30, 'flowering'], [-72, -10, 'deciduous'],
+        [-22, 22, 'flowering'], [22, 22, 'flowering'], [-22, -22, 'flowering'],
+        [-24, 14, 'deciduous'], [-24, -14, 'pine'],
+        [-12, 34, 'deciduous'], [12, 34, 'pine'], [-12, 42, 'flowering'], [12, 42, 'deciduous']
       ];
       treeCoords.forEach(([x, z, type]) => {
         if (this.isPointInObstacle(x, z, 3.2)) return;
@@ -6703,6 +6761,15 @@
       this.dynamicBuildings.set(id, bldRecord);
       this.buildings?.set?.(id, bldRecord);
 
+      this.registerObstacle(id, {
+        minX: coords.x - width / 2,
+        maxX: coords.x + width / 2,
+        minZ: coords.z - depth / 2,
+        maxZ: coords.z + depth / 2,
+        entryPos: { x: coords.x, y: 0.2, z: coords.z + depth / 2 + 0.8 },
+        name
+      });
+
       console.log(`[FenixWorld3D] ✅ Dynamic Building instantiated: ${name} (${id}) at (${coords.x}, ${coords.z})`);
       return { ok: true, id, name, position: coords, floors };
     }
@@ -7114,7 +7181,7 @@
               z: Number(nextWp.z !== undefined ? nextWp.z : nextWp.y)
             };
             if (nextWp.task && agentRecord.thoughtBubble) {
-              const cleanTask = String(nextWp.task).replace(/^\/[a-zA-Z0-9_-]+\s*(·\s*)?/, '').trim() || nextWp.task;
+              const cleanTask = this._cleanAgentTask(nextWp.task);
               agentRecord.currentTask = cleanTask;
               agentRecord.thoughtBubble.setText(`A caminho · ${cleanTask}`, '➜', '#38bdf8');
             }
@@ -7232,7 +7299,7 @@
       const status = document.getElementById('fenixMinimapStatus');
       const measuredBuildingsCount = (this.buildings instanceof Map ? this.buildings.size : 0) || buildings.length;
       if (status) status.textContent = this.telemetryStatus === 'MEASURED'
-        ? `${activeAgents || visibleAgents} ativos / ${totalAgents || visibleAgents} total · ${measuredBuildingsCount} prédios`
+        ? `${visibleAgents} no mapa · ${measuredBuildingsCount} prédios medidos`
         : this.telemetryStatus === 'PARTIAL' ? 'Leitura parcial da API'
           : this.telemetryStatus === 'CONNECTING' ? 'Sincronizando telemetria…' : 'Telemetria indisponível';
 
@@ -7756,26 +7823,26 @@
         });
       }
 
-      // 3b. Thought Bubble Anti-Clumping Pass (Deconflict Overlapping Bubbles)
+      // 3b. Thought Bubble Anti-Clumping Pass (Multi-tier vertical & horizontal offsets)
       if (this.agents && this.agents.size > 1) {
         const agentList = Array.from(this.agents.values());
         for (let i = 0; i < agentList.length; i++) {
           const a1 = agentList[i];
           const sprite1 = a1?.thoughtBubble?.sprite;
           if (!sprite1 || !a1?.mesh) continue;
-          let isClumped = false;
+          let clusterRank = 0;
           for (let j = 0; j < i; j++) {
             const a2 = agentList[j];
-            const sprite2 = a2?.thoughtBubble?.sprite;
-            if (!sprite2 || !a2?.mesh) continue;
+            if (!a2?.thoughtBubble?.sprite || !a2?.mesh) continue;
             const dist = a1.mesh.position.distanceTo(a2.mesh.position);
-            if (dist < 3.8) {
-              isClumped = true;
-              break;
+            if (dist < 4.2) {
+              clusterRank++;
             }
           }
-          const targetY = isClumped ? 3.35 : 2.45;
-          sprite1.position.y += (targetY - sprite1.position.y) * 0.12;
+          const targetY = 2.45 + (clusterRank % 3) * 0.95;
+          const targetX = clusterRank === 1 ? -0.85 : clusterRank === 2 ? 0.85 : 0.0;
+          sprite1.position.y += (targetY - sprite1.position.y) * 0.15;
+          sprite1.position.x += (targetX - sprite1.position.x) * 0.15;
         }
       }
 
@@ -7790,6 +7857,11 @@
             const targetY = isInterior ? 12.0 : 0.0;
             pNode.roofGroup.position.y += (targetY - pNode.roofGroup.position.y) * 0.1;
             pNode.roofGroup.visible = pNode.roofGroup.position.y < 11.5;
+          }
+          if (pNode.body && pNode.body.material) {
+            const targetOpacity = isInterior ? 0.22 : 0.92;
+            pNode.body.material.opacity += (targetOpacity - pNode.body.material.opacity) * 0.15;
+            pNode.body.material.transparent = true;
           }
           if (pNode.interiorGroup) {
             pNode.interiorGroup.visible = isInterior || (pNode.roofGroup && pNode.roofGroup.position.y > 1.0);

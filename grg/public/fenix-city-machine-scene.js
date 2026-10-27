@@ -8,10 +8,10 @@
   const MACHINE_ANCHOR = Object.freeze({ x: -18, z: 2 });
   const MACHINE_COLUMNS = 4;
   const MACHINE_SPACING = 3.2;
-  const PROJECT_ANCHOR = Object.freeze({ x: 44, z: 4 });
+  const PROJECT_ANCHOR = Object.freeze({ x: 63, z: 32 });
   const PROJECT_COLUMNS = 7;
-  const PROJECT_SPACING_X = 9.8;
-  const PROJECT_SPACING_Z = 7.6;
+  const PROJECT_SPACING_X = 7.2;
+  const PROJECT_SPACING_Z = 7.0;
   const PROJECT_SPACING = PROJECT_SPACING_X;
   const PROJECT_COLORS = Object.freeze(['#4e8f88', '#657ea0', '#9a8053', '#806d9b', '#4e8492']);
   const LOGISTICS_TRAFFIC_ROUTE = Object.freeze({ x: 22, startZ: -37, endZ: -4, speed: 3.4 });

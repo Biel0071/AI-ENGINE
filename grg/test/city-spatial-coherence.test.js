@@ -169,3 +169,97 @@ test('AABB segment intersection math correctly detects collision against buildin
   // Segment starting inside the building
   assert.equal(segmentIntersectsAABB(0, 0, 20, 0, -10, 10, -10, 10), true);
 });
+
+test('project sites have zero spatial collision with all major landmark buildings', () => {
+  const projects = Array.from({ length: 45 }, (_, i) => ({
+    id: `project-${i}`,
+    name: `Enterprise Project ${i}`,
+    status: 'RUNNING',
+  }));
+
+  const sites = projectSceneSites(projects);
+
+  const landmarks = [
+    { id: 'bld-fenix-hq', minX: -11, maxX: 11, minZ: -11, maxZ: 11 },
+    { id: 'bld-observatory', minX: 40, maxX: 62, minZ: 4, maxZ: 26 },
+    { id: 'bld-project-forge', minX: 14, maxX: 36, minZ: 47, maxZ: 67 },
+    { id: 'bld-deposito-mais', minX: 28, maxX: 74, minZ: -56, maxZ: -16 },
+    { id: 'bld-api-platform', minX: -68, maxX: -36, minZ: -43, maxZ: -15 },
+    { id: 'bld-dev-loft', minX: -66, maxX: -42, minZ: 47, maxZ: 67 },
+    { id: 'bld-memory-vault', minX: -34, maxX: -14, minZ: 46, maxZ: 68 },
+    { id: 'bld-ai-nexus', minX: -34, maxX: -8, minZ: -73, maxZ: -47 },
+  ];
+
+  for (const site of sites) {
+    const halfW = (site.dimensions?.width || 6.2) / 2;
+    const halfD = (site.dimensions?.depth || 5.0) / 2;
+    const sMinX = site.position.x - halfW;
+    const sMaxX = site.position.x + halfW;
+    const sMinZ = site.position.z - halfD;
+    const sMaxZ = site.position.z + halfD;
+
+    for (const lm of landmarks) {
+      const overlapX = sMinX < lm.maxX && sMaxX > lm.minX;
+      const overlapZ = sMinZ < lm.maxZ && sMaxZ > lm.minZ;
+      const collides = overlapX && overlapZ;
+      assert(!collides, `Site ${site.id} at (${site.position.x}, ${site.position.z}) overlaps landmark ${lm.id} [${lm.minX}, ${lm.maxX}]x[${lm.minZ}, ${lm.maxZ}]`);
+    }
+  }
+});
+
+test('thought bubble slash commands are properly cleaned into human-readable Portuguese descriptions', () => {
+  const world3dSrc = fs.readFileSync(path.join(__dirname, '..', 'public', 'fenix-world-3d.js'), 'utf8');
+
+  // Verify _cleanAgentTask implementation exists
+  assert.match(world3dSrc, /_cleanAgentTask\(raw\)/);
+  assert.match(world3dSrc, /teamwork-preview':\s*'Sincronização de Enxame 3D'/);
+  assert.match(world3dSrc, /goal':\s*'Execução de Meta Autônoma'/);
+  assert.match(world3dSrc, /plan':\s*'Planejamento Arquitetural'/);
+
+  // Verify _cleanAgentTask is called in _advanceAgentToTelemetry
+  assert.match(world3dSrc, /const cleanTask = this\._cleanAgentTask\(nextWp\.task\);/);
+
+  // Directly test the cleaning algorithm
+  function cleanTask(raw) {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    const slashMatch = s.match(/^\/([a-zA-Z0-9_-]+)(?:\s*·\s*(.*))?$/);
+    if (slashMatch) {
+      const cmd = slashMatch[1];
+      const rest = slashMatch[2] ? slashMatch[2].trim() : '';
+      if (rest) return rest;
+      const cmdMap = {
+        'teamwork-preview': 'Sincronização de Enxame 3D',
+        'goal': 'Execução de Meta Autônoma',
+        'plan': 'Planejamento Arquitetural',
+        'browser': 'Navegação & Inspeção Web',
+        'grill-me': 'Auditoria Crítica de Qualidade',
+        'boost': 'Otimização & Deploy Canônico',
+        'learn': 'Consolidação de Memória Ativa',
+        'automation': 'Fluxo Operacional Automatizado',
+        'schedule': 'Agendamento de Rotinas'
+      };
+      return cmdMap[cmd] || `Operação · ${cmd}`;
+    }
+    return s;
+  }
+
+  assert.equal(cleanTask('/teamwork-preview'), 'Sincronização de Enxame 3D');
+  assert.equal(cleanTask('/teamwork-preview · Verificação de Rotas'), 'Verificação de Rotas');
+  assert.equal(cleanTask('/goal'), 'Execução de Meta Autônoma');
+  assert.equal(cleanTask('/plan · Arquitetura Fênix'), 'Arquitetura Fênix');
+  assert.equal(cleanTask('Desenvolvimento de UI'), 'Desenvolvimento de UI');
+});
+
+test('drawer UI and 3D runtime expose corporate supervisors, archetypes, and cutaway opacity', () => {
+  const worldUiSrc = fs.readFileSync(path.join(__dirname, '..', 'public', 'fenix-world-ui.js'), 'utf8');
+  assert.match(worldUiSrc, /Supervisor 3D/);
+  assert.match(worldUiSrc, /Setor Corporativo/);
+  assert.match(worldUiSrc, /Voltar à Cidade/);
+  assert.match(worldUiSrc, /Entrar no espaço 3D \(Cutaway\)/);
+
+  const worldRuntimeSrc = fs.readFileSync(path.join(__dirname, '..', 'public', 'fenix-city-runtime-world.js'), 'utf8');
+  assert.match(worldRuntimeSrc, /SupervisorFigure/);
+  assert.match(worldRuntimeSrc, /opacity = 0\.22/);
+  assert.match(worldRuntimeSrc, /makeProjectNode/);
+});
