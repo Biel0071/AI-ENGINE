@@ -8,7 +8,7 @@
 
 ## 1. RESUMO EXECUTIVO DO ESTADO ATUAL
 
-- **Data da Última Sincronização**: 27/10/2026 20:59:52 (Atualização Automática)
+- **Data da Última Sincronização**: 27/10/2026 22:51:35 (Atualização Automática)
 - **Status Geral**: OPERACIONAL & AUDITÁVEL (100% Zero-Mock Compliance)
 - **Frontend Canônico Único**: [ai-engine/grg/public/index.html](file:///c:/projetos/ai-engine-core/ai-engine/grg/public/index.html) (14 views vanilla integradas + Marketplace)
 - **Servidor de Aplicação**: [ai-engine/grg/src/server.js](file:///c:/projetos/ai-engine-core/ai-engine/grg/src/server.js) (Porta 4400 Local / Porta 4410 VPS)
@@ -23,10 +23,18 @@
 - **Diagnóstico operacional (09/10/2026)**: a varredura de 9 componentes passou de 92 para no máximo 30 atualizações totais no teste, mantendo eventos e projeções individuais. VPS: disco 92%, swap em uso ~961 MiB, CPU steal de 41–42% nas últimas amostras; API Platform `/health` 200 no IP público.
 - **Alteração técnica**: eventos e auditoria são persistidos em lotes, enquanto Cidade, versões e twin são projetados uma vez por lote; heartbeat entre lotes continua ativo. Os 40 testes focados e quatro gates canônicos passaram. A suíte completa ainda tem falhas em áreas fora deste diff.
 - **Deploy/validação**: commit `79f83be1` adicionou o setter Redis esperado pelo `app.js` da VPS, corrigiu a falha revelada na primeira recarga e estabilizou o PM2; Fênix, frontend e API Platform responderam 200 após o segundo deploy.
-- **Bateria de Testes Canônica Obrigatória (100% PASS — 56/56 Verificações)**:
+- **Bateria de Testes Canônica Obrigatória (100% PASS — 63/63 Verificações)**:
   - `architecture-guard.test.js`: 5/5 Aprovado (Zero shells paralelas)
   - `frontend-honesty.test.js`: 19/19 Aprovado (Zero métricas fabricadas)
   - `frontend-runtime-safety.test.js`: 5/5 Aprovado (Segurança de API e IDE)
+  - `project-control-center-phase-a.test.js`: 7/7 Aprovado (Phase A Control Center, Bind Workspace, Service Status, Layout)
+  - `project-ide-preview-url.test.js`: 10/10 Aprovado (Previews isolados e honestos)
+  - `project-hub-unavailable-state.test.js`: 2/2 Aprovado (Tratamento de ausência e sessão)
+  - `project-hub-operational-status.test.js`: 1/1 Aprovado (Separação telemetria vs catálogo)
+  - `project-hub-lazy-startup.test.js`: 1/1 Aprovado (Carregamento sob demanda)
+  - `project-workspace-git-root.test.js`: 2/2 Aprovado (Fronteiras Git e isolamento de workspace)
+  - `project-workspace-registry-fallback.test.js`: 4/4 Aprovado (Resolução resiliente de caminhos)
+  - `local-project-catalog-ui.test.js`: 1/1 Aprovado (Playwright em 4 resoluções 375px–1920px)
   - `runtime-lifecycle.test.js`: 4/4 Aprovado (Idempotência e Zero Handles/Leaks)
   - `job-governance-telemetry.test.js`: 4/4 Aprovado (Controle de Filas e Telemetria)
   - `forensic-inspect-file.test.js`: 3/3 Aprovado (Inspeção Binária/Forense e Layout)
@@ -34,6 +42,12 @@
   - `reality-sync-audit.test.js`: 5/5 Aprovado (Sincronismo Factual e Provedores)
   - `universal-engineering-reciprocity.test.js`: 6/6 Aprovado (Regra Constitucional Nº 1 & Reciprocidade)
   - `e2e-smoke.test.js`: 1/1 Aprovado (Navegação completa E2E, Auth, WebSocket, Avatar)
+- **FASE A — Project Control Center (Concluída & Validada)**:
+  - Catálogo amplo e não-apertado: `#flpCards` expande até 500px em desktops wide e grade 100% tela cheia (`data-full-launcher="true"`).
+  - Central de Descoberta & Recuperação de Workspace: mensagem honesta preservada com card de diagnóstico claro (VPS Linux vs PC local), botão 1-clique para clonar repositório Git e formulário para vincular pasta local existente (`POST /api/fenix/projects/:id/bind-workspace`).
+  - Gerenciador de Portas, URLs & Serviços: nova aba dedicada (`ports`) com medição de socket TCP ao vivo (`GET /api/fenix/projects/:id/service-status`), exibição de latência real em ms, links diretos e zero mocks.
+  - Modo Foco de Detalhe: botão `[ ⛶ Foco ]` / `[ ▦ Ver Grade ]` permitindo visualização de detalhe em 100% de largura.
+  - Correção de previews do Visual IDE: `getPreviewUrlForProject` retorna `''` para projetos sem binding de frontend registrado em vez de substituir pela interface do Fênix.
 
 ---
 

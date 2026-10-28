@@ -25,7 +25,13 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
     if (!catalogFile) return reply(404, { error: 'Project logo is unavailable' });
     try {
       const catalogRoot = fs.realpathSync(path.dirname(catalogFile));
-      const logosDirectory = path.join(catalogRoot, 'logos');
+      let logosDirectory = path.join(catalogRoot, 'logos');
+      if (!fs.existsSync(logosDirectory)) {
+        logosDirectory = path.resolve(__dirname, '..', '..', 'public', 'assets', 'logos');
+      }
+      if (!fs.existsSync(logosDirectory)) {
+        logosDirectory = path.resolve(__dirname, '..', '..', 'memory', 'logos');
+      }
       if (fs.lstatSync(logosDirectory).isSymbolicLink()) return reply(404, { error: 'Project logo is unavailable' });
       const logosRoot = fs.realpathSync(logosDirectory);
       const logoPath = path.join(logosRoot, `${project.logoId}.png`);
@@ -42,6 +48,173 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
       return true;
     } catch { return reply(404, { error: 'Project logo is unavailable' }); }
   }
+
+  const bindMatch = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/bind-workspace$/);
+  if (req.method === 'POST' && bindMatch) {
+    await app.controlPlane.authorize(tenantId, actorId, 'project:write');
+    const projectId = decodeURIComponent(bindMatch[1]);
+    const body = await readJson(req).catch(() => ({}));
+    const targetPath = String(body?.path || '').trim();
+    if (!targetPath) return reply(400, { error: 'Caminho do workspace é obrigatório' });
+    let resolved;
+    try {
+      if (!fs.existsSync(targetPath)) return reply(404, { error: `Caminho '${targetPath}' não existe neste computador` });
+      resolved = fs.realpathSync(targetPath);
+      const stat = fs.statSync(resolved);
+      if (!stat.isDirectory()) return reply(400, { error: 'O caminho especificado deve ser uma pasta válida' });
+    } catch (err) {
+      return reply(400, { error: `Falha ao validar pasta: ${err.message}` });
+    }
+    const state = await app.store.read();
+    if (!Array.isArray(state.projects)) state.projects = [];
+    let stored = state.projects.find((p) => (!p.tenantId || p.tenantId === tenantId) && (
+      p.id === projectId || p.projectId === projectId || p.catalogId === projectId ||
+      `local-${p.id}` === projectId || p.id === `local-${projectId}`
+    ));
+    if (stored) {
+      stored.workspace = resolved;
+      stored.workspaceAvailable = true;
+    } else {
+      state.projects.push({ id: projectId, tenantId, name: projectId, workspace: resolved, workspaceAvailable: true });
+    }
+    await app.store.write(state);
+    if (app.audit?.record) {
+      await app.audit.record({ tenantId, actorId, action: 'project.workspace.bound', resource: { projectId, workspace: resolved } });
+    }
+    return reply(200, { ok: true, projectId, workspace: resolved, workspaceAvailable: true });
+  }
+
+  const cloneMatch = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/clone-workspace$/);
+  if (req.method === 'POST' && cloneMatch) {
+    await app.controlPlane.authorize(tenantId, actorId, 'project:write');
+    const projectId = decodeURIComponent(cloneMatch[1]);
+    const body = await readJson(req).catch(() => ({}));
+    let regProj = null;
+    try {
+      const registry = require('../projects/project-registry');
+      if (typeof registry.getProjectById === 'function') regProj = registry.getProjectById(projectId);
+    } catch {}
+    let localProj = null;
+    try {
+      const catalog = require('../projects/local-project-catalog');
+      if (typeof catalog.getLocalProjectById === 'function') localProj = catalog.getLocalProjectById(projectId);
+    } catch {}
+    const repository = String(body?.repository || regProj?.repository || localProj?.repository || '').trim();
+    if (!repository) return reply(400, { error: 'Repositório Git não cadastrado para este projeto' });
+
+    const projectsRoot = path.resolve(__dirname, '../../../../projects');
+    fs.mkdirSync(projectsRoot, { recursive: true });
+    const safeName = String(regProj?.name || localProj?.name || projectId).replace(/[^a-zA-Z0-9._-]+/g, '-');
+    const targetDir = path.join(projectsRoot, safeName);
+
+    if (fs.existsSync(targetDir)) {
+      const state = await app.store.read();
+      if (!Array.isArray(state.projects)) state.projects = [];
+      let stored = state.projects.find((p) => (!p.tenantId || p.tenantId === tenantId) && (
+        p.id === projectId || p.projectId === projectId || p.catalogId === projectId ||
+        `local-${p.id}` === projectId || p.id === `local-${projectId}`
+      ));
+      if (stored) {
+        stored.workspace = targetDir;
+        stored.workspaceAvailable = true;
+      } else {
+        state.projects.push({ id: projectId, tenantId, name: projectId, workspace: targetDir, workspaceAvailable: true });
+      }
+      await app.store.write(state);
+      return reply(200, { ok: true, projectId, workspace: targetDir, workspaceAvailable: true, message: 'Pasta local já existia e foi vinculada' });
+    }
+
+    const { execFile } = require('node:child_process');
+    const { promisify } = require('node:util');
+    const runFile = promisify(execFile);
+    try {
+      await runFile('git', ['clone', repository, targetDir], { timeout: 120000, windowsHide: true });
+      const state = await app.store.read();
+      if (!Array.isArray(state.projects)) state.projects = [];
+      let stored = state.projects.find((p) => (!p.tenantId || p.tenantId === tenantId) && (
+        p.id === projectId || p.projectId === projectId || p.catalogId === projectId ||
+        `local-${p.id}` === projectId || p.id === `local-${projectId}`
+      ));
+      if (stored) {
+        stored.workspace = targetDir;
+        stored.workspaceAvailable = true;
+      } else {
+        state.projects.push({ id: projectId, tenantId, name: projectId, workspace: targetDir, workspaceAvailable: true });
+      }
+      await app.store.write(state);
+      if (app.audit?.record) {
+        await app.audit.record({ tenantId, actorId, action: 'project.workspace.cloned', resource: { projectId, workspace: targetDir, repository } });
+      }
+      return reply(201, { ok: true, projectId, workspace: targetDir, workspaceAvailable: true, message: 'Repositório clonado e ativado com sucesso!' });
+    } catch (err) {
+      return reply(500, { error: `Falha ao clonar repositório: ${err.message}` });
+    }
+  }
+
+  const statusMatch = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/service-status$/);
+  if (req.method === 'GET' && statusMatch) {
+    await app.controlPlane.authorize(tenantId, actorId, 'project:read');
+    const projectId = decodeURIComponent(statusMatch[1]);
+    let regProj = null;
+    try {
+      const registry = require('../projects/project-registry');
+      if (typeof registry.getProjectById === 'function') regProj = registry.getProjectById(projectId);
+    } catch {}
+    let localProj = null;
+    try {
+      const catalog = require('../projects/local-project-catalog');
+      if (typeof catalog.getLocalProjectById === 'function') localProj = catalog.getLocalProjectById(projectId);
+    } catch {}
+    let storedProj = null;
+    try {
+      const state = await app.store.read();
+      if (Array.isArray(state?.projects)) {
+        storedProj = state.projects.find((p) => (!p.tenantId || p.tenantId === tenantId) && (
+          p.id === projectId || p.projectId === projectId || p.catalogId === projectId ||
+          `local-${p.id}` === projectId || p.id === `local-${projectId}`
+        ));
+      }
+    } catch {}
+    const proj = regProj || localProj || storedProj || {};
+
+    const localPort = Number(proj.localPort || proj.port || proj.frontend?.port) || null;
+    const apiPort = Number(proj.apiPort || proj.backend?.port) || null;
+    const remoteUrl = proj.remoteUrl || proj.url || null;
+    const vpsPort = proj.vpsPort || (proj.vpsPath ? 4410 : null);
+
+    const checkPort = (port) => {
+      if (!port || port <= 0 || port > 65535) return Promise.resolve({ online: false, reason: 'unconfigured' });
+      return new Promise((resolve) => {
+        const net = require('node:net');
+        const start = Date.now();
+        let settled = false;
+        const finish = (result) => {
+          if (settled) return;
+          settled = true;
+          try {
+            socket.end();
+            setTimeout(() => { try { socket.destroy(); } catch {} }, 50).unref();
+          } catch {}
+          resolve(result);
+        };
+        const socket = net.createConnection({ host: '127.0.0.1', port, timeout: 1500 });
+        socket.once('connect', () => finish({ online: true, port, latencyMs: Date.now() - start }));
+        socket.once('error', (err) => finish({ online: false, port, error: err.code || err.message }));
+        socket.once('timeout', () => finish({ online: false, port, error: 'timeout' }));
+      });
+    };
+
+    const [uiCheck, apiCheck] = await Promise.all([checkPort(localPort), checkPort(apiPort)]);
+    return reply(200, {
+      ok: true,
+      projectId,
+      ui: { port: localPort, ...uiCheck },
+      api: { port: apiPort, ...apiCheck },
+      remote: { url: remoteUrl, port: vpsPort, configured: Boolean(remoteUrl) },
+      checkedAt: new Date().toISOString()
+    });
+  }
+
   const match = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/(tree|file|search|checkpoints|rollback)$/);
   if (!match || !['GET', 'PUT', 'POST'].includes(req.method)) return false;
   const [, rawProjectId, action] = match;
@@ -52,7 +225,13 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   if (req.method === 'GET' && !['tree', 'file', 'search', 'checkpoints'].includes(action)) return false;
   await app.controlPlane.authorize(tenantId, actorId, write ? 'project:write' : 'project:read');
   if (write) await app.controlPlane.authorize(tenantId, actorId, 'memory:write');
-  const storedProject = (await app.store.read()).projects.find((item) => item.tenantId === tenantId && (item.id || item.projectId) === projectId);
+  const appStateData = await app.store.read();
+  const storedProject = (Array.isArray(appStateData?.projects) ? appStateData.projects : []).find((item) =>
+    (!item.tenantId || item.tenantId === tenantId) && (
+      item.id === projectId || item.projectId === projectId || item.catalogId === projectId ||
+      `local-${item.id}` === projectId || item.id === `local-${projectId}`
+    )
+  );
   let regProj = null;
   try {
     const registry = require('../projects/project-registry');

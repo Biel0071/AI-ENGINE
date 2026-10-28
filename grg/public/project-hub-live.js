@@ -69,6 +69,8 @@
     multiSelectedProjects: new Set(),
     multiViewActive: false,
     launcherFullGrid: false,
+    detailFocus: false,
+    serviceStatuses: new Map(),
     multiViewPreviews: new Set(),
     projectDecisions: new Map()
   };
@@ -347,8 +349,13 @@
             <div class="flp-project-recovery-controls" role="group" aria-label="Organização do catálogo de projetos">
               <div class="flp-project-scopes">
                 <button type="button" data-project-scope="all" aria-pressed="true">Todos</button>
-                <button type="button" data-project-scope="recent" aria-pressed="false">Recentes</button>
+                <button type="button" data-project-scope="local" aria-pressed="false">Locais</button>
+                <button type="button" data-project-scope="remote" aria-pressed="false">Remotos</button>
+                <button type="button" data-project-scope="github" aria-pressed="false">GitHub</button>
                 <button type="button" data-project-scope="favorites" aria-pressed="false">Favoritos</button>
+                <button type="button" data-project-scope="recent" aria-pressed="false">Recentes</button>
+                <button type="button" data-project-scope="problems" aria-pressed="false">Problemas</button>
+                <button type="button" data-project-scope="unverified" aria-pressed="false">Não Verificados</button>
               </div>
               <div class="flp-project-layouts">
                 <button type="button" data-project-layout="grid" aria-label="Grade" title="Grade" aria-pressed="true">▦</button>
@@ -698,9 +705,17 @@
     ].some((value) => String(value || '').toLowerCase().includes(state.query)));
 
     const recentOrder = new Map(state.catalogRecents.map((item, index) => [item.id, item.openedAt || -index]));
-    const projects = matchingProjects.filter((project) => state.catalogScope === 'favorites'
-      ? state.catalogFavorites.has(project.id)
-      : state.catalogScope === 'recent' ? recentOrder.has(project.id) : true);
+    const projects = matchingProjects.filter((project) => {
+      const isVpsRemote = Boolean(project.vpsPath || project.remoteUrl || (project.workspace && String(project.workspace).startsWith('/opt/')) || project.deployment?.bindings?.length || project.id === 'api-platform-live');
+      if (state.catalogScope === 'favorites') return state.catalogFavorites.has(project.id);
+      if (state.catalogScope === 'recent') return recentOrder.has(project.id);
+      if (state.catalogScope === 'local') return !isVpsRemote && (project.source === 'LOCAL_PROJECT_CATALOG' || project.workspaceAvailable === true);
+      if (state.catalogScope === 'remote') return isVpsRemote || project.source !== 'LOCAL_PROJECT_CATALOG';
+      if (state.catalogScope === 'github') return Boolean(project.repository && String(project.repository).includes('github.com'));
+      if (state.catalogScope === 'problems') return !workspaceIsAvailable(project) || operationalStatus(project).status === 'offline';
+      if (state.catalogScope === 'unverified') return operationalStatus(project).status === 'unknown';
+      return true;
+    });
     if (state.catalogScope === 'recent') projects.sort((left, right) => (recentOrder.get(right.id) || 0) - (recentOrder.get(left.id) || 0));
 
     container.dataset.layout = state.catalogLayout;
@@ -708,11 +723,16 @@
       if (state.error && !state.measuredAt) {
         container.appendChild(element('p', 'flp-empty', 'Catálogo indisponível nesta leitura.'));
       } else {
-        container.appendChild(element('p', 'flp-empty', state.catalogScope === 'favorites'
-          ? 'Nenhum projeto favoritado neste navegador.'
-          : state.catalogScope === 'recent'
-            ? 'Os projetos abertos aparecerão aqui.'
-            : (state.projects.length ? 'Nenhum projeto corresponde aos filtros selecionados.' : 'Nenhum projeto registrado no Project Kernel.')));
+        let emptyMsg = 'Nenhum projeto corresponde aos filtros selecionados.';
+        if (state.catalogScope === 'favorites') emptyMsg = 'Nenhum projeto favoritado neste navegador.';
+        else if (state.catalogScope === 'recent') emptyMsg = 'Os projetos abertos aparecerão aqui.';
+        else if (state.catalogScope === 'local') emptyMsg = 'Nenhum projeto local encontrado.';
+        else if (state.catalogScope === 'remote') emptyMsg = 'Nenhum projeto remoto na nuvem/VPS encontrado.';
+        else if (state.catalogScope === 'github') emptyMsg = 'Nenhum projeto com repositório GitHub vinculado.';
+        else if (state.catalogScope === 'problems') emptyMsg = 'Nenhum projeto com problemas ou offline detectado.';
+        else if (state.catalogScope === 'unverified') emptyMsg = 'Nenhum projeto não verificado.';
+        else if (!state.projects.length) emptyMsg = 'Nenhum projeto registrado no Project Kernel.';
+        container.appendChild(element('p', 'flp-empty', emptyMsg));
       }
       return;
     }
@@ -756,6 +776,18 @@
       const portPill = element('span', `flp-card-port-pill ${isOnline ? 'port-online' : ''}`, `:${port}`);
         kicker.appendChild(portPill);
       }
+
+      // Origin & Access State
+      const isLocalCatalog = project.source === 'LOCAL_PROJECT_CATALOG';
+      const hasGitRepo = Boolean(project.repository || (typeof project.repository === 'string' && project.repository.includes('github.com')));
+      const isVpsRemote = Boolean(project.vpsPath || project.deployment?.bindings?.length || project.id === 'api-platform-live');
+      const originLabel = isLocalCatalog ? 'PC Local' : isVpsRemote ? 'VPS Nuvem' : hasGitRepo ? 'GitHub' : 'Local';
+      const originClass = isLocalCatalog ? 'flp-origin-local' : isVpsRemote ? 'flp-origin-vps' : hasGitRepo ? 'flp-origin-github' : 'flp-origin-local';
+      kicker.appendChild(element('span', `flp-card-origin-pill ${originClass}`, originLabel));
+
+      const accessLabel = project.workspaceAvailable ? 'Pasta Local' : isVpsRemote ? 'Remoto (VPS)' : hasGitRepo ? 'Git Disponível' : 'Indisponível';
+      const accessClass = project.workspaceAvailable ? 'flp-access-available' : isVpsRemote ? 'flp-access-remote' : hasGitRepo ? 'flp-access-git' : 'flp-access-unavailable';
+      kicker.appendChild(element('span', `flp-card-access-pill ${accessClass}`, accessLabel));
 
       if (project.catalogGroup) {
         kicker.appendChild(element('span', '', project.catalogGroup));
@@ -884,6 +916,8 @@
     if (bodyEl) {
       bodyEl.classList.toggle('is-grid-full-view', Boolean(state.launcherFullGrid));
       bodyEl.classList.toggle('is-multiview-active', Boolean(state.multiViewActive));
+      bodyEl.dataset.fullLauncher = String(Boolean(state.launcherFullGrid));
+      bodyEl.dataset.detailFocus = String(Boolean(state.detailFocus));
     }
     const fullGridBtn = $('flpFullLauncherGridBtn');
     if (fullGridBtn) {
@@ -1591,8 +1625,17 @@
       actions.append(dashboard);
     }
 
+    const focusBtn = element('button', `flp-button flp-button-soft${state.detailFocus ? ' active' : ''}`, state.detailFocus ? '▦ Ver Grade' : '⛶ Foco');
+    focusBtn.type = 'button';
+    focusBtn.title = state.detailFocus ? 'Restaurar painel do catálogo' : 'Expandir área de trabalho em tela cheia';
+    focusBtn.addEventListener('click', () => {
+      state.detailFocus = !state.detailFocus;
+      syncMultiViewToolbar();
+      renderDetail();
+    });
+
     const primaryActions = element('div', 'flp-actions-primary');
-    primaryActions.append(wsBtn, screenDnaBtn);
+    primaryActions.append(wsBtn, screenDnaBtn, focusBtn);
     if (openSystem) primaryActions.append(openSystem);
     const additionalActions = [...actions.children].filter((action) => action !== wsBtn && action !== screenDnaBtn && action !== openSystem);
     const moreActions = element('details', 'flp-project-actions-menu');
@@ -1865,6 +1908,7 @@
     const tabs = [
       { id: 'overview', label: 'Visão Geral & Git', icon: 'ph-sliders' },
       ...(project.companyId ? [{ id: 'company', label: `Empresa: ${project.companyName || project.companyId}`, icon: 'ph-buildings' }] : []),
+      { id: 'ports', label: 'Portas & Serviços', icon: 'ph-plugs-connected' },
       { id: 'screens', label: `Screen DNA (${screens.length})`, icon: 'ph-eye' },
       { id: 'files', label: 'Arquivos', icon: 'ph-folder' },
       { id: 'code', label: 'Código Fonte', icon: 'ph-code' },
@@ -1901,6 +1945,8 @@
       if (detail) renderExecutionPanels(wsContent, detail);
     } else if (state.workspaceTab === 'company') {
       renderCompanyTab(wsContent, project, detail);
+    } else if (state.workspaceTab === 'ports') {
+      renderPortsTab(wsContent, project);
     } else if (state.workspaceTab === 'screens') {
       renderScreensTab(wsContent, project, screens);
     } else if (state.workspaceTab === 'files') {
@@ -2735,14 +2781,130 @@
 
     if (!workspaceIsAvailable(project)) {
       panel.append(element('p', 'flp-empty', 'O caminho deste projeto não está disponível neste computador.'));
+
+      const recoveryCard = element('div', 'flp-path-recovery-card');
+
+      const recoveryHead = element('div', '', '');
+      recoveryHead.innerHTML = `
+        <h4 style="margin:0 0 6px; font-size:13px; font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:8px;">
+          <i class="ph-bold ph-compass"></i> Central de Descoberta &amp; Recuperação de Workspace
+        </h4>
+        <p style="margin:0; font-size:11.5px; color:#94a3b8; line-height:1.5;">
+          ${(project.workspace || '').startsWith('/opt')
+            ? 'Este projeto está configurado na VPS remota Linux (209.50.241.22). Os arquivos residem no servidor e não neste computador local.'
+            : 'O caminho físico cadastrado não foi encontrado no sistema de arquivos deste computador.'}
+        </p>
+      `;
+      recoveryCard.appendChild(recoveryHead);
+
+      const pathRow = element('div', '', '');
+      pathRow.style.cssText = 'padding:8px 12px; border-radius:8px; background:rgba(0,0,0,0.4); font-family:ui-monospace,monospace; font-size:11px; color:#cbd5e1; border:1px solid rgba(255,255,255,0.06); word-break:break-all;';
+      pathRow.innerHTML = `<span style="color:#64748b;">Caminho cadastrado:</span> <strong>${project.workspace || project.listedPath || 'Não informado'}</strong>`;
+      recoveryCard.appendChild(pathRow);
+
+      if (project.repository) {
+        const gitSection = element('div', '', '');
+        gitSection.style.cssText = 'padding:12px; border-radius:8px; background:rgba(0,217,255,0.05); border:1px solid rgba(0,217,255,0.2); display:flex; flex-direction:column; gap:8px;';
+        gitSection.innerHTML = `
+          <div style="font-size:11px; font-weight:700; color:#00d9ff; display:flex; align-items:center; gap:6px;">
+            <i class="ph-bold ph-git-branch"></i> Repositório Git Disponível
+          </div>
+          <div style="font-size:11px; color:#cbd5e1; font-family:ui-monospace,monospace; word-break:break-all;">
+            ${project.repository}
+          </div>
+        `;
+        const cloneBtn = element('button', 'flp-button flp-button-primary', '⚡ Clonar para Workspace Local (1-Clique)');
+        cloneBtn.type = 'button';
+        cloneBtn.style.alignSelf = 'flex-start';
+        cloneBtn.addEventListener('click', async () => {
+          cloneBtn.disabled = true;
+          cloneBtn.textContent = 'Clonando repositório…';
+          try {
+            const res = await json(`/api/fenix/projects/${encodeURIComponent(project.id)}/clone-workspace`, { method: 'POST', body: '{}' });
+            project.workspace = res.workspace;
+            project.workspaceAvailable = true;
+            renderDetail();
+            renderCards();
+          } catch (err) {
+            alert(`Falha ao clonar workspace: ${err.message}`);
+            cloneBtn.disabled = false;
+            cloneBtn.textContent = '⚡ Clonar para Workspace Local (1-Clique)';
+          }
+        });
+        gitSection.appendChild(cloneBtn);
+        recoveryCard.appendChild(gitSection);
+      }
+
+      const bindSection = element('div', '', '');
+      bindSection.style.cssText = 'padding:12px; border-radius:8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:8px;';
+      bindSection.innerHTML = `
+        <div style="font-size:11px; font-weight:700; color:#e2e8f0; display:flex; align-items:center; gap:6px;">
+          <i class="ph-bold ph-folder-notch-open"></i> Vincular Pasta Local Existente neste PC
+        </div>
+        <div style="font-size:11px; color:#94a3b8;">
+          Se você já possui os arquivos deste projeto em outra pasta, informe o caminho abaixo para conectar:
+        </div>
+      `;
+      const bindRow = element('div', '', '');
+      bindRow.style.cssText = 'display:flex; gap:8px; align-items:center; flex-wrap:wrap;';
+      const pathInput = document.createElement('input');
+      pathInput.type = 'text';
+      pathInput.placeholder = 'Ex: C:\\projetos\\meu-projeto ou C:\\Users\\...';
+      pathInput.style.cssText = 'flex:1; min-width:240px; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:#080c14; color:#f8fafc; font-size:12px; font-family:ui-monospace,monospace;';
+      const bindBtn = element('button', 'flp-button flp-button-soft', '📂 Vincular Pasta');
+      bindBtn.type = 'button';
+      bindBtn.addEventListener('click', async () => {
+        const localPath = pathInput.value.trim();
+        if (!localPath) return;
+        bindBtn.disabled = true;
+        bindBtn.textContent = 'Vinculando…';
+        try {
+          const res = await json(`/api/fenix/projects/${encodeURIComponent(project.id)}/bind-workspace`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: localPath })
+          });
+          project.workspace = res.workspace;
+          project.workspaceAvailable = true;
+          renderDetail();
+          renderCards();
+        } catch (err) {
+          alert(`Não foi possível vincular a pasta: ${err.message}`);
+          bindBtn.disabled = false;
+          bindBtn.textContent = '📂 Vincular Pasta';
+        }
+      });
+      bindRow.append(pathInput, bindBtn);
+      bindSection.appendChild(bindRow);
+      recoveryCard.appendChild(bindSection);
+
+      panel.appendChild(recoveryCard);
       container.appendChild(panel);
       return;
     }
 
     if (!state.workspaceTrees.has(project.id)) {
       const error = state.workspaceTreeErrors.get(project.id);
-      panel.append(element('p', 'flp-empty', error ? `Falha ao ler a pasta: ${error}` : 'Lendo pastas e arquivos…'));
-      if (!state.workspaceTreeLoading.has(project.id)) loadWorkspaceTree(project);
+      if (error) {
+        const errorBox = element('div', 'flp-empty');
+        errorBox.append(
+          element('p', '', `Falha ao ler a pasta: ${error}`),
+          (() => {
+            const retryBtn = element('button', 'flp-button flp-button-soft', '🔄 Tentar novamente');
+            retryBtn.type = 'button';
+            retryBtn.style.marginTop = '8px';
+            retryBtn.addEventListener('click', () => {
+              state.workspaceTreeErrors.delete(project.id);
+              loadWorkspaceTree(project);
+            });
+            return retryBtn;
+          })()
+        );
+        panel.appendChild(errorBox);
+      } else {
+        panel.append(element('p', 'flp-empty', 'Lendo pastas e arquivos…'));
+        if (!state.workspaceTreeLoading.has(project.id)) loadWorkspaceTree(project);
+      }
       container.appendChild(panel);
       return;
     }
@@ -2921,6 +3083,211 @@
     actions.appendChild(folderBtn);
 
     panel.appendChild(actions);
+    container.appendChild(panel);
+  }
+
+  function renderPortsTab(container, project) {
+    const rawId = project.catalogId || (String(project.id || '').startsWith('local-') ? project.id.slice(6) : project.id);
+    const { liveStatus, status } = operationalStatus(project);
+    const isOnline = status === 'online';
+
+    const panel = element('section', 'flp-panel flp-ports-manager-panel');
+
+    // 1. Header
+    const head = element('div', 'flp-file-browser-head');
+    head.append(
+      element('div', '', 'Gerenciador de Portas, URLs & Serviços'),
+      element('small', '', 'Status verificado de portas locais e conexões na nuvem. Zero-mock: medições reais com latência em milissegundos.')
+    );
+    panel.appendChild(head);
+
+    // 2. Action Toolbar
+    const toolbar = element('div', '', '');
+    toolbar.style.cssText = 'display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:14px 0 18px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08);';
+
+    const scanBtn = element('button', 'flp-button flp-button-primary', '🔄 Retestar Portas Agora');
+    scanBtn.type = 'button';
+
+    const startBtn = element('button', 'flp-button flp-button-soft', '⚡ Iniciar Serviço');
+    startBtn.type = 'button';
+    startBtn.addEventListener('click', () => {
+      startBtn.disabled = true;
+      startBtn.textContent = 'Iniciando…';
+      startProjectService(rawId, project).finally(() => {
+        startBtn.disabled = false;
+        startBtn.textContent = '⚡ Iniciar Serviço';
+      });
+    });
+
+    const folderBtn = element('button', 'flp-button flp-button-soft', '📁 Abrir no Explorer');
+    folderBtn.type = 'button';
+    folderBtn.addEventListener('click', () => openProjectFolderDirect(rawId, project));
+
+    const activeUrl = liveStatus?.activeUrl || project.localUrl || (project.localPort ? `http://127.0.0.1:${project.localPort}` : null);
+    if (activeUrl) {
+      const openBtn = element('button', 'flp-button flp-button-soft', '🚀 Abrir Web UI ↗');
+      openBtn.type = 'button';
+      openBtn.addEventListener('click', () => window.open(activeUrl, '_blank', 'noopener,noreferrer'));
+      toolbar.append(scanBtn, startBtn, folderBtn, openBtn);
+    } else {
+      toolbar.append(scanBtn, startBtn, folderBtn);
+    }
+
+    panel.appendChild(toolbar);
+
+    // 3. Port Cards Grid
+    const cardsGrid = element('div', 'flp-ports-summary-grid');
+
+    const uiPort = Number(project.localPort || project.frontend?.port) || null;
+    const apiPort = Number(project.apiPort || project.backend?.port) || null;
+
+    const cachedCheck = state.serviceStatuses.get(project.id);
+    const uiStatus = cachedCheck?.ui || (liveStatus?.port === uiPort && isOnline ? { online: true, latencyMs: liveStatus.latencyMs } : (uiPort ? { online: isOnline, unverified: !liveStatus } : null));
+    const apiStatus = cachedCheck?.api || (apiPort ? { online: null, unverified: true } : null);
+
+    // Card 1: UI Port
+    const cardUi = element('div', 'flp-port-card');
+    cardUi.innerHTML = `
+      <h4>
+        <span><i class="ph-bold ph-desktop"></i> Interface Web Local</span>
+        <span class="flp-badge ${uiStatus?.online ? 'flp-badge-green' : uiStatus?.unverified ? 'flp-badge-gray' : 'flp-badge-amber'}">
+          ${uiStatus?.online ? `ONLINE${uiStatus.latencyMs != null ? ` · ${uiStatus.latencyMs}ms` : ''}` : uiStatus?.unverified ? 'NÃO MEDIDO' : 'OFFLINE'}
+        </span>
+      </h4>
+      <div class="flp-port-number">${uiPort ? `:${uiPort}` : '—'}</div>
+      <div class="flp-port-meta">
+        ${uiPort ? `URL Local: <a href="http://localhost:${uiPort}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">http://localhost:${uiPort} ↗</a>` : 'Nenhuma porta UI configurada.'}
+      </div>
+    `;
+    cardsGrid.appendChild(cardUi);
+
+    // Card 2: API Port
+    const cardApi = element('div', 'flp-port-card');
+    cardApi.innerHTML = `
+      <h4>
+        <span><i class="ph-bold ph-terminal"></i> Backend &amp; API Local</span>
+        <span class="flp-badge ${apiStatus?.online ? 'flp-badge-green' : apiStatus?.unverified ? 'flp-badge-gray' : 'flp-badge-amber'}">
+          ${apiStatus?.online ? `ONLINE${apiStatus.latencyMs != null ? ` · ${apiStatus.latencyMs}ms` : ''}` : apiStatus?.unverified ? 'NÃO MEDIDO' : 'OFFLINE'}
+        </span>
+      </h4>
+      <div class="flp-port-number">${apiPort ? `:${apiPort}` : '—'}</div>
+      <div class="flp-port-meta">
+        ${apiPort ? `URL API: <a href="http://localhost:${apiPort}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">http://localhost:${apiPort} ↗</a>` : 'Nenhuma porta API separada configurada.'}
+      </div>
+    `;
+    cardsGrid.appendChild(cardApi);
+
+    // Card 3: VPS Nuvem
+    const counterpart = findVpsCounterpart(project);
+    const remoteUrl = project.remoteUrl || counterpart?.project?.remoteUrl || null;
+    const vpsPort = counterpart?.project?.frontend?.port || (project.vpsPath ? '4410' : null);
+    const cardVps = element('div', 'flp-port-card');
+    cardVps.innerHTML = `
+      <h4>
+        <span><i class="ph-bold ph-cloud"></i> Ambiente VPS (209.50.241.22)</span>
+        <span class="flp-badge ${remoteUrl ? 'flp-badge-cyan' : 'flp-badge-gray'}">
+          ${remoteUrl ? 'CONFIGURADO' : 'NÃO VINCULADO'}
+        </span>
+      </h4>
+      <div class="flp-port-number">${vpsPort ? `:${vpsPort}` : (remoteUrl ? '443' : '—')}</div>
+      <div class="flp-port-meta">
+        ${remoteUrl ? `URL Remota: <a href="${remoteUrl}" target="_blank" rel="noopener noreferrer" style="color:#00d9ff;">${remoteUrl} ↗</a>` : 'Sem endpoint público mapeado.'}
+      </div>
+    `;
+    cardsGrid.appendChild(cardVps);
+
+    panel.appendChild(cardsGrid);
+
+    // Scan Button Handler
+    scanBtn.addEventListener('click', async () => {
+      scanBtn.disabled = true;
+      scanBtn.textContent = 'Sondando portas…';
+      try {
+        const res = await json(`/api/fenix/projects/${encodeURIComponent(project.id)}/service-status`);
+        state.serviceStatuses.set(project.id, res);
+        if (res.ui?.port && typeof res.ui.online === 'boolean') {
+          state.projectStatuses[rawId] = {
+            id: rawId,
+            online: res.ui.online,
+            port: res.ui.port,
+            latencyMs: res.ui.latencyMs,
+            checkedAt: res.checkedAt
+          };
+          state.projectStatuses[project.id] = state.projectStatuses[rawId];
+        }
+        renderMetrics();
+        renderCards();
+        if (state.selected === project.id && state.workspaceTab === 'ports') {
+          renderDetail();
+        }
+      } catch (err) {
+        alert(`Erro ao sondar portas: ${err.message}`);
+        scanBtn.disabled = false;
+        scanBtn.textContent = '🔄 Retestar Portas Agora';
+      }
+    });
+
+    // 4. Ports & Endpoints Details Table
+    const tableWrap = element('div', '', '');
+    tableWrap.style.marginTop = '18px';
+    const tableTitle = element('h4', '', 'Tabela de Conexões e Endpoints Mapeados');
+    tableTitle.style.cssText = 'font-size:12.5px; font-weight:700; color:#f8fafc; margin:0 0 10px; display:flex; align-items:center; gap:8px;';
+    tableWrap.appendChild(tableTitle);
+
+    const table = element('table', 'flp-ports-table');
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Serviço</th>
+          <th>Porta</th>
+          <th>Protocolo / URL</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><i class="ph-bold ph-browser" style="color:#38bdf8;"></i> Interface Web (UI)</td>
+          <td><code>${uiPort ? `:${uiPort}` : '—'}</code></td>
+          <td>${uiPort ? `<a href="http://localhost:${uiPort}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">http://localhost:${uiPort}</a>` : '—'}</td>
+          <td><span class="flp-badge ${uiStatus?.online ? 'flp-badge-green' : uiStatus?.unverified ? 'flp-badge-gray' : 'flp-badge-amber'}">${uiStatus?.online ? '🟢 ONLINE' : uiStatus?.unverified ? '⚪ NÃO MEDIDO' : '🔴 OFFLINE'}</span></td>
+        </tr>
+        <tr>
+          <td><i class="ph-bold ph-brackets-curly" style="color:#a855f7;"></i> API / Backend</td>
+          <td><code>${apiPort ? `:${apiPort}` : '—'}</code></td>
+          <td>${apiPort ? `<a href="http://localhost:${apiPort}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">http://localhost:${apiPort}</a>` : '—'}</td>
+          <td><span class="flp-badge ${apiStatus?.online ? 'flp-badge-green' : apiStatus?.unverified ? 'flp-badge-gray' : 'flp-badge-amber'}">${apiStatus?.online ? '🟢 ONLINE' : apiStatus?.unverified ? '⚪ NÃO MEDIDO' : '🔴 OFFLINE'}</span></td>
+        </tr>
+        <tr>
+          <td><i class="ph-bold ph-heartbeat" style="color:#ef4444;"></i> Health Check</td>
+          <td><code>${project.healthUrl || project.remoteHealthUrl ? 'HTTP' : '—'}</code></td>
+          <td>${project.healthUrl || project.remoteHealthUrl ? `<a href="${project.healthUrl || project.remoteHealthUrl}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">${project.healthUrl || project.remoteHealthUrl}</a>` : '—'}</td>
+          <td><span class="flp-badge flp-badge-gray">${Number.isFinite(project.health) ? `${project.health}%` : 'Não medido'}</span></td>
+        </tr>
+        <tr>
+          <td><i class="ph-bold ph-cloud-arrow-up" style="color:#00d9ff;"></i> VPS Nuvem (209.50.241.22)</td>
+          <td><code>${vpsPort ? `:${vpsPort}` : '—'}</code></td>
+          <td>${remoteUrl ? `<a href="${remoteUrl}" target="_blank" rel="noopener noreferrer" style="color:#00d9ff;">${remoteUrl}</a>` : '—'}</td>
+          <td><span class="flp-badge ${remoteUrl ? 'flp-badge-cyan' : 'flp-badge-gray'}">${remoteUrl ? 'MAPEADO' : 'NÃO CONFIGURADO'}</span></td>
+        </tr>
+      </tbody>
+    `;
+    tableWrap.appendChild(table);
+    panel.appendChild(tableWrap);
+
+    // 5. Service Logs Viewer
+    const logBox = element('div', 'flp-log-container');
+    logBox.style.cssText = 'margin-top:20px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px;';
+    const logToggle = element('button', 'flp-button flp-button-soft', '📜 Ver Logs / Output em Tempo Real');
+    logToggle.type = 'button';
+    const logViewer = element('pre', 'flp-log-viewer');
+    logViewer.hidden = true;
+    logToggle.addEventListener('click', () => {
+      logViewer.hidden = !logViewer.hidden;
+      if (!logViewer.hidden) loadProjectLogs(rawId, logViewer);
+    });
+    logBox.append(logToggle, logViewer);
+    panel.appendChild(logBox);
+
     container.appendChild(panel);
   }
 
@@ -4408,14 +4775,14 @@
     } catch (error) {
       state.git.set(id, { error: error.message });
     }
-    if (state.selected === id) renderDetail();
+    if (state.selected === id && state.workspaceTab === 'overview') renderDetail();
 
     try {
       state.connections.set(id, await json(`/api/fenix/projects/${encodeURIComponent(id)}/git/connection`, { signal: AbortSignal.timeout(60000) }));
     } catch (error) {
       state.connections.set(id, { supported: false, error: error.message });
     }
-    if (state.selected === id) renderDetail();
+    if (state.selected === id && state.workspaceTab === 'overview') renderDetail();
 
     const proj = state.projects.find((p) => p.id === id);
     if (proj?.absorbed || state.absorptions.has(id)) {
@@ -4425,7 +4792,7 @@
       } catch (e) {
         // Not absorbed yet is normal
       }
-      if (state.selected === id) renderDetail();
+      if (state.selected === id && state.workspaceTab === 'overview') renderDetail();
     }
 
     if (id === 'api-platform-live') loadDeploy(id);
@@ -4476,7 +4843,9 @@
         if (state.selected === id) {
           renderMetrics();
           renderCards();
-          renderDetail();
+          if (['overview', 'company', 'jobs'].includes(state.workspaceTab)) {
+            renderDetail();
+          }
         }
       });
     state.detailLoads.set(id, request);
@@ -5386,6 +5755,7 @@
   }
   window.addEventListener('fenix:viewchanged', (e) => {
     if (e.detail?.viewId === 'projects') {
+      if (!isProjectsRoute() && !document.getElementById('view-projects')?.classList.contains('active')) return;
       renderShell();
       load();
     }
