@@ -143,13 +143,15 @@
     { id: 'north-library', x: 0, z: 31, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
     { id: 'north-center', x: -25, z: 33, width: 12, depth: 12, floors: 2, wall: 'urbanFacadeSand', roof: 'warehouseRoof' },
     { id: 'north-garden', x: 0, z: 43, width: 10, depth: 8, floors: 2, wall: 'urbanFacadeIvory', roof: 'woodSlat' },
-    { id: 'north-east', x: 52, z: 36, width: 14, depth: 12, floors: 2, wall: 'warehouseWall', roof: 'warehouseRoof' },
-    { id: 'east-campus', x: 73, z: 39, width: 16, depth: 14, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
-    { id: 'mid-west-civic', x: -26, z: 6, width: 12, depth: 12, floors: 3, wall: 'urbanFacadeTerracotta', roof: 'warehouseRoof' },
-    { id: 'mid-east-civic', x: 26, z: 12, width: 12, depth: 12, floors: 2, wall: 'urbanFacadeIvory', roof: 'woodSlat' },
+    { id: 'north-east-periphery', x: 84, z: 8, width: 12, depth: 10, floors: 2, wall: 'warehouseWall', roof: 'warehouseRoof' },
+    { id: 'east-logistics-flank', x: 84, z: -25, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
+    { id: 'mid-west-civic', x: -48, z: 28, width: 12, depth: 10, floors: 3, wall: 'urbanFacadeTerracotta', roof: 'warehouseRoof' },
+    { id: 'mid-east-civic', x: 32, z: -2, width: 10, depth: 10, floors: 2, wall: 'urbanFacadeIvory', roof: 'woodSlat' },
     { id: 'west-campus', x: -77, z: -37, width: 14, depth: 14, floors: 2, wall: 'warehouseWall', roof: 'warehouseRoof' },
     { id: 'south-civic', x: 8, z: -39, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeSand', roof: 'brushedTitanium' },
-    { id: 'east-terrace', x: 74, z: -2, width: 14, depth: 14, floors: 2, wall: 'urbanFacadeTerracotta', roof: 'woodSlat' }
+    { id: 'east-terrace', x: 74, z: -2, width: 14, depth: 14, floors: 2, wall: 'urbanFacadeTerracotta', roof: 'woodSlat' },
+    { id: 'southwest-quantum-park', x: -52, z: -62, width: 12, depth: 10, floors: 1, wall: 'urbanFacadeSand', roof: 'woodSlat' },
+    { id: 'southeast-logistics-bay', x: 84, z: -52, width: 12, depth: 14, floors: 1, wall: 'warehouseWall', roof: 'warehouseRoof' }
   ];
 
   const districtOrigin = (id) => DISTRICTS.find((district) => district.id === id) || DISTRICTS[0];
@@ -979,18 +981,19 @@
       this.addEdge('api_lift_f3', 'api_f3_sora');
 
       // 5. Eastern Corporate District Avenues (Sidewalk Network connecting Project Parcels)
-      const aveZ = [30, 38, 46, 54, 62, 70];
-      const crossX = [38, 50, 62, 74, 84];
+      // Corridors run strictly in the buffer lanes between parcel rows (spacing 7.0) and columns (spacing 7.2)
+      const aveZ = [28.5, 35.5, 42.5, 49.5, 56.5, 63.5, 70.5, 77.5];
+      const crossX = [37.8, 45.0, 52.2, 59.4, 66.6, 73.8, 81.0, 88.2];
 
       aveZ.forEach((zVal, zIdx) => {
         crossX.forEach((xVal, xIdx) => {
-          if (typeof this.isPointInObstacle === 'function' && this.isPointInObstacle(xVal, zVal, 1.2)) return;
+          if (typeof this.isPointInObstacle === 'function' && this.isPointInObstacle(xVal, zVal, 0.8)) return;
           const nodeId = `corp_node_${xIdx}_${zIdx}`;
           this.addNode(nodeId, { x: xVal, y: 0.2, z: zVal }, 'avenue', 0);
           if (xIdx > 0 && this.nodes) {
             const leftId = `corp_node_${xIdx - 1}_${zIdx}`;
             const noCross = typeof this.doesSegmentCrossObstacle === 'function'
-              ? !this.doesSegmentCrossObstacle(this.nodes.get(leftId)?.pos, { x: xVal, y: 0.2, z: zVal }, 0.35)
+              ? !this.doesSegmentCrossObstacle(this.nodes.get(leftId)?.pos, { x: xVal, y: 0.2, z: zVal }, 0.25)
               : true;
             if (this.nodes.has(leftId) && noCross) {
               this.addEdge(nodeId, leftId);
@@ -999,7 +1002,7 @@
           if (zIdx > 0 && this.nodes) {
             const downId = `corp_node_${xIdx}_${zIdx - 1}`;
             const noCross = typeof this.doesSegmentCrossObstacle === 'function'
-              ? !this.doesSegmentCrossObstacle(this.nodes.get(downId)?.pos, { x: xVal, y: 0.2, z: zVal }, 0.35)
+              ? !this.doesSegmentCrossObstacle(this.nodes.get(downId)?.pos, { x: xVal, y: 0.2, z: zVal }, 0.25)
               : true;
             if (this.nodes.has(downId) && noCross) {
               this.addEdge(nodeId, downId);
@@ -1011,8 +1014,11 @@
       if (this.nodes?.has('corp_node_0_0')) {
         this.addEdge('corp_node_0_0', 'road_ne');
       }
-      if (this.nodes?.has('corp_node_1_0')) {
-        this.addEdge('corp_node_1_0', 'road_ne');
+      if (this.nodes?.has('corp_node_0_1')) {
+        this.addEdge('corp_node_0_1', 'road_ne');
+      }
+      if (this.nodes?.has('corp_node_0_2')) {
+        this.addEdge('corp_node_0_2', 'road_east');
       }
 
       // 6. Northern & Western District Connections
@@ -1027,32 +1033,54 @@
       const targetVec = endPos instanceof T.Vector3 ? endPos.clone() : new T.Vector3(endPos.x, endPos.y !== undefined ? endPos.y : 0.8, endPos.z !== undefined ? endPos.z : endPos.y);
       const startVec = startPos instanceof T.Vector3 ? startPos.clone() : new T.Vector3(startPos.x, startPos.y !== undefined ? startPos.y : 0.8, startPos.z !== undefined ? startPos.z : startPos.y);
 
-      // If target is inside an obstacle, route to its accessible entrance doorway
+      // 1. If start position is inside an obstacle (e.g. agent at interior workstation), route out through its entrance doorway
+      let startDoorway = null;
       for (const obs of this.obstacles.values()) {
-        if (targetVec.x >= obs.minX - 0.2 && targetVec.x <= obs.maxX + 0.2 &&
-            targetVec.z >= obs.minZ - 0.2 && targetVec.z <= obs.maxZ + 0.2) {
+        if (startVec.x >= obs.minX - 0.15 && startVec.x <= obs.maxX + 0.15 &&
+            startVec.z >= obs.minZ - 0.15 && startVec.z <= obs.maxZ + 0.15) {
           if (obs.entryPos) {
+            startDoorway = new T.Vector3(obs.entryPos.x, startVec.y, obs.entryPos.z);
+          }
+          break;
+        }
+      }
+
+      // 2. If target is inside an obstacle, route to its accessible entrance doorway first, then inside
+      let finalInsideTarget = null;
+      for (const obs of this.obstacles.values()) {
+        if (targetVec.x >= obs.minX - 0.15 && targetVec.x <= obs.maxX + 0.15 &&
+            targetVec.z >= obs.minZ - 0.15 && targetVec.z <= obs.maxZ + 0.15) {
+          if (obs.entryPos) {
+            finalInsideTarget = targetVec.clone();
             targetVec.set(obs.entryPos.x, targetVec.y, obs.entryPos.z);
           }
           break;
         }
       }
 
-      if (!this.doesSegmentCrossObstacle(startVec, targetVec, 0.4)) {
-        return [targetVec];
+      const routingStart = startDoorway || startVec;
+
+      // 3. Direct line check if no obstacles crossed
+      if (!this.doesSegmentCrossObstacle(routingStart, targetVec, 0.35)) {
+        const directPath = [];
+        if (startDoorway) directPath.push(startDoorway);
+        directPath.push(targetVec);
+        if (finalInsideTarget) directPath.push(finalInsideTarget);
+        return directPath;
       }
 
+      // 4. Find closest accessible start and end nodes on path network
       let startNode = null, minDistStart = Infinity;
       let endNode = null, minDistEnd = Infinity;
 
       for (const [id, node] of this.nodes) {
-        const dS = node.pos.distanceTo(startVec);
-        if (dS < minDistStart && !this.doesSegmentCrossObstacle(startVec, node.pos, 0.3)) {
+        const dS = node.pos.distanceTo(routingStart);
+        if (dS < minDistStart && !this.doesSegmentCrossObstacle(routingStart, node.pos, 0.25)) {
           minDistStart = dS;
           startNode = id;
         }
         const dE = node.pos.distanceTo(targetVec);
-        if (dE < minDistEnd && !this.doesSegmentCrossObstacle(node.pos, targetVec, 0.3)) {
+        if (dE < minDistEnd && !this.doesSegmentCrossObstacle(node.pos, targetVec, 0.25)) {
           minDistEnd = dE;
           endNode = id;
         }
@@ -1060,7 +1088,7 @@
 
       if (!startNode) {
         for (const [id, node] of this.nodes) {
-          const dS = node.pos.distanceTo(startVec);
+          const dS = node.pos.distanceTo(routingStart);
           if (dS < minDistStart) { minDistStart = dS; startNode = id; }
         }
       }
@@ -1071,10 +1099,33 @@
         }
       }
 
+      // 5. If startNode === endNode or one is missing, detour through intermediate node to avoid crossing walls
       if (!startNode || !endNode || startNode === endNode) {
-        return [targetVec];
+        const fallback = [];
+        if (startDoorway) fallback.push(startDoorway);
+        if (startNode && this.nodes.has(startNode)) {
+          const intermediate = this.nodes.get(startNode).pos.clone();
+          if (!this.doesSegmentCrossObstacle(intermediate, targetVec, 0.3)) {
+            fallback.push(intermediate);
+          } else {
+            const neighbors = this.edges.get(startNode);
+            if (neighbors) {
+              for (const nId of neighbors) {
+                const nPos = this.nodes.get(nId)?.pos;
+                if (nPos && !this.doesSegmentCrossObstacle(intermediate, nPos, 0.3) && !this.doesSegmentCrossObstacle(nPos, targetVec, 0.3)) {
+                  fallback.push(intermediate, nPos.clone());
+                  break;
+                }
+              }
+            }
+          }
+        }
+        fallback.push(targetVec);
+        if (finalInsideTarget) fallback.push(finalInsideTarget);
+        return fallback;
       }
 
+      // 6. A* path search along nodes
       const openSet = new Set([startNode]);
       const cameFrom = new Map();
       const gScore = new Map();
@@ -1105,8 +1156,13 @@
             currId = cameFrom.get(currId);
             rawPath.unshift(currId);
           }
-          const points = rawPath.map(nid => this.nodes.get(nid).pos.clone());
+          const points = [];
+          if (startDoorway) points.push(startDoorway);
+          for (const nid of rawPath) {
+            points.push(this.nodes.get(nid).pos.clone());
+          }
           points.push(targetVec);
+          if (finalInsideTarget) points.push(finalInsideTarget);
           return points;
         }
 
@@ -1116,7 +1172,7 @@
 
         for (const neighbor of neighbors) {
           const nPos = this.nodes.get(neighbor).pos;
-          if (this.doesSegmentCrossObstacle(currentPos, nPos, 0.35)) continue;
+          if (this.doesSegmentCrossObstacle(currentPos, nPos, 0.3)) continue;
           const tentativeG = (gScore.get(current) ?? Infinity) + currentPos.distanceTo(nPos);
           if (tentativeG < (gScore.get(neighbor) ?? Infinity)) {
             cameFrom.set(neighbor, current);
@@ -1127,7 +1183,13 @@
         }
       }
 
-      return [targetVec];
+      // 7. Fallback if search exhausted
+      const fallback = [];
+      if (startDoorway) fallback.push(startDoorway);
+      if (startNode && this.nodes.has(startNode)) fallback.push(this.nodes.get(startNode).pos.clone());
+      fallback.push(targetVec);
+      if (finalInsideTarget) fallback.push(finalInsideTarget);
+      return fallback;
     }
   }
 
@@ -6553,14 +6615,16 @@
     spawnDynamicBuilding(payload) {
       const id = payload.id || `bld-${Date.now()}`;
       const name = payload.name || 'Edifício Operacional';
-      const floors = Math.max(1, Math.min(8, parseInt(payload.floors, 10) || 2));
-      const width = parseFloat(payload.width) || 16.0;
-      const depth = parseFloat(payload.depth) || 14.0;
-      const floorH = 4.2;
-      const height = floors * floorH;
+      const archetype = payload.archetype || window.FenixCityMachineScene?.resolveProjectArchetype(payload) || 'dev_studio';
+      const defaultDims = window.FenixCityMachineScene?.ARCHETYPE_DIMENSIONS?.[archetype] || { width: 6.4, depth: 5.2, height: 5.2 };
+      const width = parseFloat(payload.width) || defaultDims.width;
+      const depth = parseFloat(payload.depth) || defaultDims.depth;
+      const floors = Math.max(1, Math.min(8, parseInt(payload.floors, 10) || (archetype === 'warehouse' ? 2 : (archetype === 'tech_cloud' || archetype === 'fintech' ? 4 : 3))));
+      const floorH = Number((defaultDims.height / floors).toFixed(2));
+      const height = defaultDims.height;
       const coords = payload.coordinates || { x: -28.0, y: 0, z: 18.0 };
-      const color = payload.color || '#4e8f88';
-      const icon = payload.icon || '🏢';
+      const color = payload.color || (archetype === 'warehouse' ? '#f59e0b' : archetype === 'tech_cloud' ? '#0284c7' : archetype === 'commerce_crm' ? '#10b981' : archetype === 'fintech' ? '#8b5cf6' : '#4e8f88');
+      const icon = payload.icon || (archetype === 'warehouse' ? '📦' : archetype === 'tech_cloud' ? '⚡' : archetype === 'commerce_crm' ? '💬' : archetype === 'fintech' ? '💳' : '💻');
 
       if (this.dynamicBuildings && this.dynamicBuildings.has(id)) {
         const building = this.dynamicBuildings.get(id);
