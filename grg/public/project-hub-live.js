@@ -358,6 +358,7 @@
                 <button type="button" data-project-scope="unverified" aria-pressed="false">Não Verificados</button>
               </div>
               <div class="flp-project-layouts">
+                <button type="button" id="flpLayoutExpandToggle" aria-label="Tela Inteira" title="Alternar Grade em Tela Inteira (4 a 6 colunas)" aria-pressed="false">⛶</button>
                 <button type="button" data-project-layout="grid" aria-label="Grade" title="Grade" aria-pressed="true">▦</button>
                 <button type="button" data-project-layout="list" aria-label="Lista" title="Lista" aria-pressed="false">☷</button>
               </div>
@@ -497,9 +498,13 @@
     $('flpQuickStatusRefresh')?.addEventListener('click', () => {
       loadCatalogStatus(true);
     });
+    $('flpLayoutExpandToggle')?.addEventListener('click', () => {
+      $('flpFullLauncherGridBtn')?.click();
+    });
     $('flpFullLauncherGridBtn')?.addEventListener('click', () => {
       state.launcherFullGrid = !state.launcherFullGrid;
       if (state.launcherFullGrid) state.catalogLayout = 'grid';
+      try { localStorage.setItem('fenix_launcher_full_grid', String(state.launcherFullGrid)); } catch {}
       syncMultiViewToolbar();
       renderCards();
     });
@@ -899,11 +904,12 @@
       card.append(multiToggle, openButton, favorite);
       card.addEventListener('click', (event) => {
         if (!event.target.closest('.flp-project-favorite') && !event.target.closest('.flp-project-multiview-toggle') && !event.target.closest('.flp-quick-action-btn')) {
-          if (state.launcherFullGrid) {
-            state.launcherFullGrid = false;
-            syncMultiViewToolbar();
-          }
           selectProject(project.id);
+          if (state.launcherFullGrid) {
+            state.detailFocus = true;
+            syncMultiViewToolbar();
+            renderDetail();
+          }
         }
       });
       container.appendChild(card);
@@ -914,15 +920,25 @@
   function syncMultiViewToolbar() {
     const bodyEl = document.querySelector('#view-projects .flp-body');
     if (bodyEl) {
-      bodyEl.classList.toggle('is-grid-full-view', Boolean(state.launcherFullGrid));
+      const isGridOnly = Boolean(state.launcherFullGrid) && !state.detailFocus;
+      bodyEl.classList.toggle('is-grid-full-view', isGridOnly);
       bodyEl.classList.toggle('is-multiview-active', Boolean(state.multiViewActive));
       bodyEl.dataset.fullLauncher = String(Boolean(state.launcherFullGrid));
       bodyEl.dataset.detailFocus = String(Boolean(state.detailFocus));
+    }
+    const expandToggle = $('flpLayoutExpandToggle');
+    if (expandToggle) {
+      expandToggle.classList.toggle('active', Boolean(state.launcherFullGrid));
+      expandToggle.setAttribute('aria-pressed', String(Boolean(state.launcherFullGrid)));
     }
     const fullGridBtn = $('flpFullLauncherGridBtn');
     if (fullGridBtn) {
       fullGridBtn.classList.toggle('active', Boolean(state.launcherFullGrid));
       fullGridBtn.setAttribute('aria-pressed', String(Boolean(state.launcherFullGrid)));
+      const label = fullGridBtn.querySelector('span:not(.fnx-mono3d-glyph)');
+      if (label) {
+        label.textContent = state.launcherFullGrid ? 'Grade Completa (Tela Inteira) ✓' : 'Grade Completa (Tela Inteira)';
+      }
     }
     const multiBtn = $('flpMultiViewToggleBtn');
     if (multiBtn) {
@@ -1453,6 +1469,25 @@
     const isLocalCatalogProject = project.source === 'LOCAL_PROJECT_CATALOG';
     const currentOperationalStatus = operationalStatus(project).status;
 
+    // 0. RETURN BANNER WHEN IN FULL WORKSPACE FOCUS
+    if (state.detailFocus) {
+      const returnBanner = element('div', 'flp-workspace-return-banner');
+      const returnBtn = element('button', 'flp-button flp-button-primary flp-return-catalog-btn');
+      returnBtn.id = 'flpReturnToGridBtn';
+      returnBtn.type = 'button';
+      returnBtn.innerHTML = '<i class="ph-bold ph-grid-four"></i> ← Voltar para Grade de Projetos (Tela Inteira)';
+      returnBtn.addEventListener('click', () => {
+        state.detailFocus = false;
+        state.launcherFullGrid = true;
+        syncMultiViewToolbar();
+        renderCards();
+      });
+      const breadcrumb = element('span', 'flp-workspace-breadcrumb');
+      breadcrumb.innerHTML = 'Área de Trabalho: <strong>' + (project.name || project.id) + '</strong> · ' + (project.workspace || 'Workspace Fênix');
+      returnBanner.append(returnBtn, breadcrumb);
+      target.appendChild(returnBanner);
+    }
+
     // 0. QUICK SWITCHER BAR (TROCA RÁPIDA ENTRE PROJETOS)
     renderQuickSwitcher(target, project);
 
@@ -1630,7 +1665,9 @@
     focusBtn.title = state.detailFocus ? 'Restaurar painel do catálogo' : 'Expandir área de trabalho em tela cheia';
     focusBtn.addEventListener('click', () => {
       state.detailFocus = !state.detailFocus;
+      if (!state.detailFocus) state.launcherFullGrid = true;
       syncMultiViewToolbar();
+      renderCards();
       renderDetail();
     });
 
