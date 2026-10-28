@@ -105,7 +105,7 @@
   }
   function openTask(agentId, projectId = null) {
     hide(); Object.assign(state, { mode: 'task', agentId, projectId });
-    const projects = window.FENIX?.cityWorld?.snapshot?.projects || [];
+    const projects = (window.FENIX?.cityWorld?.snapshot?.projects?.length ? window.FENIX.cityWorld.snapshot.projects : (window.FENIX?.projects || window.__fenixProjectsList || [{ id: 'fenix-os', name: 'FÊNIX OS' }]));
     header('Nova tarefa', `AGENTE · ${agentId}`);
     const form = el('form', 'fcw-task-form');
     const label = el('label', '', 'Projeto');
@@ -124,7 +124,7 @@
       state.busy = true; submit.disabled = true; status('Registrando job persistente…');
       try {
         const job = await request('/api/v2/jobs', { method: 'POST', body: JSON.stringify({ type: 'agent.execute', source: 'web', agentId, projectId: select.value, prompt: prompt.value.trim(), payload: { prompt: prompt.value.trim(), projectId: select.value, agentId, conversationId: state.conversationId || null }, context: { projectId: select.value, agentId, conversationId: state.conversationId || null }, riskLevel: 'HIGH' }) });
-        state.projectId = select.value; openJob(job.jobId);
+        state.projectId = select.value; openJob(job.jobId || job.id || job.result?.id);
       } catch (error) { status(`Tarefa não registrada: ${error.message}`, true); }
       finally { state.busy = false; submit.disabled = false; }
     });

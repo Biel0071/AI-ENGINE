@@ -172,7 +172,7 @@
 
       // Build 3D Curved Bezier Splines & Pulses for Links (Focus + Bridge Edges, Max 60)
       const pulseCurves = [];
-      const renderEdges = (Array.isArray(links) ? links : []).slice(0, 60);
+      const renderEdges = (Array.isArray(links) ? links : []).slice(0, 450);
       for (const edge of renderEdges) {
         const from = byId.get(edge.from);
         const to = byId.get(edge.to);
@@ -192,10 +192,11 @@
         const lineGeo = new THREE.BufferGeometry().setFromPoints(curvePoints);
 
         const isHighlight = edge.from === selectedId || edge.to === selectedId;
+        const edgeColor = isHighlight ? 0x00f0ff : (from.color ? from.color : 0x38bdf8);
         const lineMat = new THREE.LineBasicMaterial({
-          color: isHighlight ? 0x00f0ff : 0x38bdf8,
+          color: edgeColor,
           transparent: true,
-          opacity: isHighlight ? 0.85 : 0.08,
+          opacity: isHighlight ? 0.95 : 0.45,
           blending: THREE.AdditiveBlending,
           depthWrite: false
         });

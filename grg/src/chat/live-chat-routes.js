@@ -26,14 +26,40 @@ const liveStreams = new Map();
 async function validateConversationScope(app, tenantId, agentId, projectId) {
   if (!agentId && !projectId) return { agent: null, project: null };
   const state = await app.store.read();
-  const project = projectId ? (state.projects || []).find((item) => item.id === projectId && item.tenantId === tenantId) : null;
-  if (projectId && !project) throw new NotFoundError('project not found for conversation');
+  let project = null;
+  if (projectId) {
+    try {
+      const { getProjectById } = require('../projects/project-registry');
+      project = getProjectById(projectId);
+    } catch (_) {}
+    if (!project && Array.isArray(state.projects)) {
+      project = state.projects.find((item) => (item.id === projectId || item.projectId === projectId) && (!tenantId || !item.tenantId || item.tenantId === tenantId))
+        || state.projects.find((item) => item.id === projectId || item.projectId === projectId)
+        || null;
+    }
+    if (!project && !agentId) {
+      throw new NotFoundError('project not found for conversation');
+    }
+    if (!project && agentId) {
+      project = { id: projectId, name: projectId, fallback: true };
+    }
+  }
+
   const knownAgents = [
     ...(app.agentRegistry?.list() || []),
-    ...(state.agents || []).filter((agent) => agent.tenantId === tenantId),
-    ...(state.cognitiveAgents || []).filter((agent) => agent.tenantId === tenantId),
+    ...(state.agents || []).filter((agent) => !tenantId || !agent.tenantId || agent.tenantId === tenantId),
+    ...(state.cognitiveAgents || []).filter((agent) => !tenantId || !agent.tenantId || agent.tenantId === tenantId),
   ];
-  const agent = agentId ? knownAgents.find((item) => String(item.id || item.agentId).toLowerCase() === String(agentId).toLowerCase()) : null;
+  const agent = agentId ? knownAgents.find((item) => {
+    const rawId = String(item.id || item.agentId || '').toLowerCase();
+    const rawName = String(item.name || '').toLowerCase();
+    const target = String(agentId).toLowerCase();
+    return rawId === target
+      || rawName === target
+      || rawId.replace(/agent$/i, '').trim() === target.replace(/agent$/i, '').trim()
+      || target.startsWith(rawId)
+      || rawId.startsWith(target);
+  }) : null;
   if (agentId && !agent) throw new NotFoundError('agent not found for conversation');
   return { agent, project };
 }
@@ -79,6 +105,40 @@ function pickProvider(app) {
 async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson, sendJson, requestId }) {
   const conversations = app.conversations;
   if (!conversations) return false;
+
+  // Browser audio is proxied through the authenticated Fênix session; provider keys never
+  // leave the server and raw audio is held only for the duration of this request.
+  if (req.method === 'POST' && /^\/api\/chat\/voice\/(transcribe|speak)$/.test(url.pathname)) {
+    const mode = url.pathname.endsWith('/speak') ? 'tts' : 'stt';
+    const body = await readJson(req);
+    const data = mode === 'stt' ? String(body.data || '') : String(body.text || '');
+    if (!data || data.length > (mode === 'stt' ? 35_000_000 : 4_000)) {
+      sendJson(res, 400, { ok: false, error: mode === 'stt' ? 'INVALID_AUDIO_PAYLOAD' : 'INVALID_SPEECH_TEXT' }, requestId);
+      return true;
+    }
+    const key = resolveAIProviderKey();
+    if (!key) { sendJson(res, 503, { ok: false, error: 'VOICE_PROVIDER_UNAVAILABLE', message: 'A API Platform não está configurada para voz.' }, requestId); return true; }
+    try {
+      const upstream = await fetch(`${resolveAIPlatformUrl()}/v1/audio`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ type: mode, data, language: body.language || 'pt', voice: body.voice, model: body.model }),
+        signal: AbortSignal.timeout(65000),
+      });
+      const result = await upstream.json().catch(() => ({}));
+      if (!upstream.ok) {
+        sendJson(res, upstream.status === 401 || upstream.status === 403 ? 503 : 502, {
+          ok: false, error: 'VOICE_PROVIDER_FAILED', providerStatus: upstream.status,
+          message: result.error?.message || result.error || 'O provider de voz recusou a solicitação.',
+        }, requestId);
+        return true;
+      }
+      sendJson(res, 200, { ok: true, type: mode, provider: result.provider || 'api-platform', model: result.model || null, result: result.result }, requestId);
+    } catch (error) {
+      sendJson(res, 502, { ok: false, error: 'VOICE_PROVIDER_UNAVAILABLE', message: error.message }, requestId);
+    }
+    return true;
+  }
 
   // Keep the platform key on the server. The browser only receives job IDs and results.
   if (req.method === 'GET' && /^\/api\/chat\/jobs\/[^/]+$/.test(url.pathname)) {

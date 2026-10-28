@@ -778,8 +778,8 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
           const from = projectedById.get(edge.from), to = projectedById.get(edge.to);
           if (!from || !to) continue;
           const touchesSelected = edge.from === state.selected || edge.to === state.selected;
-          ctx.lineWidth = touchesSelected ? 1.8 : 0.65;
-          ctx.strokeStyle = touchesSelected ? 'rgba(110, 231, 220, 0.92)' : 'rgba(101, 164, 255, 0.34)';
+          ctx.lineWidth = touchesSelected ? 2.0 : 0.85;
+          ctx.strokeStyle = touchesSelected ? 'rgba(110, 231, 220, 0.95)' : 'rgba(101, 164, 255, 0.52)';
           ctx.beginPath(); ctx.moveTo(from.sx, from.sy); ctx.lineTo(to.sx, to.sy); ctx.stroke();
         }
 

@@ -5,7 +5,8 @@
    ========================================================================== */
 
 :root {
-  --fsb-width: 380px;
+  --fsb-width: 360px;
+  --fsb-height: 100vh;
 }
 
 /* ── 1. GLOBAL RIGHT SIDEBAR (#fenix-right-sidebar) ── */
@@ -14,11 +15,12 @@
   top: auto !important;
   right: auto !important;
   bottom: auto !important;
-  height: calc(100% - var(--bottom-dock-height, 32px)) !important;
+  height: 100% !important;
   box-sizing: border-box;
-  width: var(--fsb-width, 360px);
-  min-width: 0;
-  max-width: 600px;
+  width: var(--fsb-width, 360px) !important;
+  min-width: 300px;
+  max-width: min(600px, 60vw);
+  flex: 0 0 var(--fsb-width, 360px) !important;
   flex-shrink: 0;
   background: rgba(9, 14, 28, 0.96);
   border-left: 1px solid rgba(34, 211, 238, 0.22);
@@ -30,7 +32,7 @@
   flex-direction: column;
   overflow: hidden;
   transform: none !important;
-  transition: width 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms ease;
+  transition: width 200ms cubic-bezier(0.16, 1, 0.3, 1), flex-basis 200ms cubic-bezier(0.16, 1, 0.3, 1);
   font-family: inherit;
   color: #e2e8f0;
   user-select: none;
@@ -43,8 +45,9 @@
 #fenix-right-sidebar.collapsed,
 #fenix-right-sidebar.state-closed {
   width: 0px !important;
-  min-width: 0 !important;
-  max-width: 0 !important;
+  min-width: 0px !important;
+  max-width: 0px !important;
+  flex: 0 0 0px !important;
   border-left: none !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -55,19 +58,54 @@
   width: 64px !important;
   min-width: 64px !important;
   max-width: 64px !important;
+  flex: 0 0 64px !important;
 }
 
+#fenix-right-sidebar.state-compact > :not(.fsb-header):not(.fsb-resize-handle) { display: none !important; }
+#fenix-right-sidebar.state-compact .fsb-header {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px 4px;
+}
+#fenix-right-sidebar.state-compact .fsb-header-left { flex: 0 0 auto; }
+#fenix-right-sidebar.state-compact .fsb-header-info { display: none; }
+#fenix-right-sidebar.state-compact .fsb-header-actions { flex-direction: column; gap: 4px; }
+#fenix-right-sidebar.state-compact #fsbExpandBtn,
+#fenix-right-sidebar.state-compact #fsbClearBtn { display: none !important; }
+#fenix-right-sidebar.state-compact #fsbCompactBtn { transform: rotate(180deg); }
+
 #fenix-right-sidebar.state-expanded {
-  width: 480px !important;
-  min-width: 480px !important;
+  width: min(560px, 45vw) !important;
+  min-width: 440px !important;
+  max-width: 60vw !important;
+  flex: 0 0 min(560px, 45vw) !important;
+}
+
+#fenix-right-sidebar.fsb-height-resized {
+  height: min(var(--fsb-height), calc(100vh - var(--topbar-height, 50px) - var(--bottom-dock-height, 32px))) !important;
+  align-self: flex-end;
+  margin-top: auto;
 }
 
 /* ── Content Push When Sidebar is Open in Docked Mode (Lovable Split Screen) ── */
 .fsb-docked {}
+body.has-right-sidebar-open .views-container,
 body.has-right-sidebar-open.fsb-docked .views-container {
   margin-right: 0 !important;
-  width: 100% !important;
+  width: auto !important;
+  min-width: 0 !important;
   max-width: 100% !important;
+  flex: 1 1 0 !important;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body:not(.has-right-sidebar-open) .views-container {
+  margin-right: 0 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body.has-right-sidebar-open.fsb-docked .views-container > .view,
@@ -98,6 +136,12 @@ body.fsb-resizing {
   #fenix-right-sidebar.open {
     transform: translateX(0) !important;
   }
+  #fenix-right-sidebar.state-compact {
+    width: 64px !important;
+    min-width: 64px !important;
+    max-width: 64px !important;
+    flex: 0 0 64px !important;
+  }
   body.has-right-sidebar-open.fsb-docked .views-container {
     margin-right: 0 !important;
     width: 100% !important;
@@ -120,6 +164,54 @@ body.fsb-resizing iframe {
   z-index: 999;
   background: transparent;
   transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fsb-height-resize-handle {
+  position: absolute;
+  z-index: 1000;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 10px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.fsb-height-resize-handle:hover,
+.fsb-height-resize-handle:focus-visible { background: rgba(34, 211, 238, .45); outline: none; }
+body.fsb-resizing-height { user-select: none !important; cursor: ns-resize !important; }
+
+body.fenix-chat-window { width: 100%; height: 100%; min-width: 0; overflow: hidden; }
+body.fenix-chat-window > .mesh-background,
+body.fenix-chat-window > #fenix-floating-mascot,
+body.fenix-chat-window > #app-shell > :not(#fenixMainBody),
+body.fenix-chat-window #fenixMainBody > :not(#fenix-right-sidebar) { display: none !important; }
+body.fenix-chat-window > #app-shell,
+body.fenix-chat-window #fenixMainBody { display: contents !important; }
+body.fenix-chat-window #fenix-right-sidebar {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  width: 100vw !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  flex: none !important;
+  border: 0 !important;
+  transform: none !important;
+}
+body.fenix-chat-window #fenix-right-sidebar.fsb-height-resized { height: 100dvh !important; }
+body.fenix-chat-window .fsb-height-resize-handle { display: none; }
+body.fenix-chat-window .fsb-header-actions #fsbUndockBtn { transform: rotate(180deg); }
+
+/* Keep the compact control reachable on phones despite later app-wide width rules. */
+@media (max-width: 900px) {
+  #fenix-right-sidebar.state-compact {
+    width: 64px !important;
+    min-width: 64px !important;
+    max-width: 64px !important;
+    flex: 0 0 64px !important;
+  }
 }
 
 .fsb-resize-handle:hover,
@@ -279,17 +371,18 @@ body.fsb-resizing iframe {
 /* ── Tabs Navigation ── */
 .fsb-tabs {
   display: flex;
-  padding: 4px 10px;
-  background: rgba(15, 23, 42, 0.5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 4px 8px;
+  background: rgba(10, 16, 30, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   gap: 4px;
   flex-shrink: 0;
 }
 
 .fsb-tab-btn {
   flex: 1;
-  padding: 7px 6px;
-  border: none;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
   color: #94a3b8;
@@ -299,19 +392,28 @@ body.fsb-resizing iframe {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: all 0.15s ease;
 }
 
+.fsb-tab-btn i {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .fsb-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   color: #f8fafc;
 }
 
 .fsb-tab-btn.active {
-  background: rgba(34, 211, 238, 0.12);
+  background: rgba(34, 211, 238, 0.14);
   color: #22d3ee;
-  border: 1px solid rgba(34, 211, 238, 0.25);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.15);
 }
 
 /* ── Views Panels ── */
@@ -415,6 +517,22 @@ body.fsb-resizing iframe {
   gap: 6px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
+
+.fsb-mission-card {
+  margin-top: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(16, 185, 129, 0.36);
+  border-radius: 8px;
+}
+.fsb-mission-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.fsb-mission-badge { color: #34d399; font-size: 10px; font-weight: 800; letter-spacing: .04em; overflow-wrap: anywhere; }
+.fsb-mission-status { color: #cbd5e1; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.fsb-mission-title { color: #f1f5f9; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.fsb-mission-id-missing { color: #fbbf24; font-size: 10px; line-height: 1.4; }
 
 .fsb-job-header {
   display: flex;
@@ -674,12 +792,28 @@ body.fsb-resizing iframe {
 .fsb-chips-row {
   display: flex;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 6px 14px;
   background: rgba(15, 23, 42, 0.4);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   overflow-x: auto;
+  scrollbar-width: none;
+  flex-wrap: nowrap;
   flex-shrink: 0;
 }
+.fsb-chips-row::-webkit-scrollbar {
+  display: none;
+}
+
+.fsb-quick-actions-head { display:flex; align-items:center; justify-content:space-between; padding:4px 14px 0; color:#8fa1b8; font-size:10px; }
+.fsb-quick-actions-head button { border:0; background:transparent; color:#67d8ee; font:inherit; cursor:pointer; padding:4px 6px; }
+.fsb-quick-actions-editor { padding:6px 12px; border-top:1px solid rgba(255,255,255,.06); max-height:180px; overflow:auto; }
+.fsb-quick-actions-editor[hidden] { display:none; }
+.fsb-quick-action-edit-row { display:grid; grid-template-columns:minmax(0,1fr) repeat(3,30px); align-items:center; gap:4px; min-height:32px; color:#cbd5e1; font-size:11px; }
+.fsb-quick-action-edit-row span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fsb-quick-action-edit-row button,.fsb-quick-action-add button { min-height:28px; border:1px solid #26394d; border-radius:5px; background:#111b29; color:#cbd5e1; cursor:pointer; }
+.fsb-quick-action-edit-row button:hover,.fsb-quick-action-add button:hover { border-color:#22d3ee; color:#67e8f9; }
+.fsb-quick-action-add { display:grid; grid-template-columns:1fr 1.4fr auto; gap:5px; margin-top:6px; }
+.fsb-quick-action-add input { min-width:0; width:100%; border:1px solid #26394d; border-radius:5px; padding:6px; background:#0b1220; color:#e2e8f0; font-size:11px; }
 
 .fsb-chip {
   padding: 4px 10px;
@@ -905,10 +1039,10 @@ body.fsb-resizing iframe {
 #fenix-floating-mascot {
   position: fixed;
   bottom: 38px !important;
-  right: 24px;
-  z-index: 900;
-  width: 76px;
-  height: 84px;
+  right: 18px;
+  z-index: 850;
+  width: 54px;
+  height: 60px;
   cursor: pointer;
   user-select: none;
   display: flex;
@@ -920,7 +1054,7 @@ body.fsb-resizing iframe {
 }
 
 #fenix-floating-mascot:hover {
-  transform: translateY(-4px) scale(1.08);
+  transform: translateY(-3px) scale(1.06);
 }
 
 #fenix-floating-mascot.hidden {
@@ -931,14 +1065,14 @@ body.fsb-resizing iframe {
 
 @keyframes fenixMascotFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-7px); }
+  50% { transform: translateY(-5px); }
 }
 
 /* Mascot Pod & Sprite Container */
 .ffm-pod {
   position: relative;
-  width: 68px;
-  height: 68px;
+  width: 50px;
+  height: 50px;
   background: radial-gradient(circle at 50% 30%, rgba(34, 211, 238, 0.18), rgba(9, 14, 28, 0.92));
   border: 1.5px solid rgba(34, 211, 238, 0.45);
   border-radius: 50% 50% 45% 45%;
@@ -952,8 +1086,8 @@ body.fsb-resizing iframe {
 /* Pixel Art Robot Head / Body */
 .ffm-sprite {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -963,10 +1097,10 @@ body.fsb-resizing iframe {
 /* Blue Cloud / Robot Body */
 .ffm-body {
   position: relative;
-  width: 40px;
-  height: 34px;
+  width: 32px;
+  height: 27px;
   background: #3b82f6;
-  border-radius: 12px;
+  border-radius: 9px;
   box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -3px 4px rgba(29, 78, 216, 0.8), 0 0 8px rgba(59, 130, 246, 0.4);
   display: flex;
   align-items: center;
@@ -975,22 +1109,22 @@ body.fsb-resizing iframe {
 
 /* Face Visor Screen */
 .ffm-visor {
-  width: 28px;
-  height: 20px;
+  width: 22px;
+  height: 16px;
   background: #0f172a;
-  border-radius: 6px;
-  border: 1.5px solid #1e293b;
+  border-radius: 5px;
+  border: 1px solid #1e293b;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8);
 }
 
 /* Glowing Pixel Eyes */
 .ffm-eye {
   font-family: monospace;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 900;
   color: #22d3ee;
   line-height: 1;
@@ -1001,9 +1135,9 @@ body.fsb-resizing iframe {
 /* Mini Laptop in Lap */
 .ffm-laptop {
   position: absolute;
-  bottom: -4px;
-  width: 24px;
-  height: 15px;
+  bottom: -3px;
+  width: 20px;
+  height: 12px;
   background: #1e1b4b;
   border-radius: 3px;
   border: 1px solid #4338ca;
@@ -1012,7 +1146,7 @@ body.fsb-resizing iframe {
   justify-content: center;
   transform: perspective(60px) rotateX(15deg);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-  animation: fenixLaptopGlow 2.5s ease-in-out infinite;
+}  animation: fenixLaptopGlow 2.5s ease-in-out infinite;
 }
 
 .ffm-laptop-screen {
@@ -1402,6 +1536,10 @@ body.fsb-resizing iframe {
   border-color: rgba(192, 132, 252, 0.25);
   background: rgba(192, 132, 252, 0.08);
 }
+.fsb-msg-diagnostics { margin-top:6px; color:#94a3b8; font-size:10px; }
+.fsb-msg-diagnostics summary { width:max-content; cursor:pointer; color:#7890a8; }
+.fsb-msg-diagnostics > div { display:flex; flex-wrap:wrap; gap:4px 10px; padding-top:5px; }
+.fsb-msg-diagnostics > div span { overflow-wrap:anywhere; }
 
 /* ── Interactive Action Buttons in Chat ── */
 .fsb-msg-actions {
@@ -1522,6 +1660,12 @@ body.fsb-resizing iframe {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   gap: 8px;
   flex-shrink: 0;
+}
+
+@media (max-width:480px) {
+  .fsb-quick-action-add { grid-template-columns:1fr 1fr; }
+  .fsb-quick-action-add button { grid-column:1 / -1; }
+  .fsb-quick-actions-head { padding-inline:10px; }
 }
 
 .fsb-conv-btn {
@@ -2530,6 +2674,18 @@ body.has-right-sidebar-open.fsb-docked #view-observability .workspace-grid {
   color: #00D9FF;
 }
 
+.fsb-chat-input-btn.recording {
+  color: #fff;
+  background: #dc2626;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+  animation: fsb-recording-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes fsb-recording-pulse {
+  50% { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0.06); }
+}
+
 .fsb-chat-send-btn {
   background: #2563EB;
   border: none;
@@ -2570,32 +2726,40 @@ body.has-right-sidebar-open.fsb-docked #view-observability .workspace-grid {
 
 /* ── Universal Context Bar (Fênix V15) ── */
 .fsb-context-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 6px 12px;
   background: rgba(10, 16, 32, 0.95);
   border-bottom: 1px solid rgba(34, 211, 238, 0.15);
   font-family: var(--fenix-font-mono, monospace);
   font-size: 10px;
-  overflow-x: auto;
-  white-space: nowrap;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .fsb-ctx-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 2px 7px;
+  padding: 4px 6px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
+  border-radius: 6px;
   color: #94A3B8;
-  max-width: 140px;
+  width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: default;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.fsb-ctx-item:hover {
+  background: rgba(0, 217, 255, 0.08);
+  border-color: rgba(0, 217, 255, 0.25);
 }
 
 .fsb-ctx-item i {
@@ -2609,6 +2773,7 @@ body.has-right-sidebar-open.fsb-docked #view-observability .workspace-grid {
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Diff Proposal Card (Human-In-The-Loop) ── */
@@ -3344,3 +3509,448 @@ body.has-right-sidebar-open.fsb-docked #view-observability .workspace-grid {
   .fsb-platform-form-row { flex-direction: column; }
   .fsb-platform-orbit { width: min(100%, 240px); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FÊNIX O(1) MEMORY INDEX STRIP & CYBERNETIC 3-MONITOR WORKSTATION
+   (Design Patterns: Video 1 MCP Brain & Video 2 Tower Workstation)
+   ═══════════════════════════════════════════════════════════════════ */
+.fsb-memory-index-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(8, 20, 36, 0.95), rgba(4, 12, 22, 0.98));
+  border-bottom: 1px solid rgba(0, 217, 255, 0.18);
+  font-family: var(--fnx-font-mono, monospace);
+  font-size: 10px;
+}
+
+.fsb-mis-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fsb-mis-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 9.5px;
+}
+
+.fsb-mis-pill.accent {
+  background: rgba(0, 217, 255, 0.08);
+  border-color: rgba(0, 217, 255, 0.3);
+  color: #00d9ff;
+  font-weight: 700;
+}
+
+.fsb-mis-pill strong {
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.fsb-mis-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.fsb-mis-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 6px;
+  color: #cbd5e1;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.fsb-mis-btn:hover {
+  background: rgba(0, 217, 255, 0.12);
+  border-color: rgba(0, 217, 255, 0.4);
+  color: #00d9ff;
+  transform: translateY(-1px);
+}
+
+.fsb-mis-btn.primary {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(16, 185, 129, 0.2));
+  border-color: rgba(0, 217, 255, 0.45);
+  color: #38bdf8;
+}
+
+.fsb-delegate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #0284c7, #0d9488);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 8px;
+  color: #f8fafc;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fsb-delegate-btn:hover {
+  background: linear-gradient(135deg, #0369a1, #0f766e);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+/* 3-Monitor Workstation Styles */
+.fsb-workstation-3mon {
+  animation: fadeInWorkstation 0.3s ease-out;
+}
+
+@keyframes fadeInWorkstation {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FÊNIX OS — UNIVERSAL SCREEN PROPORTIONS & ADAPTIVE VIEWPORTS (14 VIEWS)
+   Ensures seamless compression when sidebar is open and full expansion when closed
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Global Flex Compression Contract ── */
+.main-body {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100vw !important;
+  height: calc(100vh - var(--topbar-height, 40px) - var(--bottom-dock-height, 32px)) !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.views-container {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  position: relative !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transition: width 220ms cubic-bezier(0.16, 1, 0.3, 1), flex 220ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body:not(.has-right-sidebar-open) .views-container {
+  width: 100% !important;
+}
+
+body.has-right-sidebar-open .views-container {
+  width: auto !important;
+}
+
+/* ── 2. VIEW 1: COMMAND CENTER (#view-command) ── */
+#view-command.fenix-orchestrator-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 12px 16px !important;
+  box-sizing: border-box !important;
+}
+body.has-right-sidebar-open #view-command .fenix-cmd-lower-grid,
+body.has-right-sidebar-open #view-command .orch-bottom-trio {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 12px !important;
+}
+body:not(.has-right-sidebar-open) #view-command .fenix-cmd-lower-grid,
+body:not(.has-right-sidebar-open) #view-command .orch-bottom-trio {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 16px !important;
+}
+
+/* ── 3. VIEW 2: AI LIVING CITY 3D (#view-city) ── */
+#view-city {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+#view-city #cityCanvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+}
+#view-city .fenix-city-brief {
+  position: absolute !important;
+  top: 14px !important;
+  right: 14px !important;
+  max-width: 300px !important;
+  z-index: 25 !important;
+  transition: right 220ms ease !important;
+}
+#view-city #fenixCityNavPill {
+  position: absolute !important;
+  bottom: 16px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 25 !important;
+  max-width: calc(100% - 32px) !important;
+}
+
+/* ── 4. VIEW 3: VISUAL IDE (#view-ide) ── */
+#view-ide {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+#view-ide .fenix-ide-left-panel {
+  width: 220px !important;
+  flex: 0 0 220px !important;
+  transition: width 200ms ease, flex 200ms ease !important;
+}
+body.has-right-sidebar-open #view-ide .fenix-ide-left-panel {
+  width: 180px !important;
+  flex: 0 0 180px !important;
+}
+body.has-right-sidebar-open #view-ide .fenix-ide-editor-area,
+body.has-right-sidebar-open #view-ide .fenix-ide-preview-pane {
+  min-width: 200px !important;
+}
+body:not(.has-right-sidebar-open) #view-ide .fenix-ide-editor-area,
+body:not(.has-right-sidebar-open) #view-ide .fenix-ide-preview-pane {
+  min-width: 320px !important;
+}
+
+/* ── 5. VIEW 4: OPERATIONS & SPRINTS (#view-operations) ── */
+#view-operations {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 14px 18px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── 6. VIEW 5: MEMORY MATRIX & GRAPH (#view-memory) ── */
+#view-memory {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+body.has-right-sidebar-open #view-memory .fml-workspace {
+  grid-template-columns: 210px minmax(280px, 1fr) !important;
+}
+body:not(.has-right-sidebar-open) #view-memory .fml-workspace {
+  grid-template-columns: 240px 1fr !important;
+}
+
+/* ── 7. VIEW 6: RUNTIME & HARDWARE (#view-runtime) ── */
+#view-runtime {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 14px 18px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── 8. VIEW 7: AGENTS & SWARM (#view-agents) ── */
+#view-agents {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 14px 18px !important;
+  box-sizing: border-box !important;
+}
+#view-agents #fenix-agents-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+  gap: 12px !important;
+}
+
+/* ── 9. VIEW 8: PROJECTS HUB (#view-projects) ── */
+#view-projects {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 14px 18px !important;
+  box-sizing: border-box !important;
+}
+#view-projects .fp-projects-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+/* ── 10. VIEW 9: KNOWLEDGE BASE (#view-knowledge) ── */
+#view-knowledge {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 14px 18px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── 11. VIEW 10: MCP HUB (#view-mcp) ── */
+#view-mcp {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 14px 18px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── 12. VIEW 11: BROWSER VIEWPORT (#view-browser) ── */
+#view-browser {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* ── 13. VIEW 12: OBSERVABILITY (#view-observability) ── */
+#view-observability {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 14px 18px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── 14. VIEW 13: TERMINAL (#view-terminal) ── */
+#view-terminal {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding: 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── 15. VIEW 14: FLOWGRAPH (#view-flowgraph) ── */
+#view-flowgraph {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* ── PHASE 55: MONOCHROMATIC 3D ICON STANDARD & PERSISTENT ERROR LEDGER ── */
+.fsb-tabs.fnx-mono3d-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  background: linear-gradient(180deg, rgba(10, 15, 28, 0.94), rgba(6, 10, 18, 0.98)) !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14) !important;
+}
+
+.fsb-tabs.fnx-mono3d-tabs .fsb-tab-btn {
+  height: 34px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.85), rgba(11, 17, 30, 0.95)) !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 3px 8px rgba(0, 0, 0, 0.5) !important;
+  color: #cbd5e1 !important;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.fsb-tabs.fnx-mono3d-tabs .fsb-tab-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(226, 232, 240, 0.48) !important;
+  color: #f8fafc !important;
+}
+
+.fsb-tabs.fnx-mono3d-tabs .fsb-tab-btn.active {
+  background: linear-gradient(145deg, rgba(51, 65, 85, 0.95), rgba(15, 23, 42, 0.98)) !important;
+  border-color: rgba(56, 189, 248, 0.65) !important;
+  color: #f8fafc !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 0 12px rgba(56, 189, 248, 0.22), 0 4px 10px rgba(0, 0, 0, 0.6) !important;
+}
+
+.fnx-mono3d-tab-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 15px !important;
+  color: inherit !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
+}
+
+.fsb-conv-btn.fsb-errors-btn {
+  border-color: rgba(245, 158, 11, 0.28) !important;
+  color: #cbd5e1 !important;
+}
+
+.fsb-conv-btn.fsb-errors-btn.has-errors {
+  border-color: rgba(245, 158, 11, 0.55) !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #fcd34d !important;
+}
+
+.fsb-error-card {
+  border: 1px solid rgba(245, 158, 11, 0.42) !important;
+  background: linear-gradient(180deg, rgba(24, 18, 12, 0.92), rgba(12, 15, 24, 0.96)) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+}
+
+.fsb-error-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.fsb-error-code-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fcd34d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.fsb-error-time {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.fsb-error-card-body {
+  font-size: 12px;
+  color: #f1f5f9;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.fsb-error-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+

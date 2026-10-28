@@ -267,11 +267,11 @@
   window.__fenixLiveMemoryClusters = window.__fenixLiveMemoryClusters || { ...defaultClusterTemplate };
   const MEMORY_CLUSTERS = window.__fenixLiveMemoryClusters;
 
-  let currentSelectedClusterKey = 'auth';
+  let currentSelectedClusterKey = 'core';
 
   window.fenixSelectMemoryCluster = function (clusterKey) {
     currentSelectedClusterKey = clusterKey;
-    const data = MEMORY_CLUSTERS[clusterKey] || MEMORY_CLUSTERS.auth;
+    const data = MEMORY_CLUSTERS[clusterKey] || MEMORY_CLUSTERS.core || MEMORY_CLUSTERS.auth;
     const titleEl = document.getElementById('fenixMemClusterName');
     const countEl = document.getElementById('fenixMemClusterCount');
     const confBar = document.getElementById('fenixMemConfBar');
@@ -590,7 +590,7 @@ module.exports = authRouter;`
       syncLiveTargetTelemetry();
     } else if (viewId === 'memory') {
       window.fenixSyncMemoryGraph(false);
-      window.fenixSelectMemoryCluster(currentSelectedClusterKey || 'auth');
+      window.fenixSelectMemoryCluster(currentSelectedClusterKey || 'core');
     } else if (viewId === 'flowgraph') {
       const mesh = document.getElementById('fenixFlowGraphDynamicMesh');
       if (mesh) mesh.style.display = 'block';
@@ -819,11 +819,21 @@ module.exports = authRouter;`
       const renderCard = (agent) => {
         const classification = window.FenixAgentRosterFilter?.classifyAgent(agent) || 'OTHER';
         const rawStatus = String(agent.state || agent.status || 'SEM ESTADO');
-        const statusLabel = classification === 'WORKING' ? 'EM EXECUÇÃO' : classification === 'AVAILABLE' ? 'DISPONÍVEL' : rawStatus;
+        const avatarUrl = agent.avatar?.avatarUrl || (function(id, r) {
+          const t = `${id} ${r}`.toLowerCase();
+          if (/camila|crm|vendas/.test(t)) return '/assets/agents/camila_avatar.png';
+          if (/zai|bot|triagem/.test(t)) return '/assets/agents/zaibot_avatar.png';
+          if (/ana|suporte/.test(t)) return '/assets/agents/ana_avatar.png';
+          if (/carlos|geren|business|ceo/.test(t)) return '/assets/agents/carlos_avatar.png';
+          if (/joao|backend|database|node/.test(t)) return '/assets/agents/joao_avatar.png';
+          if (/marina|design|ux|frontend/.test(t)) return '/assets/agents/marina_avatar.png';
+          if (/habbo|pedro|infra|devops|sre/.test(t)) return '/assets/agents/habbo_avatar.png';
+          return '/assets/agents/camila_avatar_16bit.png';
+        })(agent.id, agent.role);
         return `
         <article class="cp-agent-card" data-agent-id="${escape(agent.id)}" data-agent-status="${classification}" role="button" tabindex="0" aria-label="Inspecionar ${escape(agent.name)}">
           <div class="cp-status-badge"><div class="cp-status-dot ${classification === 'WORKING' ? 'online' : classification === 'AVAILABLE' ? 'available' : 'offline'}"></div>${escape(statusLabel)}</div>
-          <div class="cp-card-header"><div class="cp-avatar-box agent-profile-avatar" data-avatar-color="${escape(agent.avatar?.appearance?.colorProfile || 'cyan')}" aria-hidden="true"><span class="agent-profile-avatar__head"></span><span class="agent-profile-avatar__body"></span></div><div class="cp-header-info"><h3 class="cp-agent-name">${escape(agent.name)}</h3><div class="cp-agent-role">${escape(agent.role)}</div><div class="cp-agent-archetype">${escape(agent.avatar?.personalityProfile?.archetype || agent.avatar?.appearance?.archetype || 'Perfil indisponível')}</div></div></div>
+          <div class="cp-card-header"><div class="cp-avatar-box agent-profile-avatar" style="overflow:hidden;border:1px solid rgba(56,189,248,0.3);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#0c121e;" data-avatar-color="${escape(agent.avatar?.appearance?.colorProfile || 'cyan')}" aria-hidden="true"><img src="${avatarUrl}" alt="${escape(agent.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:9px;" onerror="this.style.display='none';const f=this.parentElement.querySelector('.agent-fallback-glyph');if(f)f.style.display='block';" /><span class="agent-fallback-glyph" style="display:none;"><span class="agent-profile-avatar__head"></span><span class="agent-profile-avatar__body"></span></span></div><div class="cp-header-info"><h3 class="cp-agent-name">${escape(agent.name)}</h3><div class="cp-agent-role">${escape(agent.role)}</div><div class="cp-agent-archetype">${escape(agent.avatar?.personalityProfile?.archetype || agent.avatar?.appearance?.archetype || 'Perfil indisponível')}</div></div></div>
           <div class="cp-tags-row"><span class="cp-tag">${agent.kind === 'cognitive' ? 'EQUIPE COGNITIVA' : 'SQUAD PRINCIPAL'}</span>${agent.currentJob ? `<span class="cp-trait">Job ${escape(typeof agent.currentJob === 'object' ? agent.currentJob.name : agent.currentJob)}</span>` : ''}</div>
           <div class="cp-card-footer" style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
             <div class="cp-agent-id">${escape(agent.id)}</div>
@@ -1088,6 +1098,10 @@ module.exports = authRouter;`
         };
       }
       window.__fenixLiveMemoryClusters = clusters;
+      if (!currentSelectedClusterKey || !clusters[currentSelectedClusterKey] || clusters[currentSelectedClusterKey].confidence === 0) {
+        const bestClusterKey = Object.keys(clusters).find(function(k) { return clusters[k].confidence > 0; }) || 'core';
+        currentSelectedClusterKey = bestClusterKey;
+      }
       if (typeof window.fenixSelectMemoryCluster === 'function' && currentSelectedClusterKey) {
         window.fenixSelectMemoryCluster(currentSelectedClusterKey);
       }
