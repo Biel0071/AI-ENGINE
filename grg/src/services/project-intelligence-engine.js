@@ -87,7 +87,7 @@ class ProjectIntelligenceEngine {
   _scanRealWorkspace(rootPath, report) {
     let fileCount = 0;
     let bytesRead = 0;
-    const maxFiles = 500;
+    const maxFiles = 1500;
     const detectedStack = new Map();
     const dependencies = [];
     const routes = [];
@@ -140,10 +140,18 @@ class ProjectIntelligenceEngine {
       let entries = [];
       try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
 
+      const priorityOrder = ['src', 'api', 'routes', 'app', 'lib', 'server'];
+      entries.sort((a, b) => {
+        const aPri = priorityOrder.includes(a.name.toLowerCase()) ? 0 : 1;
+        const bPri = priorityOrder.includes(b.name.toLowerCase()) ? 0 : 1;
+        if (aPri !== bPri) return aPri - bPri;
+        return a.name.localeCompare(b.name);
+      });
+
       for (const entry of entries) {
         if (fileCount >= maxFiles) break;
         const name = entry.name;
-        if (['node_modules', '.git', 'dist', 'build', '.cache', 'coverage'].includes(name)) continue;
+        if (['node_modules', '.git', 'dist', 'build', '.cache', 'coverage', 'skills', 'backups', 'backup', 'archive', 'android', 'node-v20.11.1-win-x64'].includes(name.toLowerCase())) continue;
 
         const fullPath = path.join(dir, name);
         const relPath = path.relative(rootPath, fullPath).replace(/\\/g, '/');
