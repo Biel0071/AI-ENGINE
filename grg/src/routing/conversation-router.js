@@ -40,11 +40,19 @@ function getConfirmationMode() {
 }
 
 function detectProject(text) {
-  var lower = text.toLowerCase();
-  if (lower.indexOf('api platform') >= 0 || lower.indexOf('api-platform') >= 0) return 'api-platform';
+  var lower = String(text || '').toLowerCase();
+  if (/\b(?:tbot|t-bot|telegram\s*bot)\b/i.test(lower)) return 'tbot';
+  if (lower.indexOf('api platform') >= 0 || lower.indexOf('api-platform') >= 0 || lower.indexOf('ai platform') >= 0) return 'api-platform';
   if (lower.indexOf('zapai') >= 0 || lower.indexOf('zap-ai') >= 0 || lower.indexOf('zapflow') >= 0) return 'zapai-crm';
-  if (lower.indexOf('fenix') >= 0 || lower.indexOf('fênix') >= 0) return 'fenix-os';
-  return 'fenix-os';
+  if (lower.indexOf('fenix') >= 0 || lower.indexOf('fênix') >= 0 || lower.indexOf('ai-engine') >= 0) return 'fenix-os';
+  if (lower.indexOf('mf-atacadista') >= 0 || lower.indexOf('mf atacadista') >= 0 || lower.indexOf('mania fashion') >= 0) return 'mf-atacadista';
+  if (lower.indexOf('dview') >= 0 || lower.indexOf('droidview') >= 0) return 'dview';
+  if (lower.indexOf('task-board') >= 0 || lower.indexOf('task board') >= 0) return 'task-board';
+  if (lower.indexOf('gerar-ficha') >= 0 || lower.indexOf('gerar ficha') >= 0) return 'gerar-ficha';
+
+  var match = String(text || '').match(/\b(?:projeto|project)\s+([a-zA-Z0-9_\-\.]+)/i);
+  if (match) return match[1].toLowerCase();
+  return null;
 }
 
 function classify(message, userOpts) {
@@ -123,28 +131,55 @@ function classify(message, userOpts) {
     lower.indexOf('rm -rf') >= 0
   );
 
-  var isAnalysis = (
-    lower.indexOf('analise') >= 0 ||
-    lower.indexOf('analisar') >= 0 ||
-    lower.indexOf('scan') >= 0 ||
-    lower.indexOf('audite') >= 0 ||
-    lower.indexOf('auditar') >= 0 ||
-    lower.indexOf('mapeie') >= 0 ||
-    lower.indexOf('mapear') >= 0
+  var isCapabilityQuestion = (
+    lower.indexOf('consegue analisar') >= 0 ||
+    lower.indexOf('pode analisar') >= 0 ||
+    lower.indexOf('consegue auditar') >= 0 ||
+    lower.indexOf('é capaz de analisar') >= 0 ||
+    lower.indexOf('e capaz de analisar') >= 0 ||
+    lower.indexOf('quais arquivos') >= 0 ||
+    lower.indexOf('encontre um bug') >= 0 ||
+    lower.indexOf('investigue antes') >= 0
   );
 
-  var isMission = (
-    lower.indexOf('melhore o ') >= 0 ||
-    lower.indexOf('até ficar pronto') >= 0 ||
-    lower.indexOf('missão') >= 0 ||
-    lower.indexOf('mission') >= 0
+  var isDeepInvestigation = !executionIsNegated && (
+    lower.indexOf('auditoria de codigo') >= 0 ||
+    lower.indexOf('auditoria de código') >= 0 ||
+    lower.indexOf('auditoria completa') >= 0 ||
+    lower.indexOf('analise profunda') >= 0 ||
+    lower.indexOf('análise profunda') >= 0 ||
+    lower.indexOf('investigacao profunda') >= 0 ||
+    lower.indexOf('investigação profunda') >= 0 ||
+    lower.indexOf('varredura completa') >= 0 ||
+    lower.indexOf('varredura profunda') >= 0 ||
+    lower.indexOf('auditar o projeto') >= 0 ||
+    lower.indexOf('auditar codigo') >= 0 ||
+    lower.indexOf('auditar código') >= 0 ||
+    lower.indexOf('analisar o projeto inteiro') >= 0
   );
 
-  var isTask = (
+  var isAnalysis = !executionIsNegated && !isCapabilityQuestion && (
+    isDeepInvestigation ||
+    lower.indexOf('analise ') >= 0 ||
+    lower.indexOf('analisar ') >= 0 ||
+    lower.indexOf('scan ') >= 0 ||
+    lower.indexOf('audite ') >= 0 ||
+    lower.indexOf('auditar ') >= 0 ||
+    lower.indexOf('mapeie ') >= 0 ||
+    lower.indexOf('mapear ') >= 0 ||
+    lower === 'analise' || lower === 'analisar' || lower === 'scan' || lower === 'audite' || lower === 'auditar' || lower === 'auditoria'
+  );
+
+  var executionIsNegated = /\b(?:nao|não|sem)\s+(?:(?:crie|criar|inicie|iniciar|execute|executar|rode|rodar|gere|gerar|abra|abrir)\s+)?(?:(?:uma?|o|a|nenhum|nenhuma)\s+)?(?:miss[aã]o|mission|tarefa|job|arquivo|file|projeto|deploy)\b|\b(?:do not|don't)\s+(?:create|start|run)\s+(?:a\s+)?(?:mission|task|job|file|project|deployment)\b/.test(lower);
+  var isMission = !executionIsNegated && (
+    /\b(?:crie|criar|inicie|iniciar|execute|executar|planeje|planejar|delegue|delegar)\b.{0,40}\b(?:miss[aã]o|mission)\b/.test(lower) ||
+    lower.indexOf('melhore o ') >= 0 || lower.indexOf('até ficar pronto') >= 0
+  );
+
+  var isTask = !executionIsNegated && (
     lower.indexOf('coloque isso na fila') >= 0 ||
     lower.indexOf('crie uma tarefa') >= 0 ||
     lower.indexOf('execute a tarefa') >= 0 ||
-    lower.indexOf('tarefa') >= 0 ||
     lower.indexOf('use qwen para') >= 0
   );
 
@@ -158,14 +193,22 @@ function classify(message, userOpts) {
   );
 
   var isQuestion = (
+    isCapabilityQuestion ||
     lower.startsWith('como funciona') ||
     lower.startsWith('o que é') ||
     lower.startsWith('o que e') ||
     lower.startsWith('me explique') ||
     lower.startsWith('explique') ||
+    lower.startsWith('me fale') ||
+    lower.startsWith('fale sobre') ||
+    lower.startsWith('fale-me') ||
+    lower.startsWith('diga-me') ||
     lower.startsWith('por que') ||
     lower.startsWith('quanto é') ||
     lower.startsWith('quanto e') ||
+    lower.indexOf('investigue') >= 0 ||
+    lower.indexOf('onde está') >= 0 ||
+    lower.indexOf('onde esta') >= 0 ||
     lower.indexOf('?') >= 0
   );
 
@@ -237,6 +280,7 @@ function classify(message, userOpts) {
     estimatedTimeSec = 60;
     requiredCapabilities = ['planning', 'code:write', 'analysis'];
     recommendedModel = preferredModel || 'qwen2.5:3b';
+    requiresConfirmation = true;
   } else if (isProjectMutation) {
     classification = CLASSIFICATIONS.PROJECT_OPERATION;
     lane = 'JOB_LANE';
@@ -249,13 +293,13 @@ function classify(message, userOpts) {
   } else if (isAnalysis || isTask) {
     classification = isAnalysis ? CLASSIFICATIONS.ANALYSIS : CLASSIFICATIONS.TASK;
     lane = 'JOB_LANE';
-    complexity = 'medium';
-    estimatedTokens = 600;
-    estimatedTimeSec = 15;
-    requiredCapabilities = ['read', 'analysis'];
+    complexity = isDeepInvestigation ? 'high' : 'medium';
+    estimatedTokens = isDeepInvestigation ? 1500 : 600;
+    estimatedTimeSec = isDeepInvestigation ? 30 : 15;
+    requiredCapabilities = isDeepInvestigation ? ['read', 'analysis', 'code:audit'] : ['read', 'analysis'];
     recommendedModel = preferredModel || 'qwen2.5:3b';
     // Read-only analysis in SMART mode is AUTO QUEUE (requiresConfirmation = false)
-    requiresConfirmation = (mode === CONFIRMATION_MODES.ALWAYS);
+    requiresConfirmation = isTask || mode === CONFIRMATION_MODES.ALWAYS;
   } else if (isChat) {
     classification = CLASSIFICATIONS.CHAT;
     lane = 'FAST_LANE';

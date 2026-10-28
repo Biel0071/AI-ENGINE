@@ -128,12 +128,17 @@ async function callQuickModel(text, opts) {
 
   var mode = getSelectorMode();
   var preferTier = mode === 'QWEN' || mode === 'OLLAMA' ? 'local' : null;
+  var configuredProvider = mode === 'QWEN' || mode === 'OLLAMA'
+    ? null
+    : router.gateway?.route?.('default')?.provider || null;
   var routed = await router.route(options.tenantId, options.actorId, {
     lane: 'fast',
     taskType: 'short_answer',
     prompt: options.prompt || String(text || ''),
     temperature: 0.3,
     preferTier: preferTier,
+    preferProvider: configuredProvider,
+    excludeProviders: ['echo'],
   });
   var responseText = String(routed && routed.result && routed.result.text || '').trim();
   if (!routed || routed.ok !== true || !responseText) {
@@ -321,15 +326,125 @@ async function handle(message, classificationResult, opts) {
   } else if (lower.indexOf('confirmação inteligente') >= 0 || text === '/confirm smart') {
     setConfirmationMode('SMART');
     reply = 'Política de confirmação configurada para: SMART (automático para leitura, confirmação para alterações de código e destrutivas).';
+  } else if (text === '/rea' || text.startsWith('/rea ') || lower.indexOf('analise rea') >= 0 || lower.indexOf('análise rea') >= 0 || lower.indexOf('reverse engineer') >= 0) {
+    var { globalReaIntelligenceEngine } = require('../services/rea-intelligence-engine');
+    var targetProj = opts?.projectId || 'fenix-os';
+    var reaEv = globalReaIntelligenceEngine.analyzeProject(targetProj, { maxFiles: 150 });
+    reply = '🔬 **Análise REA (`' + reaEv.reaEngine.version + '`) — ' + reaEv.projectName + '**\n' +
+      '• **Evidence ID:** `' + reaEv.evidenceId + '` (SHA-256: `' + reaEv.subjectSha256.slice(0, 16) + '…`)\n' +
+      '• **Grafo da Aplicação:** `' + reaEv.metrics.graphNodesCount + '` módulos analisados | `' + reaEv.metrics.graphEdgesCount + '` arestas de dependência\n' +
+      '• **Superfície HTTP & IPC:** `' + reaEv.metrics.routesDetected + '` rotas detectadas | `' + reaEv.metrics.ipcBoundariesCount + '` fronteiras IPC/SSE/WS\n' +
+      '• **Integridade:** `' + reaEv.metrics.brokenReferencesCount + '` referências quebradas | `' + reaEv.metrics.unknownsCount + '` unknowns dinâmicos\n' +
+      '• **Tempo de Execução:** `' + reaEv.durationMs + 'ms`';
+    providerUsed = 'rea-intelligence-engine';
+    modelUsed = 'rea-agents@6.5.0';
+  } else if (text === '/blueprint' || text.startsWith('/blueprint ') || lower.indexOf('blueprint dev') >= 0 || lower.indexOf('construcao dev') >= 0 || lower.indexOf('construção dev') >= 0) {
+    var { globalReaIntelligenceEngine: reaBpEngine } = require('../services/rea-intelligence-engine');
+    var bpProj = opts?.projectId || 'fenix-os';
+    var bpObj = text.replace(/^\/blueprint\s*/i, '').trim() || 'Evolução estrutural full-stack';
+    var bp = reaBpEngine.generateDevBlueprint(bpProj, bpObj);
+    reply = '📐 **Proposta de engenharia REA — `' + bp.blueprintId + '`**\n' +
+      '• **Objetivo:** ' + bp.objective + '\n' +
+      '• **Evidência:** `' + bp.evidenceRef.evidenceId + '` · SHA-256 `' + bp.evidenceRef.subjectSha256.slice(0, 16) + '…`\n' +
+      '• **Alvos frontend:** ' + (bp.fullstackContract.frontendTargets.map(function(t) { return '`' + t.viewId + '` (' + t.file + ')'; }).join(', ') || 'nenhum correlacionado') + '\n' +
+      '• **Alvos backend:** ' + (bp.fullstackContract.backendTargets.map(function(t) { return '`' + t.symbol + '` (' + t.file + ')'; }).join(', ') || 'nenhum correlacionado') + '\n' +
+      '• **Rotas:** ' + (bp.fullstackContract.apiContracts.map(function(c) { return '`' + c.method + ' ' + c.path + '`'; }).join(', ') || 'nenhuma correlacionada') + '\n' +
+      '• **Etapas propostas:** ' + bp.executionSteps.map(function(s) { return s.step + '. ' + s.phase + ' (' + s.status + ')'; }).join(' → ') + '\n' +
+      '• Proposta somente de leitura. Não executou testes nem criou job/alterações; revise antes de delegar.';
+    providerUsed = 'rea-blueprint-engine';
+    modelUsed = 'REA local analysis';
+  } else if (
+    text === '/index' || text.startsWith('/index ') || text.startsWith('/memory-index') ||
+    lower === 'memoria index' || lower === 'memória index' || lower === 'memoria ativa' || lower === 'memória ativa' ||
+    lower === 'status da memoria' || lower === 'status da memória'
+  ) {
+    var { globalProjectMemoryIndex } = require('../memory/project-memory-index');
+    var idxStatus = globalProjectMemoryIndex.getStatus();
+    var qText = text.replace(/^\/(?:memory-)?index\s*/i, '').trim() || 'fenix';
+    var qRes = globalProjectMemoryIndex.queryIndex(qText, { projectId: opts?.projectId, limit: 6 });
+    var topHits = qRes.results.slice(0, 5).map(function(r) {
+      return '  - `[' + r.type.toUpperCase() + ']` **' + r.id + '**' + (r.file ? ' (' + r.file + ')' : '');
+    }).join('\n');
+    reply = '🗂️ **Memória Ativa & Project Memory INDEX (`' + idxStatus.version + '`)**\n' +
+      '• **Latência O(1):** `' + qRes.elapsedMs + 'ms` | **Tokens Indexados:** `' + idxStatus.indexedTokens + '`\n' +
+      '• **Ecossistema Indexado:** `' + idxStatus.summary.projectsCount + '` projetos | `' + idxStatus.summary.filesCount + '` arquivos | `' + idxStatus.summary.symbolsCount + '` símbolos | `' + idxStatus.summary.routesCount + '` rotas | `' + idxStatus.summary.dependencyEdgesCount + '` arestas\n' +
+      '• **ACTIVE_PROJECT_MEMORY.md:** `' + idxStatus.activeMemory.sectionCount + '` seções ativas (SHA-256 `' + (idxStatus.activeMemory.sha256 || '—') + '`)\n' +
+      (topHits ? '• **Matches para `' + qText + '`:**\n' + topHits : '');
+    providerUsed = 'project-memory-index';
+    modelUsed = 'o1-inverted-index';
+  } else if (text === '/couplings' || text.startsWith('/couplings ') || lower.indexOf('acoplamento') >= 0 || lower.indexOf('todos os projetos') >= 0) {
+    var { globalReaIntelligenceEngine: reaCouplingEngine } = require('../services/rea-intelligence-engine');
+    var coupData = reaCouplingEngine.analyzeEcosystemCouplings();
+    var coupLines = coupData.couplings.map(function(c) {
+      return '• **' + c.source + ' ↔ ' + c.target + '** (`' + c.type + '` via ' + c.protocol + ')';
+    }).join('\n');
+    reply = '🔗 **Matriz de Acoplamento de Engenharia (REA Ecosystem — ' + coupData.totalProjects + ' Projetos)**\n' +
+      coupLines + '\n' +
+      '• **Vídeo 1 (`1001656590.mp4`):** MCP AI Brain — Memória Unificada Multi-IA (Azul=OpenAI/Codex, Laranja=Anthropic/Claude, Amarelo=Misto, Ciano=Qwen/Fênix)\n' +
+      '• **Vídeo 2 (`1001656597.mp4`):** Cidade 3D Cibernética — Torres Autônomas + Feixes de Carga + Workstation Interior de 3 Monitores';
+    providerUsed = 'rea-intelligence-engine';
+    modelUsed = 'rea-agents@6.5.0';
+  } else if (text === '/screens' || text.startsWith('/screens ') || lower.indexOf('todas as telas') >= 0 || lower.indexOf('todas telas') >= 0) {
+    var { globalReaIntelligenceEngine: reaScreensEngine } = require('../services/rea-intelligence-engine');
+    var scrData = reaScreensEngine.analyzeAllScreensAndFeatures();
+    var projList = scrData.projectsScreensSummary.map(function(p) {
+      return '• **' + p.name + '** (`' + p.projectId + '`): `' + p.pagesCount + '` telas/views | `' + p.apis.length + '` rotas principais (' + p.framework + ')';
+    }).join('\n');
+    reply = '🖥️ **Telas Registradas no Ecossistema (Inventário REA atual)**\n' +
+      '• **Total de Projetos:** `' + scrData.totalProjects + '` | **Views Canônicas Fênix OS:** `' + scrData.totalCanonicalFenixViews + '` | **Telas no Ecossistema:** `' + scrData.totalEcosystemScreens + '`\n' +
+      projList;
+    providerUsed = 'rea-intelligence-engine';
+    modelUsed = 'rea-agents@6.5.0';
+  } else if (
+    (lower.indexOf('api') >= 0 || lower.indexOf('plataform') >= 0 || lower.indexOf('platform') >= 0) &&
+    (lower.indexOf('imagem') >= 0 || lower.indexOf('imagens') >= 0 || lower.indexOf('print') >= 0 || lower.indexOf('prints') >= 0 || lower.indexOf('foto') >= 0 || lower.indexOf('fotos') >= 0 || lower.indexOf('tela') >= 0 || lower.indexOf('telas') >= 0 || lower.indexOf('screenshot') >= 0)
+  ) {
+    reply = '🖼️ **Galeria de Telas & Screenshots da API Platform (Porta 3001 / Fastify + Qwen 2.5):**\n\n' +
+      'Aqui estão as telas e componentes visuais registrados e capturados da **API Platform**:\n\n' +
+      '1. **Dashboard & Overview Central da API**\n' +
+      '![Dashboard Overview](/screenshots/api-platform_screenshot.png)\n' +
+      '*Rota:* `/overview` · *Métricas:* Uptime, requisições por segundo, provedores ativos e consumo de tokens.\n\n' +
+      '2. **Tela Real em Execução no Ecossistema**\n' +
+      '![API Platform Real Screen](/screenshots/prj_api_plataform_real_screen.png)\n' +
+      '*Status:* Conectada ao Fênix OS · *Docker Container:* `api-platform-api-1` · *Porta:* `3001`\n\n' +
+      '3. **Portal de Autenticação & Chaves da API (Login Reconstruído)**\n' +
+      '![Portal de Acesso e Chaves](/screenshots/api_platform_reconstructed_login.png)\n' +
+      '*Rota:* `/login` · *Segurança:* Tokens JWT Bearer & RBAC\n\n' +
+      '4. **Componente de Transferência & Webhook de Dados**\n' +
+      '![Componente de Transferência](/screenshots/api_platform_transfer_component.png)\n' +
+      '*Serviços:* BullMQ Workers, Qwen Bridge e Webhook Dispatcher\n\n' +
+      '💡 *Dica:* Você pode abrir e editar qualquer uma dessas telas diretamente pela aba **IDE** (Split Mode) ou pedir ao mascote para abrir no Preview.';
+    providerUsed = 'rea-screen-engine';
+    modelUsed = 'rea-agents@6.5.0';
   }
   // 3. ALL CONVERSATIONAL QUERIES: Route through Model Router -> Real Fast AI Model
   else {
-    var aiResult = await callQuickModel(text, opts);
-    reply = aiResult.text;
-    tokens = aiResult.tokens;
-    usedAI = true;
-    modelUsed = aiResult.model || null;
-    providerUsed = aiResult.provider;
+    try {
+      var aiResult = await callQuickModel(text, opts);
+      reply = aiResult.text;
+      tokens = aiResult.tokens;
+      usedAI = true;
+      modelUsed = aiResult.model || null;
+      providerUsed = aiResult.provider;
+    } catch (aiErr) {
+      if (aiErr && aiErr.code === 'AI_PROVIDER_UNAVAILABLE' && opts?.mascotFastLane === true) {
+        var { globalContextualInvestigationEngine } = require('../services/contextual-investigation-engine');
+        var invResult = await globalContextualInvestigationEngine.investigate(text, {
+          projectId: opts?.projectId,
+          conversationHistory: opts?.conversationHistory,
+          app: opts?.app,
+          tenantId: opts?.tenantId,
+          actorId: opts?.actorId
+        });
+        reply = invResult.response;
+        usedAI = false;
+        tokens = invResult.tokens || null;
+        modelUsed = invResult.model || 'fenix-investigation-engine@v1';
+        providerUsed = invResult.provider || 'contextual-investigation';
+      } else {
+        throw aiErr;
+      }
+    }
   }
 
   var latencyMs = Date.now() - t0;
