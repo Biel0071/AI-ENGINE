@@ -137,6 +137,62 @@
     return null;
   }
 
+  function getCompanyLogoForProject(project) {
+    if (!project) return '/assets/logos/fenix.png';
+    if (project.logoUrl) return project.logoUrl;
+    const name = String(project.name || project.id || '').toLowerCase();
+    const id = String(project.id || '').toLowerCase();
+    const group = String(project.catalogGroup || '').toLowerCase();
+
+    if (id.includes('fenix') || name.includes('fenix')) return '/assets/logos/fenix.png';
+    if (id.includes('crm') || name.includes('crm') || id.includes('zapai') || name.includes('zapai') || group.includes('crm')) return '/assets/logos/zapai-crm.png';
+    if (id.includes('api-platform') || id.includes('api_platform') || name.includes('api platform')) return '/assets/logos/api-platform.png';
+    if (id.includes('mf-atacadista') || name.includes('atacadista') || name.includes('deposito')) return '/assets/logos/mf-atacadista.png';
+    if (id.includes('droid') || name.includes('droidview')) return '/assets/logos/droidview.png';
+    if (id.includes('tbot') || id.includes('ocbot') || name.includes('tbot')) return '/assets/logos/ocbot.png';
+    if (id.includes('browser') || id.includes('bai') || name.includes('browser')) return '/assets/logos/browser-agent.png';
+    if (id.includes('marmita') || name.includes('marmita')) return '/assets/logos/marmita.png';
+    if (id.includes('task') || name.includes('task-board') || name.includes('kanban')) return '/assets/logos/task-board.png';
+    if (id.includes('ficha') || name.includes('gerar-ficha')) return '/assets/logos/gerar-ficha.png';
+    if (id.includes('lovable') || name.includes('lovable')) return '/assets/logos/lovable-pro.png';
+    if (id.includes('live-cam') || id.includes('avatarify') || name.includes('avatar')) return '/assets/logos/avatarify.png';
+    if (id.includes('rolezando') || name.includes('rolezando')) return '/assets/logos/rolezando.png';
+    if (id.includes('trustpag') || id.includes('payment') || name.includes('pagamento')) return '/assets/logos/trustpag.png';
+    if (id.includes('wave') || name.includes('wave-store')) return '/assets/logos/wave-store.png';
+    if (id.includes('fortlev') || name.includes('fortlev')) return '/assets/logos/fortlev-quote.png';
+    if (id.includes('claw') || name.includes('openclaw')) return '/assets/logos/openclaw.png';
+    if (id.includes('disk7') || name.includes('disk7')) return '/assets/logos/disk7.png';
+    if (id.includes('baileys') || name.includes('baileys')) return '/assets/logos/baileys-server.png';
+    if (project.logoUrl) return project.logoUrl;
+    return '/assets/logos/fenix.png';
+  }
+
+  function getScreenPreviewForProject(project) {
+    if (!project) return '/screenshots/fenix-os_screenshot.png';
+    if (project.screenshotUrl) return project.screenshotUrl;
+    const name = String(project.name || project.id || '').toLowerCase();
+    const id = String(project.id || '').toLowerCase();
+    const group = String(project.catalogGroup || '').toLowerCase();
+
+    const registered = state.registeredScreens?.get?.(project.id);
+    if (registered && registered.length && registered[0].screenshotPath) {
+      return registered[0].screenshotPath;
+    }
+    const absorption = state.absorptions?.get?.(project.id);
+    if (absorption && absorption.screens && absorption.screens.length && absorption.screens[0].screenshotPath) {
+      return absorption.screens[0].screenshotPath;
+    }
+
+    if (id.includes('fenix') || name.includes('fenix')) return '/screenshots/fenix-os_screenshot.png';
+    if (id.includes('crm') || name.includes('crm') || id.includes('zapai') || name.includes('zapai') || group.includes('crm')) return '/screenshots/zapai-crm_screenshot.png';
+    if (id.includes('api-platform') || id.includes('api_platform') || name.includes('api platform')) return '/screenshots/api-platform_screenshot.png';
+    if (id.includes('mf-atacadista') || name.includes('atacadista') || name.includes('deposito')) return '/screenshots/operations.png';
+    if (id.includes('city') || id.includes('droid') || name.includes('city')) return '/screenshots/city.png';
+    if (id.includes('bai') || id.includes('browser')) return '/screenshots/v11_phase4_browser.png';
+    if (id.includes('ide') || name.includes('ide')) return '/screenshots/v11_phase4_ide.png';
+    return '/screenshots/projects.png';
+  }
+
   function authToken() {
     return (typeof window.fenixGetAuthToken === 'function')
       ? window.fenixGetAuthToken()
@@ -319,6 +375,7 @@
         <span id="flpCloneStatus" role="status"></span>
       </form>
       <div class="flp-body">
+        <aside class="flp-tree-nav-sidebar" id="flpTreeSidebar"></aside>
         <aside class="flp-sidebar">
           <div class="flp-hub-mode-tabs" style="display:flex; border-bottom:1px solid rgba(133,179,215,.14); margin-bottom:14px; gap:4px;">
             <button type="button" id="flpModeFenix" class="flp-hub-mode-tab active" aria-label="PROJETOS FÊNIX">PROJETOS FÊNIX</button>
@@ -326,6 +383,13 @@
             <button type="button" id="flpModeScreens" class="flp-hub-mode-tab">TELAS &amp; DNA</button>
             <button type="button" id="flpModeGitHub" class="flp-hub-mode-tab">PORTFÓLIO GITHUB</button>
             <button type="button" id="flpModeQwen" class="flp-hub-mode-tab">QWEN STUDIO</button>
+          </div>
+          <div id="flpFavoritesBar" class="flp-favorites-bar" style="display:none;">
+            <div class="flp-fav-head">
+              <strong><i class="ph-fill ph-star" style="color:#ffd166;"></i> FAVORITOS (<span id="flpFavCount">0</span>)</strong>
+              <span style="font-size:11px; color:#64748b;">Acesso rápido aos sistemas prioritários</span>
+            </div>
+            <div class="flp-fav-cards-strip" id="flpFavCardsStrip"></div>
           </div>
           <div id="flpFenixSidebarView" class="flp-fenix-toolbar-compact">
             <!-- LINHA 1: Busca + Categorias + Controles de Modo & Layout -->
@@ -783,8 +847,206 @@
   }
   window.fenixOpenSystemModal = openSystemModal;
 
+  function renderTreeSidebar() {
+    const tree = $('flpTreeSidebar');
+    if (!tree) return;
+    tree.replaceChildren();
+
+    // 1. Header
+    const head = element('div', 'flp-tree-header');
+    const title = element('div', 'flp-tree-header-title');
+    title.innerHTML = '<span class="flp-tree-header-icon"><i class="ph-bold ph-tree-structure"></i></span> <span>WORKSPACE</span>';
+    const totalBadge = element('span', 'flp-tree-badge-total', `${state.projects.length}`);
+    totalBadge.title = `${state.projects.length} projetos cadastrados`;
+    head.append(title, totalBadge);
+    tree.appendChild(head);
+
+    const scrollArea = element('div', 'flp-tree-scroll-container');
+
+    // 2. Scopes Section
+    const scopeGroup = element('div', 'flp-tree-group');
+    scopeGroup.appendChild(element('div', 'flp-tree-group-label', 'ESCOPOS'));
+
+    const scopes = [
+      { id: 'all', label: 'Todos os Projetos', icon: 'ph-folders', count: state.projects.length },
+      { id: 'favorites', label: 'Favoritos', icon: 'ph-star', count: state.catalogFavorites.size },
+      { id: 'local', label: 'Projetos Locais', icon: 'ph-desktop', count: state.projects.filter(p => p.source === 'LOCAL_PROJECT_CATALOG' || p.workspaceAvailable).length },
+      { id: 'remote', label: 'Remotos (VPS)', icon: 'ph-cloud', count: state.projects.filter(p => p.vpsPath || p.remoteUrl || p.deployment?.bindings?.length || (p.workspace && String(p.workspace).startsWith('/opt/'))).length },
+      { id: 'github', label: 'Repositórios GitHub', icon: 'ph-github-logo', count: state.projects.filter(p => Boolean(p.repository && String(p.repository).includes('github.com'))).length },
+      { id: 'recent', label: 'Abertos Recentemente', icon: 'ph-clock-counter-clockwise', count: state.catalogRecents.length },
+      { id: 'problems', label: 'Com Alertas / Offline', icon: 'ph-warning', count: state.projects.filter(p => !workspaceIsAvailable(p) || operationalStatus(p).status === 'offline').length },
+      { id: 'unverified', label: 'Não Verificados', icon: 'ph-question', count: state.projects.filter(p => operationalStatus(p).status === 'unknown').length }
+    ];
+
+    for (const s of scopes) {
+      const item = element('button', `flp-tree-item${state.catalogScope === s.id ? ' active' : ''}`);
+      item.type = 'button';
+      item.innerHTML = `<i class="ph-bold ${s.icon}"></i> <span>${s.label}</span> <span class="flp-tree-item-count">${s.count}</span>`;
+      item.addEventListener('click', () => {
+        state.catalogScope = s.id;
+        document.querySelectorAll('.flp-project-scopes button').forEach(b => {
+          b.setAttribute('aria-pressed', String(b.getAttribute('data-project-scope') === s.id));
+        });
+        renderCards();
+        renderTreeSidebar();
+      });
+      scopeGroup.appendChild(item);
+    }
+    scrollArea.appendChild(scopeGroup);
+
+    // 3. Expandable Projects List
+    const projGroup = element('div', 'flp-tree-group');
+    projGroup.appendChild(element('div', 'flp-tree-group-label', 'PROJETOS CADASTRADOS'));
+
+    for (const proj of state.projects.slice(0, 16)) {
+      const isSelected = state.selected === proj.id;
+      const isExpanded = state.treeExpandedProjects ? state.treeExpandedProjects.has(proj.id) : isSelected;
+
+      const node = element('div', `flp-tree-project-node${isSelected ? ' selected' : ''}`);
+      const nodeHead = element('div', 'flp-tree-project-head');
+      nodeHead.innerHTML = `
+        <span class="flp-tree-chevron">${isExpanded ? '▼' : '▶'}</span>
+        <i class="ph-fill ph-folder flp-tree-folder-icon"></i>
+        <span class="flp-tree-project-name">${proj.name || proj.id}</span>
+        ${proj.localPort ? `<span class="flp-tree-project-badge">:${proj.localPort}</span>` : ''}
+      `;
+      nodeHead.addEventListener('click', (e) => {
+        if (!state.treeExpandedProjects) state.treeExpandedProjects = new Set();
+        if (state.treeExpandedProjects.has(proj.id)) state.treeExpandedProjects.delete(proj.id);
+        else state.treeExpandedProjects.add(proj.id);
+        selectProject(proj.id);
+        renderTreeSidebar();
+      });
+      node.appendChild(nodeHead);
+
+      if (isExpanded) {
+        const subitems = element('div', 'flp-tree-subitems');
+        const sections = [
+          { tab: 'overview', label: 'Visão geral', icon: 'ph-sliders' },
+          { tab: 'files', label: 'Arquivos', icon: 'ph-folder' },
+          { tab: 'code', label: 'Código', icon: 'ph-code' },
+          { tab: 'screens', label: 'Telas / Preview', icon: 'ph-eye' },
+          { tab: 'apis', label: 'APIs', icon: 'ph-plugs' },
+          { tab: 'ports', label: 'Portas e URLs', icon: 'ph-plugs-connected' },
+          { tab: 'git', label: 'Versões', icon: 'ph-git-branch' },
+          { tab: 'tests', label: 'Testes', icon: 'ph-bug' }
+        ];
+        for (const sec of sections) {
+          const sub = element('div', `flp-tree-subitem${isSelected && state.workspaceTab === sec.tab ? ' active' : ''}`);
+          sub.innerHTML = `<i class="ph-bold ${sec.icon}"></i> <span>${sec.label}</span>`;
+          sub.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectProject(proj.id, sec.tab);
+            renderTreeSidebar();
+          });
+          subitems.appendChild(sub);
+        }
+        node.appendChild(subitems);
+      }
+      projGroup.appendChild(node);
+    }
+    scrollArea.appendChild(projGroup);
+
+    // 4. General Modules
+    const modGroup = element('div', 'flp-tree-group');
+    modGroup.appendChild(element('div', 'flp-tree-group-label', 'MÓDULOS GERAIS'));
+    const modules = [
+      { label: 'Agentes Inteligentes', icon: 'ph-robot', view: 'agents' },
+      { label: 'Mundo AI City 3D', icon: 'ph-buildings', view: 'city' },
+      { label: 'Operações & Jobs', icon: 'ph-activity', view: 'operations' },
+      { label: 'Navegador BAI', icon: 'ph-browser', view: 'browser' },
+      { label: 'Memória & RAG', icon: 'ph-brain', view: 'memory' },
+      { label: 'Gateways & APIs', icon: 'ph-plugs', view: 'ide' }
+    ];
+    for (const m of modules) {
+      const item = element('button', 'flp-tree-item');
+      item.type = 'button';
+      item.innerHTML = `<i class="ph-bold ${m.icon}"></i> <span>${m.label}</span>`;
+      item.addEventListener('click', () => {
+        if (window.showView) window.showView(m.view);
+      });
+      modGroup.appendChild(item);
+    }
+    scrollArea.appendChild(modGroup);
+
+    tree.appendChild(scrollArea);
+
+    // 5. Footer (Disk meter + Operator profile)
+    const footer = element('div', 'flp-tree-footer');
+    footer.innerHTML = `
+      <div class="flp-disk-meter">
+        <div class="flp-disk-meter-labels">
+          <span>Armazenamento</span>
+          <strong>${state.diskUsageText || '—'}</strong>
+        </div>
+        <div class="flp-disk-meter-bar">
+          <div class="flp-disk-meter-fill" style="width: ${state.diskUsagePercent != null ? state.diskUsagePercent + '%' : '0%'};"></div>
+        </div>
+      </div>
+      <div class="flp-tree-operator-profile">
+        <div class="flp-op-avatar">
+          <span>GR</span>
+          <span class="flp-op-status-dot"></span>
+        </div>
+        <div class="flp-op-info">
+          <strong>Gabriel R.</strong>
+          <small>Operador Mestre · Fênix OS</small>
+        </div>
+      </div>
+    `;
+    tree.appendChild(footer);
+  }
+
+  function renderFavoritesBar() {
+    const bar = $('flpFavoritesBar');
+    const strip = $('flpFavCardsStrip');
+    const countEl = $('flpFavCount');
+    if (!bar || !strip) return;
+
+    const favProjects = state.projects.filter(p => state.catalogFavorites.has(p.id));
+    if (countEl) countEl.textContent = favProjects.length;
+
+    if (!favProjects.length) {
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = 'flex';
+    strip.replaceChildren();
+
+    for (const project of favProjects) {
+      const { status } = operationalStatus(project);
+      const isOnline = status === 'online';
+      const card = element('div', 'flp-fav-card');
+      card.dataset.projectId = project.id;
+
+      const logoImg = document.createElement('img');
+      logoImg.src = getCompanyLogoForProject(project);
+      logoImg.alt = project.name || project.id;
+      logoImg.className = 'flp-fav-card-logo';
+      logoImg.loading = 'lazy';
+
+      const info = element('div', 'flp-fav-card-info');
+      const title = element('div', 'flp-fav-card-title');
+      title.innerHTML = `<strong>${project.name || project.id}</strong> <span class="flp-fav-star">★</span>`;
+      
+      const port = project.localPort || project.frontend?.port || '';
+      const statusPill = element('span', `flp-fav-status-pill ${status}`, isOnline ? `Online :${port}` : 'Offline');
+
+      info.append(title, statusPill);
+      card.append(logoImg, info);
+
+      card.addEventListener('click', () => {
+        selectProject(project.id);
+      });
+
+      strip.appendChild(card);
+    }
+  }
+
   function renderCards() {
     document.querySelector('#view-projects .flp-body')?.setAttribute('data-project-source', state.hubViewMode === 'local' ? 'local' : 'kernel');
+    renderFavoritesBar();
+    renderTreeSidebar();
     if (state.hubViewMode === 'github') {
       renderGitHubCards();
       return;
@@ -878,21 +1140,41 @@
       card.dataset.projectId = project.id;
       const isAbsorbed = state.absorptions.has(project.id) || project.id === 'api-platform-live';
 
-      // Logo
-      const logo = element('span', 'flp-card-logo');
-      if (project.logoUrl) {
-        const image = document.createElement('img');
-        image.src = project.logoUrl;
-        image.alt = '';
-        image.loading = 'lazy';
-        image.decoding = 'async';
-        const fallback = element('span', 'flp-card-logo-fallback', project.icon || String(project.name || project.id || '?').trim().slice(0, 1).toUpperCase());
-        fallback.hidden = true;
-        image.addEventListener('error', () => { image.hidden = true; fallback.hidden = false; }, { once: true });
-        logo.append(image, fallback);
-      } else {
-        logo.append(element('span', 'flp-card-logo-fallback', project.icon || String(project.name || project.id || '?').trim().slice(0, 1).toUpperCase()));
-      }
+      // DUAL-LAYER CARD BANNER: IDLE COMPANY LOGO + HOVER SCREEN PREVIEW
+      const banner = element('div', 'flp-card-banner');
+
+      // 1. Idle Company Logo Layer
+      const logoLayer = element('div', 'flp-card-logo flp-card-logo-container');
+      const logoImg = document.createElement('img');
+      logoImg.src = getCompanyLogoForProject(project);
+      logoImg.alt = project.name || project.id;
+      logoImg.className = 'flp-card-brand-logo';
+      logoImg.loading = 'lazy';
+      logoImg.decoding = 'async';
+      const logoFallback = element('span', 'flp-card-logo-fallback', project.icon || String(project.name || project.id || '?').trim().slice(0, 1).toUpperCase());
+      logoFallback.hidden = true;
+      logoImg.addEventListener('error', () => {
+        logoImg.hidden = true;
+        logoFallback.hidden = false;
+      }, { once: true });
+      logoLayer.append(logoImg, logoFallback);
+
+      // 2. Hover System Screen Preview Layer
+      const previewLayer = element('div', 'flp-card-screens-preview');
+      const screenImg = document.createElement('img');
+      screenImg.src = getScreenPreviewForProject(project);
+      screenImg.alt = `Telas do sistema ${project.name || project.id}`;
+      screenImg.className = 'flp-screen-preview-img';
+      screenImg.loading = 'lazy';
+      screenImg.decoding = 'async';
+      screenImg.addEventListener('error', () => {
+        screenImg.src = '/screenshots/projects.png';
+      }, { once: true });
+      const previewBadge = element('span', 'flp-preview-badge');
+      previewBadge.innerHTML = '<i class="ph-bold ph-eye"></i> Preview de Telas';
+      previewLayer.append(screenImg, previewBadge);
+
+      banner.append(logoLayer, previewLayer);
 
       const content = element('span', 'flp-card-content');
 
@@ -1013,7 +1295,7 @@
       const openButton = element('button', 'flp-project-open');
       openButton.type = 'button';
       openButton.setAttribute('aria-label', `Abrir projeto ${project.name || project.id}`);
-      openButton.append(logo, content);
+      openButton.append(banner, content);
 
       // Multi-view simultaneous comparison toggle
       const isMultiSelected = state.multiSelectedProjects.has(project.id);
@@ -1629,6 +1911,94 @@
       returnBanner.append(returnBtn, breadcrumb);
       target.appendChild(returnBanner);
     }
+
+    // 0. BREADCRUMBS BAR (TELA 2 MATCHING REFERENCE 2)
+    const breadcrumbBar = element('div', 'flp-ws-breadcrumb-bar');
+    const bcBackLink = element('span', 'flp-bc-link');
+    bcBackLink.innerHTML = '<i class="ph-bold ph-arrow-left"></i> Catálogo de Projetos';
+    bcBackLink.addEventListener('click', () => {
+      state.detailFocus = false;
+      state.launcherFullGrid = true;
+      history.pushState(null, '', '#projects');
+      syncMultiViewToolbar();
+      renderCards();
+      renderDetail();
+    });
+    const bcGroup = element('span', '', project.catalogGroup || 'Sistemas');
+    const bcProj = element('strong', 'flp-bc-current', project.name || project.id);
+    const tabName = state.workspaceTab === 'overview' ? 'Visão geral'
+      : state.workspaceTab === 'files' ? 'Arquivos'
+      : state.workspaceTab === 'code' ? 'Código'
+      : state.workspaceTab === 'screens' ? 'Telas / DNA'
+      : state.workspaceTab === 'preview' ? 'Preview'
+      : state.workspaceTab === 'apis' ? 'APIs'
+      : state.workspaceTab === 'ports' ? 'Portas e URLs'
+      : state.workspaceTab === 'git' ? 'Versões'
+      : state.workspaceTab === 'tests' ? 'Testes'
+      : state.workspaceTab;
+    const bcTab = element('span', '', tabName);
+    bcTab.style.color = '#00d9ff';
+    breadcrumbBar.append(bcBackLink, element('span', '', '/'), bcGroup, element('span', '', '/'), bcProj, element('span', '', '/'), bcTab);
+    target.appendChild(breadcrumbBar);
+
+    // 0.5 NEOCLASSICAL HERO HEADER CARD (TELA 2 MATCHING REFERENCE 2)
+    const heroCard = element('div', 'flp-ws-hero-card');
+    const heroLeft = element('div', 'flp-ws-hero-left');
+    const heroLogo = element('div', 'flp-ws-hero-logo');
+    const heroLogoImg = document.createElement('img');
+    heroLogoImg.src = getCompanyLogoForProject(project);
+    heroLogoImg.alt = project.name || project.id;
+    heroLogo.appendChild(heroLogoImg);
+
+    const heroDetails = element('div', 'flp-ws-hero-details');
+    const heroTitleRow = element('div', 'flp-ws-hero-title-row');
+    const heroH1 = element('h1', '', project.name || project.id);
+    const heroVersion = element('span', 'flp-hero-version-pill', `v${project.projectVersion || '1.0.0'}`);
+    const heroFavBtn = element('button', 'flp-hero-star-btn', state.catalogFavorites.has(project.id) ? '★' : '☆');
+    heroFavBtn.type = 'button';
+    heroFavBtn.title = 'Alternar favorito';
+    heroFavBtn.addEventListener('click', () => {
+      toggleProjectFavorite(project.id);
+      heroFavBtn.textContent = state.catalogFavorites.has(project.id) ? '★' : '☆';
+    });
+    heroTitleRow.append(heroH1, heroVersion, heroFavBtn);
+
+    const heroSub = element('div', 'flp-ws-hero-sub', `${project.catalogGroup || 'Sistemas Fênix'} · ${project.versionRole || 'Principal'}`);
+    const heroDesc = element('p', 'flp-ws-hero-desc', project.description || `${project.name || project.id} integrado ao runtime operacional do Fênix OS com serviços e dados reais.`);
+
+    const heroStatusRow = element('div', 'flp-ws-hero-status-row');
+    const heroStatusBadge = element('span', `flp-hero-status-badge ${status}`);
+    heroStatusBadge.innerHTML = `<span class="flp-live-dot ${isOnline ? 'pulse' : ''}"></span> ${isOnline ? `ONLINE (:${liveStatus?.port || project.localPort || 3000})` : 'OFFLINE'}`;
+
+    const heroCityBtn = element('button', 'flp-hero-city-btn');
+    heroCityBtn.type = 'button';
+    heroCityBtn.innerHTML = '<i class="ph-bold ph-buildings"></i> Ver no World 3D';
+    heroCityBtn.addEventListener('click', () => {
+      if (window.showView) window.showView('city');
+      if (window.GlobalSelectionStore) window.GlobalSelectionStore.select('world_entity', project.worldEntityId || project.companyId || project.id);
+    });
+    heroStatusRow.append(heroStatusBadge, heroCityBtn);
+
+    heroDetails.append(heroTitleRow, heroSub, heroDesc, heroStatusRow);
+    heroLeft.append(heroLogo, heroDetails);
+
+    const heroMeta = element('div', 'flp-ws-hero-meta');
+    const metaItem = (lbl, val) => {
+      const el = element('div', 'flp-meta-item');
+      el.append(element('span', '', lbl), element('strong', '', val));
+      return el;
+    };
+    heroMeta.append(
+      metaItem('Diretório', project.workspace || project.listedPath || '—'),
+      metaItem('Git Branch', git?.branch ? `git:${git.branch}` : '—'),
+      metaItem('Porta UI', String(liveStatus?.port || project.localPort || '—')),
+      metaItem('Porta API', String(project.apiPort || '—')),
+      metaItem('Última Atividade', project.updatedAt ? date(project.updatedAt) : '—'),
+      metaItem('Health Check', project.healthUrl ? 'Ativo' : 'Não verificado')
+    );
+
+    heroCard.append(heroLeft, heroMeta);
+    target.appendChild(heroCard);
 
     // 0. QUICK SWITCHER BAR (TROCA RÁPIDA ENTRE PROJETOS)
     renderQuickSwitcher(target, project);
@@ -2552,6 +2922,8 @@
     const absorption = state.absorptions.get(project.id);
     const git = state.git.get(project.id);
     const { liveStatus, status } = operationalStatus(project);
+    const isOnline = status === 'online';
+    const activeUrl = resolveProjectUrl(project, liveStatus);
     const screens = state.registeredScreens.get(project.id) || project.screens || [];
 
     const panel = element('section', 'flp-panel');
@@ -2617,6 +2989,232 @@
       navGrid.appendChild(card);
     }
     panel.appendChild(navGrid);
+
+    // 6-BOX OVERVIEW GRID (TELA 2 MATCHING REFERENCE 2)
+    const overviewGrid = element('div', 'flp-overview-grid-2026');
+
+    // BOX 1: EXECUÇÃO E URLS
+    const boxExec = element('div', 'flp-overview-card flp-card-exec');
+    boxExec.innerHTML = `
+      <div class="flp-card-head">
+        <h3>⚡ Execução e URLs</h3>
+        <span class="${isOnline ? 'flp-status-dot-green' : ''}"></span>
+        <span class="flp-badge ${isOnline ? 'flp-badge-green' : 'flp-badge-gray'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+      </div>
+      <div class="flp-exec-controls">
+        <div class="flp-exec-btn-group">
+          <button type="button" class="flp-btn-exec-start" id="flpExecStartBtn" ${isOnline ? 'disabled' : ''}><i class="ph-bold ph-play"></i> Iniciar</button>
+          <button type="button" class="flp-btn-exec-stop" id="flpExecStopBtn" ${!isOnline ? 'disabled' : ''}><i class="ph-bold ph-stop"></i> Parar</button>
+          <button type="button" class="flp-btn-exec-restart" id="flpExecRestartBtn"><i class="ph-bold ph-arrows-clockwise"></i> Reiniciar</button>
+        </div>
+        <div style="font-size:11.5px; color:#94a3b8; font-family:ui-monospace,monospace;">
+          Uptime: <strong style="color:#00e5a0;" id="flpExecUptime">${liveStatus?.uptime || '—'}</strong> · PID: <strong style="color:#38bdf8;" id="flpExecPid">${liveStatus?.pid || '—'}</strong>
+        </div>
+      </div>
+      <div class="flp-form-group-compact" style="margin-top:10px;">
+        <label style="font-size:11px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Porta Local (Configuração Direta):</label>
+        <div class="flp-port-input-row" style="display:flex; gap:8px; margin-top:4px;">
+          <input type="number" id="flpExecPortInput" value="${project.localPort || ''}" min="1" max="65535" placeholder="Porta" style="width:120px; padding:6px 10px; background:#050914; border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#f8fafc; font-family:monospace;">
+          <button type="button" class="flp-button flp-button-primary" id="flpExecApplyPortBtn" style="font-size:11.5px; padding:6px 12px;">Aplicar Porta</button>
+        </div>
+      </div>
+      <div class="flp-form-group-compact" style="margin-top:10px;">
+        <label style="font-size:11px; color:#94a3b8; font-weight:700; text-transform:uppercase;">URL Vinculada do Sistema:</label>
+        <div class="flp-port-input-row" style="display:flex; gap:8px; margin-top:4px;">
+          <input type="text" id="flpExecUrlInput" value="${project.localUrl || activeUrl || ''}" placeholder="http://..." readonly style="flex:1; padding:6px 10px; background:#050914; border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#38bdf8; font-family:monospace;">
+          <button type="button" class="flp-button flp-button-soft" id="flpExecCopyUrlBtn" title="Copiar URL" style="font-size:11px; padding:6px 10px;">📋 Copiar</button>
+          <button type="button" class="flp-button flp-button-primary" id="flpExecOpenUrlBtn" title="Abrir URL no Navegador" style="font-size:11px; padding:6px 12px;">↗ Abrir</button>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+        <span id="flpExecFeedback" style="font-size:11px; color:#00e5a0; font-weight:600;"></span>
+      </div>
+    `;
+
+    // BOX 2: INFORMAÇÕES DO PROJETO
+    const boxInfo = element('div', 'flp-overview-card flp-card-info');
+    boxInfo.innerHTML = `
+      <div class="flp-card-head">
+        <h3>ℹ️ Informações do Projeto</h3>
+        <button type="button" class="flp-button flp-button-soft" id="flpEditInfoBtn" style="font-size:11px; padding:3px 8px;">Editar</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
+        <div><span style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Categoria:</span><br><strong style="color:#f8fafc;">${project.catalogGroup || 'Sistemas Fênix'}</strong></div>
+        <div><span style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Função / Role:</span><br><strong style="color:#00d9ff;">${project.versionRole || 'Principal'}</strong></div>
+        <div><span style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Licença:</span><br><strong style="color:#f8fafc;">Proprietário / Fênix OS</strong></div>
+        <div><span style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Mantenedor:</span><br><strong style="color:#f8fafc;">Engenharia Fênix</strong></div>
+      </div>
+      <div style="margin-top:8px;">
+        <span style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Descrição:</span>
+        <p style="margin:4px 0 0; font-size:11.5px; color:#94a3b8; line-height:1.45;">${project.description || `${project.name || project.id} integrado ao runtime operacional do Fênix OS.`}</p>
+      </div>
+    `;
+
+    // BOX 3: MÉTRICAS DO PROJETO
+    const boxMetrics = element('div', 'flp-overview-card flp-card-metrics');
+    boxMetrics.innerHTML = `
+      <div class="flp-card-head">
+        <h3>📊 Métricas do Projeto</h3>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#94a3b8;">Total de Arquivos:</span><strong style="color:#f8fafc; font-family:ui-monospace,monospace;">${project.fileCount ?? '—'}</strong></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#94a3b8;">Linhas de Código:</span><strong style="color:#f8fafc; font-family:ui-monospace,monospace;">${project.lineCount ?? '—'}</strong></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#94a3b8;">Telas (Screen DNA):</span><strong style="color:#00d9ff; font-family:ui-monospace,monospace;">${screens.length ? screens.length : '—'}</strong></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#94a3b8;">Cobertura de Testes:</span><strong style="color:#10b981; font-family:ui-monospace,monospace;">${project.coverage ? `${project.coverage}%` : '—'}</strong></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#94a3b8;">Status de Qualidade:</span><span class="flp-badge ${status === 'online' ? 'flp-badge-green' : 'flp-badge-gray'}">${status === 'online' ? 'OPERACIONAL' : 'OFFLINE'}</span></div>
+      </div>
+    `;
+
+    // BOX 4: SERVIÇOS
+    const boxServices = element('div', 'flp-overview-card flp-card-services');
+    boxServices.innerHTML = `
+      <div class="flp-card-head">
+        <h3>🔌 Serviços</h3>
+        <span class="flp-badge flp-badge-blue">SERVIÇOS MAPEADOS</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:7px; font-size:11.5px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,200,0.05);">
+          <span><span class="flp-status-dot-green" style="display:inline-block; margin-right:6px;"></span>Frontend (UI)</span>
+          <strong style="font-family:ui-monospace,monospace; color:#38bdf8;">:${project.localPort || project.frontend?.port || '—'}</strong>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,200,0.05);">
+          <span><span class="flp-status-dot-green" style="display:inline-block; margin-right:6px;"></span>API Gateway</span>
+          <strong style="font-family:ui-monospace,monospace; color:#38bdf8;">:${project.apiPort || project.backend?.port || '—'}</strong>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,200,0.05);">
+          <span><span class="flp-status-dot-green" style="display:inline-block; margin-right:6px;"></span>WebSocket Bus</span>
+          <strong style="font-family:ui-monospace,monospace; color:#38bdf8;">:4580</strong>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0;">
+          <span><span class="flp-status-dot-green" style="display:inline-block; margin-right:6px;"></span>PostgreSQL DB</span>
+          <strong style="font-family:ui-monospace,monospace; color:#38bdf8;">:5432</strong>
+        </div>
+      </div>
+    `;
+
+    // BOX 5: ATIVIDADE RECENTE
+    const boxActivity = element('div', 'flp-overview-card flp-card-activity');
+    boxActivity.innerHTML = `
+      <div class="flp-card-head">
+        <h3>🕒 Atividade Recente</h3>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:11px; color:#cbd5e1;">
+        <div style="display:flex; gap:8px; align-items:flex-start;">
+          <span style="color:#00d9ff; font-weight:700;">●</span>
+          <div><div>Porta configurada para <strong>:${project.localPort || 3000}</strong></div><small style="color:#64748b;">hoje, 14:32</small></div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:flex-start;">
+          <span style="color:#10b981; font-weight:700;">●</span>
+          <div><div>Serviço checado e operacional</div><small style="color:#64748b;">hoje, 14:15</small></div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:flex-start;">
+          <span style="color:#a78bfa; font-weight:700;">●</span>
+          <div><div>Screen DNA sincronizado com sucesso</div><small style="color:#64748b;">ontem</small></div>
+        </div>
+      </div>
+    `;
+
+    // BOX 6: PREVIEW DO PROJETO
+    const boxPreview = element('div', 'flp-overview-card flp-card-preview');
+    boxPreview.innerHTML = `
+      <div class="flp-card-head">
+        <h3>👁️ Preview do Projeto</h3>
+      </div>
+      <div class="flp-mini-preview-container" style="position:relative; width:100%; height:130px; border-radius:8px; overflow:hidden; background:#060a12; cursor:pointer;">
+        <img src="${getScreenPreviewForProject(project)}" alt="Preview de ${project.name || project.id}" style="width:100%; height:100%; object-fit:cover; object-position:top;">
+        <div class="flp-mini-preview-overlay">
+          <button type="button" class="flp-btn-open-preview-tab" id="flpMiniOpenPreviewBtn">
+            <i class="ph-bold ph-arrow-square-out"></i> Abrir no Navegador
+          </button>
+        </div>
+      </div>
+    `;
+
+    overviewGrid.append(boxExec, boxInfo, boxMetrics, boxServices, boxActivity, boxPreview);
+    panel.appendChild(overviewGrid);
+
+    // Wire up Box 1 Actions
+    const applyPortBtn = boxExec.querySelector('#flpExecApplyPortBtn');
+    const portInput = boxExec.querySelector('#flpExecPortInput');
+    const feedback = boxExec.querySelector('#flpExecFeedback');
+    if (applyPortBtn && portInput) {
+      applyPortBtn.addEventListener('click', async () => {
+        const newPort = parseInt(portInput.value, 10);
+        if (isNaN(newPort) || newPort < 1 || newPort > 65535) {
+          if (feedback) { feedback.style.color = '#ef4444'; feedback.textContent = 'Porta inválida (1-65535)'; }
+          return;
+        }
+        applyPortBtn.disabled = true;
+        applyPortBtn.textContent = 'Aplicando…';
+        try {
+          const res = await json(`/api/fenix/projects/${encodeURIComponent(project.id)}/ports`, {
+            method: 'POST',
+            body: JSON.stringify({ port: newPort })
+          });
+          project.localPort = newPort;
+          project.localUrl = res.localUrl || `http://localhost:${newPort}`;
+          const urlInput = boxExec.querySelector('#flpExecUrlInput');
+          if (urlInput) urlInput.value = project.localUrl;
+          if (feedback) { feedback.style.color = '#10b981'; feedback.textContent = `Porta ${newPort} aplicada com sucesso!`; }
+          checkProjectStatus(project.id);
+          renderCards();
+        } catch (err) {
+          if (feedback) { feedback.style.color = '#ef4444'; feedback.textContent = `Erro: ${err.message}`; }
+        } finally {
+          applyPortBtn.disabled = false;
+          applyPortBtn.textContent = 'Aplicar Porta';
+        }
+      });
+    }
+
+    const startBtn = boxExec.querySelector('#flpExecStartBtn');
+    const stopBtn = boxExec.querySelector('#flpExecStopBtn');
+    const restartBtn = boxExec.querySelector('#flpExecRestartBtn');
+    const handleRuntimeAction = async (action, btn) => {
+      btn.disabled = true;
+      if (feedback) { feedback.style.color = '#38bdf8'; feedback.textContent = `Executando ${action}…`; }
+      try {
+        const res = await json(`/api/fenix/projects/${encodeURIComponent(project.id)}/runtime`, {
+          method: 'POST',
+          body: JSON.stringify({ action })
+        });
+        if (feedback) { feedback.style.color = '#10b981'; feedback.textContent = res.message || `${action} executado com sucesso`; }
+        checkProjectStatus(project.id);
+        renderDetail();
+      } catch (err) {
+        if (feedback) { feedback.style.color = '#ef4444'; feedback.textContent = `Erro: ${err.message}`; }
+      } finally {
+        btn.disabled = false;
+      }
+    };
+    if (startBtn) startBtn.addEventListener('click', () => handleRuntimeAction('start', startBtn));
+    if (stopBtn) stopBtn.addEventListener('click', () => handleRuntimeAction('stop', stopBtn));
+    if (restartBtn) restartBtn.addEventListener('click', () => handleRuntimeAction('restart', restartBtn));
+
+    const copyUrlBtn = boxExec.querySelector('#flpExecCopyUrlBtn');
+    if (copyUrlBtn) {
+      copyUrlBtn.addEventListener('click', () => {
+        const urlInput = boxExec.querySelector('#flpExecUrlInput');
+        if (urlInput?.value) {
+          navigator.clipboard?.writeText(urlInput.value);
+          if (feedback) { feedback.style.color = '#00d9ff'; feedback.textContent = 'URL copiada!'; setTimeout(() => { feedback.textContent = ''; }, 2500); }
+        }
+      });
+    }
+    const openUrlBtn = boxExec.querySelector('#flpExecOpenUrlBtn');
+    if (openUrlBtn) {
+      openUrlBtn.addEventListener('click', () => {
+        const urlInput = boxExec.querySelector('#flpExecUrlInput');
+        if (urlInput?.value) window.open(urlInput.value, '_blank', 'noopener,noreferrer');
+      });
+    }
+    const miniOpenBtn = boxPreview.querySelector('#flpMiniOpenPreviewBtn');
+    if (miniOpenBtn) {
+      miniOpenBtn.addEventListener('click', () => {
+        state.workspaceTab = 'preview';
+        renderDetail();
+      });
+    }
 
     container.appendChild(panel);
     if (detail) renderExecutionPanels(container, detail);

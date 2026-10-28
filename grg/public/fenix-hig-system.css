@@ -683,7 +683,7 @@ header.global-topbar.orch-topbar .fnx-vps-topbar-btn {
 @media (max-width: 920px) {
   #view-projects .flp-actions { justify-items: start; }
   #view-projects .flp-actions-primary { justify-content: flex-start; }
-  #view-projects .flp-project-actions-panel { right: auto; left: 0; }
+  #view-projects .flp-project-actions-panel { right: auto; left: 0; width: min(260px, calc(100vw - 44px)); }
 }
 
 #view-projects .flp-ws-nav {
