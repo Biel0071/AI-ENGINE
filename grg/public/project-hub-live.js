@@ -955,14 +955,14 @@
       // Quick Actions Bar
       const quickBar = element('div', 'flp-card-quick-actions');
       if (activeUrl) {
-        const popupBtn = element('button', 'flp-quick-action-btn btn-popup', '🌐 Pop-up');
-        popupBtn.type = 'button';
-        popupBtn.title = `Abrir ${project.name || project.id} em pop-up na tela`;
-        popupBtn.addEventListener('click', (e) => {
+        const previewQuickBtn = element('button', 'flp-quick-action-btn btn-popup', '▶ Preview');
+        previewQuickBtn.type = 'button';
+        previewQuickBtn.title = `Abrir preview ao vivo de ${project.name || project.id}`;
+        previewQuickBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          openSystemModal(project, activeUrl);
+          selectProject(project.id, 'preview');
         });
-        quickBar.appendChild(popupBtn);
+        quickBar.appendChild(previewQuickBtn);
 
         const openUrlBtn = element('button', 'flp-quick-action-btn btn-open-url', '↗ Aba');
         openUrlBtn.type = 'button';
@@ -1045,11 +1045,6 @@
       card.addEventListener('click', (event) => {
         if (!event.target.closest('.flp-project-favorite') && !event.target.closest('.flp-project-multiview-toggle') && !event.target.closest('.flp-quick-action-btn')) {
           selectProject(project.id);
-          if (state.launcherFullGrid) {
-            state.detailFocus = true;
-            syncMultiViewToolbar();
-            renderDetail();
-          }
         }
       });
       container.appendChild(card);
@@ -1623,6 +1618,9 @@
       returnBtn.addEventListener('click', () => {
         state.detailFocus = false;
         state.launcherFullGrid = true;
+        if (window.location.hash.startsWith('#projects/')) {
+          history.pushState(null, '', '#projects');
+        }
         syncMultiViewToolbar();
         renderCards();
       });
@@ -1714,7 +1712,18 @@
     wsBtn.type = 'button';
     wsBtn.disabled = !workspaceIsAvailable(project);
     wsBtn.addEventListener('click', () => openProjectInIde(project));
-    const openSystemPopup = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-primary', '🌐 Abrir em Pop-up') : null;
+    const livePreviewBtn = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-primary', '▶ Preview ao Vivo') : null;
+    if (livePreviewBtn) {
+      livePreviewBtn.type = 'button';
+      livePreviewBtn.title = 'Abrir preview interativo ao vivo no workspace';
+      livePreviewBtn.addEventListener('click', () => {
+        state.workspaceTab = 'preview';
+        const targetHash = `#projects/${encodeURIComponent(project.id)}/preview`;
+        if (window.location.hash !== targetHash) history.pushState(null, '', targetHash);
+        renderDetail();
+      });
+    }
+    const openSystemPopup = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-soft', '🌐 Janela Pop-up') : null;
     if (openSystemPopup) {
       openSystemPopup.type = 'button';
       openSystemPopup.title = 'Abrir sistema em janela pop-up na tela';
@@ -1824,10 +1833,12 @@
     });
 
     const primaryActions = element('div', 'flp-actions-primary');
-    primaryActions.append(wsBtn, screenDnaBtn, focusBtn);
-    if (openSystemPopup) primaryActions.append(openSystemPopup);
+    primaryActions.append(wsBtn);
+    if (livePreviewBtn) primaryActions.append(livePreviewBtn);
+    primaryActions.append(screenDnaBtn, focusBtn);
     if (openSystem) primaryActions.append(openSystem);
-    const additionalActions = [...actions.children].filter((action) => action !== wsBtn && action !== screenDnaBtn && action !== focusBtn && action !== openSystemPopup && action !== openSystem);
+    const additionalActions = [...actions.children].filter((action) => action !== wsBtn && action !== livePreviewBtn && action !== screenDnaBtn && action !== focusBtn && action !== openSystem);
+    if (openSystemPopup) additionalActions.unshift(openSystemPopup);
     const moreActions = element('details', 'flp-project-actions-menu');
     moreActions.append(element('summary', 'flp-button flp-button-soft', `Mais ações (${additionalActions.length})`));
     const menuPanel = element('div', 'flp-project-actions-panel');
@@ -2091,28 +2102,39 @@
     // 4. PROJECT WORKSPACE SUB-TABS (Section 7)
     const wsNav = element('nav', 'flp-ws-nav');
     const tabs = [
-      { id: 'overview', label: 'Visão Geral & Git', icon: 'ph-sliders' },
+      { id: 'overview', label: 'Visão Geral', icon: 'ph-sliders' },
       ...(project.companyId ? [{ id: 'company', label: `Empresa: ${project.companyName || project.companyId}`, icon: 'ph-buildings' }] : []),
-      { id: 'ports', label: 'Portas & Serviços', icon: 'ph-plugs-connected' },
-      { id: 'screens', label: `Screen DNA (${screens.length})`, icon: 'ph-eye' },
       { id: 'files', label: 'Arquivos', icon: 'ph-folder' },
-      { id: 'code', label: 'Código Fonte', icon: 'ph-code' },
+      { id: 'code', label: 'Código Monaco', icon: 'ph-code' },
+      { id: 'screens', label: `Screen DNA (${screens.length})`, icon: 'ph-eye' },
+      { id: 'preview', label: 'Preview ao Vivo', icon: 'ph-browser' },
       { id: 'apis', label: 'APIs & Contratos', icon: 'ph-plugs' },
-      { id: 'jobs', label: 'Jobs & Filas', icon: 'ph-arrows-clockwise' },
-      { id: 'browser', label: 'Live Browser', icon: 'ph-browser' },
-      { id: 'graph', label: 'Dependency Graph', icon: 'ph-tree-structure' },
-      { id: 'intelligence', label: 'Inteligência do Sistema', icon: 'ph-brain' }
+      { id: 'ports', label: 'Portas & Serviços', icon: 'ph-plugs-connected' },
+      { id: 'git', label: 'Histórico & Git', icon: 'ph-git-branch' },
+      { id: 'tests', label: 'Testes & Bugs', icon: 'ph-bug' },
+      { id: 'graph', label: 'Dependências & Grafo', icon: 'ph-tree-structure' },
+      { id: 'memory', label: 'Memória & Docs', icon: 'ph-database' },
+      { id: 'intelligence', label: 'Inteligência & IA', icon: 'ph-brain' },
+      ...(Number.isFinite(mappedJobs) && mappedJobs > 0 ? [{ id: 'jobs', label: `Jobs & Filas (${mappedJobs})`, icon: 'ph-arrows-clockwise' }] : [])
     ];
 
     for (const t of tabs) {
-      const tabBtn = element('button', `flp-ws-tab${state.workspaceTab === t.id ? ' active' : ''}`);
+      const isCurrentActive = state.workspaceTab === t.id ||
+        (t.id === 'preview' && state.workspaceTab === 'browser') ||
+        (t.id === 'screens' && state.workspaceTab === 'dna') ||
+        (t.id === 'tests' && state.workspaceTab === 'bugs') ||
+        (t.id === 'memory' && state.workspaceTab === 'docs');
+      const tabBtn = element('button', `flp-ws-tab${isCurrentActive ? ' active' : ''}`);
       tabBtn.type = 'button';
       tabBtn.dataset.workspaceTab = t.id;
       tabBtn.innerHTML = `<i class="ph-bold ${t.icon}"></i> ${t.label}`;
       tabBtn.addEventListener('click', () => {
         state.workspaceTab = t.id;
+        const cleanTab = t.id !== 'overview' ? `/${t.id}` : '';
+        const targetHash = `#projects/${encodeURIComponent(project.id)}${cleanTab}`;
+        if (window.location.hash !== targetHash) history.pushState(null, '', targetHash);
         renderDetail();
-        if (t.id === 'screens') loadRegisteredScreens(project);
+        if (t.id === 'screens' || t.id === 'dna') loadRegisteredScreens(project);
         if (t.id === 'intelligence') {
           if (!state.analyses.has(project.id)) loadProjectAnalysis(project.id);
           if (!state.reaAnalyses.has(project.id)) loadReaEvidence(project, false);
@@ -2126,28 +2148,35 @@
     const wsContent = element('div', 'flp-ws-content');
 
     if (state.workspaceTab === 'overview') {
-      if (workspaceIsAvailable(project)) renderGit(wsContent, project);
-      if (detail) renderExecutionPanels(wsContent, detail);
+      renderOverviewTab(wsContent, project, detail);
     } else if (state.workspaceTab === 'company') {
       renderCompanyTab(wsContent, project, detail);
-    } else if (state.workspaceTab === 'ports') {
-      renderPortsTab(wsContent, project);
-    } else if (state.workspaceTab === 'screens') {
-      renderScreensTab(wsContent, project, screens);
     } else if (state.workspaceTab === 'files') {
       renderFilesTab(wsContent, project);
     } else if (state.workspaceTab === 'code') {
       renderCodeTab(wsContent, project);
+    } else if (state.workspaceTab === 'screens' || state.workspaceTab === 'dna') {
+      renderScreensTab(wsContent, project, screens);
+    } else if (state.workspaceTab === 'preview' || state.workspaceTab === 'browser') {
+      renderBrowserTab(wsContent, project);
     } else if (state.workspaceTab === 'apis') {
       renderApisTab(wsContent, project);
-    } else if (state.workspaceTab === 'jobs') {
-      renderJobsTab(wsContent, project, detail);
-    } else if (state.workspaceTab === 'browser') {
-      renderBrowserTab(wsContent, project);
+    } else if (state.workspaceTab === 'ports') {
+      renderPortsTab(wsContent, project);
+    } else if (state.workspaceTab === 'git') {
+      renderGitTab(wsContent, project);
+    } else if (state.workspaceTab === 'tests' || state.workspaceTab === 'bugs') {
+      renderTestsTab(wsContent, project);
     } else if (state.workspaceTab === 'graph') {
       renderGraphTab(wsContent, project);
+    } else if (state.workspaceTab === 'memory' || state.workspaceTab === 'docs') {
+      renderMemoryTab(wsContent, project);
     } else if (state.workspaceTab === 'intelligence') {
       renderSystemIntelligenceTab(wsContent, project);
+    } else if (state.workspaceTab === 'jobs') {
+      renderJobsTab(wsContent, project, detail);
+    } else {
+      renderOverviewTab(wsContent, project, detail);
     }
 
     target.appendChild(wsContent);
@@ -2512,6 +2541,372 @@
       state.absorptionLoading.delete(project.id);
       if (state.selected === project.id && state.workspaceTab === 'screens') renderDetail();
     }
+  }
+
+  function renderGitTab(container, project) {
+    renderGit(container, project);
+  }
+
+  function renderOverviewTab(container, project, detail) {
+    const isLocalCatalogProject = project.source === 'LOCAL_PROJECT_CATALOG';
+    const absorption = state.absorptions.get(project.id);
+    const git = state.git.get(project.id);
+    const { liveStatus, status } = operationalStatus(project);
+    const screens = state.registeredScreens.get(project.id) || project.screens || [];
+
+    const panel = element('section', 'flp-panel');
+    const head = element('div', 'flp-dna-board-head');
+    const identity = element('div');
+    identity.append(
+      element('span', 'flp-eyebrow', 'VISÃO GERAL DO PROJETO'),
+      element('h3', '', `${project.name || project.id} · Workspace Central`),
+      element('p', '', 'Resumo operacional, integridade dos serviços e atalhos rápidos para inspeção profunda.')
+    );
+    head.appendChild(identity);
+    panel.appendChild(head);
+
+    // KPI Cards / Highlights
+    const kpis = element('div', 'flp-overview-kpis');
+    kpis.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
+    const kpiRow = (lbl, val) => {
+      const el = element('div', 'flp-overview-kpi-card');
+      el.append(element('span', '', lbl), element('strong', '', text(val)));
+      return el;
+    };
+    kpis.append(
+      kpiRow('Status Operacional', status === 'online' ? `🟢 Online (Porta :${liveStatus?.port || project.localPort || '—'})` : '⚪ Offline'),
+      kpiRow('Screen DNA', screens.length ? `${screens.length} tela(s)` : (isLocalCatalogProject ? 'Pendente' : '—')),
+      kpiRow('Genome Twin', absorption ? `Absorvido (${absorption.screens?.length || 0} telas)` : 'Não absorvido'),
+      kpiRow('Git Branch', git?.branch || 'main'),
+      kpiRow('Framework', (absorption?.codeMap?.frameworks || [project.frontend?.framework || project.backend?.runtime]).filter(Boolean).join(', ') || 'Vanilla / Node')
+    );
+    panel.appendChild(kpis);
+
+    // Quick Navigation Grid
+    const navGrid = element('div', 'flp-overview-nav-grid');
+    navGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:20px 0;';
+
+    const quickLinks = [
+      { id: 'preview', title: 'Preview ao Vivo', desc: 'Visualização interativa desktop/tablet/mobile', icon: 'ph-browser', color: '#00D9FF' },
+      { id: 'files', title: 'Arquivos & Pastas', desc: 'Árvore de arquivos do projeto', icon: 'ph-folder', color: '#F59E0B' },
+      { id: 'code', title: 'Código Monaco', desc: 'Editor e inspetor de arquivos', icon: 'ph-code', color: '#A78BFA' },
+      { id: 'screens', title: 'Screen DNA', desc: `${screens.length} telas mapeadas e absorvidas`, icon: 'ph-eye', color: '#38BDF8' },
+      { id: 'apis', title: 'APIs & Contratos', desc: 'Rotas declaradas e endpoints', icon: 'ph-plugs', color: '#10B981' },
+      { id: 'tests', title: 'Testes & Bugs', desc: 'Suítes de teste e bug tracker', icon: 'ph-bug', color: '#EF4444' },
+      { id: 'git', title: 'Histórico & Git', desc: 'Commits, diffs e sincronização', icon: 'ph-git-branch', color: '#6366F1' },
+      { id: 'memory', title: 'Memória & Docs', desc: 'Genome twin e memórias ativas', icon: 'ph-database', color: '#EC4899' },
+    ];
+
+    for (const q of quickLinks) {
+      const card = element('div', 'flp-overview-nav-card');
+      card.style.cssText = 'background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; gap:6px;';
+      card.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px; color:${q.color}; font-weight:700; font-size:13px;">
+          <i class="ph-bold ${q.icon}"></i> <span>${q.title}</span>
+        </div>
+        <p style="font-size:11px; color:#94A3B8; margin:0; line-height:1.4;">${q.desc}</p>
+      `;
+      card.addEventListener('mouseenter', () => { card.style.borderColor = q.color; card.style.background = 'rgba(255,255,255,0.05)'; });
+      card.addEventListener('mouseleave', () => { card.style.borderColor = 'rgba(255,255,255,0.08)'; card.style.background = 'rgba(255,255,255,0.02)'; });
+      card.addEventListener('click', () => {
+        state.workspaceTab = q.id;
+        const cleanTab = q.id !== 'overview' ? `/${q.id}` : '';
+        history.pushState(null, '', `#projects/${encodeURIComponent(project.id)}${cleanTab}`);
+        renderDetail();
+      });
+      navGrid.appendChild(card);
+    }
+    panel.appendChild(navGrid);
+
+    container.appendChild(panel);
+    if (detail) renderExecutionPanels(container, detail);
+  }
+
+  function renderTestsTab(container, project) {
+    const panel = element('section', 'flp-panel');
+    const head = element('div', 'flp-dna-board-head');
+    const identity = element('div');
+    identity.append(
+      element('span', 'flp-eyebrow', 'TESTES & BUG TRACKER AUTÔNOMO'),
+      element('h3', '', `Testes, Riscos & Bugs · ${project.name || project.id}`),
+      element('p', '', 'Rastreamento factual de suítes de teste, probes de integridade e anomalias registradas pelo Fênix Autonomous Loop.')
+    );
+    const actions = element('div', 'flp-dna-actions');
+
+    const runTestsBtn = element('button', 'flp-button flp-button-primary', '▶ Executar Smoke Tests');
+    runTestsBtn.type = 'button';
+
+    const reportBugBtn = element('button', 'flp-button flp-button-soft', '🐛 Reportar Anomalia');
+    reportBugBtn.type = 'button';
+
+    const refreshBtn = element('button', 'flp-button flp-button-soft', '↻ Atualizar');
+    refreshBtn.type = 'button';
+
+    actions.append(runTestsBtn, reportBugBtn, refreshBtn);
+    head.append(identity, actions);
+    panel.appendChild(head);
+
+    // Metrics Row
+    const metricsRow = element('div', 'flp-tests-metrics');
+    const testKpi = (lbl, val) => {
+      const el = element('div', 'flp-test-kpi-card');
+      el.append(element('span', '', lbl), element('strong', '', text(val)));
+      return el;
+    };
+    metricsRow.append(
+      testKpi('Suítes de Teste', 'Consultando…'),
+      testKpi('Riscos / Gaps', 'Consultando…'),
+      testKpi('Bugs Ativos', 'Consultando…'),
+      testKpi('Probe / Health', project.healthUrl || project.remoteHealthUrl ? 'Configurado' : 'Não cadastrado')
+    );
+    panel.appendChild(metricsRow);
+
+    // Test Output Box (hidden initially)
+    const runOutput = element('pre', 'flp-test-run-output');
+    runOutput.style.cssText = 'display:none; background:#050914; border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:14px; font-family:monospace; font-size:11.5px; color:#38bdf8; max-height:240px; overflow-y:auto; margin:16px 0; white-space:pre-wrap;';
+    panel.appendChild(runOutput);
+
+    // Bugs Section
+    const bugsContainer = element('div', 'flp-bugs-list-wrap');
+    bugsContainer.style.marginTop = '16px';
+    bugsContainer.innerHTML = '<p class="flp-empty">Consultando anomalias e bugs do Autonomous Loop…</p>';
+    panel.appendChild(bugsContainer);
+
+    container.appendChild(panel);
+
+    async function loadTestsAndBugs() {
+      try {
+        const [bugsRes, stateRes] = await Promise.allSettled([
+          json(`/api/v2/autonomous/bugs?projectId=${encodeURIComponent(project.id)}`),
+          json(`/api/fenix/projects/${encodeURIComponent(project.id)}/state`)
+        ]);
+
+        if (stateRes.status === 'fulfilled' && stateRes.value) {
+          const detail = stateRes.value;
+          const tCount = detail.testsErrorsAndRisks?.testsCount || detail.tests?.length || 0;
+          const rCount = detail.testsErrorsAndRisks?.risksCount || detail.architecturalGaps?.length || 0;
+          testCountEl.querySelector('strong').textContent = `${tCount} suítes`;
+          risksEl.querySelector('strong').textContent = `${rCount} gaps`;
+        } else {
+          testCountEl.querySelector('strong').textContent = '—';
+          risksEl.querySelector('strong').textContent = '—';
+        }
+
+        if (bugsRes.status === 'fulfilled' && bugsRes.value && bugsRes.value.ok) {
+          const bugs = bugsRes.value.bugs || bugsRes.value.items || [];
+          activeBugsEl.querySelector('strong').textContent = `${bugs.length} detectados`;
+
+          if (bugs.length === 0) {
+            bugsContainer.innerHTML = `
+              <div style="padding:24px; text-align:center; background:rgba(16,185,129,0.04); border:1px solid rgba(16,185,129,0.2); border-radius:10px;">
+                <div style="font-size:24px; color:#10B981; margin-bottom:8px;">✓</div>
+                <strong style="color:#F8FAFC; font-size:13px;">Nenhum bug ativo para este projeto</strong>
+                <p style="color:#94A3B8; font-size:11px; margin:4px 0 0;">O Fênix Autonomous Loop não registrou regressões ativas para ${project.name || project.id}.</p>
+              </div>
+            `;
+          } else {
+            bugsContainer.replaceChildren();
+            const listTitle = element('h4', '', `Anomalias & Bugs Registrados (${bugs.length})`);
+            listTitle.style.cssText = 'color:#f8fafc; font-size:13px; margin-bottom:10px;';
+            bugsContainer.appendChild(listTitle);
+
+            for (const b of bugs) {
+              const bugCard = element('div', 'flp-bug-item');
+              const sevColor = b.severity === 'critical' ? '#ef4444' : b.severity === 'high' ? '#f97316' : '#38bdf8';
+              bugCard.style.cssText = `background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-left:4px solid ${sevColor}; border-radius:8px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:12px;`;
+              
+              const info = element('div');
+              info.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:4px; background:${sevColor}22; color:${sevColor};">${b.severity || 'normal'}</span>
+                  <strong style="color:#f8fafc; font-size:12px;">${b.title || b.description || 'Bug sem título'}</strong>
+                  <span style="font-size:10px; color:#64748b;">${date(b.createdAt)}</span>
+                </div>
+                ${b.description && b.title ? `<p style="font-size:11px; color:#94a3b8; margin:4px 0 0;">${b.description}</p>` : ''}
+              `;
+
+              const statusBadge = element('span', 'flp-badge flp-badge-purple', b.state || 'detected');
+              bugCard.append(info, statusBadge);
+              bugsContainer.appendChild(bugCard);
+            }
+          }
+        } else {
+          activeBugsEl.querySelector('strong').textContent = '—';
+          bugsContainer.innerHTML = '<p class="flp-empty">Não foi possível carregar os bugs da API autônoma.</p>';
+        }
+      } catch (err) {
+        bugsContainer.innerHTML = `<p class="flp-intelligence-error">Erro ao consultar telemetria de testes: ${err.message}</p>`;
+      }
+    }
+
+    refreshBtn.addEventListener('click', () => loadTestsAndBugs());
+
+    runTestsBtn.addEventListener('click', async () => {
+      runTestsBtn.disabled = true;
+      runTestsBtn.textContent = 'Executando…';
+      runOutput.style.display = 'block';
+      runOutput.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] Iniciando bateria de testes para ${project.name || project.id}…\nAmbiente: local\nTarget: ${project.workspace || 'default'}\n`;
+      try {
+        const res = await json('/api/onedeploy/smoke-tests/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ environment: 'local', projectId: project.id })
+        });
+        runOutput.textContent += `[${new Date().toLocaleTimeString('pt-BR')}] Testes concluídos com sucesso!\nStatus: ${res.status || 'OK'}\nResultado: ${JSON.stringify(res, null, 2)}`;
+      } catch (err) {
+        runOutput.textContent += `[${new Date().toLocaleTimeString('pt-BR')}] Falha na execução: ${err.message}\nVerifique se o runner de smoke tests está configurado para este projeto.`;
+      } finally {
+        runTestsBtn.disabled = false;
+        runTestsBtn.textContent = '▶ Executar Smoke Tests';
+        loadTestsAndBugs();
+      }
+    });
+
+    reportBugBtn.addEventListener('click', async () => {
+      const title = prompt(`Reportar bug/anomalia para ${project.name || project.id}:`);
+      if (!title || !title.trim()) return;
+      try {
+        await json('/api/v2/autonomous/bugs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: project.id,
+            title: title.trim(),
+            severity: 'medium',
+            description: `Reportado manualmente via Project Workspace 2.0 em ${new Date().toISOString()}`
+          })
+        });
+        alert('Bug reportado com sucesso no Autonomous Loop!');
+        loadTestsAndBugs();
+      } catch (err) {
+        alert(`Erro ao reportar bug: ${err.message}`);
+      }
+    });
+
+    loadTestsAndBugs();
+  }
+
+  function renderMemoryTab(container, project) {
+    const panel = element('section', 'flp-panel');
+    const head = element('div', 'flp-dna-board-head');
+    const identity = element('div');
+    identity.append(
+      element('span', 'flp-eyebrow', 'MEMÓRIA OPERACIONAL & DIGITAL GENOME'),
+      element('h3', '', `Memória & Documentação · ${project.name || project.id}`),
+      element('p', '', 'Conhecimento consolidado, padrões de arquitetura e decisões de engenharia registradas no Fênix Memory Fabric.')
+    );
+    const actions = element('div', 'flp-dna-actions');
+
+    const absorbBtn = element('button', 'flp-button flp-button-primary', '🧬 Reabsorver Genome');
+    absorbBtn.type = 'button';
+
+    const refreshBtn = element('button', 'flp-button flp-button-soft', '↻ Atualizar');
+    refreshBtn.type = 'button';
+
+    actions.append(absorbBtn, refreshBtn);
+    head.append(identity, actions);
+    panel.appendChild(head);
+
+    // Genome Status Summary
+    const genomeCard = element('div', 'flp-genome-summary-card');
+    genomeCard.style.cssText = 'background:rgba(0,217,255,0.04); border:1px solid rgba(0,217,255,0.2); border-radius:10px; padding:16px; margin:16px 0;';
+    const absorption = state.absorptions.get(project.id);
+    const screens = state.registeredScreens.get(project.id) || project.screens || [];
+
+    genomeCard.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+        <strong style="color:#00D9FF; font-size:13px;"><i class="ph-bold ph-dna"></i> Digital Genome Twin: ${absorption ? 'Sincronizado' : 'Aguardando Absorção'}</strong>
+        <span style="font-size:10.5px; color:#94A3B8;">Hash: ${absorption?.fingerprint || absorption?.hash || '—'}</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+        <div><small style="color:#64748B;">Telas (Screen DNA)</small><div style="color:#F8FAFC; font-weight:700; font-size:13px;">${screens.length || 0}</div></div>
+        <div><small style="color:#64748B;">Rotas de API</small><div style="color:#F8FAFC; font-weight:700; font-size:13px;">${absorption?.codeMap?.endpoints?.length || '—'}</div></div>
+        <div><small style="color:#64748B;">Frameworks</small><div style="color:#F8FAFC; font-weight:700; font-size:13px;">${(absorption?.codeMap?.frameworks || []).join(', ') || 'Vanilla'}</div></div>
+        <div><small style="color:#64748B;">Última Atualização</small><div style="color:#F8FAFC; font-weight:700; font-size:13px;">${absorption?.capturedAt ? date(absorption.capturedAt) : '—'}</div></div>
+      </div>
+    `;
+    panel.appendChild(genomeCard);
+
+    // Memories List
+    const memoriesWrap = element('div', 'flp-memories-list-wrap');
+    memoriesWrap.innerHTML = '<p class="flp-empty">Consultando memórias operacionais de engenharia…</p>';
+    panel.appendChild(memoriesWrap);
+
+    container.appendChild(panel);
+
+    async function loadMemories() {
+      try {
+        const [knowRes, expRes] = await Promise.allSettled([
+          json(`/api/fenix/projects/${encodeURIComponent(project.id)}/knowledge`),
+          json(`/api/fenix/projects/${encodeURIComponent(project.id)}/experience`)
+        ]);
+
+        const memories = [];
+        if (knowRes.status === 'fulfilled' && Array.isArray(knowRes.value?.memories)) {
+          memories.push(...knowRes.value.memories);
+        }
+        if (expRes.status === 'fulfilled' && Array.isArray(expRes.value?.memories)) {
+          memories.push(...expRes.value.memories);
+        }
+
+        if (memories.length === 0) {
+          memoriesWrap.innerHTML = `
+            <div style="padding:24px; text-align:center; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:10px;">
+              <strong style="color:#F8FAFC; font-size:13px;">Nenhuma memória de longo prazo isolada</strong>
+              <p style="color:#94A3B8; font-size:11px; margin:4px 0 0;">As memórias são consolidadas no Memory Fabric conforme missões e refatorações são validadas para ${project.name || project.id}.</p>
+            </div>
+          `;
+        } else {
+          memoriesWrap.replaceChildren();
+          const titleEl = element('h4', '', `Nós de Memória & Conhecimento (${memories.length})`);
+          titleEl.style.cssText = 'color:#f8fafc; font-size:13px; margin:14px 0 10px;';
+          memoriesWrap.appendChild(titleEl);
+
+          for (const m of memories) {
+            const item = element('div', 'flp-memory-item');
+            item.style.cssText = 'background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:12px; margin-bottom:8px;';
+            item.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:9.5px; font-weight:800; color:#38bdf8; text-transform:uppercase;">${m.kind || m.category || 'memória'}</span>
+                <span style="font-size:10px; color:#64748b;">${date(m.createdAt || m.updatedAt)}</span>
+              </div>
+              <strong style="color:#f8fafc; font-size:12px;">${m.title || m.summary || 'Item de memória'}</strong>
+              <p style="font-size:11px; color:#94a3b8; margin:4px 0 0; line-height:1.4;">${m.content || m.lessonLearned || '—'}</p>
+            `;
+            memoriesWrap.appendChild(item);
+          }
+        }
+      } catch (err) {
+        memoriesWrap.innerHTML = `<p class="flp-intelligence-error">Erro ao carregar memórias: ${err.message}</p>`;
+      }
+    }
+
+    refreshBtn.addEventListener('click', () => loadMemories());
+    absorbBtn.addEventListener('click', async () => {
+      absorbBtn.disabled = true;
+      absorbBtn.textContent = 'Absorvendo…';
+      try {
+        const res = await json('/api/v2/company/projects/absorb', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: project.id,
+            projectName: project.name,
+            workspacePath: project.workspace
+          })
+        });
+        state.absorptions.set(project.id, res);
+        alert(`Genome Twin absorvido com sucesso! ${res.screens?.length || 0} telas mapeadas.`);
+        renderDetail();
+      } catch (err) {
+        alert(`Erro na absorção: ${err.message}`);
+      } finally {
+        absorbBtn.disabled = false;
+        absorbBtn.textContent = '🧬 Reabsorver Genome';
+      }
+    });
+
+    loadMemories();
   }
 
   function renderCompanyTab(container, project, detail) {
@@ -3636,6 +4031,40 @@
     if (state.selected === projectId) renderDetail();
   }
 
+  async function runProjectAutonomousCycle(projectId) {
+    state.autonomousCycles = state.autonomousCycles || new Map();
+    state.autonomousCycles.set(projectId, { loading: true, error: null, result: null });
+    if (state.selected === projectId) renderDetail();
+    try {
+      const res = await json(`/api/fenix/projects/${encodeURIComponent(projectId)}/autonomous-cycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoFix: true })
+      });
+      state.autonomousCycles.set(projectId, { loading: false, error: null, result: res.cycle });
+      await loadProjectAnalysis(projectId, true);
+    } catch (err) {
+      state.autonomousCycles.set(projectId, { loading: false, error: err.message, result: null });
+    }
+    if (state.selected === projectId) renderDetail();
+  }
+
+  async function enqueueProjectEvolutionJob(projectId, priority = 'HIGH') {
+    try {
+      const res = await json(`/api/fenix/projects/${encodeURIComponent(projectId)}/evolution-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dispatchJob: true, priority })
+      });
+      if (res?.job) {
+        state.workspaceTab = 'jobs';
+        renderDetail();
+      }
+    } catch (err) {
+      console.warn('[ProjectHub] Falha ao enfileirar job:', err.message);
+    }
+  }
+
   const systemRunActive = run => ['QUEUED', 'RUNNING', 'CANCELLING'].includes(run?.status);
   const systemRunStatuses = { QUEUED: 'Na fila', RUNNING: 'Em andamento', CANCELLING: 'Cancelando', CANCELLED: 'Cancelada', FAILED: 'Falha', PARTIAL: 'Parcial · consulte as limitações', COMPLETED: 'Concluída' };
   const systemRunStages = { inventory: 'inventário', code: 'código', captures: 'capturas', tests: 'testes', synthesis: 'síntese', export: 'relatório', done: 'finalizado' };
@@ -3949,6 +4378,126 @@
       }
       panel.appendChild(section);
     }
+
+    // Render 10 Canonical Diagnostic Facets
+    if (report.facets) {
+      const facetsSection = element('section', 'flp-intelligence-section flp-diagnostic-facets');
+      facetsSection.append(element('h4', '', 'Diagnóstico Multidimensional (10 Facetas Canônicas)'));
+      facetsSection.append(element('p', 'flp-intelligence-note', 'Auditoria profunda em 10 dimensões factuais: Código, Telas, APIs, Dependências, Estado Real e Autonomia.'));
+
+      const facetsGrid = element('div', 'flp-facets-grid');
+      const facetCards = [
+        { num: '01', title: 'Finalidade & Capacidades', desc: report.purposeAndCapabilities?.purpose || '—', meta: `${(report.purposeAndCapabilities?.capabilities || []).length} capacidades registradas` },
+        { num: '02', title: 'Estrutura & Módulos', desc: `${report.fileStructureAndModules?.totalFiles || report.totalFiles} arquivos mapeados`, meta: `${(report.fileStructureAndModules?.topLevelDirectories || []).join(', ') || 'diretórios locais'}` },
+        { num: '03', title: 'Telas & Fluxos', desc: `${report.screensAndNavigationFlows?.screensCount || 0} telas mapeadas`, meta: `${report.screensAndNavigationFlows?.componentsCount || 0} componentes` },
+        { num: '04', title: 'APIs & Dependências', desc: `${report.apisAndDependencies?.routesCount || report.routes?.length || 0} rotas HTTP`, meta: `${report.apisAndDependencies?.dependenciesCount || report.dependencies?.length || 0} bibliotecas` },
+        { num: '05', title: 'Estado Real de Execução', desc: report.runtimeExecutionState?.status || '—', meta: report.runtimeExecutionState?.message || '—' },
+        { num: '06', title: 'Testes & Riscos', desc: `${report.testsErrorsAndRisks?.testsCount || report.tests?.length || 0} suítes de teste`, meta: `${report.testsErrorsAndRisks?.risksCount || report.architecturalGaps?.length || 0} riscos identificados` },
+        { num: '07', title: 'Funcionalidades Incompletas', desc: `${report.incompleteFeatures?.items?.length || 0} pendências arquiteturais`, meta: report.incompleteFeatures?.hasHealthProbe ? 'Probe /health ativo' : 'Ausência de /health' },
+        { num: '08', title: 'Oportunidades de Evolução', desc: `${report.evolutionOpportunities?.length || 0} frentes identificadas`, meta: 'Segurança, Testes e Autonomia' },
+        { num: '09', title: 'Plano Priorizado', desc: `${(report.prioritizedImprovementPlan?.phases || []).length} fases estruturadas`, meta: report.prioritizedImprovementPlan?.totalEstimatedMinutes ? `Estimativa: ${report.prioritizedImprovementPlan.totalEstimatedMinutes} min` : 'Estimativa: —' },
+        { num: '10', title: 'Critérios & Evidências', desc: `Hash: ${report.acceptanceCriteriaAndEvidence?.baselineFingerprint || '—'}`, meta: `${(report.acceptanceCriteriaAndEvidence?.criteria || []).length} critérios de aceite` }
+      ];
+
+      for (const fc of facetCards) {
+        const card = element('div', 'flp-facet-card');
+        card.innerHTML = `<span class="flp-facet-num">${fc.num}</span><strong class="flp-facet-title">${fc.title}</strong><p class="flp-facet-desc">${fc.desc}</p><small class="flp-facet-meta">${fc.meta}</small>`;
+        facetsGrid.appendChild(card);
+      }
+      facetsSection.appendChild(facetsGrid);
+      panel.appendChild(facetsSection);
+    }
+
+    // Render Architectural Gaps
+    if (Array.isArray(report.architecturalGaps) && report.architecturalGaps.length > 0) {
+      const gapsSection = element('section', 'flp-intelligence-section flp-gaps-section');
+      gapsSection.append(element('h4', '', `Gaps Arquiteturais Identificados (${report.architecturalGaps.length})`));
+      const gapsGrid = element('div', 'flp-gaps-grid');
+      for (const gap of report.architecturalGaps) {
+        const gCard = element('article', `flp-gap-card flp-gap-${(gap.severity || 'low').toLowerCase()}`);
+        const badge = element('span', `flp-gap-badge flp-badge-${(gap.severity || 'low').toLowerCase()}`, gap.severity || 'LOW');
+        const title = element('strong', 'flp-gap-title', gap.title || 'Gap identificado');
+        const desc = element('p', 'flp-gap-desc', gap.description || '—');
+        const rem = element('p', 'flp-gap-rem', `Remediação: ${gap.remediation || '—'}`);
+        gCard.append(badge, title, desc, rem);
+        gapsGrid.appendChild(gCard);
+      }
+      gapsSection.appendChild(gapsGrid);
+      panel.appendChild(gapsSection);
+    }
+
+    // Render Evolution Plan
+    if (report.evolutionPlan?.phases) {
+      const planSection = element('section', 'flp-intelligence-section flp-evolution-plan-section');
+      const planHead = element('div', 'flp-plan-head');
+      const estTotal = report.evolutionPlan.totalEstimatedMinutes ? `${report.evolutionPlan.totalEstimatedMinutes} min` : '—';
+      planHead.innerHTML = `<h4>Roteiro de Evolução em 4 Fases · Estimativa: ${estTotal}</h4>`;
+      const enqueueBtn = element('button', 'flp-button flp-button-soft', '🚀 Enfileirar no Job Lane');
+      enqueueBtn.type = 'button';
+      enqueueBtn.addEventListener('click', () => enqueueProjectEvolutionJob(project.id));
+      planHead.appendChild(enqueueBtn);
+      planSection.appendChild(planHead);
+
+      const phasesList = element('div', 'flp-phases-list');
+      for (const ph of report.evolutionPlan.phases) {
+        const phCard = element('div', 'flp-phase-card');
+        const estPhase = ph.estimatedMinutes ? `${ph.estimatedMinutes} min` : '—';
+        phCard.innerHTML = `<div class="flp-phase-header"><span class="flp-phase-tag">Fase ${ph.phase}</span><strong>${ph.name}</strong><small>${estPhase}</small></div><p class="flp-phase-desc">${ph.description}</p>`;
+        const actList = element('ul', 'flp-phase-actions');
+        for (const act of ph.actions || []) {
+          actList.appendChild(element('li', '', act));
+        }
+        phCard.appendChild(actList);
+        phasesList.appendChild(phCard);
+      }
+      planSection.appendChild(phasesList);
+      panel.appendChild(planSection);
+    }
+
+    // Render Fênix Autonomous Cycle Panel
+    const autoSection = element('section', 'flp-intelligence-section flp-autonomous-cycle-section');
+    autoSection.append(element('h4', '', 'Ecossistema Autônomo Fênix (Muse × Grok Build × Gemini × Dots × AI City)'));
+    autoSection.append(element('p', 'flp-intelligence-note', 'Executa o ciclo completo: OBSERVAR → IDENTIFICAR DEFEITO → REPRODUZIR → CORREÇÃO CIRÚRGICA → VALIDAR TESTES → REGISTRAR EM MEMÓRIA & BUG TRACKER → PROVA DE RECUPERAÇÃO COLD-RESTART.'));
+
+    const autoActions = element('div', 'flp-autonomous-actions');
+    const autoCycleBtn = element('button', 'flp-button flp-button-primary', '⚡ Executar Ciclo Autônomo');
+    autoCycleBtn.type = 'button';
+    autoCycleBtn.addEventListener('click', () => runProjectAutonomousCycle(project.id));
+    autoActions.appendChild(autoCycleBtn);
+    autoSection.appendChild(autoActions);
+
+    const cycleState = state.autonomousCycles?.get(project.id);
+    if (cycleState?.loading) {
+      const loadingMsg = element('div', 'flp-cycle-loading', '⏳ Executando ciclo autônomo (inspeção, reprodução de falha, patch cirúrgico, testes e cold-restart recovery)...');
+      autoSection.appendChild(loadingMsg);
+    } else if (cycleState?.error) {
+      const errMsg = element('div', 'flp-intelligence-error', `Falha no ciclo autônomo: ${cycleState.error}`);
+      autoSection.appendChild(errMsg);
+    } else if (cycleState?.result) {
+      const res = cycleState.result;
+      const resBox = element('div', 'flp-cycle-result-box');
+      const badge = element('span', 'flp-badge-verified', `ESTADO: ${res.stage || 'VERIFIED'}`);
+      resBox.appendChild(badge);
+
+      const stepsList = element('div', 'flp-cycle-steps');
+      for (const st of res.steps || []) {
+        const stepRow = element('div', 'flp-cycle-step-row');
+        stepRow.innerHTML = `<span class="flp-step-num">✓ Passo ${st.step} [${st.name}]</span> <span class="flp-step-detail">${st.detail}</span>`;
+        stepsList.appendChild(stepRow);
+      }
+      resBox.appendChild(stepsList);
+
+      const diffBox = element('div', 'flp-cycle-diff');
+      diffBox.innerHTML = `<strong>Comparação Antes vs Depois:</strong>
+        <div>Exit Code Inicial (Falha): <code>${res.diffSummary?.before?.exitCode}</code> → Exit Code Pós-Correção: <code>${res.diffSummary?.after?.exitCode}</code></div>
+        <div>SHA-256 Antes: <code>${res.diffSummary?.before?.sha256?.slice(0, 16)}...</code> → Depois: <code>${res.diffSummary?.after?.sha256?.slice(0, 16)}...</code></div>
+        <div>Universal Bug Tracker: <code>${res.bug?.bugId}</code> (${res.bug?.bugState}) · Cold-Restart: <code>${res.recovery?.status}</code></div>`;
+      resBox.appendChild(diffBox);
+      autoSection.appendChild(resBox);
+    }
+
+    panel.appendChild(autoSection);
+
     const actions = element('div', 'flp-intelligence-actions');
     const refresh = element('button', 'flp-button flp-button-soft', 'Atualizar mapa');
     refresh.type = 'button';
@@ -3958,7 +4507,10 @@
     ide.type = 'button';
     ide.disabled = !workspaceIsAvailable(project);
     ide.addEventListener('click', () => openProjectInIde(project));
-    actions.append(refresh, ide);
+    const autoCycleBtnMain = element('button', 'flp-button flp-button-primary', '⚡ Ciclo Autônomo');
+    autoCycleBtnMain.type = 'button';
+    autoCycleBtnMain.addEventListener('click', () => runProjectAutonomousCycle(project.id));
+    actions.append(refresh, ide, autoCycleBtnMain);
     panel.appendChild(actions);
     container.appendChild(panel);
     renderSystemObservation(container, project);
@@ -4983,15 +5535,31 @@
     if (id === 'api-platform-live') loadDeploy(id);
   }
 
-  function selectProject(id) {
+  function selectProject(id, targetTab = null, forceFocus = null) {
     clearTimeout(state.deployTimer);
     state.selected = id;
+    if (targetTab) state.workspaceTab = targetTab;
+    if (forceFocus === true) {
+      state.detailFocus = true;
+    } else if (forceFocus === false) {
+      state.detailFocus = false;
+    } else if (state.launcherFullGrid) {
+      state.detailFocus = true;
+    }
     recordProjectOpen(id);
     localStorage.setItem('fenix_project_hub_selected', id);
     const proj = state.projects.find((p) => p.id === id);
     if (window.GlobalSelectionStore && typeof window.GlobalSelectionStore.select === 'function') {
       window.GlobalSelectionStore.select('project', id, proj || { id });
     }
+    if (state.detailFocus) {
+      const cleanTab = state.workspaceTab && state.workspaceTab !== 'overview' ? `/${state.workspaceTab}` : '';
+      const targetHash = `#projects/${encodeURIComponent(id)}${cleanTab}`;
+      if (window.location.hash !== targetHash) {
+        history.pushState(null, '', targetHash);
+      }
+    }
+    syncMultiViewToolbar();
     renderCards();
     renderDetail();
     loadProjectState(id);
@@ -5028,7 +5596,7 @@
         if (state.selected === id) {
           renderMetrics();
           renderCards();
-          if (['overview', 'company', 'jobs'].includes(state.workspaceTab)) {
+          if (['overview', 'company', 'jobs', 'tests', 'memory'].includes(state.workspaceTab)) {
             renderDetail();
           }
         }
@@ -5061,12 +5629,16 @@
         const data = await json('/api/fenix/projects');
         state.projects = data.projects || [];
         state.measuredAt = new Date().toISOString();
-        const preferred = state.projects.find((item) => item.id === state.requestedProjectId) ||
+        const route = parseProjectsRoute();
+        const preferred = (route?.projectId && state.projects.find((item) => item.id === route.projectId || item.id === (route.projectId === 'api-platform' ? 'api-platform-live' : route.projectId))) ||
+                          state.projects.find((item) => item.id === state.requestedProjectId) ||
                           state.projects.find((item) => item.id === state.selected) ||
                           state.projects.find((item) => item.id === localStorage.getItem('fenix_project_hub_selected')) ||
                           state.projects.find((item) => item.id === 'api-platform-live') ||
                           state.projects[0];
         state.selected = preferred?.id || null;
+        if (route?.tab) state.workspaceTab = route.tab;
+        if (route?.projectId) state.detailFocus = true;
         state.requestedProjectId = null;
         recordProjectOpen(state.selected);
         if (state.selected) loadGit(state.selected);
@@ -5866,19 +6438,24 @@
   window.openScreenInspector = openInspector;
   window.openGitHubConnectModal = openGitHubConnectModal;
   window.openGitHubCreateModal = openGitHubCreateModal;
-  window.openProjectWorkspace = async (projectId) => {
+  window.openProjectWorkspace = async (projectId, initialTab = null) => {
     window.showView?.('projects');
     const alias = projectId === 'api-platform' ? 'api-platform-live' : projectId;
+    state.detailFocus = true;
+    if (initialTab) state.workspaceTab = initialTab;
     if (state.projects.some((project) => project.id === alias)) {
-      selectProject(alias);
+      selectProject(alias, initialTab, true);
     } else {
       state.requestedProjectId = alias;
+      await load();
+      if (state.projects.some((project) => project.id === alias)) {
+        selectProject(alias, initialTab, true);
+      }
     }
     const proj = state.projects.find((p) => p.id === alias);
     if (window.GlobalSelectionStore && typeof window.GlobalSelectionStore.select === 'function') {
       window.GlobalSelectionStore.select('project', alias, proj || { id: alias });
     }
-    await load();
   };
   window.openProjectScreenDNA = async (projectId) => {
     const alias = projectId === 'api-platform' ? 'api-platform-live' : projectId;
@@ -5926,10 +6503,32 @@
     return true;
   };
 
+  const parseProjectsRoute = () => {
+    const hash = window.location.hash || '';
+    const match = hash.match(/^#projects(?:\/([^\/?#]+))?(?:\/([^\/?#]+))?/i);
+    if (!match) return null;
+    return {
+      projectId: match[1] ? decodeURIComponent(match[1]) : null,
+      tab: match[2] ? decodeURIComponent(match[2]) : null
+    };
+  };
+
   // The Project Hub is expensive enough to load only when its route is active.
   const isProjectsRoute = () => /^#projects(?:\/|\?|$)/i.test(window.location.hash || '');
   const startProjectHub = () => {
     if (!isProjectsRoute()) return;
+    const route = parseProjectsRoute();
+    if (route?.projectId) {
+      const alias = route.projectId === 'api-platform' ? 'api-platform-live' : route.projectId;
+      state.requestedProjectId = alias;
+      state.selected = alias;
+      if (route.tab) state.workspaceTab = route.tab;
+      state.detailFocus = true;
+    } else {
+      if (window.location.hash === '#projects') {
+        state.detailFocus = false;
+      }
+    }
     renderShell();
     load();
   };

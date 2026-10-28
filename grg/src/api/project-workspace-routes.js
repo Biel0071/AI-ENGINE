@@ -252,6 +252,12 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
     state.projectAnalyses = state.projectAnalyses || {};
 
     if (action === 'analysis' && req.method === 'GET') {
+      if (app.projectKernel && typeof app.projectKernel.analysis === 'function') {
+        try {
+          const kernelAnalysis = await app.projectKernel.analysis(tenantId, actorId, projectId);
+          if (kernelAnalysis) return reply(200, kernelAnalysis);
+        } catch (_) {}
+      }
       let report = state.projectAnalyses[projectId];
       if (!report) {
         report = await globalProjectIntelligenceEngine.analyzeProject(projectId, workspace);
@@ -262,6 +268,12 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
     }
 
     if (action === 'analyze' && req.method === 'POST') {
+      if (app.projectKernel && typeof app.projectKernel.analyze === 'function') {
+        try {
+          const kernelResult = await app.projectKernel.analyze(tenantId, actorId, projectId);
+          if (kernelResult) return reply(202, kernelResult);
+        } catch (_) {}
+      }
       const report = await globalProjectIntelligenceEngine.analyzeProject(projectId, workspace);
       state.projectAnalyses[projectId] = report;
       await app.store.write(state);

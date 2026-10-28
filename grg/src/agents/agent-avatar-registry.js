@@ -42,6 +42,25 @@ class AgentAvatarRegistry {
     this.save();
     return { ...avatar, runtimeIdentity: runtimeIdentity(agent) };
   }
+
+  getOrCreateMany(agents) {
+    const input = Array.isArray(agents) ? agents : [];
+    let changed = false;
+    const profiles = input.map((agent) => {
+      const agentId = String(agent?.id || agent?.agentId || agent?.role || '').trim();
+      if (!agentId) return null;
+      const registryKey = String(agent?.registryKey || agentId);
+      let avatar = this.avatars.get(registryKey);
+      if (!avatar) {
+        avatar = buildAvatar(agentId, agent);
+        this.avatars.set(registryKey, avatar);
+        changed = true;
+      }
+      return { ...avatar, source: 'generated-from-role', runtimeIdentity: runtimeIdentity(agent) };
+    });
+    if (changed) this.save();
+    return profiles;
+  }
 }
 
 function buildAvatar(agentId, agent) {
@@ -51,6 +70,7 @@ function buildAvatar(agentId, agent) {
   return {
     agentId,
     name: agent?.name || humanize(agentId),
+    avatarUrl: avatarUrlFor(agentId, role),
     style: 'fenix-rpg-business',
     appearance: {
       archetype: archetypeFor(role),
@@ -70,11 +90,24 @@ function buildAvatar(agentId, agent) {
     },
     personalityProfile: {
       tone: 'operational',
-      focus: role.toLowerCase()
+      focus: role.toLowerCase(),
+      archetype: archetypeFor(role),
+      communicationStyle: communicationStyleFor(role),
     },
     createdAt,
     updatedAt: createdAt
   };
+}
+
+function communicationStyleFor(role) {
+  const text = String(role || '').toLowerCase();
+  if (/architect|principal|orchestrator|manager/.test(text)) return 'concise-and-coordinating';
+  if (/front|visual|browser|design/.test(text)) return 'visual-and-iterative';
+  if (/qa|test|quality/.test(text)) return 'evidence-and-checklist';
+  if (/security/.test(text)) return 'risk-aware-and-explicit';
+  if (/memory|rag|knowledge/.test(text)) return 'contextual-and-traceable';
+  if (/repair|devops|git|deploy|infra/.test(text)) return 'operational-and-stepwise';
+  return 'technical-and-direct';
 }
 
 function runtimeIdentity(agent) {
@@ -119,6 +152,18 @@ function accessoryFor(role, hash) {
   if (/memory|rag|knowledge/.test(text)) return 'memory-core';
   if (/back|front|architect/.test(text)) return 'terminal';
   return ACCESSORIES[hash % ACCESSORIES.length];
+}
+
+function avatarUrlFor(agentId, role) {
+  const text = `${agentId} ${role}`.toLowerCase();
+  if (/camila|crm|vendas|sales/.test(text)) return '/assets/agents/camila_avatar.png';
+  if (/zai|bot|triagem|orquestra/.test(text)) return '/assets/agents/zaibot_avatar.png';
+  if (/ana|suporte|atendimento/.test(text)) return '/assets/agents/ana_avatar.png';
+  if (/carlos|geren|business|ceo/.test(text)) return '/assets/agents/carlos_avatar.png';
+  if (/joao|backend|database|node/.test(text)) return '/assets/agents/joao_avatar.png';
+  if (/marina|design|ux|frontend/.test(text)) return '/assets/agents/marina_avatar.png';
+  if (/habbo|pedro|infra|devops|sre/.test(text)) return '/assets/agents/habbo_avatar.png';
+  return '/assets/agents/camila_avatar_16bit.png';
 }
 
 function numberHash(value) {

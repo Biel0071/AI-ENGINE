@@ -2257,7 +2257,12 @@ window.updateSidebarCounters = function(snapshot) {
     }
   };
   if (topKpiProjects) {
-    updateTopKpi(topKpiProjects, countText(projectsList), 'Projetos registrados');
+    const totalProjects = countText(projectsList);
+    updateTopKpi(topKpiProjects, totalProjects, 'Projetos registrados');
+    const button = topKpiProjects.closest('button');
+    if (button) {
+      button.title = `Projetos: ${totalProjects} registrados no catálogo. Clique para abrir catálogo e workspaces.`;
+    }
   }
   if (topKpiAgents) {
     const onlineStatuses = new Set(['ONLINE', 'AVAILABLE', 'IDLE', 'WORKING', 'BUSY', 'RUNNING']);
@@ -2274,23 +2279,34 @@ window.updateSidebarCounters = function(snapshot) {
         return onlineStatuses.has(String(agent?.status || agent?.state || '').toUpperCase());
       })
       : null;
-    updateTopKpi(topKpiAgents, countText(onlineAgents), 'Agentes online');
+    const activeWorking = Array.isArray(agentsList)
+      ? agentsList.filter((agent) => activeWorkStatuses.has(String(agent?.status || agent?.state || '').toUpperCase()) || Boolean(agent?.currentJob || agent?.currentTask)).length
+      : 0;
+    const onlineCount = onlineAgents ? onlineAgents.length : (Array.isArray(agentsList) ? agentsList.length : '—');
+    updateTopKpi(topKpiAgents, onlineCount, 'Agentes online');
     const topKpiAgentsLabel = document.getElementById('topKpiAgentsLabel');
     if (topKpiAgentsLabel) {
       if (Array.isArray(agentsList) && presenceMeasured) {
-        const activeWorking = agentsList.filter((agent) => activeWorkStatuses.has(String(agent?.status || agent?.state || '').toUpperCase()) || Boolean(agent?.currentJob || agent?.currentTask)).length;
-        const activeCount = activeWorking > 0 ? activeWorking : (onlineAgents ? onlineAgents.length : 0);
-        topKpiAgentsLabel.textContent = `Online · ${activeCount} Ativos / ${agentsList.length} Total`;
+        topKpiAgentsLabel.textContent = activeWorking > 0 ? `Agentes (${activeWorking} at)` : 'Agentes';
       } else if (Array.isArray(agentsList)) {
-        topKpiAgentsLabel.textContent = `Ativos / ${agentsList.length} Total`;
+        topKpiAgentsLabel.textContent = 'Agentes';
       } else {
-        topKpiAgentsLabel.textContent = 'Ativos / — Total';
+        topKpiAgentsLabel.textContent = 'Agentes';
       }
+    }
+    const button = topKpiAgents.closest('button');
+    if (button) {
+      button.title = `Agentes: ${activeWorking} ativos em execução, ${onlineCount} online de ${Array.isArray(agentsList) ? agentsList.length : '—'} registrados. Clique para abrir equipe de agentes.`;
     }
   }
   if (topKpiMissions) {
     const activeMissions = missionsList?.filter(window.fenixIsMissionOpen);
-    updateTopKpi(topKpiMissions, countText(activeMissions), 'Missões ativas');
+    const activeCount = countText(activeMissions);
+    updateTopKpi(topKpiMissions, activeCount, 'Missões ativas');
+    const button = topKpiMissions.closest('button');
+    if (button) {
+      button.title = `Missões: ${activeCount} abertas de ${Array.isArray(missionsList) ? missionsList.length : '—'} registradas. Clique para abrir painel de missões e operações.`;
+    }
   }
   if (topKpiJobs) {
     const snapshotJobs = Array.isArray(snapshot?.jobs)
@@ -2304,9 +2320,19 @@ window.updateSidebarCounters = function(snapshot) {
     if (!Array.isArray(jobsSource)) {
       updateTopKpi(topKpiJobs, '—', 'Jobs em execução');
     } else {
-      const activeStatuses = new Set(['RUNNING', 'ACTIVE', 'DISPATCHED']);
+      const activeStatuses = new Set(['RUNNING', 'ACTIVE', 'DISPATCHED', 'EXECUTING']);
+      const pendingStatuses = new Set(['PENDING', 'QUEUED', 'WAITING', 'SCHEDULED']);
       const activeJobs = jobsSource.filter((job) => activeStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
+      const pendingJobs = jobsSource.filter((job) => pendingStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
       updateTopKpi(topKpiJobs, activeJobs.length, 'Jobs em execução');
+      const topKpiJobsLabel = topKpiJobs.parentElement?.querySelector('.fnx-kpi-label');
+      if (topKpiJobsLabel) {
+        topKpiJobsLabel.textContent = pendingJobs.length > 0 ? `Jobs (${pendingJobs.length} pend)` : 'Jobs';
+      }
+      const button = topKpiJobs.closest('button');
+      if (button) {
+        button.title = `Jobs: ${activeJobs.length} em execução agora, ${pendingJobs.length} pendentes na fila de ${jobsSource.length} no total. Clique para abrir painel de runtime.`;
+      }
     }
   }
   if (topKpiSystem) {

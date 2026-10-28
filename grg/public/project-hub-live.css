@@ -1980,3 +1980,266 @@
   text-align: center;
   color: #94a3b8;
 }
+
+/* 10 CANONICAL DIAGNOSTIC FACETS */
+.flp-diagnostic-facets {
+  margin-top: 20px;
+}
+.flp-facets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.flp-facet-card {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.flp-facet-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.flp-facet-num {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 750;
+  color: #38bdf8;
+  opacity: 0.85;
+}
+.flp-facet-title {
+  font-size: 12.5px;
+  color: #f1f5f9;
+  font-weight: 650;
+}
+.flp-facet-desc {
+  margin: 0;
+  font-size: 11.5px;
+  color: #cbd5e1;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.flp-facet-meta {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: auto;
+}
+
+/* ARCHITECTURAL GAPS */
+.flp-gaps-section {
+  margin-top: 20px;
+}
+.flp-gaps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.flp-gap-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.flp-gap-card.flp-gap-high {
+  border-left: 3px solid #ef4444;
+}
+.flp-gap-card.flp-gap-medium {
+  border-left: 3px solid #f59e0b;
+}
+.flp-gap-card.flp-gap-low {
+  border-left: 3px solid #38bdf8;
+}
+.flp-gap-badge {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 750;
+  padding: 2px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+.flp-badge-high {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.flp-badge-medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.flp-badge-low {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.flp-gap-title {
+  font-size: 13px;
+  color: #f8fafc;
+}
+.flp-gap-desc {
+  margin: 0;
+  font-size: 11.5px;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+.flp-gap-rem {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #38bdf8;
+  font-style: italic;
+}
+
+/* EVOLUTION PLAN */
+.flp-evolution-plan-section {
+  margin-top: 24px;
+}
+.flp-plan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.flp-plan-head h4 {
+  margin: 0;
+}
+.flp-phases-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.flp-phase-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.flp-phase-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.flp-phase-tag {
+  font-size: 10px;
+  font-weight: 750;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+.flp-phase-header strong {
+  font-size: 13px;
+  color: #f1f5f9;
+}
+.flp-phase-header small {
+  margin-left: auto;
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: ui-monospace, monospace;
+}
+.flp-phase-desc {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+.flp-phase-actions {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
+.flp-phase-actions li {
+  margin-bottom: 4px;
+}
+
+/* AUTONOMOUS CYCLE PANEL */
+.flp-autonomous-cycle-section {
+  margin-top: 24px;
+  background: rgba(10, 15, 30, 0.7);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.flp-autonomous-actions {
+  margin: 12px 0;
+}
+.flp-cycle-loading {
+  font-size: 12px;
+  color: #00d9ff;
+  padding: 12px 16px;
+  background: rgba(0, 217, 255, 0.08);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  margin-top: 10px;
+}
+.flp-cycle-result-box {
+  margin-top: 14px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.flp-badge-verified {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  background: rgba(0, 229, 160, 0.15);
+  color: #00e5a0;
+  border: 1px solid rgba(0, 229, 160, 0.35);
+  border-radius: 6px;
+  width: fit-content;
+}
+.flp-cycle-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.flp-cycle-step-row {
+  font-size: 11.5px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.flp-step-num {
+  font-weight: 700;
+  color: #00e5a0;
+  flex-shrink: 0;
+}
+.flp-step-detail {
+  color: #cbd5e1;
+}
+.flp-cycle-diff {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  font-size: 11.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #94a3b8;
+}
+.flp-cycle-diff code {
+  color: #38bdf8;
+  font-family: ui-monospace, monospace;
+}
