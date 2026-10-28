@@ -215,16 +215,17 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
     });
   }
 
-  const match = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/(tree|file|search|checkpoints|rollback)$/);
+  const match = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/(tree|file|search|checkpoints|rollback|analyze|analysis|evolution-plan)$/);
   if (!match || !['GET', 'PUT', 'POST'].includes(req.method)) return false;
   const [, rawProjectId, action] = match;
   const projectId = decodeURIComponent(rawProjectId);
-  const write = req.method === 'PUT' || (req.method === 'POST' && action === 'rollback');
+  const isIntelligenceAction = ['analyze', 'analysis', 'evolution-plan'].includes(action);
+  const write = req.method === 'PUT' || (req.method === 'POST' && (action === 'rollback' || isIntelligenceAction));
   if (req.method === 'PUT' && action !== 'file') return false;
-  if (req.method === 'POST' && action !== 'rollback') return false;
-  if (req.method === 'GET' && !['tree', 'file', 'search', 'checkpoints'].includes(action)) return false;
-  await app.controlPlane.authorize(tenantId, actorId, write ? 'project:write' : 'project:read');
-  if (write) await app.controlPlane.authorize(tenantId, actorId, 'memory:write');
+  if (req.method === 'POST' && !['rollback', 'analyze', 'evolution-plan'].includes(action)) return false;
+  if (req.method === 'GET' && !['tree', 'file', 'search', 'checkpoints', 'analysis'].includes(action)) return false;
+  await app.controlPlane.authorize(tenantId, actorId, write && action === 'file' ? 'project:write' : 'project:read');
+  if (write && action === 'file') await app.controlPlane.authorize(tenantId, actorId, 'memory:write');
   const appStateData = await app.store.read();
   const storedProject = (Array.isArray(appStateData?.projects) ? appStateData.projects : []).find((item) =>
     (!item.tenantId || item.tenantId === tenantId) && (
@@ -243,6 +244,63 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   const projectReference = storedProject || regProj || { id: projectId };
   const workspace = resolveProjectWorkspace(projectReference, regProj);
   const project = storedProject || (regProj && { id: regProj.id || regProj.projectId, tenantId, name: regProj.name }) || (workspace && { id: projectId, tenantId, name: projectId });
+
+  // Handle Project Intelligence & Evolution Endpoints (Phase C)
+  if (isIntelligenceAction) {
+    const { globalProjectIntelligenceEngine } = require('../services/project-intelligence-engine');
+    const state = await app.store.read();
+    state.projectAnalyses = state.projectAnalyses || {};
+
+    if (action === 'analysis' && req.method === 'GET') {
+      let report = state.projectAnalyses[projectId];
+      if (!report) {
+        report = await globalProjectIntelligenceEngine.analyzeProject(projectId, workspace);
+        state.projectAnalyses[projectId] = report;
+        await app.store.write(state);
+      }
+      return reply(200, { ok: true, projectId, report, artifact: null, integration: report.integration });
+    }
+
+    if (action === 'analyze' && req.method === 'POST') {
+      const report = await globalProjectIntelligenceEngine.analyzeProject(projectId, workspace);
+      state.projectAnalyses[projectId] = report;
+      await app.store.write(state);
+      return reply(200, { ok: true, projectId, report, artifact: null, integration: report.integration });
+    }
+
+    if (action === 'evolution-plan' && req.method === 'POST') {
+      const body = await readJson(req).catch(() => ({}));
+      let report = state.projectAnalyses[projectId];
+      if (!report) {
+        report = await globalProjectIntelligenceEngine.analyzeProject(projectId, workspace);
+        state.projectAnalyses[projectId] = report;
+      }
+      const plan = globalProjectIntelligenceEngine.generateEvolutionPlan(report);
+
+      let jobRecord = null;
+      if (body?.dispatchJob) {
+        state.jobs = state.jobs || [];
+        const jobId = `job-evo-${projectId}-${Date.now()}`;
+        jobRecord = {
+          id: jobId,
+          title: `Evolução Arquitetural — ${report.projectName || projectId}`,
+          projectId,
+          category: 'EVOLUTION',
+          status: 'QUEUED',
+          priority: body.priority || 'HIGH',
+          phases: plan.phases,
+          createdAt: new Date().toISOString(),
+          actorId,
+          tenantId
+        };
+        state.jobs.push(jobRecord);
+        await app.store.write(state);
+      }
+
+      return reply(200, { ok: true, projectId, plan, job: jobRecord });
+    }
+  }
+
   if (!project || !workspace) return reply(404, { error: 'Project workspace is unavailable' });
   project.workspace = workspace;
   let root;

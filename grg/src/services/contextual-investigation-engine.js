@@ -224,6 +224,16 @@ class ContextualInvestigationEngine {
       }
     }
 
+    const isEvolutionPlanQuery = (
+      /(?:plano\s+de\s+evolucao|plano\s+de\s+desenvolvimento|evolucao|evoluir|evolution\s*plan)/i.test(lower) ||
+      /(?:gaps?\s+arquiteturais?|gaps?\s+de\s+arquitetura|pontos\s+de\s+melhoria|o\s+que\s+falta)/i.test(lower) ||
+      /(?:como\s+(?:podemos|a\s+api\s+platform\s+pode|o\s+fenix\s+pode)\s+evoluir)/i.test(lower)
+    );
+    if (isEvolutionPlanQuery) {
+      const targetProject = this.extractTargetProject(raw, history, conversationId);
+      return { type: 'PROJECT_EVOLUTION_PLAN', hasGreeting: hasGreetingPrefix, targetProject };
+    }
+
     const isActiveMemoryQuery = /(?:o\s+que\s+tem|o\s+que\s+diz|o\s+que\s+ha|pesquise|busque|consulte|como\s+esta).*(?:memoria\s+ativa|active\s*memory)/i.test(lower) ||
       /(?:memoria\s+ativa|active\s*memory).*(?:sobre|tem|diz|registra)/i.test(lower);
     if (isActiveMemoryQuery) {
@@ -614,6 +624,80 @@ class ContextualInvestigationEngine {
         model: 'fenix-investigation-engine@v1',
         provider: 'contextual-investigation',
         tokens: 45,
+      };
+    }
+
+    // =========================================================================
+    // Scenario 1B: PROJECT EVOLUTION PLAN & ARCHITECTURAL GAPS (Phase C)
+    // =========================================================================
+    if (intent.type === 'PROJECT_EVOLUTION_PLAN') {
+      const proj = targetProject || { id: 'fenix-os', name: 'Fênix OS' };
+      const { globalProjectIntelligenceEngine } = require('./project-intelligence-engine');
+      const analysis = await globalProjectIntelligenceEngine.analyzeProject(proj.id);
+      const plan = analysis.evolutionPlan;
+
+      consultedFiles.push(
+        'ai-engine/grg/src/projects/project-registry.js',
+        'ai-engine/memory/PROJECT_MEMORY_INDEX.json',
+        'ACTIVE_PROJECT_MEMORY.md'
+      );
+      if (analysis.workspace) consultedFiles.push(analysis.workspace);
+
+      let responseText = `${greetingText}📊 **Plano de Evolução Arquitetural & Diagnóstico — ${analysis.projectName}**\n\n`;
+      responseText += `**1. Diagnóstico do Sistema & Baseline Atual:**\n`;
+      responseText += `- **Score de Saúde Arquitetural:** \`${analysis.healthScore}/100\`\n`;
+      responseText += `- **Tecnologias Identificadas:** ${analysis.detectedStack.length ? analysis.detectedStack.map(s => s.name).join(', ') : 'Node.js, Vanilla JS'}\n`;
+      responseText += `- **Total de Arquivos Mapeados:** ${analysis.totalFiles}\n`;
+      responseText += `- **Rotas / Endpoints Declarados:** ${analysis.routes.length}\n`;
+      responseText += `- **Workspace Físico:** ${analysis.workspaceAvailable ? `✅ Disponível em \`${analysis.workspace}\`` : '☁️ Workspace remoto / catálogo (não montado localmente)'}\n\n`;
+
+      responseText += `**2. Gaps Arquiteturais Identificados:**\n`;
+      if (analysis.architecturalGaps.length === 0) {
+        responseText += `✅ Nenhum gap crítico identificado na estrutura base.\n\n`;
+      } else {
+        for (const gap of analysis.architecturalGaps) {
+          const icon = gap.severity === 'HIGH' ? '🔴' : gap.severity === 'MEDIUM' ? '🟡' : '🔵';
+          responseText += `${icon} **[${gap.category}] ${gap.title}** (${gap.severity})\n`;
+          responseText += `   - *Diagnóstico:* ${gap.description}\n`;
+          responseText += `   - *Remediação:* ${gap.remediation}\n`;
+        }
+        responseText += `\n`;
+      }
+
+      responseText += `**3. Roteiro de Execução em 4 Fases (Tempo Estimado: ${plan.totalEstimatedMinutes} min):**\n`;
+      for (const ph of plan.phases) {
+        responseText += `🔹 **${ph.name}** (~${ph.estimatedMinutes} min)\n`;
+        responseText += `   ${ph.description}\n`;
+        for (const act of ph.actions) {
+          responseText += `   - ${act}\n`;
+        }
+      }
+      responseText += `\n`;
+
+      responseText += `**4. Critérios de Conclusão & Quality Gate Fênix:**\n`;
+      for (const crit of plan.verificationCriteria) {
+        responseText += `- [ ] ${crit}\n`;
+      }
+      responseText += `\n`;
+      responseText += `🚀 **Coordenação via API Platform & Job Lane:**\n`;
+      responseText += `Este plano pode ser executado em segundo plano pela Fênix Job Lane via \`POST /api/fenix/projects/${encodeURIComponent(proj.id)}/evolution-plan\` com o payload \`{ "dispatchJob": true, "priority": "HIGH" }\`, mantendo telemetria 100% factual e zero mocks.`;
+
+      this.lastInvestigationState.set(conversationId, {
+        targetProject: proj.id,
+        consultedFiles,
+        lastIntent: 'PROJECT_EVOLUTION_PLAN',
+        timestamp: Date.now()
+      });
+
+      return {
+        response: responseText,
+        intent: 'PROJECT_EVOLUTION_PLAN',
+        targetProject: proj.id,
+        consultedFiles,
+        usedAI: false,
+        model: 'fenix-investigation-engine@v1',
+        provider: 'contextual-investigation',
+        tokens: 380
       };
     }
 
