@@ -52,20 +52,37 @@ const VALID_CITY_AGENT_STATES = [
 
 const CANONICAL_ENGINEERING_ROLES = [
   {
-    roleId: 'bug-hunter',
-    role: 'Bug Hunter',
-    agentId: 'agent-qa',
-    agentName: 'Visual QA Validator',
-    station: 'QA_LAB',
-    responsibilities: ['Detectar falhas de testes, logs e runtime', 'Classificar evidências CONFIRMED/PROBABLE/UNVERIFIED', 'Reproduzir bugs determinísticos']
+    roleId: 'supervisor',
+    role: 'Supervisor',
+    agentId: 'agent-supervisor',
+    agentName: 'Master Supervisor & Orchestrator',
+    station: 'COMMAND_CENTER',
+    responsibilities: ['Orquestração da equipe multiagente', 'Gestão de filas e prevenção de conflitos', 'Enforcement de limites de concorrência']
   },
   {
     roleId: 'architect',
     role: 'Architect',
     agentId: 'agent-orchestrator',
-    agentName: 'Master Orchestrator',
+    agentName: 'Master Orchestrator & System Architect',
     station: 'ARCHITECTURE_DESK',
     responsibilities: ['Analisar causa raiz e impacto cross-project', 'Consultar Memory Fabric antes de agir', 'Definir plano mínimo e critérios de aceite']
+  },
+  {
+    roleId: 'researcher',
+    role: 'Researcher',
+    agentId: 'agent-researcher',
+    agentName: 'Research & Pattern Discovery Agent',
+    station: 'RESEARCH_LAB',
+    responsibilities: ['Investigação técnica e busca de estado da arte', 'Consulta ao Digital Genome e Pattern Library', 'Levantamento de melhores práticas']
+  },
+  {
+    roleId: 'engineer',
+    role: 'Software Engineer',
+    aliasRoleId: 'code-agent',
+    agentId: 'agent-developer',
+    agentName: 'Senior Dev Engineer',
+    station: 'DEV_WORKSTATION',
+    responsibilities: ['Criar checkpoint SHA-256 antes de editar', 'Implementar correções cirúrgicas em disco', 'Validar sintaxe com node -c']
   },
   {
     roleId: 'code-agent',
@@ -76,12 +93,13 @@ const CANONICAL_ENGINEERING_ROLES = [
     responsibilities: ['Criar checkpoint SHA-256 antes de editar', 'Implementar correções cirúrgicas em disco', 'Validar sintaxe com node -c']
   },
   {
-    roleId: 'qa-agent',
-    role: 'QA Agent',
-    agentId: 'agent-fixer',
-    agentName: 'Self-Healing Auto Fixer',
-    station: 'TEST_ARENA',
-    responsibilities: ['Criar e executar testes de regressão reais', 'Verificar casos de borda e regressões', 'Acionar rollback se testes falharem']
+    roleId: 'ui-ux-specialist',
+    role: 'UI/UX Specialist',
+    aliasRoleId: 'rea-visual-agent',
+    agentId: 'agent-browser',
+    agentName: 'Headless Browser & UX Agent',
+    station: 'VISUAL_STUDIO',
+    responsibilities: ['Inspecionar DOM, layout, rotas e console no navegador', 'Capturar screenshots de evidência', 'Auditar honestidade visual e Screen DNA']
   },
   {
     roleId: 'rea-visual-agent',
@@ -92,12 +110,38 @@ const CANONICAL_ENGINEERING_ROLES = [
     responsibilities: ['Inspecionar DOM, layout, rotas e console no navegador', 'Capturar screenshots de evidência', 'Auditar honestidade visual']
   },
   {
-    roleId: 'integration-agent',
-    role: 'Integration Agent',
-    agentId: 'agent-backend',
-    agentName: 'Backend & Data Architect',
-    station: 'INTEGRATION_HUB',
-    responsibilities: ['Verificar contratos de API e schemas compartilhados', 'Propagar mudanças no grafo entre projetos', 'Testar conectores externos']
+    roleId: 'qa',
+    role: 'QA Engineer',
+    aliasRoleId: 'qa-agent',
+    agentId: 'agent-fixer',
+    agentName: 'Self-Healing Auto Fixer & QA',
+    station: 'TEST_ARENA',
+    responsibilities: ['Criar e executar testes de regressão reais', 'Verificar casos de borda e regressões', 'Acionar rollback se testes falharem']
+  },
+  {
+    roleId: 'qa-agent',
+    role: 'QA Agent',
+    agentId: 'agent-fixer',
+    agentName: 'Self-Healing Auto Fixer',
+    station: 'TEST_ARENA',
+    responsibilities: ['Criar e executar testes de regressão reais', 'Verificar casos de borda e regressões', 'Acionar rollback se testes falharem']
+  },
+  {
+    roleId: 'bug-hunter',
+    role: 'Bug Hunter',
+    agentId: 'agent-qa',
+    agentName: 'Visual QA Validator',
+    station: 'QA_LAB',
+    responsibilities: ['Detectar falhas de testes, logs e runtime', 'Classificar evidências CONFIRMED/PROBABLE/UNVERIFIED', 'Reproduzir bugs determinísticos']
+  },
+  {
+    roleId: 'devops',
+    role: 'DevOps & Release Engineer',
+    aliasRoleId: 'release-agent',
+    agentId: 'agent-git',
+    agentName: 'GitOps & Release Controller',
+    station: 'RELEASE_GATE',
+    responsibilities: ['Gerar diff estruturado para revisão', 'Garantir paridade dual e recuperação pós restart', 'Consolidar evidências SHA-256 e fechar missão']
   },
   {
     roleId: 'release-agent',
@@ -106,8 +150,37 @@ const CANONICAL_ENGINEERING_ROLES = [
     agentName: 'GitOps Controller',
     station: 'RELEASE_GATE',
     responsibilities: ['Gerar diff estruturado para revisão', 'Exigir aprovação humana quando aplicável', 'Consolidar evidências SHA-256 e fechar missão']
+  },
+  {
+    roleId: 'auditor',
+    role: 'Security & Compliance Auditor',
+    agentId: 'agent-auditor',
+    agentName: 'Zero-Trust Auditor',
+    station: 'AUDIT_CHAMBER',
+    responsibilities: ['Inspeção Zero-Mock e telemetria factual', 'Validação de contratos de payload e segurança', 'Auditoria de conformidade com a Constituição Fênix']
+  },
+  {
+    roleId: 'integration-agent',
+    role: 'Integration Agent',
+    agentId: 'agent-backend',
+    agentName: 'Backend & Data Architect',
+    station: 'INTEGRATION_HUB',
+    responsibilities: ['Verificar contratos de API e schemas compartilhados', 'Propagar mudanças no grafo entre projetos', 'Testar conectores externos']
   }
 ];
+
+let _globalAutonomousLoop = null;
+
+function getGlobalAutonomousLoop(options = {}) {
+  if (!_globalAutonomousLoop) {
+    _globalAutonomousLoop = new FenixAutonomousLoop(options);
+  }
+  return _globalAutonomousLoop;
+}
+
+function setGlobalAutonomousLoop(instance) {
+  _globalAutonomousLoop = instance;
+}
 
 function sha256Text(content) {
   return crypto.createHash('sha256').update(String(content || ''), 'utf8').digest('hex');
@@ -123,6 +196,8 @@ class FenixAutonomousLoop extends EventEmitter {
     this.testTimeoutMs = options.testTimeoutMs || DEFAULT_TEST_TIMEOUT_MS;
     this.logger = options.logger || console;
     this.statePersistPath = options.statePersistPath || path.resolve(__dirname, '../../../memory/AUTONOMOUS_EVOLUTION_STATE.json');
+    this._lastProjectCycles = {};
+    if (!_globalAutonomousLoop) _globalAutonomousLoop = this;
 
     // Submódulos evolutivos integrados
     this.aek = new AutonomousEvolutionKernel({ livingModeActive: true });
@@ -246,6 +321,9 @@ class FenixAutonomousLoop extends EventEmitter {
       if (raw?.status === 'PAUSED') {
         this._status = 'PAUSED';
       }
+      if (raw?.lastProjectCycles && typeof raw.lastProjectCycles === 'object') {
+        this._lastProjectCycles = { ...raw.lastProjectCycles };
+      }
     } catch (err) {
       this.logger.warn?.(`[FenixAutonomousLoop] Falha ao carregar estado persistido: ${err.message}`);
     }
@@ -255,6 +333,18 @@ class FenixAutonomousLoop extends EventEmitter {
     try {
       const dir = path.dirname(this.statePersistPath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+      let mergedCycles = { ...(this._lastProjectCycles || {}) };
+      if (fs.existsSync(this.statePersistPath)) {
+        try {
+          const diskData = JSON.parse(fs.readFileSync(this.statePersistPath, 'utf8'));
+          if (diskData?.lastProjectCycles && typeof diskData.lastProjectCycles === 'object') {
+            mergedCycles = { ...diskData.lastProjectCycles, ...mergedCycles };
+          }
+        } catch {}
+      }
+      this._lastProjectCycles = mergedCycles;
+
       const payload = {
         updatedAt: new Date().toISOString(),
         status: this._status,
@@ -265,12 +355,27 @@ class FenixAutonomousLoop extends EventEmitter {
         bugs: Array.from(this._bugs.values()),
         modelCalls: this._modelCalls.slice(0, 100),
         proactiveFindings: this._proactiveFindings.slice(0, 80),
-        pocRuns: this._pocRuns.slice(0, 20)
+        pocRuns: this._pocRuns.slice(0, 20),
+        lastProjectCycles: mergedCycles
       };
       fs.writeFileSync(this.statePersistPath, JSON.stringify(payload, null, 2), 'utf8');
     } catch (err) {
       this.logger.warn?.(`[FenixAutonomousLoop] Falha ao salvar estado: ${err.message}`);
     }
+  }
+
+  recordProjectCycle(projectId, cycleData) {
+    this._lastProjectCycles = this._lastProjectCycles || {};
+    this._lastProjectCycles[projectId] = cycleData;
+    this._savePersistentState();
+    this.emit('project:cycle', { projectId, cycle: cycleData });
+    return cycleData;
+  }
+
+  getProjectCycle(projectId) {
+    if (this._lastProjectCycles?.[projectId]) return this._lastProjectCycles[projectId];
+    this._loadPersistentState();
+    return this._lastProjectCycles?.[projectId] || null;
   }
 
   // ─── WATCHERS DE SINAIS REAIS ─────────────────────────────────────────────
@@ -1848,5 +1953,7 @@ module.exports = {
   FenixAutonomousLoop,
   VALID_BUG_STATES,
   VALID_CITY_AGENT_STATES,
-  CANONICAL_ENGINEERING_ROLES
+  CANONICAL_ENGINEERING_ROLES,
+  getGlobalAutonomousLoop,
+  setGlobalAutonomousLoop
 };

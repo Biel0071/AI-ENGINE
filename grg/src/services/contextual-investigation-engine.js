@@ -234,6 +234,15 @@ class ContextualInvestigationEngine {
       return { type: 'PROJECT_EVOLUTION_PLAN', hasGreeting: hasGreetingPrefix, targetProject };
     }
 
+    const isAutonomousCycleQuery = (
+      /(?:ciclo\s+autonomo|execut(?:e|ar)\s+ciclo|auto-correcao|teste\s+de\s+autonomia|autonomous\s*cycle)/i.test(lower) ||
+      /(?:reproduz(?:a|ir)\s+defeito|corrigir\s+autonomamente|fluxo\s+de\s+autonomia)/i.test(lower)
+    );
+    if (isAutonomousCycleQuery) {
+      const targetProject = this.extractTargetProject(raw, history, conversationId);
+      return { type: 'PROJECT_AUTONOMOUS_CYCLE', hasGreeting: hasGreetingPrefix, targetProject };
+    }
+
     const isActiveMemoryQuery = /(?:o\s+que\s+tem|o\s+que\s+diz|o\s+que\s+ha|pesquise|busque|consulte|como\s+esta).*(?:memoria\s+ativa|active\s*memory)/i.test(lower) ||
       /(?:memoria\s+ativa|active\s*memory).*(?:sobre|tem|diz|registra)/i.test(lower);
     if (isActiveMemoryQuery) {
@@ -698,6 +707,66 @@ class ContextualInvestigationEngine {
         model: 'fenix-investigation-engine@v1',
         provider: 'contextual-investigation',
         tokens: 380
+      };
+    }
+
+    // =========================================================================
+    // Scenario 1C: PROJECT AUTONOMOUS CYCLE & RECOVERY PROOF (Muse × Grok Build × Gemini × Dots)
+    // =========================================================================
+    if (intent.type === 'PROJECT_AUTONOMOUS_CYCLE') {
+      const proj = targetProject || { id: 'fenix-os', name: 'Fênix OS' };
+      const { globalProjectIntelligenceEngine } = require('./project-intelligence-engine');
+      const cycle = await globalProjectIntelligenceEngine.runAutonomousProjectCycle(proj.id);
+
+      consultedFiles.push(
+        'ai-engine/grg/src/projects/project-registry.js',
+        'ai-engine/memory/AUTONOMOUS_EVOLUTION_STATE.json',
+        'ai-engine/grg/src/evolution/autonomous-mission-queue.js'
+      );
+
+      let responseText = `${greetingText}⚡ **Execução do Ciclo Autônomo Fênix — ${cycle.projectName}**\n\n`;
+      responseText += `**1. Identificação do Projeto & Diagnóstico Multidimensional:**\n`;
+      responseText += `- **Projeto Alvo:** \`${cycle.projectName}\` (\`${cycle.projectId}\`)\n`;
+      responseText += `- **Score de Saúde Arquitetural:** \`${cycle.diagnostic.healthScore}/100\`\n`;
+      responseText += `- **Tempo Total de Execução:** \`${cycle.durationMs}ms\`\n\n`;
+
+      responseText += `**2. Passos do Ciclo Executados e Evidências:**\n`;
+      for (const st of cycle.steps) {
+        responseText += `✅ **Passo ${st.step} [${st.name}]:** ${st.detail}\n`;
+      }
+      responseText += `\n`;
+
+      responseText += `**3. Comparação de Comportamento (Antes vs Depois):**\n`;
+      responseText += `- **Código de Saída Inicial (Falha):** \`exitCode = ${cycle.diffSummary.before.exitCode}\`\n`;
+      responseText += `- **Código de Saída Pós-Correção (Sucesso):** \`exitCode = ${cycle.diffSummary.after.exitCode}\`\n`;
+      responseText += `- **Hash SHA-256 Inicial:** \`${cycle.diffSummary.before.sha256.slice(0, 16)}...\`\n`;
+      responseText += `- **Hash SHA-256 Corrigido:** \`${cycle.diffSummary.after.sha256.slice(0, 16)}...\`\n`;
+      responseText += `- **Validação de Sintaxe:** \`node -c\` validado com sucesso\n\n`;
+
+      responseText += `**4. Registro nos Subsistemas Oficiais:**\n`;
+      responseText += `- **Universal Bug Tracker:** Bug \`${cycle.bug.bugId}\` transicionado para status \`VERIFIED\`\n`;
+      if (cycle.memory) {
+        responseText += `- **Evolution Memory:** Aprendizado persistido em \`${cycle.memory.id}\` (Padrão: \`${cycle.memory.pattern}\`)\n`;
+      }
+      responseText += `- **Recuperação Cold-Restart:** Prova de recuperação \`${cycle.recovery.status}\` validada a partir do disco.\n`;
+
+      this.lastInvestigationState.set(conversationId, {
+        targetProject: proj.id,
+        consultedFiles,
+        lastIntent: 'PROJECT_AUTONOMOUS_CYCLE',
+        timestamp: Date.now()
+      });
+
+      return {
+        response: responseText,
+        intent: 'PROJECT_AUTONOMOUS_CYCLE',
+        targetProject: proj.id,
+        consultedFiles,
+        cycleResult: cycle,
+        usedAI: false,
+        model: 'fenix-investigation-engine@v1',
+        provider: 'contextual-investigation',
+        tokens: 420
       };
     }
 

@@ -215,15 +215,15 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
     });
   }
 
-  const match = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/(tree|file|search|checkpoints|rollback|analyze|analysis|evolution-plan)$/);
+  const match = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/(tree|file|search|checkpoints|rollback|analyze|analysis|evolution-plan|autonomous-cycle)$/);
   if (!match || !['GET', 'PUT', 'POST'].includes(req.method)) return false;
   const [, rawProjectId, action] = match;
   const projectId = decodeURIComponent(rawProjectId);
-  const isIntelligenceAction = ['analyze', 'analysis', 'evolution-plan'].includes(action);
+  const isIntelligenceAction = ['analyze', 'analysis', 'evolution-plan', 'autonomous-cycle'].includes(action);
   const write = req.method === 'PUT' || (req.method === 'POST' && (action === 'rollback' || isIntelligenceAction));
   if (req.method === 'PUT' && action !== 'file') return false;
-  if (req.method === 'POST' && !['rollback', 'analyze', 'evolution-plan'].includes(action)) return false;
-  if (req.method === 'GET' && !['tree', 'file', 'search', 'checkpoints', 'analysis'].includes(action)) return false;
+  if (req.method === 'POST' && !['rollback', 'analyze', 'evolution-plan', 'autonomous-cycle'].includes(action)) return false;
+  if (req.method === 'GET' && !['tree', 'file', 'search', 'checkpoints', 'analysis', 'autonomous-cycle'].includes(action)) return false;
   await app.controlPlane.authorize(tenantId, actorId, write && action === 'file' ? 'project:write' : 'project:read');
   if (write && action === 'file') await app.controlPlane.authorize(tenantId, actorId, 'memory:write');
   const appStateData = await app.store.read();
@@ -245,7 +245,7 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   const workspace = resolveProjectWorkspace(projectReference, regProj);
   const project = storedProject || (regProj && { id: regProj.id || regProj.projectId, tenantId, name: regProj.name }) || (workspace && { id: projectId, tenantId, name: projectId });
 
-  // Handle Project Intelligence & Evolution Endpoints (Phase C)
+  // Handle Project Intelligence & Evolution Endpoints (Phase C & Autonomous Intelligence Ecosystem)
   if (isIntelligenceAction) {
     const { globalProjectIntelligenceEngine } = require('../services/project-intelligence-engine');
     const state = await app.store.read();
@@ -298,6 +298,37 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
       }
 
       return reply(200, { ok: true, projectId, plan, job: jobRecord });
+    }
+
+    if (action === 'autonomous-cycle') {
+      state.projectAutonomousCycles = state.projectAutonomousCycles || {};
+
+      if (req.method === 'GET') {
+        let lastCycle = state.projectAutonomousCycles[projectId] || null;
+        if (!lastCycle) {
+          lastCycle = globalProjectIntelligenceEngine.getProjectCycleState(projectId);
+          if (lastCycle) {
+            state.projectAutonomousCycles[projectId] = lastCycle;
+            await app.store.write(state).catch(() => {});
+          }
+        }
+        if (!lastCycle) {
+          return reply(404, { ok: false, projectId, error: 'Nenhum ciclo autônomo registrado para este projeto.' });
+        }
+        return reply(200, { ok: true, projectId, cycle: lastCycle });
+      }
+
+      if (req.method === 'POST') {
+        const body = await readJson(req).catch(() => ({}));
+        const cycleResult = await globalProjectIntelligenceEngine.runAutonomousProjectCycle(projectId, {
+          ...body,
+          workspace,
+          loop: app.autonomousLoop || null
+        });
+        state.projectAutonomousCycles[projectId] = cycleResult;
+        await app.store.write(state);
+        return reply(200, { ok: true, projectId, cycle: cycleResult });
+      }
     }
   }
 
