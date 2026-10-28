@@ -2257,11 +2257,12 @@ window.updateSidebarCounters = function(snapshot) {
     }
   };
   if (topKpiProjects) {
-    const totalProjects = countText(projectsList);
-    updateTopKpi(topKpiProjects, totalProjects, 'Projetos registrados');
+    const catalogCount = window.__FENIX_STATE__?.catalogTotal || window.__FENIX_CATALOG_TOTAL__;
+    const totalProjects = catalogCount ? String(catalogCount) : countText(projectsList);
+    updateTopKpi(topKpiProjects, totalProjects, 'Projetos monitorados');
     const button = topKpiProjects.closest('button');
     if (button) {
-      button.title = `Projetos: ${totalProjects} registrados no catálogo. Clique para abrir catálogo e workspaces.`;
+      button.title = `Projetos: ${totalProjects} sistemas no catálogo (${projectsList?.length || 0} workspaces ativos). Clique para abrir catálogo e workspaces.`;
     }
   }
   if (topKpiAgents) {

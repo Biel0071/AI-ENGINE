@@ -1,17 +1,23 @@
 (() => {
   'use strict';
   const CATALOG_PREFS_KEY = 'fenix_project_catalog_preferences_v1';
+  const DEFAULT_FAVORITES = ['api-platform-live', 'fenix-os', 'grg-crm-distribuidor-automotivo', 'superapp-gestao-revendas', 'multi-tenant-manager'];
+  const isFullFenixShell = typeof document !== 'undefined' && Boolean(document.getElementById('topbar') || document.getElementById('fnxTopbarKpisCluster') || document.querySelector('.fenix-shell'));
   function readCatalogPreferences() {
     try {
-      const value = JSON.parse(localStorage.getItem(CATALOG_PREFS_KEY) || '{}');
+      const raw = localStorage.getItem(CATALOG_PREFS_KEY);
+      const value = raw ? JSON.parse(raw) : null;
+      const savedFavorites = Array.isArray(value?.favorites) ? value.favorites.filter((id) => typeof id === 'string').slice(0, 300) : null;
       return {
-        favorites: Array.isArray(value.favorites) ? value.favorites.filter((id) => typeof id === 'string').slice(0, 300) : [],
-        recents: Array.isArray(value.recents) ? value.recents.filter((item) => typeof item?.id === 'string' && Number.isFinite(item.openedAt)).slice(0, 24) : [],
-        layout: value.layout === 'list' ? 'list' : 'grid',
+        favorites: savedFavorites !== null ? savedFavorites : (isFullFenixShell ? DEFAULT_FAVORITES : []),
+        recents: Array.isArray(value?.recents) ? value.recents.filter((item) => typeof item?.id === 'string' && Number.isFinite(item.openedAt)).slice(0, 24) : [],
+        layout: value?.layout === 'list' ? 'list' : 'grid',
       };
-    } catch { return { favorites: [], recents: [], layout: 'grid' }; }
+    } catch { return { favorites: isFullFenixShell ? DEFAULT_FAVORITES : [], recents: [], layout: 'grid' }; }
   }
   const catalogPreferences = readCatalogPreferences();
+  const savedFullGrid = typeof localStorage !== 'undefined' ? localStorage.getItem('fenix_launcher_full_grid') : null;
+  const initialLauncherGrid = savedFullGrid !== null ? savedFullGrid === 'true' : false;
   const state = {
     projects: [],
     details: new Map(),
@@ -68,7 +74,7 @@
     designDrafts: new Map(),
     multiSelectedProjects: new Set(),
     multiViewActive: false,
-    launcherFullGrid: false,
+    launcherFullGrid: initialLauncherGrid,
     detailFocus: false,
     serviceStatuses: new Map(),
     multiViewPreviews: new Set(),
@@ -748,6 +754,24 @@
         ? `Catálogo Local · ${localProjects.length} projeto(s) registrado(s)`
         : `Catálogo Fênix Ativo · ${state.projects.length} sistemas monitorados (${onlineCount} ativos)`;
     $('flpMeasured').dataset.error = String(Boolean(state.error));
+
+    window.__FENIX_CATALOG_TOTAL__ = state.projects.length;
+    if (window.__FENIX_STATE__) {
+      window.__FENIX_STATE__.catalogTotal = state.projects.length;
+    }
+    const topKpi = document.getElementById("topKpiProjectsVal");
+    if (topKpi && state.projects.length) {
+      topKpi.textContent = String(state.projects.length);
+      const btn = topKpi.closest('button');
+      if (btn) {
+        btn.setAttribute('aria-label', `Projetos monitorados: ${state.projects.length}`);
+        btn.title = `Projetos: ${state.projects.length} sistemas no catálogo (${onlineCount} ativos). Clique para abrir catálogo e workspaces.`;
+      }
+    }
+    const tbProjects = document.getElementById("topbarStatProjects");
+    if (tbProjects && state.projects.length) {
+      tbProjects.textContent = String(state.projects.length);
+    }
   }
 
 
@@ -884,11 +908,20 @@
       item.innerHTML = `<i class="ph-bold ${s.icon}"></i> <span>${s.label}</span> <span class="flp-tree-item-count">${s.count}</span>`;
       item.addEventListener('click', () => {
         state.catalogScope = s.id;
+        state.detailFocus = false;
+        if (isFullFenixShell) {
+          state.launcherFullGrid = true;
+        }
+        if (window.location.hash.startsWith('#projects/')) {
+          history.pushState(null, '', '#projects');
+        }
+        syncMultiViewToolbar();
         document.querySelectorAll('.flp-project-scopes button').forEach(b => {
           b.setAttribute('aria-pressed', String(b.getAttribute('data-project-scope') === s.id));
         });
         renderCards();
         renderTreeSidebar();
+        renderDetail();
       });
       scopeGroup.appendChild(item);
     }
@@ -914,7 +947,7 @@
         if (!state.treeExpandedProjects) state.treeExpandedProjects = new Set();
         if (state.treeExpandedProjects.has(proj.id)) state.treeExpandedProjects.delete(proj.id);
         else state.treeExpandedProjects.add(proj.id);
-        selectProject(proj.id);
+        selectProject(proj.id, null, true);
         renderTreeSidebar();
       });
       node.appendChild(nodeHead);
@@ -936,7 +969,7 @@
           sub.innerHTML = `<i class="ph-bold ${sec.icon}"></i> <span>${sec.label}</span>`;
           sub.addEventListener('click', (e) => {
             e.stopPropagation();
-            selectProject(proj.id, sec.tab);
+            selectProject(proj.id, sec.tab, true);
             renderTreeSidebar();
           });
           subitems.appendChild(sub);
@@ -1350,7 +1383,11 @@
       card.append(multiToggle, openButton, favorite);
       card.addEventListener('click', (event) => {
         if (!event.target.closest('.flp-project-favorite') && !event.target.closest('.flp-project-multiview-toggle') && !event.target.closest('.flp-quick-action-btn')) {
-          selectProject(project.id);
+          if (state.launcherFullGrid) {
+            selectProject(project.id, null, true);
+          } else {
+            selectProject(project.id);
+          }
         }
       });
       container.appendChild(card);
@@ -1914,36 +1951,20 @@
     const isOnline = status === 'online';
     const activeUrl = resolveProjectUrl(project, liveStatus);
 
-    // 0. RETURN BANNER WHEN IN FULL WORKSPACE FOCUS
-    if (state.detailFocus) {
-      const returnBanner = element('div', 'flp-workspace-return-banner');
-      const returnBtn = element('button', 'flp-button flp-button-primary flp-return-catalog-btn');
-      returnBtn.id = 'flpReturnToGridBtn';
-      returnBtn.type = 'button';
-      returnBtn.innerHTML = '<i class="ph-bold ph-grid-four"></i> ← Voltar para Grade de Projetos (Tela Inteira)';
-      returnBtn.addEventListener('click', () => {
-        state.detailFocus = false;
-        state.launcherFullGrid = true;
-        if (window.location.hash.startsWith('#projects/')) {
-          history.pushState(null, '', '#projects');
-        }
-        syncMultiViewToolbar();
-        renderCards();
-      });
-      const breadcrumb = element('span', 'flp-workspace-breadcrumb');
-      breadcrumb.innerHTML = 'Área de Trabalho: <strong>' + (project.name || project.id) + '</strong> · ' + (project.workspace || 'Workspace Fênix');
-      returnBanner.append(returnBtn, breadcrumb);
-      target.appendChild(returnBanner);
-    }
-
     // 0. BREADCRUMBS BAR (TELA 2 MATCHING REFERENCE 2)
     const breadcrumbBar = element('div', 'flp-ws-breadcrumb-bar');
     const bcBackLink = element('span', 'flp-bc-link');
+    bcBackLink.id = 'flpReturnToGridBtn';
     bcBackLink.innerHTML = '<i class="ph-bold ph-arrow-left"></i> Catálogo de Projetos';
+    bcBackLink.title = 'Voltar para o Catálogo de Projetos (Tela 1)';
     bcBackLink.addEventListener('click', () => {
       state.detailFocus = false;
-      state.launcherFullGrid = true;
-      history.pushState(null, '', '#projects');
+      if (isFullFenixShell) {
+        state.launcherFullGrid = true;
+      }
+      if (window.location.hash.startsWith('#projects/')) {
+        history.pushState(null, '', '#projects');
+      }
       syncMultiViewToolbar();
       renderCards();
       renderDetail();
@@ -6173,8 +6194,6 @@
       state.detailFocus = true;
     } else if (forceFocus === false) {
       state.detailFocus = false;
-    } else if (state.launcherFullGrid) {
-      state.detailFocus = true;
     }
     recordProjectOpen(id);
     localStorage.setItem('fenix_project_hub_selected', id);
@@ -7155,10 +7174,11 @@
       if (route.tab) state.workspaceTab = route.tab;
       state.detailFocus = true;
     } else {
-      if (window.location.hash === '#projects') {
+      if (window.location.hash === '#projects' || window.location.hash === '' || window.location.hash.startsWith('#projects?')) {
         state.detailFocus = false;
       }
     }
+    syncMultiViewToolbar();
     renderShell();
     load();
   };
