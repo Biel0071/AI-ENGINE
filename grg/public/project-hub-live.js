@@ -123,6 +123,20 @@
     ].filter(Boolean).join(' · ');
   }
   
+  function resolveProjectUrl(project, liveStatus) {
+    if (liveStatus?.activeUrl) return liveStatus.activeUrl;
+    if (project?.localUrl) return project.localUrl;
+    if (project?.remoteUrl) return project.remoteUrl;
+    const port = liveStatus?.port || project?.localPort || project?.frontend?.port || project?.port || (project?.deployment?.bindings?.[0]?.port);
+    if (port) {
+      if (typeof window !== 'undefined' && window.location) {
+        return `${window.location.protocol}//${window.location.hostname}:${port}`;
+      }
+      return `http://localhost:${port}`;
+    }
+    return null;
+  }
+
   function authToken() {
     return (typeof window.fenixGetAuthToken === 'function')
       ? window.fenixGetAuthToken()
@@ -270,44 +284,40 @@
     if (!view || view.dataset.liveProjects === 'true') return;
     view.dataset.liveProjects = 'true';
     view.innerHTML = `<section class="fenix-live-projects">
-      <header class="flp-header">
-        <div>
-          <span class="flp-eyebrow">PROJECT KERNEL · CATÁLOGO AUTENTICADO</span>
-          <h1>Projetos em evolução</h1>
-          <p>Workspaces, jobs, Screen DNA e repositórios GitHub gerenciados no Fênix OS.</p>
+      <header class="flp-header flp-header-compact">
+        <div class="flp-header-left">
+          <span class="flp-eyebrow">PROJECT KERNEL</span>
+          <span id="flpMeasured" role="status" class="flp-header-status">Carregando…</span>
+          <span id="flpSource" class="flp-header-source">Fonte: Project Kernel / GitHub Bridge / JobEngine</span>
+          <div class="flp-metrics flp-metrics-compact">
+            <div><span>Total de Projetos</span><strong id="flpTotal">—</strong></div>
+            <div><span>Serviços Online</span><strong id="flpRunning" style="color:#00E5A0;">—</strong></div>
+            <div><span>Serviços Offline</span><strong id="flpFailed" style="color:#94a3b8;">—</strong></div>
+            <div><span>Portas Mapeadas</span><strong id="flpWorkspaces" style="color:#38bdf8;">—</strong></div>
+          </div>
         </div>
         <div class="flp-header-actions" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <a href="http://209.50.241.22:3000" target="_blank" rel="noopener noreferrer" id="flpVpsCloudBtn" class="flp-button flp-button-vps" title="Abrir Fênix OS na Nuvem (VPS 209.50.241.22:3000)">
-            <i class="ph-bold ph-cloud-arrow-up" style="font-size:16px;"></i>
+            <i class="ph-bold ph-cloud-arrow-up" style="font-size:14px;"></i>
             <span>Fênix VPS Live ↗</span>
           </a>
           <button type="button" id="flpGitHubAccountBtn" class="flp-button flp-button-soft" style="display:inline-flex; align-items:center; gap:6px;">
-            <i class="ph-bold ph-github-logo" style="font-size:16px; color:#38bdf8;"></i>
+            <i class="ph-bold ph-github-logo" style="font-size:14px; color:#38bdf8;"></i>
             <span id="flpGitHubAccountLabel">GitHub: —</span>
           </button>
           <button type="button" id="flpGitHubNewRepoBtn" class="flp-button flp-button-soft" style="display:inline-flex; align-items:center; gap:6px;">
-            <i class="ph-bold ph-plus-circle" style="color:#00E5A0;"></i> Novo Repo GitHub
+            <i class="ph-bold ph-plus-circle" style="color:#00E5A0;"></i> Novo Repo
           </button>
           <button type="button" id="flpCloneToggle" class="flp-button flp-button-primary" aria-expanded="false" aria-controls="flpClone">+ Importar URL</button>
           <button type="button" id="flpRefresh" class="flp-button flp-button-soft">↻ Atualizar</button>
         </div>
       </header>
-      <div class="flp-status-row">
-        <span id="flpMeasured" role="status">Carregando projetos…</span>
-        <span id="flpSource">Fonte: Project Kernel / GitHub Bridge / JobEngine</span>
-      </div>
       <form id="flpClone" class="flp-clone" hidden>
         <label>Nome do projeto <input name="name" required maxlength="100" placeholder="Nome do projeto"></label>
         <label>URL HTTPS <input name="repository" required type="url" placeholder="https://github.com/usuario/repositorio.git"></label>
         <button type="submit" class="flp-button flp-button-primary">Clonar e registrar</button>
         <span id="flpCloneStatus" role="status"></span>
       </form>
-      <div class="flp-metrics">
-        <div><span>Total de Projetos</span><strong id="flpTotal">—</strong></div>
-        <div><span>Serviços Online</span><strong id="flpRunning" style="color:#00E5A0;">—</strong></div>
-        <div><span>Serviços Offline</span><strong id="flpFailed" style="color:#94a3b8;">—</strong></div>
-        <div><span>Portas Mapeadas</span><strong id="flpWorkspaces" style="color:#38bdf8;">—</strong></div>
-      </div>
       <div class="flp-body">
         <aside class="flp-sidebar">
           <div class="flp-hub-mode-tabs" style="display:flex; border-bottom:1px solid rgba(133,179,215,.14); margin-bottom:14px; gap:4px;">
@@ -317,50 +327,63 @@
             <button type="button" id="flpModeGitHub" class="flp-hub-mode-tab">PORTFÓLIO GITHUB</button>
             <button type="button" id="flpModeQwen" class="flp-hub-mode-tab">QWEN STUDIO</button>
           </div>
-          <div id="flpFenixSidebarView">
-            <label for="flpSearch">Encontrar projeto</label>
-            <input id="flpSearch" type="search" placeholder="Nome, ID, porta ou grupo…" autocomplete="off">
-            <div class="flp-category-filters" role="tablist">
-              <button type="button" class="flp-cat-filter-btn active" data-category="all"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-squares-four"></i></span> Todos <span class="cat-badge" id="flpCatCountAll">—</span></button>
-              <button type="button" class="flp-cat-filter-btn" data-category="Lovable"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-sparkle"></i></span> Lovable <span class="cat-badge" id="flpCatCountLovable">—</span></button>
-              <button type="button" class="flp-cat-filter-btn" data-category="CRM &amp; WhatsApp"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-chats-circle"></i></span> CRM &amp; WA <span class="cat-badge" id="flpCatCountCrm">—</span></button>
-              <button type="button" class="flp-cat-filter-btn" data-category="Fênix &amp; Core"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-cpu"></i></span> Fênix <span class="cat-badge" id="flpCatCountFenix">—</span></button>
-              <button type="button" class="flp-cat-filter-btn" data-category="Automação"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-lightning"></i></span> Auto <span class="cat-badge" id="flpCatCountAuto">—</span></button>
-              <button type="button" class="flp-cat-filter-btn" data-category="Ferramentas &amp; IA"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-wrench"></i></span> Ferramentas <span class="cat-badge" id="flpCatCountTools">—</span></button>
-            </div>
-            <div class="flp-status-filters" role="group">
-              <button type="button" class="flp-status-pill-btn active" data-status-filter="all">Todos</button>
-              <button type="button" class="flp-status-pill-btn" data-status-filter="online"><span class="fnx-mono3d-dot online"></span> Online (<span id="flpOnlineCountBadge">—</span>)</button>
-              <button type="button" class="flp-status-pill-btn" data-status-filter="offline"><span class="fnx-mono3d-dot offline"></span> Offline (<span id="flpOfflineCountBadge">—</span>)</button>
-              <button type="button" class="flp-status-pill-btn" data-status-filter="unknown"><span class="fnx-mono3d-dot unknown"></span> Não verificado (<span id="flpUnknownCountBadge">—</span>)</button>
-              <button type="button" id="flpQuickStatusRefresh" class="fnx-mono3d-btn" title="Retestar todas as portas agora" style="margin-left:auto;"><i class="ph-bold ph-arrows-clockwise"></i> Scan</button>
-            </div>
-            <div class="flp-launcher-multiview-bar" role="group" aria-label="Grade Iniciar Projetos e Visualização Simultânea">
-              <button type="button" id="flpFullLauncherGridBtn" class="flp-launcher-mode-btn" aria-pressed="false" title="Expandir Grade Iniciar Projetos em tela cheia (todos os 40 projetos)">
-                <span class="fnx-mono3d-glyph"><i class="ph-bold ph-grid-four"></i></span>
-                <span>Iniciar Projetos (Grade Ampla)</span>
-              </button>
-              <button type="button" id="flpMultiViewToggleBtn" class="flp-multiview-mode-btn" aria-pressed="false" title="Visualizar vários projetos simultaneamente lado a lado">
-                <span class="fnx-mono3d-glyph"><i class="ph-bold ph-columns"></i></span>
-                <span>Multi-View Simultâneo (<strong id="flpMultiViewCount">0</strong>)</span>
-              </button>
-              <button type="button" id="flpMultiViewClearBtn" class="flp-multiview-clear-btn" hidden title="Limpar seleção simultânea">✕</button>
-            </div>
-            <div class="flp-project-recovery-controls" role="group" aria-label="Organização do catálogo de projetos">
-              <div class="flp-project-scopes">
-                <button type="button" data-project-scope="all" aria-pressed="true">Todos</button>
-                <button type="button" data-project-scope="local" aria-pressed="false">Locais</button>
-                <button type="button" data-project-scope="remote" aria-pressed="false">Remotos</button>
-                <button type="button" data-project-scope="github" aria-pressed="false">GitHub</button>
-                <button type="button" data-project-scope="favorites" aria-pressed="false">Favoritos</button>
-                <button type="button" data-project-scope="recent" aria-pressed="false">Recentes</button>
-                <button type="button" data-project-scope="problems" aria-pressed="false">Problemas</button>
-                <button type="button" data-project-scope="unverified" aria-pressed="false">Não Verificados</button>
+          <div id="flpFenixSidebarView" class="flp-fenix-toolbar-compact">
+            <!-- LINHA 1: Busca + Categorias + Controles de Modo & Layout -->
+            <div class="flp-toolbar-row flp-toolbar-row-1">
+              <div class="flp-search-container">
+                <i class="ph-bold ph-magnifying-glass flp-search-icon"></i>
+                <label for="flpSearch" style="display:none;">Encontrar projeto</label>
+                <input id="flpSearch" type="search" placeholder="Buscar projeto, porta, grupo…" autocomplete="off">
               </div>
-              <div class="flp-project-layouts">
-                <button type="button" id="flpLayoutExpandToggle" aria-label="Tela Inteira" title="Alternar Grade em Tela Inteira (4 a 6 colunas)" aria-pressed="false">⛶</button>
-                <button type="button" data-project-layout="grid" aria-label="Grade" title="Grade" aria-pressed="true">▦</button>
-                <button type="button" data-project-layout="list" aria-label="Lista" title="Lista" aria-pressed="false">☷</button>
+              <div class="flp-category-filters" role="tablist">
+                <button type="button" class="flp-cat-filter-btn active" data-category="all"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-squares-four"></i></span> Todos <span class="cat-badge" id="flpCatCountAll">—</span></button>
+                <button type="button" class="flp-cat-filter-btn" data-category="Lovable"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-sparkle"></i></span> Lovable <span class="cat-badge" id="flpCatCountLovable">—</span></button>
+                <button type="button" class="flp-cat-filter-btn" data-category="CRM &amp; WhatsApp"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-chats-circle"></i></span> CRM &amp; WA <span class="cat-badge" id="flpCatCountCrm">—</span></button>
+                <button type="button" class="flp-cat-filter-btn" data-category="Fênix &amp; Core"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-cpu"></i></span> Fênix <span class="cat-badge" id="flpCatCountFenix">—</span></button>
+                <button type="button" class="flp-cat-filter-btn" data-category="Automação"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-lightning"></i></span> Auto <span class="cat-badge" id="flpCatCountAuto">—</span></button>
+                <button type="button" class="flp-cat-filter-btn" data-category="Ferramentas &amp; IA"><span class="fnx-mono3d-glyph"><i class="ph-bold ph-wrench"></i></span> Ferramentas <span class="cat-badge" id="flpCatCountTools">—</span></button>
+              </div>
+              <div class="flp-toolbar-actions-right">
+                <div class="flp-launcher-multiview-bar" role="group" aria-label="Grade Iniciar Projetos e Visualização Simultânea">
+                  <button type="button" id="flpFullLauncherGridBtn" class="flp-launcher-mode-btn" aria-pressed="false" title="Expandir Grade em tela cheia (4 a 6 colunas)">
+                    <span class="fnx-mono3d-glyph"><i class="ph-bold ph-grid-four"></i></span>
+                    <span>Grade Completa</span>
+                  </button>
+                  <button type="button" id="flpMultiViewToggleBtn" class="flp-multiview-mode-btn" aria-pressed="false" title="Visualização simultânea lado a lado">
+                    <span class="fnx-mono3d-glyph"><i class="ph-bold ph-columns"></i></span>
+                    <span>Multi (<strong id="flpMultiViewCount">0</strong>)</span>
+                  </button>
+                  <button type="button" id="flpMultiViewClearBtn" class="flp-multiview-clear-btn" hidden title="Limpar seleção simultânea">✕</button>
+                </div>
+                <button type="button" id="flpQuickStatusRefresh" class="fnx-mono3d-btn" title="Retestar todas as portas agora"><i class="ph-bold ph-arrows-clockwise"></i> Scan</button>
+                <div class="flp-project-layouts">
+                  <button type="button" id="flpLayoutExpandToggle" aria-label="Tela Inteira" title="Alternar Grade em Tela Inteira (4 a 6 colunas)" aria-pressed="false">⛶</button>
+                  <button type="button" data-project-layout="grid" aria-label="Grade" title="Grade" aria-pressed="true">▦</button>
+                  <button type="button" data-project-layout="list" aria-label="Lista" title="Lista" aria-pressed="false">☷</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- LINHA 2: Status Operacional + Escopos e Filtros Rápidos (com Favoritos) -->
+            <div class="flp-toolbar-row flp-toolbar-row-2">
+              <div class="flp-status-filters" role="group">
+                <button type="button" class="flp-status-pill-btn active" data-status-filter="all">Todos</button>
+                <button type="button" class="flp-status-pill-btn" data-status-filter="online"><span class="fnx-mono3d-dot online"></span> Online (<span id="flpOnlineCountBadge">—</span>)</button>
+                <button type="button" class="flp-status-pill-btn" data-status-filter="offline"><span class="fnx-mono3d-dot offline"></span> Offline (<span id="flpOfflineCountBadge">—</span>)</button>
+                <button type="button" class="flp-status-pill-btn" data-status-filter="unknown"><span class="fnx-mono3d-dot unknown"></span> Não verificado (<span id="flpUnknownCountBadge">—</span>)</button>
+              </div>
+              <div class="flp-toolbar-sep"></div>
+              <div class="flp-project-recovery-controls" role="group" aria-label="Organização do catálogo de projetos">
+                <div class="flp-project-scopes">
+                  <button type="button" data-project-scope="favorites" aria-pressed="false" class="flp-scope-fav"><i class="ph-fill ph-star" style="color:#ffd166;"></i> Favoritos</button>
+                  <button type="button" data-project-scope="all" aria-pressed="true">Todos</button>
+                  <button type="button" data-project-scope="local" aria-pressed="false">Locais</button>
+                  <button type="button" data-project-scope="remote" aria-pressed="false">Remotos</button>
+                  <button type="button" data-project-scope="github" aria-pressed="false">GitHub</button>
+                  <button type="button" data-project-scope="recent" aria-pressed="false">Recentes</button>
+                  <button type="button" data-project-scope="problems" aria-pressed="false">Problemas</button>
+                  <button type="button" data-project-scope="unverified" aria-pressed="false">Não Verificados</button>
+                </div>
               </div>
             </div>
             <div id="flpCards" class="flp-cards"></div>
@@ -663,6 +686,103 @@
     $('flpMeasured').dataset.error = String(Boolean(state.error));
   }
 
+
+  function openSystemModal(project, url) {
+    const existing = document.getElementById('flpSystemModal');
+    if (existing) existing.remove();
+
+    const { liveStatus, status } = operationalStatus(project);
+    const isOnline = status === 'online';
+    const targetUrl = url || liveStatus?.activeUrl || project.localUrl || (project.localPort ? `http://localhost:${project.localPort}` : null);
+
+    const modal = element('div', 'flp-system-modal-overlay');
+    modal.id = 'flpSystemModal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', `Sistema: ${project.name || project.id}`);
+
+    const container = element('div', 'flp-system-modal-container');
+
+    // Header
+    const head = element('div', 'flp-system-modal-header');
+    const headLeft = element('div', 'flp-system-modal-titlebox');
+    headLeft.innerHTML = `
+      <span class="flp-modal-badge">${project.catalogGroup || 'Sistema'}</span>
+      <h3>${project.name || project.id}</h3>
+      <span class="flp-card-status-pill ${status}"><span class="flp-live-dot ${isOnline ? 'pulse' : ''}"></span> ${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+      ${targetUrl ? `<span class="flp-modal-url">${targetUrl}</span>` : ''}
+    `;
+
+    const headActions = element('div', 'flp-system-modal-actions');
+
+    if (targetUrl) {
+      const openTabBtn = element('button', 'flp-button flp-button-soft', '↗ Nova Aba (Outra Tela)');
+      openTabBtn.type = 'button';
+      openTabBtn.title = 'Abrir sistema em outra tela / aba do navegador';
+      openTabBtn.addEventListener('click', () => {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      });
+      headActions.appendChild(openTabBtn);
+    }
+
+    const closeBtn = element('button', 'flp-system-modal-close', '✕');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Fechar Janela');
+    closeBtn.addEventListener('click', () => modal.remove());
+    headActions.appendChild(closeBtn);
+
+    head.append(headLeft, headActions);
+
+    // Body
+    const body = element('div', 'flp-system-modal-body');
+    if (isOnline && targetUrl) {
+      const iframe = document.createElement('iframe');
+      iframe.className = 'flp-system-modal-iframe';
+      iframe.src = targetUrl;
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals');
+      iframe.title = `Janela do Sistema: ${project.name || project.id}`;
+      body.appendChild(iframe);
+    } else {
+      const offlineNotice = element('div', 'flp-system-modal-offline');
+      offlineNotice.innerHTML = `
+        <div style="font-size:36px; margin-bottom:12px;">🔌</div>
+        <h4>Serviço Offline na Porta :${project.localPort || project.apiPort || '—'}</h4>
+        <p>O serviço web deste projeto não está em execução no momento.</p>
+      `;
+      const startBtn = element('button', 'flp-button flp-button-primary', '⚡ Iniciar Serviço Agora');
+      startBtn.type = 'button';
+      startBtn.addEventListener('click', () => {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Iniciando…';
+        startProjectService(project.id, project).finally(() => {
+          modal.remove();
+          renderCards();
+          renderDetail();
+        });
+      });
+      offlineNotice.appendChild(startBtn);
+      body.appendChild(offlineNotice);
+    }
+
+    container.append(head, body);
+    modal.appendChild(container);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        modal.remove();
+        document.removeEventListener('keydown', onKeyDown);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+
+    document.body.appendChild(modal);
+  }
+  window.fenixOpenSystemModal = openSystemModal;
+
   function renderCards() {
     document.querySelector('#view-projects .flp-body')?.setAttribute('data-project-source', state.hubViewMode === 'local' ? 'local' : 'kernel');
     if (state.hubViewMode === 'github') {
@@ -721,7 +841,14 @@
       if (state.catalogScope === 'unverified') return operationalStatus(project).status === 'unknown';
       return true;
     });
-    if (state.catalogScope === 'recent') projects.sort((left, right) => (recentOrder.get(right.id) || 0) - (recentOrder.get(left.id) || 0));
+    // Ordenação: Projetos favoritados vão para os PRIMEIROS da lista
+    projects.sort((left, right) => {
+      const leftFav = state.catalogFavorites.has(left.id) ? 1 : 0;
+      const rightFav = state.catalogFavorites.has(right.id) ? 1 : 0;
+      if (leftFav !== rightFav) return rightFav - leftFav;
+      if (state.catalogScope === 'recent') return (recentOrder.get(right.id) || 0) - (recentOrder.get(left.id) || 0);
+      return 0;
+    });
 
     container.dataset.layout = state.catalogLayout;
     if (!projects.length) {
@@ -745,7 +872,7 @@
     for (const project of projects) {
       const { liveStatus, status } = operationalStatus(project);
       const isOnline = status === 'online';
-      const activeUrl = liveStatus?.activeUrl || project.localUrl || (project.localPort ? `http://localhost:${project.localPort}` : null);
+      const activeUrl = resolveProjectUrl(project, liveStatus);
 
       const card = element('article', `flp-card flp-card-with-logo${state.selected === project.id ? ' active' : ''}`);
       card.dataset.projectId = project.id;
@@ -827,16 +954,26 @@
 
       // Quick Actions Bar
       const quickBar = element('div', 'flp-card-quick-actions');
-      if (isOnline && activeUrl) {
-        const openUrlBtn = element('button', 'flp-quick-action-btn btn-open-url', '🚀 Abrir URL ↗');
+      if (activeUrl) {
+        const popupBtn = element('button', 'flp-quick-action-btn btn-popup', '🌐 Pop-up');
+        popupBtn.type = 'button';
+        popupBtn.title = `Abrir ${project.name || project.id} em pop-up na tela`;
+        popupBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openSystemModal(project, activeUrl);
+        });
+        quickBar.appendChild(popupBtn);
+
+        const openUrlBtn = element('button', 'flp-quick-action-btn btn-open-url', '↗ Aba');
         openUrlBtn.type = 'button';
-        openUrlBtn.title = `Abrir ${activeUrl} em nova aba`;
+        openUrlBtn.title = `Abrir ${activeUrl} em outra tela (nova aba)`;
         openUrlBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           window.open(activeUrl, '_blank', 'noopener,noreferrer');
         });
         quickBar.appendChild(openUrlBtn);
-      } else {
+      }
+      if (!isOnline) {
         const startBtn = element('button', 'flp-quick-action-btn btn-start', '⚡ Iniciar');
         startBtn.type = 'button';
         startBtn.title = 'Iniciar serviço em background';
@@ -899,7 +1036,10 @@
       favorite.setAttribute('aria-label', state.catalogFavorites.has(project.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
       favorite.title = `${favorite.getAttribute('aria-label')}: ${project.name || project.id}`;
       favorite.setAttribute('aria-pressed', String(state.catalogFavorites.has(project.id)));
-      favorite.addEventListener('click', () => toggleProjectFavorite(project.id));
+      favorite.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleProjectFavorite(project.id);
+      });
 
       card.append(multiToggle, openButton, favorite);
       card.addEventListener('click', (event) => {
@@ -1467,7 +1607,11 @@
     const absorption = state.absorptions.get(project.id);
     const git = state.git.get(project.id);
     const isLocalCatalogProject = project.source === 'LOCAL_PROJECT_CATALOG';
-    const currentOperationalStatus = operationalStatus(project).status;
+    const rawId = project.catalogId || (project.id.startsWith('local-') ? project.id.slice(6) : project.id);
+    const { liveStatus, status: currentOperationalStatus } = operationalStatus(project);
+    const status = currentOperationalStatus;
+    const isOnline = status === 'online';
+    const activeUrl = resolveProjectUrl(project, liveStatus);
 
     // 0. RETURN BANNER WHEN IN FULL WORKSPACE FOCUS
     if (state.detailFocus) {
@@ -1570,10 +1714,17 @@
     wsBtn.type = 'button';
     wsBtn.disabled = !workspaceIsAvailable(project);
     wsBtn.addEventListener('click', () => openProjectInIde(project));
-    const openSystem = project.localUrl ? element('button', 'flp-button flp-button-soft', 'Abrir sistema') : null;
+    const openSystemPopup = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-primary', '🌐 Abrir em Pop-up') : null;
+    if (openSystemPopup) {
+      openSystemPopup.type = 'button';
+      openSystemPopup.title = 'Abrir sistema em janela pop-up na tela';
+      openSystemPopup.addEventListener('click', () => openSystemModal(project, project.localUrl || activeUrl));
+    }
+    const openSystem = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-soft', '↗ Nova Aba (Outra Tela)') : null;
     if (openSystem) {
       openSystem.type = 'button';
-      openSystem.addEventListener('click', () => window.open(project.localUrl, '_blank', 'noopener,noreferrer'));
+      openSystem.title = 'Abrir sistema em outra tela (nova aba)';
+      openSystem.addEventListener('click', () => window.open(project.localUrl || activeUrl, '_blank', 'noopener,noreferrer'));
     }
 
     // Secondary Actions: MAP, ABSORB, SCREEN DNA, RUN/IDE, BROWSER, MEMORY, DEPLOY
@@ -1649,6 +1800,7 @@
     });
 
     actions.append(wsBtn);
+    if (openSystemPopup) actions.append(openSystemPopup);
     if (openSystem) actions.append(openSystem);
     actions.append(inspBtn, worldBtn, mapBtn, absorbBtn, browserBtn, memoryBtn);
 
@@ -1673,8 +1825,9 @@
 
     const primaryActions = element('div', 'flp-actions-primary');
     primaryActions.append(wsBtn, screenDnaBtn, focusBtn);
+    if (openSystemPopup) primaryActions.append(openSystemPopup);
     if (openSystem) primaryActions.append(openSystem);
-    const additionalActions = [...actions.children].filter((action) => action !== wsBtn && action !== screenDnaBtn && action !== openSystem);
+    const additionalActions = [...actions.children].filter((action) => action !== wsBtn && action !== screenDnaBtn && action !== focusBtn && action !== openSystemPopup && action !== openSystem);
     const moreActions = element('details', 'flp-project-actions-menu');
     moreActions.append(element('summary', 'flp-button flp-button-soft', `Mais ações (${additionalActions.length})`));
     const menuPanel = element('div', 'flp-project-actions-panel');
@@ -1686,11 +1839,6 @@
     target.appendChild(heading);
 
     // LIVE STATUS BANNER & DIRECT ACTIONS
-    const rawId = project.catalogId || (project.id.startsWith('local-') ? project.id.slice(6) : project.id);
-    const { liveStatus, status } = operationalStatus(project);
-    const isOnline = status === 'online';
-    const activeUrl = liveStatus?.activeUrl || project.localUrl || (project.localPort ? `http://localhost:${project.localPort}` : null);
-
     const statusBanner = element('div', `flp-detail-status-banner ${status}`);
     const bannerInfo = element('div');
     if (isOnline) {
