@@ -1007,9 +1007,13 @@
     if (countEl) countEl.textContent = favProjects.length;
 
     if (!favProjects.length) {
+      bar.hidden = true;
+      bar.classList.add('is-hidden');
       bar.style.display = 'none';
       return;
     }
+    bar.hidden = false;
+    bar.classList.remove('is-hidden');
     bar.style.display = 'flex';
     strip.replaceChildren();
 
@@ -1103,14 +1107,16 @@
       if (state.catalogScope === 'unverified') return operationalStatus(project).status === 'unknown';
       return true;
     });
-    // Ordenação: Projetos favoritados vão para os PRIMEIROS da lista
-    projects.sort((left, right) => {
-      const leftFav = state.catalogFavorites.has(left.id) ? 1 : 0;
-      const rightFav = state.catalogFavorites.has(right.id) ? 1 : 0;
-      if (leftFav !== rightFav) return rightFav - leftFav;
-      if (state.catalogScope === 'recent') return (recentOrder.get(right.id) || 0) - (recentOrder.get(left.id) || 0);
-      return 0;
-    });
+    // Ordenação: Projetos favoritados vão para os primeiros da lista, exceto em 'recent' que ordena por histórico recente
+    if (state.catalogScope === 'recent') {
+      projects.sort((left, right) => (recentOrder.get(right.id) || 0) - (recentOrder.get(left.id) || 0));
+    } else {
+      projects.sort((left, right) => {
+        const leftFav = state.catalogFavorites.has(left.id) ? 1 : 0;
+        const rightFav = state.catalogFavorites.has(right.id) ? 1 : 0;
+        return rightFav - leftFav;
+      });
+    }
 
     container.dataset.layout = state.catalogLayout;
     if (!projects.length) {
@@ -1236,6 +1242,24 @@
 
       // Quick Actions Bar
       const quickBar = element('div', 'flp-card-quick-actions');
+      const wsQuickBtn = element('button', 'flp-quick-action-btn btn-popup', '▶ Workspace');
+      wsQuickBtn.type = 'button';
+      wsQuickBtn.title = `Abrir área de trabalho completa de ${project.name || project.id}`;
+      wsQuickBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectProject(project.id, null, true);
+      });
+      quickBar.appendChild(wsQuickBtn);
+
+      const popupQuickBtn = element('button', 'flp-quick-action-btn btn-popup', '🌐 Pop-up');
+      popupQuickBtn.type = 'button';
+      popupQuickBtn.title = `Abrir sistema em janela pop-up na tela`;
+      popupQuickBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openSystemModal(project, activeUrl || project.localUrl);
+      });
+      quickBar.appendChild(popupQuickBtn);
+
       if (activeUrl) {
         const previewQuickBtn = element('button', 'flp-quick-action-btn btn-popup', '▶ Preview');
         previewQuickBtn.type = 'button';
@@ -1354,7 +1378,7 @@
       fullGridBtn.setAttribute('aria-pressed', String(Boolean(state.launcherFullGrid)));
       const label = fullGridBtn.querySelector('span:not(.fnx-mono3d-glyph)');
       if (label) {
-        label.textContent = state.launcherFullGrid ? 'Grade Completa (Tela Inteira) ✓' : 'Grade Completa (Tela Inteira)';
+        label.textContent = state.launcherFullGrid ? 'Grade Completa ✓' : 'Grade Completa';
       }
     }
     const multiBtn = $('flpMultiViewToggleBtn');
@@ -1952,7 +1976,7 @@
 
     const heroDetails = element('div', 'flp-ws-hero-details');
     const heroTitleRow = element('div', 'flp-ws-hero-title-row');
-    const heroH1 = element('h1', '', project.name || project.id);
+    const heroH2 = element('h2', 'flp-ws-hero-title', project.name || project.id);
     const heroVersion = element('span', 'flp-hero-version-pill', `v${project.projectVersion || '1.0.0'}`);
     const heroFavBtn = element('button', 'flp-hero-star-btn', state.catalogFavorites.has(project.id) ? '★' : '☆');
     heroFavBtn.type = 'button';
@@ -1961,60 +1985,7 @@
       toggleProjectFavorite(project.id);
       heroFavBtn.textContent = state.catalogFavorites.has(project.id) ? '★' : '☆';
     });
-    heroTitleRow.append(heroH1, heroVersion, heroFavBtn);
-
-    const heroSub = element('div', 'flp-ws-hero-sub', `${project.catalogGroup || 'Sistemas Fênix'} · ${project.versionRole || 'Principal'}`);
-    const heroDesc = element('p', 'flp-ws-hero-desc', project.description || `${project.name || project.id} integrado ao runtime operacional do Fênix OS com serviços e dados reais.`);
-
-    const heroStatusRow = element('div', 'flp-ws-hero-status-row');
-    const heroStatusBadge = element('span', `flp-hero-status-badge ${status}`);
-    heroStatusBadge.innerHTML = `<span class="flp-live-dot ${isOnline ? 'pulse' : ''}"></span> ${isOnline ? `ONLINE (:${liveStatus?.port || project.localPort || 3000})` : 'OFFLINE'}`;
-
-    const heroCityBtn = element('button', 'flp-hero-city-btn');
-    heroCityBtn.type = 'button';
-    heroCityBtn.innerHTML = '<i class="ph-bold ph-buildings"></i> Ver no World 3D';
-    heroCityBtn.addEventListener('click', () => {
-      if (window.showView) window.showView('city');
-      if (window.GlobalSelectionStore) window.GlobalSelectionStore.select('world_entity', project.worldEntityId || project.companyId || project.id);
-    });
-    heroStatusRow.append(heroStatusBadge, heroCityBtn);
-
-    heroDetails.append(heroTitleRow, heroSub, heroDesc, heroStatusRow);
-    heroLeft.append(heroLogo, heroDetails);
-
-    const heroMeta = element('div', 'flp-ws-hero-meta');
-    const metaItem = (lbl, val) => {
-      const el = element('div', 'flp-meta-item');
-      el.append(element('span', '', lbl), element('strong', '', val));
-      return el;
-    };
-    heroMeta.append(
-      metaItem('Diretório', project.workspace || project.listedPath || '—'),
-      metaItem('Git Branch', git?.branch ? `git:${git.branch}` : '—'),
-      metaItem('Porta UI', String(liveStatus?.port || project.localPort || '—')),
-      metaItem('Porta API', String(project.apiPort || '—')),
-      metaItem('Última Atividade', project.updatedAt ? date(project.updatedAt) : '—'),
-      metaItem('Health Check', project.healthUrl ? 'Ativo' : 'Não verificado')
-    );
-
-    heroCard.append(heroLeft, heroMeta);
-    target.appendChild(heroCard);
-
-    // 0. QUICK SWITCHER BAR (TROCA RÁPIDA ENTRE PROJETOS)
-    renderQuickSwitcher(target, project);
-
-    // 1. PROJECT HEADER (Section 7)
-    const heading = element('div', 'flp-detail-head');
-    const titleBox = element('div');
-    titleBox.append(element('span', 'flp-eyebrow', isLocalCatalogProject ? 'CATÁLOGO LOCAL · PROJECT HUB' : 'PROJECT KERNEL & GENOME TWIN'));
-    const h2Wrap = element('div', '', '');
-    h2Wrap.style.display = 'flex';
-    h2Wrap.style.alignItems = 'center';
-    h2Wrap.style.gap = '10px';
-    h2Wrap.style.flexWrap = 'wrap';
-
-    const h2 = element('h2', '', project.name || project.id);
-    h2Wrap.appendChild(h2);
+    heroTitleRow.append(heroH2, heroVersion, heroFavBtn);
 
     const isAbsorbed = Boolean(absorption);
     const statusBadge = element('span', `flp-badge ${isAbsorbed ? 'flp-badge-green' : 'flp-badge-gray'}`, isAbsorbed ? 'DNA REGISTRADO' : 'SEM DNA');
@@ -2023,90 +1994,76 @@
       : currentOperationalStatus === 'online' ? 'SERVIÇO ONLINE'
         : currentOperationalStatus === 'offline' ? 'SERVIÇO OFFLINE'
           : 'SERVIÇO NÃO VERIFICADO');
-    h2Wrap.append(statusBadge, healthBadge);
+    heroTitleRow.append(statusBadge, healthBadge);
 
-    // Framework/Tech badges
+    const heroSub = element('div', 'flp-ws-hero-sub', `${project.catalogGroup || 'Sistemas Fênix'} · ${project.versionRole || 'Principal'}`);
     const frameworks = absorption?.codeMap?.frameworks || [];
     for (const fw of frameworks) {
-      h2Wrap.appendChild(element('span', 'flp-badge flp-badge-purple', fw));
+      heroSub.appendChild(element('span', 'flp-badge flp-badge-purple', fw));
     }
 
-    titleBox.append(h2Wrap, element('p', '', `${project.id} · Última atividade: ${date(project.updatedAt)}`));
+    const heroDesc = element('p', 'flp-ws-hero-desc', project.description || `${project.name || project.id} integrado ao runtime operacional do Fênix OS com serviços e dados reais.`);
 
-    // 1.5 EMPRESA VINCULADA AO PROJETO (Apenas se o projeto possuir companyId real no Registry)
-    if (project.companyId) {
-      const companyCard = element('div', 'flp-linked-company-banner');
-      companyCard.style.cssText = 'background:rgba(0,217,255,0.06); border:1px solid rgba(0,217,255,0.22); border-radius:10px; padding:10px 14px; margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;';
+    const heroStatusRow = element('div', 'flp-ws-hero-status-row');
+    const heroStatusBadge = element('span', `flp-hero-status-badge ${status}`);
+    heroStatusBadge.innerHTML = `<span class="flp-live-dot ${isOnline ? 'pulse' : ''}"></span> ${isOnline ? `ONLINE (:${liveStatus?.port || project.localPort || 3000})` : 'OFFLINE'}`;
 
-      const compName = project.companyName || project.companyId;
-      const compInfo = element('div');
-      compInfo.style.cssText = 'display:flex; align-items:center; gap:10px;';
-      compInfo.innerHTML = `
-        <div style="width:34px; height:34px; border-radius:8px; background:rgba(0,217,255,0.15); border:1px solid #00D9FF; display:flex; align-items:center; justify-content:center; color:#00D9FF; font-size:18px;">
-          <i class="ph-bold ph-buildings"></i>
-        </div>
-        <div>
-          <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px;">Empresa Vinculada</div>
-          <strong style="color:#F8FAFC; font-size:12.5px;">${compName}</strong>
-          <span style="font-size:9.5px; margin-left:6px; color:#10B981; font-weight:700;">● VINCULADA</span>
-        </div>
-      `;
-
-      const compActions = element('div');
-      compActions.style.cssText = 'display:flex; gap:8px; align-items:center;';
-
-      const cityBtn = element('button', 'flp-button flp-button-soft', '🏙️ Ver no World');
-      cityBtn.type = 'button';
-      cityBtn.addEventListener('click', () => {
-        if (window.showView) window.showView('city');
-        if (window.GlobalSelectionStore) window.GlobalSelectionStore.select('company', project.companyId);
-        window.fenixSelectCompany?.(project.companyId);
-      });
-
-      const inspBtn = element('button', 'flp-button flp-button-primary', '⚡ Abrir Inspetor');
-      inspBtn.type = 'button';
-      inspBtn.addEventListener('click', () => {
-        window.fenixOpenSystemInspector?.(project.companyId);
-      });
-
-      compActions.append(cityBtn, inspBtn);
-      companyCard.append(compInfo, compActions);
-      titleBox.appendChild(companyCard);
-    }
-
-    // 2. PRIMARY & SECONDARY ACTIONS DOCK (Section 6)
-    const actions = element('div', 'flp-actions');
-    
-    // Primary Action: OPEN PROJECT / WORKSPACE
+    // Primary Actions on Hero
     const wsBtn = element('button', 'flp-button flp-button-primary', 'Abrir Workspace');
     wsBtn.type = 'button';
     wsBtn.disabled = !workspaceIsAvailable(project);
     wsBtn.addEventListener('click', () => openProjectInIde(project));
-    const livePreviewBtn = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-primary', '▶ Preview ao Vivo') : null;
+
+    const screenDnaBtn = element('button', 'flp-button flp-button-soft', 'Screen DNA');
+    screenDnaBtn.type = 'button';
+    screenDnaBtn.addEventListener('click', () => {
+      state.workspaceTab = 'screens';
+      renderDetail();
+      loadRegisteredScreens(project);
+    });
+
+    const focusBtn = element('button', `flp-button flp-button-soft${state.detailFocus ? ' active' : ''}`, state.detailFocus ? '▦ Ver Grade' : '⛶ Foco');
+    focusBtn.type = 'button';
+    focusBtn.title = state.detailFocus ? 'Restaurar painel do catálogo' : 'Expandir área de trabalho em tela cheia';
+    focusBtn.addEventListener('click', () => {
+      state.detailFocus = !state.detailFocus;
+      syncMultiViewToolbar();
+      renderDetail();
+    });
+
+    const livePreviewBtn = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-soft', '▶ Preview ao Vivo') : null;
     if (livePreviewBtn) {
       livePreviewBtn.type = 'button';
       livePreviewBtn.title = 'Abrir preview interativo ao vivo no workspace';
       livePreviewBtn.addEventListener('click', () => {
         state.workspaceTab = 'preview';
-        const targetHash = `#projects/${encodeURIComponent(project.id)}/preview`;
-        if (window.location.hash !== targetHash) history.pushState(null, '', targetHash);
         renderDetail();
       });
     }
-    const openSystemPopup = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-soft', '🌐 Janela Pop-up') : null;
-    if (openSystemPopup) {
-      openSystemPopup.type = 'button';
-      openSystemPopup.title = 'Abrir sistema em janela pop-up na tela';
-      openSystemPopup.addEventListener('click', () => openSystemModal(project, project.localUrl || activeUrl));
-    }
-    const openSystem = (project.localUrl || activeUrl) ? element('button', 'flp-button flp-button-soft', '↗ Nova Aba (Outra Tela)') : null;
-    if (openSystem) {
-      openSystem.type = 'button';
-      openSystem.title = 'Abrir sistema em outra tela (nova aba)';
-      openSystem.addEventListener('click', () => window.open(project.localUrl || activeUrl, '_blank', 'noopener,noreferrer'));
-    }
 
-    // Secondary Actions: MAP, ABSORB, SCREEN DNA, RUN/IDE, BROWSER, MEMORY, DEPLOY
+    const heroPopupBtn = element('button', 'flp-button flp-button-soft', '🌐 Pop-up');
+    heroPopupBtn.type = 'button';
+    heroPopupBtn.title = 'Abrir sistema em janela pop-up na tela';
+    heroPopupBtn.addEventListener('click', () => openSystemModal(project, activeUrl || project.localUrl));
+
+    const heroTabBtn = element('button', 'flp-button flp-button-soft', '↗ Nova Aba');
+    heroTabBtn.type = 'button';
+    heroTabBtn.title = 'Abrir sistema em outra tela (nova aba)';
+    heroTabBtn.addEventListener('click', () => {
+      const url = activeUrl || project.localUrl || (project.localPort ? `http://localhost:${project.localPort}` : null);
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      else alert('Nenhuma URL disponível para este projeto.');
+    });
+
+    const heroCityBtn = element('button', 'flp-hero-city-btn');
+    heroCityBtn.type = 'button';
+    heroCityBtn.innerHTML = '<i class="ph-bold ph-buildings"></i> Ver no World 3D';
+    heroCityBtn.addEventListener('click', () => {
+      if (window.showView) window.showView('city');
+      if (window.GlobalSelectionStore) window.GlobalSelectionStore.select('world_entity', project.worldEntityId || project.companyId || project.id);
+    });
+
+    // Secondary Actions Menu
     const mapBtn = element('button', 'flp-button flp-button-soft', 'Mapear Sistema');
     mapBtn.type = 'button';
     mapBtn.disabled = !workspaceIsAvailable(project) || Boolean(project.entryFile);
@@ -2142,14 +2099,6 @@
       }
     });
 
-    const screenDnaBtn = element('button', 'flp-button flp-button-soft', 'Screen DNA');
-    screenDnaBtn.type = 'button';
-    screenDnaBtn.addEventListener('click', () => {
-      state.workspaceTab = 'screens';
-      renderDetail();
-      loadRegisteredScreens(project);
-    });
-
     const browserBtn = element('button', 'flp-button flp-button-soft', 'Browser QA');
     browserBtn.type = 'button';
     browserBtn.addEventListener('click', () => window.showView?.('browser'));
@@ -2157,17 +2106,6 @@
     const memoryBtn = element('button', 'flp-button flp-button-soft', 'Memória');
     memoryBtn.type = 'button';
     memoryBtn.addEventListener('click', () => window.showView?.('memory'));
-
-    const worldBtn = element('button', 'flp-button flp-button-soft', '🏙️ Ver no World');
-    worldBtn.type = 'button';
-    worldBtn.addEventListener('click', () => {
-      if (project.companyId || project.worldEntityId) {
-        if (window.showView) window.showView('city');
-        if (window.GlobalSelectionStore) window.GlobalSelectionStore.select('world_entity', project.worldEntityId || project.companyId);
-      } else {
-        alert('Este projeto ainda não possui representação no World.');
-      }
-    });
 
     const inspBtn = element('button', 'flp-button flp-button-soft', '⚡ Inspetor');
     inspBtn.type = 'button';
@@ -2178,54 +2116,52 @@
       window.FenixSidebar?.openInspector?.({ type: 'project', id: project.id, data: project });
     });
 
-    actions.append(wsBtn);
-    if (openSystemPopup) actions.append(openSystemPopup);
-    if (openSystem) actions.append(openSystem);
-    actions.append(inspBtn, worldBtn, mapBtn, absorbBtn, browserBtn, memoryBtn);
-
+    const additionalActions = [mapBtn, absorbBtn, browserBtn, memoryBtn, inspBtn];
     if (project.id === 'api-platform-live') {
       const dashboard = element('a', 'flp-button flp-button-soft', 'Abrir Painel da API');
       dashboard.href = `${location.protocol}//${location.hostname}:8081/`;
       dashboard.target = '_blank';
       dashboard.rel = 'noopener noreferrer';
-      actions.append(dashboard);
+      additionalActions.push(dashboard);
     }
-
-    const focusBtn = element('button', `flp-button flp-button-soft${state.detailFocus ? ' active' : ''}`, state.detailFocus ? '▦ Ver Grade' : '⛶ Foco');
-    focusBtn.type = 'button';
-    focusBtn.title = state.detailFocus ? 'Restaurar painel do catálogo' : 'Expandir área de trabalho em tela cheia';
-    focusBtn.addEventListener('click', () => {
-      state.detailFocus = !state.detailFocus;
-      if (!state.detailFocus) state.launcherFullGrid = true;
-      syncMultiViewToolbar();
-      renderCards();
-      renderDetail();
-    });
-
-    const primaryActions = element('div', 'flp-actions-primary');
-    primaryActions.append(wsBtn);
-    if (livePreviewBtn) primaryActions.append(livePreviewBtn);
-    primaryActions.append(screenDnaBtn, focusBtn);
-    if (openSystem) primaryActions.append(openSystem);
-    const additionalActions = [...actions.children].filter((action) => action !== wsBtn && action !== livePreviewBtn && action !== screenDnaBtn && action !== focusBtn && action !== openSystem);
-    if (openSystemPopup) additionalActions.unshift(openSystemPopup);
     const moreActions = element('details', 'flp-project-actions-menu');
     moreActions.append(element('summary', 'flp-button flp-button-soft', `Mais ações (${additionalActions.length})`));
     const menuPanel = element('div', 'flp-project-actions-panel');
     menuPanel.append(...additionalActions);
     moreActions.appendChild(menuPanel);
-    actions.replaceChildren(primaryActions, moreActions);
 
-    heading.append(titleBox, actions);
-    target.appendChild(heading);
+    heroStatusRow.append(heroStatusBadge, wsBtn, screenDnaBtn, focusBtn);
+    if (livePreviewBtn) heroStatusRow.append(livePreviewBtn);
+    heroStatusRow.append(heroPopupBtn, heroTabBtn, heroCityBtn, moreActions);
 
-    // LIVE STATUS BANNER & DIRECT ACTIONS
+    heroDetails.append(heroTitleRow, heroSub, heroDesc, heroStatusRow);
+    heroLeft.append(heroLogo, heroDetails);
+
+    const heroMeta = element('div', 'flp-ws-hero-meta');
+    const metaItem = (lbl, val) => {
+      const el = element('div', 'flp-meta-item');
+      el.append(element('span', '', lbl), element('strong', '', val));
+      return el;
+    };
+    heroMeta.append(
+      metaItem('Diretório', project.workspace || project.listedPath || '—'),
+      metaItem('Git Branch', git?.branch ? `git:${git.branch}` : '—'),
+      metaItem('Porta UI', String(liveStatus?.port || project.localPort || '—')),
+      metaItem('Porta API', String(project.apiPort || '—')),
+      metaItem('Última Atividade', project.updatedAt ? date(project.updatedAt) : '—'),
+      metaItem('Health Check', project.healthUrl ? 'Ativo' : 'Não verificado')
+    );
+
+    heroCard.append(heroLeft, heroMeta);
+    target.appendChild(heroCard);
+
+    // 0.8 LIVE STATUS BANNER & DIRECT ACTIONS
     const statusBanner = element('div', `flp-detail-status-banner ${status}`);
     const bannerInfo = element('div');
     if (isOnline) {
       const port = liveStatus?.port || project.localPort || project.apiPort || '—';
       const checkedAt = liveStatus?.checkedAt ? date(liveStatus.checkedAt) : 'horário indisponível';
-      bannerInfo.innerHTML = `<strong><span class="flp-live-dot pulse"></span> SERVIÇO RESPONDEU NA CHECAGEM · PORTA :${port}</strong><p>Latência: ${liveStatus?.latencyMs != null ? `${liveStatus.latencyMs} ms` : 'não medida'} · Checado: ${checkedAt}</p>`;
+      bannerInfo.innerHTML = `<strong><span class="flp-live-dot pulse"></span> SERVIÇO ONLINE RESPONDEU NA CHECAGEM · PORTA :${port}</strong><p>Latência: ${liveStatus?.latencyMs != null ? `${liveStatus.latencyMs} ms` : 'não medida'} · Checado: ${checkedAt}</p>`;
       if (activeUrl) {
         const directOpen = element('button', 'flp-btn-open-direct', '🚀 Abrir Sistema Agora ↗');
         directOpen.type = 'button';
@@ -2234,8 +2170,8 @@
       } else statusBanner.appendChild(bannerInfo);
     } else if (status === 'offline') {
       bannerInfo.innerHTML = `
-        <strong><span class="flp-live-dot"></span> SERVIÇO SEM RESPOSTA NA ÚLTIMA CHECAGEM (Porta :${liveStatus?.port || project.localPort || project.apiPort || '—'})</strong>
-        <p>Checado: ${liveStatus?.checkedAt ? date(liveStatus.checkedAt) : 'horário indisponível'}. Você pode tentar iniciar o serviço ou explorar a pasta.</p>
+        <strong><span class="flp-live-dot"></span> SERVIÇO OFFLINE (Porta :${liveStatus?.port || project.localPort || project.apiPort || '—'})</strong>
+        <p>Checado: ${liveStatus?.checkedAt ? date(liveStatus.checkedAt) : 'horário indisponível'}. Inicie o serviço ou explore a pasta.</p>
       `;
       const bannerActions = element('div');
       bannerActions.style.cssText = 'display:flex; gap:8px; align-items:center; flex-wrap:wrap;';
@@ -2266,150 +2202,137 @@
     }
     target.appendChild(statusBanner);
 
-    // 2.5 PROGRESSIVE DECISION & ACTION FUNNEL (Escolha Total do Projeto)
-    renderDecisionFunnel(target, project, liveStatus, status);
+    // 0.9 QUICK SWITCHER BAR (TROCA RÁPIDA ENTRE PROJETOS)
+    renderQuickSwitcher(target, project);
 
-    // 3. COMPREHENSIVE PROJECT FACTS (Section 6)
+    // 1.5 EMPRESA VINCULADA AO PROJETO (Apenas se o projeto possuir companyId real no Registry)
+    if (project.companyId) {
+      const companyCard = element('div', 'flp-linked-company-banner');
+      companyCard.style.cssText = 'background:rgba(0,217,255,0.06); border:1px solid rgba(0,217,255,0.22); border-radius:10px; padding:10px 14px; margin-top:4px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;';
+
+      const compName = project.companyName || project.companyId;
+      const compInfo = element('div');
+      compInfo.style.cssText = 'display:flex; align-items:center; gap:10px;';
+      compInfo.innerHTML = `
+        <div style="width:34px; height:34px; border-radius:8px; background:rgba(0,217,255,0.15); border:1px solid #00D9FF; display:flex; align-items:center; justify-content:center; color:#00D9FF; font-size:18px;">
+          <i class="ph-bold ph-buildings"></i>
+        </div>
+        <div>
+          <div style="font-size:10px; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px;">Empresa Vinculada</div>
+          <strong style="color:#F8FAFC; font-size:12.5px;">${compName}</strong>
+          <span style="font-size:9.5px; margin-left:6px; color:#10B981; font-weight:700;">● VINCULADA</span>
+        </div>
+      `;
+
+      const compActions = element('div');
+      compActions.style.cssText = 'display:flex; gap:8px; align-items:center;';
+
+      const cityBtn = element('button', 'flp-button flp-button-soft', '🏙️ Ver no World');
+      cityBtn.type = 'button';
+      cityBtn.addEventListener('click', () => {
+        if (window.showView) window.showView('city');
+        if (window.GlobalSelectionStore) window.GlobalSelectionStore.select('company', project.companyId);
+        window.fenixSelectCompany?.(project.companyId);
+      });
+
+      const inspCompBtn = element('button', 'flp-button flp-button-primary', '⚡ Abrir Inspetor');
+      inspCompBtn.type = 'button';
+      inspCompBtn.addEventListener('click', () => {
+        window.fenixOpenSystemInspector?.(project.companyId);
+      });
+
+      compActions.append(cityBtn, inspCompBtn);
+      companyCard.append(compInfo, compActions);
+      target.appendChild(companyCard);
+    }
+
+    // 3. COMPREHENSIVE WORKSPACE SUB-TABS (Section 7)
     const screens = getProjectScreens(project);
-    const facts = element('div', 'flp-facts');
-    const mappedAgents = Array.isArray(detail?.activeAgents) ? detail.activeAgents.length
-      : Array.isArray(project.agents) ? project.agents.length
-        : Number.isFinite(project.agentCount) ? project.agentCount : null;
     const mappedJobs = Number.isFinite(detail?.progress?.totalJobs) ? detail.progress.totalJobs
       : Number.isFinite(project.totalJobs) ? project.totalJobs : null;
-    const mappedRoutes = state.analyses.get(project.id)?.report?.routes?.length ?? project.routesCount;
-    const technology = frameworks.length ? frameworks.join(', ') : [project.technology, project.framework, project.tech, project.type].filter(Boolean).join(', ');
-    const memory = project.activeMemory || null;
-    const genome = project.genomeVersion || null;
-    const tokenSavings = absorption?.accumulatedSavings?.tokensSaved;
-    const repository = project.repository || git?.remote;
-    const screensKnown = screens.length > 0 || Number.isFinite(project.screenCount);
-    const factEntries = [
-      ['Status', isLocalCatalogProject
-        ? (project.workspaceAvailable ? 'Workspace disponível' : 'Caminho indisponível')
-        : (project.runtimeStatus && project.runtimeStatus !== 'UNKNOWN' ? text(project.runtimeStatus) : 'Não verificado'), true],
-      ['Health', Number.isFinite(project.health) && project.healthMeasuredAt && project.healthSource ? `${project.health}% · ${text(project.healthSource)}` : 'Não medido', true],
-      ['Tecnologia', technology || 'Não mapeada', Boolean(technology) || !isLocalCatalogProject],
-      ...(!isLocalCatalogProject ? [] : [
-        ['Grupo', text(project.catalogGroup), Boolean(project.catalogGroup)],
-        ['Tipo', text(project.versionRole), Boolean(project.versionRole)],
-        ['Caminho local', project.listedPath || project.workspace || 'Indisponível', true],
-        ...(project.entryFile ? [['Arquivo de entrada', project.entryFile, true]] : []),
-      ]),
-      ['Última Atividade', project.updatedAt ? date(project.updatedAt) : 'Não informada', Boolean(project.updatedAt) || !isLocalCatalogProject],
-      ['Agentes Vinculados', mappedAgents === null ? 'Não informado' : String(mappedAgents), mappedAgents !== null || !isLocalCatalogProject],
-      ['Jobs Registrados', mappedJobs === null ? 'Não informado' : String(mappedJobs), mappedJobs !== null || !isLocalCatalogProject],
-      ['Telas (Screen DNA)', screens.length ? `${screens.length} tela(s)` : (Number.isFinite(project.screenCount) ? String(project.screenCount) : (isLocalCatalogProject ? 'Ainda não absorvido' : 'Não medido')), screensKnown || !isLocalCatalogProject],
-      ['APIs Mapeadas', Number.isFinite(mappedRoutes) ? `${mappedRoutes} rotas` : 'Não medido', Number.isFinite(mappedRoutes) || !isLocalCatalogProject],
-      ['Memória Ativa', memory || 'Não medida', Boolean(memory) || !isLocalCatalogProject],
-      ['Versão do Genome', genome || 'Não informada', Boolean(genome) || !isLocalCatalogProject],
-      ['Economia de Tokens', tokenSavings ? `${tokenSavings} tokens` : '—', Boolean(tokenSavings) || !isLocalCatalogProject],
-      ['Repositório', repository || 'Não informado', Boolean(repository) || !isLocalCatalogProject],
+
+    const wsNav = element('nav', 'flp-ws-nav');
+    const tabs = [
+      { id: 'overview', label: 'Visão Geral', icon: 'ph-sliders' },
+      ...(project.companyId ? [{ id: 'company', label: `Empresa: ${project.companyName || project.companyId}`, icon: 'ph-buildings' }] : []),
+      { id: 'files', label: 'Arquivos', icon: 'ph-folder' },
+      { id: 'code', label: 'Código Monaco', icon: 'ph-code' },
+      { id: 'screens', label: `Screen DNA (${screens.length})`, icon: 'ph-eye' },
+      { id: 'preview', label: 'Preview ao Vivo', icon: 'ph-browser' },
+      { id: 'apis', label: 'APIs & Contratos', icon: 'ph-plugs' },
+      { id: 'ports', label: 'Portas & Serviços', icon: 'ph-plugs-connected' },
+      { id: 'git', label: 'Histórico & Git', icon: 'ph-git-branch' },
+      { id: 'tests', label: 'Testes & Bugs', icon: 'ph-bug' },
+      { id: 'graph', label: 'Dependências & Grafo', icon: 'ph-tree-structure' },
+      { id: 'memory', label: 'Memória & Docs', icon: 'ph-database' },
+      { id: 'intelligence', label: 'Inteligência & IA', icon: 'ph-brain' },
+      ...(Number.isFinite(mappedJobs) && mappedJobs > 0 ? [{ id: 'jobs', label: `Jobs & Filas (${mappedJobs})`, icon: 'ph-arrows-clockwise' }] : [])
     ];
-    const unmappedFacts = [];
-    for (const [label, value, known] of factEntries) {
-      if (isLocalCatalogProject && !known) unmappedFacts.push(label);
-      else facts.appendChild(row(label, value));
-    }
-    target.appendChild(facts);
-    if (unmappedFacts.length) {
-      const disclosure = element('details', 'flp-unmapped-facts');
-      const summary = element('summary', '', `Dados ainda não mapeados (${unmappedFacts.length})`);
-      const list = element('ul', '');
-      for (const label of unmappedFacts) list.appendChild(element('li', 'flp-unmapped-fact', `${label} · Ainda não mapeado`));
-      disclosure.append(summary, list);
-      target.appendChild(disclosure);
-    }
-    if (isLocalCatalogProject) {
-      const runtime = element('details', 'flp-project-runtime');
-      runtime.appendChild(element('summary', '', 'Portas e versões do projeto'));
-      runtime.appendChild(element('p', 'flp-runtime-unverified', 'Portas configuradas no host do catálogo · disponibilidade não verificada'));
-      if (liveStatus) {
-        const statusNote = liveStatus.online
-          ? `🟢 Porta :${liveStatus.port || project.localPort} ATIVA e respondendo (${liveStatus.latencyMs != null ? liveStatus.latencyMs + 'ms' : 'imediato'})`
-          : `⚪ Porta :${project.localPort || '—'} OFFLINE`;
-        const statusNoteEl = element('p', liveStatus.online ? 'flp-card-ports' : 'flp-runtime-unverified', statusNote);
-        if (liveStatus.online) statusNoteEl.style.cssText = 'margin:4px 0 8px; color:#00E5A0; font-weight:700; font-size:11.5px;';
-        runtime.appendChild(statusNoteEl);
-      }
-      const runtimeGrid = element('div', 'flp-project-runtime-grid');
-      const ports = [
-        Number.isInteger(project.localPort) ? `PC local · UI: ${project.localPort}` : null,
-        Number.isInteger(project.apiPort) ? `PC local · API: ${project.apiPort}` : null,
-      ].filter(Boolean);
-      const runtimeRows = [
-        ['Versão', project.projectVersion || 'Não declarada'],
-        ['Modo', project.mode || 'Não informado'],
-        ['Portas', ports.join(' · ') || 'Não cadastradas'],
-        ['Pasta', project.workspace || project.listedPath || 'Indisponível'],
-      ];
-      for (const [label, value] of runtimeRows) {
-        const item = element('div', 'flp-runtime-item');
-        item.append(element('span', '', label), element('strong', '', value));
-        runtimeGrid.appendChild(item);
-      }
-      for (const [label, value] of [
-        ['Abrir URL local', project.localUrl],
-        ['Abrir URL VPS', project.remoteUrl],
-        ['Health check cadastrado', project.healthUrl || project.remoteHealthUrl],
-      ]) {
-        if (!value) continue;
-        let safeUrl;
-        try {
-          const parsed = new URL(value, window.location.href);
-          if (!['http:', 'https:'].includes(parsed.protocol)) continue;
-          safeUrl = parsed.toString();
-        } catch { continue; }
-        const item = element('div', 'flp-runtime-item');
-        const link = element('a', '', value);
-        link.href = safeUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        item.append(element('span', '', label), link);
-        runtimeGrid.appendChild(item);
-      }
-      runtime.appendChild(runtimeGrid);
-      target.appendChild(runtime);
 
-      // Live service logs viewer
-      const logContainer = element('div', 'flp-log-container');
-      logContainer.style.cssText = 'margin:12px 0;';
-      const logToggle = element('button', 'flp-button flp-button-soft', '📜 Ver Logs / Output do Serviço');
-      logToggle.type = 'button';
-      const logViewer = element('pre', 'flp-log-viewer');
-      logViewer.hidden = true;
-      logToggle.addEventListener('click', () => {
-        logViewer.hidden = !logViewer.hidden;
-        if (!logViewer.hidden) loadProjectLogs(rawId, logViewer);
+    for (const t of tabs) {
+      const isCurrentActive = state.workspaceTab === t.id ||
+        (t.id === 'preview' && state.workspaceTab === 'browser') ||
+        (t.id === 'screens' && state.workspaceTab === 'dna') ||
+        (t.id === 'tests' && state.workspaceTab === 'bugs') ||
+        (t.id === 'memory' && state.workspaceTab === 'docs');
+      const tabBtn = element('button', `flp-ws-tab${isCurrentActive ? ' active' : ''}`);
+      tabBtn.type = 'button';
+      tabBtn.dataset.workspaceTab = t.id;
+      tabBtn.innerHTML = `<i class="ph-bold ${t.icon}"></i> ${t.label}`;
+      tabBtn.addEventListener('click', () => {
+        state.workspaceTab = t.id;
+        const cleanTab = t.id !== 'overview' ? `/${t.id}` : '';
+        const targetHash = `#projects/${encodeURIComponent(project.id)}${cleanTab}`;
+        if (window.location.hash !== targetHash) history.pushState(null, '', targetHash);
+        renderDetail();
+        if (t.id === 'screens' || t.id === 'dna') loadRegisteredScreens(project);
+        if (t.id === 'intelligence') {
+          if (!state.analyses.has(project.id)) loadProjectAnalysis(project.id);
+          if (!state.reaAnalyses.has(project.id)) loadReaEvidence(project, false);
+        }
       });
-      logContainer.append(logToggle, logViewer);
-      target.appendChild(logContainer);
-    } else if (project.frontend || project.backend) {
-      const runtime = element('details', 'flp-project-runtime');
-      runtime.appendChild(element('summary', '', 'Runtime cadastrado'));
-      runtime.appendChild(element('p', 'flp-runtime-unverified', 'Portas cadastradas · listener e health não verificados'));
-      const runtimeGrid = element('div', 'flp-project-runtime-grid');
-      const frontendPort = Number.isInteger(project.frontend?.port) ? project.frontend.port : null;
-      const backendPort = Number.isInteger(project.backend?.port) ? project.backend.port : null;
-      const runtimeRows = [
-        ['Versão', project.projectVersion || project.currentVersion || 'Não informada'],
-        ['Portas', [frontendPort !== null ? `UI: ${frontendPort}` : null, backendPort !== null ? `API: ${backendPort}` : null].filter(Boolean).join(' · ') || 'Não cadastradas'],
-        ['Frontend', [project.frontend?.framework, project.frontend?.entry].filter(Boolean).join(' · ') || 'Não informado'],
-        ['Backend', [project.backend?.runtime, project.backend?.pm2Name ? `PM2: ${project.backend.pm2Name}` : null, project.backend?.serviceManager ? `systemd: ${project.backend.serviceManager}` : null].filter(Boolean).join(' · ') || 'Não informado'],
-        ['Pasta VPS', project.vpsPath || project.productionPath || 'Não cadastrada'],
-        ['Pasta do frontend', project.frontend?.path || 'Não cadastrada'],
-        ['Pasta da API', project.backend?.path || 'Não cadastrada'],
-      ];
-      for (const [label, value] of runtimeRows) {
-        const item = element('div', 'flp-runtime-item');
-        item.append(element('span', '', label), element('strong', '', value));
-        runtimeGrid.appendChild(item);
-      }
-      runtime.appendChild(runtimeGrid);
-      renderVpsBindings(project, runtime);
-      target.appendChild(runtime);
+      wsNav.appendChild(tabBtn);
+    }
+    target.appendChild(wsNav);
+
+    // 4. WORKSPACE TAB CONTENT
+    const wsContent = element('div', 'flp-ws-content');
+
+    if (state.workspaceTab === 'overview') {
+      renderOverviewTab(wsContent, project, detail);
+    } else if (state.workspaceTab === 'company') {
+      renderCompanyTab(wsContent, project, detail);
+    } else if (state.workspaceTab === 'files') {
+      renderFilesTab(wsContent, project);
+    } else if (state.workspaceTab === 'code') {
+      renderCodeTab(wsContent, project);
+    } else if (state.workspaceTab === 'screens' || state.workspaceTab === 'dna') {
+      renderScreensTab(wsContent, project, screens);
+    } else if (state.workspaceTab === 'preview' || state.workspaceTab === 'browser') {
+      renderBrowserTab(wsContent, project);
+    } else if (state.workspaceTab === 'apis') {
+      renderApisTab(wsContent, project);
+    } else if (state.workspaceTab === 'ports') {
+      renderPortsTab(wsContent, project);
+    } else if (state.workspaceTab === 'git') {
+      renderGitTab(wsContent, project);
+    } else if (state.workspaceTab === 'tests' || state.workspaceTab === 'bugs') {
+      renderTestsTab(wsContent, project);
+    } else if (state.workspaceTab === 'graph') {
+      renderGraphTab(wsContent, project);
+    } else if (state.workspaceTab === 'memory' || state.workspaceTab === 'docs') {
+      renderMemoryTab(wsContent, project);
+    } else if (state.workspaceTab === 'intelligence') {
+      renderSystemIntelligenceTab(wsContent, project);
+    } else if (state.workspaceTab === 'jobs') {
+      renderJobsTab(wsContent, project, detail);
+    } else {
+      renderOverviewTab(wsContent, project, detail);
     }
 
+    target.appendChild(wsContent);
+
+    // 4.5 FAMILY & COUNTERPART SECTIONS (Persistent across tabs for catalog projects)
     if (isLocalCatalogProject && project.catalogGroup && project.catalogGroup.toLocaleLowerCase() !== 'outros') {
       const family = state.projects
         .filter((item) => item.source === 'LOCAL_PROJECT_CATALOG'
@@ -2469,87 +2392,52 @@
       target.appendChild(section);
     }
 
-    // 4. PROJECT WORKSPACE SUB-TABS (Section 7)
-    const wsNav = element('nav', 'flp-ws-nav');
-    const tabs = [
-      { id: 'overview', label: 'Visão Geral', icon: 'ph-sliders' },
-      ...(project.companyId ? [{ id: 'company', label: `Empresa: ${project.companyName || project.companyId}`, icon: 'ph-buildings' }] : []),
-      { id: 'files', label: 'Arquivos', icon: 'ph-folder' },
-      { id: 'code', label: 'Código Monaco', icon: 'ph-code' },
-      { id: 'screens', label: `Screen DNA (${screens.length})`, icon: 'ph-eye' },
-      { id: 'preview', label: 'Preview ao Vivo', icon: 'ph-browser' },
-      { id: 'apis', label: 'APIs & Contratos', icon: 'ph-plugs' },
-      { id: 'ports', label: 'Portas & Serviços', icon: 'ph-plugs-connected' },
-      { id: 'git', label: 'Histórico & Git', icon: 'ph-git-branch' },
-      { id: 'tests', label: 'Testes & Bugs', icon: 'ph-bug' },
-      { id: 'graph', label: 'Dependências & Grafo', icon: 'ph-tree-structure' },
-      { id: 'memory', label: 'Memória & Docs', icon: 'ph-database' },
-      { id: 'intelligence', label: 'Inteligência & IA', icon: 'ph-brain' },
-      ...(Number.isFinite(mappedJobs) && mappedJobs > 0 ? [{ id: 'jobs', label: `Jobs & Filas (${mappedJobs})`, icon: 'ph-arrows-clockwise' }] : [])
+    // 5. UNMAPPED FACTS DISCLOSURE (Persistent across all tabs at bottom of detail)
+    const mappedAgents = Array.isArray(detail?.activeAgents) ? detail.activeAgents.length
+      : Array.isArray(project.agents) ? project.agents.length
+        : Number.isFinite(project.agentCount) ? project.agentCount : null;
+    const mappedRoutes = state.analyses.get(project.id)?.report?.routes?.length ?? project.routesCount;
+    const technology = frameworks.length ? frameworks.join(', ') : [project.technology, project.framework, project.tech, project.type].filter(Boolean).join(', ');
+    const memory = project.activeMemory || null;
+    const genome = project.genomeVersion || null;
+    const tokenSavings = absorption?.accumulatedSavings?.tokensSaved;
+    const repository = project.repository || git?.remote;
+    const screensKnown = screens.length > 0 || Number.isFinite(project.screenCount);
+    const factEntries = [
+      ['Status', isLocalCatalogProject
+        ? (project.workspaceAvailable ? 'Workspace disponível' : 'Caminho indisponível')
+        : (project.runtimeStatus && project.runtimeStatus !== 'UNKNOWN' ? text(project.runtimeStatus) : 'Não verificado'), true],
+      ['Health', Number.isFinite(project.health) && project.healthMeasuredAt && project.healthSource ? `${project.health}% · ${text(project.healthSource)}` : 'Não medido', true],
+      ['Tecnologia', technology || 'Não mapeada', Boolean(technology) || !isLocalCatalogProject],
+      ...(!isLocalCatalogProject ? [] : [
+        ['Grupo', text(project.catalogGroup), Boolean(project.catalogGroup)],
+        ['Tipo', text(project.versionRole), Boolean(project.versionRole)],
+        ['Caminho local', project.listedPath || project.workspace || 'Indisponível', true],
+        ...(project.entryFile ? [['Arquivo de entrada', project.entryFile, true]] : []),
+      ]),
+      ['Última Atividade', project.updatedAt ? date(project.updatedAt) : 'Não informada', Boolean(project.updatedAt) || !isLocalCatalogProject],
+      ['Agentes Vinculados', mappedAgents === null ? 'Não informado' : String(mappedAgents), mappedAgents !== null || !isLocalCatalogProject],
+      ['Jobs Registrados', mappedJobs === null ? 'Não informado' : String(mappedJobs), mappedJobs !== null || !isLocalCatalogProject],
+      ['Telas (Screen DNA)', screens.length ? `${screens.length} tela(s)` : (Number.isFinite(project.screenCount) ? String(project.screenCount) : (isLocalCatalogProject ? 'Ainda não absorvido' : 'Não medido')), screensKnown || !isLocalCatalogProject],
+      ['APIs Mapeadas', Number.isFinite(mappedRoutes) ? `${mappedRoutes} rotas` : 'Não medido', Number.isFinite(mappedRoutes) || !isLocalCatalogProject],
+      ['Memória Ativa', memory || 'Não medida', Boolean(memory) || !isLocalCatalogProject],
+      ['Versão do Genome', genome || 'Não informada', Boolean(genome) || !isLocalCatalogProject],
+      ['Economia de Tokens', tokenSavings ? `${tokenSavings} tokens` : '—', Boolean(tokenSavings) || !isLocalCatalogProject],
+      ['Repositório', repository || 'Não informado', Boolean(repository) || !isLocalCatalogProject],
     ];
-
-    for (const t of tabs) {
-      const isCurrentActive = state.workspaceTab === t.id ||
-        (t.id === 'preview' && state.workspaceTab === 'browser') ||
-        (t.id === 'screens' && state.workspaceTab === 'dna') ||
-        (t.id === 'tests' && state.workspaceTab === 'bugs') ||
-        (t.id === 'memory' && state.workspaceTab === 'docs');
-      const tabBtn = element('button', `flp-ws-tab${isCurrentActive ? ' active' : ''}`);
-      tabBtn.type = 'button';
-      tabBtn.dataset.workspaceTab = t.id;
-      tabBtn.innerHTML = `<i class="ph-bold ${t.icon}"></i> ${t.label}`;
-      tabBtn.addEventListener('click', () => {
-        state.workspaceTab = t.id;
-        const cleanTab = t.id !== 'overview' ? `/${t.id}` : '';
-        const targetHash = `#projects/${encodeURIComponent(project.id)}${cleanTab}`;
-        if (window.location.hash !== targetHash) history.pushState(null, '', targetHash);
-        renderDetail();
-        if (t.id === 'screens' || t.id === 'dna') loadRegisteredScreens(project);
-        if (t.id === 'intelligence') {
-          if (!state.analyses.has(project.id)) loadProjectAnalysis(project.id);
-          if (!state.reaAnalyses.has(project.id)) loadReaEvidence(project, false);
-        }
-      });
-      wsNav.appendChild(tabBtn);
+    const unmappedFacts = [];
+    for (const [label, , known] of factEntries) {
+      if (isLocalCatalogProject && !known) unmappedFacts.push(label);
     }
-    target.appendChild(wsNav);
-
-    // 5. WORKSPACE TAB CONTENT
-    const wsContent = element('div', 'flp-ws-content');
-
-    if (state.workspaceTab === 'overview') {
-      renderOverviewTab(wsContent, project, detail);
-    } else if (state.workspaceTab === 'company') {
-      renderCompanyTab(wsContent, project, detail);
-    } else if (state.workspaceTab === 'files') {
-      renderFilesTab(wsContent, project);
-    } else if (state.workspaceTab === 'code') {
-      renderCodeTab(wsContent, project);
-    } else if (state.workspaceTab === 'screens' || state.workspaceTab === 'dna') {
-      renderScreensTab(wsContent, project, screens);
-    } else if (state.workspaceTab === 'preview' || state.workspaceTab === 'browser') {
-      renderBrowserTab(wsContent, project);
-    } else if (state.workspaceTab === 'apis') {
-      renderApisTab(wsContent, project);
-    } else if (state.workspaceTab === 'ports') {
-      renderPortsTab(wsContent, project);
-    } else if (state.workspaceTab === 'git') {
-      renderGitTab(wsContent, project);
-    } else if (state.workspaceTab === 'tests' || state.workspaceTab === 'bugs') {
-      renderTestsTab(wsContent, project);
-    } else if (state.workspaceTab === 'graph') {
-      renderGraphTab(wsContent, project);
-    } else if (state.workspaceTab === 'memory' || state.workspaceTab === 'docs') {
-      renderMemoryTab(wsContent, project);
-    } else if (state.workspaceTab === 'intelligence') {
-      renderSystemIntelligenceTab(wsContent, project);
-    } else if (state.workspaceTab === 'jobs') {
-      renderJobsTab(wsContent, project, detail);
-    } else {
-      renderOverviewTab(wsContent, project, detail);
+    if (unmappedFacts.length) {
+      const disclosure = element('details', 'flp-unmapped-facts');
+      const summary = element('summary', '', `Dados ainda não mapeados (${unmappedFacts.length})`);
+      const list = element('ul', '');
+      for (const label of unmappedFacts) list.appendChild(element('li', 'flp-unmapped-fact', `${label} · Ainda não mapeado`));
+      disclosure.append(summary, list);
+      target.appendChild(disclosure);
     }
 
-    target.appendChild(wsContent);
     keepActiveWorkspaceTabVisible(target);
   }
 
@@ -2917,6 +2805,149 @@
     renderGit(container, project);
   }
 
+  function renderProjectFactsSection(target, project, detail) {
+    const isLocalCatalogProject = project.source === 'LOCAL_PROJECT_CATALOG';
+    const absorption = state.absorptions.get(project.id);
+    const git = state.git.get(project.id);
+    const { liveStatus, status } = operationalStatus(project);
+    const rawId = project.catalogId || (project.id.startsWith('local-') ? project.id.slice(6) : project.id);
+    const frameworks = absorption?.codeMap?.frameworks || [];
+    const screens = getProjectScreens(project);
+    const mappedAgents = Array.isArray(detail?.activeAgents) ? detail.activeAgents.length
+      : Array.isArray(project.agents) ? project.agents.length
+        : Number.isFinite(project.agentCount) ? project.agentCount : null;
+    const mappedJobs = Number.isFinite(detail?.progress?.totalJobs) ? detail.progress.totalJobs
+      : Number.isFinite(project.totalJobs) ? project.totalJobs : null;
+    const mappedRoutes = state.analyses.get(project.id)?.report?.routes?.length ?? project.routesCount;
+    const technology = frameworks.length ? frameworks.join(', ') : [project.technology, project.framework, project.tech, project.type].filter(Boolean).join(', ');
+    const memory = project.activeMemory || null;
+    const genome = project.genomeVersion || null;
+    const tokenSavings = absorption?.accumulatedSavings?.tokensSaved;
+    const repository = project.repository || git?.remote;
+    const screensKnown = screens.length > 0 || Number.isFinite(project.screenCount);
+
+    // Decision Funnel
+    renderDecisionFunnel(target, project, liveStatus, status);
+
+    const facts = element('div', 'flp-facts');
+    const factEntries = [
+      ['Status', isLocalCatalogProject
+        ? (project.workspaceAvailable ? 'Workspace disponível' : 'Caminho indisponível')
+        : (project.runtimeStatus && project.runtimeStatus !== 'UNKNOWN' ? text(project.runtimeStatus) : 'Não verificado'), true],
+      ['Health', Number.isFinite(project.health) && project.healthMeasuredAt && project.healthSource ? `${project.health}% · ${text(project.healthSource)}` : 'Não medido', true],
+      ['Tecnologia', technology || 'Não mapeada', Boolean(technology) || !isLocalCatalogProject],
+      ...(!isLocalCatalogProject ? [] : [
+        ['Grupo', text(project.catalogGroup), Boolean(project.catalogGroup)],
+        ['Tipo', text(project.versionRole), Boolean(project.versionRole)],
+        ['Caminho local', project.listedPath || project.workspace || 'Indisponível', true],
+        ...(project.entryFile ? [['Arquivo de entrada', project.entryFile, true]] : []),
+      ]),
+      ['Última Atividade', project.updatedAt ? date(project.updatedAt) : 'Não informada', Boolean(project.updatedAt) || !isLocalCatalogProject],
+      ['Agentes Vinculados', mappedAgents === null ? 'Não informado' : String(mappedAgents), mappedAgents !== null || !isLocalCatalogProject],
+      ['Jobs Registrados', mappedJobs === null ? 'Não informado' : String(mappedJobs), mappedJobs !== null || !isLocalCatalogProject],
+      ['Telas (Screen DNA)', screens.length ? `${screens.length} tela(s)` : (Number.isFinite(project.screenCount) ? String(project.screenCount) : (isLocalCatalogProject ? 'Ainda não absorvido' : 'Não medido')), screensKnown || !isLocalCatalogProject],
+      ['APIs Mapeadas', Number.isFinite(mappedRoutes) ? `${mappedRoutes} rotas` : 'Não medido', Number.isFinite(mappedRoutes) || !isLocalCatalogProject],
+      ['Memória Ativa', memory || 'Não medida', Boolean(memory) || !isLocalCatalogProject],
+      ['Versão do Genome', genome || 'Não informada', Boolean(genome) || !isLocalCatalogProject],
+      ['Economia de Tokens', tokenSavings ? `${tokenSavings} tokens` : '—', Boolean(tokenSavings) || !isLocalCatalogProject],
+      ['Repositório', repository || 'Não informado', Boolean(repository) || !isLocalCatalogProject],
+    ];
+    for (const [label, value, known] of factEntries) {
+      if (!isLocalCatalogProject || known) facts.appendChild(row(label, value));
+    }
+    target.appendChild(facts);
+
+    if (isLocalCatalogProject) {
+      const runtime = element('details', 'flp-project-runtime');
+      runtime.appendChild(element('summary', '', 'Portas e versões do projeto'));
+      runtime.appendChild(element('p', 'flp-runtime-unverified', 'Portas configuradas no host do catálogo · disponibilidade não verificada'));
+      if (liveStatus) {
+        const statusNote = liveStatus.online
+          ? `🟢 Porta :${liveStatus.port || project.localPort} ATIVA e respondendo (${liveStatus.latencyMs != null ? liveStatus.latencyMs + 'ms' : 'imediato'})`
+          : `⚪ Porta :${project.localPort || '—'} OFFLINE`;
+        const statusNoteEl = element('p', liveStatus.online ? 'flp-card-ports' : 'flp-runtime-unverified', statusNote);
+        if (liveStatus.online) statusNoteEl.style.cssText = 'margin:4px 0 8px; color:#00E5A0; font-weight:700; font-size:11.5px;';
+        runtime.appendChild(statusNoteEl);
+      }
+      const runtimeGrid = element('div', 'flp-project-runtime-grid');
+      const ports = [
+        Number.isInteger(project.localPort) ? `PC local · UI: ${project.localPort}` : null,
+        Number.isInteger(project.apiPort) ? `PC local · API: ${project.apiPort}` : null,
+      ].filter(Boolean);
+      const runtimeRows = [
+        ['Versão', project.projectVersion || 'Não declarada'],
+        ['Modo', project.mode || 'Não informado'],
+        ['Portas', ports.join(' · ') || 'Não cadastradas'],
+        ['Pasta', project.workspace || project.listedPath || 'Indisponível'],
+      ];
+      for (const [label, value] of runtimeRows) {
+        const item = element('div', 'flp-runtime-item');
+        item.append(element('span', '', label), element('strong', '', value));
+        runtimeGrid.appendChild(item);
+      }
+      for (const [label, value] of [
+        ['Abrir URL local', project.localUrl],
+        ['Abrir URL VPS', project.remoteUrl],
+        ['Health check cadastrado', project.healthUrl || project.remoteHealthUrl],
+      ]) {
+        if (!value) continue;
+        let safeUrl;
+        try {
+          const parsed = new URL(value, window.location.href);
+          if (!['http:', 'https:'].includes(parsed.protocol)) continue;
+          safeUrl = parsed.toString();
+        } catch { continue; }
+        const item = element('div', 'flp-runtime-item');
+        const link = element('a', '', value);
+        link.href = safeUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        item.append(element('span', '', label), link);
+        runtimeGrid.appendChild(item);
+      }
+      runtime.appendChild(runtimeGrid);
+      target.appendChild(runtime);
+
+      // Live service logs viewer
+      const logContainer = element('div', 'flp-log-container');
+      logContainer.style.cssText = 'margin:12px 0;';
+      const logToggle = element('button', 'flp-button flp-button-soft', '📜 Ver Logs / Output do Serviço');
+      logToggle.type = 'button';
+      const logViewer = element('pre', 'flp-log-viewer');
+      logViewer.hidden = true;
+      logToggle.addEventListener('click', () => {
+        logViewer.hidden = !logViewer.hidden;
+        if (!logViewer.hidden) loadProjectLogs(rawId, logViewer);
+      });
+      logContainer.append(logToggle, logViewer);
+      target.appendChild(logContainer);
+    } else if (project.frontend || project.backend) {
+      const runtime = element('details', 'flp-project-runtime');
+      runtime.appendChild(element('summary', '', 'Runtime cadastrado'));
+      runtime.appendChild(element('p', 'flp-runtime-unverified', 'Portas cadastradas · listener e health não verificados'));
+      const runtimeGrid = element('div', 'flp-project-runtime-grid');
+      const frontendPort = Number.isInteger(project.frontend?.port) ? project.frontend.port : null;
+      const backendPort = Number.isInteger(project.backend?.port) ? project.backend.port : null;
+      const runtimeRows = [
+        ['Versão', project.projectVersion || project.currentVersion || 'Não informada'],
+        ['Portas', [frontendPort !== null ? `UI: ${frontendPort}` : null, backendPort !== null ? `API: ${backendPort}` : null].filter(Boolean).join(' · ') || 'Não cadastradas'],
+        ['Frontend', [project.frontend?.framework, project.frontend?.entry].filter(Boolean).join(' · ') || 'Não informado'],
+        ['Backend', [project.backend?.runtime, project.backend?.pm2Name ? `PM2: ${project.backend.pm2Name}` : null, project.backend?.serviceManager ? `systemd: ${project.backend.serviceManager}` : null].filter(Boolean).join(' · ') || 'Não informado'],
+        ['Pasta VPS', project.vpsPath || project.productionPath || 'Não cadastrada'],
+        ['Pasta do frontend', project.frontend?.path || 'Não cadastrada'],
+        ['Pasta da API', project.backend?.path || 'Não cadastrada'],
+      ];
+      for (const [label, value] of runtimeRows) {
+        const item = element('div', 'flp-runtime-item');
+        item.append(element('span', '', label), element('strong', '', value));
+        runtimeGrid.appendChild(item);
+      }
+      runtime.appendChild(runtimeGrid);
+      renderVpsBindings(project, runtime);
+      target.appendChild(runtime);
+    }
+  }
+
   function renderOverviewTab(container, project, detail) {
     const isLocalCatalogProject = project.source === 'LOCAL_PROJECT_CATALOG';
     const absorption = state.absorptions.get(project.id);
@@ -3216,6 +3247,7 @@
       });
     }
 
+    renderProjectFactsSection(panel, project, detail);
     container.appendChild(panel);
     if (detail) renderExecutionPanels(container, detail);
   }
