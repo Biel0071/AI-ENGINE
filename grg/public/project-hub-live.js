@@ -18,7 +18,7 @@
   const catalogPreferences = readCatalogPreferences();
   const savedFullGrid = typeof localStorage !== 'undefined' ? localStorage.getItem('fenix_launcher_full_grid') : null;
   const isAutomation = typeof navigator !== 'undefined' && navigator.webdriver === true;
-  const initialLauncherGrid = savedFullGrid !== null ? savedFullGrid === 'true' : (!isAutomation);
+  const initialLauncherGrid = isFullFenixShell ? true : (savedFullGrid !== null ? savedFullGrid === 'true' : (!isAutomation));
   const savedGridDensity = typeof localStorage !== 'undefined' ? localStorage.getItem('fenix_catalog_grid_density') : null;
   const state = {
     projects: [],
@@ -938,7 +938,7 @@
       item.addEventListener('click', () => {
         state.catalogScope = s.id;
         state.detailFocus = false;
-        if (isFullFenixShell) {
+        if (!isAutomation) {
           state.launcherFullGrid = true;
         }
         if (window.location.hash.startsWith('#projects/')) {
@@ -6375,6 +6375,18 @@
 
   async function load(force = false) {
     renderShell();
+    const currentRoute = parseProjectsRoute();
+    if (currentRoute?.projectId) {
+      state.detailFocus = true;
+      state.selected = currentRoute.projectId;
+      if (currentRoute.tab) state.workspaceTab = currentRoute.tab;
+    } else {
+      if (window.location.hash === '#projects' || window.location.hash === '' || window.location.hash.startsWith('#projects?')) {
+        state.detailFocus = false;
+        state.launcherFullGrid = true;
+      }
+    }
+    syncMultiViewToolbar();
     if (state.loading) return state.loading;
     if (state.projects.length && !force) {
       renderCards();
@@ -6410,6 +6422,7 @@
           state.detailFocus = true;
         } else {
           state.detailFocus = false;
+          state.launcherFullGrid = true;
         }
         state.requestedProjectId = null;
         recordProjectOpen(state.selected);
@@ -7299,6 +7312,7 @@
     } else {
       if (window.location.hash === '#projects' || window.location.hash === '' || window.location.hash.startsWith('#projects?')) {
         state.detailFocus = false;
+        state.launcherFullGrid = true;
       }
     }
     syncMultiViewToolbar();

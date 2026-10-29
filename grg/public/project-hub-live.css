@@ -205,8 +205,8 @@
 @media(max-width:600px){#view-projects .flp-card-with-logo{grid-template-columns:42px minmax(0,1fr);gap:10px;padding:11px}#view-projects .flp-card-logo{width:42px;height:42px;border-radius:10px}}
 
 /* The Windows project catalog is a visual launcher; keep runtime projects in their denser list. */
-#view-projects .flp-body[data-project-source="local"] .flp-sidebar{flex:0 0 minmax(320px,46%);width:46%;min-width:320px}
-#view-projects .flp-body[data-project-source="local"] .flp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));align-content:start;gap:10px}
+.flp-body:not(.is-grid-full-view):not([data-full-launcher="true"])[data-project-source="local"] .flp-sidebar{flex:0 0 minmax(320px,46%);width:46%;min-width:320px}
+.flp-body:not(.is-grid-full-view):not([data-full-launcher="true"])[data-project-source="local"] .flp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));align-content:start;gap:10px}
 #view-projects .flp-body[data-project-source="local"] .flp-card-with-logo{display:flex;min-width:0;min-height:154px;align-items:center;justify-content:flex-start;gap:8px;padding:12px 9px;text-align:center}
 #view-projects .flp-body[data-project-source="local"] .flp-card-logo{width:68px;height:68px;border-radius:14px;background:linear-gradient(145deg,#172433,#0b111a);box-shadow:inset 0 0 0 1px rgba(69,210,220,.08)}
 #view-projects .flp-body[data-project-source="local"] .flp-card-content{width:100%;justify-items:center;gap:5px}
@@ -603,48 +603,69 @@
 .flp-preview-frame.viewport-tablet {
   width: 768px;
 }
-/* FNX-CAP PROJETOS: Desktop-Identical Grid & Category Controls */
-@media (min-width: 921px) {
-  #view-projects .flp-body,
-  #view-projects .flp-body[data-project-source="local"],
-  #view-projects .flp-body[data-project-source="kernel"] {
-    grid-template-columns: minmax(360px, 48%) minmax(0, 1fr);
+/* FNX-CAP PROJETOS: Full-width Catalog Listing vs Full-width Workspace View */
+#view-projects .flp-body {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+}
+@media (max-width: 768px) {
+  #view-projects .flp-body {
+    flex-direction: column !important;
+    overflow-y: auto !important;
   }
 }
-@media (max-width: 920px) {
-  #view-projects .flp-body,
-  #view-projects .flp-body[data-project-source="local"],
-  #view-projects .flp-body[data-project-source="kernel"] {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-}
-#view-projects .flp-body.is-grid-full-view:not([data-detail-focus="true"]) {
-  grid-template-columns: minmax(0, 1fr) !important;
-}
+
+/* TELA 1: FULL CATALOG LISTING / GRID VIEW (Default on enter in Full Shell) */
+#view-projects .flp-body[data-full-launcher="true"]:not([data-detail-focus="true"]) .flp-sidebar,
 #view-projects .flp-body.is-grid-full-view:not([data-detail-focus="true"]) .flp-sidebar {
+  order: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 16px 28px 36px !important;
+  box-sizing: border-box !important;
+  background: var(--fenix-bg-base, #050810) !important;
 }
+
+#view-projects .flp-body[data-full-launcher="true"]:not([data-detail-focus="true"]) .flp-detail,
 #view-projects .flp-body.is-grid-full-view:not([data-detail-focus="true"]) .flp-detail {
   display: none !important;
 }
-#view-projects .flp-body[data-detail-focus="true"] {
-  display: flex !important;
-  flex-direction: row !important;
-}
+
+/* TELA 2: FULL WORKSPACE DETAIL VIEW (Opened upon clicking a project) */
 #view-projects .flp-body[data-detail-focus="true"] .flp-sidebar {
   display: none !important;
 }
+
 #view-projects .flp-body[data-detail-focus="true"] .flp-detail {
-  display: block !important;
+  order: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
   width: 100% !important;
   max-width: 100% !important;
-  padding: 20px 32px 36px !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 16px 28px 36px !important;
+  margin-top: 0 !important;
+  box-sizing: border-box !important;
+  background: var(--fenix-bg-base, #050810) !important;
 }
 
-#view-projects .flp-cards[data-layout="grid"],
-#view-projects .flp-body[data-project-source="local"] .flp-cards[data-layout="grid"],
-#view-projects .flp-body[data-project-source="local"] .flp-cards:not([data-layout="list"]) {
+/* Fallback grid columns for legacy fixtures without density attribute */
+.flp-body:not(.is-grid-full-view):not([data-full-launcher="true"]) #view-projects .flp-cards[data-layout="grid"],
+.flp-body:not(.is-grid-full-view):not([data-full-launcher="true"]) #view-projects .flp-body[data-project-source="local"] .flp-cards[data-layout="grid"],
+.flp-body:not(.is-grid-full-view):not([data-full-launcher="true"]) #view-projects .flp-body[data-project-source="local"] .flp-cards:not([data-layout="list"]) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr));
   align-content: start;
@@ -4103,40 +4124,54 @@
    ========================================================================== */
 
 /* Densities for #flpCards */
+#view-projects #flpCards[data-density="auto"],
+#view-projects .flp-cards[data-density="auto"],
 .flp-cards[data-density="auto"] {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
   gap: 14px !important;
 }
 
+#view-projects #flpCards[data-density="6"],
+#view-projects .flp-cards[data-density="6"],
 .flp-cards[data-density="6"] {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(max(200px, calc((100% - 80px) / 6)), 1fr)) !important;
   gap: 14px !important;
 }
-@media (min-width: 1400px) {
+@media (min-width: 1300px) {
+  #view-projects #flpCards[data-density="6"],
+  #view-projects .flp-cards[data-density="6"],
   .flp-cards[data-density="6"] {
     grid-template-columns: repeat(6, 1fr) !important;
   }
 }
 
+#view-projects #flpCards[data-density="8"],
+#view-projects .flp-cards[data-density="8"],
 .flp-cards[data-density="8"] {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(max(150px, calc((100% - 84px) / 8)), 1fr)) !important;
   gap: 12px !important;
 }
-@media (min-width: 1400px) {
+@media (min-width: 1300px) {
+  #view-projects #flpCards[data-density="8"],
+  #view-projects .flp-cards[data-density="8"],
   .flp-cards[data-density="8"] {
     grid-template-columns: repeat(8, 1fr) !important;
   }
 }
 
+#view-projects #flpCards[data-density="12"],
+#view-projects .flp-cards[data-density="12"],
 .flp-cards[data-density="12"] {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(max(110px, calc((100% - 88px) / 12)), 1fr)) !important;
   gap: 8px !important;
 }
-@media (min-width: 1400px) {
+@media (min-width: 1300px) {
+  #view-projects #flpCards[data-density="12"],
+  #view-projects .flp-cards[data-density="12"],
   .flp-cards[data-density="12"] {
     grid-template-columns: repeat(12, 1fr) !important;
   }
