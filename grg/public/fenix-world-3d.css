@@ -109,7 +109,7 @@ body.fenix-mode-3d #view-city #cityCanvas { display: none !important; }
   display: block !important;
   width: 100% !important;
   height: 100% !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
 }
 
 /* Card 2: Agentes em Destaque */
@@ -435,7 +435,7 @@ body.fenix-mode-3d #view-city #cityCanvas { display: none !important; }
 
 .fw3-district-label strong {
   font-family: var(--fenix-font-display, "Inter", sans-serif) !important;
-  font-size: 11.5px !important;
+  font-size: 12px !important;
   font-weight: 800 !important;
   letter-spacing: 0.6px !important;
   color: #ffffff !important;
@@ -445,11 +445,85 @@ body.fenix-mode-3d #view-city #cityCanvas { display: none !important; }
 
 .fw3-district-label small {
   font-family: var(--fenix-font-sans, "Inter", sans-serif) !important;
-  font-size: 9px !important;
+  font-size: 10px !important;
   color: #94a3b8 !important;
   font-weight: 500 !important;
   letter-spacing: 0.2px !important;
   line-height: 1.2 !important;
+}
+
+@media (max-width: 760px) {
+  .fw3-district-label strong {
+    font-size: 11px !important;
+  }
+  .fw3-district-label small {
+    font-size: 9px !important;
+  }
+}
+
+/* 3D Floating Project Badges (ZapFlow CRM, MF Atacadista, ZAI CRM, etc.) */
+.fw3-project-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 5px 10px !important;
+  min-height: 38px !important;
+  max-width: 220px !important;
+  background: rgba(9, 14, 26, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(0, 217, 255, 0.28) !important;
+  border-left: 3px solid var(--label-color, #00d9ff) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 14px color-mix(in srgb, var(--label-color, #00d9ff) 25%, transparent) !important;
+  cursor: pointer !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease !important;
+  z-index: 20 !important;
+}
+
+.fw3-project-label:hover {
+  transform: translate(-50%, -110%) scale(1.06) !important;
+  background: rgba(14, 22, 38, 0.98) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85), 0 0 20px color-mix(in srgb, var(--label-color, #00d9ff) 45%, transparent) !important;
+}
+
+.fw3-project-label .fw3-project-icon-box {
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  border-radius: 6px !important;
+  background: color-mix(in srgb, var(--label-color, #00d9ff) 20%, rgba(0, 0, 0, 0.6)) !important;
+  border: 1px solid color-mix(in srgb, var(--label-color, #00d9ff) 50%, transparent) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  color: var(--label-color, #00d9ff) !important;
+}
+
+.fw3-project-label .fw3-label-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+}
+
+.fw3-project-label strong {
+  font-family: var(--fenix-font-display, "Inter", sans-serif) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.4px !important;
+  color: #ffffff !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+.fw3-project-label small {
+  font-family: var(--fenix-font-sans, "Inter", sans-serif) !important;
+  font-size: 8.5px !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
 }
 
 /* Suppression of legacy floating overlays to match canonical standard in media_1793303887123_654a6089.jpg */
