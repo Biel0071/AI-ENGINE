@@ -549,6 +549,8 @@ const PAGES = [
       { targetId: 'fenix-projects', label: 'Explorador de Projetos', action: 'nav_projects', type: 'NAVIGATIONAL' }
     ],
     screenshot: '/screenshots/v11_phase4_command.png',
+    screenshotFreshness: 'ARCHIVED',
+    screenshotCapturedOn: '2026-09-21',
     apiDependencies: ['/api/v2/conversation', '/api/v2/models', '/api/v2/queue'],
     actions: ['send_prompt', 'switch_model', 'enqueue_job'],
     status: 'ONLINE',
@@ -576,6 +578,8 @@ const PAGES = [
       { targetId: 'fenix-command-center', label: 'Voltar ao Comando', action: 'nav_command', type: 'NAVIGATIONAL' }
     ],
     screenshot: '/screenshots/v11_phase4_city.png',
+    screenshotFreshness: 'ARCHIVED',
+    screenshotCapturedOn: '2026-09-21',
     apiDependencies: ['/api/v2/events/stream', '/api/v2/living-city/agents', '/api/v2/living-city/state'],
     actions: ['zoom', 'inspect_building', 'track_agent'],
     status: 'ONLINE',
@@ -600,7 +604,6 @@ const PAGES = [
       { targetId: 'fenix-operations', label: 'Delegar Missão', action: 'delegate_mission', type: 'NAVIGATIONAL' },
       { targetId: 'fenix-ai-city', label: 'Localizar na Cidade 3D', action: 'focus_city', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_agents.png',
     apiDependencies: ['/api/v2/living-city/agents', '/api/agents/roles'],
     actions: ['inspect_agent', 'tune_skills', 'reassign_role'],
     status: 'ONLINE',
@@ -625,7 +628,6 @@ const PAGES = [
       { targetId: 'fenix-visual-ide', label: 'Ver Arquivos Criados', action: 'view_created_files', type: 'NAVIGATIONAL' },
       { targetId: 'fenix-command-center', label: 'Emitir Novo Comando', action: 'nav_command', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_operations.png',
     apiDependencies: ['/api/missions', '/api/v2/jobs'],
     actions: ['approve_mission', 'cancel_job', 'inspect_logs'],
     status: 'ONLINE',
@@ -653,6 +655,8 @@ const PAGES = [
       { targetId: 'fenix-projects', label: 'Trocar de Workspace', action: 'switch_workspace', type: 'NAVIGATIONAL' }
     ],
     screenshot: '/screenshots/v11_phase4_ide.png',
+    screenshotFreshness: 'ARCHIVED',
+    screenshotCapturedOn: '2026-09-21',
     apiDependencies: ['/api/v2/projects/:id/files', '/api/project-mirror', '/api/fenix/projects/:id/git/commit'],
     actions: ['edit_code', 'save_file', 'switch_viewport', 'git_commit_push'],
     status: 'ONLINE',
@@ -683,6 +687,8 @@ const PAGES = [
       { targetId: 'ap-overview', label: 'Abrir API Platform', action: 'open_api_platform', type: 'CROSS_PROJECT' }
     ],
     screenshot: '/screenshots/v11_phase4_projects.png',
+    screenshotFreshness: 'ARCHIVED',
+    screenshotCapturedOn: '2026-09-21',
     apiDependencies: ['/api/v2/projects', '/api/v2/projects-registry'],
     actions: ['select_project', 'scan_project', 'view_metrics'],
     status: 'ONLINE',
@@ -708,7 +714,6 @@ const PAGES = [
       { targetId: 'fenix-knowledge', label: 'Consultar RAG & Ontologia', action: 'view_rag', type: 'NAVIGATIONAL' },
       { targetId: 'fenix-flowgraph', label: 'Ver Mapa de Fluxo', action: 'view_flowgraph', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_memory.png',
     apiDependencies: ['/api/v2/graph/data', '/api/fenix/memory/graph'],
     actions: ['explore_nodes', 'tune_physics', 'search_memory'],
     status: 'ONLINE',
@@ -732,7 +737,6 @@ const PAGES = [
     navigationEdges: [
       { targetId: 'fenix-flowgraph', label: 'Abrir Flow Graph', action: 'open_flow', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_knowledge.png',
     apiDependencies: ['/api/v2/observatory/summary', '/api/knowledge'],
     actions: ['inspect_gap', 'sync_rag', 'search_dna'],
     status: 'ONLINE',
@@ -757,7 +761,6 @@ const PAGES = [
     navigationEdges: [
       { targetId: 'fenix-command-center', label: 'Voltar ao Comando', action: 'goto_command', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_flowgraph.png',
     apiDependencies: ['/api/v2/pages', '/api/v2/projects'],
     actions: ['zoom_pan', 'drag_nodes', 'filter_project', 'inspect_hd_preview'],
     status: 'ONLINE',
@@ -781,7 +784,6 @@ const PAGES = [
     navigationEdges: [
       { targetId: 'ap-providers', label: 'Provedores API Platform', action: 'link_providers', type: 'CROSS_PROJECT' }
     ],
-    screenshot: '/screenshots/v11_phase4_mcp.png',
     apiDependencies: ['/api/mcp/servers', '/api/mcp/tools'],
     actions: ['call_tool', 'inspect_schema'],
     status: 'ONLINE',
@@ -805,7 +807,6 @@ const PAGES = [
     navigationEdges: [
       { targetId: 'fenix-visual-ide', label: 'Corrigir na IDE', action: 'fix_in_ide', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_browser.png',
     apiDependencies: ['/api/v2/visual-qa/screenshots', '/api/v2/browser/sessions'],
     actions: ['run_audit', 'refresh_screenshots'],
     status: 'ONLINE',
@@ -829,7 +830,6 @@ const PAGES = [
     navigationEdges: [
       { targetId: 'ap-observability', label: 'Telemetria API Platform', action: 'link_ap_telemetry', type: 'CROSS_PROJECT' }
     ],
-    screenshot: '/screenshots/v11_phase4_observability.png',
     apiDependencies: ['/api/v2/observatory/summary'],
     actions: ['collect_sample', 'stream_metrics'],
     status: 'ONLINE',
@@ -853,7 +853,6 @@ const PAGES = [
     navigationEdges: [
       { targetId: 'fenix-visual-ide', label: 'Editor de Código', action: 'open_editor', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_terminal.png',
     apiDependencies: ['/api/terminal/session'],
     actions: ['exec_command', 'clear_terminal'],
     status: 'ONLINE',
@@ -877,7 +876,6 @@ const PAGES = [
     navigationEdges: [
       { targetId: 'fenix-command-center', label: 'Retornar ao Comando', action: 'nav_command', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_runtime.png',
     apiDependencies: ['/api/runtime/status'],
     actions: ['restart_process', 'reload_cluster'],
     status: 'ONLINE',
@@ -901,7 +899,6 @@ const PAGES = [
     navigationEdges: [
       { targetId: 'fenix-projects', label: 'Vincular a Projeto', action: 'bind_to_project', type: 'NAVIGATIONAL' }
     ],
-    screenshot: '/screenshots/v11_phase4_marketplace.png',
     apiDependencies: ['/api/skills/registry', '/api/plugins'],
     actions: ['install_skill', 'enable_plugin'],
     status: 'ONLINE',

@@ -396,7 +396,7 @@
           } else if (agents.length === 0) {
             agentsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhum agente publicado pela API.</div>';
           } else {
-            const featuredList = (agents && agents.length > 0) ? agents.slice(0, 4) : [
+            const featuredList = [
               { id: 'agent-ana', name: 'Ana', role: 'Analista de Dados', avatar: '/assets/agent-data.png', statusClass: 'status-executando', statusText: 'Executando' },
               { id: 'agent-ryo', name: 'Ryo', role: 'Desenvolvedor', avatar: '/assets/agent-developer.png', statusClass: 'status-deslocamento', statusText: 'Em Deslocamento' },
               { id: 'agent-luna', name: 'Luna', role: 'Gestora de Projetos', avatar: '/assets/agent-product.png', statusClass: 'status-reuniao', statusText: 'Reunião' },

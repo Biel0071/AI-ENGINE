@@ -2473,7 +2473,7 @@
     } else if (state.workspaceTab === 'ports') {
       renderPortsTab(wsContent, project);
     } else if (state.workspaceTab === 'git') {
-      renderGitTab(wsContent, project);
+      renderGit(wsContent, project);
     } else if (state.workspaceTab === 'tests' || state.workspaceTab === 'bugs') {
       renderTestsTab(wsContent, project);
     } else if (state.workspaceTab === 'graph') {
@@ -2609,6 +2609,181 @@
     else if (tabBounds.left < navBounds.left) nav.scrollLeft -= navBounds.left - tabBounds.left;
   }
 
+  function generateDefaultProjectScreens(project) {
+    if (!project) return [];
+    const name = project.name || project.id || '';
+    const group = String(project.catalogGroup || project.group || '').toLowerCase();
+    const isCommerce = /atacad|commerc|loj|vend|shop|store|b2b/i.test(name + ' ' + group);
+    const isCrm = /crm|whatsapp|zap|chat|atend|lead/i.test(name + ' ' + group);
+
+    let list = [];
+    if (isCommerce) {
+      list = [
+        {
+          screenId: `${project.id}-catalog`,
+          name: 'Catálogo B2B & Listagem de Produtos',
+          route: '/produtos',
+          sourceFile: 'src/pages/ProductCatalog.tsx',
+          componentEvidence: ['ProductGrid', 'PriceTierTable', 'CategoryFilter', 'B2BCartSummary'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 142 },
+          mockType: 'catalog',
+          kpis: [{ label: 'Itens em Estoque', value: '4.820' }, { label: 'Categorias', value: '38' }]
+        },
+        {
+          screenId: `${project.id}-quote`,
+          name: 'Cotação Rápida & Pedido em Lote',
+          route: '/cotacao-rapida',
+          sourceFile: 'src/pages/QuickQuoteOrder.tsx',
+          componentEvidence: ['SkuBatchInput', 'TaxBreakdownCard', 'CreditLimitMeter'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 98 },
+          mockType: 'form',
+          kpis: [{ label: 'Tempo Médio', value: '45s' }, { label: 'Limite Crédito', value: 'R$ 85.000' }]
+        },
+        {
+          screenId: `${project.id}-dashboard`,
+          name: 'Dashboard Operacional & Vendas',
+          route: '/dashboard',
+          sourceFile: 'src/pages/Dashboard.tsx',
+          componentEvidence: ['SalesKpiRow', 'PendingOrdersTable', 'ClientPipelineChart'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 186 },
+          mockType: 'dashboard',
+          kpis: [{ label: 'Vendas Hoje', value: 'R$ 42.600' }, { label: 'Pedidos Pendentes', value: '18' }]
+        },
+        {
+          screenId: `${project.id}-login`,
+          name: 'Portal do Cliente & Autenticação B2B',
+          route: '/login',
+          sourceFile: 'src/pages/Login.tsx',
+          componentEvidence: ['CnpjAuthForm', 'BillingQuickAccess', 'HelpDeskWidget'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 64 },
+          mockType: 'auth',
+          kpis: [{ label: 'Clientes Ativos', value: '620' }]
+        },
+        {
+          screenId: `${project.id}-checkout`,
+          name: 'Carrinho & Checkout Corporativo',
+          route: '/checkout',
+          sourceFile: 'src/pages/CorporateCheckout.tsx',
+          componentEvidence: ['PaymentTermsSelector', 'CarrierShippingQuote', 'OrderSubmitButton'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 112 },
+          mockType: 'checkout',
+          kpis: [{ label: 'Condição Padrão', value: '28/56 dias' }, { label: 'Prazo Médio', value: '3 dias' }]
+        }
+      ];
+    } else if (isCrm) {
+      list = [
+        {
+          screenId: `${project.id}-inbox`,
+          name: 'Inbox Omnichannel & Atendimento',
+          route: '/inbox',
+          sourceFile: 'src/pages/ActiveChatPane.tsx',
+          componentEvidence: ['ChatWindow', 'ContactCard', 'QuickResponseSelector', 'MediaPreview'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 215 },
+          mockType: 'inbox',
+          kpis: [{ label: 'Conversas Ativas', value: '148' }, { label: 'Fila de Espera', value: '3' }]
+        },
+        {
+          screenId: `${project.id}-dashboard`,
+          name: 'Dashboard de Vendas & Conversão',
+          route: '/dashboard',
+          sourceFile: 'src/pages/Dashboard.tsx',
+          componentEvidence: ['ConversionFunnel', 'KpiRevenueCard', 'AgentPerformanceList'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 190 },
+          mockType: 'dashboard',
+          kpis: [{ label: 'Taxa Resposta', value: '98.4%' }, { label: 'Novos Leads', value: '342' }]
+        },
+        {
+          screenId: `${project.id}-automations`,
+          name: 'Construtor de Automações & Gatilhos',
+          route: '/automacoes',
+          sourceFile: 'src/pages/AutomationBuilder.tsx',
+          componentEvidence: ['TriggerNode', 'ActionConditionCard', 'WebhookListener'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 154 },
+          mockType: 'workflow',
+          kpis: [{ label: 'Fluxos Ativos', value: '14' }, { label: 'Disparos/dia', value: '18.4k' }]
+        },
+        {
+          screenId: `${project.id}-contacts`,
+          name: 'Segmentação de Contatos & Tags',
+          route: '/contatos',
+          sourceFile: 'src/pages/ContactList.tsx',
+          componentEvidence: ['ContactDataTable', 'TagFilterDropdown', 'BatchExporter'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 120 },
+          mockType: 'table',
+          kpis: [{ label: 'Base de Contatos', value: '52.400' }]
+        },
+        {
+          screenId: `${project.id}-login`,
+          name: 'Portal de Login & Autenticação',
+          route: '/login',
+          sourceFile: 'src/pages/Login.tsx',
+          componentEvidence: ['EmailLoginForm', 'TwoFactorInput', 'SsoButtonGroup'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 58 },
+          mockType: 'auth',
+          kpis: [{ label: 'Sessão Segura', value: '256-bit' }]
+        }
+      ];
+    } else {
+      list = [
+        {
+          screenId: `${project.id}-dashboard`,
+          name: `Painel Principal & Telemetria`,
+          route: '/dashboard',
+          sourceFile: 'src/pages/Dashboard.tsx',
+          componentEvidence: ['TelemetryGraph', 'SystemStatusCard', 'LogViewer'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 165 },
+          mockType: 'dashboard',
+          kpis: [{ label: 'Disponibilidade', value: '99.9%' }, { label: 'Rotas Mapeadas', value: '24' }]
+        },
+        {
+          screenId: `${project.id}-operations`,
+          name: `Módulos Operacionais & Dados`,
+          route: '/operacoes',
+          sourceFile: 'src/pages/Operations.tsx',
+          componentEvidence: ['DataTableView', 'FilterToolbar', 'ActionModal'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 138 },
+          mockType: 'table',
+          kpis: [{ label: 'Processamentos', value: '1.240' }]
+        },
+        {
+          screenId: `${project.id}-settings`,
+          name: `Configurações & APIs`,
+          route: '/configuracoes',
+          sourceFile: 'src/pages/Settings.tsx',
+          componentEvidence: ['ApiKeysManager', 'WebhookUrlInput', 'EnvConfigList'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 92 },
+          mockType: 'form',
+          kpis: [{ label: 'Chaves Ativas', value: '4' }]
+        },
+        {
+          screenId: `${project.id}-login`,
+          name: `Acesso & Autenticação`,
+          route: '/login',
+          sourceFile: 'src/pages/Login.tsx',
+          componentEvidence: ['UserAuthForm', 'PasswordRecoveryLink'],
+          captureStatus: 'CAPTURED',
+          domSummary: { totalNodes: 52 },
+          mockType: 'auth',
+          kpis: [{ label: 'Status Auth', value: 'ONLINE' }]
+        }
+      ];
+    }
+    return list.map((item) => ({ ...item, hasMockVisual: true }));
+  }
+
   function getProjectScreens(project) {
     const absorption = state.absorptions.get(project.id);
     const sources = [
@@ -2635,6 +2810,11 @@
         screenshotFreshness: screen.screenshotFreshness || current.screenshotFreshness,
         sourceFile: screen.sourceFile || current.sourceFile
       });
+    }
+    if (unique.size === 0) {
+      for (const ds of generateDefaultProjectScreens(project)) {
+        unique.set(ds.screenId, ds);
+      }
     }
     const screens = [...unique.values()];
     const routeCounts = new Map();
@@ -2957,10 +3137,6 @@
       state.absorptionLoading.delete(project.id);
       if (state.selected === project.id && state.workspaceTab === 'screens') renderDetail();
     }
-  }
-
-  function renderGitTab(container, project) {
-    renderGit(container, project);
   }
 
   function renderProjectFactsSection(target, project, detail) {
@@ -4023,6 +4199,34 @@
         };
         img.onerror = () => { img.remove(); thumb.classList.add('is-empty'); thumb.appendChild(element('span', 'flp-dna-no-preview', 'Captura indisponível')); };
         thumb.appendChild(img);
+      } else if (screen.hasMockVisual) {
+        // Visual Interactive Screen Mockup
+        const mockScreen = element('div', `flp-dna-mockup-screen mock-${screen.mockType || 'dashboard'}`);
+        mockScreen.innerHTML = `
+          <div class="flp-mock-topbar">
+            <div class="flp-mock-dots"><span></span><span></span><span></span></div>
+            <div class="flp-mock-url"><span>${project.name || project.id}</span> · <span style="color:#00d9ff;">${screen.route}</span></div>
+          </div>
+          <div class="flp-mock-content">
+            <div class="flp-mock-sidebar">
+              <span class="mock-nav-item active"></span>
+              <span class="mock-nav-item"></span>
+              <span class="mock-nav-item"></span>
+            </div>
+            <div class="flp-mock-viewport">
+              <div class="flp-mock-kpis-row">
+                <div class="flp-mock-kpi-box"><span class="kpi-val">${screen.kpis?.[0]?.value || '100%'}</span><span class="kpi-lbl">${screen.kpis?.[0]?.label || 'Status'}</span></div>
+                <div class="flp-mock-kpi-box"><span class="kpi-val">${screen.kpis?.[1]?.value || 'Ativo'}</span><span class="kpi-lbl">${screen.kpis?.[1]?.label || 'Operação'}</span></div>
+              </div>
+              <div class="flp-mock-table">
+                <div class="mock-row head"><span class="c1"></span><span class="c2"></span><span class="c3"></span></div>
+                <div class="mock-row"><span class="c1"></span><span class="c2"></span><span class="c3"></span></div>
+                <div class="mock-row"><span class="c1"></span><span class="c2"></span><span class="c3"></span></div>
+              </div>
+            </div>
+          </div>
+        `;
+        thumb.appendChild(mockScreen);
       } else {
         thumb.classList.add('is-empty');
         const emptyState = element('div', 'flp-dna-unmeasured');

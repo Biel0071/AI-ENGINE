@@ -8265,34 +8265,86 @@
       const toY = (z) => height / 2 + (z - centerZ) * scale;
 
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = '#08131c';
+      ctx.fillStyle = '#040812';
       ctx.fillRect(0, 0, width, height);
-      ctx.strokeStyle = 'rgba(94, 135, 151, 0.14)';
+
+      // Isometric 3D Projection functions
+      const isoX = (wx, wz) => width / 2 + (wx - wz) * scale * 0.95;
+      const isoY = (wx, wz, wy = 0) => height / 2 + (wx + wz) * scale * 0.48 - wy * scale * 0.75 + 10;
+
+      // Draw Isometric Grid Ground
+      ctx.strokeStyle = 'rgba(0, 217, 255, 0.12)';
       ctx.lineWidth = 1;
-      const gridStep = 20;
-      const left = centerX - halfSpan;
-      const top = centerZ - halfSpan;
-      for (let x = Math.floor(left / gridStep) * gridStep; x <= centerX + halfSpan; x += gridStep) {
-        const px = toX(x);
-        ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, height); ctx.stroke();
+      const isoStep = 24;
+      for (let gx = -72; gx <= 72; gx += isoStep) {
+        ctx.beginPath();
+        ctx.moveTo(isoX(gx, -72), isoY(gx, -72));
+        ctx.lineTo(isoX(gx, 72), isoY(gx, 72));
+        ctx.stroke();
       }
-      for (let z = Math.floor(top / gridStep) * gridStep; z <= centerZ + halfSpan; z += gridStep) {
-        const py = toY(z);
-        ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(width, py); ctx.stroke();
+      for (let gz = -72; gz <= 72; gz += isoStep) {
+        ctx.beginPath();
+        ctx.moveTo(isoX(-72, gz), isoY(-72, gz));
+        ctx.lineTo(isoX(72, gz), isoY(72, gz));
+        ctx.stroke();
       }
 
+      // Draw Golden Phoenix Plaza at (0, 14.5)
+      const phX = isoX(0, 14.5);
+      const phY = isoY(0, 14.5);
+      const gradPh = ctx.createRadialGradient(phX, phY, 2, phX, phY, 18);
+      gradPh.addColorStop(0, 'rgba(245, 158, 11, 0.55)');
+      gradPh.addColorStop(1, 'transparent');
+      ctx.fillStyle = gradPh;
+      ctx.beginPath(); ctx.arc(phX, phY, 18, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath(); ctx.arc(phX, phY, 4, 0, Math.PI * 2); ctx.fill();
+
+      // Draw 3D Isometric District Blocks
+      const drawIsoBox = (bx, bz, bw, bd, bh, topCol, sideCol) => {
+        const x1 = isoX(bx - bw/2, bz - bd/2);
+        const y1 = isoY(bx - bw/2, bz - bd/2, bh);
+        const x2 = isoX(bx + bw/2, bz - bd/2);
+        const y2 = isoY(bx + bw/2, bz - bd/2, bh);
+        const x3 = isoX(bx + bw/2, bz + bd/2);
+        const y3 = isoY(bx + bw/2, bz + bd/2, bh);
+        const x4 = isoX(bx - bw/2, bz + bd/2);
+        const y4 = isoY(bx - bw/2, bz + bd/2, bh);
+
+        const b1 = isoY(bx - bw/2, bz - bd/2, 0);
+        const b2 = isoY(bx + bw/2, bz - bd/2, 0);
+        const b3 = isoY(bx + bw/2, bz + bd/2, 0);
+        const b4 = isoY(bx - bw/2, bz + bd/2, 0);
+
+        // Left Face
+        ctx.fillStyle = 'rgba(8, 25, 42, 0.85)';
+        ctx.beginPath();
+        ctx.moveTo(x4, y4); ctx.lineTo(x3, y3); ctx.lineTo(x3, b3); ctx.lineTo(x4, b4);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = sideCol; ctx.lineWidth = 1; ctx.stroke();
+
+        // Right Face
+        ctx.fillStyle = 'rgba(12, 38, 60, 0.9)';
+        ctx.beginPath();
+        ctx.moveTo(x3, y3); ctx.lineTo(x2, y2); ctx.lineTo(x2, b2); ctx.lineTo(x3, b3);
+        ctx.closePath(); ctx.fill();
+        ctx.stroke();
+
+        // Top Face (Roof)
+        ctx.fillStyle = topCol;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x4, y4);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#00d9ff'; ctx.lineWidth = 1.2; ctx.stroke();
+      };
+
       for (const district of DISTRICTS) {
-        const x = toX(district.x);
-        const y = toY(district.z);
-        const districtWidth = Math.max(6, (district.footprint?.width || 24) * scale);
-        const districtDepth = Math.max(6, (district.footprint?.depth || 24) * scale);
-        if (x + districtWidth / 2 < 0 || x - districtWidth / 2 > width || y + districtDepth / 2 < 0 || y - districtDepth / 2 > height) continue;
-        const color = `#${Number(district.color).toString(16).padStart(6, '0')}`;
-        ctx.fillStyle = `${color}20`;
-        ctx.strokeStyle = `${color}95`;
-        ctx.lineWidth = 1;
-        ctx.fillRect(x - districtWidth / 2, y - districtDepth / 2, districtWidth, districtDepth);
-        ctx.strokeRect(x - districtWidth / 2, y - districtDepth / 2, districtWidth, districtDepth);
+        const bw = Math.max(14, (district.footprint?.width || 20));
+        const bd = Math.max(14, (district.footprint?.depth || 20));
+        const bh = district.id === 'api-platform' ? 24 : district.id === 'command-center' ? 14 : 12;
+        const col = district.id === 'command-center' ? 'rgba(245, 158, 11, 0.8)' : 'rgba(0, 217, 255, 0.75)';
+        const sideCol = district.id === 'command-center' ? '#b45309' : '#0891b2';
+        drawIsoBox(district.x, district.z, bw, bd, bh, col, sideCol);
       }
 
       const buildings = this.dynamicBuildings instanceof Map ? Array.from(this.dynamicBuildings.values()) : [];
