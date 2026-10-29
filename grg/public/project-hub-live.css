@@ -4098,3 +4098,254 @@
   }
 }
 
+/* ==========================================================================
+   GRID DENSITY SELECTOR (6, 8, 12, AUTO) & FOLDER CARDS NAVIGATION
+   ========================================================================== */
+
+/* Densities for #flpCards */
+.flp-cards[data-density="auto"] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.flp-cards[data-density="6"] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(max(200px, calc((100% - 80px) / 6)), 1fr)) !important;
+  gap: 14px !important;
+}
+@media (min-width: 1400px) {
+  .flp-cards[data-density="6"] {
+    grid-template-columns: repeat(6, 1fr) !important;
+  }
+}
+
+.flp-cards[data-density="8"] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(max(150px, calc((100% - 84px) / 8)), 1fr)) !important;
+  gap: 12px !important;
+}
+@media (min-width: 1400px) {
+  .flp-cards[data-density="8"] {
+    grid-template-columns: repeat(8, 1fr) !important;
+  }
+}
+
+.flp-cards[data-density="12"] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(max(110px, calc((100% - 88px) / 12)), 1fr)) !important;
+  gap: 8px !important;
+}
+@media (min-width: 1400px) {
+  .flp-cards[data-density="12"] {
+    grid-template-columns: repeat(12, 1fr) !important;
+  }
+}
+
+/* Compact adjustments for 12/lin mode */
+.flp-cards[data-density="12"] .flp-card {
+  padding: 8px 10px !important;
+}
+.flp-cards[data-density="12"] .flp-card-banner {
+  height: 64px !important;
+}
+.flp-cards[data-density="12"] .flp-card-brand-logo {
+  max-height: 38px !important;
+}
+.flp-cards[data-density="12"] .flp-card-title {
+  font-size: 11px !important;
+}
+.flp-cards[data-density="12"] .flp-card-path,
+.flp-cards[data-density="12"] .flp-card-ports,
+.flp-cards[data-density="12"] .flp-card-foot,
+.flp-cards[data-density="12"] .flp-card-quick-actions {
+  display: none !important;
+}
+
+/* Compact adjustments for 8/lin mode */
+.flp-cards[data-density="8"] .flp-card {
+  padding: 10px 12px !important;
+}
+.flp-cards[data-density="8"] .flp-card-banner {
+  height: 80px !important;
+}
+.flp-cards[data-density="8"] .flp-card-brand-logo {
+  max-height: 48px !important;
+}
+.flp-cards[data-density="8"] .flp-card-title {
+  font-size: 12px !important;
+}
+.flp-cards[data-density="8"] .flp-card-path {
+  font-size: 10px !important;
+}
+.flp-cards[data-density="8"] .flp-card-quick-actions {
+  gap: 4px !important;
+}
+.flp-cards[data-density="8"] .flp-quick-action-btn {
+  font-size: 9px !important;
+  padding: 2px 6px !important;
+}
+
+/* Density Controls Toolbar */
+.flp-density-controls {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--fenix-border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+  margin-right: 6px;
+}
+.flp-density-btn {
+  background: transparent;
+  border: none;
+  color: var(--fenix-text-muted, #64748b);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.flp-density-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.flp-density-btn.active {
+  color: #00E5A0;
+  background: rgba(0, 229, 160, 0.12);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+  box-shadow: 0 0 10px rgba(0, 229, 160, 0.15);
+}
+
+/* Folder Cards Grid */
+.flp-folder-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--fenix-border-subtle, rgba(255, 255, 255, 0.06));
+}
+.flp-folder-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(14, 23, 38, 0.7), rgba(8, 13, 22, 0.85));
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.flp-folder-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 229, 160, 0.4);
+  background: linear-gradient(135deg, rgba(16, 32, 54, 0.85), rgba(10, 18, 30, 0.95));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 229, 160, 0.12);
+}
+.flp-folder-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.flp-folder-card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.flp-folder-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flp-folder-card-count {
+  font-size: 11px;
+  color: var(--fenix-text-muted, #94a3b8);
+}
+
+/* Folder Navigation Banner */
+.flp-folder-nav-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(14, 23, 38, 0.8), rgba(8, 14, 24, 0.9));
+  border: 1px solid rgba(0, 229, 160, 0.25);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.flp-folder-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #00E5A0;
+  background: rgba(0, 229, 160, 0.1);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.flp-folder-back-btn:hover {
+  background: rgba(0, 229, 160, 0.2);
+  border-color: rgba(0, 229, 160, 0.5);
+  transform: translateX(-2px);
+}
+.flp-folder-nav-path {
+  font-size: 13px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flp-folder-nav-path strong {
+  color: #fff;
+}
+.flp-folder-count-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+/* Prominent Workspace Return Back Button */
+.flp-ws-back-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 16px !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  color: #00E5A0 !important;
+  background: linear-gradient(135deg, rgba(0, 229, 160, 0.15), rgba(0, 217, 255, 0.1)) !important;
+  border: 1px solid rgba(0, 229, 160, 0.4) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 10px rgba(0, 229, 160, 0.15) !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.flp-ws-back-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 229, 160, 0.25), rgba(0, 217, 255, 0.2)) !important;
+  border-color: rgba(0, 229, 160, 0.7) !important;
+  box-shadow: 0 4px 16px rgba(0, 229, 160, 0.25) !important;
+  transform: translateX(-2px) !important;
+}
+
+

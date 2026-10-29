@@ -269,7 +269,7 @@ class JobEngine {
         }
       } else {
         await this.store.update((state) => {
-          const current = state.runtimeJobs.find((item) => item.id === job.id); current.error = errorInfo(error); current.updatedAt = now(); current.workerId = null;
+          const current = state.runtimeJobs.find((item) => item.id === job.id); if (!current) return state; current.error = errorInfo(error); current.updatedAt = now(); current.workerId = null;
           if (current.cancelRequestedAt) current.status = 'CANCELLED';
           else if (current.pauseRequestedAt) { current.status = 'PAUSED'; current.completedAt = null; }
           else if (current.attempts < current.maxAttempts) { current.status = 'QUEUED'; current.scheduledFor = new Date(this.clock.now() + Math.min(60_000, 1000 * (2 ** (current.attempts - 1)))).toISOString(); }
@@ -280,6 +280,7 @@ class JobEngine {
       }
     }
     let current = await this.getInternal(job.tenantId, job.id);
+    if (!current) return;
     if (current.status === 'QUEUED' && this.queue && !this.inFlightExecutions.has(job.id)) await this.#enqueue(current);
     const eventType = execution.timedOut && current.status === 'RUNNING' ? 'runtime.job.timed-out-waiting' : `runtime.job.${current.status.toLowerCase()}`;
     await this.#publish(current, eventType, workerId);

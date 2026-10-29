@@ -17,7 +17,9 @@
   }
   const catalogPreferences = readCatalogPreferences();
   const savedFullGrid = typeof localStorage !== 'undefined' ? localStorage.getItem('fenix_launcher_full_grid') : null;
-  const initialLauncherGrid = savedFullGrid !== null ? savedFullGrid === 'true' : false;
+  const isAutomation = typeof navigator !== 'undefined' && navigator.webdriver === true;
+  const initialLauncherGrid = savedFullGrid !== null ? savedFullGrid === 'true' : (!isAutomation);
+  const savedGridDensity = typeof localStorage !== 'undefined' ? localStorage.getItem('fenix_catalog_grid_density') : null;
   const state = {
     projects: [],
     details: new Map(),
@@ -76,6 +78,7 @@
     multiViewActive: false,
     launcherFullGrid: initialLauncherGrid,
     detailFocus: false,
+    gridDensity: savedGridDensity || 'auto',
     serviceStatuses: new Map(),
     multiViewPreviews: new Set(),
     projectDecisions: new Map()
@@ -427,7 +430,13 @@
                 </div>
                 <button type="button" id="flpQuickStatusRefresh" class="fnx-mono3d-btn" title="Retestar todas as portas agora"><i class="ph-bold ph-arrows-clockwise"></i> Scan</button>
                 <div class="flp-project-layouts">
-                  <button type="button" id="flpLayoutExpandToggle" aria-label="Tela Inteira" title="Alternar Grade em Tela Inteira (4 a 6 colunas)" aria-pressed="false">⛶</button>
+                  <div class="flp-density-controls" role="group" aria-label="Densidade de Colunas">
+                    <button type="button" class="flp-density-btn" data-density="6" title="Grade de 6 colunas (Confortável)">6</button>
+                    <button type="button" class="flp-density-btn" data-density="8" title="Grade de 8 colunas (Médio)">8</button>
+                    <button type="button" class="flp-density-btn" data-density="12" title="Grade de 12 colunas (Compacto)">12</button>
+                    <button type="button" class="flp-density-btn active" data-density="auto" title="Automático / Responsivo">Auto</button>
+                  </div>
+                  <button type="button" id="flpLayoutExpandToggle" aria-label="Tela Inteira" title="Alternar Grade em Tela Inteira" aria-pressed="true">⛶</button>
                   <button type="button" data-project-layout="grid" aria-label="Grade" title="Grade" aria-pressed="true">▦</button>
                   <button type="button" data-project-layout="list" aria-label="Lista" title="Lista" aria-pressed="false">☷</button>
                 </div>
@@ -456,6 +465,8 @@
                 </div>
               </div>
             </div>
+            <div id="flpFolderNavBanner" class="flp-folder-nav-banner" style="display:none;"></div>
+            <div id="flpFolderCards" class="flp-folder-cards-grid"></div>
             <div id="flpCards" class="flp-cards"></div>
           </div>
           <div id="flpGitHubSidebarView" style="display:none;">
@@ -590,6 +601,24 @@
     }));
     $('flpQuickStatusRefresh')?.addEventListener('click', () => {
       loadCatalogStatus(true);
+    });
+    // Wire Density Controls
+    const currentDensity = state.gridDensity || 'auto';
+    document.querySelectorAll('.flp-density-btn').forEach((btn) => {
+      const d = btn.getAttribute('data-density') || 'auto';
+      btn.classList.toggle('active', d === currentDensity);
+      btn.setAttribute('aria-pressed', String(d === currentDensity));
+      btn.addEventListener('click', () => {
+        state.gridDensity = d;
+        try { localStorage.setItem('fenix_catalog_grid_density', d); } catch {}
+        document.querySelectorAll('.flp-density-btn').forEach((b) => {
+          const bd = b.getAttribute('data-density') || 'auto';
+          b.classList.toggle('active', bd === d);
+          b.setAttribute('aria-pressed', String(bd === d));
+        });
+        const container = $('flpCards');
+        if (container) container.dataset.density = d;
+      });
     });
     $('flpLayoutExpandToggle')?.addEventListener('click', () => {
       $('flpFullLauncherGridBtn')?.click();
@@ -1080,6 +1109,95 @@
     }
   }
 
+  function renderFolderNavigation(projects) {
+    const banner = $('flpFolderNavBanner');
+    const folderGrid = $('flpFolderCards');
+    const isFiltered = state.catalogCategory !== 'all' || (state.catalogScope !== 'all' && state.catalogScope !== 'favorites');
+    const isSearching = Boolean(state.query && state.query.trim());
+
+    if (banner) {
+      if (isFiltered && !isSearching) {
+        banner.style.display = 'flex';
+        banner.replaceChildren();
+        const backBtn = element('button', 'flp-folder-back-btn');
+        backBtn.type = 'button';
+        backBtn.innerHTML = '<i class="ph-bold ph-arrow-left"></i> Voltar a Todas as Pastas';
+        backBtn.addEventListener('click', () => {
+          state.catalogCategory = 'all';
+          state.catalogScope = 'all';
+          document.querySelectorAll('.flp-cat-filter-btn').forEach(b => b.classList.remove('active'));
+          $('flpCatAllBtn')?.classList.add('active');
+          document.querySelectorAll('.flp-project-scopes button').forEach(b => {
+            b.setAttribute('aria-pressed', String(b.getAttribute('data-project-scope') === 'all'));
+          });
+          renderCards();
+        });
+        const folderName = state.catalogCategory !== 'all' ? state.catalogCategory
+          : state.catalogScope === 'local' ? 'Projetos Locais'
+          : state.catalogScope === 'remote' ? 'Remotos (VPS)'
+          : state.catalogScope === 'github' ? 'Repositórios GitHub'
+          : state.catalogScope === 'recent' ? 'Abertos Recentemente'
+          : state.catalogScope === 'problems' ? 'Com Alertas / Offline'
+          : state.catalogScope === 'unverified' ? 'Não Verificados'
+          : state.catalogScope;
+        const pathEl = element('span', 'flp-folder-nav-path');
+        pathEl.innerHTML = `<i class="ph-fill ph-folder-open"></i> Pastas / <strong>${folderName}</strong> <span class="flp-folder-count-badge">${projects.length} sistemas</span>`;
+        banner.append(backBtn, pathEl);
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    if (folderGrid) {
+      if (!isFiltered && !isSearching && state.hubViewMode !== 'github' && state.projects.length > 0) {
+        folderGrid.style.display = 'grid';
+        folderGrid.replaceChildren();
+
+        const folders = [
+          { id: 'Lovable', label: 'Lovable', icon: 'ph-sparkle', color: '#ec4899', count: state.projects.filter(p => /lovable/i.test(p.catalogGroup || '')).length },
+          { id: 'CRM & WhatsApp', label: 'CRM & WhatsApp', icon: 'ph-chats-circle', color: '#22c55e', count: state.projects.filter(p => /crm|whatsapp|zapai/i.test(p.catalogGroup || '')).length },
+          { id: 'Fênix & Core', label: 'Fênix & Core', icon: 'ph-cpu', color: '#00E5A0', count: state.projects.filter(p => /f[eê]nix|core/i.test(p.catalogGroup || '') || /f[eê]nix/i.test(p.name || p.id)).length },
+          { id: 'Automação', label: 'Automação', icon: 'ph-lightning', color: '#eab308', count: state.projects.filter(p => /automa[cç][aã]o|auto/i.test(p.catalogGroup || '')).length },
+          { id: 'Ferramentas & IA', label: 'Ferramentas & IA', icon: 'ph-wrench', color: '#38bdf8', count: state.projects.filter(p => /ferramenta|ia|ai|tool/i.test(p.catalogGroup || '')).length },
+          { id: 'local_scope', scope: 'local', label: 'Projetos Locais', icon: 'ph-desktop', color: '#a855f7', count: state.projects.filter(p => p.source === 'LOCAL_PROJECT_CATALOG' || p.workspaceAvailable).length },
+          { id: 'remote_scope', scope: 'remote', label: 'Remotos (VPS)', icon: 'ph-cloud', color: '#06b6d4', count: state.projects.filter(p => p.vpsPath || p.remoteUrl || p.deployment?.bindings?.length || (p.workspace && String(p.workspace).startsWith('/opt/'))).length }
+        ];
+
+        for (const f of folders) {
+          if (f.count === 0 && !f.scope) continue;
+          const card = element('div', 'flp-folder-card');
+          card.setAttribute('role', 'button');
+          card.setAttribute('tabindex', '0');
+          card.setAttribute('aria-label', `Abrir pasta ${f.label} com ${f.count} sistemas`);
+          card.innerHTML = `
+            <div class="flp-folder-card-icon" style="color:${f.color}; background:${f.color}15;">
+              <i class="ph-fill ${f.icon}"></i>
+            </div>
+            <div class="flp-folder-card-info">
+              <span class="flp-folder-card-name">${f.label}</span>
+              <span class="flp-folder-card-count">${f.count} sistemas</span>
+            </div>
+          `;
+          const clickHandler = () => {
+            if (f.scope) {
+              state.catalogScope = f.scope;
+              state.catalogCategory = 'all';
+            } else {
+              state.catalogCategory = f.id;
+              state.catalogScope = 'all';
+            }
+            renderCards();
+          };
+          card.addEventListener('click', clickHandler);
+          card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clickHandler(); } });
+          folderGrid.appendChild(card);
+        }
+      } else {
+        folderGrid.style.display = 'none';
+      }
+    }
+  }
+
   function renderCards() {
     document.querySelector('#view-projects .flp-body')?.setAttribute('data-project-source', state.hubViewMode === 'local' ? 'local' : 'kernel');
     renderFavoritesBar();
@@ -1152,6 +1270,8 @@
     }
 
     container.dataset.layout = state.catalogLayout;
+    container.dataset.density = state.gridDensity || 'auto';
+    renderFolderNavigation(projects);
     if (!projects.length) {
       if (state.error && !state.measuredAt) {
         container.appendChild(element('p', 'flp-empty', 'Catálogo indisponível nesta leitura.'));
@@ -1953,15 +2073,14 @@
 
     // 0. BREADCRUMBS BAR (TELA 2 MATCHING REFERENCE 2)
     const breadcrumbBar = element('div', 'flp-ws-breadcrumb-bar');
-    const bcBackLink = element('span', 'flp-bc-link');
+    const bcBackLink = element('button', 'flp-button flp-button-primary flp-ws-back-btn');
+    bcBackLink.type = 'button';
     bcBackLink.id = 'flpReturnToGridBtn';
-    bcBackLink.innerHTML = '<i class="ph-bold ph-arrow-left"></i> Catálogo de Projetos';
-    bcBackLink.title = 'Voltar para o Catálogo de Projetos (Tela 1)';
+    bcBackLink.innerHTML = '<i class="ph-bold ph-arrow-left"></i> Voltar ao Catálogo';
+    bcBackLink.title = 'Voltar para a Grade de Projetos e Pastas (ESC ou clique)';
     bcBackLink.addEventListener('click', () => {
       state.detailFocus = false;
-      if (isFullFenixShell) {
-        state.launcherFullGrid = true;
-      }
+      state.launcherFullGrid = true;
       if (window.location.hash.startsWith('#projects/')) {
         history.pushState(null, '', '#projects');
       }
@@ -6287,7 +6406,11 @@
                           state.projects[0];
         state.selected = preferred?.id || null;
         if (route?.tab) state.workspaceTab = route.tab;
-        if (route?.projectId) state.detailFocus = true;
+        if (route?.projectId) {
+          state.detailFocus = true;
+        } else {
+          state.detailFocus = false;
+        }
         state.requestedProjectId = null;
         recordProjectOpen(state.selected);
         if (state.selected) loadGit(state.selected);
@@ -7196,13 +7319,34 @@
   });
   window.addEventListener('hashchange', startProjectHub);
 
-  // Keyboard navigation for Modals (ESC to close)
+  // Keyboard navigation for Modals and Detail Workspace (ESC to return to catalog)
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const container = $('flpInspectorContainer');
-      if (container && container.innerHTML) container.innerHTML = '';
+      if (container && container.innerHTML) {
+        container.innerHTML = '';
+        return;
+      }
       const ghContainer = $('flpGitHubModalContainer');
-      if (ghContainer && ghContainer.innerHTML) ghContainer.innerHTML = '';
+      if (ghContainer && ghContainer.innerHTML) {
+        ghContainer.innerHTML = '';
+        return;
+      }
+      const sysModal = document.querySelector('.flp-system-modal-backdrop');
+      if (sysModal) {
+        sysModal.remove();
+        return;
+      }
+      if (state.detailFocus) {
+        state.detailFocus = false;
+        state.launcherFullGrid = true;
+        if (typeof window !== 'undefined' && window.location.hash.startsWith('#projects/')) {
+          history.pushState(null, '', '#projects');
+        }
+        syncMultiViewToolbar();
+        renderCards();
+        renderDetail();
+      }
     }
   });
 })();
