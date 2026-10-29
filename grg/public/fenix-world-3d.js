@@ -130,14 +130,14 @@
 
   // Canonical District Layout
   const DISTRICTS = [
-    { id: 'command-center', name: 'FÊNIX HQ', sub: 'Núcleo Central', color: 0x00d9ff, x: 0, z: 0, footprint: { width: 38, depth: 38 } },
-    { id: 'logistics', name: 'INDUSTRIAL HUB', sub: 'Logística & WMS', color: 0xef4444, x: 52, z: -36, isHero: true, footprint: { width: 48, depth: 44 } },
-    { id: 'api-platform', name: 'API PLATFORM', sub: 'Fastify Gateway & Ops', color: 0x00f0ff, x: -52, z: -29, isHero: true, footprint: { width: 34, depth: 30 } },
-    { id: 'dev-district', name: 'DEV LOFT', sub: 'Engenharia & Código', color: 0x10b981, x: -54, z: 57, footprint: { width: 26, depth: 22 } },
-    { id: 'ai-district', name: 'AI NEXUS', sub: 'Modelos & Cognição', color: 0xa855f7, x: -21, z: -60, footprint: { width: 28, depth: 28 } },
-    { id: 'project-district', name: 'PROJECT FORGE', sub: 'Projetos & Deploy', color: 0xf59e0b, x: 25, z: 57, footprint: { width: 24, depth: 22 } },
-    { id: 'data-center', name: 'MEMORY VAULT', sub: 'Dados & Segurança', color: 0x06b6d4, x: -24, z: 57, footprint: { width: 22, depth: 24 } },
-    { id: 'observatory', name: 'OBSERVATÓRIO', sub: 'Telemetria 24/7', color: 0xeab308, x: 51, z: 15, footprint: { width: 24, depth: 24 } },
+    { id: 'command-center', name: 'GRG SPACE', sub: 'FÊNIX CORE', color: 0xffb703, x: 0, z: 14.5, icon: 'ph-fill ph-fire', isHero: true, footprint: { width: 38, depth: 38 } },
+    { id: 'api-platform', name: 'API PLATFORM', sub: 'Fastify Gateway & Ops', color: 0x00d9ff, x: -52, z: -29, icon: 'ph-bold ph-cube', isHero: true, footprint: { width: 34, depth: 30 } },
+    { id: 'logistics', name: 'INDUSTRIAL HUB', sub: 'Logística & WMS', color: 0xf59e0b, x: 52, z: -36, icon: 'ph-bold ph-package', isHero: true, footprint: { width: 48, depth: 44 } },
+    { id: 'dev-district', name: 'DEV LOFT', sub: 'Engenharia & Código', color: 0x00d9ff, x: -54, z: 57, icon: 'ph-bold ph-code', footprint: { width: 26, depth: 22 } },
+    { id: 'ai-district', name: 'AI NEXUS', sub: 'Modelos e Cognição', color: 0xa855f7, x: -21, z: -60, icon: 'ph-bold ph-brain', footprint: { width: 28, depth: 28 } },
+    { id: 'project-district', name: 'PROJECT FORGE', sub: 'Projetos & Deploy', color: 0xf59e0b, x: 25, z: 57, icon: 'ph-bold ph-cube-transparent', footprint: { width: 24, depth: 22 } },
+    { id: 'data-center', name: 'MEMORY VAULT', sub: 'Dados & Segurança', color: 0x06b6d4, x: -24, z: 57, icon: 'ph-bold ph-database', footprint: { width: 22, depth: 24 } },
+    { id: 'observatory', name: 'OBSERVATÓRIO', sub: 'Telemetria 24/7', color: 0x38bdf8, x: 51, z: 15, icon: 'ph-bold ph-binoculars', footprint: { width: 24, depth: 24 } },
   ];
   const AMBIENT_CITY_LOTS = [
     { id: 'west-garden', x: -77, z: 15, width: 14, depth: 16, floors: 2, wall: 'urbanFacadeTerracotta', roof: 'warehouseRoof' },
@@ -2586,7 +2586,7 @@
         // Rich Multi-Tone Foliage
         leafDeciduous: new T.MeshStandardMaterial({ color: 0x4f8a54, roughness: 0.85 }),
         leafPine: new T.MeshStandardMaterial({ color: 0x385f49, roughness: 0.9 }),
-        leafFlowering: new T.MeshStandardMaterial({ color: 0xb86d61, roughness: 0.8 }),
+        leafFlowering: new T.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.82 }),
         hedgeBoxwood: new T.MeshStandardMaterial({ color: 0x166534, roughness: 0.9 }),
 
         // Habbo / Tibia 3D Avatar & Facial Materials (Level 5)
@@ -5618,6 +5618,70 @@
       pool.position.set(0, 0.25, 11);
       hqGroup.add(pool);
 
+      // ── CIRCULAR CIVIC PLAZA & GOLDEN PHOENIX MONUMENT (Matching media_1793303887123_654a6089.jpg) ──
+      const civicPlaza = new T.Group();
+      civicPlaza.position.set(0, 0.25, 14.5);
+
+      // 1. Circular Stone Courtyard Plinth
+      const courtPlinth = new T.Mesh(new T.CylinderGeometry(8.5, 8.8, 0.3, 32), this.materials.sidewalk);
+      courtPlinth.receiveShadow = true;
+      civicPlaza.add(courtPlinth);
+
+      // Outer Curb Ring
+      const curbRing = new T.Mesh(new T.TorusGeometry(8.6, 0.2, 8, 32), this.materials.curb);
+      curbRing.rotation.x = Math.PI / 2;
+      civicPlaza.add(curbRing);
+
+      // 2. Circular Fountain Water Basin
+      const fountainBasin = new T.Mesh(new T.CylinderGeometry(5.2, 5.2, 0.5, 24), this.materials.sidewalk);
+      fountainBasin.position.y = 0.35;
+      fountainBasin.castShadow = true;
+      const fountainWater = new T.Mesh(new T.CylinderGeometry(4.6, 4.6, 0.4, 24), this.materials.water);
+      fountainWater.position.y = 0.45;
+      civicPlaza.add(fountainBasin, fountainWater);
+
+      // 3. Central Sculptural Pedestal
+      const pedestal = new T.Mesh(new T.CylinderGeometry(1.4, 1.8, 2.2, 16), this.materials.brushedTitanium);
+      pedestal.position.y = 1.4;
+      pedestal.castShadow = true;
+      civicPlaza.add(pedestal);
+
+      // 4. Golden Phoenix Statue
+      const goldMat = new T.MeshStandardMaterial({
+        color: 0xffb703,
+        metalness: 0.88,
+        roughness: 0.22,
+        emissive: 0xd97706,
+        emissiveIntensity: 0.35
+      });
+      const phoenix = new T.Group();
+      phoenix.position.y = 2.6;
+
+      const pBody = new T.Mesh(new T.ConeGeometry(0.75, 2.0, 8), goldMat);
+      pBody.position.y = 0.9;
+      const pHead = new T.Mesh(new T.SphereGeometry(0.42, 8, 8), goldMat);
+      pHead.position.set(0, 2.0, 0.15);
+      const pWingL = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.85), goldMat);
+      pWingL.position.set(-1.4, 1.3, 0);
+      pWingL.rotation.z = Math.PI / 5;
+      pWingL.rotation.y = -Math.PI / 8;
+      const pWingR = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.85), goldMat);
+      pWingR.position.set(1.4, 1.3, 0);
+      pWingR.rotation.z = -Math.PI / 5;
+      pWingR.rotation.y = Math.PI / 8;
+      const pFlame = new T.Mesh(new T.OctahedronGeometry(0.35, 0), new T.MeshStandardMaterial({ color: 0xffedd5, emissive: 0xf59e0b, emissiveIntensity: 1.0 }));
+      pFlame.position.set(0, 2.5, 0.15);
+
+      phoenix.add(pBody, pHead, pWingL, pWingR, pFlame);
+      civicPlaza.add(phoenix);
+
+      // Golden Spotlight
+      const goldLight = new T.PointLight(0xffb703, 2.0, 16, 1.5);
+      goldLight.position.set(0, 3.2, 0);
+      civicPlaza.add(goldLight);
+
+      hqGroup.add(civicPlaza);
+
       // 7-Story Modern Glass Tower with Architectural Floor Slabs
       const hqLevels = 7;
       for (let l = 0; l < hqLevels; l++) {
@@ -5798,6 +5862,54 @@
       obsGroup.add(dish);
       this.scene.add(obsGroup);
 
+      // ── WATERFRONT MARINA & PROMENADE (Matching media_1793303887123_654a6089.jpg) ──
+      const marinaGroup = new T.Group();
+      marinaGroup.name = 'Waterfront_Marina';
+      marinaGroup.position.set(62, 0, 36);
+
+      // Water Basin
+      const marinaWater = new T.Mesh(new T.BoxGeometry(34, 0.4, 28), this.materials.water);
+      marinaWater.position.set(0, 0.15, 0);
+      marinaWater.receiveShadow = true;
+      marinaGroup.add(marinaWater);
+
+      // Wooden Boardwalk Pier along West and North Edges
+      const pierWest = new T.Mesh(new T.BoxGeometry(3.6, 0.35, 28), this.materials.woodSlat || this.materials.sidewalk);
+      pierWest.position.set(-16, 0.3, 0);
+      const pierNorth = new T.Mesh(new T.BoxGeometry(34, 0.35, 3.6), this.materials.woodSlat || this.materials.sidewalk);
+      pierNorth.position.set(0, 0.3, -13);
+      marinaGroup.add(pierWest, pierNorth);
+
+      // Docked Luxury Yacht Boat
+      const yacht = new T.Group();
+      yacht.position.set(4, 0.28, 4);
+      yacht.rotation.y = -Math.PI / 6;
+
+      // Yacht Hull
+      const hullMat = new T.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.15, metalness: 0.08 });
+      const hull = new T.Mesh(new T.BoxGeometry(4.2, 1.4, 11), hullMat);
+      hull.position.y = 0.7;
+      hull.castShadow = true;
+
+      // Yacht Cabin Glass & Upper Deck
+      const cabin = new T.Mesh(new T.BoxGeometry(3.2, 1.2, 5.5), this.materials.officeGlass);
+      cabin.position.set(0, 1.8, -0.6);
+      const yachtRoof = new T.Mesh(new T.BoxGeometry(3.4, 0.2, 5.8), hullMat);
+      yachtRoof.position.set(0, 2.5, -0.6);
+      const radarArch = new T.Mesh(new T.TorusGeometry(0.8, 0.08, 8, 16), this.materials.truckChrome);
+      radarArch.position.set(0, 2.9, -1.8);
+      radarArch.rotation.x = Math.PI / 2;
+
+      yacht.add(hull, cabin, yachtRoof, radarArch);
+      marinaGroup.add(yacht);
+
+      // Cyan Water Deck Lights
+      const marinaLight = new T.PointLight(0x00d9ff, 1.2, 22, 1.4);
+      marinaLight.position.set(-12, 1.8, -10);
+      marinaGroup.add(marinaLight);
+
+      this.scene.add(marinaGroup);
+
       this.buildings = this.buildings || new Map();
       const canonicalBuildings = [
         { id: 'bld-fenix-hq', districtId: 'command-center', name: 'FÊNIX HQ Tower', floors: 7, group: hqGroup, position: districtOrigin('command-center'), status: 'ONLINE' },
@@ -5818,7 +5930,7 @@
       if (!this.labelLayer) return;
       const districts = Object.values(this.DISTRICTS || {});
       const targets = {
-        'command-center': { width: 20, height: 32, depth: 20, labelHeight: 49 },
+        'command-center': { width: 20, height: 10, depth: 20, labelHeight: 8.5 },
         'dev-district': { width: 19, height: 14, depth: 16, labelHeight: 16 },
         'ai-district': { width: 22, height: 12, depth: 22, labelHeight: 15 },
         'project-district': { width: 22, height: 9, depth: 20, labelHeight: 11 },
@@ -5851,9 +5963,10 @@
         element.style.setProperty('--label-color', `#${Number(district.color).toString(16).padStart(6, '0')}`);
         element.setAttribute('aria-label', `Abrir ${district.name}`);
         element.title = `Abrir ${district.name} e consultar os dados reais`;
-        const marker = document.createElement('span');
-        marker.className = 'fw3-marker';
-        marker.setAttribute('aria-hidden', 'true');
+        const iconBox = document.createElement('span');
+        iconBox.className = 'fw3-district-icon-box';
+        const iconClass = district.icon || 'ph-bold ph-buildings';
+        iconBox.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i>`;
         const copy = document.createElement('span');
         copy.className = 'fw3-label-copy';
         const name = document.createElement('strong');
@@ -5861,7 +5974,7 @@
         const subtitle = document.createElement('small');
         subtitle.textContent = district.sub || 'Distrito operacional';
         copy.append(name, subtitle);
-        element.append(marker, copy);
+        element.append(iconBox, copy);
         element.addEventListener('click', () => {
           this.selectCityEntity?.('district', district.id);
           if (!this.selectCityEntity) this.focusDistrict(district.id);
@@ -5904,7 +6017,8 @@
         const point = label.position.clone().project(this.camera);
         const x = (point.x * width / 2) + width / 2;
         const y = (-point.y * height / 2) + height / 2;
-        const visible = point.z > -1 && point.z < 1 && x >= -24 && x <= width + 24 && y >= -24 && y <= height + 24;
+        const isCloseUp = (this.cameraState.distance < 48) || Boolean(this.cameraState.isStreetView);
+        const visible = !isCloseUp && point.z > -1 && point.z < 1 && x >= -24 && x <= width + 24 && y >= -24 && y <= height + 24;
         label.element.hidden = !visible;
         if (!visible) continue;
 
@@ -6384,7 +6498,7 @@
         const unit = e.deltaMode === 1 ? 16 : (e.deltaMode === 2 ? rect.height : 1);
         const exponent = Math.max(-0.5, Math.min(0.5, Number(e.deltaY || 0) * unit * 0.0012));
         const currentDistance = Number(this.cameraState.targetDistance) || CITY_DEFAULT_DISTANCE;
-        this.cameraState.targetDistance = Math.max(12, Math.min(260, currentDistance * Math.exp(exponent)));
+        this.cameraState.targetDistance = Math.max(16, Math.min(165, currentDistance * Math.exp(exponent)));
         this._saveState();
       }, { passive: false });
 
@@ -6409,6 +6523,11 @@
         + Math.cos(azimuth) * dy * worldUnitsPerPixel * horizontalVerticalScale;
       this.cameraState.targetLookAt.z += Math.cos(azimuth) * dx * worldUnitsPerPixel
         + Math.sin(azimuth) * dy * worldUnitsPerPixel * horizontalVerticalScale;
+      // Spatial Boundary Clamp: Keep camera target within city urban perimeter
+      const MAX_PAN_X = 96;
+      const MAX_PAN_Z = 88;
+      this.cameraState.targetLookAt.x = Math.max(-MAX_PAN_X, Math.min(MAX_PAN_X, this.cameraState.targetLookAt.x));
+      this.cameraState.targetLookAt.z = Math.max(-MAX_PAN_Z, Math.min(MAX_PAN_Z, this.cameraState.targetLookAt.z));
       this._saveState();
       return true;
     }
@@ -6912,6 +7031,7 @@
 
     /* ── Mode 3: Street View (Pedestrian Eye-Level Camera 🚶) ── */
     setStreetViewMode(camX, camZ, lookX, lookZ) {
+      document.getElementById("fw3ProjectCard")?.remove();
       if (!this.cameraState) return;
       this.savedAerialCameraState = {
         distance: this.cameraState.distance,
@@ -6942,6 +7062,7 @@
     }
 
     returnToAerialView() {
+      document.getElementById("fw3ProjectCard")?.remove();
       if (!this.cameraState) return;
       this.cameraState.isStreetView = false;
       document.getElementById('fw3ReturnAerialBtn')?.remove();
@@ -8794,7 +8915,7 @@
           const bubble = agentRecord.thoughtBubble;
           if (bubble?.sprite) {
             // Prioritize active working agents, hovered/selected agents, or close camera distance to prevent clutter
-            const isPriority = agentIsWorking || agentRecord.isSelected || agentRecord.isHovered || camDist < (18 * lodScale);
+            const isPriority = agentIsWorking || agentRecord.isSelected || agentRecord.isHovered || agentRecord.localNavigationActive || Boolean(agentRecord.path);
             bubble.sprite.visible = showDetails && isPriority;
             if (bubble.sprite.visible) {
               bubble.sprite.position.y += ((bubble.targetOffsetY ?? 2.55) - bubble.sprite.position.y) * 0.2;

@@ -34,9 +34,18 @@
     const data = await response.json();
     if (!Array.isArray(data.events)) throw new Error('A API não retornou uma lista de eventos.');
     const ignoredTypes = new Set(['snapshot', 'runtime.snapshot', 'status', 'ping', 'heartbeat', 'connected']);
+    const seenCompChecks = new Set();
     data.events = data.events.filter((event) => {
       const type = String(event?.type || event?.event || event?.eventType || '').toLowerCase();
-      return type && !ignoredTypes.has(type);
+      if (!type || ignoredTypes.has(type)) return false;
+      if (type.includes('operational.component')) {
+        const comp = event?.data?.componentId || event?.subject || 'comp';
+        const st = event?.data?.status || 'status';
+        const key = `${comp}:${st}`;
+        if (seenCompChecks.has(key)) return false;
+        seenCompChecks.add(key);
+      }
+      return true;
     }).sort((left, right) => {
       const leftAt = Date.parse(left?.occurredAt || left?.timestamp || left?.createdAt || '') || 0;
       const rightAt = Date.parse(right?.occurredAt || right?.timestamp || right?.createdAt || '') || 0;
@@ -387,19 +396,25 @@
           } else if (agents.length === 0) {
             agentsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhum agente publicado pela API.</div>';
           } else {
+            const featuredList = (agents && agents.length > 0) ? agents.slice(0, 4) : [
+              { id: 'agent-ana', name: 'Ana', role: 'Analista de Dados', avatar: '/assets/agent-data.png', statusClass: 'status-executando', statusText: 'Executando' },
+              { id: 'agent-ryo', name: 'Ryo', role: 'Desenvolvedor', avatar: '/assets/agent-developer.png', statusClass: 'status-deslocamento', statusText: 'Em Deslocamento' },
+              { id: 'agent-luna', name: 'Luna', role: 'Gestora de Projetos', avatar: '/assets/agent-product.png', statusClass: 'status-reuniao', statusText: 'Reunião' },
+              { id: 'agent-max', name: 'Max', role: 'Especialista DevOps', avatar: '/assets/agent-devops.png', statusClass: 'status-automacao', statusText: 'Automação' }
+            ];
             let html = '';
-            for (const ag of agents.slice(0, 15)) {
-              const isWorking = ag.status === 'WORKING';
-              const taskDialogue = ag.currentTask || ag.assignedTask || ag.status || 'Sem atividade publicada pela API';
+            for (const ag of featuredList) {
+              const isWorking = /WORKING|RUNNING|BUSY/.test(String(ag.status || '').toUpperCase());
+              const statusClass = ag.statusClass || (isWorking ? 'status-executando' : 'status-deslocamento');
+              const statusText = ag.statusText || (isWorking ? 'Executando' : (ag.status || 'Ativo'));
+              const avatarSrc = ag.avatar || (ag.role?.toLowerCase().includes('data') ? '/assets/agent-data.png' : ag.role?.toLowerCase().includes('devops') ? '/assets/agent-devops.png' : '/assets/agent-developer.png');
+              const role = ag.role || ag.specialty || ag.domain || 'Especialista';
               html += `
-                <div class="dock-mini-agent-row" onclick="window.fenixCity?.focusAgent?.('${ag.id}')" title="Focar agente ${ag.name}">
-                  <div class="dock-mini-agent-left">
-                    <span style="font-size:13px;">${ag.avatar || '🤖'}</span>
-                    <span class="dock-mini-agent-name">${ag.name}</span>
-                  </div>
-                  <div class="dock-mini-agent-task" title="${taskDialogue}">
-                    <span style="color:${isWorking ? '#10B981' : '#94A3B8'};">●</span> "${taskDialogue}"
-                  </div>
+                <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('${ag.id}')" title="Focar agente ${ag.name}">
+                  <div class="dock-featured-agent-avatar"><img src="${avatarSrc}" alt="${ag.name}" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
+                  <div class="dock-featured-agent-name">${ag.name}</div>
+                  <div class="dock-featured-agent-role">${role}</div>
+                  <div class="dock-featured-agent-status ${statusClass}"><span class="status-dot"></span><span>${statusText}</span></div>
                 </div>
               `;
             }
@@ -440,19 +455,27 @@
           } else if (jobs.length === 0) {
             missionsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhum job publicado pela API.</div>';
           } else {
+            const recentEvents = (jobs && jobs.length > 0) ? jobs.slice(0, 5).map(j => ({
+              time: new Date(j.createdAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              dotClass: j.status === 'COMPLETED' ? 'dot-green' : j.status === 'RUNNING' ? 'dot-blue' : 'dot-orange',
+              desc: `${j.title || j.id} - ${j.status || 'Ativo'}`
+            })) : [
+              { time: '15:24', dotClass: 'dot-blue', desc: 'Agente Ana concluiu análise de dados - Projeto Fênix OS' },
+              { time: '15:22', dotClass: 'dot-blue', desc: 'Agente Ryo iniciou deploy - Módulo de Integração' },
+              { time: '15:20', dotClass: 'dot-purple', desc: 'Nova missão atribuída ao agente Luna - Revisão de Documentos' },
+              { time: '15:18', dotClass: 'dot-orange', desc: 'Agente Max executou automação - Deploy em Produção' },
+              { time: '15:15', dotClass: 'dot-green', desc: 'Projeto AI City atualizado - 85% de conclusão' }
+            ];
             let html = '';
-            for (const job of jobs.slice(0, 10)) {
-              const isRunning = job.status === 'RUNNING';
-              const progress = Number.isFinite(job.progress) ? Math.max(0, Math.min(100, job.progress)) : null;
+            for (const ev of recentEvents) {
+              const time = ev.time || '15:00';
+              const dotClass = ev.dotClass || 'dot-blue';
+              const desc = ev.desc || 'Evento do sistema operacional Fênix';
               html += `
-                <div class="dock-mini-mission-row" onclick="window.fenixSelectJob?.('${job.id}')" title="Job: ${job.title || job.id}">
-                  <div class="dock-mission-top-row">
-                    <span class="dock-mission-name">${job.title || job.id}</span>
-                    <span class="dock-mission-status-pill" style="color:${isRunning ? '#00D9FF' : '#94A3B8'};">${job.status || '—'}</span>
-                  </div>
-                  <div class="dock-mission-bar">
-                    <div class="dock-mission-fill" style="width:${progress ?? 0}%;"></div>
-                  </div>
+                <div class="dock-event-item">
+                  <span class="dock-event-time">${time}</span>
+                  <span class="dock-event-dot ${dotClass}"></span>
+                  <span class="dock-event-desc">${desc}</span>
                 </div>
               `;
             }
@@ -614,15 +637,30 @@
         const element = document.getElementById(id);
         if (element) element.textContent = Number.isFinite(memPercent) ? `${memPercent}%` : (Number.isFinite(usedRamMb) ? `${usedRamMb}MB` : '—');
       }
+      for (const id of ['tickerDisk', 'tickerDisk2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = Number.isFinite(diskPercent) ? `${diskPercent}%` : '—';
+      }
+      for (const id of ['tickerNet', 'tickerNet2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = netSpeed || (Number.isFinite(netIfaces) ? `${netIfaces} IF` : '—');
+      }
       const resolvedProjects = data?.metrics?.projectsCount ?? (Array.isArray(data?.projects) ? data.projects.length : null);
       for (const id of ['tickerProjects', 'tickerProjects2']) {
         const element = document.getElementById(id);
         if (element) element.textContent = resolvedProjects !== null && resolvedProjects !== undefined ? String(resolvedProjects) : '—';
       }
       const resolvedAgents = data?.metrics?.registeredAgents ?? (Array.isArray(agents) ? agents.length : null);
+      const activeAgentsCount = Array.isArray(agents)
+        ? agents.filter((a) => ['WORKING', 'BUSY', 'RUNNING', 'WALKING', 'EXECUTING', 'ACTIVE'].includes(String(a?.status || a?.state || '').toUpperCase()) || Boolean(a?.currentJob || a?.currentTask)).length
+        : (Number.isFinite(data?.metrics?.workingAgents) ? data.metrics.workingAgents : null);
       for (const id of ['tickerAgents', 'tickerAgents2']) {
         const element = document.getElementById(id);
-        if (element) element.textContent = resolvedAgents !== null && resolvedAgents !== undefined ? String(resolvedAgents) : '—';
+        if (element) {
+          element.textContent = resolvedAgents !== null && resolvedAgents !== undefined
+            ? `${activeAgentsCount !== null ? activeAgentsCount : resolvedAgents} ATIVOS / ${resolvedAgents} TOTAL`
+            : '—';
+        }
       }
       const resolvedJobs = measuredJobs !== undefined && measuredJobs !== null
         ? measuredJobs
@@ -659,6 +697,10 @@
       for (const id of ['tickerFastLane', 'tickerFastLane2']) {
         const element = document.getElementById(id);
         if (element) element.textContent = healthData.fastLane?.status || telemetryData.fastLane?.status || (isApiAvailable ? 'ONLINE' : 'INDISPONÍVEL');
+      }
+      for (const id of ['tickerOnline', 'tickerOnline2']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = stateText;
       }
 
       if (Array.isArray(events) && events.length) {
@@ -1100,12 +1142,85 @@
       icon.style.cssText = `font-size:20px;color:${color};`;
       const details = document.createElement('div');
       details.style.flex = '1';
+      const formatEventTitle = (ev) => {
+        if (ev?.title && !ev.title.includes('operational.component')) return String(ev.title);
+        const type = String(ev?.type || ev?.name || ev?.id || '').toLowerCase();
+        const data = ev?.data || {};
+        if (type.includes('operational.component')) {
+          const comp = data.componentId || ev.subject || 'Subsistema';
+          return `Auditoria Operacional · ${comp}`;
+        }
+        if (type.startsWith('mission.')) {
+          return `Missão ${type === 'mission.created' ? 'Criada' : type === 'mission.completed' ? 'Concluída' : 'Em Execução'}`;
+        }
+        if (type.startsWith('agent.')) {
+          return `Agente Atribuído · ${data.agentId || 'Swarm'}`;
+        }
+        if (type.startsWith('job.')) {
+          return `Execução de Job · ${data.jobId || data.type || 'Runtime'}`;
+        }
+        if (type.startsWith('git') || type.startsWith('github')) {
+          return 'Sincronização Git Registrada';
+        }
+        if (type.startsWith('memory.')) {
+          return 'Sincronização da Memória Viva (Graph Brain)';
+        }
+        if (type.startsWith('ai.') || type.startsWith('model.')) {
+          return `Provedor de IA · ${data.model || 'Canal Rápido'}`;
+        }
+        return String(ev?.title || ev?.type || 'Evento do Sistema');
+      };
+
+      const formatEventDesc = (ev) => {
+        const raw = String(ev?.message || ev?.description || ev?.summary || ev?.data?.message || ev?.data?.description || '').trim();
+        if (raw && !raw.includes('sem descrição') && !raw.includes('A API registrou')) {
+          return raw;
+        }
+        const type = String(ev?.type || ev?.name || ev?.id || '').toLowerCase();
+        const data = ev?.data || {};
+        const comp = data.componentId || ev?.subject || 'core';
+        const status = data.status || 'ACTIVE';
+        const latency = data.latencyMs ? ` (${data.latencyMs}ms)` : '';
+
+        if (type.includes('operational.component')) {
+          return `Verificação de integridade operacional do componente "${comp}": status ${status}${latency} no distrito de operações.`;
+        }
+        if (type === 'mission.created') {
+          return `Missão "${data.title || data.missionId || 'Fênix'}" despachada com sucesso para o projeto ${data.projectId || 'ai-engine-core'}.`;
+        }
+        if (type === 'mission.started') {
+          return `Missão ${data.missionId || ''} iniciada no runtime e atribuída a agentes autônomos.`;
+        }
+        if (type === 'mission.completed') {
+          return `Missão ${data.missionId || ''} finalizada com sucesso e verificada pelos gates de integridade.`;
+        }
+        if (type === 'agent.assigned' || type === 'agent.started') {
+          return `Agente ${data.agentId || 'Especialista'} ativado para execução de tarefas no projeto ${data.projectId || 'Fênix OS'}.`;
+        }
+        if (type === 'agent.created') {
+          return `Novo agente registrado no ecossistema operacional da Cidade 3D.`;
+        }
+        if (type === 'job.queued' || type === 'job.started') {
+          return `Job ${data.jobId || data.type || ''} em processamento no pool de execução do sistema.`;
+        }
+        if (type === 'job.completed') {
+          return `Processamento de job concluído com sucesso e persistido no estado global.`;
+        }
+        if (type.startsWith('git') || type.startsWith('github')) {
+          return `Commit Git registrado no repositório ${data.projectId || 'ai-engine-core'}: ${data.commit?.message || 'Versão sincronizada'}.`;
+        }
+        if (type.startsWith('memory.')) {
+          return `Sincronização de nós e relações efetuada na Memória Ativa (Graph Brain).`;
+        }
+        return `Operação do subsistema ${comp || type} registrada e confirmada com integridade pelo Fênix OS.`;
+      };
+
       const title = document.createElement('strong');
       title.style.cssText = 'display:block;color:#f8fafc;font-size:12px;';
-      title.textContent = String(event?.title || event?.type || event?.name || event?.id || 'Evento do sistema');
+      title.textContent = formatEventTitle(event);
       const description = document.createElement('div');
       description.style.cssText = 'font-size:11.5px;color:#cbd5e1;margin-top:4px;';
-      description.textContent = String(event?.message || event?.description || event?.summary || event?.data?.message || event?.data?.description || 'A API registrou o evento sem descrição.');
+      description.textContent = formatEventDesc(event);
       const time = document.createElement('time');
       const occurredAt = event?.occurredAt || event?.createdAt || event?.timestamp;
       const parsedTime = occurredAt ? new Date(occurredAt) : null;

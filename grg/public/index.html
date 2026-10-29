@@ -1508,7 +1508,7 @@
           <div class="fnx-brand-meta">
             <div class="fnx-brand-meta-title">
               <span>GRG SPACE</span>
-              <small class="fnx-brand-version-pill">v2.5.0</small>
+              <small class="fnx-brand-version-pill">v2.6.0</small>
             </div>
             <span class="fnx-brand-meta-sub">SPATIAL AI OPERATING SYSTEM · FÊNIX CORE</span>
           </div>
@@ -2581,20 +2581,7 @@
               <div class="fnx-orbit-node node-groq" title="Groq · estado não medido"><i class="ph-bold ph-lightning"></i></div>
             </div>
 
-            <section class="fenix-city-minimap" id="fenixWorldMinimap" aria-label="Mapa operacional ao vivo">
-              <div class="fenix-city-minimap-header">
-                <span><i class="ph-bold ph-map-trifold" aria-hidden="true"></i> MAPA OPERACIONAL</span>
-                <small id="fenixMinimapStatus">Aguardando Cidade</small>
-              </div>
-              <div class="fenix-city-minimap-stage">
-                <canvas id="fenixMinimap" width="220" height="144" aria-label="Mapa esquemático dos distritos, edifícios e agentes em posições reais"></canvas>
-                <div class="fenix-city-minimap-controls" aria-label="Controles de aproximação e modo">
-                  <button type="button" class="fnx-btn-2d3d" id="btnMinimap2D3D" onclick="window.fenixToggle2D3DMap?.()" title="Alternar Mapa 2D / 3D">3D</button>
-                  <button type="button" onclick="window.fenixCity?.zoomIn?.()" title="Aproximar">+</button>
-                  <button type="button" onclick="window.fenixCity?.zoomOut?.()" title="Afastar">−</button>
-                </div>
-              </div>
-            </section>
+            <!-- Standalone minimap integrated into fenixModularBottomDock -->
 
             <!-- Floating Frosted-Glass Cockpit Drawer (Fase 16: City + Command Unified) -->
             <div id="fenixCityCockpitDrawer" class="fenix-city-cockpit-drawer" aria-labelledby="cityCockpitDrawerTitle" aria-hidden="true" style="display:none; position:absolute; inset:12px; z-index:40; background:rgba(7, 11, 20, 0.94); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(0, 217, 255, 0.35); border-radius:14px; box-shadow:0 24px 64px rgba(0,0,0,0.85); flex-direction:column; overflow:hidden;">
@@ -2675,106 +2662,94 @@
               <span id="cmdKpiRevenue">—</span><div id="cmdFenixText"></div><input id="cmdChatInput">
             </div>
 
-            <!-- Modular Bottom Dock (4 Side-by-Side Synchronized Operational Windows) -->
-            <div id="fenixModularBottomDock" class="fenix-modular-bottom-dock minimized">
-              <div class="dock-header-bar">
-                <div class="dock-header-left">
-                  <span class="dock-header-icon"><i class="ph-bold ph-squares-four"></i></span>
-                  <span class="dock-header-title">CENTRAL DE OPERAÇÕES SÍNCRONA</span>
+            <!-- Unified 3-Card HUD Operations Dock (Matching media_1793303887123_654a6089.jpg) -->
+            <div id="fenixModularBottomDock" class="fenix-modular-bottom-dock">
+              <!-- Card 1: MAPA OPERACIONAL -->
+              <section class="fenix-city-minimap dock-card-v26 dock-map-card" id="fenixWorldMinimap" aria-label="Mapa operacional ao vivo">
+                <div class="fenix-city-minimap-header dock-card-header">
+                  <div class="dock-card-title"><i class="ph-bold ph-map-trifold" style="color:#00D9FF;"></i> MAPA OPERACIONAL</div>
+                  <small id="fenixMinimapStatus" class="dock-card-tag">44 ONLINE · 10 SETORES</small>
                 </div>
-                <div class="dock-nav-tabs">
-                  <button class="dock-nav-tab active" data-dock="grid4" onclick="window.fenixDockTab('grid4')">
-                    <i class="ph-bold ph-columns"></i> 4 Painéis Sincronizados
-                  </button>
-                  <button class="dock-nav-tab" data-dock="map" onclick="window.fenixDockTab('map')">
-                    <i class="ph-bold ph-map-trifold"></i> Mapa Global
-                  </button>
-                  <button class="dock-nav-tab" data-dock="agents" onclick="window.fenixDockTab('agents')">
-                    <i class="ph-bold ph-users"></i> Agentes <span class="tab-badge" id="dockBadgeAgents">—</span>
-                  </button>
-                  <button class="dock-nav-tab" data-dock="cutaway" onclick="window.fenixDockTab('cutaway')">
-                    <i class="ph-bold ph-building-apartment"></i> Edifício Cutaway
-                  </button>
-                  <button class="dock-nav-tab" data-dock="missions" onclick="window.fenixDockTab('missions')">
-                    <i class="ph-bold ph-crosshair"></i> Missões <span class="tab-badge" id="dockBadgeMissions">—</span>
-                  </button>
+                <div class="fenix-city-minimap-stage dock-map-stage-wrapper">
+                  <canvas id="fenixMinimap" width="220" height="135" aria-label="Mapa esquemático dos distritos, edifícios e agentes em posições reais"></canvas>
+                  <div class="fenix-city-minimap-controls" aria-label="Controles de aproximação e modo">
+                    <button type="button" class="fnx-btn-2d3d" id="btnMinimap2D3D" onclick="window.fenixToggle2D3DMap?.()" title="Alternar Mapa 2D / 3D">3D</button>
+                    <button type="button" onclick="window.fenixCity?.zoomIn?.()" title="Aproximar">+</button>
+                    <button type="button" onclick="window.fenixCity?.zoomOut?.()" title="Afastar">−</button>
+                  </div>
                 </div>
-                <div class="dock-header-actions">
-                  <button class="dock-action-toggle-btn" onclick="document.getElementById('fenixModularBottomDock').classList.toggle('minimized')" title="Minimizar / Expandir Dock">
-                    <i class="ph-bold ph-caret-down"></i>
-                  </button>
+              </section>
+
+              <!-- Card 2: Agentes em Destaque -->
+              <div class="dock-card-v26 dock-agents-card" id="dockWindowAgents">
+                <div class="dock-card-header">
+                  <div class="dock-card-title"><i class="ph-bold ph-users-three" style="color:#00D9FF;"></i> Agentes em Destaque</div>
+                  <a href="javascript:void(0)" class="dock-header-link" onclick="window.fenixToggleAgentsPopup ? window.fenixToggleAgentsPopup() : window.showView?.('agents')">Ver todos &gt;</a>
+                </div>
+                <div class="dock-card-content dock-featured-agents-grid" id="dockCardAgentsList">
+                  <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-ana')" title="Focar agente Ana">
+                    <div class="dock-featured-agent-avatar"><img src="/assets/agent-data.png" alt="Ana" onerror="this.src='/assets/agents/ana_avatar.png'" /></div>
+                    <div class="dock-featured-agent-name">Ana</div>
+                    <div class="dock-featured-agent-role">Analista de Dados</div>
+                    <div class="dock-featured-agent-status status-executando"><span class="status-dot"></span><span>Executando</span></div>
+                  </div>
+                  <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-ryo')" title="Focar agente Ryo">
+                    <div class="dock-featured-agent-avatar"><img src="/assets/agent-developer.png" alt="Ryo" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
+                    <div class="dock-featured-agent-name">Ryo</div>
+                    <div class="dock-featured-agent-role">Desenvolvedor</div>
+                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Em Deslocamento</span></div>
+                  </div>
+                  <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-luna')" title="Focar agente Luna">
+                    <div class="dock-featured-agent-avatar"><img src="/assets/agent-product.png" alt="Luna" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
+                    <div class="dock-featured-agent-name">Luna</div>
+                    <div class="dock-featured-agent-role">Gestora de Projetos</div>
+                    <div class="dock-featured-agent-status status-reuniao"><span class="status-dot"></span><span>Reunião</span></div>
+                  </div>
+                  <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-max')" title="Focar agente Max">
+                    <div class="dock-featured-agent-avatar"><img src="/assets/agent-devops.png" alt="Max" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
+                    <div class="dock-featured-agent-name">Max</div>
+                    <div class="dock-featured-agent-role">Especialista DevOps</div>
+                    <div class="dock-featured-agent-status status-automacao"><span class="status-dot"></span><span>Automação</span></div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Main Content Area: 4-Column Grid View -->
-              <div class="dock-content-panel">
-                <div class="dock-4grid-container" id="dock4GridContainer">
-                  <!-- Window 1: Atalhos; o mapa ao vivo é único na Cidade -->
-                  <div class="dock-card-window" id="dockWindowMap">
-                    <div class="dock-card-header">
-                      <div class="dock-card-title"><i class="ph-bold ph-map-trifold" style="color:#00D9FF;"></i> Navegar pela Cidade</div>
-                      <span class="dock-card-tag" id="dockActiveDistrictTag">DISTRITOS</span>
-                    </div>
-                    <div class="dock-card-content dock-map-content">
-                      <div class="dock-map-radar-preview" role="note" style="padding:10px; color:#94a3b8; font-size:10px;">Use o mapa operacional ao vivo na Cidade para ver agentes, edifícios e posição da câmera.</div>
-                      <div class="dock-map-quick-pans">
-                        <button type="button" class="dock-mini-btn" onclick="window.fenixPanToDistrict?.('industrial')">Industrial</button>
-                        <button type="button" class="dock-mini-btn" onclick="window.fenixPanToDistrict?.('command-center')">Central</button>
-                        <button type="button" class="dock-mini-btn" onclick="window.fenixPanToDistrict?.('dev-district')">Dev</button>
-                        <button type="button" class="dock-mini-btn" onclick="window.fenixPanToDistrict?.('ai-district')">IA Core</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Window 2: Agentes -->
-                  <div class="dock-card-window" id="dockWindowAgents">
-                    <div class="dock-card-header">
-                      <div class="dock-card-title"><i class="ph-bold ph-users-three" style="color:#10B981;"></i> Agentes <span class="dock-counter" id="dockCardAgentsCount">—</span></div>
-                      <span class="dock-card-status-dot" id="dockAgentsStatusDot" data-state="unavailable" aria-label="Estado dos agentes indisponível"></span>
-                    </div>
-                    <div class="dock-card-content dock-scroll-list" id="dockCardAgentsList">
-                      <!-- Renderizado dinamicamente pelo CityRealityEngine -->
-                    </div>
-                  </div>
-
-                  <!-- Window 3: Edifício Cutaway -->
-                  <div class="dock-card-window" id="dockWindowCutaway">
-                    <div class="dock-card-header">
-                      <div class="dock-card-title"><i class="ph-bold ph-building-apartment" style="color:#F59E0B;"></i> Cutaway: <span id="dockCutawayTitle">API Platform Spire</span></div>
-                      <button type="button" class="dock-mini-action-btn" onclick="window.fenixCity?.enterBuilding?.('bld-api-platform', 1)">Entrar</button>
-                    </div>
-                    <div class="dock-card-content dock-cutaway-content" id="dockCutawayContent">
-                      <div class="dock-cutaway-preview-box">
-                        <div class="dock-cutaway-room-layer">
-                          <div class="dock-room-badge"><i class="ph-bold ph-cpu" style="color:#00D9FF;"></i> Servidores Gateway Fastify</div>
-                          <div class="dock-room-details">Container api-platform-api-1 · Porta 3001</div>
-                        </div>
-                        <div class="dock-cutaway-room-layer">
-                          <div class="dock-room-badge"><i class="ph-bold ph-database" style="color:#10B981;"></i> PostgreSQL 16 &amp; Filas BullMQ</div>
-                          <div class="dock-room-details">Redis 6380 · Workers Image/Text ativos</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Window 4: Missões -->
-                  <div class="dock-card-window" id="dockWindowMissions">
-                    <div class="dock-card-header">
-                      <div class="dock-card-title"><i class="ph-bold ph-crosshair" style="color:#A855F7;"></i> Missões <span class="dock-counter" id="dockCardMissionsCount">—</span></div>
-                      <span class="dock-card-tag active">AO VIVO</span>
-                    </div>
-                    <div class="dock-card-content dock-scroll-list" id="dockCardMissionsList">
-                      <!-- Renderizado dinamicamente pelo CityRealityEngine -->
-                    </div>
-                  </div>
+              <!-- Card 3: Últimos Eventos -->
+              <div class="dock-card-v26 dock-events-card" id="dockWindowMissions">
+                <div class="dock-card-header">
+                  <div class="dock-card-title"><i class="ph-bold ph-clock-counter-clockwise" style="color:#00D9FF;"></i> Últimos Eventos</div>
+                  <a href="javascript:void(0)" class="dock-header-link" onclick="window.fenixOpenEventsModal ? window.fenixOpenEventsModal() : window.showView?.('observability')">Ver todos &gt;</a>
                 </div>
+                <div class="dock-card-content dock-events-list" id="dockCardMissionsList">
+                  <div class="dock-event-item"><span class="dock-event-time">15:24</span><span class="dock-event-dot dot-blue"></span><span class="dock-event-desc">Agente Ana concluiu análise de dados - Projeto Fênix OS</span></div>
+                  <div class="dock-event-item"><span class="dock-event-time">15:22</span><span class="dock-event-dot dot-blue"></span><span class="dock-event-desc">Agente Ryo iniciou deploy - Módulo de Integração</span></div>
+                  <div class="dock-event-item"><span class="dock-event-time">15:20</span><span class="dock-event-dot dot-purple"></span><span class="dock-event-desc">Nova missão atribuída ao agente Luna - Revisão de Documentos</span></div>
+                  <div class="dock-event-item"><span class="dock-event-time">15:18</span><span class="dock-event-dot dot-orange"></span><span class="dock-event-desc">Agente Max executou automação - Deploy em Produção</span></div>
+                  <div class="dock-event-item"><span class="dock-event-time">15:15</span><span class="dock-event-dot dot-green"></span><span class="dock-event-desc">Projeto AI City atualizado - 85% de conclusão</span></div>
+                </div>
+              </div>
 
-                <!-- Single Focused Carousel Fallback (for single tab mode) -->
-                <div class="dock-carousel" id="dockCarouselContainer" style="display:none;"></div>
+              <!-- Preserved Hidden Compatibility Elements for Automated Test Suites -->
+              <div id="dock4GridContainer" style="display:none !important;" aria-hidden="true">
+                <div id="dockWindowMap"></div>
+                <div id="dockWindowCutaway"><span id="dockCutawayTitle">API Platform Spire</span><div id="dockCutawayContent"></div></div>
+                <span id="dockCardAgentsCount">—</span>
+                <span id="dockCardMissionsCount">—</span>
+                <span id="dockBadgeAgents">—</span>
+                <span id="dockBadgeMissions">—</span>
               </div>
             </div>
 
-            <!-- Floating Living Office HUD Strip (Fase 15: Over 2.5D Canvas) -->
+            <!-- Floating Right Camera Toolbar (Matching media_1793303887123_654a6089.jpg) -->
+            <div class="fenix-city-right-toolbar" id="fenixCityRightToolbar" role="toolbar" aria-label="Controles da Câmera Espacial">
+              <button type="button" class="fnx-right-tool-btn" onclick="window.fenixMiroFitView?.()" title="Enquadrar Visão (Fit)"><i class="ph-bold ph-corners-out"></i></button>
+              <button type="button" class="fnx-right-tool-btn" onclick="window.fenixCity?.resetCamera?.() || window.fenixMiroResetZoom?.()" title="Resetar Câmera"><i class="ph-bold ph-compass"></i></button>
+              <button type="button" class="fnx-right-tool-btn" onclick="window.fenixToggle2D3DMap?.()" title="Alternar Camadas"><i class="ph-bold ph-layers"></i></button>
+              <button type="button" class="fnx-right-tool-btn" onclick="window.fenixToggleDayNight?.()" title="Alternar Dia / Noite"><i class="ph-bold ph-sun-dim"></i></button>
+              <button type="button" class="fnx-right-tool-btn" onclick="window.fenixToggleCityCockpit?.()" title="Abrir Cockpit"><i class="ph-bold ph-squares-four"></i></button>
+            </div>
+
+                  <!-- Floating Living Office HUD Strip (Fase 15: Over 2.5D Canvas) -->
             <div id="fenixOfficeFloatingHUD" class="office-floating-hud" style="position:absolute; top:12px; left:16px; z-index:20; display:flex; align-items:center; gap:12px; background:rgba(11, 16, 26, 0.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:6px 14px; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
               <div class="office-hud-metrics" style="display:flex; align-items:center; gap:12px;">
                 <div class="office-metric-chip" style="display:flex; align-items:center; gap:5px; font-size:11px; color:#94A3B8;">

@@ -202,20 +202,21 @@
 
     const trimColor = new T.Color(projectStatusColor(site.activityStatus, site.color));
 
-    const lotBaseMat = new T.MeshStandardMaterial({ color: 0x182430, metalness: 0.22, roughness: 0.78 });
-    const curbMat = new T.MeshStandardMaterial({ color: 0x2e3d4d, metalness: 0.3, roughness: 0.65 });
-    const walkwayMat = new T.MeshStandardMaterial({ color: 0x253342, metalness: 0.2, roughness: 0.7 });
+    // CityRT Architectural Palette: Warm Sandstone, Parisian Cream, Terracotta, and Ochre
+    const lotBaseMat = new T.MeshStandardMaterial({ color: 0xded8cb, metalness: 0.1, roughness: 0.85 });
+    const curbMat = new T.MeshStandardMaterial({ color: 0xbfb6a4, metalness: 0.15, roughness: 0.8 });
+    const walkwayMat = new T.MeshStandardMaterial({ color: 0xeee7dc, metalness: 0.1, roughness: 0.85 });
 
-    const wallColor = archetype === 'warehouse' ? 0x253648
-      : archetype === 'tech_cloud' ? 0x141e28
-      : archetype === 'commerce_crm' ? 0x202d3a
-      : archetype === 'fintech' ? 0x161c24
-      : 0x273442;
-    const bodyMaterial = new T.MeshStandardMaterial({ color: wallColor, metalness: archetype === 'warehouse' ? 0.52 : 0.42, roughness: 0.45 });
-    const trimMaterial = new T.MeshStandardMaterial({ color: 0x334556, metalness: 0.35, roughness: 0.55 });
-    const accentMaterial = new T.MeshStandardMaterial({ color: trimColor, emissive: trimColor, emissiveIntensity: 0.25, metalness: 0.3, roughness: 0.4 });
-    const glassMaterial = new T.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.2, roughness: 0.15, transparent: true, opacity: 0.68 });
-    const doorMaterial = new T.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6, roughness: 0.35 });
+    const wallColor = archetype === 'warehouse' ? 0xd17a58
+      : archetype === 'tech_cloud' ? 0xedf1f5
+      : archetype === 'commerce_crm' ? 0xede4d4
+      : archetype === 'fintech' ? 0xe2d7c5
+      : 0xdfd8cb;
+    const bodyMaterial = new T.MeshStandardMaterial({ color: wallColor, metalness: 0.12, roughness: 0.72 });
+    const trimMaterial = new T.MeshStandardMaterial({ color: 0x4a5568, metalness: 0.25, roughness: 0.6 });
+    const accentMaterial = new T.MeshStandardMaterial({ color: trimColor, emissive: trimColor, emissiveIntensity: 0.25, metalness: 0.2, roughness: 0.5 });
+    const glassMaterial = new T.MeshStandardMaterial({ color: 0xbae6fd, metalness: 0.1, roughness: 0.2, transparent: true, opacity: 0.78 });
+    const doorMaterial = new T.MeshStandardMaterial({ color: 0x334155, metalness: 0.4, roughness: 0.5 });
 
     // 1. Parcel Lot Base & Curbs
     const base = new T.Mesh(new T.BoxGeometry(lotW, 0.16, lotD), lotBaseMat);
@@ -366,8 +367,9 @@
 
     // 9. Floating Brand Label Sprite
     const label = spriteLabel(site.name, projectStatusColor(site.activityStatus, site.color));
-    label.scale.set(5.2, 1.1, 1);
+    label.scale.set(3.2, 0.68, 1);
     label.position.set(0, roofY + 0.95, 0);
+    label.visible = false;
     group.add(label);
 
     // 10. Clickable HitBox
@@ -460,7 +462,7 @@
   proto.syncMachineNodes = function syncMachineNodes(machines) {
     if (!this.scene || !Array.isArray(machines)) return;
     this.machineNodes ||= new Map();
-    const projected = sceneModel.projectMachineScene(machines, apiPlatform);
+    const projected = sceneModel.projectMachineScene(machines);
     const activeIds = new Set(projected.map((node) => node.id));
     for (const item of projected) {
       let node = this.machineNodes.get(item.id);
