@@ -354,6 +354,40 @@
     }
 
     // Quiet, varied apartment and civic facades for the ambient city blocks.
+        static createStorefrontSignTexture(title, port, isOnline, colorHex = '#2563eb') {
+      return this.create(512, 128, (ctx, w, h) => {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, w, h);
+        // Border & accent
+        ctx.fillStyle = colorHex;
+        ctx.fillRect(0, 0, w, 6);
+        ctx.fillRect(0, h - 5, w, 5);
+        // Status dot
+        ctx.fillStyle = isOnline ? '#22c55e' : '#64748b';
+        ctx.beginPath();
+        ctx.arc(28, h / 2, 9, 0, Math.PI * 2);
+        ctx.fill();
+        if (isOnline) {
+          ctx.strokeStyle = '#4ade80';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+        // Title
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const displayTitle = String(title || 'PROJECT').toUpperCase();
+        ctx.fillText(displayTitle.length > 22 ? displayTitle.slice(0, 20) + '...' : displayTitle, 48, h / 2 + 9);
+        // Port badge
+        if (port) {
+          ctx.fillStyle = isOnline ? '#15803d' : '#334155';
+          ctx.fillRect(w - 116, h / 2 - 16, 102, 32);
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = 'bold 16px monospace';
+          ctx.fillText(':' + port, w - 104, h / 2 + 6);
+        }
+      });
+    }
+
     static createUrbanFacadeTexture(palette) {
       return this.create(256, 256, (ctx, w, h) => {
         ctx.fillStyle = palette.base;
@@ -2253,6 +2287,16 @@
       const whiteboardTex = TextureFactory.createWhiteboardTexture();
 
       this.materials = {
+        mansardSlate: new T.MeshStandardMaterial({ color: 0x333b47, roughness: 0.65, metalness: 0.25 }),
+        terracottaRoof: new T.MeshStandardMaterial({ color: 0xd97757, roughness: 0.85, metalness: 0.05 }),
+        streetLampPole: new T.MeshStandardMaterial({ color: 0x1e2631, roughness: 0.5, metalness: 0.8 }),
+        streetLampLantern: new T.MeshStandardMaterial({ color: 0xffe7a8, emissive: 0xffdd77, emissiveIntensity: 0.95, roughness: 0.2 }),
+        awningRed: new T.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.7 }),
+        awningBlue: new T.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.7 }),
+        awningGreen: new T.MeshStandardMaterial({ color: 0x15803d, roughness: 0.7 }),
+        awningAmber: new T.MeshStandardMaterial({ color: 0xd97706, roughness: 0.7 }),
+        stoneRustication: new T.MeshStandardMaterial({ color: 0xd6cebe, roughness: 0.88, metalness: 0.04 }),
+        
         asphalt: new T.MeshStandardMaterial({ map: roadTex, roughness: 0.88, metalness: 0.08 }),
         crosswalk: new T.MeshStandardMaterial({ map: crosswalkTex, roughness: 0.82 }),
         sidewalk: new T.MeshStandardMaterial({ map: sidewalkTex, roughness: 0.78, metalness: 0.12 }),
@@ -2483,26 +2527,26 @@
       const terrainGroup = new T.Group();
       terrainGroup.name = 'TerrainGroup';
 
-      // 1. A softened shoreline keeps the city footprint readable without a square display slab.
+      // 1. Shoreline & Island Bedrock Slab
       const shoreline = new T.Shape();
-      shoreline.moveTo(-74, -77.5);
-      shoreline.quadraticCurveTo(-87.5, -77.5, -87.5, -63);
-      shoreline.lineTo(-87.5, -43);
-      shoreline.quadraticCurveTo(-87.5, -35, -80, -31);
-      shoreline.lineTo(-82, 33);
-      shoreline.quadraticCurveTo(-82, 44, -73, 49);
-      shoreline.lineTo(-68, 70);
-      shoreline.quadraticCurveTo(-66, 77.5, -55, 77.5);
-      shoreline.lineTo(52, 77.5);
-      shoreline.quadraticCurveTo(63, 77.5, 68, 69);
-      shoreline.lineTo(84, 39);
-      shoreline.quadraticCurveTo(87.5, 32, 87.5, 23);
-      shoreline.lineTo(87.5, -48);
-      shoreline.quadraticCurveTo(87.5, -60, 77, -63);
-      shoreline.lineTo(71, -77.5);
-      shoreline.quadraticCurveTo(68, -82, 59, -82);
-      shoreline.lineTo(-62, -82);
-      shoreline.quadraticCurveTo(-72, -82, -74, -77.5);
+      shoreline.moveTo(-84, -86);
+      shoreline.quadraticCurveTo(-94, -86, -94, -72);
+      shoreline.lineTo(-94, -43);
+      shoreline.quadraticCurveTo(-94, -35, -88, -31);
+      shoreline.lineTo(-88, 38);
+      shoreline.quadraticCurveTo(-88, 49, -82, 56);
+      shoreline.lineTo(-76, 78);
+      shoreline.quadraticCurveTo(-72, 86, -60, 86);
+      shoreline.lineTo(60, 86);
+      shoreline.quadraticCurveTo(72, 86, 78, 78);
+      shoreline.lineTo(88, 48);
+      shoreline.quadraticCurveTo(94, 38, 94, 25);
+      shoreline.lineTo(94, -54);
+      shoreline.quadraticCurveTo(94, -68, 84, -74);
+      shoreline.lineTo(76, -86);
+      shoreline.quadraticCurveTo(70, -90, 58, -90);
+      shoreline.lineTo(-70, -90);
+      shoreline.quadraticCurveTo(-80, -90, -84, -86);
       shoreline.closePath();
 
       const baseGeo = new T.ExtrudeGeometry(shoreline, {
@@ -2517,74 +2561,170 @@
       terrainGroup.add(baseMesh);
       this.terrainGroup = terrainGroup;
 
-      // The sea continues beyond the camera horizon instead of ending as a visible blue stripe.
+      // Ambient Sea Water Plane
       const waterGeo = new T.PlaneGeometry(1400, 1400);
       const waterMesh = new T.Mesh(waterGeo, this.materials.water);
       waterMesh.rotation.x = -Math.PI / 2;
       waterMesh.position.y = -2.1;
       terrainGroup.add(waterMesh);
 
-      // 2. Green Landscaped Parks & Lawns
-      const greenPads = [
-        { x: -38, z: -38, w: 42, d: 38 },
-        { x: -38, z: 38, w: 42, d: 38 },
-        { x: 38, z: 38, w: 42, d: 38 },
-        { x: 44, z: -38, w: 32, d: 38 }
+      // 2. CityRT Orthogonal Street Network
+      const streets = [
+        // Primary Arteries (4-lane with double yellow stripes)
+        { id: 'ave_ew', x: 0, z: 0, w: 176, d: 14, rot: 0, lanes: 4 },
+        { id: 'ave_ns', x: 0, z: 0, w: 14, d: 176, rot: 0, lanes: 4 },
+        // Secondary Street Grid (2-lane with parking / bike corridor)
+        { id: 'st_w1', x: -44, z: 0, w: 10, d: 166, rot: 0, lanes: 2 },
+        { id: 'st_w2', x: -78, z: 0, w: 8, d: 144, rot: 0, lanes: 2 },
+        { id: 'st_e1', x: 44, z: 0, w: 10, d: 166, rot: 0, lanes: 2 },
+        { id: 'st_e2', x: 78, z: 0, w: 8, d: 144, rot: 0, lanes: 2 },
+        { id: 'st_n1', x: 0, z: 44, w: 166, d: 10, rot: 0, lanes: 2 },
+        { id: 'st_n2', x: 0, z: 76, w: 144, d: 8, rot: 0, lanes: 2 },
+        { id: 'st_s1', x: 0, z: -44, w: 166, d: 10, rot: 0, lanes: 2 },
+        { id: 'st_s2', x: 0, z: -76, w: 144, d: 8, rot: 0, lanes: 2 },
+        // Logistics Access Service Road
+        { id: 'st_log', x: 62, z: -18, w: 9, d: 44, rot: 0, lanes: 2 }
       ];
-      greenPads.forEach(p => {
-        const gMesh = new T.Mesh(new T.BoxGeometry(p.w, 0.16, p.d), this.materials.grass);
-        gMesh.position.set(p.x, 0.08, p.z);
-        gMesh.receiveShadow = true;
-        terrainGroup.add(gMesh);
+
+      streets.forEach((st) => {
+        const roadMesh = new T.Mesh(new T.BoxGeometry(st.w, 0.12, st.d), this.materials.asphalt);
+        roadMesh.position.set(st.x, 0.06, st.z);
+        roadMesh.receiveShadow = true;
+        terrainGroup.add(roadMesh);
       });
 
-      // 3. Arterial Roadways (Textured Asphalt + Double Yellow Stripes)
-      const roadEW = new T.Mesh(new T.BoxGeometry(150, 0.12, 14), this.materials.asphalt);
-      roadEW.position.set(0, 0.06, 0);
-      roadEW.receiveShadow = true;
-      terrainGroup.add(roadEW);
-
-      const roadNS = new T.Mesh(new T.BoxGeometry(14, 0.12, 130), this.materials.asphalt);
-      roadNS.position.set(0, 0.06, 0);
-      roadNS.receiveShadow = true;
-      terrainGroup.add(roadNS);
-
-      // Raised concrete curbs define the road edge and leave the main junction open.
-      const roadEWCurbs = [-7.2, 7.2].flatMap(z => [-41, 41].map(x => ({ x, z, w: 68, d: 0.48 })));
-      roadEWCurbs.forEach(({ x, z, w, d }) => {
-        const curb = new T.Mesh(new T.BoxGeometry(w, 0.18, d), this.materials.sidewalk);
-        curb.position.set(x, 0.12, z);
-        curb.receiveShadow = true;
-        terrainGroup.add(curb);
-      });
-      const roadNSCurbs = [-7.2, 7.2].flatMap(x => [-36, 36].map(z => ({ x, z, w: 0.48, d: 58 })));
-      roadNSCurbs.forEach(({ x, z, w, d }) => {
-        const curb = new T.Mesh(new T.BoxGeometry(w, 0.18, d), this.materials.sidewalk);
-        curb.position.set(x, 0.12, z);
-        curb.receiveShadow = true;
-        terrainGroup.add(curb);
-      });
-
-      // A short service road runs beside the warehouse apron and stays clear of its footprint.
-      const roadLogistics = new T.Mesh(new T.BoxGeometry(8, 0.12, 40), this.materials.asphalt);
-      roadLogistics.position.set(22, 0.06, -18);
-      roadLogistics.receiveShadow = true;
-      terrainGroup.add(roadLogistics);
-
-      // 4. White Zebra Crosswalks at Major Intersections
-      const crosswalks = [
-        { x: 12, z: 0, rot: Math.PI / 2, w: 14, d: 3.5 },
-        { x: -12, z: 0, rot: Math.PI / 2, w: 14, d: 3.5 },
-        { x: 0, z: 12, rot: 0, w: 14, d: 3.5 },
-        { x: 0, z: -12, rot: 0, w: 14, d: 3.5 },
-        { x: 22, z: -4, rot: 0, w: 8, d: 3.5 }
+      // 3. Defined City Blocks (Elevated Concrete Sidewalk Plinths & Lawns)
+      const cityBlocks = [
+        // Inner Central 4 Quadrants
+        { id: 'block_nw', x: -22, z: 22, w: 32, d: 32, parkSize: 14 },
+        { id: 'block_ne', x: 22, z: 22, w: 32, d: 32, parkSize: 14 },
+        { id: 'block_sw', x: -22, z: -22, w: 32, d: 32, parkSize: 14 },
+        { id: 'block_se', x: 22, z: -22, w: 32, d: 32, parkSize: 14 },
+        // Outer West Blocks
+        { id: 'block_w_mid', x: -61, z: 0, w: 24, d: 32, parkSize: 10 },
+        { id: 'block_w_north', x: -61, z: 44, w: 24, d: 32, parkSize: 10 },
+        { id: 'block_w_south', x: -61, z: -44, w: 24, d: 32, parkSize: 10 },
+        // Outer East Blocks
+        { id: 'block_e_mid', x: 61, z: 22, w: 24, d: 32, parkSize: 10 },
+        { id: 'block_e_north', x: 61, z: 60, w: 24, d: 26, parkSize: 8 },
+        // North Flank Blocks
+        { id: 'block_n_mid_w', x: -22, z: 60, w: 32, d: 24, parkSize: 10 },
+        { id: 'block_n_mid_e', x: 22, z: 60, w: 32, d: 24, parkSize: 10 },
+        // South Flank Blocks
+        { id: 'block_s_mid_w', x: -22, z: -60, w: 32, d: 24, parkSize: 10 },
+        { id: 'block_s_mid_e', x: 22, z: -60, w: 32, d: 24, parkSize: 10 }
       ];
-      crosswalks.forEach(cw => {
+
+      cityBlocks.forEach((block) => {
+        // Sidewalk plinth
+        const plinth = new T.Mesh(new T.BoxGeometry(block.w, 0.16, block.d), this.materials.sidewalk);
+        plinth.position.set(block.x, 0.16, block.z);
+        plinth.receiveShadow = true;
+        terrainGroup.add(plinth);
+
+        // Raised curbs along all 4 perimeter edges
+        const curbThick = 0.38;
+        const curbH = 0.18;
+        const curby = 0.22;
+        const cN = new T.Mesh(new T.BoxGeometry(block.w, curbH, curbThick), this.materials.sidewalk);
+        cN.position.set(block.x, curby, block.z + block.d / 2 - curbThick / 2);
+        const cS = new T.Mesh(new T.BoxGeometry(block.w, curbH, curbThick), this.materials.sidewalk);
+        cS.position.set(block.x, curby, block.z - block.d / 2 + curbThick / 2);
+        const cE = new T.Mesh(new T.BoxGeometry(curbThick, curbH, block.d), this.materials.sidewalk);
+        cE.position.set(block.x + block.w / 2 - curbThick / 2, curby, block.z);
+        const cW = new T.Mesh(new T.BoxGeometry(curbThick, curbH, block.d), this.materials.sidewalk);
+        cW.position.set(block.x - block.w / 2 + curbThick / 2, curby, block.z);
+        terrainGroup.add(cN, cS, cE, cW);
+
+        // Interior Courtyard Lawn
+        if (block.parkSize > 0) {
+          const grass = new T.Mesh(
+            new T.BoxGeometry(block.parkSize, 0.05, block.parkSize),
+            this.materials.grass
+          );
+          grass.position.set(block.x, 0.25, block.z);
+          grass.receiveShadow = true;
+          terrainGroup.add(grass);
+        }
+      });
+
+      // 4. White Zebra Pedestrian Crosswalks at Intersections
+      const crosswalkLocations = [
+        // Central 4-Way Junction (Fênix HQ Perimeter)
+        { x: 10, z: 0, rot: Math.PI / 2, w: 14, d: 3.5 },
+        { x: -10, z: 0, rot: Math.PI / 2, w: 14, d: 3.5 },
+        { x: 0, z: 10, rot: 0, w: 14, d: 3.5 },
+        { x: 0, z: -10, rot: 0, w: 14, d: 3.5 },
+        // Secondary Avenue Intersections
+        { x: -44, z: 10, rot: 0, w: 10, d: 3.2 },
+        { x: -44, z: -10, rot: 0, w: 10, d: 3.2 },
+        { x: -36, z: 0, rot: Math.PI / 2, w: 14, d: 3.2 },
+        { x: -52, z: 0, rot: Math.PI / 2, w: 14, d: 3.2 },
+        { x: 44, z: 10, rot: 0, w: 10, d: 3.2 },
+        { x: 44, z: -10, rot: 0, w: 10, d: 3.2 },
+        { x: 36, z: 0, rot: Math.PI / 2, w: 14, d: 3.2 },
+        { x: 52, z: 0, rot: Math.PI / 2, w: 14, d: 3.2 },
+        { x: 10, z: 44, rot: Math.PI / 2, w: 10, d: 3.2 },
+        { x: -10, z: 44, rot: Math.PI / 2, w: 10, d: 3.2 },
+        { x: 0, z: 36, rot: 0, w: 14, d: 3.2 },
+        { x: 0, z: 52, rot: 0, w: 14, d: 3.2 },
+        { x: 10, z: -44, rot: Math.PI / 2, w: 10, d: 3.2 },
+        { x: -10, z: -44, rot: Math.PI / 2, w: 10, d: 3.2 },
+        { x: 0, z: -36, rot: 0, w: 14, d: 3.2 },
+        { x: 0, z: -52, rot: 0, w: 14, d: 3.2 },
+        // Outer Block Corners
+        { x: -44, z: 44, rot: 0, w: 10, d: 3.0 },
+        { x: 44, z: 44, rot: 0, w: 10, d: 3.0 },
+        { x: -44, z: -44, rot: 0, w: 10, d: 3.0 },
+        { x: 44, z: -44, rot: 0, w: 10, d: 3.0 }
+      ];
+
+      crosswalkLocations.forEach((cw) => {
         const cwMesh = new T.Mesh(new T.PlaneGeometry(cw.w, cw.d), this.materials.crosswalk);
         cwMesh.rotation.x = -Math.PI / 2;
         cwMesh.rotation.z = cw.rot;
         cwMesh.position.set(cw.x, 0.14, cw.z);
         terrainGroup.add(cwMesh);
+      });
+
+      // 5. Classic Warm CityRT Streetlamps along Sidewalks & Intersections
+      const streetlampPositions = [
+        // Central Plaza Corners
+        [-8.5, 8.5], [8.5, 8.5], [-8.5, -8.5], [8.5, -8.5],
+        // Avenue Crossings
+        [-38, 8.5], [-38, -8.5], [38, 8.5], [38, -8.5],
+        [-8.5, 38], [8.5, 38], [-8.5, -38], [8.5, -38],
+        // Secondary Street Corners
+        [-50, 8.5], [-50, -8.5], [50, 8.5], [50, -8.5],
+        [-38, 38], [38, 38], [-38, -38], [38, -38],
+        [-50, 38], [50, 38], [-50, -38], [50, -38],
+        // Logistics Yard Entrance
+        [58, -8.5], [68, -8.5], [58, -36], [68, -36]
+      ];
+
+      streetlampPositions.forEach(([lx, lz]) => {
+        const lamp = this._createStreetLamp();
+        lamp.position.set(lx, 0.18, lz);
+        terrainGroup.add(lamp);
+      });
+
+      // 6. Sidewalk Trees Placed in Geometric Rows Along Streets
+      const sidewalkTreePositions = [
+        [-24, 7.8, 'deciduous'], [-16, 7.8, 'flowering'], [16, 7.8, 'deciduous'], [24, 7.8, 'pine'],
+        [-24, -7.8, 'flowering'], [-16, -7.8, 'deciduous'], [16, -7.8, 'pine'], [24, -7.8, 'flowering'],
+        [-7.8, 24, 'deciduous'], [-7.8, 16, 'pine'], [7.8, 16, 'flowering'], [7.8, 24, 'deciduous'],
+        [-7.8, -24, 'pine'], [-7.8, -16, 'flowering'], [7.8, -16, 'deciduous'], [7.8, -24, 'pine'],
+        // Outer sidewalks
+        [-40, 24, 'deciduous'], [-40, 16, 'flowering'], [40, 16, 'pine'], [40, 24, 'deciduous'],
+        [-48, 24, 'flowering'], [-48, 16, 'deciduous'], [48, 16, 'pine'], [48, 24, 'flowering']
+      ];
+
+      sidewalkTreePositions.forEach(([tx, tz, treeType]) => {
+        if (typeof this._createDetailedTree === 'function') {
+          const tree = this._createDetailedTree(treeType);
+          tree.position.set(tx, 0.22, tz);
+          terrainGroup.add(tree);
+        }
       });
 
       this.scene.add(terrainGroup);
@@ -3434,6 +3574,121 @@
       car.add(hlL, hlR, tlL, tlR);
 
       return car;
+    }
+
+    _createStreetLamp() {
+      const lamp = new T.Group();
+      lamp.name = 'StreetLamp';
+      const baseGeo = new T.CylinderGeometry(0.18, 0.24, 0.6, 8);
+      const base = new T.Mesh(baseGeo, this.materials.streetLampPole || this.materials.dockBumper);
+      base.position.y = 0.3;
+      base.castShadow = true;
+      lamp.add(base);
+
+      const poleGeo = new T.CylinderGeometry(0.08, 0.12, 3.6, 8);
+      const pole = new T.Mesh(poleGeo, this.materials.streetLampPole || this.materials.dockBumper);
+      pole.position.y = 2.4;
+      pole.castShadow = true;
+      lamp.add(pole);
+
+      const armGeo = new T.BoxGeometry(0.65, 0.08, 0.08);
+      const arm = new T.Mesh(armGeo, this.materials.streetLampPole || this.materials.dockBumper);
+      arm.position.set(0.28, 4.15, 0);
+      lamp.add(arm);
+
+      const capGeo = new T.ConeGeometry(0.24, 0.18, 6);
+      const cap = new T.Mesh(capGeo, this.materials.streetLampPole || this.materials.dockBumper);
+      cap.position.set(0.55, 4.25, 0);
+      lamp.add(cap);
+
+      const lanternGeo = new T.CylinderGeometry(0.15, 0.10, 0.28, 6);
+      const lantern = new T.Mesh(lanternGeo, this.materials.streetLampLantern);
+      lantern.position.set(0.55, 4.05, 0);
+      lamp.add(lantern);
+
+      const light = new T.PointLight(0xffe7a8, 1.25, 18, 1.4);
+      light.position.set(0.55, 3.95, 0);
+      lamp.add(light);
+      return lamp;
+    }
+
+    _createMansardRoof(width, depth, height = 2.4) {
+      const roofGroup = new T.Group();
+      roofGroup.name = 'MansardRoof';
+
+      // Sloped mansard base tier (Truncated pyramid effect)
+      const slopeGeo = new T.CylinderGeometry(
+        Math.max(1, (width - 2.2) * 0.707),
+        Math.max(2, (width + 0.6) * 0.707),
+        height,
+        4,
+        1,
+        false,
+        Math.PI / 4
+      );
+      const slope = new T.Mesh(slopeGeo, this.materials.mansardSlate || this.materials.warehouseRoof);
+      slope.position.y = height / 2;
+      slope.scale.set(1, 1, depth / width);
+      slope.castShadow = true;
+      roofGroup.add(slope);
+
+      // Flat lead/zinc top plate
+      const topPlate = new T.Mesh(
+        new T.BoxGeometry(Math.max(1, width - 2.6), 0.18, Math.max(1, depth - 2.6)),
+        this.materials.brushedTitanium || this.materials.sidewalk
+      );
+      topPlate.position.y = height + 0.09;
+      topPlate.castShadow = true;
+      roofGroup.add(topPlate);
+
+      // Dormer windows on front
+      const dormerCount = Math.max(2, Math.floor(width / 4));
+      const dormerSpacing = (width - 3.2) / (dormerCount - 1);
+      for (let i = 0; i < dormerCount; i++) {
+        const dx = -(width - 3.2) / 2 + i * dormerSpacing;
+        const dormer = new T.Group();
+        dormer.position.set(dx, height * 0.45, depth / 2 - 0.2);
+
+        const dBody = new T.Mesh(new T.BoxGeometry(1.1, 1.2, 0.8), this.materials.mansardSlate || this.materials.sidewalk);
+        const dGlass = new T.Mesh(new T.BoxGeometry(0.8, 0.85, 0.05), this.materials.streetLampLantern);
+        dGlass.position.set(0, 0, 0.42);
+        const dCap = new T.Mesh(new T.ConeGeometry(0.8, 0.6, 4), this.materials.mansardSlate);
+        dCap.rotation.y = Math.PI / 4;
+        dCap.position.y = 0.85;
+
+        dormer.add(dBody, dGlass, dCap);
+        roofGroup.add(dormer);
+      }
+
+      return roofGroup;
+    }
+
+    _createPitchedRoof(width, depth, height = 2.6) {
+      const roofGroup = new T.Group();
+      roofGroup.name = 'PitchedGableRoof';
+
+      const prismShape = new T.Shape();
+      prismShape.moveTo(-width / 2 - 0.3, 0);
+      prismShape.lineTo(0, height);
+      prismShape.lineTo(width / 2 + 0.3, 0);
+      prismShape.closePath();
+
+      const extrudeSettings = { depth: depth + 0.6, bevelEnabled: false };
+      const roofGeo = new T.ExtrudeGeometry(prismShape, extrudeSettings);
+      const roofMesh = new T.Mesh(roofGeo, this.materials.terracottaRoof || this.materials.warehouseRoof);
+      roofMesh.position.set(0, 0, -depth / 2 - 0.3);
+      roofMesh.castShadow = true;
+      roofGroup.add(roofMesh);
+
+      // Brick Chimney
+      const chimney = new T.Mesh(new T.BoxGeometry(0.9, height + 1.2, 0.9), this.materials.brickWall);
+      chimney.position.set(width * 0.28, height * 0.6, -depth * 0.15);
+      chimney.castShadow = true;
+      const chCap = new T.Mesh(new T.BoxGeometry(1.1, 0.15, 1.1), this.materials.mansardSlate);
+      chCap.position.set(width * 0.28, height * 1.2 + 0.08, -depth * 0.15);
+      roofGroup.add(chimney, chCap);
+
+      return roofGroup;
     }
 
     _createEntranceDoor(name = 'EntranceDoor') {
@@ -5217,37 +5472,8 @@
       terrace.receiveShadow = true;
       obsGroup.add(terrace);
 
-      // ── CYBERPUNK VERTICAL NEON BEACON BEAMS (Video 1001656597 Reference) ──
+      // ── CITYRT ELEGANT ARCHITECTURAL LIGHTING (Sky Lasers Completely Removed) ──
       this.neonBeams = [];
-      const createNeonBeam = (colorHex, height, baseRadius, topRadius, posX, posY, posZ) => {
-        const geo = new T.CylinderGeometry(topRadius, baseRadius, height, 16, 1, true);
-        const mat = new T.MeshBasicMaterial({
-          color: colorHex,
-          transparent: true,
-          opacity: 0.35,
-          side: T.DoubleSide,
-          blending: T.AdditiveBlending,
-          depthWrite: false
-        });
-        const mesh = new T.Mesh(geo, mat);
-        mesh.position.set(posX, posY + height / 2, posZ);
-        this.scene.add(mesh);
-        this.neonBeams.push(mesh);
-        return mesh;
-      };
-
-      // 1. Central Fênix HQ Spire Beacon (Electric Cyan / 80m high)
-      createNeonBeam(0x00f0ff, 80, 0.8, 3.2, 0, hqLevels * 4.2 + 16.3, 0);
-
-      // 2. AI Nexus Quantum Core Beacon (Neon Magenta / 65m high)
-      createNeonBeam(0xd946ef, 65, 0.6, 2.6, -22, 7.5, -18);
-
-      // 3. Memory Vault Data Bunker Beacon (Emerald Green / 55m high)
-      createNeonBeam(0x10b981, 55, 0.5, 2.2, -8, 8.0, 28);
-
-      // 4. Depósito Mais Logistics Hub Beacon (Amber Gold / 48m high)
-      createNeonBeam(0xf59e0b, 48, 0.5, 2.0, 32, 12.0, -10);
-
       const obsDome = new T.Mesh(new T.SphereGeometry(6, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), this.materials.truckChrome);
       obsDome.position.y = 1.6;
       obsDome.castShadow = true;
@@ -5416,104 +5642,182 @@
     _initAmbientCityFabric() {
       const fabric = new T.Group();
       fabric.name = 'AmbientCityFabric';
-      fabric.userData = { type: 'city-scenery', interactive: false };
+      fabric.userData = { type: 'city-scenery', interactive: true };
+      this.projectBuildings = new Map();
 
-      AMBIENT_CITY_LOTS.forEach((lot, lotIdx) => {
-        const block = new T.Group();
-        block.name = 'AmbientBlock_' + lot.id;
-        block.position.set(lot.x, 0, lot.z);
-        block.userData = { type: 'scenery', liveEntity: false, selectable: false };
+      // Project Registry & CityRT Urban Lots (All 44 projects mapped to street-facing parcels)
+      const projectLots = [
+        // Core & Tech Hub (Block NW - Dev & Engineering)
+        { id: 'zapflow-crm', name: 'ZapFlow CRM', port: '8182', x: -24, z: 15, w: 12, d: 11, floors: 3, roofType: 'mansard', awning: 'awningBlue', cat: 'CRM' },
+        { id: 'ius-email-control', name: 'IUS Email Control', port: '1000', x: -14, z: 27, w: 11, d: 12, floors: 4, roofType: 'terracotta', awning: 'awningGreen', cat: 'Tools' },
+        { id: 'zai-crm', name: 'ZAI CRM', port: '8080', x: -28, z: 27, w: 11, d: 11, floors: 3, roofType: 'mansard', awning: 'awningAmber', cat: 'CRM' },
+        // AI & Cognitive Hub (Block NE)
+        { id: 'qwen-studio', name: 'Qwen Studio', port: '7860', x: 22, z: 15, w: 13, d: 12, floors: 4, roofType: 'parapet', awning: 'awningBlue', cat: 'AI' },
+        { id: 'meta-autoposter', name: 'Meta AutoPoster', port: 'Auto', x: 14, z: 27, w: 11, d: 11, floors: 3, roofType: 'terracotta', awning: 'awningRed', cat: 'Social' },
+        { id: 'meta-instagram-autoposter', name: 'Instagram AutoPoster', port: 'Insta', x: 28, z: 27, w: 11, d: 11, floors: 3, roofType: 'mansard', awning: 'awningRed', cat: 'Social' },
+        // Commerce & Services Hub (Block SW)
+        { id: 'mf-atacadista', name: 'MF Atacadista', port: '8181', x: -22, z: -15, w: 14, d: 13, floors: 2, roofType: 'parapet', awning: 'awningRed', cat: 'Retail' },
+        { id: 'marmita-da-casa', name: 'Marmita da Casa', port: 'Food', x: -14, z: -27, w: 11, d: 11, floors: 2, roofType: 'terracotta', awning: 'awningGreen', cat: 'Service' },
+        { id: 'zapai-crm', name: 'ZapAI CRM', port: 'CRM', x: -28, z: -27, w: 11, d: 11, floors: 3, roofType: 'mansard', awning: 'awningBlue', cat: 'CRM' },
+        // Operations & Gateway Hub (Block SE)
+        { id: 'fortlev-quote', name: 'Fortlev B2B Quote', port: 'B2B', x: 22, z: -15, w: 12, d: 11, floors: 3, roofType: 'terracotta', awning: 'awningAmber', cat: 'Commerce' },
+        { id: 'api-platform', name: 'API Gateway Ops', port: '4410', x: 14, z: -27, w: 12, d: 12, floors: 4, roofType: 'parapet', awning: 'awningBlue', cat: 'Gateway' },
+        { id: 'fenix-os', name: 'Fênix OS Core', port: '4400', x: 28, z: -27, w: 12, d: 12, floors: 5, roofType: 'mansard', awning: 'awningGreen', cat: 'Core' },
+        // West Flank Street Parcels
+        { id: 'project-dev-studio', name: 'Dev Studio', port: '3001', x: -61, z: 12, w: 12, d: 12, floors: 3, roofType: 'mansard', awning: 'awningBlue', cat: 'Dev' },
+        { id: 'project-code-engine', name: 'Code Engine', port: '8090', x: -61, z: -12, w: 12, d: 12, floors: 3, roofType: 'terracotta', awning: 'awningAmber', cat: 'Dev' },
+        { id: 'project-memory-core', name: 'Memory Core', port: '6379', x: -61, z: 42, w: 12, d: 12, floors: 3, roofType: 'parapet', awning: 'awningGreen', cat: 'Data' },
+        { id: 'project-vector-store', name: 'Vector Vault', port: '6333', x: -61, z: -42, w: 12, d: 12, floors: 3, roofType: 'mansard', awning: 'awningBlue', cat: 'AI' },
+        // East Flank Street Parcels
+        { id: 'project-analytics', name: 'Live Analytics', port: '3002', x: 61, z: 12, w: 12, d: 12, floors: 3, roofType: 'terracotta', awning: 'awningAmber', cat: 'Ops' },
+        { id: 'project-monitoring', name: 'Observability 360', port: '9090', x: 61, z: 32, w: 12, d: 12, floors: 4, roofType: 'parapet', awning: 'awningBlue', cat: 'Ops' },
+        { id: 'project-billing-gateway', name: 'Billing Gateway', port: '5000', x: 61, z: 54, w: 12, d: 12, floors: 3, roofType: 'mansard', awning: 'awningGreen', cat: 'Fin' },
+        // North Flank Parcels
+        { id: 'project-agent-mesh', name: 'Agent Mesh Swarm', port: '4200', x: -22, z: 62, w: 14, d: 12, floors: 4, roofType: 'mansard', awning: 'awningBlue', cat: 'Swarm' },
+        { id: 'project-neural-search', name: 'Neural Search', port: '8000', x: 22, z: 62, w: 14, d: 12, floors: 3, roofType: 'terracotta', awning: 'awningAmber', cat: 'Search' },
+        // South Flank Parcels
+        { id: 'project-security-vault', name: 'Security Vault', port: 'Auth', x: -22, z: -62, w: 14, d: 12, floors: 3, roofType: 'parapet', awning: 'awningRed', cat: 'Security' },
+        { id: 'project-event-bus', name: 'Event Bus Kafka', port: '9092', x: 22, z: -62, w: 14, d: 12, floors: 3, roofType: 'mansard', awning: 'awningGreen', cat: 'Events' }
+      ];
 
-        const floorHeight = 3.2;
-        const height = lot.floors * floorHeight;
-        const plinth = new T.Mesh(
-          new T.BoxGeometry(lot.width + 1.4, 0.42, lot.depth + 1.4),
-          this.materials.sidewalk
+      const facades = [
+        this.materials.urbanFacadeSand,
+        this.materials.urbanFacadeTerracotta,
+        this.materials.urbanFacadeGlass,
+        this.materials.urbanFacadeIvory
+      ];
+
+      projectLots.forEach((lot, lotIdx) => {
+        const bGroup = new T.Group();
+        bGroup.name = 'ProjectBuilding_' + lot.id;
+        bGroup.position.set(lot.x, 0, lot.z);
+        bGroup.userData = {
+          type: 'project-building',
+          projectId: lot.id,
+          name: lot.name,
+          port: lot.port,
+          category: lot.cat
+        };
+
+        const floorH = 3.2;
+        const bldH = lot.floors * floorH;
+        const facadeMat = facades[lotIdx % facades.length];
+
+        // 1. Rusticated Stone Base Floor (Pedestrian Entrance Level)
+        const baseH = 3.4;
+        const baseMesh = new T.Mesh(
+          new T.BoxGeometry(lot.w + 0.3, baseH, lot.d + 0.3),
+          this.materials.stoneRustication || this.materials.sidewalk
         );
-        plinth.position.y = 0.21;
-        plinth.receiveShadow = true;
+        baseMesh.position.y = baseH / 2 + 0.16;
+        baseMesh.castShadow = true;
+        baseMesh.receiveShadow = true;
+        bGroup.add(baseMesh);
 
-        const body = new T.Mesh(
-          new T.BoxGeometry(lot.width, height, lot.depth),
-          this.materials[lot.wall]
-        );
-        body.position.y = height / 2 + 0.42;
-        body.castShadow = true;
-        body.receiveShadow = true;
+        // Ground Floor Entrance Door facing street
+        const door = this._createEntranceDoor('Door_' + lot.id);
+        door.position.set(0, 0.16, lot.d / 2 + 0.18);
+        bGroup.add(door);
 
-        const roof = new T.Mesh(
-          new T.BoxGeometry(lot.width + 0.6, 0.42, lot.depth + 0.6),
-          this.materials[lot.roof]
-        );
-        roof.position.y = height + 0.63;
-        roof.castShadow = true;
+        // Fabric Awning over Entrance
+        const awningMat = this.materials[lot.awning] || this.materials.awningBlue;
+        const awning = new T.Mesh(new T.BoxGeometry(Math.min(5.2, lot.w * 0.48), 0.32, 1.6), awningMat);
+        awning.position.set(0, 2.75, lot.d / 2 + 0.85);
+        awning.rotation.x = Math.PI / 18;
+        awning.castShadow = true;
+        bGroup.add(awning);
 
-        // Parapet trim along roof edge
-        const parapet = new T.Mesh(
-          new T.BoxGeometry(lot.width + 0.85, 0.22, lot.depth + 0.85),
-          this.materials.cyberMullion
-        );
-        parapet.position.y = height + 0.92;
+        // Storefront Signboard with Project Title & Port
+        const isOnline = lot.port === '4400' || lot.port === '1000' || lot.port === '8182' || lot.port === '8181' || lot.port === '8080';
+        const signTex = TextureFactory.createStorefrontSignTexture(lot.name, lot.port, isOnline, lot.awning === 'awningRed' ? '#ef4444' : '#3b82f6');
+        const signMat = new T.MeshStandardMaterial({ map: signTex, roughness: 0.3, metalness: 0.2 });
+        const signMesh = new T.Mesh(new T.BoxGeometry(Math.min(6.2, lot.w * 0.58), 1.25, 0.12), signMat);
+        signMesh.position.set(0, 3.45, lot.d / 2 + 0.22);
+        bGroup.add(signMesh);
 
-        // Entrance canopy on street-facing side
-        const canopy = new T.Mesh(
-          new T.BoxGeometry(Math.min(4.8, lot.width * 0.42), 0.18, 1.4),
-          this.materials.brushedTitanium
-        );
-        canopy.position.set(0, 2.75, lot.depth / 2 + 0.65);
+        // 2. Mid-Floor Window Matrices
+        const midH = bldH - baseH;
+        if (midH > 0) {
+          const midMesh = new T.Mesh(new T.BoxGeometry(lot.w, midH, lot.d), facadeMat);
+          midMesh.position.y = baseH + midH / 2 + 0.16;
+          midMesh.castShadow = true;
+          midMesh.receiveShadow = true;
+          bGroup.add(midMesh);
 
-        block.add(plinth, body, roof, parapet, canopy);
-
-        const winMatFront = (lotIdx % 2 === 0) ? this.materials.officeGlass : this.materials.clearGlass;
-        for (let floor = 0; floor < lot.floors; floor += 1) {
-          const yPos = 1.95 + floor * floorHeight;
-          const frontBand = new T.Mesh(
-            new T.BoxGeometry(lot.width - 1.2, 0.95, 0.08),
-            winMatFront
+          // Stone Cornice between Base and Mid Floors
+          const cornice = new T.Mesh(
+            new T.BoxGeometry(lot.w + 0.6, 0.22, lot.d + 0.6),
+            this.materials.sidewalk
           );
-          frontBand.position.set(0, yPos, lot.depth / 2 + 0.05);
-          const backBand = new T.Mesh(
-            new T.BoxGeometry(lot.width - 1.2, 0.95, 0.08),
-            winMatFront
-          );
-          backBand.position.set(0, yPos, -lot.depth / 2 - 0.05);
-          const leftBand = new T.Mesh(
-            new T.BoxGeometry(0.08, 0.95, lot.depth - 1.4),
-            this.materials.clearGlass
-          );
-          leftBand.position.set(-lot.width / 2 - 0.05, yPos, 0);
-          const rightBand = new T.Mesh(
-            new T.BoxGeometry(0.08, 0.95, lot.depth - 1.4),
-            this.materials.clearGlass
-          );
-          rightBand.position.set(lot.width / 2 + 0.05, yPos, 0);
-          block.add(frontBand, backBand, leftBand, rightBand);
+          cornice.position.y = baseH + 0.16;
+          bGroup.add(cornice);
         }
 
-        const roofUnit = new T.Mesh(
-          new T.BoxGeometry(Math.max(1.8, lot.width * 0.28), 0.85, Math.max(1.8, lot.depth * 0.25)),
-          this.materials.brushedTitanium
-        );
-        roofUnit.position.set(-lot.width * 0.22, height + 1.25, -lot.depth * 0.18);
-        block.add(roofUnit);
-
-        if (this.materials.solarPanel) {
-          const solarArray = new T.Mesh(
-            new T.BoxGeometry(Math.max(2.4, lot.width * 0.36), 0.12, Math.max(2.0, lot.depth * 0.32)),
-            this.materials.solarPanel
+        // 3. CityRT Architectural Roofs
+        const roofY = bldH + 0.16;
+        if (lot.roofType === 'mansard') {
+          const mansard = this._createMansardRoof(lot.w, lot.d, 2.8);
+          mansard.position.y = roofY;
+          bGroup.add(mansard);
+        } else if (lot.roofType === 'terracotta') {
+          const pitched = this._createPitchedRoof(lot.w, lot.d, 2.6);
+          pitched.position.y = roofY;
+          bGroup.add(pitched);
+        } else {
+          // Parapet with Cornice & Rooftop HVAC Equipment
+          const roofSlab = new T.Mesh(
+            new T.BoxGeometry(lot.w + 0.5, 0.35, lot.d + 0.5),
+            this.materials.sidewalk
           );
-          solarArray.position.set(lot.width * 0.18, height + 0.92, lot.depth * 0.14);
-          block.add(solarArray);
+          roofSlab.position.y = roofY + 0.17;
+          roofSlab.castShadow = true;
+          bGroup.add(roofSlab);
+
+          const parapetTrim = new T.Mesh(
+            new T.BoxGeometry(lot.w + 0.7, 0.45, lot.d + 0.7),
+            this.materials.cyberMullion || this.materials.dockBumper
+          );
+          parapetTrim.position.y = roofY + 0.45;
+          bGroup.add(parapetTrim);
+
+          const hvac = new T.Mesh(
+            new T.BoxGeometry(Math.max(2.0, lot.w * 0.32), 1.1, Math.max(2.0, lot.d * 0.28)),
+            this.materials.brushedTitanium
+          );
+          hvac.position.set(-lot.w * 0.2, roofY + 0.9, -lot.d * 0.18);
+          hvac.castShadow = true;
+          bGroup.add(hvac);
+
+          if (this.materials.solarPanel) {
+            const solar = new T.Mesh(
+              new T.BoxGeometry(Math.max(2.4, lot.w * 0.35), 0.12, Math.max(2.0, lot.d * 0.32)),
+              this.materials.solarPanel
+            );
+            solar.position.set(lot.w * 0.2, roofY + 0.5, lot.d * 0.15);
+            bGroup.add(solar);
+          }
         }
 
-        if (typeof this._createDetailedTree === 'function' && typeof T.CylinderGeometry === 'function') {
-          const treeType = ['deciduous', 'flowering', 'pine'][lotIdx % 3];
-          const tree = this._createDetailedTree(treeType);
-          tree.position.set(lot.width / 2 + 1.8, 0, lot.depth / 2 + 1.2);
-          block.add(tree);
-        }
+        // 4. Raycast Interactive Hit Box
+        const hitBox = new T.Mesh(
+          new T.BoxGeometry(lot.w + 1.2, bldH + 3.2, lot.d + 1.2),
+          new T.MeshBasicMaterial({ visible: false })
+        );
+        hitBox.position.y = (bldH + 3.2) / 2;
+        hitBox.userData = {
+          type: 'project',
+          id: lot.id,
+          projectId: lot.id,
+          name: lot.name,
+          port: lot.port,
+          category: lot.cat,
+          isOnline: isOnline
+        };
+        bGroup.add(hitBox);
+        this.interactiveMeshes.push(hitBox);
+        this.projectBuildings.set(lot.id, { group: bGroup, hitBox, lot, isOnline });
 
-        fabric.add(block);
+        fabric.add(bGroup);
       });
 
       this.scene.add(fabric);
@@ -5805,6 +6109,10 @@
           const liveAgent = this.agents.get(data.assignedAgentId) || { id: data.assignedAgentId, name: data.assignedAgentName || data.assignedAgentId };
           window.fenixShowWorldAgentInspector(liveAgent);
         }
+      } else if (data.type === 'project') {
+        const targetPos = this.hoveredObject.parent ? this.hoveredObject.parent.position : this.hoveredObject.position;
+        this.focusEntity(targetPos, 34);
+        this.selectProjectBuilding(data);
       } else if (data.type === 'building') {
         this.selectBuilding(data.id || data.buildingId);
       }
@@ -6222,6 +6530,68 @@
           this.focusEntity(new T.Vector3(wPos.x, Math.max(3.5, wPos.y), wPos.z), 46, Math.PI / 4, 0.54);
         }
       }
+    }
+
+    selectProjectBuilding(projectData) {
+      if (!projectData) return;
+      const bldInfo = this.projectBuildings?.get(projectData.projectId || projectData.id);
+      if (bldInfo && bldInfo.group) {
+        const lookPos = new T.Vector3(bldInfo.group.position.x, 5.5, bldInfo.group.position.z);
+        this.focusEntity(lookPos, 52, Math.PI / 4, 0.56);
+      }
+      this._showProjectBuildingModal(projectData);
+    }
+
+    _showProjectBuildingModal(project) {
+      let modal = document.getElementById('fw3ProjectCard');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'fw3ProjectCard';
+        modal.className = 'fcw-panel fw3-project-modal';
+        modal.style.cssText = 'position:fixed;top:75px;right:24px;width:340px;background:rgba(15,23,42,0.95);border:1px solid #334155;border-radius:12px;padding:16px;box-shadow:0 20px 40px rgba(0,0,0,0.6);z-index:9999;backdrop-filter:blur(12px);color:#f8fafc;font-family:Inter,system-ui,sans-serif;';
+        document.body.appendChild(modal);
+      }
+
+      const isOnline = project.isOnline || project.port === '4400' || project.port === '1000' || project.port === '8182' || project.port === '8181' || project.port === '8080';
+      const statusBadge = isOnline
+        ? '<span style="display:inline-flex;align-items:center;gap:5px;background:#052e16;color:#4ade80;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> ONLINE</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:5px;background:#1e293b;color:#94a3b8;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:#64748b;"></span> OFFLINE</span>';
+
+      modal.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:2px;">Edifício do Projeto • ${project.category || 'Sistema'}</div>
+            <h3 style="margin:0;font-size:16px;font-weight:700;color:#f8fafc;">${project.name || project.projectId}</h3>
+          </div>
+          <button id="fw3CloseProjectCard" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:18px;padding:4px;">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+          ${statusBadge}
+          ${project.port ? `<span style="font-family:monospace;font-size:11px;color:#cbd5e1;background:#1e293b;padding:2px 6px;border-radius:4px;">Porta :${project.port}</span>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button id="fw3BtnOpenWorkspace" style="flex:1;background:#2563eb;color:#ffffff;border:none;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <span>Abrir Workspace</span> ➔
+          </button>
+        </div>
+      `;
+      modal.style.display = 'block';
+
+      document.getElementById('fw3CloseProjectCard')?.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+
+      document.getElementById('fw3BtnOpenWorkspace')?.addEventListener('click', () => {
+        modal.style.display = 'none';
+        if (typeof window.openProjectWorkspace === 'function') {
+          window.openProjectWorkspace(project.projectId || project.id);
+        } else if (typeof window.fenixSelectProject === 'function') {
+          window.fenixSelectProject(project.projectId || project.id);
+        }
+        if (typeof window.showView === 'function') {
+          window.showView('projects');
+        }
+      });
     }
 
     selectBuilding(buildingId) {
