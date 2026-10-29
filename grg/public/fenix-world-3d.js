@@ -3608,11 +3608,13 @@
       const body = new T.Mesh(new T.BoxGeometry(2.3, 2.4, 5.2), colorMat);
       body.position.set(0, 1.5, 0);
       body.castShadow = true;
+      this._applyLigneClaire(body, 25);
       van.add(body);
 
       // Cab front
       const cab = new T.Mesh(new T.BoxGeometry(2.2, 1.8, 2.0), colorMat);
       cab.position.set(0, 1.2, 3.1);
+      this._applyLigneClaire(cab, 25);
       van.add(cab);
 
       // Windshield
@@ -3623,11 +3625,14 @@
       // Wheels
       const wGeom = new T.CylinderGeometry(0.42, 0.42, 0.35, 10);
       wGeom.rotateZ(Math.PI / 2);
+      const wheels = [];
       [[-1.15, 0.42, 2.4], [1.15, 0.42, 2.4], [-1.15, 0.42, -1.8], [1.15, 0.42, -1.8]].forEach(pos => {
         const w = new T.Mesh(wGeom, this.materials.rubberTire);
         w.position.set(...pos);
         van.add(w);
+        wheels.push(w);
       });
+      van.userData.wheels = wheels;
       return van;
     }
 
@@ -3640,27 +3645,33 @@
       const lowerBody = new T.Mesh(new T.BoxGeometry(1.8, 0.65, 4.2), colorMat);
       lowerBody.position.set(0, 0.55, 0);
       lowerBody.castShadow = true;
+      this._applyLigneClaire(lowerBody, 25);
       car.add(lowerBody);
 
       // Cabin / Greenhouse (Width 1.5m, Height 0.68m, Length 2.1m)
       const cabin = new T.Mesh(new T.BoxGeometry(1.5, 0.68, 2.1), this.materials.officeGlass || this.materials.glass);
       cabin.position.set(0, 1.11, -0.2);
       cabin.castShadow = true;
+      this._applyLigneClaire(cabin, 25);
       car.add(cabin);
 
       // Roof panel (Total car height reaches exactly 1.45m)
       const roof = new T.Mesh(new T.BoxGeometry(1.48, 0.08, 1.8), colorMat);
       roof.position.set(0, 1.41, -0.2);
+      this._applyLigneClaire(roof, 25);
       car.add(roof);
 
       // Wheels (Radius 0.30, Width 0.22)
       const wGeom = new T.CylinderGeometry(0.30, 0.30, 0.22, 12);
       wGeom.rotateZ(Math.PI / 2);
+      const wheels = [];
       [[-0.92, 0.30, 1.3], [0.92, 0.30, 1.3], [-0.92, 0.30, -1.3], [0.92, 0.30, -1.3]].forEach(pos => {
         const w = new T.Mesh(wGeom, this.materials.rubberTire);
         w.position.set(...pos);
         car.add(w);
+        wheels.push(w);
       });
+      car.userData.wheels = wheels;
 
       // Front Headlights & Rear Taillights
       const hlMat = new T.MeshBasicMaterial({ color: 0xffffff });
@@ -3676,6 +3687,91 @@
       car.add(hlL, hlR, tlL, tlR);
 
       return car;
+    }
+
+    /* ── CityRT Signature Red Vintage Pickup Truck ── */
+    _createPickupTruck(colorMat = this.materials.depositoRed || this.materials.truckCabinBlue) {
+      const truck = new T.Group();
+      truck.name = 'PickupTruck';
+      truck.userData = { type: 'pickup', length: 4.8, width: 2.0, height: 1.75 };
+
+      // 1. Front Hood / Engine Bay (Length 1.6m, Width 1.9m, Height 0.75m)
+      const hood = new T.Mesh(new T.BoxGeometry(1.9, 0.75, 1.6), colorMat);
+      hood.position.set(0, 0.65, 1.3);
+      hood.castShadow = true;
+      this._applyLigneClaire(hood, 25);
+      truck.add(hood);
+
+      // 2. Vintage Cabin with Windshield & Roof (Length 1.4m, Width 1.85m, Height 0.95m)
+      const cabBody = new T.Mesh(new T.BoxGeometry(1.85, 0.95, 1.4), colorMat);
+      cabBody.position.set(0, 1.15, -0.1);
+      cabBody.castShadow = true;
+      this._applyLigneClaire(cabBody, 25);
+      truck.add(cabBody);
+
+      // Cabin Windows Glass
+      const winMat = this.materials.officeGlass || this.materials.glass;
+      const frontWin = new T.Mesh(new T.BoxGeometry(1.65, 0.5, 0.08), winMat);
+      frontWin.position.set(0, 1.35, 0.61);
+      truck.add(frontWin);
+
+      const sideWinL = new T.Mesh(new T.BoxGeometry(0.08, 0.45, 0.8), winMat);
+      sideWinL.position.set(-0.94, 1.35, -0.1);
+      const sideWinR = new T.Mesh(new T.BoxGeometry(0.08, 0.45, 0.8), winMat);
+      sideWinR.position.set(0.94, 1.35, -0.1);
+      truck.add(sideWinL, sideWinR);
+
+      // 3. Open Rear Cargo Bed (Length 1.8m, Width 1.9m, Height 0.60m)
+      const bedMat = this.materials.stoneRustication || this.materials.dockBumper;
+      const bedFloor = new T.Mesh(new T.BoxGeometry(1.85, 0.15, 1.8), bedMat);
+      bedFloor.position.set(0, 0.45, -1.65);
+      this._applyLigneClaire(bedFloor, 25);
+      truck.add(bedFloor);
+
+      const bedWallL = new T.Mesh(new T.BoxGeometry(0.12, 0.55, 1.8), colorMat);
+      bedWallL.position.set(-0.88, 0.72, -1.65);
+      this._applyLigneClaire(bedWallL, 25);
+      const bedWallR = new T.Mesh(new T.BoxGeometry(0.12, 0.55, 1.8), colorMat);
+      bedWallR.position.set(0.88, 0.72, -1.65);
+      this._applyLigneClaire(bedWallR, 25);
+      const bedTail = new T.Mesh(new T.BoxGeometry(1.85, 0.55, 0.12), colorMat);
+      bedTail.position.set(0, 0.72, -2.52);
+      this._applyLigneClaire(bedTail, 25);
+      truck.add(bedWallL, bedWallR, bedTail);
+
+      // 4. Rugged Wheels (Radius 0.36, Width 0.26)
+      const wGeom = new T.CylinderGeometry(0.36, 0.36, 0.26, 12);
+      wGeom.rotateZ(Math.PI / 2);
+      const wheels = [];
+      [[-0.98, 0.36, 1.3], [0.98, 0.36, 1.3], [-0.98, 0.36, -1.6], [0.98, 0.36, -1.6]].forEach(pos => {
+        const w = new T.Mesh(wGeom, this.materials.rubberTire);
+        w.position.set(...pos);
+        w.castShadow = true;
+        truck.add(w);
+        wheels.push(w);
+      });
+      truck.userData.wheels = wheels;
+
+      // 5. Front Chrome Bumper & Grille + Headlights
+      const chromeMat = new T.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.2 });
+      const bumper = new T.Mesh(new T.BoxGeometry(2.0, 0.22, 0.18), chromeMat);
+      bumper.position.set(0, 0.42, 2.15);
+      this._applyLigneClaire(bumper, 25);
+      truck.add(bumper);
+
+      const hlMat = new T.MeshBasicMaterial({ color: 0xfffae0 });
+      const tlMat = new T.MeshBasicMaterial({ color: 0xff1111 });
+      const hlL = new T.Mesh(new T.BoxGeometry(0.3, 0.2, 0.05), hlMat);
+      hlL.position.set(-0.68, 0.72, 2.12);
+      const hlR = new T.Mesh(new T.BoxGeometry(0.3, 0.2, 0.05), hlMat);
+      hlR.position.set(0.68, 0.72, 2.12);
+      const tlL = new T.Mesh(new T.BoxGeometry(0.24, 0.16, 0.05), tlMat);
+      tlL.position.set(-0.8, 0.65, -2.6);
+      const tlR = new T.Mesh(new T.BoxGeometry(0.24, 0.16, 0.05), tlMat);
+      tlR.position.set(0.8, 0.65, -2.6);
+      truck.add(hlL, hlR, tlL, tlR);
+
+      return truck;
     }
 
     
@@ -5954,12 +6050,79 @@
       boxVan.rotation.y = -Math.PI / 4;
       this.scene.add(boxVan);
 
-      // 4. Moving Highway Traffic
-      const highwayTruck = this._createDeliveryBoxVan(this.materials.containerBlue);
-      const trafficRoute = window.FenixCityMachineScene?.LOGISTICS_TRAFFIC_ROUTE || { x: 22, startZ: -37, endZ: -4, speed: 3.4 };
-      highwayTruck.position.set(trafficRoute.x, 0, trafficRoute.startZ);
-      this.scene.add(highwayTruck);
-      this.trafficVehicle = { mesh: highwayTruck, x: trafficRoute.x, z: trafficRoute.startZ, direction: 1, speed: trafficRoute.speed };
+      // 4. CityRT Active Vehicular Traffic Fleet (Moving smoothly along orthogonal avenues)
+      this.trafficVehicles = [];
+
+      // Vehicle A: Iconic Red Vintage Pickup Truck (Cruising North on Central Avenue, right lane: x = 2.4)
+      const pickup = this._createPickupTruck(this.materials.depositoRed || this.materials.truckCabinBlue);
+      pickup.position.set(2.4, 0, -40);
+      pickup.rotation.y = 0; // heading +Z
+      this.scene.add(pickup);
+      this.trafficVehicles.push({
+        mesh: pickup,
+        axis: 'z',
+        lane: 2.4,
+        pos: -40,
+        dir: 1,
+        speed: 5.2,
+        min: -85,
+        max: 85,
+        wheels: pickup.userData.wheels || []
+      });
+
+      // Vehicle B: Blue Delivery Box Van (Cruising South on Central Avenue, opposite lane: x = -2.4)
+      const vanBlue = this._createDeliveryBoxVan(this.materials.containerBlue || this.materials.truckCabinBlue);
+      vanBlue.position.set(-2.4, 0, 45);
+      vanBlue.rotation.y = Math.PI; // heading -Z
+      this.scene.add(vanBlue);
+      this.trafficVehicles.push({
+        mesh: vanBlue,
+        axis: 'z',
+        lane: -2.4,
+        pos: 45,
+        dir: -1,
+        speed: 4.4,
+        min: -85,
+        max: 85,
+        wheels: vanBlue.userData.wheels || []
+      });
+
+      // Vehicle C: Cream/Yellow Sedan (Cruising East on East-West Boulevard, right lane: z = -2.4)
+      const creamSedan = this._createSedanCar(this.materials.cityrtFacadeCream || this.materials.dockBumper);
+      creamSedan.position.set(-45, 0, -2.4);
+      creamSedan.rotation.y = Math.PI / 2; // heading +X
+      this.scene.add(creamSedan);
+      this.trafficVehicles.push({
+        mesh: creamSedan,
+        axis: 'x',
+        lane: -2.4,
+        pos: -45,
+        dir: 1,
+        speed: 5.8,
+        min: -85,
+        max: 85,
+        wheels: creamSedan.userData.wheels || []
+      });
+
+      // Vehicle D: Classic Red Sedan (Cruising West on East-West Boulevard, opposite lane: z = 2.4)
+      const redSedan = this._createSedanCar(this.materials.depositoRed);
+      redSedan.position.set(50, 0, 2.4);
+      redSedan.rotation.y = -Math.PI / 2; // heading -X
+      this.scene.add(redSedan);
+      this.trafficVehicles.push({
+        mesh: redSedan,
+        axis: 'x',
+        lane: 2.4,
+        pos: 50,
+        dir: -1,
+        speed: 4.8,
+        min: -85,
+        max: 85,
+        wheels: redSedan.userData.wheels || []
+      });
+
+      // Retain backward-compatible single vehicle reference
+      this.trafficVehicle = this.trafficVehicles[0];
 
       // 5. Executive Sedan Car parked near API Platform Complex
       const sedanCar = this._createSedanCar(this.materials.dockBumper);
@@ -6657,8 +6820,10 @@
       };
       
       this.cameraState.isStreetView = true;
-      const lookPos = new T.Vector3(lookX || camX, 1.8, lookZ || (camZ - 8));
-      this.focusEntity(lookPos, 14, Math.PI / 4, 0.12);
+      const targetX = lookX !== undefined ? lookX : (camX || 0);
+      const targetZ = lookZ !== undefined ? lookZ : (camZ !== undefined ? camZ - 8 : 0);
+      const lookPos = new T.Vector3(targetX, 2.4, targetZ);
+      this.focusEntity(lookPos, 13.5, Math.PI * 0.36, 0.16);
       
       // Floating return pill in HUD
       let retBtn = document.getElementById('fw3ReturnAerialBtn');
@@ -8141,8 +8306,29 @@
         }
       }
 
-      // CityRT: Active vehicular traffic along urban avenues
-      if (this.trafficVehicle && this.trafficVehicle.mesh) {
+      // CityRT: Active vehicular traffic along urban avenues with smooth wheel rotation & boundary wrap
+      if (Array.isArray(this.trafficVehicles)) {
+        this.trafficVehicles.forEach(tv => {
+          if (!tv || !tv.mesh) return;
+          tv.pos += (tv.speed || 4.5) * (tv.dir || 1) * delta;
+          if (tv.dir > 0 && tv.pos > tv.max) {
+            tv.pos = tv.min;
+          } else if (tv.dir < 0 && tv.pos < tv.min) {
+            tv.pos = tv.max;
+          }
+          if (tv.axis === 'z') {
+            tv.mesh.position.z = tv.pos;
+            tv.mesh.position.x = tv.lane;
+          } else {
+            tv.mesh.position.x = tv.pos;
+            tv.mesh.position.z = tv.lane;
+          }
+          if (Array.isArray(tv.wheels)) {
+            const rotStep = (tv.speed || 4.5) * delta * 2.8 * (tv.dir || 1);
+            tv.wheels.forEach(w => { w.rotation.x += rotStep; });
+          }
+        });
+      } else if (this.trafficVehicle && this.trafficVehicle.mesh) {
         const tv = this.trafficVehicle;
         tv.z = (tv.z || -30) + (tv.speed || 3.8) * (tv.direction || 1) * delta;
         if (tv.z > 65) {
