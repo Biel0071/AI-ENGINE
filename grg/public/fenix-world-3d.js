@@ -7936,13 +7936,20 @@
         }
       }
 
-      // Cyberpunk Skyscraper Vertical Neon Beacon Beams pulse
-      if (this.neonBeams && this.neonBeams.length > 0) {
-        const beamPulse = 0.30 + Math.sin(time * 2.2) * 0.12;
-        this.neonBeams.forEach((bm) => {
-          bm.material.opacity = beamPulse;
-          bm.rotation.y += delta * 0.2;
-        });
+      // CityRT: Active vehicular traffic along urban avenues
+      if (this.trafficVehicle && this.trafficVehicle.mesh) {
+        const tv = this.trafficVehicle;
+        tv.z = (tv.z || -30) + (tv.speed || 3.8) * (tv.direction || 1) * delta;
+        if (tv.z > 65) {
+          tv.z = 65;
+          tv.direction = -1;
+          tv.mesh.rotation.y = Math.PI;
+        } else if (tv.z < -65) {
+          tv.z = -65;
+          tv.direction = 1;
+          tv.mesh.rotation.y = 0;
+        }
+        tv.mesh.position.z = tv.z;
       }
 
       // 1. Dynamic Automatic Warehouse Roof Cutaway System
