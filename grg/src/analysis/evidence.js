@@ -8,7 +8,7 @@ const { scanProject } = require('../project-mirror/scanner');
 const { extractScreens } = require('../project-mirror/screen-extractor');
 const exec = promisify(execFile);
 const SECRET = /password|passwd|secret|token|authorization|credential|api.?key|private.?key|cookie/i;
-const OMIT = new Set(['node_modules', '.git', '.data', '.env', 'generated', 'archive', 'coverage', 'dist', 'build', 'graphify-out', 'qa-results', 'temp_backup', 'temp_backup2']);
+const OMIT = new Set(['node_modules', '.git', '.data', '.env', 'generated', 'archive', 'coverage', 'dist', 'build', 'graphify-out', 'qa-results', 'test-results', 'workspaces', 'temp_backup', 'temp_backup2', 'node-v20.11.1-win-x64']);
 function redact(value) {
   if (Array.isArray(value)) return value.map(redact);
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, SECRET.test(k) ? '[REMOVIDO]' : redact(v)]));
@@ -21,7 +21,7 @@ function redact(value) {
   for (const [key, secret] of Object.entries(process.env)) if (SECRET.test(key) && secret.length >= 8) result = result.split(secret).join('[REMOVIDO]');
   return result;
 }
-function allowedFile(name) { return !OMIT.has(name) && !name.startsWith('.env') && !/\.(pem|key|p12|pfx)$/i.test(name) && !/session.?token|credentials|secrets/i.test(name) && !/^(?:temp_|tmp_|patch_)/.test(name); }
+function allowedFile(name) { return !OMIT.has(name) && !name.startsWith('.env') && !name.startsWith('node-v') && !name.startsWith('.fenix-') && !/\.(pem|key|p12|pfx)$/i.test(name) && !/session.?token|credentials|secrets/i.test(name) && !/^(?:temp_|tmp_|patch_)/.test(name); }
 async function inventory(root) {
   const files = [], errors = [];
   async function walk(dir) {

@@ -12,7 +12,7 @@ const { promisify } = require('node:util');
 
 const runFile = promisify(execFile);
 
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', '.next', '__pycache__', 'graphify-out', 'temp_backup', 'temp_backup2']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', '.next', '__pycache__', 'graphify-out', 'test-results', 'workspaces', 'temp_backup', 'temp_backup2', 'node-v20.11.1-win-x64']);
 const MAX_FILES = 2000;
 
 async function walkDir(rootDir, maxFiles = MAX_FILES) {

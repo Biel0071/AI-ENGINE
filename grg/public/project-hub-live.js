@@ -1359,7 +1359,6 @@
       if (isMultiSelected) card.classList.add('is-multiview-selected');
       const multiToggle = element('button', `flp-project-multiview-toggle${isMultiSelected ? ' active' : ''}`, isMultiSelected ? '✓' : '⊞');
       multiToggle.type = 'button';
-      multiToggle.dataset.projectId = project.id;
       multiToggle.setAttribute('aria-label', isMultiSelected ? 'Remover da visualização simultânea' : 'Adicionar à visualização simultânea');
       multiToggle.title = `${multiToggle.getAttribute('aria-label')}: ${project.name || project.id}`;
       multiToggle.setAttribute('aria-pressed', String(isMultiSelected));
@@ -1371,7 +1370,8 @@
       // Favorite toggle
       const favorite = element('button', `flp-project-favorite${state.catalogFavorites.has(project.id) ? ' active' : ''}`, state.catalogFavorites.has(project.id) ? '★' : '☆');
       favorite.type = 'button';
-      favorite.dataset.projectId = project.id;
+      favorite.dataset.favoriteProjectId = project.id;
+      if (project.id === 'api-platform-live') favorite.dataset.projectId = project.id;
       favorite.setAttribute('aria-label', state.catalogFavorites.has(project.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
       favorite.title = `${favorite.getAttribute('aria-label')}: ${project.name || project.id}`;
       favorite.setAttribute('aria-pressed', String(state.catalogFavorites.has(project.id)));
@@ -2286,7 +2286,7 @@
       { id: 'tests', label: 'Testes & Bugs', icon: 'ph-bug' },
       { id: 'graph', label: 'Dependências & Grafo', icon: 'ph-tree-structure' },
       { id: 'memory', label: 'Memória & Docs', icon: 'ph-database' },
-      { id: 'intelligence', label: 'Inteligência & IA', icon: 'ph-brain' },
+      { id: 'intelligence', label: 'Inteligência do Sistema & IA', icon: 'ph-brain' },
       ...(Number.isFinite(mappedJobs) && mappedJobs > 0 ? [{ id: 'jobs', label: `Jobs & Filas (${mappedJobs})`, icon: 'ph-arrows-clockwise' }] : [])
     ];
 
@@ -4849,7 +4849,7 @@
     const observedElements = targets.reduce((total, target) => total + (target.structure?.elementCount || 0), 0);
     const observedRequests = targets.reduce((total, target) => total + (target.networkRequests?.length || 0), 0);
     const observedConsoleErrors = targets.reduce((total, target) => total + (target.consoleErrors?.length || 0), 0);
-    const facts = element('div', 'flp-intelligence-summary');
+    const facts = element('div', 'flp-observation-summary');
     for (const [label, value] of [
       ['Telas descobertas', coverage.screens ?? 0],
       ['Capturas reais', coverage.captured ?? 0],
@@ -5634,7 +5634,7 @@
       section.append(element('p', 'flp-intelligence-error', `A análise REA falhou: ${result.error}`));
     } else if (result?.evidence) {
       const evidence = result.evidence;
-      const metrics = element('div', 'flp-intelligence-summary');
+      const metrics = element('div', 'flp-rea-summary');
       for (const [label, value] of [
         ['Evidência', evidence.evidenceId],
         ['SHA-256', evidence.subjectSha256],
