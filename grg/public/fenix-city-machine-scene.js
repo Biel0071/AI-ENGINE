@@ -5,9 +5,12 @@
 })(typeof window !== 'undefined' ? window : globalThis, () => {
   'use strict';
 
-  const MACHINE_ANCHOR = Object.freeze({ x: -18, z: 2 });
+  // ⚡ Dedicated Tech Substation & Server Yard (North of API Platform Complex, away from roads)
+  const MACHINE_ANCHOR = Object.freeze({ x: -50, z: -48 });
   const MACHINE_COLUMNS = 4;
-  const MACHINE_SPACING = 3.2;
+  const MACHINE_SPACING_X = 3.8;
+  const MACHINE_SPACING_Z = 3.6;
+  const MACHINE_SPACING = MACHINE_SPACING_X;
   const PROJECT_ANCHOR = Object.freeze({ x: 63, z: 32 });
   const PROJECT_COLUMNS = 7;
   const PROJECT_SPACING_X = 7.2;
@@ -138,9 +141,9 @@
         memoryTotalBytes: Number.isFinite(machine.memoryTotalBytes) ? machine.memoryTotalBytes : null,
         cpuLoad1m: Number.isFinite(machine.cpuLoad1m) ? machine.cpuLoad1m : null,
         position: {
-          x: anchor.x + centeredColumn * MACHINE_SPACING,
+          x: anchor.x + centeredColumn * MACHINE_SPACING_X,
           y: 0,
-          z: anchor.z + row * MACHINE_SPACING,
+          z: anchor.z + row * MACHINE_SPACING_Z,
         },
       };
     });

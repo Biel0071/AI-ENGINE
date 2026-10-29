@@ -1027,15 +1027,15 @@
       this.addEdge('dep_dock2', 'dep_apron');
       this.addEdge('dep_apron', 'dep_gate');
 
-      // 2. City Central Arteries & Fênix HQ Perimeter Ring Road (Detour around HQ)
-      this.addNode('road_hq_n', { x: 0.0, y: 0.2, z: 16.0 }, 'road', 0);
-      this.addNode('road_hq_s', { x: 0.0, y: 0.2, z: -16.0 }, 'road', 0);
-      this.addNode('road_hq_e', { x: 16.0, y: 0.2, z: 0.0 }, 'road', 0);
-      this.addNode('road_hq_w', { x: -16.0, y: 0.2, z: 0.0 }, 'road', 0);
-      this.addNode('road_north', { x: 0.0, y: 0.2, z: 24.0 }, 'road', 0);
-      this.addNode('road_south', { x: 0.0, y: 0.2, z: -24.0 }, 'road', 0);
-      this.addNode('road_east', { x: 28.0, y: 0.2, z: 0.0 }, 'road', 0);
-      this.addNode('road_west', { x: -28.0, y: 0.2, z: 0.0 }, 'road', 0);
+      // 2. City Pedestrian Sidewalk Corridors & Fênix HQ Plaza (Sidewalks along avenues, out of car lanes)
+      this.addNode('road_hq_n', { x: 0.0, y: 0.2, z: 12.8 }, 'plaza', 0);
+      this.addNode('road_hq_s', { x: 0.0, y: 0.2, z: -12.8 }, 'plaza', 0);
+      this.addNode('road_hq_e', { x: 12.8, y: 0.2, z: 0.0 }, 'plaza', 0);
+      this.addNode('road_hq_w', { x: -12.8, y: 0.2, z: 0.0 }, 'plaza', 0);
+      this.addNode('road_north', { x: 5.6, y: 0.2, z: 24.0 }, 'sidewalk', 0);
+      this.addNode('road_south', { x: 5.6, y: 0.2, z: -24.0 }, 'sidewalk', 0);
+      this.addNode('road_east', { x: 28.0, y: 0.2, z: 5.5 }, 'sidewalk', 0);
+      this.addNode('road_west', { x: -28.0, y: 0.2, z: 5.5 }, 'sidewalk', 0);
       this.addNode('road_ne', { x: 28.0, y: 0.2, z: 24.0 }, 'road', 0);
       this.addNode('road_nw', { x: -28.0, y: 0.2, z: 24.0 }, 'road', 0);
       this.addNode('road_se', { x: 28.0, y: 0.2, z: -24.0 }, 'road', 0);
@@ -1895,6 +1895,7 @@
         }
 
         if (agentList.length > 0) {
+          const occupiedInteriorPositions = [];
           // Dynamically instantiate 3D agent models ONLY if they exist in real backend telemetry
           if (agentList.some(a => String(a.id || a.agentId) === 'agent-camila') && !this.camilaGroup) {
             this._initCamilaAgent();
@@ -1905,12 +1906,18 @@
             const stableIndex = Math.abs(Array.from(id).reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) | 0, 7));
             const coordinateInput = a.coordinates || a.homeCoordinates;
             const coordinateSource = this._getAgentCoordinateSource(coordinateInput, a);
-            const coordinates = this._normalizeAgentCoordinates(coordinateInput, stableIndex, a);
+            const measuredCoordinates = this._normalizeAgentCoordinates(coordinateInput, stableIndex, a);
             const pathDestination = Array.isArray(a.path) && a.path.length ? a.path[a.path.length - 1] : null;
             const targetRecord = this._hasExplicitCoordinates(a.targetCoordinates) ? a.targetCoordinates : pathDestination;
             const targetCoordinates = this._hasExplicitCoordinates(targetRecord) ? this._normalizeAgentCoordinates(targetRecord, stableIndex, a) : null;
             const canonicalMovementState = String(a.movementState || '').toUpperCase();
             const isCanonicalWalking = canonicalMovementState === 'WALKING' && Boolean(targetCoordinates);
+            const coordinates = isCanonicalWalking
+              ? measuredCoordinates
+              : this._resolveInteriorAgentCoordinates(a, measuredCoordinates, occupiedInteriorPositions);
+            if (a.buildingId && Number.isFinite(Number(a.floorNum))) {
+              occupiedInteriorPositions.push({ buildingId: a.buildingId, floorNum: Number(a.floorNum), x: coordinates.x, z: coordinates.z });
+            }
             if (existing && existing.mesh) {
               const lastTelemetry = existing.telemetryCoordinates || existing.coordinates || {
                 x: existing.mesh.position.x,
@@ -2094,6 +2101,100 @@
       const angle = (spoke / DISTRICTS.length) * Math.PI * 2 + ring * 0.61803398875;
       const radius = 17 + Math.min(12, ring * 1.4);
       return { x: district.x + Math.cos(angle) * radius, y: 0.8, z: district.z + Math.sin(angle) * radius };
+    }
+
+    _resolveInteriorAgentCoordinates(agent, coordinates, occupiedPositions = []) {
+      if (!agent?.buildingId || !Number.isFinite(Number(agent.floorNum))) return coordinates;
+      const buildingId = String(agent.buildingId).toLowerCase();
+      const districtId = buildingId === 'bld-api-platform' || buildingId === 'api-platform'
+        ? 'api-platform'
+        : buildingId === 'bld-deposito-mais' || buildingId === 'deposito-mais' || buildingId === 'logistics'
+          ? 'logistics'
+          : null;
+      if (!districtId) return coordinates;
+      const sameFloor = occupiedPositions.filter((item) =>
+        item.buildingId === agent.buildingId && item.floorNum === Number(agent.floorNum));
+      if (!sameFloor.some((item) => Math.hypot(item.x - coordinates.x, item.z - coordinates.z) < 1.5)) {
+        return coordinates;
+      }
+
+      const origin = districtOrigin(districtId);
+      const floor = Number(agent.floorNum);
+      const anchorX = coordinates.x - origin.x;
+      const anchorZ = coordinates.z - origin.z;
+      const spacing = 2.0;
+      const maxRadius = districtId === 'api-platform' ? 8.0 : 16.0;
+      const phase = (Math.abs(Array.from(String(agent.id || agent.agentId || '')).reduce((hash, ch) => (hash * 31 + ch.charCodeAt(0)) | 0, 7)) % 16) / 16;
+      for (let ring = 1; ring <= Math.ceil(maxRadius / spacing); ring += 1) {
+        const radius = ring * spacing;
+        if (radius > maxRadius) break;
+        const slots = ring * 8;
+        for (let slot = 0; slot < slots; slot += 1) {
+          const angle = (slot / slots + phase) * Math.PI * 2;
+          const x = origin.x + anchorX + Math.cos(angle) * radius;
+          const z = origin.z + anchorZ + Math.sin(angle) * radius;
+          if (districtId === 'api-platform' && (Math.abs(x - origin.x) > 8.2 || Math.abs(z - origin.z) > 6.2)) continue;
+          if (districtId === 'logistics' && (x < 29 || x > 71 || z < -53 || z > -19)) continue;
+          if (occupiedPositions.some((item) => item.buildingId === agent.buildingId && item.floorNum === floor && Math.hypot(item.x - x, item.z - z) < 1.5)) continue;
+          return { ...coordinates, x, z };
+        }
+      }
+      return coordinates;
+    }
+
+    _computeThoughtBubbleOffsets(agentRecords, radius = 2.8) {
+      const cellSize = radius;
+      const radiusSquared = radius * radius;
+      const columnOffsets = [0, -0.6, 0.6];
+      const grid = new Map();
+      const eligible = [];
+      const offsets = new Map();
+      const cellKey = (x, y, z) => `${x},${y},${z}`;
+
+      for (let index = 0; index < agentRecords.length; index += 1) {
+        const record = agentRecords[index];
+        const position = record?.mesh?.position;
+        if (!record?.thoughtBubble?.sprite || record.thoughtBubble.sprite.visible === false || !position
+          || ![position.x, position.y, position.z].every(Number.isFinite)) continue;
+        const item = {
+          record,
+          index,
+          x: position.x,
+          y: position.y,
+          z: position.z,
+          cellX: Math.floor(position.x / cellSize),
+          cellY: Math.floor(position.y / cellSize),
+          cellZ: Math.floor(position.z / cellSize)
+        };
+        const key = cellKey(item.cellX, item.cellY, item.cellZ);
+        const cell = grid.get(key) || [];
+        cell.push(item);
+        grid.set(key, cell);
+        eligible.push(item);
+      }
+
+      for (const item of eligible) {
+        let clusterRank = 0;
+        for (let x = item.cellX - 1; x <= item.cellX + 1; x += 1) {
+          for (let y = item.cellY - 1; y <= item.cellY + 1; y += 1) {
+            for (let z = item.cellZ - 1; z <= item.cellZ + 1; z += 1) {
+              for (const neighbor of grid.get(cellKey(x, y, z)) || []) {
+                if (neighbor.index >= item.index) continue;
+                const dx = item.x - neighbor.x;
+                const dy = item.y - neighbor.y;
+                const dz = item.z - neighbor.z;
+                if (dx * dx + dy * dy + dz * dz < radiusSquared) clusterRank += 1;
+              }
+            }
+          }
+        }
+
+        offsets.set(item.record, {
+          x: columnOffsets[clusterRank % columnOffsets.length],
+          y: 2.45 + Math.floor(clusterRank / 3) * 0.78
+        });
+      }
+      return offsets;
     }
 
     _loadState() {
@@ -8013,7 +8114,13 @@
       }
 
       if (Number.isFinite(subTarget.y)) position.y += (subTarget.y - position.y) * progress;
-      if (agentRecord.mesh.rotation) agentRecord.mesh.rotation.y = Math.atan2(dx, dz);
+      if (agentRecord.mesh.rotation) {
+        const targetYaw = Math.atan2(dx, dz);
+        let diff = targetYaw - agentRecord.mesh.rotation.y;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        agentRecord.mesh.rotation.y += diff * Math.min(1.0, delta * 9.0);
+      }
       return true;
     }
 
@@ -8536,6 +8643,18 @@
         this._projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
         this._frustum.setFromProjectionMatrix(this._projScreenMatrix);
         this._frameCounter = (this._frameCounter || 0) + 1;
+        // Thought Bubble Anti-Clumping Pass: spatially indexed targets refresh every eight frames.
+        if (this._frameCounter % 8 === 1) {
+          const agentList = Array.from(this.agents.values());
+          const bubbleOffsets = this._computeThoughtBubbleOffsets(agentList);
+          for (const agentRecord of agentList) {
+            const bubble = agentRecord?.thoughtBubble;
+            if (!bubble?.sprite) continue;
+            const offset = bubbleOffsets.get(agentRecord);
+            bubble.targetOffsetX = offset?.x ?? 0;
+            bubble.targetOffsetY = offset?.y ?? 2.45;
+          }
+        }
 
         let aIdx = 0;
         this.agents.forEach(agentRecord => {
@@ -8578,27 +8697,46 @@
                 this._tempMoveDir.normalize();
                 const walkSpeed = agentRecord.speed || 2.4;
                 agentRecord.mesh.position.addScaledVector(this._tempMoveDir, walkSpeed * delta);
-                agentRecord.mesh.rotation.y = Math.atan2(this._tempMoveDir.x, this._tempMoveDir.z);
+                const targetYaw = Math.atan2(this._tempMoveDir.x, this._tempMoveDir.z);
+                let diff = targetYaw - agentRecord.mesh.rotation.y;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                agentRecord.mesh.rotation.y += diff * Math.min(1.0, delta * 9.0);
 
-                // Skip limb kinematics if not in frustum or very distant
+                // Organic per-agent walk kinematics
                 if (inFrustum && camDist < 75) {
-                  const walkCycle = time * 9;
-                  if (ud.legL) ud.legL.rotation.x = Math.sin(walkCycle) * 0.65;
-                  if (ud.legR) ud.legR.rotation.x = -Math.sin(walkCycle) * 0.65;
-                  if (ud.armL) ud.armL.rotation.x = -Math.sin(walkCycle) * 0.45;
-                  if (ud.armR) ud.armR.rotation.x = Math.sin(walkCycle) * 0.45;
-                  agentRecord.mesh.position.y = (agentRecord.baseY || 0.9) + Math.abs(Math.sin(walkCycle * 2)) * 0.04;
+                  agentRecord._walkPhase = (agentRecord._walkPhase || 0) + delta * walkSpeed * 4.2;
+                  const walkCycle = agentRecord._walkPhase;
+                  if (ud.legL) ud.legL.rotation.x = Math.sin(walkCycle) * 0.72;
+                  if (ud.legR) ud.legR.rotation.x = -Math.sin(walkCycle) * 0.72;
+                  if (ud.armL) ud.armL.rotation.x = -Math.sin(walkCycle) * 0.52;
+                  if (ud.armR) ud.armR.rotation.x = Math.sin(walkCycle) * 0.52;
+                  agentRecord.mesh.rotation.z = Math.sin(walkCycle) * 0.035;
+                  agentRecord.mesh.position.y = (agentRecord.baseY || 0.88) + Math.abs(Math.sin(walkCycle * 2)) * 0.048;
                 }
               }
             }
           } else if (agentRecord.telemetryTarget && this._advanceAgentToTelemetry(agentRecord, delta)) {
             if (inFrustum && camDist < 75) {
-              const walkCycle = time * 9;
-              if (ud.legL) ud.legL.rotation.x = Math.sin(walkCycle) * 0.65;
-              if (ud.legR) ud.legR.rotation.x = -Math.sin(walkCycle) * 0.65;
-              if (ud.armL) ud.armL.rotation.x = -Math.sin(walkCycle) * 0.45;
-              if (ud.armR) ud.armR.rotation.x = Math.sin(walkCycle) * 0.45;
-              agentRecord.mesh.position.y = (agentRecord.baseY || 0.9) + Math.abs(Math.sin(walkCycle * 2)) * 0.04;
+              const walkSpeed = agentRecord.speed || 2.4;
+              agentRecord._walkPhase = (agentRecord._walkPhase || 0) + delta * walkSpeed * 4.2;
+              const walkCycle = agentRecord._walkPhase;
+              if (ud.legL) ud.legL.rotation.x = Math.sin(walkCycle) * 0.72;
+              if (ud.legR) ud.legR.rotation.x = -Math.sin(walkCycle) * 0.72;
+              if (ud.armL) ud.armL.rotation.x = -Math.sin(walkCycle) * 0.52;
+              if (ud.armR) ud.armR.rotation.x = Math.sin(walkCycle) * 0.52;
+              agentRecord.mesh.rotation.z = Math.sin(walkCycle) * 0.035;
+              agentRecord.mesh.position.y = (agentRecord.baseY || 0.88) + Math.abs(Math.sin(walkCycle * 2)) * 0.048;
+            }
+          } else {
+            // Smooth idle return to natural standing pose
+            if (agentRecord.mesh.rotation.z) agentRecord.mesh.rotation.z *= 0.85;
+            if (ud.legL && Math.abs(ud.legL.rotation.x) > 0.005) ud.legL.rotation.x *= 0.82;
+            if (ud.legR && Math.abs(ud.legR.rotation.x) > 0.005) ud.legR.rotation.x *= 0.82;
+            if (ud.armL && Math.abs(ud.armL.rotation.x) > 0.005) ud.armL.rotation.x *= 0.82;
+            if (ud.armR && Math.abs(ud.armR.rotation.x) > 0.005) ud.armR.rotation.x *= 0.82;
+            if (!ud.isSeated && inFrustum && camDist < 50) {
+              agentRecord.mesh.position.y = (agentRecord.baseY || 0.88) + Math.sin(aTime * 2.2) * 0.012;
             }
           }
 
@@ -8652,33 +8790,21 @@
           if (ud.detailParts && Array.isArray(ud.detailParts)) {
             ud.detailParts.forEach(p => { if (p) p.visible = showDetails; });
           }
+
+          const bubble = agentRecord.thoughtBubble;
+          if (bubble?.sprite) {
+            // Prioritize active working agents, hovered/selected agents, or close camera distance to prevent clutter
+            const isPriority = agentIsWorking || agentRecord.isSelected || agentRecord.isHovered || camDist < (18 * lodScale);
+            bubble.sprite.visible = showDetails && isPriority;
+            if (bubble.sprite.visible) {
+              bubble.sprite.position.y += ((bubble.targetOffsetY ?? 2.55) - bubble.sprite.position.y) * 0.2;
+              bubble.sprite.position.x += ((bubble.targetOffsetX ?? 0) - bubble.sprite.position.x) * 0.2;
+            }
+          }
         });
       }
 
-      // 3b. Thought Bubble Anti-Clumping Pass (Multi-tier vertical & horizontal offsets)
-      if (this.agents && this.agents.size > 1) {
-        const agentList = Array.from(this.agents.values());
-        for (let i = 0; i < agentList.length; i++) {
-          const a1 = agentList[i];
-          const sprite1 = a1?.thoughtBubble?.sprite;
-          if (!sprite1 || !a1?.mesh) continue;
-          let clusterRank = 0;
-          for (let j = 0; j < i; j++) {
-            const a2 = agentList[j];
-            if (!a2?.thoughtBubble?.sprite || !a2?.mesh) continue;
-            const dist = a1.mesh.position.distanceTo(a2.mesh.position);
-            if (dist < 4.2) {
-              clusterRank++;
-            }
-          }
-          const targetY = 2.45 + (clusterRank % 3) * 0.95;
-          const targetX = clusterRank === 1 ? -0.85 : clusterRank === 2 ? 0.85 : 0.0;
-          sprite1.position.y += (targetY - sprite1.position.y) * 0.15;
-          sprite1.position.x += (targetX - sprite1.position.x) * 0.15;
-        }
-      }
-
-      // 3c. Project Cutaway & Interior Reveal Transition
+      // 3b. Project Cutaway & Interior Reveal Transition
       if (this.projectNodes && this.projectNodes.size > 0) {
         const activeProjId = this.state?.level === 'interior' && this.state?.selected?.kind === 'project'
           ? this.state.selected.id

@@ -1412,7 +1412,7 @@ Responda diretamente em português como o agente operacional em primeira pessoa,
         { x: 8, y: 10, task: '/plan · Planejamento de Missões Multi-Empresa' },
         { x: 10, y: -8, task: '/teamwork-preview · Sincronização de Enxame 3D' },
         { x: -8, y: -10, task: '/learn · Atualização ACTIVE_PROJECT_MEMORY' },
-        { x: 0, y: 14, task: '/grill-me · Auditoria de Qualidade & SLA' }
+        { x: 0, y: 12.5, task: '/grill-me · Auditoria de Qualidade & SLA' }
       ]
     };
   }

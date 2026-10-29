@@ -2758,26 +2758,81 @@ window.fnxToggleKpiDrawer = function(category) {
       actionBtn.innerHTML = 'Abrir Central de Agentes &rarr;';
       actionBtn.onclick = () => { window.showView?.('agents'); window.fnxCloseKpiDrawer(); };
     }
-    const agents = Array.isArray(window.state?.agents) ? window.state.agents
-      : (Array.isArray(window.FENIX?.live?.agents) ? window.FENIX.live.agents : []);
-    const activeCount = agents.filter(a => ['WORKING', 'BUSY', 'RUNNING', 'WALKING', 'EXECUTING', 'ACTIVE'].includes(String(a?.status || a?.state || '').toUpperCase()) || Boolean(a?.currentJob || a?.currentTask)).length;
-    if (titleEl) {
-      titleEl.textContent = agents.length > 0 ? `AGENTES (${activeCount} ATIVOS / ${agents.length} TOTAL)` : 'AGENTES NO RUNTIME';
+    let agents = Array.isArray(window.state?.agents) && window.state.agents.length > 0 ? window.state.agents
+      : (Array.isArray(window.FENIX?.live?.agents) && window.FENIX.live.agents.length > 0 ? window.FENIX.live.agents : []);
+
+    // Merge live tasks and positions from 3D World if available
+    const worldAgents = window.fenixWorld3D?.agents;
+    if (worldAgents && worldAgents.size > 0) {
+      const merged = new Map();
+      agents.forEach(a => merged.set(String(a.id || a.agentId), { ...a }));
+      worldAgents.forEach((wa, wId) => {
+        const current = merged.get(wId) || {};
+        merged.set(wId, {
+          ...current,
+          id: wId,
+          name: wa.name || current.name || wId,
+          role: wa.role || current.role || 'Especialista',
+          status: wa.status || current.status || 'AVAILABLE',
+          state: wa.state || current.state || wa.status,
+          currentTask: wa.currentTask || current.currentTask || wa.assignedTask?.taskName || (wa.activity?.key === 'working' ? wa.activity.text : null),
+          currentJob: wa.currentJob || current.currentJob || null,
+          routineWaypoints: wa.routineWaypoints || current.routineWaypoints
+        });
+      });
+      agents = Array.from(merged.values());
     }
-    if (agents.length === 0) {
+
+    const isAgentActive = (a) => {
+      const s = String(a?.status || a?.state || '').toUpperCase();
+      return ['WORKING', 'BUSY', 'RUNNING', 'WALKING', 'EXECUTING', 'ACTIVE'].includes(s) || Boolean(a?.currentJob || a?.currentTask || a?.assignedTask?.taskName);
+    };
+
+    // Sort active agents strictly first!
+    const sortedAgents = [...agents].sort((a, b) => {
+      const aAct = isAgentActive(a);
+      const bAct = isAgentActive(b);
+      if (aAct && !bAct) return -1;
+      if (!aAct && bAct) return 1;
+      return 0;
+    });
+
+    const activeCount = sortedAgents.filter(isAgentActive).length;
+    if (titleEl) {
+      titleEl.textContent = sortedAgents.length > 0 ? `AGENTES (${activeCount} ATIVOS / ${sortedAgents.length} TOTAL)` : 'AGENTES NO RUNTIME';
+    }
+    if (sortedAgents.length === 0) {
       bodyEl.innerHTML = '<div style="padding:16px; text-align:center; color:#64748b;">Nenhum agente ativo registrado no momento.</div>';
     } else {
-      bodyEl.innerHTML = agents.slice(0, 8).map(a => `
-        <div class="fnx-kpi-item">
-          <div>
-            <strong style="color:#f1f5f9;">${a.name || a.id || 'Agente'}</strong>
-            <div style="font-size:10px; color:#94a3b8;">${a.role || a.specialty || 'Generalista'}</div>
+      bodyEl.innerHTML = sortedAgents.slice(0, 12).map(a => {
+        const isActive = isAgentActive(a);
+        const taskName = a.currentJob?.name || a.currentJob?.prompt || a.currentJob?.type || a.currentTask || a.assignedTask?.taskName || (isActive ? 'Executando rotina operacional' : null);
+        const statusText = isActive ? (a.currentJob ? 'TRABALHANDO' : (a.status || 'ATIVO')) : 'DISPONÍVEL';
+        const badgeColor = isActive ? '#10b981' : '#38bdf8';
+        const badgeBg = isActive ? 'rgba(16,185,129,0.18)' : 'rgba(56,189,248,0.12)';
+        const badgeBorder = isActive ? 'rgba(16,185,129,0.35)' : 'rgba(56,189,248,0.25)';
+
+        return `
+          <div class="fnx-kpi-item" style="display:flex; justify-content:space-between; align-items:flex-start; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.06); gap:10px; cursor:pointer;" onclick="if(window.fenixWorld3D?.focusAgent){ window.fenixWorld3D.focusAgent('${escapeHtml(a.id)}'); window.fnxCloseKpiDrawer(); }" title="Clique para focar este agente no Mundo 3D">
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <strong style="color:#f1f5f9; font-size:13px;">${escapeHtml(a.name || a.id || 'Agente')}</strong>
+                ${isActive ? '<span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>' : ''}
+              </div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${escapeHtml(a.role || a.specialty || 'Generalista')}</div>
+              ${taskName ? `
+                <div style="font-size:11px; color:#38bdf8; font-weight:600; margin-top:4px; display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(taskName)}">
+                  <i class="ph-bold ph-lightning" style="color:#fbbf24; flex-shrink:0;"></i>
+                  <span style="overflow:hidden; text-overflow:ellipsis;">${escapeHtml(taskName)}</span>
+                </div>
+              ` : ''}
+            </div>
+            <span style="font-size:10px; padding:3px 8px; border-radius:8px; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder}; font-weight:700; white-space:nowrap; flex-shrink:0; text-transform:uppercase;">
+              ${escapeHtml(String(statusText))}
+            </span>
           </div>
-          <span style="font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(34,211,238,0.15); color:#22d3ee; border:1px solid rgba(34,211,238,0.3); font-weight:700;">
-            ${String(a.status || a.state || 'ONLINE').toUpperCase()}
-          </span>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
   } else if (category === 'missions') {
     if (iconEl) iconEl.className = 'ph-bold ph-target';
@@ -2957,3 +3012,6 @@ document.addEventListener('click', (e) => {
   }
 })();
 
+
+// ESC to close drawer
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') window.fnxCloseKpiDrawer?.(); });

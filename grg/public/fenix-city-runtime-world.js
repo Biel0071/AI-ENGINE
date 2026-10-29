@@ -115,22 +115,23 @@
     group.name = `RuntimeNode_${projected.id}`;
     group.position.set(projected.position.x, projected.position.y, projected.position.z);
 
-    const baseMaterial = new T.MeshStandardMaterial({ color: 0x182431, metalness: 0.55, roughness: 0.38 });
-    const caseMaterial = new T.MeshStandardMaterial({ color: 0x263647, metalness: 0.62, roughness: 0.3 });
+    // Sleek, high-density server rack unit (Cyber-Obsidian styling)
+    const baseMaterial = new T.MeshStandardMaterial({ color: 0x111c26, metalness: 0.7, roughness: 0.35 });
+    const caseMaterial = new T.MeshStandardMaterial({ color: 0x1c2b3a, metalness: 0.65, roughness: 0.28 });
     const ledColor = statusColor(projected.status);
-    const base = new T.Mesh(new T.BoxGeometry(2.6, 0.35, 2.25), baseMaterial);
-    base.position.y = 0.2;
-    const cabinet = new T.Mesh(new T.BoxGeometry(projected.kind === 'runtime' ? 1.75 : 1.35, projected.kind === 'runtime' ? 2.6 : 1.9, 1.45), caseMaterial);
-    cabinet.position.y = projected.kind === 'runtime' ? 1.65 : 1.3;
-    const face = new T.Mesh(new T.BoxGeometry(projected.kind === 'runtime' ? 1.25 : 0.95, projected.kind === 'runtime' ? 2.25 : 1.55, 0.08), new T.MeshStandardMaterial({ color: 0x101820, metalness: 0.5, roughness: 0.45 }));
-    face.position.set(0, cabinet.position.y, 0.77);
+    const base = new T.Mesh(new T.BoxGeometry(1.6, 0.2, 1.4), baseMaterial);
+    base.position.y = 0.1;
+    const cabinet = new T.Mesh(new T.BoxGeometry(1.2, 2.3, 1.1), caseMaterial);
+    cabinet.position.y = 1.25;
+    const face = new T.Mesh(new T.BoxGeometry(0.96, 2.05, 0.05), new T.MeshStandardMaterial({ color: 0x081018, metalness: 0.8, roughness: 0.2 }));
+    face.position.set(0, cabinet.position.y, 0.56);
     group.add(base, cabinet, face);
 
     const lights = [];
-    for (let index = 0; index < 3; index++) {
-      const ledMaterial = new T.MeshStandardMaterial({ color: ledColor, emissive: ledColor, emissiveIntensity: 1.2, metalness: 0.2, roughness: 0.3 });
-      const led = new T.Mesh(new T.SphereGeometry(0.085, 8, 6), ledMaterial);
-      led.position.set(-0.38 + index * 0.38, cabinet.position.y + 0.56 - index * 0.18, 0.84);
+    for (let index = 0; index < 4; index++) {
+      const ledMaterial = new T.MeshStandardMaterial({ color: ledColor, emissive: ledColor, emissiveIntensity: 1.4, metalness: 0.2, roughness: 0.2 });
+      const led = new T.Mesh(new T.SphereGeometry(0.065, 8, 6), ledMaterial);
+      led.position.set(-0.3 + index * 0.2, cabinet.position.y + 0.65 - (index % 2) * 0.25, 0.6);
       group.add(led);
       lights.push(led);
     }
@@ -139,12 +140,12 @@
       ? `Worker · ${String(projected.workerId || projected.id || '').replace(/^worker:|^fenix-local:/g, '').slice(0, 8)}`
       : projected.name;
     const label = spriteLabel(displayTitle, String(projected.kind === 'worker' ? '#7aa2ff' : '#27d7c4'));
-    label.scale.set(2.8, 0.58, 1);
-    label.position.set(0, 2.75, 0);
+    label.scale.set(2.0, 0.44, 1);
+    label.position.set(0, 2.65, 0);
     group.add(label);
 
-    const hitBox = new T.Mesh(new T.BoxGeometry(3.1, 3.8, 2.8), new T.MeshBasicMaterial({ visible: false }));
-    hitBox.position.y = 1.8;
+    const hitBox = new T.Mesh(new T.BoxGeometry(1.8, 2.6, 1.6), new T.MeshBasicMaterial({ visible: false }));
+    hitBox.position.y = 1.3;
     hitBox.userData = { type: 'machine', machineId: projected.id, name: projected.name };
     group.add(hitBox);
     instance.interactiveMeshes.push(hitBox);
