@@ -2,10 +2,18 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const net = require('net');
+const zlib = require('zlib');
 
 const PORT = Number(process.env.PORT || 3000);
 const BACKEND_PORT = Number(process.env.BACKEND_PORT || 4410);
 const PUBLIC_DIR = path.resolve(process.env.FENIX_PUBLIC_DIR || '/opt/fenix-os/public');
+
+const backendAgent = new http.Agent({
+  keepAlive: true,
+  maxSockets: 100,
+  maxFreeSockets: 20,
+  timeout: 60000
+});
 
 // Authentication belongs to the backend. The gateway only forwards the caller's
 // cookie or Authorization header; it never creates a shared administrator session.
@@ -27,11 +35,98 @@ const MIME_TYPES = {
   '.ttf': 'font/ttf'
 };
 
-function serveHtml(filename, res) {
+function shouldCompress(contentType) {
+  return contentType && (
+    contentType.includes('text') ||
+    contentType.includes('javascript') ||
+    contentType.includes('json') ||
+    contentType.includes('xml') ||
+    contentType.includes('svg')
+  );
+}
+
+// ⚡ FÊNIX ULTRA-FAST IN-MEMORY STATIC & GZIP BUFFER CACHE
+const STATIC_RAM_CACHE = new Map();
+const MAX_CACHEABLE_FILE_SIZE = 8 * 1024 * 1024; // Cache up to 8MB files in RAM
+
+function etagMatches(clientEtag, serverEtag) {
+  if (!clientEtag || !serverEtag) return false;
+  const c = String(clientEtag).trim();
+  const s = String(serverEtag).trim();
+  if (c === s || c === '*') return true;
+  return c.replace(/^W\//, '') === s.replace(/^W\//, '');
+}
+
+function getCachedStaticFile(filePath, contentType, isHtml) {
+  try {
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile()) return null;
+    const existing = STATIC_RAM_CACHE.get(filePath);
+    if (existing && existing.mtimeMs === stat.mtimeMs) {
+      return existing;
+    }
+    if (stat.size > MAX_CACHEABLE_FILE_SIZE) return null;
+
+    const rawBuffer = fs.readFileSync(filePath);
+    const etag = 'W/"' + stat.size.toString(16) + '-' + Math.floor(stat.mtimeMs).toString(16) + '"';
+    let gzipBuffer = null;
+    if (shouldCompress(contentType)) {
+      gzipBuffer = zlib.gzipSync(rawBuffer, { level: 6 });
+    }
+    const entry = {
+      mtimeMs: stat.mtimeMs,
+      rawBuffer: rawBuffer,
+      gzipBuffer: gzipBuffer,
+      etag: etag,
+      contentType: contentType,
+      size: stat.size,
+      isHtml: Boolean(isHtml)
+    };
+    STATIC_RAM_CACHE.set(filePath, entry);
+    return entry;
+  } catch (_) {
+    return null;
+  }
+}
+
+function serveHtml(filename, req, res) {
   const file = path.join(PUBLIC_DIR, filename);
   if (!fs.existsSync(file)) { res.writeHead(404); return res.end('Not Found'); }
-  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-  fs.createReadStream(file).pipe(res);
+
+  const cached = getCachedStaticFile(file, 'text/html; charset=utf-8', true);
+  if (cached) {
+    const ifNoneMatch = req?.headers ? req.headers['if-none-match'] : null;
+    if (ifNoneMatch && etagMatches(ifNoneMatch, cached.etag)) {
+      res.writeHead(304, {
+        'ETag': cached.etag,
+        'Cache-Control': 'no-cache, must-revalidate'
+      });
+      return res.end();
+    }
+    const acceptEncoding = req?.headers ? (req.headers['accept-encoding'] || '') : '';
+    const sendGzip = acceptEncoding.includes('gzip') && cached.gzipBuffer;
+    const body = sendGzip ? cached.gzipBuffer : cached.rawBuffer;
+    const headers = {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': body.length,
+      'ETag': cached.etag,
+      'Cache-Control': 'no-cache, must-revalidate'
+    };
+    if (sendGzip) headers['Content-Encoding'] = 'gzip';
+    res.writeHead(200, headers);
+    return res.end(body);
+  }
+
+  const headers = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' };
+  const acceptEncoding = req?.headers ? (req.headers['accept-encoding'] || '') : '';
+  if (acceptEncoding.includes('gzip')) {
+    headers['Content-Encoding'] = 'gzip';
+    res.writeHead(200, headers);
+    fs.createReadStream(file).pipe(zlib.createGzip()).pipe(res);
+  } else {
+    res.writeHead(200, headers);
+    fs.createReadStream(file).pipe(res);
+  }
 }
 
 // Auth check endpoint - frontend calls this to verify auth status
@@ -40,9 +135,14 @@ async function handleAuthCheck(req, res) {
     const me = await fetchFromBackend('/api/me', req);
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ authenticated: true, user: me.userId || me.id || null, tenantId: me.tenantId || null }));
-  } catch {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-    res.end(JSON.stringify({ authenticated: false, user: null, tenantId: null }));
+  } catch (error) {
+    if (error.status === 401) {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ authenticated: false, user: null, tenantId: null }));
+      return;
+    }
+    res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ authenticated: null, user: null, tenantId: null, error: 'auth check unavailable' }));
   }
 }
 
@@ -144,12 +244,19 @@ async function handleRealityScore(req, res) {
 // Helper to fetch JSON from backend
 function fetchFromBackend(apiPath, caller) {
   return new Promise((resolve, reject) => {
-    const opts = { hostname: '127.0.0.1', port: BACKEND_PORT, path: apiPath, method: 'GET', timeout: 10000,
-      headers: { cookie: caller?.headers.cookie || '', authorization: caller?.headers.authorization || '' } };
+    const opts = {
+      hostname: '127.0.0.1',
+      port: BACKEND_PORT,
+      path: apiPath,
+      method: 'GET',
+      agent: backendAgent,
+      timeout: 10000,
+      headers: { cookie: caller?.headers.cookie || '', authorization: caller?.headers.authorization || '' }
+    };
     const r = http.request(opts, (resp) => {
       let body = '';
       resp.on('data', c => body += c);
-      resp.on('end', () => { if (resp.statusCode < 200 || resp.statusCode >= 300) return reject(new Error(`backend HTTP ${resp.statusCode}`)); try { resolve(JSON.parse(body)); } catch { resolve(null); } });
+      resp.on('end', () => { if (resp.statusCode < 200 || resp.statusCode >= 300) { const error = new Error(`backend HTTP ${resp.statusCode}`); error.status = resp.statusCode; return reject(error); } try { resolve(JSON.parse(body)); } catch { resolve(null); } });
     });
     r.on('error', reject);
     r.on('timeout', () => { r.destroy(); reject(new Error('timeout')); });
@@ -181,12 +288,9 @@ const server = http.createServer((req, res) => {
     pathname.startsWith('/jobs') ||
     pathname === '/events'
   ) {
-    const headers = { ...req.headers, host: '127.0.0.1:' + BACKEND_PORT };
-
     const isSse = pathname.includes('/events') || (req.headers['accept'] && req.headers['accept'].includes('text/event-stream'));
 
     const forward = (bodyBuffer) => {
-      console.log('[GW FORWARDING]', req.method, pathname, 'bodyLen:', bodyBuffer ? bodyBuffer.length : 0);
       const headers = { ...req.headers, host: '127.0.0.1:' + BACKEND_PORT };
       if (isSse) {
         headers['accept'] = 'text/event-stream';
@@ -200,9 +304,9 @@ const server = http.createServer((req, res) => {
         port: BACKEND_PORT,
         path: req.url,
         method: req.method,
+        agent: isSse ? false : backendAgent,
         headers
       }, (proxyRes) => {
-        console.log('[GW PROXY RES]', req.method, pathname, proxyRes.statusCode);
         const outHeaders = { ...proxyRes.headers };
         if (isSse || (proxyRes.headers['content-type'] && proxyRes.headers['content-type'].includes('text/event-stream'))) {
           outHeaders['Cache-Control'] = 'no-cache, no-transform';
@@ -213,8 +317,12 @@ const server = http.createServer((req, res) => {
         proxyRes.pipe(res);
       });
 
+      if (isSse) {
+        proxyReq.setTimeout(0);
+      }
+
       proxyReq.on('error', (err) => {
-        console.log('[GW PROXY ERR]', req.method, pathname, err.message);
+        console.error('[GW PROXY ERR]', req.method, pathname, err.message);
         if (!res.headersSent) {
           res.writeHead(502, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Fenix Backend initializing...', details: err.message }));
@@ -234,18 +342,15 @@ const server = http.createServer((req, res) => {
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
       forward(null);
     } else {
-      console.log('[GW BODY WAIT]', req.method, pathname);
       const chunks = [];
       req.on('data', c => {
-        console.log('[GW DATA CHUNK]', c.length);
         chunks.push(c);
       });
       req.on('end', () => {
-        console.log('[GW END CHUNKS]', chunks.length);
         forward(Buffer.concat(chunks));
       });
       req.on('error', (err) => {
-        console.log('[GW BODY ERROR]', err.message);
+        console.error('[GW BODY ERROR]', err.message);
         if (!res.headersSent) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Request body error' }));
@@ -257,9 +362,9 @@ const server = http.createServer((req, res) => {
 
   // 2. Static files
   let relPath = pathname === '/' ? 'login.html' : pathname.replace(/^\//, '');
-  if (['GRG-login', 'GRG-loqin', 'login'].includes(relPath)) return serveHtml('login.html', res);
-  if (['app', 'app/', 'city', 'dashboard', 'office'].includes(relPath)) return serveHtml('index.html', res);
-  if (relPath === 'index.html') return serveHtml('index.html', res);
+  if (['GRG-login', 'GRG-loqin', 'login'].includes(relPath)) return serveHtml('login.html', req, res);
+  if (['app', 'app/', 'city', 'dashboard', 'office'].includes(relPath)) return serveHtml('index.html', req, res);
+  if (relPath === 'index.html') return serveHtml('index.html', req, res);
 
   const filePath = path.join(PUBLIC_DIR, relPath);
 
@@ -272,10 +377,44 @@ const server = http.createServer((req, res) => {
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    const isHtml = ext === '.html';
+
+    const cached = getCachedStaticFile(filePath, contentType, isHtml);
+    if (cached) {
+      const ifNoneMatch = req.headers['if-none-match'];
+      if (ifNoneMatch && etagMatches(ifNoneMatch, cached.etag)) {
+        res.writeHead(304, {
+          'ETag': cached.etag,
+          'Cache-Control': isHtml ? 'no-cache, must-revalidate' : 'public, max-age=86400, stale-while-revalidate=3600'
+        });
+        return res.end();
+      }
+
+      const acceptEncoding = req.headers['accept-encoding'] || '';
+      const sendGzip = acceptEncoding.includes('gzip') && cached.gzipBuffer;
+      const body = sendGzip ? cached.gzipBuffer : cached.rawBuffer;
+      const headers = {
+        'Content-Type': contentType,
+        'Content-Length': body.length,
+        'ETag': cached.etag,
+        'Cache-Control': isHtml ? 'no-cache, must-revalidate' : 'public, max-age=86400, stale-while-revalidate=3600'
+      };
+      if (sendGzip) headers['Content-Encoding'] = 'gzip';
+      res.writeHead(200, headers);
+      return res.end(body);
+    }
+
     const cacheHeaders = {
       'Content-Type': contentType,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600'
+      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=86400, stale-while-revalidate=3600'
     };
+    const acceptEncoding = req.headers['accept-encoding'] || '';
+    if (acceptEncoding.includes('gzip') && shouldCompress(contentType)) {
+      cacheHeaders['Content-Encoding'] = 'gzip';
+      res.writeHead(200, cacheHeaders);
+      fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res);
+      return;
+    }
     res.writeHead(200, cacheHeaders);
     fs.createReadStream(filePath).pipe(res);
     return;
@@ -283,7 +422,7 @@ const server = http.createServer((req, res) => {
 
   // Fallback to index.html for SPA client-side routes
   if (!path.extname(pathname)) {
-    return serveHtml('index.html', res);
+    return serveHtml('index.html', req, res);
   }
 
   res.writeHead(404, { 'Content-Type': 'text/plain' });

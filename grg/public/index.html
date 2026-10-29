@@ -22,7 +22,11 @@
   const _origFetch = window.fetch;
   const _inflightGets = new Map();
   const _recentGets = new Map();
-  const DEDUPE_PATHS = ['/api/v2/living-city/state', '/api/v2/reality/summary', '/api/v2/system/health', '/api/v2/telemetry/live', '/api/v2/events/history', '/api/v2/company/list'];
+  const CACHE_TTL_MS = 3500; // 3.5s micro-cache for zero-latency instant tab switching
+  window.__fenixInvalidateApiCache = function() {
+    _recentGets.clear();
+  };
+
   window.fetch = function(input, init) {
     let url = '';
     try {
@@ -54,20 +58,40 @@
     } catch (_) {}
 
     const method = String(init?.method || (typeof input === 'object' && input?.method) || 'GET').toUpperCase();
-    if (method === 'GET' && typeof url === 'string' && DEDUPE_PATHS.some((p) => url.startsWith(p))) {
+
+    // Invalidate micro-cache on state-mutating requests
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      _recentGets.clear();
+      return _origFetch.call(this, input, init);
+    }
+
+    // High-performance coalescing & micro-cache for GET requests to /api/
+    const isApiGet = method === 'GET' && typeof url === 'string' && (url.includes('/api/') || url.startsWith('api/'));
+    const isStream = typeof url === 'string' && (
+      url.includes('/stream') || url.includes('/live-stream') || url.includes('/sse') ||
+      url.includes('/heart/stream') || url.includes('/chat/message')
+    );
+
+    if (isApiGet && !isStream) {
       const cached = _recentGets.get(url);
-      if (cached && (Date.now() - cached.ts) < 2500) {
-        return Promise.resolve(cached.res.clone());
+      if (cached && (Date.now() - cached.ts) < CACHE_TTL_MS) {
+        try {
+          return Promise.resolve(cached.res.clone());
+        } catch (_) {
+          _recentGets.delete(url);
+        }
       }
       if (_inflightGets.has(url)) {
-        return _inflightGets.get(url).then((r) => r.clone());
+        return _inflightGets.get(url).then(r => r.clone()).catch(() => _origFetch.call(this, input, init));
       }
       const sharedInit = init ? { ...init } : {};
       delete sharedInit.signal;
       const p = _origFetch.call(this, input, sharedInit).then((res) => {
         _inflightGets.delete(url);
         if (res && res.ok) {
-          _recentGets.set(url, { ts: Date.now(), res: res.clone() });
+          try {
+            _recentGets.set(url, { ts: Date.now(), res: res.clone() });
+          } catch (_) {}
         }
         return res;
       }).catch((err) => {
@@ -75,7 +99,7 @@
         throw err;
       });
       _inflightGets.set(url, p);
-      return p.then((r) => r.clone());
+      return p.then(r => r.clone());
     }
 
     return _origFetch.call(this, input, init);
@@ -198,11 +222,21 @@
   };
 })();
 </script>
-  <script src="/fenix-request-guard.js"></script>
+  <script defer src="/fenix-request-guard.js"></script>
   <script defer src="/agent-roster-filter.js?v=1"></script>
   <script defer src="/agent-activity-filter.js?v=1"></script>
   <script defer src="/runtime-control-overview.js?v=1"></script>
   <script defer src="/fenix-core-controller.js?v=responsive-navigation-20261013"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://unpkg.com">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
   <meta charset="UTF-8">
   <title>GRG SPACE · FENIX OS | Unified Workspace — Master Agentic IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

@@ -6448,22 +6448,24 @@
         }
         state.requestedProjectId = null;
         recordProjectOpen(state.selected);
-        if (state.selected) loadGit(state.selected);
-        await loadCatalogStatus(force);
+        // ⚡ INSTANT RENDER (0ms latency without blocking on background network calls)
         renderMetrics();
         renderCards();
         renderDetail();
+        if (state.selected) loadGit(state.selected);
         if (force) {
           state.details.clear();
           state.detailErrors.clear();
         }
-        await loadProjectState(state.selected);
+        // Background async updates (auto-update UI when resolved via their internal callbacks)
+        loadCatalogStatus(force);
+        loadProjectState(state.selected);
       } catch (error) {
         state.error = error.message;
+        renderMetrics();
+        renderCards();
+        renderDetail();
       }
-      renderMetrics();
-      renderCards();
-      renderDetail();
     })().finally(() => {
       state.loading = null;
     });

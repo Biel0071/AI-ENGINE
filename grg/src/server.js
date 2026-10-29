@@ -692,7 +692,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         if (cityInspector) url.pathname = `/api/v2/agents/${encodeURIComponent(decodeURIComponent(cityInspector[1]))}/inspector`;
       }
 
-      if (!url.pathname.startsWith('/api/v2/jobs')) {
+      if (!url.pathname.startsWith('/api/v2/jobs') && !url.pathname.startsWith('/api/v2/universal-jobs')) {
         const productHandled = await handleProductExperienceRoutes(req, res, url, app, sendJson, (r, s, e) => sendJson(r, s, { error: e }), { tenantId, actorId });
         if (productHandled) return;
       }
@@ -1095,11 +1095,59 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/registry') return sendJson(res, 200, { resources: await app.registry.list(tenantId, actorId, { kind: url.searchParams.get('kind') || undefined }) }, requestId);
       if (req.method === 'GET' && ['/api/events', '/api/v2/events/history'].includes(url.pathname)) {
         await app.controlPlane.authorize(tenantId, actorId, 'event:read');
-        const events = await app.eventStore.list(tenantId, {
-          type: url.searchParams.get('type') || undefined,
-          limit: url.searchParams.get('limit') || 100,
+        const limit = Math.min(200, Math.max(10, parseInt(url.searchParams.get('limit') || '100', 10)));
+        const typeFilter = url.searchParams.get('type') || undefined;
+        let events = await app.eventStore.list(tenantId, {
+          type: typeFilter,
+          limit: limit,
         });
-        return sendJson(res, 200, { events }, requestId);
+        const { globalBus } = require('./eventing/fenix-event-bus');
+        const liveEvents = globalBus ? globalBus.getHistory(limit, typeFilter) : [];
+        const seenIds = new Set(events.map((e) => e.id));
+        for (const le of liveEvents) {
+          if (!seenIds.has(le.id)) {
+            events.push({
+              id: le.id,
+              type: le.type,
+              title: le.title || le.data?.title,
+              message: le.message || le.data?.message,
+              description: le.description || le.data?.description,
+              data: le.data,
+              occurredAt: le.timestamp,
+              recordedAt: le.timestamp,
+            });
+            seenIds.add(le.id);
+          }
+        }
+        events = events.map((ev) => {
+          let title = ev.title || ev.data?.title;
+          let msg = ev.message || ev.description || ev.data?.message || ev.data?.description;
+          if (!title || !msg || msg.includes('sem descrição')) {
+            const comp = ev.data?.componentId || ev.subject || '';
+            const st = ev.data?.status || 'OK';
+            if (ev.type === 'operational.component.checked') {
+              title = `Auditoria Operacional · ${comp || 'Subsistema'}`;
+              msg = `Verificação de integridade: subsistema "${comp}" operando com status ${st} (${ev.data?.latencyMs || 0}ms).`;
+            } else if (ev.type?.startsWith('mission.')) {
+              title = `Missão · ${ev.data?.title || ev.data?.missionId || 'Autônoma'}`;
+              msg = `Missão despachada para o projeto ${ev.data?.projectId || 'Fênix OS'}.`;
+            } else if (ev.type?.startsWith('agent.')) {
+              title = `Agente · ${ev.data?.agentId || 'Swarm'}`;
+              msg = `Atividade de agente registrada no ecossistema Fênix.`;
+            } else if (ev.type?.startsWith('job.')) {
+              title = `Execução de Job · ${ev.data?.jobId || 'Runtime'}`;
+              msg = `Job ${ev.data?.type || 'operacional'} processado no runtime do Fênix OS.`;
+            }
+          }
+          return {
+            ...ev,
+            title: title || ev.type || 'Evento Operacional',
+            message: msg || `Evento ${ev.type} registrado com sucesso pela API.`,
+            description: msg || `Evento ${ev.type} registrado com sucesso pela API.`,
+          };
+        });
+        events.sort((a, b) => (Date.parse(b.occurredAt || b.recordedAt || b.timestamp || 0) || 0) - (Date.parse(a.occurredAt || a.recordedAt || a.timestamp || 0) || 0));
+        return sendJson(res, 200, { ok: true, events: events.slice(0, limit), total: events.length }, requestId);
       }
       if (req.method === 'POST' && url.pathname === '/api/events') {
         await app.controlPlane.authorize(tenantId, actorId, 'event:write');
@@ -1970,6 +2018,23 @@ function resolveCanonicalPort(env = process.env) {
   return Number.isInteger(candidate) && candidate >= 1 && candidate <= 65535 ? candidate : 4400;
 }
 
+const SERVER_STATIC_CACHE = new Map();
+function getCachedServerFile(file) {
+  try {
+    const stat = fs.statSync(file);
+    if (!stat.isFile()) return null;
+    const existing = SERVER_STATIC_CACHE.get(file);
+    if (existing && existing.mtimeMs === stat.mtimeMs) {
+      return existing.buffer;
+    }
+    const buffer = fs.readFileSync(file);
+    SERVER_STATIC_CACHE.set(file, { mtimeMs: stat.mtimeMs, buffer });
+    return buffer;
+  } catch (_) {
+    return null;
+  }
+}
+
 function serveStatic(pathname, res) {
   if (pathname === '/favicon.ico') { res.writeHead(204, { 'content-type': 'image/x-icon' }); return res.end(); }
   const ALIASES = { '/': 'login.html', '/GRG-login': 'login.html', '/login': 'login.html', '/app': 'index.html', '/app.html': 'index.html', '/office': 'index.html', '/office.html': 'index.html' };
@@ -1981,7 +2046,8 @@ function serveStatic(pathname, res) {
   const type = mimeMap[ext] || 'application/octet-stream';
   const cacheControl = file.endsWith('.html') ? 'no-store, max-age=0' : 'no-cache';
   res.writeHead(200, { 'content-type': type, 'cache-control': cacheControl });
-  res.end(fs.readFileSync(file));
+  const buf = getCachedServerFile(file) || fs.readFileSync(file);
+  res.end(buf);
 }
 
 function safeToken(header, expected) { const supplied = String(header || '').replace(/^Bearer\s+/i, ''); if (!supplied || !expected) return false; const a = crypto.createHash('sha256').update(supplied).digest(); const b = crypto.createHash('sha256').update(String(expected)).digest(); return crypto.timingSafeEqual(a, b); }
