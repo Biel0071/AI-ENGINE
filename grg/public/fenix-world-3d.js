@@ -38,6 +38,8 @@
   'use strict';
 
   window.fenixActivateCity2DFallback = function(error) {
+    if (window.__FENIX_FALLBACK_ACTIVE__) return;
+    window.__FENIX_FALLBACK_ACTIVE__ = true;
     window.FENIX_WORLD_3D = false;
     window.FENIX_CITY_RENDERER = 'canvas2d';
     window.__FENIX_WORLD_3D_ERROR__ = error?.message || 'WebGL indisponível';
@@ -168,6 +170,93 @@
      PROCEDURAL TEXTURE ENGINE (Instant, In-Memory, Tactile Canvas Textures)
   ══════════════════════════════════════════════════════════════════════════ */
   class TextureFactory {
+
+    /* ── CityRT Signature Haussmannian & Neoclassical Facade Texture ── */
+    static createCityRTHaussmannianFacadeTexture(palette = {}) {
+      const baseColor = palette.base || '#ede5d8';
+      const trimColor = palette.trim || '#33383f';
+      const windowLit = palette.windowLit || '#ffe199';
+      const windowDark = palette.windowDark || '#475361';
+      const stoneShadow = palette.stoneShadow || '#d9cfbe';
+
+      return this.create(512, 512, (ctx, w, h) => {
+        // Base limestone wall
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(0, 0, w, h);
+
+        // Rusticated stone joint lines (Ligne Claire inking)
+        ctx.strokeStyle = stoneShadow;
+        ctx.lineWidth = 2;
+        const blockH = h / 16;
+        for (let y = 0; y <= h; y += blockH) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        const rows = 4;
+        const cols = 4;
+        const cellW = w / cols;
+        const cellH = h / rows;
+
+        for (let r = 0; r < rows; r++) {
+          const cy = r * cellH;
+
+          // Floor Cornice Stringcourse molding with ink outline
+          ctx.fillStyle = stoneShadow;
+          ctx.fillRect(0, cy + cellH - 12, w, 12);
+          ctx.strokeStyle = trimColor;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.moveTo(0, cy + cellH - 12); ctx.lineTo(w, cy + cellH - 12); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, cy + cellH); ctx.lineTo(w, cy + cellH); ctx.stroke();
+
+          for (let c = 0; c < cols; c++) {
+            const cx = c * cellW;
+            const winW = cellW * 0.52;
+            const winH = cellH * 0.62;
+            const wx = cx + (cellW - winW) / 2;
+            const wy = cy + (cellH - winH) / 2 - 4;
+
+            // Stone lintel / pediment above window
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(wx - 4, wy - 8, winW + 8, 6);
+            ctx.strokeStyle = trimColor;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(wx - 4, wy - 8, winW + 8, 6);
+
+            // Window frame (Ligne Claire black outline)
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(wx - 2, wy - 2, winW + 4, winH + 4);
+            ctx.strokeStyle = trimColor;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(wx - 2, wy - 2, winW + 4, winH + 4);
+
+            // Glass pane: Warm golden interior glow vs cool slate
+            const isLit = (r * 3 + c * 7 + (palette.seed || 1)) % 5 < 3;
+            ctx.fillStyle = isLit ? windowLit : windowDark;
+            ctx.fillRect(wx, wy, winW, winH);
+
+            // Window Mullions (Classic French cross-panes)
+            ctx.strokeStyle = trimColor;
+            ctx.lineWidth = 2;
+            // Vertical center bar
+            ctx.beginPath(); ctx.moveTo(wx + winW / 2, wy); ctx.lineTo(wx + winW / 2, wy + winH); ctx.stroke();
+            // Horizontal crossbar
+            ctx.beginPath(); ctx.moveTo(wx, wy + winH * 0.4); ctx.lineTo(wx + winW, wy + winH * 0.4); ctx.stroke();
+
+            // Wrought Iron Balcony Railing on 2nd and 3rd floors
+            if (r === 1 || r === 2) {
+              ctx.strokeStyle = '#1e242b';
+              ctx.lineWidth = 3;
+              ctx.strokeRect(wx - 5, wy + winH - 14, winW + 10, 14);
+              // Baluster pickets
+              for (let bx = wx - 3; bx < wx + winW + 3; bx += 6) {
+                ctx.beginPath(); ctx.moveTo(bx, wy + winH - 14); ctx.lineTo(bx, wy + winH); ctx.stroke();
+              }
+            }
+          }
+        }
+      }, 1, 1);
+    }
+
     static create(width, height, drawFn, repeatX = 1, repeatY = 1) {
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -1331,8 +1420,8 @@
       if (!this.container) return;
 
       this.scene = new T.Scene();
-      this.scene.background = new T.Color(0x14212b);
-      this.scene.fog = new T.FogExp2(0x14212b, 0.0011);
+      this.scene.background = new T.Color(0xd7dec9); // CityRT signature watercolor pastel haze
+      this.scene.fog = new T.Fog(0xd7dec9, 85, 340);
 
       // Camera State
       const saved = this._loadState();
@@ -2197,13 +2286,13 @@
     ══════════════════════════════════════════════════════════════════════════ */
     _initLighting() {
       // 1. Dual Hemisphere Ambient (Sky Blue from above + Warm Slate Earth from below)
-      this.hemiLight = new T.HemisphereLight(0xcbd7d3, 0x38433f, 0.78);
+      this.hemiLight = new T.HemisphereLight(0xe8edd8, 0x8c9c72, 0.88);
       this.hemiLight.position.set(0, 80, 0);
       this.scene.add(this.hemiLight);
 
-      // 2. Primary Solar Directional Light with PCF Soft Shadows
-      this.sunLight = new T.DirectionalLight(0xffdfb5, 1.25);
-      this.sunLight.position.set(70, 95, 55);
+      // 2. Primary Solar Directional Light (CityRT Warm Golden Sun)
+      this.sunLight = new T.DirectionalLight(0xfff2d4, 1.55);
+      this.sunLight.position.set(65, 75, 75);
       this.sunLight.castShadow = true;
       this.sunLight.shadow.mapSize.width = 2048;
       this.sunLight.shadow.mapSize.height = 2048;
@@ -2286,7 +2375,18 @@
       const serverBladeTex = TextureFactory.createServerRackFasciaTexture();
       const whiteboardTex = TextureFactory.createWhiteboardTexture();
 
+      
+      // CityRT Signature Hand-Drawn Watercolor Facades
+      const cityrtCreamTex = TextureFactory.createCityRTHaussmannianFacadeTexture({ base: '#f0eae1', stoneShadow: '#ded4c3', seed: 1 });
+      const cityrtTerracottaTex = TextureFactory.createCityRTHaussmannianFacadeTexture({ base: '#d88b74', stoneShadow: '#bf6b55', seed: 2 });
+      const cityrtOchreTex = TextureFactory.createCityRTHaussmannianFacadeTexture({ base: '#e6c88f', stoneShadow: '#cca96e', seed: 3 });
+      const cityrtSageTex = TextureFactory.createCityRTHaussmannianFacadeTexture({ base: '#b5c4ad', stoneShadow: '#99ab90', seed: 4 });
+
       this.materials = {
+        cityrtFacadeCream: new T.MeshStandardMaterial({ map: cityrtCreamTex, roughness: 0.88, metalness: 0.02 }),
+        cityrtFacadeTerracotta: new T.MeshStandardMaterial({ map: cityrtTerracottaTex, roughness: 0.88, metalness: 0.02 }),
+        cityrtFacadeOchre: new T.MeshStandardMaterial({ map: cityrtOchreTex, roughness: 0.88, metalness: 0.02 }),
+        cityrtFacadeSage: new T.MeshStandardMaterial({ map: cityrtSageTex, roughness: 0.88, metalness: 0.02 }),
         mansardSlate: new T.MeshStandardMaterial({ color: 0x333b47, roughness: 0.65, metalness: 0.25 }),
         terracottaRoof: new T.MeshStandardMaterial({ color: 0xd97757, roughness: 0.85, metalness: 0.05 }),
         streetLampPole: new T.MeshStandardMaterial({ color: 0x1e2631, roughness: 0.5, metalness: 0.8 }),
@@ -2300,7 +2400,7 @@
         asphalt: new T.MeshStandardMaterial({ map: roadTex, roughness: 0.88, metalness: 0.08 }),
         crosswalk: new T.MeshStandardMaterial({ map: crosswalkTex, roughness: 0.82 }),
         sidewalk: new T.MeshStandardMaterial({ map: sidewalkTex, roughness: 0.78, metalness: 0.12 }),
-        grass: new T.MeshStandardMaterial({ color: 0x496447, roughness: 0.92, metalness: 0.02 }),
+        grass: new T.MeshStandardMaterial({ color: 0x92a872, roughness: 0.96, metalness: 0.01 }), // CityRT soft watercolor olive grass
         water: new T.MeshStandardMaterial({ color: 0x1d3a44, roughness: 0.6, metalness: 0.12, transparent: true, opacity: 0.96 }),
         curb: new T.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 }),
         hazardStripe: new T.MeshBasicMaterial({ color: 0xfbbf24 }),
@@ -2562,11 +2662,13 @@
       this.terrainGroup = terrainGroup;
 
       // Ambient Sea Water Plane
-      const waterGeo = new T.PlaneGeometry(1400, 1400);
-      const waterMesh = new T.Mesh(waterGeo, this.materials.water);
-      waterMesh.rotation.x = -Math.PI / 2;
-      waterMesh.position.y = -2.1;
-      terrainGroup.add(waterMesh);
+      // Ambient Ground / Countryside Plane (CityRT Signature Watercolor Olive Grass)
+      const groundGeo = new T.PlaneGeometry(1600, 1600);
+      const groundMesh = new T.Mesh(groundGeo, this.materials.grass);
+      groundMesh.rotation.x = -Math.PI / 2;
+      groundMesh.position.y = -0.05;
+      groundMesh.receiveShadow = true;
+      terrainGroup.add(groundMesh);
 
       // 2. CityRT Orthogonal Street Network
       const streets = [
@@ -3576,6 +3678,20 @@
       return car;
     }
 
+    
+    /* ── CityRT Signature Ligne Claire / Comic-Book Ink Outline Engine ── */
+    _applyLigneClaire(mesh, threshold = 26, color = 0x1c1e21) {
+      if (!mesh || !mesh.geometry) return mesh;
+      try {
+        const edges = new T.EdgesGeometry(mesh.geometry, threshold);
+        const lineMat = new T.LineBasicMaterial({ color: color, linewidth: 1.5 });
+        const wire = new T.LineSegments(edges, lineMat);
+        wire.name = 'InkOutline';
+        mesh.add(wire);
+      } catch (e) {}
+      return mesh;
+    }
+
     _createStreetLamp() {
       const lamp = new T.Group();
       lamp.name = 'StreetLamp';
@@ -3629,8 +3745,7 @@
       const slope = new T.Mesh(slopeGeo, this.materials.mansardSlate || this.materials.warehouseRoof);
       slope.position.y = height / 2;
       slope.scale.set(1, 1, depth / width);
-      slope.castShadow = true;
-      roofGroup.add(slope);
+      slope.castShadow = true; this._applyLigneClaire(slope, 24); roofGroup.add(slope);
 
       // Flat lead/zinc top plate
       const topPlate = new T.Mesh(
@@ -3638,8 +3753,7 @@
         this.materials.brushedTitanium || this.materials.sidewalk
       );
       topPlate.position.y = height + 0.09;
-      topPlate.castShadow = true;
-      roofGroup.add(topPlate);
+      topPlate.castShadow = true; this._applyLigneClaire(topPlate, 35); roofGroup.add(topPlate);
 
       // Dormer windows on front
       const dormerCount = Math.max(2, Math.floor(width / 4));
@@ -3677,14 +3791,12 @@
       const roofGeo = new T.ExtrudeGeometry(prismShape, extrudeSettings);
       const roofMesh = new T.Mesh(roofGeo, this.materials.terracottaRoof || this.materials.warehouseRoof);
       roofMesh.position.set(0, 0, -depth / 2 - 0.3);
-      roofMesh.castShadow = true;
-      roofGroup.add(roofMesh);
+      roofMesh.castShadow = true; this._applyLigneClaire(roofMesh, 24); roofGroup.add(roofMesh);
 
       // Brick Chimney
       const chimney = new T.Mesh(new T.BoxGeometry(0.9, height + 1.2, 0.9), this.materials.brickWall);
       chimney.position.set(width * 0.28, height * 0.6, -depth * 0.15);
-      chimney.castShadow = true;
-      const chCap = new T.Mesh(new T.BoxGeometry(1.1, 0.15, 1.1), this.materials.mansardSlate);
+      chimney.castShadow = true; this._applyLigneClaire(chimney, 35); const chCap = new T.Mesh(new T.BoxGeometry(1.1, 0.15, 1.1), this.materials.mansardSlate);
       chCap.position.set(width * 0.28, height * 1.2 + 0.08, -depth * 0.15);
       roofGroup.add(chimney, chCap);
 
@@ -5687,6 +5799,13 @@
         this.materials.urbanFacadeIvory
       ];
 
+      const cityrtFacades = [
+        this.materials.cityrtFacadeCream || this.materials.urbanFacadeSand,
+        this.materials.cityrtFacadeTerracotta || this.materials.urbanFacadeTerracotta,
+        this.materials.cityrtFacadeOchre || this.materials.urbanFacadeIvory,
+        this.materials.cityrtFacadeSage || this.materials.urbanFacadeGlass
+      ];
+
       projectLots.forEach((lot, lotIdx) => {
         const bGroup = new T.Group();
         bGroup.name = 'ProjectBuilding_' + lot.id;
@@ -5696,15 +5815,19 @@
           projectId: lot.id,
           name: lot.name,
           port: lot.port,
-          category: lot.cat
+          category: lot.cat,
+          floors: lot.floors
         };
 
-        const floorH = 3.2;
-        const bldH = lot.floors * floorH;
-        const facadeMat = facades[lotIdx % facades.length];
+        const isOnline = lot.port === '4400' || lot.port === '1000' || lot.port === '8182' || lot.port === '8181' || lot.port === '8080';
+        // Dynamic floor calculation: active systems grow taller in floors!
+        const totalFloors = Math.min(5, Math.max(2, (lot.floors || 2) + (isOnline ? 1 : 0)));
+        const floorH = 2.9;
+        const bldH = totalFloors * floorH;
+        const facadeMat = cityrtFacades[lotIdx % cityrtFacades.length];
 
-        // 1. Rusticated Stone Base Floor (Pedestrian Entrance Level)
-        const baseH = 3.4;
+        // 1. Rusticated Stone Base Floor (Pedestrian Entrance Level) with Ligne Claire
+        const baseH = 3.2;
         const baseMesh = new T.Mesh(
           new T.BoxGeometry(lot.w + 0.3, baseH, lot.d + 0.3),
           this.materials.stoneRustication || this.materials.sidewalk
@@ -5712,48 +5835,54 @@
         baseMesh.position.y = baseH / 2 + 0.16;
         baseMesh.castShadow = true;
         baseMesh.receiveShadow = true;
+        this._applyLigneClaire(baseMesh, 30);
         bGroup.add(baseMesh);
 
         // Ground Floor Entrance Door facing street
         const door = this._createEntranceDoor('Door_' + lot.id);
         door.position.set(0, 0.16, lot.d / 2 + 0.18);
+        this._applyLigneClaire(door, 30);
         bGroup.add(door);
 
-        // Fabric Awning over Entrance
+        // Fabric Awning over Entrance with Ligne Claire
         const awningMat = this.materials[lot.awning] || this.materials.awningBlue;
         const awning = new T.Mesh(new T.BoxGeometry(Math.min(5.2, lot.w * 0.48), 0.32, 1.6), awningMat);
         awning.position.set(0, 2.75, lot.d / 2 + 0.85);
         awning.rotation.x = Math.PI / 18;
         awning.castShadow = true;
+        this._applyLigneClaire(awning, 25);
         bGroup.add(awning);
 
-        // Storefront Signboard with Project Title & Port
-        const isOnline = lot.port === '4400' || lot.port === '1000' || lot.port === '8182' || lot.port === '8181' || lot.port === '8080';
+        // Storefront Signboard with Project Title & Port with Ligne Claire
         const signTex = TextureFactory.createStorefrontSignTexture(lot.name, lot.port, isOnline, lot.awning === 'awningRed' ? '#ef4444' : '#3b82f6');
         const signMat = new T.MeshStandardMaterial({ map: signTex, roughness: 0.3, metalness: 0.2 });
         const signMesh = new T.Mesh(new T.BoxGeometry(Math.min(6.2, lot.w * 0.58), 1.25, 0.12), signMat);
         signMesh.position.set(0, 3.45, lot.d / 2 + 0.22);
+        this._applyLigneClaire(signMesh, 35);
         bGroup.add(signMesh);
 
-        // 2. Mid-Floor Window Matrices
-        const midH = bldH - baseH;
-        if (midH > 0) {
-          const midMesh = new T.Mesh(new T.BoxGeometry(lot.w, midH, lot.d), facadeMat);
-          midMesh.position.y = baseH + midH / 2 + 0.16;
-          midMesh.castShadow = true;
-          midMesh.receiveShadow = true;
-          bGroup.add(midMesh);
+        // 2. Individual Architectural Upper Floors with Cornices & Ligne Claire Inking
+        for (let fl = 1; fl < totalFloors; fl++) {
+          const flY = baseH + (fl - 1) * floorH;
+          const flMesh = new T.Mesh(new T.BoxGeometry(lot.w, floorH, lot.d), facadeMat);
+          flMesh.position.y = flY + floorH / 2 + 0.16;
+          flMesh.castShadow = true;
+          flMesh.receiveShadow = true;
+          this._applyLigneClaire(flMesh, 30);
+          bGroup.add(flMesh);
 
-          // Stone Cornice between Base and Mid Floors
+          // Floor Cornice Band (Stone molding dividing floors)
           const cornice = new T.Mesh(
-            new T.BoxGeometry(lot.w + 0.6, 0.22, lot.d + 0.6),
+            new T.BoxGeometry(lot.w + 0.5, 0.20, lot.d + 0.5),
             this.materials.sidewalk
           );
-          cornice.position.y = baseH + 0.16;
+          cornice.position.y = flY + 0.16;
+          cornice.castShadow = true;
+          this._applyLigneClaire(cornice, 35);
           bGroup.add(cornice);
         }
 
-        // 3. CityRT Architectural Roofs
+        // 3. CityRT Architectural Roofs with Ligne Claire
         const roofY = bldH + 0.16;
         if (lot.roofType === 'mansard') {
           const mansard = this._createMansardRoof(lot.w, lot.d, 2.8);
@@ -5764,38 +5893,23 @@
           pitched.position.y = roofY;
           bGroup.add(pitched);
         } else {
-          // Parapet with Cornice & Rooftop HVAC Equipment
+          // Classic European Flat Roof with Balustrade & Cornice
           const roofSlab = new T.Mesh(
             new T.BoxGeometry(lot.w + 0.5, 0.35, lot.d + 0.5),
             this.materials.sidewalk
           );
           roofSlab.position.y = roofY + 0.17;
           roofSlab.castShadow = true;
+          this._applyLigneClaire(roofSlab, 35);
           bGroup.add(roofSlab);
 
           const parapetTrim = new T.Mesh(
             new T.BoxGeometry(lot.w + 0.7, 0.45, lot.d + 0.7),
-            this.materials.cyberMullion || this.materials.dockBumper
+            this.materials.dockBumper
           );
           parapetTrim.position.y = roofY + 0.45;
+          this._applyLigneClaire(parapetTrim, 35);
           bGroup.add(parapetTrim);
-
-          const hvac = new T.Mesh(
-            new T.BoxGeometry(Math.max(2.0, lot.w * 0.32), 1.1, Math.max(2.0, lot.d * 0.28)),
-            this.materials.brushedTitanium
-          );
-          hvac.position.set(-lot.w * 0.2, roofY + 0.9, -lot.d * 0.18);
-          hvac.castShadow = true;
-          bGroup.add(hvac);
-
-          if (this.materials.solarPanel) {
-            const solar = new T.Mesh(
-              new T.BoxGeometry(Math.max(2.4, lot.w * 0.35), 0.12, Math.max(2.0, lot.d * 0.32)),
-              this.materials.solarPanel
-            );
-            solar.position.set(lot.w * 0.2, roofY + 0.5, lot.d * 0.15);
-            bGroup.add(solar);
-          }
         }
 
         // 4. Raycast Interactive Hit Box
@@ -6532,6 +6646,51 @@
       }
     }
 
+    /* ── Mode 3: Street View (Pedestrian Eye-Level Camera 🚶) ── */
+    setStreetViewMode(camX, camZ, lookX, lookZ) {
+      if (!this.cameraState) return;
+      this.savedAerialCameraState = {
+        distance: this.cameraState.distance,
+        elevation: this.cameraState.elevation,
+        azimuth: this.cameraState.azimuth,
+        target: this.cameraState.target.clone()
+      };
+      
+      this.cameraState.isStreetView = true;
+      const lookPos = new T.Vector3(lookX || camX, 1.8, lookZ || (camZ - 8));
+      this.focusEntity(lookPos, 14, Math.PI / 4, 0.12);
+      
+      // Floating return pill in HUD
+      let retBtn = document.getElementById('fw3ReturnAerialBtn');
+      if (!retBtn) {
+        retBtn = document.createElement('button');
+        retBtn.id = 'fw3ReturnAerialBtn';
+        retBtn.innerHTML = '🏙️ Voltar à Visão Aérea (Cidade)';
+        retBtn.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#4ade80;border:1px solid #4ade80;border-radius:99px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;z-index:99999;box-shadow:0 10px 25px rgba(0,0,0,0.6);backdrop-filter:blur(8px);';
+        document.body.appendChild(retBtn);
+        retBtn.addEventListener('click', () => {
+          retBtn.remove();
+          this.returnToAerialView();
+        });
+      }
+    }
+
+    returnToAerialView() {
+      if (!this.cameraState) return;
+      this.cameraState.isStreetView = false;
+      document.getElementById('fw3ReturnAerialBtn')?.remove();
+      if (this.savedAerialCameraState) {
+        this.focusEntity(
+          this.savedAerialCameraState.target,
+          this.savedAerialCameraState.distance,
+          this.savedAerialCameraState.azimuth,
+          this.savedAerialCameraState.elevation
+        );
+      } else {
+        this.focusEntity(new T.Vector3(0, 0, 0), 75, Math.PI / 4, 0.56);
+      }
+    }
+
     selectProjectBuilding(projectData) {
       if (!projectData) return;
       const bldInfo = this.projectBuildings?.get(projectData.projectId || projectData.id);
@@ -6565,13 +6724,22 @@
           </div>
           <button id="fw3CloseProjectCard" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:18px;padding:4px;">✕</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
           ${statusBadge}
           ${project.port ? `<span style="font-family:monospace;font-size:11px;color:#cbd5e1;background:#1e293b;padding:2px 6px;border-radius:4px;">Porta :${project.port}</span>` : ''}
+          <span style="font-size:11px;color:#a3e635;background:rgba(163,230,53,0.1);border:1px solid rgba(163,230,53,0.3);padding:2px 6px;border-radius:4px;">🏛️ ${project.floors || 3} Andares</span>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button id="fw3BtnOpenWorkspace" style="flex:1;background:#2563eb;color:#ffffff;border:none;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
-            <span>Abrir Workspace</span> ➔
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:8px;">
+            <button id="fw3BtnOpenWorkspace" style="flex:1;background:#2563eb;color:#ffffff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+              <span>Abrir Workspace</span> ➔
+            </button>
+            <button id="fw3BtnStreetView" style="flex:1;background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+              <span>🚶 Modo Rua</span>
+            </button>
+          </div>
+          <button id="fw3BtnTelemetryDrawer" style="width:100%;background:rgba(30,41,59,0.8);color:#94a3b8;border:1px solid #334155;border-radius:6px;padding:6px;font-size:11px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
+            <span>📊 Expandir Telemetria / Painel Lateral</span>
           </button>
         </div>
       `;
@@ -6579,6 +6747,24 @@
 
       document.getElementById('fw3CloseProjectCard')?.addEventListener('click', () => {
         modal.style.display = 'none';
+      });
+
+      document.getElementById('fw3BtnStreetView')?.addEventListener('click', () => {
+        modal.style.display = 'none';
+        const bldInfo = this.projectBuildings?.get(project.projectId || project.id);
+        if (bldInfo && bldInfo.group) {
+          const bPos = bldInfo.group.position;
+          this.setStreetViewMode(bPos.x, bPos.z + 10, bPos.x, bPos.z);
+        }
+      });
+
+      document.getElementById('fw3BtnTelemetryDrawer')?.addEventListener('click', () => {
+        modal.style.display = 'none';
+        if (typeof window.openProjectWorkspace === 'function') {
+          window.openProjectWorkspace(project.projectId || project.id);
+        } else if (typeof window.showView === 'function') {
+          window.showView('projects');
+        }
       });
 
       document.getElementById('fw3BtnOpenWorkspace')?.addEventListener('click', () => {
@@ -7258,6 +7444,25 @@
       const onPointerUp = () => { pointerX = null; };
       canvas.style.touchAction = 'pan-y';
       canvas.addEventListener('pointerdown', onPointerDown);
+
+        // Mode 1: Double-click cinematic fly-to project building
+        canvas.addEventListener('dblclick', (e) => {
+          if (!this.raycaster || !this.camera || !this.interactiveMeshes) return;
+          const rect = canvas.getBoundingClientRect();
+          const mouse = new T.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+          );
+          this.raycaster.setFromCamera(mouse, this.camera);
+          const hits = this.raycaster.intersectObjects(this.interactiveMeshes, false);
+          if (hits.length > 0) {
+            const hitData = hits[0].object.userData;
+            if (hitData && hitData.projectId) {
+              this.selectProjectBuilding(hitData);
+            }
+          }
+        }); // fw3DoubleClickFly
+
       canvas.addEventListener('pointermove', onPointerMove);
       canvas.addEventListener('pointerup', onPointerUp);
       canvas.addEventListener('pointercancel', onPointerUp);
