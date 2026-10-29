@@ -3993,51 +3993,160 @@ class IsoCityEngine {
     }
 
 
-    // C. NEW FILLER BUILDINGS (DENSE URBAN WORLD)
-    if (Cache.buildings.officeBlockA) {
-      // NW block: gx=-8..-1, gy=-3..-1
-      addBuilding(Cache.buildings.officeBlockA, -3.5, -2.5, 0, 70, 130, 'business');
-      addBuilding(Cache.buildings.retailStripA, -5.5, -1.5, 0, 90, 100, 'shopping');
-      addBuilding(Cache.buildings.apartmentMidA, -2.5, -1.5, 0, 60, 145, 'residential');
-      addBuilding(Cache.buildings.techStartup, -1.5, -2.5, 0, 70, 120, 'dev-district');
+    // C. AUTONOMOUS CITY BUILDINGS & PROJECT TOWERS (CityRT Procedural Architecture)
+    this._projectLotHits = [];
+    const projectsList = Array.isArray(this.world.projects) && this.world.projects.length > 0
+      ? this.world.projects
+      : (Array.isArray(window.state?.projects) && window.state.projects.length > 0 ? window.state.projects : []);
 
-      // NE block: gx=2..8, gy=-3..-1
-      addBuilding(Cache.buildings.officeBlockB, 3.5, -1.5, 0, 70, 140, 'business');
-      addBuilding(Cache.buildings.restaurantA, 5.0, -1.5, 0, 70, 85, 'shopping');
-      addBuilding(Cache.buildings.apartmentMidB, 4.0, -2.5, 0, 60, 125, 'residential');
-      addBuilding(Cache.buildings.parkingStructure, 2.5, -2.5, 0, 80, 115, 'industrial');
+    const projectZoningMap = {
+      'fenix-os': { x: -1.5, y: -2.5, bld: 'techStartup', district: 'command-center', icon: '🔥', w: 75, h: 125 },
+      'api-platform-live': { x: -3.5, y: -2.5, bld: 'officeBlockA', district: 'dev-district', icon: '⚡', w: 70, h: 130 },
+      'api-platform': { x: -3.5, y: -2.5, bld: 'officeBlockA', district: 'dev-district', icon: '⚡', w: 70, h: 130 },
+      'zapai-crm': { x: 3.5, y: 2.5, bld: 'officeBlockA', district: 'business', icon: '💬', w: 70, h: 130 },
+      'zai-crm': { x: 5.5, y: 2.5, bld: 'techStartup', district: 'business', icon: '💼', w: 70, h: 120 },
+      'zapflow-crm': { x: 3.5, y: 3.5, bld: 'apartmentMidA', district: 'business', icon: '⚡', w: 65, h: 140 },
+      'zapflow': { x: 3.5, y: 3.5, bld: 'apartmentMidA', district: 'business', icon: '⚡', w: 65, h: 140 },
+      'mf-atacadista': { x: 5.5, y: 3.5, bld: 'retailStripA', district: 'business', icon: '🛒', w: 75, h: 90 },
+      'ius-email-control': { x: 3.5, y: -7.5, bld: 'officeBlockB', district: 'ai-district', icon: '✉️', w: 70, h: 140 },
+      'ius-email': { x: 3.5, y: -7.5, bld: 'officeBlockB', district: 'ai-district', icon: '✉️', w: 70, h: 140 },
+      'qwen-studio': { x: 5.5, y: -7.5, bld: 'hotelSmall', district: 'ai-district', icon: '🤖', w: 70, h: 135 },
+      'meta-autoposter': { x: 4.0, y: -2.5, bld: 'apartmentMidB', district: 'industrial', icon: '📱', w: 65, h: 125 },
+      'meta-instagram-autoposter': { x: 4.0, y: -2.5, bld: 'apartmentMidB', district: 'industrial', icon: '📱', w: 65, h: 125 },
+      'marmita-da-casa': { x: -5.5, y: -7.5, bld: 'restaurantA', district: 'shopping', icon: '🍲', w: 80, h: 85 }
+    };
 
-      // SW block: gx=-8..-1, gy=2..5
-      addBuilding(Cache.buildings.hotelSmall, -3.5, 2.5, 0, 70, 135, 'business');
-      addBuilding(Cache.buildings.retailStripB, -5.5, 2.5, 0, 90, 105, 'shopping');
-      addBuilding(Cache.buildings.clinicSmall, -2.5, 3.5, 0, 80, 105, 'hospital');
-      addBuilding(Cache.buildings.workshopGarage, -4.5, 4.5, 0, 80, 85, 'industrial');
+    const autonomousSlots = [
+      { x: -5.5, y: -1.5, bld: 'retailStripA', district: 'shopping', w: 90, h: 100 },
+      { x: -2.5, y: -1.5, bld: 'apartmentMidA', district: 'residential', w: 60, h: 145 },
+      { x: 3.5, y: -1.5, bld: 'officeBlockB', district: 'business', w: 70, h: 140 },
+      { x: 5.0, y: -1.5, bld: 'restaurantA', district: 'shopping', w: 70, h: 85 },
+      { x: 2.5, y: -2.5, bld: 'parkingStructure', district: 'industrial', w: 80, h: 115 },
+      { x: -3.5, y: 2.5, bld: 'hotelSmall', district: 'business', w: 70, h: 135 },
+      { x: -5.5, y: 2.5, bld: 'retailStripB', district: 'shopping', w: 90, h: 105 },
+      { x: -2.5, y: 3.5, bld: 'clinicSmall', district: 'hospital', w: 80, h: 105 },
+      { x: -4.5, y: 4.5, bld: 'workshopGarage', district: 'industrial', w: 80, h: 85 },
+      { x: -3.5, y: -7.5, bld: 'apartmentMidB', district: 'residential', w: 60, h: 125 },
+      { x: -5.5, y: -7.5, bld: 'clinicSmall', district: 'hospital', w: 80, h: 105 },
+      { x: -2.5, y: -6.5, bld: 'parkingStructure', district: 'industrial', w: 80, h: 115 },
+      { x: -4.5, y: -6.5, bld: 'workshopGarage', district: 'industrial', w: 80, h: 85 },
+      { x: 3.5, y: -6.5, bld: 'retailStripA', district: 'shopping', w: 90, h: 100 },
+      { x: 5.5, y: -6.5, bld: 'retailStripB', district: 'shopping', w: 90, h: 105 },
+      { x: -8.5, y: 2.5, bld: 'apartmentMidA', district: 'residential', w: 60, h: 145 },
+      { x: -8.5, y: 3.5, bld: 'apartmentMidB', district: 'residential', w: 60, h: 125 },
+      { x: 7.5, y: 2.5, bld: 'officeBlockA', district: 'business', w: 70, h: 130 },
+      { x: 7.5, y: 3.5, bld: 'officeBlockB', district: 'business', w: 70, h: 140 },
+      { x: -8.5, y: -2.5, bld: 'hotelSmall', district: 'business', w: 70, h: 135 },
+      { x: 7.5, y: -2.5, bld: 'restaurantA', district: 'shopping', w: 70, h: 85 }
+    ];
 
-      // SE block: gx=2..8, gy=2..5
-      addBuilding(Cache.buildings.officeBlockA, 3.5, 2.5, 0, 70, 130, 'business');
-      addBuilding(Cache.buildings.techStartup, 5.5, 2.5, 0, 70, 120, 'dev-district');
-      addBuilding(Cache.buildings.apartmentMidA, 3.5, 3.5, 0, 60, 145, 'residential');
-      addBuilding(Cache.buildings.restaurantA, 5.5, 3.5, 0, 70, 85, 'shopping');
+    const renderedProjectIds = new Set();
+    let slotIdx = 0;
 
-      // Far NW: gx=-8..-1, gy=-8..-6
-      addBuilding(Cache.buildings.apartmentMidB, -3.5, -7.5, 0, 60, 125, 'residential');
-      addBuilding(Cache.buildings.clinicSmall, -5.5, -7.5, 0, 80, 105, 'hospital');
-      addBuilding(Cache.buildings.parkingStructure, -2.5, -6.5, 0, 80, 115, 'industrial');
-      addBuilding(Cache.buildings.workshopGarage, -4.5, -6.5, 0, 80, 85, 'industrial');
+    for (let pi = 0; pi < projectsList.length; pi++) {
+      const proj = projectsList[pi];
+      if (!proj || !proj.id) continue;
+      const pid = String(proj.id).toLowerCase();
+      let slot = projectZoningMap[pid];
 
-      // Far NE: gx=2..8, gy=-8..-6
-      addBuilding(Cache.buildings.officeBlockB, 3.5, -7.5, 0, 70, 140, 'business');
-      addBuilding(Cache.buildings.hotelSmall, 5.5, -7.5, 0, 70, 135, 'business');
-      addBuilding(Cache.buildings.retailStripA, 3.5, -6.5, 0, 90, 100, 'shopping');
-      addBuilding(Cache.buildings.retailStripB, 5.5, -6.5, 0, 90, 105, 'shopping');
-      
-      // Additional scattered filler blocks to avoid empty spaces
-      addBuilding(Cache.buildings.apartmentMidA, -8.5, 2.5, 0, 60, 145, 'residential');
-      addBuilding(Cache.buildings.apartmentMidB, -8.5, 3.5, 0, 60, 125, 'residential');
-      addBuilding(Cache.buildings.officeBlockA, 7.5, 2.5, 0, 70, 130, 'business');
-      addBuilding(Cache.buildings.officeBlockB, 7.5, 3.5, 0, 70, 140, 'business');
-      addBuilding(Cache.buildings.hotelSmall, -8.5, -2.5, 0, 70, 135, 'business');
-      addBuilding(Cache.buildings.restaurantA, 7.5, -2.5, 0, 70, 85, 'shopping');
+      if (!slot) {
+        if (slotIdx >= autonomousSlots.length) break;
+        slot = autonomousSlots[slotIdx++];
+      }
+
+      renderedProjectIds.add(pid);
+      const sprite = Cache.buildings?.[slot.bld] || Cache.buildings?.officeBlockA;
+      if (!sprite) continue;
+
+      const bw = slot.w ?? 70;
+      const bh = slot.h ?? 130;
+      const base = this.toScreen(slot.x, slot.y, 0, cx, cy, zoom);
+      const port = proj.localPort || proj.port || (pid.includes('4400') ? 4400 : (pid.includes('8080') ? 8080 : (pid.includes('8181') ? 8181 : (pid.includes('1000') ? 1000 : null))));
+      const isOnline = proj.status === 'online' || proj.lifecycleState === 'ACTIVE' || Boolean(port);
+
+      // Register interactive lot hitbox for clicking directly into Workspace
+      this._projectLotHits.push({
+        id: proj.id,
+        x: base.x,
+        y: base.y - (bh - 25) * zoom,
+        width: (bw / 2) * zoom + 16,
+        height: bh * zoom + 20
+      });
+
+      // Push custom building drawing to depth-sorted scene
+      scene.push({
+        sortY: base.y,
+        draw: () => {
+          // Contact shadow
+          ctx.save();
+          const sw = (bw * 0.52) * zoom;
+          const sh = (bh * 0.38) * zoom;
+          const sGrad = ctx.createRadialGradient(base.x + sw * 0.25, base.y + 4 * zoom, 2, base.x + sw * 0.45, base.y + 6 * zoom, sw * 1.15);
+          sGrad.addColorStop(0, 'rgba(0, 4, 15, 0.42)');
+          sGrad.addColorStop(1, 'rgba(0, 4, 15, 0)');
+          ctx.fillStyle = sGrad;
+          ctx.beginPath();
+          ctx.ellipse(base.x + sw * 0.25, base.y + 6 * zoom, sw * 0.95, sh * 0.45, Math.PI / 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          // Building Sprite
+          ctx.drawImage(sprite, Math.round(base.x - (bw / 2) * zoom), Math.round(base.y - (bh - 25) * zoom), Math.round(bw * zoom), Math.round(bh * zoom));
+
+          // CityRT-style Floating Status Badge for Project Buildings (visible at medium/high zoom)
+          if (zoom >= 0.85 && zoom <= 2.6) {
+            const badgeY = Math.round(base.y - (bh + 5) * zoom);
+            const badgeText = `${slot.icon || '🏢'} ${proj.name || proj.id}`;
+            const subBadge = port ? `:${port}` : (isOnline ? 'ONLINE' : 'SYS');
+
+            ctx.save();
+            ctx.font = `bold ${Math.max(9, Math.round(10 * Math.min(1.2, zoom)))}px "Inter", sans-serif`;
+            const textWidth = ctx.measureText(badgeText).width;
+            const bWidth = textWidth + (port ? 36 : 20);
+            const bHeight = 16 * zoom;
+
+            // Badge Background Capsule
+            ctx.fillStyle = 'rgba(5, 8, 16, 0.88)';
+            ctx.strokeStyle = isOnline ? 'rgba(0, 229, 160, 0.6)' : 'rgba(245, 158, 11, 0.5)';
+            ctx.lineWidth = 1;
+            if (ctx.roundRect) {
+              ctx.beginPath();
+              ctx.roundRect(base.x - bWidth / 2, badgeY - bHeight / 2, bWidth, bHeight, 4 * zoom);
+              ctx.fill();
+              ctx.stroke();
+            }
+
+            // Status Dot
+            ctx.fillStyle = isOnline ? '#00E5A0' : '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(base.x - bWidth / 2 + 8 * zoom, badgeY, 3 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Text Label
+            ctx.fillStyle = '#f8fafc';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(badgeText, base.x - bWidth / 2 + 14 * zoom, badgeY);
+
+            // Port Pill
+            if (port) {
+              ctx.fillStyle = isOnline ? '#00D9FF' : '#94a3b8';
+              ctx.font = `bold ${Math.max(8, Math.round(8.5 * Math.min(1.2, zoom)))}px monospace`;
+              ctx.textAlign = 'right';
+              ctx.fillText(subBadge, base.x + bWidth / 2 - 5 * zoom, badgeY);
+            }
+            ctx.restore();
+          }
+        }
+      });
+    }
+
+    // Fill remaining vacant slots with urban architecture so map is never empty
+    for (; slotIdx < autonomousSlots.length; slotIdx++) {
+      const slot = autonomousSlots[slotIdx];
+      const sprite = Cache.buildings?.[slot.bld];
+      if (!sprite) continue;
+      addBuilding(sprite, slot.x, slot.y, 0, slot.w ?? 70, slot.h ?? 130, slot.district || 'business');
     }
 
     // C. Logistics Container Stacks & Equipment

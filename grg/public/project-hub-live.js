@@ -2,7 +2,19 @@
   'use strict';
   const CATALOG_PREFS_KEY = 'fenix_project_catalog_preferences_v1';
   const DEFAULT_FAVORITES = ['api-platform-live', 'fenix-os', 'grg-crm-distribuidor-automotivo', 'superapp-gestao-revendas', 'multi-tenant-manager'];
-  const isFullFenixShell = typeof document !== 'undefined' && Boolean(document.getElementById('topbar') || document.getElementById('fnxTopbarKpisCluster') || document.querySelector('.fenix-shell'));
+  const isFixture = typeof window !== 'undefined' && (
+    (window.location.pathname || '').includes('fixture') ||
+    (window.location.search || '').includes('fixture')
+  );
+  const isFullFenixShell = typeof document !== 'undefined' && !isFixture && Boolean(
+    document.getElementById('topbar') ||
+    document.getElementById('fnxTopbarKpisCluster') ||
+    document.querySelector('.global-topbar') ||
+    document.querySelector('.fenix-shell') ||
+    document.getElementById('view-city') ||
+    document.getElementById('view-command') ||
+    (window.location.pathname === '/app' || window.location.pathname === '/')
+  );
   function readCatalogPreferences() {
     try {
       const raw = localStorage.getItem(CATALOG_PREFS_KEY);
@@ -383,7 +395,7 @@
         <button type="submit" class="flp-button flp-button-primary">Clonar e registrar</button>
         <span id="flpCloneStatus" role="status"></span>
       </form>
-      <div class="flp-body">
+      <div class="flp-body is-grid-full-view" data-full-launcher="true" data-detail-focus="false">
         <aside class="flp-tree-nav-sidebar" id="flpTreeSidebar"></aside>
         <aside class="flp-sidebar">
           <div class="flp-hub-mode-tabs" style="display:flex; border-bottom:1px solid rgba(133,179,215,.14); margin-bottom:14px; gap:4px;">
@@ -624,9 +636,15 @@
       $('flpFullLauncherGridBtn')?.click();
     });
     $('flpFullLauncherGridBtn')?.addEventListener('click', () => {
-      state.launcherFullGrid = !state.launcherFullGrid;
-      if (state.launcherFullGrid) state.catalogLayout = 'grid';
-      try { localStorage.setItem('fenix_launcher_full_grid', String(state.launcherFullGrid)); } catch {}
+      if (isFullFenixShell) {
+        state.launcherFullGrid = true;
+        state.detailFocus = false;
+        state.catalogLayout = 'grid';
+      } else {
+        state.launcherFullGrid = !state.launcherFullGrid;
+        if (state.launcherFullGrid) state.catalogLayout = 'grid';
+        try { localStorage.setItem('fenix_launcher_full_grid', String(state.launcherFullGrid)); } catch {}
+      }
       syncMultiViewToolbar();
       renderCards();
     });
@@ -1503,7 +1521,7 @@
       card.append(multiToggle, openButton, favorite);
       card.addEventListener('click', (event) => {
         if (!event.target.closest('.flp-project-favorite') && !event.target.closest('.flp-project-multiview-toggle') && !event.target.closest('.flp-quick-action-btn')) {
-          if (state.launcherFullGrid) {
+          if (isFullFenixShell || state.launcherFullGrid) {
             selectProject(project.id, null, true);
           } else {
             selectProject(project.id);
@@ -1518,10 +1536,10 @@
   function syncMultiViewToolbar() {
     const bodyEl = document.querySelector('#view-projects .flp-body');
     if (bodyEl) {
-      const isGridOnly = Boolean(state.launcherFullGrid) && !state.detailFocus;
+      const isGridOnly = isFullFenixShell ? !state.detailFocus : (Boolean(state.launcherFullGrid) && !state.detailFocus);
       bodyEl.classList.toggle('is-grid-full-view', isGridOnly);
       bodyEl.classList.toggle('is-multiview-active', Boolean(state.multiViewActive));
-      bodyEl.dataset.fullLauncher = String(Boolean(state.launcherFullGrid));
+      bodyEl.dataset.fullLauncher = String(isFullFenixShell ? true : Boolean(state.launcherFullGrid));
       bodyEl.dataset.detailFocus = String(Boolean(state.detailFocus));
     }
     const expandToggle = $('flpLayoutExpandToggle');
@@ -6383,7 +6401,9 @@
     } else {
       if (window.location.hash === '#projects' || window.location.hash === '' || window.location.hash.startsWith('#projects?')) {
         state.detailFocus = false;
-        state.launcherFullGrid = true;
+        if (isFullFenixShell || localStorage.getItem('fenix_launcher_full_grid') === 'true') {
+          state.launcherFullGrid = true;
+        }
       }
     }
     syncMultiViewToolbar();
@@ -6422,7 +6442,9 @@
           state.detailFocus = true;
         } else {
           state.detailFocus = false;
-          state.launcherFullGrid = true;
+          if (isFullFenixShell || localStorage.getItem('fenix_launcher_full_grid') === 'true') {
+            state.launcherFullGrid = true;
+          }
         }
         state.requestedProjectId = null;
         recordProjectOpen(state.selected);
@@ -7312,7 +7334,9 @@
     } else {
       if (window.location.hash === '#projects' || window.location.hash === '' || window.location.hash.startsWith('#projects?')) {
         state.detailFocus = false;
-        state.launcherFullGrid = true;
+        if (isFullFenixShell || localStorage.getItem('fenix_launcher_full_grid') === 'true') {
+          state.launcherFullGrid = true;
+        }
       }
     }
     syncMultiViewToolbar();
@@ -7327,6 +7351,12 @@
   window.addEventListener('fenix:viewchanged', (e) => {
     if (e.detail?.viewId === 'projects') {
       if (!isProjectsRoute() && !document.getElementById('view-projects')?.classList.contains('active')) return;
+      if (!parseProjectsRoute()?.projectId) {
+        state.detailFocus = false;
+        if (isFullFenixShell || localStorage.getItem('fenix_launcher_full_grid') === 'true') {
+          state.launcherFullGrid = true;
+        }
+      }
       renderShell();
       load();
     }

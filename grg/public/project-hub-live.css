@@ -4383,4 +4383,29 @@
   transform: translateX(-2px) !important;
 }
 
+/* Fênix OS Production Shell — Strict Two-State Layout (No Squeezed 460px Split Mode) */
+.fenix-projects-view .flp-body:not([data-detail-focus="true"]) .flp-detail {
+  display: none !important;
+}
+.fenix-projects-view .flp-body:not([data-detail-focus="true"]) .flp-sidebar {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+.fenix-projects-view .flp-body[data-detail-focus="true"] .flp-sidebar {
+  display: none !important;
+}
+.fenix-projects-view .flp-body[data-detail-focus="true"] .flp-detail {
+  order: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+
 
