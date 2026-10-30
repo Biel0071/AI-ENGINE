@@ -1747,33 +1747,90 @@
       return atOrigin && assignedOutsideHq ? 'ESTIMATED' : 'MEASURED';
     }
 
+    setAgentState(agentId, stateName) {
+      const ag = this.agents ? this.agents.get(agentId) : null;
+      if (!ag) return false;
+      const validStates = ['IDLE', 'WALKING', 'RUNNING', 'WORKING', 'TALKING', 'INTERACTING', 'THINKING', 'WAITING', 'CELEBRATING'];
+      const st = String(stateName || 'IDLE').toUpperCase();
+      ag.state = validStates.includes(st) ? st : 'IDLE';
+      ag.status = ag.state;
+      if (ag.thoughtBubble) {
+        const emojis = {
+          IDLE: '●', WALKING: '🚶', RUNNING: '🏃', WORKING: '⚡', TALKING: '💬',
+          INTERACTING: '👉', THINKING: '🤔', WAITING: '⏳', CELEBRATING: '🎉'
+        };
+        const colors = {
+          IDLE: '#67e8f9', WALKING: '#00d9ff', RUNNING: '#38bdf8', WORKING: '#10b981',
+          TALKING: '#c084fc', INTERACTING: '#f59e0b', THINKING: '#a78bfa', WAITING: '#fbbf24', CELEBRATING: '#fb7185'
+        };
+        ag.thoughtBubble.setText(`${ag.role || ag.name} · ${ag.state}`, emojis[ag.state] || '●', colors[ag.state] || '#67e8f9');
+      }
+      return true;
+    }
+
     _applyAgentActivityPose(agent, userData, time, enabled) {
       if (!enabled || agent.path?.length || agent.telemetryTarget) return false;
-      const isWorking = (agent.activity?.key || this._resolveAgentActivity(agent).key) === 'working';
-      const arms = [userData.armL, userData.armR].filter(Boolean);
-      if (!arms.length) return false;
-      if (!isWorking) {
-        const shoulderRest = userData.isSeated ? Math.PI / 3.5 : 0;
-        const idlePhase = time * 0.72;
-        if (userData.armL?.rotation) userData.armL.rotation.x = shoulderRest + Math.sin(idlePhase) * 0.035;
-        if (userData.armR?.rotation) userData.armR.rotation.x = shoulderRest + Math.sin(idlePhase + 1.7) * 0.035;
-        const forearmRest = userData.isSeated ? Math.PI / 2.2 : Math.PI / 6;
-        if (userData.forearmL?.rotation) userData.forearmL.rotation.x = forearmRest + Math.sin(idlePhase + 0.8) * 0.018;
-        if (userData.forearmR?.rotation) userData.forearmR.rotation.x = forearmRest + Math.sin(idlePhase + 2.2) * 0.018;
-        return false;
-      }
+      const st = String(agent.state || agent.status || (agent.activity?.key === 'working' ? 'WORKING' : 'IDLE')).toUpperCase();
+      const armL = userData.armL;
+      const armR = userData.armR;
+      const forearmL = userData.forearmL;
+      const forearmR = userData.forearmR;
+      const head = userData.head;
 
-      const phase = time * (userData.isSeated ? 8 : 3.2);
-      if (userData.isSeated) {
-        if (userData.armL?.rotation) userData.armL.rotation.x = Math.PI / 3.5 + Math.sin(phase) * 0.12;
-        if (userData.armR?.rotation) userData.armR.rotation.x = Math.PI / 3.5 + Math.cos(phase) * 0.12;
-        if (userData.forearmL?.rotation) userData.forearmL.rotation.x = Math.PI / 2.2 + Math.cos(phase) * 0.08;
-        if (userData.forearmR?.rotation) userData.forearmR.rotation.x = Math.PI / 2.2 + Math.sin(phase) * 0.08;
+      if (st === 'WORKING') {
+        const phase = time * (userData.isSeated ? 8 : 3.8);
+        if (armL?.rotation) armL.rotation.x = Math.PI / 3.4 + Math.sin(phase) * 0.12;
+        if (armR?.rotation) armR.rotation.x = Math.PI / 3.4 + Math.cos(phase) * 0.12;
+        if (forearmL?.rotation) forearmL.rotation.x = Math.PI / 2.2 + Math.cos(phase) * 0.08;
+        if (forearmR?.rotation) forearmR.rotation.x = Math.PI / 2.2 + Math.sin(phase) * 0.08;
+        if (head?.rotation) head.rotation.x = 0.14;
+      } else if (st === 'TALKING') {
+        const phase = time * 3.4;
+        if (armL?.rotation) armL.rotation.x = 0.15 + Math.sin(phase * 0.5) * 0.06;
+        if (armR?.rotation) armR.rotation.x = Math.PI / 2.8 + Math.sin(phase) * 0.22;
+        if (forearmR?.rotation) forearmR.rotation.x = Math.PI / 2.5 + Math.cos(phase) * 0.15;
+        if (head?.rotation) {
+          head.rotation.y = Math.sin(phase * 0.8) * 0.18;
+          head.rotation.x = Math.sin(phase * 1.6) * 0.08;
+        }
+      } else if (st === 'INTERACTING') {
+        if (armR?.rotation) armR.rotation.x = Math.PI / 2.2;
+        if (forearmR?.rotation) forearmR.rotation.x = 0.12;
+        if (armL?.rotation) armL.rotation.x = 0.08;
+        if (head?.rotation) head.rotation.x = 0.08;
+      } else if (st === 'THINKING') {
+        if (armR?.rotation) {
+          armR.rotation.x = Math.PI / 2.5;
+          armR.rotation.z = -0.32;
+        }
+        if (forearmR?.rotation) forearmR.rotation.x = Math.PI / 2.2;
+        if (head?.rotation) head.rotation.z = 0.14;
+      } else if (st === 'WAITING') {
+        if (armL?.rotation) armL.rotation.x = 0.18;
+        if (armR?.rotation) armR.rotation.x = 0.18;
+        if (forearmL?.rotation) forearmL.rotation.x = Math.PI / 4;
+        if (forearmR?.rotation) forearmR.rotation.x = Math.PI / 4;
+      } else if (st === 'CELEBRATING') {
+        const cPhase = time * 6.5;
+        if (armL?.rotation) armL.rotation.x = -Math.PI * 0.78 + Math.sin(cPhase) * 0.18;
+        if (armR?.rotation) armR.rotation.x = -Math.PI * 0.78 + Math.sin(cPhase + 0.6) * 0.18;
+        if (forearmL?.rotation) forearmL.rotation.x = 0.1;
+        if (forearmR?.rotation) forearmR.rotation.x = 0.1;
+        if (agent.mesh?.position && !userData.isSeated) {
+          agent.mesh.position.y = (agent.baseY || 0.88) + Math.abs(Math.sin(cPhase)) * 0.14;
+        }
       } else {
-        if (userData.armL?.rotation) userData.armL.rotation.x = 0.24 + Math.sin(phase) * 0.08;
-        if (userData.armR?.rotation) userData.armR.rotation.x = 0.34 + Math.cos(phase) * 0.08;
-        if (userData.forearmL?.rotation) userData.forearmL.rotation.x = Math.PI / 6 + Math.sin(phase + 0.4) * 0.08;
-        if (userData.forearmR?.rotation) userData.forearmR.rotation.x = Math.PI / 6 + Math.cos(phase + 0.4) * 0.08;
+        // IDLE
+        const idlePhase = time * 0.72;
+        const shoulderRest = userData.isSeated ? Math.PI / 3.5 : 0;
+        if (armL?.rotation) armL.rotation.x = shoulderRest + Math.sin(idlePhase) * 0.035;
+        if (armR?.rotation) armR.rotation.x = shoulderRest + Math.sin(idlePhase + 1.7) * 0.035;
+        const forearmRest = userData.isSeated ? Math.PI / 2.2 : Math.PI / 6;
+        if (forearmL?.rotation) forearmL.rotation.x = forearmRest + Math.sin(idlePhase + 0.8) * 0.018;
+        if (forearmR?.rotation) forearmR.rotation.x = forearmRest + Math.sin(idlePhase + 2.2) * 0.018;
+        if (head?.rotation) {
+          head.rotation.set(0, Math.sin(idlePhase * 0.6) * 0.08, 0);
+        }
       }
       return true;
     }
@@ -4951,28 +5008,40 @@
 
         agent.add(thighL, thighR, calfL, calfR, shoeSoleL, shoeUpperL, shoeSoleR, shoeUpperR);
       } else {
+        // ── FÊNIX CHARACTER ENGINE 5.0: Anatomical Hip Joints for Fluid Strides ──
         const legGeo = new T.BoxGeometry(0.20, 0.60, 0.22);
         const shoeSoleGeo = new T.BoxGeometry(0.24, 0.05, 0.36);
         const shoeUpperGeo = new T.BoxGeometry(0.22, 0.10, 0.32);
 
+        const hipL = new T.Group();
+        hipL.name = 'HipJoint_L';
+        hipL.position.set(-0.15, 0.68, 0);
+
         const legL = new T.Mesh(legGeo, pantsMaterial);
-        legL.position.set(-0.15, 0.35, 0);
+        legL.position.set(0, -0.32, 0);
         legL.castShadow = true;
-        const legR = new T.Mesh(legGeo, pantsMaterial);
-        legR.position.set(0.15, 0.35, 0);
-        legR.castShadow = true;
-
         const shoeSoleL = new T.Mesh(shoeSoleGeo, this.materials.sneakerWhite);
-        shoeSoleL.position.set(-0.15, 0.025, 0.05);
+        shoeSoleL.position.set(0, -0.655, 0.05);
         const shoeUpperL = new T.Mesh(shoeUpperGeo, shoeMaterial);
-        shoeUpperL.position.set(-0.15, 0.09, 0.05);
+        shoeUpperL.position.set(0, -0.59, 0.05);
+        hipL.add(legL, shoeSoleL, shoeUpperL);
 
+        const hipR = new T.Group();
+        hipR.name = 'HipJoint_R';
+        hipR.position.set(0.15, 0.68, 0);
+
+        const legR = new T.Mesh(legGeo, pantsMaterial);
+        legR.position.set(0, -0.32, 0);
+        legR.castShadow = true;
         const shoeSoleR = new T.Mesh(shoeSoleGeo, this.materials.sneakerWhite);
-        shoeSoleR.position.set(0.15, 0.025, 0.05);
+        shoeSoleR.position.set(0, -0.655, 0.05);
         const shoeUpperR = new T.Mesh(shoeUpperGeo, shoeMaterial);
-        shoeUpperR.position.set(0.15, 0.09, 0.05);
+        shoeUpperR.position.set(0, -0.59, 0.05);
+        hipR.add(legR, shoeSoleR, shoeUpperR);
 
-        agent.add(legL, legR, shoeSoleL, shoeUpperL, shoeSoleR, shoeUpperR);
+        agent.add(hipL, hipR);
+        agent._hipL = hipL;
+        agent._hipR = hipR;
       }
 
       // Torso Interactive UserData & Raycast Target
@@ -5005,6 +5074,10 @@
         armR,
         forearmL,
         forearmR,
+        legL: isSeated ? null : agent._hipL,
+        legR: isSeated ? null : agent._hipR,
+        hipL: agent._hipL,
+        hipR: agent._hipR,
         head,
         emoteBadge,
         emoteIcon,
@@ -7571,15 +7644,88 @@
 
       const d = this.cameraState.distance;
       const az = this.cameraState.azimuth;
-      const el = this.cameraState.elevation;
+      const el = Math.max(0.12, Math.min(1.42, this.cameraState.elevation));
+      this.cameraState.elevation = el;
 
-      this.camera.position.set(
-        this.cameraState.target.x + d * Math.cos(az) * Math.cos(el),
-        this.cameraState.target.y + d * Math.sin(el),
-        this.cameraState.target.z + d * Math.sin(az) * Math.cos(el)
-      );
+      // ── FÊNIX CAMERA ENGINE 5.0: Collision Clearance & Anti-Clipping ──
+      let eyeX = this.cameraState.target.x + d * Math.cos(az) * Math.cos(el);
+      let eyeY = this.cameraState.target.y + d * Math.sin(el);
+      let eyeZ = this.cameraState.target.z + d * Math.sin(az) * Math.cos(el);
+
+      // Prevent camera from clipping through known solid building boundaries
+      if (this.obstacles && Array.isArray(this.obstacles)) {
+        const margin = 1.35;
+        for (let i = 0; i < this.obstacles.length; i++) {
+          const obs = this.obstacles[i];
+          if (!obs || obs.minX === undefined) continue;
+          const oMinY = obs.minY !== undefined ? obs.minY : 0;
+          const oMaxY = obs.maxY !== undefined ? obs.maxY : 28;
+          if (eyeX >= (obs.minX - margin) && eyeX <= (obs.maxX + margin) &&
+              eyeZ >= (obs.minZ - margin) && eyeZ <= (obs.maxZ + margin) &&
+              eyeY >= (oMinY - 0.5) && eyeY <= (oMaxY + margin)) {
+            // Push eye out along nearest face
+            const dL = Math.abs(eyeX - (obs.minX - margin));
+            const dR = Math.abs((obs.maxX + margin) - eyeX);
+            const dB = Math.abs(eyeZ - (obs.minZ - margin));
+            const dF = Math.abs((obs.maxZ + margin) - eyeZ);
+            const minD = Math.min(dL, dR, dB, dF);
+            if (minD === dL) eyeX = obs.minX - margin;
+            else if (minD === dR) eyeX = obs.maxX + margin;
+            else if (minD === dB) eyeZ = obs.minZ - margin;
+            else eyeZ = obs.maxZ + margin;
+            eyeY = Math.max(eyeY, oMaxY + 1.2);
+          }
+        }
+      }
+
+      // Dynamic Near Plane: prevent close-up slicing of workstations, screens, or interior props
+      const targetNear = d < 18 ? 0.08 : d < 40 ? 0.22 : 0.45;
+      if (Math.abs(this.camera.near - targetNear) > 0.02) {
+        this.camera.near = targetNear;
+        this.camera.updateProjectionMatrix();
+      }
+
+      this.camera.position.set(eyeX, eyeY, eyeZ);
       this.camera.lookAt(this.cameraState.target);
       this._syncExpansionChunks(this.cameraState.targetLookAt.x, this.cameraState.targetLookAt.z);
+    }
+
+    applyCameraPreset(presetName, targetOverride = null, instant = false) {
+      const PRESETS = {
+        CITY_VIEW: { id: 'CITY_VIEW', distance: 68, elevation: 0.56, azimuth: Math.PI / 4, target: { x: 0, y: 0, z: 8 }, near: 0.45, minDist: 32, maxDist: 160 },
+        DISTRICT_VIEW: { id: 'DISTRICT_VIEW', distance: 36, elevation: 0.46, azimuth: Math.PI / 4, target: { x: -16, y: 0, z: 12 }, near: 0.25, minDist: 18, maxDist: 75 },
+        BUILDING_VIEW: { id: 'BUILDING_VIEW', distance: 22, elevation: 0.38, azimuth: Math.PI / 3.8, target: { x: 0, y: 4, z: 0 }, near: 0.15, minDist: 12, maxDist: 45 },
+        FLOOR_VIEW: { id: 'FLOOR_VIEW', distance: 13.5, elevation: 0.32, azimuth: Math.PI / 3.2, target: { x: 0, y: 3, z: 0 }, near: 0.08, minDist: 6, maxDist: 25 },
+        AGENT_FOLLOW: { id: 'AGENT_FOLLOW', distance: 8.5, elevation: 0.28, azimuth: Math.PI / 4, target: null, near: 0.08, minDist: 4, maxDist: 18 },
+        OBJECT_FOCUS: { id: 'OBJECT_FOCUS', distance: 4.8, elevation: 0.24, azimuth: Math.PI / 4, target: null, near: 0.05, minDist: 2.5, maxDist: 12 }
+      };
+
+      const preset = PRESETS[presetName] || PRESETS.CITY_VIEW;
+      this.cameraState.currentPreset = preset.id;
+      this.cameraState.targetDistance = preset.distance * responsiveCameraScale(this.camera?.aspect);
+      this.cameraState.targetElevation = preset.elevation;
+      this.cameraState.targetAzimuth = preset.azimuth;
+
+      if (targetOverride) {
+        if (typeof targetOverride.clone === 'function') {
+          this.cameraState.targetLookAt.copy(targetOverride);
+        } else if (Number.isFinite(targetOverride.x)) {
+          this.cameraState.targetLookAt.set(targetOverride.x, targetOverride.y || 0, targetOverride.z || 0);
+        }
+      } else if (preset.target) {
+        this.cameraState.targetLookAt.set(preset.target.x, preset.target.y, preset.target.z);
+      }
+
+      this.camera.near = preset.near;
+      this.camera.updateProjectionMatrix();
+
+      if (instant || Boolean(navigator.webdriver) || Boolean(window.__FENIX_HEADLESS__)) {
+        this._updateCameraPosition(true);
+        this._updateDistrictLabels?.();
+        this.renderer?.render?.(this.scene, this.camera);
+      }
+      this._saveState();
+      return preset;
     }
 
     setCameraMode(mode) {
@@ -9604,9 +9750,70 @@
       return true;
     }
 
+    _initMinimapInteraction(canvas) {
+      if (!canvas || canvas._hasMinimapNavListener) return;
+      canvas._hasMinimapNavListener = true;
+      canvas.style.cursor = 'crosshair';
+
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        const width = canvas.width;
+        const height = canvas.height;
+        const minimapScaleMultiplier = this.minimapZoomScale || 1.0;
+        const isoSpanX = 140;
+        const isoSpanY = 100;
+        const scaleX = (width * 0.88) / (isoSpanX * 2);
+        const scaleY = (height * 0.84) / (isoSpanY * 2);
+        const scale = Math.min(scaleX, scaleY) * minimapScaleMultiplier;
+
+        // Invert isometric projection
+        const u = (clickX - width / 2) / (scale * 1.0);
+        const v = (clickY - height / 2 - 6) / (scale * 0.50);
+        const worldX = (u + v) / 2;
+        const worldZ = (v - u) / 2;
+
+        if (Math.abs(worldX) < 140 && Math.abs(worldZ) < 140) {
+          this.cameraState.targetLookAt.set(worldX, 0, worldZ);
+          this._lastMinimapClick = { x: clickX, y: clickY, time: performance.now(), wx: worldX, wz: worldZ };
+          for (const d of DISTRICTS) {
+            const dist = Math.hypot(worldX - d.x, worldZ - d.z);
+            if (dist < 16) {
+              this.focusDistrict(d.id);
+              break;
+            }
+          }
+          if (Boolean(navigator.webdriver) || Boolean(window.__FENIX_HEADLESS__)) {
+            this._updateCameraPosition(true);
+            this.renderer?.render?.(this.scene, this.camera);
+          }
+        }
+      });
+    }
+
+    minimapZoomIn() {
+      this.minimapZoomScale = Math.min(2.5, (this.minimapZoomScale || 1.0) + 0.25);
+      this._renderWorldMinimap(performance.now());
+      return this.minimapZoomScale;
+    }
+
+    minimapZoomOut() {
+      this.minimapZoomScale = Math.max(0.6, (this.minimapZoomScale || 1.0) - 0.25);
+      this._renderWorldMinimap(performance.now());
+      return this.minimapZoomScale;
+    }
+
+    minimapReset() {
+      this.minimapZoomScale = 1.0;
+      this._renderWorldMinimap(performance.now());
+      return this.minimapZoomScale;
+    }
+
     _renderWorldMinimap(time) {
       const canvas = document.getElementById('fenixMinimap');
       if (!canvas || !this.cameraState) return;
+      this._initMinimapInteraction(canvas);
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
       if (this._lastMinimapFrame && now - this._lastMinimapFrame < 250) return;
       this._lastMinimapFrame = now;
@@ -9622,7 +9829,8 @@
       const isoSpanY = 100;
       const scaleX = (width * 0.88) / (isoSpanX * 2);
       const scaleY = (height * 0.84) / (isoSpanY * 2);
-      const scale = Math.min(scaleX, scaleY);
+      const minimapScaleMultiplier = this.minimapZoomScale || 1.0;
+      const scale = Math.min(scaleX, scaleY) * minimapScaleMultiplier;
       const toX = (x) => width / 2 + (x - centerX) * scale * 1.2;
       const toY = (z) => height / 2 + (z - centerZ) * scale * 1.2;
 
@@ -9793,28 +10001,29 @@
       ctx.beginPath(); ctx.arc(markerX, markerY, 5, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(markerX - 8, markerY); ctx.lineTo(markerX + 8, markerY); ctx.moveTo(markerX, markerY - 8); ctx.lineTo(markerX, markerY + 8); ctx.stroke();
 
+      // Click Ping Ripple Animation
+      if (this._lastMinimapClick && (now - this._lastMinimapClick.time) < 1400) {
+        const pProg = (now - this._lastMinimapClick.time) / 1400;
+        const pRadius = 4 + pProg * 26;
+        const pAlpha = Math.max(0, 1.0 - pProg);
+        ctx.strokeStyle = `rgba(0, 217, 255, ${pAlpha})`;
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.arc(this._lastMinimapClick.x, this._lastMinimapClick.y, pRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(0, 217, 255, ${pAlpha * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(this._lastMinimapClick.x, this._lastMinimapClick.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       const status = document.getElementById('fenixMinimapStatus');
       const measuredBuildingsCount = (this.buildings instanceof Map ? this.buildings.size : 0) || buildings.length;
       if (status) status.textContent = this.telemetryStatus === 'MEASURED'
         ? `${visibleAgents} no mapa · ${measuredBuildingsCount} prédios medidos`
         : this.telemetryStatus === 'PARTIAL' ? 'Leitura parcial da API'
           : this.telemetryStatus === 'CONNECTING' ? 'Sincronizando telemetria…' : 'Telemetria indisponível';
-
-      if (!canvas.dataset.fenixPanBound) {
-        canvas.dataset.fenixPanBound = '1';
-        canvas.addEventListener('click', (event) => {
-          const rect = canvas.getBoundingClientRect();
-          const localX = (event.clientX - rect.left) * (canvas.width / rect.width);
-          const localY = (event.clientY - rect.top) * (canvas.height / rect.height);
-          const currentTarget = this.cameraState.targetLookAt;
-          const currentSpan = Math.max(90, Math.min(260, this.cameraState.targetDistance * 1.15));
-          const currentScale = Math.min(canvas.width, canvas.height) / (currentSpan * 2);
-          const worldX = currentTarget.x + (localX - canvas.width / 2) / currentScale;
-          const worldZ = currentTarget.z + (localY - canvas.height / 2) / currentScale;
-          this.stopFollowing?.();
-          this.focusEntity(new T.Vector3(worldX, currentTarget.y, worldZ), this.cameraState.targetDistance);
-        });
-      }
     }
 
     assignDynamicMission(payload) {

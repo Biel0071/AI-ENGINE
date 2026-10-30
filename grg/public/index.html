@@ -2787,6 +2787,16 @@
                 <button class="office-btn office-btn-secondary" onclick="window.refreshCityState?.(); window.fenixOffice?.refresh?.()" title="Sincronizar" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#CBD5E1; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">
                   <i class="ph-bold ph-arrows-clockwise"></i>
                 </button>
+
+                <div class="fnx-floor-nav-strip" style="display:flex; align-items:center; gap:3px; margin-left:6px; border-left:1px solid rgba(255,255,255,0.12); padding-left:8px;">
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusFloor?.(null)" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#f8fafc; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Visão Geral do Edifício">🏢 Geral</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusFloor?.(0)" style="background:rgba(0,217,255,0.12); border:1px solid rgba(0,217,255,0.3); color:#00d9ff; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Piso 0: Recepção e Lounge">Piso 0</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusFloor?.(1)" style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#10b981; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Piso 1: Engenharia e Workstations">Piso 1</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusFloor?.(2)" style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:#f59e0b; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Piso 2: Data Center e Racks">Piso 2</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusFloor?.(3)" style="background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); color:#a855f7; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Piso 3: Sora AI Core Lab">Piso 3</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusElevator?.()" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Ver Elevador Panorâmico">🛗 Elevador</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusCivicPlaza?.()" style="background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); color:#fbbf24; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Ver Praça Cívica e Fênix Dourado">🏛️ Praça</button>
+                </div>
               </div>
             </div>
 
