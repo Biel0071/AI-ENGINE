@@ -90,11 +90,11 @@
   }
 
   const T = THREE;
-  const STORAGE_KEY = 'fenix_world_camera_v5';
-  const LEGACY_STORAGE_KEY = 'fenix_world_camera_v4';
-  const CITY_DEFAULT_DISTANCE = 136;
+  const STORAGE_KEY = 'fenix_world_camera_v6';
+  const LEGACY_STORAGE_KEY = 'fenix_world_camera_v5';
+  const CITY_DEFAULT_DISTANCE = 118;
   const CITY_REFERENCE_ASPECT = 16 / 10;
-  const CITY_DEFAULT_FOV = 38;
+  const CITY_DEFAULT_FOV = 36;
   const CITY_MAX_RESPONSIVE_FOV = 55;
   const EXPANSION_CHUNK_SIZE = 160;
   const EXPANSION_MAX_RADIUS = 2;
@@ -273,26 +273,26 @@
     // Asphalt Road with Grain, Double Yellow Centerline & White Edges
     static createRoadTexture() {
       return this.create(512, 512, (ctx, w, h) => {
-        // Base dark asphalt
-        ctx.fillStyle = '#343c46';
+        // Base dark cyber-obsidian asphalt
+        ctx.fillStyle = '#141c26';
         ctx.fillRect(0, 0, w, h);
 
         // Fine grain noise (deterministic)
         for (let i = 0; i < 18000; i++) {
           const x = ((i * 73) % w);
           const y = ((i * 137 + Math.floor(i / w) * 29) % h);
-          const shade = 52 + ((i * 19) % 27);
+          const shade = 22 + ((i * 19) % 18);
           ctx.fillStyle = `rgb(${shade},${shade + 2},${shade + 6})`;
           ctx.fillRect(x, y, 1.5, 1.5);
         }
 
         // White solid edge lines
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = '#f8fafc';
         ctx.fillRect(16, 0, 8, h);
         ctx.fillRect(w - 24, 0, 8, h);
 
         // Double yellow centerline
-        ctx.fillStyle = '#f59e0b';
+        ctx.fillStyle = '#facc15';
         ctx.fillRect(w / 2 - 8, 0, 6, h);
         ctx.fillRect(w / 2 + 2, 0, 6, h);
       }, 1, 4);
@@ -1420,8 +1420,8 @@
       if (!this.container) return;
 
       this.scene = new T.Scene();
-      this.scene.background = new T.Color(0xd7dec9); // CityRT signature watercolor pastel haze
-      this.scene.fog = new T.Fog(0xd7dec9, 85, 340);
+      this.scene.background = new T.Color(0x0a1017); // Cyber-Obsidian living city atmosphere
+      this.scene.fog = new T.Fog(0x0a1017, 130, 480);
 
       // Camera State
       const saved = this._loadState();
@@ -2372,8 +2372,12 @@
           && pixelRatio === this._lastRendererPixelRatio && aspect === this.camera.aspect) return;
         this.camera.aspect = aspect;
         this.camera.fov = responsiveCameraFov(this.camera.aspect);
-        const dockHeight = 175;
-        this.camera.setViewOffset(w, h + dockHeight, 0, dockHeight, w, h);
+        const dockHeight = (this.activeApiFloor !== null && this.activeApiFloor !== undefined) ? 0 : Math.min(48, Math.floor(h * 0.055));
+        if (dockHeight > 0) {
+          this.camera.setViewOffset(w, h + dockHeight, 0, dockHeight, w, h);
+        } else {
+          this.camera.clearViewOffset();
+        }
         this.camera.updateProjectionMatrix();
         if (this.cameraState) {
           const preferenceDistance = Number(this.cameraState.preferenceDistance) || CITY_DEFAULT_DISTANCE;
@@ -2391,13 +2395,13 @@
        4-POINT BALANCED LIGHTING + ARCHITECTURAL INTERIOR ILLUMINATION
     ══════════════════════════════════════════════════════════════════════════ */
     _initLighting() {
-      // 1. Dual Hemisphere Ambient (Sky Blue from above + Warm Slate Earth from below)
-      this.hemiLight = new T.HemisphereLight(0xe8edd8, 0x8c9c72, 0.88);
+      // 1. Dual Hemisphere Ambient (Crisp Azure Sky from above + Deep Slate Ground from below)
+      this.hemiLight = new T.HemisphereLight(0xe0f2fe, 0x0f172a, 1.25);
       this.hemiLight.position.set(0, 80, 0);
       this.scene.add(this.hemiLight);
 
-      // 2. Primary Solar Directional Light (CityRT Warm Golden Sun)
-      this.sunLight = new T.DirectionalLight(0xfff2d4, 1.55);
+      // 2. Primary Solar Directional Light (Crisp Architectural Key Light)
+      this.sunLight = new T.DirectionalLight(0xfff7ed, 2.35);
       this.sunLight.position.set(65, 75, 75);
       this.sunLight.castShadow = true;
       this.sunLight.shadow.mapSize.width = 2048;
@@ -2411,25 +2415,25 @@
       this.sunLight.shadow.bias = -0.00015;
       this.scene.add(this.sunLight);
 
-      // 3. Cool Secondary Azure Fill Light (Opposite Angle) -> Prevents dark silhouettes!
-      this.fillLight = new T.DirectionalLight(0x91b5c0, 0.42);
+      // 3. Cool Secondary Azure Fill Light (Opposite Angle) -> Specular cyan edge highlights
+      this.fillLight = new T.DirectionalLight(0x00f0ff, 0.55);
       this.fillLight.position.set(-65, 45, -55);
       this.scene.add(this.fillLight);
 
       // 4. Warm Ground Bounce Fill Light -> Illuminates undersides and truck suspensions
-      this.bounceLight = new T.DirectionalLight(0xf0bd7e, 0.22);
+      this.bounceLight = new T.DirectionalLight(0xf59e0b, 0.32);
       this.bounceLight.position.set(30, -20, 20);
       this.scene.add(this.bounceLight);
 
-      // 5. Dedicated Architectural Interior Light for API Platform (Eliminating Pitch Black Interiors)
-      this.apiInteriorLight = new T.DirectionalLight(0xd6e6e2, 0.65);
+      // 5. Dedicated Architectural Interior Light for API Platform
+      this.apiInteriorLight = new T.DirectionalLight(0xdbeafe, 0.95);
       this.apiInteriorLight.position.copy(districtPoint('api-platform', 0, 14, 28));
       this.apiInteriorLight.target.position.copy(districtPoint('api-platform', 0, 9, 0));
       this.scene.add(this.apiInteriorLight);
       this.scene.add(this.apiInteriorLight.target);
 
       // High-Mast Floodlight at Depósito Mais Loading Dock
-      this.dockFloodlight = new T.PointLight(0xffc66d, 2.8, 65, 1.1);
+      this.dockFloodlight = new T.PointLight(0xffc66d, 3.2, 70, 1.1);
       this.dockFloodlight.position.copy(districtPoint('logistics', 0, 14, 8));
       this.dockFloodlight.castShadow = true;
       this.dockFloodlight.shadow.bias = -0.0002;
@@ -2503,12 +2507,17 @@
         awningAmber: new T.MeshStandardMaterial({ color: 0xd97706, roughness: 0.7 }),
         stoneRustication: new T.MeshStandardMaterial({ color: 0xd6cebe, roughness: 0.88, metalness: 0.04 }),
         
-        asphalt: new T.MeshStandardMaterial({ map: roadTex, roughness: 0.88, metalness: 0.08 }),
-        crosswalk: new T.MeshStandardMaterial({ map: crosswalkTex, roughness: 0.82 }),
-        sidewalk: new T.MeshStandardMaterial({ map: sidewalkTex, roughness: 0.78, metalness: 0.12 }),
-        grass: new T.MeshStandardMaterial({ color: 0x92a872, roughness: 0.96, metalness: 0.01 }), // CityRT soft watercolor olive grass
-        water: new T.MeshStandardMaterial({ color: 0x1d3a44, roughness: 0.6, metalness: 0.12, transparent: true, opacity: 0.96 }),
-        curb: new T.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 }),
+        asphalt: new T.MeshStandardMaterial({ map: roadTex, roughness: 0.72, metalness: 0.15 }),
+        crosswalk: new T.MeshStandardMaterial({ map: crosswalkTex, roughness: 0.75 }),
+        sidewalk: new T.MeshStandardMaterial({ map: sidewalkTex, roughness: 0.70, metalness: 0.18 }),
+        grass: new T.MeshStandardMaterial({ color: 0x15803d, roughness: 0.84, metalness: 0.03 }), // Rich vibrant emerald grass (matching Image 3)
+        water: new T.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.14, metalness: 0.52, transparent: true, opacity: 0.94 }), // Sparkling cyan/turquoise marina water
+        curb: new T.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.3 }),
+        boardwalkWood: new T.MeshStandardMaterial({ color: 0xb45309, roughness: 0.78, metalness: 0.08 }),
+        waterFoam: new T.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.35, transparent: true, opacity: 0.85 }),
+        flowerPink: new T.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.6 }),
+        flowerGold: new T.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 }),
+        flowerPurple: new T.MeshStandardMaterial({ color: 0xc084fc, roughness: 0.6 }),
         hazardStripe: new T.MeshBasicMaterial({ color: 0xfbbf24 }),
 
         // Depósito Mais Materials (Light Insulated Panels & Clean Standing Seam)
@@ -4024,6 +4033,59 @@
       return doorGroup;
     }
 
+    _createLuxuryYacht() {
+      const yacht = new T.Group();
+      yacht.name = 'LuxuryYacht';
+
+      const hullMat = new T.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.15, metalness: 0.12 });
+      const hullStripeMat = new T.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.25, metalness: 0.35 });
+
+      // Lower Hull V-Shape
+      const hull = new T.Mesh(new T.BoxGeometry(4.4, 1.4, 12.5), hullMat);
+      hull.position.y = 0.7;
+      hull.castShadow = true;
+
+      // Navy waterline trim stripe
+      const stripe = new T.Mesh(new T.BoxGeometry(4.46, 0.18, 12.55), hullStripeMat);
+      stripe.position.y = 0.45;
+
+      // Pointed Bow Chime
+      const bow = new T.Mesh(new T.ConeGeometry(2.2, 3.2, 4), hullMat);
+      bow.position.set(0, 0.7, 7.2);
+      bow.rotation.x = Math.PI / 2;
+      bow.rotation.y = Math.PI / 4;
+      bow.scale.set(1.0, 0.45, 1.0);
+
+      // Main Deck Cabin Glass & Enclosure
+      const cabin = new T.Mesh(new T.BoxGeometry(3.4, 1.25, 6.2), this.materials.officeGlass);
+      cabin.position.set(0, 1.85, -0.6);
+
+      // Upper Flybridge Deck
+      const flyDeck = new T.Mesh(new T.BoxGeometry(3.6, 0.18, 6.5), hullMat);
+      flyDeck.position.set(0, 2.52, -0.6);
+
+      // Flybridge Windshield
+      const flyWin = new T.Mesh(new T.BoxGeometry(3.2, 0.5, 0.08), this.materials.officeGlass);
+      flyWin.position.set(0, 2.82, 1.8);
+
+      // Chrome Radar Arch & Satellite Domes
+      const radarArch = new T.Mesh(new T.TorusGeometry(0.85, 0.09, 8, 16), this.materials.truckChrome);
+      radarArch.position.set(0, 3.1, -2.2);
+      radarArch.rotation.x = Math.PI / 2;
+
+      const satDome = new T.Mesh(new T.SphereGeometry(0.28, 8, 8), hullMat);
+      satDome.position.set(0, 3.3, -2.2);
+
+      // Navigation Lights (Red port, Green starboard)
+      const navRed = new T.Mesh(new T.BoxGeometry(0.12, 0.08, 0.12), this.materials.neonRed);
+      navRed.position.set(-1.8, 1.9, 2.2);
+      const navGreen = new T.Mesh(new T.BoxGeometry(0.12, 0.08, 0.12), this.materials.neonGreen);
+      navGreen.position.set(1.8, 1.9, 2.2);
+
+      yacht.add(hull, stripe, bow, cabin, flyDeck, flyWin, radarArch, satDome, navRed, navGreen);
+      return yacht;
+    }
+
     _createPalletWithBoxes(stackLevel = 0, variant = null) {
       const group = new T.Group();
       group.name = 'EuroPalletLoaded';
@@ -4156,56 +4218,81 @@
         return tree;
       }
 
-      // Natural Wooden Trunk with Root Flare
-      const trunk = new T.Mesh(new T.CylinderGeometry(0.28, 0.45, 2.6, 8), this.materials.palletWood);
-      trunk.position.y = 1.3;
-      trunk.castShadow = true;
-      tree.add(trunk);
+      // Circular stone tree planter / curb pit at sidewalk level
+      const planter = new T.Mesh(new T.CylinderGeometry(1.15, 1.25, 0.22, 16), this.materials.curb);
+      planter.position.y = 0.11;
+      planter.receiveShadow = true;
+      const soil = new T.Mesh(new T.CylinderGeometry(1.05, 1.05, 0.20, 16), this.materials.asphalt);
+      soil.position.y = 0.12;
+      tree.add(planter, soil);
 
-      let treeH = 5.8;
+      // Colorful flower accents around base
+      const flowerMats = [this.materials.flowerPink, this.materials.flowerGold, this.materials.flowerPurple];
+      if (flowerMats[0]) {
+        for (let fi = 0; fi < 5; fi++) {
+          const fa = fi * (Math.PI * 2 / 5);
+          const fMesh = new T.Mesh(new T.SphereGeometry(0.12, 6, 6), flowerMats[fi % flowerMats.length]);
+          fMesh.position.set(Math.cos(fa) * 0.72, 0.24, Math.sin(fa) * 0.72);
+          tree.add(fMesh);
+        }
+      }
+
+      let treeH = 5.2;
       if (type === 'palm') {
-        treeH = 6.2;
-        const palmTrunk = new T.Mesh(new T.CylinderGeometry(0.18, 0.32, 4.8, 8), this.materials.palletWood);
-        palmTrunk.position.y = 2.4;
+        treeH = 5.8;
+        const palmTrunk = new T.Mesh(new T.CylinderGeometry(0.14, 0.24, 4.4, 8), this.materials.palletWood);
+        palmTrunk.position.y = 2.2;
         palmTrunk.castShadow = true;
         tree.add(palmTrunk);
-        for (let i = 0; i < 6; i++) {
-          const frond = new T.Mesh(new T.BoxGeometry(2.4, 0.08, 0.45), this.materials.monsteraLeaf || this.materials.leafDeciduous);
-          frond.position.set(Math.cos(i * Math.PI / 3) * 1.1, 4.7, Math.sin(i * Math.PI / 3) * 1.1);
-          frond.rotation.y = i * Math.PI / 3;
-          frond.rotation.z = 0.35;
+        for (let i = 0; i < 7; i++) {
+          const frond = new T.Mesh(new T.BoxGeometry(2.2, 0.06, 0.42), this.materials.monsteraLeaf || this.materials.leafDeciduous);
+          frond.position.set(Math.cos(i * Math.PI * 2 / 7) * 0.95, 4.3, Math.sin(i * Math.PI * 2 / 7) * 0.95);
+          frond.rotation.y = i * Math.PI * 2 / 7;
+          frond.rotation.z = 0.38;
           tree.add(frond);
         }
       } else if (type === 'pine' || type === 'conifer') {
-        treeH = 6.4;
+        treeH = 5.8;
+        const trunk = new T.Mesh(new T.CylinderGeometry(0.20, 0.32, 2.0, 8), this.materials.palletWood);
+        trunk.position.y = 1.0;
+        trunk.castShadow = true;
+        tree.add(trunk);
         for (let l = 0; l < 4; l++) {
-          const cone = new T.Mesh(new T.ConeGeometry(2.3 - l * 0.42, 2.2, 8), this.materials.leafPine);
-          cone.position.y = 2.6 + l * 1.35;
+          const cone = new T.Mesh(new T.ConeGeometry(1.8 - l * 0.35, 1.8, 8), this.materials.leafPine);
+          cone.position.y = 2.1 + l * 1.1;
           cone.castShadow = true;
           tree.add(cone);
         }
       } else if (type === 'flowering' || type === 'sakura') {
-        treeH = 5.2;
-        const f1 = new T.Mesh(new T.DodecahedronGeometry(2.1), this.materials.leafFlowering);
-        f1.position.set(0, 3.5, 0);
+        treeH = 4.8;
+        const trunk = new T.Mesh(new T.CylinderGeometry(0.18, 0.28, 2.2, 8), this.materials.palletWood);
+        trunk.position.y = 1.1;
+        trunk.castShadow = true;
+        tree.add(trunk);
+        const f1 = new T.Mesh(new T.SphereGeometry(1.35, 12, 10), this.materials.leafFlowering || this.materials.flowerPink);
+        f1.position.set(0, 3.1, 0);
         f1.castShadow = true;
-        const f2 = new T.Mesh(new T.DodecahedronGeometry(1.6), this.materials.leafFlowering);
-        f2.position.set(0.6, 4.4, 0.5);
+        const f2 = new T.Mesh(new T.SphereGeometry(1.05, 10, 8), this.materials.leafFlowering || this.materials.flowerPink);
+        f2.position.set(0.55, 3.8, 0.35);
         f2.castShadow = true;
-        const f3 = new T.Mesh(new T.DodecahedronGeometry(1.4), this.materials.leafFlowering);
-        f3.position.set(-0.5, 4.0, -0.4);
+        const f3 = new T.Mesh(new T.SphereGeometry(0.95, 10, 8), this.materials.leafFlowering || this.materials.flowerPink);
+        f3.position.set(-0.5, 3.5, -0.35);
         f3.castShadow = true;
         tree.add(f1, f2, f3);
       } else {
-        treeH = 5.8;
-        const f1 = new T.Mesh(new T.DodecahedronGeometry(2.2), this.materials.leafDeciduous);
-        f1.position.set(0, 3.4, 0);
+        treeH = 5.2;
+        const trunk = new T.Mesh(new T.CylinderGeometry(0.20, 0.30, 2.2, 8), this.materials.palletWood);
+        trunk.position.y = 1.1;
+        trunk.castShadow = true;
+        tree.add(trunk);
+        const f1 = new T.Mesh(new T.SphereGeometry(1.45, 12, 10), this.materials.leafDeciduous);
+        f1.position.set(0, 3.2, 0);
         f1.castShadow = true;
-        const f2 = new T.Mesh(new T.DodecahedronGeometry(1.7), this.materials.leafDeciduous);
-        f2.position.set(0.7, 4.3, 0.4);
+        const f2 = new T.Mesh(new T.SphereGeometry(1.15, 10, 8), this.materials.leafDeciduous);
+        f2.position.set(0.65, 3.9, 0.35);
         f2.castShadow = true;
-        const f3 = new T.Mesh(new T.DodecahedronGeometry(1.5), this.materials.leafDeciduous);
-        f3.position.set(-0.6, 3.9, -0.4);
+        const f3 = new T.Mesh(new T.SphereGeometry(1.0, 10, 8), this.materials.leafDeciduous);
+        f3.position.set(-0.55, 3.6, -0.35);
         f3.castShadow = true;
         tree.add(f1, f2, f3);
       }
@@ -4582,7 +4669,7 @@
       const displayScale = Number(visualProfile?.displayScale) || 1;
       const bodyType = ['compact', 'standard', 'tall'].includes(visualProfile?.bodyType) ? visualProfile.bodyType : 'standard';
       const bodyShape = { compact: { x: 1.08, z: 1.06 }, standard: { x: 1, z: 1 }, tall: { x: 0.94, z: 0.96 } }[bodyType];
-      const calibratedScale = Math.max(1, Math.min(1.9, displayScale));
+      const calibratedScale = Math.max(0.95, Math.min(1.05, displayScale || 1.0));
       agent.scale.set(calibratedScale * bodyShape.x, calibratedScale, calibratedScale * bodyShape.z);
       const skinMaterial = new T.MeshStandardMaterial({
         color: visualProfile?.skinColor || '#d4a17f',
@@ -5018,17 +5105,19 @@
       rightWall.position.set(bW / 2, podiumH + (fH * 4) / 2, 0);
       bldGroup.add(rightWall);
 
-      // Central Glass Elevator Core / Spine with Functional Cab & Sliding Doors
+      // Left-Flank Glass Elevator Shaft with Functional Cab & Sliding Doors (Matching Image 7)
       const shaftH = fH * 4;
+      const liftX = -bW / 2 + 2.4;
+      const liftZ = -bD / 4;
       const liftShaft = new T.Mesh(new T.BoxGeometry(3.6, shaftH, 3.6), this.materials.clearGlass);
-      liftShaft.position.set(0, podiumH + shaftH / 2, -bD / 4);
+      liftShaft.position.set(liftX, podiumH + shaftH / 2, liftZ);
 
       // Vertical Titanium Guide Rails & Corner Mullions for Elevator Shaft
       const railGeo = new T.CylinderGeometry(0.06, 0.06, shaftH, 8);
       for (const rx of [-1.75, 1.75]) {
         for (const rz of [-1.75, 1.75]) {
           const rail = new T.Mesh(railGeo, this.materials.brushedTitanium);
-          rail.position.set(rx, podiumH + shaftH / 2, -bD / 4 + rz);
+          rail.position.set(liftX + rx, podiumH + shaftH / 2, liftZ + rz);
           bldGroup.add(rail);
         }
       }
@@ -5037,7 +5126,7 @@
       const liftCabGroup = new T.Group();
       liftCabGroup.name = 'ElevatorCab';
       const cabBaseY = podiumH + 1.6;
-      liftCabGroup.position.set(0, cabBaseY, -bD / 4);
+      liftCabGroup.position.set(liftX, cabBaseY, liftZ);
 
       // Cab floor & ceiling
       const cabFloor = new T.Mesh(new T.BoxGeometry(2.9, 0.14, 2.9), this.materials.terrazzoFloor || this.materials.brushedTitanium);
@@ -5046,7 +5135,7 @@
       cabCeiling.position.y = 1.45;
 
       // Cab spot light inside
-      const cabLight = new T.PointLight(0x00f0ff, 1.2, 5);
+      const cabLight = new T.PointLight(0x00f0ff, 1.4, 6);
       cabLight.position.set(0, 1.2, 0);
 
       // Back and side walls (brushed titanium with clear glass cutouts)
@@ -5087,7 +5176,7 @@
       for (let lf = 0; lf < 4; lf++) {
         const landingDoorGroup = new T.Group();
         const lfY = podiumH + lf * fH + 1.6;
-        landingDoorGroup.position.set(0, lfY, -bD / 4 + 1.55);
+        landingDoorGroup.position.set(liftX, lfY, liftZ + 1.55);
         const lDoorL = new T.Mesh(new T.BoxGeometry(0.65, 2.7, 0.04), this.materials.brushedTitanium);
         lDoorL.position.set(-0.35, 0, 0);
         const lDoorR = new T.Mesh(new T.BoxGeometry(0.65, 2.7, 0.04), this.materials.brushedTitanium);
@@ -5174,13 +5263,64 @@
 
       // ── FLOOR 0: RECEPTION & EXECUTIVE LOBBY ──
       const f0Y = podiumH;
-      const deskGroup = new T.Group();
-      deskGroup.position.set(0, f0Y + 0.55, 3.2);
 
-      const deskBase = new T.Mesh(new T.BoxGeometry(5.2, 1.1, 1.4), this.materials.woodSlat);
-      const deskTop = new T.Mesh(new T.BoxGeometry(5.6, 0.12, 1.6), this.materials.terrazzoFloor);
+      // ── HOLOGRAPHIC ARRIVAL & TELEPORT PORTAL PAD (Image 7 Centerpiece) ──
+      const portalGroup = new T.Group();
+      portalGroup.position.set(0, f0Y + 0.18, 2.2);
+
+      // 1. Stepped Plinth with Cyan Underglow
+      const portalBase = new T.Mesh(new T.BoxGeometry(4.2, 0.22, 4.2), this.materials.brushedTitanium);
+      const portalGlowEdge = new T.Mesh(new T.BoxGeometry(4.35, 0.08, 4.35), this.materials.fastLaneGlow);
+      portalGlowEdge.position.y = -0.06;
+      portalGroup.add(portalBase, portalGlowEdge);
+
+      // 2. Glowing Circuit Floor Grid
+      const portalFloor = new T.Mesh(new T.BoxGeometry(3.8, 0.05, 3.8), this.materials.quantumFloor || this.materials.glowStripCyan);
+      portalFloor.position.y = 0.12;
+      portalGroup.add(portalFloor);
+
+      // 3. 4 Corner Emitter Pylons with Cyan LED Rings
+      for (const cx of [-1.8, 1.8]) {
+        for (const cz of [-1.8, 1.8]) {
+          const pylon = new T.Mesh(new T.CylinderGeometry(0.16, 0.20, 0.65, 12), this.materials.serverBlack);
+          pylon.position.set(cx, 0.35, cz);
+          const pRing = new T.Mesh(new T.TorusGeometry(0.18, 0.035, 8, 16), this.materials.fastLaneGlow);
+          pRing.rotation.x = Math.PI / 2;
+          pRing.position.set(cx, 0.60, cz);
+          portalGroup.add(pylon, pRing);
+        }
+      }
+
+      // 4. Glowing Neon Portal Archway ([  ])
+      const archMat = new T.MeshStandardMaterial({
+        color: 0x00f0ff,
+        emissive: 0x00d9ff,
+        emissiveIntensity: 1.8,
+        roughness: 0.1
+      });
+      const archL = new T.Mesh(new T.BoxGeometry(0.12, 2.6, 0.12), archMat);
+      archL.position.set(-1.4, 1.4, 0);
+      const archR = new T.Mesh(new T.BoxGeometry(0.12, 2.6, 0.12), archMat);
+      archR.position.set(1.4, 1.4, 0);
+      const archTop = new T.Mesh(new T.BoxGeometry(2.92, 0.12, 0.12), archMat);
+      archTop.position.set(0, 2.65, 0);
+      portalGroup.add(archL, archR, archTop);
+
+      // 5. Cyan Portal Area Spotlight
+      const portalLight = new T.PointLight(0x00f0ff, 2.4, 14, 1.3);
+      portalLight.position.set(0, 2.0, 0);
+      portalGroup.add(portalLight);
+
+      this.apiFloorGroups[0].add(portalGroup);
+
+      // Reception Desk on the Right Flank
+      const deskGroup = new T.Group();
+      deskGroup.position.set(5.2, f0Y + 0.55, 2.4);
+
+      const deskBase = new T.Mesh(new T.BoxGeometry(4.2, 1.1, 1.4), this.materials.woodSlat);
+      const deskTop = new T.Mesh(new T.BoxGeometry(4.6, 0.12, 1.6), this.materials.terrazzoFloor);
       deskTop.position.y = 0.58;
-      const deskLed = new T.Mesh(new T.BoxGeometry(5.4, 0.05, 0.1), this.materials.fastLaneGlow);
+      const deskLed = new T.Mesh(new T.BoxGeometry(4.4, 0.05, 0.1), this.materials.fastLaneGlow);
       deskLed.position.set(0, 0.52, 0.76);
       deskGroup.add(deskBase, deskTop, deskLed);
 
@@ -5193,14 +5333,15 @@
       deskGroup.add(recScreen1, recScreen2, recKb);
       this.apiFloorGroups[0].add(deskGroup);
 
-      const brandWall = new T.Mesh(new T.BoxGeometry(8, 3.6, 0.1), this.materials.woodSlat);
-      brandWall.position.set(0, f0Y + 2.0, -bD / 4 + 2.0);
-      const brandSign = new T.Mesh(new T.BoxGeometry(6.4, 0.6, 0.05), this.materials.fastLaneGlow);
-      brandSign.position.set(0, f0Y + 2.8, -bD / 4 + 2.08);
+      const brandWall = new T.Mesh(new T.BoxGeometry(5.2, 3.6, 0.1), this.materials.woodSlat);
+      brandWall.position.set(5.2, f0Y + 2.0, 0.2);
+      const brandSign = new T.Mesh(new T.BoxGeometry(4.4, 0.6, 0.05), this.materials.fastLaneGlow);
+      brandSign.position.set(5.2, f0Y + 2.8, 0.28);
       this.apiFloorGroups[0].add(brandWall, brandSign);
 
+      // Executive Lounge on the Left Flank (near elevator)
       const loungeGroup = new T.Group();
-      loungeGroup.position.set(-5.5, f0Y, 3.0);
+      loungeGroup.position.set(-3.0, f0Y, -2.8);
 
       const sofaMain = new T.Mesh(new T.BoxGeometry(3.6, 0.7, 1.4), this.materials.leatherCognac);
       sofaMain.position.set(0, 0.35, 0);
@@ -5223,15 +5364,24 @@
       loungeGroup.add(pot, plantLeaf);
       this.apiFloorGroups[0].add(loungeGroup);
 
+      // Potted Ficus Plants flanking entrance
+      [-7.5, 7.5].forEach(px => {
+        const pPot = new T.Mesh(new T.CylinderGeometry(0.35, 0.25, 0.75, 12), this.materials.ceramicWhite);
+        pPot.position.set(px, f0Y + 0.38, 4.2);
+        const pLeaf = new T.Mesh(new T.SphereGeometry(0.55, 8, 8), this.materials.monsteraLeaf || this.materials.leafDeciduous);
+        pLeaf.position.set(px, f0Y + 0.95, 4.2);
+        this.apiFloorGroups[0].add(pPot, pLeaf);
+      });
+
       const turnstileGroup = new T.Group();
-      turnstileGroup.position.set(5.5, f0Y, 1.5);
-      for (let tx of [-0.9, 0.9]) {
-        const post = new T.Mesh(new T.BoxGeometry(0.35, 1.05, 1.2), this.materials.brushedTitanium);
+      turnstileGroup.position.set(2.5, f0Y, 4.2);
+      for (let tx of [-0.6, 0.6]) {
+        const post = new T.Mesh(new T.BoxGeometry(0.30, 1.05, 1.0), this.materials.brushedTitanium);
         post.position.set(tx, 0.52, 0);
-        const glassFlap = new T.Mesh(new T.BoxGeometry(0.04, 0.75, 0.5), this.materials.clearGlass);
+        const glassFlap = new T.Mesh(new T.BoxGeometry(0.04, 0.75, 0.4), this.materials.clearGlass);
         glassFlap.position.set(tx * 0.4, 0.65, 0);
-        const ledIndicator = new T.Mesh(new T.BoxGeometry(0.12, 0.04, 0.12), this.materials.neonGreen);
-        ledIndicator.position.set(tx, 1.06, 0.4);
+        const ledIndicator = new T.Mesh(new T.BoxGeometry(0.10, 0.04, 0.10), this.materials.neonGreen);
+        ledIndicator.position.set(tx, 1.06, 0.35);
         turnstileGroup.add(post, glassFlap, ledIndicator);
       }
       this.apiFloorGroups[0].add(turnstileGroup);
@@ -5241,7 +5391,7 @@
         name: 'Gabriel Tech Support',
         role: 'Developer Relations & API Support Lead',
         department: 'API PLATFORM',
-        pos: new T.Vector3(0, f0Y + 0.35, 1.8),
+        pos: new T.Vector3(5.2, f0Y + 0.35, 1.2),
         shirtMat: this.materials.acousticDark,
         hairColor: 0x334155,
         accessory: 'headset',
@@ -5440,7 +5590,7 @@
       const f2Y = podiumH + fH * 2;
       this.serverRacksLeds = [];
 
-      [-6.5, -4.0, -1.5, 1.5, 4.0, 6.5].forEach((rx, idx) => {
+      [-3.2, -0.8, 1.6, 4.0, 6.4].forEach((rx, idx) => {
         const rackGroup = new T.Group();
         rackGroup.position.set(rx, f2Y + 1.8, -bD / 4);
 
@@ -5461,6 +5611,15 @@
         }
 
         this.apiFloorGroups[2].add(rackGroup);
+      });
+
+      // Wall-Mounted High-Visibility Analytics Dashboards (Image 7 Detail)
+      [-1.5, 3.5].forEach((wx) => {
+        const dashFrame = new T.Mesh(new T.BoxGeometry(3.6, 1.6, 0.08), this.materials.brushedTitanium);
+        dashFrame.position.set(wx, f2Y + 2.4, -bD / 2 + 0.38);
+        const dashScreen = new T.Mesh(new T.BoxGeometry(3.4, 1.4, 0.04), this.materials.grafanaScreen || this.materials.whiteboardMat);
+        dashScreen.position.set(wx, f2Y + 2.4, -bD / 2 + 0.43);
+        this.apiFloorGroups[2].add(dashFrame, dashScreen);
       });
 
       const fiberRunner = new T.Mesh(new T.BoxGeometry(16, 0.22, 0.4), this.materials.trussYellow);
@@ -5797,9 +5956,19 @@
       civicPlaza.add(phoenix);
 
       // Golden Spotlight
-      const goldLight = new T.PointLight(0xffb703, 2.0, 16, 1.5);
-      goldLight.position.set(0, 3.2, 0);
+      const goldLight = new T.PointLight(0xffb703, 3.8, 32, 1.2);
+      goldLight.position.set(0, 4.2, 0);
       civicPlaza.add(goldLight);
+
+      // Surrounding Civic Palm Trees in Stone Planters
+      for (let pi = 0; pi < 4; pi++) {
+        const pa = pi * (Math.PI / 2) + Math.PI / 4;
+        const px = Math.cos(pa) * 7.4;
+        const pz = Math.sin(pa) * 7.4;
+        const palm = this._createDetailedTree('palm');
+        palm.position.set(px, 0.28, pz);
+        civicPlaza.add(palm);
+      }
 
       hqGroup.add(civicPlaza);
 
@@ -5983,51 +6152,69 @@
       obsGroup.add(dish);
       this.scene.add(obsGroup);
 
-      // ── WATERFRONT MARINA & PROMENADE (Matching media_1793303887123_654a6089.jpg) ──
+      // ── WATERFRONT MARINA & PROMENADE (Matching Image 3) ──
       const marinaGroup = new T.Group();
       marinaGroup.name = 'Waterfront_Marina';
-      marinaGroup.position.set(62, 0, 36);
+      marinaGroup.position.set(64, 0, 24);
 
-      // Water Basin
-      const marinaWater = new T.Mesh(new T.BoxGeometry(34, 0.4, 28), this.materials.water);
+      // Expansive Water Basin along Eastern Waterfront
+      const marinaWater = new T.Mesh(new T.BoxGeometry(44, 0.45, 92), this.materials.water);
       marinaWater.position.set(0, 0.15, 0);
       marinaWater.receiveShadow = true;
       marinaGroup.add(marinaWater);
 
-      // Wooden Boardwalk Pier along West and North Edges
-      const pierWest = new T.Mesh(new T.BoxGeometry(3.6, 0.35, 28), this.materials.woodSlat || this.materials.sidewalk);
-      pierWest.position.set(-16, 0.3, 0);
-      const pierNorth = new T.Mesh(new T.BoxGeometry(34, 0.35, 3.6), this.materials.woodSlat || this.materials.sidewalk);
-      pierNorth.position.set(0, 0.3, -13);
-      marinaGroup.add(pierWest, pierNorth);
+      // Cyan shoreline water edge rim glow
+      const shoreGlow = new T.Mesh(new T.BoxGeometry(0.5, 0.46, 92), this.materials.waterFoam || this.materials.fastLaneGlow);
+      shoreGlow.position.set(-21.8, 0.16, 0);
+      marinaGroup.add(shoreGlow);
 
-      // Docked Luxury Yacht Boat
-      const yacht = new T.Group();
-      yacht.position.set(4, 0.28, 4);
-      yacht.rotation.y = -Math.PI / 6;
+      // Wooden Boardwalk Promenade along the entire West Shore
+      const woodMat = this.materials.boardwalkWood || this.materials.woodSlat || this.materials.sidewalk;
+      const boardwalk = new T.Mesh(new T.BoxGeometry(6.2, 0.35, 92), woodMat);
+      boardwalk.position.set(-18.5, 0.32, 0);
+      boardwalk.receiveShadow = true;
+      marinaGroup.add(boardwalk);
 
-      // Yacht Hull
-      const hullMat = new T.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.15, metalness: 0.08 });
-      const hull = new T.Mesh(new T.BoxGeometry(4.2, 1.4, 11), hullMat);
-      hull.position.y = 0.7;
-      hull.castShadow = true;
+      // 3 Finger Docks extending out into the water
+      [-26, 6, 32].forEach((pz) => {
+        const fingerDock = new T.Mesh(new T.BoxGeometry(16, 0.32, 3.4), woodMat);
+        fingerDock.position.set(-9.0, 0.30, pz);
+        fingerDock.receiveShadow = true;
+        marinaGroup.add(fingerDock);
 
-      // Yacht Cabin Glass & Upper Deck
-      const cabin = new T.Mesh(new T.BoxGeometry(3.2, 1.2, 5.5), this.materials.officeGlass);
-      cabin.position.set(0, 1.8, -0.6);
-      const yachtRoof = new T.Mesh(new T.BoxGeometry(3.4, 0.2, 5.8), hullMat);
-      yachtRoof.position.set(0, 2.5, -0.6);
-      const radarArch = new T.Mesh(new T.TorusGeometry(0.8, 0.08, 8, 16), this.materials.truckChrome);
-      radarArch.position.set(0, 2.9, -1.8);
-      radarArch.rotation.x = Math.PI / 2;
+        // Nautical bollards
+        [-14, -6].forEach((bx) => {
+          const bollard = new T.Mesh(new T.CylinderGeometry(0.12, 0.15, 0.42, 8), this.materials.dockBumper);
+          bollard.position.set(bx, 0.52, pz + 1.5);
+          marinaGroup.add(bollard);
+        });
+      });
 
-      yacht.add(hull, cabin, yachtRoof, radarArch);
-      marinaGroup.add(yacht);
+      // Docked Luxury Yacht 1 (Northern Berth)
+      const yacht1 = this._createLuxuryYacht();
+      yacht1.position.set(3, 0.30, -18);
+      yacht1.rotation.y = -Math.PI / 12;
+      marinaGroup.add(yacht1);
 
-      // Cyan Water Deck Lights
-      const marinaLight = new T.PointLight(0x00d9ff, 1.2, 22, 1.4);
-      marinaLight.position.set(-12, 1.8, -10);
-      marinaGroup.add(marinaLight);
+      // Docked Luxury Yacht 2 (Southern Berth)
+      const yacht2 = this._createLuxuryYacht();
+      yacht2.position.set(2, 0.30, 20);
+      yacht2.rotation.y = Math.PI / 16;
+      marinaGroup.add(yacht2);
+
+      // Marine promenade palm trees
+      [-36, -12, 14, 38].forEach((pz) => {
+        const palm = this._createDetailedTree('palm');
+        palm.position.set(-20.5, 0.32, pz);
+        marinaGroup.add(palm);
+      });
+
+      // Cyan Waterfront Deck Uplights along promenade
+      for (let pz = -40; pz <= 40; pz += 16) {
+        const marinaLight = new T.PointLight(0x00f0ff, 1.4, 24, 1.3);
+        marinaLight.position.set(-15.8, 1.4, pz);
+        marinaGroup.add(marinaLight);
+      }
 
       this.scene.add(marinaGroup);
 
@@ -6298,14 +6485,14 @@
         // Core & Tech Hub (Block NW - Dev & Engineering)
         { id: 'zapflow-crm', name: 'ZapFlow CRM', port: '8182', x: -24, z: 15, w: 12, d: 11, floors: 3, style: 'brick-loft', awning: 'awningBlue', cat: 'CRM' },
         { id: 'ius-email-control', name: 'IUS Email Control', port: '1000', x: -14, z: 27, w: 11, d: 12, floors: 4, style: 'white-cube', awning: 'awningGreen', cat: 'Tools' },
-        { id: 'zai-crm', name: 'ZAI CRM', port: '8080', x: -28, z: 27, w: 11, d: 11, floors: 3, style: 'haussmann', roofType: 'mansard', awning: 'awningAmber', cat: 'CRM' },
+        { id: 'zai-crm', name: 'ZAI CRM', port: '8080', x: -28, z: 27, w: 11, d: 11, floors: 3, style: 'cyber-tower', awning: 'awningAmber', cat: 'CRM' },
         // AI & Cognitive Hub (Block NE)
         { id: 'qwen-studio', name: 'Qwen Studio', port: '7860', x: 22, z: 15, w: 13, d: 12, floors: 4, style: 'cyber-tower', awning: 'awningBlue', cat: 'AI' },
         { id: 'meta-autoposter', name: 'Meta AutoPoster', port: 'Auto', x: 14, z: 27, w: 11, d: 11, floors: 3, style: 'brick-loft', awning: 'awningRed', cat: 'Social' },
         { id: 'meta-instagram-autoposter', name: 'Instagram AutoPoster', port: 'Insta', x: 28, z: 27, w: 11, d: 11, floors: 3, style: 'white-cube', awning: 'awningRed', cat: 'Social' },
         // Commerce & Services Hub (Block SW)
         { id: 'mf-atacadista', name: 'MF Atacadista', port: '8181', x: -22, z: -15, w: 14, d: 13, floors: 2, style: 'brick-loft', awning: 'awningRed', cat: 'Retail' },
-        { id: 'marmita-da-casa', name: 'Marmita da Casa', port: 'Food', x: -14, z: -27, w: 11, d: 11, floors: 2, style: 'haussmann', roofType: 'terracotta', awning: 'awningGreen', cat: 'Service' },
+        { id: 'marmita-da-casa', name: 'Marmita da Casa', port: 'Food', x: -14, z: -27, w: 11, d: 11, floors: 2, style: 'white-cube', awning: 'awningGreen', cat: 'Service' },
         { id: 'zapai-crm', name: 'ZapAI CRM', port: 'CRM', x: -28, z: -27, w: 11, d: 11, floors: 3, style: 'cyber-tower', awning: 'awningBlue', cat: 'CRM' },
         // Operations & Gateway Hub (Block SE)
         { id: 'fortlev-quote', name: 'Fortlev B2B Quote', port: 'B2B', x: 22, z: -15, w: 12, d: 11, floors: 3, style: 'white-cube', awning: 'awningAmber', cat: 'Commerce' },
@@ -6319,7 +6506,7 @@
         // East Flank Street Parcels
         { id: 'project-analytics', name: 'Live Analytics', port: '3002', x: 61, z: 12, w: 12, d: 12, floors: 3, style: 'white-cube', awning: 'awningAmber', cat: 'Ops' },
         { id: 'project-monitoring', name: 'Observability 360', port: '9090', x: 61, z: 32, w: 12, d: 12, floors: 4, style: 'data-bunker', awning: 'awningBlue', cat: 'Ops' },
-        { id: 'project-billing-gateway', name: 'Billing Gateway', port: '5000', x: 61, z: 54, w: 12, d: 12, floors: 3, style: 'haussmann', roofType: 'mansard', awning: 'awningGreen', cat: 'Fin' },
+        { id: 'project-billing-gateway', name: 'Billing Gateway', port: '5000', x: 61, z: 54, w: 12, d: 12, floors: 3, style: 'cyber-tower', awning: 'awningGreen', cat: 'Fin' },
         // North Flank Parcels
         { id: 'project-agent-mesh', name: 'Agent Mesh Swarm', port: '4200', x: -22, z: 62, w: 14, d: 12, floors: 4, style: 'cyber-tower', awning: 'awningBlue', cat: 'Swarm' },
         { id: 'project-neural-search', name: 'Neural Search', port: '8000', x: 22, z: 62, w: 14, d: 12, floors: 3, style: 'white-cube', awning: 'awningAmber', cat: 'Search' },
@@ -6629,61 +6816,76 @@
 
         } else {
           // ==========================================
-          // ARCHETYPE 5: CLASSICAL HAUSSMANNIAN STONE FACADE
+          // ARCHETYPE 5: CYBER-TECH PAVILION & GLASS ATRIUM (Matching Target Obsidian Design)
           // ==========================================
-          const baseH = 3.2;
-          const baseMesh = new T.Mesh(new T.BoxGeometry(lot.w + 0.3, baseH, lot.d + 0.3), this.materials.stoneRustication || this.materials.sidewalk);
+          const baseH = 3.4;
+          const pavilionBaseMat = this.materials.acousticDark || this.materials.dockBumper;
+          const baseMesh = new T.Mesh(new T.BoxGeometry(lot.w + 0.4, baseH, lot.d + 0.4), pavilionBaseMat);
           baseMesh.position.y = baseH / 2 + 0.16;
           baseMesh.castShadow = true; baseMesh.receiveShadow = true;
           this._applyLigneClaire(baseMesh, 30);
           bGroup.add(baseMesh);
 
           const door = this._createEntranceDoor('Door_' + lot.id);
-          door.position.set(0, 0.16, lot.d / 2 + 0.18);
+          door.position.set(0, 0.16, lot.d / 2 + 0.22);
           this._applyLigneClaire(door, 30);
           bGroup.add(door);
 
-          const awningMat = this.materials[lot.awning] || this.materials.awningBlue;
-          const awning = new T.Mesh(new T.BoxGeometry(Math.min(5.2, lot.w * 0.48), 0.32, 1.6), awningMat);
-          awning.position.set(0, 2.75, lot.d / 2 + 0.85);
-          awning.rotation.x = Math.PI / 18;
-          awning.castShadow = true;
-          this._applyLigneClaire(awning, 25);
-          bGroup.add(awning);
+          // Sleek cantilevered glass & metal canopy
+          const canopy = new T.Mesh(new T.BoxGeometry(Math.min(5.6, lot.w * 0.5), 0.16, 1.8), this.materials.brushedTitanium || this.materials.sidewalk);
+          canopy.position.set(0, 3.1, lot.d / 2 + 0.95);
+          canopy.castShadow = true;
+          bGroup.add(canopy);
 
-          const signTex = TextureFactory.createStorefrontSignTexture(lot.name, lot.port, isOnline, lot.awning === 'awningRed' ? '#ef4444' : '#3b82f6');
-          const signMat = new T.MeshStandardMaterial({ map: signTex, roughness: 0.3, metalness: 0.2 });
+          const glowUnderside = new T.Mesh(new T.PlaneGeometry(Math.min(5.2, lot.w * 0.46), 1.6), this.materials.fastLaneGlow || this.materials.glowStripCyan);
+          glowUnderside.position.set(0, 3.01, lot.d / 2 + 0.95);
+          glowUnderside.rotation.x = Math.PI / 2;
+          bGroup.add(glowUnderside);
+
+          const signTex = TextureFactory.createStorefrontSignTexture(lot.name, lot.port, isOnline, '#00d9ff');
+          const signMat = new T.MeshStandardMaterial({ map: signTex, roughness: 0.25, metalness: 0.3 });
           const signMesh = new T.Mesh(new T.BoxGeometry(Math.min(6.2, lot.w * 0.58), 1.25, 0.12), signMat);
-          signMesh.position.set(0, 3.45, lot.d / 2 + 0.22);
+          signMesh.position.set(0, 3.8, lot.d / 2 + 0.24);
           this._applyLigneClaire(signMesh, 35);
           bGroup.add(signMesh);
 
-          const facadeMat = cityrtFacades[lotIdx % cityrtFacades.length];
+          // Upper floors: Sleek glass curtain wall with horizontal titanium louvers & LED accents
           for (let fl = 1; fl < totalFloors; fl++) {
             const flY = baseH + (fl - 1) * floorH;
-            const flMesh = new T.Mesh(new T.BoxGeometry(lot.w, floorH, lot.d), facadeMat);
+            const flMesh = new T.Mesh(new T.BoxGeometry(lot.w, floorH, lot.d), this.materials.urbanFacadeGlass || this.materials.officeGlass);
             flMesh.position.y = flY + floorH / 2 + 0.16;
             flMesh.castShadow = true; flMesh.receiveShadow = true;
             this._applyLigneClaire(flMesh, 30);
             bGroup.add(flMesh);
 
-            const cornice = new T.Mesh(new T.BoxGeometry(lot.w + 0.5, 0.20, lot.d + 0.5), this.materials.sidewalk);
-            cornice.position.y = flY + 0.16;
-            cornice.castShadow = true;
-            this._applyLigneClaire(cornice, 35);
-            bGroup.add(cornice);
+            const floorSlab = new T.Mesh(new T.BoxGeometry(lot.w + 0.3, 0.14, lot.d + 0.3), this.materials.brushedTitanium || this.materials.sidewalk);
+            floorSlab.position.y = flY + 0.16;
+            floorSlab.castShadow = true;
+            bGroup.add(floorSlab);
+
+            // Horizontal cyan LED accent strip
+            const ledBand = new T.Mesh(new T.BoxGeometry(lot.w + 0.32, 0.08, lot.d + 0.32), this.materials.glowStripCyan || this.materials.fastLaneGlow);
+            ledBand.position.y = flY + 0.26;
+            bGroup.add(ledBand);
           }
 
+          // Rooftop Terrace with Glass Balustrade & Solar Arrays
           const roofY = bldH + 0.16;
-          if (lot.roofType === 'terracotta') {
-            const pitched = this._createPitchedRoof(lot.w, lot.d, 2.6);
-            pitched.position.y = roofY;
-            bGroup.add(pitched);
-          } else {
-            const mansard = this._createMansardRoof(lot.w, lot.d, 2.8);
-            mansard.position.y = roofY;
-            bGroup.add(mansard);
-          }
+          const roofDeck = new T.Mesh(new T.BoxGeometry(lot.w + 0.4, 0.3, lot.d + 0.4), this.materials.acousticDark || this.materials.sidewalk);
+          roofDeck.position.y = roofY + 0.15;
+          roofDeck.castShadow = true;
+          this._applyLigneClaire(roofDeck, 35);
+          bGroup.add(roofDeck);
+
+          const glassBalustrade = new T.Mesh(new T.BoxGeometry(lot.w + 0.2, 0.9, lot.d + 0.2), this.materials.clearGlass || this.materials.glass);
+          glassBalustrade.position.y = roofY + 0.75;
+          bGroup.add(glassBalustrade);
+
+          const solarArray = new T.Mesh(new T.BoxGeometry(lot.w * 0.48, 0.14, lot.d * 0.48), this.materials.solarPanel || this.materials.dockBumper);
+          solarArray.position.set(-lot.w * 0.15, roofY + 0.85, 0);
+          solarArray.rotation.x = Math.PI / 18;
+          solarArray.castShadow = true;
+          bGroup.add(solarArray);
         }
 
         // 4. Raycast Interactive Hit Box
@@ -6799,37 +7001,37 @@
         wheels: redSedan.userData.wheels || []
       });
 
-      // Vehicle E: Autonomous Cyber Shuttle (Cruising Outer North Avenue at x = 36.0)
+      // Vehicle E: Autonomous Cyber Shuttle (Cruising East Street st_e1 at x = 44.0, northbound lane x = 41.8)
       const cyberShuttle = this._createDeliveryBoxVan(this.materials.glassGlowCyan || this.materials.truckCabinBlue);
-      cyberShuttle.position.set(36.0, 0, -45);
+      cyberShuttle.position.set(41.8, 0, -45);
       cyberShuttle.rotation.y = 0; // heading +Z
       this.scene.add(cyberShuttle);
       this.trafficVehicles.push({
         mesh: cyberShuttle,
         axis: 'z',
-        lane: 36.0,
+        lane: 41.8,
         pos: -45,
         dir: 1,
         speed: 6.2,
-        min: -85,
-        max: 85,
+        min: -80,
+        max: 80,
         wheels: cyberShuttle.userData.wheels || []
       });
 
-      // Vehicle F: Delivery Courier Van (Cruising Outer West Boulevard at z = -36.0)
+      // Vehicle F: Delivery Courier Van (Cruising South Street st_s1 at z = -44.0, eastbound lane z = -41.8)
       const courierVan = this._createPickupTruck(this.materials.dockBumper);
-      courierVan.position.set(-50, 0, -36.0);
+      courierVan.position.set(-50, 0, -41.8);
       courierVan.rotation.y = Math.PI / 2; // heading +X
       this.scene.add(courierVan);
       this.trafficVehicles.push({
         mesh: courierVan,
         axis: 'x',
-        lane: -36.0,
+        lane: -41.8,
         pos: -50,
         dir: 1,
         speed: 5.4,
-        min: -85,
-        max: 85,
+        min: -80,
+        max: 80,
         wheels: courierVan.userData.wheels || []
       });
 
@@ -8281,8 +8483,8 @@
       const podiumH = 0.5;
       const fH = 4.0;
       const fY = podiumH + f * fH;
-      // Position camera directly into floor f interior with calibrated clearance
-      this.focusEntity(districtPoint('api-platform', 0, fY + 1.6, 1.2), 18.0, 1.62, 0.26);
+      // Position camera directly into floor f interior looking through open front facade (calibrated isometric angle)
+      this.focusEntity(districtPoint('api-platform', 0, fY + 1.4, 0.8), 20.0, 0.12, 0.32);
     }
 
     focusCompany(companyId) {
@@ -8433,16 +8635,16 @@
         this.focusEntity(districtPoint('logistics', 0, 0.9, 8), 16, 1.5, 0.25);
       } else if (r.includes('lobby') || r.includes('plaza') || r.includes('floor_0') || r.includes('andar_0')) {
         this.focusFloor(0);
-        this.focusEntity(districtPoint('api-platform', 0, 1.4, 1.2), 14, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', 0, 1.8, 0.8), 18, 0.12, 0.30);
       } else if (r.includes('support') || r.includes('gateway') || r.includes('floor_1') || r.includes('andar_1')) {
         this.focusFloor(1);
-        this.focusEntity(districtPoint('api-platform', 0, 5.4, 1.2), 14, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', 0, 5.8, 0.8), 18, 0.12, 0.30);
       } else if (r.includes('server') || r.includes('infra') || r.includes('sec') || r.includes('floor_2') || r.includes('andar_2')) {
         this.focusFloor(2);
-        this.focusEntity(districtPoint('api-platform', 0, 9.8, 1.2), 14, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', 0, 9.8, 0.8), 18, 0.12, 0.30);
       } else if (r.includes('neural') || r.includes('core') || r.includes('floor_3') || r.includes('andar_3')) {
         this.focusFloor(3);
-        this.focusEntity(districtPoint('api-platform', 0, 14.8, 2.8), 14, 1.62, 0.22);
+        this.focusEntity(districtPoint('api-platform', 0, 14.8, 1.8), 18, 0.12, 0.30);
       } else {
         this.focusBuilding('api-platform');
       }
