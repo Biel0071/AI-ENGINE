@@ -262,7 +262,7 @@ const CANONICAL_BUILDINGS_DATA = {
     companyId: 'fenix-enterprise',
     district: 'command-center',
     floors: 5,
-    coordinates: { x: 0.0, y: 0, z: 0.0 },
+    coordinates: { x: 0.0, y: 0, z: 26.0 },
     color: '#3b82f6'
   },
   'bld-dev-loft': {

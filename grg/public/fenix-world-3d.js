@@ -130,7 +130,7 @@
 
   // Canonical District Layout
   const DISTRICTS = [
-    { id: 'command-center', name: 'GRG SPACE', sub: 'FÊNIX CORE', color: 0xffb703, x: 0, z: 14.5, icon: 'ph-fill ph-fire', isHero: true, footprint: { width: 38, depth: 38 } },
+    { id: 'command-center', name: 'GRG SPACE', sub: 'FÊNIX CORE', color: 0xffb703, x: 0, z: 26, icon: 'ph-fill ph-fire', isHero: true, footprint: { width: 38, depth: 38 } },
     { id: 'api-platform', name: 'API PLATFORM', sub: 'Fastify Gateway & Ops', color: 0x00d9ff, x: -52, z: -29, icon: 'ph-bold ph-cube', isHero: true, footprint: { width: 34, depth: 30 } },
     { id: 'logistics', name: 'INDUSTRIAL HUB', sub: 'Logística & WMS', color: 0xf59e0b, x: 52, z: -36, icon: 'ph-bold ph-package', isHero: true, footprint: { width: 48, depth: 44 } },
     { id: 'dev-district', name: 'DEV LOFT', sub: 'Engenharia & Código', color: 0x00d9ff, x: -54, z: 57, icon: 'ph-bold ph-code', footprint: { width: 26, depth: 22 } },
@@ -142,7 +142,7 @@
   const AMBIENT_CITY_LOTS = [
     { id: 'west-garden', x: -77, z: 15, width: 14, depth: 16, floors: 2, wall: 'urbanFacadeTerracotta', roof: 'warehouseRoof' },
     { id: 'west-courtyard', x: -77, z: -7, width: 14, depth: 14, floors: 2, wall: 'urbanFacadeSand', roof: 'brushedTitanium' },
-    { id: 'north-library', x: 0, z: 31, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
+    { id: 'north-library', x: -28, z: 42, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
     { id: 'north-center', x: -25, z: 33, width: 12, depth: 12, floors: 2, wall: 'urbanFacadeSand', roof: 'warehouseRoof' },
     { id: 'north-garden', x: 0, z: 43, width: 10, depth: 8, floors: 2, wall: 'urbanFacadeIvory', roof: 'woodSlat' },
     { id: 'north-east-periphery', x: 84, z: 8, width: 12, depth: 10, floors: 2, wall: 'warehouseWall', roof: 'warehouseRoof' },
@@ -1583,7 +1583,7 @@
     _initObstacleRegistry() {
       if (!this.pathGraph) return;
       const heroObstacles = [
-        { id: 'bld-fenix-hq', minX: -11, maxX: 11, minZ: -11, maxZ: 11, entryPos: { x: 0, y: 0.2, z: 12.5 }, name: 'FÊNIX HQ Tower' },
+        { id: 'bld-fenix-hq', minX: -11, maxX: 11, minZ: 15, maxZ: 37, entryPos: { x: 0, y: 0.2, z: 14.5 }, name: 'FÊNIX HQ Tower' },
         { id: 'bld-deposito-mais', minX: 28, maxX: 74, minZ: -56, maxZ: -16, entryPos: { x: 52, y: 0.2, z: -14 }, name: 'Depósito Mais WMS Hub' },
         { id: 'bld-api-platform', minX: -68, maxX: -36, minZ: -43, maxZ: -15, entryPos: { x: -34, y: 0.2, z: -29 }, name: 'API Platform Complex' },
         { id: 'bld-dev-loft', minX: -66, maxX: -42, minZ: 47, maxZ: 67, entryPos: { x: -54, y: 0.2, z: 45 }, name: 'Dev Loft Engineering' },
@@ -1784,10 +1784,14 @@
         if (!payload?.id || !payload.coordinates) continue;
         const building = this.buildings.get(payload.id);
         if (!building) continue;
-        const x = Number(payload.coordinates.x);
-        const z = Number(payload.coordinates.z);
+        let x = Number(payload.coordinates.x);
+        let z = Number(payload.coordinates.z);
         const y = Number(payload.coordinates.y ?? 0);
         if (![x, y, z].every(Number.isFinite)) continue;
+        // Keep Fênix HQ at its canonical command-center location (z = 26) so it never collapses onto Civic Plaza (0, 0)
+        if (payload.id === 'bld-fenix-hq' && x === 0 && z === 0) {
+          z = 26;
+        }
         building.position = { x, y, z };
         if (building.group?.position?.set) building.group.position.set(x, y, z);
         if (payload.name) building.name = payload.name;
@@ -2325,8 +2329,12 @@
       const h = this.host.clientHeight || window.innerHeight;
 
       this.camera = new T.PerspectiveCamera(38, w / h, 0.1, 750);
-      const dockHeight = 175;
-      this.camera.setViewOffset(w, h + dockHeight, 0, dockHeight, w, h);
+      const dockHeight = (this.activeApiFloor !== null && this.activeApiFloor !== undefined) ? 0 : Math.min(48, Math.floor(h * 0.055));
+      if (dockHeight > 0) {
+        this.camera.setViewOffset(w, h + dockHeight, 0, dockHeight, w, h);
+      } else {
+        this.camera.clearViewOffset();
+      }
       this._updateCameraPosition(true);
 
       this.renderer = new T.WebGLRenderer({
@@ -2524,7 +2532,7 @@
         warehouseWall: new T.MeshStandardMaterial({ map: whWallTex, roughness: 0.38, metalness: 0.22 }),
         warehouseRoof: new T.MeshStandardMaterial({ map: whRoofTex, roughness: 0.42, metalness: 0.35 }),
         warehouseEpoxy: new T.MeshStandardMaterial({ map: epoxyTex, roughness: 0.25, metalness: 0.28 }),
-        officeGlass: new T.MeshStandardMaterial({ map: glassTex, roughness: 0.1, metalness: 0.85, transparent: true, opacity: 0.85 }),
+        officeGlass: new T.MeshStandardMaterial({ map: glassTex, roughness: 0.15, metalness: 0.75 }),
         depositoRed: new T.MeshStandardMaterial({ color: 0xef4444, roughness: 0.25, metalness: 0.3 }),
         rackOrange: new T.MeshStandardMaterial({ color: 0xf97316, roughness: 0.35, metalness: 0.3 }),
         rackBlue: new T.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.35, metalness: 0.3 }),
@@ -5883,7 +5891,147 @@
        SURROUNDING METROPOLIS: 6 CANONICAL ARCHITECTURAL DISTRICT LANDMARKS
     ══════════════════════════════════════════════════════════════════════════ */
     _initSurroundingMetropolis() {
-      // ── 1. CENTRAL FÊNIX HQ GLASS SKYSCRAPER & CIVIC PLAZA (x: 0, z: 0) ──
+      // ── 1. CIRCULAR CIVIC PLAZA & GOLDEN PHOENIX MONUMENT (Central Roundabout at x: 0, z: 0) ──
+      const civicPlaza = new T.Group();
+      civicPlaza.name = 'Landmark_CivicPlaza';
+      civicPlaza.position.set(0, 0.16, 0);
+
+      // 1. Circular Stone Courtyard Plinth (Tiered Cyber-Obsidian & Granite)
+      const courtPlinth = new T.Mesh(new T.CylinderGeometry(11.2, 11.8, 0.36, 48), this.materials.sidewalk);
+      courtPlinth.receiveShadow = true;
+      civicPlaza.add(courtPlinth);
+
+      // Outer Glowing Ring (Cyan Neon Curb Inlay)
+      const curbRing = new T.Mesh(new T.TorusGeometry(11.4, 0.24, 8, 48), this.materials.curb);
+      curbRing.rotation.x = Math.PI / 2;
+      civicPlaza.add(curbRing);
+
+      const neonRing = new T.Mesh(new T.TorusGeometry(10.6, 0.08, 6, 48), this.materials.cyanNeon || this.materials.neonCyan);
+      neonRing.rotation.x = Math.PI / 2;
+      neonRing.position.y = 0.19;
+      civicPlaza.add(neonRing);
+
+      // 2. Circular Fountain Water Basin with Crystal Turquoise Water
+      const fountainBasin = new T.Mesh(new T.CylinderGeometry(7.0, 7.2, 0.65, 36), this.materials.sidewalk);
+      fountainBasin.position.y = 0.42;
+      fountainBasin.castShadow = true;
+      const fountainWater = new T.Mesh(new T.CylinderGeometry(6.4, 6.4, 0.50, 36), this.materials.water);
+      fountainWater.position.y = 0.54;
+      civicPlaza.add(fountainBasin, fountainWater);
+
+      // Fountain Water Basin Gold Trim Ring
+      const basinRing = new T.Mesh(new T.TorusGeometry(7.05, 0.12, 8, 36), this.materials.curb);
+      basinRing.rotation.x = Math.PI / 2;
+      basinRing.position.y = 0.74;
+      civicPlaza.add(basinRing);
+
+      // 3. Multi-Tiered Central Sculptural Pedestal
+      const pedBase = new T.Mesh(new T.CylinderGeometry(2.4, 2.8, 0.9, 24), this.materials.brushedTitanium);
+      pedBase.position.y = 1.05;
+      pedBase.castShadow = true;
+      const pedShaft = new T.Mesh(new T.CylinderGeometry(1.8, 2.1, 1.8, 20), this.materials.brushedTitanium);
+      pedShaft.position.y = 2.4;
+      pedShaft.castShadow = true;
+      const pedCap = new T.Mesh(new T.CylinderGeometry(2.2, 1.8, 0.4, 20), this.materials.brushedTitanium);
+      pedCap.position.y = 3.4;
+      civicPlaza.add(pedBase, pedShaft, pedCap);
+
+      // 4. Heroic Golden Phoenix Monument (Monumental Sculpture Matching Reference Concept)
+      const goldMat = new T.MeshStandardMaterial({
+        color: 0xffb703,
+        metalness: 0.94,
+        roughness: 0.12,
+        emissive: 0xd97706,
+        emissiveIntensity: 0.70
+      });
+      const goldFeatherMat = new T.MeshStandardMaterial({
+        color: 0xf59e0b,
+        metalness: 0.90,
+        roughness: 0.16,
+        emissive: 0xb45309,
+        emissiveIntensity: 0.50
+      });
+
+      const phoenix = new T.Group();
+      phoenix.position.y = 3.6;
+
+      // Sculpted Majestic Phoenix Body & Breast
+      const pBody = new T.Mesh(new T.ConeGeometry(1.15, 3.2, 12), goldMat);
+      pBody.position.y = 1.5;
+      pBody.castShadow = true;
+      const pChest = new T.Mesh(new T.SphereGeometry(0.85, 12, 12), goldMat);
+      pChest.position.set(0, 2.4, 0.28);
+      pChest.castShadow = true;
+      const pHead = new T.Mesh(new T.SphereGeometry(0.55, 10, 10), goldMat);
+      pHead.position.set(0, 3.2, 0.36);
+      pHead.castShadow = true;
+
+      // Crown of Solar Fire (Emissive Multi-Peak Crest)
+      const pFlame = new T.Mesh(new T.OctahedronGeometry(0.65, 0), new T.MeshStandardMaterial({
+        color: 0xffedd5,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 2.2
+      }));
+      pFlame.position.set(0, 3.95, 0.36);
+
+      // Heroic Sweeping Wings (Tiered Flight Feathers, 7.2m Total Wingspan)
+      const pWingL1 = new T.Mesh(new T.BoxGeometry(3.6, 0.22, 1.2), goldMat);
+      pWingL1.position.set(-2.0, 2.2, 0);
+      pWingL1.rotation.z = Math.PI / 4.5;
+      pWingL1.rotation.y = -Math.PI / 7;
+      pWingL1.castShadow = true;
+
+      const pWingL2 = new T.Mesh(new T.BoxGeometry(2.4, 0.15, 0.8), goldFeatherMat);
+      pWingL2.position.set(-3.2, 3.0, -0.15);
+      pWingL2.rotation.z = Math.PI / 3.8;
+      pWingL2.rotation.y = -Math.PI / 6;
+
+      const pWingR1 = new T.Mesh(new T.BoxGeometry(3.6, 0.22, 1.2), goldMat);
+      pWingR1.position.set(2.0, 2.2, 0);
+      pWingR1.rotation.z = -Math.PI / 4.5;
+      pWingR1.rotation.y = Math.PI / 7;
+      pWingR1.castShadow = true;
+
+      const pWingR2 = new T.Mesh(new T.BoxGeometry(2.4, 0.15, 0.8), goldFeatherMat);
+      pWingR2.position.set(3.2, 3.0, -0.15);
+      pWingR2.rotation.z = -Math.PI / 3.8;
+      pWingR2.rotation.y = Math.PI / 6;
+
+      // Cascading Tail Feathers
+      const pTail = new T.Mesh(new T.ConeGeometry(0.65, 2.8, 8), goldMat);
+      pTail.position.set(0, 0.8, -0.6);
+      pTail.rotation.x = -Math.PI / 7;
+
+      phoenix.add(pBody, pChest, pHead, pFlame, pWingL1, pWingL2, pWingR1, pWingR2, pTail);
+      civicPlaza.add(phoenix);
+
+      // 4 Upward Ground-Recessed Golden Spotlights
+      const goldSpotS = new T.PointLight(0xffb703, 5.5, 42, 1.1);
+      goldSpotS.position.set(0, 2.0, -4.5);
+      const goldSpotN = new T.PointLight(0xffb703, 4.0, 36, 1.1);
+      goldSpotN.position.set(0, 2.0, 4.5);
+      const goldSpotE = new T.PointLight(0x00d9ff, 3.2, 30, 1.2);
+      goldSpotE.position.set(4.5, 2.0, 0);
+      const goldSpotW = new T.PointLight(0x00d9ff, 3.2, 30, 1.2);
+      goldSpotW.position.set(-4.5, 2.0, 0);
+      civicPlaza.add(goldSpotS, goldSpotN, goldSpotE, goldSpotW);
+
+      // 4 Civic Palm Trees in Planters at 45° Diagonal Corners (Leaving N-S and E-W Axes Open)
+      [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4].forEach(pa => {
+        const px = Math.cos(pa) * 9.6;
+        const pz = Math.sin(pa) * 9.6;
+        const planter = new T.Mesh(new T.CylinderGeometry(1.1, 1.3, 0.7, 16), this.materials.sidewalk);
+        planter.position.set(px, 0.35, pz);
+        civicPlaza.add(planter);
+        const palm = this._createDetailedTree('palm');
+        palm.position.set(px, 0.70, pz);
+        civicPlaza.add(palm);
+      });
+
+      this.civicPlaza = civicPlaza;
+      this.scene.add(civicPlaza);
+
+      // ── 2. CENTRAL FÊNIX HQ GLASS SKYSCRAPER (x: 0, z: 26) ──
       const hqGroup = new T.Group();
       hqGroup.name = 'District_HQ';
       placeAtDistrict(hqGroup, 'command-center');
@@ -5897,80 +6045,6 @@
       const pool = new T.Mesh(new T.BoxGeometry(26, 0.3, 8), this.materials.water);
       pool.position.set(0, 0.25, 11);
       hqGroup.add(pool);
-
-      // ── CIRCULAR CIVIC PLAZA & GOLDEN PHOENIX MONUMENT (Matching media_1793303887123_654a6089.jpg) ──
-      const civicPlaza = new T.Group();
-      civicPlaza.position.set(0, 0.25, 14.5);
-
-      // 1. Circular Stone Courtyard Plinth
-      const courtPlinth = new T.Mesh(new T.CylinderGeometry(8.5, 8.8, 0.3, 32), this.materials.sidewalk);
-      courtPlinth.receiveShadow = true;
-      civicPlaza.add(courtPlinth);
-
-      // Outer Curb Ring
-      const curbRing = new T.Mesh(new T.TorusGeometry(8.6, 0.2, 8, 32), this.materials.curb);
-      curbRing.rotation.x = Math.PI / 2;
-      civicPlaza.add(curbRing);
-
-      // 2. Circular Fountain Water Basin
-      const fountainBasin = new T.Mesh(new T.CylinderGeometry(5.2, 5.2, 0.5, 24), this.materials.sidewalk);
-      fountainBasin.position.y = 0.35;
-      fountainBasin.castShadow = true;
-      const fountainWater = new T.Mesh(new T.CylinderGeometry(4.6, 4.6, 0.4, 24), this.materials.water);
-      fountainWater.position.y = 0.45;
-      civicPlaza.add(fountainBasin, fountainWater);
-
-      // 3. Central Sculptural Pedestal
-      const pedestal = new T.Mesh(new T.CylinderGeometry(1.4, 1.8, 2.2, 16), this.materials.brushedTitanium);
-      pedestal.position.y = 1.4;
-      pedestal.castShadow = true;
-      civicPlaza.add(pedestal);
-
-      // 4. Golden Phoenix Statue
-      const goldMat = new T.MeshStandardMaterial({
-        color: 0xffb703,
-        metalness: 0.88,
-        roughness: 0.22,
-        emissive: 0xd97706,
-        emissiveIntensity: 0.35
-      });
-      const phoenix = new T.Group();
-      phoenix.position.y = 2.6;
-
-      const pBody = new T.Mesh(new T.ConeGeometry(0.75, 2.0, 8), goldMat);
-      pBody.position.y = 0.9;
-      const pHead = new T.Mesh(new T.SphereGeometry(0.42, 8, 8), goldMat);
-      pHead.position.set(0, 2.0, 0.15);
-      const pWingL = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.85), goldMat);
-      pWingL.position.set(-1.4, 1.3, 0);
-      pWingL.rotation.z = Math.PI / 5;
-      pWingL.rotation.y = -Math.PI / 8;
-      const pWingR = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.85), goldMat);
-      pWingR.position.set(1.4, 1.3, 0);
-      pWingR.rotation.z = -Math.PI / 5;
-      pWingR.rotation.y = Math.PI / 8;
-      const pFlame = new T.Mesh(new T.OctahedronGeometry(0.35, 0), new T.MeshStandardMaterial({ color: 0xffedd5, emissive: 0xf59e0b, emissiveIntensity: 1.0 }));
-      pFlame.position.set(0, 2.5, 0.15);
-
-      phoenix.add(pBody, pHead, pWingL, pWingR, pFlame);
-      civicPlaza.add(phoenix);
-
-      // Golden Spotlight
-      const goldLight = new T.PointLight(0xffb703, 3.8, 32, 1.2);
-      goldLight.position.set(0, 4.2, 0);
-      civicPlaza.add(goldLight);
-
-      // Surrounding Civic Palm Trees in Stone Planters
-      for (let pi = 0; pi < 4; pi++) {
-        const pa = pi * (Math.PI / 2) + Math.PI / 4;
-        const px = Math.cos(pa) * 7.4;
-        const pz = Math.sin(pa) * 7.4;
-        const palm = this._createDetailedTree('palm');
-        palm.position.set(px, 0.28, pz);
-        civicPlaza.add(palm);
-      }
-
-      hqGroup.add(civicPlaza);
 
       // 7-Story Modern Glass Tower with Architectural Floor Slabs
       const hqLevels = 7;
@@ -7577,7 +7651,6 @@
       if (Boolean(navigator.webdriver) || Boolean(window.__FENIX_HEADLESS__)) {
         this._updateCameraPosition(true);
         this._updateDistrictLabels?.();
-        this.renderer?.render?.(this.scene, this.camera);
       }
       this._saveState();
     }
@@ -7588,8 +7661,12 @@
         if (this.activeApiFloor !== null && this.activeApiFloor !== undefined) {
           this.focusFloor(null);
         }
-        const yOffset = d.id === 'command-center' ? 5 : 3;
-        this.focusEntity(new T.Vector3(d.x, yOffset, d.z), d.isHero ? 48 : 54, Math.PI / 4, 0.56);
+        if (d.id === 'command-center') {
+          this.focusCivicPlaza();
+          return true;
+        }
+        const yOffset = 3;
+        this.focusEntity(new T.Vector3(d.x, yOffset, d.z), d.isHero ? 42 : 48, Math.PI / 4, 0.48);
         return true;
       }
       return false;
@@ -8261,9 +8338,11 @@
         this.focusEntity(districtPoint('logistics', 0, 4.5, 0), 56, Math.PI / 4, 0.54);
       } else if (buildingId === 'bld-api-platform' || buildingId === 'api-platform') {
         this.focusFloor(null);
-        this.focusEntity(districtPoint('api-platform', 0, 6.5, 0), 56, Math.PI / 4, 0.52);
-      } else if (buildingId === 'bld-fenix-hq' || buildingId === 'command-center') {
-        this.focusEntity(new T.Vector3(0, 8, 0), 58, Math.PI / 4, 0.54);
+        this.focusEntity(districtPoint('api-platform', 0, 6.0, 8.0), 22.0, 1.25, 0.26);
+      } else if (buildingId === 'bld-fenix-hq') {
+        this.focusEntity(new T.Vector3(0, 10, 26), 46, Math.PI / 4, 0.48);
+      } else if (buildingId === 'command-center') {
+        this.focusCivicPlaza();
       } else if (buildingId === 'bld-dev-loft' || buildingId === 'dev-district') {
         this.focusEntity(districtPoint('dev-district', 0, 4.0, 0), 52, Math.PI / 4, 0.54);
       } else if (buildingId === 'bld-ai-nexus' || buildingId === 'ai-district') {
@@ -8484,7 +8563,18 @@
       const fH = 4.0;
       const fY = podiumH + f * fH;
       // Position camera directly into floor f interior looking through open front facade (calibrated isometric angle)
-      this.focusEntity(districtPoint('api-platform', 0, fY + 1.4, 0.8), 20.0, 0.12, 0.32);
+      this.focusEntity(districtPoint('api-platform', 0, fY + 1.2, 0), 20.0, 1.48, 0.28);
+    }
+
+    focusElevator() {
+      // Focus on panoramic glass elevator on left flank of ApiPlatformHeroComplex (-59.6, y, -33.0)
+      this.focusEntity(new T.Vector3(-59.6, 7.5, -33.0), 13.0, 2.22, 0.22);
+    }
+
+    focusCivicPlaza() {
+      // Focus directly on Golden Phoenix monument and circular civic plaza at (0, 0, 0)
+      // Elevated perspective looking South at Golden Phoenix with circular plaza, fountain and HQ behind
+      this.focusEntity(new T.Vector3(0, 4.5, 0), 20.0, -Math.PI / 2, 0.30);
     }
 
     focusCompany(companyId) {
@@ -8564,8 +8654,8 @@
     _setDayNight(isNight) {
       const night = Boolean(isNight);
       const settings = night
-        ? { background: 0x0b151f, sun: 0x8ea6bb, sunIntensity: 0.62, hemiIntensity: 0.62, floodlight: 5.2 }
-        : { background: 0x1a2935, sun: 0xffdfb5, sunIntensity: 1.3, hemiIntensity: 0.82, floodlight: 2.2 };
+        ? { background: 0x070c12, sun: 0x8ea6bb, sunIntensity: 0.62, hemiIntensity: 0.62, floodlight: 5.2 }
+        : { background: 0x0c1520, sun: 0xffdfb5, sunIntensity: 1.35, hemiIntensity: 0.88, floodlight: 2.2 };
       this.cameraState.night = night;
       this.scene.background.set(settings.background);
       this.scene.fog.color.set(settings.background);
