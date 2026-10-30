@@ -1511,6 +1511,7 @@
       this._initVehicles();
       this._initDataFlowPipelines();
       this.dataPulses.forEach((pulse) => { if (pulse.mesh) pulse.mesh.visible = false; });
+      this._initSemanticNavigationUI();
       this._bindEvents();
 
       // Start Render Loop with Visibility & View Throttling (Requirement 7)
@@ -4162,7 +4163,20 @@
       tree.add(trunk);
 
       let treeH = 5.8;
-      if (type === 'pine') {
+      if (type === 'palm') {
+        treeH = 6.2;
+        const palmTrunk = new T.Mesh(new T.CylinderGeometry(0.18, 0.32, 4.8, 8), this.materials.palletWood);
+        palmTrunk.position.y = 2.4;
+        palmTrunk.castShadow = true;
+        tree.add(palmTrunk);
+        for (let i = 0; i < 6; i++) {
+          const frond = new T.Mesh(new T.BoxGeometry(2.4, 0.08, 0.45), this.materials.monsteraLeaf || this.materials.leafDeciduous);
+          frond.position.set(Math.cos(i * Math.PI / 3) * 1.1, 4.7, Math.sin(i * Math.PI / 3) * 1.1);
+          frond.rotation.y = i * Math.PI / 3;
+          frond.rotation.z = 0.35;
+          tree.add(frond);
+        }
+      } else if (type === 'pine' || type === 'conifer') {
         treeH = 6.4;
         for (let l = 0; l < 4; l++) {
           const cone = new T.Mesh(new T.ConeGeometry(2.3 - l * 0.42, 2.2, 8), this.materials.leafPine);
@@ -4170,7 +4184,7 @@
           cone.castShadow = true;
           tree.add(cone);
         }
-      } else if (type === 'flowering') {
+      } else if (type === 'flowering' || type === 'sakura') {
         treeH = 5.2;
         const f1 = new T.Mesh(new T.DodecahedronGeometry(2.1), this.materials.leafFlowering);
         f1.position.set(0, 3.5, 0);
@@ -4178,7 +4192,10 @@
         const f2 = new T.Mesh(new T.DodecahedronGeometry(1.6), this.materials.leafFlowering);
         f2.position.set(0.6, 4.4, 0.5);
         f2.castShadow = true;
-        tree.add(f1, f2);
+        const f3 = new T.Mesh(new T.DodecahedronGeometry(1.4), this.materials.leafFlowering);
+        f3.position.set(-0.5, 4.0, -0.4);
+        f3.castShadow = true;
+        tree.add(f1, f2, f3);
       } else {
         treeH = 5.8;
         const f1 = new T.Mesh(new T.DodecahedronGeometry(2.2), this.materials.leafDeciduous);
@@ -5001,12 +5018,112 @@
       rightWall.position.set(bW / 2, podiumH + (fH * 4) / 2, 0);
       bldGroup.add(rightWall);
 
-      // Central Glass Elevator Core / Spine
-      const liftShaft = new T.Mesh(new T.BoxGeometry(3.6, fH * 4, 3.6), this.materials.clearGlass);
-      liftShaft.position.set(0, podiumH + (fH * 4) / 2, -bD / 4);
-      const liftCab = new T.Mesh(new T.BoxGeometry(3.0, 3.2, 3.0), this.materials.brushedTitanium);
-      liftCab.position.set(0, podiumH + 6.2, -bD / 4);
-      bldGroup.add(liftShaft, liftCab);
+      // Central Glass Elevator Core / Spine with Functional Cab & Sliding Doors
+      const shaftH = fH * 4;
+      const liftShaft = new T.Mesh(new T.BoxGeometry(3.6, shaftH, 3.6), this.materials.clearGlass);
+      liftShaft.position.set(0, podiumH + shaftH / 2, -bD / 4);
+
+      // Vertical Titanium Guide Rails & Corner Mullions for Elevator Shaft
+      const railGeo = new T.CylinderGeometry(0.06, 0.06, shaftH, 8);
+      for (const rx of [-1.75, 1.75]) {
+        for (const rz of [-1.75, 1.75]) {
+          const rail = new T.Mesh(railGeo, this.materials.brushedTitanium);
+          rail.position.set(rx, podiumH + shaftH / 2, -bD / 4 + rz);
+          bldGroup.add(rail);
+        }
+      }
+
+      // Detailed Interactive Elevator Cab Group
+      const liftCabGroup = new T.Group();
+      liftCabGroup.name = 'ElevatorCab';
+      const cabBaseY = podiumH + 1.6;
+      liftCabGroup.position.set(0, cabBaseY, -bD / 4);
+
+      // Cab floor & ceiling
+      const cabFloor = new T.Mesh(new T.BoxGeometry(2.9, 0.14, 2.9), this.materials.terrazzoFloor || this.materials.brushedTitanium);
+      cabFloor.position.y = -1.45;
+      const cabCeiling = new T.Mesh(new T.BoxGeometry(2.9, 0.12, 2.9), this.materials.cyberWall || this.materials.brushedTitanium);
+      cabCeiling.position.y = 1.45;
+
+      // Cab spot light inside
+      const cabLight = new T.PointLight(0x00f0ff, 1.2, 5);
+      cabLight.position.set(0, 1.2, 0);
+
+      // Back and side walls (brushed titanium with clear glass cutouts)
+      const cabBack = new T.Mesh(new T.BoxGeometry(2.9, 2.8, 0.08), this.materials.brushedTitanium);
+      cabBack.position.set(0, 0, -1.4);
+      const cabLeftWall = new T.Mesh(new T.BoxGeometry(0.08, 2.8, 2.9), this.materials.clearGlass);
+      cabLeftWall.position.set(-1.4, 0, 0);
+      const cabRightWall = new T.Mesh(new T.BoxGeometry(0.08, 2.8, 2.9), this.materials.clearGlass);
+      cabRightWall.position.set(1.4, 0, 0);
+
+      // Sliding Elevator Doors (Left & Right)
+      const cabDoorL = new T.Mesh(new T.BoxGeometry(0.65, 2.7, 0.05), this.materials.brushedTitanium);
+      cabDoorL.position.set(-0.35, 0, 1.42);
+      const cabDoorR = new T.Mesh(new T.BoxGeometry(0.65, 2.7, 0.05), this.materials.brushedTitanium);
+      cabDoorR.position.set(0.35, 0, 1.42);
+
+      // Floor indicator digital badge above cab doors
+      const indBadge = new T.Mesh(new T.BoxGeometry(0.8, 0.22, 0.06), this.materials.serverBlack);
+      indBadge.position.set(0, 1.55, 1.44);
+      const indText = new T.Mesh(new T.BoxGeometry(0.7, 0.15, 0.07), this.materials.fastLaneGlow);
+      indText.position.set(0, 1.55, 1.45);
+
+      liftCabGroup.add(cabFloor, cabCeiling, cabLight, cabBack, cabLeftWall, cabRightWall, cabDoorL, cabDoorR, indBadge, indText);
+      bldGroup.add(liftShaft, liftCabGroup);
+
+      // Make Elevator Cab interactive
+      liftCabGroup.userData = {
+        type: 'elevator',
+        id: 'central-elevator',
+        name: 'Elevador Central AI Nexus / API Platform',
+        floors: 4
+      };
+      this.interactiveMeshes.push(cabBack);
+      cabBack.userData = liftCabGroup.userData;
+
+      // Floor Landing Doors on each floor
+      this.elevatorLandingDoors = [];
+      for (let lf = 0; lf < 4; lf++) {
+        const landingDoorGroup = new T.Group();
+        const lfY = podiumH + lf * fH + 1.6;
+        landingDoorGroup.position.set(0, lfY, -bD / 4 + 1.55);
+        const lDoorL = new T.Mesh(new T.BoxGeometry(0.65, 2.7, 0.04), this.materials.brushedTitanium);
+        lDoorL.position.set(-0.35, 0, 0);
+        const lDoorR = new T.Mesh(new T.BoxGeometry(0.65, 2.7, 0.04), this.materials.brushedTitanium);
+        lDoorR.position.set(0.35, 0, 0);
+        const lFrame = new T.Mesh(new T.BoxGeometry(1.6, 2.85, 0.06), this.materials.cyberMullion);
+        lFrame.position.set(0, 0, -0.02);
+        landingDoorGroup.add(lDoorL, lDoorR, lFrame);
+        bldGroup.add(landingDoorGroup);
+
+        this.elevatorLandingDoors.push({
+          group: landingDoorGroup,
+          doorL: lDoorL,
+          doorR: lDoorR,
+          floor: lf
+        });
+      }
+
+      this.elevator = {
+        group: liftCabGroup,
+        doorL: cabDoorL,
+        doorR: cabDoorR,
+        indText: indText,
+        shaftMesh: liftShaft,
+        currentFloor: 0,
+        targetFloor: 0,
+        y: cabBaseY,
+        targetY: cabBaseY,
+        baseY: cabBaseY,
+        floorH: fH,
+        state: 'IDLE',
+        doorProgress: 0,
+        doorTimer: 0,
+        speed: 3.6,
+        queue: [],
+        passengers: []
+      };
 
       // Floor Groups & Rooftop Group for Intelligent Cutaway
       this.apiFloorGroups = [new T.Group(), new T.Group(), new T.Group(), new T.Group()];
@@ -6682,6 +6799,40 @@
         wheels: redSedan.userData.wheels || []
       });
 
+      // Vehicle E: Autonomous Cyber Shuttle (Cruising Outer North Avenue at x = 36.0)
+      const cyberShuttle = this._createDeliveryBoxVan(this.materials.glassGlowCyan || this.materials.truckCabinBlue);
+      cyberShuttle.position.set(36.0, 0, -45);
+      cyberShuttle.rotation.y = 0; // heading +Z
+      this.scene.add(cyberShuttle);
+      this.trafficVehicles.push({
+        mesh: cyberShuttle,
+        axis: 'z',
+        lane: 36.0,
+        pos: -45,
+        dir: 1,
+        speed: 6.2,
+        min: -85,
+        max: 85,
+        wheels: cyberShuttle.userData.wheels || []
+      });
+
+      // Vehicle F: Delivery Courier Van (Cruising Outer West Boulevard at z = -36.0)
+      const courierVan = this._createPickupTruck(this.materials.dockBumper);
+      courierVan.position.set(-50, 0, -36.0);
+      courierVan.rotation.y = Math.PI / 2; // heading +X
+      this.scene.add(courierVan);
+      this.trafficVehicles.push({
+        mesh: courierVan,
+        axis: 'x',
+        lane: -36.0,
+        pos: -50,
+        dir: 1,
+        speed: 5.4,
+        min: -85,
+        max: 85,
+        wheels: courierVan.userData.wheels || []
+      });
+
       // Retain backward-compatible single vehicle reference
       this.trafficVehicle = this.trafficVehicles[0];
 
@@ -6850,6 +7001,103 @@
 
       window.addEventListener('resize', () => {
         this.resize();
+      });
+
+      // Semantic & Keyboard Navigation (WASD / Arrows, Q/E Orbit, +/- Zoom, 1-4 Semantic Levels, C/Space Center)
+      window.addEventListener('keydown', (e) => {
+        const tag = e.target?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+        const cityView = document.getElementById('view-city');
+        if (!cityView || !cityView.classList.contains('active') || cityView.style.display === 'none') return;
+
+        const panSpeed = 3.5;
+        const az = this.cameraState.targetAzimuth ?? this.cameraState.azimuth;
+
+        switch (e.key) {
+          case 'w':
+          case 'W':
+          case 'ArrowUp':
+            e.preventDefault();
+            this.cameraMode = 'pan';
+            this.cameraState.targetLookAt.x -= Math.sin(az) * panSpeed;
+            this.cameraState.targetLookAt.z -= Math.cos(az) * panSpeed;
+            break;
+          case 's':
+          case 'S':
+          case 'ArrowDown':
+            e.preventDefault();
+            this.cameraMode = 'pan';
+            this.cameraState.targetLookAt.x += Math.sin(az) * panSpeed;
+            this.cameraState.targetLookAt.z += Math.cos(az) * panSpeed;
+            break;
+          case 'a':
+          case 'A':
+          case 'ArrowLeft':
+            e.preventDefault();
+            this.cameraMode = 'pan';
+            this.cameraState.targetLookAt.x -= Math.cos(az) * panSpeed;
+            this.cameraState.targetLookAt.z += Math.sin(az) * panSpeed;
+            break;
+          case 'd':
+          case 'D':
+          case 'ArrowRight':
+            e.preventDefault();
+            this.cameraMode = 'pan';
+            this.cameraState.targetLookAt.x += Math.cos(az) * panSpeed;
+            this.cameraState.targetLookAt.z -= Math.sin(az) * panSpeed;
+            break;
+          case 'q':
+          case 'Q':
+            e.preventDefault();
+            this.cameraState.azimuth -= 0.15;
+            break;
+          case 'e':
+          case 'E':
+            e.preventDefault();
+            this.cameraState.azimuth += 0.15;
+            break;
+          case '+':
+          case '=':
+            e.preventDefault();
+            this.zoomStep(1);
+            break;
+          case '-':
+          case '_':
+            e.preventDefault();
+            this.zoomStep(-1);
+            break;
+          case '1':
+            e.preventDefault();
+            this.setSemanticZoomLevel(1);
+            break;
+          case '2':
+            e.preventDefault();
+            this.setSemanticZoomLevel(2);
+            break;
+          case '3':
+            e.preventDefault();
+            this.setSemanticZoomLevel(3);
+            break;
+          case '4':
+            e.preventDefault();
+            this.setSemanticZoomLevel(4);
+            break;
+          case 'c':
+          case 'C':
+          case ' ':
+            e.preventDefault();
+            this.cameraState.targetLookAt.set(0, 0, 0);
+            break;
+          default:
+            return;
+        }
+
+        const MAX_PAN_X = 96;
+        const MAX_PAN_Z = 88;
+        this.cameraState.targetLookAt.x = Math.max(-MAX_PAN_X, Math.min(MAX_PAN_X, this.cameraState.targetLookAt.x));
+        this.cameraState.targetLookAt.z = Math.max(-MAX_PAN_Z, Math.min(MAX_PAN_Z, this.cameraState.targetLookAt.z));
+        this._updateCameraPosition(true);
+        this._saveState();
       });
     }
 
@@ -7331,8 +7579,461 @@
     }
 
     enterBuilding(buildingId, floorNumber) {
-      this.focusBuilding(buildingId);
-      if (floorNumber !== undefined && floorNumber !== null) this.focusFloor(floorNumber);
+      this.activeBuildingId = buildingId || 'bld-api-platform';
+      const targetFloor = (floorNumber !== undefined && floorNumber !== null) ? floorNumber : 0;
+
+      if (this.activeBuildingId === 'bld-api-platform' || this.activeBuildingId === 'api-platform') {
+        this.focusFloor(targetFloor);
+      } else {
+        this.focusBuilding(this.activeBuildingId);
+        if (this.projectNodes && this.projectNodes.has(this.activeBuildingId)) {
+          this.state.level = 'interior';
+          this.state.selected = { kind: 'project', id: this.activeBuildingId };
+        }
+      }
+
+      this._mountFloorNavigationDock(this.activeBuildingId);
+      this._updateSemanticNavUI(4);
+      return true;
+    }
+
+    exitBuilding() {
+      this.activeBuildingId = null;
+      this.focusFloor(null);
+      if (this.state.level === 'interior') {
+        this.state.level = 'island';
+        this.state.selected = null;
+      }
+      this._unmountFloorNavigationDock();
+      this.setSemanticZoomLevel(1);
+      return true;
+    }
+
+    _mountFloorNavigationDock(buildingId) {
+      this._unmountFloorNavigationDock();
+      const host = this.host || document.getElementById('view-city') || document.body;
+      const dock = document.createElement('div');
+      dock.className = 'fw3-floor-dock';
+      dock.id = 'fw3FloorDock';
+
+      const isApiPlatform = !buildingId || buildingId === 'bld-api-platform' || buildingId === 'api-platform';
+      let title = 'AI Nexus & API Complex';
+      if (!isApiPlatform) {
+        const pNode = this.projectNodes?.get(buildingId) || this.projectBuildings?.get(buildingId);
+        title = pNode?.name || buildingId;
+      }
+
+      const curFloor = this.activeApiFloor ?? 0;
+      const elevatorStatus = this.elevator?.state || 'IDLE';
+      const curFLabel = this.elevator?.currentFloor === 0 ? 'T (Térreo)' : `${this.elevator?.currentFloor}º Andar`;
+
+      dock.innerHTML = `
+        <div class="fw3-floor-dock-header">
+          <div>
+            <span class="fw3-dock-tag">🏢 Nível 4 · Visão Interna</span>
+            <h4 class="fw3-dock-title">${title}</h4>
+            <span class="fw3-dock-sub">Explorador Isométrico de Pavimentos</span>
+          </div>
+          <button class="fw3-dock-close-btn" id="fw3CloseFloorDock" title="Fechar Interior">✕</button>
+        </div>
+
+        <div class="fw3-floor-selector-list">
+          <button class="fw3-floor-btn ${curFloor === 3 ? 'active' : ''}" data-floor="3">
+            <span class="fw3-floor-num">3F</span>
+            <div class="fw3-floor-info">
+              <strong>3º Andar · AI Cognition & Autonomous Loops</strong>
+              <small>Modelos Neurais, Swarm & RAG Core</small>
+            </div>
+          </button>
+          <button class="fw3-floor-btn ${curFloor === 2 ? 'active' : ''}" data-floor="2">
+            <span class="fw3-floor-num">2F</span>
+            <div class="fw3-floor-info">
+              <strong>2º Andar · Neural Routing & Fastify Gateway</strong>
+              <small>Event Bus, WebSockets & APIs Rest</small>
+            </div>
+          </button>
+          <button class="fw3-floor-btn ${curFloor === 1 ? 'active' : ''}" data-floor="1">
+            <span class="fw3-floor-num">1F</span>
+            <div class="fw3-floor-info">
+              <strong>1º Andar · Architecture & Security Vault</strong>
+              <small>PostgreSQL, Valkey Cache & RBAC</small>
+            </div>
+          </button>
+          <button class="fw3-floor-btn ${curFloor === 0 ? 'active' : ''}" data-floor="0">
+            <span class="fw3-floor-num">T</span>
+            <div class="fw3-floor-info">
+              <strong>Térreo · Recepção & Urban Hub</strong>
+              <small>Entrada Principal, Lobby & Elevadores</small>
+            </div>
+          </button>
+        </div>
+
+        <div class="fw3-elevator-card">
+          <div class="fw3-elevator-header">
+            <span class="fw3-elevator-icon">🛗</span>
+            <div class="fw3-elevator-status-text">
+              <strong id="fw3ElevatorFloorText">Elevador Central: ${curFLabel}</strong>
+              <small id="fw3ElevatorStateText">Status: ${elevatorStatus}</small>
+            </div>
+          </div>
+          <button class="fw3-elevator-call-btn" id="fw3CallElevatorBtn">Chamar Elevador</button>
+        </div>
+
+        <div class="fw3-interfloor-stream-card">
+          <span class="fw3-stream-title">⚡ Barramento Óptico Inter-Pavimentos</span>
+          <div class="fw3-stream-list" id="fw3StreamList">
+            <div class="fw3-stream-item"><span class="fw3-stream-dot"></span><span>Tráfego óptico ativo nos condutos verticais</span></div>
+            <div class="fw3-stream-item"><span class="fw3-stream-dot" style="background:#10b981;"></span><span>Elevador conectado aos 4 pavimentos</span></div>
+          </div>
+        </div>
+
+        <button class="fw3-return-city-btn" id="fw3ReturnCityBtn">🏙️ Voltar à Cidade (Visão Completa)</button>
+      `;
+
+      host.appendChild(dock);
+
+      dock.querySelectorAll('.fw3-floor-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const fl = parseInt(btn.getAttribute('data-floor'), 10);
+          dock.querySelectorAll('.fw3-floor-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          this.focusFloor(fl);
+          this.sendInterFloorTask(this.activeApiFloor ?? 0, fl, 'Inspeção de Pavimento');
+        });
+      });
+
+      document.getElementById('fw3CallElevatorBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.callElevator(this.activeApiFloor ?? 0);
+      });
+
+      document.getElementById('fw3CloseFloorDock')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.exitBuilding();
+      });
+
+      document.getElementById('fw3ReturnCityBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.exitBuilding();
+      });
+    }
+
+    _unmountFloorNavigationDock() {
+      const dock = document.getElementById('fw3FloorDock');
+      if (dock) dock.remove();
+    }
+
+    _initSemanticNavigationUI() {
+      if (document.getElementById('fw3NavLevelsBar')) return;
+      const host = this.host || document.getElementById('view-city') || document.body;
+      const bar = document.createElement('div');
+      bar.id = 'fw3NavLevelsBar';
+      bar.className = 'fw3-nav-levels-bar';
+      bar.innerHTML = `
+        <button class="fw3-level-btn active" data-level="1" title="Nível 1 · Visão Panorâmica (Tecla 1)">🏙️ 1 · Cidade</button>
+        <button class="fw3-level-btn" data-level="2" title="Nível 2 · Visão de Bairro (Tecla 2)">🏘️ 2 · Bairros</button>
+        <button class="fw3-level-btn" data-level="3" title="Nível 3 · Visão de Edifício (Tecla 3)">🏢 3 · Edifícios</button>
+        <button class="fw3-level-btn" data-level="4" title="Nível 4 · Visão Interna / Pavimentos (Tecla 4)">🚪 4 · Pavimentos</button>
+      `;
+      host.appendChild(bar);
+
+      bar.querySelectorAll('.fw3-level-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const lvl = parseInt(btn.getAttribute('data-level'), 10);
+          this.setSemanticZoomLevel(lvl);
+        });
+      });
+    }
+
+    _updateSemanticNavUI(level) {
+      const bar = document.getElementById('fw3NavLevelsBar');
+      if (!bar) return;
+      bar.querySelectorAll('.fw3-level-btn').forEach(btn => {
+        const lvl = parseInt(btn.getAttribute('data-level'), 10);
+        if (lvl === level) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    setSemanticZoomLevel(level) {
+      const lvl = Math.max(1, Math.min(4, parseInt(level, 10)));
+      this._updateSemanticNavUI(lvl);
+
+      switch (lvl) {
+        case 1:
+          if (this.activeBuildingId) {
+            this.activeBuildingId = null;
+            this.focusFloor(null);
+            this._unmountFloorNavigationDock();
+          }
+          this.stopFollowing();
+          this.cameraState.targetLookAt.set(0, 0, 0);
+          this.cameraState.targetDistance = 110 * responsiveCameraScale(this.camera?.aspect);
+          this.cameraState.targetElevation = 0.62;
+          this.state.level = 'island';
+          break;
+
+        case 2:
+          if (this.activeBuildingId) {
+            this.activeBuildingId = null;
+            this.focusFloor(null);
+            this._unmountFloorNavigationDock();
+          }
+          this.stopFollowing();
+          const curDistId = this.state.cityFilter || 'api-platform';
+          this.focusDistrict(curDistId) || this.focusEntity(districtPoint('api-platform', 0, 4.0, 0), 55, Math.PI / 4, 0.54);
+          this.state.level = 'district';
+          break;
+
+        case 3:
+          if (this.activeBuildingId) {
+            this.focusFloor(null);
+          }
+          this.stopFollowing();
+          const bldId = this.activeBuildingId || 'bld-api-platform';
+          this.focusBuilding(bldId);
+          this.cameraState.targetDistance = 38 * responsiveCameraScale(this.camera?.aspect);
+          this.cameraState.targetElevation = 0.50;
+          this.state.level = 'building';
+          break;
+
+        case 4:
+          const enterId = this.activeBuildingId || 'bld-api-platform';
+          this.enterBuilding(enterId, this.activeApiFloor ?? 0);
+          this.state.level = 'interior';
+          break;
+      }
+      this._updateCameraPosition(true);
+      this._saveState();
+      return true;
+    }
+
+    _updateElevator(delta, time) {
+      if (!this.elevator || !this.elevator.group) return;
+      const el = this.elevator;
+
+      switch (el.state) {
+        case 'IDLE':
+          if (el.queue && el.queue.length > 0) {
+            const nextFloor = el.queue.shift();
+            this._startElevatorTravel(nextFloor);
+          }
+          break;
+
+        case 'MOVING':
+          const targetY = el.baseY + el.targetFloor * el.floorH;
+          const diff = targetY - el.y;
+          const dir = Math.sign(diff);
+          const step = el.speed * delta;
+
+          if (Math.abs(diff) <= step) {
+            el.y = targetY;
+            el.group.position.y = el.y;
+            el.currentFloor = el.targetFloor;
+            el.state = 'OPENING';
+            el.doorProgress = 0;
+            this._updateElevatorHud();
+          } else {
+            el.y += dir * step;
+            el.group.position.y = el.y;
+          }
+
+          if (Array.isArray(el.passengers)) {
+            el.passengers.forEach(p => {
+              if (p?.mesh) {
+                p.mesh.position.y = el.y + 0.1;
+              }
+            });
+          }
+          break;
+
+        case 'OPENING':
+          el.doorProgress = Math.min(1.0, (el.doorProgress || 0) + delta * 2.8);
+          this._applyElevatorDoorProgress(el.doorProgress);
+          if (el.doorProgress >= 1.0) {
+            el.state = 'WAITING';
+            el.doorTimer = 2.0;
+            this._updateElevatorHud();
+            if (typeof el.pendingCallback === 'function') {
+              const cb = el.pendingCallback;
+              el.pendingCallback = null;
+              cb(el.currentFloor);
+            }
+          }
+          break;
+
+        case 'WAITING':
+          el.doorTimer = (el.doorTimer || 0) - delta;
+          if (el.doorTimer <= 0) {
+            el.state = 'CLOSING';
+            this._updateElevatorHud();
+          }
+          break;
+
+        case 'CLOSING':
+          el.doorProgress = Math.max(0.0, (el.doorProgress || 0) - delta * 2.8);
+          this._applyElevatorDoorProgress(el.doorProgress);
+          if (el.doorProgress <= 0.0) {
+            el.state = 'IDLE';
+            this._updateElevatorHud();
+          }
+          break;
+      }
+    }
+
+    _applyElevatorDoorProgress(prog) {
+      if (!this.elevator) return;
+      if (this.elevator.doorL) this.elevator.doorL.position.x = -0.35 - (0.55 * prog);
+      if (this.elevator.doorR) this.elevator.doorR.position.x = 0.35 + (0.55 * prog);
+
+      if (Array.isArray(this.elevatorLandingDoors)) {
+        this.elevatorLandingDoors.forEach((ld, idx) => {
+          if (!ld) return;
+          if (idx === this.elevator.currentFloor) {
+            if (ld.doorL) ld.doorL.position.x = -0.35 - (0.55 * prog);
+            if (ld.doorR) ld.doorR.position.x = 0.35 + (0.55 * prog);
+          } else {
+            if (ld.doorL) ld.doorL.position.x = -0.35;
+            if (ld.doorR) ld.doorR.position.x = 0.35;
+          }
+        });
+      }
+    }
+
+    _startElevatorTravel(targetFloor, callback) {
+      if (!this.elevator) return;
+      const tf = Math.max(0, Math.min(3, parseInt(targetFloor, 10)));
+      this.elevator.targetFloor = tf;
+      if (typeof callback === 'function') this.elevator.pendingCallback = callback;
+
+      if (this.elevator.currentFloor === tf) {
+        this.elevator.state = 'OPENING';
+        this.elevator.doorProgress = 0;
+      } else {
+        this.elevator.state = 'MOVING';
+      }
+      this._updateElevatorHud();
+      this.sendInterFloorTask(this.elevator.currentFloor, tf, 'Movimentação do Elevador');
+    }
+
+    callElevator(targetFloor, callback) {
+      if (!this.elevator) return;
+      const tf = Math.max(0, Math.min(3, parseInt(targetFloor, 10)));
+      if (this.elevator.state === 'IDLE' && this.elevator.currentFloor === tf) {
+        this.elevator.state = 'OPENING';
+        this.elevator.doorProgress = 0;
+        if (typeof callback === 'function') callback(tf);
+      } else if (this.elevator.state === 'IDLE') {
+        this._startElevatorTravel(tf, callback);
+      } else {
+        if (!this.elevator.queue) this.elevator.queue = [];
+        if (!this.elevator.queue.includes(tf)) {
+          this.elevator.queue.push(tf);
+        }
+        if (typeof callback === 'function') this.elevator.pendingCallback = callback;
+      }
+      this._updateElevatorHud();
+    }
+
+    _updateElevatorHud() {
+      if (!this.elevator) return;
+      const flText = document.getElementById('fw3ElevatorFloorText');
+      const stText = document.getElementById('fw3ElevatorStateText');
+      const curF = this.elevator.currentFloor === 0 ? 'T (Térreo)' : `${this.elevator.currentFloor}º Andar`;
+      if (flText) {
+        flText.textContent = `Elevador Central: ${curF}`;
+      }
+      if (stText) {
+        let statusLabel = 'Aguardando';
+        if (this.elevator.state === 'MOVING') {
+          const dir = this.elevator.targetFloor > this.elevator.currentFloor ? '▲ Subindo' : '▼ Descendo';
+          statusLabel = `${dir} para o ${this.elevator.targetFloor === 0 ? 'Térreo' : this.elevator.targetFloor + 'º Andar'}`;
+        } else if (this.elevator.state === 'OPENING' || this.elevator.state === 'WAITING') {
+          statusLabel = '🔓 Portas Abertas';
+        } else if (this.elevator.state === 'CLOSING') {
+          statusLabel = '🔒 Fechando Portas';
+        }
+        stText.textContent = `Status: ${statusLabel}`;
+      }
+    }
+
+    sendInterFloorTask(fromFloor, toFloor, taskName = 'Barramento Óptico') {
+      const streamList = document.getElementById('fw3StreamList');
+      if (streamList) {
+        const item = document.createElement('div');
+        item.className = 'fw3-stream-item';
+        const d = new Date();
+        const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        item.innerHTML = `<span class="fw3-stream-dot"></span><span class="fw3-stream-time">[${timeStr}]</span> <span>Andar ${fromFloor === 0 ? 'T' : fromFloor} ➔ Andar ${toFloor === 0 ? 'T' : toFloor}: ${taskName}</span>`;
+        streamList.prepend(item);
+        while (streamList.children.length > 5) {
+          streamList.removeChild(streamList.lastChild);
+        }
+      }
+
+      if (this.materials?.glowingCyan) {
+        const pulseGeo = new T.SphereGeometry(0.35, 12, 12);
+        const pulseMesh = new T.Mesh(pulseGeo, this.materials.glowingCyan);
+        const podiumH = 0.5;
+        const fH = 4.0;
+        const startY = podiumH + fromFloor * fH + 1.8;
+        const endY = podiumH + toFloor * fH + 1.8;
+        const bD = 24.0;
+        const shaftZ = -bD / 4 + 1.55;
+        pulseMesh.position.set(0, startY, shaftZ);
+        this.scene.add(pulseMesh);
+
+        if (!this.livePackets) this.livePackets = [];
+        this.livePackets.push({
+          mesh: pulseMesh,
+          startPos: new T.Vector3(0, startY, shaftZ),
+          endPos: new T.Vector3(0, endY, shaftZ),
+          progress: 0,
+          speed: 1.8,
+          arcHeight: 0
+        });
+      }
+    }
+
+    transportAgentToFloor(agentId, destinationFloor) {
+      if (!agentId || !this.agents) return false;
+      const ag = this.agents.get(agentId);
+      if (!ag || !ag.mesh) return false;
+      const targetF = Math.max(0, Math.min(3, parseInt(destinationFloor, 10)));
+
+      const bD = 24.0;
+      const elevatorFront = new T.Vector3(0, ag.mesh.position.y, -bD / 4 + 3.2);
+      if (typeof this.setAgentTarget === 'function') {
+        this.setAgentTarget(agentId, elevatorFront.x, elevatorFront.z, 'TRANSPORTE_ELEVADOR');
+      }
+
+      this.callElevator(this.activeApiFloor ?? 0, () => {
+        if (ag.thoughtBubble) {
+          ag.thoughtBubble.setText(`Entrando no elevador para o ${targetF === 0 ? 'Térreo' : targetF + 'º Andar'}`, '🛗', '#00d9ff');
+        }
+        if (!this.elevator.passengers) this.elevator.passengers = [];
+        this.elevator.passengers.push(ag);
+
+        setTimeout(() => {
+          this.callElevator(targetF, () => {
+            const idx = this.elevator.passengers.indexOf(ag);
+            if (idx !== -1) this.elevator.passengers.splice(idx, 1);
+            const podiumH = 0.5;
+            const fH = 4.0;
+            const newY = podiumH + targetF * fH + 0.88;
+            ag.baseY = newY;
+            ag.mesh.position.set(ag.mesh.position.x, newY, -bD / 4 + 4.5);
+            if (ag.thoughtBubble) {
+              ag.thoughtBubble.setText(`Chegou ao ${targetF === 0 ? 'Térreo' : targetF + 'º Andar'}`, '✓', '#10b981');
+            }
+          });
+        }, 1200);
+      });
       return true;
     }
 
@@ -7469,6 +8170,9 @@
           <span style="font-size:11px;color:#a3e635;background:rgba(163,230,53,0.1);border:1px solid rgba(163,230,53,0.3);padding:2px 6px;border-radius:4px;">🏛️ ${project.floors || 3} Andares</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
+          <button id="fw3BtnEnterProjectBuilding" style="width:100%;background:linear-gradient(135deg,rgba(0,217,255,0.22),rgba(59,130,246,0.22));color:#00d9ff;border:1px solid rgba(0,217,255,0.5);border-radius:6px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 0 10px rgba(0,217,255,0.2);">
+            <span>🚪 ENTRAR NO EDIFÍCIO (EXPLORAR PAVIMENTOS)</span>
+          </button>
           <div style="display:flex;gap:8px;">
             <button id="fw3BtnOpenWorkspace" style="flex:1;background:#2563eb;color:#ffffff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
               <span>Abrir Workspace</span> ➔
@@ -7486,6 +8190,11 @@
 
       document.getElementById('fw3CloseProjectCard')?.addEventListener('click', () => {
         modal.style.display = 'none';
+      });
+
+      document.getElementById('fw3BtnEnterProjectBuilding')?.addEventListener('click', () => {
+        modal.style.display = 'none';
+        this.enterBuilding(project.projectId || project.id);
       });
 
       document.getElementById('fw3BtnStreetView')?.addEventListener('click', () => {
@@ -7573,7 +8282,7 @@
       const fH = 4.0;
       const fY = podiumH + f * fH;
       // Position camera directly into floor f interior with calibrated clearance
-      this.focusEntity(districtPoint('api-platform', 0, fY + 1.8, 0), 28.0, Math.PI / 4, 0.48);
+      this.focusEntity(districtPoint('api-platform', 0, fY + 1.6, 1.2), 18.0, 1.62, 0.26);
     }
 
     focusCompany(companyId) {
@@ -9374,6 +10083,9 @@
           dp.mesh.position.lerpVectors(dp.start, dp.end, dp.progress);
         });
       }
+
+      // 6. Interactive Functional 3D Elevator & Vertical Transit
+      this._updateElevator(delta, time);
 
       // 7. Camera Smoothing & Render
       this._updateCameraPosition(false, delta * 1000);

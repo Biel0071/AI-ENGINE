@@ -190,9 +190,12 @@
         <div><span style="color:#64748b;">Agente Responsável:</span> <strong style="color:#38bdf8;">${isApi ? 'Alex Ops Lead' : isWarehouse ? 'Camila Warehouse Lead' : 'CEO Agent'}</strong></div>
       </div>
 
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
         <button type="button" class="fp-btn" onclick="document.getElementById('fenixBuildingDetailsModal')?.remove();window.fenixWorld3D?.resetCamera?.()" style="padding:8px 14px;background:rgba(255,255,255,0.05);color:#cbd5e1;border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;font-size:12px;">
           ← Voltar para Cidade
+        </button>
+        <button type="button" class="fp-btn" onclick="document.getElementById('fenixBuildingDetailsModal')?.remove();window.fenixWorld3D?.enterBuilding?.('${id}');" style="padding:8px 16px;background:linear-gradient(135deg,rgba(0,217,255,0.3),rgba(168,85,247,0.3));color:#00d9ff;border:1px solid rgba(0,217,255,0.6);border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;">
+          🚪 Entrar no Edifício (Explorar Pavimentos)
         </button>
         <button type="button" class="fp-btn fp-btn-primary" onclick="document.getElementById('fenixBuildingDetailsModal')?.remove();window.showView?.('ide');if(typeof window.fenixSetCurrentProject==='function')window.fenixSetCurrentProject('${projectTarget}');" style="padding:8px 16px;background:linear-gradient(135deg,rgba(0,217,255,0.25),rgba(59,130,246,0.25));color:#00d9ff;border:1px solid rgba(0,217,255,0.4);border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;">
           Abrir na IDE ↗

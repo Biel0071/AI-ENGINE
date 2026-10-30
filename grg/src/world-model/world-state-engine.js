@@ -17,7 +17,44 @@ const { globalBus } = require('../eventing/fenix-event-bus');
 const STATE_DIR = path.join(__dirname, '..', '.data');
 const STATE_FILE = path.join(STATE_DIR, 'world-state.json');
 
-const CANONICAL_COMPANIES_DATA = {};
+const CANONICAL_COMPANIES_DATA = {
+  'api-platform': {
+    id: 'api-platform',
+    name: 'API Platform Inc.',
+    companyType: 'API_PLATFORM',
+    districtId: 'dev-district',
+    headquartersBuildingId: 'bld-api-platform',
+    buildingId: 'bld-api-platform',
+    description: 'API Gateway & Fastify Operations Engine',
+    status: 'ACTIVE',
+    telemetry: { totalRequestsProcessed: 0 },
+    agents: ['agent-api-ops', 'agent-integration', 'agent-infra', 'agent-monitor', 'agent-security', 'agent-ai-core', 'agent-support']
+  },
+  'deposito-mais': {
+    id: 'deposito-mais',
+    name: 'Depósito Mais Logística',
+    companyType: 'LOGISTICS',
+    districtId: 'industrial',
+    headquartersBuildingId: 'bld-deposito-mais',
+    buildingId: 'bld-deposito-mais',
+    description: 'Centro de Distribuição e Gestão de Cadeia de Suprimentos',
+    status: 'ACTIVE',
+    telemetry: { totalRequestsProcessed: 0 },
+    agents: []
+  },
+  'fenix-hq': {
+    id: 'fenix-hq',
+    name: 'Fênix Core Headquarters',
+    companyType: 'CORE_OS',
+    districtId: 'command-center',
+    headquartersBuildingId: 'bld-fenix-hq',
+    buildingId: 'bld-fenix-hq',
+    description: 'Governança Central, Kernel e Supervisão Sistêmica',
+    status: 'ACTIVE',
+    telemetry: { totalRequestsProcessed: 0 },
+    agents: []
+  }
+};
 
 const CANONICAL_DISTRICTS_DATA = {
   'command-center': {
@@ -199,7 +236,12 @@ const CANONICAL_BUILDINGS_DATA = {
     label: 'API PLATFORM',
     companyId: 'api-platform',
     district: 'api-platform',
-    floors: 4,
+    floors: [
+      { id: 'floor-ground', level: 0, name: 'Ground Floor (Reception, Lounge)', description: 'Reception, Lounge & Welcome Hub' },
+      { id: 'floor-1', level: 1, name: 'Floor 1 (API Ops, Integrations)', description: 'API Operations & Webhooks' },
+      { id: 'floor-2', level: 2, name: 'Floor 2 (SRE, Security Vault, 42U Server Core)', description: 'SRE, Security Vault & Server Core' },
+      { id: 'floor-3', level: 3, name: 'Floor 3 (Cognitive AI Core, Research Lab)', description: 'Cognitive AI Core & Research Lab' }
+    ],
     coordinates: { x: -18.0, y: 0, z: 2.0 },
     color: '#0284c7'
   },
@@ -274,8 +316,24 @@ const CANONICAL_BUILDINGS_DATA = {
     color: '#0284c7'
   }
 };
-const CANONICAL_WORKSTATIONS_DATA = {};
-const CANONICAL_AGENTS_DATA = {};
+const CANONICAL_WORKSTATIONS_DATA = {
+  'st-ap-ops': { id: 'st-ap-ops', name: 'API Operations Station', buildingId: 'bld-api-platform', companyId: 'api-platform', floorId: 'floor-1' },
+  'st-ap-integration': { id: 'st-ap-integration', name: 'Integrations Desk', buildingId: 'bld-api-platform', companyId: 'api-platform', floorId: 'floor-1' },
+  'st-ap-infra': { id: 'st-ap-infra', name: 'Infra & Server Core', buildingId: 'bld-api-platform', companyId: 'api-platform', floorId: 'floor-2' },
+  'st-ap-monitor': { id: 'st-ap-monitor', name: 'Monitoring Station', buildingId: 'bld-api-platform', companyId: 'api-platform', floorId: 'floor-2' },
+  'st-ap-security': { id: 'st-ap-security', name: 'Security Vault Desk', buildingId: 'bld-api-platform', companyId: 'api-platform', floorId: 'floor-2' },
+  'st-ap-ai-core': { id: 'st-ap-ai-core', name: 'AI Core Station', buildingId: 'bld-api-platform', companyId: 'api-platform', floorId: 'floor-3' },
+  'st-ap-support': { id: 'st-ap-support', name: 'Support Station', buildingId: 'bld-api-platform', companyId: 'api-platform', floorId: 'floor-ground' }
+};
+const CANONICAL_AGENTS_DATA = {
+  'agent-api-ops': { id: 'agent-api-ops', name: 'Alex', role: 'API Operations Specialist', companyId: 'api-platform', buildingId: 'bld-api-platform', workstationId: 'st-ap-ops', status: 'IDLE' },
+  'agent-integration': { id: 'agent-integration', name: 'Elena', role: 'Integrations Engineer', companyId: 'api-platform', buildingId: 'bld-api-platform', workstationId: 'st-ap-integration', status: 'IDLE' },
+  'agent-infra': { id: 'agent-infra', name: 'Lucas', role: 'SRE & Infrastructure Engineer', companyId: 'api-platform', buildingId: 'bld-api-platform', workstationId: 'st-ap-infra', status: 'IDLE' },
+  'agent-monitor': { id: 'agent-monitor', name: 'Maya', role: 'SRE & Observability Lead', companyId: 'api-platform', buildingId: 'bld-api-platform', workstationId: 'st-ap-monitor', status: 'IDLE' },
+  'agent-security': { id: 'agent-security', name: 'Victor', role: 'Zero-Trust Security Architect', companyId: 'api-platform', buildingId: 'bld-api-platform', workstationId: 'st-ap-security', status: 'IDLE' },
+  'agent-ai-core': { id: 'agent-ai-core', name: 'Sora', role: 'Cognitive AI Core Specialist', companyId: 'api-platform', buildingId: 'bld-api-platform', workstationId: 'st-ap-ai-core', status: 'IDLE' },
+  'agent-support': { id: 'agent-support', name: 'Gabriel', role: 'Technical Support Specialist', companyId: 'api-platform', buildingId: 'bld-api-platform', workstationId: 'st-ap-support', status: 'IDLE' }
+};
 const CANONICAL_VEHICLES_DATA = {};
 const CANONICAL_CONSTRUCTIONS_DATA = {};
 
@@ -608,6 +666,7 @@ class WorldStateEngine {
         name: event.type,
         progress: 15
       };
+      if (!Array.isArray(targetAgent.memory)) targetAgent.memory = [];
       targetAgent.memory.unshift({
         timestamp: event.timestamp,
         content: `Recebido evento ${event.type} [${event.speed}]: ${JSON.stringify(event.payload).slice(0, 100)}`

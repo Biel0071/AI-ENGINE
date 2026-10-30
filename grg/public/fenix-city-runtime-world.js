@@ -550,13 +550,31 @@
     const id = String(buildingId || '');
     pushNavigation(this);
     this.state.level = 'interior';
-    this.focusBuilding?.(id, floorNumber);
+    this.activeBuildingId = id;
+    if (id === 'bld-api-platform' || id === 'api-platform' || !id) {
+      const targetFloor = (floorNumber !== undefined && floorNumber !== null) ? floorNumber : (this.activeApiFloor ?? 0);
+      this.focusFloor?.(targetFloor);
+    } else {
+      this.focusBuilding?.(id, floorNumber);
+    }
+    if (typeof this._mountFloorNavigationDock === 'function') {
+      this._mountFloorNavigationDock(id);
+    }
+    if (typeof this._updateSemanticNavUI === 'function') {
+      this._updateSemanticNavUI(4);
+    }
     saveNavigation(this);
     emitSelection(this);
     return true;
   };
 
   proto.back = function backFromCityContext() {
+    if (typeof this._unmountFloorNavigationDock === 'function') {
+      this._unmountFloorNavigationDock();
+    }
+    if (typeof this._updateSemanticNavUI === 'function') {
+      this._updateSemanticNavUI(1);
+    }
     const previous = this.state.history?.pop();
     if (previous) {
       this.state.selected = previous.selected || null;
