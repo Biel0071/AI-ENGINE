@@ -1420,8 +1420,8 @@
       if (!this.container) return;
 
       this.scene = new T.Scene();
-      this.scene.background = new T.Color(0x0a1017); // Cyber-Obsidian living city atmosphere
-      this.scene.fog = new T.Fog(0x0a1017, 130, 480);
+      this.scene.background = new T.Color(0x060c16); // Cyber-Obsidian living city atmosphere
+      this.scene.fog = new T.Fog(0x060c16, 140, 520);
 
       // Camera State
       const saved = this._loadState();
@@ -2784,14 +2784,20 @@
       terrainGroup.add(baseMesh);
       this.terrainGroup = terrainGroup;
 
-      // Ambient Sea Water Plane
-      // Ambient Ground / Countryside Plane (CityRT Signature Watercolor Olive Grass)
-      const groundGeo = new T.PlaneGeometry(1600, 1600);
-      const groundMesh = new T.Mesh(groundGeo, this.materials.grass);
-      groundMesh.rotation.x = -Math.PI / 2;
-      groundMesh.position.y = -0.05;
-      groundMesh.receiveShadow = true;
-      terrainGroup.add(groundMesh);
+      // Ambient Sea Water Ocean Basin (Surrounding the island metropolis as in Image 1)
+      const oceanGeo = new T.PlaneGeometry(1600, 1600);
+      const oceanMat = new T.MeshStandardMaterial({
+        color: 0x071e33,
+        roughness: 0.16,
+        metalness: 0.60,
+        transparent: true,
+        opacity: 0.94
+      });
+      const oceanMesh = new T.Mesh(oceanGeo, oceanMat);
+      oceanMesh.rotation.x = -Math.PI / 2;
+      oceanMesh.position.y = -0.22;
+      oceanMesh.receiveShadow = true;
+      terrainGroup.add(oceanMesh);
 
       // 2. CityRT Orthogonal Street Network
       const streets = [
@@ -8654,8 +8660,8 @@
     _setDayNight(isNight) {
       const night = Boolean(isNight);
       const settings = night
-        ? { background: 0x070c12, sun: 0x8ea6bb, sunIntensity: 0.62, hemiIntensity: 0.62, floodlight: 5.2 }
-        : { background: 0x0c1520, sun: 0xffdfb5, sunIntensity: 1.35, hemiIntensity: 0.88, floodlight: 2.2 };
+        ? { background: 0x040810, sun: 0x64748b, sunIntensity: 0.55, hemiIntensity: 0.45, floodlight: 5.2 }
+        : { background: 0x060c16, sun: 0xffedd5, sunIntensity: 1.85, hemiIntensity: 0.95, floodlight: 2.2 };
       this.cameraState.night = night;
       this.scene.background.set(settings.background);
       this.scene.fog.color.set(settings.background);
@@ -9730,11 +9736,62 @@
         ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
       }
 
-      const markerX = isoX(centerX, centerZ); const markerY = isoY(centerX, centerZ, 0);
+      // Draw Camera Frustum View Cone & Eye Position (Dynamic GIS / Tactical Orientation)
+      const az = this.cameraState.azimuth || 0;
+      const el = this.cameraState.elevation || 0.5;
+      const dist = Math.min(100, Math.max(25, this.cameraState.distance || 60));
+      const eyeWorldX = centerX + dist * Math.cos(el) * Math.sin(az);
+      const eyeWorldZ = centerZ + dist * Math.cos(el) * Math.cos(az);
+      const eyeMinimapX = isoX(eyeWorldX, eyeWorldZ);
+      const eyeMinimapY = isoY(eyeWorldX, eyeWorldZ, 0);
+
+      const fovAngle = 0.42;
+      const leftRayX = centerX + Math.sin(az - Math.PI + fovAngle) * (dist * 0.7);
+      const leftRayZ = centerZ + Math.cos(az - Math.PI + fovAngle) * (dist * 0.7);
+      const rightRayX = centerX + Math.sin(az - Math.PI - fovAngle) * (dist * 0.7);
+      const rightRayZ = centerZ + Math.cos(az - Math.PI - fovAngle) * (dist * 0.7);
+
+      const markerX = isoX(centerX, centerZ);
+      const markerY = isoY(centerX, centerZ, 0);
+      const leftIsoX = isoX(leftRayX, leftRayZ);
+      const leftIsoY = isoY(leftRayX, leftRayZ, 0);
+      const rightIsoX = isoX(rightRayX, rightRayZ);
+      const rightIsoY = isoY(rightRayX, rightRayZ, 0);
+
+      // Frustum cone polygon
+      const coneGrad = ctx.createLinearGradient(eyeMinimapX, eyeMinimapY, markerX, markerY);
+      coneGrad.addColorStop(0, 'rgba(0, 217, 255, 0.40)');
+      coneGrad.addColorStop(0.7, 'rgba(0, 217, 255, 0.12)');
+      coneGrad.addColorStop(1, 'rgba(0, 217, 255, 0.02)');
+      ctx.fillStyle = coneGrad;
+      ctx.beginPath();
+      ctx.moveTo(eyeMinimapX, eyeMinimapY);
+      ctx.lineTo(leftIsoX, leftIsoY);
+      ctx.lineTo(rightIsoX, rightIsoY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Cone outline rays
+      ctx.strokeStyle = 'rgba(0, 217, 255, 0.50)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(eyeMinimapX, eyeMinimapY);
+      ctx.lineTo(leftIsoX, leftIsoY);
+      ctx.moveTo(eyeMinimapX, eyeMinimapY);
+      ctx.lineTo(rightIsoX, rightIsoY);
+      ctx.stroke();
+
+      // Camera eye dot
+      ctx.fillStyle = '#00d9ff';
+      ctx.beginPath();
+      ctx.arc(eyeMinimapX, eyeMinimapY, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Target reticle
       ctx.strokeStyle = '#f8fafc';
       ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(markerX, markerY, 6, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(markerX - 9, markerY); ctx.lineTo(markerX + 9, markerY); ctx.moveTo(markerX, markerY - 9); ctx.lineTo(markerX, markerY + 9); ctx.stroke();
+      ctx.beginPath(); ctx.arc(markerX, markerY, 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(markerX - 8, markerY); ctx.lineTo(markerX + 8, markerY); ctx.moveTo(markerX, markerY - 8); ctx.lineTo(markerX, markerY + 8); ctx.stroke();
 
       const status = document.getElementById('fenixMinimapStatus');
       const measuredBuildingsCount = (this.buildings instanceof Map ? this.buildings.size : 0) || buildings.length;
