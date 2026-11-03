@@ -21,6 +21,7 @@
 
 const http = require('http');
 const { FenixAutonomousLoop } = require('../evolution/fenix-autonomous-loop');
+const { getWorldStateEngine } = require('../world-model/world-state-engine');
 
 function forwardToDedicatedWorker(endpoint, method = 'GET', body = null, timeoutMs = 4000) {
   return new Promise((resolve) => {
@@ -68,7 +69,7 @@ function ensureLoopInstance(autonomousLoop, app, identity) {
 
 async function handleAutonomousLoopRoutes(req, res, { url, sendJson, readJson, app, autonomousLoop, identity }) {
   const path = url.pathname;
-  const knownRoute = /^\/api\/v2\/autonomous\/(heartbeat|dashboard|memories|queue|mission|status|start|pause|resume|stop|cycle|tick|bugs|budget|scan|poc\/run|city-state)/.test(path);
+  const knownRoute = /^\/api\/v2\/autonomous\/(heartbeat|dashboard|memories|queue|mission|status|start|pause|resume|stop|cycle|tick|bugs|budget|scan|poc\/run|city-state|company-agents\/spawn|evolution-report|v6\/)/.test(path);
 
   if (knownRoute) {
     if (!identity?.tenantId || !identity?.actorId || !app?.controlPlane?.authorize) {
@@ -408,6 +409,112 @@ async function handleAutonomousLoopRoutes(req, res, { url, sendJson, readJson, a
       return sendJson(res, 202, { ok: true, message: 'Ciclo disparado no dedicated worker', result: workerRes.data });
     }
     return sendJson(res, 503, { ok: false, error: 'Dedicated worker indisponível' });
+  }
+
+  // POST /api/v2/autonomous/company-agents/spawn — cria agente dinâmico para uma empresa/projeto no mundo 3D
+  if (req.method === 'POST' && path === '/api/v2/autonomous/company-agents/spawn') {
+    const body = await readJson(req).catch(() => ({}));
+    const worldEngine = getWorldStateEngine();
+    const companyId = String(body.companyId || body.projectId || body.company || 'fenix-os').trim();
+    const spawned = worldEngine.spawnCompanyAgent({
+      ...body,
+      companyId,
+      issuer: identity?.actorId || body.issuer || 'autonomous-company-brain',
+    });
+    const allAgents = Object.values(worldEngine.agents || {});
+    const activeSet = new Set(['working', 'running', 'moving', 'walking', 'thinking', 'talking', 'active']);
+    const activeCount = allAgents.filter((a) =>
+      activeSet.has(String(a.state || '').toLowerCase()) || activeSet.has(String(a.status || '').toLowerCase())
+    ).length;
+    return sendJson(res, 201, {
+      ok: true,
+      companyId,
+      agent: spawned,
+      activeAgents: activeCount,
+      totalAgents: allAgents.length,
+      ratioLabel: `${activeCount} / ${allAgents.length}`,
+    });
+  }
+
+  // ─── FASE 2, 3, 4, 9, 11, 13: ROTAS CANÔNICAS FÊNIX V6 ────────────────────
+
+  const ensureLoop = () => loop || ensureLoopInstance(autonomousLoop, app, identity) || new FenixAutonomousLoop({ app });
+
+  // GET /api/v2/autonomous/evolution-report
+  if (req.method === 'GET' && path === '/api/v2/autonomous/evolution-report') {
+    const activeLoop = ensureLoop();
+    return sendJson(res, 200, { ok: true, ...activeLoop.getEvolutionReport() });
+  }
+
+  // GET /api/v2/autonomous/v6/subsystems
+  if (req.method === 'GET' && path === '/api/v2/autonomous/v6/subsystems') {
+    const activeLoop = ensureLoop();
+    return sendJson(res, 200, { ok: true, ...activeLoop.getV6SubsystemsStatus() });
+  }
+
+  // GET /api/v2/autonomous/v6/schedules
+  if (req.method === 'GET' && path === '/api/v2/autonomous/v6/schedules') {
+    const activeLoop = ensureLoop();
+    return sendJson(res, 200, { ok: true, ...activeLoop.getSchedulesStatus() });
+  }
+
+  // POST /api/v2/autonomous/v6/schedules — configurar intervalos das 3 cadências (Saúde, Qualidade, Evolução)
+  if (req.method === 'POST' && path === '/api/v2/autonomous/v6/schedules') {
+    const body = await readJson(req).catch(() => ({}));
+    const activeLoop = ensureLoop();
+    const updated = activeLoop.configureSchedules(body || {});
+    return sendJson(res, 200, { ok: true, ...updated });
+  }
+
+  // POST /api/v2/autonomous/v6/cadence — disparar ciclo específico (health | quality | evolution)
+  if (req.method === 'POST' && path === '/api/v2/autonomous/v6/cadence') {
+    const body = await readJson(req).catch(() => ({}));
+    const activeLoop = ensureLoop();
+    try {
+      const result = await activeLoop.runCadence(body.cadenceId || 'health');
+      return sendJson(res, 200, { ok: true, result, schedules: activeLoop.getSchedulesStatus() });
+    } catch (err) {
+      return sendJson(res, 400, { ok: false, error: err.message });
+    }
+  }
+
+  // POST /api/v2/autonomous/v6/execute-mission — Fase 13: executar missão completa multiambiente
+  if (req.method === 'POST' && path === '/api/v2/autonomous/v6/execute-mission') {
+    const body = await readJson(req).catch(() => ({}));
+    const activeLoop = ensureLoop();
+    try {
+      const result = await activeLoop.executeV6SharedMission(body || {});
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, error: err.message });
+    }
+  }
+
+  // POST /api/v2/autonomous/v6/handoff — Fase 4: handoff de missão entre API Platform, Antigravity e Codex
+  if (req.method === 'POST' && path === '/api/v2/autonomous/v6/handoff') {
+    const body = await readJson(req).catch(() => ({}));
+    if (!body.missionId || !body.nextProvider) {
+      return sendJson(res, 400, { ok: false, error: 'Campos missionId e nextProvider são obrigatórios' });
+    }
+    const activeLoop = ensureLoop();
+    try {
+      const contract = activeLoop.missionQueue.handoffMissionProvider(body.missionId, body.nextProvider, body);
+      return sendJson(res, 200, { ok: true, contract });
+    } catch (err) {
+      return sendJson(res, 400, { ok: false, error: err.message });
+    }
+  }
+
+  // GET /api/v2/autonomous/v6/contract/:missionId — Fase 4: consultar SharedMissionContract (19 campos)
+  const contractMatch = path.match(/^\/api\/v2\/autonomous\/v6\/contract\/([^/]+)$/);
+  if (req.method === 'GET' && contractMatch) {
+    const missionId = decodeURIComponent(contractMatch[1]);
+    const activeLoop = ensureLoop();
+    const contract = activeLoop.missionQueue.toSharedMissionContract(missionId);
+    if (!contract) {
+      return sendJson(res, 404, { ok: false, error: `Missão ${missionId} não encontrada` });
+    }
+    return sendJson(res, 200, { ok: true, contract });
   }
 
   return false;

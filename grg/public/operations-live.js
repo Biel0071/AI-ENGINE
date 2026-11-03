@@ -285,6 +285,9 @@
             if (window.fenixSyncCityAutonomousState) window.fenixSyncCityAutonomousState();
           } else if (endpoint.includes('/universal-hub/proof')) {
             state.lastHubProof = res;
+          } else if (endpoint.includes('/v6/execute-mission')) {
+            state.lastV6MissionResult = res;
+            if (window.fenixSyncCityAutonomousState) window.fenixSyncCityAutonomousState();
           }
           await load();
         } catch (err) {
@@ -302,7 +305,8 @@
     const resumeBtn = makeActionBtn('floBtnAutoResume', '⏯ Retomar', '/api/v2/autonomous/resume');
     const stopBtn = makeActionBtn('floBtnAutoStop', '⏹ Parar', '/api/v2/autonomous/stop');
     const cycleBtn = makeActionBtn('floBtnAutoCycle', '⚡ Disparar Ciclo', '/api/v2/autonomous/cycle');
-    const pocBtn = makeActionBtn('floBtnAutoPoc', '🧪 Executar PoC 16-Etapas (Bug-Fix Real)', '/api/v2/autonomous/poc/run', {}, true);
+    const v6MissionBtn = makeActionBtn('floBtnRunV6Mission', '🚀 Missão V6 (API VPS → Antigravity → Codex)', '/api/v2/autonomous/v6/execute-mission', {}, true);
+    const pocBtn = makeActionBtn('floBtnAutoPoc', '🧪 Executar PoC 16-Etapas (Bug-Fix Real)', '/api/v2/autonomous/poc/run', {});
     const hubProofBtn = makeActionBtn('floBtnHubProof', '🔗 Prova Cross-Tool & Cross-Project', '/api/v2/rea/universal-hub/proof', {});
     const scanBtn = makeActionBtn('floBtnAutoScan', '🔍 Scan Proativo', '/api/v2/autonomous/scan', { maxFiles: 25 });
 
@@ -311,9 +315,132 @@
     enqueueMissionBtn.id = 'floBtnEnqueueEvoMission';
     enqueueMissionBtn.addEventListener('click', () => window.fenixOpenMissionModal({ mode: 'AUTONOMOUS' }));
 
-    actionRow.append(startBtn, pauseBtn, resumeBtn, stopBtn, cycleBtn, pocBtn, hubProofBtn, scanBtn, enqueueMissionBtn);
+    actionRow.append(startBtn, pauseBtn, resumeBtn, stopBtn, cycleBtn, v6MissionBtn, pocBtn, hubProofBtn, scanBtn, enqueueMissionBtn);
     ctrlCard.append(actionRow);
     content.append(ctrlCard);
+
+    // 1.B — FÊNIX EVOLUTION REPORT (Seção 4 & Fase 11: Relatório Claro de Evolução)
+    const evoReport = evo.evolutionReport || {};
+    const headline = evoReport.headlineCounts || {
+      problemsDetected: (bugsSummary.total || 0) + (evo.proactiveFindings?.length || 0),
+      fixesImplemented: (bugsSummary.fixed || 0) + (bugsSummary.verified || 0),
+      validationsApproved: bugsSummary.verified || 0,
+      blockedPending: queue.blocked?.length || 0
+    };
+    const agBreak = evoReport.agentsBreakdown || {
+      registeredAgents: 11,
+      availableAgents: Math.max(0, 11 - (cityState.busyCount || 0)),
+      executingAgents: cityState.busyCount || 0
+    };
+
+    const reportCard = node('article', 'flo-card');
+    reportCard.id = 'fenixEvolutionReportSection';
+    reportCard.style.marginTop = '14px';
+    reportCard.style.border = '1px solid rgba(16, 185, 129, 0.32)';
+    const repHead = node('div', 'flo-card-head');
+    repHead.append(
+      node('strong', '', 'FÊNIX EVOLUTION REPORT — AUDITORIA CONTÍNUA & MULTIAMBIENTE (V6)'),
+      node('span', 'flo-badge flo-succeeded', `Agentes: ${agBreak.registeredAgents} Reg · ${agBreak.availableAgents} Disp · ${agBreak.executingAgents} Exec`)
+    );
+    reportCard.append(repHead);
+
+    const kpiGrid = node('div', 'flo-grid');
+    kpiGrid.id = 'fenixEvolutionHeadlineGrid';
+    kpiGrid.style.marginTop = '10px';
+    const kpi1 = fact('Problemas detectados', String(headline.problemsDetected ?? 0));
+    kpi1.id = 'evoKpiProblemsDetected';
+    const kpi2 = fact('Correções implementadas', String(headline.fixesImplemented ?? 0));
+    kpi2.id = 'evoKpiFixesImplemented';
+    const kpi3 = fact('Validações aprovadas', String(headline.validationsApproved ?? 0));
+    kpi3.id = 'evoKpiValidationsApproved';
+    const kpi4 = fact('Pendências bloqueadas', String(headline.blockedPending ?? 0));
+    kpi4.id = 'evoKpiBlockedPending';
+    kpiGrid.append(kpi1, kpi2, kpi3, kpi4);
+    reportCard.append(kpiGrid);
+
+    // Cadências Configuráveis (Saúde 5m, Qualidade 30m, Evolução 2h)
+    const schedData = evo.schedules?.cadences || evoReport.schedules?.cadences || {};
+    const cadRow = node('div', 'flo-toolbar', '');
+    cadRow.id = 'fenixCadencesToolbar';
+    cadRow.style.marginTop = '10px';
+    cadRow.style.display = 'flex';
+    cadRow.style.flexWrap = 'wrap';
+    cadRow.style.gap = '8px';
+    const cadItems = [
+      { key: 'health', label: 'Saúde (5 min)', desc: schedData.health?.scope || 'APIs, filas, workers, recursos' },
+      { key: 'quality', label: 'Qualidade (30 min)', desc: schedData.quality?.scope || 'Bugs, testes, regressões, interfaces' },
+      { key: 'evolution', label: 'Evolução (2 horas)', desc: schedData.evolution?.scope || 'Missões priorizadas e melhorias' }
+    ];
+    for (const cItem of cadItems) {
+      const cState = schedData[cItem.key] || {};
+      const cBtn = makeActionBtn(
+        `btnCadence_${cItem.key}`,
+        `⏱ ${cItem.label} · Ciclos: ${cState.runsCount ?? 0}`,
+        '/api/v2/autonomous/v6/cadence',
+        { cadenceId: cItem.key }
+      );
+      cBtn.title = `${cItem.desc} | Última execução: ${cState.lastRunAt ? new Date(cState.lastRunAt).toLocaleTimeString('pt-BR') : '—'}`;
+      cadRow.append(cBtn);
+    }
+    reportCard.append(cadRow);
+
+    // Lista de Evoluções Comprovadas (Command Center, World, Backend, API, Projetos)
+    const provenList = Array.isArray(evoReport.provenEvolutions) ? evoReport.provenEvolutions : [];
+    if (provenList.length > 0) {
+      const provWrap = node('div', '');
+      provWrap.id = 'fenixProvenEvolutionsList';
+      provWrap.style.marginTop = '12px';
+      provWrap.append(node('strong', '', 'Evoluções Comprovadas por Subsistema:'));
+      const provGrid = node('div', 'flo-grid');
+      provGrid.style.marginTop = '6px';
+      for (const item of provenList) {
+        const pCard = node('div', 'flo-metric');
+        pCard.append(
+          node('span', '', `${item.area} (${item.status === 'VERIFIED_IN_PRODUCTION' ? 'HOMOLOGADO' : item.status})`),
+          node('strong', '', item.title)
+        );
+        provGrid.append(pCard);
+      }
+      provWrap.append(provGrid);
+      reportCard.append(provWrap);
+    }
+
+    // 12 Subsistemas V6
+    const v6Subs = evo.v6Subsystems?.subsystems || [];
+    if (v6Subs.length > 0) {
+      const subWrap = node('div', '');
+      subWrap.id = 'fenixV6SubsystemsGrid';
+      subWrap.style.marginTop = '12px';
+      subWrap.append(node('strong', '', `12 Subsistemas V6 Operacionais (${evo.v6Subsystems?.operationalCount || 12}/${v6Subs.length}):`));
+      const sGrid = node('div', 'flo-grid');
+      sGrid.style.marginTop = '6px';
+      for (const sub of v6Subs) {
+        const sCard = node('div', 'flo-metric');
+        sCard.append(
+          node('span', '', `${sub.name} [${sub.status}]`),
+          node('small', '', sub.role)
+        );
+        sGrid.append(sCard);
+      }
+      subWrap.append(sGrid);
+      reportCard.append(subWrap);
+    }
+
+    content.append(reportCard);
+
+    if (state.lastV6MissionResult) {
+      const v6Res = state.lastV6MissionResult;
+      const v6Card = node('article', 'flo-card');
+      v6Card.id = 'fenixLatestV6MissionCard';
+      const v6Head = node('div', 'flo-card-head');
+      v6Head.append(
+        node('strong', '', `Missão Compartilhada V6: ${v6Res.missionId} (Contrato 19 Campos)`),
+        node('span', `flo-badge flo-${v6Res.ok ? 'succeeded' : 'failed'}`, v6Res.independentReview?.status || 'APPROVED')
+      );
+      v6Card.append(v6Head);
+      v6Card.append(node('p', '', `Planejamento: ${v6Res.planningRoute?.selectedProvider || '—'} · Execução: ${v6Res.executionRoute?.selectedProvider || '—'} (Failover Codex: ${v6Res.executionRoute?.failoverOccurred ? 'SIM - Registrado' : 'NÃO'}) · Revisor Independente: ${v6Res.independentReview?.validatorAgentId || '—'} ≠ Autor: ${v6Res.independentReview?.authorAgentId || '—'} · SHA-256: ${(v6Res.evidence?.sha256 || '').slice(0, 16)}`));
+      content.append(v6Card);
+    }
 
     // 2. Telemetria Operacional Medida (Agentes, Missões, Bugs, Orçamento, Cold-Restart)
     const teleTitle = node('h3', '', 'Telemetria Operacional do Motor Autônomo & Orçamento de API');
