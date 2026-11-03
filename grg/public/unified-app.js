@@ -209,39 +209,76 @@ function updateMiroZoomDisplay() {
 window.fenixMiroZoomIn = function() {
   currentMiroZoom = Math.min(2.5, currentMiroZoom + 0.15);
   updateMiroZoomDisplay();
-  if (window.fenixCity && typeof window.fenixCity.zoomIn === 'function') {
-    window.fenixCity.zoomIn();
-  } else if (window.fenixCity && typeof window.fenixCity.setZoom === 'function') {
-    window.fenixCity.setZoom(currentMiroZoom);
+  const world = window.fenixWorld3D || window.fenixWorldEngine3D || window.fenixCity;
+  if (world && typeof world.zoomIn === 'function') {
+    world.zoomIn();
+  } else if (world && typeof world.setZoom === 'function') {
+    world.setZoom(currentMiroZoom);
   }
 };
 
 window.fenixMiroZoomOut = function() {
   currentMiroZoom = Math.max(0.4, currentMiroZoom - 0.15);
   updateMiroZoomDisplay();
-  if (window.fenixCity && typeof window.fenixCity.zoomOut === 'function') {
-    window.fenixCity.zoomOut();
-  } else if (window.fenixCity && typeof window.fenixCity.setZoom === 'function') {
-    window.fenixCity.setZoom(currentMiroZoom);
+  const world = window.fenixWorld3D || window.fenixWorldEngine3D || window.fenixCity;
+  if (world && typeof world.zoomOut === 'function') {
+    world.zoomOut();
+  } else if (world && typeof world.setZoom === 'function') {
+    world.setZoom(currentMiroZoom);
   }
 };
 
 window.fenixMiroResetZoom = function() {
   currentMiroZoom = 1.0;
   updateMiroZoomDisplay();
-  if (window.fenixCity && typeof window.fenixCity.setZoom === 'function') {
-    window.fenixCity.setZoom(1.0);
+  const world = window.fenixWorld3D || window.fenixWorldEngine3D || window.fenixCity;
+  if (world && typeof world.resetCamera === 'function') {
+    world.resetCamera();
+  } else if (world && typeof world.setZoom === 'function') {
+    world.setZoom(1.0);
+  }
+};
+
+window.fenixResetCamera = function() {
+  const world = window.fenixWorld3D || window.fenixWorldEngine3D || window.fenixCity;
+  if (typeof world?.resetCamera === 'function') {
+    world.resetCamera();
+  } else if (typeof window.fenixMiroResetZoom === 'function') {
+    window.fenixMiroResetZoom();
+  }
+};
+
+window.fenixRotateCamera = function() {
+  const world = window.fenixWorld3D || window.fenixWorldEngine3D || window.fenixCity;
+  if (typeof world?.rotateCamera === 'function') {
+    world.rotateCamera();
+  }
+};
+
+window.fenixFocusOrOpenAgent = function(agentId) {
+  if (!agentId) return;
+  const world = window.fenixWorld3D || window.fenixWorldEngine3D || window.fenixCity;
+  if (world?.focusAgent) {
+    world.focusAgent(agentId);
+  }
+  if (typeof window.fenixOpenAgent === 'function') {
+    window.fenixOpenAgent(agentId);
+  } else if (typeof window.inspectAgentDetail === 'function') {
+    window.inspectAgentDetail(agentId);
   }
 };
 
 window.fenixMiroFitView = function() {
   currentMiroZoom = 1.0;
   updateMiroZoomDisplay();
-  if (typeof window.fenixPanToDistrict === 'function') {
+  const world = window.fenixWorld3D || window.fenixWorldEngine3D || window.fenixCity;
+  if (world?.resetCamera) {
+    world.resetCamera();
+  } else if (typeof window.fenixPanToDistrict === 'function') {
     window.fenixPanToDistrict('ALL');
   }
-  if (window.fenixCity && typeof window.fenixCity.resize === 'function') {
-    window.fenixCity.resize();
+  if (world?.resize) {
+    world.resize();
   }
 };
 
@@ -249,6 +286,23 @@ window.fenixMiroToggleMinimap = function() {
   const minimap = document.getElementById('fenixWorldMinimap');
   if (minimap) {
     minimap.style.display = minimap.style.display === 'none' ? '' : 'none';
+  }
+};
+
+window.fenixToggleFullscreen = function() {
+  const elem = document.getElementById('fenixCityWorldArea') || document.getElementById('view-city') || document.documentElement;
+  if (!document.fullscreenElement) {
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(() => {});
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
   }
 };
 

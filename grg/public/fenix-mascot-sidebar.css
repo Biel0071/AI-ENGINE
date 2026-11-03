@@ -1038,7 +1038,7 @@ body.fenix-chat-window .fsb-header-actions #fsbUndockBtn { transform: rotate(180
    ========================================================================== */
 #fenix-floating-mascot {
   position: fixed;
-  bottom: 38px !important;
+  bottom: 24px;
   right: 18px;
   z-index: 850;
   width: 54px;
@@ -1050,11 +1050,45 @@ body.fenix-chat-window .fsb-header-actions #fsbUndockBtn { transform: rotate(180
   align-items: center;
   justify-content: flex-end;
   animation: fenixMascotFloat 3.2s ease-in-out infinite;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, bottom 0.25s ease, right 0.25s ease;
 }
 
 #fenix-floating-mascot:hover {
   transform: translateY(-3px) scale(1.06);
+}
+
+/* Elevated in City view to clear bottom modular dock + presentation footer */
+body:has(#view-city.active) #fenix-floating-mascot,
+#view-city.active ~ #fenix-floating-mascot,
+body.view-city-active #fenix-floating-mascot {
+  bottom: calc(188px + 84px + 14px) !important;
+  right: 18px !important;
+}
+
+@media (max-width: 820px) {
+  #fenix-floating-mascot {
+    bottom: 20px;
+    right: 12px;
+  }
+  body:has(#view-city.active) #fenix-floating-mascot,
+  #view-city.active ~ #fenix-floating-mascot,
+  body.view-city-active #fenix-floating-mascot {
+    bottom: calc(160px + 84px + 10px) !important;
+    right: 12px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  #fenix-floating-mascot {
+    bottom: 16px;
+    right: 8px;
+  }
+  body:has(#view-city.active) #fenix-floating-mascot,
+  #view-city.active ~ #fenix-floating-mascot,
+  body.view-city-active #fenix-floating-mascot {
+    bottom: calc(140px + 84px + 10px) !important;
+    right: 8px !important;
+  }
 }
 
 #fenix-floating-mascot.hidden {

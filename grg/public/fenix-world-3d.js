@@ -90,11 +90,71 @@
   }
 
   const T = THREE;
+  if (typeof T.CylinderGeometry !== 'function') {
+    T.CylinderGeometry = class CylinderGeometry extends (T.BoxGeometry || class {}) {
+      constructor(radiusTop = 1, radiusBottom = 1, height = 1, radialSegments = 8, ...args) {
+        const d = Math.max(radiusTop, radiusBottom) * 2;
+        super(d, height, d, ...args);
+        this.type = 'CylinderGeometry';
+      }
+    };
+  }
+  if (typeof T.ConeGeometry !== 'function') {
+    T.ConeGeometry = class ConeGeometry extends (T.CylinderGeometry || class {}) {
+      constructor(radius = 1, height = 1, radialSegments = 8, ...args) {
+        super(0, radius, height, radialSegments, ...args);
+        this.type = 'ConeGeometry';
+      }
+    };
+  }
+  if (typeof T.SphereGeometry !== 'function') {
+    T.SphereGeometry = class SphereGeometry extends (T.BoxGeometry || class {}) {
+      constructor(radius = 1, ...args) {
+        super(radius * 2, radius * 2, radius * 2, ...args);
+        this.type = 'SphereGeometry';
+      }
+    };
+  }
+  if (typeof T.TorusGeometry !== 'function') {
+    T.TorusGeometry = class TorusGeometry extends (T.BoxGeometry || class {}) {
+      constructor(radius = 1, tube = 0.4, ...args) {
+        super(radius * 2, tube * 2, radius * 2, ...args);
+        this.type = 'TorusGeometry';
+      }
+    };
+  }
+  if (typeof T.CanvasTexture !== 'function') {
+    T.CanvasTexture = class CanvasTexture {
+      constructor() {
+        this.wrapS = 0;
+        this.wrapT = 0;
+        this.repeat = { set() {} };
+      }
+    };
+  }
+  if (typeof T.PointLight !== 'function') {
+    T.PointLight = class PointLight extends (T.Group || class {}) {
+      constructor(color, intensity, distance, decay) {
+        super();
+        this.position = { set: (x, y, z) => Object.assign(this.position, { x, y, z }) };
+      }
+    };
+  }
+  if (typeof T.MeshBasicMaterial !== 'function') {
+    T.MeshBasicMaterial = class MeshBasicMaterial {
+      constructor(opts) { Object.assign(this, opts); }
+    };
+  }
+  if (typeof T.MeshStandardMaterial !== 'function') {
+    T.MeshStandardMaterial = T.MeshBasicMaterial || class MeshStandardMaterial {
+      constructor(opts) { Object.assign(this, opts); }
+    };
+  }
   const STORAGE_KEY = 'fenix_world_camera_v6';
   const LEGACY_STORAGE_KEY = 'fenix_world_camera_v5';
-  const CITY_DEFAULT_DISTANCE = 118;
+  const CITY_DEFAULT_DISTANCE = 136;
   const CITY_REFERENCE_ASPECT = 16 / 10;
-  const CITY_DEFAULT_FOV = 36;
+  const CITY_DEFAULT_FOV = 38;
   const CITY_MAX_RESPONSIVE_FOV = 55;
   const EXPANSION_CHUNK_SIZE = 160;
   const EXPANSION_MAX_RADIUS = 2;
@@ -130,7 +190,7 @@
 
   // Canonical District Layout
   const DISTRICTS = [
-    { id: 'command-center', name: 'GRG SPACE', sub: 'FÊNIX CORE', color: 0xffb703, x: 0, z: 26, icon: 'ph-fill ph-fire', isHero: true, footprint: { width: 38, depth: 38 } },
+    { id: 'command-center', name: 'GRG SPACE', sub: 'FÊNIX CORE', color: 0xffb703, x: 0, z: 0, icon: 'ph-fill ph-fire', isHero: true, footprint: { width: 38, depth: 38 } },
     { id: 'api-platform', name: 'API PLATFORM', sub: 'Fastify Gateway & Ops', color: 0x00d9ff, x: -52, z: -29, icon: 'ph-bold ph-cube', isHero: true, footprint: { width: 34, depth: 30 } },
     { id: 'logistics', name: 'INDUSTRIAL HUB', sub: 'Logística & WMS', color: 0xf59e0b, x: 52, z: -36, icon: 'ph-bold ph-package', isHero: true, footprint: { width: 48, depth: 44 } },
     { id: 'dev-district', name: 'DEV LOFT', sub: 'Engenharia & Código', color: 0x00d9ff, x: -54, z: 57, icon: 'ph-bold ph-code', footprint: { width: 26, depth: 22 } },
@@ -142,18 +202,16 @@
   const AMBIENT_CITY_LOTS = [
     { id: 'west-garden', x: -77, z: 15, width: 14, depth: 16, floors: 2, wall: 'urbanFacadeTerracotta', roof: 'warehouseRoof' },
     { id: 'west-courtyard', x: -77, z: -7, width: 14, depth: 14, floors: 2, wall: 'urbanFacadeSand', roof: 'brushedTitanium' },
-    { id: 'north-library', x: -28, z: 24, width: 12, depth: 10, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
+    { id: 'north-library', x: 0, z: 31, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
     { id: 'north-center', x: -25, z: 33, width: 12, depth: 12, floors: 2, wall: 'urbanFacadeSand', roof: 'warehouseRoof' },
     { id: 'north-garden', x: 0, z: 43, width: 10, depth: 8, floors: 2, wall: 'urbanFacadeIvory', roof: 'woodSlat' },
-    { id: 'north-east-periphery', x: 84, z: 8, width: 12, depth: 10, floors: 2, wall: 'warehouseWall', roof: 'warehouseRoof' },
-    { id: 'east-logistics-flank', x: 84, z: -25, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
-    { id: 'mid-west-civic', x: -48, z: 28, width: 12, depth: 10, floors: 3, wall: 'urbanFacadeTerracotta', roof: 'warehouseRoof' },
-    { id: 'mid-east-civic', x: 32, z: -2, width: 10, depth: 10, floors: 2, wall: 'urbanFacadeIvory', roof: 'woodSlat' },
+    { id: 'north-east', x: 52, z: 36, width: 14, depth: 12, floors: 2, wall: 'warehouseWall', roof: 'warehouseRoof' },
+    { id: 'east-campus', x: 73, z: 39, width: 16, depth: 14, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
+    { id: 'mid-west-civic', x: -26, z: 6, width: 12, depth: 12, floors: 3, wall: 'urbanFacadeTerracotta', roof: 'warehouseRoof' },
+    { id: 'mid-east-civic', x: 26, z: 12, width: 12, depth: 12, floors: 2, wall: 'urbanFacadeIvory', roof: 'woodSlat' },
     { id: 'west-campus', x: -77, z: -37, width: 14, depth: 14, floors: 2, wall: 'warehouseWall', roof: 'warehouseRoof' },
     { id: 'south-civic', x: 8, z: -39, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeSand', roof: 'brushedTitanium' },
-    { id: 'east-terrace', x: 74, z: -2, width: 14, depth: 14, floors: 2, wall: 'urbanFacadeTerracotta', roof: 'woodSlat' },
-    { id: 'southwest-quantum-park', x: -52, z: -62, width: 12, depth: 10, floors: 1, wall: 'urbanFacadeSand', roof: 'woodSlat' },
-    { id: 'southeast-logistics-bay', x: 84, z: -52, width: 12, depth: 14, floors: 1, wall: 'warehouseWall', roof: 'warehouseRoof' }
+    { id: 'east-terrace', x: 74, z: -2, width: 14, depth: 14, floors: 2, wall: 'urbanFacadeTerracotta', roof: 'woodSlat' }
   ];
 
   const districtOrigin = (id) => DISTRICTS.find((district) => district.id === id) || DISTRICTS[0];
@@ -258,6 +316,9 @@
     }
 
     static create(width, height, drawFn, repeatX = 1, repeatY = 1) {
+      if (typeof document?.createElement !== 'function') {
+        return typeof T.CanvasTexture === 'function' ? new T.CanvasTexture({}) : { wrapS: 0, wrapT: 0, repeat: { set() {} } };
+      }
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
@@ -1663,6 +1724,7 @@
       this._initSurroundingMetropolis();
       this._initDistrictInteractionLabels();
       this._initAmbientCityFabric();
+      this._initProjectBuildings();
       this._initVehicles();
       this._initDataFlowPipelines();
       this.dataPulses.forEach((pulse) => { if (pulse.mesh) pulse.mesh.visible = false; });
@@ -1738,17 +1800,20 @@
     _initObstacleRegistry() {
       if (!this.pathGraph) return;
       const heroObstacles = [
-        { id: 'bld-fenix-hq', minX: -11, maxX: 11, minZ: 15, maxZ: 37, entryPos: { x: 0, y: 0.2, z: 14.5 }, name: 'FÊNIX HQ Tower' },
+        { id: 'bld-fenix-hq', minX: -11, maxX: 11, minZ: 15, maxZ: 37, entryPos: { x: 0, y: 0.2, z: 14.5 }, name: 'GRG SPACE (FÊNIX HQ Tower)' },
         { id: 'bld-deposito-mais', minX: 28, maxX: 74, minZ: -56, maxZ: -16, entryPos: { x: 52, y: 0.2, z: -14 }, name: 'Depósito Mais WMS Hub' },
         { id: 'bld-api-platform', minX: -68, maxX: -36, minZ: -43, maxZ: -15, entryPos: { x: -34, y: 0.2, z: -29 }, name: 'API Platform Complex' },
-        { id: 'bld-dev-loft', minX: -66, maxX: -42, minZ: 47, maxZ: 67, entryPos: { x: -54, y: 0.2, z: 45 }, name: 'Dev Loft Engineering' },
+        { id: 'bld-dev-loft', minX: -66, maxX: -42, minZ: 47, maxZ: 67, entryPos: { x: -54, y: 0.2, z: 45 }, name: 'Dev Studio / Dev Loft Engineering' },
         { id: 'bld-ai-nexus', minX: -34, maxX: -8, minZ: -73, maxZ: -47, entryPos: { x: -21, y: 0.2, z: -45 }, name: 'AI Nexus Quantum Dome' },
         { id: 'bld-project-forge', minX: 14, maxX: 36, minZ: 47, maxZ: 67, entryPos: { x: 25, y: 0.2, z: 45 }, name: 'Project Forge Plant' },
         { id: 'bld-memory-vault', minX: -34, maxX: -14, minZ: 46, maxZ: 68, entryPos: { x: -24, y: 0.2, z: 44 }, name: 'Memory Vault Data Bunker' },
         { id: 'bld-observatory', minX: 40, maxX: 62, minZ: 4, maxZ: 26, entryPos: { x: 38, y: 0.2, z: 15 }, name: 'Observatório 24/7' },
-        { id: 'bld-mf-atacadista', minX: 25, maxX: 33, minZ: 10, maxZ: 18, entryPos: { x: 29, y: 0.2, z: 19 }, name: 'MF Atacadista Centro de Distribuição & Atacado' },
-        { id: 'bld-zapai-crm', minX: 16, maxX: 24, minZ: 10, maxZ: 18, entryPos: { x: 20, y: 0.2, z: 19 }, name: 'ZapAI CRM & Atendimento Omnichannel' },
-        { id: 'bld-fortlev-quote', minX: 18, maxX: 26, minZ: 20, maxZ: 28, entryPos: { x: 22, y: 0.2, z: 29 }, name: 'Fortlev Quote Commerce & Orçamentos B2B' }
+        { id: 'bld-mf-atacadista', minX: -29, maxX: -15, minZ: -21.5, maxZ: -8.5, entryPos: { x: -22, y: 0.2, z: -8 }, name: 'MF Atacadista Centro de Distribuição & Atacado' },
+        { id: 'bld-zapai-crm', minX: -33.5, maxX: -22.5, minZ: -32.5, maxZ: -21.5, entryPos: { x: -28, y: 0.2, z: -21 }, name: 'ZapAI CRM & Atendimento Omnichannel' },
+        { id: 'bld-fortlev-quote', minX: 16, maxX: 28, minZ: -20.5, maxZ: -9.5, entryPos: { x: 22, y: 0.2, z: -9 }, name: 'Fortlev Quote Commerce & Orçamentos B2B' },
+        { id: 'bld-zapflow-crm', minX: -30, maxX: -18, minZ: 9.5, maxZ: 20.5, entryPos: { x: -24, y: 0.2, z: 21 }, name: 'ZapFlow CRM' },
+        { id: 'bld-ius-email-control', minX: -19.5, maxX: -8.5, minZ: 21, maxZ: 33, entryPos: { x: -14, y: 0.2, z: 33.5 }, name: 'IUS Email Control' },
+        { id: 'bld-event-bus-kafka', minX: 15, maxX: 29, minZ: -68, maxZ: -56, entryPos: { x: 22, y: 0.2, z: -55.5 }, name: 'Event Bus Kafka' }
       ];
       for (const obs of heroObstacles) {
         this.registerObstacle(obs.id, obs);
@@ -2378,7 +2443,7 @@
     _computeThoughtBubbleOffsets(agentRecords, radius = 2.8) {
       const cellSize = radius;
       const radiusSquared = radius * radius;
-      const columnOffsets = [0, -0.6, 0.6];
+      const columnOffsets = [0, -2.7, 2.7];
       const grid = new Map();
       const eligible = [];
       const offsets = new Map();
@@ -2435,12 +2500,12 @@
       try { if (typeof localStorage !== 'undefined') stores.push(localStorage); } catch {}
       try { if (typeof sessionStorage !== 'undefined') stores.push(sessionStorage); } catch {}
       for (const storage of stores) {
-        for (const key of [STORAGE_KEY, LEGACY_STORAGE_KEY]) {
+        for (const key of [STORAGE_KEY, LEGACY_STORAGE_KEY, 'fenix_world_camera_v4']) {
           try {
             const stored = storage.getItem(key);
             if (!stored) continue;
             const state = JSON.parse(stored);
-            if (key === LEGACY_STORAGE_KEY && Number(state.distance) === 85) state.distance = CITY_DEFAULT_DISTANCE;
+            if ((key === LEGACY_STORAGE_KEY || key === 'fenix_world_camera_v4') && Number(state.distance) === 85) state.distance = CITY_DEFAULT_DISTANCE;
             if (key === STORAGE_KEY && Number(state.distance) === 92 && Math.abs(Number(state.target?.x || 0)) < 1 && Math.abs(Number(state.target?.z || 0)) < 1) {
               state.distance = CITY_DEFAULT_DISTANCE;
             }
@@ -2610,9 +2675,13 @@
         this.camera.fov = responsiveCameraFov(this.camera.aspect);
         const dockHeight = (this.activeApiFloor !== null && this.activeApiFloor !== undefined) ? 0 : Math.min(48, Math.floor(h * 0.055));
         if (dockHeight > 0) {
-          this.camera.setViewOffset(w, h + dockHeight, 0, dockHeight, w, h);
+          if (typeof this.camera.setViewOffset === 'function') {
+            this.camera.setViewOffset(w, h + dockHeight, 0, dockHeight, w, h);
+          }
         } else {
-          this.camera.clearViewOffset();
+          if (typeof this.camera.clearViewOffset === 'function') {
+            this.camera.clearViewOffset();
+          }
         }
         this.camera.updateProjectionMatrix();
         if (this.cameraState) {
@@ -3034,13 +3103,14 @@
 
       // Ambient Sea Water Ocean Basin (Surrounding the island metropolis as in Image 1)
       const oceanGeo = new T.PlaneGeometry(1600, 1600);
-      const oceanMat = new T.MeshStandardMaterial({
-        color: 0x071e33,
-        roughness: 0.16,
-        metalness: 0.60,
-        transparent: true,
-        opacity: 0.94
-      });
+      const oceanMat = this.materials?.ocean
+        || (typeof T.MeshStandardMaterial === 'function' ? new T.MeshStandardMaterial({
+          color: 0x071e33,
+          roughness: 0.16,
+          metalness: 0.60,
+          transparent: true,
+          opacity: 0.94
+        }) : (typeof T.MeshBasicMaterial === 'function' ? new T.MeshBasicMaterial({ color: 0x071e33 }) : this.materials.sidewalk));
       const oceanMesh = new T.Mesh(oceanGeo, oceanMat);
       oceanMesh.rotation.x = -Math.PI / 2;
       oceanMesh.position.y = -0.22;
@@ -6469,7 +6539,7 @@
       // ── 2. CENTRAL FÊNIX HQ GLASS SKYSCRAPER (x: 0, z: 26) ──
       const hqGroup = new T.Group();
       hqGroup.name = 'District_HQ';
-      placeAtDistrict(hqGroup, 'command-center');
+      hqGroup.position.set(0, 0, 26);
 
       // Paved Plaza with Reflecting Pool
       const plaza = new T.Mesh(new T.BoxGeometry(32, 0.4, 32), this.materials.sidewalk);
@@ -6729,7 +6799,7 @@
 
       this.buildings = this.buildings || new Map();
       const canonicalBuildings = [
-        { id: 'bld-fenix-hq', districtId: 'command-center', name: 'FÊNIX HQ Tower', floors: 7, group: hqGroup, position: districtOrigin('command-center'), status: 'ONLINE' },
+        { id: 'bld-fenix-hq', districtId: 'command-center', name: 'FÊNIX HQ Tower', floors: 7, group: hqGroup, position: { x: 0, y: 0, z: 26 }, status: 'ONLINE' },
         { id: 'bld-api-platform', districtId: 'api-platform', name: 'API Platform Complex', floors: 4, group: this.apiPlatformComplex, position: districtOrigin('api-platform'), status: 'ONLINE' },
         { id: 'bld-deposito-mais', districtId: 'logistics', name: 'Depósito Mais WMS Hub', floors: 2, group: this.warehouseGroup || null, position: districtOrigin('logistics'), status: 'ONLINE' },
         { id: 'bld-ai-nexus', districtId: 'ai-district', name: 'AI Nexus Quantum Dome', floors: 3, group: aiGroup, position: districtOrigin('ai-district'), status: 'ONLINE' },
@@ -6988,6 +7058,64 @@
     _initAmbientCityFabric() {
       const fabric = new T.Group();
       fabric.name = 'AmbientCityFabric';
+      fabric.userData = { type: 'city-scenery', interactive: false };
+
+      AMBIENT_CITY_LOTS.forEach((lot) => {
+        const block = new T.Group();
+        block.name = 'AmbientBlock_' + lot.id;
+        block.position.set(lot.x, 0, lot.z);
+        block.userData = { type: 'scenery', liveEntity: false, selectable: false };
+
+        const floorHeight = 3.1;
+        const height = lot.floors * floorHeight;
+        const plinth = new T.Mesh(
+          new T.BoxGeometry(lot.width + 0.8, 0.42, lot.depth + 0.8),
+          this.materials?.sidewalk
+        );
+        plinth.position.y = 0.21;
+        plinth.receiveShadow = true;
+
+        const body = new T.Mesh(
+          new T.BoxGeometry(lot.width, height, lot.depth),
+          this.materials?.[lot.wall] || this.materials?.sidewalk
+        );
+        body.position.y = height / 2 + 0.42;
+        body.castShadow = true;
+        body.receiveShadow = true;
+
+        const roof = new T.Mesh(
+          new T.BoxGeometry(lot.width + 0.6, 0.42, lot.depth + 0.6),
+          this.materials?.[lot.roof] || this.materials?.sidewalk
+        );
+        roof.position.y = height + 0.63;
+        roof.castShadow = true;
+
+        block.add(plinth, body, roof);
+        for (let floor = 0; floor < lot.floors; floor += 1) {
+          const band = new T.Mesh(
+            new T.BoxGeometry(lot.width - 1.2, 0.72, 0.08),
+            this.materials?.clearGlass || this.materials?.sidewalk
+          );
+          band.position.set(0, 1.9 + floor * floorHeight, lot.depth / 2 + 0.05);
+          block.add(band);
+        }
+
+        const roofUnit = new T.Mesh(
+          new T.BoxGeometry(Math.max(1.6, lot.width * 0.28), 0.8, Math.max(1.6, lot.depth * 0.25)),
+          this.materials?.brushedTitanium || this.materials?.sidewalk
+        );
+        roofUnit.position.set(-lot.width * 0.22, height + 1.22, -lot.depth * 0.18);
+        block.add(roofUnit);
+
+        fabric.add(block);
+      });
+
+      this.scene.add(fabric);
+    }
+
+    _initProjectBuildings() {
+      const fabric = new T.Group();
+      fabric.name = 'ProjectBuildingsFabric';
       fabric.userData = { type: 'city-scenery', interactive: true };
       this.projectBuildings = new Map();
 
@@ -7708,8 +7836,9 @@
         const unit = e.deltaMode === 1 ? 16 : (e.deltaMode === 2 ? rect.height : 1);
         const exponent = Math.max(-0.5, Math.min(0.5, Number(e.deltaY || 0) * unit * 0.0012));
         const currentDistance = Number(this.cameraState.targetDistance) || CITY_DEFAULT_DISTANCE;
-        this.cameraState.targetDistance = Math.max(16, Math.min(165, currentDistance * Math.exp(exponent)));
+        this.cameraState.targetDistance = Math.max(12, Math.min(165, currentDistance * Math.exp(exponent)));
         this._saveState();
+        this._syncZoomDisplay?.();
       }, { passive: false });
 
       window.addEventListener('resize', () => {
@@ -7981,7 +8110,14 @@
           this.cameraState.distance = this.cameraState.targetDistance;
         }
         this.cameraState.target.lerp(this.cameraState.targetLookAt, smoothing);
-        if (this.cameraState.target.distanceTo(this.cameraState.targetLookAt) < 0.005) {
+        const targetDist = typeof this.cameraState.target.distanceTo === 'function'
+          ? this.cameraState.target.distanceTo(this.cameraState.targetLookAt)
+          : Math.hypot(
+              (this.cameraState.target.x || 0) - (this.cameraState.targetLookAt.x || 0),
+              (this.cameraState.target.y || 0) - (this.cameraState.targetLookAt.y || 0),
+              (this.cameraState.target.z || 0) - (this.cameraState.targetLookAt.z || 0)
+            );
+        if (targetDist < 0.005) {
           this.cameraState.target.copy(this.cameraState.targetLookAt);
         }
         if (this.cameraState.targetAzimuth !== null) {
@@ -8206,6 +8342,16 @@
       return this.focusDistrict(id) || Boolean(this.focusBuilding(id));
     }
 
+    _syncZoomDisplay() {
+      try {
+        const base = CITY_DEFAULT_DISTANCE * responsiveCameraScale(this.camera?.aspect);
+        const dist = Number(this.cameraState?.targetDistance) || base;
+        const pct = Math.round((base / dist) * 100);
+        const badge = document.getElementById('fenixMiroZoomLevel');
+        if (badge) badge.textContent = `${pct}%`;
+      } catch (_) {}
+    }
+
     setZoom(zoomFactor) {
       const zoom = Number(zoomFactor);
       if (!Number.isFinite(zoom) || zoom <= 0) return false;
@@ -8214,6 +8360,7 @@
         this._updateCameraPosition(true);
       }
       this._saveState();
+      this._syncZoomDisplay();
       return true;
     }
 
@@ -8226,6 +8373,7 @@
         this._updateCameraPosition(true);
       }
       this._saveState();
+      this._syncZoomDisplay();
       return true;
     }
 
@@ -8268,6 +8416,7 @@
       this.cameraState.targetDistance = resetDistance;
       this.cameraState.targetAzimuth = null;
       this.cameraState.targetElevation = null;
+      this._syncZoomDisplay();
       if (this.state) {
         this.state.selected = null;
         this.state.level = 'world';

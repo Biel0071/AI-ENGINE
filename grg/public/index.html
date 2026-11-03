@@ -270,14 +270,14 @@
   <script defer src="/vendor/three.min.js?v=1522"></script>
   <script defer src="/fenix-city-machine-scene.js?v=3-city-traffic-route-20261013"></script>
     <script defer src="/city-agent-visual-profile.js?v=20261021-custom-avatar-bodytype-3"></script>
-  <script defer src="/fenix-world-3d.js?v=20261103-v72-living-world-steam-blueprint-atmo"></script>
+  <script defer src="/fenix-world-3d.js?v=20261103-v73-world-ui-reconstruction"></script>
   <script defer src="/office-live.js?v=7-agent-idle-presence-20261021"></script>
   <script defer src="/selection-store.js?v=1"></script>
 
   <link rel="stylesheet" href="/city-return.css?v=1">
   <link rel="stylesheet" href="/runtime-health-badge.css?v=1">
   <link rel="stylesheet" href="/fenix-bai-browser.css?v=20261027-1">
-  <link rel="stylesheet" href="/unified.css?v=fenix4">
+  <link rel="stylesheet" href="/unified.css?v=v73-world-ui-20261103">
   <link rel="stylesheet" href="/fenix-ide-v2.css?v=fenix3">
   <link rel="stylesheet" href="/command-center.css?v=fenix3">
   <link rel="stylesheet" href="/fenix-premium-layout.css?v=fenix5">
@@ -287,9 +287,9 @@
   <link rel="stylesheet" href="/fenix-flow-graph.css?v=3-project-canvas-drag-20261022">
   <link rel="stylesheet" href="/fenix-v11-evolution.css?v=8">
     <link rel="stylesheet" href="/fenix-v11-phase6.css?v=11">
-  <link rel="stylesheet" href="/fenix-mascot-sidebar.css?v=chat-window-resize-20261021-1">
+  <link rel="stylesheet" href="/fenix-mascot-sidebar.css?v=v73-world-ui-20261103">
     <link rel="stylesheet" href="/unreal-world.css?v=17">
-    <link rel="stylesheet" href="/city-reality.css?v=canonical-20261013">
+    <link rel="stylesheet" href="/city-reality.css?v=v73-world-ui-20261103">
     <link rel="stylesheet" href="/fenix-master-world-ds.css?v=ds1.0">
     <link rel="stylesheet" href="/city-media-library.css?v=20261021-city-hig-layout-1">
     <link rel="stylesheet" href="/project-ide-live.css?v=2">
@@ -298,7 +298,7 @@
     <link rel="stylesheet" href="/operations-live.css?v=5-jobengine-persisted-20261009">
     <link rel="stylesheet" href="/city-brief.css?v=2">
     <link rel="stylesheet" href="/premium-world.css?v=2">
-    <link rel="stylesheet" href="/fenix-world-3d.css?v=8-city-inspector-hig-copy">
+    <link rel="stylesheet" href="/fenix-world-3d.css?v=v73-world-ui-20261103">
     <link rel="stylesheet" href="/memory-live.css?v=7-memory-brain-webgl-overlay">
     <link rel="stylesheet" href="/inspector-measured.css?v=1">
     <link rel="stylesheet" href="/office.css?v=2">
@@ -2540,14 +2540,19 @@
           </div>
 
           <div class="fenix-city-canvas-area" id="fenixCityWorldArea" style="position:relative; flex:1; width:100%; height:100%; overflow:hidden; background:#050810;">
-            <!-- Miro-Style Spatial Canvas HUD (Zoom, Fit, Mode) -->
-            <div class="fenix-miro-spatial-hud" id="fenixMiroSpatialHud" role="toolbar" aria-label="Controles Miro de Câmera Espacial">
-              <button type="button" class="fenix-miro-hud-btn" id="btnMiroZoomOut" onclick="window.fenixMiroZoomOut()" title="Afastar Zoom (-)"><i class="ph-bold ph-minus"></i></button>
-              <span class="fenix-miro-zoom-badge" id="fenixMiroZoomLevel" onclick="window.fenixMiroResetZoom()" title="Resetar Zoom (100%)">100%</span>
-              <button type="button" class="fenix-miro-hud-btn" id="btnMiroZoomIn" onclick="window.fenixMiroZoomIn()" title="Aproximar Zoom (+)"><i class="ph-bold ph-plus"></i></button>
+            <!-- Exclusive Map Controls Cluster (Zoom, Fullscreen, Reset/Rotate Camera, 2D/3D Toggle, Day/Night) -->
+            <div class="fenix-miro-spatial-hud" id="fenixMiroSpatialHud" role="toolbar" aria-label="Controles Exclusivos de Câmera Espacial">
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroZoomOut" onclick="window.fenixMiroZoomOut()" title="Afastar Zoom (-)" aria-label="Afastar Zoom"><i class="ph-bold ph-minus"></i></button>
+              <span class="fenix-miro-zoom-badge" id="fenixMiroZoomLevel" onclick="window.fenixMiroResetZoom()" title="Resetar Zoom (100%)" aria-label="Nível de Zoom">100%</span>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroZoomIn" onclick="window.fenixMiroZoomIn()" title="Aproximar Zoom (+)" aria-label="Aproximar Zoom"><i class="ph-bold ph-plus"></i></button>
               <div class="fenix-miro-hud-divider"></div>
-              <button type="button" class="fenix-miro-hud-btn" id="btnMiroFitView" onclick="window.fenixMiroFitView()" title="Enquadrar Visão (Fit)"><i class="ph-bold ph-corners-out"></i></button>
-              <button type="button" class="fenix-miro-hud-btn" id="btnMiroToggleMinimap" onclick="window.fenixMiroToggleMinimap()" title="Alternar Minimapa"><i class="ph-bold ph-map-trifold"></i></button>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroResetCamera" onclick="window.fenixResetCamera ? window.fenixResetCamera() : (window.fenixCity?.resetCamera?.() || window.fenixMiroResetZoom?.())" title="Resetar Câmera / Orientação" aria-label="Resetar Câmera"><i class="ph-bold ph-compass"></i></button>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroRotateCamera" onclick="window.fenixRotateCamera ? window.fenixRotateCamera() : window.fenixCity?.rotateCamera?.()" title="Girar Câmera (90°)" aria-label="Girar Câmera"><i class="ph-bold ph-arrow-clockwise"></i></button>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroToggle2D3D" onclick="window.fenixToggle2D3DMap?.()" title="Alternar Perspectiva 2D / 3D" aria-label="Alternar Perspectiva 2D e 3D"><i class="ph-bold ph-cube"></i></button>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroToggleDayNight" onclick="window.fenixToggleDayNight?.()" title="Alternar Dia / Noite" aria-label="Alternar Dia e Noite"><i class="ph-bold ph-sun-dim"></i></button>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroFullscreen" onclick="window.fenixToggleFullscreen?.()" title="Tela Cheia" aria-label="Tela Cheia"><i class="ph-bold ph-corners-out"></i></button>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroFitView" onclick="window.fenixMiroFitView?.()" title="Enquadrar Visão (Fit)" aria-label="Enquadrar Visão"><i class="ph-bold ph-arrows-out-cardinal"></i></button>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroToggleMinimap" onclick="window.fenixMiroToggleMinimap?.()" title="Alternar Minimapa" aria-label="Alternar Minimapa"><i class="ph-bold ph-map-trifold"></i></button>
             </div>
 
             <!-- Miro-Style Contextual Action Pill (Quick actions on selected Agent/Building) -->
@@ -2668,14 +2673,14 @@
               <section class="fenix-city-minimap dock-card-v26 dock-map-card" id="fenixWorldMinimap" aria-label="Mapa operacional ao vivo">
                 <div class="fenix-city-minimap-header dock-card-header">
                   <div class="dock-card-title"><i class="ph-bold ph-map-trifold" style="color:#00D9FF;"></i> MAPA OPERACIONAL</div>
-                  <small id="fenixMinimapStatus" class="dock-card-tag">44 ONLINE · 10 SETORES</small>
+                  <small id="fenixMinimapStatus" class="dock-card-tag" data-state="unknown">— ONLINE · 10 SETORES</small>
                 </div>
                 <div class="fenix-city-minimap-stage dock-map-stage-wrapper">
                   <canvas id="fenixMinimap" width="300" height="140" aria-label="Mapa esquemático dos distritos, edifícios e agentes em posições reais"></canvas>
                   <div class="fenix-city-minimap-controls" aria-label="Controles de aproximação e modo">
                     <button type="button" class="fnx-btn-2d3d" id="btnMinimap2D3D" onclick="window.fenixToggle2D3DMap?.()" title="Alternar Mapa 2D / 3D">3D</button>
-                    <button type="button" onclick="window.fenixCity?.zoomIn?.()" title="Aproximar">+</button>
-                    <button type="button" onclick="window.fenixCity?.zoomOut?.()" title="Afastar">−</button>
+                    <button type="button" onclick="window.fenixMiroZoomIn?.() || window.fenixCity?.zoomIn?.()" title="Aproximar">+</button>
+                    <button type="button" onclick="window.fenixMiroZoomOut?.() || window.fenixCity?.zoomOut?.()" title="Afastar">−</button>
                   </div>
                 </div>
               </section>
@@ -2687,30 +2692,7 @@
                   <a href="javascript:void(0)" class="dock-header-link" onclick="window.fenixToggleAgentsPopup ? window.fenixToggleAgentsPopup() : window.showView?.('agents')">Ver todos &gt;</a>
                 </div>
                 <div class="dock-card-content dock-featured-agents-grid" id="dockCardAgentsList">
-                  <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-ana')" title="Focar agente Ana">
-                    <div class="dock-featured-agent-avatar"><img src="/assets/agent-data.png" alt="Ana" onerror="this.src='/assets/agents/ana_avatar.png'" /></div>
-                    <div class="dock-featured-agent-name">Ana</div>
-                    <div class="dock-featured-agent-role">Analista de Dados</div>
-                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Disponível</span></div>
-                  </div>
-                  <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-ryo')" title="Focar agente Ryo">
-                    <div class="dock-featured-agent-avatar"><img src="/assets/agent-developer.png" alt="Ryo" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
-                    <div class="dock-featured-agent-name">Ryo</div>
-                    <div class="dock-featured-agent-role">Desenvolvedor</div>
-                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Disponível</span></div>
-                  </div>
-                  <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-luna')" title="Focar agente Luna">
-                    <div class="dock-featured-agent-avatar"><img src="/assets/agent-product.png" alt="Luna" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
-                    <div class="dock-featured-agent-name">Luna</div>
-                    <div class="dock-featured-agent-role">Gestora de Projetos</div>
-                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Disponível</span></div>
-                  </div>
-                  <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-max')" title="Focar agente Max">
-                    <div class="dock-featured-agent-avatar"><img src="/assets/agent-devops.png" alt="Max" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
-                    <div class="dock-featured-agent-name">Max</div>
-                    <div class="dock-featured-agent-role">Especialista DevOps</div>
-                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Disponível</span></div>
-                  </div>
+                  <div class="dock-agent-placeholder" style="grid-column:1 / -1; display:flex; align-items:center; justify-content:center; color:#64748B; font-size:11px; padding:12px; height:100%; text-align:center;">Sincronizando agentes reais do runtime…</div>
                 </div>
               </div>
 
@@ -5730,6 +5712,7 @@ window.__fenixSubmitIdeChat = async function () {
 
     window.updateBreadcrumbs(viewId);
     window.__fenixState.currentRoute = viewId;
+    document.body.classList.toggle('view-city-active', viewId === 'city');
     if (cameFromCity) sessionStorage.setItem('fenix_city_return_available', 'true');
     else if (viewId === 'city') sessionStorage.removeItem('fenix_city_return_available');
     window.fenixUpdateCityReturn?.(viewId, cameFromCity);
@@ -6339,7 +6322,154 @@ window.__fenixSubmitIdeChat = async function () {
       window.fenixPanToDistrict = (dist) => window.fenixCity?.panToDistrict(dist);
       window.refreshCityState = () => window.fenixCity?.syncRealData();
     }
+
+    // City Runtime Connection State Management
+    window.__fenixCityConnectionState = window.__fenixCityConnectionState || 'UNKNOWN';
+    window.__fenixCityRetryCount = window.__fenixCityRetryCount || 0;
+    window.__fenixCityRetryTimer = window.__fenixCityRetryTimer || null;
+
+    function setCityConnectionState(newState, detail = {}) {
+      const prevState = window.__fenixCityConnectionState;
+      window.__fenixCityConnectionState = newState;
+      const statusTag = document.getElementById('fenixMinimapStatus');
+      const loadStatus = document.getElementById('cityRuntimeLoadStatus');
+      const isNavigable = Boolean(window.fenixWorld3D || window.fenixWorldEngine3D || window.fenixCity || window.isoCityInstance);
+      if (loadStatus) {
+        loadStatus.hidden = isNavigable;
+      }
+      if (statusTag) {
+        if (newState === 'CONNECTED') {
+          const count = detail.agentCount !== undefined ? detail.agentCount : '—';
+          statusTag.textContent = `${count} ONLINE · 10 SETORES`;
+          statusTag.dataset.state = 'ready';
+        } else if (newState === 'CONNECTING') {
+          statusTag.textContent = 'CONECTANDO…';
+          statusTag.dataset.state = 'syncing';
+        } else if (newState === 'DEGRADED') {
+          statusTag.textContent = 'DEGRADADO (OFFLINE)';
+          statusTag.dataset.state = 'degraded';
+        } else if (newState === 'STALE') {
+          statusTag.textContent = 'CACHE (STALE)';
+          statusTag.dataset.state = 'stale';
+        } else if (newState === 'DISCONNECTED') {
+          statusTag.textContent = 'DESCONECTADO';
+          statusTag.dataset.state = 'disconnected';
+        } else {
+          statusTag.textContent = 'ESTADO: ' + newState;
+          statusTag.dataset.state = 'unknown';
+        }
+      }
+      document.dispatchEvent(new CustomEvent('fenix:city-connection-state', {
+        detail: { state: newState, prevState, ...detail }
+      }));
+    }
+
+    function scheduleCityReconnect() {
+      if (window.__fenixCityRetryTimer) clearTimeout(window.__fenixCityRetryTimer);
+      const attempt = ++window.__fenixCityRetryCount;
+      const delay = Math.min(30000, Math.pow(2, Math.min(attempt, 5)) * 1000 + Math.floor(Math.random() * 500));
+      window.__fenixCityRetryTimer = setTimeout(() => {
+        window.__fenixCityRetryTimer = null;
+        if (document.getElementById('view-city')?.classList.contains('active')) {
+          window.loadCityView({ force: true, isRetry: true }).catch(() => {});
+        }
+      }, delay);
+    }
+
+    function renderDockFeaturedAgents(agents, isOffline = false) {
+      const container = document.getElementById('dockCardAgentsList');
+      if (!container) return;
+      if (!Array.isArray(agents) || agents.length === 0) {
+        container.innerHTML = `<div class="dock-agent-placeholder" style="grid-column:1 / -1; display:flex; align-items:center; justify-content:center; color:#64748B; font-size:11px; padding:12px; height:100%; text-align:center;">${isOffline ? 'Agentes indisponíveis · Runtime desconectado' : 'Nenhum agente publicado pelo runtime.'}</div>`;
+        return;
+      }
+      const fallbackAvatars = ['/assets/agent-data.png', '/assets/agent-developer.png', '/assets/agent-product.png', '/assets/agent-devops.png'];
+      const displayAgents = agents.slice(0, 4);
+      const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+      container.innerHTML = displayAgents.map((ag, idx) => {
+        const agId = ag.id || ag.agentId || `agent-${idx}`;
+        const agName = ag.name || agId;
+        const roleStr = ag.role || ag.specialty || ag.domain || 'Especialista Fênix';
+        const avatarSrc = ag.avatar || fallbackAvatars[idx % fallbackAvatars.length];
+
+        let statusClass = 'status-deslocamento';
+        let statusText = 'Disponível';
+        if (isOffline) {
+          statusClass = 'status-offline';
+          statusText = 'Offline';
+        } else {
+          const rawState = String(ag.status || ag.state || '').toUpperCase();
+          if (/WORKING|BUSY|EXECUTING|RUNNING/.test(rawState) || ag.currentJobId || ag.currentTask) {
+            statusClass = 'status-executando';
+            statusText = 'Ocupado';
+          } else if (/APPROVAL|WAITING|PENDING|TE_NECESITAN/.test(rawState)) {
+            statusClass = 'status-reuniao';
+            statusText = 'Aguardando Aprovação';
+          } else if (/OFFLINE|DISCONNECTED/.test(rawState)) {
+            statusClass = 'status-offline';
+            statusText = 'Offline';
+          } else {
+            statusClass = 'status-deslocamento';
+            statusText = 'Disponível';
+          }
+        }
+
+        return `
+          <div class="dock-featured-agent-card" onclick="window.fenixFocusOrOpenAgent ? window.fenixFocusOrOpenAgent('${escapeHtml(agId)}') : (window.fenixCity?.focusAgent?.('${escapeHtml(agId)}') || window.fenixOpenAgent?.('${escapeHtml(agId)}'))" title="Focar ${escapeHtml(agName)} (${escapeHtml(roleStr)}) — ${statusText}">
+            <div class="dock-featured-agent-avatar"><img src="${escapeHtml(avatarSrc)}" alt="${escapeHtml(agName)}" onerror="this.src='/assets/agent-developer.png'" /></div>
+            <div class="dock-featured-agent-name">${escapeHtml(agName)}</div>
+            <div class="dock-featured-agent-role">${escapeHtml(roleStr)}</div>
+            <div class="dock-featured-agent-status ${statusClass}"><span class="status-dot"></span><span>${statusText}</span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDockEvents(events, isOffline = false) {
+      const container = document.getElementById('dockCardMissionsList');
+      if (!container) return;
+      if (!Array.isArray(events) || events.length === 0) {
+        container.innerHTML = `<div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot ${isOffline ? 'dot-orange' : 'dot-green'}"></span><span class="dock-event-desc">${isOffline ? 'Eventos indisponíveis · Runtime desconectado' : 'Aguardando eventos operacionais do runtime…'}</span></div>`;
+        return;
+      }
+      const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const displayEvents = events.slice(0, 5);
+
+      container.innerHTML = displayEvents.map(ev => {
+        const eventTime = ev.occurredAt || ev.timestamp || ev.createdAt;
+        const parsedTime = eventTime ? new Date(eventTime) : null;
+        const time = parsedTime && !Number.isNaN(parsedTime.getTime())
+          ? parsedTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          : '—';
+        const type = escapeHtml(ev.type || ev.category || 'EVENT');
+        const origin = escapeHtml(ev.data?.origin || ev.data?.componentId || ev.subject || ev.source || 'runtime');
+        let desc = ev.description || ev.message || ev.data?.message || ev.data?.description || '';
+        if (!desc) desc = `Operação ${type} registrada pelo subsistema ${origin}`;
+        desc = escapeHtml(desc);
+
+        let dotClass = 'dot-blue';
+        const tUpper = String(type).toUpperCase();
+        if (/ERROR|FAIL|EXCEPTION/.test(tUpper)) dotClass = 'dot-orange';
+        else if (/MISSION|TASK/.test(tUpper)) dotClass = 'dot-purple';
+        else if (/AGENT|AVATAR/.test(tUpper)) dotClass = 'dot-cyan';
+        else if (/SUCCESS|READY|ONLINE|CONNECT/.test(tUpper)) dotClass = 'dot-green';
+
+        return `
+          <div class="dock-event-item" title="${type} [${origin}] — ${desc}">
+            <span class="dock-event-time">${time}</span>
+            <span class="dock-event-dot ${dotClass}"></span>
+            <span class="dock-event-type" style="color:#00d9ff; font-weight:600; font-size:10px; margin-right:4px;">${type}</span>
+            <span class="dock-event-desc" style="color:#94a3b8; font-size:10px;">[${origin}] ${desc}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    window.renderDockFeaturedAgents = renderDockFeaturedAgents;
+    window.renderDockEvents = renderDockEvents;
+
     try {
+      setCityConnectionState('CONNECTING');
       const fetchFn = window.fenixAuthedFetch || window.fenixFetch || fetch;
       const requestJSON = async (url) => {
         let response = await fetchFn(url, { credentials: 'same-origin' });
@@ -6398,6 +6528,27 @@ window.__fenixSubmitIdeChat = async function () {
         elMissions.textContent = '🎯 ' + missionsCount + ' MISSÕES';
       }
 
+      // Populate dock Region B with real live agents
+      renderDockFeaturedAgents(agents, false);
+
+      // Populate dock Region C with real live events
+      try {
+        const eventsRes = await requestJSON('/api/v2/events/history?limit=15').catch(() => null);
+        const eventsList = Array.isArray(eventsRes?.events) ? eventsRes.events : (Array.isArray(livingState.events) ? livingState.events : []);
+        window.__fenixCityEventsCache = eventsList;
+        renderDockEvents(eventsList, false);
+      } catch (_) {
+        renderDockEvents(window.__fenixCityEventsCache || [], false);
+      }
+
+      window.__fenixCityRetryCount = 0;
+      if (window.__fenixCityRetryTimer) {
+        clearTimeout(window.__fenixCityRetryTimer);
+        window.__fenixCityRetryTimer = null;
+      }
+      setCityConnectionState('CONNECTED', { agentCount: registeredCount });
+      window.__fenixCitySnapshotCache = { livingState, agentsRes, timestamp: Date.now() };
+
       const activeWorld3D = window.fenixWorld3D || window.fenixWorldEngine3D || world3D;
       if (!usedSharedSnapshot && activeWorld3D?.syncRealData) {
         const snapshot = Array.isArray(livingState.agents) ? livingState : agentsRes;
@@ -6412,17 +6563,29 @@ window.__fenixSubmitIdeChat = async function () {
       }
       window.__fenixCityLastLoadAt = Date.now();
     } catch(err) {
-      const loadStatus = document.getElementById('cityRuntimeLoadStatus');
-      const loadMessage = document.getElementById('cityRuntimeLoadMessage');
-      if (loadMessage) {
-        loadMessage.textContent = err?.status === 401 || err?.status === 403
-          ? 'Sessão expirada ou sem acesso. Entre novamente e tente carregar a Cidade.'
-          : err?.status
-            ? 'Runtime da Cidade indisponível (HTTP ' + err.status + '). Tente novamente.'
-            : 'Não foi possível conectar ao runtime da Cidade. Tente novamente.';
+      console.warn('[CityRuntimeRecovery] Runtime offline, maintaining navigable city:', err?.message || err);
+      const cached = window.__fenixCitySnapshotCache;
+      if (cached?.agentsRes?.agents?.length > 0) {
+        setCityConnectionState('STALE', { error: err?.message, agentCount: cached.agentsRes.agents.length });
+        const activeWorld3D = window.fenixWorld3D || window.fenixWorldEngine3D;
+        if (activeWorld3D?.syncRealData) {
+          activeWorld3D.syncRealData(new CustomEvent('fenix:city-world', { detail: cached.agentsRes })).catch(() => {});
+        }
+        renderDockFeaturedAgents(cached.agentsRes.agents, true);
+        renderDockEvents(window.__fenixCityEventsCache || [], true);
+      } else {
+        setCityConnectionState('DISCONNECTED', { error: err?.message });
+        renderDockFeaturedAgents([], true);
+        renderDockEvents([], true);
       }
-      if (loadStatus) loadStatus.hidden = Boolean(window.isoCityInstance?.world?.agents?.size > 0);
-      console.warn('loadCityView error:', err);
+
+      const activeWorld3D = window.fenixWorld3D || window.fenixWorldEngine3D;
+      if (activeWorld3D?.resize) {
+        activeWorld3D.resize();
+      } else if (window.fenixCity?.resize) {
+        window.fenixCity.resize();
+      }
+      scheduleCityReconnect();
     } finally {
       window.__fenixCityLoading = false;
     }
