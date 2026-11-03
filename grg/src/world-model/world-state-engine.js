@@ -242,7 +242,7 @@ const CANONICAL_BUILDINGS_DATA = {
       { id: 'floor-2', level: 2, name: 'Floor 2 (SRE, Security Vault, 42U Server Core)', description: 'SRE, Security Vault & Server Core' },
       { id: 'floor-3', level: 3, name: 'Floor 3 (Cognitive AI Core, Research Lab)', description: 'Cognitive AI Core & Research Lab' }
     ],
-    coordinates: { x: -18.0, y: 0, z: 2.0 },
+    coordinates: { x: -52.0, y: 0, z: -29.0 },
     color: '#0284c7'
   },
   'bld-deposito-mais': {
@@ -252,7 +252,7 @@ const CANONICAL_BUILDINGS_DATA = {
     companyId: 'deposito-mais',
     district: 'logistics',
     floors: 2,
-    coordinates: { x: 26.0, y: 0, z: -10.0 },
+    coordinates: { x: 52.0, y: 0, z: -36.0 },
     color: '#f59e0b'
   },
   'bld-fenix-hq': {

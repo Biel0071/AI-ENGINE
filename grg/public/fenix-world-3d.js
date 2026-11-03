@@ -142,7 +142,7 @@
   const AMBIENT_CITY_LOTS = [
     { id: 'west-garden', x: -77, z: 15, width: 14, depth: 16, floors: 2, wall: 'urbanFacadeTerracotta', roof: 'warehouseRoof' },
     { id: 'west-courtyard', x: -77, z: -7, width: 14, depth: 14, floors: 2, wall: 'urbanFacadeSand', roof: 'brushedTitanium' },
-    { id: 'north-library', x: -28, z: 42, width: 14, depth: 12, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
+    { id: 'north-library', x: -28, z: 24, width: 12, depth: 10, floors: 3, wall: 'urbanFacadeGlass', roof: 'brushedTitanium' },
     { id: 'north-center', x: -25, z: 33, width: 12, depth: 12, floors: 2, wall: 'urbanFacadeSand', roof: 'warehouseRoof' },
     { id: 'north-garden', x: 0, z: 43, width: 10, depth: 8, floors: 2, wall: 'urbanFacadeIvory', roof: 'woodSlat' },
     { id: 'north-east-periphery', x: 84, z: 8, width: 12, depth: 10, floors: 2, wall: 'warehouseWall', roof: 'warehouseRoof' },
@@ -873,6 +873,160 @@
         ctx.fillText('• Zero-Trust Token Auth (Victor)', 16, 85);
         ctx.fillText('• 100% Non-Blocking Async IO', 16, 100);
         ctx.fillText('• P99 SLA < 5ms Guaranteed', 16, 115);
+      });
+    }
+
+    // High-Tech Cyber Infographics Dashboard (Image 4 Wall Display Reference)
+    static createCyberInfographicTexture() {
+      return this.create(512, 256, (ctx, w, h) => {
+        // Deep obsidian navy background
+        ctx.fillStyle = '#0b1329';
+        ctx.fillRect(0, 0, w, h);
+
+        // Header bar with status badge
+        ctx.fillStyle = '#0f1d3a';
+        ctx.fillRect(0, 0, w, 28);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText('SYS·AI ENGINE · NEURAL TOPOLOGY & METRICS', 14, 18);
+        ctx.fillStyle = '#22c55e';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText('● 100% OPERATIONAL', w - 140, 18);
+
+        // Left Panel: Multi-Bar Metric Graph (Orange & Cyan)
+        ctx.fillStyle = '#0e172e';
+        ctx.fillRect(12, 36, 230, 208);
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(12, 36, 230, 208);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px monospace';
+        ctx.fillText('CORE THROUGHPUT (T/s)', 22, 54);
+
+        const bars = [42, 65, 88, 72, 95, 110, 84, 125, 140, 118, 155, 170];
+        const barW = 14;
+        bars.forEach((bVal, bi) => {
+          const bx = 22 + bi * 18;
+          const bh = (bVal / 180) * 130;
+          const by = 210 - bh;
+          ctx.fillStyle = bi % 2 === 0 ? '#f97316' : '#38bdf8';
+          ctx.fillRect(bx, by, barW, bh);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(bx, by, barW, 2);
+        });
+
+        // Right Panel Top: Connected Multi-Agent DAG nodes
+        ctx.fillStyle = '#0e172e';
+        ctx.fillRect(254, 36, 246, 100);
+        ctx.strokeRect(254, 36, 246, 100);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px monospace';
+        ctx.fillText('ACTIVE AGENT ORCHESTRATION', 264, 52);
+
+        const nodes = [
+          { label: 'PLANNER', x: 270, y: 70, col: '#38bdf8' },
+          { label: 'CODER', x: 345, y: 70, col: '#f59e0b' },
+          { label: 'VERIFIER', x: 420, y: 70, col: '#22c55e' }
+        ];
+        // Connect lines
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(315, 80); ctx.lineTo(345, 80);
+        ctx.moveTo(395, 80); ctx.lineTo(420, 80);
+        ctx.stroke();
+
+        nodes.forEach(n => {
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(n.x, n.y, 50, 22);
+          ctx.strokeStyle = n.col;
+          ctx.strokeRect(n.x, n.y, 50, 22);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 8px monospace';
+          ctx.fillText(n.label, n.x + 6, n.y + 14);
+        });
+
+        // Right Panel Bottom: Live Sparkline trend
+        ctx.fillStyle = '#0e172e';
+        ctx.fillRect(254, 144, 246, 100);
+        ctx.strokeRect(254, 144, 246, 100);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px monospace';
+        ctx.fillText('LATENCY P99: 3.8ms · MEM 512MB', 264, 160);
+
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const trend = [30, 45, 38, 52, 48, 60, 55, 75, 68, 85, 80, 95];
+        trend.forEach((v, vi) => {
+          const tx = 264 + vi * 18;
+          const ty = 230 - (v / 100) * 55;
+          if (vi === 0) ctx.moveTo(tx, ty);
+          else ctx.lineTo(tx, ty);
+        });
+        ctx.stroke();
+      });
+    }
+
+    // Glowing Neon Cyber Circuit Grid for Portal Pad (Image 1 & 4 Reference)
+    static createCyberCircuitTexture() {
+      return this.create(256, 256, (ctx, w, h) => {
+        // Deep obsidian floor
+        ctx.fillStyle = '#090e1a';
+        ctx.fillRect(0, 0, w, h);
+
+        // Grid lines in subtle cyan
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+        ctx.lineWidth = 1;
+        const step = 32;
+        for (let x = 0; x <= w; x += step) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = 0; y <= h; y += step) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        // Concentric illuminated circuit rings in center
+        ctx.strokeStyle = '#00f5ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, 48, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, 80, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Terminal solder pads / glowing dots
+        ctx.fillStyle = '#00f5ff';
+        for (let x = step; x < w; x += step) {
+          for (let y = step; y < h; y += step) {
+            ctx.beginPath();
+            ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // Outer border highlight
+        ctx.strokeStyle = '#00f5ff';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(4, 4, w - 8, h - 8);
+      });
+    }
+
+    // Striped Awning / Canopy Fabric (Image 3, 5, 7 Sidewalk Cafe Reference)
+    static createCafeCanopyTexture(color1 = '#f43f5e', color2 = '#ffffff') {
+      return this.create(128, 128, (ctx, w, h) => {
+        ctx.fillStyle = color2;
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = color1;
+        const stripeW = 16;
+        for (let x = 0; x < w; x += stripeW * 2) {
+          ctx.fillRect(x, 0, stripeW, h);
+        }
       });
     }
   }
@@ -1854,6 +2008,14 @@
         if (payload.id === 'bld-fenix-hq' && x === 0 && z === 0) {
           z = 26;
         }
+        if ((payload.id === 'bld-api-platform' || payload.id === 'api-platform') && (x === -18 || (Math.abs(x - (-18)) < 1 && Math.abs(z - 2) < 1))) {
+          x = -52;
+          z = -29;
+        }
+        if ((payload.id === 'bld-deposito-mais' || payload.id === 'deposito-mais' || payload.id === 'logistics') && (x === 26 && z === -10)) {
+          x = 52;
+          z = -36;
+        }
         building.position = { x, y, z };
         if (building.group?.position?.set) building.group.position.set(x, y, z);
         if (payload.name) building.name = payload.name;
@@ -2558,6 +2720,10 @@
       const woodSlatTex = TextureFactory.createWoodSlatTexture();
       const serverBladeTex = TextureFactory.createServerRackFasciaTexture();
       const whiteboardTex = TextureFactory.createWhiteboardTexture();
+      const cyberInfographicTex = TextureFactory.createCyberInfographicTexture();
+      const cyberCircuitTex = TextureFactory.createCyberCircuitTexture();
+      const cafeCanopyTex = TextureFactory.createCafeCanopyTexture('#f43f5e', '#ffffff');
+      const yellowCanopyTex = TextureFactory.createCafeCanopyTexture('#f59e0b', '#fef08a');
 
       
       // CityRT Signature Hand-Drawn Watercolor Facades
@@ -2689,7 +2855,19 @@
         opticalConduitGlass: new T.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.08, metalness: 0.3, transparent: true, opacity: 0.38 }),
         tokenPacketCyan: new T.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.95, roughness: 0.1 }),
         tokenPacketPurple: new T.MeshStandardMaterial({ color: 0xa855f7, emissive: 0xa855f7, emissiveIntensity: 0.95, roughness: 0.1 }),
-        tokenPacketGreen: new T.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 0.95, roughness: 0.1 })
+        tokenPacketGreen: new T.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 0.95, roughness: 0.1 }),
+
+        // High-Tech Cyber & Architectural Living Materials (Image 1, 3, 4, 7 References)
+        cyberInfographicMat: new T.MeshStandardMaterial({ map: cyberInfographicTex, roughness: 0.25, emissive: 0x38bdf8, emissiveIntensity: 0.45 }),
+        cyberCircuitMat: new T.MeshStandardMaterial({ map: cyberCircuitTex, roughness: 0.2, emissive: 0x00f5ff, emissiveIntensity: 0.65 }),
+        cafeCanopyMat: new T.MeshStandardMaterial({ map: cafeCanopyTex, roughness: 0.65, metalness: 0.05 }),
+        yellowCanopyMat: new T.MeshStandardMaterial({ map: yellowCanopyTex, roughness: 0.65, metalness: 0.05 }),
+        yellowPavilionMat: new T.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35, metalness: 0.25 }),
+        magentaCanopyMat: new T.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.45, metalness: 0.15 }),
+        cyanFinMat: new T.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00b4d8, emissiveIntensity: 1.2, roughness: 0.1 }),
+        holoRingMat: new T.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00e5ff, emissiveIntensity: 1.8, transparent: true, opacity: 0.75 }),
+        bistroTableMat: new T.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.15, metalness: 0.1 }),
+        whiteStripes: new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.05 })
       };
     }
 
@@ -3240,6 +3418,120 @@
         bollard.position.set(bx, 0.55, bz);
         bollard.castShadow = true;
         infraGroup.add(bollard);
+      });
+
+      // ── 6. HIGH-VISIBILITY PEDESTRIAN ZEBRA CROSSWALKS (Image 3, 5, 7 Reference) ──
+      const crosswalkStripeMat = this.materials.whiteStripes || new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      const crosswalkConfigs = [
+        // North Crosswalk across Central Avenue (heading +Z)
+        { cx: 0, cz: 14.5, orientation: 'horizontal', width: 6.8, stripes: 7, spacing: 0.95 },
+        // South Crosswalk across Central Avenue (heading -Z)
+        { cx: 0, cz: -14.5, orientation: 'horizontal', width: 6.8, stripes: 7, spacing: 0.95 },
+        // East Crosswalk across East-West Boulevard (heading +X)
+        { cx: 14.5, cz: 0, orientation: 'vertical', width: 6.8, stripes: 7, spacing: 0.95 },
+        // West Crosswalk across East-West Boulevard (heading -X)
+        { cx: -14.5, cz: 0, orientation: 'vertical', width: 6.8, stripes: 7, spacing: 0.95 },
+        // Flank West Crosswalk (Dev & API Avenue)
+        { cx: -38.0, cz: 0, orientation: 'vertical', width: 6.0, stripes: 6, spacing: 0.95 },
+        // Flank East Crosswalk (Logistics & Forge Avenue)
+        { cx: 38.0, cz: 0, orientation: 'vertical', width: 6.0, stripes: 6, spacing: 0.95 },
+        // North Street Crosswalk (Dev Loft & Forge Avenue)
+        { cx: 0, cz: 42.0, orientation: 'horizontal', width: 6.4, stripes: 6, spacing: 0.95 }
+      ];
+
+      crosswalkConfigs.forEach((cw) => {
+        const cwGroup = new T.Group();
+        cwGroup.position.set(cw.cx, 0.08, cw.cz);
+        const isHoriz = cw.orientation === 'horizontal';
+
+        for (let s = 0; s < cw.stripes; s++) {
+          const offset = (s - (cw.stripes - 1) / 2) * cw.spacing;
+          const stripeGeo = isHoriz
+            ? new T.BoxGeometry(0.55, 0.04, 3.4)
+            : new T.BoxGeometry(3.4, 0.04, 0.55);
+          const stripe = new T.Mesh(stripeGeo, crosswalkStripeMat);
+          if (isHoriz) {
+            stripe.position.set(offset, 0, 0);
+          } else {
+            stripe.position.set(0, 0, offset);
+          }
+          stripe.receiveShadow = true;
+          cwGroup.add(stripe);
+        }
+        infraGroup.add(cwGroup);
+      });
+
+      // ── 7. SIDEWALK PROMENADE CAFE & OUTDOOR SEATING (Image 3 & 5 Reference) ──
+      const cafeSpots = [
+        { x: -10.5, z: 11.5, umbrellaMat: this.materials.cafeCanopyMat || this.materials.magentaCanopyMat },
+        { x: 10.5, z: 11.5, umbrellaMat: this.materials.yellowCanopyMat || this.materials.jobLaneGlow },
+        { x: -10.5, z: -11.5, umbrellaMat: this.materials.yellowCanopyMat || this.materials.jobLaneGlow },
+        { x: 10.5, z: -11.5, umbrellaMat: this.materials.cafeCanopyMat || this.materials.magentaCanopyMat }
+      ];
+
+      cafeSpots.forEach((spot) => {
+        const cafeGroup = new T.Group();
+        cafeGroup.position.set(spot.x, 0.16, spot.z);
+
+        // Round Bistro Table (Chrome Pedestal + Ceramic White Top)
+        const tableBase = new T.Mesh(new T.CylinderGeometry(0.35, 0.35, 0.05, 12), this.materials.truckChrome);
+        tableBase.position.y = 0.03;
+        const tableStem = new T.Mesh(new T.CylinderGeometry(0.04, 0.04, 0.72, 8), this.materials.truckChrome);
+        tableStem.position.y = 0.38;
+        const tableTop = new T.Mesh(new T.CylinderGeometry(0.65, 0.65, 0.06, 16), this.materials.bistroTableMat || this.materials.ceramicWhite);
+        tableTop.position.y = 0.75;
+        tableTop.receiveShadow = true;
+        cafeGroup.add(tableBase, tableStem, tableTop);
+
+        // 2 Miniature Cafe Swivel Chairs
+        [-0.75, 0.75].forEach((cx, ci) => {
+          const chairStem = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.45, 6), this.materials.truckChrome);
+          chairStem.position.set(cx, 0.23, 0);
+          const chairSeat = new T.Mesh(new T.CylinderGeometry(0.26, 0.26, 0.04, 12), this.materials.acousticDark);
+          chairSeat.position.set(cx, 0.46, 0);
+          const chairBack = new T.Mesh(new T.BoxGeometry(0.32, 0.30, 0.04), this.materials.acousticDark);
+          chairBack.position.set(cx, 0.62, ci === 0 ? -0.12 : 0.12);
+          cafeGroup.add(chairStem, chairSeat, chairBack);
+        });
+
+        // Vibrant Striped Sun Parasol / Umbrella on Slender Center Mast
+        const umbrellaPole = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 2.2, 8), this.materials.truckChrome);
+        umbrellaPole.position.y = 1.1;
+        const umbrellaCanopy = new T.Mesh(new T.ConeGeometry(1.35, 0.45, 12), spot.umbrellaMat);
+        umbrellaCanopy.position.y = 2.15;
+        umbrellaCanopy.castShadow = true;
+        cafeGroup.add(umbrellaPole, umbrellaCanopy);
+
+        // Flower & Green Shrub Planter Box
+        const planterBox = new T.Mesh(new T.BoxGeometry(1.6, 0.45, 0.5), this.materials.ceramicWhite);
+        planterBox.position.set(0, 0.23, -1.2);
+        const flowerFoliage = new T.Mesh(new T.BoxGeometry(1.4, 0.35, 0.38), this.materials.leafFlowering || this.materials.leafDeciduous);
+        flowerFoliage.position.set(0, 0.48, -1.2);
+        cafeGroup.add(planterBox, flowerFoliage);
+
+        infraGroup.add(cafeGroup);
+      });
+
+      // ── 8. STREET TREES IN RAISED ROUND STONE PLANTERS (Image 3 & 7 Reference) ──
+      const streetTreeCoords = [
+        [-26, 9.8], [26, 9.8], [-26, -9.8], [26, -9.8],
+        [-9.8, 26], [9.8, 26], [-9.8, -26], [9.8, -26],
+        [-48, 9.8], [48, 9.8], [-48, -9.8], [48, -9.8]
+      ];
+      streetTreeCoords.forEach(([tx, tz]) => {
+        if (this.isPointInObstacle(tx, tz, 2.8)) return;
+        const planterRing = new T.Mesh(new T.CylinderGeometry(1.1, 1.25, 0.45, 16), this.materials.curb || this.materials.sidewalk);
+        planterRing.position.set(tx, 0.23, tz);
+        planterRing.receiveShadow = true;
+        infraGroup.add(planterRing);
+
+        const soil = new T.Mesh(new T.CylinderGeometry(0.95, 0.95, 0.08, 16), this.materials.acousticDark);
+        soil.position.set(tx, 0.42, tz);
+        infraGroup.add(soil);
+
+        const tree = this._createDetailedTree('deciduous');
+        tree.position.set(tx, 0.45, tz);
+        infraGroup.add(tree);
       });
 
       this.scene.add(infraGroup);
@@ -5229,11 +5521,11 @@
       const liftShaft = new T.Mesh(new T.BoxGeometry(3.6, shaftH, 3.6), this.materials.clearGlass);
       liftShaft.position.set(liftX, podiumH + shaftH / 2, liftZ);
 
-      // Vertical Titanium Guide Rails & Corner Mullions for Elevator Shaft
-      const railGeo = new T.CylinderGeometry(0.06, 0.06, shaftH, 8);
+      // Vertical Guide Rails & Glowing Cyan Corner Mullions for Elevator Shaft (Image 4 Reference)
+      const railGeo = new T.CylinderGeometry(0.07, 0.07, shaftH, 8);
       for (const rx of [-1.75, 1.75]) {
         for (const rz of [-1.75, 1.75]) {
-          const rail = new T.Mesh(railGeo, this.materials.brushedTitanium);
+          const rail = new T.Mesh(railGeo, this.materials.fastLaneGlow || this.materials.brushedTitanium);
           rail.position.set(liftX + rx, podiumH + shaftH / 2, liftZ + rz);
           bldGroup.add(rail);
         }
@@ -5392,8 +5684,8 @@
       portalGlowEdge.position.y = -0.06;
       portalGroup.add(portalBase, portalGlowEdge);
 
-      // 2. Glowing Circuit Floor Grid
-      const portalFloor = new T.Mesh(new T.BoxGeometry(3.8, 0.05, 3.8), this.materials.quantumFloor || this.materials.glowStripCyan);
+      // 2. Glowing Cyber Circuit Floor Grid (Image 1 & 4 Reference)
+      const portalFloor = new T.Mesh(new T.BoxGeometry(3.8, 0.05, 3.8), this.materials.cyberCircuitMat || this.materials.quantumFloor || this.materials.glowStripCyan);
       portalFloor.position.y = 0.12;
       portalGroup.add(portalFloor);
 
@@ -5430,6 +5722,20 @@
       portalGroup.add(portalLight);
 
       this.apiFloorGroups[0].add(portalGroup);
+
+      // Arriving Agent stepping through the Portal (Image 1 & 4 Reference)
+      const portalVisitor = this._createCyberHumanoid({
+        id: 'agent-portal-visitor',
+        name: 'Nexus Teleport Traveler',
+        role: 'Autonomous Cross-Cluster Agent',
+        department: 'API PLATFORM',
+        pos: new T.Vector3(0.5, f0Y + 0.35, 2.2),
+        shirtMat: this.materials.fastLaneGlow,
+        hairColor: 0x0284c7,
+        accessory: 'visor',
+        isSeated: false
+      });
+      this.apiFloorGroups[0].add(portalVisitor);
 
       // Reception Desk on the Right Flank
       const deskGroup = new T.Group();
@@ -5604,9 +5910,18 @@
       if (!this.liveKpiMaterial) {
         this._initLiveKpiCanvasTexture();
       }
-      const telemetryWall = new T.Mesh(new T.BoxGeometry(12, 2.6, 0.08), this.liveKpiMaterial || this.materials.grafanaScreen);
-      telemetryWall.position.set(0, f1Y + 2.2, -bD / 2 + 0.38);
+      const telemetryWall = new T.Mesh(new T.BoxGeometry(10, 2.6, 0.08), this.liveKpiMaterial || this.materials.grafanaScreen);
+      telemetryWall.position.set(1.5, f1Y + 2.2, -bD / 2 + 0.38);
       this.apiFloorGroups[1].add(telemetryWall);
+
+      // Dedicated Analytics Infographic Panel & Warm Sconce Lamp (Image 4 Reference)
+      const f1DashScreen = new T.Mesh(new T.BoxGeometry(3.6, 2.0, 0.04), this.materials.cyberInfographicMat || this.materials.grafanaScreen);
+      f1DashScreen.position.set(-6.2, f1Y + 2.2, -bD / 2 + 0.40);
+      const f1Sconce = new T.Mesh(new T.BoxGeometry(0.6, 0.12, 0.22), this.materials.serverLedAmber || this.materials.trussYellow);
+      f1Sconce.position.set(-6.2, f1Y + 3.35, -bD / 2 + 0.48);
+      const f1SconceLight = new T.PointLight(0xf97316, 1.2, 5.0, 1.2);
+      f1SconceLight.position.set(-6.2, f1Y + 3.2, -bD / 2 + 0.55);
+      this.apiFloorGroups[1].add(f1DashScreen, f1Sconce, f1SconceLight);
 
       // ── CIRCULAR MEETING ISLAND (snapinsta-1793020553137 Reference) ──
       const meetingGroup = new T.Group();
@@ -5731,13 +6046,19 @@
         this.apiFloorGroups[2].add(rackGroup);
       });
 
-      // Wall-Mounted High-Visibility Analytics Dashboards (Image 7 Detail)
+      // Wall-Mounted High-Visibility Analytics Dashboards (Image 4 & 7 Detail)
       [-1.5, 3.5].forEach((wx) => {
         const dashFrame = new T.Mesh(new T.BoxGeometry(3.6, 1.6, 0.08), this.materials.brushedTitanium);
         dashFrame.position.set(wx, f2Y + 2.4, -bD / 2 + 0.38);
-        const dashScreen = new T.Mesh(new T.BoxGeometry(3.4, 1.4, 0.04), this.materials.grafanaScreen || this.materials.whiteboardMat);
+        const dashScreen = new T.Mesh(new T.BoxGeometry(3.4, 1.4, 0.04), this.materials.cyberInfographicMat || this.materials.grafanaScreen || this.materials.whiteboardMat);
         dashScreen.position.set(wx, f2Y + 2.4, -bD / 2 + 0.43);
-        this.apiFloorGroups[2].add(dashFrame, dashScreen);
+
+        // Warm Orange Overhead Sconce Lamps (Image 4 Reference)
+        const sconce = new T.Mesh(new T.BoxGeometry(0.6, 0.12, 0.22), this.materials.trussYellow || this.materials.serverLedAmber);
+        sconce.position.set(wx, f2Y + 3.35, -bD / 2 + 0.48);
+        const sconceLight = new T.PointLight(0xf97316, 1.1, 5.0, 1.2);
+        sconceLight.position.set(wx, f2Y + 3.2, -bD / 2 + 0.55);
+        this.apiFloorGroups[2].add(dashFrame, dashScreen, sconce, sconceLight);
       });
 
       const fiberRunner = new T.Mesh(new T.BoxGeometry(16, 0.22, 0.4), this.materials.trussYellow);
@@ -7688,9 +8009,13 @@
       // Prevent camera from clipping through known solid building boundaries
       if (this.obstacles && Array.isArray(this.obstacles)) {
         const margin = 1.35;
+        const currentActive = this.activeBuildingId;
+        const isApiInterior = this.activeApiFloor !== null && this.activeApiFloor !== undefined;
         for (let i = 0; i < this.obstacles.length; i++) {
           const obs = this.obstacles[i];
           if (!obs || obs.minX === undefined) continue;
+          if (isApiInterior && (obs.id === 'bld-api-platform' || obs.id === 'api-platform')) continue;
+          if (currentActive && (obs.id === currentActive || obs.id === 'bld-' + currentActive || currentActive.includes(obs.id))) continue;
           const oMinY = obs.minY !== undefined ? obs.minY : 0;
           const oMaxY = obs.maxY !== undefined ? obs.maxY : 28;
           if (eyeX >= (obs.minX - margin) && eyeX <= (obs.maxX + margin) &&
@@ -7706,7 +8031,6 @@
             else if (minD === dR) eyeX = obs.maxX + margin;
             else if (minD === dB) eyeZ = obs.minZ - margin;
             else eyeZ = obs.maxZ + margin;
-            eyeY = Math.max(eyeY, oMaxY + 1.2);
           }
         }
       }
@@ -8045,7 +8369,7 @@
 
     enterBuilding(buildingId, floorNumber) {
       this.activeBuildingId = buildingId || 'bld-api-platform';
-      const targetFloor = (floorNumber !== undefined && floorNumber !== null) ? floorNumber : 0;
+      const targetFloor = (floorNumber !== undefined && floorNumber !== null) ? floorNumber : 'all';
 
       if (this.activeBuildingId === 'bld-api-platform' || this.activeBuildingId === 'api-platform') {
         this.focusFloor(targetFloor);
@@ -8103,6 +8427,13 @@
         </div>
 
         <div class="fw3-floor-selector-list">
+          <button class="fw3-floor-btn ${(curFloor === null || curFloor === 'all') ? 'active' : ''}" data-floor="all">
+            <span class="fw3-floor-num">🏢</span>
+            <div class="fw3-floor-info">
+              <strong>Diorama Completo · Todos os Pavimentos</strong>
+              <small>Corte Isométrico 3D Integrado (Térreo ao 3º Andar)</small>
+            </div>
+          </button>
           <button class="fw3-floor-btn ${curFloor === 3 ? 'active' : ''}" data-floor="3">
             <span class="fw3-floor-num">3F</span>
             <div class="fw3-floor-info">
@@ -8160,11 +8491,14 @@
       dock.querySelectorAll('.fw3-floor-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const fl = parseInt(btn.getAttribute('data-floor'), 10);
+          const flAttr = btn.getAttribute('data-floor');
+          const fl = flAttr === 'all' ? 'all' : parseInt(flAttr, 10);
           dock.querySelectorAll('.fw3-floor-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           this.focusFloor(fl);
-          this.sendInterFloorTask(this.activeApiFloor ?? 0, fl, 'Inspeção de Pavimento');
+          if (fl !== 'all') {
+            this.sendInterFloorTask(this.activeApiFloor ?? 0, fl, 'Inspeção de Pavimento');
+          }
         });
       });
 
@@ -8523,8 +8857,7 @@
       if (buildingId === 'bld-deposito-mais' || buildingId === 'deposito-mais' || buildingId === 'logistics' || buildingId === 'bld-logistics') {
         this.focusEntity(districtPoint('logistics', 0, 4.5, 0), 56, Math.PI / 4, 0.54);
       } else if (buildingId === 'bld-api-platform' || buildingId === 'api-platform') {
-        this.focusFloor(null);
-        this.focusEntity(districtPoint('api-platform', 0, 6.0, 8.0), 22.0, 1.25, 0.26);
+        this.focusFloor('all');
       } else if (buildingId === 'bld-fenix-hq') {
         this.focusEntity(new T.Vector3(0, 10, 26), 46, Math.PI / 4, 0.48);
       } else if (buildingId === 'command-center') {
@@ -8722,12 +9055,13 @@
 
     focusFloor(floorNumber) {
       if (floorNumber === null || floorNumber === undefined || floorNumber === 'all' || floorNumber === -1) {
-        this.activeApiFloor = null;
+        this.activeApiFloor = 'all';
         if (this.apiFloorGroups) {
           this.apiFloorGroups.forEach(fg => { if (fg) fg.visible = true; });
         }
-        if (this.apiRoofGroup) this.apiRoofGroup.visible = true;
-        this.focusEntity(districtPoint('api-platform', 0, 6.5, 0), 56, Math.PI / 4, 0.52);
+        if (this.apiRoofGroup) this.apiRoofGroup.visible = false;
+        // Calibrated front-isometric cutaway diorama camera (Image 1 & 4 Reference)
+        this.focusEntity(districtPoint('api-platform', 0, 8.0, 0.0), 32.0, 1.02, 0.38);
         return;
       }
 
@@ -8748,8 +9082,8 @@
       const podiumH = 0.5;
       const fH = 4.0;
       const fY = podiumH + f * fH;
-      // Position camera directly into floor f interior looking through open front facade (calibrated isometric angle)
-      this.focusEntity(districtPoint('api-platform', 0, fY + 1.2, 0), 20.0, 1.48, 0.28);
+      // Position camera directly looking into floor f interior through front open cutaway (Image 4 Reference)
+      this.focusEntity(districtPoint('api-platform', 0, fY + 1.2, 0.0), 20.0, 1.02, 0.34);
     }
 
     focusElevator() {
@@ -9169,12 +9503,14 @@
         const floorY = 0.6 + (f * floorH);
 
         // Floor slab
-        const slab = new T.Mesh(new T.BoxGeometry(width + 0.4, 0.3, depth + 0.4), this.materials.dockBumper || wallMat);
+        const slabMat = (archetype === 'commerce_crm' || archetype === 'marketplace') ? (this.materials.yellowPavilionMat || accentMat) : (this.materials.dockBumper || wallMat);
+        const slab = new T.Mesh(new T.BoxGeometry(width + 0.4, 0.3, depth + 0.4), slabMat);
         slab.position.y = floorY + 0.15;
         bldGroup.add(slab);
 
         // Solid architectural core so the building has visual volume
-        const coreVolume = new T.Mesh(new T.BoxGeometry(Math.max(2, width - 1.4), floorH - 0.32, Math.max(2, depth - 1.4)), coreMat);
+        const curCoreMat = (archetype === 'commerce_crm' || archetype === 'marketplace') ? (this.materials.yellowPavilionMat || coreMat) : coreMat;
+        const coreVolume = new T.Mesh(new T.BoxGeometry(Math.max(2, width - 1.4), floorH - 0.32, Math.max(2, depth - 1.4)), curCoreMat);
         coreVolume.position.y = floorY + (floorH / 2);
         coreVolume.castShadow = true;
         coreVolume.receiveShadow = true;
@@ -9202,6 +9538,85 @@
             bldGroup.add(col);
           }
         }
+      }
+
+      // ── ARCHETYPE-SPECIFIC ARCHITECTURAL CHARACTER (Image 3, 5, 7 References) ──
+      if (archetype === 'commerce_crm' || archetype === 'marketplace') {
+        // [ARCHETYPE 1] Yellow Tech Pavilion & Sidewalk Cafe (Image 3, 5, 7)
+        // 1. Curved Coral/Magenta Entrance Canopy
+        const canopy = new T.Mesh(new T.BoxGeometry(width * 0.72, 0.22, 1.8), this.materials.magentaCanopyMat || this.materials.cafeCanopyMat);
+        canopy.position.set(0, 0.6 + floorH * 0.85, depth / 2 + 0.9);
+        canopy.castShadow = true;
+        bldGroup.add(canopy);
+
+        // 2. Ground-Level Sidewalk Cafe Table & Parasol
+        const cafeTable = new T.Mesh(new T.CylinderGeometry(0.42, 0.42, 0.05, 12), this.materials.bistroTableMat || this.materials.ceramicWhite);
+        cafeTable.position.set(-width * 0.28, 0.45, depth / 2 + 1.2);
+        const cafeStem = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.42, 8), this.materials.truckChrome);
+        cafeStem.position.set(-width * 0.28, 0.22, depth / 2 + 1.2);
+        bldGroup.add(cafeTable, cafeStem);
+
+        const umbrellaPole = new T.Mesh(new T.CylinderGeometry(0.025, 0.025, 1.8, 8), this.materials.truckChrome);
+        umbrellaPole.position.set(-width * 0.28, 0.9, depth / 2 + 1.2);
+        const umbrella = new T.Mesh(new T.ConeGeometry(0.95, 0.35, 10), this.materials.cafeCanopyMat || this.materials.yellowCanopyMat);
+        umbrella.position.set(-width * 0.28, 1.75, depth / 2 + 1.2);
+        bldGroup.add(umbrellaPole, umbrella);
+
+        // 3. Flower Planter flanking entrance
+        const planter = new T.Mesh(new T.BoxGeometry(1.2, 0.35, 0.4), this.materials.ceramicWhite);
+        planter.position.set(width * 0.28, 0.2, depth / 2 + 0.9);
+        const flowers = new T.Mesh(new T.BoxGeometry(1.1, 0.25, 0.35), this.materials.leafFlowering || this.materials.leafDeciduous);
+        flowers.position.set(width * 0.28, 0.4, depth / 2 + 0.9);
+        bldGroup.add(planter, flowers);
+
+        // 4. Rooftop Industrial Vent Cowls (Image 3 & 7 Yellow Pavilion Detail)
+        const ventGeo = new T.CylinderGeometry(0.35, 0.4, 0.85, 12);
+        const ventCapGeo = new T.CylinderGeometry(0.48, 0.48, 0.12, 12);
+        const ventMat = this.materials.serverRackDark || this.materials.brushedTitanium;
+        [-width * 0.22, width * 0.22].forEach(vx => {
+          const vPipe = new T.Mesh(ventGeo, ventMat);
+          vPipe.position.set(vx, 0.6 + floors * floorH + 0.42, -depth * 0.18);
+          const vCap = new T.Mesh(ventCapGeo, ventMat);
+          vCap.position.set(vx, 0.6 + floors * floorH + 0.88, -depth * 0.18);
+          bldGroup.add(vPipe, vCap);
+        });
+
+      } else if (archetype === 'tech_cloud' || archetype === 'fintech') {
+        // [ARCHETYPE 2] Curved Cyber Tower with Luminous Cyan Fins & Holographic Halo (Image 3, 7)
+        // 1. 4 Vertical Luminous Cyan Aerodynamic Fins
+        const finMat = this.materials.cyanFinMat || this.materials.fastLaneGlow;
+        [-width / 2 - 0.08, width / 2 + 0.08].forEach(fx => {
+          [-depth / 4, depth / 4].forEach(fz => {
+            const fin = new T.Mesh(new T.BoxGeometry(0.12, height + 0.6, 0.45), finMat);
+            fin.position.set(fx, 0.6 + height / 2, fz);
+            bldGroup.add(fin);
+          });
+        });
+
+        // 2. Rooftop Holographic Projection Halo Ring
+        const haloMat = this.materials.holoRingMat || this.materials.fastLaneGlow;
+        const holoRing = new T.Mesh(new T.TorusGeometry(Math.min(width, depth) * 0.35, 0.08, 8, 24), haloMat);
+        holoRing.rotation.x = Math.PI / 2;
+        holoRing.position.set(0, 0.6 + floors * floorH + 1.6, 0);
+        bldGroup.add(holoRing);
+
+      } else if (archetype === 'dev_studio' || archetype === 'ai_lab') {
+        // [ARCHETYPE 3] Stepped Brutalist Tech Lab with Balcony Terraces & Foliage ("DR. MUNC" Style, Image 3, 7)
+        // 1. Balcony Terrace with Glass Balustrade & Potted Shrubbery
+        if (floors >= 2) {
+          const balc = new T.Mesh(new T.BoxGeometry(width * 0.45, 0.65, 0.08), this.materials.clearGlass || this.materials.officeGlass);
+          balc.position.set(width * 0.22, 0.6 + floorH + 0.35, depth / 2 + 0.06);
+          bldGroup.add(balc);
+
+          const shrub = new T.Mesh(new T.DodecahedronGeometry(0.42), this.materials.monsteraLeaf || this.materials.leafDeciduous);
+          shrub.position.set(width * 0.22, 0.6 + floorH + 0.45, depth / 2 - 0.3);
+          bldGroup.add(shrub);
+        }
+
+        // 2. Ground Floor Cyber Storefront Sign
+        const neonSign = new T.Mesh(new T.BoxGeometry(width * 0.55, 0.4, 0.06), this.materials.fastLaneGlow);
+        neonSign.position.set(0, 0.6 + floorH * 0.88, depth / 2 + 0.12);
+        bldGroup.add(neonSign);
       }
 
       // Roof terrace & parapet
