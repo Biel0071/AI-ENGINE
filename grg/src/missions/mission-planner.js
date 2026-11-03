@@ -52,17 +52,17 @@ class MissionPlanner {
       jobs.push(databaseJob);
       const backendJob = new Job({ missionId: mission.id, worker: 'Backend', dependencies: [databaseJob.id] });
       jobs.push(backendJob);
-      const frontendJob = new Job({ missionId: mission.id, worker: 'Frontend', dependencies: [backendJob.id] });
+      const frontendJob = new Job({ missionId: mission.id, worker: 'Frontend', dependencies: [architectJob.id], payload: { wave: 2, worktree: 'frontend', authorWorker: 'Frontend' } });
       jobs.push(frontendJob);
-      const devOpsJob = new Job({ missionId: mission.id, worker: 'DevOps', dependencies: [frontendJob.id] });
+      const devOpsJob = new Job({ missionId: mission.id, worker: 'DevOps', dependencies: [backendJob.id, frontendJob.id], payload: { wave: 3, role: 'Integrator' } });
       jobs.push(devOpsJob);
-      const qaJob = new Job({ missionId: mission.id, worker: 'QA', dependencies: [devOpsJob.id] });
+      const qaJob = new Job({ missionId: mission.id, worker: 'QA', dependencies: [devOpsJob.id], payload: { wave: 4, role: 'IndependentValidator', authorWorker: 'Backend', validatorWorker: 'QA' } });
       jobs.push(qaJob);
-      const securityJob = new Job({ missionId: mission.id, worker: 'Security', dependencies: [qaJob.id] });
+      const securityJob = new Job({ missionId: mission.id, worker: 'Security', dependencies: [devOpsJob.id], payload: { wave: 4, role: 'Auditor', authorWorker: 'Backend', validatorWorker: 'Security' } });
       jobs.push(securityJob);
-      const docJob = new Job({ missionId: mission.id, worker: 'Documentation', dependencies: [securityJob.id] });
+      const docJob = new Job({ missionId: mission.id, worker: 'Documentation', dependencies: [qaJob.id, securityJob.id], payload: { wave: 5 } });
       jobs.push(docJob);
-      const deployJob = new Job({ missionId: mission.id, worker: 'Deploy', dependencies: [docJob.id] });
+      const deployJob = new Job({ missionId: mission.id, worker: 'Deploy', dependencies: [docJob.id], payload: { wave: 6, role: 'ReleaseManager' } });
       jobs.push(deployJob);
       mission.jobs = jobs;
       mission.planData = planData;
@@ -100,41 +100,55 @@ class MissionPlanner {
       steps: steps.map((step) => ({ key: step.key, type: step.type, dependsOn: step.dependsOn, estimate: ESTIMATES[step.type] || { durationMs: 30000, tokens: 1000, costUsd: 0.005, risk: 'LOW' } })),
       estimates: totals, risk: totals.risk, questions, requestedBy: actorId, createdAt: now()
     };
-    if (this.store) {
-      await this.store.update((state) => {
-        if (!state.missionPlans) state.missionPlans = [];
-        state.missionPlans.push(plan);
-        return state;
-      });
+    if (questions.length) {
+      if (this.store) {
+        await this.store.update((state) => {
+          if (!state.missionPlans) state.missionPlans = [];
+          state.missionPlans.push(plan);
+          return state;
+        });
+      }
+      if (this.events) {
+        await this.events.publish({
+          tenantId, stream: `mission-plan:${plan.id}`, type: 'mission.plan.created', source: 'fenix-mission-planner', subject: plan.id,
+          data: { actorId, planId: plan.id, mode, status: plan.status, stepCount: steps.length, objectiveHash: plan.objectiveHash, estimates: { durationMs: totals.durationMs, aiUnits: totals.tokens, costUsd: totals.costUsd }, risk: totals.risk },
+          idempotencyKey: `mission.plan.created:${plan.id}`
+        });
+      }
+      return { plan, mission: null };
     }
-    if (this.events) {
-      await this.events.publish({
-        tenantId, stream: `mission-plan:${plan.id}`, type: 'mission.plan.created', source: 'fenix-mission-planner', subject: plan.id,
-        data: { actorId, planId: plan.id, mode, status: plan.status, stepCount: steps.length, objectiveHash: plan.objectiveHash, estimates: { durationMs: totals.durationMs, aiUnits: totals.tokens, costUsd: totals.costUsd }, risk: totals.risk },
-        idempotencyKey: `mission.plan.created:${plan.id}`
-      });
-    }
-    if (questions.length) return { plan, mission: null };
+
     const policy = { maxTokens: input.policy?.maxTokens ?? Math.ceil(totals.tokens * 1.25), maxCostUsd: input.policy?.maxCostUsd ?? Number((totals.costUsd * 1.25).toFixed(6)), deadline: input.policy?.deadline };
     let mission = null;
     if (this.missions) {
       mission = await this.missions.create(tenantId, actorId, { title: String(input.title || objective).slice(0, 200), objective, scopeId: input.scopeId, priority: input.priority, policy, contextRefs: input.contextRefs || [], steps });
-      if (this.store) {
-        await this.store.update((state) => {
-          const current = (state.missionPlans || []).find((item) => item.id === plan.id);
-          if (current) {
-            current.status = 'MATERIALIZED';
-            current.missionId = mission.id;
-            current.materializedAt = now();
-          }
-          return state;
-        });
-      }
-      if (input.autoStart !== false) {
-        mission = await this.missions.start(tenantId, actorId, mission.id);
-      }
     }
-    return { plan: { ...plan, status: 'MATERIALIZED', missionId: mission?.id || null }, mission };
+    const materializedPlan = {
+      ...plan,
+      status: 'MATERIALIZED',
+      missionId: mission?.id || null,
+      materializedAt: now()
+    };
+    await Promise.all([
+      this.store
+        ? this.store.update((state) => {
+            if (!state.missionPlans) state.missionPlans = [];
+            state.missionPlans.push(materializedPlan);
+            return state;
+          })
+        : Promise.resolve(),
+      this.events
+        ? this.events.publish({
+            tenantId, stream: `mission-plan:${plan.id}`, type: 'mission.plan.created', source: 'fenix-mission-planner', subject: plan.id,
+            data: { actorId, planId: plan.id, mode, status: 'MATERIALIZED', stepCount: steps.length, objectiveHash: plan.objectiveHash, estimates: { durationMs: totals.durationMs, aiUnits: totals.tokens, costUsd: totals.costUsd }, risk: totals.risk },
+            idempotencyKey: `mission.plan.created:${plan.id}`
+          })
+        : Promise.resolve(),
+    ]);
+    if (this.missions && mission && input.autoStart !== false) {
+      mission = await this.missions.start(tenantId, actorId, mission.id);
+    }
+    return { plan: materializedPlan, mission };
   }
 
   async list(tenantId, actorId) {
@@ -156,7 +170,7 @@ function missingInputs(steps) { return steps.some((step) => step.type === 'inspe
 function inferMode(value) { const text = value.toLowerCase(); if (/\b(criar|construir|gerar|novo sistema|new system|build)\b/.test(text)) return 'BUILD'; if (/\b(sa[uú]de|status|operar|health|readiness)\b/.test(text)) return 'OPERATE'; if (/\b(observar|monitorar|acompanhar|observe|monitor)\b/.test(text)) return 'OBSERVE'; return 'INSPECT'; }
 function normalizeMode(value, objective = '') {
   const mode = String(value || '').toUpperCase();
-  if (!mode || mode === 'UNIFIED' || mode === 'AUTO') return inferMode(objective);
+  if (!mode || mode === 'UNIFIED' || mode === 'AUTO' || mode === 'DELIVERY') return inferMode(objective);
   if (!['INSPECT', 'OPERATE', 'OBSERVE', 'BUILD', 'AUDIT'].includes(mode)) throw new ValidationError(`unsupported mission planning mode: ${mode}`);
   return mode;
 }

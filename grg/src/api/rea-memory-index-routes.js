@@ -12,6 +12,7 @@ const { resolveProjectWorkspace } = require('../projects/project-workspace-resol
 const { globalProjectMemoryIndex } = require('../memory/project-memory-index');
 const { globalReaIntelligenceEngine } = require('../services/rea-intelligence-engine');
 const { REA_MULTIMODAL_PROMPT } = require('../analysis/rea-multimodal-prompt');
+const { ingestUniversalIdeJob, getUniversalIdeJobFeed } = require('./universal-job-routes');
 
 async function handleReaMemoryIndexRoutes(req, res, url, sendJson, readJson, identity = {}, app = null) {
   const pathname = url.pathname;
@@ -201,6 +202,32 @@ async function handleReaMemoryIndexRoutes(req, res, url, sendJson, readJson, ide
       return sendJson(res, 200, reaEngine.runSecurityAndResilienceAudit());
     }
 
+    if (method === 'GET' && pathname === '/api/v2/rea/video-benchmarks') {
+      return sendJson(res, 200, reaEngine.getVideoBenchmarksSynthesis());
+    }
+
+    if (method === 'GET' && pathname === '/api/v2/rea/approval-queue') {
+      const projectId = url.searchParams.get('projectId') || null;
+      return sendJson(res, 200, reaEngine.getApprovalQueue(projectId));
+    }
+
+    if (method === 'GET' && pathname === '/api/v2/rea/locks') {
+      const projectId = url.searchParams.get('projectId') || null;
+      return sendJson(res, 200, reaEngine.getActiveResourceLocks(projectId));
+    }
+
+    if (method === 'POST' && pathname === '/api/v2/rea/locks/acquire') {
+      const body = await readJson(req).catch(() => ({}));
+      const out = reaEngine.acquireResourceLock(body.projectId, body.resourcePath || body.filePath, body.agentId || identity?.actorId, body.orchestrationId);
+      return sendJson(res, out.ok ? 200 : (out.code === 'RESOURCE_LOCKED_BY_OTHER_AGENT' ? 409 : 400), out);
+    }
+
+    if (method === 'POST' && pathname === '/api/v2/rea/locks/release') {
+      const body = await readJson(req).catch(() => ({}));
+      const out = reaEngine.releaseResourceLock(body.projectId, body.resourcePath || body.filePath, body.agentId || identity?.actorId);
+      return sendJson(res, out.ok ? 200 : 403, out);
+    }
+
     if (method === 'GET' && pathname === '/api/v2/rea/orchestrations') {
       return sendJson(res, 200, { ok: true, orchestrations: reaEngine.orchestrations.slice(0, 25) });
     }
@@ -214,6 +241,7 @@ async function handleReaMemoryIndexRoutes(req, res, url, sendJson, readJson, ide
         actorId: identity?.actorId || 'grg-admin',
         priority: body.priority || 'high',
         agent: body.agent || 'agent-architect',
+        validatorAgent: body.validatorAgent || null,
         requireHumanApproval: Boolean(body.requireHumanApproval),
         timeoutMs: body.timeoutMs,
         maxRetries: body.maxRetries,
@@ -224,7 +252,7 @@ async function handleReaMemoryIndexRoutes(req, res, url, sendJson, readJson, ide
       return sendJson(res, result.deduplicated ? 200 : 201, result);
     }
 
-    const orchActionMatch = pathname.match(/^\/api\/v2\/rea\/orchestrate\/([^/]+)\/(checkpoint|retry|cancel|approve)$/);
+    const orchActionMatch = pathname.match(/^\/api\/v2\/rea\/orchestrate\/([^/]+)\/(checkpoint|retry|cancel|approve|validate-independent)$/);
     if (method === 'POST' && orchActionMatch) {
       const orchestrationId = decodeURIComponent(orchActionMatch[1]);
       const action = orchActionMatch[2];
@@ -247,8 +275,10 @@ async function handleReaMemoryIndexRoutes(req, res, url, sendJson, readJson, ide
           body.decision || 'APPROVE',
           identity?.actorId || body.actorId || 'grg-admin'
         );
+      } else if (action === 'validate-independent') {
+        out = reaEngine.validateStepIndependently(orchestrationId, body);
       }
-      const statusCode = out?.ok ? 200 : (out?.error === 'Orchestration not found' ? 404 : 400);
+      const statusCode = out?.ok ? 200 : (out?.code === 'SELF_VALIDATION_FORBIDDEN' ? 409 : (out?.error === 'Orchestration not found' ? 404 : 400));
       return sendJson(res, statusCode, out);
     }
 
@@ -298,6 +328,17 @@ async function handleReaMemoryIndexRoutes(req, res, url, sendJson, readJson, ide
         const body = await readJson(req).catch(() => ({}));
         const proof = await reaEngine.runCrossToolAndProjectProof({ ...body, actorId, tenantId }, app);
         return sendJson(res, proof.ok ? 200 : 500, proof);
+      }
+
+      if (method === 'POST' && pathname === '/api/v2/rea/universal-hub/ide-ingest') {
+        const body = await readJson(req).catch(() => ({}));
+        const ingested = await ingestUniversalIdeJob(body, app, { tenantId, actorId });
+        return sendJson(res, 201, ingested);
+      }
+
+      if (method === 'GET' && pathname === '/api/v2/rea/universal-hub/ide-feed') {
+        const feed = await getUniversalIdeJobFeed(app, { tenantId, actorId });
+        return sendJson(res, 200, feed);
       }
     }
   }

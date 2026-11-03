@@ -143,6 +143,8 @@
   var es = null;
   var retries = 0;
 
+  var seenSseEventIds = new Set();
+
   function connect() {
     try {
       if (!window.__FENIX_SSE_SOURCE__ || window.__FENIX_SSE_SOURCE__.readyState === 2) {
@@ -150,6 +152,10 @@
       }
       es = window.__FENIX_SSE_SOURCE__;
       window.__FENIX_SINGLETONS__?.register('eventSource:/api/v2/events/stream', es);
+      if (es.__fenixBridgeBound) {
+        return es;
+      }
+      es.__fenixBridgeBound = true;
       es.addEventListener('open', function() {
         retries = 0;
         console.log('[FenixCityBridge] SSE connected to V8.2 event stream');
@@ -160,7 +166,16 @@
       es.addEventListener('message', function(e) {
         try {
           var ev = JSON.parse(e.data);
-          if (!ev || ev.type === 'heartbeat') return;
+          if (!ev || ev.type === 'heartbeat' || ev.type === 'telemetry.sample') return;
+          var evKey = ev.id || (ev.type + ':' + (ev.timestamp || ''));
+          if (evKey && seenSseEventIds.has(evKey)) return;
+          if (evKey) {
+            seenSseEventIds.add(evKey);
+            if (seenSseEventIds.size > 200) {
+              var firstKey = seenSseEventIds.values().next().value;
+              seenSseEventIds.delete(firstKey);
+            }
+          }
           var detail = {
             type: ev.type,
             source: 'event-stream',
@@ -180,16 +195,18 @@
           document.dispatchEvent(new CustomEvent('fenix-live', { detail: detail, bubbles: true }));
         } catch(err) {}
       });
+      return es;
     } catch(e) {
       console.warn('[FenixCityBridge] SSE unavailable:', e.message);
+      return null;
     }
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', connect);
+    document.addEventListener('DOMContentLoaded', () => setTimeout(connect, 1500));
   } else {
-    setTimeout(connect, 100);
+    setTimeout(connect, 1500);
   }
 
-  window.FenixCityBridge = { connect: connect, getSSE: function() { return es; } };
+  window.FenixCityBridge = { connect: connect, getSSE: function() { return es; }, isBound: function() { return Boolean(es && es.__fenixBridgeBound); } };
 }());

@@ -811,6 +811,9 @@
         } else if (world3d && typeof world3d.focusEntity === 'function') {
           world3d.focusEntity({ x: 0, y: 3.5, z: 0 }, 32, Math.PI / 4, 0.48);
         }
+        if (window.fenixCity && typeof window.fenixCity.panToDistrict === 'function') {
+          window.fenixCity.panToDistrict('command-center');
+        }
         window.fenixOffice?.startPolling();
       } else if (mode === 'feed') {
         if (feedDrawer) {

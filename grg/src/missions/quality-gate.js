@@ -3,6 +3,7 @@ const { InvalidStateTransitionError } = require('./mission-schema');
 class QualityGate {
   constructor(options = {}) {
     this.router = options.router || null;
+    this.validators = options.validators || {};
   }
 
   async validate(mission) {
@@ -10,45 +11,44 @@ class QualityGate {
       throw new InvalidStateTransitionError(mission.id, mission.state, 'COMPLETED');
     }
 
-    const checks = {
-      architecture: false,
-      performance: false,
-      security: false,
-      coverage: false,
-      documentation: false,
-      realityFirst: false
-    };
+    const checkNames = ['architecture', 'performance', 'security', 'coverage', 'documentation', 'realityFirst'];
+    const checks = Object.fromEntries(checkNames.map((name) => [name, false]));
+    let audit = null;
 
-    // Simulated check processing
-    // In production, this would involve executing test runners, linting, security scans,
-    // and querying the 'precise' LLM for an architectural review.
-
+    // An LLM review is advisory; it cannot certify objective checks by itself.
     if (this.router && this.router.isAvailable('audit')) {
       try {
         const result = await this.router.execute('audit', {
           prompt: `Audit this mission completion. Objective: ${mission.intent.type}. Respond with JSON { passed: true/false, reasons: [] }`
         });
-        const parsed = typeof result === 'string' ? JSON.parse(result) : result;
-        
-        checks.architecture = parsed.passed !== false;
-        checks.performance = parsed.passed !== false;
-        checks.security = parsed.passed !== false;
-        checks.coverage = parsed.passed !== false;
-        checks.documentation = parsed.passed !== false;
-        checks.realityFirst = parsed.passed !== false;
+        audit = typeof result === 'string' ? JSON.parse(result) : result;
       } catch (err) {
-        console.warn('[QualityGate] LLM audit failed, falling back to heuristic passed:', err.message);
-        Object.keys(checks).forEach(k => checks[k] = true);
+        console.warn('[QualityGate] Advisory LLM audit unavailable:', err.message);
       }
-    } else {
-      // Heuristic fallback
-      Object.keys(checks).forEach(k => checks[k] = true);
+    }
+
+    for (const name of checkNames) {
+      const validate = this.validators[name];
+      if (typeof validate !== 'function') continue;
+      try {
+        const result = await validate({ mission, audit });
+        checks[name] = result?.passed === true && hasEvidence(result.evidence);
+      } catch (err) {
+        console.warn(`[QualityGate] ${name} validator unavailable:`, err.message);
+      }
     }
     
     // Check if any job failed
     const hasFailedJobs = mission.jobs.some(j => j.status === 'FAILED');
     if (hasFailedJobs) {
       checks.realityFirst = false;
+    }
+    const selfVal = (mission.jobs || []).find((j) => j?.payload?.authorWorker && j?.payload?.validatorWorker && String(j.payload.authorWorker).toLowerCase() === String(j.payload.validatorWorker).toLowerCase());
+    const mSelf = mission.authorAgentId && mission.validatorAgentId && String(mission.authorAgentId).toLowerCase() === String(mission.validatorAgentId).toLowerCase();
+    if (selfVal || mSelf) {
+      checks.realityFirst = false;
+      checks.architecture = false;
+      mission.rejectionReason = 'SELF_VALIDATION_FORBIDDEN';
     }
 
     // Strict Anti-Regression & Single Source of Truth Gate:
@@ -63,7 +63,7 @@ class QualityGate {
       if (!fs.existsSync(canonicalShell)) {
         checks.architecture = false;
         checks.realityFirst = false;
-        mission.rejectionReason = 'CANONICAL_FRONTEND_SHELL_MISSING';
+        if (!mission.rejectionReason) mission.rejectionReason = 'CANONICAL_FRONTEND_SHELL_MISSING';
       }
 
       const scanDir = (dir) => {
@@ -93,7 +93,7 @@ class QualityGate {
       if (scanDir(projectRoot)) {
         checks.architecture = false;
         checks.realityFirst = false;
-        mission.rejectionReason = 'ROGUE_FRONTEND_SHELL_DETECTED';
+        if (!mission.rejectionReason) mission.rejectionReason = 'ROGUE_FRONTEND_SHELL_DETECTED';
       }
     } catch (_) {}
 
@@ -102,14 +102,18 @@ class QualityGate {
     if (allPassed) {
       mission.transitionTo('COMPLETED');
     } else {
-      // If validation fails, transition back to RUNNING or block it. 
-      // For now, if failed jobs, we just mark as COMPLETED with failure.
       mission.transitionTo('COMPLETED');
       mission.failedValidation = true;
     }
 
     return checks;
   }
+}
+
+function hasEvidence(evidence) {
+  if (typeof evidence === 'string') return evidence.trim().length > 0;
+  if (Array.isArray(evidence)) return evidence.length > 0;
+  return Boolean(evidence && typeof evidence === 'object' && Object.keys(evidence).length > 0);
 }
 
 module.exports = { QualityGate };

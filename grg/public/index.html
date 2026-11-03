@@ -2691,25 +2691,25 @@
                     <div class="dock-featured-agent-avatar"><img src="/assets/agent-data.png" alt="Ana" onerror="this.src='/assets/agents/ana_avatar.png'" /></div>
                     <div class="dock-featured-agent-name">Ana</div>
                     <div class="dock-featured-agent-role">Analista de Dados</div>
-                    <div class="dock-featured-agent-status status-executando"><span class="status-dot"></span><span>Executando</span></div>
+                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Disponível</span></div>
                   </div>
                   <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-ryo')" title="Focar agente Ryo">
                     <div class="dock-featured-agent-avatar"><img src="/assets/agent-developer.png" alt="Ryo" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
                     <div class="dock-featured-agent-name">Ryo</div>
                     <div class="dock-featured-agent-role">Desenvolvedor</div>
-                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Em Deslocamento</span></div>
+                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Disponível</span></div>
                   </div>
                   <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-luna')" title="Focar agente Luna">
                     <div class="dock-featured-agent-avatar"><img src="/assets/agent-product.png" alt="Luna" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
                     <div class="dock-featured-agent-name">Luna</div>
                     <div class="dock-featured-agent-role">Gestora de Projetos</div>
-                    <div class="dock-featured-agent-status status-reuniao"><span class="status-dot"></span><span>Reunião</span></div>
+                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Disponível</span></div>
                   </div>
                   <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('agent-max')" title="Focar agente Max">
                     <div class="dock-featured-agent-avatar"><img src="/assets/agent-devops.png" alt="Max" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
                     <div class="dock-featured-agent-name">Max</div>
                     <div class="dock-featured-agent-role">Especialista DevOps</div>
-                    <div class="dock-featured-agent-status status-automacao"><span class="status-dot"></span><span>Automação</span></div>
+                    <div class="dock-featured-agent-status status-deslocamento"><span class="status-dot"></span><span>Disponível</span></div>
                   </div>
                 </div>
               </div>
@@ -2721,11 +2721,7 @@
                   <a href="javascript:void(0)" class="dock-header-link" onclick="window.fenixOpenEventsModal ? window.fenixOpenEventsModal() : window.showView?.('observability')">Ver todos &gt;</a>
                 </div>
                 <div class="dock-card-content dock-events-list" id="dockCardMissionsList">
-                  <div class="dock-event-item"><span class="dock-event-time">15:24</span><span class="dock-event-dot dot-blue"></span><span class="dock-event-desc">Agente Ana concluiu análise de dados - Projeto Fênix OS</span></div>
-                  <div class="dock-event-item"><span class="dock-event-time">15:22</span><span class="dock-event-dot dot-blue"></span><span class="dock-event-desc">Agente Ryo iniciou deploy - Módulo de Integração</span></div>
-                  <div class="dock-event-item"><span class="dock-event-time">15:20</span><span class="dock-event-dot dot-purple"></span><span class="dock-event-desc">Nova missão atribuída ao agente Luna - Revisão de Documentos</span></div>
-                  <div class="dock-event-item"><span class="dock-event-time">15:18</span><span class="dock-event-dot dot-orange"></span><span class="dock-event-desc">Agente Max executou automação - Deploy em Produção</span></div>
-                  <div class="dock-event-item"><span class="dock-event-time">15:15</span><span class="dock-event-dot dot-green"></span><span class="dock-event-desc">Projeto AI City atualizado - 85% de conclusão</span></div>
+                  <div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot dot-blue"></span><span class="dock-event-desc">Sincronizando eventos reais do runtime…</span></div>
                 </div>
               </div>
 
@@ -2772,10 +2768,29 @@
                   <span style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">WAR ROOM</span>
                   <span class="office-metric-val" id="officeHudWarRoomStatus" style="font-weight:700; color:#10B981; font-family:monospace;">NORMAL</span>
                 </div>
+                <div class="office-metric-chip" style="display:flex; align-items:center; gap:5px; font-size:11px; color:#94A3B8;" title="Agentes Registrados no Catálogo">
+                  <span style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">REGISTRADOS</span>
+                  <span class="office-metric-val cyan" id="officeHudRegisteredAgents" style="font-weight:700; color:#38BDF8; font-family:monospace;">—</span>
+                </div>
+                <div class="office-metric-chip" style="display:flex; align-items:center; gap:5px; font-size:11px; color:#94A3B8;" title="Jobs na Fila">
+                  <span style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">FILA</span>
+                  <span class="office-metric-val amber" id="officeHudQueuedJobs" style="font-weight:700; color:#F59E0B; font-family:monospace;">—</span>
+                </div>
+                <div class="office-metric-chip" style="display:flex; align-items:center; gap:5px; font-size:11px; color:#94A3B8;" title="Execuções Concluídas">
+                  <span style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">CONCLUÍDOS</span>
+                  <span class="office-metric-val green" id="officeHudCompletedJobs" style="font-weight:700; color:#10B981; font-family:monospace;">—</span>
+                </div>
+                <div class="office-metric-chip" style="display:flex; align-items:center; gap:5px; font-size:11px; color:#94A3B8;" title="Aguardando Aprovação Humana (Te Necesitan)">
+                  <span style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">APROVAÇÃO</span>
+                  <span class="office-metric-val amber" id="officeHudApprovalQueue" style="font-weight:700; color:#FBBF24; font-family:monospace;">—</span>
+                </div>
                 <div class="office-metric-chip" style="display:flex; align-items:center; gap:5px; font-size:11px; color:#94A3B8;">
                   <span style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">OPERADOR</span>
                   <span class="office-metric-val green" id="officeHudHumanStatus" style="font-weight:700; color:#10B981; font-family:monospace;">AVAILABLE</span>
                 </div>
+              </div>
+              <div class="office-hud-swarm-pill" id="fenixParallelSwarmPill" style="display:flex; align-items:center; gap:6px; border-left:1px solid rgba(255,255,255,0.08); padding-left:10px; font-size:10.5px; color:#38BDF8; font-family:monospace;" title="Execução Paralela Multiagente (Waves & Locks)">
+                <i class="ph-bold ph-git-Fork"></i> <span id="fenixSwarmWaveText">Swarm: —</span>
               </div>
               <div class="office-hud-actions" style="display:flex; align-items:center; gap:6px; border-left:1px solid rgba(255,255,255,0.08); padding-left:10px;">
                 <button class="office-btn office-btn-primary" onclick="window.fenixOffice?.openMeetingModal()" style="background:rgba(0,217,255,0.15); border:1px solid rgba(0,217,255,0.35); color:#00D9FF; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px;">

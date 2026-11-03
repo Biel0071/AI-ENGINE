@@ -396,28 +396,44 @@
           } else if (agents.length === 0) {
             agentsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhum agente publicado pela API.</div>';
           } else {
-            const featuredList = [
-              { id: 'agent-ana', name: 'Ana', role: 'Analista de Dados', avatar: '/assets/agent-data.png', statusClass: 'status-executando', statusText: 'Executando' },
-              { id: 'agent-ryo', name: 'Ryo', role: 'Desenvolvedor', avatar: '/assets/agent-developer.png', statusClass: 'status-deslocamento', statusText: 'Em Deslocamento' },
-              { id: 'agent-luna', name: 'Luna', role: 'Gestora de Projetos', avatar: '/assets/agent-product.png', statusClass: 'status-reuniao', statusText: 'Reunião' },
-              { id: 'agent-max', name: 'Max', role: 'Especialista DevOps', avatar: '/assets/agent-devops.png', statusClass: 'status-automacao', statusText: 'Automação' }
-            ];
+            const fallbackAvatars = ['/assets/agent-data.png', '/assets/agent-developer.png', '/assets/agent-product.png', '/assets/agent-devops.png'];
+            const topKpiJobsNum = parseInt(document.getElementById('topKpiJobsVal')?.textContent || '0', 10) || 0;
+            const activeRunningJobs = (topKpiJobsNum > 0 && Array.isArray(jobs))
+              ? jobs.filter(j => /RUNNING|ACTIVE|EXECUTING|DISPATCHED/i.test(String(j?.status || j?.state || '')))
+              : [];
+            const displayAgents = agents.slice(0, 4);
             let html = '';
-            for (const ag of featuredList) {
-              const isWorking = /WORKING|RUNNING|BUSY/.test(String(ag.status || '').toUpperCase());
-              const statusClass = ag.statusClass || (isWorking ? 'status-executando' : 'status-deslocamento');
-              const statusText = ag.statusText || (isWorking ? 'Executando' : (ag.status || 'Ativo'));
-              const avatarSrc = ag.avatar || (ag.role?.toLowerCase().includes('data') ? '/assets/agent-data.png' : ag.role?.toLowerCase().includes('devops') ? '/assets/agent-devops.png' : '/assets/agent-developer.png');
-              const role = ag.role || ag.specialty || ag.domain || 'Especialista';
+            displayAgents.forEach((ag, idx) => {
+              const rawState = String(ag.status || ag.state || 'AVAILABLE').toUpperCase();
+              const hasActiveJob = activeRunningJobs.length > 0 && (Boolean(ag.currentJobId || ag.currentJob) || /WORKING|RUNNING|BUSY|EXECUTING/.test(rawState));
+              let statusClass = 'status-deslocamento';
+              let statusText = 'Disponível';
+              if (hasActiveJob) {
+                statusClass = 'status-executando';
+                statusText = 'Executando';
+              } else if (/MEETING|REUNIAO/.test(rawState)) {
+                statusClass = 'status-reuniao';
+                statusText = 'Em Reunião';
+              } else if (/BLOCKED|ERROR|FAILED/.test(rawState)) {
+                statusClass = 'status-reuniao';
+                statusText = 'Bloqueado';
+              } else if (/IDLE|STANDBY/.test(rawState)) {
+                statusClass = 'status-deslocamento';
+                statusText = 'Em Prontidão';
+              }
+              const roleStr = String(ag.role || ag.specialty || ag.domain || 'Especialista');
+              const avatarSrc = ag.avatar || fallbackAvatars[idx % fallbackAvatars.length];
+              const agId = ag.id || ag.agentId || `agent-${idx}`;
+              const agName = ag.name || agId;
               html += `
-                <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('${ag.id}')" title="Focar agente ${ag.name}">
-                  <div class="dock-featured-agent-avatar"><img src="${avatarSrc}" alt="${ag.name}" onerror="this.src='/assets/agents/habbo_avatar.png'" /></div>
-                  <div class="dock-featured-agent-name">${ag.name}</div>
-                  <div class="dock-featured-agent-role">${role}</div>
+                <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('${agId}')" title="${agName} (${roleStr}) — ${statusText}">
+                  <div class="dock-featured-agent-avatar"><img src="${avatarSrc}" alt="${agName}" onerror="this.src='/assets/agent-developer.png'" /></div>
+                  <div class="dock-featured-agent-name">${agName}</div>
+                  <div class="dock-featured-agent-role">${roleStr}</div>
                   <div class="dock-featured-agent-status ${statusClass}"><span class="status-dot"></span><span>${statusText}</span></div>
                 </div>
               `;
-            }
+            });
             agentsList.innerHTML = html;
           }
         }
@@ -453,19 +469,22 @@
           if (!hasJobSnapshot) {
             missionsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Jobs indisponíveis nesta leitura.</div>';
           } else if (jobs.length === 0) {
-            missionsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Nenhum job publicado pela API.</div>';
+            const sysEvents = Array.isArray(window.__fenixSystemEvents) ? window.__fenixSystemEvents.slice(0, 4) : [];
+            if (sysEvents.length > 0) {
+              missionsList.innerHTML = sysEvents.map(ev => {
+                const t = ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+                const desc = ev.message || ev.title || ev.type || 'Evento operacional';
+                return `<div class="dock-event-item"><span class="dock-event-time">${t}</span><span class="dock-event-dot dot-blue"></span><span class="dock-event-desc">${desc}</span></div>`;
+              }).join('');
+            } else {
+              missionsList.innerHTML = '<div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot dot-green"></span><span class="dock-event-desc">0 jobs ativos · Todos os agentes em prontidão operacional</span></div>';
+            }
           } else {
-            const recentEvents = (jobs && jobs.length > 0) ? jobs.slice(0, 5).map(j => ({
+            const recentEvents = jobs.slice(0, 5).map(j => ({
               time: new Date(j.createdAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-              dotClass: j.status === 'COMPLETED' ? 'dot-green' : j.status === 'RUNNING' ? 'dot-blue' : 'dot-orange',
-              desc: `${j.title || j.id} - ${j.status || 'Ativo'}`
-            })) : [
-              { time: '15:24', dotClass: 'dot-blue', desc: 'Agente Ana concluiu análise de dados - Projeto Fênix OS' },
-              { time: '15:22', dotClass: 'dot-blue', desc: 'Agente Ryo iniciou deploy - Módulo de Integração' },
-              { time: '15:20', dotClass: 'dot-purple', desc: 'Nova missão atribuída ao agente Luna - Revisão de Documentos' },
-              { time: '15:18', dotClass: 'dot-orange', desc: 'Agente Max executou automação - Deploy em Produção' },
-              { time: '15:15', dotClass: 'dot-green', desc: 'Projeto AI City atualizado - 85% de conclusão' }
-            ];
+              dotClass: /COMPLETED|SUCCEEDED/i.test(String(j.status || '')) ? 'dot-green' : /RUNNING|ACTIVE/i.test(String(j.status || '')) ? 'dot-blue' : 'dot-orange',
+              desc: `${j.title || j.id} — ${j.status || 'Ativo'}`
+            }));
             let html = '';
             for (const ev of recentEvents) {
               const time = ev.time || '15:00';

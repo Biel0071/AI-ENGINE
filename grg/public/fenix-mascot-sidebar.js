@@ -181,8 +181,18 @@
           <div class="fsb-conv-toolbar" style="flex-wrap:wrap; gap:6px;">
             <button type="button" class="fsb-conv-btn primary" id="fsbNewChatBtn" title="Iniciar Nova Conversa"><i class="ph-bold ph-plus"></i> Nova</button>
             <button type="button" class="fsb-conv-btn" id="fsbHistoryBtn" title="Ver Histórico de Conversas"><i class="ph-bold ph-clock-counter-clockwise"></i> Histórico (<span id="fsbHistoryCount">0</span>)</button>
+            <button type="button" class="fsb-conv-btn fsb-approval-btn" id="fsbApprovalQueueBtn" title="Fila de Aprovação Humana (Aguardando Aprovação)"><i class="ph-bold ph-hand-palm"></i> Aprovação (<span id="fsbApprovalQueueCount">0</span>)</button>
             <button type="button" class="fsb-conv-btn fsb-errors-btn" id="fsbSavedErrorsBtn" title="Histórico Persistente de Erros e Alertas do Chat"><i class="ph-bold ph-warning-octagon"></i> Erros (<span id="fsbSavedErrorsCount">0</span>)</button>
             <button type="button" class="fsb-conv-btn" id="fsbExecModeToggleBtn" data-mode="fast" title="Alternar entre Canal Rápido (Conversa Imediata + Memória) e API Profunda + Fila (Alto Limite de Tokens)" style="border-color:rgba(0,217,255,0.35); color:#00D9FF;"><i class="ph-bold ph-lightning"></i> Canal Rápido</button>
+          </div>
+
+          <!-- Active Execution Status Bar with Cancel Action -->
+          <div class="fsb-active-exec-bar" id="fsbActiveExecutionBar" style="display:none;">
+            <div class="fsb-active-exec-info">
+              <span class="fsb-pulse-dot"></span>
+              <span id="fsbActiveExecLabel">Executando missão...</span>
+            </div>
+            <button type="button" class="fsb-conv-btn danger" id="fsbCancelActiveExecBtn" title="Cancelar execução ativa"><i class="ph-bold ph-stop-circle"></i> Cancelar</button>
           </div>
 
           <!-- Diff Proposal Container (Human-in-the-loop) -->
@@ -206,7 +216,22 @@
               <span><i class="ph-bold ph-chats-circle" style="color:#22d3ee; margin-right:6px;"></i> Histórico de Conversas</span>
               <button type="button" class="fsb-icon-btn" id="fsbCloseHistoryBtn" title="Fechar Histórico"><i class="ph-bold ph-x"></i></button>
             </div>
+            <div class="fsb-history-search-bar">
+              <input type="search" id="fsbHistorySearchInput" placeholder="Buscar no histórico por texto ou projeto..." aria-label="Buscar no histórico de conversas" />
+            </div>
             <div class="fsb-history-list" id="fsbHistoryList"></div>
+          </div>
+
+          <!-- Human Approval Queue Drawer (Te Necesitan / Aguardando Aprovação) -->
+          <div class="fsb-history-drawer fsb-approval-drawer" id="fsbApprovalQueueDrawer" style="display:none;">
+            <div class="fsb-history-header">
+              <span><i class="ph-bold ph-hand-palm" style="color:#10b981; margin-right:6px;"></i> Fila de Aprovação Humana</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <button type="button" class="fsb-conv-btn" id="fsbRefreshApprovalQueueBtn" title="Atualizar Fila" style="padding:2px 8px; font-size:10px;">Atualizar</button>
+                <button type="button" class="fsb-icon-btn" id="fsbCloseApprovalQueueBtn" title="Fechar Fila de Aprovação"><i class="ph-bold ph-x"></i></button>
+              </div>
+            </div>
+            <div class="fsb-history-list" id="fsbApprovalQueueList"></div>
           </div>
 
           <!-- Persistent Chat Error & Alert History Drawer -->
@@ -876,6 +901,11 @@
       document.getElementById('fsbNewChatBtn')?.addEventListener('click', () => this.startNewConversation());
       document.getElementById('fsbHistoryBtn')?.addEventListener('click', () => this.toggleHistoryDrawer());
       document.getElementById('fsbCloseHistoryBtn')?.addEventListener('click', () => this.toggleHistoryDrawer(false));
+      document.getElementById('fsbHistorySearchInput')?.addEventListener('input', () => this.renderHistoryDrawerList());
+      document.getElementById('fsbApprovalQueueBtn')?.addEventListener('click', () => this.toggleApprovalQueueDrawer());
+      document.getElementById('fsbCloseApprovalQueueBtn')?.addEventListener('click', () => this.toggleApprovalQueueDrawer(false));
+      document.getElementById('fsbRefreshApprovalQueueBtn')?.addEventListener('click', () => this.syncApprovalQueue());
+      document.getElementById('fsbCancelActiveExecBtn')?.addEventListener('click', () => this.cancelActiveExecution());
       document.getElementById('fsbSavedErrorsBtn')?.addEventListener('click', () => this.toggleErrorsDrawer());
       document.getElementById('fsbCloseSavedErrorsBtn')?.addEventListener('click', () => this.toggleErrorsDrawer(false));
       document.getElementById('fsbClearSavedErrorsBtn')?.addEventListener('click', () => this.clearSavedErrors());
@@ -1871,8 +1901,17 @@
     },
 
     switchConversation(id) {
-      if (state.conversations.some(c => c.id === id)) {
+      const target = state.conversations.find(c => c.id === id);
+      if (target) {
         state.activeConversationId = id;
+        if (target.projectId || target.context?.project) {
+          updateCopilotContext({
+            contextType: target.context?.contextType || 'PROJECT',
+            contextId: target.projectId || target.context?.contextId || target.context?.project,
+            project: target.context?.project || target.projectId,
+            projectId: target.projectId || target.context?.projectId || null
+          });
+        }
         this.saveConversations();
         this.renderActiveConversation();
         this.toggleHistoryDrawer(false);
@@ -1906,13 +1945,22 @@
     renderHistoryDrawerList() {
       const list = document.getElementById('fsbHistoryList');
       if (!list) return;
-      if (state.conversations.length === 0) {
-        list.innerHTML = `<div class="fsb-history-empty"><i class="ph-bold ph-chats" style="font-size:24px; color:#64748b; margin-bottom:8px; display:inline-block;"></i><br>Nenhuma conversa gravada.</div>`;
+      const query = (document.getElementById('fsbHistorySearchInput')?.value || '').trim().toLowerCase();
+      const filtered = state.conversations.filter(c => {
+        if (!query) return true;
+        const titleMatch = String(c.title || '').toLowerCase().includes(query);
+        const projMatch = String(c.projectId || c.context?.project || '').toLowerCase().includes(query);
+        const msgMatch = Array.isArray(c.messages) && c.messages.some(m => String(m.text || m.prompt || m.data?.response || '').toLowerCase().includes(query));
+        return titleMatch || projMatch || msgMatch;
+      });
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="fsb-history-empty"><i class="ph-bold ph-chats" style="font-size:24px; color:#64748b; margin-bottom:8px; display:inline-block;"></i><br>${query ? 'Nenhuma conversa encontrada para a busca.' : 'Nenhuma conversa gravada.'}</div>`;
         return;
       }
-      list.innerHTML = state.conversations.map(c => {
+      list.innerHTML = filtered.map(c => {
         const isActive = c.id === state.activeConversationId;
         const count = (c.messages || []).length;
+        const projLabel = c.projectId || (c.context?.project && c.context.project !== 'GLOBAL' ? c.context.project : null);
         const dateStr = new Date(c.updatedAt || c.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         return `
           <div class="fsb-history-item ${isActive ? 'active' : ''}" onclick="window.FenixSidebar.switchConversation('${c.id}')">
@@ -1921,12 +1969,118 @@
               <div class="fsb-history-meta">
                 <span><i class="ph-bold ph-clock"></i> ${dateStr}</span>
                 <span><i class="ph-bold ph-chat-teardrop"></i> ${count} msgs</span>
+                ${projLabel ? `<span class="fsb-history-proj-tag"><i class="ph-bold ph-folder"></i> ${this.escapeHTML(projLabel)}</span>` : ''}
               </div>
             </div>
             <button type="button" class="fsb-history-del-btn" title="Excluir conversa" onclick="window.FenixSidebar.deleteConversation('${c.id}', event)"><i class="ph-bold ph-trash"></i></button>
           </div>
         `;
       }).join('');
+    },
+
+    // ── Human Approval Queue ("Te Necesitan") & Active Execution Control ──
+    toggleApprovalQueueDrawer(forceState) {
+      const drawer = document.getElementById('fsbApprovalQueueDrawer');
+      if (!drawer) return;
+      const shouldShow = typeof forceState === 'boolean' ? forceState : (drawer.style.display === 'none');
+      drawer.style.display = shouldShow ? 'flex' : 'none';
+      if (shouldShow) this.syncApprovalQueue();
+    },
+
+    async syncApprovalQueue() {
+      try {
+        const res = await authedFetch('/api/v2/rea/approval-queue', { method: 'GET' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const queue = Array.isArray(data.approvalQueue) ? data.approvalQueue : [];
+        state.approvalQueue = queue;
+        const countEl = document.getElementById('fsbApprovalQueueCount');
+        if (countEl) countEl.textContent = String(queue.length);
+
+        const activeExec = queue.find(item => item.status === 'EXECUTING' || item.status === 'RUNNING');
+        const execBar = document.getElementById('fsbActiveExecutionBar');
+        const execLabel = document.getElementById('fsbActiveExecLabel');
+        if (execBar) {
+          if (activeExec) {
+            state.activeOrchestrationId = activeExec.orchestrationId;
+            execBar.style.display = 'flex';
+            if (execLabel) execLabel.textContent = `Executando · ${activeExec.projectName || activeExec.projectId || activeExec.orchestrationId}`;
+          } else if (this._trackedJobs && this._trackedJobs.size > 0) {
+            const firstJob = Array.from(this._trackedJobs.values())[0];
+            execBar.style.display = 'flex';
+            if (execLabel) execLabel.textContent = `Job Ativo · ${firstJob.title || firstJob.id || 'Em curso'}`;
+          } else {
+            execBar.style.display = 'none';
+          }
+        }
+
+        const list = document.getElementById('fsbApprovalQueueList');
+        if (!list) return;
+        if (queue.length === 0) {
+          list.innerHTML = `<div class="fsb-history-empty"><i class="ph-bold ph-check-circle" style="font-size:24px; color:#10b981; margin-bottom:8px; display:inline-block;"></i><br>Nenhuma tarefa aguardando aprovação humana no momento.</div>`;
+          return;
+        }
+        list.innerHTML = queue.map(item => `
+          <div class="fsb-history-item" style="flex-direction:column; align-items:stretch; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:11px; color:#f8fafc;">${this.escapeHTML(item.projectName || item.projectId)}</strong>
+              <span style="font-size:9.5px; padding:2px 6px; border-radius:999px; background:rgba(245,158,11,0.16); color:#fbbf24; font-weight:700;">${this.escapeHTML(item.status)}</span>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1;">${this.escapeHTML(item.objective || 'Orquestração multiagente')}</div>
+            <div style="font-size:10px; color:#94a3b8;">Agente: <strong>${this.escapeHTML(item.waitingStepRole || 'Arquiteto')}</strong> · Progresso: ${item.completedSteps || 0}/${item.totalSteps || 7}</div>
+            <div style="display:flex; gap:6px; margin-top:4px;">
+              <button type="button" class="fsb-conv-btn primary" onclick="window.FenixSidebar.approveOrchestrationItem('${this.escapeHTML(item.orchestrationId)}')" style="flex:1;"><i class="ph-bold ph-check"></i> Aprovar</button>
+              <button type="button" class="fsb-conv-btn" onclick="window.FenixSidebar.cancelOrchestrationItem('${this.escapeHTML(item.orchestrationId)}')" style="flex:1;"><i class="ph-bold ph-x"></i> Cancelar</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (_) {}
+    },
+
+    async approveOrchestrationItem(orchestrationId) {
+      if (!orchestrationId) return;
+      try {
+        const res = await authedFetch(`/api/v2/rea/orchestrate/${encodeURIComponent(orchestrationId)}/approve`, {
+          method: 'POST',
+          body: JSON.stringify({ approvedBy: 'operator' })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          this.appendMessage('system', `✅ Orquestração ${orchestrationId} aprovada pelo operador (${data.status}).`);
+          await this.syncApprovalQueue();
+        }
+      } catch (err) {
+        this.appendMessage('system', `⚠️ Falha ao aprovar ${orchestrationId}: ${err.message}`);
+      }
+    },
+
+    async cancelOrchestrationItem(orchestrationId) {
+      if (!orchestrationId) return;
+      try {
+        const res = await authedFetch(`/api/v2/rea/orchestrate/${encodeURIComponent(orchestrationId)}/cancel`, {
+          method: 'POST',
+          body: JSON.stringify({ reason: 'Cancelado pelo operador via Command Center' })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          this.appendMessage('system', `🛑 Orquestração ${orchestrationId} cancelada pelo operador.`);
+          await this.syncApprovalQueue();
+        }
+      } catch (err) {
+        this.appendMessage('system', `⚠️ Falha ao cancelar ${orchestrationId}: ${err.message}`);
+      }
+    },
+
+    async cancelActiveExecution() {
+      if (state.activeOrchestrationId) {
+        await this.cancelOrchestrationItem(state.activeOrchestrationId);
+        state.activeOrchestrationId = null;
+        return;
+      }
+      if (this._trackedJobs && this._trackedJobs.size > 0) {
+        const firstJobId = Array.from(this._trackedJobs.keys())[0];
+        await this.cancelJob(firstJobId);
+      }
     },
 
     // ── Persistent Chat Error & Alert History System ──
@@ -2146,6 +2300,12 @@
       const msg = document.createElement('div');
       msg.className = `fsb-msg ${role}`;
       const name = senderName || (role === 'user' ? 'Operador' : 'Mascote Fênix');
+      msg.dataset.senderRole = role;
+      msg.dataset.senderName = name;
+      const prev = container.lastElementChild;
+      if (prev && prev.dataset?.senderRole === role && prev.dataset?.senderName === name && !prev.querySelector('[data-fsb-welcome]')) {
+        msg.classList.add('fsb-msg-grouped');
+      }
       msg.innerHTML = `
         <div class="fsb-msg-sender">${role === 'user' ? '<i class="ph-bold ph-user"></i>' : '<i class="ph-bold ph-robot"></i>'} ${name}</div>
         <div class="fsb-bubble">${role === 'user' ? this.escapeHTML(text) : this.renderMarkdown(text)}</div>
@@ -2174,6 +2334,12 @@
       if (!container) return;
       const msg = document.createElement('div');
       msg.className = 'fsb-msg bot';
+      msg.dataset.senderRole = 'bot';
+      msg.dataset.senderName = 'Mascote Fênix';
+      const prev = container.lastElementChild;
+      if (prev && prev.dataset?.senderRole === 'bot' && prev.dataset?.senderName === 'Mascote Fênix' && !prev.querySelector('[data-fsb-welcome]')) {
+        msg.classList.add('fsb-msg-grouped');
+      }
 
       const responseText = data.response || data.reply || data.output || data.message || 'O serviço não retornou uma resposta.';
       const bodyHtml = this.renderMarkdown(responseText);
@@ -5702,6 +5868,11 @@
       },
       sendChatMessage: (opts) => SidebarController.sendChatMessage(opts),
       toggleErrorsDrawer: (force) => SidebarController.toggleErrorsDrawer(force),
+      toggleApprovalQueueDrawer: (force) => SidebarController.toggleApprovalQueueDrawer(force),
+      syncApprovalQueue: () => SidebarController.syncApprovalQueue(),
+      approveOrchestrationItem: (id) => SidebarController.approveOrchestrationItem(id),
+      cancelOrchestrationItem: (id) => SidebarController.cancelOrchestrationItem(id),
+      cancelActiveExecution: () => SidebarController.cancelActiveExecution(),
       retryErrorPrompt: (prompt) => SidebarController.retryErrorPrompt(prompt),
       recordPersistentChatError: (record, opts) => SidebarController.recordPersistentChatError(record, opts),
       setMood: (mood) => MascotController.setMood(mood),

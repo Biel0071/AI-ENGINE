@@ -2280,21 +2280,25 @@ window.updateSidebarCounters = function(snapshot) {
         return onlineStatuses.has(String(agent?.status || agent?.state || '').toUpperCase());
       })
       : null;
-    const activeWorking = Array.isArray(agentsList)
-      ? agentsList.filter((agent) => activeWorkStatuses.has(String(agent?.status || agent?.state || '').toUpperCase()) || Boolean(agent?.currentJob || agent?.currentTask)).length
+    const rawJobsList = Array.isArray(snapshot?.jobs)
+      ? snapshot.jobs
+      : (Array.isArray(snapshot?.jobs?.jobs) ? snapshot.jobs.jobs : (Array.isArray(window.state?.jobs) ? window.state.jobs : []));
+    const runningJobsNow = Array.isArray(rawJobsList)
+      ? rawJobsList.filter((j) => /RUNNING|ACTIVE|DISPATCHED|EXECUTING/i.test(String(j?.status || j?.state || ''))).length
       : 0;
-    const onlineCount = onlineAgents ? onlineAgents.length : (Array.isArray(agentsList) ? agentsList.length : '—');
+    const activeWorking = (Array.isArray(agentsList) && runningJobsNow > 0)
+      ? agentsList.filter((agent) => activeWorkStatuses.has(String(agent?.status || agent?.state || '').toUpperCase()) || Boolean(agent?.currentJob)).length
+      : 0;
+    const onlineCount = onlineAgents ? onlineAgents.length : '—';
     updateTopKpi(topKpiAgents, onlineCount, 'Agentes online');
     const topKpiAgentsLabel = document.getElementById('topKpiAgentsLabel');
     if (topKpiAgentsLabel) {
-      if (Array.isArray(agentsList) && presenceMeasured) {
-        topKpiAgentsLabel.textContent = activeWorking > 0 ? `Agentes (${activeWorking} at)` : 'Agentes';
-      } else if (Array.isArray(agentsList)) {
-        topKpiAgentsLabel.textContent = 'Agentes';
-      } else {
-        topKpiAgentsLabel.textContent = 'Agentes';
-      }
+      topKpiAgentsLabel.textContent = 'Agentes';
     }
+    const hudRegEl = document.getElementById('officeHudRegisteredAgents');
+    if (hudRegEl) hudRegEl.textContent = Array.isArray(agentsList) ? String(agentsList.length) : '—';
+    const hudActEl = document.getElementById('officeHudActiveAgents');
+    if (hudActEl) hudActEl.textContent = Array.isArray(agentsList) ? `${activeWorking}/${onlineCount}` : '—';
     const button = topKpiAgents.closest('button');
     if (button) {
       button.title = `Agentes: ${activeWorking} ativos em execução, ${onlineCount} online de ${Array.isArray(agentsList) ? agentsList.length : '—'} registrados. Clique para abrir equipe de agentes.`;
@@ -2326,10 +2330,22 @@ window.updateSidebarCounters = function(snapshot) {
       const activeJobs = jobsSource.filter((job) => activeStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
       const pendingJobs = jobsSource.filter((job) => pendingStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
       updateTopKpi(topKpiJobs, activeJobs.length, 'Jobs em execução');
+      const completedStatuses = new Set(['COMPLETED', 'SUCCEEDED', 'DONE', 'VERIFIED_SUCCESS']);
+      const approvalStatuses = new Set(['PENDING_CONFIRMATION', 'AWAITING_APPROVAL', 'AWAITING_HUMAN_APPROVAL']);
+      const completedJobs = jobsSource.filter((job) => completedStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
+      const approvalJobs = jobsSource.filter((job) => approvalStatuses.has(String(job?.status || job?.state || '').toUpperCase()));
       const topKpiJobsLabel = topKpiJobs.parentElement?.querySelector('.fnx-kpi-label');
       if (topKpiJobsLabel) {
-        topKpiJobsLabel.textContent = pendingJobs.length > 0 ? `Jobs (${pendingJobs.length} pend)` : 'Jobs';
+        topKpiJobsLabel.textContent = 'Jobs';
       }
+      const hudQueueEl = document.getElementById('officeHudQueuedJobs');
+      if (hudQueueEl) hudQueueEl.textContent = String(pendingJobs.length);
+      const hudCompEl = document.getElementById('officeHudCompletedJobs');
+      if (hudCompEl) hudCompEl.textContent = String(completedJobs.length);
+      const hudApprEl = document.getElementById('officeHudApprovalQueue');
+      if (hudApprEl) hudApprEl.textContent = String(approvalJobs.length);
+      const swarmWaveEl = document.getElementById('fenixSwarmWaveText');
+      if (swarmWaveEl) swarmWaveEl.textContent = `Swarm: ${activeJobs.length} exec · ${pendingJobs.length} fila`;
       const button = topKpiJobs.closest('button');
       if (button) {
         button.title = `Jobs: ${activeJobs.length} em execução agora, ${pendingJobs.length} pendentes na fila de ${jobsSource.length} no total. Clique para abrir painel de runtime.`;

@@ -1696,7 +1696,10 @@
     _resolveAgentActivity(agent = {}) {
       const status = String(agent.status || agent.state || '').toUpperCase();
       const rawTask = String(agent.currentTask || agent.assignedTask || '').trim();
-      const task = this._cleanAgentTask(rawTask).slice(0, 52);
+      const cleanFn = (this && typeof this._cleanAgentTask === 'function')
+        ? this._cleanAgentTask.bind(this)
+        : FenixWorld3DEngine.prototype._cleanAgentTask;
+      const task = cleanFn(rawTask).slice(0, 52);
       if (String(agent.movementState || '').toUpperCase() === 'WALKING') {
         return { key: 'walking', text: task ? `A caminho · ${task}` : 'Em deslocamento', icon: '➜', color: '#38bdf8' };
       }
@@ -1831,6 +1834,7 @@
         if (head?.rotation) {
           head.rotation.set(0, Math.sin(idlePhase * 0.6) * 0.08, 0);
         }
+        return false;
       }
       return true;
     }
@@ -1870,7 +1874,7 @@
         const fetchFn = window.fenixAuthedFetch || window.fenixFetch || fetch;
         const requestState = async (endpoint) => {
           const sessionFetch = typeof window.fetch === 'function' ? window.fetch : fetchFn;
-          let response = await sessionFetch(endpoint, { credentials: 'same-origin', signal: AbortSignal.timeout(10000) });
+          let response = await sessionFetch(endpoint, { credentials: 'same-origin', headers, signal: AbortSignal.timeout(10000) });
           if (response.status === 401 && token && sessionFetch !== fetchFn) {
             response = await fetchFn(endpoint, { credentials: 'same-origin', headers, signal: AbortSignal.timeout(10000) });
           }
@@ -1913,6 +1917,10 @@
           return;
         }
         this.telemetryStatus = 'MEASURED';
+        if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
+          const loadStatus = document.getElementById('cityRuntimeLoadStatus');
+          if (loadStatus) loadStatus.hidden = true;
+        }
         this.lastCitySnapshot = data;
         this.lastCitySnapshotAt = Date.now();
         const reportedRunningJobs = Number(data.metrics?.runningJobs);
@@ -9775,6 +9783,7 @@
         const worldZ = (v - u) / 2;
 
         if (Math.abs(worldX) < 140 && Math.abs(worldZ) < 140) {
+          this.focusEntity(new T.Vector3(worldX, 0, worldZ), this.cameraState.targetDistance || 68);
           this.cameraState.targetLookAt.set(worldX, 0, worldZ);
           this._lastMinimapClick = { x: clickX, y: clickY, time: performance.now(), wx: worldX, wz: worldZ };
           for (const d of DISTRICTS) {
