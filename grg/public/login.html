@@ -102,7 +102,7 @@
       <input id="user" name="username" type="text" placeholder="grg-admin" value="grg-admin" autocomplete="username" required />
       <label for="pw">Senha</label>
       <div style="position:relative">
-        <input id="pw" name="password" type="password" placeholder="••••••••" value="grg-admin" autocomplete="current-password" required style="padding-right:40px;" />
+        <input id="pw" name="password" type="password" placeholder="••••••••" value="admin" autocomplete="current-password" required style="padding-right:40px;" />
         <span id="togglePw" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none; filter:grayscale(1) brightness(1.5);">👁️</span>
       </div>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; margin-bottom:4px;">
@@ -187,7 +187,7 @@
       const config = await oidcConfig;
       if (config.enabled && window.crypto && crypto.subtle) { const verifier=b64url(crypto.getRandomValues(new Uint8Array(32))); const challenge=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))); const state=b64url(crypto.getRandomValues(new Uint8Array(24))); sessionStorage.setItem('oidc_verifier',verifier); sessionStorage.setItem('oidc_state',state); const auth=new URL(config.authorizationEndpoint,location.origin); auth.search=new URLSearchParams({ response_type:'code', client_id:config.clientId, redirect_uri:config.redirectUri, scope:config.scope, state, code_challenge:challenge, code_challenge_method:'S256' }); location.href=auth; return; }
       const userId = (document.getElementById('user').value || '').trim() || 'grg-admin';
-      const password = (document.getElementById('pw').value || '') || 'grg-admin';
+      const password = (document.getElementById('pw').value || '') || 'admin';
       const rememberMe = document.getElementById('rememberMe') ? document.getElementById('rememberMe').checked : true;
       try {
         const r = await fetch('/api/login', {

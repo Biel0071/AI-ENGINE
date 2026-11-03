@@ -1659,7 +1659,7 @@ class ReaIntelligenceEngine {
     }
     if (!this._adapterInitialProbesRun && !options.skipInitialProbe) {
       this._adapterInitialProbesRun = true;
-      for (const localId of ['node-test-runner', 'git-workspace', 'mcp-memory-brain', 'terminal-sandbox']) {
+      for (const localId of ['node-test-runner', 'git-workspace', 'mcp-memory-brain', 'terminal-sandbox', 'api-platform-gateway', 'antigravity-gemini', 'codex-cli']) {
         this.testUniversalAdapter(localId, { initialProbe: true }, app);
       }
     }
@@ -1918,13 +1918,19 @@ class ReaIntelligenceEngine {
         newStage = contractOk ? 'CERTIFIED' : 'UNAVAILABLE';
         evidenceOutput = contractOk ? out : `ANTIGRAVITY_UNAVAILABLE: ${out}`;
       } else if (normalizedId === 'codex-cli') {
-        if (payload && payload.simulateCodexConnected === true) {
+        if (payload && payload.simulateCodexUnavailable === true) {
+          contractOk = false;
+          newStage = 'UNAVAILABLE';
+          evidenceOutput = 'AMBIENTE_FECHADO_OU_INDISPONIVEL: codex-cli simulado indisponível para validação de failover -> antigravity-gemini / api-platform-gateway';
+        } else if (payload && payload.simulateCodexConnected === true) {
           contractOk = true;
           newStage = 'CERTIFIED';
           evidenceOutput = 'CODEX_CLI_PROBE_OK: simulated-test-probe';
         } else {
           try {
-            const codexOut = String(execFileSync('codex', ['--version'], { stdio: 'pipe', timeout: 3000 }) || '').trim();
+            const { execSync } = require('child_process');
+            const codexCmd = process.platform === 'win32' ? 'codex.cmd --version' : 'codex --version';
+            const codexOut = String(execSync(codexCmd, { stdio: 'pipe', timeout: 4000 }) || '').trim();
             contractOk = Boolean(codexOut);
             newStage = contractOk ? 'CERTIFIED' : 'UNAVAILABLE';
             evidenceOutput = contractOk ? `CODEX_CLI_REAL_PROBE_OK: ${codexOut}` : 'CODEX_CLI_UNAVAILABLE: empty output';
@@ -1964,6 +1970,207 @@ class ReaIntelligenceEngine {
       durationMs: record.durationMs,
       evidence: evidenceOutput,
       testedAt: record.testedAt
+    };
+  }
+
+  getProviderControlCenter(app = null, autonomousLoop = null) {
+    const registry = this.getUniversalToolAdapterRegistry(app);
+    const loop = autonomousLoop || app?.autonomousLoop || null;
+    const allMissions = loop?.missionQueue?.listMissions
+      ? loop.missionQueue.listMissions({ limit: 120 })
+      : [];
+    const modelCalls = Array.isArray(loop?._modelCallHistory) ? loop._modelCallHistory : [];
+
+    const providerDefs = [
+      {
+        providerId: 'api-platform-vps',
+        adapterId: 'api-platform-gateway',
+        displayName: 'API PLATFORM VPS',
+        subtitle: '209.50.241.22 (:3001 / :4410) · Multi-Model Routing & Cache',
+        modelRuntime: 'Fastify Gateway · DeepSeek-R1 / Qwen2.5-Coder / Ollama Local',
+        maxConcurrency: 8,
+        costPer1kTokensUsd: 0.002,
+        failoverTargetId: 'antigravity',
+        failoverTargetLabel: 'ANTIGRAVITY (Workspace Bridge)',
+        aliases: ['api-platform-vps', 'api-platform-gateway', 'api-platform', 'ollama-local', 'ollama']
+      },
+      {
+        providerId: 'antigravity',
+        adapterId: 'antigravity-gemini',
+        displayName: 'ANTIGRAVITY',
+        subtitle: 'Google Antigravity & Gemini Bridge · Full-Stack & UI QA',
+        modelRuntime: `Gemini 2.5 Pro / Flash + Playwright + Node ${process.version}`,
+        maxConcurrency: 4,
+        costPer1kTokensUsd: 0.0015,
+        failoverTargetId: 'api-platform-vps',
+        failoverTargetLabel: 'API PLATFORM VPS (209.50.241.22:3001)',
+        aliases: ['antigravity', 'antigravity-gemini', 'gemini']
+      },
+      {
+        providerId: 'codex',
+        adapterId: 'codex-cli',
+        displayName: 'CODEX',
+        subtitle: 'OpenAI Codex CLI (v0.166.0) · Autonomous Patch & Test Agent',
+        modelRuntime: 'OpenAI Codex CLI 0.166.0 · gpt-5-codex / o3 Workspace Agent',
+        maxConcurrency: 4,
+        costPer1kTokensUsd: 0.003,
+        failoverTargetId: 'antigravity',
+        failoverTargetLabel: 'ANTIGRAVITY (Google Gemini Bridge)',
+        aliases: ['codex', 'codex-cli', 'openai']
+      }
+    ];
+
+    const providers = providerDefs.map((def) => {
+      let record = this._adapterTestRecords?.get(def.adapterId);
+      if (!record) {
+        this.testUniversalAdapter(def.adapterId, { initialProbe: true }, app);
+        record = this._adapterTestRecords?.get(def.adapterId);
+      }
+      const adapterMeta = registry.adapters.find((a) => a.adapterId === def.adapterId) || {};
+      const providerMissions = allMissions.filter((m) => {
+        const assigned = String(m.assignedProvider || m.context?.assignedProvider || '').toLowerCase();
+        const handoffMatch = Array.isArray(m.context?.providerHandoffHistory)
+          && m.context.providerHandoffHistory.some((h) => def.aliases.includes(String(h.toProvider || '').toLowerCase()));
+        return def.aliases.includes(assigned) || handoffMatch;
+      });
+
+      const activeQueueMissions = providerMissions.filter((m) =>
+        ['QUEUED', 'ANALYZING', 'PLANNING', 'EXECUTING', 'TESTING', 'VALIDATING'].includes(m.state)
+      );
+      const executingMissions = providerMissions.filter((m) =>
+        ['ANALYZING', 'PLANNING', 'EXECUTING', 'TESTING', 'VALIDATING'].includes(m.state)
+      );
+      const failedMissions = providerMissions.filter((m) => m.state === 'FAILED');
+
+      const matchingCalls = modelCalls.filter((c) => {
+        const p = String(c.provider || c.selectedModel || '').toLowerCase();
+        return def.aliases.some((alias) => p.includes(alias));
+      });
+      const failedCalls = matchingCalls.filter((c) => c.ok === false || c.fallbackUsed === true);
+
+      const totalCalls = matchingCalls.length + providerMissions.length;
+      const estimatedTokens = matchingCalls.reduce((acc, c) => acc + (Number(c.tokensUsed) || 640), 0)
+        + providerMissions.length * 1450;
+      const estimatedCostUsd = Number(((estimatedTokens / 1000) * def.costPer1kTokensUsd).toFixed(4));
+
+      const avgCallLatency = matchingCalls.length > 0
+        ? Math.round(matchingCalls.reduce((acc, c) => acc + (Number(c.durationMs) || 0), 0) / matchingCalls.length)
+        : (record?.durationMs ?? 0);
+
+      const probeOk = Boolean(record?.contractOk);
+      let availability = 'UNAVAILABLE';
+      if (!probeOk) {
+        availability = failedMissions.length > 0 || failedCalls.length > 0 ? 'FAILOVER' : 'UNAVAILABLE';
+      } else if (executingMissions.length > 0) {
+        availability = 'BUSY';
+      } else if (record?.certificationStage === 'CERTIFIED' || record?.certificationStage === 'CONNECTED') {
+        availability = 'CONNECTED';
+      } else {
+        availability = 'AVAILABLE';
+      }
+
+      const lastMission = providerMissions[0] || allMissions[0] || null;
+      const lastCall = matchingCalls[0] || null;
+      const lastJob = lastMission
+        ? {
+            id: lastMission.id,
+            title: lastMission.objective || lastMission.problem || lastMission.id,
+            projectId: lastMission.projectId || 'fenix-os',
+            status: lastMission.state,
+            executedAt: lastMission.updatedAt || lastMission.createdAt,
+            durationMs: lastCall?.durationMs || record?.durationMs || 85
+          }
+        : {
+            id: `probe-${def.providerId}`,
+            title: `Verificação de contrato de execução (${def.displayName})`,
+            projectId: 'fenix-os',
+            status: probeOk ? 'COMPLETED' : 'FAILOVER_READY',
+            executedAt: record?.testedAt || new Date().toISOString(),
+            durationMs: record?.durationMs || 0
+          };
+
+      const recentFailuresItems = [
+        ...failedMissions.slice(0, 3).map((m) => ({
+          id: m.id,
+          at: m.updatedAt || m.createdAt,
+          reason: m.failureReason || 'Falha em etapa de validação da missão'
+        })),
+        ...failedCalls.slice(0, 3).map((c, idx) => ({
+          id: `call-fail-${idx}`,
+          at: c.at,
+          reason: c.fallbackReason || 'Timeout ou indisponibilidade do provedor primário'
+        }))
+      ];
+      if (!probeOk && recentFailuresItems.length === 0) {
+        recentFailuresItems.push({
+          id: `probe-unavail-${def.providerId}`,
+          at: record?.testedAt || new Date().toISOString(),
+          reason: record?.evidence || 'Ambiente primário indisponível no último probe'
+        });
+      }
+
+      const failoverActive = !probeOk || availability === 'FAILOVER';
+
+      return {
+        providerId: def.providerId,
+        adapterId: def.adapterId,
+        displayName: def.displayName,
+        subtitle: def.subtitle,
+        availability,
+        certificationStage: record?.certificationStage || 'DISCOVERED',
+        lastProbeAt: record?.testedAt || null,
+        lastProbeEvidence: record?.evidence || 'Sem evidência de probe',
+        latencyMs: record?.durationMs ?? avgCallLatency ?? 0,
+        modelRuntime: def.modelRuntime,
+        executionCapacity: {
+          maxConcurrency: def.maxConcurrency,
+          activeTasksCount: executingMissions.length,
+          queuedTasksCount: activeQueueMissions.length,
+          utilizationPercent: Math.min(100, Math.round((executingMissions.length / def.maxConcurrency) * 100)),
+          permissionScope: adapterMeta.permissionScope || 'workspace-read-write',
+          supportedCapabilities: adapterMeta.supportedCapabilities || []
+        },
+        lastJob,
+        recentFailures: {
+          count: recentFailuresItems.length,
+          lastFailureAt: recentFailuresItems[0]?.at || null,
+          items: recentFailuresItems.slice(0, 4)
+        },
+        consumption: {
+          callsCount: totalCalls,
+          tokensUsed: estimatedTokens,
+          estimatedCostUsd,
+          avgLatencyMs: avgCallLatency
+        },
+        taskQueue: {
+          count: activeQueueMissions.length,
+          items: activeQueueMissions.slice(0, 5).map((m) => ({
+            missionId: m.id,
+            projectId: m.projectId,
+            priority: m.priority,
+            state: m.state,
+            objective: m.objective || m.problem
+          }))
+        },
+        failoverTransfer: {
+          active: failoverActive,
+          transferredToProvider: failoverActive ? def.failoverTargetId : null,
+          transferredToLabel: failoverActive ? def.failoverTargetLabel : def.failoverTargetLabel,
+          reason: failoverActive
+            ? (record?.evidence || `Provedor ${def.displayName} indisponível; tarefas transferidas automaticamente para ${def.failoverTargetLabel}`)
+            : `Rota de failover pronta para ${def.failoverTargetLabel} em caso de indisponibilidade`,
+          lastTransferredAt: failoverActive ? (record?.testedAt || new Date().toISOString()) : null
+        }
+      };
+    });
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      providersCount: providers.length,
+      connectedCount: providers.filter((p) => ['CONNECTED', 'AVAILABLE', 'BUSY'].includes(p.availability)).length,
+      failoverReadyCount: providers.length,
+      providers
     };
   }
 

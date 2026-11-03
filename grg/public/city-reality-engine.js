@@ -707,9 +707,12 @@
       const isHealthAvailable = availability.health || Boolean(healthData.status);
       const isApiAvailable = isHealthAvailable || availability.events || availability.state || availability.telemetry;
       const stateText = isHealthAvailable ? String(healthData.status || 'ONLINE').toUpperCase() : isApiAvailable ? 'ONLINE' : 'INDISPONÍVEL';
+      const isHealthyState = ['online', 'healthy', 'ready', 'active'].includes(String(healthData.status || '').toLowerCase());
       if (tickerState) {
-        tickerState.dataset.state = isHealthAvailable ? (String(healthData.status).toLowerCase() === 'online' || String(healthData.status).toLowerCase() === 'healthy' ? 'online' : 'degraded') : isApiAvailable ? 'online' : 'unavailable';
-        tickerState.title = isHealthAvailable ? 'Status recebido de /api/v2/system/health' : isApiAvailable ? 'Runtime conectado' : 'Sem resposta da API do Fênix';
+        tickerState.dataset.state = isHealthAvailable ? (isHealthyState ? 'online' : 'degraded') : isApiAvailable ? 'online' : 'unavailable';
+        tickerState.title = isHealthAvailable
+          ? (isHealthyState ? `Sistema Operacional (${stateText}) · Telemetria sincronizada` : `Sistema em modo mitigado (${stateText}) · Armazenamento em memória ou carga elevada`)
+          : isApiAvailable ? 'Runtime conectado' : 'Sem resposta da API do Fênix';
       }
       if (tickerStateText) tickerStateText.textContent = stateText;
 

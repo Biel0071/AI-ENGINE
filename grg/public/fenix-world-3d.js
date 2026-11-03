@@ -1425,9 +1425,10 @@
 
       // Camera State
       const saved = this._loadState();
-      const savedTarget = saved.target && ['x', 'y', 'z'].every((axis) => Number.isFinite(Number(saved.target[axis])))
+      const isLegacyTarget = !saved.target || (Math.abs(Number(saved.target.x || 0)) < 0.1 && Math.abs(Number(saved.target.z || 0)) < 2);
+      const savedTarget = (!isLegacyTarget && saved.target && ['x', 'y', 'z'].every((axis) => Number.isFinite(Number(saved.target[axis]))))
         ? new T.Vector3(Number(saved.target.x), Number(saved.target.y), Number(saved.target.z))
-        : new T.Vector3(0, 0, 0);
+        : new T.Vector3(0, 4, -14);
       const savedDistance = normalizeCameraDistance(saved.distance);
       this.cameraState = {
         azimuth: saved.azimuth !== undefined ? saved.azimuth : Math.PI / 4,
@@ -2406,7 +2407,7 @@
         canvas: this.canvas,
         antialias: true,
         alpha: false,
-        preserveDrawingBuffer: false,
+        preserveDrawingBuffer: true,
         powerPreference: 'low-power'
       });
       this.renderer.setSize(w, h, false);
@@ -4068,27 +4069,48 @@
     }
 
     _createPitchedRoof(width, depth, height = 2.6) {
+      // Modern High-Tech Stepped Terrace & Solar Pavilion Roof (Cyberpunk/Solarpunk Architecture)
       const roofGroup = new T.Group();
-      roofGroup.name = 'PitchedGableRoof';
+      roofGroup.name = 'ModernTechTerraceRoof';
 
-      const prismShape = new T.Shape();
-      prismShape.moveTo(-width / 2 - 0.3, 0);
-      prismShape.lineTo(0, height);
-      prismShape.lineTo(width / 2 + 0.3, 0);
-      prismShape.closePath();
+      // 1. Inset Penthouse & Glass Skylight
+      const pW = Math.max(2, width - 2.8);
+      const pD = Math.max(2, depth - 2.8);
+      const penthouse = new T.Mesh(new T.BoxGeometry(pW, 1.4, pD), this.materials.urbanFacadeGlass || this.materials.officeGlass);
+      penthouse.position.set(0, 0.7, 0);
+      penthouse.castShadow = true;
+      roofGroup.add(penthouse);
 
-      const extrudeSettings = { depth: depth + 0.6, bevelEnabled: false };
-      const roofGeo = new T.ExtrudeGeometry(prismShape, extrudeSettings);
-      const roofMesh = new T.Mesh(roofGeo, this.materials.terracottaRoof || this.materials.warehouseRoof);
-      roofMesh.position.set(0, 0, -depth / 2 - 0.3);
-      roofMesh.castShadow = true; this._applyLigneClaire(roofMesh, 24); roofGroup.add(roofMesh);
+      // 2. Solar Canopy Array
+      const solarW = Math.max(2, width * 0.55);
+      const solarD = Math.max(2, depth * 0.55);
+      const solar = new T.Mesh(new T.BoxGeometry(solarW, 0.10, solarD), this.materials.solarPanel || this.materials.dockBumper);
+      solar.position.set(-width * 0.12, 1.65, 0);
+      solar.rotation.x = Math.PI / 20;
+      solar.castShadow = true;
+      roofGroup.add(solar);
 
-      // Brick Chimney
-      const chimney = new T.Mesh(new T.BoxGeometry(0.9, height + 1.2, 0.9), this.materials.brickWall);
-      chimney.position.set(width * 0.28, height * 0.6, -depth * 0.15);
-      chimney.castShadow = true; this._applyLigneClaire(chimney, 35); const chCap = new T.Mesh(new T.BoxGeometry(1.1, 0.15, 1.1), this.materials.mansardSlate);
-      chCap.position.set(width * 0.28, height * 1.2 + 0.08, -depth * 0.15);
-      roofGroup.add(chimney, chCap);
+      // 3. Compact HVAC Chiller with Rotating Fan Grill
+      const chiller = new T.Mesh(new T.BoxGeometry(1.8, 1.1, 1.4), this.materials.brushedTitanium || this.materials.sidewalk);
+      chiller.position.set(width * 0.24, 0.55, -depth * 0.15);
+      chiller.castShadow = true;
+      const fanGrill = new T.Mesh(new T.CylinderGeometry(0.5, 0.5, 0.08, 12), this.materials.dockBumper);
+      fanGrill.position.set(width * 0.24, 1.14, -depth * 0.15);
+      roofGroup.add(chiller, fanGrill);
+
+      // 4. Rooftop Garden Lawn Patch & Planter
+      const lawnW = Math.max(1.8, width * 0.35);
+      const lawnD = Math.max(1.8, depth * 0.35);
+      const lawn = new T.Mesh(new T.BoxGeometry(lawnW, 0.08, lawnD), this.materials.grass);
+      lawn.position.set(width * 0.22, 0.04, depth * 0.22);
+      const hedge = this._createDetailedTree('hedge');
+      hedge.position.set(width * 0.22, 0.08, depth * 0.22);
+      roofGroup.add(lawn, hedge);
+
+      // 5. Perimeter Glass Safety Balustrade
+      const balustrade = new T.Mesh(new T.BoxGeometry(width + 0.2, 0.85, depth + 0.2), this.materials.clearGlass || this.materials.glass);
+      balustrade.position.y = 0.42;
+      roofGroup.add(balustrade);
 
       return roofGroup;
     }
@@ -5223,6 +5245,7 @@
       const cabBaseY = podiumH + 1.6;
       liftCabGroup.position.set(liftX, cabBaseY, liftZ);
 
+      this.elevatorCab = liftCabGroup;
       // Cab floor & ceiling
       const cabFloor = new T.Mesh(new T.BoxGeometry(2.9, 0.14, 2.9), this.materials.terrazzoFloor || this.materials.brushedTitanium);
       cabFloor.position.y = -1.45;
@@ -6463,17 +6486,19 @@
       // Initialize Floating Project Badges across the Metropolitan Map
       this.projectLabels = new Map();
       const projectHUDList = [
-        { id: 'zapflow-crm', name: 'ZapFlow CRM', sub: 'CRM & Atendimento · :8182', icon: 'ph-bold ph-chats-circle', color: '#3b82f6', x: -24, z: 15, h: 14.5 },
-        { id: 'ius-email-control', name: 'IUS Email Control', sub: 'Email Intel · :1000', icon: 'ph-bold ph-envelope-simple', color: '#8b5cf6', x: -14, z: 27, h: 16.5 },
-        { id: 'zai-crm', name: 'ZAI CRM', sub: 'Gestão & Omnichannel · :8080', icon: 'ph-bold ph-headset', color: '#06b6d4', x: -28, z: 27, h: 14.5 },
-        { id: 'qwen-studio', name: 'Qwen Studio', sub: 'Modelos LLM & Cognição · :7860', icon: 'ph-bold ph-cpu', color: '#ec4899', x: 22, z: 15, h: 16.5 },
-        { id: 'meta-autoposter', name: 'Meta AutoPoster', sub: 'Social Media & Ads', icon: 'ph-bold ph-share-network', color: '#f43f5e', x: 14, z: 27, h: 14.5 },
-        { id: 'mf-atacadista', name: 'MF Atacadista', sub: 'E-Commerce B2B · :8181', icon: 'ph-bold ph-shopping-bag-open', color: '#10b981', x: -22, z: -15, h: 12.5 },
-        { id: 'fortlev-quote', name: 'Fortlev Quote', sub: 'Orçamentos & Cotações B2B', icon: 'ph-bold ph-file-text', color: '#f59e0b', x: 22, z: -15, h: 14.5 },
-        { id: 'project-dev-studio', name: 'Dev Studio', sub: 'Engenharia & Monaco IDE · :3001', icon: 'ph-bold ph-code', color: '#00d9ff', x: -61, z: 12, h: 14.5 },
-        { id: 'project-analytics', name: 'Live Analytics', sub: 'Telemetria & Métricas · :3002', icon: 'ph-bold ph-chart-line-up', color: '#6366f1', x: 61, z: 12, h: 14.5 },
-        { id: 'project-security-vault', name: 'Security Vault', sub: 'Criptografia & Auth 2FA', icon: 'ph-bold ph-shield-check', color: '#ef4444', x: -22, z: -62, h: 14.5 },
-        { id: 'project-event-bus', name: 'Event Bus Kafka', sub: 'Mensageria & Fila · :9092', icon: 'ph-bold ph-arrows-split', color: '#22c55e', x: 22, z: -62, h: 14.5 },
+        { id: 'zapflow-crm', name: 'ZapFlow CRM', sub: 'CRM & Omnichannel · :8182', icon: 'ph-bold ph-chats-circle', color: '#00d9ff', x: -24, z: 15, h: 15.5 },
+        { id: 'ius-email-control', name: 'IUS Email Control', sub: 'Email Engine · :1000', icon: 'ph-bold ph-envelope-simple', color: '#8b5cf6', x: -14, z: 27, h: 17.5 },
+        { id: 'zai-crm', name: 'ZAI CRM', sub: 'Suporte & Chatbot · :8080', icon: 'ph-bold ph-headset', color: '#38bdf8', x: -28, z: 27, h: 15.5 },
+        { id: 'qwen-studio', name: 'Qwen Studio', sub: 'Modelos Cognitivos · :7860', icon: 'ph-bold ph-brain', color: '#ec4899', x: 22, z: 15, h: 17.5 },
+        { id: 'meta-autoposter', name: 'Meta AutoPoster', sub: 'Social Media Ops', icon: 'ph-bold ph-share-network', color: '#f43f5e', x: 14, z: 27, h: 15.5 },
+        { id: 'mf-atacadista', name: 'MF Atacadista', sub: 'E-Commerce B2B · :8181', icon: 'ph-bold ph-shopping-bag-open', color: '#10b981', x: -22, z: -15, h: 14.5 },
+        { id: 'fortlev-quote', name: 'Fortlev Quote', sub: 'Cotações B2B & Preços', icon: 'ph-bold ph-file-text', color: '#f59e0b', x: 22, z: -15, h: 15.5 },
+        { id: 'marmita-da-casa', name: 'Marmita da Casa', sub: 'Food Ops & Delivery', icon: 'ph-bold ph-fork-knife', color: '#22c55e', x: -14, z: -27, h: 14.0 },
+        { id: 'zapai-crm', name: 'ZapAI CRM', sub: 'WhatsApp Gateway & Bots', icon: 'ph-bold ph-whatsapp-logo', color: '#00d9ff', x: -28, z: -27, h: 15.0 },
+        { id: 'project-dev-studio', name: 'Dev Studio', sub: 'Engenharia & Monaco IDE · :3001', icon: 'ph-bold ph-code', color: '#00d9ff', x: -61, z: 12, h: 15.5 },
+        { id: 'project-analytics', name: 'Live Analytics', sub: 'Telemetria 360 · :3002', icon: 'ph-bold ph-chart-line-up', color: '#6366f1', x: 61, z: 12, h: 15.5 },
+        { id: 'project-security-vault', name: 'Security Vault', sub: 'Auth & Zero-Trust', icon: 'ph-bold ph-shield-check', color: '#ef4444', x: -22, z: -62, h: 15.5 },
+        { id: 'project-event-bus', name: 'Event Bus Kafka', sub: 'Kafka Events · :9092', icon: 'ph-bold ph-arrows-split', color: '#22c55e', x: 22, z: -62, h: 15.5 },
       ];
 
       for (const proj of projectHUDList) {
@@ -6595,7 +6620,7 @@
           const x = (point.x * width / 2) + width / 2;
           const y = (-point.y * height / 2) + height / 2;
           const isCloseUp = Boolean(this.cameraState.isStreetView);
-          const isFarOut = this.cameraState.distance > 195;
+          const isFarOut = this.cameraState.distance > 290;
           const visible = !isCloseUp && !isFarOut && point.z > -1 && point.z < 1 && x >= -24 && x <= width + 24 && y >= -24 && y <= height + 24;
           label.element.hidden = !visible;
           if (!visible) continue;
@@ -7744,9 +7769,9 @@
         this.followingAgentId = null;
         this.cameraState.preferenceDistance = CITY_DEFAULT_DISTANCE;
         this.cameraState.targetDistance = CITY_DEFAULT_DISTANCE * responsiveCameraScale(this.camera?.aspect);
-        this.cameraState.targetLookAt.set(0, 0, 8);
+        this.cameraState.targetLookAt.set(0, 4, -14);
         this.cameraState.targetAzimuth = Math.PI / 4;
-        this.cameraState.targetElevation = 0.56;
+        this.cameraState.targetElevation = 0.52;
         if (Boolean(navigator.webdriver) || Boolean(window.__FENIX_HEADLESS__)) {
           this._updateCameraPosition(true);
           this._updateDistrictLabels?.();
@@ -7904,13 +7929,14 @@
     resetCamera() {
       this.stopFollowing();
       this.cameraMode = 'orbit';
-      const resetDistance = CITY_DEFAULT_DISTANCE * responsiveCameraScale(this.camera?.aspect);
+      const resetDistance = Math.max(140, CITY_DEFAULT_DISTANCE * responsiveCameraScale(this.camera?.aspect));
       this.cameraState.azimuth = Math.PI / 4;
-      this.cameraState.elevation = 0.56;
+      this.cameraState.elevation = 0.52;
       this.cameraState.distance = resetDistance;
-      this.cameraState.preferenceDistance = CITY_DEFAULT_DISTANCE;
-      this.cameraState.target.set(0, 0, 8);
-      this.cameraState.targetLookAt.set(0, 0, 8);
+      this.cameraState.preferenceDistance = resetDistance;
+      // Shift look-at target North along Z so the whole island sits cleanly above the bottom dock and status bar
+      this.cameraState.target.set(0, 4, -14);
+      this.cameraState.targetLookAt.set(0, 4, -14);
       this.cameraState.targetDistance = resetDistance;
       this.cameraState.targetAzimuth = null;
       this.cameraState.targetElevation = null;
@@ -10255,6 +10281,14 @@
       }
 
       // 1. Dynamic Automatic Warehouse Roof Cutaway System
+      // High-Fidelity Elevator Cab Cyclic Travel (Image 5 Cutaway Simulation)
+      if (this.elevatorCab && (!this.elevator || !this.elevator.isMoving)) {
+        const timeSec = time * 0.45;
+        const cycle = (Math.sin(timeSec) + 1) * 0.5; // 0 to 1 smooth oscillation
+        const maxTravel = 12.0; // Travel between Floor 0 and Floor 3
+        this.elevatorCab.position.y = 2.1 + cycle * maxTravel;
+      }
+
       if (this.warehouseRoofGroup) {
         const distToDep = this.cameraState.targetLookAt.distanceTo(districtPoint('logistics'));
         const shouldCutaway = (this.cameraState.distance < 60 && distToDep < 32) || this.cutawayState.manual;
