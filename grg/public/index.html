@@ -270,7 +270,7 @@
   <script defer src="/vendor/three.min.js?v=1522"></script>
   <script defer src="/fenix-city-machine-scene.js?v=3-city-traffic-route-20261013"></script>
     <script defer src="/city-agent-visual-profile.js?v=20261021-custom-avatar-bodytype-3"></script>
-  <script defer src="/fenix-world-3d.js?v=20261103-v71-living-world-interior-cutaway"></script>
+  <script defer src="/fenix-world-3d.js?v=20261103-v72-living-world-steam-blueprint-atmo"></script>
   <script defer src="/office-live.js?v=7-agent-idle-presence-20261021"></script>
   <script defer src="/selection-store.js?v=1"></script>
 
@@ -2811,6 +2811,13 @@
                   <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusFloor?.(3)" style="background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); color:#a855f7; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Piso 3: Sora AI Core Lab">Piso 3</button>
                   <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusElevator?.()" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Ver Elevador Panorâmico">🛗 Elevador</button>
                   <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.focusCivicPlaza?.()" style="background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); color:#fbbf24; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:600; cursor:pointer;" title="Ver Praça Cívica e Fênix Dourado">🏛️ Praça</button>
+                  <button type="button" id="btnFnxBlueprint" class="fnx-lvl-btn" onclick="window.fenixCity?.toggleBlueprintMode?.()" style="background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.35); color:#60a5fa; border-radius:4px; padding:3px 7px; font-size:10px; font-weight:600; cursor:pointer;" title="Alternar Planta Baixa 2D / 3D">📐 Planta 2D</button>
+                </div>
+                <div class="fnx-atmo-strip" style="display:flex; align-items:center; gap:2px; margin-left:6px; border-left:1px solid rgba(255,255,255,0.12); padding-left:8px;">
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.setAtmosphere?.('day')" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#f8fafc; border-radius:4px; padding:3px 5px; font-size:10px; cursor:pointer;" title="Atmosfera: Dia Claro">☀</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.setAtmosphere?.('golden')" style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:#fbbf24; border-radius:4px; padding:3px 5px; font-size:10px; cursor:pointer;" title="Atmosfera: Golden Hour">🌆</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.setAtmosphere?.('night')" style="background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.3); color:#818cf8; border-radius:4px; padding:3px 5px; font-size:10px; cursor:pointer;" title="Atmosfera: Noite Cyberpunk">🌙</button>
+                  <button type="button" class="fnx-lvl-btn" onclick="window.fenixCity?.setAtmosphere?.('rain')" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; border-radius:4px; padding:3px 5px; font-size:10px; cursor:pointer;" title="Atmosfera: Chuva & Reflexos">🌧</button>
                 </div>
               </div>
             </div>

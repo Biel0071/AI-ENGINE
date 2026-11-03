@@ -2866,6 +2866,10 @@
         magentaCanopyMat: new T.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.45, metalness: 0.15 }),
         cyanFinMat: new T.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00b4d8, emissiveIntensity: 1.2, roughness: 0.1 }),
         holoRingMat: new T.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00e5ff, emissiveIntensity: 1.8, transparent: true, opacity: 0.75 }),
+        holoGlobeMat: new T.MeshBasicMaterial({ color: 0x00f5ff, wireframe: true, transparent: true, opacity: 0.65 }),
+        steamMat: new T.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.9, metalness: 0.05, transparent: true, opacity: 0.35, depthWrite: false }),
+        tePrecisaMat: new T.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 1.5, roughness: 0.2 }),
+        beaconBeamMat: new T.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.45, depthWrite: false }),
         bistroTableMat: new T.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.15, metalness: 0.1 }),
         whiteStripes: new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.05 })
       };
@@ -9097,6 +9101,186 @@
       this.focusEntity(new T.Vector3(0, 4.5, 0), 20.0, -Math.PI / 2, 0.30);
     }
 
+    toggleBlueprintMode() {
+      this.isBlueprintMode = !this.isBlueprintMode;
+      const btn = document.getElementById('btnFnxBlueprint');
+      if (this.isBlueprintMode) {
+        if (!this._preBlueprintCamera) {
+          this._preBlueprintCamera = {
+            target: this.cameraState.targetLookAt.clone(),
+            distance: this.cameraState.targetDistance,
+            azimuth: this.cameraState.targetAzimuth,
+            elevation: this.cameraState.targetElevation
+          };
+        }
+        // Top-down perpendicular blueprint view (near 90 deg elevation)
+        const center = districtPoint('api-platform', 0, 8.0, 0.0);
+        this.focusEntity(center, 44.0, 0, 1.48);
+        if (btn) {
+          btn.textContent = '🏙 Modo 3D';
+          btn.style.background = 'rgba(16,185,129,0.2)';
+          btn.style.borderColor = 'rgba(16,185,129,0.5)';
+          btn.style.color = '#10b981';
+        }
+      } else {
+        if (this._preBlueprintCamera) {
+          this.focusEntity(
+            this._preBlueprintCamera.target,
+            this._preBlueprintCamera.distance,
+            this._preBlueprintCamera.azimuth,
+            this._preBlueprintCamera.elevation
+          );
+        } else {
+          this.focusFloor(null);
+        }
+        if (btn) {
+          btn.textContent = '📐 Planta 2D';
+          btn.style.background = 'rgba(59,130,246,0.15)';
+          btn.style.borderColor = 'rgba(59,130,246,0.35)';
+          btn.style.color = '#60a5fa';
+        }
+      }
+    }
+
+    setAtmosphere(preset) {
+      this.currentAtmosphere = preset || 'day';
+      if (!this.scene) return;
+
+      if (preset === 'golden') {
+        if (this.sunLight) {
+          this.sunLight.color.setHex(0xfbbf24);
+          this.sunLight.intensity = 2.6;
+          this.sunLight.position.set(-60, 45, -70);
+        }
+        if (this.hemiLight) {
+          this.hemiLight.color.setHex(0xfef3c7);
+          this.hemiLight.groundColor.setHex(0x78350f);
+        }
+        if (this.bounceLight) {
+          this.bounceLight.color.setHex(0xd97706);
+          this.bounceLight.intensity = 0.55;
+        }
+        if (this.scene.fog) {
+          this.scene.fog.color.setHex(0x1a120b);
+        }
+      } else if (preset === 'night') {
+        if (this.sunLight) {
+          this.sunLight.color.setHex(0x1e3a8a);
+          this.sunLight.intensity = 0.6;
+          this.sunLight.position.set(40, 60, 40);
+        }
+        if (this.hemiLight) {
+          this.hemiLight.color.setHex(0x0c1222);
+          this.hemiLight.groundColor.setHex(0x020617);
+        }
+        if (this.fillLight) {
+          this.fillLight.color.setHex(0x00f0ff);
+          this.fillLight.intensity = 1.2;
+        }
+        if (this.bounceLight) {
+          this.bounceLight.color.setHex(0xec4899);
+          this.bounceLight.intensity = 0.4;
+        }
+        if (this.scene.fog) {
+          this.scene.fog.color.setHex(0x050814);
+        }
+      } else if (preset === 'rain') {
+        if (this.sunLight) {
+          this.sunLight.color.setHex(0x64748b);
+          this.sunLight.intensity = 0.9;
+          this.sunLight.position.set(-30, 70, -30);
+        }
+        if (this.hemiLight) {
+          this.hemiLight.color.setHex(0x1e293b);
+          this.hemiLight.groundColor.setHex(0x0f172a);
+        }
+        if (this.fillLight) {
+          this.fillLight.color.setHex(0x38bdf8);
+          this.fillLight.intensity = 0.7;
+        }
+        if (this.materials?.asphalt) {
+          this.materials.asphalt.roughness = 0.15;
+          this.materials.asphalt.metalness = 0.4;
+        }
+        if (this.scene.fog) {
+          this.scene.fog.color.setHex(0x111827);
+        }
+      } else {
+        if (this.sunLight) {
+          this.sunLight.color.setHex(0xfff7ed);
+          this.sunLight.intensity = 2.35;
+          this.sunLight.position.set(65, 75, 75);
+        }
+        if (this.hemiLight) {
+          this.hemiLight.color.setHex(0xe0f2fe);
+          this.hemiLight.groundColor.setHex(0x0f172a);
+        }
+        if (this.fillLight) {
+          this.fillLight.color.setHex(0x00f0ff);
+          this.fillLight.intensity = 0.55;
+        }
+        if (this.bounceLight) {
+          this.bounceLight.color.setHex(0xf59e0b);
+          this.bounceLight.intensity = 0.32;
+        }
+        if (this.materials?.asphalt) {
+          this.materials.asphalt.roughness = 0.72;
+          this.materials.asphalt.metalness = 0.08;
+        }
+        if (this.scene.fog) {
+          this.scene.fog.color.setHex(0x0b101a);
+        }
+      }
+    }
+
+    highlightAgentWorkstation(agentId) {
+      if (!this.scene) return;
+      if (this._activeAgentBeacon) {
+        this.scene.remove(this._activeAgentBeacon);
+        this._activeAgentBeacon = null;
+      }
+      let targetPos = null;
+      if (this.interactiveMeshes) {
+        const station = this.interactiveMeshes.find(m => m.userData?.assignedAgentId === agentId || m.userData?.id === agentId);
+        if (station) {
+          const wPos = new T.Vector3();
+          station.getWorldPosition(wPos);
+          targetPos = wPos;
+        }
+      }
+      if (!targetPos) {
+        targetPos = districtPoint('api-platform', -4.5, 4.5, 1.8);
+      }
+      const beaconGeo = new T.CylinderGeometry(0.8, 1.2, 8.0, 16, 1, true);
+      const beaconMesh = new T.Mesh(beaconGeo, this.materials.beaconBeamMat || this.materials.cyanFinMat);
+      beaconMesh.position.set(targetPos.x, targetPos.y + 4.0, targetPos.z);
+      this.scene.add(beaconMesh);
+      this._activeAgentBeacon = beaconMesh;
+      this.focusEntity(new T.Vector3(targetPos.x, targetPos.y + 0.8, targetPos.z), 20.0, Math.PI / 4, 0.38);
+
+      setTimeout(() => {
+        if (this._activeAgentBeacon === beaconMesh) {
+          this.scene.remove(beaconMesh);
+          this._activeAgentBeacon = null;
+        }
+      }, 5000);
+    }
+
+    updateApprovalAlert(hasPending, count = 1) {
+      if (!this.apiFloorGroups || !this.apiFloorGroups[1]) return;
+      if (!this._tePrecisaBadge) {
+        const badgeGroup = new T.Group();
+        const badgePlate = new T.Mesh(new T.BoxGeometry(2.4, 0.6, 0.12), this.materials.tePrecisaMat || this.materials.magentaCanopyMat);
+        const borderPlate = new T.Mesh(new T.BoxGeometry(2.55, 0.75, 0.08), this.materials.dockBumper);
+        badgeGroup.add(borderPlate, badgePlate);
+        badgeGroup.position.set(-4.5, 4.5 + 2.8, 1.8);
+        badgeGroup.userData = { isTePrecisa: true };
+        this.apiFloorGroups[1].add(badgeGroup);
+        this._tePrecisaBadge = badgeGroup;
+      }
+      this._tePrecisaBadge.visible = Boolean(hasPending);
+    }
+
     focusCompany(companyId) {
       this.focusBuilding(companyId);
     }
@@ -9569,20 +9753,41 @@
         flowers.position.set(width * 0.28, 0.4, depth / 2 + 0.9);
         bldGroup.add(planter, flowers);
 
-        // 4. Rooftop Industrial Vent Cowls (Image 3 & 7 Yellow Pavilion Detail)
+        // 4. Rooftop Industrial Vent Cowls with Billowing Steam (Image 4 & Video 12 Reference)
         const ventGeo = new T.CylinderGeometry(0.35, 0.4, 0.85, 12);
         const ventCapGeo = new T.CylinderGeometry(0.48, 0.48, 0.12, 12);
         const ventMat = this.materials.serverRackDark || this.materials.brushedTitanium;
+        if (!this.steamEmitters) this.steamEmitters = [];
         [-width * 0.22, width * 0.22].forEach(vx => {
           const vPipe = new T.Mesh(ventGeo, ventMat);
           vPipe.position.set(vx, 0.6 + floors * floorH + 0.42, -depth * 0.18);
           const vCap = new T.Mesh(ventCapGeo, ventMat);
           vCap.position.set(vx, 0.6 + floors * floorH + 0.88, -depth * 0.18);
           bldGroup.add(vPipe, vCap);
+
+          // Animated Volumetric Steam Plumes
+          const steamGroup = new T.Group();
+          steamGroup.position.set(vx, 0.6 + floors * floorH + 1.02, -depth * 0.18);
+          const puffs = [];
+          for (let p = 0; p < 7; p++) {
+            const puffMat = (this.materials.steamMat || this.materials.dockBumper).clone();
+            const puffMesh = new T.Mesh(new T.DodecahedronGeometry(0.24 + p * 0.05), puffMat);
+            puffMesh.position.set((Math.random() - 0.5) * 0.14, p * 0.42, (Math.random() - 0.5) * 0.14);
+            puffMesh.userData = {
+              baseY: p * 0.42,
+              speed: 0.75 + Math.random() * 0.35,
+              driftX: (Math.random() - 0.5) * 0.18,
+              driftZ: (Math.random() - 0.5) * 0.18
+            };
+            steamGroup.add(puffMesh);
+            puffs.push(puffMesh);
+          }
+          bldGroup.add(steamGroup);
+          this.steamEmitters.push({ group: steamGroup, puffs, maxH: 3.2 });
         });
 
       } else if (archetype === 'tech_cloud' || archetype === 'fintech') {
-        // [ARCHETYPE 2] Curved Cyber Tower with Luminous Cyan Fins & Holographic Halo (Image 3, 7)
+        // [ARCHETYPE 2] Curved Cyber Tower with Luminous Cyan Fins & Holographic Rotating Globe (Image 4 & Video 02)
         // 1. 4 Vertical Luminous Cyan Aerodynamic Fins
         const finMat = this.materials.cyanFinMat || this.materials.fastLaneGlow;
         [-width / 2 - 0.08, width / 2 + 0.08].forEach(fx => {
@@ -9593,12 +9798,26 @@
           });
         });
 
-        // 2. Rooftop Holographic Projection Halo Ring
+        // 2. Rooftop Holographic Projection Halo Ring & Rotating Wireframe Globe
         const haloMat = this.materials.holoRingMat || this.materials.fastLaneGlow;
+        const holoGroup = new T.Group();
+        holoGroup.position.set(0, 0.6 + floors * floorH + 1.6, 0);
+
         const holoRing = new T.Mesh(new T.TorusGeometry(Math.min(width, depth) * 0.35, 0.08, 8, 24), haloMat);
         holoRing.rotation.x = Math.PI / 2;
-        holoRing.position.set(0, 0.6 + floors * floorH + 1.6, 0);
-        bldGroup.add(holoRing);
+
+        const polarRing = new T.Mesh(new T.TorusGeometry(Math.min(width, depth) * 0.42, 0.05, 8, 24), this.materials.cyanFinMat || haloMat);
+        polarRing.rotation.x = Math.PI / 4;
+        polarRing.rotation.y = Math.PI / 6;
+
+        const globeGeo = new T.SphereGeometry(Math.min(width, depth) * 0.22, 12, 10);
+        const globeMesh = new T.Mesh(globeGeo, this.materials.holoGlobeMat || haloMat);
+
+        holoGroup.add(holoRing, polarRing, globeMesh);
+        bldGroup.add(holoGroup);
+
+        if (!this.rotatingHolograms) this.rotatingHolograms = [];
+        this.rotatingHolograms.push({ group: holoGroup, ring1: holoRing, ring2: polarRing, globe: globeMesh });
 
       } else if (archetype === 'dev_studio' || archetype === 'ai_lab') {
         // [ARCHETYPE 3] Stepped Brutalist Tech Lab with Balcony Terraces & Foliage ("DR. MUNC" Style, Image 3, 7)
@@ -11102,6 +11321,51 @@
 
       // 6. Interactive Functional 3D Elevator & Vertical Transit
       this._updateElevator(delta, time);
+
+      // 6.1 Animate Billowing Steam Plumes (Yellow Industrial Pavilion - Image 4)
+      if (Array.isArray(this.steamEmitters)) {
+        this.steamEmitters.forEach(em => {
+          em.puffs.forEach(p => {
+            const ud = p.userData;
+            ud.baseY += ud.speed * delta;
+            p.position.y = ud.baseY;
+            p.position.x += ud.driftX * delta;
+            p.position.z += ud.driftZ * delta;
+            const progress = Math.min(1.0, ud.baseY / em.maxH);
+            const scaleMul = 1.0 + progress * 2.4;
+            p.scale.set(scaleMul, scaleMul, scaleMul);
+            if (p.material) {
+              p.material.opacity = Math.max(0.02, (1.0 - progress) * 0.36);
+            }
+            if (ud.baseY >= em.maxH) {
+              ud.baseY = 0;
+              p.position.x = (Math.random() - 0.5) * 0.12;
+              p.position.z = (Math.random() - 0.5) * 0.12;
+            }
+          });
+        });
+      }
+
+      // 6.2 Animate Rotating Holographic Globes (Tech Tower - Image 4 & Video 02)
+      if (Array.isArray(this.rotatingHolograms)) {
+        this.rotatingHolograms.forEach(h => {
+          if (h.globe) h.globe.rotation.y += delta * 0.85;
+          if (h.ring1) h.ring1.rotation.z += delta * 0.45;
+          if (h.ring2) {
+            h.ring2.rotation.y += delta * 0.65;
+            h.ring2.rotation.x += delta * 0.35;
+          }
+        });
+      }
+
+      // 6.3 Animate Human Intervention "Te precisa" Badge and Spatial Beacon
+      if (this._tePrecisaBadge && this._tePrecisaBadge.visible) {
+        this._tePrecisaBadge.position.y = 4.5 + 2.8 + Math.sin(time * 5.0) * 0.15;
+        this._tePrecisaBadge.rotation.y = Math.sin(time * 2.0) * 0.2;
+      }
+      if (this._activeAgentBeacon) {
+        this._activeAgentBeacon.rotation.y += delta * 1.5;
+      }
 
       // 7. Camera Smoothing & Render
       this._updateCameraPosition(false, delta * 1000);
