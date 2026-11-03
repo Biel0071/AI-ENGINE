@@ -33,6 +33,7 @@ const { handleAutonomousLoopRoutes } = require('./api/autonomous-loop-routes');
 const { handleMediaRoutes } = require('./api/media-routes');
 const { handleQwenOrchestratorRoutes } = require('./api/qwen-orchestrator-routes');
 const { handleDynamicPoolRoutes } = require('./api/dynamic-pool-routes');
+const { handleVisualAgentWorkspaceRoutes } = require('./api/visual-agent-workspace-routes');
 
 process.on('uncaughtException', (err) => console.error('[Server uncaughtException]', err));
 process.on('unhandledRejection', (reason) => console.error('[Server unhandledRejection]', reason));
@@ -662,6 +663,11 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           url, sendJson, readJson, app, identity: { tenantId, actorId }, autonomousLoop: server.autonomousLoop || app.autonomousLoop
         });
         if (loopHandled || res.headersSent) return;
+      }
+
+      if (url.pathname.startsWith('/api/v2/visual-workspace') || url.pathname.startsWith('/api/v2/video-studio')) {
+        const workspaceHandled = await handleVisualAgentWorkspaceRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId });
+        if (workspaceHandled || res.headersSent) return;
       }
 
       if (url.pathname.startsWith('/api/v2/')) {
@@ -1961,7 +1967,10 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       server.autonomousLoop = autonomousLoop;
       app.autonomousLoop = autonomousLoop;
       if (process.env.FENIX_AUTONOMOUS_LOOP_AUTOSTART !== 'false') {
-        setTimeout(() => autonomousLoop.start(), 10_000);
+        server.autonomousLoopTimer = setTimeout(() => autonomousLoop.start(), 10_000);
+        if (server.autonomousLoopTimer && typeof server.autonomousLoopTimer.unref === 'function') {
+          server.autonomousLoopTimer.unref();
+        }
         logger.info?.({ event: 'autonomous.loop.scheduled', tenantId, actorId });
       } else {
         logger.info?.({ event: 'autonomous.loop.standby' });
@@ -1989,7 +1998,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       clearInterval(server.localRuntimeWorker);
       server.localRuntimeWorker = null;
     }
+    if (server.autonomousLoopTimer) {
+      clearTimeout(server.autonomousLoopTimer);
+      server.autonomousLoopTimer = null;
+    }
     if (server.autonomousLoop) { server.autonomousLoop.stop(); server.autonomousLoop = null; }
+    if (global.FENIX_KERNEL?.storage?.disconnectAll) {
+      try { global.FENIX_KERNEL.storage.disconnectAll(); } catch (_) {}
+    }
     try {
       const { getWorldSimulationEngine } = require('./world-model/world-simulation-engine');
       getWorldSimulationEngine().stop();

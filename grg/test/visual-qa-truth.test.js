@@ -48,6 +48,17 @@ test('operations dashboard has no seeded missions or sample job presented as liv
   assert.doesNotMatch(source, /Auditoria Visual de 14 Telas|screensCertified\s*:\s*14/);
 });
 
+test('visual QA dashboard counts only the result rows it displays and separates unmeasured checks', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'fenix-core-controller.js'), 'utf8');
+  assert.match(source, /const totalChecks=results\.length/);
+  assert.match(source, /value==='PASSED'\|\|value==='PASS'/);
+  assert.match(source, /value==='FAILED'\|\|value==='FAIL'/);
+  assert.match(source, /const unmeasuredChecks=totalChecks-passedChecks-failedChecks/);
+  assert.match(source, /VERIFICAÇÕES:/);
+  assert.match(source, /NÃO MEDIDAS:/);
+  assert.doesNotMatch(source, /TOTAL TELAS:/);
+});
+
 test('operational views do not invent online workers, providers, telemetry, or QA passes', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'fenix-core-controller.js'), 'utf8');
   assert.doesNotMatch(source, /ar\.ready\s*\|\|\s*15|ar\.capacity\s*\|\|\s*20/);
