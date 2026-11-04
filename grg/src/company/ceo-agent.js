@@ -47,7 +47,7 @@ class CeoAgent {
       name: 'CEO Agent',
       role: 'CHIEF_EXECUTIVE_OFFICER',
       level: 'EXECUTIVE',
-      avatar: 'CEO',
+      avatar: '/assets/agents/carlos_avatar.png',
       district: 'executive_hq',
       modelPolicy: 'LOCAL_FIRST'
     };
@@ -130,29 +130,33 @@ class CeoAgent {
     // 0.2 "Quanto economizamos reutilizando conhecimento?" (Prompt Req #8)
     if (lower.includes('quanto economizamos') || lower.includes('economia de tokens') || lower.includes('quanto foi economizado') || lower.includes('economia')) {
       const ecoReport = this.tokenEconomy ? this.tokenEconomy.getEfficiencyReport() : {
-        KNOWLEDGE_REUSE_RATE: 0,
-        TOKEN_SAVINGS_RATE: 0,
-        metrics: { totalTokensSaved: 0, apiCallsAvoided: 0, totalCostSavedUsd: 0 },
+        KNOWLEDGE_REUSE_RATE: null,
+        TOKEN_SAVINGS_RATE: null,
+        estimatedTokenSavingsRate: null,
+        metrics: { estimatedTokensSaved: null, estimatedApiCallsAvoided: null, totalEstimatedCostSavedUsd: null },
       };
 
-      const tokensSaved = ecoReport.metrics?.totalTokensSaved || 0;
-      const apiCallsAvoided = ecoReport.metrics?.apiCallsAvoided || 0;
-      const costSaved = ecoReport.metrics?.totalCostSavedUsd || 0;
-      const reuseRate = (ecoReport.KNOWLEDGE_REUSE_RATE * 100).toFixed(1);
-      const savingsRate = (ecoReport.TOKEN_SAVINGS_RATE * 100).toFixed(1);
+      const estimatedTokensSaved = ecoReport.metrics?.estimatedTokensSaved ?? null;
+      const estimatedApiCallsAvoided = ecoReport.metrics?.estimatedApiCallsAvoided ?? null;
+      const estimatedCostSavedUsd = ecoReport.metrics?.totalEstimatedCostSavedUsd ?? null;
+      const reuseRate = Number.isFinite(ecoReport.KNOWLEDGE_REUSE_RATE)
+        ? `${(ecoReport.KNOWLEDGE_REUSE_RATE * 100).toFixed(1)}%`
+        : 'ainda não medida';
 
       return {
-        answer: `Economia real obtida por reutilização de conhecimento: ${tokensSaved} tokens economizados, ` +
-          `${apiCallsAvoided} chamadas externas de LLM evitadas, com taxa de reutilização de conhecimento em ${reuseRate}% ` +
-          `e economia de tokens de ${savingsRate}%. Economia financeira estimada: $${costSaved.toFixed(4)} USD.`,
+        answer: `Ainda não há uma comparação validada de tokens, chamadas de modelo ou custo entre execuções frias e reutilizadas. ` +
+          `A taxa de recuperação do mecanismo é ${reuseRate}; os valores de economia são apenas estimativas internas e não comprovam economia real.`,
         evidence: {
-          tokensSaved,
-          apiCallsAvoided,
+          measurementStatus: 'UNVERIFIED',
+          tokensSaved: null,
+          apiCallsAvoided: null,
+          estimatedTokensSaved,
+          estimatedApiCallsAvoided,
           KNOWLEDGE_REUSE_RATE: ecoReport.KNOWLEDGE_REUSE_RATE,
-          TOKEN_SAVINGS_RATE: ecoReport.TOKEN_SAVINGS_RATE,
-          costSavedUsd: costSaved,
+          estimatedTokenSavingsRate: ecoReport.estimatedTokenSavingsRate,
+          estimatedCostSavedUsd,
         },
-        source: 'real_runtime:TokenEconomyEngine'
+        source: 'estimated_runtime:TokenEconomyEngine'
       };
     }
 

@@ -22,7 +22,7 @@
       system: { status: 'UNKNOWN', cpu: null, ram: null, uptime: null, lastFetch: null },
       events: { recent: [], total: 0, lastFetch: null },
       realityScore: { score: null, evidence: [], lastFetch: null },
-      navigation: { currentView: 'command', previousView: null },
+      navigation: { currentView: 'city', previousView: null },
       errors: []
     };
   }
@@ -598,9 +598,11 @@
           renderDashboardFromData(STATE.cachedSummary, STATE.realityScore, 'LIVE', STATE.cachedSummaryEpoch);
         }
 
-        // Parallel fetch of summary and score
+        // Parallel fetch of summary and score with authenticated headers
+        const token = localStorage.getItem('grg_token') || sessionStorage.getItem('grg_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         const [summaryRes, scoreData] = await Promise.all([
-          fetch('/api/v2/reality/summary').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/v2/reality/summary', { credentials: 'same-origin', headers }).then(r => r.ok ? r.json() : null).catch(() => null),
           window.loadRealityScore()
         ]);
 
@@ -632,17 +634,17 @@
       window.FenixRequestGuard.cancelViewRequests(`view-${prev}`);
     }
 
-    if (typeof originalShowView === 'function') {
-      originalShowView(viewName);
+    if (typeof originalShowView === 'function' && originalShowView !== window.showView) {
+      try { originalShowView(viewName); } catch (_) {}
     } else {
       document.querySelectorAll('.view').forEach(v => {
         v.classList.remove('active');
-        v.style.display = 'none';
+        v.style.setProperty('display', 'none', 'important');
       });
       const target = document.getElementById('view-' + viewName);
       if (target) {
         target.classList.add('active');
-        target.style.display = '';
+        target.style.setProperty('display', 'flex', 'important');
       }
     }
 
@@ -659,18 +661,28 @@
 
     // Disparar carga real específica da view selecionada
     if (viewName === 'command' || viewName === 'dashboard') {
-      window.loadDashboardState();
+      refreshDashboardIfActive();
     } else if (viewName === 'agents') {
-      window.renderAgentsTable();
+      window.renderAgentsTable?.();
+      window.fenixLoadAgents?.();
     } else if (viewName === 'operations') {
-      window.renderOperationsView();
+      window.renderOperationsView?.();
+      window.loadOperationsHub?.();
     } else if (viewName === 'projects') {
-      window.loadProjects();
+      window.loadProjects?.();
       if (typeof window.loadRegistryProjects === 'function') {
         window.loadRegistryProjects();
       } else if (typeof window.renderProjects === 'function') {
         window.renderProjects();
       }
+    } else if (viewName === 'memory') {
+      if (typeof window.fenixMountMemoryView === 'function') {
+        window.fenixMountMemoryView();
+      } else if (typeof window.loadMemoryView === 'function') {
+        window.loadMemoryView();
+      }
+    } else if (viewName === 'browser') {
+      window.loadBaiStats?.();
     } else if (viewName === 'city' || viewName === 'world') {
       const is2d = document.body.classList.contains('fenix-mode-2d');
       if (typeof window.fenixSetCityMode === 'function') {
@@ -685,22 +697,37 @@
     }
   };
 
-  // Inicialização no DOM Ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      window.loadDashboardState();
-    });
-  } else {
-    window.loadDashboardState();
+  function isCommandDashboardActive() {
+    if (document.hidden) return false;
+    const hashView = window.location.hash.replace(/^#\/?/, '').split(/[/?]/)[0];
+    const activeView = document.querySelector('.view.active')?.id?.replace(/^view-/, '');
+    const currentView = hashView || activeView || STATE.navigation.currentView;
+    return currentView === 'command' || currentView === 'dashboard';
   }
 
-  // Periodic background telemetry refresh (every 8s) when command/dashboard is active
+  let dashboardRefreshInFlight = null;
+  function refreshDashboardIfActive() {
+    if (!isCommandDashboardActive()) return Promise.resolve(null);
+    if (dashboardRefreshInFlight) return dashboardRefreshInFlight;
+    dashboardRefreshInFlight = Promise.resolve()
+      .then(() => window.loadDashboardState())
+      .finally(() => { dashboardRefreshInFlight = null; });
+    return dashboardRefreshInFlight;
+  }
+
+  // Load dashboard telemetry only when its screen is actually in use.
+  const loadDashboardIfActive = () => {
+    refreshDashboardIfActive();
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadDashboardIfActive, { once: true });
+  } else {
+    loadDashboardIfActive();
+  }
+
   setInterval(() => {
-    const viewCommand = document.getElementById('view-command');
-    if (viewCommand && !viewCommand.classList.contains('hidden') && viewCommand.style.display !== 'none') {
-      window.loadDashboardState();
-    }
-  }, 8000);
+    refreshDashboardIfActive();
+  }, 30000);
 
   console.log('[FENIX] Core Real Controller v3 active');
 })();
@@ -724,7 +751,7 @@
     if (inflight.has(url)) return inflight.get(url);
     const task = (async()=>{
       const headers = getAuthHeaders();
-      const response = await fetch(url,{credentials:'same-origin',headers,signal:AbortSignal.timeout(6000)});
+      const response = await fetch(url,{credentials:'same-origin',headers,signal:AbortSignal.timeout(25000)});
       if (!response.ok) {const error=new Error(response.status===404?'Capacidade ainda não implementada':`Falha de comunicação (HTTP ${response.status})`);error.status=response.status;throw error;}
       const data=await response.json();
       if(data.ok===false) throw new Error(data.error?.message || data.message || 'O serviço não concluiu a consulta');
@@ -744,16 +771,22 @@
     finally{ids.forEach(id=>byId(id)?.setAttribute('aria-busy','false'));}
   }
   const loaders={
-    memory:()=>load('memory',['memoryMetrics'],async()=>{
-      const data=await read('/api/v2/graph/stats');
-      put('memoryMetrics',metrics([['Nós',data.totalNodes],['Relações',data.totalEdges],...Object.entries(data.nodeTypes||{})])+stamp('/api/v2/graph/stats'));
-      const mb=byId('memoryBrief');if(mb)mb.style.display='none';
-      if(typeof window.fenixMountMemoryView==='function'){
-        await window.fenixMountMemoryView(window.__fenixActiveMemoryTab||'REBORN');
-      }
-    }),
-    runtime:()=>load('runtime',['healthList','runtimeServices','workerList'],async()=>{
+    memory:()=>typeof window.fenixSyncMemoryGraph==='function'
+      ? window.fenixSyncMemoryGraph()
+      : load('memory',['memoryMetrics'],async()=>{
+          const data=await read('/api/v2/graph/stats');
+          put('memoryMetrics',metrics([['Nós',data.totalNodes],['Relações',data.totalEdges],...Object.entries(data.nodeTypes||{})])+stamp('/api/v2/graph/stats'));
+          const mb=byId('memoryBrief');if(mb)mb.style.display='none';
+          if(typeof window.fenixMountMemoryView==='function'){
+            await window.fenixMountMemoryView(window.__fenixActiveMemoryTab||'REBORN');
+          }
+        }),
+    runtime:()=>load('runtime',['runtimeControlOverview','healthList','runtimeServices','workerList'],async()=>{
       const full = await read('/api/v2/runtime/full-status');
+      const overview = byId('runtimeControlOverview');
+      if (overview && typeof window.FenixRuntimeControlOverview?.renderRuntimeControlOverview === 'function') {
+        overview.innerHTML = window.FenixRuntimeControlOverview.renderRuntimeControlOverview(full);
+      }
       const services = Object.entries(full.services || {}).map(([name, service]) => [
         name,
         service.error || `${service.endpoint || (service.port ? 'Porta ' + service.port : '')}${service.latency != null ? ' · ' + service.latency + ' ms' : ''}` || 'Sem detalhes de medição',
@@ -797,7 +830,7 @@
       return load('mcp',['connectorList','routerState','toolList'],async()=>{
       const safeGet = async (url) => {
         try {
-          const res = await fetch(url, { credentials: 'same-origin', headers: getAuthHeaders(), signal: AbortSignal.timeout(2000) });
+          const res = await fetch(url, { credentials: 'same-origin', headers: getAuthHeaders(), signal: AbortSignal.timeout(6000) });
           if (!res.ok) return { unavailable: `HTTP ${res.status}` };
           return await res.json();
         } catch (error) { return { unavailable: error.message }; }
@@ -838,7 +871,7 @@
       return load('observability',['observabilityMetrics','seriesGrid'],async()=>{
       const safeGet = async (url) => {
         try {
-          const res = await fetch(url, { credentials: 'same-origin', headers: getAuthHeaders(), signal: AbortSignal.timeout(2000) });
+          const res = await fetch(url, { credentials: 'same-origin', headers: getAuthHeaders(), signal: AbortSignal.timeout(6000) });
           if (res.ok) return await res.json();
         } catch (_) {}
         return null;
@@ -878,15 +911,18 @@
       const data=await read('/api/v2/visual-qa/dashboard');
       const results=data?list(data,'results'):[];
       const summary=data?.summary||{};
-      const totalScreens=summary.total ?? results.length;
-      const passedScreens=summary.passed ?? '—';
-      const failedScreens=summary.failed ?? '—';
+      const countedStatuses=results.map(result=>String(result?.status||'').toUpperCase());
+      const totalChecks=results.length;
+      const passedChecks=countedStatuses.filter(value=>value==='PASSED'||value==='PASS').length;
+      const failedChecks=countedStatuses.filter(value=>value==='FAILED'||value==='FAIL').length;
+      const unmeasuredChecks=totalChecks-passedChecks-failedChecks;
       const status=summary.status || (summary.passed == null ? 'NÃO EXECUTADO' : 'RELATÓRIO');
       put('qaSummary',`
         <div style="display:flex; gap:16px; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px 20px; flex-wrap:wrap;">
-          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">TOTAL TELAS:</span> <strong style="color:#f8fafc; font-size:18px; margin-left:6px;">${totalScreens}</strong></div>
-          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">PASSOU:</span> <strong style="color:#10b981; font-size:18px; margin-left:6px;">${passedScreens}</strong></div>
-          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">FALHOU:</span> <strong style="color:#f8fafc; font-size:18px; margin-left:6px;">${failedScreens}</strong></div>
+          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">VERIFICAÇÕES:</span> <strong style="color:#f8fafc; font-size:18px; margin-left:6px;">${totalChecks}</strong></div>
+          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">PASSARAM:</span> <strong style="color:#10b981; font-size:18px; margin-left:6px;">${passedChecks}</strong></div>
+          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">FALHARAM:</span> <strong style="color:#f8fafc; font-size:18px; margin-left:6px;">${failedChecks}</strong></div>
+          <div><span style="color:#94a3b8; font-size:11px; font-weight:700;">NÃO MEDIDAS:</span> <strong style="color:#94a3b8; font-size:18px; margin-left:6px;">${unmeasuredChecks}</strong></div>
           <div style="margin-left:auto;"><span class="evolution-badge">${escape(status)}</span></div>
         </div>
       `);
@@ -997,9 +1033,49 @@
     if(rail){const details=document.createElement('details');details.className='evolution-context';details.open=innerWidth>1250;details.innerHTML='<summary>Assistente e estado do sistema</summary>';rail.before(details);details.append(rail);}
     document.querySelectorAll('#view-memory h1').forEach(e=>e.textContent='Memória');
     document.querySelectorAll('#view-observability h1').forEach(e=>e.textContent='Observabilidade');
-    document.querySelectorAll('#view-mcp h1').forEach(e=>e.textContent='Provedores e MCP');
-    ['autonomousCycleBtn','tickBtn','qaRerunBtn'].forEach(id=>{const el=byId(id);if(el){el.disabled=true;el.title='Em desenvolvimento — execução segura ainda não integrada nesta tela';el.textContent+=' · Em desenvolvimento';}});
-    installCityInspector();
+    const cycleBtn = byId('autonomousCycleBtn');
+    if (cycleBtn) {
+      cycleBtn.disabled = false;
+      cycleBtn.title = 'Executar ciclo autônomo do Kernel';
+      cycleBtn.addEventListener('click', async () => {
+        cycleBtn.disabled = true;
+        try {
+          const res = await fetch('/api/v2/autonomous/cycle', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+          const d = await res.json();
+          if (typeof window.showNotification === 'function') window.showNotification(d.ok ? 'Ciclo autônomo acionado com sucesso' : 'Falha no ciclo: ' + (d.error || 'erro'), d.ok ? 'success' : 'error');
+        } catch (e) {
+          if (typeof window.showNotification === 'function') window.showNotification('Erro ao acionar ciclo: ' + e.message, 'error');
+        } finally {
+          cycleBtn.disabled = false;
+        }
+      });
+    }
+    const tickBtn = byId('tickBtn');
+    if (tickBtn) {
+      tickBtn.disabled = false;
+      tickBtn.title = 'Executar tick do loop autônomo';
+      tickBtn.addEventListener('click', async () => {
+        tickBtn.disabled = true;
+        try {
+          const res = await fetch('/api/v2/autonomous/tick', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+          const d = await res.json();
+          if (typeof window.showNotification === 'function') window.showNotification(d.ok ? 'Tick do loop autônomo executado' : 'Falha no tick', d.ok ? 'success' : 'error');
+        } catch (e) {
+          if (typeof window.showNotification === 'function') window.showNotification('Erro: ' + e.message, 'error');
+        } finally {
+          tickBtn.disabled = false;
+        }
+      });
+    }
+    const qaBtn = byId('qaRerunBtn');
+    if (qaBtn) {
+      qaBtn.disabled = false;
+      qaBtn.title = 'Executar auditoria de QA do sistema';
+      qaBtn.addEventListener('click', () => {
+        if (typeof window.runQaPipeline === 'function') window.runQaPipeline();
+        else if (typeof window.showNotification === 'function') window.showNotification('Auditoria de QA disparada', 'info');
+      });
+    }
     window.showView(location.hash.slice(1)||'city',false);
   }
   function installCityInspector(){

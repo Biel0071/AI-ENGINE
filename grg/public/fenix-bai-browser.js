@@ -49,6 +49,12 @@
       if (readinessEl) readinessEl.textContent = data.healthRate ? `${data.healthRate}%` : '—';
       if (runningEl) runningEl.textContent = data.runningInstances ?? '—';
     } catch (_) { /* ignore */ }
+
+    const cState = document.getElementById('baiConnectionState');
+    if (cState && cState.textContent.includes('ainda não consultada')) {
+      const btn = document.getElementById('baiRefreshBtn');
+      if (btn) btn.click();
+    }
   }
 
   // 3. Load Instances & Profiles Grid
@@ -63,6 +69,7 @@
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      window.__baiInstancesList = Array.isArray(data) ? data : (data.instances || []);
       const instances = data.instances || [];
 
       if (instances.length === 0) {
@@ -223,10 +230,13 @@
     const titleEl = document.getElementById('baiPageTitle');
     const latencyEl = document.getElementById('baiLatencyChip');
     const frame = document.getElementById('baiViewportFrame');
+    const overlay = document.getElementById('baiStandbyOverlay');
+    const statusDot = document.getElementById('baiStatusDot');
 
-    const targetUrl = url || input?.value || 'http://127.0.0.1:3000/app';
+    const targetUrl = url || input?.value || 'https://google.com';
     if (input) input.value = targetUrl;
     if (titleEl) titleEl.textContent = `Carregando ${targetUrl}…`;
+    if (statusDot) statusDot.style.background = '#fbbf24';
 
     try {
       const res = await fetch('/api/v2/browser/navigate', {
@@ -238,13 +248,18 @@
       if (data.ok) {
         if (titleEl) titleEl.textContent = data.title || targetUrl;
         if (latencyEl) latencyEl.textContent = `⚡ ${data.latencyMs}ms`;
+        if (statusDot) statusDot.style.background = '#10b981';
+        if (overlay) overlay.style.display = 'none';
         if (frame) {
-          // If frame target is internal or same origin, update src
+          frame.style.display = 'block';
           frame.src = targetUrl;
         }
+      } else {
+        throw new Error(data.error || 'Falha de navegação');
       }
     } catch (err) {
       if (titleEl) titleEl.textContent = `Erro ao navegar: ${err.message}`;
+      if (statusDot) statusDot.style.background = '#ef4444';
     }
   };
 
@@ -264,14 +279,49 @@
     baiNavigateTo(url);
   };
 
-  // 10. TOTP & AdsPower Stubs
-  window.generateBaiTotp = function(instanceId) {
-    const code = Math.floor(100000 + Math.random() * 900000);
-    alert(`[2FA TOTP BAI] Token gerado para ${instanceId}:\n\n${code}\n\n(Válido por 30s)`);
+  // 10. TOTP & AdsPower Integration
+  window.generateBaiTotp = async function(instanceId) {
+    try {
+      const res = await fetch(`/api/v2/browser/instance/${encodeURIComponent(instanceId)}/totp`, {
+        headers: { Accept: 'application/json', ...getAuthHeader() },
+        credentials: 'same-origin'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.code) {
+          if (window.FenixToast) window.FenixToast.show(`2FA TOTP para ${instanceId}: ${data.code}`, 'success', 4000);
+          return;
+        }
+      }
+    } catch (_) {}
+    if (window.FenixToast) {
+      window.FenixToast.show(`Nenhum segredo 2FA configurado para a instância ${instanceId}.`, 'info', 3000);
+    } else {
+      alert(`Nenhum segredo 2FA configurado para a instância ${instanceId}.`);
+    }
   };
 
   window.exportBaiToAdsPower = function(instanceId) {
-    alert(`[AdsPower Export] Perfil ${instanceId} exportado com sucesso no formato AdsPower JSON!`);
+    const inst = (window.__baiInstancesList || []).find(i => (i.id || i.name) === instanceId) || { id: instanceId };
+    const exportPayload = {
+      name: inst.name || instanceId,
+      platform: 'AdsPower',
+      fingerprint: inst.fingerprint || { userAgent: navigator.userAgent },
+      proxy: inst.proxy || null,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `adspower-${instanceId}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (window.FenixToast) {
+      window.FenixToast.show(`Perfil AdsPower exportado: adspower-${instanceId}.json`, 'success', 2500);
+    }
   };
 
   function escapeHtml(str) {

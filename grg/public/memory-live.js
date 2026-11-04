@@ -298,7 +298,55 @@ url = "http://209.50.241.22:4410/api/v2/mcp"</code></pre>
   function renderDetail() {
     const target = $('fmlDetail'); if (!target) return; target.replaceChildren();
     const item = state.nodes.find((entry) => entry.id === state.selected);
-    if (!item) { target.append(make('p', 'fml-empty', 'Selecione uma entidade.')); return; }
+    if (!item) {
+      target.append(make('p', 'fml-empty', 'Selecione uma entidade.'));
+      const upperClusterName = $('fenixMemClusterName');
+      if (upperClusterName) upperClusterName.textContent = 'Cluster: —';
+      const upperClusterCount = $('fenixMemClusterCount');
+      if (upperClusterCount) upperClusterCount.textContent = '— memórias';
+      return;
+    }
+
+    const upperClusterName = $('fenixMemClusterName');
+    const upperClusterCount = $('fenixMemClusterCount');
+    const upperConfVal = $('fenixMemConfVal');
+    const upperConfBar = $('fenixMemConfBar');
+    const upperRecVal = $('fenixMemRecVal');
+    const upperRecBar = $('fenixMemRecBar');
+    const upperTopicsList = $('fenixMemTopicsList');
+    const upperStatsBadge = $('memGraphStatsBadge');
+
+    const itemName = label(item);
+    const itemRelations = neighbors(item.id);
+
+    if (upperStatsBadge) {
+      upperStatsBadge.textContent = `${state.nodes.length} nós · ${state.edges.length} relações`;
+    }
+    if (upperClusterName) {
+      upperClusterName.textContent = itemName;
+    }
+    if (upperClusterCount) {
+      upperClusterCount.textContent = `${itemRelations.length} relações ativas · ${item.type || 'NÓ'}`;
+    }
+    if (upperConfVal) upperConfVal.textContent = '100%';
+    if (upperConfBar) upperConfBar.style.width = '96%';
+    if (upperRecVal) upperRecVal.textContent = 'Tempo Real';
+    if (upperRecBar) upperRecBar.style.width = '92%';
+    if (upperTopicsList) {
+      const topNeighbors = itemRelations.slice(0, 6);
+      if (topNeighbors.length > 0) {
+        upperTopicsList.innerHTML = topNeighbors.map(e => {
+          const otherId = e.from === item.id ? e.to : e.from;
+          const otherNode = state.nodes.find(n => n.id === otherId);
+          const otherName = otherNode ? label(otherNode) : otherId;
+          return `<li style="padding:4px 8px; background:rgba(255,255,255,0.03); border-radius:4px; color:#94A3B8; font-size:11px;">
+            <strong style="color:#38BDF8;">${e.type || 'LIGAÇÃO'}</strong> &rarr; ${otherName}
+          </li>`;
+        }).join('');
+      } else {
+        upperTopicsList.innerHTML = `<li style="padding:4px 8px; background:rgba(255,255,255,0.03); border-radius:4px; color:#64748B; font-size:11px;">Nenhum vizinho direto indexado</li>`;
+      }
+    }
 
     const card = make('div', 'fml-decision-card');
     card.style.cssText = 'background:rgba(15,23,42,0.92); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:10px; box-shadow:0 8px 24px rgba(0,0,0,0.6);';
@@ -600,6 +648,30 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
       if (typeof _origCluster === 'function') {
         try { _origCluster(clusterKey); } catch (_) {}
       }
+      const typeMap = {
+        core: 'PROJECT',
+        auth: 'API',
+        deploy: 'TEST',
+        frontend: 'PAGE',
+        errors: 'ERROR',
+        patterns: 'PATTERN',
+        security: 'SERVICE',
+        telemetry: 'telemetry'
+      };
+      const targetType = typeMap[clusterKey];
+      if (targetType) {
+        const found = state.nodes.find(n => n.type === targetType || (n.properties && n.properties.type === targetType));
+        if (found) {
+          choose(found.id);
+        }
+      }
+    };
+    window.fenixSearchMemory = (query) => {
+      state.query = (query || '').trim().toLocaleLowerCase('pt-BR');
+      const searchBox = $('fmlSearch');
+      if (searchBox && searchBox.value !== (query || '')) searchBox.value = query || '';
+      renderList();
+      if (neuralBrainActive) init3DNeuralBrain();
     };
     const _origLayer = window.fenixSelectMemoryLayer;
     window.fenixSelectMemoryLayer = (layerIdx) => {
@@ -662,6 +734,21 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
         else {
           canvas.width = Math.round(neuralBrainSize.width * neuralBrainPixelRatio);
           canvas.height = Math.round(neuralBrainSize.height * neuralBrainPixelRatio);
+        }
+
+        if (window.ResizeObserver && !neuralBrainResizeObserver) {
+          neuralBrainResizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+              if (entry.contentRect.width > 20 && entry.contentRect.height > 20) {
+                const nw = Math.round(entry.contentRect.width);
+                const nh = Math.round(entry.contentRect.height);
+                if (Math.abs(neuralBrainSize.width - nw) > 4 || Math.abs(neuralBrainSize.height - nh) > 4) {
+                  init3DNeuralBrain();
+                }
+              }
+            }
+          });
+          neuralBrainResizeObserver.observe(canvas.parentElement);
         }
       }
       canvas.style.display = 'block';

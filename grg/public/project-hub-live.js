@@ -101,8 +101,23 @@
   const date = (value) => value ? new Date(value).toLocaleString('pt-BR') : '—';
   function operationalStatus(project) {
     const rawId = project?.catalogId || (String(project?.id || '').startsWith('local-') ? project.id.slice(6) : project?.id);
-    const liveStatus = state.projectStatuses[rawId] || state.projectStatuses[project?.id] || null;
-    return { liveStatus, status: typeof liveStatus?.online === 'boolean' ? (liveStatus.online ? 'online' : 'offline') : 'unknown' };
+    const liveStatus = (state.projectStatuses && (state.projectStatuses[rawId] || state.projectStatuses[project?.id])) || null;
+    if (liveStatus) {
+      if (liveStatus.status === 'DEGRADED' || liveStatus.state === 'DEGRADED') return { liveStatus, status: 'degraded', label: 'DEGRADADO' };
+      if (liveStatus.status === 'ERROR' || liveStatus.state === 'ERROR') return { liveStatus, status: 'error', label: 'ERRO' };
+      if (typeof liveStatus.online === 'boolean') {
+        return {
+          liveStatus,
+          status: liveStatus.online ? 'online' : 'offline',
+          label: liveStatus.online ? 'ONLINE' : 'OFFLINE'
+        };
+      }
+    }
+    const hasPorts = Number.isInteger(project?.localPort) || Number.isInteger(project?.frontend?.port) || Number.isInteger(project?.backend?.port) || (Array.isArray(project?.deployment?.bindings) && project.deployment.bindings.length > 0);
+    if (!hasPorts && !project?.localUrl && !project?.remoteUrl) {
+      return { liveStatus, status: 'not_configured', label: 'SEM PORTAS' };
+    }
+    return { liveStatus, status: 'unknown', label: 'NÃO MEDIDO' };
   }
   const workspaceIsAvailable = (project) => project?.workspaceAvailable === true || (project?.workspaceAvailable !== false && Boolean(project?.workspace));
   const normalizeProjectKey = (value) => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -404,6 +419,7 @@
             <button type="button" id="flpModeScreens" class="flp-hub-mode-tab">TELAS &amp; DNA</button>
             <button type="button" id="flpModeGitHub" class="flp-hub-mode-tab">PORTFÓLIO GITHUB</button>
             <button type="button" id="flpModeQwen" class="flp-hub-mode-tab">QWEN STUDIO</button>
+            <button type="button" id="flpModeProductTree" class="flp-hub-mode-tab" aria-label="ÁRVORE DO PRODUTO">ÁRVORE DO PRODUTO</button>
           </div>
           <div id="flpFavoritesBar" class="flp-favorites-bar" style="display:none;">
             <div class="flp-fav-head">
@@ -460,7 +476,10 @@
               <div class="flp-status-filters" role="group">
                 <button type="button" class="flp-status-pill-btn active" data-status-filter="all">Todos</button>
                 <button type="button" class="flp-status-pill-btn" data-status-filter="online"><span class="fnx-mono3d-dot online"></span> Online (<span id="flpOnlineCountBadge">—</span>)</button>
+                <button type="button" class="flp-status-pill-btn" data-status-filter="degraded"><span class="fnx-mono3d-dot degraded" style="background:#f59e0b; width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:4px;"></span> Degradado (<span id="flpDegradedCountBadge">—</span>)</button>
+                <button type="button" class="flp-status-pill-btn" data-status-filter="error"><span class="fnx-mono3d-dot error" style="background:#ef4444; width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:4px;"></span> Erro (<span id="flpErrorCountBadge">—</span>)</button>
                 <button type="button" class="flp-status-pill-btn" data-status-filter="offline"><span class="fnx-mono3d-dot offline"></span> Offline (<span id="flpOfflineCountBadge">—</span>)</button>
+                <button type="button" class="flp-status-pill-btn" data-status-filter="not_configured"><span class="fnx-mono3d-dot not_configured" style="background:#64748b; width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:4px;"></span> Sem portas (<span id="flpNotConfiguredCountBadge">—</span>)</button>
                 <button type="button" class="flp-status-pill-btn" data-status-filter="unknown"><span class="fnx-mono3d-dot unknown"></span> Não verificado (<span id="flpUnknownCountBadge">—</span>)</button>
               </div>
               <div class="flp-toolbar-sep"></div>
@@ -586,7 +605,26 @@
       $('flpFenixSidebarView').style.display = 'none';
       $('flpGitHubSidebarView').style.display = 'none';
       if ($('flpQwenSidebarView')) $('flpQwenSidebarView').style.display = 'none';
+      $('flpModeProductTree')?.classList.remove('active');
       renderScreenPortfolio($('flpDetail'));
+    });
+
+    $('flpModeProductTree')?.addEventListener('click', () => {
+      state.hubViewMode = 'product-tree';
+      $('flpModeProductTree').classList.add('active');
+      $('flpModeFenix')?.classList.remove('active');
+      $('flpModeGitHub')?.classList.remove('active');
+      $('flpModeQwen')?.classList.remove('active');
+      $('flpModeLocal')?.classList.remove('active');
+      $('flpModeScreens')?.classList.remove('active');
+      $('flpFenixSidebarView').style.display = 'none';
+      $('flpGitHubSidebarView').style.display = 'none';
+      if ($('flpQwenSidebarView')) $('flpQwenSidebarView').style.display = 'none';
+      const detail = $('flpDetail');
+      if (detail) {
+        detail.innerHTML = '<div id="fenixProductTreeContainer" style="width:100%; height:100%; min-height:650px;"></div>';
+        if (window.FenixProductTreePanel) window.FenixProductTreePanel.init();
+      }
     });
 
     $('flpCloneToggle').addEventListener('click', (event) => {
@@ -738,9 +776,10 @@
     const localProjects = state.projects.filter((p) => p.source === 'LOCAL_PROJECT_CATALOG');
     const catalogUnavailable = Boolean(state.error && !state.measuredAt);
     const statusCounts = state.projects.reduce((counts, project) => {
-      counts[operationalStatus(project).status] += 1;
+      const st = operationalStatus(project).status;
+      counts[st] = (counts[st] || 0) + 1;
       return counts;
-    }, { online: 0, offline: 0, unknown: 0 });
+    }, { online: 0, offline: 0, unknown: 0, degraded: 0, error: 0, not_configured: 0 });
     const { online: onlineCount, offline: offlineCount, unknown: unknownCount } = statusCounts;
     const mappedPorts = new Set(state.projects.map((p) => p.localPort).filter(Boolean)).size;
 
@@ -773,7 +812,7 @@
     if ($('flpCatCountTools')) $('flpCatCountTools').textContent = catalogUnavailable ? '—' : String(catCounts.tools);
 
     if (catalogUnavailable) {
-      ['flpTotal', 'flpRunning', 'flpFailed', 'flpWorkspaces', 'flpOnlineCountBadge', 'flpOfflineCountBadge', 'flpUnknownCountBadge']
+      ['flpTotal', 'flpRunning', 'flpFailed', 'flpWorkspaces', 'flpOnlineCountBadge', 'flpOfflineCountBadge', 'flpUnknownCountBadge', 'flpDegradedCountBadge', 'flpErrorCountBadge', 'flpNotConfiguredCountBadge']
         .forEach((id) => { if ($(id)) $(id).textContent = '—'; });
       $('flpMeasured').textContent = `Catálogo de projetos indisponível · ${text(state.error, 'erro não informado')}`;
       $('flpMeasured').dataset.error = 'true';
@@ -791,9 +830,12 @@
       $('flpFailed').textContent = String(offlineCount);
       $('flpWorkspaces').textContent = String(mappedPorts);
     }
-    if ($('flpOnlineCountBadge')) $('flpOnlineCountBadge').textContent = String(onlineCount);
-    if ($('flpOfflineCountBadge')) $('flpOfflineCountBadge').textContent = String(offlineCount);
-    if ($('flpUnknownCountBadge')) $('flpUnknownCountBadge').textContent = String(unknownCount);
+    if ($('flpOnlineCountBadge')) $('flpOnlineCountBadge').textContent = String(statusCounts.online || 0);
+    if ($('flpDegradedCountBadge')) $('flpDegradedCountBadge').textContent = String(statusCounts.degraded || 0);
+    if ($('flpErrorCountBadge')) $('flpErrorCountBadge').textContent = String(statusCounts.error || 0);
+    if ($('flpOfflineCountBadge')) $('flpOfflineCountBadge').textContent = String(statusCounts.offline || 0);
+    if ($('flpNotConfiguredCountBadge')) $('flpNotConfiguredCountBadge').textContent = String(statusCounts.not_configured || 0);
+    if ($('flpUnknownCountBadge')) $('flpUnknownCountBadge').textContent = String(statusCounts.unknown || 0);
 
     $('flpMeasured').textContent = state.error
       ? `Falha ao atualizar · exibindo leitura de ${date(state.measuredAt)}`
@@ -2424,6 +2466,7 @@
       { id: 'graph', label: 'Dependências & Grafo', icon: 'ph-tree-structure' },
       { id: 'memory', label: 'Memória & Docs', icon: 'ph-database' },
       { id: 'intelligence', label: 'Inteligência do Sistema & IA', icon: 'ph-brain' },
+      { id: 'product-tree', label: 'Árvore do Produto', icon: 'ph-tree-structure' },
       ...(Number.isFinite(mappedJobs) && mappedJobs > 0 ? [{ id: 'jobs', label: `Jobs & Filas (${mappedJobs})`, icon: 'ph-arrows-clockwise' }] : [])
     ];
 
@@ -2484,6 +2527,11 @@
       renderSystemIntelligenceTab(wsContent, project);
     } else if (state.workspaceTab === 'jobs') {
       renderJobsTab(wsContent, project, detail);
+    } else if (state.workspaceTab === 'product-tree') {
+      wsContent.innerHTML = '<div id="fenixProductTreeContainer" style="width:100%; height:100%; min-height:650px;"></div>';
+      if (window.FenixProductTreePanel) {
+        window.FenixProductTreePanel.init();
+      }
     } else {
       renderOverviewTab(wsContent, project, detail);
     }

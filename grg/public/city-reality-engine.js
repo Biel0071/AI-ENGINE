@@ -422,7 +422,13 @@
                 statusText = 'Em Prontidão';
               }
               const roleStr = String(ag.role || ag.specialty || ag.domain || 'Especialista');
-              const avatarSrc = ag.avatar || fallbackAvatars[idx % fallbackAvatars.length];
+              const fallback = fallbackAvatars[idx % fallbackAvatars.length];
+              const rawAv = ag.avatar;
+              const avatarSrc = (typeof rawAv === 'string' && (rawAv.startsWith('/') || rawAv.startsWith('http://') || rawAv.startsWith('https://')))
+                ? rawAv
+                : (rawAv && typeof rawAv === 'object' && typeof rawAv.avatarUrl === 'string' && (rawAv.avatarUrl.startsWith('/') || rawAv.avatarUrl.startsWith('http')))
+                  ? rawAv.avatarUrl
+                  : fallback;
               const agId = ag.id || ag.agentId || `agent-${idx}`;
               const agName = ag.name || agId;
               html += `

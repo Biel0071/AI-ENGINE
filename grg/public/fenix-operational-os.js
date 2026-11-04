@@ -374,11 +374,7 @@
         ${projectId ? `<button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('projects', { projectId: '${esc(projectId)}' })">📁 Ver Projeto</button>` : ''}
         <button class="fenix-action-btn" onclick="window.fenixNavigateWithContext('observability', { source: '${esc(agent.id)}' })">📡 Ver Eventos</button>
         <button class="fenix-action-btn" onclick="window.fenixOpenFlowGraph ? window.fenixOpenFlowGraph({ context: 'AGENT', entityId: '${esc(agent.id)}' }) : null" style="background:rgba(16,185,129,0.15); border-color:#10b981; color:#34d399;">🧬 Ver no Grafo</button>
-        ${hasExecuteTick ? `
-          <button class="fenix-action-btn primary" onclick="window.fenixExecuteAgentCapability('${esc(agent.id)}', 'tick')">⚡ Executar</button>
-        ` : `
-          <button class="fenix-action-btn" style="opacity:0.6; cursor:not-allowed;" title="Capacidade em desenvolvimento no backend">🚧 Em desenvolvimento</button>
-        `}
+        <button class="fenix-action-btn primary" onclick="window.fenixExecuteAgentCapability('${esc(agent.id)}', 'tick')">⚡ Executar Ciclo</button>
       `;
 
       window.fenixOpenInspector(identity, 'AGENT INSPECTOR', body, footer, agent);
@@ -392,21 +388,26 @@
   };
 
   // Agent capability execution
-  window.fenixExecuteAgentCapability = async function (agentId, capability) {
-    if (capability === 'tick') {
-      try {
-        const res = await fetch('/api/v2/runtime/tick', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agentId, trigger: 'agent_inspector' })
-        });
-        const data = await res.json();
+  window.fenixExecuteAgentCapability = async function (agentId, capability = 'tick') {
+    try {
+      const fetchFn = window.fenixAuthedFetch || fetch;
+      const res = await fetchFn('/api/v2/runtime/tick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId, capability, trigger: 'agent_inspector' })
+      });
+      const data = await res.json();
+      if (window.FenixToast) {
+        window.FenixToast.show(`Ciclo executado para ${agentId} (${data.status || 'OK'})`, 'success', 3000);
+      } else {
         alert(`✅ Ciclo executado com sucesso pelo agente ${agentId}!\nStatus: ${data.status || 'OK'}`);
-      } catch (e) {
+      }
+    } catch (e) {
+      if (window.FenixToast) {
+        window.FenixToast.show(`Falha ao disparar ciclo: ${e.message}`, 'error', 3500);
+      } else {
         alert(`❌ Falha ao disparar ciclo: ${e.message}`);
       }
-    } else {
-      alert('🚧 CAPABILITY NOT AVAILABLE / EM DESENVOLVIMENTO');
     }
   };
 
