@@ -40,11 +40,12 @@ class AICityProjection {
     this.unsubscribe = null;
   }
   attach() {
-    if (!this.unsubscribe) this.unsubscribe = this.events.subscribe('fabric.event', (event) => this.apply(event));
+    if (!this.unsubscribe) this.unsubscribe = this.events.subscribe('fabric.event', (event) => this.apply(event?.payload || event));
     return this;
   }
   async apply(event, options = {}) {
-    const events = event?.type === 'fabric.events.batch' && Array.isArray(event.events) ? event.events : [event];
+    const raw = (event?.payload && (event.payload.tenantId || event.payload.stream || event.payload.data)) ? event.payload : event;
+    const events = raw?.type === 'fabric.events.batch' && Array.isArray(raw.events) ? raw.events : [raw];
     const notifications = [];
     await this.store.update((state) => {
       const nodesById = new Map(state.cityNodes.map((item) => [item.id, item]));

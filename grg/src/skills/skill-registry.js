@@ -17,11 +17,64 @@ class SkillRegistry {
     this.extraPaths = extraPaths;
     this.cache = null;
     this.cacheKey = null;
+    this.dynamicSkills = new Map();
+  }
+
+  anonymizeSkill(skillRecord = {}) {
+    const sanitizeStr = (str) => {
+      if (typeof str !== 'string') return str;
+      return str
+        .replace(/https?:\/\/[^\s"'`]+/gi, 'https://example.local')
+        .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, 'user@domain.local')
+        .replace(/(bearer\s+[a-zA-Z0-9_\-\.]+)/gi, 'bearer [REDACTED_TOKEN]')
+        .replace(/(apiKey|password|secret|token|client_secret)\s*[:=]\s*['"][^'"]+['"]/gi, '$1: "[REDACTED_SECRET]"');
+    };
+    return {
+      ...skillRecord,
+      name: sanitizeStr(skillRecord.name),
+      description: sanitizeStr(skillRecord.description),
+      body: sanitizeStr(skillRecord.body),
+    };
+  }
+
+  registerSkill(skillInput = {}) {
+    if (!skillInput || !skillInput.id) throw new Error('Skill requires an id');
+    const scope = skillInput.scope || 'GLOBAL';
+    const projectId = skillInput.projectId || 'system';
+    let skillRecord = {
+      id: slugify(skillInput.id),
+      name: skillInput.name || skillInput.id,
+      description: skillInput.description || 'Learned procedural skill',
+      triggers: Array.isArray(skillInput.triggers) ? skillInput.triggers.map(t => String(t).toLowerCase()) : (skillInput.keywords || []).map(t => String(t).toLowerCase()),
+      domains: Array.isArray(skillInput.domains) ? skillInput.domains.map(d => String(d).toLowerCase()) : [String(skillInput.domain || 'engineering').toLowerCase()],
+      alwaysOn: Boolean(skillInput.alwaysOn),
+      estimatedTokens: skillInput.estimatedTokens || estimateTokens(skillInput.body || (Array.isArray(skillInput.steps) ? skillInput.steps.join('\n') : '')),
+      body: skillInput.body || (Array.isArray(skillInput.steps) ? skillInput.steps.map((s, i) => `${i + 1}. ${typeof s === 'string' ? s : s.name}`).join('\n') : ''),
+      source: skillInput.source || 'runtime/dynamic-learning',
+      hash: skillInput.hash || crypto.createHash('sha256').update(skillInput.id + Date.now()).digest('hex').slice(0, 16),
+      isDynamic: true,
+      scope,
+      projectId,
+      registeredAt: new Date().toISOString()
+    };
+    if (scope === 'GLOBAL') {
+      skillRecord = this.anonymizeSkill(skillRecord);
+    }
+    this.dynamicSkills.set(skillRecord.id, skillRecord);
+    this.cache = null;
+    this.cacheKey = null;
+    return skillRecord;
+  }
+
+  getDynamicSkills(projectId = null) {
+    const list = Array.from(this.dynamicSkills.values());
+    if (!projectId) return list;
+    return list.filter(s => s.scope === 'GLOBAL' || s.projectId === projectId);
   }
 
   async listSkills(tenantId, actorId, options = {}) {
     await this.cp.authorize(tenantId, actorId, 'governance:read');
-    const skills = this.#discover();
+    const skills = this.#discover(options.projectId);
     const q = String(options.q || '').trim();
     const filtered = q ? skills.filter((skill) => this.#score(skill, q) > 0) : skills;
     return {
@@ -39,7 +92,7 @@ class SkillRegistry {
     const agentDomain = String(input.agentDomain || input.domain || '').trim();
     const maxTokens = clampInt(input.maxTokens, 300, 4000, 1200);
     const limit = clampInt(input.limit, 1, 12, 4);
-    return this.#contextPack({ objective, agentDomain, maxTokens, limit });
+    return this.#contextPack({ objective, agentDomain, maxTokens, limit, projectId: input.projectId });
   }
 
   async contextForAgent(tenantId, actorId, agent = {}, task = {}) {
@@ -50,6 +103,7 @@ class SkillRegistry {
       agentDomain: agent.domain,
       maxTokens: clampInt(task.maxTokens, 300, 4000, 900),
       limit: clampInt(task.limit, 1, 8, 3),
+      projectId: task.projectId || agent.projectId,
     });
     return {
       agentId: agent.id,
@@ -58,8 +112,8 @@ class SkillRegistry {
     };
   }
 
-  #contextPack({ objective, agentDomain, maxTokens, limit }) {
-    const scored = this.#discover()
+  #contextPack({ objective, agentDomain, maxTokens, limit, projectId = null }) {
+    const scored = this.#discover(projectId)
       .map((skill) => ({ skill, score: this.#score(skill, objective, agentDomain) }))
       .filter((item) => item.score > 0 || item.skill.alwaysOn)
       .sort((a, b) => b.score - a.score || a.skill.estimatedTokens - b.skill.estimatedTokens);
@@ -85,16 +139,16 @@ class SkillRegistry {
       objective,
       agentDomain: agentDomain || null,
       selectedSkills: selected,
-      totalSkills: this.#discover().length,
+      totalSkills: this.#discover(projectId).length,
       estimatedTokens: usedTokens,
-      savedBySelectiveLoad: Math.max(0, this.#discover().reduce((sum, skill) => sum + skill.estimatedTokens, 0) - usedTokens),
+      savedBySelectiveLoad: Math.max(0, this.#discover(projectId).reduce((sum, skill) => sum + skill.estimatedTokens, 0) - usedTokens),
       prompt: selected.map((skill) => `# Skill: ${skill.name}\n${skill.context}`).join('\n\n---\n\n'),
     };
   }
 
-  #discover() {
+  #discover(projectId = null) {
     const roots = this.#roots();
-    const key = roots.map((root) => `${root}:${safeMtime(root)}`).join('|');
+    const key = `${roots.map((root) => `${root}:${safeMtime(root)}`).join('|')}#${projectId || 'all'}`;
     if (this.cache && this.cacheKey === key) return this.cache;
 
     const files = [];
@@ -112,6 +166,11 @@ class SkillRegistry {
       const parsed = parseSkillFile(file, this.rootDir);
       if (!parsed) continue;
       byId.set(parsed.id, parsed);
+    }
+    for (const [id, skill] of this.dynamicSkills.entries()) {
+      if (!projectId || skill.scope === 'GLOBAL' || skill.projectId === projectId) {
+        byId.set(id, skill);
+      }
     }
     this.cache = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
     this.cacheKey = key;

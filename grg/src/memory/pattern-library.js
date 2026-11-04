@@ -2,6 +2,19 @@
 
 const crypto = require('node:crypto');
 
+function hasValidationEvidence(evidence = {}) {
+  return evidence.validationStatus === 'VERIFIED'
+    && Array.isArray(evidence.testIds)
+    && evidence.testIds.length > 0
+    && Number.isFinite(Date.parse(evidence.validatedAt));
+}
+
+function mayPromote(status, evidence) {
+  if (status === 'PROVEN') return hasValidationEvidence(evidence);
+  if (status === 'CORE') return hasValidationEvidence(evidence) && Boolean(evidence.approvedBy);
+  return true;
+}
+
 /**
  * FÊNIX OS — Pattern Library (Level 10)
  * 
@@ -49,6 +62,11 @@ class PatternLibrary {
       const existing = this.patternsByHash.get(signature);
       existing.usageCount = (existing.usageCount || 0) + 1;
       existing.lastUsedAt = new Date().toISOString();
+      if (['PROVEN', 'CORE'].includes(patternInput.status) && mayPromote(patternInput.status, patternInput.evidence)) {
+        existing.status = patternInput.status;
+        existing.confidence = patternInput.confidence || existing.confidence;
+        existing.evidence = { ...(existing.evidence || {}), ...(patternInput.evidence || {}) };
+      }
       if (patternInput.sourceProject && !existing.sourceProjects?.includes(patternInput.sourceProject)) {
         existing.sourceProjects = existing.sourceProjects || [existing.sourceProject];
         existing.sourceProjects.push(patternInput.sourceProject);
@@ -72,6 +90,10 @@ class PatternLibrary {
 
     // Register new learned pattern
     const id = patternInput.id || `PTN-${signature.slice(0, 8)}`;
+    const validated = hasValidationEvidence(patternInput.evidence);
+    const status = mayPromote(patternInput.status, patternInput.evidence)
+      ? (patternInput.status || 'CANDIDATE')
+      : 'CANDIDATE';
     const pattern = {
       id,
       signature,
@@ -80,7 +102,7 @@ class PatternLibrary {
       scope: patternInput.scope || 'GLOBAL',
       sourceProject: patternInput.sourceProject || 'system',
       sourceProjects: [patternInput.sourceProject || 'system'],
-      confidence: patternInput.confidence || 'HIGH',
+      confidence: validated ? (patternInput.confidence || 'HIGH') : 'UNASSESSED',
       concept: patternInput.concept || 'Structural pattern',
       structure: patternInput.structure || {},
       components: patternInput.components || [],
@@ -88,7 +110,7 @@ class PatternLibrary {
       codeTemplate: patternInput.codeTemplate || null,
       doNotCopy: patternInput.doNotCopy || ['branding', 'specific_secrets'],
       usageCount: 1,
-      status: patternInput.status || 'PROVEN',
+      status,
       createdAt: patternInput.createdAt || new Date().toISOString(),
       lastUsedAt: new Date().toISOString(),
       evidence: patternInput.evidence || null,
@@ -131,6 +153,11 @@ class PatternLibrary {
     );
   }
 
+  findReusablePatterns(query = '') {
+    return this.findPatterns(query).filter((pattern) => mayPromote(pattern.status, pattern.evidence)
+      && ['PROVEN', 'CORE'].includes(pattern.status));
+  }
+
   /**
    * Backward-compatible pattern extraction from project context
    */
@@ -165,6 +192,83 @@ class PatternLibrary {
     }
 
     return newPatterns;
+  }
+
+  /**
+   * Cleanses private project details, branding, credentials and company secrets
+   * before a pattern can be stored or promoted to GLOBAL scope.
+   */
+  anonymizePattern(patternInput = {}) {
+    const sanitizeStr = (str) => {
+      if (typeof str !== 'string') return str;
+      return str
+        .replace(/https?:\/\/[^\s"'`]+/gi, 'https://example.local')
+        .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, 'user@domain.local')
+        .replace(/(bearer\s+[a-zA-Z0-9_\-\.]+)/gi, 'bearer [REDACTED_TOKEN]')
+        .replace(/(apiKey|password|secret|token|client_secret)\s*[:=]\s*['"][^'"]+['"]/gi, '$1: "[REDACTED_SECRET]"');
+    };
+
+    const deepSanitize = (val) => {
+      if (val === null || val === undefined) return val;
+      if (typeof val === 'string') return sanitizeStr(val);
+      if (Array.isArray(val)) return val.map(deepSanitize);
+      if (typeof val === 'object') {
+        const res = {};
+        for (const [k, v] of Object.entries(val)) {
+          if (/password|secret|apiKey|token/i.test(k) && typeof v === 'string') {
+            res[k] = '[REDACTED_SECRET]';
+          } else {
+            res[k] = deepSanitize(v);
+          }
+        }
+        return res;
+      }
+      return val;
+    };
+
+    const anonymized = deepSanitize(JSON.parse(JSON.stringify(patternInput)));
+
+    // Explicitly guarantee isolation boundaries in doNotCopy
+    const baseDoNotCopy = Array.isArray(anonymized.doNotCopy) ? anonymized.doNotCopy : [];
+    anonymized.doNotCopy = [...new Set([
+      ...baseDoNotCopy,
+      'branding',
+      'proprietary_assets',
+      'specific_secrets',
+      'project_identifiers',
+      'credentials'
+    ])];
+
+    return anonymized;
+  }
+
+  /**
+   * Registers a pattern learned from studio execution (visual edit, reconstruction, QA defect fix, multitrack video)
+   * with automatic privacy sanitization when scope is GLOBAL.
+   */
+  registerLearnedPattern(patternInput = {}) {
+    const isGlobal = patternInput.scope === 'GLOBAL';
+    const target = isGlobal ? this.anonymizePattern(patternInput) : { ...patternInput };
+
+    target.isLearnedFromExecution = true;
+    target.learnedAt = target.learnedAt || new Date().toISOString();
+
+    return this.registerPattern(target);
+  }
+
+  /**
+   * Query patterns strictly respecting multi-project isolation.
+   * Returns GLOBAL patterns plus patterns belonging specifically to the requested projectId.
+   * Project A NEVER sees private patterns from Project B.
+   */
+  findPatternsForProject(projectId = 'system', query = '') {
+    const all = this.findPatterns(query);
+    return all.filter((p) => {
+      // Global patterns are visible to all projects (they are anonymized templates)
+      if (p.scope === 'GLOBAL') return true;
+      // Project-specific patterns are only visible to their owning project
+      return p.sourceProject === projectId;
+    });
   }
 
   /**
