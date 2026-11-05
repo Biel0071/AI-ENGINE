@@ -998,10 +998,11 @@
     // 2. Scopes Section
     const scopeGroup = element('div', 'flp-tree-group');
     scopeGroup.appendChild(element('div', 'flp-tree-group-label', 'ESCOPOS'));
+    const favoriteCount = state.projects.filter(project => state.catalogFavorites.has(project.id)).length;
 
     const scopes = [
       { id: 'all', label: 'Todos os Projetos', icon: 'ph-folders', count: state.projects.length },
-      { id: 'favorites', label: 'Favoritos', icon: 'ph-star', count: state.catalogFavorites.size },
+      { id: 'favorites', label: 'Favoritos', icon: 'ph-star', count: favoriteCount },
       { id: 'local', label: 'Projetos Locais', icon: 'ph-desktop', count: state.projects.filter(p => p.source === 'LOCAL_PROJECT_CATALOG' || p.workspaceAvailable).length },
       { id: 'remote', label: 'Remotos (VPS)', icon: 'ph-cloud', count: state.projects.filter(p => p.vpsPath || p.remoteUrl || p.deployment?.bindings?.length || (p.workspace && String(p.workspace).startsWith('/opt/'))).length },
       { id: 'github', label: 'Repositórios GitHub', icon: 'ph-github-logo', count: state.projects.filter(p => Boolean(p.repository && String(p.repository).includes('github.com'))).length },
