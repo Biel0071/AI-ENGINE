@@ -12,7 +12,6 @@ const GRG_FLOWS_PATH = path.join(GRG_DATA_DIR, 'browser-flows.json');
 
 // In-memory runtime instances registry
 let memoryInstances = null;
-const activeInstancePids = new Map();
 const instanceActivityLogs = [];
 
 function addActivityLog(instanceId, message, level = 'info') {
@@ -133,7 +132,7 @@ function computeGovernanceStats(instances) {
       }
     }
   }
-  const healthRate = instances.length > 0 ? Math.round((withCookies / instances.length) * 100) : 100;
+  const healthRate = instances.length > 0 ? Math.round((running / instances.length) * 100) : null;
   return {
     totalInstances: instances.length,
     runningInstances: running,
@@ -209,33 +208,13 @@ async function handleBaiInstanceRoutes(req, res, url, sendJson, readJson = null,
     if (!target) {
       return sendJson(res, 404, { ok: false, error: `Instância ${instanceId} não encontrada` });
     }
-
-    if (action === 'start') {
-      target.state = 'running';
-      const pid = 10000 + Math.floor(Math.random() * 50000);
-      target.pid = pid;
-      activeInstancePids.set(instanceId, pid);
-      addActivityLog(instanceId, `Instância iniciada com sucesso (PID ${pid}, Motor: ${target.config?.engine || 'chromium'})`);
-    } else if (action === 'stop') {
-      target.state = 'stopped';
-      target.pid = undefined;
-      activeInstancePids.delete(instanceId);
-      addActivityLog(instanceId, 'Instância parada pelo operador');
-    } else if (action === 'restart') {
-      target.state = 'running';
-      const pid = 10000 + Math.floor(Math.random() * 50000);
-      target.pid = pid;
-      activeInstancePids.set(instanceId, pid);
-      addActivityLog(instanceId, `Instância reiniciada (PID ${pid})`);
-    } else {
+    if (!['start', 'stop', 'restart'].includes(action)) {
       return sendJson(res, 400, { ok: false, error: `Ação ${action} desconhecida` });
     }
-
-    saveInstances(instances);
-    return sendJson(res, 200, {
-      ok: true,
-      instance: target,
-      stats: computeGovernanceStats(instances)
+    return sendJson(res, 501, {
+      ok: false,
+      code: 'BAI_EXECUTOR_UNAVAILABLE',
+      error: 'O executor BAI não está integrado; nenhuma instância foi alterada.'
     });
   }
 
@@ -367,4 +346,4 @@ async function handleBaiInstanceRoutes(req, res, url, sendJson, readJson = null,
   return false;
 }
 
-module.exports = { handleBaiInstanceRoutes };
+module.exports = { handleBaiInstanceRoutes, computeGovernanceStats };

@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { handleBaiInstanceRoutes } = require('../src/api/bai-instance-routes');
+const { handleBaiInstanceRoutes, computeGovernanceStats } = require('../src/api/bai-instance-routes');
 
 function mockSendJson(captured) {
   return (res, status, data) => {
@@ -11,6 +11,17 @@ function mockSendJson(captured) {
     return true;
   };
 }
+
+test('BAI readiness measures running instances and stays unknown when no profiles exist', () => {
+  const profiles = Array.from({ length: 3 }, (_, index) => ({
+    id: `profile-${index}`,
+    state: index === 0 ? 'running' : 'stopped',
+    config: { cookies: 'saved' }
+  }));
+
+  assert.equal(computeGovernanceStats(profiles).healthRate, 33);
+  assert.equal(computeGovernanceStats([]).healthRate, null);
+});
 
 test('BAI Endpoints: GET /api/v2/browser/instance/status returns status and local instances', async () => {
   const captured = {};
@@ -51,13 +62,15 @@ test('BAI Endpoints: GET /api/v2/browser/stats returns account governance metric
   assert.equal(captured.status, 200);
   assert.equal(captured.data.ok, true);
   assert.equal(typeof captured.data.connectedAccounts, 'number');
-  assert.equal(typeof captured.data.healthRate, 'number');
+  assert.ok(captured.data.healthRate === null || typeof captured.data.healthRate === 'number');
 });
 
-test('BAI Endpoints: POST /api/v2/browser/instance/action starts and stops instance', async () => {
+test('BAI Endpoints: instance actions do not claim to run without an executor', async () => {
   const instancesCaptured = {};
   await handleBaiInstanceRoutes({ method: 'GET' }, {}, new URL('http://localhost:3000/api/v2/browser/instances'), mockSendJson(instancesCaptured));
   const testId = instancesCaptured.data.instances[0].id;
+  const originalState = instancesCaptured.data.instances[0].state;
+  const originalPid = instancesCaptured.data.instances[0].pid;
 
   const startCaptured = {};
   const startReq = { method: 'POST' };
@@ -66,16 +79,13 @@ test('BAI Endpoints: POST /api/v2/browser/instance/action starts and stops insta
 
   const handledStart = await handleBaiInstanceRoutes(startReq, {}, startUrl, mockSendJson(startCaptured), readJson);
   assert.equal(handledStart, true);
-  assert.equal(startCaptured.status, 200);
-  assert.equal(startCaptured.data.instance.state, 'running');
-  assert.ok(startCaptured.data.instance.pid);
+  assert.equal(startCaptured.status, 501);
+  assert.equal(startCaptured.data.code, 'BAI_EXECUTOR_UNAVAILABLE');
 
-  const stopCaptured = {};
-  const readStopJson = async () => ({ instanceId: testId, action: 'stop' });
-  const handledStop = await handleBaiInstanceRoutes(startReq, {}, startUrl, mockSendJson(stopCaptured), readStopJson);
-  assert.equal(handledStop, true);
-  assert.equal(stopCaptured.status, 200);
-  assert.equal(stopCaptured.data.instance.state, 'stopped');
+  const afterAction = {};
+  await handleBaiInstanceRoutes({ method: 'GET' }, {}, new URL('http://localhost:3000/api/v2/browser/instances'), mockSendJson(afterAction));
+  assert.equal(afterAction.data.instances[0].state, originalState);
+  assert.equal(afterAction.data.instances[0].pid, originalPid);
 });
 
 test('BAI Endpoints: GET /api/v2/browser/flows and POST /api/v2/browser/flow/run executes steps', async () => {

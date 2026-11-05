@@ -46,7 +46,7 @@
       if (accountsEl) accountsEl.textContent = data.connectedAccounts ?? '—';
       if (cookiesEl) cookiesEl.textContent = data.sessionsWithCookies ?? '—';
       if (proxiesEl) proxiesEl.textContent = data.dedicatedProxies ?? '—';
-      if (readinessEl) readinessEl.textContent = data.healthRate ? `${data.healthRate}%` : '—';
+      if (readinessEl) readinessEl.textContent = Number.isFinite(data.healthRate) ? `${data.healthRate}%` : '—';
       if (runningEl) runningEl.textContent = data.runningInstances ?? '—';
     } catch (_) { /* ignore */ }
 
