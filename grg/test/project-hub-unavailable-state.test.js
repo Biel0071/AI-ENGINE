@@ -30,10 +30,12 @@ test('Project Hub distinguishes unavailable projects from a measured empty catal
   await page.locator('#flpMeasured').waitFor({ state: 'visible' });
   await page.waitForFunction(() => document.querySelector('#flpMeasured')?.dataset.error === 'true');
 
+  assert.equal(await page.locator('[data-nav="projects"] .fnx-nav-subtitle').innerText(), 'Catálogo indisponível');
   assert.deepEqual(await page.locator('#flpTotal,#flpWorkspaces,#flpRunning,#flpFailed').allTextContents(), ['—', '—', '—', '—']);
   assert.match(await page.locator('#flpDetail').innerText(), /Catálogo de projetos indisponível/);
-  const retry = page.getByRole('button', { name: /Tentar novamente/ });
+  const retry = page.locator('#flpRetryCatalog');
   assert.equal(await retry.count(), 1);
+  assert.equal(await retry.isVisible(), true);
   const evidenceDir = path.resolve(__dirname, '../docs/visual-evidence/2026-10-21');
   fs.mkdirSync(evidenceDir, { recursive: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 1280);
@@ -54,6 +56,7 @@ test('Project Hub distinguishes unavailable projects from a measured empty catal
   await retry.click();
   await page.waitForFunction(() => document.querySelector('#flpMeasured')?.dataset.error === 'false');
   assert.deepEqual(await page.locator('#flpTotal,#flpWorkspaces,#flpRunning,#flpFailed').allTextContents(), ['0', '0', '0', '0']);
+  assert.equal(await page.locator('[data-nav="projects"] .fnx-nav-subtitle').innerText(), '0 projetos cadastrados');
   assert.match(await page.locator('#flpCards').innerText(), /Nenhum projeto registrado no Project Kernel/);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.screenshot({ path: path.join(evidenceDir, 'projects-empty-1280-after.png'), fullPage: true });

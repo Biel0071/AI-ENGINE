@@ -380,6 +380,7 @@
         <div class="flp-header-left">
           <span class="flp-eyebrow">PROJECT KERNEL</span>
           <span id="flpMeasured" role="status" class="flp-header-status">Carregando…</span>
+          <button type="button" id="flpRetryCatalog" class="flp-button flp-button-soft flp-retry-header" aria-label="Tentar novamente" title="Tentar novamente" hidden>↻</button>
           <span id="flpSource" class="flp-header-source">Fonte: Project Kernel / GitHub Bridge / JobEngine</span>
           <div class="flp-metrics flp-metrics-compact">
             <div><span>Total de Projetos</span><strong id="flpTotal">—</strong></div>
@@ -526,6 +527,7 @@
       load(true);
       loadGitHubAccount();
     });
+    $('flpRetryCatalog').addEventListener('click', () => load(true));
     $('flpGitHubAccountBtn').addEventListener('click', () => openGitHubConnectModal());
     $('flpGitHubNewRepoBtn').addEventListener('click', () => openGitHubCreateModal());
 
@@ -775,6 +777,23 @@
     const isLocal = state.hubViewMode === 'local';
     const localProjects = state.projects.filter((p) => p.source === 'LOCAL_PROJECT_CATALOG');
     const catalogUnavailable = Boolean(state.error && !state.measuredAt);
+    const retryButton = $('flpRetryCatalog');
+    if (retryButton) retryButton.hidden = !catalogUnavailable;
+    const projectNav = document.querySelector('[data-nav="projects"]');
+    if (projectNav) {
+      const projectNavLabel = catalogUnavailable
+        ? 'Catálogo indisponível'
+        : !state.measuredAt
+          ? 'Carregando catálogo…'
+          : state.error
+            ? `${state.projects.length} projetos · leitura anterior`
+            : isLocal
+              ? `${localProjects.length} projetos locais`
+              : `${state.projects.length} projetos cadastrados`;
+      const subtitle = projectNav.querySelector('.fnx-nav-subtitle');
+      if (subtitle) subtitle.textContent = projectNavLabel;
+      projectNav.title = `Projetos — ${projectNavLabel}`;
+    }
     const statusCounts = state.projects.reduce((counts, project) => {
       const st = operationalStatus(project).status;
       counts[st] = (counts[st] || 0) + 1;
@@ -814,7 +833,7 @@
     if (catalogUnavailable) {
       ['flpTotal', 'flpRunning', 'flpFailed', 'flpWorkspaces', 'flpOnlineCountBadge', 'flpOfflineCountBadge', 'flpUnknownCountBadge', 'flpDegradedCountBadge', 'flpErrorCountBadge', 'flpNotConfiguredCountBadge']
         .forEach((id) => { if ($(id)) $(id).textContent = '—'; });
-      $('flpMeasured').textContent = `Catálogo de projetos indisponível · ${text(state.error, 'erro não informado')}`;
+      $('flpMeasured').textContent = 'Catálogo indisponível';
       $('flpMeasured').dataset.error = 'true';
       return;
     }
@@ -1270,7 +1289,7 @@
     if (!container) return;
     container.replaceChildren();
 
-    // 1. Base Source Filtering: In 'local' mode show only local catalogue; in 'fenix' mode show all 43 systems!
+    // 1. Base Source Filtering: local mode uses the local catalog; Fênix mode uses the loaded Project Kernel list.
     const sourceProjects = state.hubViewMode === 'local'
       ? state.projects.filter((project) => project.source === 'LOCAL_PROJECT_CATALOG')
       : state.projects;
@@ -1334,7 +1353,10 @@
     renderFolderNavigation(projects);
     if (!projects.length) {
       if (state.error && !state.measuredAt) {
-        container.appendChild(element('p', 'flp-empty', 'Catálogo indisponível nesta leitura.'));
+        const unavailable = element('p', 'flp-empty flp-unavailable');
+        unavailable.setAttribute('role', 'alert');
+        unavailable.textContent = 'Catálogo indisponível nesta leitura. Use “Tentar novamente” no cabeçalho.';
+        container.appendChild(unavailable);
       } else {
         let emptyMsg = 'Nenhum projeto corresponde aos filtros selecionados.';
         if (state.catalogScope === 'favorites') emptyMsg = 'Nenhum projeto favoritado neste navegador.';
