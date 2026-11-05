@@ -6946,7 +6946,7 @@
       const now = window.performance?.now?.() || Date.now();
       const cachedLayout = this._districtLabelLayoutCache;
       if (!cachedLayout || cachedLayout.width !== width || cachedLayout.height !== height || now - cachedLayout.measuredAt > 250) {
-        const obstacles = [...document.querySelectorAll('.fw3-control-hint, .fw3-identity, .fw3-nav, .fw3-context, .fw3-pulse, #fenixWorldMinimap, #fenixCityNavPill, #fnxProviderOrbit, #fenixProviderOrbit, #cityRuntimeLoadStatus')]
+        const obstacles = [...document.querySelectorAll('.fw3-control-hint, .fw3-identity, .fw3-nav, .fw3-nav-levels-bar, .fw3-context, .fw3-pulse, #fenixWorldMinimap, #fenixModularBottomDock, #fenixMiroSpatialHud, #spatialBuildingInspectorPanel, #fenixWorldBuildingInspector, #fenixCityNavPill, #fnxProviderOrbit, #fenixProviderOrbit, #cityRuntimeLoadStatus')]
           .map((node) => {
             const style = getComputedStyle(node), rect = node.getBoundingClientRect();
             if (style.display === 'none' || style.visibility === 'hidden' || rect.width <= 0 || rect.height <= 0) return null;
@@ -7020,8 +7020,9 @@
           label.element.hidden = !visible;
           if (!visible) continue;
 
-          const labelWidth = 140;
-          const labelHeight = 36;
+          const measured = label.element.getBoundingClientRect();
+          const labelWidth = measured.width || 180;
+          const labelHeight = measured.height || 42;
           const minX = labelWidth / 2 + 6;
           const maxX = width - minX;
           const minY = labelHeight * 1.1 + 6;

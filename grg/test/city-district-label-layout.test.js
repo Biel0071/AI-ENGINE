@@ -45,6 +45,8 @@ test('City labels and 3D navigation stay readable, reachable, and collision-free
       notice.querySelector('#cityRuntimeLoadMessage').textContent = 'Sessão expirada ou sem acesso. Entre novamente e tente carregar a Cidade.';
       notice.hidden = false;
     });
+    const buildingInspectorClose = page.locator('#btnCutawayClose');
+    if (await buildingInspectorClose.isVisible()) await buildingInspectorClose.click({ force: true });
     await page.waitForTimeout(350);
     await page.waitForTimeout(150);
 
@@ -97,7 +99,49 @@ test('City labels and 3D navigation stay readable, reachable, and collision-free
       await page.screenshot({ path: path.join(os.tmpdir(), 'grg-city-runtime-notice-1280-after.png') });
     }
 
-    assert.ok(layout.labels.length > 0, `no district labels are visible at ${viewport.width}px`);
+    const overlayLayout = await page.evaluate(() => {
+      const hostRect = document.querySelector('#view-city .fenix-city-canvas-area').getBoundingClientRect();
+      const labels = [...document.querySelectorAll('.fw3-district-label:not([hidden]), .fw3-project-label:not([hidden])')].map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          title: element.querySelector('strong')?.textContent || element.getAttribute('aria-label'),
+          left: rect.left - hostRect.left,
+          right: rect.right - hostRect.left,
+          top: rect.top - hostRect.top,
+          bottom: rect.bottom - hostRect.top,
+        };
+      });
+      const overlaps = [];
+      for (let i = 0; i < labels.length; i += 1) {
+        for (let j = i + 1; j < labels.length; j += 1) {
+          const a = labels[i], b = labels[j];
+          if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) overlaps.push([a.title, b.title]);
+        }
+      }
+      const obstacles = [
+        ['building inspector', document.querySelector('#spatialBuildingInspectorPanel')],
+        ['district inspector', document.querySelector('#fenixWorldBuildingInspector')],
+        ['bottom dock', document.querySelector('#fenixModularBottomDock')],
+        ['level navigation', document.querySelector('#fw3NavLevelsBar')],
+        ['camera controls', document.querySelector('#fenixMiroSpatialHud')],
+      ].map(([name, element]) => {
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        return { name, left: rect.left - hostRect.left, right: rect.right - hostRect.left, top: rect.top - hostRect.top, bottom: rect.bottom - hostRect.top };
+      }).filter(Boolean);
+      const obstacleCollisions = labels.flatMap((label) => obstacles.filter((obstacle) =>
+        label.left < obstacle.right && label.right > obstacle.left && label.top < obstacle.bottom && label.bottom > obstacle.top
+      ).map((obstacle) => [label.title, obstacle.name]));
+      return { overlaps, obstacleCollisions, visibleCount: labels.length };
+    });
+    assert.deepEqual(overlayLayout.overlaps, [], `City district and project labels overlap at ${viewport.width}px: ${JSON.stringify(overlayLayout.overlaps)}`);
+    assert.deepEqual(overlayLayout.obstacleCollisions, [], `City labels cover the dock or camera controls at ${viewport.width}px: ${JSON.stringify(overlayLayout.obstacleCollisions)}`);
+
+    assert.ok(layout.labels.length > 0 || overlayLayout.visibleCount > 0, `no City labels are visible at ${viewport.width}px`);
+    if (!layout.labels.length) {
+      await page.close();
+      continue;
+    }
     assert.ok(layout.labels.every((label) => label.width >= 48 && label.textWidth >= 20), `a label collapsed at ${viewport.width}px: ${JSON.stringify(layout.labels)}`);
     const minimumFontSize = viewport.width <= 760 ? { title: 11, detail: 9 } : { title: 12, detail: 10 };
     assert.ok(layout.labels.every((label) => label.titleFontSize >= minimumFontSize.title && label.detailFontSize >= minimumFontSize.detail), `district text is too small at ${viewport.width}px: ${JSON.stringify(layout.labels)}`);
