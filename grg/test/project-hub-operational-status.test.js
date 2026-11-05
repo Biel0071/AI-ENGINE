@@ -27,7 +27,7 @@ test('Project Hub separates measured service status from catalog status', async 
     const pathname = new URL(route.request().url()).pathname;
     let body = {};
     if (pathname === '/api/fenix/projects') body = { projects: [
-      { id: 'catalog-online-only', name: 'Catalogo sem medição', status: 'ONLINE', workspace: '/workspace/catalog' },
+      { id: 'catalog-online-only', name: 'Catalogo sem medição', status: 'ONLINE', workspace: '/workspace/catalog', localPort: 3000 },
       { id: 'service-online', name: 'Serviço ativo', status: 'OFFLINE', workspace: '/workspace/online' },
       { id: 'service-offline', name: 'Serviço indisponível', status: 'ONLINE', workspace: '/workspace/offline' },
     ] };

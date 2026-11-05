@@ -24,10 +24,15 @@ test('Project Hub counts only favorites present in the loaded catalog', async (t
 
   browser = await chromium.launch({ headless: true, executablePath: process.env.FENIX_QA_CHROMIUM_PATH || undefined });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await page.addInitScript(() => localStorage.setItem('fenix_project_hub_view_mode', 'fenix'));
   await page.addInitScript(() => localStorage.setItem('fenix_project_catalog_preferences_v1', JSON.stringify({ favorites: ['retired-id', 'project-1'] })));
   await page.route('**/api/**', async (route) => {
     const pathname = new URL(route.request().url()).pathname;
-    const body = pathname === '/api/fenix/projects' ? { projects: [{ id: 'project-1', name: 'Project One', status: 'ONLINE' }] } : {};
+    const body = pathname === '/api/fenix/projects' ? { projects: [
+      { id: 'project-1', name: 'Project One', status: 'ONLINE', source: 'LOCAL_PROJECT_CATALOG', workspaceAvailable: true },
+      { id: 'project-2', name: 'Project Two', status: 'OFFLINE', source: 'LOCAL_PROJECT_CATALOG', workspaceAvailable: false },
+      { id: 'project-3', name: 'Project Three', status: 'ONLINE', workspace: '/opt/project-3' },
+    ] } : {};
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
 
@@ -37,7 +42,14 @@ test('Project Hub counts only favorites present in the loaded catalog', async (t
   const favoriteScope = page.locator('.flp-tree-item').filter({ hasText: 'Favoritos' });
   assert.equal(await favoriteScope.locator('.flp-tree-item-count').innerText(), '1');
   assert.equal(await page.locator('#flpFavCount').innerText(), '1');
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('fenix_project_catalog_preferences_v1')).favorites), ['project-1']);
+  const localScope = page.locator('.flp-tree-item').filter({ hasText: 'Projetos Locais' });
+  assert.equal(await localScope.locator('.flp-tree-item-count').innerText(), '2');
+  const localFolder = page.locator('.flp-folder-card').filter({ hasText: 'Projetos Locais' });
+  assert.match(await localFolder.getAttribute('aria-label'), /2 sistemas/);
 
   await favoriteScope.click();
   assert.deepEqual(await page.locator('.flp-card[data-project-id]').evaluateAll((cards) => cards.map((card) => card.dataset.projectId)), ['project-1']);
+  await page.locator('.flp-tree-item').filter({ hasText: 'Projetos Locais' }).click();
+  assert.deepEqual(await page.locator('.flp-card[data-project-id]').evaluateAll((cards) => cards.map((card) => card.dataset.projectId)), ['project-1', 'project-2']);
 });

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const CATALOG_PREFS_KEY = 'fenix_project_catalog_preferences_v1';
-  const DEFAULT_FAVORITES = ['api-platform-live', 'fenix-os', 'grg-crm-distribuidor-automotivo', 'superapp-gestao-revendas', 'multi-tenant-manager'];
+  const DEFAULT_FAVORITES = ['fenix-os'];
   const isFixture = typeof window !== 'undefined' && (
     (window.location.pathname || '').includes('fixture') ||
     (window.location.search || '').includes('fixture')
@@ -999,11 +999,15 @@
     const scopeGroup = element('div', 'flp-tree-group');
     scopeGroup.appendChild(element('div', 'flp-tree-group-label', 'ESCOPOS'));
     const favoriteCount = state.projects.filter(project => state.catalogFavorites.has(project.id)).length;
+    const localCount = state.projects.filter(project => {
+      const remote = Boolean(project.vpsPath || project.remoteUrl || (project.workspace && String(project.workspace).startsWith('/opt/')) || project.deployment?.bindings?.length || project.id === 'api-platform-live');
+      return !remote && (project.source === 'LOCAL_PROJECT_CATALOG' || project.workspaceAvailable === true);
+    }).length;
 
     const scopes = [
       { id: 'all', label: 'Todos os Projetos', icon: 'ph-folders', count: state.projects.length },
       { id: 'favorites', label: 'Favoritos', icon: 'ph-star', count: favoriteCount },
-      { id: 'local', label: 'Projetos Locais', icon: 'ph-desktop', count: state.projects.filter(p => p.source === 'LOCAL_PROJECT_CATALOG' || p.workspaceAvailable).length },
+      { id: 'local', label: 'Projetos Locais', icon: 'ph-desktop', count: localCount },
       { id: 'remote', label: 'Remotos (VPS)', icon: 'ph-cloud', count: state.projects.filter(p => p.vpsPath || p.remoteUrl || p.deployment?.bindings?.length || (p.workspace && String(p.workspace).startsWith('/opt/'))).length },
       { id: 'github', label: 'Repositórios GitHub', icon: 'ph-github-logo', count: state.projects.filter(p => Boolean(p.repository && String(p.repository).includes('github.com'))).length },
       { id: 'recent', label: 'Abertos Recentemente', icon: 'ph-clock-counter-clockwise', count: state.catalogRecents.length },
@@ -1239,7 +1243,7 @@
           { id: 'Fênix & Core', label: 'Fênix & Core', icon: 'ph-cpu', color: '#00E5A0', count: state.projects.filter(p => /f[eê]nix|core/i.test(p.catalogGroup || '') || /f[eê]nix/i.test(p.name || p.id)).length },
           { id: 'Automação', label: 'Automação', icon: 'ph-lightning', color: '#eab308', count: state.projects.filter(p => /automa[cç][aã]o|auto/i.test(p.catalogGroup || '')).length },
           { id: 'Ferramentas & IA', label: 'Ferramentas & IA', icon: 'ph-wrench', color: '#38bdf8', count: state.projects.filter(p => /ferramenta|ia|ai|tool/i.test(p.catalogGroup || '')).length },
-          { id: 'local_scope', scope: 'local', label: 'Projetos Locais', icon: 'ph-desktop', color: '#a855f7', count: state.projects.filter(p => p.source === 'LOCAL_PROJECT_CATALOG' || p.workspaceAvailable).length },
+          { id: 'local_scope', scope: 'local', label: 'Projetos Locais', icon: 'ph-desktop', color: '#a855f7', count: state.projects.filter(p => { const remote = Boolean(p.vpsPath || p.remoteUrl || (p.workspace && String(p.workspace).startsWith('/opt/')) || p.deployment?.bindings?.length || p.id === 'api-platform-live'); return !remote && (p.source === 'LOCAL_PROJECT_CATALOG' || p.workspaceAvailable === true); }).length },
           { id: 'remote_scope', scope: 'remote', label: 'Remotos (VPS)', icon: 'ph-cloud', color: '#06b6d4', count: state.projects.filter(p => p.vpsPath || p.remoteUrl || p.deployment?.bindings?.length || (p.workspace && String(p.workspace).startsWith('/opt/'))).length }
         ];
 
@@ -6704,6 +6708,14 @@
         const data = await json('/api/fenix/projects');
         state.projects = data.projects || [];
         state.measuredAt = new Date().toISOString();
+        const projectIds = new Set(state.projects.map((project) => project.id));
+        const validFavorites = [...state.catalogFavorites].filter((id) => projectIds.has(id));
+        const validRecents = state.catalogRecents.filter((item) => projectIds.has(item.id));
+        if (validFavorites.length !== state.catalogFavorites.size || validRecents.length !== state.catalogRecents.length) {
+          state.catalogFavorites = new Set(validFavorites);
+          state.catalogRecents = validRecents;
+          persistCatalogPreferences();
+        }
         const route = parseProjectsRoute();
         const preferred = (route?.projectId && state.projects.find((item) => item.id === route.projectId || item.id === (route.projectId === 'api-platform' ? 'api-platform-live' : route.projectId))) ||
                           state.projects.find((item) => item.id === state.requestedProjectId) ||
