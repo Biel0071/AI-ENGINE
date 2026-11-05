@@ -171,6 +171,25 @@ test('empty default live arrays stay unavailable until a collection was measured
   assert.match(unifiedApp, /agentsMeasured === true && Array\.isArray\(window\.FENIX\.live\.agents\)/);
 });
 
+test('primary shell routes use scoped data plans instead of the broad fallback', () => {
+  const refreshStart = unifiedApp.indexOf('async function refreshAll() {');
+  const refreshEnd = unifiedApp.indexOf('\nfunction renderAll()', refreshStart);
+  const refreshSource = unifiedApp.slice(refreshStart, refreshEnd);
+  const planStart = refreshSource.indexOf('const viewEntries = {');
+  const planEnd = refreshSource.indexOf('\n    // Command Center polls', planStart);
+  const viewPlanSource = refreshSource.slice(planStart, planEnd);
+  const sandbox = { api: (path) => () => path, publicJson: (path) => () => path };
+  vm.runInNewContext(`${viewPlanSource}\nglobalThis.viewEntries = viewEntries;`, sandbox);
+  const viewPlan = sandbox.viewEntries;
+
+  for (const route of ['projects', 'agents', 'runtime', 'browser', 'defense']) {
+    assert.ok(Array.isArray(viewPlan[route]), `${route} has an explicit data plan`);
+  }
+  assert.deepEqual(Array.from(viewPlan.projects, ([key, load]) => [key, load()()]), [['projects', '/projects']]);
+  assert.deepEqual(Array.from(viewPlan.agents, ([key, load]) => [key, load()()]), [['agents', '/agents/panel'], ['swarm', '/agents/swarm']]);
+  assert.deepEqual(Array.from(viewPlan.runtime, ([key, load]) => [key, load()()]), [['runtime', '/runtime']]);
+});
+
 test('header and event panel distinguish API failure from measured empty data', () => {
   const headerStart = unifiedApp.indexOf('function renderHeader() {');
   const headerEnd = unifiedApp.indexOf('\nfunction renderCommand() {', headerStart);

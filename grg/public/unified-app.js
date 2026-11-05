@@ -436,7 +436,29 @@ async function refreshAll() {
       ['me', () => api('/me')],
       ['overview', () => api('/overview')],
     ];
+    const summaryEntries = [
+      ['agents', () => api('/agents/panel')],
+      ['missions', () => api('/missions')],
+      ['jobs', () => api('/runtime/jobs')],
+    ];
     const viewEntries = {
+      projects: [
+        ['projects', () => api('/projects')],
+      ],
+      agents: [
+        ['agents', () => api('/agents/panel')],
+        ['swarm', () => api('/agents/swarm')],
+      ],
+      runtime: [
+        ['runtime', () => api('/runtime')],
+      ],
+      browser: [
+        ['browserStats', () => api('/v2/browser/stats')],
+        ['browserInstances', () => api('/v2/browser/instances')],
+      ],
+      defense: [
+        ['encryption', () => api('/security/encryption/status')],
+      ],
       skills: [
         ['skills', () => api('/skills')],
         ['fullstackSlices', () => api('/scos/factory/slices')],
@@ -494,7 +516,7 @@ async function refreshAll() {
     // intelligence/governance/graph/deploy endpoint on each 15s tick; with an SSE tab
     // open this created a request storm and could starve the HTTP listener. Feature-specific
     // views keep their own endpoints below, while the command view stays live and bounded.
-    const entries = viewEntries[activeView] ? [...essentialEntries, ...viewEntries[activeView]] : [
+    const viewSpecificEntries = viewEntries[activeView] || [
       ['health', () => publicJson('/health')],
       ['me', () => api('/me')],
     ['operations', () => api('/operations/state')],
@@ -511,6 +533,7 @@ async function refreshAll() {
     ['swarm', () => api('/agents/swarm')],
     ['city', () => api('/city')],
     ];
+    const entries = [...new Map([...essentialEntries, ...summaryEntries, ...viewSpecificEntries].map((entry) => [entry[0], entry])).values()];
     const data = await settle(entries, viewEntries[activeView] ? 2 : 4);
     state.data = data;
     state.projects = data.projects?.projects || [];
