@@ -8425,6 +8425,9 @@
       this.selectedBuilding = null;
       this.selectedAgent = null;
       this.activeApiFloor = null;
+      this.activeBuildingId = null;
+      this._unmountFloorNavigationDock();
+      this._updateSemanticNavUI(1);
       this.apiFloorGroups?.forEach((floor) => { if (floor) floor.visible = true; });
       if (this.apiRoofGroup) this.apiRoofGroup.visible = true;
       if (this.cutawayState) {

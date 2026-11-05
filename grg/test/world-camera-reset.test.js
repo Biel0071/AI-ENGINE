@@ -38,6 +38,7 @@ test('resetCamera restores the live camera and renders immediately outside headl
   };
   engine.cameraMode = 'follow';
   engine.followingAgentId = 'agent-7';
+  engine.activeBuildingId = 'bld-api-platform';
   engine.state = { selected: { id: 'agent-7' }, level: 'agent' };
   engine.activeApiFloor = 2;
   engine.apiFloorGroups = [{ visible: false }, { visible: false }, { visible: true }, { visible: true }];
@@ -46,6 +47,10 @@ test('resetCamera restores the live camera and renders immediately outside headl
   let renders = 0;
   engine._syncExpansionChunks = () => {};
   engine._updateDistrictLabels = () => {};
+  let floorDockUnmounted = false;
+  let semanticLevel = null;
+  engine._unmountFloorNavigationDock = () => { floorDockUnmounted = true; };
+  engine._updateSemanticNavUI = (level) => { semanticLevel = level; };
   engine.renderer = { render: () => { renders += 1; } };
   engine.scene = {};
   engine._saveState = () => {};
@@ -56,14 +61,17 @@ test('resetCamera restores the live camera and renders immediately outside headl
   assert.equal(engine.cameraState.distance, engine.cameraState.targetDistance);
   assert.deepEqual(
     [engine.cameraState.target.x, engine.cameraState.target.y, engine.cameraState.target.z],
-    [0, 0, 0]
+    [0, 4, -14]
   );
   assert.equal(engine.cameraState.targetAzimuth, null);
   assert.equal(engine.cameraState.targetElevation, null);
-  assert.equal(engine.camera.position.x, 0 + engine.cameraState.distance * Math.cos(Math.PI / 4) * Math.cos(0.56));
-  assert.equal(engine.camera.position.z, engine.cameraState.distance * Math.sin(Math.PI / 4) * Math.cos(0.56));
+  assert.equal(engine.camera.position.x, engine.cameraState.target.x + engine.cameraState.distance * Math.cos(engine.cameraState.azimuth) * Math.cos(engine.cameraState.elevation));
+  assert.equal(engine.camera.position.z, engine.cameraState.target.z + engine.cameraState.distance * Math.sin(engine.cameraState.azimuth) * Math.cos(engine.cameraState.elevation));
   assert.equal(renders, 1);
   assert.equal(engine.activeApiFloor, null);
+  assert.equal(engine.activeBuildingId, null);
+  assert.equal(floorDockUnmounted, true);
+  assert.equal(semanticLevel, 1);
   assert.ok(engine.apiFloorGroups.every((floor) => floor.visible));
   assert.equal(engine.apiRoofGroup.visible, true);
 });
