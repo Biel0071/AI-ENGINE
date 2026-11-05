@@ -7021,8 +7021,9 @@
           if (!visible) continue;
 
           const measured = label.element.getBoundingClientRect();
-          const labelWidth = measured.width || 180;
-          const labelHeight = measured.height || 42;
+          if (!measured.width || !measured.height) continue;
+          const labelWidth = measured.width;
+          const labelHeight = measured.height;
           const minX = labelWidth / 2 + 6;
           const maxX = width - minX;
           const minY = labelHeight * 1.1 + 6;
