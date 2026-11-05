@@ -204,7 +204,7 @@
   function renderExecutiveHeader(content, reportData = {}) {
     const headerData = reportData.header || {};
     const envelope = reportData.telemetryEnvelope || {};
-    const engineState = headerData.engineState || (state.evolution?._paused ? 'PAUSED' : 'ONLINE');
+    const engineState = headerData.engineState || (state.evolution?._paused ? 'PAUSED' : 'NOT_MEASURED');
     const badgeClass = engineState === 'ONLINE' ? 'v7-badge-online' : (engineState === 'PAUSED' ? 'v7-badge-blocked' : 'v7-badge-degraded');
 
     const header = node('div', 'v7-exec-header');
@@ -219,20 +219,25 @@
     left.append(titleRow);
 
     const sub = node('p', 'v7-subsystem-role');
-    const freshness = envelope.freshness || 'FRESH';
+    const freshness = envelope.freshness || 'NOT_MEASURED';
     const lastUp = headerData.lastUpdatedAt ? new Date(headerData.lastUpdatedAt).toLocaleTimeString('pt-BR') : '—';
-    sub.textContent = `Telemetria Canônica (${freshness}) · Última atualização: ${lastUp} · Ciclos Históricos: ${headerData.historicalCyclesCount ?? (state.evolution?.status?.cycleCount ?? 0)}`;
+    sub.textContent = `Telemetria Canônica (${freshness}) · Última atualização: ${lastUp} · Ciclos Históricos: ${headerData.historicalCyclesCount ?? (state.evolution?.status?.cycleCount ?? '—')}`;
     left.append(sub);
 
     const stats = node('div', 'v7-exec-stats');
     const p1 = node('div', 'v7-exec-stat-pill');
-    p1.innerHTML = `Projetos Monitorados: <strong>${headerData.monitoredProjectsCount ?? 44}</strong>`;
+    p1.textContent = 'Projetos Monitorados: ';
+    p1.append(node('strong', '', headerData.monitoredProjectsCount ?? '—'));
     const p2 = node('div', 'v7-exec-stat-pill');
-    p2.innerHTML = `Missões Ativas: <strong>${headerData.activeMissionsCount ?? (state.evolution?.queue?.active?.length ?? 0)}</strong>`;
+    p2.textContent = 'Missões Ativas: ';
+    p2.append(node('strong', '', headerData.activeMissionsCount ?? (Array.isArray(state.evolution?.queue?.active) ? state.evolution.queue.active.length : '—')));
     const p3 = node('div', 'v7-exec-stat-pill');
-    const uptimeSec = headerData.uptimeSeconds || 3600;
-    const uptimeFormatted = uptimeSec >= 3600 ? `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m` : `${Math.floor(uptimeSec / 60)}m`;
-    p3.innerHTML = `Uptime: <strong>${uptimeFormatted}</strong>`;
+    const uptimeSec = headerData.uptimeSeconds;
+    const uptimeFormatted = Number.isFinite(uptimeSec)
+      ? (uptimeSec >= 3600 ? `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m` : `${Math.floor(uptimeSec / 60)}m`)
+      : '—';
+    p3.textContent = 'Uptime: ';
+    p3.append(node('strong', '', uptimeFormatted));
     stats.append(p1, p2, p3);
 
     header.append(left, stats);
@@ -244,38 +249,40 @@
     grid.id = 'v7KpiGrid';
 
     const defaultKpis = {
-      problemsDetected: { label: 'Problemas detectados', currentValue: 40, delta: 2, trendSeries: [36, 38, 38, 39, 40, 40], formula: 'Bugs abertos + achados proativos do scanner de código', recordsFilter: 'problems' },
-      problemsResolved: { label: 'Problemas resolvidos', currentValue: 27, delta: 1, trendSeries: [22, 24, 25, 27, 27, 27], formula: 'Bugs com status FIXED/VERIFIED + missões concluídas', recordsFilter: 'fixes' },
-      independentValidationsApproved: { label: 'Validações independentes aprovadas', currentValue: 25, delta: 1, trendSeries: [18, 20, 22, 24, 25, 25], formula: 'Aprovações assinadas por agente validador distinto do autor (validator !== author)', recordsFilter: 'validations' },
-      blockedPending: { label: 'Pendências bloqueadas', currentValue: 1, delta: -1, trendSeries: [3, 2, 2, 3, 2, 1], formula: 'Missões e bugs em AWAITING_APPROVAL ou com dependências bloqueadas', recordsFilter: 'blocked' },
-      resolutionRatePercent: { label: 'Taxa de resolução', currentValue: 68, delta: 2, trendSeries: [62, 64, 65, 66, 68, 68], formula: '(Problemas resolvidos / Problemas detectados) * 100', recordsFilter: 'resolution_rate' },
-      publishedEvolutions: { label: 'Evoluções publicadas', currentValue: 5, delta: 1, trendSeries: [3, 3, 4, 4, 5, 5], formula: 'Evoluções com status VERIFIED_IN_PRODUCTION comprovadas na VPS e Git', recordsFilter: 'evolutions' }
+      problemsDetected: { label: 'Problemas detectados', recordsFilter: 'problems' },
+      problemsResolved: { label: 'Problemas resolvidos', recordsFilter: 'fixes' },
+      independentValidationsApproved: { label: 'Validações independentes aprovadas', recordsFilter: 'validations' },
+      blockedPending: { label: 'Pendências bloqueadas', recordsFilter: 'blocked' },
+      resolutionRatePercent: { label: 'Taxa de resolução', recordsFilter: 'resolution_rate' },
+      publishedEvolutions: { label: 'Evoluções publicadas', recordsFilter: 'evolutions' }
     };
 
     const keys = ['problemsDetected', 'problemsResolved', 'independentValidationsApproved', 'blockedPending', 'resolutionRatePercent', 'publishedEvolutions'];
     const colors = ['#f59e0b', '#10b981', '#38bdf8', '#ef4444', '#10b981', '#a855f7'];
 
     keys.forEach((key, idx) => {
-      const k = kpisData[key] || defaultKpis[key];
+      const k = { ...defaultKpis[key], ...(kpisData[key] || {}) };
       const card = node('article', 'v7-kpi-card');
       card.id = `kpiCard_${key}`;
 
       const top = node('div', 'v7-kpi-top');
       top.append(node('span', 'v7-kpi-label', k.label || key));
-      const deltaVal = Number(k.delta || 0);
+      const hasDelta = k.delta != null && Number.isFinite(Number(k.delta));
+      const deltaVal = hasDelta ? Number(k.delta) : 0;
       const deltaClass = deltaVal > 0 ? (key === 'blockedPending' ? 'v7-delta-negative' : 'v7-delta-positive') : (deltaVal < 0 ? (key === 'blockedPending' ? 'v7-delta-positive' : 'v7-delta-negative') : 'v7-delta-neutral');
       const deltaStr = deltaVal > 0 ? `+${deltaVal}` : String(deltaVal);
-      top.append(node('span', `v7-delta-tag ${deltaClass}`, deltaStr));
+      top.append(node('span', `v7-delta-tag ${hasDelta ? deltaClass : 'v7-delta-neutral'}`, hasDelta ? deltaStr : '—'));
       card.append(top);
 
-      const valRow = node('div', 'v7-kpi-val', key === 'resolutionRatePercent' ? `${k.currentValue}%` : String(k.currentValue));
+      const value = k.currentValue == null ? '—' : (key === 'resolutionRatePercent' ? `${k.currentValue}%` : String(k.currentValue));
+      const valRow = node('div', 'v7-kpi-val', value);
       card.append(valRow);
 
       const sparkContainer = node('div', '');
-      sparkContainer.innerHTML = renderSparklineSvg(k.trendSeries || [10, 20, 15, 25, 30], colors[idx]);
+      sparkContainer.innerHTML = renderSparklineSvg(k.trendSeries || [], colors[idx]);
       card.append(sparkContainer);
 
-      const formula = node('div', 'v7-kpi-formula', k.formula || '');
+      const formula = node('div', 'v7-kpi-formula', k.formula || 'Métrica não disponível nesta leitura');
       card.append(formula);
 
       card.addEventListener('click', () => {

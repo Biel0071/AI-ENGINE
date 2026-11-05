@@ -176,3 +176,12 @@ test('V7.5 — Frontend Single-Source Contract & UI Implementation Verification'
   assert.ok(worldJs.includes('ModernTechTerraceRoof'), 'Roof archetype must be modern tech terrace');
   assert.ok(worldJs.includes('this.elevatorCab'), 'Elevator cab must exist and animate');
 });
+
+test('operations view does not substitute sample KPIs or uptime when telemetry is missing', () => {
+  const opsJs = fs.readFileSync(operationsLiveJsPath, 'utf8');
+  assert.doesNotMatch(opsJs, /currentValue:\s*(?:40|27|25|68|5)\b/);
+  assert.doesNotMatch(opsJs, /monitoredProjectsCount\s*\?\?\s*44/);
+  assert.doesNotMatch(opsJs, /uptimeSec\s*=\s*headerData\.uptimeSeconds\s*\|\|\s*3600/);
+  assert.match(opsJs, /headerData\.engineState\s*\|\|\s*\(state\.evolution\?\._paused\s*\?\s*'PAUSED'\s*:\s*'NOT_MEASURED'\)/);
+  assert.match(opsJs, /currentValue\s*==\s*null\s*\?\s*'—'/);
+});
