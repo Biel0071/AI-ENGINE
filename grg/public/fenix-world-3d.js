@@ -8640,6 +8640,26 @@
       `;
 
       host.appendChild(dock);
+      const fitDockToAvailableHeight = () => {
+        if (!dock.isConnected) return;
+        const hostRect = host.getBoundingClientRect();
+        const dockRect = dock.getBoundingClientRect();
+        const bottomDock = document.getElementById('fenixModularBottomDock');
+        const bottomDockRect = bottomDock?.getBoundingClientRect();
+        const availableBottom = bottomDockRect && bottomDockRect.top > dockRect.top
+          ? bottomDockRect.top
+          : hostRect.bottom;
+        dock.style.maxHeight = `${Math.max(160, Math.floor(availableBottom - dockRect.top - 12))}px`;
+      };
+      this._floorDockResizeObserver = typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(fitDockToAvailableHeight)
+        : null;
+      this._floorDockResizeObserver?.observe(host);
+      const bottomDock = document.getElementById('fenixModularBottomDock');
+      if (bottomDock) this._floorDockResizeObserver?.observe(bottomDock);
+      this._floorDockResizeHandler = fitDockToAvailableHeight;
+      window.addEventListener('resize', this._floorDockResizeHandler);
+      fitDockToAvailableHeight();
 
       dock.querySelectorAll('.fw3-floor-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -8672,6 +8692,12 @@
     }
 
     _unmountFloorNavigationDock() {
+      this._floorDockResizeObserver?.disconnect();
+      this._floorDockResizeObserver = null;
+      if (this._floorDockResizeHandler) {
+        window.removeEventListener('resize', this._floorDockResizeHandler);
+        this._floorDockResizeHandler = null;
+      }
       const dock = document.getElementById('fw3FloorDock');
       if (dock) dock.remove();
     }

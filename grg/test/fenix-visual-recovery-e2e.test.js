@@ -143,6 +143,20 @@ test('FÊNIX OS — Visual Recovery & Fênix Life Integration E2E Acceptance', {
       assert.ok(fs.existsSync(shotPath), `Screenshot must exist for ${vp.name}`);
     }
 
+    // Verify the floor inspector stays within the usable area above the bottom dock.
+    for (const vp of viewports) {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.evaluate(() => window.fenixWorld3D?.enterBuilding('bld-api-platform'));
+      await page.waitForTimeout(150);
+      const floorDock = page.locator('#fw3FloorDock');
+      assert.ok(await floorDock.isVisible(), `Floor inspector must open at ${vp.name}`);
+      const floorBox = await floorDock.boundingBox();
+      const bottomBox = await page.locator('#fenixModularBottomDock').boundingBox();
+      assert.ok(floorBox && bottomBox, `Floor and bottom docks must be measurable at ${vp.name}`);
+      assert.ok(floorBox.y + floorBox.height <= bottomBox.y + 2, `Floor inspector must not overlap bottom dock at ${vp.name}`);
+      await page.evaluate(() => window.fenixWorld3D?.exitBuilding());
+    }
+
     // ── 2. Deep Functional Verification at 1920x1080 ──
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.waitForTimeout(400);

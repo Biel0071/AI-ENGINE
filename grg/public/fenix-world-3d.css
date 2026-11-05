@@ -697,6 +697,9 @@ body.fenix-mode-3d #view-city #cityCanvas { display: none !important; }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
   animation: fw3SlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
