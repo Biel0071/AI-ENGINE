@@ -939,6 +939,12 @@ header.global-topbar.orch-topbar #fnxPoolHudCount { display: none; }
   #fnxPoolHudWrapper {
     display: none !important;
   }
+  #view-agents .fenix-module-header > div:last-child {
+    box-sizing: border-box !important;
+    flex-wrap: wrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
 }
 
 /* Reserve real room for the docked chat so the active screen can reflow beside it. */

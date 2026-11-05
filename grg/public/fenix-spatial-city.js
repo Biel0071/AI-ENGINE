@@ -1060,23 +1060,23 @@
   const WORKSPACE_PRESETS = {
     default: {
       visible: ['fenixWorldMinimap', 'dockWindowAgents', 'dockWindowMissions', 'dockWindowJobs'],
-      hidden: ['dockWindowEvents', 'dockWindowTelemetry', 'dockWindowProjects', 'dockWindowServices'],
-      order: ['fenixWorldMinimap', 'dockWindowAgents', 'dockWindowMissions', 'dockWindowJobs', 'dockWindowEvents', 'dockWindowTelemetry', 'dockWindowProjects', 'dockWindowServices']
+      hidden: [],
+      order: ['fenixWorldMinimap', 'dockWindowAgents', 'dockWindowMissions', 'dockWindowJobs']
     },
     operations: {
-      visible: ['fenixWorldMinimap', 'dockWindowAgents', 'dockWindowMissions', 'dockWindowJobs', 'dockWindowEvents'],
-      hidden: ['dockWindowTelemetry', 'dockWindowProjects', 'dockWindowServices'],
-      order: ['fenixWorldMinimap', 'dockWindowMissions', 'dockWindowJobs', 'dockWindowEvents', 'dockWindowAgents', 'dockWindowTelemetry', 'dockWindowProjects', 'dockWindowServices']
+      visible: ['fenixWorldMinimap', 'dockWindowAgents', 'dockWindowMissions', 'dockWindowJobs'],
+      hidden: [],
+      order: ['dockWindowMissions', 'dockWindowAgents', 'fenixWorldMinimap', 'dockWindowJobs']
     },
     development: {
-      visible: ['fenixWorldMinimap', 'dockWindowProjects', 'dockWindowServices', 'dockWindowJobs', 'dockWindowAgents'],
-      hidden: ['dockWindowMissions', 'dockWindowEvents', 'dockWindowTelemetry'],
-      order: ['fenixWorldMinimap', 'dockWindowProjects', 'dockWindowServices', 'dockWindowJobs', 'dockWindowAgents', 'dockWindowMissions', 'dockWindowEvents', 'dockWindowTelemetry']
+      visible: ['fenixWorldMinimap', 'dockWindowAgents', 'dockWindowMissions', 'dockWindowJobs'],
+      hidden: [],
+      order: ['dockWindowJobs', 'dockWindowAgents', 'dockWindowMissions', 'fenixWorldMinimap']
     },
     monitoring: {
-      visible: ['fenixWorldMinimap', 'dockWindowTelemetry', 'dockWindowEvents', 'dockWindowServices', 'dockWindowAgents'],
-      hidden: ['dockWindowMissions', 'dockWindowProjects', 'dockWindowJobs'],
-      order: ['fenixWorldMinimap', 'dockWindowTelemetry', 'dockWindowEvents', 'dockWindowServices', 'dockWindowAgents', 'dockWindowJobs', 'dockWindowMissions', 'dockWindowProjects']
+      visible: ['fenixWorldMinimap', 'dockWindowAgents', 'dockWindowMissions', 'dockWindowJobs'],
+      hidden: [],
+      order: ['dockWindowMissions', 'dockWindowJobs', 'dockWindowAgents', 'fenixWorldMinimap']
     }
   };
 
@@ -1088,15 +1088,118 @@
 
     init() {
       this.dockContainer = document.getElementById('fenixModularBottomDock');
-      this.panels = Array.from(document.querySelectorAll('.city-panel-card'));
+      this.worldContainer = document.getElementById('fenixCityWorldArea');
+      this.ensureWorkspaceControls();
+      this.panels = Array.from(this.dockContainer?.querySelectorAll('#fenixWorldMinimap, #dockWindowAgents, #dockWindowMissions, #dockWindowJobs') || []);
+      this.panels.forEach((panel) => this.preparePanel(panel));
       this.loadSavedLayout();
       this.bindDragAndDrop();
       this.bindResizeHandles();
       this.bindWindowControlButtons();
       this.bindContextMenu();
       this.bindToolbarControls();
+      window.addEventListener('resize', () => {
+        this.panels.filter((panel) => panel.classList.contains('is-floating') && !panel.classList.contains('is-maximized')).forEach((panel) => {
+          const point = this.clampFloatingPosition(panel, parseFloat(panel.style.left) || 0, parseFloat(panel.style.top) || 0);
+          panel.style.left = `${point.left}px`;
+          panel.style.top = `${point.top}px`;
+        });
+      });
       console.log('[SpatialPanelManager] Modular panel system v2.0 initialized.');
       return this;
+    },
+
+    preparePanel(panel) {
+      if (!panel || panel.dataset.workspaceReady === 'true') return;
+      panel.classList.add('city-panel-card');
+      const header = panel.querySelector('.dock-card-header, .fenix-city-minimap-header');
+      if (header) {
+        header.dataset.dragHandle = 'true';
+        header.tabIndex = 0;
+        header.setAttribute('aria-label', `${panel.getAttribute('aria-label') || panel.querySelector('.dock-card-title')?.textContent?.trim() || 'Painel'} — arraste para mover no modo de layout`);
+        const actions = document.createElement('div');
+        actions.className = 'cpc-window-controls';
+        const controls = [
+          ['minimize', '−', 'Minimizar painel', 'cpc-min-btn'],
+          ['maximize', '□', 'Maximizar painel', 'cpc-max-btn'],
+          ['hide', '×', 'Ocultar painel', 'cpc-hide-btn'],
+        ];
+        controls.forEach(([action, label, title, className]) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = `cpc-btn ${className}`;
+          button.dataset.panelAction = action;
+          button.title = title;
+          button.setAttribute('aria-label', title);
+          button.textContent = label;
+          actions.appendChild(button);
+        });
+        header.appendChild(actions);
+      }
+      const resize = document.createElement('div');
+      resize.className = 'panel-resize-handle resize-se';
+      resize.setAttribute('role', 'separator');
+      resize.setAttribute('aria-orientation', 'horizontal');
+      resize.setAttribute('aria-label', `Redimensionar ${panel.querySelector('.dock-card-title')?.textContent?.trim() || 'painel'}`);
+      resize.tabIndex = 0;
+      panel.appendChild(resize);
+      panel.dataset.workspaceReady = 'true';
+    },
+
+    getWorkspaceBounds() {
+      const rect = this.worldContainer?.getBoundingClientRect();
+      const dockHeight = this.dockContainer?.getBoundingClientRect().height || 0;
+      const width = Math.max(280, (rect?.width || window.innerWidth) - 24);
+      const height = Math.max(140, (rect?.height || window.innerHeight) - dockHeight - 24);
+      this.worldContainer?.style.setProperty('--spatial-dock-height', `${dockHeight}px`);
+      return { left: rect?.left || 0, top: rect?.top || 0, width, height, bottom: (rect?.top || 0) + height };
+    },
+
+    clampFloatingPosition(panel, left, top) {
+      const bounds = this.getWorkspaceBounds();
+      const width = panel?.getBoundingClientRect().width || 340;
+      const height = panel?.getBoundingClientRect().height || 240;
+      return {
+        left: Math.max(0, Math.min(bounds.width - Math.min(width, bounds.width), Number(left) || 0)),
+        top: Math.max(0, Math.min(bounds.height - Math.min(height, bounds.height), Number(top) || 0)),
+      };
+    },
+
+    ensureWorkspaceControls() {
+      if (!this.worldContainer || document.getElementById('btnToggleCustomWorkspace')) return;
+      const launcher = document.createElement('button');
+      launcher.type = 'button';
+      launcher.id = 'btnToggleCustomWorkspace';
+      launcher.className = 'spatial-workspace-launcher';
+      launcher.setAttribute('aria-label', 'Personalizar janelas da Cidade');
+      launcher.setAttribute('aria-controls', 'spatialWorkspaceEditorToolbar');
+      launcher.setAttribute('aria-expanded', 'false');
+      launcher.textContent = 'Layout';
+      const toolbar = document.createElement('div');
+      toolbar.id = 'spatialWorkspaceEditorToolbar';
+      toolbar.className = 'spatial-workspace-toolbar';
+      toolbar.style.display = 'none';
+      toolbar.innerHTML = `
+        <label class="spatial-workspace-preset-label" for="spatialLayoutPresetSelect">Layout</label>
+        <select id="spatialLayoutPresetSelect" aria-label="Preset de layout">
+          <option value="default">Padrão</option><option value="operations">Operações</option>
+          <option value="development">Desenvolvimento</option><option value="monitoring">Monitoramento</option>
+        </select>
+        <details class="spatial-workspace-panels"><summary>Painéis</summary><div id="swetPanelsDropdownMenu" class="spatial-workspace-panels-menu"></div></details>
+        <button type="button" data-workspace-action="save">Salvar</button>
+        <button type="button" data-workspace-action="reset">Restaurar padrão</button>
+        <button type="button" data-workspace-action="done">Concluir</button>`;
+      const mobileBar = document.createElement('nav');
+      mobileBar.className = 'fenix-mobile-dock-bar';
+      mobileBar.setAttribute('aria-label', 'Painéis da Cidade');
+      mobileBar.innerHTML = `
+        <button type="button" class="mob-dock-btn" data-target="fenixWorldMinimap">Mapa</button>
+        <button type="button" class="mob-dock-btn" data-target="dockWindowAgents">Agentes</button>
+        <button type="button" class="mob-dock-btn" data-target="dockWindowMissions">Eventos</button>
+        <button type="button" class="mob-dock-btn" data-target="dockWindowJobs">Jobs</button>`;
+      this.worldContainer.insertBefore(launcher, this.dockContainer || this.worldContainer.firstChild);
+      this.worldContainer.insertBefore(toolbar, this.dockContainer || null);
+      this.worldContainer.insertBefore(mobileBar, this.dockContainer || null);
     },
 
     loadSavedLayout() {
@@ -1107,28 +1210,32 @@
           return;
         }
         const state = JSON.parse(raw);
+        if (state?.activePreset && state.activePreset in WORKSPACE_PRESETS) {
+          this.activePreset = state.activePreset;
+          const select = document.getElementById('spatialLayoutPresetSelect');
+          if (select) select.value = state.activePreset;
+        }
         if (state && Array.isArray(state.order)) {
           this.reorderPanels(state.order);
         }
         if (state && state.panels) {
           Object.entries(state.panels).forEach(([id, pData]) => {
             const el = document.getElementById(id);
-            if (!el) return;
+            if (!el || !this.panels.includes(el)) return;
             if (pData.hidden) {
               el.style.display = 'none';
             } else {
               el.style.display = 'flex';
             }
             if (pData.minimized) el.classList.add('is-minimized');
-            if (pData.maximized) el.classList.add('is-maximized');
-            if (pData.width) el.style.width = pData.width;
-            if (pData.height) el.style.height = pData.height;
-            if (pData.floating && pData.left && pData.top) {
-              el.classList.add('is-floating');
-              el.style.position = 'fixed';
-              el.style.left = pData.left;
-              el.style.top = pData.top;
-              el.style.zIndex = '55';
+            if (pData.floating) {
+              this.toggleFloat(id, true, parseFloat(pData.left), parseFloat(pData.top), true);
+              if (pData.width) el.style.setProperty('width', pData.width, 'important');
+              if (pData.height) el.style.setProperty('height', pData.height, 'important');
+            }
+            if (pData.maximized) {
+              el.dataset.preMaxLayout = JSON.stringify({ left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height });
+              el.classList.add('is-maximized');
             }
           });
         }
@@ -1138,14 +1245,16 @@
       }
     },
 
-    saveCurrentLayout() {
+    saveCurrentLayout(showFeedback = true) {
       const state = {
+        version: 2,
+        activePreset: this.activePreset,
         timestamp: Date.now(),
         order: [],
         panels: {}
       };
 
-      const currentCards = Array.from(document.querySelectorAll('.city-panel-card'));
+      const currentCards = this.panels;
       currentCards.forEach(c => {
         const id = c.id;
         state.order.push(id);
@@ -1162,19 +1271,22 @@
       });
 
       localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(state));
-      this.showToast('Layout Modular Salvo!');
+      if (showFeedback) this.showToast('Layout Modular Salvo!');
     },
 
     resetToDefaultLayout() {
       localStorage.removeItem(WORKSPACE_STORAGE_KEY);
       this.panels.forEach(p => {
         p.classList.remove('is-minimized', 'is-maximized', 'is-floating');
-        p.style.width = '';
-        p.style.height = '';
+        p.classList.remove('mobile-drawer-open');
+        p.style.removeProperty('width');
+        p.style.removeProperty('height');
         p.style.position = '';
         p.style.left = '';
         p.style.top = '';
         p.style.zIndex = '';
+        delete p.dataset.preMaxLayout;
+        if (p.parentElement !== this.dockContainer) this.dockContainer?.appendChild(p);
       });
       this.applyPreset('default', false);
       this.showToast('Layout Restaurado para o Padrão');
@@ -1182,11 +1294,15 @@
 
     applyPreset(presetName, showFeedback = true) {
       const preset = WORKSPACE_PRESETS[presetName] || WORKSPACE_PRESETS.default;
+      this.activePreset = presetName in WORKSPACE_PRESETS ? presetName : 'default';
       if (preset.order) {
         this.reorderPanels(preset.order);
       }
       this.panels.forEach(p => {
         const id = p.id;
+        p.classList.remove('is-minimized', 'is-maximized');
+        if (p.classList.contains('is-floating')) this.toggleFloat(id, false, null, null, true);
+        p.classList.remove('mobile-drawer-open');
         if (preset.visible.includes(id)) {
           p.style.display = 'flex';
         } else if (preset.hidden.includes(id)) {
@@ -1198,15 +1314,18 @@
       if (select) select.value = presetName;
 
       this.updatePanelsDropdown();
+      this.saveCurrentLayout(false);
       if (showFeedback) this.showToast(`Preset: ${presetName.toUpperCase()}`);
     },
 
     reorderPanels(orderIds) {
       if (!this.dockContainer) return;
-      orderIds.forEach(id => {
+      const used = new Set();
+      [...orderIds, ...this.panels.map((panel) => panel.id)].forEach(id => {
         const el = document.getElementById(id);
-        if (el && el.parentElement === this.dockContainer) {
+        if (!used.has(id) && this.panels.includes(el) && el.parentElement === this.dockContainer) {
           this.dockContainer.appendChild(el);
+          used.add(id);
         }
       });
     },
@@ -1221,7 +1340,7 @@
 
       document.addEventListener('pointerdown', (e) => {
         const handle = e.target.closest('[data-drag-handle="true"]');
-        if (!handle) return;
+        if (!handle || !this.isEditMode || e.button !== 0) return;
         const panel = handle.closest('.city-panel-card') || handle.closest('#spatialBuildingInspectorPanel');
         if (!panel) return;
 
@@ -1231,8 +1350,8 @@
         startX = e.clientX;
         startY = e.clientY;
         const rect = panel.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
+        initialLeft = panel.classList.contains('is-floating') ? (parseFloat(panel.style.left) || panel.offsetLeft) : rect.left;
+        initialTop = panel.classList.contains('is-floating') ? (parseFloat(panel.style.top) || panel.offsetTop) : rect.top;
         hasMoved = false;
 
         panel.setPointerCapture?.(e.pointerId);
@@ -1248,10 +1367,11 @@
           draggedElement.classList.add('is-dragging');
 
           if (draggedElement.classList.contains('is-floating')) {
-            draggedElement.style.left = `${initialLeft + dx}px`;
-            draggedElement.style.top = `${initialTop + dy}px`;
+            const point = this.clampFloatingPosition(draggedElement, initialLeft + dx, initialTop + dy);
+            draggedElement.style.left = `${point.left}px`;
+            draggedElement.style.top = `${point.top}px`;
           } else {
-            const cards = Array.from(document.querySelectorAll('.city-panel-card:not(.is-dragging)'));
+            const cards = this.panels.filter((card) => card !== draggedElement && card.parentElement === this.dockContainer && card.style.display !== 'none');
             cards.forEach(c => c.classList.remove('drop-target'));
 
             const targetCard = cards.find(c => {
@@ -1270,7 +1390,7 @@
         if (!draggedElement) return;
 
         if (hasMoved) {
-          const cards = Array.from(document.querySelectorAll('.city-panel-card'));
+          const cards = this.panels;
           const targetCard = cards.find(c => c.classList.contains('drop-target'));
 
           if (targetCard && this.dockContainer && draggedElement.parentElement === this.dockContainer) {
@@ -1284,13 +1404,19 @@
               this.dockContainer.insertBefore(draggedElement, targetCard);
             }
             this.saveCurrentLayout();
-          } else if (e.clientY < window.innerHeight - 240 && !draggedElement.classList.contains('is-floating')) {
-            this.toggleFloat(draggedElement.id, true, e.clientX - 100, e.clientY - 20);
+          } else if (draggedElement.classList.contains('is-floating')) {
+            const point = this.clampFloatingPosition(draggedElement, parseFloat(draggedElement.style.left) || 0, parseFloat(draggedElement.style.top) || 0);
+            draggedElement.style.left = `${point.left}px`;
+            draggedElement.style.top = `${point.top}px`;
+            this.saveCurrentLayout();
+          } else if (e.clientY < this.getWorkspaceBounds().bottom) {
+            const bounds = this.getWorkspaceBounds();
+            this.toggleFloat(draggedElement.id, true, e.clientX - bounds.left - 120, e.clientY - bounds.top - 24);
           }
         }
 
         draggedElement.classList.remove('is-dragging');
-        document.querySelectorAll('.city-panel-card').forEach(c => c.classList.remove('drop-target'));
+        this.panels.forEach(c => c.classList.remove('drop-target'));
         draggedElement = null;
       });
     },
@@ -1304,13 +1430,18 @@
 
       document.addEventListener('pointerdown', (e) => {
         const handle = e.target.closest('.panel-resize-handle');
-        if (!handle) return;
+        if (!handle || !this.isEditMode) return;
         const panel = handle.closest('.city-panel-card') || handle.closest('#spatialBuildingInspectorPanel');
         if (!panel) return;
 
+        if (!panel.classList.contains('is-floating')) {
+          const rect = panel.getBoundingClientRect();
+          this.toggleFloat(panel.id, true, rect.left, rect.top, true);
+        }
+
         resizingPanel = panel;
-        startW = panel.offsetWidth;
-        startH = panel.offsetHeight;
+        startW = parseFloat(panel.style.width) || panel.offsetWidth;
+        startH = parseFloat(panel.style.height) || panel.offsetHeight;
         startX = e.clientX;
         startY = e.clientY;
         panel.setPointerCapture?.(e.pointerId);
@@ -1322,12 +1453,14 @@
         const dw = e.clientX - startX;
         const dh = e.clientY - startY;
 
-        const newW = Math.max(220, Math.min(1400, startW + dw));
-        const newH = Math.max(100, Math.min(800, startH + dh));
+        const bounds = this.getWorkspaceBounds();
+        const maxW = Math.max(240, bounds.width - (parseFloat(resizingPanel.style.left) || 0) - 12);
+        const maxH = Math.max(120, bounds.height - (parseFloat(resizingPanel.style.top) || 0) - 12);
+        const newW = Math.max(Math.min(260, maxW), Math.min(maxW, startW + dw));
+        const newH = Math.max(Math.min(140, maxH), Math.min(maxH, startH + dh));
 
-        resizingPanel.style.width = `${newW}px`;
-        resizingPanel.style.height = `${newH}px`;
-        resizingPanel.style.flex = 'none';
+        resizingPanel.style.setProperty('width', `${newW}px`, 'important');
+        resizingPanel.style.setProperty('height', `${newH}px`, 'important');
       });
 
       document.addEventListener('pointerup', () => {
@@ -1335,6 +1468,22 @@
           resizingPanel = null;
           this.saveCurrentLayout();
         }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        const handle = e.target.closest('.panel-resize-handle');
+        if (!handle || !this.isEditMode || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+        const panel = handle.closest('.city-panel-card');
+        if (!panel) return;
+        if (!panel.classList.contains('is-floating')) this.toggleFloat(panel.id, true, panel.getBoundingClientRect().left, panel.getBoundingClientRect().top, true);
+        const bounds = this.getWorkspaceBounds();
+        const step = e.shiftKey ? 48 : 16;
+        const width = parseFloat(panel.style.width) || panel.offsetWidth;
+        const height = parseFloat(panel.style.height) || panel.offsetHeight;
+        panel.style.setProperty('width', `${Math.max(240, Math.min(bounds.width, width + (e.key === 'ArrowRight' ? step : e.key === 'ArrowLeft' ? -step : 0)))}px`, 'important');
+        panel.style.setProperty('height', `${Math.max(120, Math.min(bounds.height, height + (e.key === 'ArrowDown' ? step : e.key === 'ArrowUp' ? -step : 0)))}px`, 'important');
+        this.saveCurrentLayout(false);
+        e.preventDefault();
       });
     },
 
@@ -1413,15 +1562,39 @@
       const isMin = el.classList.toggle('is-minimized');
       el.classList.remove('is-maximized');
       const minBtn = el.querySelector('.cpc-min-btn');
-      if (minBtn) minBtn.textContent = isMin ? '+' : '_';
+      if (minBtn) {
+        minBtn.textContent = isMin ? '+' : '−';
+        minBtn.setAttribute('aria-label', isMin ? 'Restaurar painel' : 'Minimizar painel');
+      }
       this.saveCurrentLayout();
     },
 
     toggleMaximize(panelId) {
       const el = document.getElementById(panelId);
       if (!el) return;
-      const isMax = el.classList.toggle('is-maximized');
-      el.classList.remove('is-minimized');
+      if (!el.classList.contains('is-floating')) {
+        const rect = el.getBoundingClientRect();
+        this.toggleFloat(panelId, true, rect.left, rect.top, true);
+      }
+      const isMax = !el.classList.contains('is-maximized');
+      if (isMax) {
+        el.dataset.preMaxLayout = JSON.stringify({ left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height });
+        el.classList.remove('is-minimized');
+        el.style.removeProperty('width');
+        el.style.removeProperty('height');
+        el.classList.add('is-maximized');
+      } else {
+        el.classList.remove('is-maximized');
+        let previous = {};
+        try {
+          previous = JSON.parse(el.dataset.preMaxLayout || '{}');
+          ['left', 'top', 'width', 'height'].forEach((key) => {
+            if (previous[key]) el.style.setProperty(key, previous[key], key === 'width' || key === 'height' ? 'important' : '');
+            else el.style.removeProperty(key);
+          });
+        } catch { /* Keep the current floating bounds if the saved size is invalid. */ }
+        delete el.dataset.preMaxLayout;
+      }
       const maxBtn = el.querySelector('.cpc-max-btn');
       if (maxBtn) maxBtn.textContent = isMax ? '❐' : '□';
       this.saveCurrentLayout();
@@ -1435,31 +1608,41 @@
       this.saveCurrentLayout();
     },
 
-    toggleFloat(panelId, enableFloat = true, targetX = null, targetY = null) {
+    toggleFloat(panelId, enableFloat = true, targetX = null, targetY = null, suppressSave = false) {
       const el = document.getElementById(panelId);
       if (!el) return;
 
       if (enableFloat) {
         el.classList.add('is-floating');
-        el.style.position = 'fixed';
-        el.style.left = targetX != null ? `${targetX}px` : `${Math.max(20, window.innerWidth / 2 - 200)}px`;
-        el.style.top = targetY != null ? `${targetY}px` : `${Math.max(60, window.innerHeight / 2 - 150)}px`;
-        el.style.zIndex = '55';
-        el.style.width = '340px';
-        el.style.height = '240px';
+        if (el.parentElement !== this.worldContainer) this.worldContainer?.appendChild(el);
+        el.style.position = 'absolute';
+        const bounds = this.getWorkspaceBounds();
+        const defaultWidth = Math.min(360, bounds.width);
+        const defaultHeight = Math.min(250, bounds.height);
+        if (!el.style.width) el.style.setProperty('width', `${defaultWidth}px`, 'important');
+        if (!el.style.height) el.style.setProperty('height', `${defaultHeight}px`, 'important');
+        const left = targetX == null ? Math.max(8, (bounds.width - defaultWidth) / 2) : Number(targetX) - bounds.left;
+        const top = targetY == null ? Math.max(8, (bounds.height - defaultHeight) / 2) : Number(targetY) - bounds.top;
+        const point = this.clampFloatingPosition(el, left, top);
+        el.style.left = `${point.left}px`;
+        el.style.top = `${point.top}px`;
+        el.style.zIndex = String((Number(this.topZIndex) || 55) + 1);
+        this.topZIndex = Number(el.style.zIndex);
       } else {
         el.classList.remove('is-floating');
+        el.classList.remove('is-maximized');
+        delete el.dataset.preMaxLayout;
         el.style.position = '';
         el.style.left = '';
         el.style.top = '';
         el.style.zIndex = '';
-        el.style.width = '';
-        el.style.height = '';
         if (this.dockContainer && el.parentElement !== this.dockContainer) {
           this.dockContainer.appendChild(el);
         }
+        el.style.removeProperty('width');
+        el.style.removeProperty('height');
       }
-      this.saveCurrentLayout();
+      if (!suppressSave) this.saveCurrentLayout();
     },
 
     resetPanel(panelId) {
@@ -1472,6 +1655,8 @@
       el.style.left = '';
       el.style.top = '';
       el.style.display = 'flex';
+      delete el.dataset.preMaxLayout;
+      if (el.parentElement !== this.dockContainer) this.dockContainer?.appendChild(el);
       this.saveCurrentLayout();
     },
 
@@ -1480,6 +1665,26 @@
       if (btnToggleEdit) {
         btnToggleEdit.addEventListener('click', () => this.toggleWorkspaceEditMode());
       }
+      const toolbar = document.getElementById('spatialWorkspaceEditorToolbar');
+      toolbar?.addEventListener('change', (event) => {
+        if (event.target.id === 'spatialLayoutPresetSelect') this.applyPreset(event.target.value);
+      });
+      toolbar?.addEventListener('click', (event) => {
+        const action = event.target.closest('[data-workspace-action]')?.dataset.workspaceAction;
+        if (action === 'save') this.saveCurrentLayout();
+        else if (action === 'reset' && window.confirm('Restaurar o layout padrão da Cidade?')) this.resetToDefaultLayout();
+        else if (action === 'done') this.toggleWorkspaceEditMode(false);
+      });
+      this.worldContainer?.querySelector('.fenix-mobile-dock-bar')?.addEventListener('click', (event) => {
+        const button = event.target.closest('.mob-dock-btn[data-target]');
+        if (!button) return;
+        window.fenixToggleMobileDockCard(button.dataset.target);
+        this.worldContainer.querySelectorAll('.mob-dock-btn').forEach((item) => {
+          const open = document.getElementById(item.dataset.target)?.classList.contains('mobile-drawer-open');
+          item.classList.toggle('active', Boolean(open));
+          item.setAttribute('aria-pressed', String(Boolean(open)));
+        });
+      });
     },
 
     toggleWorkspaceEditMode(forceState = null) {
@@ -1491,6 +1696,7 @@
       if (toolbar) toolbar.style.display = this.isEditMode ? 'flex' : 'none';
       if (viewCity) viewCity.classList.toggle('edit-mode-active', this.isEditMode);
       if (btnEdit) btnEdit.classList.toggle('active', this.isEditMode);
+      if (btnEdit) btnEdit.setAttribute('aria-expanded', String(this.isEditMode));
 
       if (this.isEditMode) {
         this.updatePanelsDropdown();
@@ -1501,27 +1707,29 @@
       const menu = document.getElementById('swetPanelsDropdownMenu');
       if (!menu) return;
 
-      const panelNames = {
-        fenixWorldMinimap: 'Minimapa 3D Cidade',
-        dockWindowAgents: 'Agentes em Destaque',
-        dockWindowMissions: 'Missões Ativas',
-        dockWindowJobs: 'Jobs em Execução',
-        dockWindowEvents: 'Fluxo Operacional de Eventos',
-        dockWindowTelemetry: 'Telemetria & IA Economy',
-        dockWindowProjects: 'Portfólio de Projetos',
-        dockWindowServices: 'Malha de Microsserviços'
-      };
+      const labels = new Map([
+        ['fenixWorldMinimap', 'Mapa operacional'], ['dockWindowAgents', 'Agentes'],
+        ['dockWindowMissions', 'Eventos recentes'], ['dockWindowJobs', 'Jobs'],
+      ]);
+      menu.replaceChildren(...this.panels.map((panel) => {
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = panel.style.display !== 'none';
+        checkbox.addEventListener('change', () => this.setPanelVisibility(panel.id, checkbox.checked));
+        const text = document.createElement('span');
+        text.textContent = labels.get(panel.id) || panel.id;
+        label.append(checkbox, text);
+        return label;
+      }));
+    },
 
-      menu.innerHTML = Object.entries(panelNames).map(([id, label]) => {
-        const el = document.getElementById(id);
-        const isVisible = el && el.style.display !== 'none';
-        return `
-          <label class="swet-panel-toggle-item" style="display:flex; align-items:center; gap:8px; padding:6px 10px; cursor:pointer; font-size:11.5px; color:#cbd5e1;">
-            <input type="checkbox" ${isVisible ? 'checked' : ''} onchange="window.FenixSpatialCity?.setPanelVisibility('${id}', this.checked)" />
-            <span>${label}</span>
-          </label>
-        `;
-      }).join('');
+    setPanelVisibility(panelId, visible) {
+      const panel = this.panels.find((item) => item.id === panelId);
+      if (!panel) return;
+      panel.style.display = visible ? 'flex' : 'none';
+      this.updatePanelsDropdown();
+      this.saveCurrentLayout(false);
     },
 
     togglePanelsDropdown() {
@@ -1584,6 +1792,7 @@
       const panel = document.getElementById('spatialBuildingInspectorPanel');
       if (stage) stage.style.display = 'flex';
       if (panel) {
+        panel.hidden = false;
         panel.style.display = 'flex';
         panel.classList.remove('is-minimized');
         panel.classList.remove('is-maximized');
@@ -1628,6 +1837,7 @@
       const panel = document.getElementById('spatialBuildingInspectorPanel');
       if (stage) stage.style.display = 'none';
       if (panel) {
+        panel.hidden = true;
         panel.style.display = 'none';
         panel.classList.remove('is-minimized');
         panel.classList.remove('is-maximized');
@@ -1661,6 +1871,7 @@
       document.getElementById('view-city')?.classList.remove('has-inspector-open');
       const panel = document.getElementById('spatialBuildingInspectorPanel');
       if (panel) {
+        panel.hidden = true;
         panel.style.display = 'none';
         panel.classList.remove('is-minimized');
         panel.classList.remove('is-maximized');
