@@ -105,9 +105,22 @@ test('frontend: inspetor de agentes começa sem capacidades ou estado de runtime
   assert.match(inspector, /id="agentInspMemoryStatus">Não medido/);
   assert.match(inspector, /id="agentInspSandboxStatus">Não informado/);
   assert.match(inspector, /id="agentInspCapabilities"[^>]*>Não informado<\/div>/);
+  assert.match(inspector, /id="agentInspStatusBadge">NÃO INFORMADO/);
+  assert.match(inspector, /id="agentInspDistrict">Não informado/);
+  assert.match(inspector, /class="insp-action-btn"[^>]*disabled/);
   assert.match(inspector, /SEM TELEMETRIA PUBLICADA/);
   assert.doesNotMatch(inspector, /STREAMING|Workstation conectada|Memória: Sincronizada|Sandboxed runtime|ModelRouter conectado/);
   assert.doesNotMatch(inspector, /32k \/ 128k|SINCRONIZADA|>ATIVO<|file_system|shell_exec|mission_kernel|zero_ai_fallback/);
+  const interactions = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-v11-interactions.js'), 'utf8');
+  assert.doesNotMatch(interactions, /Despachando missão autônoma|Sinal de pausa enviado|Cache transiente do agente .* liberado/);
+  assert.match(interactions, /Ação indisponível: integração de runtime não conectada/);
+});
+
+test('frontend: mascote não anuncia conexão ativa sem confirmação do runtime', () => {
+  const mascot = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-mascot-sidebar.js'), 'utf8');
+  assert.doesNotMatch(mascot, /Fênix Life · Companion de IA Ativo/);
+  assert.match(mascot, /<span id="ffmStatusLabel">OCIOSO<\/span>/);
+  assert.match(mascot, /lChar = '\^', rChar = '\^', label = 'OCIOSO'/);
 });
 
 test('frontend: camadas da memória não aparecem ativas antes da primeira leitura', () => {

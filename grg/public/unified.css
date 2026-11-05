@@ -2321,6 +2321,11 @@ body {
   gap: 6px;
 }
 
+.insp-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .insp-action-btn.danger {
   border-color: rgba(244, 63, 94, 0.3);
   color: #FB7185;

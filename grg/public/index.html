@@ -3936,7 +3936,7 @@
                     </div>
                   </div>
                   <div class="insp-meta-row" style="margin-top:6px;"><span>Squad:</span> <strong id="agentInspSquad">—</strong></div>
-                  <div class="insp-meta-row"><span>Estado:</span> <strong class="badge-status-cyan" id="agentInspStatusBadge">STANDBY</strong></div>
+                  <div class="insp-meta-row"><span>Estado:</span> <strong class="badge-status-cyan" id="agentInspStatusBadge">NÃO INFORMADO</strong></div>
                 </div>
 
                 <div class="insp-section" id="agentInspPersonalitySection">
@@ -3951,7 +3951,7 @@
                   <div class="insp-meta-row"><span>Função:</span> <strong id="agentInspRole">—</strong></div>
                   <div class="insp-meta-row"><span>Missão:</span> <strong id="agentInspMission">Nenhuma missão ativa</strong></div>
                   <div class="insp-meta-row"><span>Job Atual:</span> <strong id="agentInspJob">—</strong></div>
-                  <div class="insp-meta-row"><span>Distrito:</span> <strong id="agentInspDistrict">executive_hq</strong></div>
+                  <div class="insp-meta-row"><span>Distrito:</span> <strong id="agentInspDistrict">Não informado</strong></div>
                 </div>
 
                 <div class="insp-section">
@@ -3969,12 +3969,12 @@
                 <div class="insp-section">
                   <div class="insp-label">AÇÕES RÁPIDAS DE CONTROLE</div>
                   <div class="insp-actions-row">
-                    <button class="insp-action-btn" onclick="window.fenixDispatchAgent && window.fenixDispatchAgent()"><i class="ph-bold ph-play"></i> Despachar</button>
-                    <button class="insp-action-btn" onclick="window.fenixFocusAgentInCity && window.fenixFocusAgentInCity()"><i class="ph-bold ph-buildings"></i> Ver na Cidade</button>
+                    <button class="insp-action-btn" data-agent-inspector-action disabled onclick="window.fenixDispatchAgent && window.fenixDispatchAgent()"><i class="ph-bold ph-play"></i> Despachar</button>
+                    <button class="insp-action-btn" data-agent-inspector-action disabled onclick="window.fenixFocusAgentInCity && window.fenixFocusAgentInCity()"><i class="ph-bold ph-buildings"></i> Ver na Cidade</button>
                   </div>
                   <div class="insp-actions-row">
-                    <button class="insp-action-btn danger" onclick="window.fenixPauseAgent && window.fenixPauseAgent()"><i class="ph-bold ph-pause"></i> Pausar</button>
-                    <button class="insp-action-btn" onclick="window.fenixClearAgentMem && window.fenixClearAgentMem()"><i class="ph-bold ph-broom"></i> Limpar Memória</button>
+                    <button class="insp-action-btn danger" data-agent-inspector-action disabled onclick="window.fenixPauseAgent && window.fenixPauseAgent()"><i class="ph-bold ph-pause"></i> Pausar</button>
+                    <button class="insp-action-btn" data-agent-inspector-action disabled onclick="window.fenixClearAgentMem && window.fenixClearAgentMem()"><i class="ph-bold ph-broom"></i> Limpar Memória</button>
                   </div>
                 </div>
 
@@ -7935,7 +7935,7 @@ window.__fenixSubmitIdeChat = async function () {
 <script defer src="/fenix-design-document.js?v=20261105-v2.6.0"></script>
 <script defer src="/fenix-design-reference.js?v=20261105-v2.6.0"></script>
 <script defer src="/fenix-flow-graph.js?v=5-project-canvas-layout-20261022"></script>
-<script defer src="/fenix-v11-interactions.js?v=20261105-v2.6.0"></script>
+<script defer src="/fenix-v11-interactions.js?v=20261105-agent-inspector-1"></script>
 <script defer src="/fenix-city-workflow.js?v=4"></script>
 <script defer src="/fenix-city-runtime-world.js?v=3-building-inspector-20261013"></script>
 <script defer src="/fenix-world-ui.js?v=20261105-v2.6.0"></script>
@@ -8110,7 +8110,7 @@ window.__fenixSubmitIdeChat = async function () {
       };
     </script>
     <div id="orchModalContainer"></div>
-    <script defer src="/fenix-mascot-sidebar.js?v=20261105-v2.6.0"></script>
+<script defer src="/fenix-mascot-sidebar.js?v=20261105-agent-inspector-1"></script>
     <script defer src="/qwen-project-orchestrator.js?v=20261105-v2.6.0"></script>
     <script defer src="/city-reality-engine.js?v=live-events-telemetry-20261013-b2"></script>
     <script id="fenix-v17-layout-controller">

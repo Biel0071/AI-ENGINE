@@ -387,10 +387,10 @@
       mf.id = 'fenix-floating-mascot';
       mf.className = state.isOpen ? 'hidden' : '';
       mf.innerHTML = `
-        <div class="ffm-tooltip">Fênix Life · Companion de IA Ativo</div>
+        <div class="ffm-tooltip">Assistente Fênix Life</div>
         <div class="ffm-status-capsule" id="ffmStatusCapsule">
           <span class="ffm-pulse-dot"></span>
-          <span id="ffmStatusLabel">ONLINE</span>
+          <span id="ffmStatusLabel">OCIOSO</span>
         </div>
         <div class="ffm-badge" id="ffmBadge" style="display:none;">1</div>
         <div class="ffm-pod">
@@ -614,7 +614,7 @@
       mascotEl.setAttribute('data-state', mood);
       mascotEl.classList.remove('working', 'error', 'success');
 
-      let lChar = '^', rChar = '^', label = 'ONLINE';
+      let lChar = '^', rChar = '^', label = 'OCIOSO';
       switch (mood) {
         case 'listening':
           lChar = 'o'; rChar = 'o'; label = 'OUVINDO';
@@ -654,7 +654,7 @@
           break;
         case 'idle':
         default:
-          lChar = '^'; rChar = '^'; label = 'ONLINE';
+          lChar = '^'; rChar = '^'; label = 'OCIOSO';
           break;
       }
 

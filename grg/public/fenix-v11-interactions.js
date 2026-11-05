@@ -2345,10 +2345,11 @@ window.fenixShowClusterMemories = function() {
 
   // ── Agent Deep Inspector & Workforce Actions ──
   window.fenixSelectAgentForDeepInspector = function(agent) {
-    if (!agent) return;
+    if (!agent || !(agent.id || agent.agentId || agent.name)) return;
+    document.querySelectorAll('[data-agent-inspector-action]').forEach((button) => { button.disabled = false; });
     const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
     set('agentInspName', agent.name || agent.id);
-    set('agentInspId', agent.id);
+    set('agentInspId', agent.id || agent.agentId || agent.name);
     set('agentInspRole', agent.role || 'Geral');
     const knownStatus = typeof agent.status === 'string' ? agent.status.toUpperCase() : null;
     set('agentInspSquad', knownStatus === 'WORKING' ? 'Em execução' : knownStatus === 'AVAILABLE' ? 'Disponível' : 'Não informado');
@@ -2410,13 +2411,11 @@ window.fenixShowClusterMemories = function() {
   };
 
   window.fenixDispatchAgent = function() {
-    const id = document.getElementById('agentInspId')?.textContent;
-    if (window.FenixToast) window.FenixToast.show(`Despachando missão autônoma para ${id || 'agente'}...`, 'info', 3000);
+    window.FenixToast?.show?.('Ação indisponível: integração de runtime não conectada.', 'warning', 3000);
   };
 
   window.fenixPauseAgent = function() {
-    const id = document.getElementById('agentInspId')?.textContent;
-    if (window.FenixToast) window.FenixToast.show(`Sinal de pausa enviado para ${id || 'agente'}.`, 'warning', 3000);
+    window.FenixToast?.show?.('Ação indisponível: integração de runtime não conectada.', 'warning', 3000);
   };
 
   window.fenixFocusAgentInCity = function() {
@@ -2456,8 +2455,7 @@ window.fenixShowClusterMemories = function() {
   };
 
   window.fenixClearAgentMem = function() {
-    const id = document.getElementById('agentInspId')?.textContent;
-    if (window.FenixToast) window.FenixToast.show(`Cache transiente do agente ${id} liberado.`, 'success', 2500);
+    window.FenixToast?.show?.('Ação indisponível: integração de runtime não conectada.', 'warning', 3000);
   };
 
   // ── IDE Dock Tray Controller ──
