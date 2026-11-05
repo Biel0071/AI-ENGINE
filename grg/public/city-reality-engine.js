@@ -630,14 +630,15 @@
       const memPercent = telemetryData.memory?.usedPercent ?? healthData.hostTelemetry?.memory?.usedPercent ?? healthData.memPercent
         ?? (Number.isFinite(usedRamMb) && Number.isFinite(totalRamMb) && totalRamMb > 0 ? Math.round(usedRamMb / totalRamMb * 100) : null);
       const diskPercent = telemetryData.disk?.usedPercent ?? healthData.hostTelemetry?.disk?.usedPercent ?? healthData.diskPercent ?? null;
-      const networkBitsPerSecond = telemetryData.network?.throughputBps ?? healthData.hostTelemetry?.network?.throughput ?? healthData.netSpeed ?? null;
-      const netIfaces = telemetryData.network?.interfaceCount ?? healthData.hostTelemetry?.network?.interfaceCount ?? null;
+      const networkBitsPerSecond = telemetryData.network?.throughputBps ?? healthData.hostTelemetry?.network?.throughputBps ?? healthData.hostTelemetry?.network?.throughput ?? healthData.netSpeed ?? null;
+      const networkUtilizationPercent = telemetryData.network?.utilizationPercent ?? healthData.hostTelemetry?.network?.utilizationPercent ?? null;
       const netSpeed = Number.isFinite(networkBitsPerSecond)
         ? networkBitsPerSecond >= 1_000_000 ? `${(networkBitsPerSecond / 1_000_000).toFixed(1)} Mbps` : `${(networkBitsPerSecond / 1_000).toFixed(1)} Kbps`
-        : (Number.isFinite(netIfaces) ? `${netIfaces} IF` : null);
+        : null;
 
       const setGauge = (fill, value, percent, label) => {
         if (fill) fill.style.width = Number.isFinite(percent) ? `${Math.max(0, Math.min(100, percent))}%` : '0%';
+        if (fill?.parentElement) fill.parentElement.style.display = Number.isFinite(percent) ? '' : 'none';
         if (value) value.textContent = label == null ? '—' : String(label);
       };
 
@@ -647,7 +648,7 @@
 
       setGauge(diskFill, diskVal, diskPercent, Number.isFinite(diskPercent) ? `${diskPercent}%` : null);
 
-      setGauge(netFill, netVal, Number.isFinite(netIfaces) ? Math.min(100, netIfaces * 25) : null, netSpeed);
+      setGauge(netFill, netVal, networkUtilizationPercent, netSpeed);
 
       const host = healthData.vps?.host || healthData.host || telemetryData.system?.platform || null;
       for (const id of ['tickerHost', 'tickerHost2']) {
@@ -668,7 +669,7 @@
       }
       for (const id of ['tickerNet', 'tickerNet2']) {
         const element = document.getElementById(id);
-        if (element) element.textContent = netSpeed || (Number.isFinite(netIfaces) ? `${netIfaces} IF` : '—');
+        if (element) element.textContent = netSpeed || '—';
       }
       const resolvedProjects = data?.metrics?.projectsCount ?? (Array.isArray(data?.projects) ? data.projects.length : null);
       for (const id of ['tickerProjects', 'tickerProjects2']) {
@@ -710,21 +711,22 @@
 
       const tickerState = document.getElementById('fenixTickerStatus');
       const tickerStateText = document.getElementById('fenixTickerState');
-      const isHealthAvailable = availability.health || Boolean(healthData.status);
+      const healthStatus = String(healthData.status || '').trim().toLowerCase();
+      const isHealthAvailable = Boolean(availability.health || healthStatus);
       const isApiAvailable = isHealthAvailable || availability.events || availability.state || availability.telemetry;
-      const stateText = isHealthAvailable ? String(healthData.status || 'ONLINE').toUpperCase() : isApiAvailable ? 'ONLINE' : 'INDISPONÍVEL';
-      const isHealthyState = ['online', 'healthy', 'ready', 'active'].includes(String(healthData.status || '').toLowerCase());
+      const stateText = isHealthAvailable ? (healthStatus ? healthStatus.toUpperCase() : 'DEGRADED') : isApiAvailable ? 'DEGRADED' : 'INDISPONÍVEL';
+      const isHealthyState = ['online', 'healthy', 'ready', 'active'].includes(healthStatus);
       if (tickerState) {
-        tickerState.dataset.state = isHealthAvailable ? (isHealthyState ? 'online' : 'degraded') : isApiAvailable ? 'online' : 'unavailable';
+        tickerState.dataset.state = isHealthyState ? 'online' : isApiAvailable ? 'degraded' : 'unavailable';
         tickerState.title = isHealthAvailable
-          ? (isHealthyState ? `Sistema Operacional (${stateText}) · Telemetria sincronizada` : `Sistema em modo mitigado (${stateText}) · Armazenamento em memória ou carga elevada`)
-          : isApiAvailable ? 'Runtime conectado' : 'Sem resposta da API do Fênix';
+          ? (isHealthyState ? `Sistema Operacional (${stateText}) · Saúde agregada medida` : `Sistema em estado ${stateText} · Saúde agregada medida`)
+          : isApiAvailable ? 'Runtime parcialmente conectado; saúde agregada não medida' : 'Sem resposta da API do Fênix';
       }
       if (tickerStateText) tickerStateText.textContent = stateText;
 
       for (const id of ['tickerFastLane', 'tickerFastLane2']) {
         const element = document.getElementById(id);
-        if (element) element.textContent = healthData.fastLane?.status || telemetryData.fastLane?.status || (isApiAvailable ? 'ONLINE' : 'INDISPONÍVEL');
+        if (element) element.textContent = healthData.fastLane?.status || telemetryData.fastLane?.status || (isApiAvailable ? 'NÃO MEDIDA' : 'INDISPONÍVEL');
       }
       for (const id of ['tickerOnline', 'tickerOnline2']) {
         const element = document.getElementById(id);

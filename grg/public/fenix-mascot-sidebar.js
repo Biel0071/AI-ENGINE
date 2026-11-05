@@ -4768,7 +4768,9 @@
         const latency = apiData?.latency != null ? `${apiData.latency} ms` : '—';
         const uptimeSeconds = sysData?.uptime || apiData?.uptime || 0;
         const uptime = uptimeSeconds >= 3600 ? `${Math.floor(uptimeSeconds / 3600)}h` : (uptimeSeconds >= 60 ? `${Math.floor(uptimeSeconds / 60)}m` : (uptimeSeconds > 0 ? `${uptimeSeconds}s` : '—'));
-        const vpsStatus = (sysData?.status || apiData?.status || '—').toUpperCase();
+        const systemStatus = String(sysData?.status || '').trim().toUpperCase();
+        const hasSystemStatus = Boolean(systemStatus && systemStatus !== '—');
+        const vpsStatus = hasSystemStatus ? systemStatus : apiData ? 'DEGRADED' : 'INDISPONÍVEL';
         const apiPlatform = apiData
           ? String(apiData.status || (apiData.ok || apiData.success ? 'ONLINE' : 'DEGRADED')).toUpperCase()
           : 'INDISPONÍVEL';
@@ -4804,36 +4806,46 @@
         // Sincronizar status do ticker e gauges de hardware (Zero-Mock Telemetria Real)
         const tickerStateEl = document.getElementById('fenixTickerState');
         const tickerStatusEl = document.getElementById('fenixTickerStatus');
-        const isHealthy = ['ONLINE', 'HEALTHY', 'READY', 'ACTIVE'].includes(vpsStatus);
-        if (tickerStateEl) tickerStateEl.textContent = vpsStatus !== '—' ? vpsStatus : 'ONLINE';
+        const isHealthy = hasSystemStatus && ['ONLINE', 'HEALTHY', 'READY', 'ACTIVE'].includes(systemStatus);
+        if (tickerStateEl) tickerStateEl.textContent = vpsStatus;
         if (tickerStatusEl) {
-          tickerStatusEl.dataset.state = isHealthy ? 'online' : (vpsStatus === '—' ? 'unavailable' : 'degraded');
-          tickerStatusEl.title = isHealthy ? `Sistema Operacional (${vpsStatus}) · Telemetria sincronizada` : `Sistema (${vpsStatus})`;
+          tickerStatusEl.dataset.state = isHealthy ? 'online' : (hasSystemStatus || apiData ? 'degraded' : 'unavailable');
+          tickerStatusEl.title = isHealthy
+            ? `Sistema Operacional (${vpsStatus}) · Saúde agregada medida`
+            : hasSystemStatus ? `Sistema em estado ${vpsStatus} · Saúde agregada medida`
+              : apiData ? 'Runtime parcialmente conectado; saúde agregada não medida' : 'Saúde do sistema indisponível';
         }
-        this.setDOMText('tickerOnline', vpsStatus !== '—' ? vpsStatus : 'ONLINE');
-        this.setDOMText('tickerOnline2', vpsStatus !== '—' ? vpsStatus : 'ONLINE');
+        this.setDOMText('tickerOnline', vpsStatus);
+        this.setDOMText('tickerOnline2', vpsStatus);
 
         // Atualizar gauges de hardware com dados medidos
         const cpuNum = sysData?.system?.cpu ?? (sysData?.cpu != null ? Math.round(sysData.cpu * 100) : null);
         const memNum = sysData?.memory?.usedPercent ?? (sysData?.memory?.usedMb && sysData?.memory?.totalMb ? Math.round(sysData.memory.usedMb / sysData.memory.totalMb * 100) : null);
         const diskNum = sysData?.disk?.usedPercent ?? null;
+        const networkBps = sysData?.network?.throughputBps ?? sysData?.hostTelemetry?.network?.throughputBps ?? null;
+        const networkUtilization = sysData?.network?.utilizationPercent ?? sysData?.hostTelemetry?.network?.utilizationPercent ?? null;
+        const networkValue = Number.isFinite(networkBps)
+          ? networkBps >= 1_000_000 ? `${(networkBps / 1_000_000).toFixed(1)} Mbps` : `${(networkBps / 1_000).toFixed(1)} Kbps`
+          : '—';
         const cpuBar = document.getElementById('gaugeCpuFill');
         const cpuVal = document.getElementById('gaugeCpuVal');
-        if (cpuBar && Number.isFinite(cpuNum)) cpuBar.style.width = Math.min(100, Math.max(0, cpuNum)) + '%';
-        if (cpuVal && cpu !== '—') cpuVal.textContent = cpu;
         const memBar = document.getElementById('gaugeMemFill');
         const memVal = document.getElementById('gaugeMemVal');
-        if (memBar && Number.isFinite(memNum)) memBar.style.width = Math.min(100, Math.max(0, memNum)) + '%';
-        if (memVal && ram !== '—') memVal.textContent = ram;
         const diskBar = document.getElementById('gaugeDiskFill');
         const diskVal = document.getElementById('gaugeDiskVal');
-        if (diskBar && Number.isFinite(diskNum)) diskBar.style.width = Math.min(100, Math.max(0, diskNum)) + '%';
-        if (diskVal && Number.isFinite(diskNum)) diskVal.textContent = diskNum + '%';
         const netBar = document.getElementById('gaugeNetFill');
         const netVal = document.getElementById('gaugeNetVal');
-        if (netBar && apiPlatform === 'ONLINE') netBar.style.width = '65%';
-        if (netVal && latency !== '—') netVal.textContent = latency;
-        else if (netVal && apiPlatform !== '—') netVal.textContent = apiPlatform;
+        const setGauge = (bar, value, percent, label) => {
+          if (bar) {
+            bar.style.width = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) + '%' : '0%';
+            if (bar.parentElement) bar.parentElement.style.display = Number.isFinite(percent) ? '' : 'none';
+          }
+          if (value) value.textContent = label;
+        };
+        setGauge(cpuBar, cpuVal, cpuNum, cpu);
+        setGauge(memBar, memVal, memNum, ram);
+        setGauge(diskBar, diskVal, diskNum, Number.isFinite(diskNum) ? diskNum + '%' : '—');
+        setGauge(netBar, netVal, networkUtilization, networkValue);
 
         if (manual) MascotController.setMood('success');
         return { cpu, ram, latency, uptime, vpsStatus, apiPlatform, jobs };

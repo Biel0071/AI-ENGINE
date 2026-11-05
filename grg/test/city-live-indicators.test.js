@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const publicRoot = path.join(__dirname, '../public');
 const html = fs.readFileSync(path.join(publicRoot, 'index.html'), 'utf8');
@@ -43,6 +44,75 @@ test('footer alerts, telemetry and status come from API measurements', () => {
   assert.doesNotMatch(reality, /alertBtn\.textContent\s*=\s*'0'/);
   assert.doesNotMatch(reality, /20°C Céu Limpo|24°C Ensolarado/);
   assert.doesNotMatch(sidebar, /const host = window\.location\?\.host/);
+});
+
+test('city footer shows partial health and does not infer bandwidth from interface count', () => {
+  const start = reality.indexOf('    updateTopbarAndFooter(');
+  const end = reality.indexOf('\n    setDockTab(', start);
+  assert.ok(start >= 0 && end > start, 'footer renderer is available');
+
+  const elements = new Map();
+  const renderer = vm.runInNewContext(
+    `({ ${reality.slice(start, end)} }).updateTopbarAndFooter`,
+    {
+      window: { FENIX: { cityWorld: {} } },
+      document: { getElementById(id) {
+        if (!elements.has(id)) elements.set(id, { textContent: '', dataset: {}, style: {} });
+        return elements.get(id);
+      } }
+    }
+  );
+
+  renderer.call({ latestEvent: null, renderLatestEventTicker() {} }, null, {}, [], { events: true, telemetry: true }, { network: { interfaceCount: 2 } });
+
+  assert.equal(elements.get('fenixTickerState').textContent, 'DEGRADED');
+  assert.equal(elements.get('fenixTickerStatus').dataset.state, 'degraded');
+  assert.equal(elements.get('tickerFastLane').textContent, 'NÃO MEDIDA');
+  assert.equal(elements.get('tickerOnline').textContent, 'DEGRADED');
+  assert.equal(elements.get('gaugeNetVal').textContent, '—');
+  assert.equal(elements.get('gaugeNetFill').style.width, '0%');
+});
+
+test('mascot telemetry does not use API Platform status as system health or retain stale gauges', async () => {
+  const start = sidebar.indexOf('    async fetchTelemetry(');
+  const end = sidebar.indexOf('\n    async fetchProviders(', start);
+  assert.ok(start >= 0 && end > start, 'mascot telemetry renderer is available');
+
+  const elements = new Map();
+  const getElement = (id) => {
+    if (!elements.has(id)) elements.set(id, {
+      textContent: id === 'gaugeCpuVal' ? '80%' : id === 'gaugeNetVal' ? '21 ms' : '',
+      dataset: {},
+      style: { width: '80%' }
+    });
+    return elements.get(id);
+  };
+  const renderer = vm.runInNewContext(
+    `({ ${sidebar.slice(start, end)} }).fetchTelemetry`,
+    {
+      authedFetch: async (url) => url === '/api/v2/system/health'
+        ? { ok: false }
+        : { ok: true, json: async () => ({ status: 'ONLINE', latency: 21 }) },
+      document: { getElementById: getElement }
+    }
+  );
+
+  const writes = new Map();
+  await renderer.call({
+    setDOMText(id, value) {
+      writes.set(id, value);
+      getElement(id).textContent = value;
+    },
+    syncMemoryIndexStatus() {}
+  }, false);
+
+  assert.equal(elements.get('fenixTickerState').textContent, 'DEGRADED');
+  assert.equal(elements.get('fenixTickerStatus').dataset.state, 'degraded');
+  assert.equal(writes.get('tickerOnline'), 'DEGRADED');
+  assert.equal(elements.get('gaugeCpuVal').textContent, '—');
+  assert.equal(elements.get('gaugeCpuFill').style.width, '0%');
+  assert.equal(elements.get('gaugeNetVal').textContent, '—');
+  assert.equal(elements.get('gaugeNetFill').style.width, '0%');
 });
 
 test('API error envelopes never become entity counts and KPIs count active entities', () => {
