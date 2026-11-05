@@ -5526,6 +5526,10 @@
       px(-4, -18, 8, 4, '#f43f5e');  // security crest
     } else if (profile.outfit === 'jacket') {
       px(-3, -22, 6, 11, '#18181b'); // inner t-shirt
+    } else if (profile.outfit === 'cyber') {
+      px(-7, -19, 2, 9, profile.accentColor || '#22d3ee'); // shoulder circuit
+      px(5, -19, 2, 9, profile.accentColor || '#22d3ee');
+      px(-2, -16, 4, 2, '#d9faff'); // compact chest interface
     }
 
     // ── C. ARMS & WORK / GESTURE ANIMATIONS ──────────────────────

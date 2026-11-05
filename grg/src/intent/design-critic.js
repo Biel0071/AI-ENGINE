@@ -28,41 +28,44 @@ class DesignCritic {
     const designA = {
       id: 'DESIGN_A_CANONICAL',
       name: 'Full-Stack Real Capability (Golden Rule VII)',
-      approach: 'Directly extends existing controllers, connects to AgentFactory, registers in Unreal 3D and 2.5D City, stores in StorageManager with events on CommunicationBus.',
-      pros: ['100% compliant with Fênix Constitution', 'Zero duplication', 'Observability out-of-the-box', 'Integrated World Presence'],
+      approach: 'Proposed extension through existing controllers and runtime services, after workspace and contracts are inspected.',
+      pros: ['Provides a proposal that can reuse existing Fênix services after the workspace and contracts are verified'],
       cons: ['Requires touching backend and frontend contracts simultaneously'],
-      score: 9.6,
+      score: null,
+      scoreStatus: 'NOT_MEASURED',
       zeroAiCompatible: true,
-      worldIntegrated: true
+      worldIntegrated: null
     };
 
     // Design B: Lightweight Local-First (Minimal Surface)
     const designB = {
       id: 'DESIGN_B_LIGHTWEIGHT',
       name: 'Deterministic Local-First Extension',
-      approach: 'Client-side reactive state inside unified-app.js with in-memory SQLite state; minimal backend route touch.',
-      pros: ['Ultra-fast execution', 'Zero risk to other modules', 'Immediate feedback'],
+      approach: 'Proposed local-first UI extension with the smallest backend surface allowed by the verified project contract.',
+      pros: ['Limits the proposed change surface when project constraints permit'],
       cons: ['Limited multi-tenant persistence', 'Lacks spatial embodiment in 3D deck unless explicitly linked'],
-      score: 8.2,
+      score: null,
+      scoreStatus: 'NOT_MEASURED',
       zeroAiCompatible: true,
-      worldIntegrated: false
+      worldIntegrated: null
     };
 
     // Design C: Distributed Scalable Stream
     const designC = {
       id: 'DESIGN_C_ENTERPRISE',
       name: 'Event-Driven Distributed Micro-Flow',
-      approach: 'Spawns dedicated BullMQ queue, independent SSE stream, separate storage partition, and isolated supervisor worker.',
-      pros: ['Infinite horizontal scale', 'Complete isolation'],
+      approach: 'Proposed distributed execution path; queue, stream, storage and worker requirements must be established from measured load and runtime contracts.',
+      pros: ['Separates queue and stream responsibilities in the proposed architecture'],
       cons: ['Overkill for contained tasks', 'Adds operational overhead and potential latency'],
-      score: 7.8,
+      score: null,
+      scoreStatus: 'NOT_MEASURED',
       zeroAiCompatible: false, // May require queue infrastructure
-      worldIntegrated: true
+      worldIntegrated: null
     };
 
     // Critique evaluation
     let selectedDesign = designA;
-    let critiqueRationale = 'Design A selected: Maximizes leverage of existing Fênix runtime while adhering to Full-Stack Real Capability and World-First presence without unnecessary complexity.';
+    let critiqueRationale = 'Design A is an initial proposal. Workspace-specific reuse, runtime behavior, risk and visual quality have not been validated.';
 
     if (intentSpec.constraints?.includes('OFFLINE_ONLY') || intentSpec.constraints?.includes('MINIMAL_FOOTPRINT')) {
       selectedDesign = designB;
@@ -78,41 +81,45 @@ class DesignCritic {
       critiqueRationale,
       frontendCritique,
       worldCritique,
-      meetsDefinitionOfDone: true
+      meetsDefinitionOfDone: false,
+      evaluationStatus: 'NOT_VALIDATED'
     };
   }
 
   /**
    * Frontend Critic (Section 23): Verifies that UI does not look like a prototype
    */
-  critiqueFrontend(intentSpec) {
-    return {
-      status: 'AAA_DESIGN_SYSTEM_VERIFIED',
-      checks: {
-        hierarchy: 'Strict single source of truth in grg/public/index.html',
-        density: 'Compact, information-dense operational layout',
-        typography: 'Inter + Tabular Numbers for telemetry',
-        emptyStates: 'Honest Absence Marker (—) compliant with Rule II',
-        responsiveness: 'Verified on 1920x1080 and fluid viewports',
-        prototypeRisk: 'ZERO: No raw browser alerts, unstyled tables, or placeholders'
-      }
-    };
+  critiqueFrontend(intentSpec, measurements = {}) {
+    const dimensions = ['hierarchy', 'density', 'typography', 'emptyStates', 'responsiveness', 'interaction', 'accessibility'];
+    const checks = Object.fromEntries(dimensions.map((dimension) => {
+      const measurement = measurements[dimension];
+      const status = ['PASS', 'FAIL'].includes(String(measurement?.status || '').toUpperCase()) && typeof measurement.evidence === 'string' && measurement.evidence.trim()
+        ? String(measurement.status).toUpperCase()
+        : 'NOT_MEASURED';
+      return [dimension, { status, evidence: status === 'NOT_MEASURED' ? null : measurement.evidence.trim() }];
+    }));
+    const measured = Object.values(checks).filter((check) => check.status !== 'NOT_MEASURED');
+    const passedCount = measured.filter((check) => check.status === 'PASS').length;
+    const failedCount = measured.filter((check) => check.status === 'FAIL').length;
+    const status = !measured.length ? 'NOT_MEASURED'
+      : measured.length < dimensions.length ? 'PARTIALLY_MEASURED'
+        : failedCount ? 'ISSUES_FOUND' : 'VERIFIED';
+    return { status, checks, measuredCount: measured.length, passedCount, failedCount, requiredEvidence: dimensions.filter((dimension) => checks[dimension].status === 'NOT_MEASURED') };
   }
 
   /**
    * World-First Critic (Section 25): Verifies spatial embodiment for agents
    */
-  critiqueWorld(intentSpec) {
-    return {
-      isSpatial: true,
-      checks: {
-        hasWorkstation: true,
-        hasPresence: true,
-        hasDistrict: true,
-        avoidsFloatingEntities: true,
-        preservesDualEngine: 'Unreal 3D Living World + 2.5D Iso City fallback intact'
-      }
-    };
+  critiqueWorld(intentSpec, evidence = {}) {
+    const dimensions = ['hasWorkstation', 'hasPresence', 'hasDistrict', 'avoidsFloatingEntities', 'preservesDualEngine'];
+    const checks = Object.fromEntries(dimensions.map((dimension) => {
+      const item = evidence[dimension];
+      const status = ['PASS', 'FAIL'].includes(String(item?.status || '').toUpperCase()) && typeof item.evidence === 'string' && item.evidence.trim()
+        ? String(item.status).toUpperCase() : 'NOT_MEASURED';
+      return [dimension, { status, evidence: status === 'NOT_MEASURED' ? null : item.evidence.trim() }];
+    }));
+    const measuredCount = Object.values(checks).filter((check) => check.status !== 'NOT_MEASURED').length;
+    return { status: measuredCount ? (measuredCount === dimensions.length ? 'MEASURED' : 'PARTIALLY_MEASURED') : 'NOT_MEASURED', isSpatial: null, checks, measuredCount };
   }
 }
 

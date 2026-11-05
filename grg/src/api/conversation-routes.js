@@ -15,6 +15,23 @@ var { formatDesignPreferences, isCompatibleDesignProfile } = require('../design/
 var { formatProjectReferenceContext } = require('../design/project-reference-context');
 var { formatProjectScreenAnnotationContext } = require('../design/project-screen-annotation-context');
 
+function canonicalProjectId(projectId) {
+  const id = String(projectId || '').trim();
+  return id.toLowerCase() === 'api-platform-live' ? 'api-platform' : id;
+}
+
+async function resolveRequestedProjectId(app, tenantId, actorId, projectId) {
+  const id = String(projectId || '');
+  const canonicalId = canonicalProjectId(id);
+  if (!id || canonicalId === id || typeof app?.projectKernel?.list !== 'function') return projectId;
+  try {
+    const projects = await app.projectKernel.list(tenantId, actorId);
+    if (projects.some((project) => String(project.id) === id)) return projectId;
+    if (projects.some((project) => String(project.id) === canonicalId)) return canonicalId;
+  } catch (_) {}
+  return projectId;
+}
+
 async function openConversation(app, tenantId, actorId, body, projectId, message) {
   if (!app?.conversations || typeof app.conversations.open !== 'function' || typeof app.conversations.append !== 'function') {
     const error = new Error('conversation persistence is unavailable');
@@ -163,14 +180,16 @@ async function resolveProjectWorkspace(app, tenantId, actorId, projectId) {
     throw error;
   }
   const projects = await app.projectKernel.list(tenantId, actorId);
-  const project = projects.find((item) => String(item.id) === String(projectId));
+  const requestedProjectId = String(projectId);
+  const project = projects.find((item) => String(item.id) === requestedProjectId)
+    || projects.find((item) => String(item.id) === canonicalProjectId(requestedProjectId));
   if (!project) {
     const error = new Error(`project is not available to this user: ${projectId}`);
     error.code = 'PROJECT_NOT_FOUND';
     throw error;
   }
   const { getProjectById } = require('../projects/project-registry');
-  const registryProject = getProjectById(projectId);
+  const registryProject = getProjectById(project.id);
   const configuredWorkspace = project.workspace || app.fileSystemService?.workspaceRoot || app.workspaceRoot;
   if (!configuredWorkspace || typeof configuredWorkspace !== 'string') {
     const error = new Error('project has no configured workspace');
@@ -329,6 +348,9 @@ async function handleConversationRoutes(req, res, url, sendJson, readJson, ident
   if (method === 'POST' && pathname === '/api/v2/conversation') {
     var reqStart = Date.now();
     var body = await readJson(req).catch(function() { return {}; });
+    if (body && typeof body === 'object' && body.projectId) {
+      body.projectId = await resolveRequestedProjectId(app, tenantId, actorId, body.projectId);
+    }
     var rawMessage = String(body.message || '').trim();
     if (!rawMessage) {
       sendJson(res, 400, { ok: false, error: 'message is required' });
@@ -1064,7 +1086,7 @@ async function handleConversationRoutes(req, res, url, sendJson, readJson, ident
         sendJson(res, 503, { ok: false, error: 'MISSION_RUNTIME_UNAVAILABLE' });
         return true;
       }
-      const projectId = body.projectId || classification.targetProject || null;
+      const projectId = body.projectId || canonicalProjectId(classification.targetProject) || null;
       const conversation = await openConversation(app, tenantId, actorId, body, projectId, rawMessage);
       if (!projectId) {
         const response = 'Qual projeto devo usar? A conversa foi salva e nenhuma missão foi criada.';
@@ -1114,7 +1136,7 @@ async function handleConversationRoutes(req, res, url, sendJson, readJson, ident
         return true;
       }
 
-      const projectId = String(body.projectId || classification.targetProject || 'fenix-os').slice(0, 128);
+      const projectId = String(body.projectId || canonicalProjectId(classification.targetProject || 'fenix-os')).slice(0, 128);
       let projectContext;
       try {
         projectContext = await resolveProjectWorkspace(app, tenantId, actorId, projectId);
@@ -1469,7 +1491,7 @@ async function handleConversationRoutes(req, res, url, sendJson, readJson, ident
       sendJson(res, 503, { ok: false, error: 'MISSION_RUNTIME_UNAVAILABLE' });
       return true;
     }
-    const projectId = String(body.projectId || classification.targetProject || 'fenix-os').slice(0, 128);
+    const projectId = String(body.projectId || canonicalProjectId(classification.targetProject || 'fenix-os')).slice(0, 128);
     const conversation = await openConversation(app, tenantId, actorId, body, projectId, rawMessage);
     let projectContext;
     try {

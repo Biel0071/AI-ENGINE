@@ -131,12 +131,9 @@
     if (frontendBinding) return frontendBinding.url;
     if (projectId === 'fenix-os') {
       const fenixBinding = (deployment.bindings || []).find(binding => binding?.url && /fenix|gateway|principal/i.test(binding.label || ''));
-      return fenixBinding?.url || '/login.html?preview=1';
+      return fenixBinding?.url || '';
     }
-    if (projectId) {
-      return `/api/project-mirror/preview/${projectId}`;
-    }
-    return '/login.html?preview=1';
+    return '';
   }
 
   function getPreviewUrlForScreen(project, screen) {
@@ -284,6 +281,11 @@
     if (state.mode === 'preview' || state.mode === 'split') {
       const targetUrl = state.previewUrl || getPreviewUrlForProject(state.projectId || 'fenix-os');
       updatePreview(targetUrl);
+    }
+
+    if (window.FenixWorkspaceLayoutManager) {
+      window.FenixWorkspaceLayoutManager.state.ideMode = newMode;
+      window.FenixWorkspaceLayoutManager.updateTopControls();
     }
   }
   window.fenixSetIdeMode = setMode;
@@ -962,15 +964,51 @@
     if (!tree) return;
     tree.innerHTML = '<div style="color:#64748B; padding:8px;"><i class="ph-bold ph-spinner ph-spin"></i> Carregando arquivos…</div>';
     try {
-      let data;
-      try {
-        data = await json(endpoint('/tree'));
-      } catch (error) {
-        if (state.projectId !== 'fenix-os') throw error;
+      let data = null;
+      const candidates = [
+        endpoint('/tree'),
+        `/api/v2/projects/${encodeURIComponent(state.projectId)}/tree`,
+        ...(state.projectId === 'fenix-os' ? ['/api/fenix/projects/fenix/tree', '/api/v2/projects/fenix/tree'] : []),
+        ...(state.projectId === 'fenix' ? ['/api/fenix/projects/fenix-os/tree', '/api/v2/projects/fenix-os/tree'] : []),
+      ];
+
+      for (const url of candidates) {
+        try {
+          const res = await json(url);
+          if (res && Array.isArray(res.tree) && res.tree.length > 0) {
+            data = res;
+            break;
+          }
+        } catch (_) {}
       }
-      if (state.projectId === 'fenix-os' && (!data || !Array.isArray(data.tree))) {
-        data = await json('/api/v2/projects/fenix-os/tree');
+
+      // If still no tree, try /files fallback from product-experience-routes
+      if (!data || !Array.isArray(data.tree)) {
+        try {
+          const filesRes = await json(`/api/v2/projects/${encodeURIComponent(state.projectId)}/files`);
+          if (filesRes && Array.isArray(filesRes.files)) {
+            data = { projectId: state.projectId, tree: filesRes.files };
+          }
+        } catch (_) {}
       }
+
+      // If still no tree and we have other projects in state.projects, try fenix-os or first available
+      if ((!data || !Array.isArray(data.tree) || data.tree.length === 0) && state.projectId !== 'fenix-os' && state.projectId !== 'fenix') {
+        const fallbackProject = state.projects.find((p) => p.id === 'fenix-os') || state.projects.find((p) => p.id === 'fenix') || state.projects[0];
+        if (fallbackProject && fallbackProject.id !== state.projectId) {
+          console.log(`[IDE] Workspace para ${state.projectId} não localizado no disco local, alternando para ${fallbackProject.id}`);
+          state.projectId = fallbackProject.id;
+          localStorage.setItem('fenix_ide_project', fallbackProject.id);
+          const sel = document.getElementById('fenixIdeProject');
+          if (sel) sel.value = fallbackProject.id;
+          return loadTree(generation);
+        }
+      }
+
+      if (!data || !Array.isArray(data.tree)) {
+        throw new Error(`Workspace para '${state.projectId}' não encontrado`);
+      }
+
       if (generation !== state.generation) return;
       tree.replaceChildren();
       state.treeData = data.tree || [];
@@ -1001,7 +1039,16 @@
       updatePreview(state.previewUrl);
     } catch (error) {
       if (generation === state.generation) {
-        tree.innerHTML = `<div style="color:#EF4444; padding:8px;">Falha: ${error.message}</div>`;
+        tree.innerHTML = `
+          <div style="color:#FCA5A5; padding:10px; font-size:11px; line-height:1.5;">
+            <div style="font-weight:700; margin-bottom:4px;"><i class="ph-bold ph-warning-circle"></i> ${error.message}</div>
+            <div style="color:#94A3B8; font-size:10px; margin-bottom:8px;">O workspace deste projeto não está mapeado no disco local ou requer login.</div>
+            <div style="display:flex; gap:6px;">
+              <button onclick="window.fenixSelectIdeProject('fenix-os')" style="background:rgba(0,217,255,0.15); border:1px solid rgba(0,217,255,0.3); color:#00D9FF; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Abrir Fênix OS</button>
+              <button onclick="window.fenixSelectIdeProject('api-platform')" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#CBD5E1; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">API Platform</button>
+            </div>
+          </div>
+        `;
         status(error.message, true);
       }
     }
@@ -1014,14 +1061,26 @@
     const generation = state.generation, token = ++state.openToken;
     status(`Abrindo ${cleanPath}…`);
     try {
-      let data;
-      try {
-        data = await json(`${endpoint('/file')}?path=${encodeURIComponent(cleanPath)}`);
-      } catch (error) {
-        if (state.projectId !== 'fenix-os') throw error;
+      let data = null;
+      const fileCandidates = [
+        `${endpoint('/file')}?path=${encodeURIComponent(cleanPath)}`,
+        `/api/v2/projects/${encodeURIComponent(state.projectId)}/file?path=${encodeURIComponent(cleanPath)}`,
+        ...(state.projectId === 'fenix-os' ? [`/api/fenix/projects/fenix/file?path=${encodeURIComponent(cleanPath)}`] : []),
+        ...(state.projectId === 'fenix' ? [`/api/fenix/projects/fenix-os/file?path=${encodeURIComponent(cleanPath)}`] : []),
+      ];
+
+      for (const fUrl of fileCandidates) {
+        try {
+          const res = await json(fUrl);
+          if (res && typeof res.content === 'string') {
+            data = res;
+            break;
+          }
+        } catch (_) {}
       }
-      if (state.projectId === 'fenix-os' && (!data || typeof data.content !== 'string')) {
-        data = await json(`/api/v2/projects/fenix-os/file?path=${encodeURIComponent(cleanPath)}`);
+
+      if (!data || typeof data.content !== 'string') {
+        throw new Error(`Não foi possível carregar o arquivo ${cleanPath}`);
       }
       if (generation !== state.generation || token !== state.openToken) return false;
       state.path = data.path;
@@ -1043,7 +1102,7 @@
       window.fenixHighlightCodeView?.(data.content);
 
       // Manage open tabs
-      if (!state.openTabs.some(t => t.path === data.path)) {
+      if (!state.openTabs.some((t) => t.path === data.path)) {
         state.openTabs.push({ path: data.path, name: data.path.split('/').pop(), dirty: false });
       }
       renderTabs();
@@ -1080,8 +1139,8 @@
 
       status(`${data.size || data.content.length} bytes · pronto para edição`);
       return true;
-    } catch (error) {
-      if (generation === state.generation && token === state.openToken) status(`Falha ao abrir: ${error.message}`, true);
+    } catch (err) {
+      if (generation === state.generation && token === state.openToken) status(`Falha ao abrir ${cleanPath}: ${err.message}`, true);
       return false;
     }
   }
@@ -1217,6 +1276,11 @@
       if (inputBar) inputBar.style.display = 'none';
       if (viewport) viewport.style.display = 'none';
       if (icon) icon.className = 'ph-bold ph-caret-up';
+    }
+
+    if (window.FenixWorkspaceLayoutManager) {
+      window.FenixWorkspaceLayoutManager.state.dockCollapsed = !shouldExpand;
+      window.FenixWorkspaceLayoutManager.state.dockHeight = shouldExpand ? 240 : 36;
     }
   };
 

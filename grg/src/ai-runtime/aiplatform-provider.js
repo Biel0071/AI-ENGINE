@@ -272,6 +272,9 @@ class AIPlatformProvider {
     return { res, text, job };
   }
 
+  #availCache = null;
+  #availInFlight = null;
+
   // available() FAZ INFERENCIA, nao ping. GET /v1/health responde 200 com o gateway de pe e
   // TODOS os modelos descarregados -- o health do FENIX reportava "ai-providers: ok" sem que
   // uma unica geracao fosse possivel. Um prompt minimo e a unica prova de que o caminho
@@ -279,27 +282,38 @@ class AIPlatformProvider {
   async available() {
     this.lastError = null;
     if (!this.baseUrl || !this.#apiKey) { this.lastError = 'missing URL or API key'; return false; }
-    try {
-      const res = await request(this.baseUrl, '/v1/chat', this.#apiKey, { messages: [{ role: 'user', content: 'ok' }], ...(this.model ? { model: this.model } : {}) }, 20000);
-      // MEDIDO (2026-07-30): o health do FENIX roda as sondas em paralelo, entao ESTA sonda
-      // caia justamente no 202 da fila (`concurrency: 4` no gateway) e reportava
-      // "sem provider de LLM" com o gateway gerando texto. Recusar era honesto e incompleto:
-      // a fila e o caminho normal sob carga, nao uma falha. Agora ela espera o job -- com teto
-      // curto, porque health que demora e health que ninguem le.
-      const enfileirado = res && res.jobId && !res.result;
-      if (enfileirado && !this.jobWait.waitMs) return false;
-      const text = enfileirado
-        ? (await waitForJob(this.baseUrl, this.#apiKey, res.jobId, { waitMs: Math.min(this.jobWait.waitMs, 25000), intervalMs: this.jobWait.intervalMs })).text
-        : extractText(res);
-      // Texto fabricado NAO conta como disponivel: `[Fallback Response] ...` e non-empty, entao
-      // sem esta checagem um gateway sem provider nenhum registrava a conexao como ONLINE.
-      // assertNotFabricated lanca, o catch abaixo devolve false, e o connection-manager grava
-      // OFFLINE com o motivo -- que e a verdade medida.
-      assertNotFabricated(text, { provider: 'aiplatform', endpoint: '/v1/chat' });
-      const available = typeof text === 'string' && text.length > 0;
-      if (!available) this.lastError = 'inference returned empty text';
-      return available;
-    } catch (error) { this.lastError = String(error.message || error).slice(0, 300); return false; }
+    const now = Date.now();
+    if (this.#availCache && (now - this.#availCache.at < 15_000)) {
+      this.lastError = this.#availCache.lastError;
+      return this.#availCache.ok;
+    }
+    if (this.#availInFlight) return this.#availInFlight;
+
+    this.#availInFlight = (async () => {
+      try {
+        const res = await request(this.baseUrl, '/v1/chat', this.#apiKey, { messages: [{ role: 'user', content: 'ok' }], ...(this.model ? { model: this.model } : {}) }, 6000, 1);
+        const enfileirado = res && res.jobId && !res.result;
+        if (enfileirado && !this.jobWait.waitMs) {
+          this.#availCache = { at: Date.now(), ok: false, lastError: this.lastError };
+          return false;
+        }
+        const text = enfileirado
+          ? (await waitForJob(this.baseUrl, this.#apiKey, res.jobId, { waitMs: Math.min(this.jobWait.waitMs, 8000), intervalMs: this.jobWait.intervalMs })).text
+          : extractText(res);
+        assertNotFabricated(text, { provider: 'aiplatform', endpoint: '/v1/chat' });
+        const ok = typeof text === 'string' && text.length > 0;
+        if (!ok) this.lastError = 'inference returned empty text';
+        this.#availCache = { at: Date.now(), ok, lastError: this.lastError };
+        return ok;
+      } catch (error) {
+        this.lastError = String(error.message || error).slice(0, 300);
+        this.#availCache = { at: Date.now(), ok: false, lastError: this.lastError };
+        return false;
+      } finally {
+        this.#availInFlight = null;
+      }
+    })();
+    return this.#availInFlight;
   }
 
   // Streaming token a token. O gateway /v1/text nao faz stream, entao o FENIX vai direto ao

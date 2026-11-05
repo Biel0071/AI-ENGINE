@@ -13,6 +13,8 @@
   // ==========================================
   
   let projectSnapshot = null;
+  let projectSectionGeneration = 0;
+  let currentProjectSection = null;
 
   function isServerWorkspacePath(value) {
     if (!value || typeof value !== 'string') return false;
@@ -27,8 +29,29 @@
   let selectedScreen = null;
   let selectedElement = null;
 
+  window.FenixVisualIDE = Object.freeze({
+    getSelectionContext(projectId) {
+      if (!selectedScreen || (projectId && selectedScreen.projectId !== projectId)) return null;
+      return {
+        projectId: selectedScreen.projectId || null,
+        screenId: selectedScreen.id || selectedScreen.screenId || null,
+        route: selectedScreen.route || null,
+        workspacePath: selectedScreen.projectPath || null,
+        element: selectedElement ? {
+          selector: selectedElement.selector || null,
+          tag: selectedElement.tag || null,
+          text: selectedElement.text || null,
+        } : null,
+      };
+    },
+  });
+
   function selectedProjectPath() {
     return safeProjectPath($('projectSwitcher')?.selectedOptions?.[0]?.dataset?.path) || safeProjectPath(projectSnapshot?.path);
+  }
+
+  function selectedProjectId(fallback) {
+    return $('projectSwitcher')?.value || fallback || null;
   }
 
   function mirrorPath(route, projectPath = selectedProjectPath()) {
@@ -60,6 +83,7 @@
   }
 
   async function loadProjectMirror() {
+    const generation = projectSectionGeneration;
     try {
       const pmContent = $('pmContent');
       if (!pmContent) return;
@@ -74,7 +98,7 @@
       renderCommandMirror();
       
       // Auto-load Overview
-      renderProjectSection('overview');
+      if (generation === projectSectionGeneration && (currentProjectSection === null || currentProjectSection === 'overview')) renderProjectSection('overview');
     } catch (e) {
       if ($('pmContent')) $('pmContent').innerHTML = `<div style="color: var(--danger);">Error loading Project Mirror: ${e.message}</div>`;
     }
@@ -100,7 +124,8 @@
     try {
       const data = await api(mirrorPath(`/api/project-mirror/screen/${encodeURIComponent(screenId)}`));
       const screen = data.screen;
-      selectedScreen = { ...screen, projectId: data.projectId, workspaceId: data.workspaceId, projectPath: data.projectPath, git: data.git };
+      selectedElement = null;
+      selectedScreen = { ...screen, projectId: selectedProjectId(data.projectId), workspaceId: data.workspaceId, projectPath: data.projectPath, git: data.git };
       const previewPath = previewUrl(screen, data.projectPath);
       if (previewPath && $('wsPreviewFrame')) {
         $('wsPreviewFrame').src = previewPath;
@@ -123,6 +148,8 @@
 
   function renderProjectSection(section) {
     if (!projectSnapshot) return;
+    const generation = ++projectSectionGeneration;
+    currentProjectSection = section;
     
     // Update nav highlights
     document.querySelectorAll('.pm-nav-item').forEach(el => el.classList.remove('active'));
@@ -323,7 +350,7 @@
     } else if (section === 'runtime') {
       pmTitle.textContent = 'Runtime Status';
       pmContent.innerHTML = '<div style="padding: 40px; text-align: center;"><i class="ph ph-spinner ph-spin" style="font-size: 32px;"></i></div>';
-      setTimeout(renderRuntimeStatus, 100);
+      setTimeout(() => renderRuntimeStatus(generation), 100);
     } else {
       pmTitle.textContent = section.toUpperCase();
       pmContent.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-muted);">Detailed view for ${section} is under construction in this vertical slice.</div>`;
@@ -388,9 +415,10 @@
     }
   }
 
-  async function renderRuntimeStatus() {
+  async function renderRuntimeStatus(generation) {
     try {
       const status = await api('/api/v2/system/status');
+      if (generation !== projectSectionGeneration) return;
       const pmContent = $('pmContent');
       
       const renderItem = (name, isOk, extra) => `
@@ -416,19 +444,25 @@
         </div>
       `;
     } catch (e) {
+      if (generation !== projectSectionGeneration) return;
       if ($('pmContent')) $('pmContent').innerHTML = `<div style="padding: 24px; color: var(--danger);">Failed to load runtime status: ${e.message}</div>`;
     }
   }
 
   window.showScreenDetail = async function(name) {
+    const generation = ++projectSectionGeneration;
+    currentProjectSection = 'screen-detail';
     const pmContent = $('pmContent');
     pmContent.innerHTML = '<div style="padding: 40px; text-align: center;"><i class="ph ph-spinner ph-spin" style="font-size: 32px;"></i></div>';
     try {
       const data = await api(mirrorPath(`/api/project-mirror/screen/${encodeURIComponent(name)}`));
+      if (generation !== projectSectionGeneration) return;
       const screen = data.screen;
-      selectedScreen = { ...screen, projectId: data.projectId, workspaceId: data.workspaceId, projectPath: data.projectPath, git: data.git };
+      selectedElement = null;
+      selectedScreen = { ...screen, projectId: selectedProjectId(data.projectId), workspaceId: data.workspaceId, projectPath: data.projectPath, git: data.git };
       const source = screen.sourceFiles?.[0] || { file: screen.file, line: screen.sourceLine || 1 };
       const sourceResponse = await api(`/api/project-mirror/source?path=${encodeURIComponent(data.projectPath)}&file=${encodeURIComponent(source.file)}&line=${encodeURIComponent(source.line || 1)}`);
+      if (generation !== projectSectionGeneration) return;
       const preview = previewUrl(screen, data.projectPath);
       
       let html = `
@@ -464,6 +498,11 @@
               <h4 style="margin-top: 0;">Elemento visual selecionado</h4>
               <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px">Clique em qualquer item dentro do preview para anexá-lo ao prompt.</p>
               <pre id="selectedElementContext" style="font:11px/1.45 var(--font-mono);white-space:pre-wrap;margin:0">NENHUM ELEMENTO SELECIONADO</pre>
+              <label for="screenAnnotationInput" style="display:block;margin-top:12px;font-size:12px">Anotação do operador</label>
+              <textarea id="screenAnnotationInput" maxlength="1200" rows="3" placeholder="Ex.: ajustar espaçamento deste botão sem mudar sua ação" style="width:100%;box-sizing:border-box;margin-top:6px;resize:vertical"></textarea>
+              <button id="saveScreenAnnotationBtn" class="btn-secondary" type="button" disabled style="margin-top:8px">Salvar anotação no projeto</button>
+              <p id="screenAnnotationStatus" role="status" style="font-size:11px;color:var(--text-muted);min-height:16px"></p>
+              <div id="screenAnnotationList" aria-label="Anotações existentes da tela"></div>
             </div>
             
             <div style="background: var(--bg-surface); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
@@ -485,10 +524,72 @@
       const codePane = $('screenCodePane');
       const previewFrame = $('selectedScreenFrame');
       selectedElement = null;
-      previewFrame?.addEventListener('load', () => {
+      const annotationList = $('screenAnnotationList');
+      const annotationStatus = $('screenAnnotationStatus');
+      const annotationInput = $('screenAnnotationInput');
+      const saveAnnotation = $('saveScreenAnnotationBtn');
+      const renderAnnotation = (record) => {
+        if (!annotationList) return;
+        const card = document.createElement('article');
+        card.style.cssText = 'margin-top:8px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-main)';
+        const target = document.createElement('small');
+        target.textContent = `${record.element.selector} · ${record.route || record.screenId} · ${new Date(record.createdAt).toLocaleString()}`;
+        const note = document.createElement('p');
+        note.style.cssText = 'margin:6px 0 0;white-space:pre-wrap';
+        note.textContent = record.note;
+        card.append(target, note);
+        annotationList.prepend(card);
+      };
+      const loadAnnotations = async () => {
+        if (!selectedScreen?.projectId || !window.FenixProjectScreenAnnotations) return;
+        try {
+          const screenId = selectedScreen.id || selectedScreen.screenId;
+          const response = await api(`/api/memory/project/${encodeURIComponent(selectedScreen.projectId)}`);
+          const records = (response.results || []).map((item) => item.memory || item)
+            .map((memory) => window.FenixProjectScreenAnnotations.fromMemory(memory, selectedScreen.projectId))
+            .filter((record) => record?.screenId === screenId)
+            .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 30);
+          records.reverse().forEach(renderAnnotation);
+        } catch (error) {
+          if (annotationStatus) annotationStatus.textContent = `Anotações salvas indisponíveis: ${error.message}`;
+        }
+      };
+      annotationInput?.addEventListener('input', () => {
+        if (saveAnnotation) saveAnnotation.disabled = !selectedElement?.selector || !annotationInput.value.trim();
+      });
+      saveAnnotation?.addEventListener('click', async () => {
+        if (!selectedElement?.selector || !selectedScreen?.projectId || !window.FenixProjectScreenAnnotations) return;
+        saveAnnotation.disabled = true;
+        if (annotationStatus) annotationStatus.textContent = 'Salvando observação na memória autenticada do projeto…';
+        try {
+          const record = window.FenixProjectScreenAnnotations.create({
+            projectId: selectedScreen.projectId,
+            screenId: selectedScreen.id || selectedScreen.screenId,
+            screenName: selectedScreen.name,
+            route: selectedScreen.route,
+            element: selectedElement,
+            note: annotationInput.value
+          });
+          await api('/api/memory/write', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(window.FenixProjectScreenAnnotations.toMemoryWrite(record))
+          });
+          renderAnnotation(record);
+          annotationInput.value = '';
+          if (annotationStatus) annotationStatus.textContent = 'Anotação vinculada ao projeto e à tela; nenhum arquivo foi alterado.';
+          window.dispatchEvent(new CustomEvent('FENIX_PROJECT_SCREEN_ANNOTATION_SAVED', { detail: { projectId: record.projectId, screenId: record.screenId, annotationId: record.annotationId } }));
+        } catch (error) {
+          if (annotationStatus) annotationStatus.textContent = `Não foi possível salvar a anotação: ${error.message}`;
+        } finally {
+          saveAnnotation.disabled = !selectedElement?.selector || !annotationInput.value.trim();
+        }
+      });
+      void loadAnnotations();
+      const bindPreviewSelection = () => {
         try {
           const doc = previewFrame.contentDocument;
-          if (!doc) return;
+          if (!doc?.documentElement || doc.documentElement.dataset.fenixSelectionBound === 'true') return;
+          doc.documentElement.dataset.fenixSelectionBound = 'true';
           doc.addEventListener('click', (event) => {
             const target = event.target?.closest?.('a,button,input,select,textarea,[id],[class]') || event.target;
             if (!target || target === doc.body || target === doc.documentElement) return;
@@ -512,25 +613,50 @@
               html: target.outerHTML?.slice(0, 1200) || '',
             };
             if ($('selectedElementContext')) $('selectedElementContext').textContent = `${selector}\n${selectedElement.text || '(sem texto)'}`;
+            if (saveAnnotation) saveAnnotation.disabled = !annotationInput?.value.trim();
           }, true);
         } catch (error) {
           if ($('selectedElementContext')) $('selectedElementContext').textContent = `INSPEÇÃO INDISPONÍVEL: ${error.message}`;
         }
-      });
+      };
+      previewFrame?.addEventListener('load', bindPreviewSelection);
+      try { if (previewFrame?.contentDocument?.readyState === 'complete') bindPreviewSelection(); } catch (_) { /* cross-origin preview cannot be inspected */ }
       pmContent.querySelectorAll('[data-screen-mode]').forEach((button) => button.addEventListener('click', () => {
         const mode = button.dataset.screenMode;
         if (previewPane) { previewPane.style.display = mode === 'code' ? 'none' : 'block'; previewPane.style.flex = '1'; }
         if (codePane) { codePane.style.display = mode === 'preview' ? 'none' : 'block'; codePane.style.flex = '1'; }
         if (mode === 'split' && previewPane && codePane) { previewPane.style.width = '50%'; codePane.style.width = '50%'; previewPane.parentElement.style.flexDirection = 'column'; }
       }));
-      $('editSelectedScreenBtn')?.addEventListener('click', () => {
-        const input = $('masterPrompt') || $('prompt');
-        const elementHint = selectedElement ? ` O elemento selecionado é ${selectedElement.selector}, texto "${selectedElement.text}".` : '';
-        document.querySelector('[data-view="command"]')?.click();
-        if (input) { input.value = `Na tela ${screen.name}, faça uma alteração pequena e segura.${elementHint}`; input.focus(); }
+      $('editSelectedScreenBtn')?.addEventListener('click', async () => {
+        const projectId = selectedScreen?.projectId;
+        const sourceFile = screen.sourceFiles?.[0]?.file || screen.file;
+        try {
+          if (!projectId || !sourceFile || typeof window.fenixSelectIdeProject !== 'function' || typeof window.fenixSelectIdeFile !== 'function') {
+            throw new Error('Projeto ou arquivo-fonte da tela não está disponível na IDE.');
+          }
+          window.showView?.('ide');
+          await window.fenixSelectIdeProject(projectId);
+          const opened = await window.fenixSelectIdeFile(sourceFile);
+          if (opened === false) return;
+          const context = window.FenixVisualIDE.getSelectionContext(projectId);
+          if (!context || context.projectId !== projectId) throw new Error('A seleção visual não corresponde ao projeto aberto na IDE.');
+          if (typeof window.fenixOpenEditProposal !== 'function') throw new Error('A revisão de edição da IDE está indisponível.');
+          window.fenixOpenEditProposal();
+          const prompt = $('fenixIdeProposalPrompt');
+          if (prompt) {
+            const elementHint = context.element?.selector
+              ? ` Elemento observado: ${context.element.selector} (${context.element.tag || 'elemento'}), texto "${context.element.text || '(sem texto)'}".`
+              : '';
+            prompt.value = `Na tela ${screen.name} (${context.route || screen.route || 'rota não informada'}), proponha uma melhoria segura e preserve o comportamento existente.${elementHint}`;
+            prompt.focus();
+          }
+        } catch (error) {
+          const status = $('fenixIdeLiveStatus');
+          if (status) { status.textContent = `Não foi possível abrir a revisão na IDE: ${error.message}`; status.dataset.error = 'true'; }
+        }
       });
     } catch (e) {
-      pmContent.innerHTML = `<div style="color: var(--danger);">Error loading screen detail: ${e.message}</div>`;
+      if (generation === projectSectionGeneration) pmContent.innerHTML = `<div style="color: var(--danger);">Error loading screen detail: ${e.message}</div>`;
     }
   };
 
@@ -931,6 +1057,8 @@
     });
     $('projectSwitcher')?.addEventListener('change', async () => {
       projectSnapshot = null;
+      currentProjectSection = null;
+      projectSectionGeneration += 1;
       selectedScreen = null;
       selectedElement = null;
       const selectedPath = selectedProjectPath();

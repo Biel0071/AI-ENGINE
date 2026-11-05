@@ -10,7 +10,9 @@ const reality = fs.readFileSync(path.join(publicRoot, 'city-reality-engine.js'),
 const sidebar = fs.readFileSync(path.join(publicRoot, 'fenix-mascot-sidebar.js'), 'utf8');
 const world = fs.readFileSync(path.join(publicRoot, 'fenix-world-3d.js'), 'utf8');
 const unifiedApp = fs.readFileSync(path.join(publicRoot, 'unified-app.js'), 'utf8');
+const missionHelperSource = unifiedApp.match(/const OPEN_MISSION_STATUSES\s*=\s*new Set\([\s\S]*?window\.fenixIsMissionOpen\s*=\s*function\(mission\)\s*\{[\s\S]*?^\};/m)?.[0];
 const cityCss = fs.readFileSync(path.join(publicRoot, 'city-reality.css'), 'utf8');
+const cityEventAdapter = fs.readFileSync(path.join(publicRoot, 'fenix-city-event-adapter.js'), 'utf8');
 
 test('City exposes one live minimap canvas and no fixed screenshot thumbnail', () => {
   assert.equal((html.match(/id="fenixMinimap"/g) || []).length, 1);
@@ -24,7 +26,7 @@ test('City exposes one live minimap canvas and no fixed screenshot thumbnail', (
 });
 
 test('snapshot and heartbeat transport messages are not shown as system events', () => {
-  assert.match(isoCity, /'snapshot', 'runtime\.snapshot'/);
+  assert.match(cityEventAdapter, /\['snapshot', 'runtime\.snapshot', 'ping', 'heartbeat', 'connected'\]\.includes\(type\)/);
   assert.match(sidebar, /type === 'snapshot'/);
   assert.match(reality, /data\.events = data\.events\.filter/);
   assert.match(reality, /ignoredTypes\.has\(type\)/);
@@ -52,11 +54,11 @@ test('API error envelopes never become entity counts and KPIs count active entit
   const sandbox = {
     window: { FENIX: { live: {} }, fenixRenderAlerts() {} },
     document: { getElementById(id) {
-      if (!elements.has(id)) elements.set(id, { textContent: '' });
+      if (!elements.has(id)) elements.set(id, { textContent: '', closest: () => null });
       return elements.get(id);
     } }
   };
-  require('node:vm').runInNewContext(counterRenderer, sandbox);
+  require('node:vm').runInNewContext(`${missionHelperSource}\n${counterRenderer}`, sandbox);
 
   sandbox.window.updateSidebarCounters({
     agents: { __error: 'HTTP 503' },
@@ -76,7 +78,7 @@ test('API error envelopes never become entity counts and KPIs count active entit
     missions: { missions: [{ status: 'running' }, { status: 'completed' }, { status: 'pending' }] }
   });
   assert.equal(elements.get('topKpiAgentsVal').textContent, '1');
-  assert.equal(elements.get('topKpiMissionsVal').textContent, '1');
+  assert.equal(elements.get('topKpiMissionsVal').textContent, '2');
 });
 
 test('empty default live arrays stay unavailable until a collection was measured', () => {
@@ -86,11 +88,11 @@ test('empty default live arrays stay unavailable until a collection was measured
   const sandbox = {
     window: { FENIX: { live: { snapshotMeasured: true, agents: [], missions: [] } }, fenixRenderAlerts() {} },
     document: { getElementById(id) {
-      if (!elements.has(id)) elements.set(id, { textContent: '' });
+      if (!elements.has(id)) elements.set(id, { textContent: '', closest: () => null });
       return elements.get(id);
     } }
   };
-  require('node:vm').runInNewContext(unifiedApp.slice(start, end), sandbox);
+  require('node:vm').runInNewContext(`${missionHelperSource}\n${unifiedApp.slice(start, end)}`, sandbox);
 
   sandbox.window.updateSidebarCounters({ health: { status: 'degraded' } });
 
@@ -132,8 +134,8 @@ test('shell contains no fixed weather, notification count, or stale indicator as
   assert.match(html, /id="fnxNotifCount" hidden[^>]*style="display:none"/);
   assert.doesNotMatch(sidebar, /Fênix OS Online/);
   assert.doesNotMatch(reality, /Operação saudável com telemetria nominal/);
-  assert.match(html, /iso-city\.js\?v=4/);
-  assert.match(html, /fenix-world-3d\.js\?v=13-city-district-labels-20261013/);
+  assert.match(html, /iso-city\.js\?v=[^"']+/);
+  assert.match(html, /fenix-world-3d\.js\?v=[^"']+/);
 });
 
 test('operations drawer shows unavailable when live jobs and health have not been measured', () => {

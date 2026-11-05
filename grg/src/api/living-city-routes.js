@@ -182,6 +182,8 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
       homeCoordinates: agent.homeCoordinates || null,
       targetCoordinates: agent.targetCoordinates || null,
       path: agent.path || [],
+      routineWaypoints: Array.isArray(agent.routineWaypoints) ? agent.routineWaypoints : null,
+      waypointIndex: Number.isFinite(agent.waypointIndex) ? agent.waypointIndex : 0,
       facing: agent.facing || 'SE',
       speed: Number.isFinite(agent.speed) ? agent.speed : null,
       status, state: status,
@@ -192,7 +194,7 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
       jobId: activeJob?.id || null,
       missionId: activeJob?.missionId || agent.missionId || null,
       parentGoal: agent.parentGoal || activeJob?.objective || null,
-      currentTask: status === 'AVAILABLE' ? null : (activeJob?.name || activeJob?.prompt || activeJob?.type || agent.currentTask || agent.assignedTask || null),
+      currentTask: status === 'AVAILABLE' ? null : (activeJob?.name || activeJob?.prompt || activeJob?.type || agent.currentTask || agent.assignedTask?.taskName || agent.assignedTask || null),
       projectId: activeJob?.projectId || agent.projectId || null,
       avatar: profile?.avatar || agent.avatar || null,
       skills: agent.skills || [],
@@ -387,6 +389,58 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
         ok: true,
         mutation,
         worldTime: worldEngine.worldTime
+      });
+      return true;
+    } catch (err) {
+      sendJson(res, 400, { ok: false, error: err.message });
+      return true;
+    }
+  }
+
+  // --- POST /api/v2/living-city/company/:companyId/agents/spawn & /api/v2/living-city/agents/spawn ---
+  const companySpawnMatch = url.pathname.match(/^\/api\/v2\/living-city\/company\/([^/]+)\/agents\/spawn$/);
+  if (req.method === 'POST' && (companySpawnMatch || url.pathname === '/api/v2/living-city/agents/spawn')) {
+    try {
+      const body = (await readJson(req)) || {};
+      const companyId = companySpawnMatch
+        ? decodeURIComponent(companySpawnMatch[1]).trim()
+        : String(body.companyId || body.projectId || 'fenix-os').trim();
+      const spawned = worldEngine.spawnCompanyAgent({
+        ...body,
+        companyId,
+        issuer: identity.actorId || 'operator'
+      });
+      if (app?.store?.update) {
+        await app.store.update((current) => {
+          current.agents = Array.isArray(current.agents) ? current.agents : [];
+          if (!current.agents.some((a) => a.id === spawned.id)) {
+            current.agents.push({ ...spawned, tenantId: identity.tenantId });
+          }
+          return current;
+        }).catch(() => {});
+      }
+      const allWorldAgents = Object.values(worldEngine.agents || {});
+      const activeSet = new Set(['working', 'running', 'moving', 'walking', 'thinking', 'talking']);
+      const activeWorldAgents = allWorldAgents.filter(
+        (a) => activeSet.has(String(a.state || '').toLowerCase())
+      );
+      const companyAgents = allWorldAgents.filter(
+        (a) => String(a.companyId || '').toLowerCase() === companyId.toLowerCase()
+      );
+      const companyActiveAgents = companyAgents.filter(
+        (a) => activeSet.has(String(a.state || '').toLowerCase())
+      );
+      sendJson(res, 201, {
+        ok: true,
+        success: true,
+        companyId,
+        agent: spawned,
+        companyActiveAgentsCount: companyActiveAgents.length,
+        companyAgentsCount: companyAgents.length,
+        activeAgentsCount: activeWorldAgents.length,
+        totalAgentsCount: allWorldAgents.length,
+        totalCompanyAgents: companyAgents.length,
+        totalWorldAgents: allWorldAgents.length
       });
       return true;
     } catch (err) {

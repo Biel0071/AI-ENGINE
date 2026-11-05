@@ -133,19 +133,18 @@ test('FASE 15 - INVARIANT 8: Embodied Missions & Real-Time Job Tags on Nameplate
     'iso-city must inspect currentJobId and missionId'
   );
   assert.ok(
-    isoCity.includes('JOB #') && isoCity.includes('MIS #'),
-    'iso-city must render JOB # or MIS # chip above nameplate'
+    isoCity.includes('JOB #') && isoCity.includes('focusMission(missionId)'),
+    'iso-city must render real Job IDs and keep mission focus wired to runtime IDs'
   );
 });
 
-test('FASE 15 - INVARIANT 9: Spontaneous Group Conversation between Idle Neighbors', () => {
+test('FASE 15 - INVARIANT 9: Idle agents do not invent work or social activity', () => {
   const isoCity = fs.readFileSync(ISO_CITY_PATH, 'utf-8');
 
-  // Verify proximity social conversation logic
-  assert.ok(
-    isoCity.includes('agent.socialTimer') && (isoCity.includes('peerDist < 1.35') || isoCity.includes('pdist < 1.35')),
-    'iso-city must implement social proximity interaction between neighboring agents'
-  );
+  assert.doesNotMatch(isoCity, /agent\.socialTimer|chatTopics|Alinhando sprint com/,
+    'idle agents must not fabricate conversations or operational claims');
+  assert.doesNotMatch(isoCity, /agent\.routineTimer|routineChoices/,
+    'idle agents must not receive random movement destinations');
 });
 
 test('FASE 15 - INVARIANT 10: Multi-Floor Cutaway Architecture', () => {
@@ -159,14 +158,18 @@ test('FASE 15 - INVARIANT 10: Multi-Floor Cutaway Architecture', () => {
   assert.ok(isoCity.includes('updateFloorSelector('), 'Must implement updateFloorSelector');
 });
 
-test('FASE 15 - INVARIANT 11: 15-Level Semantic Zoom & Breadcrumb Navigation', () => {
+test('FASE 15 - INVARIANT 11: Semantic Zoom & Breadcrumb Navigation', () => {
   const isoCity = fs.readFileSync(ISO_CITY_PATH, 'utf-8');
   const html = fs.readFileSync(HTML_PATH, 'utf-8');
 
   assert.ok(html.includes('id="cityBreadcrumb"'), 'HTML must contain #cityBreadcrumb');
   assert.ok(isoCity.includes('updateBreadcrumbs('), 'Must implement updateBreadcrumbs');
   assert.ok(isoCity.includes('navigateToLevel('), 'Must implement navigateToLevel');
-  assert.ok(isoCity.includes('L6 AGENTE HABBO') || isoCity.includes('AGENTE HABBO'), 'Must include close-up Habbo zoom label');
+  assert.ok(isoCity.includes("this.state.semanticZoomLevel = 'district'")
+    && isoCity.includes("this.state.semanticZoomLevel = 'city'")
+    && isoCity.includes("this.state.semanticZoomLevel = 'building'")
+    && isoCity.includes("this.state.semanticZoomLevel = 'agent'"),
+  'Must expose the implemented district, city, building, and agent detail levels');
 });
 
 test('FASE 15 - INVARIANT 12: Workstation Inspection & Round-Trip IDE Binding', () => {

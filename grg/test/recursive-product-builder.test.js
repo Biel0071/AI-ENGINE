@@ -23,7 +23,17 @@ const {
   RecursiveProductBuilder,
   PageCompletenessEngine,
   InteractionCompletenessEngine,
-  NavigationCrawler
+  NavigationCrawler,
+  DependencyPlanner,
+  KnowledgeCache,
+  ComponentReuseRegistry,
+  SafeParallelExecutor,
+  IncrementalGenerator,
+  FileDeduplicator,
+  BlockerPrioritizer,
+  AutoIntegrator,
+  HumanInterventionGate,
+  ComponentDeduplicator
 } = require('../src/product/recursive-product-builder');
 
 const { AutonomousDevelopmentFactory } = require('../src/evolution/autonomous-development-factory');
@@ -485,3 +495,253 @@ test('10. AutonomousDevelopmentFactory executes real node -c syntax and test ver
   assert.equal(testTask.result.suitesPassed, 5);
   assert.ok(testTask.result.summary.includes('Regression test suite passed'));
 });
+
+test('11. Generalization: Builder automatically synthesizes and certifies complete E-Commerce architecture', async () => {
+  const builder = new RecursiveProductBuilder();
+  const tree = await builder.generateProductTree({
+    projectId: 'prj.ecommerce_store',
+    name: 'Loja Virtual Fênix Store',
+    domain: 'ecommerce'
+  });
+
+  assert.equal(tree.domain, 'ecommerce');
+  assert.ok(tree.modules.length >= 4, 'Must have at least 4 modules in ecommerce');
+  assert.ok(tree.modules.some(m => m.id === 'mod_catalog'), 'Must have catalog module');
+  assert.ok(tree.modules.some(m => m.id === 'mod_cart_checkout'), 'Must have cart & checkout module');
+  assert.ok(tree.modules.some(m => m.id === 'mod_orders_billing'), 'Must have orders module');
+  assert.ok(tree.modules.some(m => m.id === 'mod_inventory_admin'), 'Must have backoffice module');
+
+  const cert = builder.certifyProduct('prj.ecommerce_store');
+  assert.equal(cert.status, 'CERTIFIED_DEEP_APPLICATION');
+  assert.equal(cert.pageCompletenessScore, 100);
+  assert.equal(cert.interactionCompletenessScore, 100);
+  assert.equal(cert.navigationReachabilityScore, 100);
+  assert.ok(cert.certificateId.startsWith('CERT-PRJ.ECOMMERCE_STORE-'));
+  assert.equal(cert.cryptographicSignature.length, 64);
+});
+
+test('12. Generalization: Builder automatically synthesizes and certifies complete Project Management architecture', async () => {
+  const builder = new RecursiveProductBuilder();
+  const tree = await builder.generateProductTree({
+    projectId: 'prj.task_manager',
+    name: 'Fênix Task Manager & Kanban',
+    domain: 'project_management'
+  });
+
+  assert.equal(tree.domain, 'project_management');
+  assert.ok(tree.modules.length >= 4, 'Must have at least 4 modules in PM');
+  assert.ok(tree.modules.some(m => m.id === 'mod_projects_overview'), 'Must have projects overview module');
+  assert.ok(tree.modules.some(m => m.id === 'mod_kanban_workspace'), 'Must have kanban workspace module');
+  assert.ok(tree.modules.some(m => m.id === 'mod_teams_allocation'), 'Must have team allocation module');
+  assert.ok(tree.modules.some(m => m.id === 'mod_productivity_reports'), 'Must have reports module');
+
+  const cert = builder.certifyProduct('prj.task_manager');
+  assert.equal(cert.status, 'CERTIFIED_DEEP_APPLICATION');
+  assert.equal(cert.pageCompletenessScore, 100);
+  assert.equal(cert.interactionCompletenessScore, 100);
+  assert.equal(cert.navigationReachabilityScore, 100);
+  assert.ok(cert.certificateId.startsWith('CERT-PRJ.TASK_MANAGER-'));
+  assert.equal(cert.cryptographicSignature.length, 64);
+});
+
+test('13. Production Optimization: DependencyPlanner, KnowledgeCache, and ComponentDeduplicator operate deterministically', () => {
+  const planner = new DependencyPlanner();
+  const plan = planner.planBuildOrder({ projectId: 'prj.opt_test', domain: 'ecommerce' });
+  assert.equal(plan.stages.length, 5);
+  assert.equal(plan.stages[0].id, 'STAGE_1_SCHEMA');
+  assert.deepEqual(plan.stages[0].dependencies, []);
+  assert.deepEqual(plan.stages[1].dependencies, ['STAGE_1_SCHEMA']);
+  assert.deepEqual(plan.stages[4].dependencies, ['STAGE_4_FRONTEND_SPA']);
+
+  const cache = new KnowledgeCache();
+  cache.set('schema:products', { table: 'produtos', columns: ['id', 'nome', 'preco'] });
+  assert.equal(cache.get('schema:products').table, 'produtos');
+  assert.equal(cache.get('schema:non_existent'), null);
+  const stats = cache.getStats();
+  assert.equal(stats.hits, 1);
+  assert.equal(stats.misses, 1);
+  assert.equal(stats.hitRate, 0.5);
+
+  const mockTree = {
+    modules: [{
+      pages: [{
+        components: [
+          { type: 'button', id: 'btn_1', label: 'Salvar' },
+          { type: 'button', id: 'btn_1', label: 'Salvar' },
+          { type: 'data_table', id: 'tbl_1', label: 'Lista' }
+        ]
+      }]
+    }]
+  };
+  const dedup = ComponentDeduplicator.deduplicateTree(mockTree);
+  assert.equal(dedup.componentsScanned, 3);
+  assert.equal(dedup.duplicatesFound, 1);
+  assert.equal(mockTree.modules[0].pages[0].components.length, 2);
+});
+
+test('14. Governance: HumanInterventionGate correctly distinguishes autonomous operations from critical actions', () => {
+  const opAuto1 = HumanInterventionGate.evaluate({ type: 'CODE_GENERATION', target: 'routes.js' });
+  assert.equal(opAuto1.decision, 'AUTONOMOUS_APPROVED');
+  assert.equal(opAuto1.requiresConfirmation, false);
+  assert.equal(opAuto1.riskLevel, 'LOW');
+
+  const opAuto2 = HumanInterventionGate.evaluate({ type: 'RUN_UNIT_TESTS' });
+  assert.equal(opAuto2.decision, 'AUTONOMOUS_APPROVED');
+
+  const opCrit1 = HumanInterventionGate.evaluate({ type: 'DROP_DATABASE', database: 'prod.sqlite' });
+  assert.equal(opCrit1.decision, 'REQUIRES_HUMAN_APPROVAL');
+  assert.equal(opCrit1.requiresConfirmation, true);
+  assert.equal(opCrit1.riskLevel, 'CRITICAL');
+
+  const opCrit2 = HumanInterventionGate.evaluate({ type: 'LIVE_FINANCIAL_CHARGE', amount: 500 });
+  assert.equal(opCrit2.decision, 'REQUIRES_HUMAN_APPROVAL');
+  assert.equal(opCrit2.riskLevel, 'CRITICAL');
+
+  const opHigh = HumanInterventionGate.evaluate({ type: 'OVERWRITE_SCHEMA_MIGRATION' });
+  assert.equal(opHigh.decision, 'REQUIRES_HUMAN_APPROVAL');
+  assert.equal(opHigh.riskLevel, 'HIGH');
+});
+
+test('15. Production Optimization: DependencyPlanner topologicalSort detects DAG cycles and computes parallel waves', () => {
+  const dag = [
+    { id: 'STAGE_1', dependencies: [] },
+    { id: 'STAGE_2A', dependencies: ['STAGE_1'] },
+    { id: 'STAGE_2B', dependencies: ['STAGE_1'] },
+    { id: 'STAGE_3', dependencies: ['STAGE_2A', 'STAGE_2B'] }
+  ];
+
+  const order = DependencyPlanner.topologicalSort(dag);
+  assert.equal(order[0], 'STAGE_1');
+  assert.ok(order.indexOf('STAGE_3') > order.indexOf('STAGE_2A'));
+  assert.ok(order.indexOf('STAGE_3') > order.indexOf('STAGE_2B'));
+
+  // Test cycle detection
+  const cyclicDag = [
+    { id: 'N1', dependencies: ['N3'] },
+    { id: 'N2', dependencies: ['N1'] },
+    { id: 'N3', dependencies: ['N2'] }
+  ];
+  assert.throws(() => DependencyPlanner.topologicalSort(cyclicDag), /Ciclo de dependência detectado/);
+
+  // Test parallel waves computation
+  const waves = DependencyPlanner.computeParallelWaves(dag);
+  assert.equal(waves.length, 3);
+  assert.deepEqual(waves[0], ['STAGE_1']);
+  assert.deepEqual(waves[1].sort(), ['STAGE_2A', 'STAGE_2B']);
+  assert.deepEqual(waves[2], ['STAGE_3']);
+});
+
+test('16. Production Optimization: SafeParallelExecutor executes tasks in bounded parallel batches with error isolation', async () => {
+  const tasks = [
+    { id: 'task_fast_1', fn: async () => 'result_1' },
+    { id: 'task_fast_2', fn: async () => 'result_2' },
+    { id: 'task_fail', fn: async () => { throw new Error('Falha isolada simulada'); } },
+    { id: 'task_fast_3', fn: async () => 'result_3' }
+  ];
+
+  const batchResult = await SafeParallelExecutor.executeBatch(tasks, 2, 5000);
+  assert.equal(batchResult.totalTasks, 4);
+  assert.equal(batchResult.succeededCount, 3);
+  assert.equal(batchResult.failedCount, 1);
+  assert.equal(batchResult.successRate, 75);
+  assert.equal(batchResult.results.succeeded[0].id, 'task_fast_1');
+  assert.equal(batchResult.results.failed[0].id, 'task_fail');
+  assert.ok(batchResult.results.failed[0].error.includes('Falha isolada'));
+});
+
+test('17. Production Optimization: IncrementalGenerator fingerprints specs and computes surgical deltas', () => {
+  const specA = { id: 'mod_catalog', version: 1, route: '/catalog' };
+  const specB = { id: 'mod_orders', version: 1, route: '/orders' };
+  const hashA = IncrementalGenerator.computeSpecHash(specA);
+  const hashB = IncrementalGenerator.computeSpecHash(specB);
+
+  assert.equal(hashA.length, 64);
+  assert.notEqual(hashA, hashB);
+
+  const prevManifest = {
+    mod_catalog: hashA,
+    mod_old_deprecated: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+  };
+
+  const delta = IncrementalGenerator.computeDelta([specA, specB], prevManifest);
+  assert.equal(delta.unchanged.length, 1);
+  assert.equal(delta.unchanged[0].id, 'mod_catalog');
+  assert.equal(delta.toGenerate.length, 1);
+  assert.equal(delta.toGenerate[0].id, 'mod_orders');
+  assert.equal(delta.toGenerate[0].reason, 'NEW');
+  assert.deepEqual(delta.toDelete, ['mod_old_deprecated']);
+});
+
+test('18. Production Optimization: FileDeduplicator and ComponentReuseRegistry track duplicates and cross-project reuse', () => {
+  const fileMap = {
+    'src/a.css': '.btn { color: #06b6d4; }',
+    'src/b.css': '.btn { color: #06b6d4; }', // Exact duplicate
+    'src/c.css': '.card { background: #0b1018; }'
+  };
+
+  const dedupReport = FileDeduplicator.scanFiles(fileMap);
+  assert.equal(dedupReport.scannedCount, 3);
+  assert.equal(dedupReport.uniqueCount, 2);
+  assert.equal(dedupReport.duplicateCount, 1);
+  assert.equal(dedupReport.duplicateClusters.length, 1);
+  assert.deepEqual(dedupReport.duplicateClusters[0].files, ['src/a.css', 'src/b.css']);
+
+  const registry = new ComponentReuseRegistry();
+  registry.registerUsage('ptn_data_table', 'ecommerce-store');
+  registry.registerUsage('ptn_data_table', 'task-manager');
+  registry.registerUsage('ptn_data_table', 'distribuidora-saas');
+  registry.registerUsage('ptn_kanban_board', 'task-manager');
+
+  const report = registry.getReuseReport();
+  assert.ok(report.totalPatterns >= 8);
+  assert.ok(report.reusedPatternsCount >= 1);
+  const dataTable = report.patterns.find(p => p.id === 'ptn_data_table');
+  assert.equal(dataTable.usageCount, 3);
+  assert.equal(dataTable.productCount, 3);
+});
+
+test('19. Production Optimization: BlockerPrioritizer and AutoIntegrator rank critical blockers and certify full-stack integration', () => {
+  const dag = [
+    { id: 'DB_SCHEMA', dependencies: [] },
+    { id: 'API_USERS', dependencies: ['DB_SCHEMA'] },
+    { id: 'API_PRODUCTS', dependencies: ['DB_SCHEMA'] },
+    { id: 'UI_CHECKOUT', dependencies: ['API_PRODUCTS', 'API_USERS'] }
+  ];
+
+  const blockers = [
+    { id: 'blk_1', type: 'COSMETIC', description: 'Padding de 8px em vez de 12px', affectedNodeId: 'UI_CHECKOUT' },
+    { id: 'blk_2', type: 'CRITICAL_SCHEMA', description: 'Coluna ausente na tabela de pedidos', affectedNodeId: 'DB_SCHEMA' }
+  ];
+
+  const priorityResult = BlockerPrioritizer.prioritizeBlockers(blockers, dag);
+  assert.equal(priorityResult.totalBlockers, 2);
+  assert.equal(priorityResult.actionPlan[0].id, 'blk_2', 'DB_SCHEMA blocker must be top priority');
+  assert.equal(priorityResult.actionPlan[0].priority, 'P0');
+  assert.ok(priorityResult.actionPlan[0].dependentStagesBlocked >= 2);
+  assert.equal(priorityResult.actionPlan[1].id, 'blk_1');
+  assert.equal(priorityResult.actionPlan[1].priority, 'P3');
+
+  const mockTree = {
+    modules: [{
+      id: 'mod_test',
+      operations: [
+        { id: 'op_list', endpoint: '/api/produtos' },
+        { id: 'op_checkout', endpoint: '/api/checkout' }
+      ],
+      pages: [{
+        id: 'page_shop',
+        actions: [{ id: 'act_shop', endpoint: '/api/produtos' }],
+        forms: [{ id: 'form_pay', onSubmit: '/api/checkout' }]
+      }]
+    }]
+  };
+
+  const integration = AutoIntegrator.verifyIntegration(mockTree);
+  assert.equal(integration.totalFrontendEndpoints, 2);
+  assert.equal(integration.integratedCount, 2);
+  assert.equal(integration.missingBackendCount, 0);
+  assert.equal(integration.integrationScore, 100);
+  assert.equal(integration.certified, true);
+});
+
+

@@ -10,14 +10,22 @@ const context = {
   THREE: {},
   localStorage: { getItem() { return null; } },
   window: { addEventListener() {}, localStorage: { getItem() { return null; } } },
-  document: { readyState: 'loading', addEventListener() {} }
+  document: {
+    readyState: 'loading',
+    addEventListener() {},
+    createElement() { return { style: {}, setAttribute() {}, addEventListener() {} }; }
+  }
 };
 vm.runInNewContext(source, context);
 
 function createWorld(fetchFn) {
   const world = Object.create(context.window.FenixWorld3DEngine.prototype);
   world.agents = new Map();
-  world.emptyOverlay = { style: {} };
+  world.emptyOverlay = {
+    style: {}, children: [],
+    replaceChildren() { this.children = []; },
+    append(...children) { this.children.push(...children); },
+  };
   world.camilaGroup = null;
   world._initCamilaAgent = function () { this.camilaGroup = {}; };
   world._initWorkforceAgents = function () {};
@@ -75,11 +83,12 @@ test('City falls back to the agents endpoint when the full state has no agent pr
 });
 
 test('City reports unavailable agents when both API projections fail', async () => {
-  const world = createWorld(async () => ({ ok: false, json: async () => ({ error: 'HTTP 503' }) }));
+  const world = createWorld(async () => ({ status: 503, ok: false, json: async () => ({ error: 'HTTP 503' }) }));
 
   await world.syncRealData();
 
   assert.equal(world.telemetryStatus, 'UNAVAILABLE');
   assert.equal(world.emptyOverlay.style.display, 'flex');
-  assert.match(world.emptyOverlay.innerHTML, /Agentes indisponíveis nesta leitura/);
+  assert.equal(world.emptyOverlay.children[0]?.textContent, 'Runtime indisponível · HTTP 503');
+  assert.equal(world.emptyOverlay.children[1]?.textContent, 'Tentar novamente');
 });

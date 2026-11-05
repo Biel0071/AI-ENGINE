@@ -21,6 +21,17 @@ class GitWorkspaceWriteCapability {
 
   async precheck({ root = '.', expectedBranch = null, expectedHead = null, requireClean = true } = {}) {
     const cwd = this.#resolveRoot(root);
+    let isGit = true;
+    try {
+      await this.#git(['rev-parse', '--is-inside-work-tree'], cwd);
+    } catch {
+      isGit = false;
+    }
+    if (!isGit) {
+      if (expectedBranch) throw new WorkspaceWriteError('branch requested but directory is not a git repository', 'WORKSPACE_NOT_GIT');
+      if (expectedHead) throw new WorkspaceWriteError('HEAD requested but directory is not a git repository', 'WORKSPACE_NOT_GIT');
+      return { cwd, branch: null, head: null, clean: true, isGit: false, checkedAt: new Date().toISOString() };
+    }
     const branch = await this.#git(['branch', '--show-current'], cwd);
     const head = await this.#git(['rev-parse', 'HEAD'], cwd);
     const status = await this.#git(['status', '--porcelain'], cwd);
@@ -28,7 +39,7 @@ class GitWorkspaceWriteCapability {
     if (expectedBranch && actualBranch !== expectedBranch) throw new WorkspaceWriteError(`branch changed: expected ${expectedBranch}, got ${actualBranch}`, 'WORKSPACE_STATE_CHANGED');
     if (expectedHead && actualHead !== expectedHead) throw new WorkspaceWriteError(`HEAD changed: expected ${expectedHead}, got ${actualHead}`, 'WORKSPACE_STATE_CHANGED');
     if (requireClean && status.stdout.trim()) throw new WorkspaceWriteError('workspace is not clean', 'WORKSPACE_NOT_CLEAN');
-    return { cwd, branch: actualBranch, head: actualHead, clean: !status.stdout.trim(), checkedAt: new Date().toISOString() };
+    return { cwd, branch: actualBranch, head: actualHead, clean: !status.stdout.trim(), isGit: true, checkedAt: new Date().toISOString() };
   }
 
   async write(input = {}) {
@@ -50,7 +61,7 @@ class GitWorkspaceWriteCapability {
     else {
       if (operation === 'create') { try { await this.fs.access(target); throw new WorkspaceWriteError(`file already exists: ${input.path}`, 'FILE_EXISTS'); } catch (error) { if (error.code !== 'ENOENT') throw error; } }
       await this.fs.mkdir(path.dirname(target), { recursive: true });
-      await this.fs.writeFile(target, String(input.content ?? ''), 'utf8');
+      await this.fs.writeFile(target, String(input.content ?? ''), { encoding: 'utf8', ...(operation === 'create' ? { flag: 'wx' } : {}) });
     }
     return { operation, path: input.path, from: input.from || null, to: input.to || null, ...check, changedAt: new Date().toISOString() };
   }

@@ -128,6 +128,11 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
       return { category: 'PROJECT_CONNECT', requiresConfirmation: false, intent: 'connect_repo', url };
     }
 
+    // Capability questions are conversational; they must not trigger analysis jobs.
+    if (/^(voc[eê] )?(consegue|pode|d[aá] para)\b/.test(t) && /\?$/.test(value)) {
+      return { category: 'CONVERSATION', requiresConfirmation: false, intent: this.detectIntent(value).kind };
+    }
+
     // 2. PROJECT_ANALYSIS (análise estrutural e arquitetural de projeto)
     if (/(analise meu projeto|analisar meu projeto|analise o projeto|audite meu projeto|diagn[oó]stico do projeto|estrutura do projeto)\b/.test(t)) {
       return { category: 'PROJECT_ANALYSIS', requiresConfirmation: false, intent: 'twin' };

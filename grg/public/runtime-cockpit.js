@@ -1980,15 +1980,20 @@
 
     const activeView = document.querySelector('.view.active')?.id || 'view-command';
     const forceDomain = options.forceDomain || null;
+    const isCityOnly = activeView === 'view-city' && !forceDomain;
 
-    // 1. CORE ESSENTIAL LOADERS (Requirement 6: /health, /runtime/snapshot, /api/fenix/projects, /api/v2/jobs, /api/missions)
+    // The World has its own measured project/job snapshot; avoid duplicating dashboard list requests there.
     const loaders = [
       ['health', () => requestJson('/health'), 5000],
-      ['snapshot', () => requestJson('/runtime/snapshot'), 12000],
-      ['projects', () => api('/api/fenix/projects'), 5000],
-      ['jobs', () => api('/api/v2/jobs', { cache: 'no-store' }), 3500],
-      ['missions', () => api('/api/missions', { cache: 'no-store' }), 3500]
+      ['snapshot', () => requestJson('/runtime/snapshot'), 12000]
     ];
+    if (!isCityOnly) {
+      loaders.push(
+        ['projects', () => api('/api/fenix/projects'), 5000],
+        ['jobs', () => api('/api/v2/jobs', { cache: 'no-store' }), 3500],
+        ['missions', () => api('/api/missions', { cache: 'no-store' }), 3500]
+      );
+    }
 
     // 2. LAZY / SOB DEMANDA LOADERS (Requirement 6: only fetch when corresponding view is active or explicitly requested)
     if (activeView === 'view-command' || activeView === 'view-runtime' || forceDomain === 'command') {

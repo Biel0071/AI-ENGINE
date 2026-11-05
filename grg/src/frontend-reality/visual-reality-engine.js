@@ -123,10 +123,24 @@ class VisualRealityEngine extends SystemModule {
 
   /** Lightweight inventory used by the screen browser; reads only the canonical shell. */
   scanShell(projectId = 'fenix_enterprise') {
-    const shellPath = require('path').join(__dirname, '..', '..', 'public', 'index.html');
-    if (projectId !== 'fenix_enterprise' || !require('fs').existsSync(shellPath)) return { projectId, screens: [], totalScreens: 0, status: 'NOT_DISCOVERED', verificationStatus: 'NOT_VERIFIED' };
-    const content = require('fs').readFileSync(shellPath, 'utf8');
+    const path = require('path');
+    const fs = require('fs');
+    const shellPath = path.join(__dirname, '..', '..', 'public', 'index.html');
+    if (projectId !== 'fenix_enterprise' || !fs.existsSync(shellPath)) return { projectId, screens: [], totalScreens: 0, status: 'NOT_DISCOVERED', verificationStatus: 'NOT_VERIFIED' };
+    const content = fs.readFileSync(shellPath, 'utf8');
     const screens = this.discoveryEngine._extractScreensFromFile(content, 'public/index.html', shellPath);
+    let manifest = { domains: {}, screens: {} };
+    try {
+      manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'qa', 'frontend-screen-manifest.json'), 'utf8'));
+    } catch {}
+    for (const screen of screens) {
+      const key = String(screen.route || '').replace(/^#?\/?/, '');
+      const spec = manifest.screens?.[key];
+      screen.domain = Object.entries(manifest.domains || {}).find(([, members]) => Array.isArray(members) && members.includes(key))?.[0] || null;
+      screen.purpose = typeof spec?.purpose === 'string' ? spec.purpose : null;
+      screen.readEndpoints = Array.isArray(spec?.readEndpoints) ? spec.readEndpoints : [];
+      screen.actionEndpoints = Array.isArray(spec?.actionEndpoints) ? spec.actionEndpoints : [];
+    }
     this.discoveryEngine.screenRegistry.set(projectId, screens);
     return { projectId, screens, totalScreens: screens.length, status: screens.length ? 'STATIC_INVENTORY' : 'NOT_DISCOVERED', verificationStatus: 'NOT_VERIFIED' };
   }

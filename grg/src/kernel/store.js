@@ -120,6 +120,7 @@ const EMPTY_STATE = () => ({
   missionSummaries: [],
   missionCheckpoints: [],
   projectKernelStates: [],
+  projectWorkspaceDrafts: [],
   engineeringMemories: [],
   memoryReuseEvents: [],
   missionPlans: [],

@@ -8,7 +8,8 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'fenix-operational-os.js'), 'utf8');
 const start = source.indexOf('window.fenixInspectBuilding =');
-const end = source.indexOf('\n  // ═══════════════════════════════════════════════════════════════════════════\n  // 9. CONTEXT PRESERVATION', start);
+const end = source.indexOf('\n  // 9. CONTEXT PRESERVATION', start);
+assert.ok(start >= 0 && end > start, 'building inspector source block must have valid delimiters');
 const inspectorSource = source.slice(start, end);
 
 function createInspectorFixture(responses) {
@@ -84,4 +85,27 @@ test('building inspector includes agents assigned by district when no building i
   const body = fixture.inspectors.at(-1)[2];
   assert.match(body, /Agente de IA/);
   assert.doesNotMatch(body, /Outro agente/);
+});
+
+test('building inspector exposes only registered rooms and lets the operator focus a real floor', async () => {
+  const building = {
+    id: 'bld-api-platform', name: 'API Platform', floors: 3,
+    rooms: [{ id: 'room-gateway', name: 'Gateway', floorNum: 0, function: 'APIs' }],
+  };
+  const fixture = createInspectorFixture({
+    '/api/v2/living-city/building/bld-api-platform': { ok: true, data: { ok: true, building } },
+    '/api/v2/living-city/agents': { ok: true, data: { agents: [] } },
+  });
+
+  await fixture.inspect({ id: 'bld-api-platform', name: 'API Platform' });
+
+  const body = fixture.inspectors.at(-1)[2];
+  assert.match(body, /Estrutura do edifício/);
+  assert.match(body, /Térreo/);
+  assert.match(body, /Gateway/);
+  assert.match(body, /1º andar/);
+  assert.match(body, /Sem salas cadastradas/);
+  assert.match(body, /Planta 3D não modelada/);
+  assert.doesNotMatch(body, /data-building-id="bld-api-platform"/);
+  assert.doesNotMatch(body, /Sala de reunião|Sala de operações/);
 });

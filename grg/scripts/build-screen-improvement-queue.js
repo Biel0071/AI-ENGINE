@@ -7,6 +7,12 @@ const map = JSON.parse(fs.readFileSync(path.join(root, 'qa', 'screen-function-ma
 const plan = JSON.parse(fs.readFileSync(path.join(root, 'qa-results', 'screen-qa-plan.json'), 'utf8'));
 const navigationPath = path.join(root, 'qa-results', 'frontend-navigation-qa.json');
 const navigation = fs.existsSync(navigationPath) ? JSON.parse(fs.readFileSync(navigationPath, 'utf8')) : {};
+const contractsPath = path.join(root, 'qa-results', 'screen-contract-probe.json');
+const contracts = fs.existsSync(contractsPath) ? JSON.parse(fs.readFileSync(contractsPath, 'utf8')) : {};
+const navigationBlocked = Boolean(navigation.blocked);
+const navigationStatus = navigationBlocked
+  ? (navigation.blocked.component === 'authentication' ? 'BLOCKED_AUTH' : 'BLOCKED_RUNTIME')
+  : null;
 const navByScreen = Object.fromEntries((navigation.navigation || []).map(item => [item.view, item]));
 const activitiesByScreen = Object.fromEntries((plan.activities || []).map(item => [item.screen, item]));
 
@@ -14,10 +20,19 @@ const items = map.screens.map(screen => {
   const nav = navByScreen[screen.name];
   const activity = activitiesByScreen[screen.name];
   const missingAsset = screen.endpoints.filter(item => !item.asset).map(item => item.endpoint);
-  const status = navigation.blocked ? 'BLOCKED_AUTH' : nav ? (nav.ok ? 'PASS' : 'FAIL') : 'NOT_RUN';
+  const screenApiBlocked = screen.endpoints.some(item => contracts.results?.find(result => result.endpoint === item.endpoint)?.category === 'protected-route');
+  const screenAuthBlocked = navigationStatus === 'BLOCKED_AUTH' || screenApiBlocked;
+  const priority = screenAuthBlocked || navigationStatus === 'BLOCKED_RUNTIME'
+    || !screen.viewPresentInHtml || screen.endpoints.some(item => !item.backend)
+    ? 'P1'
+    : 'P2';
+  const status = screenAuthBlocked
+    ? 'BLOCKED_AUTH'
+    : navigationStatus === 'BLOCKED_RUNTIME' ? 'BLOCKED_RUNTIME'
+    : nav ? (nav.ok ? 'PASS' : 'FAIL') : 'NOT_RUN';
   return {
     id: `screen.${screen.name}`,
-    priority: screen.name === 'command' ? 'P0' : ((!screen.viewPresentInHtml || screen.endpoints.some(item => !item.backend)) ? 'P1' : 'P2'),
+    priority,
     domain: screen.domain,
     screen: screen.name,
     purpose: screen.purpose,
@@ -27,6 +42,8 @@ const items = map.screens.map(screen => {
       assetEndpoints: screen.endpoints.filter(item => item.asset).map(item => item.endpoint),
       unreferencedExpectedEndpoints: missingAsset,
       navigation: status,
+      browserNavigation: navigationStatus || (nav ? (nav.ok ? 'PASS' : 'FAIL') : 'NOT_RUN'),
+      apiAccess: screenApiBlocked ? 'BLOCKED_AUTH' : 'NOT_BLOCKED',
       navigationError: nav?.error || navigation.blocked?.error || null
     },
     nextActions: [
@@ -49,6 +66,7 @@ const result = {
     screens: items.length,
     priorities: Object.fromEntries(['P0', 'P1', 'P2'].map(priority => [priority, items.filter(item => item.priority === priority).length])),
     blockedAuth: items.filter(item => item.currentEvidence.navigation === 'BLOCKED_AUTH').length,
+    blockedRuntime: items.filter(item => item.currentEvidence.browserNavigation === 'BLOCKED_RUNTIME').length,
     missingAssetContracts: items.filter(item => item.currentEvidence.unreferencedExpectedEndpoints.length).length
   },
   items

@@ -37,11 +37,28 @@ class AIProviderAdapter {
   // próprio provider via available() quando ele expõe; senão, presença de credencial não é
   // observável aqui e devolvemos unknown honesto (o selfTest é quem prova).
   async authenticate() {
+    if (typeof this.provider.hasKey === 'boolean') {
+      return {
+        ok: this.provider.hasKey,
+        detail: measured(this.provider.hasKey, `${this.provider.name}.hasKey`),
+      };
+    }
+    if (typeof this.provider.availableFast === 'function') {
+      try {
+        const ok = await this.provider.availableFast();
+        return { ok: ok === true, detail: measured(ok === true, `${this.provider.name}.availableFast()`) };
+      } catch (error) {
+        return { ok: false, detail: unknown(`${this.provider.name}.availableFast() threw`, String(error.message || error)) };
+      }
+    }
     if (typeof this.provider.available === 'function') {
+      const t0 = Date.now();
       try {
         const ok = await this.provider.available();
+        this._lastAvailableProbe = { at: Date.now(), ok: ok === true, latencyMs: Date.now() - t0 };
         return { ok: ok === true, detail: measured(ok === true, `${this.provider.name}.available()`) };
       } catch (error) {
+        this._lastAvailableProbe = null;
         return { ok: false, detail: unknown(`${this.provider.name}.available() threw`, String(error.message || error)) };
       }
     }
@@ -60,10 +77,19 @@ class AIProviderAdapter {
     const started = Date.now();
     try {
       if (typeof this.provider.available === 'function') {
-        const ok = await this.provider.available();
+        let ok;
+        let latency;
+        if (this._lastAvailableProbe && (Date.now() - this._lastAvailableProbe.at < 250)) {
+          ok = this._lastAvailableProbe.ok;
+          latency = this._lastAvailableProbe.latencyMs;
+          this._lastAvailableProbe = null;
+        } else {
+          ok = await this.provider.available();
+          latency = Date.now() - started;
+        }
         return ok
-          ? { ok: true, latencyMs: measured(Date.now() - started, 'derived:available()') }
-          : { ok: false, reason: measured('provider.available() returned false', `${this.provider.name}.available()`), latencyMs: Date.now() - started };
+          ? { ok: true, latencyMs: measured(latency, 'derived:available()') }
+          : { ok: false, reason: measured('provider.available() returned false', `${this.provider.name}.available()`), latencyMs: latency };
       }
       // Ping mínimo: um complete curto. Custa pouco e prova que responde autenticado.
       const probe = typeof this.provider.complete === 'function'

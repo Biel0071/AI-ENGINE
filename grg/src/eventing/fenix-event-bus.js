@@ -17,11 +17,56 @@ function FenixEventBus() {
 FenixEventBus.prototype = Object.create(EventEmitter.prototype);
 FenixEventBus.prototype.constructor = FenixEventBus;
 
+function enrichEventDescriptions(type, data) {
+  if (!data || typeof data !== 'object') data = {};
+  var title = data.title;
+  var message = data.message || data.description;
+  if (!title) {
+    if (type.startsWith('mission.')) title = 'Missão ' + (type === 'mission.created' ? 'Criada' : type === 'mission.completed' ? 'Concluída' : 'Em Execução');
+    else if (type.startsWith('agent.')) title = 'Agente · ' + (data.agentId || 'Swarm');
+    else if (type.startsWith('job.')) title = 'Job Runtime · ' + (data.jobId || data.type || 'Execução');
+    else if (type.startsWith('github.') || type.startsWith('git.')) title = 'Sincronização Git';
+    else if (type.startsWith('project.')) title = 'Projeto Atualizado · ' + (data.projectId || 'Fênix');
+    else if (type.startsWith('memory.')) title = 'Memória Cognitiva · ' + (type.includes('write') ? 'Indexação' : 'Consulta');
+    else if (type.startsWith('tool.')) title = 'Ferramenta · ' + (data.tool || 'Operação');
+    else if (type.startsWith('ai.')) title = 'Inteligência Artificial · ' + (data.model || 'Roteamento');
+    else title = 'Evento do Sistema · ' + type;
+  }
+  if (!message) {
+    if (type === 'mission.created') message = 'Missão "' + (data.title || data.missionId || '') + '" registrada no projeto ' + (data.projectId || 'Fênix') + '.';
+    else if (type === 'mission.started') message = 'Missão ' + (data.missionId || '') + ' iniciada e atribuída para execução.';
+    else if (type === 'mission.completed') message = 'Missão ' + (data.missionId || '') + ' concluída com sucesso.';
+    else if (type === 'agent.assigned') message = 'Agente ' + (data.agentId || '') + ' despachado para executar job no projeto ' + (data.projectId || 'Fênix') + '.';
+    else if (type === 'agent.created') message = 'Agente ' + (data.name || data.id || 'dinâmico') + ' registrado no ecossistema.';
+    else if (type === 'agent.started') message = 'Agente ' + (data.agentId || '') + ' entrou em estado de execução.';
+    else if (type === 'agent.navigating') message = 'Agente ' + (data.agentId || '') + ' movimentando-se para ' + (data.destination || 'posto de trabalho') + '.';
+    else if (type === 'job.queued') message = 'Job ' + (data.type || data.jobId || '') + ' enfileirado com prioridade ' + (data.priority || 'NORMAL') + '.';
+    else if (type === 'job.started') message = 'Job ' + (data.jobId || '') + ' em execução no runtime.';
+    else if (type === 'job.completed') message = 'Job ' + (data.jobId || '') + ' concluído com sucesso.';
+    else if (type === 'job.step') message = 'Etapa "' + (data.step || '') + '" em progresso no job ' + (data.jobId || '') + '.';
+    else if (type === 'github.commit') message = 'Commit registrado no repositório ' + (data.projectId || 'core') + ': ' + (data.commit?.message || 'Versão sincronizada') + '.';
+    else if (type === 'memory.write') message = 'Gravação e indexação de nó cognitivo concluída com sucesso.';
+    else if (type === 'memory.read') message = 'Leitura de nós da Memória Ativa (Graph Brain) realizada.';
+    else if (type === 'tool.started') message = 'Ferramenta ' + (data.tool || '') + ' iniciada no projeto ' + (data.projectId || 'core') + '.';
+    else if (type === 'tool.completed') message = 'Ferramenta ' + (data.tool || '') + ' concluída com sucesso.';
+    else if (type === 'system.alert') message = String(data.message || 'Alerta operacional verificado.');
+    else message = 'Evento operacional ' + type + ' registrado pelo runtime do Fênix OS.';
+  }
+  data.title = title;
+  data.message = message;
+  data.description = message;
+  return { title: title, message: message, description: message };
+}
+
 FenixEventBus.prototype.emit = function(type, data) {
   if (data === undefined) data = {};
+  var enriched = enrichEventDescriptions(type, data);
   var event = {
     id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
     type: type,
+    title: enriched.title,
+    message: enriched.message,
+    description: enriched.description,
     data: data,
     timestamp: new Date().toISOString(),
   };

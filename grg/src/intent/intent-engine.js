@@ -58,50 +58,14 @@ class IntentEngine {
       };
     }
 
-    // Step 10: Implement (Simulate or dispatch DAG execution to AgentFactory / JobEngine)
-    const executionReport = {
-      status: 'EXECUTED',
-      executedSteps: intentSpec.implementationPlan.map(s => ({
-        step: s.stepIndex,
-        action: s.action,
-        actor: s.actor,
-        status: 'COMPLETED'
-      }))
-    };
-
-    // Step 11: Test & Step 12: Observe Result & Step 13: Compare Against Intent & Step 14: Improve
-    const testResults = {
-      passed: [
-        'Architecture guard verified',
-        'Frontend honesty validated',
-        'Contrato Full-Stack Real Capability satisfeito'
-      ],
-      failed: []
-    };
-
-    // Step 15: Deliver & Learn (Persist in TaskMemory & PatternLibrary)
-    const recordedOutcome = await this.taskMemory.recordTaskOutcome({
-      intentSpec,
-      executionReport,
-      testResults
-    });
-
-    const deliveryReport = this.taskMemory.formatDeliveryReport(recordedOutcome);
-
-    if (this.eventBus) {
-      await this.eventBus.emit('intent.completed', {
-        intentId: intentSpec.id,
-        normalizedIntent: intentSpec.normalizedIntent,
-        confidenceScore: intentSpec.confidenceScore
-      });
-    }
-
+    // A compiled DAG is only a proposal. This engine has no execution adapter,
+    // approval record, or runtime evidence, so it must not claim completion.
     return {
-      status: 'SUCCESS',
+      status: 'AWAITING_APPROVAL',
       intentSpec,
-      executionReport,
-      deliveryReport,
-      recordedOutcome
+      executionReport: null,
+      testResults: null,
+      message: 'Plano preparado. Nenhuma ação foi executada; confirme o plano para encaminhá-lo ao executor disponível.'
     };
   }
 

@@ -50,6 +50,18 @@ test('authenticated Project Hub maps a project and renders the persisted evidenc
   const created = await fetch(`${base}/api/fenix/projects`, { method: 'POST', headers, body: JSON.stringify({ id: 'project-map-ui', name: 'Project map UI', workspace }) });
   assert.equal(created.status, 201);
 
+  const reaResponse = await fetch(`${base}/api/v2/rea/analyze`, { method: 'POST', headers, body: JSON.stringify({ projectId: 'project-map-ui' }) });
+  assert.equal(reaResponse.status, 200);
+  const reaEvidence = await reaResponse.json();
+  assert.equal(reaEvidence.projectId, 'project-map-ui', 'REA must analyze the authenticated Project Hub workspace, not its default project');
+  assert.equal(path.resolve(reaEvidence.rootPath), path.resolve(workspace));
+  assert.ok(reaEvidence.routes.some((route) => route.path === '/api/health'), 'REA evidence must come from the selected project files');
+  assert.equal(reaEvidence.persistence.status, 'PERSISTED');
+  const persistedReaResponse = await fetch(`${base}/api/v2/rea/evidence/project-map-ui`, { headers });
+  assert.equal(persistedReaResponse.status, 200);
+  const persistedRea = await persistedReaResponse.json();
+  assert.equal(persistedRea.evidenceId, reaEvidence.evidenceId, 'saved REA evidence must survive a fresh evidence read');
+
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const [cookieName, cookieValue] = sessionCookie.split('=', 2);
@@ -75,14 +87,15 @@ test('authenticated Project Hub maps a project and renders the persisted evidenc
   await page.locator('[data-nav="projects"]').click();
   await page.locator('#flpCards [data-project-id="project-map-ui"]').waitFor({ state: 'visible' });
   await page.locator('#flpCards [data-project-id="project-map-ui"]').click();
-  await page.getByRole('button', { name: 'Mapear Sistema' }).click();
+  await page.locator('[data-workspace-tab="intelligence"]').click();
+  await page.getByRole('button', { name: 'Mapear este sistema' }).click();
   await page.getByText('Mapa estrutural com evidências').waitFor({ state: 'visible' });
   await page.getByText('GET /api/health', { exact: false }).waitFor({ state: 'visible' });
   await page.getByText('NÃO EXECUTADOS', { exact: true }).waitFor({ state: 'visible' });
   const intelligenceSummary = await page.locator('.flp-intelligence-summary').innerText();
   assert.match(intelligenceSummary, /SYSTEM TWIN[\s\S]*Vinculado/i);
   assert.match(intelligenceSummary, /GRAPH BRAIN[\s\S]*LINKED/i);
-  assert.deepEqual(analysisResponses.map((item) => item.status), [202, 200]);
+  assert.deepEqual(analysisResponses.map((item) => item.status), [404, 202, 200]);
   assert.deepEqual(pageErrors, []);
   const savedMap = await fetch(`${base}/api/fenix/projects/project-map-ui/analysis`, { headers }).then((response) => response.json());
   assert.equal(savedMap.integration.status, 'LINKED');
@@ -91,6 +104,11 @@ test('authenticated Project Hub maps a project and renders the persisted evidenc
   assert.equal(twin.twin.perception.source, 'ProjectUnderstandingScanner');
   const graph = await fetch(`${base}/api/v2/graph/data`, { headers }).then((response) => response.json());
   assert.ok(graph.nodes.some((node) => node.id === savedMap.integration.graphBrain.projectNodeId));
+
+  await page.getByRole('button', { name: /Analisar com REA|Atualizar análise REA/ }).click();
+  await page.locator('.flp-rea-evidence').getByText('PERSISTED', { exact: true }).waitFor({ state: 'visible' });
+  await page.getByRole('button', { name: 'Abrir Flow Graph' }).waitFor({ state: 'visible' });
+  assert.ok(pageErrors.length === 0, `Project Hub REA integration raised browser errors: ${pageErrors.join('; ')}`);
 
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('[data-nav="projects"]').click();

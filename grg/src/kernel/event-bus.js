@@ -59,19 +59,19 @@ class EventBus {
 
   async #dispatch(event) {
     const set = this.handlers.get(event.type);
-    if (set) {
-      for (const handler of set) {
-        await handler(event);
-      }
+    if (set && set.size > 0) {
+      await Promise.all([...set].map((handler) => handler(event)));
     }
     const wildcard = this.handlers.get('*');
-    if (wildcard) {
-      for (const handler of wildcard) await handler(event);
+    if (wildcard && wildcard.size > 0) {
+      await Promise.all([...wildcard].map((handler) => handler(event)));
     }
   }
 
   async #dispatchBatch(events) {
-    for (const handler of this.batchHandlers) await handler(events);
+    if (this.batchHandlers.size > 0) {
+      await Promise.all([...this.batchHandlers].map((handler) => handler(events)));
+    }
   }
 
   async #queueBatch(events) {

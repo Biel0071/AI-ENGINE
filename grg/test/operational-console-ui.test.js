@@ -7,11 +7,14 @@ const root = join(__dirname, '..', 'public');
 const html = readFileSync(join(root, 'index.html'), 'utf8');
 const js = readFileSync(join(root, 'unified-app.js'), 'utf8');
 const css = readFileSync(join(root, 'unified.css'), 'utf8');
+const screenManifest = JSON.parse(readFileSync(join(__dirname, '..', 'qa', 'frontend-screen-manifest.json'), 'utf8'));
 
-test('unified workspace exposes all primary command navigation districts', () => {
-  for (const nav of ['command', 'city', 'agents', 'ide', 'operations', 'runtime', 'projects', 'memory', 'knowledge', 'mcp', 'browser', 'observability', 'terminal']) {
-    assert.match(html, new RegExp(`data-nav="${nav}"`));
+test('unified workspace exposes every canonical screen in the registered navigation map', () => {
+  assert.match(html, /data-nav="city"/, 'the City is the canonical command entry');
+  for (const screen of Object.keys(screenManifest.screens)) {
+    assert.match(html, new RegExp(`id="view-${screen}"`), `missing canonical screen ${screen}`);
   }
+  assert.doesNotMatch(html, /data-nav="command"/, 'legacy Command must not duplicate the World/City destination');
   assert.match(html, /FÊNIX OS/);
   assert.match(css, /\.fenix-os-layout/);
 });

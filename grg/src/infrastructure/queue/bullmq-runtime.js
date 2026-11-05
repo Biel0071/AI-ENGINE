@@ -69,11 +69,12 @@ class BullMQRuntime {
     return worker;
   }
 
-  async status(queueName = 'fenix-runtime', limit = 100) {
+  async status(queueName = 'fenix-runtime', limit = 25) {
     const queue = this.queue(queueName);
     const types = ['waiting', 'active', 'completed', 'failed', 'delayed', 'paused'];
     const counts = typeof queue.getJobCounts === 'function' ? await queue.getJobCounts(...types) : {};
-    const jobs = typeof queue.getJobs === 'function' ? await queue.getJobs(types, 0, Math.max(0, Number(limit) - 1), false) : [];
+    const numLimit = Number(limit);
+    const jobs = numLimit > 0 && typeof queue.getJobs === 'function' ? await queue.getJobs(types, 0, Math.max(0, numLimit - 1), false) : [];
     return {
       queue: queueName,
       counts,

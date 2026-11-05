@@ -941,6 +941,20 @@ async function createApp(options = {}) {
   readOnlyAudit.conversations = app.conversations;
   app.masterAvatar = new MasterAvatar({ chat: app.chat, missionPlanner });
   app.npcCity.masterAvatar = app.masterAvatar;
+
+  // Fênix PersonaPlex Voice Platform Service
+  const { VoicePersonaPlexService } = require('./services/voice-personaplex-service');
+  app.voicePersonaPlex = new VoicePersonaPlexService({ app });
+  if (global.FENIX_KERNEL?.registries?.ServiceRegistry) {
+    global.FENIX_KERNEL.registries.ServiceRegistry.register('fenix-voice-personaplex', {
+      id: 'fenix-voice-personaplex',
+      name: 'PersonaPlex Managed Voice Platform',
+      owner: 'system',
+      status: 'running',
+      version: '2.0.0',
+      capabilities: ['voice-streaming', 'personaplex-audio', 'stt-tts-bidirectional', 'realtime-visemes']
+    });
+  }
   
   // SCOS: Kernel Initialization
   app.capabilityMarketplace = new CapabilityMarketplace();

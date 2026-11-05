@@ -443,5 +443,6 @@ const globalVisualComparator = new VisualComparator();
 
 module.exports = {
   VisualComparator,
-  globalVisualComparator
+  globalVisualComparator,
+  comparePngFiles
 };

@@ -19,11 +19,15 @@ const domainByScreen = Object.fromEntries(Object.entries(screenManifest.domains)
 fs.mkdirSync(outDir, { recursive: true });
 
 (async () => {
-  const browser = await chromium.launch({ headless: process.env.HEADLESS !== '0' });
+  const browser = await chromium.launch({
+    headless: process.env.HEADLESS !== '0',
+    executablePath: process.env.FENIX_QA_CHROMIUM_PATH || undefined,
+  });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   context.setDefaultTimeout(actionTimeout);
   context.setDefaultNavigationTimeout(navigationTimeout);
-  const sessionToken = process.env.FENIX_TOKEN || (fs.existsSync(path.join(__dirname, '..', '.session_token')) ? fs.readFileSync(path.join(__dirname, '..', '.session_token'), 'utf8').trim() : '');
+  const sessionFile = path.join(__dirname, '..', '.session_token');
+  const sessionToken = process.env.FENIX_TOKEN || (process.env.FENIX_QA_USE_SESSION_FILE === '1' && fs.existsSync(sessionFile) ? fs.readFileSync(sessionFile, 'utf8').trim() : '');
   if (sessionToken) {
     await context.addCookies([{ name: 'fenix_session', value: encodeURIComponent(sessionToken), url: new URL(baseUrl).origin, httpOnly: true, sameSite: 'Lax' }]);
   }
@@ -48,7 +52,19 @@ fs.mkdirSync(outDir, { recursive: true });
   });
 
   const result = { url: baseUrl, startedAt: new Date().toISOString(), navigation: [], controls: [], consoleErrors, failedRequests };
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: navigationTimeout });
+  try {
+    await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: navigationTimeout });
+  } catch (error) {
+    result.blocked = { component: 'navigation', error: 'initial page navigation failed', cause: error.message };
+    result.finishedAt = new Date().toISOString();
+    result.summary = { navTotal: 0, navPass: 0, controlTotal: 0, controlClicked: 0, controlSkipped: 0, consoleErrors: consoleErrors.length, failedRequests: failedRequests.length };
+    fs.writeFileSync(path.join(outDir, 'frontend-navigation-qa.json'), JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(result.summary, null, 2));
+    console.log(`Evidence: ${path.join(outDir, 'frontend-navigation-qa.json')}`);
+    await closeBounded(() => browser.close({ reason: 'frontend navigation did not load' })).catch(() => {});
+    process.exitCode = 2;
+    return;
+  }
   // Some Chromium profiles reject storage writes from an init script when the
   // initial document is redirected. Re-assert the same ephemeral token after
   // the origin is available; no token is written to disk by this process.
@@ -76,12 +92,12 @@ fs.mkdirSync(outDir, { recursive: true });
     result.blocked = { component: 'authentication', error: 'application redirected to GRG-login', cause: 'standalone QA has no authenticated session; credentials are intentionally not embedded in the script' };
     result.title = await page.title();
     result.finishedAt = new Date().toISOString();
-    const expectedAuthErrors = consoleErrors.filter(item => /Nenhuma identidade|Backend não respondeu/i.test(item.message)).length;
+    const expectedAuthErrors = consoleErrors.filter(item => /Nenhuma identidade|Backend não respondeu|401\s*\(Unauthorized\)/i.test(item.message)).length;
     result.summary = { navTotal: 0, navPass: 0, controlTotal: 0, controlClicked: 0, controlSkipped: 0, consoleErrors: consoleErrors.length, expectedAuthErrors, fatalConsoleErrors: consoleErrors.length - expectedAuthErrors, failedRequests: failedRequests.length };
     fs.writeFileSync(path.join(outDir, 'frontend-navigation-qa.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result.summary, null, 2));
     console.log(`Evidence: ${path.join(outDir, 'frontend-navigation-qa.json')}`);
-    await browser.close();
+    await closeBounded(() => browser.close({ reason: 'frontend QA blocked by authentication' })).catch(() => {});
     process.exitCode = 2;
     return;
   }

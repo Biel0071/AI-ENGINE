@@ -98,6 +98,24 @@ test('canonical districts provide collision-free building footprints', () => {
   }
 });
 
+test('canonical runtime coordinates update the matching visible building without inventing positions', () => {
+  const engine = Object.create(context.window.FenixWorld3DEngine.prototype);
+  const group = { position: { set(x, y, z) { Object.assign(this, { x, y, z }); } } };
+  const building = { id: 'bld-api-platform', group, position: { x: 0, y: 0, z: 0 } };
+  engine.buildings = new Map([[building.id, building]]);
+
+  engine._syncCanonicalBuildings([
+    { id: 'bld-api-platform', name: 'API Platform', status: 'RUNNING', coordinates: { x: 31, y: 2, z: -12 } },
+    { id: 'unmapped-building', coordinates: null }
+  ]);
+
+  assert.deepEqual({ ...building.position }, { x: 31, y: 2, z: -12 });
+  assert.deepEqual({ x: group.position.x, y: group.position.y, z: group.position.z }, { x: 31, y: 2, z: -12 });
+  assert.equal(building.name, 'API Platform');
+  assert.equal(building.status, 'RUNNING');
+  assert.equal(engine.buildings.size, 1, 'unmapped runtime data must not become a fabricated scene object');
+});
+
 test('ambient blocks stay decorative, non-selectable and outside operational footprints', () => {
   const districts = context.window.FenixWorld3DEngine.DISTRICTS;
   const lots = context.window.FenixWorld3DEngine.AMBIENT_CITY_LOTS;
@@ -168,7 +186,7 @@ test('saved camera near a moved district migrates with its building', () => {
   const engine = Object.create(context.window.FenixWorld3DEngine.prototype);
   const state = engine._loadState();
 
-  assert.equal(state.layoutVersion, 2);
+  assert.equal(state.layoutVersion, 3);
   assert.deepEqual({ ...state.target }, { x: 52, y: 0, z: -36 });
   assert.equal(state.distance, 38);
 });
@@ -208,7 +226,47 @@ test('camera preferences survive tab closure and take precedence over session-on
   const state = engine._loadState();
 
   assert.equal(state.distance, 96);
-  assert.deepEqual({ ...state.target }, { x: 14, y: 0, z: -8 });
+  assert.deepEqual({ ...state.target }, { x: 14, y: 0, z: -8 }, 'v2 camera targets already use canonical district coordinates');
+});
+
+test('responsive camera fit reveals the city on portrait screens and restores desktop framing', () => {
+  let width = 375;
+  let height = 664;
+  const engine = Object.create(context.window.FenixWorld3DEngine.prototype);
+  engine.host = { getBoundingClientRect: () => ({ width, height }) };
+  engine.renderer = { setSize() {}, setPixelRatio() {} };
+  engine.camera = { fov: 38, aspect: 1, updateProjectionMatrix() {} };
+  engine.cameraState = { targetDistance: 136, preferenceDistance: 136 };
+
+  engine.resize();
+  assert.ok(engine.camera.fov > 38 && engine.camera.fov <= 55, `portrait FOV should widen moderately: ${engine.camera.fov}`);
+  assert.ok(engine.cameraState.targetDistance > 240 && engine.cameraState.targetDistance <= 260,
+    `portrait camera should pull back to reveal more districts: ${engine.cameraState.targetDistance}`);
+
+  width = 1280;
+  height = 800;
+  engine.resize();
+  assert.ok(Math.abs(engine.camera.fov - 38) < 0.01);
+  assert.ok(Math.abs(engine.cameraState.targetDistance - 136) < 0.01, 'desktop framing must return to the saved reference distance');
+});
+
+test('camera zoom preference remains proportional when viewport changes', () => {
+  let width = 375;
+  let height = 664;
+  const engine = Object.create(context.window.FenixWorld3DEngine.prototype);
+  engine.host = { getBoundingClientRect: () => ({ width, height }) };
+  engine.renderer = { setSize() {}, setPixelRatio() {} };
+  engine.camera = { fov: 38, aspect: 1, updateProjectionMatrix() {} };
+  engine.cameraState = { targetDistance: 68, preferenceDistance: 68 };
+
+  engine.resize();
+  const portraitZoomRatio = engine.cameraState.targetDistance / 256;
+  width = 1280;
+  height = 800;
+  engine.resize();
+
+  assert.ok(Math.abs(engine.cameraState.targetDistance / 136 - portraitZoomRatio) < 0.02,
+    'switching viewport must preserve the operator’s relative zoom preference');
 });
 
 test('weather-only environment updates do not invent a day/night change', () => {
@@ -251,6 +309,25 @@ test('the city expansion streams stable decorative neighborhoods as the camera p
   assert.equal(engine.expansionChunks.size, 24, 'streaming keeps a bounded neighborhood count');
   assert.equal(engine.expansionChunks.get('1,0'), retainedChunk, 'nearby chunks remain stable while the camera crosses a boundary');
   assert.equal(engine.expansionChunks.has('-2,-2'), false, 'distant chunks are removed after leaving the view radius');
+});
+
+test('the initial city view loads one scenery ring and defers the outer ring until zoomed out', () => {
+  const engine = Object.create(context.window.FenixWorld3DEngine.prototype);
+  engine.materials = new Proxy({}, { get: (_, name) => ({ name }) });
+  engine.terrainGroup = new Group();
+  engine.expansionChunks = new Map();
+  engine.cameraState = { targetDistance: 136 };
+
+  engine._syncExpansionChunks(0, 0);
+  assert.equal(engine.expansionChunks.size, 8, 'the initial view keeps only the nearest ring');
+
+  engine.cameraState.targetDistance = 220;
+  engine._syncExpansionChunks(0, 0);
+  assert.equal(engine.expansionChunks.size, 24, 'the outer ring streams only when the user zooms out');
+});
+
+test('the minimap labels mapped agents without implying runtime online presence', () => {
+  assert.match(source, /\$\{visibleAgents\} no mapa · \$\{measuredBuildingsCount\} prédios medidos/);
 });
 
 test('procedural city blocks are deterministic and cannot be selected as real projects', () => {

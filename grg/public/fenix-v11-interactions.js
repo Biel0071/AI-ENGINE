@@ -819,6 +819,7 @@ module.exports = authRouter;`
       const renderCard = (agent) => {
         const classification = window.FenixAgentRosterFilter?.classifyAgent(agent) || 'OTHER';
         const rawStatus = String(agent.state || agent.status || 'SEM ESTADO');
+        const statusLabel = classification === 'WORKING' ? 'EM EXECUÇÃO' : classification === 'AVAILABLE' ? 'DISPONÍVEL' : rawStatus.toUpperCase();
         const avatarUrl = agent.avatar?.avatarUrl || (function(id, r) {
           const t = `${id} ${r}`.toLowerCase();
           if (/camila|crm|vendas/.test(t)) return '/assets/agents/camila_avatar.png';
@@ -843,9 +844,12 @@ module.exports = authRouter;`
       };
 
       if (visibleAgents.length) {
-        const workingSquad = visibleAgents.filter(a => a.status === 'WORKING');
-        const availableSquad = visibleAgents.filter(a => a.status === 'AVAILABLE');
-        const otherSquad = visibleAgents.filter(a => a.status !== 'WORKING' && a.status !== 'AVAILABLE');
+        const workingSquad = visibleAgents.filter(a => (window.FenixAgentRosterFilter?.classifyAgent(a) || a.status) === 'WORKING');
+        const availableSquad = visibleAgents.filter(a => (window.FenixAgentRosterFilter?.classifyAgent(a) || a.status) === 'AVAILABLE');
+        const otherSquad = visibleAgents.filter(a => {
+          const c = window.FenixAgentRosterFilter?.classifyAgent(a) || a.status;
+          return c !== 'WORKING' && c !== 'AVAILABLE';
+        });
         let squadsHtml = '';
 
         if (workingSquad.length > 0) {

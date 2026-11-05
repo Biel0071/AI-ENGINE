@@ -211,6 +211,10 @@
     }
   }
 
+  function panelIsOpen() {
+    return !document.hidden && document.getElementById('fv8-panel')?.style.display === 'flex';
+  }
+
   function section(parent, title) {
     var wrap = mk('div', null, parent);
     css(wrap, { marginBottom: '12px' });
@@ -603,12 +607,10 @@
   function init() {
     panel();
     updateTopbar();
-    connectSSE();
-    loadProjects();
-    loadJobs();
-    setInterval(updMetrics, 15000);
-    setInterval(loadJobs, 20000);
-    setInterval(loadProjects, 60000);
+    setTimeout(connectSSE, 2000);
+    setInterval(() => { if (panelIsOpen()) updMetrics(); }, 15000);
+    setInterval(() => { if (panelIsOpen()) loadJobs(); }, 20000);
+    setInterval(() => { if (panelIsOpen()) loadProjects(); }, 60000);
     console.log('[FenixV8.2] AI Conversation + Intelligent Execution Cockpit online');
   }
 

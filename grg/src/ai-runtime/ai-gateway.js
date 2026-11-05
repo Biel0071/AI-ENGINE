@@ -43,7 +43,7 @@ class AIGateway {
   // exatamente o de antes: a rota configurada manda. Com override, o provider decidido pelo
   // Router lidera a lista de candidatos e a rota configurada vira fallback operacional —
   // então se o escolhido cair no breaker, o Gateway ainda tem para onde ir.
-  candidates(taskType, override = null) {
+  candidates(taskType, override = null, { excludeProviders = [] } = {}) {
     const route = this.route(taskType);
     if (!route?.provider || !route?.model) throw new ValidationError(`AI route ${taskType} requires provider and model`);
     const fallback = route.fallback ? (Array.isArray(route.fallback) ? route.fallback : [route.fallback]) : [];
@@ -60,9 +60,10 @@ class AIGateway {
       if (!model) return base;
       const chosen = { provider: override.provider, model };
       // O escolhido pelo Router primeiro; a rota configurada segue como fallback (sem duplicar o escolhido).
-      return [chosen, ...base.filter((item) => item.provider !== chosen.provider)];
+      return [chosen, ...base.filter((item) => item.provider !== chosen.provider)]
+        .filter((item) => !excludeProviders.includes(item.provider));
     }
-    return base;
+    return base.filter((item) => !excludeProviders.includes(item.provider));
   }
 
   breaker(providerName) {
@@ -113,7 +114,7 @@ class AIGateway {
   // `provider`/`model` opcionais: quando o AI Router já decidiu por evidência, ele os passa
   // e o Gateway executa essa escolha (mantendo cache/breaker/rate-limit/aiCalls). Ausentes,
   // o Gateway roteia pela config como sempre — retrocompatível.
-  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, format = null, provider = null, model = null, lane = null }) {
+  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, format = null, provider = null, model = null, lane = null, excludeProviders = [] }) {
     await this.cp.authorize(tenantId, actorId, 'ai:invoke');
     if (!prompt) throw new ValidationError('prompt is required');
     if (this.rateLimiter) await this.rateLimiter.consume(tenantId, 'ai.invoke');
@@ -128,7 +129,8 @@ class AIGateway {
     }
 
     const promptEstimate = estimateTokens(prompt);
-    const candidates = this.candidates(taskType, override);
+    const candidates = this.candidates(taskType, override, { excludeProviders });
+    if (!candidates.length) throw new ValidationError('No AI provider is allowed for this request');
     const maxOutputTokens = Math.max(...candidates.map((item) => Number(item.maxOutputTokens || 2_048)));
     const tokenReservation = promptEstimate + maxOutputTokens;
     const costReservation = Math.max(...candidates.map((item) => estimateCost(

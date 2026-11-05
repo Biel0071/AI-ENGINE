@@ -63,3 +63,73 @@ test('heartbeats stay out of event history while runtime events carry a real sou
   assert.equal(live.events[0].source, 'runtime-event');
   assert.equal(emitted.at(-1).payload.source, 'runtime-event');
 });
+
+test('concurrent runtime snapshot requests share one HTTP request', async () => {
+  let resolveFetch;
+  let fetchCalls = 0;
+  const { sandbox } = makeSandbox();
+  sandbox.snapshotInFlight = null;
+  sandbox.snapshotRetryAt = 0;
+  sandbox.snapshotFailureCount = 0;
+  sandbox.getLiveToken = () => '';
+  sandbox.fetch = () => {
+    fetchCalls += 1;
+    return new Promise((resolve) => { resolveFetch = resolve; });
+  };
+  sandbox.AbortSignal = { timeout: () => ({}) };
+  sandbox.applySnapshot = () => {};
+  vm.runInNewContext(`${extractFunction('requestSnapshot', 'startPing')}\nglobalThis.requestSnapshot = requestSnapshot;`, sandbox);
+
+  const first = sandbox.requestSnapshot();
+  const second = sandbox.requestSnapshot();
+  assert.strictEqual(second, first);
+  assert.equal(fetchCalls, 1);
+
+  resolveFetch({ ok: true, json: async () => ({ agents: [] }) });
+  await first;
+});
+
+test('unauthorized snapshot failures back off instead of hitting the API on each reconnect', async () => {
+  let now = 1000;
+  let fetchCalls = 0;
+  const { sandbox } = makeSandbox();
+  sandbox.snapshotInFlight = null;
+  sandbox.snapshotRetryAt = 0;
+  sandbox.snapshotFailureCount = 0;
+  sandbox.Date = { now: () => now };
+  sandbox.getLiveToken = () => '';
+  sandbox.fetch = async () => {
+    fetchCalls += 1;
+    return { ok: false, status: 401, headers: { get: () => null } };
+  };
+  sandbox.AbortSignal = { timeout: () => ({}) };
+  sandbox.applySnapshot = () => {};
+  vm.runInNewContext(`${extractFunction('requestSnapshot', 'startPing')}\nglobalThis.requestSnapshot = requestSnapshot;`, sandbox);
+
+  await sandbox.requestSnapshot();
+  await sandbox.requestSnapshot();
+  assert.equal(fetchCalls, 1);
+
+  now += 60000;
+  await sandbox.requestSnapshot();
+  assert.equal(fetchCalls, 2);
+});
+
+test('closed runtime sockets release stale global and request-guard registrations', () => {
+  const { sandbox } = makeSandbox();
+  const socket = {};
+  const registered = new Map([['webSocket', socket]]);
+  sandbox.window.__FENIX_WS__ = socket;
+  sandbox.window.FENIX.ws = socket;
+  sandbox.window.__FENIX_SINGLETONS__ = {
+    get: (key) => registered.get(key) || null,
+    remove: (key, instance) => registered.get(key) === instance && registered.delete(key)
+  };
+  vm.runInNewContext(`${extractFunction('releaseWebSocket', 'requestSnapshot')}\nglobalThis.releaseWebSocket = releaseWebSocket;`, sandbox);
+
+  sandbox.releaseWebSocket(socket);
+
+  assert.equal(sandbox.window.__FENIX_WS__, null);
+  assert.equal(sandbox.window.FENIX.ws, null);
+  assert.equal(registered.has('webSocket'), false);
+});

@@ -34,6 +34,8 @@ const { handleMediaRoutes } = require('./api/media-routes');
 const { handleQwenOrchestratorRoutes } = require('./api/qwen-orchestrator-routes');
 const { handleDynamicPoolRoutes } = require('./api/dynamic-pool-routes');
 const { handleVisualAgentWorkspaceRoutes } = require('./api/visual-agent-workspace-routes');
+const { handleProductBuilderRoutes } = require('./api/product-builder-routes');
+const { handleUniversal3DStudioRoutes } = require('./api/universal-3d-studio-routes');
 
 process.on('uncaughtException', (err) => console.error('[Server uncaughtException]', err));
 process.on('unhandledRejection', (reason) => console.error('[Server unhandledRejection]', reason));
@@ -670,6 +672,16 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         if (workspaceHandled || res.headersSent) return;
       }
 
+      if (url.pathname.startsWith('/api/v2/studio-3d')) {
+        const studioHandled = await handleUniversal3DStudioRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId });
+        if (studioHandled || res.headersSent) return;
+      }
+
+      if (url.pathname.startsWith('/api/v2/product-builder') || url.pathname.startsWith('/api/v2/factory')) {
+        const builderHandled = await handleProductBuilderRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId });
+        if (builderHandled || res.headersSent) return;
+      }
+
       if (url.pathname.startsWith('/api/v2/')) {
         const universalHandled = await handleUniversalSystemRoutes(
           req, res, url, sendJson, readJson, { tenantId, actorId }, app
@@ -829,6 +841,29 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       if (req.method === 'GET' && url.pathname === '/api/me') return sendJson(res, 200, { tenantId, actorId, authed: cx.authed });
       if (req.method === 'POST' && url.pathname === '/api/avatar/message') return sendJson(res, 200, await app.masterAvatar.handle(tenantId, actorId, await readJson(req)), requestId);
+
+      if (req.method === 'GET' && (url.pathname === '/api/voice/health' || url.pathname === '/api/voice/status')) {
+        return sendJson(res, 200, app.voicePersonaPlex ? app.voicePersonaPlex.getHealth() : { status: 'READY', service: 'fenix-voice-personaplex' }, requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/voice/synthesize') {
+        const body = await readJson(req);
+        return sendJson(res, 200, await app.voicePersonaPlex.synthesize(body), requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/voice/transcribe') {
+        const body = await readJson(req);
+        return sendJson(res, 200, await app.voicePersonaPlex.transcribe(body), requestId);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/voice/chat') {
+        const body = await readJson(req);
+        return sendJson(res, 200, await app.voicePersonaPlex.handleConversation({ tenantId, actorId, ...body }), requestId);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/voice/sessions') {
+        return sendJson(res, 200, {
+          ok: true,
+          sessions: app.voicePersonaPlex ? Array.from(app.voicePersonaPlex.sessions.values()) : [],
+          history: app.voicePersonaPlex ? app.voicePersonaPlex.history : []
+        }, requestId);
+      }
 
       const agentInspMatch = url.pathname.match(/^\/api\/v2\/agents\/([^/]+)\/inspector$/);
       if (req.method === 'GET' && agentInspMatch) {
@@ -1793,7 +1828,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   server.on('close', () => { clearInterval(projectHeartbeatTimer); });
   server.on('upgrade', async (request, socket, head) => {
     const upgradeUrl = new URL(request.url || '/', 'http://localhost');
-    if (upgradeUrl.pathname !== '/events') return socket.destroy();
+    if (upgradeUrl.pathname !== '/events' && upgradeUrl.pathname !== '/ws/voice' && upgradeUrl.pathname !== '/api/voice/stream') return socket.destroy();
     
     const queryToken = upgradeUrl.searchParams.get('token') || upgradeUrl.searchParams.get('access_token');
     const headers = { ...request.headers };
@@ -1812,7 +1847,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     });
   });
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, request) => {
+    const connUrl = new URL(request?.url || '/', 'http://localhost');
+    if (connUrl.pathname === '/ws/voice' || connUrl.pathname === '/api/voice/stream') {
+      if (app.voicePersonaPlex) {
+        app.voicePersonaPlex.handleWebSocketClient(ws);
+      }
+      return;
+    }
     // Send initial connection event
     // Keep the wire event aligned with the frontend live-runtime contract.
     ws.send(JSON.stringify({ type: 'runtime.connected', payload: { status: 'ok' } }));

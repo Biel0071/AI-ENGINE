@@ -13,8 +13,8 @@ test('world-scale: 1 Three.js unit = 1 logical meter standard convention', () =>
 });
 
 test('world-scale: Character standing height is 1.76m (within [1.70, 1.80m])', () => {
-  // Check scale is 1.0
-  assert.ok(worldJs.includes('agent.scale.set(1.0, 1.0, 1.0)'), 'Standing humanoid must be scale (1.0, 1.0, 1.0)');
+  assert.match(worldJs, /agent\.scale\.set\(calibratedScale \* bodyShape\.x, calibratedScale, calibratedScale \* bodyShape\.z\)/, 'Avatar scale must preserve calibrated height while applying the selected silhouette');
+  assert.match(worldJs, /const calibratedScale = Math\.max\(1, Math\.min\(1\.9, displayScale\)\)/, 'Avatar display scale must stay within the calibrated limits');
   assert.ok(worldJs.includes('height: 1.76'), 'Humanoid userData height must record 1.76m');
   assert.ok(worldJs.includes('totalHeight: 1.76'), 'Humanoid userData totalHeight must record 1.76m');
 

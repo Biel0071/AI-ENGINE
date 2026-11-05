@@ -86,7 +86,12 @@ class OperationalActivationService {
         tenantId, stream: `operations:${runId}:${record.componentId}`,
         type: 'operational.component.checked', source: 'fenix-operational-activation',
         subject: `${runId}:${record.componentId}`,
-        data: { actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId } },
+        data: {
+          title: `Auditoria Operacional · ${record.componentId}`,
+          message: `Subsistema ${record.componentId} verificado com status ${record.status} (${record.latencyMs || 0}ms).`,
+          description: `Verificação de integridade operacional do componente "${record.componentId}" com status ${record.status} no distrito de operações.`,
+          actorId, runId, componentId: record.componentId, status: record.status, critical: record.critical, latencyMs: record.latencyMs, city: { district: 'operations', building: record.componentId }
+        },
         idempotencyKey: `operational.component.checked:${runId}:${record.componentId}`,
       }));
       if (typeof this.events?.publishBatch === 'function') await this.events.publishBatch(inputs);

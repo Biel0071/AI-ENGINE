@@ -49,13 +49,10 @@
   // ═══════════════════════════════════════════════════════════════
   async function loadKnowledgeView() {
     try {
-      const [summaryRes, projRes, scrRes, dnaRes, unkRes, gapsRes, graphRes, patternsRes, agentsRes, knowRes, scoreRes] = await Promise.all([
+      const [summaryRes, projRes, scrRes, graphRes, patternsRes, agentsRes, knowRes, scoreRes] = await Promise.all([
         readApi('/api/v2/observatory/summary'),
         readApi('/api/v2/observatory/twins/project'),
         readApi('/api/v2/observatory/twins/screen'),
-        readApi('/api/v2/observatory/visual-dna'),
-        readApi('/api/v2/observatory/unknowns'),
-        readApi('/api/v2/observatory/gaps'),
         readApi('/api/v2/graph/data'),
         readApi('/api/v2/patterns'),
         readApi('/api/v2/living-city/agents'),
@@ -63,6 +60,12 @@
         readApi('/api/v2/reality/score')
       ]);
       const summary = summaryRes.data || {};
+      const caps = summary.capabilities || {};
+      const [dnaRes, unkRes, gapsRes] = await Promise.all([
+        caps.visualDna?.enabled === true ? readApi('/api/v2/observatory/visual-dna') : Promise.resolve({ ok: false, status: 503, data: null }),
+        caps.unknowns?.enabled === true ? readApi('/api/v2/observatory/unknowns') : Promise.resolve({ ok: false, status: 503, data: null }),
+        caps.gaps?.enabled === true ? readApi('/api/v2/observatory/gaps') : Promise.resolve({ ok: false, status: 503, data: null }),
+      ]);
       const projects = apiArray(projRes, 'projects');
       const screens = apiArray(scrRes, 'screens');
       const visualTwins = apiArray(dnaRes, 'visualTwins');
@@ -70,6 +73,7 @@
       const gaps = apiArray(gapsRes, 'gaps');
       const graphNodes = graphRes.ok && Array.isArray(graphRes.data?.nodes) ? graphRes.data.nodes : null;
       const graphEdges = graphRes.ok && Array.isArray(graphRes.data?.edges) ? graphRes.data.edges : null;
+      const graphStats = graphRes.ok && graphRes.data?.stats ? graphRes.data.stats : null;
       const patterns = apiArray(patternsRes, 'patterns');
       const agentRows = apiArray(agentsRes, 'agents');
       const agentsData = agentsRes.data || {};
@@ -101,9 +105,10 @@
 
       const totalProjects = summary.metrics?.totalProjects ?? projects?.length ?? null;
       const totalScreens = screens?.length ?? null;
-      const edgesCount = graphEdges?.length ?? null;
+      const edgesCount = graphStats?.totalEdges ?? graphEdges?.length ?? null;
       const agentsCount = Number.isFinite(agentsData.total) ? agentsData.total : (agentRows?.length ?? null);
-      const countNodes = (type) => graphNodes ? graphNodes.filter(n => n.type === type).length : null;
+      const countNodes = (type) => graphStats?.nodeTypes ? (graphStats.nodeTypes[type] ?? 0) : (graphNodes ? graphNodes.filter(n => n.type === type).length : null);
+      const testsCount = summary.metrics?.verifiedScreens ?? (graphStats?.nodeTypes?.TEST ?? null);
 
       setVal('skKpiProjects', observedCount(totalProjects));
       setVal('skKpiScreens', observedCount(totalScreens));
@@ -112,7 +117,7 @@
       setVal('skKpiServices', observedCount(countNodes('SERVICE')));
       setVal('skKpiAgents', observedCount(agentsCount));
       setVal('skKpiJobs', observedCount(summary.metrics?.jobsTotal));
-      setVal('skKpiTests', observedCount(summary.metrics?.verifiedScreens));
+      setVal('skKpiTests', observedCount(testsCount));
       setVal('skKpiReality', score.status === 'NOT_EVALUATED' ? 'NÃO AVALIADO' : observedCount(score.score ?? score.status));
       setVal('skKpiGaps', observedCount(unknowns?.length));
       setVal('skKpiUnknowns', observedCount(gaps?.length));
@@ -131,7 +136,7 @@
       renderUnknownsAndGaps(unknowns, gaps);
 
       // Render Data Lineage & API Trace
-      renderDataLineageTab();
+      renderDataLineageTab(caps);
 
       // Render KOS Manifest & Graph Brain (Real Patterns & Real Edges)
       renderLegacyManifestAndGraph(patterns, graphEdges);
@@ -152,18 +157,23 @@
       return;
     }
 
-    const cardsHtml = projects.map(p => `
+    const cardsHtml = projects.map(p => {
+      const stackStr = Array.isArray(p.stack) && p.stack.length
+        ? p.stack.join(', ')
+        : (typeof p.stack === 'string' && p.stack.trim() ? p.stack : 'Não informada');
+      return `
       <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:12px; margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <strong style="color:#38bdf8; font-size:14px;">${html(p.name || p.id || 'Projeto')}</strong>
           <span style="color:#94a3b8; font-weight:700; font-size:11px;">${html(p.status || 'REGISTRADO')}</span>
         </div>
         <div style="font-size:11px; color:#94a3b8; line-height:1.4;">
-          <div><strong>Workspace:</strong> <code>${html(p.workspace || p.path || 'Não informado')}</code></div>
-          <div><strong>Stack:</strong> ${html(p.stack || 'Não informada')}</div>
+          <div><strong>Workspace:</strong> <code>${html(p.workspace || p.path || p.rootPath || 'Não informado')}</code></div>
+          <div><strong>Stack:</strong> ${html(stackStr)}</div>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     listEl.innerHTML = cardsHtml || '<div style="padding:10px; color:#94a3b8;">Nenhum projeto registrado para esta conta.</div>';
   }
@@ -246,11 +256,11 @@
     }
   }
 
-  async function renderDataLineageTab() {
+  async function renderDataLineageTab(caps = {}) {
     try {
       const [linRes, traceRes] = await Promise.all([
-        readApi('/api/v2/observatory/data-lineage'),
-        readApi('/api/v2/observatory/api-trace')
+        caps.dataLineage?.enabled !== false ? readApi('/api/v2/observatory/data-lineage') : Promise.resolve({ ok: false, status: 503, data: null }),
+        caps.apiTrace?.enabled !== false ? readApi('/api/v2/observatory/api-trace') : Promise.resolve({ ok: false, status: 503, data: null })
       ]);
       const lineageData = linRes.data || {};
       const traceData = traceRes.data || {};
@@ -802,25 +812,31 @@
   // ═══════════════════════════════════════════════════════════════
   window.loadKnowledgeView = loadKnowledgeView;
 
-  // Run immediately if DOM ready, else on DOMContentLoaded
+  function isKnowledgeViewActive() {
+    const raw = (window.location.hash || '').replace(/^#\/?/, '').split(/[/?]/)[0];
+    return raw === 'knowledge';
+  }
+
+  // Run on startup ONLY if knowledge view is currently the active route
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(loadKnowledgeView, 50);
+    if (isKnowledgeViewActive()) setTimeout(loadKnowledgeView, 50);
   } else {
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(loadKnowledgeView, 50);
+      if (isKnowledgeViewActive()) setTimeout(loadKnowledgeView, 50);
     });
   }
 
-  // Also hook into hashchange
+  // Hook into hashchange and view changes
   window.addEventListener('hashchange', () => {
-    if (window.location.hash === '#knowledge') {
+    if (isKnowledgeViewActive()) {
       loadKnowledgeView();
     }
   });
 
-  // Call loadKnowledgeView right away synchronously
-  try {
-    loadKnowledgeView();
-  } catch (e) {}
+  window.addEventListener('fenix:viewchanged', (event) => {
+    if (event.detail?.viewId === 'knowledge') {
+      loadKnowledgeView();
+    }
+  });
 
 })();

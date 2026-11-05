@@ -68,7 +68,7 @@ async function runSuite() {
   // 1a. GET efficiency report
   const rep = await get('/api/v2/economy/report');
   ok('Economy report returns 200', rep.status === 200);
-  ok('Report has devEfficiencyScore', rep.data.devEfficiencyScore !== undefined, rep.data.devEfficiencyScore);
+  ok('Unmeasured score is explicit', rep.data.devEfficiencyScore === null && rep.data.measurementStatus?.score === 'UNMEASURED', rep.data.devEfficiencyScore);
   ok('Report has costMode', !!rep.data.costMode, rep.data.costMode);
   ok('Report has metrics', !!rep.data.metrics);
 

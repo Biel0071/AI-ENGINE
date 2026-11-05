@@ -124,22 +124,32 @@ body.dark-theme {
 }
 
 .fnx-brand-emblem {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--fnx-r-md);
-  background: linear-gradient(135deg, rgba(255, 138, 0, 0.2), rgba(255, 51, 102, 0.15));
-  border: 1px solid rgba(255, 138, 0, 0.4);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 138, 0, 0.35), rgba(0, 229, 255, 0.15) 70%, rgba(10, 16, 26, 0.95));
+  border: 1px solid rgba(0, 229, 255, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 16px rgba(255, 138, 0, 0.35);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.fnx-brand-emblem:hover {
+  border-color: var(--fnx-cyan);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: scale(1.04);
 }
 
 .fnx-brand-emblem img {
   width: 24px;
   height: 24px;
-  filter: drop-shadow(0 0 6px rgba(255, 138, 0, 0.8));
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.7));
 }
 
 .fnx-brand-meta {
@@ -229,7 +239,7 @@ body.dark-theme {
   gap: 12px;
   flex: 1;
   justify-content: center;
-  max-width: 920px;
+  max-width: 960px;
 }
 
 .fnx-kpi-capsule {
@@ -241,7 +251,7 @@ body.dark-theme {
   border: 1px solid var(--fnx-border-subtle);
   border-radius: var(--fnx-r-lg);
   padding: 8px 14px;
-  min-width: 170px;
+  min-width: 196px;
   flex: 1;
   transition: all 0.2s ease;
   position: relative;
@@ -252,8 +262,8 @@ body.dark-theme {
 .fnx-kpi-capsule:hover {
   background: rgba(14, 22, 36, 0.95);
   border-color: var(--fnx-border-default);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 229, 255, 0.12);
 }
 
 .fnx-kpi-capsule::before {
@@ -277,14 +287,24 @@ body.dark-theme {
 .fnx-kpi-capsule.kpi-green .fnx-kpi-icon { background: rgba(0, 230, 160, 0.12); color: var(--fnx-green); }
 
 .fnx-kpi-icon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--fnx-r-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
   flex-shrink: 0;
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.fnx-kpi-icon i {
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.fnx-kpi-capsule:hover .fnx-kpi-icon {
+  transform: scale(1.08);
 }
 
 .fnx-kpi-data {
@@ -292,27 +312,57 @@ body.dark-theme {
   flex-direction: column;
   min-width: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .fnx-kpi-val-row {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  line-height: 1.1 !important;
 }
 
 .fnx-kpi-value {
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--fnx-text-title);
-  font-family: var(--fnx-font-mono);
-  line-height: 1.1;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: var(--fnx-text-title, #f8fafc) !important;
+  font-family: var(--fnx-font-mono, monospace) !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.fnx-kpi-capsule.kpi-green .fnx-kpi-value {
+  font-size: 11px !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 750 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.fnx-kpi-capsule.kpi-green .fnx-kpi-label {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .fnx-kpi-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--fnx-text-muted);
-  white-space: nowrap;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--fnx-text-muted, #94a3b8) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 0 !important;
+  line-height: 1.1 !important;
 }
 
 .fnx-kpi-trend-row {
@@ -614,29 +664,35 @@ body.dark-theme {
 
 .fnx-user-avatar-wrap {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fnx-user-avatar-wrap img {
   width: 100%;
   height: 100%;
-  border-radius: var(--fnx-r-md);
-  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 50% !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3), inset 0 0 6px rgba(0, 229, 255, 0.2);
   object-fit: cover;
+  background: rgba(14, 22, 36, 0.8);
 }
 
 .fnx-online-dot {
   position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 8px;
-  height: 8px;
+  right: 0px;
+  bottom: 0px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--fnx-green);
-  border: 2px solid var(--fnx-bg-0);
-  box-shadow: 0 0 6px var(--fnx-green);
+  border: 2px solid #060a12;
+  box-shadow: 0 0 8px var(--fnx-green);
+  z-index: 2;
 }
 
 .fnx-user-details {
@@ -715,8 +771,8 @@ body.dark-theme {
 .fnx-provider-orbit-widget {
   position: absolute;
   right: 28px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 18px;
+  transform: none;
   width: 130px;
   height: 130px;
   border-radius: 50%;

@@ -1263,10 +1263,10 @@ body {
   font-size: 11.5px !important;
 }
 .fenix-ide-editor-area {
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .fenix-ide-tabs-header {
   height: 38px !important;
@@ -1527,8 +1527,13 @@ body {
    VIEW SPECIFIC MASTER OVERRIDES & REGRESSION SAFEGUARDS
    ====================================================================== */
 
+/* 0. Strict Inactive View Guard (prevents initial load flash of non-active views) */
+.views-container > .view:not(.active),
+.view:not(.active) {
+  display: none !important;
+}
+
 /* 1. Command Center: 100% full width, no squeezing */
-#view-command,
 #view-command.active {
   display: flex !important;
   flex-direction: column !important;
@@ -1573,9 +1578,8 @@ body {
 }
 
 /* 3. IDE View: Top Toolbar + Body (File Tree | Split Editor & Preview | Assistant) */
-#view-ide,
 #view-ide.active,
-#view-ide.fenix-ide-layout-evolution {
+#view-ide.fenix-ide-layout-evolution.active {
   display: flex !important;
   flex-direction: column !important;
   width: 100% !important;
@@ -1585,7 +1589,6 @@ body {
 }
 
 /* 4. Memory View: Full screen radial map without legacy clutter */
-#view-memory,
 #view-memory.active {
   display: flex !important;
   flex-direction: column !important;
@@ -1603,7 +1606,6 @@ body {
 }
 
 /* 5. Project Hub: High-end Design Standard */
-#view-projects,
 #view-projects.active {
   display: flex !important;
   flex-direction: column !important;
@@ -1866,13 +1868,13 @@ body {
 }
 
 #fenixMemoryOperationalContainer {
-  position: absolute !important;
-  left: -9999px !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+  position: relative !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: auto !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 /* Presentation Footer Anti-Occlusion & Decoupled Workspace Styling */
@@ -2843,4 +2845,86 @@ body {
 .fenix-agent-list-table { width: 100%; border-collapse: collapse; border: 1px solid #243449; border-radius: 10px; background: #101a29; color: #dbeafe; text-align: left; }
 .fenix-agent-list-table th, .fenix-agent-list-table td { padding: 11px 14px; border-bottom: 1px solid #243449; font-size: 12px; }
 .fenix-agent-list-table th { color: #67e8f9; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+
+/* Evolution Engine V18 — Full-Width Multi-Column Agents Grid & Cohesive SaaS/IDE Tokens */
+#view-agents #fenix-agents-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+  padding: 6px 0 24px !important;
+  width: 100% !important;
+}
+#view-agents .fenix-squad-group {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  background: rgba(11, 20, 34, 0.72);
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+#view-agents .fenix-workforce-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+  gap: 14px !important;
+  width: 100% !important;
+  margin-top: 12px;
+}
+#view-knowledge button,
+#view-runtime button,
+#view-mcp button,
+#view-browser button,
+#view-observability button,
+#view-terminal button {
+  background: linear-gradient(180deg, rgba(15, 29, 48, 0.92), rgba(9, 18, 32, 0.95)) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(56, 189, 248, 0.32) !important;
+  border-radius: 8px !important;
+  padding: 7px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.16s ease !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+#view-knowledge button:hover,
+#view-runtime button:hover,
+#view-mcp button:hover,
+#view-browser button:hover,
+#view-observability button:hover,
+#view-terminal button:hover {
+  border-color: rgba(56, 189, 248, 0.75) !important;
+  color: #38bdf8 !important;
+  background: rgba(14, 38, 64, 0.95) !important;
+}
+#view-knowledge .sk-tab-btn.active {
+  background: rgba(56, 189, 248, 0.18) !important;
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+}
+
+/* Dock 5 visualization pill buttons directly atop the Minimap in bottom-left corner */
+#view-city #fenixCityNavPill,
+.fenix-city-floating-pill#fenixCityNavPill {
+  position: absolute !important;
+  left: 8px !important;
+  right: auto !important;
+  bottom: 182px !important;
+  width: 236px !important;
+  max-width: 236px !important;
+  transform: none !important;
+  z-index: 35 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+  gap: 4px !important;
+  padding: 4px 6px !important;
+  background: rgba(7, 13, 23, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(34, 211, 238, 0.28) !important;
+  border-bottom: none !important;
+  border-radius: 9px 9px 0 0 !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5) !important;
+  box-sizing: border-box !important;
+}
 

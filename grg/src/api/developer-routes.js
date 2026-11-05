@@ -1,3 +1,9 @@
+const path = require('node:path');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
+
+const runFile = promisify(execFile);
+
 async function handleDeveloperRoutes(req, res, url, app, sendJson, sendError, context = {}) {
   if (!url.pathname.startsWith('/api/dev/')) return false;
 
@@ -22,21 +28,41 @@ async function handleDeveloperRoutes(req, res, url, app, sendJson, sendError, co
       const payload = JSON.parse(await readBody(req) || '{}');
       const objective = String(payload.prompt || '').trim();
       if (!objective) throw new Error('prompt is required');
+      if (typeof payload.projectId !== 'string' || !payload.projectId.trim() || payload.projectId.length > 120) throw new Error('a selected projectId is required');
+      if (typeof app.projectKernel?.state !== 'function') throw new Error('project workspace resolver is unavailable');
+      const project = await app.projectKernel.state(tenantId, actorId, payload.projectId.trim());
+      if (project.workspaceAvailable === false || typeof project.workspace !== 'string' || !path.isAbsolute(project.workspace)) throw new Error('selected project workspace is unavailable');
+      try { await runFile('git', ['rev-parse', '--show-toplevel'], { cwd: project.workspace, timeout: 10_000 }); }
+      catch { throw new Error('selected project must be an available Git workspace'); }
+      const plan = String(payload.plan || '').trim();
+      if (!plan || plan.length > 8_000) throw new Error('a reviewed plan is required');
+      if (objective.length + plan.length > 8_000) throw new Error('objective and plan are too large');
+      const evidenceId = safeContextRef(payload.evidenceId);
+      const referenceIds = Array.isArray(payload.referenceIds) ? payload.referenceIds.map(safeContextRef).filter(Boolean).slice(0, 10) : [];
+      const sourceFile = safeProjectRelativePath(payload.filePath);
+      const contextRefs = [
+        ...(evidenceId ? [{ type: 'ARTIFACT', ref: evidenceId }] : []),
+        ...referenceIds.map((ref) => ({ type: 'ARTIFACT', ref })),
+      ];
       const mission = await app.missions.create(tenantId, actorId, {
-        projectId: payload.projectId || null,
+        projectId: project.id,
         title: objective.slice(0, 200),
         objective,
         source: 'fenix-ide-dev-pipeline',
-        steps: [
-          { key: 'discover', type: 'discover', payload: {} },
-          { key: 'analyze', type: 'analyze', payload: {}, dependsOn: ['discover'] },
-          { key: 'implement-test', type: 'dev-execute', payload: { prompt: objective, projectPath: process.cwd(), context: { projectId: payload.projectId || 'fenix_enterprise' } }, dependsOn: ['analyze'] },
-          { key: 'browser-qa', type: 'browser-qa', payload: { projectId: payload.projectId || 'fenix_enterprise' }, dependsOn: ['implement-test'] },
-          { key: 'activate', type: 'activate', payload: { trigger: 'dev-pipeline' }, dependsOn: ['browser-qa'] },
-        ],
+        contextRefs,
+        steps: [{
+          key: 'implement-reviewed-plan', type: 'dev-execute',
+          payload: {
+            prompt: `${objective}\n\nPlano REA revisado pelo operador:\n${plan}`,
+            projectPath: project.workspace,
+            context: { projectId: project.id, ...(sourceFile ? { sourceFiles: [sourceFile] } : {}), reaEvidenceId: evidenceId, reaReferenceIds: referenceIds },
+          },
+          contextRefs,
+        }],
       });
-      setImmediate(() => app.missions.start(tenantId, actorId, mission.id).catch(() => {}));
-      sendJson(res, 202, { mission: { missionId: mission.id, status: 'QUEUED' } });
+      await app.missions.start(tenantId, actorId, mission.id);
+      const current = await app.missions.get(tenantId, actorId, mission.id);
+      sendJson(res, 202, { mission: current });
     } catch (err) { sendError(res, 400, err.message); }
     return true;
   }
@@ -236,6 +262,20 @@ function readBody(req) {
     req.on('end', () => resolve(body));
     req.on('error', reject);
   });
+}
+
+function safeContextRef(value) {
+  const ref = typeof value === 'string' ? value.trim() : '';
+  return /^[A-Za-z0-9:._/@-]{3,256}$/.test(ref) ? ref : null;
+}
+
+function safeProjectRelativePath(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const normalized = value.trim().replace(/\\/g, '/');
+  if (normalized.startsWith('/') || /^[A-Za-z]:/.test(normalized)) return null;
+  const segments = normalized.split('/');
+  if (segments.some((segment) => !segment || segment === '.' || segment === '..')) return null;
+  return segments.join('/');
 }
 
 function buildAiEditPrompt(filePath, content, instruction) {

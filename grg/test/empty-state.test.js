@@ -83,8 +83,8 @@ test('empty-state: fenix-world-3d does not spawn 3D character models on clean bo
   // Verify empty overlay element exists
   assert.match(
     world3d,
-    /Nenhum agente ativo na cidade/,
-    'fenix-world-3d.js must have honest empty overlay for 0 active agents'
+    /Nenhum agente publicado pela API/,
+    'fenix-world-3d.js must state that no agents are published by the API'
   );
 });
 

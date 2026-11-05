@@ -47,6 +47,9 @@
   let pingAt = null;
   let reconnectTimer = null;
   let intentionallyClosed = false;
+  let snapshotInFlight = null;
+  let snapshotRetryAt = 0;
+  let snapshotFailureCount = 0;
 
   function wsUrl() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -305,22 +308,58 @@
            window.__FENIX_TOKEN__ || '';
   }
 
+  function releaseWebSocket(socket) {
+    if (window.__FENIX_WS__ === socket) window.__FENIX_WS__ = null;
+    if (window.FENIX.ws === socket) window.FENIX.ws = null;
+    const registry = window.__FENIX_SINGLETONS__;
+    if (registry?.get('webSocket') === socket) registry.remove('webSocket', socket);
+  }
+
   function requestSnapshot() {
+    if (snapshotInFlight) return snapshotInFlight;
+    if (Date.now() < snapshotRetryAt) return Promise.resolve(null);
+
     const token = getLiveToken();
     const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-    const attempt = (remaining) => fetch('/runtime/snapshot', { headers }).then(async r => {
+    let authRejected = false;
+    const attempt = (remaining) => {
+      const signal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout
+        ? AbortSignal.timeout(8000)
+        : undefined;
+      return fetch('/runtime/snapshot', { headers, ...(signal ? { signal } : {}) }).then(async r => {
       if (r.status === 429 && remaining > 0) {
         const delay = Math.min(Number(r.headers.get('retry-after') || 1), 5) * 1000;
         await new Promise(resolve => setTimeout(resolve, delay));
         return attempt(remaining - 1);
       }
       if (!r.ok) {
+        authRejected = r.status === 401;
         updateStatus(r.status === 401 ? 'AUTH_REQUIRED' : 'RECONNECTING');
         return null;
       }
       return r.json();
-    }).then(data => { if (data) applySnapshot(data); }).catch(() => updateStatus('RECONNECTING'));
-    return attempt(3);
+      });
+    };
+    const request = attempt(3).then(data => {
+      if (data) {
+        snapshotFailureCount = 0;
+        snapshotRetryAt = 0;
+        applySnapshot(data);
+        return data;
+      }
+      snapshotFailureCount += 1;
+      const delay = authRejected
+        ? 60000
+        : Math.min(5000 * (2 ** Math.min(snapshotFailureCount - 1, 4)), 60000);
+      snapshotRetryAt = Date.now() + delay;
+      return null;
+    }).catch(() => {
+      snapshotFailureCount += 1;
+      snapshotRetryAt = Date.now() + Math.min(5000 * (2 ** Math.min(snapshotFailureCount - 1, 4)), 60000);
+      throw new Error('snapshot_failed');
+    }).catch(() => updateStatus('RECONNECTING'));
+    snapshotInFlight = request.finally(() => { snapshotInFlight = null; });
+    return snapshotInFlight;
   }
 
   function startPing() {
@@ -399,8 +438,10 @@
     ws.onerror = () => {};
 
     ws.onclose = () => {
+      const closedSocket = ws;
       stopPing();
-      window.FENIX.ws = null;
+      releaseWebSocket(closedSocket);
+      if (ws === closedSocket) ws = null;
       if (!intentionallyClosed) {
         updateStatus('RECONNECTING');
         scheduleReconnect();
@@ -422,7 +463,12 @@
     intentionallyClosed = true;
     stopPing();
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-    if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+    if (ws) {
+      const closedSocket = ws;
+      try { closedSocket.close(); } catch (e) {}
+      releaseWebSocket(closedSocket);
+      ws = null;
+    }
   }
 
   // Public API

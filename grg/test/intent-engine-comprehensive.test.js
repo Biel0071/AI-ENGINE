@@ -3,8 +3,7 @@
 /**
  * FÊNIX OS — INTENT ENGINE 2.0 COMPREHENSIVE TEST SUITE
  * =====================================================
- * Validates the 12 Mandatory Real Proof Tests (Section 48)
- * and the Incomplete Request Test (Section 49).
+ * Validates intent compilation and ensures proposed plans are not mislabeled as execution.
  * Tests all 15 stages: READ -> UNDERSTAND -> DECOMPOSE -> INSPECT ->
  * IDENTIFY GAPS -> CHECK AMBIGUITIES -> DESIGN -> CRITIQUE ->
  * IMPROVE -> IMPLEMENT -> TEST -> OBSERVE -> COMPARE -> IMPROVE -> DELIVER -> LEARN
@@ -22,7 +21,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 01: "Crie um agente."', async () => {
   const engine = new IntentEngine();
   const res = await engine.processRequest('Crie um agente.');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
   
   // Understanding
@@ -38,14 +37,14 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 01: "Crie um agente."', async () => {
   assert.ok(spec.implementationPlan.some(s => s.actor === 'AgentFactory'));
 
   // Learning
-  assert.ok(res.recordedOutcome.patternResult);
+  assert.equal(res.recordedOutcome, undefined);
 });
 
 test('FÊNIX INTENT ENGINE 2.0 — TEST 02: "Crie um agente de segurança."', async () => {
   const engine = new IntentEngine();
   const res = await engine.processRequest('Crie um agente de segurança.');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Understanding & Role Specialization
@@ -64,7 +63,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 03: "Faça ele trabalhar com o Backend."
     selectedAgentId: 'Security'
   });
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Collaboration Semantics
@@ -80,13 +79,13 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 04: "Melhore a tela."', async () => {
     activeRoute: 'view-city'
   });
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Contextual Inference & Frontend Critic
   assert.strictEqual(spec.normalizedIntent, 'FRONTEND_AESTHETIC_REFINEMENT');
   assert.ok(spec.proposedArchitecture.frontendCritique);
-  assert.strictEqual(spec.proposedArchitecture.frontendCritique.status, 'AAA_DESIGN_SYSTEM_VERIFIED');
+  assert.strictEqual(spec.proposedArchitecture.frontendCritique.status, 'NOT_MEASURED');
   assert.ok(spec.constraints.includes('VANILLA_JS_MODULAR_ONLY'));
 });
 
@@ -105,7 +104,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 05: "Quero algo parecido com esta refer�
     reference: refRes
   });
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   assert.strictEqual(res.intentSpec.normalizedIntent, 'REFERENCE_BASED_ADAPTATION');
 });
 
@@ -113,7 +112,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 06: "Crie um sistema que faça X."', asy
   const engine = new IntentEngine();
   const res = await engine.processRequest('Crie um sistema de monitoramento de integridade de disco');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Universal Engineering Goal
@@ -125,7 +124,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 07: "Faça isso funcionar sem IA."', asy
   const engine = new IntentEngine();
   const res = await engine.processRequest('Faça isso funcionar sem IA.');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Zero-AI Determinism
@@ -139,7 +138,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 08: "Crie 20 agentes."', async () => {
   const engine = new IntentEngine();
   const res = await engine.processRequest('Crie 20 agentes.');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Population Scale
@@ -155,7 +154,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 09: "Agora crie mais 10."', async () => 
     currentAgentCount: 20
   });
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Anaphoric Context Understanding
@@ -167,7 +166,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 10: "Faça esses agentes trabalharem jun
   const engine = new IntentEngine();
   const res = await engine.processRequest('Faça esses agentes trabalharem juntos.');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   assert.strictEqual(spec.normalizedIntent, 'AGENT_TEAM_COLLABORATION');
@@ -178,7 +177,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 11: "Melhore tudo."', async () => {
   const engine = new IntentEngine();
   const res = await engine.processRequest('Melhore tudo.');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Holistic Polish
@@ -193,7 +192,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TEST 12: "Descubra o que está faltando."', a
   const engine = new IntentEngine();
   const res = await engine.processRequest('Descubra o que está faltando no sistema.');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // Gap Analysis & Self Model
@@ -206,7 +205,7 @@ test('FÊNIX INTENT ENGINE 2.0 — TESTE INCOMPLETO (SEÇÃO 49): "Quero um sist
   const engine = new IntentEngine();
   const res = await engine.processRequest('Quero um sistema de atendimento inteligente para minha empresa.');
 
-  assert.strictEqual(res.status, 'SUCCESS');
+  assert.strictEqual(res.status, 'AWAITING_APPROVAL');
   const spec = res.intentSpec;
 
   // 1. Entendeu a intenção
@@ -229,7 +228,8 @@ test('FÊNIX INTENT ENGINE 2.0 — TESTE INCOMPLETO (SEÇÃO 49): "Quero um sist
 
   // 7. Melhorou a ideia (adicionou presença espacial no World e fallback sem IA)
   assert.ok(spec.constraints.includes('ZERO_AI_FALLBACK_REQUIRED'));
-  assert.ok(spec.proposedArchitecture.worldCritique.isSpatial);
+  assert.equal(spec.proposedArchitecture.worldCritique.status, 'NOT_MEASURED');
+  assert.equal(spec.proposedArchitecture.worldCritique.isSpatial, null);
 
   // 8. Implementou (DAG gerado)
   assert.ok(spec.implementationPlan.length >= 5);
@@ -242,10 +242,9 @@ test('FÊNIX INTENT ENGINE 2.0 — TESTE INCOMPLETO (SEÇÃO 49): "Quero um sist
   assert.ok(spec.dependencies.includes('OfficeManager'));
 
   // 12. Entregou
-  assert.ok(res.deliveryReport);
-  assert.strictEqual(res.deliveryReport.title, 'FÊNIX OS — ENTREGA DE INTENÇÃO EXECUTADA');
+  assert.equal(res.executionReport, null);
+  assert.equal(res.testResults, null);
 
   // 13. Aprendeu com o resultado
-  assert.ok(res.recordedOutcome.patternResult);
-  assert.ok(['REUSE', 'LEARN'].includes(res.recordedOutcome.patternResult.status));
+  assert.equal(res.recordedOutcome, undefined);
 });

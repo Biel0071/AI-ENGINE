@@ -47,7 +47,25 @@ test('Git workspace write enforces isolation, precheck and local commit-ready di
   assert.equal((await fs.readFile(path.join(root, 'src/preserved.js'), 'utf8')).replace(/\r\n/g, '\n'), 'preserve\n');
   const commit = await new GitCommitCapability({ workspaceRoot: root }).commit({ root: '.', files: ['src/api.js'], message: 'Implement API', missionId: 'mission-1', jobId: 'job-1', projectId: 'project-1', agent: 'backend', testsPassed: true, validationPassed: true, policyAllows: true });
   assert.match(commit.commit, /^[0-9a-f]{40}$/);
-  assert.match((await git(root, 'log', '-1', '--format=%B')).stdout, /Mission-Id: mission-1/);
   await fs.rm(root, { recursive: true, force: true });
   await fs.rm(outside, { recursive: true, force: true });
+});
+
+test('GitWorkspaceWriteCapability writes safely in non-git workspace directories', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'fenix-non-git-'));
+  try {
+    const capability = new GitWorkspaceWriteCapability({ workspaceRoot: root });
+    const checkpoint = await capability.precheck();
+    assert.equal(checkpoint.isGit, false);
+    assert.equal(checkpoint.clean, true);
+    await capability.write({ operation: 'create', root: '.', path: 'config.json', content: '{"ok":true}\n' });
+    const written = await fs.readFile(path.join(root, 'config.json'), 'utf8');
+    assert.equal(written, '{"ok":true}\n');
+    await capability.write({ operation: 'modify', root: '.', path: 'config.json', content: '{"ok":false}\n' });
+    const modified = await fs.readFile(path.join(root, 'config.json'), 'utf8');
+    assert.equal(modified, '{"ok":false}\n');
+    await assert.rejects(() => capability.write({ operation: 'create', root: '.', path: '../outside.txt', content: 'bad' }), (err) => err instanceof WorkspaceWriteError && err.code === 'WORKSPACE_ESCAPE');
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });

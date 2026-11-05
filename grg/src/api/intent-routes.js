@@ -12,6 +12,7 @@
  */
 
 const { globalIntentEngine } = require('../intent/intent-engine');
+const { analyzeReferenceImage } = require('../intent/reference-image-analysis');
 
 async function handleIntentRoutes(req, res, url, app, sendJson, readJson, authContext = {}) {
   const method = req.method;
@@ -85,6 +86,54 @@ async function handleIntentRoutes(req, res, url, app, sendJson, readJson, authCo
       return sendJson(res, 200, { ok: true, referenceSpec: result }, requestId);
     } catch (err) {
       return sendJson(res, 500, { ok: false, error: err.message }, requestId);
+    }
+  }
+
+  if (method === 'POST' && pathname === '/api/v2/intent/analyze-reference-image') {
+    try {
+      await app.controlPlane.authorize(authContext.tenantId, authContext.actorId, 'project:read');
+      const body = await readJson(req);
+      const projectId = typeof body.projectId === 'string' ? body.projectId.trim().slice(0, 120) : '';
+      if (!projectId) return sendJson(res, 400, { ok: false, error: 'PROJECT_ID_REQUIRED' }, requestId);
+      const state = await app.store.read();
+      const projectExists = (state.projects || []).some((project) => project.tenantId === authContext.tenantId && (project.id || project.projectId) === projectId)
+        || Boolean(app.projectRegistry?.get?.(projectId));
+      if (!projectExists) return sendJson(res, 404, { ok: false, error: 'PROJECT_NOT_FOUND' }, requestId);
+      const model = String(process.env.GRG_VISION_MODEL || process.env.FENIX_VISION_MODEL || '').trim();
+      const visual = await analyzeReferenceImage({ llm: app.llm, model, imageBase64: body.imageBase64, projectId });
+      const referenceSpec = await globalIntentEngine.ingestReference({
+        type: 'SCREENSHOT', source: `project-hub:${projectId}`,
+        visualObservations: [
+          { kind: 'layout', description: visual.analysis.layout },
+          ...visual.analysis.visibleComponents.map((component) => ({ kind: 'component', ...component })),
+        ],
+        targetFenixViews: ['projects', 'ide', 'flow-graph'],
+      });
+      referenceSpec.projectId = projectId;
+      referenceSpec.analysisStatus = visual.status;
+      referenceSpec.knowledge ||= {};
+      referenceSpec.imageAnalysis = {
+        status: visual.status, mimeType: visual.mimeType, imageBytes: visual.imageBytes,
+        imageSha256: visual.imageSha256, provider: visual.provider, model: visual.model, durationMs: visual.durationMs,
+      };
+      referenceSpec.knowledge.visual = {
+        status: visual.status,
+        observations: visual.analysis,
+        colorPalette: null, typography: null, spacingScale: null, contrastRatio: null,
+        limitation: 'Modelo de visão interpreta pixels, mas as descrições são observações do modelo e exigem validação humana; não são medições geométricas nem prova de interação.',
+      };
+      referenceSpec.evidence = {
+        ...referenceSpec.evidence,
+        captureProvided: true,
+        imageSha256: visual.imageSha256,
+        mimeType: visual.mimeType,
+        provider: visual.provider,
+        model: visual.model,
+        limitations: [referenceSpec.knowledge.visual.limitation, ...referenceSpec.evidence.limitations],
+      };
+      return sendJson(res, 200, { ok: true, referenceSpec }, requestId);
+    } catch (error) {
+      return sendJson(res, error.status || 502, { ok: false, error: error.code || 'REFERENCE_IMAGE_ANALYSIS_FAILED', reason: String(error.message || 'Falha na análise da imagem').slice(0, 300) }, requestId);
     }
   }
 

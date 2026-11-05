@@ -3755,13 +3755,13 @@ body:not(.has-right-sidebar-open) #view-command .orch-bottom-trio {
   overflow: hidden !important;
 }
 #view-ide .fenix-ide-left-panel {
-  width: 220px !important;
-  flex: 0 0 220px !important;
-  transition: width 200ms ease, flex 200ms ease !important;
+  width: 220px;
+  flex: 0 0 auto;
+  transition: width 200ms ease, flex 200ms ease;
 }
 body.has-right-sidebar-open #view-ide .fenix-ide-left-panel {
-  width: 180px !important;
-  flex: 0 0 180px !important;
+  width: 180px;
+  flex: 0 0 auto;
 }
 body.has-right-sidebar-open #view-ide .fenix-ide-editor-area,
 body.has-right-sidebar-open #view-ide .fenix-ide-preview-pane {

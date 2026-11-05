@@ -62,7 +62,7 @@ test('AXIS 3: CAMERA_EXISTS — Camera modes, follow tracking & smooth interpola
 // ── AXIS 4: RENDERER_EXISTS ────────────────────────────────────────────────
 test('AXIS 4: RENDERER_EXISTS — WebGLRenderer setup, headless throttling & lifecycle dispose', () => {
   assert.ok(worldJs.includes('new T.WebGLRenderer'), 'WebGLRenderer must be instantiated');
-  assert.ok(worldJs.includes('powerPreference: \'high-performance\''), 'High-performance WebGL requested');
+  assert.ok(worldJs.includes('powerPreference: \'low-power\''), 'Renderer must request the low-power profile');
   assert.ok(worldJs.includes('isHeadless'), 'Headless environment check must be present');
   assert.ok(worldJs.includes('dispose()'), 'Lifecycle dispose method must exist');
   assert.ok(worldJs.includes('cancelAnimationFrame(this._animationFrameId)'), 'Render loop must cancel on dispose');
@@ -72,7 +72,7 @@ test('AXIS 4: RENDERER_EXISTS — WebGLRenderer setup, headless throttling & lif
 test('AXIS 5: RUNTIME_CONNECTED — Live telemetry sync with zero mock', () => {
   assert.ok(worldJs.includes('syncRealData'), 'syncRealData method must exist');
   assert.ok(worldJs.includes("data.agents"), 'Must consume real runtime agents array');
-  assert.ok(worldJs.includes("window.addEventListener('fenix:data'"), 'Must listen to live runtime event bus');
+  assert.ok(worldJs.includes("window.addEventListener('fenix:city-world'"), 'Must listen to live city-world telemetry');
   assert.ok(!worldJs.includes('MOCK_METRICS'), 'Must not contain fabricated metrics');
   assert.ok(!worldJs.includes('FAKE_AGENTS'), 'Must not contain fake agents');
 });
@@ -103,9 +103,8 @@ test('AXIS 7: REAL_MISSION_BOUND — AgentThoughtBubble billboard with real task
   assert.ok(worldJs.includes('class AgentThoughtBubble'), 'AgentThoughtBubble billboard class must exist');
   assert.ok(worldJs.includes('new T.Sprite(mat)'), 'Thought bubble must use THREE.Sprite for automatic billboarding');
   assert.ok(worldJs.includes('setText(text, emoji'), 'setText method must exist on thought bubble');
-  assert.ok(worldJs.includes('WMS: Inspeção Lote #4410'), 'Camila initial task must be defined');
-  assert.ok(worldJs.includes('Doca 2: Embarque 40ft'), 'Carlos initial task must be defined');
-  assert.ok(worldJs.includes('existing.thoughtBubble.setText(bubbleText'), 'Thought bubble must update from runtime tasks');
+  assert.ok(worldJs.includes('agent.currentTask || agent.assignedTask'), 'Thought bubble activity must derive from runtime task data');
+  assert.ok(worldJs.includes('this._resolveAgentActivity({ ...a, movementState: existing.movementState })'), 'Thought bubble must reflect measured runtime state');
 });
 
 // ── AXIS 8: REAL_EVENT_BOUND ───────────────────────────────────────────────
@@ -126,7 +125,8 @@ test('AXIS 9: PATH_SYSTEM — PathGraph with 26 waypoints, BFS routing & agent w
   assert.ok(worldJs.includes('api_f3_sora'), 'API Platform floor 3 Sora waypoint must exist');
   assert.ok(worldJs.includes('findPath('), 'findPath shortest path algorithm must exist');
   assert.ok(worldJs.includes('navigateAgent('), 'navigateAgent method must exist');
-  assert.ok(worldJs.includes("agentRecord.state = 'WALKING'"), 'Agent state must transition to WALKING when traveling');
+  assert.ok(worldJs.includes('agent.localNavigationActive = true'), 'Local navigation must enter an explicit moving state');
+  assert.ok(worldJs.includes("setText('Movimento local · não sincronizado'"), 'Local movement must not masquerade as canonical runtime telemetry');
   assert.ok(/Math\.atan2\((?:moveDir|this\._tempMoveDir)\.x,\s*(?:moveDir|this\._tempMoveDir)\.z\)/.test(worldJs), 'Agent heading must orient toward waypoint');
 });
 

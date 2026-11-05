@@ -2,10 +2,10 @@
 
 Grafo FILE→MODULE→API/EVENT derivado do índice. Consultas: "quem usa este módulo?" → tabela CONSUMERS abaixo (fonte completa em output/graph.json).
 
-- Nós (arquivos): 5155
-- Arestas IMPORTS: 4776
-- Endpoints expostos: 2581
-- Referências quebradas: 896
+- Nós (arquivos): 5266
+- Arestas IMPORTS: 4803
+- Endpoints expostos: 2587
+- Referências quebradas: 897
 
 ## Arquivos mais consumidos (top 25)
 

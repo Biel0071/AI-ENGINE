@@ -26,7 +26,8 @@ class AgentExecutionRuntime {
       '  "commitMessage": "..."',
       '}',
       `Job: ${input.prompt || input.type || ''}`,
-      `Project context: ${JSON.stringify(context)}`
+      `Project context: ${JSON.stringify(context)}`,
+      skillContext?.prompt ? `Selected skills: ${skillContext.selectedSkills.map((skill) => skill.name).join(', ')}\nSelected skill instructions:\n${skillContext.prompt}` : ''
     ].join('\n');
     let maxAttempts = 3;
     let attempt = 1;

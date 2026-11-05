@@ -115,7 +115,15 @@ class MemoryEngine {
   async validateScope(tenantId, memory) {
     const state = await this.store.read();
     if ((memory.kind === 'project' || memory.projectId) && !(memory.scopeType === 'project' && memory.scopeId)) {
-      if (!memory.projectId || !state.projects.some((item) => item.tenantId === tenantId && item.id === memory.projectId)) {
+      const existsInStore = Boolean(memory.projectId && state.projects.some((item) => item.tenantId === tenantId && item.id === memory.projectId));
+      let existsInRegistry = false;
+      if (!existsInStore && memory.projectId) {
+        try {
+          const registry = require('../projects/project-registry');
+          existsInRegistry = Boolean(typeof registry.getProjectById === 'function' && registry.getProjectById(memory.projectId));
+        } catch {}
+      }
+      if (!existsInStore && !existsInRegistry) {
         throw new ValidationError('project memory requires an existing tenant project');
       }
     }

@@ -1,0 +1,321 @@
+/* FÊNIX OS — Product Tree & Recursive Builder CSS Tokens */
+.fenix-pt-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #050810;
+  color: #f8fafc;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.fenix-pt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #0B1018;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.fenix-pt-title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fenix-pt-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fenix-pt-title span.accent {
+  color: #00d9ff;
+}
+
+.fenix-pt-tabs {
+  display: flex;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fenix-pt-tab-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fenix-pt-tab-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.fenix-pt-tab-btn.active {
+  background: #00d9ff;
+  color: #050810;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.35);
+}
+
+.fenix-pt-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.fenix-pt-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.fenix-pt-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.fenix-pt-btn-primary {
+  background: #00d9ff;
+  color: #050810;
+  border-color: #00d9ff;
+}
+
+.fenix-pt-btn-primary:hover {
+  background: #33e1ff;
+  box-shadow: 0 0 14px rgba(0, 217, 255, 0.4);
+}
+
+.fenix-pt-btn-success {
+  background: #10b981;
+  color: #050810;
+  border-color: #10b981;
+}
+
+.fenix-pt-btn-danger {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* Metrics Pulse Strip */
+.fenix-pt-pulse-strip {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 20px;
+  background: #080d16;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.fenix-pt-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fenix-pt-metric-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.fenix-pt-metric-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.fenix-pt-metric-value.cyan { color: #00d9ff; }
+.fenix-pt-metric-value.green { color: #10b981; }
+.fenix-pt-metric-value.orange { color: #f59e0b; }
+
+/* Main Content Area */
+.fenix-pt-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Tree Explorer Column */
+.fenix-pt-tree-col {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fenix-pt-detail-col {
+  width: 420px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 20px;
+  background: #070b13;
+}
+
+/* Tree Nodes */
+.fenix-pt-node {
+  margin-left: 18px;
+  position: relative;
+  border-left: 1px dashed rgba(255, 255, 255, 0.12);
+  padding-left: 14px;
+  margin-top: 6px;
+}
+
+.fenix-pt-node-root {
+  margin-left: 0;
+  border-left: none;
+  padding-left: 0;
+}
+
+.fenix-pt-node-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: 4px;
+}
+
+.fenix-pt-node-item:hover {
+  background: rgba(0, 217, 255, 0.05);
+  border-color: rgba(0, 217, 255, 0.25);
+}
+
+.fenix-pt-node-item.selected {
+  background: rgba(0, 217, 255, 0.1);
+  border-color: #00d9ff;
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
+}
+
+.fenix-pt-node-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fenix-pt-node-type-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tag-product { background: #3b82f6; color: #fff; }
+.tag-module { background: #6366f1; color: #fff; }
+.tag-page { background: #00d9ff; color: #050810; }
+.tag-subpage { background: #0ea5e9; color: #fff; }
+.tag-tab { background: #14b8a6; color: #050810; }
+.tag-form { background: #f59e0b; color: #050810; }
+.tag-modal { background: #ec4899; color: #fff; }
+.tag-component { background: #8b5cf6; color: #fff; }
+.tag-action { background: #10b981; color: #050810; }
+.tag-operation { background: #f97316; color: #fff; }
+.tag-rule { background: #eab308; color: #050810; }
+.tag-permission { background: #ef4444; color: #fff; }
+
+/* 11 Axes Cards */
+.fenix-pt-axis-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.fenix-pt-axis-card.passed {
+  border-left: 3px solid #10b981;
+}
+
+.fenix-pt-axis-card.failed {
+  border-left: 3px solid #ef4444;
+}
+
+.fenix-pt-axis-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.fenix-pt-axis-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Interactions Grid */
+.fenix-pt-interaction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+}
+
+.fenix-pt-interaction-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.badge-functional {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.badge-defective {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}

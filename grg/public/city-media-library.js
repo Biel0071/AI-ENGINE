@@ -122,19 +122,40 @@
   }
 
   function openPanel() {
+    window.fenixCollapseSidebarForMobileCityDrawer?.();
+    for (const id of ['fenixCityCockpitDrawer', 'fenixCityOpsDrawer']) {
+      const competingDrawer = byId(id);
+      if (competingDrawer) {
+        window.fenixDeactivateCityDrawer?.(competingDrawer, false);
+        competingDrawer.style.display = 'none';
+      }
+    }
     panel.hidden = false;
+    panel.style.display = 'flex';
+    window.fenixActivateCityDrawer?.(panel, () => closePanel(), 'btnCityMediaLibrary');
     byId('btnCityMediaLibrary')?.setAttribute('aria-expanded', 'true');
     loadSaved();
     byId('fenixCityMediaQuery')?.focus();
   }
 
-  function closePanel() {
+  function closePanel(restoreFocus = true) {
+    window.fenixDeactivateCityDrawer?.(panel, restoreFocus);
     panel.hidden = true;
+    panel.style.display = 'none';
     byId('btnCityMediaLibrary')?.setAttribute('aria-expanded', 'false');
-    byId('btnCityMediaLibrary')?.focus();
+    if (restoreFocus) byId('btnCityMediaLibrary')?.focus();
   }
 
-  byId('btnCityMediaLibrary')?.addEventListener('click', openPanel);
+  // Force hidden on initial mount
+  closePanel();
+
+  byId('btnCityMediaLibrary')?.addEventListener('click', () => {
+    if (panel.hidden || panel.style.display === 'none') {
+      openPanel();
+    } else {
+      closePanel();
+    }
+  });
   byId('fenixCityMediaClose')?.addEventListener('click', closePanel);
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !panel.hidden) closePanel(); });
   searchForm.addEventListener('submit', async (event) => {

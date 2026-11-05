@@ -1,0 +1,139 @@
+/* ==========================================================================
+   FÊNIX OS — MULTI-MONITOR SCREEN ADAPTATION & FLUID VIEWPORT ENGINE
+   ========================================================================== */
+
+:root {
+  --fnx-ui-scale: 1;
+  --fnx-font-scale: 1;
+  --fnx-panel-gap: 8px;
+  --fnx-sidebar-adaptive-width: 320px;
+  --fnx-hud-glow: rgba(0, 240, 255, 0.25);
+}
+
+/* 1. Ultrawide Viewports (>= 2560px or 21:9 / 32:9) */
+html.fnx-screen-ultrawide {
+  --fnx-ui-scale: 1;
+  --fnx-panel-gap: 12px;
+  --fnx-sidebar-adaptive-width: 420px;
+}
+
+html.fnx-screen-ultrawide .views-container {
+  display: flex !important;
+  gap: var(--fnx-panel-gap) !important;
+}
+
+/* 2. 4K UHD Viewports (>= 3840px or high-density 4K) */
+html.fnx-screen-4k {
+  --fnx-ui-scale: 1;
+  --fnx-font-scale: 1;
+  --fnx-panel-gap: 16px;
+  --fnx-sidebar-adaptive-width: 480px;
+}
+
+/* 3. Standard Desktop HD (1440px - 2559px) */
+html.fnx-screen-desktop {
+  --fnx-ui-scale: 1.0;
+  --fnx-panel-gap: 8px;
+  --fnx-sidebar-adaptive-width: 340px;
+}
+
+/* 4. Laptop Viewports (1024px - 1439px) */
+html.fnx-screen-laptop {
+  --fnx-ui-scale: 1;
+  --fnx-font-scale: 1;
+  --fnx-panel-gap: 6px;
+  --fnx-sidebar-adaptive-width: 280px;
+}
+
+/* 5. Tablet Viewports (768px - 1023px) */
+html.fnx-screen-tablet {
+  --fnx-ui-scale: 1;
+  --fnx-font-scale: 1;
+  --fnx-sidebar-adaptive-width: 240px;
+}
+
+/* 6. Mobile Viewports (< 768px) */
+html.fnx-screen-mobile {
+  --fnx-ui-scale: 1;
+  --fnx-font-scale: 1;
+  --fnx-sidebar-adaptive-width: 100%;
+}
+
+/* HUD Auto-Display Telemetry Pill - Clean Topbar: Hidden */
+.fnx-display-hud-pill,
+#fnxDisplayHudPill {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  clip: rect(0, 0, 0, 0) !important;
+}
+
+.fnx-display-hud-pill:hover {
+  background: rgba(15, 25, 42, 0.95);
+  border-color: #00f0ff;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+}
+
+.fnx-display-hud-pill .pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: fnxPulse 2s infinite ease-in-out;
+}
+
+@keyframes fnxPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Dropdown Menu for Display Override */
+.fnx-display-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  background: rgba(8, 12, 20, 0.96);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 240, 255, 0.1);
+  backdrop-filter: blur(16px);
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 9999;
+}
+
+.fnx-display-menu.open {
+  display: flex;
+}
+
+.fnx-display-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fnx-display-menu-item:hover,
+.fnx-display-menu-item.active {
+  background: rgba(0, 240, 255, 0.12);
+  color: #38bdf8;
+}
+
+.fnx-display-menu-item.active::after {
+  content: '✓';
+  color: #10b981;
+  font-weight: 700;
+}

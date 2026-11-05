@@ -1,30 +1,30 @@
 # PROJECT_STRUCTURE.md — FÊNIX OS
 
-Gerado automaticamente por `engine/projectIntelligence/build.js` em 2026-10-14T21:25:05.191Z. Derivado da realidade do código.
+Gerado automaticamente por `engine/projectIntelligence/build.js` em 2026-10-17T21:15:36.183Z. Derivado da realidade do código.
 
-## Topo do repositório (6157 arquivos, sem node_modules/.git)
+## Topo do repositório (6305 arquivos, sem node_modules/.git)
 
 | Diretório | Arquivos | Finalidade (verificada no código) |
 |---|---|---|
-| `grg/` | 2938 | FÊNIX OS canônico — backend Node (src/server.js, porta 4400) + frontend canônico public/index.html (Live Workspace) + office.html |
+| `grg/` | 2969 | FÊNIX OS canônico — backend Node (src/server.js, porta 4400) + frontend canônico public/index.html (Live Workspace) + office.html |
 | `archive/` | 1681 | A classificar |
 | `projects/` | 307 | A classificar |
 | `graphify-out/` | 240 | Grafo/AST cache gerados por ferramenta externa — regenerável |
 | `generated/` | 205 | Saídas geradas pelo engine (smoke/dashboards) — NÃO editar |
 | `engine/` | 103 | Motor de IA reutilizável (análise, AST tree-sitter, memória, codeIntelligence) |
+| `scratch/` | 101 | A classificar |
+| `docs/` | 97 | Documentação geral |
 | `ai-os/` | 92 | Documentos operacionais do FÊNIX (memória de decisões, prompts, repositórios registrados) |
 | `future/` | 81 | Rascunhos/legado (legacy-root) — inativo |
-| `docs/` | 76 | Documentação geral |
 | `platform/` | 64 | Control Plane v2 legado do AI-ENGINE (porta 4310) — dashboard próprio em public/ |
 | `executions/` | 38 | A classificar |
 | `temp_artifacts/` | 31 | A classificar |
 | `qa-results/` | 20 | A classificar |
-| `memory/` | 17 | Memória de projetos (ai-engine, zapai-crm) |
+| `memory/` | 19 | Memória de projetos (ai-engine, zapai-crm) |
 | `ai-analysis/` | 14 | Análises congeladas (freeze) — gerado |
 | `missions/` | 11 | A classificar |
 | `system/` | 11 | Docs de sistema |
 | `tests/` | 10 | A classificar |
-| `scratch/` | 7 | A classificar |
 | `clients/` | 5 | A classificar |
 | `test-results/` | 4 | A classificar |
 | `tmp/` | 4 | A classificar |
@@ -229,9 +229,9 @@ Gerado automaticamente por `engine/projectIntelligence/build.js` em 2026-10-14T2
 
 | Classe | Arquivos |
 |---|---|
-| ACTIVE | 4231 |
+| ACTIVE | 4334 |
 | GENERATED | 453 |
-| TEST | 394 |
+| TEST | 402 |
 | LEGACY | 76 |
 | TEMPORARY | 1 |
 

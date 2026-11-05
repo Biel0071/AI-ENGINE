@@ -1,0 +1,4 @@
+/* The shared drawer owns entity details while open; restore the map context when it closes. */
+body:has(#fenixInspectorDrawer.open) #view-city .fw3-context {
+  display: none !important;
+}

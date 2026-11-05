@@ -50,14 +50,69 @@
   // 1. Studio Modality Switcher
   window.fenixSetStudioModality = function(mode) {
     state.studioModality = mode;
-    ['btnStudioWeb', 'btnStudioVideo', 'btnStudioReconstruct', 'btnStudioQa'].forEach(id => {
+    const previewPane = $('fenixIdePreviewPane');
+    const editorArea = $('fenixIdeEditorArea');
+    const splitDivider = $('fenixIdeSplitDivider');
+
+    if (mode === 'studio3d') {
+      if (typeof window.fenixSetIdeMode === 'function') {
+        window.fenixSetIdeMode('preview');
+      }
+      if (editorArea) editorArea.style.display = 'none';
+      if (splitDivider) splitDivider.style.display = 'none';
+      if (previewPane) {
+        previewPane.style.display = 'flex';
+        previewPane.style.flex = '1';
+        previewPane.style.width = '100%';
+      }
+      const inspector = document.querySelector('.studio-right-inspector');
+      if (inspector && window.innerWidth <= 1024) {
+        inspector.style.display = 'none';
+      }
+      if (window.FenixWorkspaceLayoutManager) {
+        window.FenixWorkspaceLayoutManager.state.studioModality = 'studio3d';
+        window.FenixWorkspaceLayoutManager.state.studioMaximized = true;
+        window.FenixWorkspaceLayoutManager.activePreset = '3d-modeling';
+        window.FenixWorkspaceLayoutManager.updateDropdown();
+      }
+      setTimeout(() => {
+        window.FenixUniversal3DStudio?.onResize?.();
+        window.dispatchEvent(new Event('resize'));
+      }, 60);
+    } else {
+      if (window.FenixWorkspaceLayoutManager) {
+        window.FenixWorkspaceLayoutManager.state.studioModality = mode;
+        window.FenixWorkspaceLayoutManager.state.studioMaximized = false;
+        if (window.FenixWorkspaceLayoutManager.activePreset === '3d-modeling' || window.FenixWorkspaceLayoutManager.activePreset === 'cad-engineering') {
+          window.FenixWorkspaceLayoutManager.activePreset = 'development';
+          window.FenixWorkspaceLayoutManager.state.leftPanelVisible = true;
+          window.FenixWorkspaceLayoutManager.state.ideMode = 'split';
+          window.FenixWorkspaceLayoutManager.state.editorRatio = 50;
+          window.FenixWorkspaceLayoutManager.state.previewRatio = 50;
+        }
+        window.FenixWorkspaceLayoutManager.applyCurrentState();
+        window.FenixWorkspaceLayoutManager.updateDropdown();
+      } else {
+        if (editorArea) {
+          editorArea.style.display = 'flex';
+          editorArea.style.flex = '1';
+        }
+        if (splitDivider) splitDivider.style.display = 'block';
+        if (previewPane) {
+          previewPane.style.display = 'flex';
+          previewPane.style.flex = '1';
+        }
+      }
+    }
+    ['btnStudioWeb', 'btnStudioVideo', 'btnStudioReconstruct', 'btnStudioQa', 'btnStudio3D'].forEach(id => {
       const btn = $(id);
       if (btn) btn.classList.remove('active');
     });
 
     const activeBtn = mode === 'web' ? $('btnStudioWeb') :
                      mode === 'video' ? $('btnStudioVideo') :
-                     mode === 'reconstruct' ? $('btnStudioReconstruct') : $('btnStudioQa');
+                     mode === 'reconstruct' ? $('btnStudioReconstruct') :
+                     mode === 'qa' ? $('btnStudioQa') : $('btnStudio3D');
     if (activeBtn) activeBtn.classList.add('active');
 
     // Toggle Panels
@@ -65,11 +120,13 @@
     const videoView = $('fenixStudioVideoView');
     const reconView = $('fenixStudioReconstructView');
     const qaView = $('fenixStudioQaView');
+    const studio3dView = $('fenixStudio3DView');
 
     if (webView) webView.style.display = mode === 'web' ? 'flex' : 'none';
     if (videoView) videoView.style.display = mode === 'video' ? 'flex' : 'none';
     if (reconView) reconView.style.display = mode === 'reconstruct' ? 'flex' : 'none';
     if (qaView) qaView.style.display = mode === 'qa' ? 'flex' : 'none';
+    if (studio3dView) studio3dView.style.display = mode === 'studio3d' ? 'flex' : 'none';
 
     if (mode === 'video') {
       window.fenixLoadVideoStudio();
@@ -77,6 +134,8 @@
       window.fenixLoadReconstructionPanel();
     } else if (mode === 'qa') {
       window.fenixLoadQaPanel();
+    } else if (mode === 'studio3d') {
+      window.FenixUniversal3DStudio?.init();
     }
   };
 

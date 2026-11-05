@@ -35,8 +35,8 @@ async function getSnapshot(projectPath) {
   const abs = path.resolve(projectPath);
   const cached = cache.get(abs);
   
-  // SWR: Se tiver cache recente (10s), retorna logo
-  if (cached && Date.now() - cached.ts < 10000) return cached.data;
+  // SWR: Se tiver cache recente (60s), retorna logo
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.data;
 
   // Se ja tem um scan em andamento
   if (pendingScans.has(abs)) {

@@ -1,0 +1,356 @@
+/* ==========================================================================
+   FÊNIX OS — CYBERPUNK TASK POP-UP MODAL (HUMAN-IN-THE-LOOP & HUD)
+   ========================================================================== */
+
+.fnx-task-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 7, 13, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.25s;
+}
+
+.fnx-task-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.fnx-task-modal {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  background: linear-gradient(135deg, rgba(13, 20, 36, 0.95) 0%, rgba(9, 14, 26, 0.98) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 240, 255, 0.2);
+  color: #e2e8f0;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  overflow: hidden;
+  transform: scale(0.94) translateY(12px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fnx-task-modal-overlay.active .fnx-task-modal {
+  transform: scale(1) translateY(0);
+}
+
+/* Header */
+.fnx-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(0, 240, 255, 0.04);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+}
+
+.fnx-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fnx-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  letter-spacing: 0.05em;
+}
+
+.fnx-modal-badge.approval {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+}
+
+.fnx-modal-badge.running {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #34d399;
+}
+
+.fnx-modal-badge.completed {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #38bdf8;
+}
+
+.fnx-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.fnx-modal-close-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Body */
+.fnx-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fnx-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.fnx-modal-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.fnx-task-reference {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: -10px;
+  color: #7e91a8;
+  font-size: 11px;
+}
+
+.fnx-task-reference code {
+  min-width: 0;
+  color: #7dd3fc;
+  font-family: var(--font-mono, monospace);
+  overflow-wrap: anywhere;
+}
+
+/* Agent Dossier Card */
+.fnx-agent-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  border-radius: 10px;
+}
+
+.fnx-agent-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fnx-agent-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.fnx-agent-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.fnx-agent-role-pill {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.fnx-executor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+}
+
+/* Live Telemetry Row */
+.fnx-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.fnx-telemetry-box {
+  padding: 10px 12px;
+  background: rgba(8, 14, 26, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fnx-telemetry-label {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.fnx-telemetry-value {
+  font-size: 14px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  color: #00f0ff;
+}
+
+/* Progress Bar */
+.fnx-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fnx-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.fnx-progress-bar-fill {
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(90deg, #00f0ff, #10b981);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+/* Footer / Actions */
+.fnx-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fnx-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+  transition: all 0.15s ease;
+}
+
+.fnx-btn-primary:hover {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+}
+
+.fnx-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fnx-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+}
+
+.fnx-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fnx-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+}
+
+/* Floating minimized dock trigger */
+.fnx-minimized-task-dock {
+  position: fixed;
+  bottom: 42px;
+  right: 20px;
+  z-index: 9990;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(10, 16, 28, 0.95);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: 9999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 14px rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  animation: fnxPulse 2s infinite ease-in-out;
+}
+
+.fnx-minimized-task-dock.visible {
+  display: inline-flex;
+}

@@ -95,6 +95,65 @@ function createTestHarness(options = {}) {
   return { store, bus, cp, aiGateway, aiRouter, heart, app };
 }
 
+test('conversational gateway requests can exclude the deterministic Echo fallback', async () => {
+  const { aiGateway } = createTestHarness();
+  await assert.rejects(
+    () => aiGateway.invoke('grg', 'grg-admin', {
+      taskType: 'fail_route', prompt: 'Quanto é 2 + 2?', excludeProviders: ['echo']
+    }),
+    /No AI provider succeeded: failing/
+  );
+});
+
+test('AIRouter propagates the conversational Echo exclusion to gateway fallbacks', async () => {
+  const { aiRouter } = createTestHarness();
+  const result = await aiRouter.route('grg', 'grg-admin', {
+    lane: 'fast', taskType: 'short_answer', prompt: 'Quanto é 2 + 2?', excludeProviders: ['echo']
+  });
+  assert.equal(result.ok, false);
+  assert.notEqual(result.provider, 'echo');
+});
+
+test('AIRouter honors a configured conversational provider before a healthy local fallback', async () => {
+  const connectors = {
+    list: () => ['ai:ollama', 'ai:aiplatform'],
+    connectors: new Map([
+      ['ai:ollama', { models: () => ({ state: 'measured', value: ['qwen2.5:0.5b'] }) }],
+      ['ai:aiplatform', { models: () => ({ state: 'measured', value: ['qwen2.5:0.5b'] }) }],
+    ]),
+    status: async () => ({ state: { value: 'CONNECTED' } }),
+  };
+  const router = new AIRouter({ connectors });
+  const selected = await router.select('grg', 'grg-admin', {
+    tiers: ['local', 'free'], preferProvider: 'aiplatform'
+  });
+  assert.equal(selected.chosen.value, 'aiplatform');
+});
+
+test('Fast Lane prefers the configured provider and excludes Echo from chat responses', async () => {
+  const { callQuickModel } = require('../src/execution/fast-lane-engine');
+  const modelRouter = require('../src/routing/model-router');
+  const previousMode = modelRouter.getSelectorMode();
+  const calls = [];
+  modelRouter.setSelectorMode('AUTO');
+  try {
+    await callQuickModel('Quanto é 2 + 2?', {
+      tenantId: 'grg', actorId: 'grg-admin', prompt: 'Quanto é 2 + 2?',
+      app: { aiRouter: {
+        gateway: { route: () => ({ provider: 'aiplatform' }) },
+        route: async (_tenantId, _actorId, request) => {
+          calls.push(request);
+          return { ok: true, provider: 'aiplatform', result: { text: '4', model: 'qwen2.5:0.5b' } };
+        },
+      } },
+    });
+  } finally {
+    modelRouter.setSelectorMode(previousMode);
+  }
+  assert.equal(calls[0].preferProvider, 'aiplatform');
+  assert.deepEqual(calls[0].excludeProviders, ['echo']);
+});
+
 test('TEST 1: Heart inicia e registra status ONLINE', async () => {
   const { heart } = createTestHarness();
   assert.equal(heart.status, 'STOPPED');

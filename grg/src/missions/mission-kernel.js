@@ -46,9 +46,41 @@ class MissionKernel {
     const mission = { id: uuid(), tenantId, projectId: input.projectId || null, scopeId: input.scopeId || null, title, displayName, objective, objectiveHash: hash(objective), status: 'PLANNED', priority: Math.max(-10, Math.min(10, Number(input.priority || 0))), policy: { maxTokens: nullableNumber(input.policy?.maxTokens), maxCostUsd: nullableNumber(input.policy?.maxCostUsd), deadline: normalizeDeadline(input.policy?.deadline) }, progress: 0, requestedBy: actorId, createdAt: now(), updatedAt: now() };
     const steps = normalized.map((item, index) => ({ id: uuid(), tenantId, missionId: mission.id, key: item.key, type: item.type, agent: item.definition.agent, policyLevel: item.definition.level, jobType: item.definition.jobType, avatarState: item.definition.avatar, building: item.definition.building, dependsOn: item.dependsOn, payload: item.payload, payloadHash: hash(item.payload), validation: item.validation, contextRefs: item.contextRefs, status: 'PLANNED', order: index, approvalId: null, approvalConsumedAt: null, jobId: null, metrics: { durationMs: null, attempts: 0, tokens: null, costUsd: null }, createdAt: now(), updatedAt: now() }));
     const refs = normalizeRefs(input.contextRefs || []).map((item) => ({ id: uuid(), tenantId, missionId: mission.id, stepId: null, ...item, createdAt: now() }));
-    await this.store.update((state) => { state.missions.push(mission); state.missionSteps.push(...steps); state.missionContextRefs.push(...refs); return state; });
-    await this.#event(mission, 'mission.created', null, { status: mission.status, stepCount: steps.length, objectiveHash: mission.objectiveHash, contextRefs: refs.map((item) => item.ref) }, actorId);
-    return this.get(tenantId, actorId, mission.id);
+    const eventPayload = { status: mission.status, stepCount: steps.length, objectiveHash: mission.objectiveHash, contextRefs: refs.map((item) => item.ref) };
+    assertNoSecrets(eventPayload);
+    const eventRecord = { id: uuid(), tenantId: mission.tenantId, missionId: mission.id, stepId: null, stepKey: null, agent: 'mission-kernel', type: 'mission.created', status: mission.status, contextRefs: refs.map((item) => item.ref), confidence: null, metrics: null, payloadHash: hash(eventPayload), actorId, createdAt: now() };
+    const updateTask = this.store.update((state) => {
+      state.missions.push(mission);
+      state.missionSteps.push(...steps);
+      state.missionContextRefs.push(...refs);
+      state.missionEvents.push(eventRecord);
+      return state;
+    });
+    const publishTask = this.events
+      ? this.events.publish({
+          tenantId: mission.tenantId,
+          stream: `mission:${mission.id}`,
+          type: 'mission.created',
+          source: 'fenix-mission-kernel',
+          subject: mission.id,
+          data: {
+            actorId,
+            missionId: mission.id,
+            stepId: null,
+            stepKey: null,
+            agent: eventRecord.agent,
+            status: eventRecord.status,
+            contextRefs: eventRecord.contextRefs,
+            confidence: null,
+            metrics: null,
+            payloadHash: eventRecord.payloadHash,
+            city: { district: 'missions', building: 'mission-control' }
+          },
+          idempotencyKey: `mission.created:${eventRecord.id}`
+        })
+      : Promise.resolve();
+    await Promise.all([updateTask, publishTask]);
+    return { ...mission, steps: steps.sort((a, b) => a.order - b.order), events: [eventRecord], contextRefs: refs, summary: null };
   }
 
   async start(tenantId, actorId, missionId) {
@@ -63,8 +95,12 @@ class MissionKernel {
         if (job.status === 'PAUSED' || job.status === 'PAUSING') await this.jobs.resume(tenantId, actorId, job.id);
       }
     }
-    await this.store.update((state) => { const current = state.missions.find((item) => item.id === missionId); current.status = 'RUNNING'; current.startedAt ||= now(); current.updatedAt = now(); return state; });
-    await this.#event(mission, 'mission.started', null, { status: 'RUNNING' }, actorId); await this.#dispatchReady(tenantId, missionId); return this.get(tenantId, actorId, missionId);
+    await this.#event(mission, 'mission.started', null, { status: 'RUNNING' }, actorId, (state) => {
+      const current = state.missions.find((item) => item.id === missionId);
+      if (current) { current.status = 'RUNNING'; current.startedAt ||= now(); current.updatedAt = now(); }
+    });
+    await this.#dispatchReady(tenantId, missionId);
+    return this.get(tenantId, actorId, missionId);
   }
 
   // MEDIDO em producao (2026-07-29): o ciclo de missao so avancava por EVENTO de job
@@ -316,7 +352,40 @@ class MissionKernel {
   async #step(tenantId, missionId, stepId) { const state = await this.store.read(); const step = state.missionSteps.find((item) => item.tenantId === tenantId && item.missionId === missionId && item.id === stepId); if (!step) throw new NotFoundError(`mission step not found: ${stepId}`); return step; }
   async #authorizeScope(tenantId, actorId, mission, permission) { if (mission.scopeId && this.hierarchy) return this.hierarchy.authorizeScope(tenantId, actorId, mission.scopeId, permission); const membership = await this.cp.getMembership(tenantId, actorId); if (!['admin', 'master_admin'].includes(membership.role)) throw new ForbiddenError('global missions require an administrator'); return membership; }
   async #setMissionStatus(missionId, status) { await this.store.update((state) => { const mission = state.missions.find((item) => item.id === missionId); mission.status = status; mission.updatedAt = now(); return state; }); }
-  async #event(mission, type, step, data, actorId) { assertNoSecrets(data); const record = { id: uuid(), tenantId: mission.tenantId, missionId: mission.id, stepId: step?.id || null, stepKey: step?.key || null, agent: step?.agent || 'mission-kernel', type, status: data.status || null, contextRefs: data.contextRefs || [], confidence: data.confidence ?? null, metrics: data.metrics || null, payloadHash: hash(data), actorId, createdAt: now() }; await this.store.update((state) => { state.missionEvents.push(record); return state; }); if (this.events) await this.events.publish({ tenantId: mission.tenantId, stream: `mission:${mission.id}`, type, source: 'fenix-mission-kernel', subject: step?.id || mission.id, data: { actorId, missionId: mission.id, stepId: step?.id || null, stepKey: step?.key || null, agent: record.agent, status: record.status, contextRefs: record.contextRefs, confidence: record.confidence, metrics: record.metrics, payloadHash: record.payloadHash, city: { district: 'missions', building: step?.building || 'mission-control' } }, idempotencyKey: `${type}:${record.id}` }); return record; }
+  async #event(mission, type, step, data, actorId, mutator = null) {
+    assertNoSecrets(data);
+    const record = { id: uuid(), tenantId: mission.tenantId, missionId: mission.id, stepId: step?.id || null, stepKey: step?.key || null, agent: step?.agent || 'mission-kernel', type, status: data.status || null, contextRefs: data.contextRefs || [], confidence: data.confidence ?? null, metrics: data.metrics || null, payloadHash: hash(data), actorId, createdAt: now() };
+    const updateTask = this.store.update((state) => {
+      if (typeof mutator === 'function') mutator(state);
+      state.missionEvents.push(record);
+      return state;
+    });
+    const publishTask = this.events
+      ? this.events.publish({
+          tenantId: mission.tenantId,
+          stream: `mission:${mission.id}`,
+          type,
+          source: 'fenix-mission-kernel',
+          subject: step?.id || mission.id,
+          data: {
+            actorId,
+            missionId: mission.id,
+            stepId: step?.id || null,
+            stepKey: step?.key || null,
+            agent: record.agent,
+            status: record.status,
+            contextRefs: record.contextRefs,
+            confidence: record.confidence,
+            metrics: record.metrics,
+            payloadHash: record.payloadHash,
+            city: { district: 'missions', building: step?.building || 'mission-control' }
+          },
+          idempotencyKey: `${type}:${record.id}`
+        })
+      : Promise.resolve();
+    await Promise.all([updateTask, publishTask]);
+    return record;
+  }
 }
 
 function normalizeSteps(input, jobs, missionInput = {}) { if (!Array.isArray(input) || !input.length || input.length > 50) throw new ValidationError('mission requires between 1 and 50 steps'); const generatedKeys = input.map((step, idx) => String(step?.key || (step?.type ? `${step.type}_${idx + 1}` : `step_${idx + 1}`)).trim()); const keys = new Set(); return input.map((step, index) => { const key = generatedKeys[index]; if (!/^[a-z][a-z0-9._-]{1,79}$/.test(key) || keys.has(key)) throw new ValidationError(`invalid or duplicate mission step key: ${key}`); if (step.jobType || step.agent) throw new ValidationError('mission jobType and agent are assigned only by the governed catalog'); keys.add(key); const definition = MISSION_STEP_CATALOG[step.type]; if (!definition) throw new ValidationError(`mission step type is not governed: ${step.type}`); if (!jobs.handlers.has(definition.jobType)) throw new ValidationError(`mission job handler is unavailable: ${definition.jobType}`); const payload = step.payload || {}; if (Buffer.byteLength(JSON.stringify(payload)) > 100_000) throw new ValidationError('mission step payload is too large'); assertNoSecrets(payload); const validation = { ...(missionInput?.autoApprove ? { testsPassed: true, risk: 'low', impactKnown: true } : {}), ...(step.validation || {}) }; assertNoSecrets(validation); if (definition.level === 'YELLOW' && !(validation.testsPassed === true && validation.risk === 'low' && validation.impactKnown === true)) throw new ValidationError(`yellow mission step ${key} requires passing tests, low risk and known impact`); const dependsOn = [...new Set((step.dependsOn || []).map((dep) => typeof dep === 'number' && generatedKeys[dep] ? generatedKeys[dep] : String(dep)))]; return { key, type: step.type, definition, dependsOn, payload, validation, contextRefs: normalizeRefs(step.contextRefs || []) }; }); }

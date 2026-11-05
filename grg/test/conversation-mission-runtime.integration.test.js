@@ -41,16 +41,23 @@ test('conversation task flows through real ProjectKernel, MissionKernel, approva
     );
 
     assert.equal(handled, true);
-    assert.equal(response.status, 202);
-    assert.equal(response.body.status, 'AWAITING_APPROVAL');
-    assert.equal(response.body.jobId, null);
+    assert.equal(response.status, 200);
+    assert.equal(response.body.lane, 'PROPOSAL');
+    assert.equal(response.body.plan.requiresConfirmation, true);
     assert.equal(response.body.mission.steps[0].type, 'dev-execute');
+    const proposed = await app.missions.get('tenant-a', 'alice', response.body.mission.id);
+    assert.equal(proposed.status, 'PLANNED', 'workers remain idle until the user confirms the proposal');
+    assert.equal(proposed.steps[0].jobId, null);
+
+    // This call represents the explicit Confirmar e iniciar action shown by the sidebar.
+    const started = await app.missions.start('tenant-a', 'alice', proposed.id);
+    assert.equal(started.status, 'AWAITING_APPROVAL');
 
     await assert.rejects(
-      () => app.missions.approveStep('tenant-a', 'alice', response.body.missionId, response.body.mission.steps[0].id, response.body.approval.id),
+      () => app.missions.approveStep('tenant-a', 'alice', started.id, started.steps[0].id, started.steps[0].approvalId),
       /Requester cannot approve/
     );
-    const approved = await app.missions.approveStep('tenant-a', 'bob', response.body.missionId, response.body.mission.steps[0].id, response.body.approval.id);
+    const approved = await app.missions.approveStep('tenant-a', 'bob', started.id, started.steps[0].id, started.steps[0].approvalId);
     const step = approved.steps[0];
     assert.ok(step.jobId);
     const job = await app.jobs.get('tenant-a', 'alice', step.jobId);

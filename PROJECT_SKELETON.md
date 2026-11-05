@@ -1,7 +1,7 @@
 # PROJECT_SKELETON.md
 
 Gerado automaticamente. Resumo estrutural por arquivo (imports/exports/classes/funções/endpoints/eventos) — permite entender a arquitetura sem abrir os arquivos.
-Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligence/output/skeleton.json`.
+Total: 5266 arquivos indexados. Detalhes completos em `engine/projectIntelligence/output/skeleton.json`.
 
 ## .agents/skills
 
@@ -39,7 +39,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## API_REGISTRY.md
 
-- `API_REGISTRY.md` (markdown, 242 linhas)
+- `API_REGISTRY.md` (markdown, 2690 linhas)
 
 ## ARCHITECTURE_MEMORY.md
 
@@ -183,11 +183,11 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## PROJECT_SKELETON.md
 
-- `PROJECT_SKELETON.md` (markdown, 954 linhas)
+- `PROJECT_SKELETON.md` (markdown, 2437 linhas)
 
 ## PROJECT_STRUCTURE.md
 
-- `PROJECT_STRUCTURE.md` (markdown, 75 linhas)
+- `PROJECT_STRUCTURE.md` (markdown, 248 linhas)
 
 ## README.md
 
@@ -199,7 +199,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## TASK_MEMORY.md
 
-- `TASK_MEMORY.md` (markdown, 18 linhas)
+- `TASK_MEMORY.md` (markdown, 32 linhas)
 
 ## ai-analysis/architecture.md
 
@@ -559,6 +559,10 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 - `docs/FENIX-V1-PRODUCTION-READINESS-AUDIT.md` (markdown, 39 linhas)
 
+## docs/FENIX_150_TESTS.md
+
+- `docs/FENIX_150_TESTS.md` (markdown, 198 linhas)
+
 ## docs/FENIX_AGENT_OS_CERTIFICATION.md
 
 - `docs/FENIX_AGENT_OS_CERTIFICATION.md` (markdown, 158 linhas)
@@ -567,9 +571,17 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 - `docs/FENIX_AGENT_WORLD.md` (markdown, 32 linhas)
 
+## docs/FENIX_BASELINE.md
+
+- `docs/FENIX_BASELINE.md` (markdown, 112 linhas)
+
 ## docs/FENIX_CCMAP_ACTIVATION_PLAN.md
 
 - `docs/FENIX_CCMAP_ACTIVATION_PLAN.md` (markdown, 134 linhas)
+
+## docs/FENIX_CHANGELOG.md
+
+- `docs/FENIX_CHANGELOG.md` (markdown, 64 linhas)
 
 ## docs/FENIX_CITY_EVOLUTION_LOG.md
 
@@ -595,13 +607,41 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 - `docs/FENIX_CONTEXTUAL_UI.md` (markdown, 58 linhas)
 
+## docs/FENIX_CONVERGENCE_AUDIT_AND_SPEC.md
+
+- `docs/FENIX_CONVERGENCE_AUDIT_AND_SPEC.md` (markdown, 74 linhas)
+
+## docs/FENIX_DEPLOY_EVIDENCE.md
+
+- `docs/FENIX_DEPLOY_EVIDENCE.md` (markdown, 115 linhas)
+
+## docs/FENIX_EVOLUTION_ENGINE_MAP_AND_DNA.md
+
+- `docs/FENIX_EVOLUTION_ENGINE_MAP_AND_DNA.md` (markdown, 60 linhas)
+
 ## docs/FENIX_INITIAL_STATE_REPORT.md
 
 - `docs/FENIX_INITIAL_STATE_REPORT.md` (markdown, 86 linhas)
 
+## docs/FENIX_MVP_IMPLEMENTATION.md
+
+- `docs/FENIX_MVP_IMPLEMENTATION.md` (markdown, 86 linhas)
+
+## docs/FENIX_PRODUCTION_CERTIFICATION.md
+
+- `docs/FENIX_PRODUCTION_CERTIFICATION.md` (markdown, 66 linhas)
+
 ## docs/FENIX_PRODUCTION_READINESS.md
 
 - `docs/FENIX_PRODUCTION_READINESS.md` (markdown, 148 linhas)
+
+## docs/FENIX_REALITY_AUDIT.md
+
+- `docs/FENIX_REALITY_AUDIT.md` (markdown, 79 linhas)
+
+## docs/FENIX_RECOVERY_PLAN.md
+
+- `docs/FENIX_RECOVERY_PLAN.md` (markdown, 104 linhas)
 
 ## docs/FENIX_SYSTEM_CENSUS.json
 
@@ -610,6 +650,10 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 ## docs/FENIX_SYSTEM_CENSUS.md
 
 - `docs/FENIX_SYSTEM_CENSUS.md` (markdown, 146 linhas)
+
+## docs/FENIX_TEST_REPORT.md
+
+- `docs/FENIX_TEST_REPORT.md` (markdown, 142 linhas)
 
 ## docs/FENIX_UNIVERSAL_CAPABILITY_MATRIX.md
 
@@ -622,6 +666,46 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 ## docs/FRONTEND_ARCHITECTURE_MAP.md
 
 - `docs/FRONTEND_ARCHITECTURE_MAP.md` (markdown, 177 linhas)
+
+## docs/GRG_SPACE_AUDIT_REPORT.md
+
+- `docs/GRG_SPACE_AUDIT_REPORT.md` (markdown, 47 linhas)
+
+## docs/GRG_SPACE_BASELINE.md
+
+- `docs/GRG_SPACE_BASELINE.md` (markdown, 40 linhas)
+
+## docs/GRG_SPACE_BUG_REGISTER.md
+
+- `docs/GRG_SPACE_BUG_REGISTER.md` (markdown, 36 linhas)
+
+## docs/GRG_SPACE_E2E_RESULTS.md
+
+- `docs/GRG_SPACE_E2E_RESULTS.md` (markdown, 52 linhas)
+
+## docs/GRG_SPACE_KNOWN_ISSUES.md
+
+- `docs/GRG_SPACE_KNOWN_ISSUES.md` (markdown, 36 linhas)
+
+## docs/GRG_SPACE_PERFORMANCE_REPORT.md
+
+- `docs/GRG_SPACE_PERFORMANCE_REPORT.md` (markdown, 37 linhas)
+
+## docs/GRG_SPACE_RELEASE_READINESS.md
+
+- `docs/GRG_SPACE_RELEASE_READINESS.md` (markdown, 47 linhas)
+
+## docs/GRG_SPACE_SECURITY_REPORT.md
+
+- `docs/GRG_SPACE_SECURITY_REPORT.md` (markdown, 27 linhas)
+
+## docs/GRG_SPACE_SYSTEM_INVENTORY.md
+
+- `docs/GRG_SPACE_SYSTEM_INVENTORY.md` (markdown, 50 linhas)
+
+## docs/GRG_SPACE_TEST_MATRIX.md
+
+- `docs/GRG_SPACE_TEST_MATRIX.md` (markdown, 46 linhas)
 
 ## docs/MIGRATION_PLAN.md
 
@@ -783,11 +867,8 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 - `engine/projectIntelligence/audit.js` (javascript, 99 linhas) — funções: timed, main | requires: ./lib
 - `engine/projectIntelligence/build.js` (javascript, 229 linhas) — funções: main, scanForLeaks, writeStructureDoc, writeSkeletonDoc, writeGraphDoc, writeScreenRegistry… | requires: ./lib | **endpoints(1)**: ...
 - `engine/projectIntelligence/lib.js` (javascript, 228 linhas) — funções: sha1, redactEnv, walk, extOf, isIndexable, skeletonJs… | requires:  | **endpoints(1)**: /api/x
-- `engine/projectIntelligence/output/graph.json` (json, 1 linhas)
-- `engine/projectIntelligence/output/index-cache.json` (json, 1 linhas)
-- `engine/projectIntelligence/output/metrics.json` (json, 133 linhas)
-- `engine/projectIntelligence/output/perf-history.json` (json, 18 linhas)
-- `engine/projectIntelligence/output/skeleton.json` (json, 1 linhas)
+- `engine/projectIntelligence/output/metrics.json` (json, 914 linhas)
+- `engine/projectIntelligence/output/perf-history.json` (json, 26 linhas)
 - `engine/projectIntelligence/query.js` (javascript, 113 linhas) — funções: load, fuzzyMatch, main, out, bump | requires: ./lib
 
 ## engine/projectScanner.js
@@ -1108,7 +1189,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 - `grg/check_runtime.js` (javascript, 34 linhas) — funções: check | requires: 
 
-## grg/data — 37 arquivos (detalhes no skeleton.json)
+## grg/data — 42 arquivos (detalhes no skeleton.json)
 
 ## grg/deploy-project-git-patch.js
 
@@ -1150,7 +1231,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## grg/gateway
 
-- `grg/gateway/frontend-gateway.js` (javascript, 321 linhas) — funções: serveHtml, handleAuthCheck, handleRealityScore, fetchFromBackend, forward | requires:  | eventos: on:data, on:end, on:error, on:timeout, on:error, on:aborted
+- `grg/gateway/frontend-gateway.js` (javascript, 359 linhas) — funções: shouldCompress, serveHtml, handleAuthCheck, handleRealityScore, fetchFromBackend, forward | requires:  | eventos: on:data, on:end, on:error, on:timeout, on:error, on:aborted
 
 ## grg/generate-workers.js
 
@@ -1207,18 +1288,18 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## grg/public
 
+- `grg/public/artifacts/FENIX_ZAI_AUDIT_REPORT.json` (json, 158 linhas)
+- `grg/public/artifacts/FENIX_ZAI_AUDIT_REPORT.md` (markdown, 68 linhas)
 - `grg/public/city-brief.css` (css, 4 linhas) — classes: fenix-city-brief, collapsed, fcb-head, fcb-eyebrow, fcb-collapse, fcb-body
 - `grg/public/city-brief.js` (javascript, 85 linhas) — funções: getJson, sectionHeading, render, refresh, applyWorld, el
 - `grg/public/city-integration.js` (javascript, 762 linhas) — classes: CityIntegration
-- `grg/public/city-media-library.css` (css, 56 linhas) — classes: fenix-city-media-panel, fenix-city-media-header, fenix-city-media-eyebrow, fenix-city-media-close, fenix-city-media-search, fenix-city-media-query-label
-- `grg/public/city-media-library.js` (javascript, 169 linhas) — funções: initializeCityMediaLibrary, requestJson, setStatus, showEmpty, makePreview, mediaCard…
+- `grg/public/city-media-library.css` (css, 100 linhas) — classes: fenix-city-media-panel, hidden, fenix-city-media-header, fenix-city-media-title, fenix-city-media-body, fenix-city-media-search
+- `grg/public/city-media-library.js` (javascript, 180 linhas) — funções: initializeCityMediaLibrary, requestJson, setStatus, showEmpty, makePreview, mediaCard…
 - `grg/public/city-overrides.css` (css, 1795 linhas) — classes: css, runtime-city-grid, city-stage-panel, city-side-panel, city-stage-header, worker-metrics
-- `grg/public/city-reality-engine.js` (javascript, 1091 linhas) — classes: CityRealityEngine | funções: getAuthToken, fetchSystemEventHistory, setGauge, getPos, simulate, severityOf…
-- `grg/public/city-reality.css` (css, 1571 linhas) — classes: fenix-company-strip, fenix-company-label, fenix-company-chip, active, chip-badge, fenix-contextual-cmd-panel
+- `grg/public/city-reality-engine.js` (javascript, 1130 linhas) — classes: CityRealityEngine | funções: getAuthToken, fetchSystemEventHistory, setGauge, getPos, simulate, severityOf…
+- `grg/public/city-reality.css` (css, 1845 linhas) — classes: fenix-company-strip, fenix-company-label, fenix-company-chip, active, chip-badge, fenix-contextual-cmd-panel
 - `grg/public/city-return.css` (css, 2 linhas)
 - `grg/public/city-return.js` (javascript, 29 linhas)
-- `grg/public/cockpit-app.js` (javascript, 60 linhas)
-- `grg/public/command-center.css` (css, 2101 linhas) — classes: fenix-orchestrator-layout, orch-topbar, orch-brand, orch-logo-crest, orch-brand-info, orch-brand-title
 
 ## grg/public-files.txt
 
@@ -1362,7 +1443,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 - `grg/src/absorption/project-absorption-engine.js` (javascript, 942 linhas) — classes: ProjectAbsorptionEngine, or | funções: scanDir, has, hasExt, hasPath | requires: ../product/project-dna, ../memory/pattern-library, ../brain/graph-brain | eventos: on:error
 - `grg/src/absorption/system-absorption-engine.js` (javascript, 254 linhas) — classes: SystemAbsorptionEngine | requires: ../repo-intel/project-understanding-scanner, ../intelligence/genome-builder, ../memory/pattern-library, ../brain/graph-brain | eventos: emit:system:absorbed
 
-## grg/src/agents — 9 arquivos (detalhes no skeleton.json)
+## grg/src/agents — 10 arquivos (detalhes no skeleton.json)
 
 ## grg/src/ai — 4 arquivos (detalhes no skeleton.json)
 
@@ -1385,16 +1466,16 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 - `grg/src/api/autonomous-loop-routes.js` (javascript, 212 linhas) — funções: forwardToDedicatedWorker, handleAutonomousLoopRoutes | requires:  | eventos: on:data, on:end, on:timeout, on:error
 - `grg/src/api/cloud-routes.js` (javascript, 162 linhas) — funções: handleCloudRoutes, readBody | requires: ../memory/pattern-library | **endpoints(4)**: /api/dev/projects, /api/dev/projects, /api/dev/jobs, /api/dev/tasks | eventos: emit:job.created, on:data, on:end, on:error
-- `grg/src/api/company-brain-routes.js` (javascript, 303 linhas) — funções: handleCompanyBrainRoutes
-- `grg/src/api/conversation-routes.js` (javascript, 926 linhas) — funções: openConversation, conversationPrompt, missionStepFor, resolveProjectWorkspace, handleConversationRoutes, isReadOnlySystemAudit | requires: ../routing/conversation-router, ../routing/model-router, ../execution/job-queue-manager, ../execution/fast-lane-engine, ../projects/page-registry
+- `grg/src/api/company-brain-routes.js` (javascript, 363 linhas) — funções: handleCompanyBrainRoutes | requires: ../projects/project-workspace-resolver, ../projects/project-registry, ../projects/project-workspace-resolver, ../projects/project-registry
+- `grg/src/api/conversation-routes.js` (javascript, 1050 linhas) — funções: openConversation, conversationPrompt, missionStepFor, resolveProjectWorkspace, inspectZaiCodebase, countExt… | requires: ../routing/conversation-router, ../routing/model-router, ../execution/job-queue-manager, ../execution/fast-lane-engine, ../services/zai-audit-service
 - `grg/src/api/developer-routes.js` (javascript, 274 linhas) — funções: handleDeveloperRoutes, readBody, buildAiEditPrompt, parseAiEditResponse | **endpoints(11)**: /api/dev/pipeline, /api/dev/small-task, /api/dev/projects/clone, /api/dev/fs, /api/dev/fs/file, /api/dev/fs/file, /api/dev/fs/move, /api/dev/fs/mkdir… | eventos: on:data, on:end, emit:dev:projectCloned, emit:dev:fileSaved, emit:dev:pathMoved, emit:dev:aiFileTransformed
+- `grg/src/api/dynamic-pool-routes.js` (javascript, 223 linhas) — funções: handleDynamicPoolRoutes | requires: ../agents/dynamic-pool-manager, ../world-model/world-state-engine | **endpoints(5)**: /api/v2/agents/pool, /api/v2/agents/pool/scale, /api/v2/agents/popups, /api/v2/agents/test-task, /api/v2/agents/parallel-dispatch
 - `grg/src/api/intent-routes.js` (javascript, 107 linhas) — funções: handleIntentRoutes | requires: ../intent/intent-engine
-- `grg/src/api/living-city-routes.js` (javascript, 1074 linhas) — funções: executeRealityIntent, workersFromSnapshot, livingCityState, handleLivingCityRoutes | requires: ../eventing/fenix-event-bus, ../world-model/world-state-engine, ../world-model/world-simulation-engine, ../world-model/world-command-engine, ../world-model/world-intent-planner | **endpoints(13)**: /api/v2/living-city/world-state, /api/v2/living-city/mutation, /api/v2/living-city/command, /api/v2/living-city/commands, /api/v2/living-city/vehicles, /api/v2/living-city/constructions, /api/v2/living-city/director/trigger, /api/v2/living-city/events/stream… | eventos: on:data, on:end, on:error, on:close
+- `grg/src/api/living-city-routes.js` (javascript, 1085 linhas) — funções: executeRealityIntent, workersFromSnapshot, livingCityState, handleLivingCityRoutes, ensureWorldAgent | requires: ../eventing/fenix-event-bus, ../world-model/world-state-engine, ../world-model/world-simulation-engine, ../world-model/world-command-engine, ../world-model/world-intent-planner | **endpoints(13)**: /api/v2/living-city/world-state, /api/v2/living-city/mutation, /api/v2/living-city/command, /api/v2/living-city/commands, /api/v2/living-city/vehicles, /api/v2/living-city/constructions, /api/v2/living-city/director/trigger, /api/v2/living-city/events/stream… | eventos: on:data, on:end, on:error, on:close
 - `grg/src/api/media-routes.js` (javascript, 38 linhas) — funções: handleMediaRoutes | requires: ../media/media-search-service | **endpoints(3)**: /api/media/search, /api/media/assets, /api/media/assets
-- `grg/src/api/observatory-routes.js` (javascript, 249 linhas) — funções: sendUnavailable, listProjects, listMissions, getTenantState, countStatus, getObservatorySummary… | requires: 
+- `grg/src/api/observatory-routes.js` (javascript, 344 linhas) — funções: sendUnavailable, listProjects, listMissions, getTenantState, countStatus, getObservatorySummary… | requires: 
 - `grg/src/api/office-communication-routes.js` (javascript, 316 linhas) — funções: handleOfficeCommunicationRoutes | requires: ../communication
 - `grg/src/api/orchestration-routes.js` (javascript, 87 linhas) — funções: handleOrchestrationRoutes | requires: ../orchestrator/central-orchestrator | **endpoints(3)**: /api/orchestration/requests, /api/orchestration/requests, /api/orchestration/events
-- `grg/src/api/product-api-routes.js` (javascript, 215 linhas) — funções: handleProductApiRoutes, scoped, scoped
 
 ## grg/src/app-factory
 
@@ -1402,7 +1483,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## grg/src/app.js
 
-- `grg/src/app.js` (javascript, 992 linhas) — funções: discoverGitRepositoryRoot, createApp, overview, scoped, registerReadOnlyAuditTool, t | requires: ./kernel/store, ./kernel/event-bus, ./kernel/organism-identity, ./connectors/connector-runtime, ./connectors/github-connector-adapter | eventos: on:scan.completed, emit:MissionRecovered
+- `grg/src/app.js` (javascript, 1065 linhas) — funções: discoverGitRepositoryRoot, createApp, overview, ensureCognitiveInspectionScript, scoped, registerReadOnlyAuditTool… | requires: ./kernel/store, ./kernel/event-bus, ./kernel/organism-identity, ./connectors/connector-runtime, ./connectors/github-connector-adapter | eventos: on:scan.completed, emit:MissionRecovered
 
 ## grg/src/auth
 
@@ -1415,7 +1496,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## grg/src/brain
 
-- `grg/src/brain/graph-brain.js` (javascript, 166 linhas) — classes: GraphBrain | requires: 
+- `grg/src/brain/graph-brain.js` (javascript, 194 linhas) — classes: GraphBrain | requires: ../projects/project-registry
 
 ## grg/src/browser
 
@@ -1430,7 +1511,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 - `grg/src/chat/chat-agent.js` (javascript, 550 linhas) — classes: ChatAgent | funções: f, f | requires: ../project-mirror/scanner, ../kernel/ids
 - `grg/src/chat/conversation-gateway.js` (javascript, 86 linhas) — classes: ConversationGateway | requires: ../missions/mission-schema
-- `grg/src/chat/conversation-store.js` (javascript, 284 linhas) — classes: ConversationStore | funções: nowIso | requires: 
+- `grg/src/chat/conversation-store.js` (javascript, 280 linhas) — classes: ConversationStore | funções: nowIso | requires: 
 - `grg/src/chat/live-chat-routes.js` (javascript, 317 linhas) — funções: validateConversationScope, sseOpen, sseSend, pickProvider, handleLiveChat, platformRequest | requires: ../security/secret-resolver, ../kernel/errors | **endpoints(6)**: /api/chat/conversations, /api/chat/conversations, /api/chat/preferences, /api/chat/preferences, /api/chat/abort, /api/chat/stream | eventos: on:close
 
 ## grg/src/cli
@@ -1596,7 +1677,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 - `grg/src/memory/engineering-memory.js` (javascript, 44 linhas) — classes: EngineeringMemory | requires: ../kernel/ids
 - `grg/src/memory/knowledge-genome.js` (javascript, 154 linhas) — classes: KnowledgeGenomeEngine | requires: ../kernel/ids, ../kernel/errors | eventos: emit:knowledge.capsule.created, emit:knowledge.capsule.promoted
 - `grg/src/memory/memory-consolidator.js` (javascript, 58 linhas) — classes: MemoryConsolidator | requires: ./memory-fabric | eventos: emit:mission.requested
-- `grg/src/memory/memory-engine.js` (javascript, 276 linhas) — classes: MemoryEngine | funções: now | requires: ../kernel/ids, ../kernel/errors, ./embedding | eventos: emit:memory.index_failed, emit:memory.recorded, emit:memory.vector_search_failed, emit:memory.queried, emit:memory.forgotten, emit:memory.consolidated
+- `grg/src/memory/memory-engine.js` (javascript, 284 linhas) — classes: MemoryEngine | funções: now | requires: ../kernel/ids, ../kernel/errors, ./embedding, ../projects/project-registry | eventos: emit:memory.index_failed, emit:memory.recorded, emit:memory.vector_search_failed, emit:memory.queried, emit:memory.forgotten, emit:memory.consolidated
 - `grg/src/memory/memory-fabric.js` (javascript, 160 linhas) — classes: MemoryProvider, FenixEngineProvider, GraphitiProvider, ZepProvider, MemoryGateway | requires: 
 - `grg/src/memory/pattern-library.js` (javascript, 202 linhas) — classes: PatternLibrary | requires: 
 - `grg/src/memory/procedural-learning-engine.js` (javascript, 358 linhas) — classes: ProceduralLearningEngine | funções: buildEvidence, buildEpisode, proceduralSteps, inferTags, patternSignature, patternTitle… | requires: 
@@ -1614,8 +1695,8 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 - `grg/src/missions/mission-artifacts.js` (javascript, 229 linhas) — classes: MissionArtifactsService | funções: capsuleContent, numberOrUnknown, pickPlaybook | requires: ../kernel/ids, ../kernel/measurement | eventos: emit:mission.artifacts.failed, emit:mission.artifacts.recorded
 - `grg/src/missions/mission-checkpoints.js` (javascript, 40 linhas) — classes: MissionCheckpointsService | funções: classify | requires: ../kernel/ids, ../kernel/errors
 - `grg/src/missions/mission-dna.js` (javascript, 42 linhas) — classes: MissionDNA
-- `grg/src/missions/mission-kernel.js` (javascript, 341 linhas) — classes: MissionKernel | funções: normalizeSteps, validateDag, normalizeRefs, approvalResource, progress, sumKnown… | requires: ../kernel/ids, ../kernel/errors, ../eventing/event-store, ../governance/approval-engine
-- `grg/src/missions/mission-planner.js` (javascript, 167 linhas) — classes: MissionPlanner | funções: buildSteps, missingInputs, inferMode, normalizeMode, hash, now | requires: ../kernel/ids, ../kernel/errors, ../eventing/event-store, ./mission-schema
+- `grg/src/missions/mission-kernel.js` (javascript, 410 linhas) — classes: MissionKernel | funções: normalizeSteps, validateDag, normalizeRefs, approvalResource, progress, sumKnown… | requires: ../kernel/ids, ../kernel/errors, ../eventing/event-store, ../governance/approval-engine
+- `grg/src/missions/mission-planner.js` (javascript, 181 linhas) — classes: MissionPlanner | funções: buildSteps, missingInputs, inferMode, normalizeMode, hash, now | requires: ../kernel/ids, ../kernel/errors, ../eventing/event-store, ./mission-schema
 - `grg/src/missions/mission-routes.js` (javascript, 113 linhas) — funções: handleMissionRoutes | **endpoints(7)**: /api/orchestrator/status, /api/workers/health, /api/workers, /api/providers, /api/jobs, /api/plans, /api/estimates
 - `grg/src/missions/mission-schema.js` (javascript, 95 linhas) — classes: InvalidStateTransitionError, Mission, Job | requires: 
 - `grg/src/missions/quality-gate.js` (javascript, 116 linhas) — classes: QualityGate | funções: scanDir | requires: ./mission-schema
@@ -1695,11 +1776,9 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## grg/src/server.js
 
-- `grg/src/server.js` (javascript, 1895 linhas) — funções: sendJson, readJson, withHealthDeadline, start, readHealth, capabilityFromPath… | requires: ./core/Kernel, ./app, ./kernel/errors, ./repo-intel/cloning-git-host, ./security/config | **endpoints(272)**: /api/system/boot-status, /api/runtime, /api/runtime/services, /api/runtime/capabilities, /api/test/event, /favicon.ico, /health, /api/oidc/config… | eventos: on:uncaughtException, on:unhandledRejection, on:telemetry, on:close, on:city.live, on:close
+- `grg/src/server.js` (javascript, 1936 linhas) — funções: sendJson, readJson, withHealthDeadline, start, readHealth, capabilityFromPath… | requires: ./core/Kernel, ./app, ./kernel/errors, ./repo-intel/cloning-git-host, ./security/config | **endpoints(273)**: /api/system/boot-status, /api/runtime, /api/runtime/services, /api/runtime/capabilities, /api/test/event, /favicon.ico, /health, /api/oidc/config… | eventos: on:uncaughtException, on:unhandledRejection, on:telemetry, on:close, on:city.live, on:close
 
-## grg/src/services
-
-- `grg/src/services/image-generation-engine.js` (javascript, 1151 linhas) — classes: ImageGenerationEngine | funções: getImageEngine, normalizeBlendMode, encodePackBitsUniformRow, buildRleUniformChannel, escXml
+## grg/src/services — 5 arquivos (detalhes no skeleton.json)
 
 ## grg/src/skills — 5 arquivos (detalhes no skeleton.json)
 
@@ -1871,7 +1950,7 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 ## memory/ACTIVE_PROJECT_MEMORY.md
 
-- `memory/ACTIVE_PROJECT_MEMORY.md` (markdown, 1279 linhas)
+- `memory/ACTIVE_PROJECT_MEMORY.md` (markdown, 1565 linhas)
 
 ## memory/API_DEPENDENCY.json
 
@@ -1884,6 +1963,10 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 ## memory/DOM_MAP.json
 
 - `memory/DOM_MAP.json` (json, 59 linhas)
+
+## memory/EVOLUTION_V2_CHECKPOINT.json
+
+- `memory/EVOLUTION_V2_CHECKPOINT.json` (json, 160 linhas)
 
 ## memory/SYSTEM_GRAPH.md
 
@@ -1910,6 +1993,10 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 - `memory/UNIVERSAL_TYPE_SYSTEM.json` (json, 38 linhas)
 
 ## memory/projects — 6 arquivos (detalhes no skeleton.json)
+
+## memory/qwen_projects_registry.json
+
+- `memory/qwen_projects_registry.json` (json, 8 linhas)
 
 ## missions/0005.json
 
@@ -2224,13 +2311,193 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 - `schemas/execution-package.schema.json` (json, 51 linhas)
 
+## scratch/audit_all_views.js
+
+- `scratch/audit_all_views.js` (javascript, 76 linhas) — requires: 
+
+## scratch/audit_live_screens_and_subpages.js
+
+- `scratch/audit_live_screens_and_subpages.js` (javascript, 211 linhas) — requires:  | eventos: on:console, on:pageerror, on:response
+
+## scratch/changes_verification_report.json
+
+- `scratch/changes_verification_report.json` (json, 59 linhas)
+
 ## scratch/check-hierarchy.js
 
 - `scratch/check-hierarchy.js` (javascript, 26 linhas) — requires: 
 
+## scratch/check_active_queries.sh
+
+- `scratch/check_active_queries.sh` (sh, 3 linhas)
+
+## scratch/check_db_size.sh
+
+- `scratch/check_db_size.sh` (sh, 3 linhas)
+
+## scratch/check_pg_activity.sh
+
+- `scratch/check_pg_activity.sh` (sh, 19 linhas)
+
+## scratch/check_pg_clients.sh
+
+- `scratch/check_pg_clients.sh` (sh, 13 linhas)
+
+## scratch/check_pm2_env.sh
+
+- `scratch/check_pm2_env.sh` (sh, 3 linhas)
+
+## scratch/check_scripts.js
+
+- `scratch/check_scripts.js` (javascript, 38 linhas) — funções: check | requires:  | eventos: on:data, on:end, on:error, on:timeout
+
+## scratch/check_three_tag.js
+
+- `scratch/check_three_tag.js` (javascript, 26 linhas) — requires: 
+
+## scratch/city-audit-report.json
+
+- `scratch/city-audit-report.json` (json, 857 linhas)
+
+## scratch/clear_stuck_locks.sh
+
+- `scratch/clear_stuck_locks.sh` (sh, 8 linhas)
+
+## scratch/count_steps.sh
+
+- `scratch/count_steps.sh` (sh, 12 linhas)
+
+## scratch/debug_modal_flow.js
+
+- `scratch/debug_modal_flow.js` (javascript, 68 linhas) — requires:  | eventos: on:pageerror, on:console, on:request, on:response
+
+## scratch/debug_ops_view.js
+
+- `scratch/debug_ops_view.js` (javascript, 75 linhas) — requires:  | eventos: on:console
+
+## scratch/deploy_fast_v10.sh
+
+- `scratch/deploy_fast_v10.sh` (sh, 30 linhas)
+
+## scratch/deploy_fast_v2.sh
+
+- `scratch/deploy_fast_v2.sh` (sh, 27 linhas)
+
+## scratch/deploy_fast_v3.sh
+
+- `scratch/deploy_fast_v3.sh` (sh, 29 linhas)
+
+## scratch/deploy_fast_v4.sh
+
+- `scratch/deploy_fast_v4.sh` (sh, 30 linhas)
+
+## scratch/deploy_fast_v5.sh
+
+- `scratch/deploy_fast_v5.sh` (sh, 29 linhas)
+
+## scratch/deploy_fast_v6.sh
+
+- `scratch/deploy_fast_v6.sh` (sh, 32 linhas)
+
+## scratch/deploy_fast_v7.sh
+
+- `scratch/deploy_fast_v7.sh` (sh, 35 linhas)
+
+## scratch/deploy_fast_v8.sh
+
+- `scratch/deploy_fast_v8.sh` (sh, 36 linhas)
+
+## scratch/deploy_fast_v9.sh
+
+- `scratch/deploy_fast_v9.sh` (sh, 28 linhas)
+
+## scratch/deploy_vps_payload.sh
+
+- `scratch/deploy_vps_payload.sh` (sh, 53 linhas)
+
+## scratch/diag_city.js
+
+- `scratch/diag_city.js` (javascript, 74 linhas) — requires:  | eventos: on:requestfailed, on:console
+
+## scratch/dump_page_state.js
+
+- `scratch/dump_page_state.js` (javascript, 64 linhas) — requires:  | eventos: on:console
+
+## scratch/find_8890_server.js
+
+- `scratch/find_8890_server.js` (javascript, 15 linhas) — requires: 
+
+## scratch/find_codex_fenix.js
+
+- `scratch/find_codex_fenix.js` (javascript, 15 linhas) — requires: 
+
+## scratch/find_recent_prompts.js
+
+- `scratch/find_recent_prompts.js` (javascript, 13 linhas) — requires: 
+
+## scratch/find_recursion.js
+
+- `scratch/find_recursion.js` (javascript, 52 linhas) — requires:  | eventos: on:pageerror
+
+## scratch/find_user_prompts.js
+
+- `scratch/find_user_prompts.js` (javascript, 24 linhas) — requires: 
+
+## scratch/full_system_tour_report.json
+
+- `scratch/full_system_tour_report.json` (json, 287 linhas)
+
+## scratch/inspect_8890.js
+
+- `scratch/inspect_8890.js` (javascript, 24 linhas) — requires: 
+
+## scratch/inspect_codex_thread.js
+
+- `scratch/inspect_codex_thread.js` (javascript, 30 linhas) — requires: 
+
+## scratch/inspect_doc_collections.sh
+
+- `scratch/inspect_doc_collections.sh` (sh, 12 linhas)
+
+## scratch/inspect_sizes.sh
+
+- `scratch/inspect_sizes.sh` (sh, 10 linhas)
+
+## scratch/live-token.txt
+
+- `scratch/live-token.txt` (txt, 1 linhas)
+
 ## scratch/measure-screenshot.js
 
 - `scratch/measure-screenshot.js` (javascript, 9 linhas) — requires: 
+
+## scratch/mission_test_payload.json
+
+- `scratch/mission_test_payload.json` (json, 11 linhas)
+
+## scratch/probe_endpoints.js
+
+- `scratch/probe_endpoints.js` (javascript, 37 linhas) — requires: 
+
+## scratch/prune_kernel_state.js
+
+- `scratch/prune_kernel_state.js` (javascript, 43 linhas) — funções: main | requires: 
+
+## scratch/record_changes_verification_tour.js
+
+- `scratch/record_changes_verification_tour.js` (javascript, 355 linhas) — funções: step, highlightAndClick | requires:  | eventos: on:console, on:pageerror, on:response
+
+## scratch/record_city_tour.js
+
+- `scratch/record_city_tour.js` (javascript, 311 linhas) — funções: step, smoothMouseMove, smoothDrag | requires:  | eventos: on:console
+
+## scratch/record_full_system_tour.js
+
+- `scratch/record_full_system_tour.js` (javascript, 393 linhas) — funções: step | requires:  | eventos: on:console, on:pageerror, on:response
+
+## scratch/run_150_tests.js
+
+- `scratch/run_150_tests.js` (javascript, 266 linhas) — classes: FenixWorld3DEngine | funções: assertTest | requires: 
 
 ## scratch/test-district-selected.js
 
@@ -2248,9 +2515,69 @@ Total: 5155 arquivos indexados. Detalhes completos em `engine/projectIntelligenc
 
 - `scratch/test-vps-login.js` (javascript, 27 linhas) — funções: testLogin | requires: 
 
+## scratch/test_api_missions_curl.js
+
+- `scratch/test_api_missions_curl.js` (javascript, 41 linhas) — requires: 
+
+## scratch/test_city_interactions.js
+
+- `scratch/test_city_interactions.js` (javascript, 47 linhas) — requires: 
+
+## scratch/test_curl_post.sh
+
+- `scratch/test_curl_post.sh` (sh, 7 linhas)
+
+## scratch/test_dispatch_api.js
+
+- `scratch/test_dispatch_api.js` (javascript, 61 linhas) — requires:  | eventos: on:console, on:pageerror, on:request, on:response
+
+## scratch/test_parse_progression.js
+
+- `scratch/test_parse_progression.js` (javascript, 38 linhas) — requires: 
+
+## scratch/test_remote_mission_post.js
+
+- `scratch/test_remote_mission_post.js` (javascript, 44 linhas) — requires:  | eventos: on:data, on:end, on:timeout, on:error
+
+## scratch/trace_mission_hang.js
+
+- `scratch/trace_mission_hang.js` (javascript, 38 linhas) — funções: trace | requires: ./src/infrastructure/database/postgres-store
+
+## scratch/trace_network.js
+
+- `scratch/trace_network.js` (javascript, 61 linhas) — requires:  | eventos: on:request, on:response, on:requestfailed
+
+## scratch/trace_requests.js
+
+- `scratch/trace_requests.js` (javascript, 30 linhas) — requires:  | eventos: on:request, on:response, on:pageerror
+
 ## scratch/verify-live-vps.js
 
 - `scratch/verify-live-vps.js` (javascript, 88 linhas) — requires: 
+
+## scratch/verify_agentcraft_live_reality.js
+
+- `scratch/verify_agentcraft_live_reality.js` (javascript, 155 linhas) — requires:  | eventos: on:console, on:pageerror
+
+## scratch/verify_city_live_reality.js
+
+- `scratch/verify_city_live_reality.js` (javascript, 153 linhas) — requires:  | eventos: on:console, on:request, on:response
+
+## scratch/verify_mission_dispatch_live.js
+
+- `scratch/verify_mission_dispatch_live.js` (javascript, 165 linhas) — requires:  | eventos: on:console
+
+## scratch/visual_audit_screens_report.json
+
+- `scratch/visual_audit_screens_report.json` (json, 1203 linhas)
+
+## scratch/vps_reload_all.sh
+
+- `scratch/vps_reload_all.sh` (sh, 35 linhas)
+
+## scratch/vps_reload_backend.sh
+
+- `scratch/vps_reload_backend.sh` (sh, 21 linhas)
 
 ## scratch_add_project.js
 

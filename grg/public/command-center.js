@@ -14,6 +14,8 @@
   let pendingProposal = null;
   let currentConversationId = null;
   let apiBackoffUntil = 0;
+  let apiAuthBackoffUntil = 0;
+  let apiAuthBackoffToken = null;
   let apiPlatformBackoffUntil = 0;
 
   // Helper para obter token autenticado de todas as fontes canônicas
@@ -48,6 +50,11 @@
   async function apiCall(path, method = 'GET', data = null, retried = false) {
     if (Date.now() < apiBackoffUntil) return null;
     const token = retried ? null : getAuthToken();
+    if (Date.now() < apiAuthBackoffUntil && getAuthToken() === apiAuthBackoffToken) return null;
+    if (getAuthToken() !== apiAuthBackoffToken) {
+      apiAuthBackoffUntil = 0;
+      apiAuthBackoffToken = null;
+    }
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
     try {
@@ -64,6 +71,9 @@
         // header so the canonical cookie session can recover the shell.
         if (!retried && token) return apiCall(path, method, data, true);
         console.warn('Sessão expirada ou não autenticada para ' + path);
+        apiAuthBackoffToken = getAuthToken();
+        apiAuthBackoffUntil = Date.now() + 60000;
+        return null;
       }
       if (res.status === 429) {
         const retryAfter = Number(res.headers.get('retry-after') || 5);
@@ -3344,7 +3354,7 @@ if (typeof openProjectWorkspace !== 'undefined') {
     if (row) openAgentDeskModal(row.dataset.agentId);
   }, true);
 
-  setInterval(() => { if (!document.hidden) renderPanels(); }, 15000);
+  setInterval(() => { if (commandViewActive() && !document.hidden) renderPanels(); }, 15000);
   setInterval(() => { if (commandViewActive() && !document.hidden) refreshRegisteredSkills(); }, 20000);
   
   // === SYSTEM HEALTH BAR (REAL DATA & EXPONENTIAL BACKOFF) ===
@@ -3457,7 +3467,7 @@ if (typeof openProjectWorkspace !== 'undefined') {
       dst.scrollTop = dst.scrollHeight;
     }
   }
-  setInterval(() => { if (!document.hidden) syncActivityStream(); }, 10000);
+  setInterval(() => { if (commandViewActive() && !document.hidden) syncActivityStream(); }, 10000);
 
   // === HEATMAP LIVE ANIMATION ===
   function animateHeatmap() {
@@ -3471,24 +3481,6 @@ if (typeof openProjectWorkspace !== 'undefined') {
       btn.classList.add('active');
     });
   });
-
-  // === SISTEMA DE TELEMETRY REAL — CPU approx via requestAnimationFrame timing ===
-  let _rafLast = performance.now();
-  let _cpuLoad = 0;
-  function measureCPU() {
-    const now = performance.now();
-    const delta = now - _rafLast;
-    _rafLast = now;
-    // frame > 20ms = high load; approximate
-    _cpuLoad = Math.min(100, Math.max(0, Math.round((delta / 16.67 - 1) * 50)));
-    const cpuEl = document.getElementById('kpiLatency');
-    if (cpuEl && delta > 0) {
-      cpuEl.textContent = `${Math.round(delta)}ms`;
-      cpuEl.className = delta < 30 ? 'orch-meta-val green' : (delta < 60 ? 'orch-meta-val amber' : 'orch-meta-val red');
-    }
-    requestAnimationFrame(measureCPU);
-  }
-  requestAnimationFrame(measureCPU);
 
   // === API PLATFORM MONITOR (localhost:3000) ===
   // O browser consulta o proxy do Fênix; credenciais ficam somente no backend.
@@ -4152,10 +4144,105 @@ if (typeof openProjectWorkspace !== 'undefined') {
     }
   }
 
+  // ── Holographic JARVIS Orb Renderer (Video 4 Pattern) ──
+  function initHoloOrbCanvas() {
+    const canvas = document.getElementById('fenixHoloOrbCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let time = 0;
+    function renderOrb() {
+      if (document.hidden) {
+        requestAnimationFrame(renderOrb);
+        return;
+      }
+      time += 0.035;
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const pulse = 0.85 + 0.15 * Math.sin(time * 3);
+
+      // 1. Outer Atmospheric Energy Glow
+      const glowGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, 65 * pulse);
+      glowGrad.addColorStop(0, 'rgba(0, 217, 255, 0.45)');
+      glowGrad.addColorStop(0.5, 'rgba(59, 130, 246, 0.20)');
+      glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 65 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Central High-Density Core
+      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 22 * pulse);
+      coreGrad.addColorStop(0, '#ffffff');
+      coreGrad.addColorStop(0.3, '#7dd3fc');
+      coreGrad.addColorStop(0.7, '#0284c7');
+      coreGrad.addColorStop(1, 'rgba(14, 165, 233, 0.2)');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 22 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Concentric Multi-Axis Rotating Rings (Video 4 JARVIS Pattern)
+      const rings = [
+        { rx: 50 * pulse, ry: 16 * pulse, rot: time * 1.2, color: 'rgba(0, 217, 255, 0.75)' },
+        { rx: 42 * pulse, ry: 20 * pulse, rot: -time * 0.9 + 1, color: 'rgba(168, 85, 247, 0.65)' },
+        { rx: 58 * pulse, ry: 12 * pulse, rot: time * 0.6 + 2, color: 'rgba(34, 197, 94, 0.65)' }
+      ];
+
+      for (const r of rings) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(r.rot);
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r.rx, r.ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Glowing node on ring
+        const nodeAngle = time * 2;
+        const nx = Math.cos(nodeAngle) * r.rx;
+        const ny = Math.sin(nodeAngle) * r.ry;
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = r.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 4. Floating Holographic Data Sparks
+      for (let i = 0; i < 6; i++) {
+        const sparkAngle = time * 1.5 + (i * Math.PI / 3);
+        const dist = 32 + (Math.sin(time * 2 + i) * 18);
+        const sx = cx + Math.cos(sparkAngle) * dist;
+        const sy = cy + Math.sin(sparkAngle) * (dist * 0.5);
+        ctx.fillStyle = i % 2 === 0 ? '#38bdf8' : '#a855f7';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(renderOrb);
+    }
+
+    renderOrb();
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFenixChat);
+    document.addEventListener('DOMContentLoaded', () => {
+      initFenixChat();
+      setTimeout(initHoloOrbCanvas, 200);
+    });
   } else {
     initFenixChat();
+    setTimeout(initHoloOrbCanvas, 200);
   }
 
 })();

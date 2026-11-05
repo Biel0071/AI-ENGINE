@@ -53,3 +53,10 @@ test('city removes agents and mission cards absent from the next runtime snapsho
   assert.equal(elements.floatingMissionCard.style.display, 'none');
   assert.equal(elements.floatingJobCard.style.display, 'none');
 });
+
+test('city does not present a terminal job as the active mission', () => {
+  const { city, elements } = cityFixture();
+  city.populateMissions([{ id: 'completed', type: 'build', status: 'SUCCEEDED' }]);
+  assert.equal(elements.floatingMissionCard.style.display, 'none');
+  assert.equal(elements.floatingJobCard.style.display, 'none');
+});

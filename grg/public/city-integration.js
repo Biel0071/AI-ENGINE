@@ -533,8 +533,8 @@
       console.log(`[CityIntegration] Loaded ${jobs.length} missions/jobs`);
 
       // Update Floating Mission Card with real job
-      if (jobs.length > 0) {
-        const activeJob = jobs.find(j => j.status === 'RUNNING') || jobs[0];
+      const activeJob = jobs.find((job) => ['RUNNING', 'DISPATCHED', 'STARTING'].includes(String(job.status || '').toUpperCase()));
+      if (activeJob) {
         const missionCard = document.getElementById('floatingMissionCard');
         const jobCard = document.getElementById('floatingJobCard');
 

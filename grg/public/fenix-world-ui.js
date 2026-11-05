@@ -61,8 +61,12 @@
     const showBack=Boolean(engine.state.level==='interior');
     back.hidden=!showBack;
     back.textContent=engine.state.level==='interior'?'← Voltar ao prédio':'← Voltar ao mundo';
-    context.replaceChildren(); context.hidden=!selected;
-    if (!selected) return;
+    context.hidden=!selected;
+    if (!selected) { context.replaceChildren(); context._renderKey = ''; return; }
+    const renderKey = `${selected.kind}:${selected.id}:${selected.level || 'world'}:${Boolean(data)}:${(data?.agents || []).length}:${(data?.projects || []).length}`;
+    if (context._renderKey === renderKey && context.children.length > 0) return;
+    context._renderKey = renderKey;
+    context.replaceChildren();
     const kicker=make('span','fw3-context-kicker',selected.kind==='district'?'BAIRRO':selected.kind==='building'?'EDIFÍCIO · RUNTIME':selected.kind==='project'?'PROJETO · PROJECT KERNEL':selected.kind==='machine'?'MÁQUINA · RUNTIME':'AGENTE · RUNTIME');
     context.append(close,kicker);
     if (!data && !['district','building'].includes(selected.kind)) { context.append(make('h2','','Restaurando seleção'),make('p','','Aguardando a leitura do Project Kernel para mostrar os dados e ações.')); return; }

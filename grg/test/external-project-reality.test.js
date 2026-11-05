@@ -24,10 +24,9 @@
  * [x] Comparison executed (DOM & computed styles)
  * [x] Corrections executed & logged
  * [x] Second run (Warm) executed
- * [x] Reutilization proven (0 tokens, 0 API calls)
- * [x] Tokens measured (Cold vs Warm vs Transfer)
- * [x] API calls measured
- * [x] Knowledge transfer proven to secondary component
+ * [ ] Token/API savings proven (the reconstruction path has no provider usage counters)
+ * [x] Local elapsed time observed for each reconstruction
+ * [ ] Knowledge transfer measured on an independent validated output
  */
 
 const test = require('node:test');
@@ -137,8 +136,11 @@ test('EXTERNAL PROJECT ABSORPTION & PLAYWRIGHT REALITY: Hard Reality Gates Test'
     assert.ok(loginScreen.screenId, 'screenId deve estar definido');
     assert.ok(loginScreen.layout, 'layout deve estar definido');
     assert.ok(loginScreen.structuralHash, 'structuralHash deve estar calculado');
-    assert.equal(loginScreen.confidence, 1.0);
-    assert.equal(loginScreen.source, 'ProjectAbsorptionEngine');
+    assert.equal(loginScreen.confidence, 1.0, 'confidence is scored only for the screen actually inspected in a browser');
+    assert.equal(loginScreen.confidenceStatus, 'BROWSER_OBSERVED');
+    assert.equal(loginScreen.domInspectionStatus, 'INSPECTED');
+    assert.equal(loginScreen.captureStatus, 'CAPTURED');
+    assert.ok(loginScreen.domSummary.totalNodes > 0, 'measured DOM summary is attached to the observed screen');
 
     // Project DNA
     const dna = absorptionReport.projectDna;
@@ -183,7 +185,7 @@ test('EXTERNAL PROJECT ABSORPTION & PLAYWRIGHT REALITY: Hard Reality Gates Test'
   });
 
   // ─── GATE 11 & 12: DUAL-RUN LEARNING LOOP (COLD VS WARM) ────────────────────
-  await t.test('6. Dual-Run Learning Loop & Token Economy Proof', async () => {
+  await t.test('6. Dual-Run Learning Loop leaves unmeasured savings unverified', async () => {
     learningReport = await reconstructionEngine.executeExternalProjectLearningLoop({
       targetScreen1: 'API Platform Login Card',
       targetScreen2: 'Dashboard Metrics Overview',
@@ -193,28 +195,25 @@ test('EXTERNAL PROJECT ABSORPTION & PLAYWRIGHT REALITY: Hard Reality Gates Test'
     });
 
     assert.ok(learningReport, 'Relatório de aprendizado deve existir');
-    assert.equal(learningReport.status, 'LEARNING_PROVEN');
-
-    // Cold Run vs Warm Run comparisons
-    assert.equal(learningReport.cold.tokens, 2400, 'Cold run deve consumir tokens');
-    assert.equal(learningReport.cold.apiCalls, 1, 'Cold run deve realizar API call');
-    assert.equal(learningReport.warm.tokens, 0, 'Warm run deve ter 0 tokens (reuso)');
-    assert.equal(learningReport.warm.apiCalls, 0, 'Warm run deve ter 0 chamadas de API');
-
-    // Verified Savings
-    assert.equal(learningReport.savings.tokensSaved, 2400);
-    assert.equal(learningReport.savings.apiCallsAvoided, 1);
-    assert.equal(learningReport.savings.tokenSavingsRate, '100%');
-    assert.ok(learningReport.savings.timeSavedMs >= 0, 'Tempo economizado deve ser positivo');
+    assert.equal(learningReport.status, 'LEARNING_NOT_PROVEN');
+    assert.equal(learningReport.cold.tokens, null);
+    assert.equal(learningReport.cold.apiCalls, 0);
+    assert.equal(learningReport.warm.tokens, null);
+    assert.equal(learningReport.savings.tokensSaved, null);
+    assert.equal(learningReport.savings.apiCallsAvoided, null);
+    assert.equal(learningReport.savings.tokenSavingsRate, null);
+    assert.equal(learningReport.savings.timeSavedMs, null);
+    assert.ok(Number.isFinite(learningReport.cold.timeMs));
+    assert.ok(Number.isFinite(learningReport.warm.timeMs));
   });
 
   // ─── GATE 13: GENERALIZATION & KNOWLEDGE TRANSFER (RUN 3) ───────────────────
   await t.test('7. Generalization & Knowledge Transfer (Transfer Run)', async () => {
     assert.ok(learningReport.transfer, 'Relatório de transferência deve existir');
     assert.equal(learningReport.transfer.target, 'Dashboard Metrics Overview');
-    assert.equal(learningReport.transfer.tokens, 0, 'Transferência de conhecimento deve consumir 0 tokens novos');
-    assert.equal(learningReport.transfer.apiCalls, 0, 'Transferência de conhecimento deve evitar chamada externa');
-    assert.equal(learningReport.transfer.knowledgeTransferRate, '100%');
+    assert.equal(learningReport.transfer.tokens, null);
+    assert.equal(learningReport.transfer.apiCalls, 0);
+    assert.equal(learningReport.transfer.knowledgeTransferRate, null);
 
     // Validate that transfer screen can also be visually validated in sandbox
     const transferScreenshot = path.resolve(__dirname, '..', '..', '..', 'screenshots', 'api_platform_transfer_component.png');

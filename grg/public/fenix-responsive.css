@@ -58,7 +58,7 @@ body {
 
 .fnx-topbar-kpis-cluster {
   flex: 1 1 0 !important;
-  max-width: 920px;
+  max-width: 960px;
   overflow-x: auto;
   overflow-y: hidden;
   justify-content: flex-start !important;
@@ -68,8 +68,8 @@ body {
 .fnx-topbar-kpis-cluster::-webkit-scrollbar { display: none; }
 
 .fnx-kpi-capsule {
-  flex: 0 0 clamp(132px, 11vw, 190px);
-  min-width: 0 !important;
+  flex: 0 1 auto;
+  min-width: 110px !important;
 }
 
 .fnx-topbar-right {
@@ -151,6 +151,8 @@ body {
   bottom: 0 !important;
   width: 100% !important;
   max-width: 100vw !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
 .fenix-ticker-viewport,
@@ -185,16 +187,18 @@ body {
 }
 
 @media (max-width: 1440px) {
-  .global-topbar { gap: 6px !important; }
-  .v10-topbar-left { max-width: 37%; }
-  .fnx-topbar-kpis-cluster { max-width: min(48vw, 650px); gap: 6px; }
-  .fnx-kpi-capsule { flex-basis: 148px; padding: 6px 9px; gap: 7px; }
+  .global-topbar { gap: 8px !important; }
+  .v10-topbar-left { max-width: 34%; }
+  .fnx-topbar-kpis-cluster { max-width: min(52vw, 680px); gap: 6px; }
+  .fnx-kpi-capsule { flex: 0 1 auto !important; min-width: 108px !important; padding: 5px 8px; gap: 7px; }
   .fnx-kpi-value { font-size: 14px !important; }
-  .fnx-kpi-label { font-size: 9px !important; }
-  #topKpiSystemVal { font-size: 11px !important; letter-spacing: -.04em; }
+  .fnx-kpi-label { font-size: 9.5px !important; }
+  #topKpiSystemVal { font-size: 11px !important; letter-spacing: -.02em; }
   .fnx-kpi-capsule.kpi-green .fnx-kpi-label { display: none !important; }
-  .fnx-topbar-right { max-width: 19%; }
+  .fnx-topbar-right { flex: 0 0 auto !important; max-width: none !important; gap: 6px !important; }
+  .fnx-vps-topbar-btn { flex-shrink: 0 !important; white-space: nowrap !important; }
   .fnx-context-pill { display: none !important; }
+  #fnxDisplayHudPill { display: none !important; }
 }
 
 @media (max-width: 1180px) {
@@ -209,7 +213,20 @@ body {
   .fnx-topbar-kpis-cluster { max-width: 44vw; }
   .fnx-kpi-capsule { flex-basis: 138px; }
   .fnx-kpi-label { display: none !important; }
-  .fnx-topbar-right { max-width: 54px; }
+  .fnx-topbar-right { flex: 0 0 auto !important; width: auto !important; max-width: none !important; min-width: 0 !important; overflow: visible !important; gap: 6px !important; }
+  #fnxDisplayHudPill { display: none !important; }
+  #fnxPoolHudBtn { max-width: 110px; white-space: nowrap; }
+  #fnxPoolHudLabel { max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fnx-pool-panel {
+    position: fixed !important;
+    top: calc(var(--topbar-height) + 6px) !important;
+    right: 8px !important;
+    left: auto !important;
+    width: min(380px, calc(100vw - 16px)) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - var(--topbar-height) - var(--bottom-dock-height) - 24px);
+    overflow-y: auto;
+  }
   .fnx-window-actions button:not(:nth-child(3)) { display: none !important; }
 
   #mainSidebarNav:not(.collapsed) {
@@ -250,9 +267,9 @@ body {
     right: 8px !important;
     bottom: calc(var(--bottom-dock-height) + 8px) !important;
     left: auto !important;
-    width: min(var(--fsb-width, 380px), calc(100vw - 84px)) !important;
+    width: min(var(--fsb-width, 380px), clamp(320px, 42vw, 440px)) !important;
     min-width: 0 !important;
-    max-width: calc(100vw - 84px) !important;
+    max-width: min(calc(100vw - 84px), 440px) !important;
     height: auto !important;
     max-height: none !important;
     border: 1px solid rgba(34, 211, 238, .25) !important;
@@ -260,11 +277,11 @@ body {
     box-shadow: 0 22px 60px rgba(0, 0, 0, .6) !important;
     z-index: 950 !important;
   }
-  #fenix-right-sidebar.state-expanded { width: min(var(--fsb-width, 380px), calc(100vw - 84px)) !important; min-width: 0 !important; }
+  #fenix-right-sidebar.state-expanded { width: min(var(--fsb-width, 380px), clamp(320px, 42vw, 440px)) !important; min-width: 0 !important; }
   body.has-right-sidebar-open #fenix-right-sidebar.open { display: flex !important; }
   .fenix-presentation-footer { padding: 0 8px !important; gap: 6px; }
-  .fenix-ticker-badge { max-width: 170px; padding-right: 7px !important; }
-  .fenix-ticker-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fenix-ticker-badge { max-width: none !important; flex-shrink: 0; padding-right: 10px !important; }
+  .fenix-ticker-badge span { white-space: nowrap; }
   .fenix-footer-hardware-gauges { display: none !important; }
 }
 
@@ -354,9 +371,21 @@ body {
   .fnx-kpi-capsule { flex: 0 0 42px; width: 42px; min-width: 42px !important; padding: 4px; justify-content: center; }
   .fnx-kpi-icon { width: 28px; height: 28px; font-size: 14px; }
   .fnx-kpi-data { display: none !important; }
-  .fnx-topbar-right { flex: 0 0 auto !important; max-width: 36px; }
+  .fnx-topbar-right { flex: 0 0 74px !important; width: 74px !important; max-width: 74px !important; min-width: 74px !important; justify-content: flex-end !important; overflow: visible !important; }
   .fnx-window-actions { gap: 0; }
   .fnx-window-actions button:not(:nth-child(3)) { display: none !important; }
+  #fnxDisplayHudPill { display: none !important; }
+  #fnxPoolHudBtn, #fnxPoolHudWrapper { display: none !important; }
+  .fnx-pool-panel {
+    position: fixed !important;
+    top: calc(var(--topbar-height) + 6px) !important;
+    right: 6px !important;
+    left: 6px !important;
+    width: auto !important;
+    max-width: calc(100vw - 12px) !important;
+    max-height: calc(100dvh - var(--topbar-height) - var(--bottom-dock-height) - 20px) !important;
+    overflow: auto !important;
+  }
 
   .main-body { flex-direction: column !important; }
   #mainSidebarNav,
@@ -482,12 +511,13 @@ body {
 }
 
 @media (max-width: 600px) {
+  .v10-topbar-left { max-width: 48% !important; }
   .fnx-brand-lockup { max-width: 118px; }
   .fnx-brand-meta-title > span { font-size: 12px; }
   .fnx-brand-version-pill { display: none !important; }
   .fnx-topbar-kpis-cluster { max-width: 90px; }
-  .fnx-kpi-capsule:nth-child(n + 3) { display: none !important; }
-  .fnx-topbar-right { max-width: 32px; }
+  .fnx-topbar-kpis-cluster { overflow-x: auto !important; overscroll-behavior-x: contain; }
+  .fnx-topbar-right { flex: 0 0 74px !important; width: 74px !important; max-width: 74px !important; min-width: 74px !important; }
   .workspace-view { padding: 10px !important; }
   .workspace-header { gap: 8px; margin-bottom: 14px !important; }
   .workspace-header h1,
@@ -522,11 +552,23 @@ body {
     max-width: calc(100vw - 12px) !important;
     border-radius: 12px !important;
   }
-  #fenix-right-sidebar.state-expanded { width: min(var(--fsb-width, 380px), calc(100vw - 12px)) !important; }
+  #fenix-right-sidebar.state-expanded {
+    width: min(var(--fsb-width, 380px), calc(100vw - 12px)) !important;
+    max-width: calc(100vw - 12px) !important;
+    flex: 0 0 min(var(--fsb-width, 380px), calc(100vw - 12px)) !important;
+  }
   #fenix-right-sidebar .fsb-resize-handle { width: 14px; left: -7px; touch-action: none; }
   .fenix-ticker-status { display: none !important; }
   .fw3-context { max-height: 40% !important; padding: 11px !important; }
   .fw3-context h2 { font-size: 17px !important; }
+}
+
+@media (max-width: 360px) {
+  .v10-topbar-left { max-width: 118px !important; }
+  .fnx-brand-lockup { flex: 0 0 30px !important; width: 30px !important; max-width: 30px !important; }
+  .fnx-brand-meta { display: none !important; }
+  .fnx-search-pill { flex-basis: 28px !important; width: 28px !important; min-width: 28px !important; max-width: 28px !important; }
+  .fnx-topbar-kpis-cluster { max-width: 84px !important; }
 }
 
 /* Keep the single live minimap clear of the fixed navigation drawer. */
@@ -538,6 +580,10 @@ body {
 
 #view-city .fenix-city-minimap { bottom: 100px !important; }
 
+@media (min-width: 761px) {
+  #view-city #fenixCityNavPill { bottom: calc(100px + 192px + 20px) !important; }
+}
+
 @media (min-width: 901px) and (max-width: 1180px) {
   body.sidebar-labels-visible #view-city .fenix-city-minimap { left: 254px !important; }
 }
@@ -548,11 +594,61 @@ body {
 }
 
 @media (max-width: 760px) {
+  :root {
+    --city-universe-hud-height: 44px;
+    --city-mobile-control-gap: 8px;
+    --city-mobile-minimap-height: 180px;
+    --city-nav-height: 43px;
+  }
+
+  #view-city .fw3-context {
+    top: 100px !important;
+    bottom: auto !important;
+    left: 8px !important;
+    right: 68px !important;
+    width: auto !important;
+    max-height: calc(100dvh - 100px - var(--bottom-dock-height) - var(--city-mobile-control-gap) - var(--city-universe-hud-height) - var(--city-mobile-control-gap) - var(--city-mobile-minimap-height) - var(--city-nav-height) - 154px) !important;
+    box-sizing: border-box !important;
+    overflow: auto !important;
+    padding: 11px !important;
+  }
+
   body.has-right-sidebar-open #view-city .fenix-city-minimap { display: none !important; }
+  #view-city .fenix-city-minimap {
+    bottom: calc(var(--bottom-dock-height) + var(--city-mobile-control-gap) + var(--city-universe-hud-height) + var(--city-mobile-control-gap)) !important;
+  }
+
+  #view-city #fenixUniverseExplorerHUD,
+  #view-city .fenix-universe-hud {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: calc(var(--bottom-dock-height) + 8px) !important;
+    width: auto !important;
+    max-width: calc(100% - 16px) !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    gap: 3px !important;
+    padding: 4px !important;
+    transform: none !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none;
+  }
+  #view-city #fenixUniverseExplorerHUD::-webkit-scrollbar { display: none; }
+  #view-city .fenix-universe-hud .fuh-level-btn { flex: 0 0 32px !important; width: 32px !important; height: 32px !important; min-width: 32px !important; justify-content: center !important; padding: 0 !important; }
+  #view-city .fenix-universe-hud .fuh-level-btn span { display: none !important; }
+  #view-city .fenix-universe-hud .fuh-divider,
+  #view-city #btnRotateCity { display: none !important; }
+  #view-city #fuhIslandSelector { flex: 0 0 112px !important; width: 112px !important; min-width: 0 !important; padding: 3px 5px !important; font-size: 9px !important; }
+  #view-city #fenixCityZoomLevel { min-width: 30px !important; font-size: 9px !important; }
+  #view-city .fenix-universe-hud .fuh-icon-btn { flex: 0 0 26px !important; width: 26px !important; height: 26px !important; }
+  body.has-right-sidebar-open #view-city #fenixUniverseExplorerHUD,
+  body.has-right-sidebar-open #view-city .fenix-universe-hud { display: none !important; }
 
   #view-city #fenixCityNavPill {
     left: 8px !important;
     right: 8px !important;
+    bottom: calc(var(--bottom-dock-height) + var(--city-mobile-control-gap) + var(--city-universe-hud-height) + var(--city-mobile-control-gap) + var(--city-mobile-minimap-height) + 20px) !important;
     width: max-content !important;
     max-width: calc(100% - 16px) !important;
     box-sizing: border-box !important;
@@ -566,12 +662,137 @@ body {
   body.has-right-sidebar-open #view-city #fenixCityNavPill { display: none !important; }
 }
 
+/* Keep the world-navigation controls inside the exposed map beside the chat drawer. */
+@media (min-width: 761px) and (max-width: 1180px) {
+  body.has-right-sidebar-open #view-city .fenix-universe-hud {
+    left: 8px !important;
+    right: calc(clamp(320px, 42vw, 440px) + 20px) !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+    touch-action: pan-x;
+  }
+  body.has-right-sidebar-open #view-city .fenix-universe-hud::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 760px) {
+  body.has-right-sidebar-open #fenix-right-sidebar.open:not(.state-expanded) {
+    top: auto !important;
+    right: 8px !important;
+    bottom: calc(var(--bottom-dock-height, 32px) + 8px) !important;
+    left: 8px !important;
+    width: auto !important;
+    height: min(58dvh, 560px) !important;
+    min-height: 300px !important;
+    max-height: calc(100dvh - var(--topbar-height, 56px) - var(--bottom-dock-height, 32px) - 24px) !important;
+    max-width: none !important;
+    border-radius: 14px !important;
+    z-index: 950 !important;
+  }
+
+  body.has-right-sidebar-open #fenix-right-sidebar.open.state-compact {
+    top: auto !important;
+    right: 8px !important;
+    bottom: calc(var(--bottom-dock-height, 32px) + 8px) !important;
+    left: auto !important;
+    width: 64px !important;
+    min-width: 64px !important;
+    max-width: 64px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    flex: 0 0 64px !important;
+  }
+
+  body.has-right-sidebar-open #fenix-right-sidebar.open.state-expanded {
+    top: calc(var(--topbar-height, 56px) + 4px) !important;
+    right: 6px !important;
+    bottom: calc(var(--bottom-dock-height, 32px) + 5px) !important;
+    left: 6px !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    max-width: none !important;
+  }
+
+  body.has-right-sidebar-open #view-city #fenixUniverseExplorerHUD,
+  body.has-right-sidebar-open #view-city .fenix-universe-hud {
+    display: flex !important;
+    top: calc(var(--topbar-height, 56px) + 8px) !important;
+    right: 8px !important;
+    bottom: auto !important;
+    left: auto !important;
+    z-index: 940 !important;
+  }
+}
+
+/* Compact header: keep measured counts visible when category labels collapse. */
+@media (max-width: 1180px) {
+  header.global-topbar.orch-topbar .fnx-kpi-capsule {
+    position: relative !important;
+    overflow: visible !important;
+  }
+  header.global-topbar.orch-topbar .fnx-kpi-data {
+    display: block !important;
+    position: absolute !important;
+    top: 2px !important;
+    right: 2px !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+  }
+  header.global-topbar.orch-topbar .fnx-kpi-val-row {
+    display: block !important;
+    line-height: 1 !important;
+  }
+  header.global-topbar.orch-topbar .fnx-kpi-value {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    padding: 0 4px !important;
+    border: 1px solid currentColor !important;
+    border-radius: 999px !important;
+    background: #080d16 !important;
+    color: #f5f8fc !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .65) !important;
+  }
+  header.global-topbar.orch-topbar .kpi-cyan .fnx-kpi-value { border-color: var(--fnx-cyan, #00e5ff) !important; }
+  header.global-topbar.orch-topbar .kpi-orange .fnx-kpi-value { border-color: var(--fnx-orange, #ff8a00) !important; }
+  header.global-topbar.orch-topbar .kpi-purple .fnx-kpi-value { border-color: var(--fnx-purple, #9b6cff) !important; }
+  header.global-topbar.orch-topbar .fnx-kpi-label { display: none !important; }
+  header.global-topbar.orch-topbar .kpi-green .fnx-kpi-data { display: none !important; }
+  header.global-topbar.orch-topbar .fnx-kpi-capsule:hover,
+  header.global-topbar.orch-topbar .fnx-kpi-capsule:focus-visible {
+    z-index: 30 !important;
+  }
+}
+
+#view-city #fenixCityOpsDrawer,
+#view-city #fenixCityCockpitDrawer {
+  top: 100px !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #fenix-right-sidebar { transition: none !important; }
 }
 
 /* Keep the cognitive workspace readable between tablet and desktop widths. */
 @media (max-width: 900px) {
+  body.has-right-sidebar-open #view-memory .fml-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
   #view-memory {
     min-width: 0 !important;
     max-width: 100% !important;
@@ -664,6 +885,14 @@ body {
   }
 }
 
+/* Keep the live map usable when the docked Fênix conversation narrows the City. */
+@media (min-width: 901px) and (max-width: 1360px) {
+  body.has-right-sidebar-open #view-city #fenixWorldMinimap { width: 190px !important; }
+  body.has-right-sidebar-open #view-city #fenixCityNavPill {
+    bottom: calc(100px + 160px + 20px) !important;
+  }
+}
+
 @media (max-width: 760px) {
   #view-memory .fenix-memory-layers {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -688,8 +917,45 @@ body {
   }
 }
 
+/* Compact operational header: measured counts stay visible when labels collapse. */
+header.global-topbar.orch-topbar #fnxPoolHudCount { display: none; }
+@media (max-width: 1180px) {
+  header.global-topbar.orch-topbar .fnx-kpi-data { display: block !important; }
+  header.global-topbar.orch-topbar .fnx-kpi-value {
+    border-color: currentColor !important;
+    color: #f5f8fc !important;
+  }
+  header.global-topbar.orch-topbar .kpi-cyan .fnx-kpi-value { border-color: var(--fnx-cyan, #00e5ff) !important; color: var(--fnx-cyan, #00e5ff) !important; }
+  header.global-topbar.orch-topbar .kpi-orange .fnx-kpi-value { border-color: var(--fnx-orange, #ff8a00) !important; color: var(--fnx-orange, #ff8a00) !important; }
+  header.global-topbar.orch-topbar .kpi-purple .fnx-kpi-value { border-color: var(--fnx-purple, #9b6cff) !important; color: var(--fnx-purple, #9b6cff) !important; }
+  header.global-topbar.orch-topbar .kpi-green .fnx-kpi-data { display: none !important; }
+}
+
+/* On narrow headers clean topbar: hide pool button */
+@media (max-width: 900px) {
+  header.global-topbar.orch-topbar #fnxPoolHudBtn,
+  header.global-topbar.orch-topbar #fnxPoolHudWrapper,
+  #fnxPoolHudBtn,
+  #fnxPoolHudWrapper {
+    display: none !important;
+  }
+}
+
 /* Reserve real room for the docked chat so the active screen can reflow beside it. */
 @media (min-width: 761px) and (max-width: 900px) {
+  :root { --fnx-tablet-drawer-width: min(var(--fsb-width, 380px), clamp(320px, 42vw, 440px)); }
+  /* Keep the tablet split aligned with the drawer while its content reflows. */
+  #fenix-right-sidebar {
+    width: min(var(--fsb-width, 380px), clamp(320px, 42vw, 440px)) !important;
+    min-width: 0 !important;
+    max-width: min(calc(100vw - 84px), 440px) !important;
+    box-sizing: border-box !important;
+  }
+  #fenix-right-sidebar.state-expanded {
+    width: min(var(--fsb-width, 380px), clamp(320px, 42vw, 440px)) !important;
+    min-width: 0 !important;
+    max-width: min(calc(100vw - 84px), 440px) !important;
+  }
   .global-topbar { padding: 0 8px !important; gap: 5px !important; }
   .v10-topbar-left { flex: 0 1 auto !important; max-width: 300px !important; gap: 5px !important; }
   .fnx-brand-lockup { flex: 0 1 170px !important; max-width: 170px !important; gap: 6px !important; }
@@ -702,7 +968,11 @@ body {
   .fnx-kpi-icon { flex: 0 0 28px !important; width: 28px !important; height: 28px !important; }
   .fnx-kpi-data { display: none !important; }
   .fnx-kpi-label { display: none !important; }
-  .fnx-topbar-right { flex: 0 0 36px !important; max-width: 36px !important; }
+  .fnx-topbar-right { flex: 0 0 142px !important; width: 142px !important; max-width: 142px !important; min-width: 142px !important; justify-content: flex-end !important; overflow: visible !important; }
+  #fnxDisplayHudPill { display: none !important; }
+  #fnxPoolHudBtn { max-width: 104px; white-space: nowrap; }
+  #fnxPoolHudLabel { max-width: 84px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fnx-pool-panel { max-width: min(380px, calc(100vw - 16px)); max-height: calc(100dvh - var(--topbar-height) - var(--bottom-dock-height) - 24px); overflow-y: auto; }
   .fnx-window-actions button:not(:nth-child(3)) { display: none !important; }
 
   body:not(.menu-open):not(.sidebar-labels-visible) #mainSidebarNav {
@@ -718,13 +988,103 @@ body {
 
   body.has-right-sidebar-open.fsb-docked .main-body .views-container {
     flex: 1 1 0 !important;
-    width: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
     max-width: none !important;
-    margin-right: min(calc(var(--fsb-width, 380px) + 16px), calc(100vw - 68px)) !important;
+    margin-right: calc(var(--fnx-tablet-drawer-width) + 16px) !important;
+  }
+
+  body.has-right-sidebar-open.fsb-docked .views-container:has(> #view-city.active) {
+    margin-right: 0 !important;
   }
 }
 
 @container (max-width: 560px) {
+  #view-runtime .runtime-overview {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  #view-runtime .workspace-grid.two-columns,
+  #view-runtime .workspace-grid.three-columns,
+  #view-runtime .workspace-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  #view-runtime .workspace-card,
+  #view-runtime .runtime-overview-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  #view-runtime .fenix-module-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  #view-runtime #fenixControlCockpitTabs {
+    flex-wrap: wrap !important;
+    max-width: 100% !important;
+  }
+  #view-runtime #fenixControlCockpitTabs .fenix-pill-tab {
+    flex: 1 1 120px !important;
+    min-width: 0 !important;
+  }
+  #view-agents .fenix-system-pulse-strip {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #view-agents .fenix-module-header,
+  #view-agents .fenix-module-title-area {
+    flex-wrap: wrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  #view-agents .fenix-module-header {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+  #view-agents .fenix-module-title-area {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  #view-agents .fenix-module-title {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+  #view-agents .fenix-workforce-layout {
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  #view-agents .fenix-workforce-main {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px !important;
+    overflow: visible !important;
+  }
+  #view-agents #fenixAgentDeepInspector {
+    box-sizing: border-box !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border-left: 0 !important;
+    border-top: 1px solid rgba(0, 229, 255, 0.15) !important;
+  }
+  #view-agents .fenix-agent-toolbar {
+    align-items: stretch !important;
+    flex-wrap: wrap !important;
+  }
+  #view-agents .fenix-agent-search {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
   #view-memory .fml-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   #view-memory .fml-workspace {
     grid-template-columns: minmax(0, 1fr) !important;

@@ -13,6 +13,20 @@ window.FENIX = window.FENIX || {
   visual: null
 };
 
+let fenixAuthCheckPromise = null;
+window.__FENIX_SESSION_VALID__ = function() {
+  if (fenixAuthCheckPromise) return fenixAuthCheckPromise;
+  fenixAuthCheckPromise = fetch('/api/v2/auth/check', {
+    credentials: 'same-origin',
+    cache: 'no-store',
+    headers: { Accept: 'application/json' }
+  }).then(async (response) => {
+    const result = await response.json().catch(() => null);
+    return response.ok && typeof result?.authenticated === 'boolean' ? result.authenticated : null;
+  }).catch(() => null).finally(() => { fenixAuthCheckPromise = null; });
+  return fenixAuthCheckPromise;
+};
+
 window.FENIX.api = async function api(path, options = {}, retried = false) {
   const token = localStorage.getItem('grg_token');
   // A sessão pode estar no cookie HttpOnly após reload. Não redirecionar
@@ -25,9 +39,12 @@ window.FENIX.api = async function api(path, options = {}, retried = false) {
     if (res.status === 401 && !retried) {
       const success = await attemptRefresh();
       if (success) return window.FENIX.api(path, options, true);
-      localStorage.removeItem('grg_token');
-      if (location.pathname !== '/' && !location.pathname.includes('login') && !location.pathname.includes('index')) { location.href = '/GRG-login'; }
-      return Promise.reject(new Error("Unauthorized"));
+      const sessionValid = await window.__FENIX_SESSION_VALID__();
+      if (sessionValid === false) {
+        localStorage.removeItem('grg_token');
+        if (location.pathname !== '/' && !location.pathname.includes('login') && !location.pathname.includes('index')) { location.href = '/GRG-login'; }
+      }
+      return Promise.reject(new Error(sessionValid === true ? 'A API recusou esta sessão.' : 'Não foi possível confirmar a sessão.'));
     }
     if (!res.ok) {
       const txt = await res.text();
@@ -107,7 +124,7 @@ async function bootFenix() {
 
     // Load sequence: supplementary scripts loaded in parallel
     const scripts = [
-      '/runtime-cockpit.js?v=17',
+      '/runtime-cockpit.js?v=20261022-city-loaders-1',
       '/live-runtime.js?v=12',
       '/ide-enhancer.js?v=5',
       '/cockpit-app.js?v=3',

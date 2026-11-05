@@ -9086,12 +9086,19 @@
 
     selectProjectBuilding(projectData) {
       if (!projectData) return;
-      const bldInfo = this.projectBuildings?.get(projectData.projectId || projectData.id);
+      const bldId = projectData.projectId || projectData.id;
+      const bldInfo = this.projectBuildings?.get(bldId);
       if (bldInfo && bldInfo.group) {
         const lookPos = new T.Vector3(bldInfo.group.position.x, 5.5, bldInfo.group.position.z);
         this.focusEntity(lookPos, 52, Math.PI / 4, 0.56);
       }
-      this._showProjectBuildingModal(projectData);
+      if (typeof window.fenixSelectBuilding === 'function') {
+        window.fenixSelectBuilding(bldId, projectData);
+      } else if (window.FenixSpatialCity && typeof window.FenixSpatialCity.selectBuilding === 'function') {
+        window.FenixSpatialCity.selectBuilding(bldId, projectData);
+      } else {
+        this._showProjectBuildingModal(projectData);
+      }
     }
 
     _showProjectBuildingModal(project) {
@@ -9185,11 +9192,30 @@
       if (!buildingId) return;
       this.focusBuilding(buildingId);
       let bld = this.dynamicBuildings?.get(buildingId);
-      if (typeof window.fenixShowBuildingDetails === 'function') {
+      if (typeof window.fenixSelectBuilding === 'function') {
+        window.fenixSelectBuilding(buildingId, bld);
+      } else if (window.FenixSpatialCity && typeof window.FenixSpatialCity.selectBuilding === 'function') {
+        window.FenixSpatialCity.selectBuilding(buildingId, bld);
+      } else if (typeof window.fenixShowBuildingDetails === 'function') {
         window.fenixShowBuildingDetails(bld || { id: buildingId, name: buildingId });
       }
       if (window.GlobalSelectionStore) {
         window.GlobalSelectionStore.select('building', buildingId, bld || { id: buildingId }, 'city');
+      }
+    }
+
+    setLayerFilter(layer) {
+      this.minimapLayerFilter = layer;
+      if (layer === 'districts') {
+        this.setZoom?.(1.05);
+      } else if (layer === 'buildings') {
+        this.setZoom?.(1.45);
+      } else if (layer === 'floors') {
+        this.focusFloor?.('all');
+      }
+      this._lastMinimapFrame = 0;
+      if (typeof this._renderWorldMinimap === 'function') {
+        this._renderWorldMinimap(typeof performance !== 'undefined' ? performance.now() : Date.now());
       }
     }
 
@@ -11369,7 +11395,7 @@
           const lodScale = this._densityLodScale || 1.0;
 
           // Kinematics LOD gating: distant agents skip subtle upper body animations
-          const allowSubtleAnim = inFrustum && camDist < (60 * lodScale) && (camDist < (30 * lodScale) || ((this._frameCounter + aIdx) % 2 === 0));
+          const allowSubtleAnim = inFrustum && camDist < 60 && (camDist < (30 * lodScale) || ((this._frameCounter + aIdx) % 2 === 0));
 
           // Work gestures only play for a measured WORKING job; queued/available agents rest.
           this._applyAgentActivityPose(agentRecord, ud, aTime, allowSubtleAnim);

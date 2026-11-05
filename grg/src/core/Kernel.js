@@ -212,47 +212,51 @@ class Kernel {
   }
 
   writeArtifacts() {
-    const runtimeDir = path.join(__dirname, '../../runtime');
-    if (!fs.existsSync(runtimeDir)) fs.mkdirSync(runtimeDir, { recursive: true });
+    try {
+      const runtimeDir = path.join(__dirname, '../../runtime');
+      if (!fs.existsSync(runtimeDir)) fs.mkdirSync(runtimeDir, { recursive: true });
 
-    // 1. runtime-manifest.json
-    const manifest = {
-      version: "1.0",
-      modules: this.registries.ModuleRegistry.getAll().length,
-      plugins: this.registries.PluginRegistry.getAll().length,
-      workers: this.registries.WorkerRegistry.getAll().length,
-      services: this.registries.ServiceRegistry.getAll().length,
-      providers: this.registries.ProviderRegistry.getAll().length,
-      projects: this.registries.ProjectRegistry.getAll().length,
-      routes: this.registries.RouteRegistry.getAll().length,
-      events: this.registries.EventRegistry.getAll().length,
-      knowledgeStores: this.registries.KnowledgeRegistry.getAll().length,
-      capabilities: this.registries.CapabilityRegistry.getAll().length
-    };
-    fs.writeFileSync(path.join(runtimeDir, 'runtime-manifest.json'), JSON.stringify(manifest, null, 2));
+      // 1. runtime-manifest.json
+      const manifest = {
+        version: "1.0",
+        modules: this.registries.ModuleRegistry.getAll().length,
+        plugins: this.registries.PluginRegistry.getAll().length,
+        workers: this.registries.WorkerRegistry.getAll().length,
+        services: this.registries.ServiceRegistry.getAll().length,
+        providers: this.registries.ProviderRegistry.getAll().length,
+        projects: this.registries.ProjectRegistry.getAll().length,
+        routes: this.registries.RouteRegistry.getAll().length,
+        events: this.registries.EventRegistry.getAll().length,
+        knowledgeStores: this.registries.KnowledgeRegistry.getAll().length,
+        capabilities: this.registries.CapabilityRegistry.getAll().length
+      };
+      fs.writeFileSync(path.join(runtimeDir, 'runtime-manifest.json'), JSON.stringify(manifest, null, 2));
 
-    // 2. runtime-graph.json
-    fs.writeFileSync(path.join(runtimeDir, 'runtime-graph.json'), JSON.stringify(this.graph, null, 2));
+      // 2. runtime-graph.json
+      fs.writeFileSync(path.join(runtimeDir, 'runtime-graph.json'), JSON.stringify(this.graph, null, 2));
 
-    // 3. index.json
-    const index = {
-      modules: this.registries.ModuleRegistry.getAll(),
-      capabilities: this.registries.CapabilityRegistry.getAll()
-    };
-    fs.writeFileSync(path.join(runtimeDir, 'index.json'), JSON.stringify(index, null, 2));
+      // 3. index.json
+      const index = {
+        modules: this.registries.ModuleRegistry.getAll(),
+        capabilities: this.registries.CapabilityRegistry.getAll()
+      };
+      fs.writeFileSync(path.join(runtimeDir, 'index.json'), JSON.stringify(index, null, 2));
 
-    // 4. dna.json
-    const dna = {
-      System: {
-        Kernel: {
-          Registries: Object.keys(this.registries).reduce((acc, k) => {
-            acc[k] = this.registries[k].getAll().map(i => i.name || i);
-            return acc;
-          }, {})
+      // 4. dna.json
+      const dna = {
+        System: {
+          Kernel: {
+            Registries: Object.keys(this.registries).reduce((acc, k) => {
+              acc[k] = this.registries[k].getAll().map(i => i.name || i);
+              return acc;
+            }, {})
+          }
         }
-      }
-    };
-    fs.writeFileSync(path.join(runtimeDir, 'dna.json'), JSON.stringify(dna, null, 2));
+      };
+      fs.writeFileSync(path.join(runtimeDir, 'dna.json'), JSON.stringify(dna, null, 2));
+    } catch (err) {
+      console.warn('[Kernel] Warning writing runtime artifacts:', err.message);
+    }
   }
 }
 

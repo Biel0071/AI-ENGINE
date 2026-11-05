@@ -85,22 +85,42 @@ function handleMissionRoutes(req, res, url, app, sendJson) {
     }
 
     if (url.pathname === '/api/jobs') {
-      sendJson(res, 200, {
-        jobs: []
+      const tenantId = 'grg';
+      const actorId = 'operator';
+      Promise.resolve().then(async () => {
+        try {
+          const jobs = app.jobs?.list ? await app.jobs.list(tenantId, actorId) : [];
+          sendJson(res, 200, { ok: true, source: 'JobEngine', jobs });
+        } catch (_) {
+          sendJson(res, 200, { ok: true, source: 'JobEngine', jobs: [] });
+        }
       });
       return true;
     }
 
     if (url.pathname === '/api/plans') {
-      sendJson(res, 200, {
-        plans: []
+      const tenantId = 'grg';
+      const actorId = 'operator';
+      Promise.resolve().then(async () => {
+        try {
+          const missions = app.missions?.list ? await app.missions.list(tenantId, actorId) : [];
+          sendJson(res, 200, { ok: true, source: 'MissionKernel', plans: missions });
+        } catch (_) {
+          sendJson(res, 200, { ok: true, source: 'MissionKernel', plans: [] });
+        }
       });
       return true;
     }
 
     if (url.pathname === '/api/estimates') {
-      sendJson(res, 200, {
-        estimates: []
+      Promise.resolve().then(async () => {
+        try {
+          const state = app.store?.read ? await app.store.read() : {};
+          const estimates = state.estimates || [];
+          sendJson(res, 200, { ok: true, source: 'Store', estimates });
+        } catch (_) {
+          sendJson(res, 200, { ok: true, source: 'Store', estimates: [] });
+        }
       });
       return true;
     }

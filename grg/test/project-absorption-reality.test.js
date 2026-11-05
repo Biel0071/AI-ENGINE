@@ -13,11 +13,11 @@
  * [x] Component reconstruction executed
  * [x] Sandbox syntax and contract tests executed
  * [x] Second run executed
- * [x] Knowledge reuse proven
- * [x] Tokens measured
- * [x] Time measured
- * [x] API calls avoided measured
- * [x] Economy calculated (KNOWLEDGE_REUSE_RATE & TOKEN_SAVINGS_RATE)
+ * [x] Knowledge retrieval and reconstruction attempted
+ * [ ] Tokens saved measured (no provider-reported cold/warm usage)
+ * [x] Local elapsed durations observed
+ * [ ] API calls avoided measured (no comparable cold provider run)
+ * [ ] Token savings rate proven (engine currently reports estimates)
  * [x] CEO received results and answered with factual telemetry
  * [x] Living City reflected real project state
  * [x] Heart remained operational throughout
@@ -44,6 +44,7 @@ test('PROJECT ABSORPTION & SCREEN RECONSTRUCTION: Hard Reality Gates Test', asyn
   const graphBrain = app.graphBrain;
   const ceoAgent = app.ceoAgent;
   const heart = app.heart;
+  let reconstructionTarget = 'Agent Inspector';
 
   assert.ok(absorptionEngine, 'absorptionEngine deve estar instanciado');
   assert.ok(reconstructionEngine, 'reconstructionEngine deve estar instanciado');
@@ -68,6 +69,7 @@ test('PROJECT ABSORPTION & SCREEN RECONSTRUCTION: Hard Reality Gates Test', asyn
 
     assert.ok(absorptionReport, 'Relatório de absorção deve ser gerado');
     assert.equal(absorptionReport.projectId, 'fenix-grg-core');
+    reconstructionTarget = absorptionReport.screens.find((screen) => String(screen.title || '').trim())?.title || reconstructionTarget;
     assert.ok(absorptionReport.stats.totalFilesScanned > 20, `Arquivos reais devem ser escaneados (encontrados: ${absorptionReport.stats.totalFilesScanned})`);
     assert.ok(absorptionReport.entrypoints.length > 0, 'Entrypoints reais devem ser identificados');
     assert.ok(absorptionReport.techStack.length > 0, 'Stack tecnológica real deve ser detectada');
@@ -82,11 +84,14 @@ test('PROJECT ABSORPTION & SCREEN RECONSTRUCTION: Hard Reality Gates Test', asyn
     assert.ok(firstScreen.screenId, 'Screen DNA deve conter screenId');
     assert.ok(firstScreen.title, 'Screen DNA deve conter title');
     assert.ok(firstScreen.layout, 'Screen DNA deve conter layout');
-    assert.ok(firstScreen.components.length > 0, 'Screen DNA deve mapear componentes');
-    assert.ok(firstScreen.spacing.length > 0, 'Screen DNA deve conter tokens de espaçamento');
-    assert.ok(firstScreen.colors.length > 0, 'Screen DNA deve conter tokens de cor');
+    assert.deepEqual(firstScreen.components, [], 'componentes não observados não podem ser inventados');
+    assert.ok(Array.isArray(firstScreen.spacing), 'Screen DNA deve declarar tokens encontrados no código');
+    assert.ok(Array.isArray(firstScreen.colors), 'Screen DNA deve declarar tokens encontrados no código');
     assert.ok(firstScreen.structuralHash, 'Screen DNA deve conter structuralHash');
-    assert.equal(firstScreen.confidence, 1.0, 'Confiança deve ser 1.0 (fato inspecionado)');
+    assert.equal(firstScreen.discoveryStatus, 'SOURCE_DISCOVERED');
+    assert.equal(firstScreen.domInspectionStatus, 'NOT_INSPECTED');
+    assert.equal(firstScreen.captureStatus, 'NOT_CAPTURED');
+    assert.equal(firstScreen.confidence, null, 'descoberta estática não implica confiança visual medida');
   });
 
   // ─── GATE 4 & 5: PROJECT DNA & PATTERN LIBRARY PERSISTENCE ─────────────────
@@ -122,8 +127,8 @@ test('PROJECT ABSORPTION & SCREEN RECONSTRUCTION: Hard Reality Gates Test', asyn
   let run1Result = null;
   await t.test('5. Execute Screen Reconstruction in Sandbox (Run 1 - Cold)', async () => {
     run1Result = await reconstructionEngine.reconstruct({
-      targetName: 'Agent Inspector',
-      prompt: 'Reconstrua a interface do Agent Inspector com telemetria honesta e chat',
+      targetName: reconstructionTarget,
+      prompt: `Reconstrua a tela absorvida ${reconstructionTarget}`,
       tenantId,
       actorId,
       projectId: 'fenix-grg-core',
@@ -138,12 +143,12 @@ test('PROJECT ABSORPTION & SCREEN RECONSTRUCTION: Hard Reality Gates Test', asyn
     assert.equal(run1Result.validation.checks.honestInitialValues, true, 'Deve respeitar Zero-Mock honesto (marcador —)');
   });
 
-  // ─── GATE 9 & 10: SECOND RUN & PROVEN KNOWLEDGE REUSE ──────────────────────
+  // ─── GATE 9 & 10: SECOND RUN & SCREEN DNA SOURCE ──────────────────────────
   let run2Result = null;
-  await t.test('6. Second Execution & Proven Knowledge Reuse (Run 2 - Warm)', async () => {
+  await t.test('6. Second Execution reuses the exact absorbed Screen DNA', async () => {
     run2Result = await reconstructionEngine.reconstruct({
-      targetName: 'Agent Inspector',
-      prompt: 'Reconstrua a interface do Agent Inspector com telemetria honesta e chat',
+      targetName: reconstructionTarget,
+      prompt: `Reconstrua a tela absorvida ${reconstructionTarget}`,
       tenantId,
       actorId,
       projectId: 'fenix-grg-core',
@@ -151,27 +156,26 @@ test('PROJECT ABSORPTION & SCREEN RECONSTRUCTION: Hard Reality Gates Test', asyn
     });
 
     assert.ok(run2Result.knowledgeReused, 'Segunda execução DEVE reutilizar conhecimento acumulado');
+    assert.equal(run2Result.screenDnaSource, 'ABSORBED_SCREEN_DNA');
     assert.equal(run2Result.validation.valid, true, 'Validação da segunda execução deve passar');
     assert.equal(run2Result.metrics.apiCalls, 0, 'Segunda execução deve evitar chamadas externas de API');
   });
 
   // ─── GATE 11, 12, 13, 14: DUAL-RUN DELTA & TOKEN ECONOMY MEASUREMENT ────────
-  await t.test('7. Measure Dual-Run Delta & Token Economy', async () => {
+  await t.test('7. Dual-Run reports savings as unverified without provider measurements', async () => {
     const learningReport = await reconstructionEngine.executeDualLearningLoop({
-      targetName: 'Agent Inspector',
+      targetName: reconstructionTarget,
       tenantId,
       actorId,
       projectId: 'fenix-grg-core',
     });
 
-    assert.equal(learningReport.isProven, true, 'Aprendizado deve ser comprovado');
-    assert.equal(learningReport.status, 'LEARNING_PROVEN', 'Status deve ser LEARNING_PROVEN');
-    assert.ok(learningReport.delta.tokensSaved > 0, `Tokens devem ser economizados (economizados: ${learningReport.delta.tokensSaved})`);
-    assert.ok(learningReport.delta.apiCallsAvoided > 0, 'Chamadas externas de API devem ser evitadas');
+    assert.equal(learningReport.isProven, false, 'Sem dados comparáveis, o ganho não pode ser declarado comprovado');
+    assert.equal(learningReport.status, 'LEARNING_NOT_PROVEN');
+    assert.equal(learningReport.delta.tokensSaved, null);
+    assert.equal(learningReport.delta.apiCallsAvoided, null);
+    assert.equal(learningReport.delta.tokenSavingsPercent, null);
 
-    const ecoReport = tokenEconomy.getEfficiencyReport();
-    assert.ok(ecoReport.KNOWLEDGE_REUSE_RATE > 0, `KNOWLEDGE_REUSE_RATE deve ser > 0 (medido: ${ecoReport.KNOWLEDGE_REUSE_RATE})`);
-    assert.ok(ecoReport.TOKEN_SAVINGS_RATE > 0, `TOKEN_SAVINGS_RATE deve ser > 0 (medido: ${ecoReport.TOKEN_SAVINGS_RATE})`);
   });
 
   // ─── GATE 15: CEO FACTUAL TELEMETRY RESPONSES ──────────────────────────────
@@ -190,9 +194,10 @@ test('PROJECT ABSORPTION & SCREEN RECONSTRUCTION: Hard Reality Gates Test', asyn
 
     // Inquiry 2: "Quanto economizamos reutilizando conhecimento?"
     const savingsAnswer = await ceoAgent.chat(tenantId, 'comp.fenix_enterprise', 'Quanto economizamos reutilizando conhecimento?');
-    assert.ok(savingsAnswer.answer.includes('tokens economizados'), 'CEO deve reportar tokens economizados reais');
-    assert.ok(savingsAnswer.evidence.tokensSaved > 0, 'Evidência deve comprovar tokens poupados');
-    assert.ok(savingsAnswer.evidence.apiCallsAvoided > 0, 'Evidência deve comprovar chamadas de API evitadas');
+    assert.ok(savingsAnswer.answer.includes('não há uma comparação validada'), 'CEO deve explicitar a ausência de medição comparativa');
+    assert.equal(savingsAnswer.evidence.measurementStatus, 'UNVERIFIED');
+    assert.equal(savingsAnswer.evidence.tokensSaved, null);
+    assert.equal(savingsAnswer.evidence.apiCallsAvoided, null);
   });
 
   // ─── GATE 16: LIVING CITY & HEART PERSISTENCE ──────────────────────────────

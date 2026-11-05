@@ -9,7 +9,7 @@
  * - Result caching & deduplication
  * - Multi-Model cascade (cheap first: Qwen -> DeepSeek -> OpenAI escalation)
  * - Cost Control & Dev Cost Modes (BALANCED, ECONOMY, MAXIMUM_SAVING)
- * - Dev Efficiency Score calculation (≥ 50% operational gain verified)
+ * - Evidence-based usage reporting; estimates are kept separate from provider telemetry
  * - Zero Secret Leakage
  */
 
@@ -60,12 +60,7 @@ class TokenEconomyEngine extends SystemModule {
       estimatedCostSavedUsd: 0.0,
       tasksExecuted: 0,
       tasksSolvedWithoutLlm: 0,
-      baselineComparison: {
-        baselineTokensPerTask: 3850,
-        optimizedTokensPerTask: 1150,
-        baselineCostPerTask: 0.0192,
-        optimizedCostPerTask: 0.0038
-      }
+      baselineComparison: null
     };
 
     // Pricing per 1k tokens (Estimated blended rates)
@@ -337,8 +332,8 @@ class TokenEconomyEngine extends SystemModule {
     }
 
     // TIER 2: Pattern Library
-    if (patternLibrary && typeof patternLibrary.findPatterns === 'function') {
-      const patterns = patternLibrary.findPatterns(task);
+    if (patternLibrary && typeof patternLibrary.findReusablePatterns === 'function') {
+      const patterns = patternLibrary.findReusablePatterns(task);
       if (patterns && patterns.length > 0) {
         const topPattern = patterns[0];
         resultRecord.patternHit = true;
@@ -489,31 +484,29 @@ class TokenEconomyEngine extends SystemModule {
    */
   getEfficiencyReport() {
     const totalOps = this.metrics.totalCalls + this.metrics.cacheHits + this.metrics.tasksSolvedWithoutLlm;
-    const cacheHitRate = totalOps > 0 ? (this.metrics.cacheHits / totalOps) * 100 : 0;
-    
-    const avgTokensPerTask = this.metrics.totalCalls > 0 
-      ? Math.round((this.metrics.tokensInput + this.metrics.tokensOutput) / this.metrics.totalCalls)
-      : this.metrics.baselineComparison.optimizedTokensPerTask;
-
-    const tokenReductionPercent = Math.min(95, Math.max(0, Math.round(
-      ((this.metrics.baselineComparison.baselineTokensPerTask - avgTokensPerTask) / this.metrics.baselineComparison.baselineTokensPerTask) * 100
-    )));
-
+    const cacheHitRate = totalOps > 0 ? Number((this.metrics.cacheHits / totalOps).toFixed(4)) : null;
     const knowledgeHits = this.metrics.cacheHits + this.metrics.patternHits + this.metrics.memoryHits + this.metrics.graphHits + this.metrics.dnaHits + this.metrics.previousSolutionHits;
-    const KNOWLEDGE_REUSE_RATE = Number((knowledgeHits / Math.max(1, totalOps)).toFixed(4));
-    
-    const totalTokensUsed = this.metrics.tokensInput + this.metrics.tokensOutput;
-    const TOKEN_SAVINGS_RATE = Number((this.metrics.tokensSaved / Math.max(1, totalTokensUsed + this.metrics.tokensSaved)).toFixed(4));
-
-    // Dev Efficiency Score: combines token reduction, cache hit rate, and non-LLM resolutions
-    const devEfficiencyScore = Math.min(100, Math.max(50, Math.round(50 + (tokenReductionPercent * 0.35) + (cacheHitRate * 0.15))));
+    const KNOWLEDGE_REUSE_RATE = totalOps > 0 ? Number((knowledgeHits / totalOps).toFixed(4)) : null;
+    const estimatedTokensSaved = this.metrics.tokensSaved;
+    const estimatedTokensUsed = this.metrics.tokensInput + this.metrics.tokensOutput;
+    const estimatedTokenSavingsRate = estimatedTokensUsed + estimatedTokensSaved > 0
+      ? Number((estimatedTokensSaved / (estimatedTokensUsed + estimatedTokensSaved)).toFixed(4))
+      : null;
 
     return {
-      devEfficiencyScore, // eg. 78 / 100
+      devEfficiencyScore: null,
       costMode: this.costMode,
-      tokenReductionPercent: `${tokenReductionPercent}%`,
+      tokenReductionPercent: null,
       KNOWLEDGE_REUSE_RATE,
-      TOKEN_SAVINGS_RATE,
+      TOKEN_SAVINGS_RATE: null,
+      estimatedTokensSaved,
+      estimatedTokenSavingsRate,
+      usagePrecision: 'ESTIMATED',
+      measurementStatus: {
+        score: 'UNMEASURED',
+        savings: 'UNMEASURED',
+        knowledgeReuse: totalOps > 0 ? 'OBSERVED' : 'UNMEASURED'
+      },
       metrics: {
         totalCalls: this.metrics.totalCalls,
         cacheHits: this.metrics.cacheHits,
@@ -522,23 +515,30 @@ class TokenEconomyEngine extends SystemModule {
         memoryHits: this.metrics.memoryHits,
         graphHits: this.metrics.graphHits,
         dnaHits: this.metrics.dnaHits,
-        apiCallsAvoided: this.metrics.apiCallsAvoided || this.metrics.tasksSolvedWithoutLlm,
+        apiCallsAvoided: null,
+        estimatedApiCallsAvoided: this.metrics.tasksSolvedWithoutLlm,
         localModelCalls: this.metrics.localModelCalls,
         externalModelCalls: this.metrics.externalModelCalls,
-        cacheHitRate: `${cacheHitRate.toFixed(1)}%`,
-        totalTokensInput: this.metrics.tokensInput,
-        totalTokensOutput: this.metrics.tokensOutput,
-        totalTokensSaved: this.metrics.tokensSaved,
+        cacheHitRate,
+        totalTokensInput: null,
+        totalTokensOutput: null,
+        totalTokensSaved: null,
+        estimatedTokensInput: this.metrics.tokensInput,
+        estimatedTokensOutput: this.metrics.tokensOutput,
+        estimatedTokensSaved,
         totalEstimatedCostUsd: parseFloat(this.metrics.estimatedCostUsd.toFixed(4)),
-        totalCostSavedUsd: parseFloat(this.metrics.estimatedCostSavedUsd.toFixed(4)),
+        totalCostSavedUsd: null,
+        totalEstimatedCostSavedUsd: parseFloat(this.metrics.estimatedCostSavedUsd.toFixed(4)),
+        usagePrecision: 'ESTIMATED',
         cachedPromptsCount: this.promptCache.size
       },
       baselineComparison: {
-        baselineTokensPerTask: this.metrics.baselineComparison.baselineTokensPerTask,
-        currentTokensPerTask: avgTokensPerTask,
-        baselineCostPerTaskUsd: this.metrics.baselineComparison.baselineCostPerTask,
-        currentCostPerTaskUsd: parseFloat(((avgTokensPerTask / 1000) * 0.0003).toFixed(5)),
-        efficiencyGain: `+${Math.max(52, tokenReductionPercent)}%`
+        status: 'UNMEASURED',
+        baselineTokensPerTask: null,
+        currentTokensPerTask: null,
+        baselineCostPerTaskUsd: null,
+        currentCostPerTaskUsd: null,
+        efficiencyGain: null
       }
     };
   }

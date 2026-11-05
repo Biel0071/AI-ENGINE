@@ -215,7 +215,7 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
     });
   }
 
-  const match = url.pathname.match(/^\/api\/fenix\/projects\/([^/]+)\/(tree|file|search|checkpoints|rollback|analyze|analysis|evolution-plan|autonomous-cycle|ports|runtime)$/);
+  const match = url.pathname.match(/^\/api\/(?:fenix|v2)\/projects\/([^/]+)\/(tree|file|search|checkpoints|rollback|analyze|analysis|evolution-plan|autonomous-cycle|ports|runtime)$/);
   if (!match || !['GET', 'PUT', 'POST'].includes(req.method)) return false;
   const [, rawProjectId, action] = match;
   const projectId = decodeURIComponent(rawProjectId);
@@ -231,16 +231,27 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
   const storedProject = (Array.isArray(appStateData?.projects) ? appStateData.projects : []).find((item) =>
     (!item.tenantId || item.tenantId === tenantId) && (
       item.id === projectId || item.projectId === projectId || item.catalogId === projectId ||
-      `local-${item.id}` === projectId || item.id === `local-${projectId}`
+      `local-${item.id}` === projectId || item.id === `local-${projectId}` ||
+      (projectId === 'fenix-os' && (item.id === 'fenix' || item.catalogId === 'fenix')) ||
+      (projectId === 'fenix' && (item.id === 'fenix-os' || item.catalogId === 'fenix'))
     )
   );
   let regProj = null;
   try {
     const registry = require('../projects/project-registry');
-    if (typeof registry.getProjectById === 'function') regProj = registry.getProjectById(projectId);
+    if (typeof registry.getProjectById === 'function') {
+      regProj = registry.getProjectById(projectId) ||
+        (projectId === 'fenix' ? registry.getProjectById('fenix-os') : null) ||
+        (projectId === 'fenix-os' ? registry.getProjectById('fenix') : null);
+    }
   }
   catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
-  if (!regProj) regProj = require('../projects/local-project-catalog').getLocalProjectById(projectId);
+  if (!regProj) {
+    const catalog = require('../projects/local-project-catalog');
+    regProj = catalog.getLocalProjectById(projectId) ||
+      (projectId === 'fenix-os' ? catalog.getLocalProjectById('fenix') : null) ||
+      (projectId === 'fenix' ? catalog.getLocalProjectById('fenix-os') : null);
+  }
   if (!regProj && typeof app.projectRegistry?.get === 'function') regProj = app.projectRegistry.get(projectId);
   const projectReference = storedProject || regProj || { id: projectId };
   const workspace = resolveProjectWorkspace(projectReference, regProj);
@@ -257,13 +268,15 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
         try {
           const kernelAnalysis = await app.projectKernel.analysis(tenantId, actorId, projectId);
           if (kernelAnalysis) return reply(200, kernelAnalysis);
-        } catch (_) {}
+        } catch (err) {
+          if (err.name === 'NotFoundError' || err.status === 404 || err.statusCode === 404 || /not found/i.test(err.message)) {
+            return reply(404, { ok: false, error: err.message });
+          }
+        }
       }
       let report = state.projectAnalyses[projectId];
       if (!report) {
-        report = await globalProjectIntelligenceEngine.analyzeProject(projectId, workspace);
-        state.projectAnalyses[projectId] = report;
-        await app.store.write(state);
+        return reply(404, { ok: false, error: `project analysis not found: ${projectId}` });
       }
       return reply(200, { ok: true, projectId, report, artifact: null, integration: report.integration });
     }
@@ -406,10 +419,20 @@ async function handleProjectWorkspaceRoutes(req, res, url, app, sendJson, readJs
     }
   }
 
-  if (!project || !workspace) return reply(404, { error: 'Project workspace is unavailable' });
-  project.workspace = workspace;
+  let effectiveWorkspace = workspace;
+  if (!effectiveWorkspace && (projectId === 'fenix-os' || projectId === 'fenix' || projectId === 'ai-engine' || projectId === 'ai-engine-core')) {
+    effectiveWorkspace = [
+      path.resolve(__dirname, '../../../..'),
+      path.resolve(__dirname, '../../..'),
+      path.resolve(__dirname, '../..'),
+      '/opt/fenix-os',
+      '/opt/AI-ENGINE'
+    ].find((p) => { try { return fs.existsSync(p); } catch { return false; } }) || null;
+  }
+  if (!effectiveWorkspace) return reply(404, { error: `Project workspace is unavailable for ${projectId}` });
+  project.workspace = effectiveWorkspace;
   let root;
-  try { root = fs.realpathSync(project.workspace); } catch { return reply(404, { error: 'Project workspace is unavailable' }); }
+  try { root = fs.realpathSync(project.workspace); } catch { return reply(404, { error: `Project workspace is unavailable for ${projectId}` }); }
   const entryFile = regProj?.source === 'LOCAL_PROJECT_CATALOG' ? regProj.entryFile : null;
   if (action === 'tree') return reply(200, { projectId, tree: entryFile ? [{ name: entryFile, path: entryFile, type: 'file' }] : scan(root, root, 0), source: 'project-kernel-workspace' });
   if (action === 'search') {

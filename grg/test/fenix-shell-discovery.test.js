@@ -17,4 +17,7 @@ test('FÊNIX shell discovery maps the 18 hash-routed views in the current source
   assert.equal(result.status, 'STATIC_INVENTORY');
   assert.equal(result.overallHealthScore, null);
   assert.equal(result.zeroDeadButtonsPass, null);
+  const city = result.screens.find((screen) => screen.screenId === 'screen_city');
+  assert.ok(city.navigationEdges.some((edge) => edge.targetScreenId === 'screen_projects' && edge.action.includes('Projetos')));
+  assert.ok(city.navigationEdges.every((edge) => edge.evidenceSource === 'STATIC_SOURCE' && edge.verificationStatus === 'NOT_VERIFIED'));
 });

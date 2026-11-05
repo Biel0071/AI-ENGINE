@@ -17,6 +17,21 @@ function normalizePersistedState(document) {
   return migrateState(document).state;
 }
 
+function cloneReadSnapshot(state) {
+  if (!state || typeof state !== 'object') return state;
+  const copy = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (Array.isArray(value)) {
+      copy[key] = value.slice();
+    } else if (value && typeof value === 'object') {
+      copy[key] = { ...value };
+    } else {
+      copy[key] = value;
+    }
+  }
+  return copy;
+}
+
 function safeIdentifier(value) {
   const identifier = String(value || 'fenix');
   if (!/^[a-z_][a-z0-9_]*$/.test(identifier)) throw new Error('invalid PostgreSQL schema identifier');
@@ -43,7 +58,9 @@ class PostgresStore {
     // canonical row. Serializing locally leaves one API and one worker transaction at
     // most in contention, instead of a 20-connection lock convoy doing duplicate clones.
     this.writeQueue = Promise.resolve();
-    this.cacheTtlMs = Number(env?.FENIX_STORE_CACHE_TTL_MS || process.env.FENIX_STORE_CACHE_TTL_MS || 750);
+    this.pendingUpdates = [];
+    this.flushScheduled = false;
+    this.cacheTtlMs = Number(env?.FENIX_STORE_CACHE_TTL_MS || process.env.FENIX_STORE_CACHE_TTL_MS || 2500);
     this.cachedState = null;
     this.cachedAt = 0;
     this.cacheGeneration = 0;
@@ -64,6 +81,9 @@ class PostgresStore {
       idleTimeoutMillis: Number(options.idleTimeoutMs || 30_000),
       connectionTimeoutMillis: Number(options.connectionTimeoutMs || process.env.FENIX_PG_TIMEOUT_MS || 20_000),
       ssl: options.ssl,
+    });
+    pool.on('error', (err) => {
+      console.warn('[PostgresStore] Idle pool client error:', err?.message || err);
     });
     const store = new PostgresStore({
       pool,
@@ -107,12 +127,12 @@ class PostgresStore {
   async read() {
     const now = Date.now();
     if (this.cachedState && (now - this.cachedAt < this.cacheTtlMs)) {
-      return structuredClone(this.cachedState);
+      return cloneReadSnapshot(this.cachedState);
     }
     const generation = this.cacheGeneration;
     const existingRead = this.readPromise;
     if (existingRead?.generation === generation) {
-      return structuredClone(await existingRead.promise);
+      return cloneReadSnapshot(await existingRead.promise);
     }
 
     const readPromise = (async () => {
@@ -129,7 +149,7 @@ class PostgresStore {
     })();
     this.readPromise = { generation, promise: readPromise };
     try {
-      return structuredClone(await readPromise);
+      return cloneReadSnapshot(await readPromise);
     } finally {
       if (this.readPromise?.promise === readPromise) this.readPromise = null;
     }
@@ -146,32 +166,85 @@ class PostgresStore {
     this.cacheGeneration += 1;
     this.cachedState = migrated;
     this.cachedAt = Date.now();
-    return structuredClone(migrated);
+    return cloneReadSnapshot(migrated);
   }
 
   async update(mutator) {
-    const task = this.writeQueue.then(() => this.#updateTransaction(mutator));
-    this.writeQueue = task.catch(() => {});
-    return task;
+    const caller = new Error().stack.split('\n')[2]?.trim() || 'unknown';
+    return new Promise((resolve, reject) => {
+      this.pendingUpdates.push({ mutator, resolve, reject, caller });
+      this.#scheduleFlush();
+    });
   }
 
-  async #updateTransaction(mutator) {
+  #scheduleFlush() {
+    if (this.flushScheduled) return;
+    this.flushScheduled = true;
+    const task = this.writeQueue.then(async () => {
+      try {
+        await Promise.resolve();
+        while (this.pendingUpdates.length > 0) {
+          const batch = this.pendingUpdates.splice(0, this.pendingUpdates.length);
+          if (batch.length === 1) {
+            try {
+              const res = await this.#updateTransaction(batch[0].mutator, batch[0].caller);
+              batch[0].resolve(res);
+            } catch (err) {
+              batch[0].reject(err);
+            }
+          } else {
+            try {
+              const res = await this.#updateTransaction(async (current) => {
+                let draft = current;
+                for (const item of batch) {
+                  draft = normalizePersistedState(await item.mutator(draft));
+                }
+                return draft;
+              }, `${batch[0].caller} (+${batch.length - 1} batched)`);
+              for (const item of batch) {
+                item.resolve(cloneReadSnapshot(res));
+              }
+            } catch (batchErr) {
+              // Fallback to individual transactions if a combined batch mutator fails
+              for (const item of batch) {
+                try {
+                  const res = await this.#updateTransaction(item.mutator, item.caller);
+                  item.resolve(res);
+                } catch (err) {
+                  item.reject(err);
+                }
+              }
+            }
+          }
+        }
+      } finally {
+        this.flushScheduled = false;
+        if (this.pendingUpdates.length > 0) {
+          this.#scheduleFlush();
+        }
+      }
+    });
+    this.writeQueue = task.catch(() => {});
+  }
+
+  async #updateTransaction(mutator, callerOverride = null) {
+    const caller = callerOverride || new Error().stack.split('\n')[3]?.trim() || 'unknown';
+    const t0 = Date.now();
     return withRetry(async () => {
       const client = await this.pool.connect();
+      let destroyClient = false;
+      const onClientError = () => { destroyClient = true; };
+      client.on?.('error', onClientError);
       try {
-        // The canonical state is one row and SELECT ... FOR UPDATE already gives every
-        // writer exclusive, ordered access to it. SERIALIZABLE added transaction-wide
-        // snapshot conflicts on top of that row lock, so concurrent API/worker writers
-        // repeatedly failed with 40001 after doing the expensive JSON serialization.
-        // READ COMMITTED waits for the preceding writer and then reads its committed row,
-        // preserving mutation order without false serialization failures.
         await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+        await client.query('SET LOCAL statement_timeout = 15000');
+        await client.query("SET LOCAL idle_in_transaction_session_timeout = '15000'");
         const result = await client.query(
           `SELECT document FROM ${this.schema}.kernel_state WHERE state_key = $1 FOR UPDATE`, ['global'],
         );
         if (!result.rows[0]) throw new Error('PostgreSQL kernel state is not initialized');
         const current = normalizePersistedState(result.rows[0].document);
-        const mutated = await mutator(structuredClone(current));
+        const mutated = await mutator(current);
         const next = this.#prune(normalizePersistedState(mutated));
         await client.query(
           `UPDATE ${this.schema}.kernel_state
@@ -183,12 +256,27 @@ class PostgresStore {
         this.cacheGeneration += 1;
         this.cachedState = next;
         this.cachedAt = Date.now();
-        return structuredClone(next);
+        const duration = Date.now() - t0;
+        if (duration > 300) {
+          console.warn(`[PostgresStore] slow update (${duration}ms) by: ${caller}`);
+        }
+        return cloneReadSnapshot(next);
       } catch (error) {
-        try { await client.query('ROLLBACK'); } catch { /* connection may already be closed */ }
+        if (
+          error?.code === '25P03' ||
+          error?.code === '57P01' ||
+          error?.code === '57014' ||
+          /connection error|not queryable|terminating connection/i.test(error?.message || '')
+        ) {
+          destroyClient = true;
+        }
+        if (!destroyClient) {
+          try { await client.query('ROLLBACK'); } catch { destroyClient = true; }
+        }
         throw error;
       } finally {
-        client.release();
+        client.removeListener?.('error', onClientError);
+        client.release(destroyClient);
       }
     }, {
       // MEDIDO em producao (2026-07-29, doc de 6.38 MB): um update() no-op leva ~2 s -- o
@@ -200,7 +288,12 @@ class PostgresStore {
       // jitter alto de proposito: dois escritores em loop de periodo fixo re-colidem em fase
       // se o atraso for deterministico.
       jitter: 0.5,
-      retryable: (error) => error?.code === '40001' || error?.code === '40P01',
+      retryable: (error) =>
+        error?.code === '40001' ||
+        error?.code === '40P01' ||
+        error?.code === '25P03' ||
+        error?.code === '57014' ||
+        /connection error|not queryable|terminating connection/i.test(error?.message || ''),
     });
   }
 

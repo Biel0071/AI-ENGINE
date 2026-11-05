@@ -22,6 +22,13 @@ test('agent Inspector renders a job record by its name or ID', () => {
   assert.doesNotMatch(inspector, /esc\(agent\.currentJob\)/);
 });
 
+test('agent Inspector shows only EventBus records explicitly linked to the selected agent', () => {
+  assert.match(inspector, /\/api\/v2\/living-city\/events\?limit=100/);
+  assert.match(inspector, /String\(eventAgentId \|\| ''\) === String\(agent\.id \|\| agentId\)/);
+  assert.match(inspector, /Atividade registrada · EventBus/);
+  assert.match(inspector, /Nenhum evento deste agente encontrado no EventBus nesta leitura/);
+});
+
 test('Workforce shares its authenticated agent snapshot with the Inspector', () => {
   assert.match(workforce, /window\.__fenixContext\) window\.__fenixContext\.cachedAgents = agents/);
 });

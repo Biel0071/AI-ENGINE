@@ -20,18 +20,32 @@ class ReferenceAcquisitionEngine {
    */
   async ingestReference(input = {}) {
     const type = this.detectReferenceType(input);
-    const rawContent = input.content || input.url || input.path || input.text || '';
+    const rawContent = typeof input.capturedHtml === 'string' ? input.capturedHtml
+      : typeof input.content === 'string' ? input.content
+        : typeof input.text === 'string' ? input.text : '';
 
     const functionalKnowledge = this.extractFunctionalDimensions(rawContent, type);
-    const visualKnowledge = this.extractVisualDimensions(rawContent, type);
-    const architecturalKnowledge = this.extractArchitecturalDimensions(rawContent, type);
-    const interactionKnowledge = this.extractInteractionDimensions(rawContent, type);
+    const visualKnowledge = this.extractVisualDimensions(input.visualObservations);
+    const architecturalKnowledge = this.extractArchitecturalDimensions(input.codeEvidence);
+    const interactionKnowledge = this.extractInteractionDimensions(input.interactionObservations);
+    const hasCapturedContent = Boolean(rawContent.trim() || (Array.isArray(input.visualObservations) && input.visualObservations.length));
 
     const referenceSpec = {
       referenceId: `ref_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       type,
       source: input.source || 'user_input',
       ingestedAt: new Date().toISOString(),
+      analysisStatus: hasCapturedContent ? 'PARTIALLY_ANALYZED' : type === 'URL_WEBSITE' ? 'NEEDS_CAPTURE' : 'NEEDS_ANALYSIS',
+      evidence: {
+        captureProvided: hasCapturedContent,
+        urlFetched: false,
+        sourceType: type,
+        limitations: type === 'URL_WEBSITE' && !rawContent
+          ? ['A URL foi registrada, mas o conteúdo do site não foi acessado nesta análise.']
+          : type === 'SCREENSHOT' && !input.visualObservations?.length
+            ? ['A captura precisa ser analisada por visão; dimensões, cores e componentes não foram medidos.']
+            : ['A extração heurística produz pistas inferidas, não validação visual ou funcional.'],
+      },
       knowledge: {
         functional: functionalKnowledge,
         visual: visualKnowledge,
@@ -40,9 +54,9 @@ class ReferenceAcquisitionEngine {
       },
       adaptationStrategy: {
         principle: 'Evolve, Enhance, Never Blindly Copy',
-        targetFenixViews: ['view-command', 'view-city', 'view-ide'],
-        recommendedArchitecture: architecturalKnowledge.recommendedPattern,
-        fenixEnhancementFactor: '10x Integration & Zero-Mock Observability'
+        targetFenixViews: Array.isArray(input.targetFenixViews) ? input.targetFenixViews : [],
+        recommendedArchitecture: architecturalKnowledge.recommendedPattern || null,
+        nextAction: hasCapturedContent ? 'VALIDATE_IN_PROJECT_CONTEXT' : 'PROVIDE_CAPTURE_OR_AUTHORIZED_CONTENT'
       }
     };
 
@@ -63,64 +77,61 @@ class ReferenceAcquisitionEngine {
   extractFunctionalDimensions(content, type) {
     const text = String(content).toLowerCase();
     const capabilities = [];
+    const evidence = [];
 
-    if (text.includes('auth') || text.includes('login') || text.includes('user')) capabilities.push('AUTHENTICATION_RBAC');
-    if (text.includes('chat') || text.includes('message') || text.includes('conversa')) capabilities.push('REALTIME_MESSAGING');
-    if (text.includes('dashboard') || text.includes('metric') || text.includes('painel')) capabilities.push('ANALYTIC_DASHBOARD');
-    if (text.includes('agent') || text.includes('bot') || text.includes('ai')) capabilities.push('EMBODIED_AGENTS');
-    if (text.includes('saas') || text.includes('billing') || text.includes('checkout')) capabilities.push('COMMERCE_BILLING');
-    if (text.includes('ticket') || text.includes('suporte') || text.includes('atendimento')) capabilities.push('CUSTOMER_SUPPORT_QUEUE');
+    const signals = [
+      [/\b(auth|login|user)\b/i, 'AUTHENTICATION_RBAC'],
+      [/\b(chat|message|conversa)\b/i, 'REALTIME_MESSAGING'],
+      [/\b(dashboard|metric|painel)\b/i, 'ANALYTIC_DASHBOARD'],
+      [/\b(agent|bot|ai)\b/i, 'EMBODIED_AGENTS'],
+      [/\b(saas|billing|checkout)\b/i, 'COMMERCE_BILLING'],
+      [/\b(ticket|suporte|atendimento)\b/i, 'CUSTOMER_SUPPORT_QUEUE'],
+    ];
+    for (const [pattern, capability] of signals) {
+      const match = pattern.exec(text);
+      if (!match) continue;
+      capabilities.push(capability);
+      evidence.push({ capability, classification: 'INFERRED_FROM_TEXT', excerpt: String(content).slice(Math.max(0, match.index - 40), match.index + match[0].length + 60) });
+    }
 
     return {
-      coreCapabilities: capabilities.length > 0 ? capabilities : ['CORE_UTILITY', 'INTERACTIVE_INTERFACE'],
-      summary: `Functional capability set extracted from ${type}`,
-      isZeroAiCompatible: true
+      status: content ? 'INFERRED_FROM_TEXT' : 'NOT_ANALYZED',
+      coreCapabilities: capabilities,
+      evidence,
+      sourceType: type,
+      limitations: content ? ['Pistas de texto não comprovam execução, permissão, fluxo completo ou estado real.'] : ['Nenhum conteúdo capturado para análise.']
     };
   }
 
-  extractVisualDimensions(content, type) {
+  extractVisualDimensions(observations = []) {
+    const measured = Array.isArray(observations) ? observations.filter((item) => item && typeof item === 'object') : [];
     return {
-      designSystem: 'Fênix Dark Glassmorphism HSL',
-      colorPalette: {
-        background: 'hsl(222, 47%, 7%)',
-        surface: 'hsl(222, 40%, 11%)',
-        accentPrimary: 'hsl(180, 100%, 45%)', // Cyan Fênix
-        accentAmber: 'hsl(38, 92%, 50%)',
-        textPrimary: 'hsl(210, 40%, 98%)',
-        textMuted: 'hsl(215, 20%, 65%)'
-      },
-      typography: {
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        scale: 'Modular 1.25 with tabular monospace numbers for telemetry'
-      },
-      spacingScale: '4px / 8px / 12px / 16px / 24px / 32px',
-      contrastRatio: 'AAA compliant (>= 7:1 for text)',
-      aestheticPillars: ['Glassmorphism', 'Clean Borders 1px', 'Micro-holograms', 'Spatial Depth']
+      status: measured.length ? 'OBSERVED_INPUT_REQUIRES_VALIDATION' : 'NOT_MEASURED',
+      observations: measured,
+      colorPalette: null,
+      typography: null,
+      spacingScale: null,
+      contrastRatio: null,
+      limitation: measured.length ? 'Observações fornecidas precisam de captura/localização verificável antes de serem tratadas como medidas.' : 'Sem captura analisada por visão; nenhuma cor, fonte ou distância foi medida.'
     };
   }
 
-  extractArchitecturalDimensions(content, type) {
-    const text = String(content).toLowerCase();
-    let pattern = 'MODULAR_REST_WEBSOCKET';
-
-    if (text.includes('saas') || text.includes('scale')) pattern = 'MULTI_TENANT_EVENT_DRIVEN';
-    if (text.includes('offline') || text.includes('sem ia')) pattern = 'DETERMINISTIC_LOCAL_FIRST';
-
+  extractArchitecturalDimensions(codeEvidence) {
+    const evidence = Array.isArray(codeEvidence) ? codeEvidence.filter((item) => item && typeof item === 'object') : [];
     return {
-      recommendedPattern: pattern,
-      backendLayer: 'Node.js Express / Kernel DI with StorageManager',
-      stateManagement: 'window.__FENIX_STATE__ with EventSource SSE / WS',
-      database: 'PostgreSQL Relational + Redis Cache + Qdrant Vector',
-      offlineFallback: 'In-Memory / SQLite Local Storage'
+      status: evidence.length ? 'OBSERVED_INPUT_REQUIRES_VALIDATION' : 'NOT_INSPECTED',
+      recommendedPattern: null,
+      evidence,
+      limitation: 'Arquitetura não é inferida a partir do nome da URL ou da aparência da tela.'
     };
   }
 
-  extractInteractionDimensions(content, type) {
+  extractInteractionDimensions(observations) {
+    const evidence = Array.isArray(observations) ? observations.filter((item) => item && typeof item === 'object') : [];
     return {
-      feedbackLoops: ['Immediate Visual Hover', 'Optimistic UI State', 'Honest Progress Marker'],
-      transitions: 'Cubic Bezier (0.16, 1, 0.3, 1) duration 200ms',
-      emptyStates: 'Honest Absence Dash (—) instead of fabricated numbers',
-      accessibility: 'Keyboard Tab Navigation, ARIA pressed states, Screen-Reader Labels'
+      status: evidence.length ? 'OBSERVED_INPUT_REQUIRES_REPRODUCTION' : 'NOT_OBSERVED',
+      evidence,
+      limitation: 'Interações só são confirmadas ao reproduzir ações e estados no sistema de referência.'
     };
   }
 }

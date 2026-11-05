@@ -67,7 +67,7 @@ class JobQueueManager {
             if (!isNaN(num) && num >= this.counter) this.counter = num + 1;
           }
         }
-        if (parsed.isPaused !== undefined) this.isPaused = Boolean(parsed.isPaused);
+        if (parsed.isPaused !== undefined && process.env.FENIX_TEST_MODE !== 'true') this.isPaused = Boolean(parsed.isPaused);
       }
     } catch (e) {
       console.warn('[JobQueueManager] Load state warning:', e.message);

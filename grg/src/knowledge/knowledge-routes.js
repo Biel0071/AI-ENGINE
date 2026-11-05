@@ -93,15 +93,25 @@ function handleKnowledgeRoutes(req, res, url, app, sendJson) {
     }
 
     if (url.pathname === '/api/artifacts') {
-      sendJson(res, 200, {
-        artifacts: [] // Would stream from artifactStore
+      Promise.resolve().then(async () => {
+        try {
+          const state = app.store?.read ? await app.store.read() : {};
+          sendJson(res, 200, { ok: true, artifacts: state.artifacts || [] });
+        } catch (_) {
+          sendJson(res, 200, { ok: true, artifacts: [] });
+        }
       });
       return true;
     }
     
     if (url.pathname === '/api/missions') {
-      sendJson(res, 200, {
-        missions: [] // Would stream from missionStore
+      Promise.resolve().then(async () => {
+        try {
+          const missions = app.missions?.list ? await app.missions.list(context.tenantId || 'grg', context.actorId || 'operator') : [];
+          sendJson(res, 200, { ok: true, missions });
+        } catch (_) {
+          sendJson(res, 200, { ok: true, missions: [] });
+        }
       });
       return true;
     }

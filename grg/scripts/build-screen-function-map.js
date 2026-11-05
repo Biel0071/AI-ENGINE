@@ -39,8 +39,15 @@ function backendHas(endpoint) {
 
 const domainByScreen = Object.fromEntries(Object.entries(manifest.domains).flatMap(([domain, screens]) => screens.map(screen => [screen, domain])));
 const screens = Object.entries(manifest.screens).map(([name, spec]) => {
-  const expected = spec.readEndpoints || [];
-  const endpoints = expected.map(endpoint => ({ endpoint, backend: backendHas(endpoint), asset: assets.includes(endpoint) }));
+  const expected = [
+    ...(spec.readEndpoints || []).map(endpoint => ({ endpoint, method: 'GET', kind: 'read', probed: true })),
+    ...(spec.actionEndpoints || []).map(action => ({ ...action, kind: 'action', probed: false }))
+  ];
+  const endpoints = expected.map(contract => ({
+    ...contract,
+    backend: backendHas(contract.endpoint),
+    asset: assets.includes(contract.endpoint)
+  }));
   const marker = new RegExp(`<[^>]+id=["']view-${name}["']`, 'i');
   return {
     name,

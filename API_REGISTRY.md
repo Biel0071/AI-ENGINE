@@ -2086,6 +2086,14 @@ Endpoints extraídos diretamente dos handlers (url.pathname === '...'). Fonte: s
 - `/api/dev/small-task`
 - `/api/dev/terminal`
 
+## `grg/src/api/dynamic-pool-routes.js` — 5 endpoints
+
+- `/api/v2/agents/parallel-dispatch`
+- `/api/v2/agents/pool`
+- `/api/v2/agents/pool/scale`
+- `/api/v2/agents/popups`
+- `/api/v2/agents/test-task`
+
 ## `grg/src/api/living-city-routes.js` — 13 endpoints
 
 - `/api/v2/living-city/agent/message`
@@ -2284,7 +2292,7 @@ Endpoints extraídos diretamente dos handlers (url.pathname === '...'). Fonte: s
 - `/health`
 - `/status`
 
-## `grg/src/server.js` — 246 endpoints
+## `grg/src/server.js` — 247 endpoints
 
 - `/api/agents/cycles`
 - `/api/agents/delegations`
@@ -2350,6 +2358,7 @@ Endpoints extraídos diretamente dos handlers (url.pathname === '...'). Fonte: s
 - `/api/factory/demands`
 - `/api/factory/generate`
 - `/api/fenix/jobs`
+- `/api/fenix/memory/graph`
 - `/api/fenix/memory/invalidate`
 - `/api/fenix/memory/metrics`
 - `/api/fenix/memory/promote`

@@ -188,13 +188,20 @@ async function handleCompanyBrainRoutes(req, res, url, app, sendJson, readJson, 
         cacheHits: ecoReport.metrics.cacheHits,
         patternHits: ecoReport.metrics.patternHits,
         memoryHits: ecoReport.metrics.memoryHits,
-        tokensTotal: ecoReport.metrics.totalTokensInput + ecoReport.metrics.totalTokensOutput,
+        tokensTotal: null,
+        estimatedTokensTotal: ecoReport.metrics.estimatedTokensInput + ecoReport.metrics.estimatedTokensOutput,
         tokensSaved: ecoReport.metrics.totalTokensSaved,
+        estimatedTokensSaved: ecoReport.metrics.estimatedTokensSaved,
         apiCallsAvoided: ecoReport.metrics.apiCallsAvoided,
         KNOWLEDGE_REUSE_RATE: ecoReport.KNOWLEDGE_REUSE_RATE,
         TOKEN_SAVINGS_RATE: ecoReport.TOKEN_SAVINGS_RATE,
-        costUsd: ecoReport.metrics.totalEstimatedCostUsd,
+        costUsd: null,
+        estimatedCostUsd: ecoReport.metrics.totalEstimatedCostUsd,
         costSavedUsd: ecoReport.metrics.totalCostSavedUsd,
+        estimatedCostSavedUsd: ecoReport.metrics.totalEstimatedCostSavedUsd,
+        measurementStatus: ecoReport.measurementStatus,
+        usagePrecision: ecoReport.usagePrecision,
+        baselineComparison: ecoReport.baselineComparison,
         routingOrder: ['CACHE', 'PATTERN_LIBRARY', 'MEMORY_FABRIC', 'GRAPH_BRAIN', 'PROJECT_DNA', 'LOCAL_MODEL', 'EXTERNAL_API']
       });
     }
@@ -204,16 +211,19 @@ async function handleCompanyBrainRoutes(req, res, url, app, sendJson, readJson, 
     const cache = state.aiCache || [];
     const totalTokens = calls.reduce((acc, c) => acc + (c.tokensTotal || c.tokens || 0), 0);
     const cacheHits = cache.length;
-    const tokensSaved = cacheHits * 450;
-
     return sendJson(res, 200, {
       apiCalls: calls.filter((c) => c.provider !== 'cache' && c.provider !== 'local').length,
       localCalls: calls.filter((c) => c.provider === 'local' || c.provider === 'ollama').length,
       cacheHits,
       tokensTotal: totalTokens,
-      tokensSaved,
-      apiCallsAvoided: cacheHits,
-      costUsd: Number((totalTokens * 0.000002).toFixed(4)),
+      tokensTotal: null,
+      estimatedTokensTotal: totalTokens,
+      tokensSaved: null,
+      estimatedTokensSaved: null,
+      apiCallsAvoided: null,
+      measurementStatus: { savings: 'UNMEASURED', baseline: 'UNMEASURED' },
+      costUsd: null,
+      estimatedCostUsd: Number((totalTokens * 0.000002).toFixed(4)),
       routingOrder: ['CACHE', 'PATTERN_LIBRARY', 'MEMORY_FABRIC', 'LOCAL_MODEL', 'API']
     });
   }
@@ -222,20 +232,82 @@ async function handleCompanyBrainRoutes(req, res, url, app, sendJson, readJson, 
   if (method === 'POST' && pathname === '/api/v2/company/projects/absorb') {
     if (!app.absorptionEngine) return sendJson(res, 503, { error: 'Project Absorption Engine indisponível' });
     const body = await readJson(req);
+    const fs = require('node:fs');
+    const { resolveProjectWorkspace } = require('../projects/project-workspace-resolver');
+    const { getProjectById } = require('../projects/project-registry');
+    const localProj = require('../projects/local-project-catalog').getLocalProjectById(body.projectId);
+    if (localProj?.entryFile) return sendJson(res, 409, { error: 'O Screen DNA de arquivo individual ainda não está disponível; a pasta vizinha não será absorvida', projectId: body.projectId });
+    const regProj = getProjectById(body.projectId) || localProj;
+    const st = app.store?.read && body.projectId ? await app.store.read() : null;
+    const storedProj = (st?.projects || []).find((p) => (p.id || p.projectId) === body.projectId && p.tenantId === tenantId) || null;
+    const workspacePath = resolveProjectWorkspace(storedProj || localProj, regProj);
+    if (!workspacePath || !fs.existsSync(workspacePath)) return sendJson(res, 404, { error: 'Workspace canônico indisponível para este projeto', projectId: body.projectId });
+    if (body.workspacePath && require('node:path').resolve(body.workspacePath) !== require('node:path').resolve(workspacePath)) {
+      return sendJson(res, 403, { error: 'O caminho informado não corresponde ao workspace registrado', projectId: body.projectId });
+    }
     const report = await app.absorptionEngine.absorbProject({
       projectId: body.projectId,
       projectName: body.projectName,
-      workspacePath: body.workspacePath,
+      workspacePath,
       tenantId,
       actorId,
     });
+    if (app.store?.update) {
+      await app.store.update((state) => {
+        state.projectAbsorptions = state.projectAbsorptions && typeof state.projectAbsorptions === 'object' ? state.projectAbsorptions : {};
+        state.projectAbsorptions[report.projectId] = report;
+        if (body.projectId) state.projectAbsorptions[body.projectId] = report;
+        return state;
+      });
+    }
     return sendJson(res, 200, report);
   }
 
   if (method === 'GET' && pathname.startsWith('/api/v2/company/projects/') && pathname.endsWith('/absorption')) {
     if (!app.absorptionEngine) return sendJson(res, 503, { error: 'Project Absorption Engine indisponível' });
     const pId = decodeURIComponent(pathname.slice('/api/v2/company/projects/'.length, -'/absorption'.length));
-    const report = app.absorptionEngine.getAbsorbedProject(pId) || app.absorptionEngine.getAbsorbedProject(pId.toLowerCase()) || (pId === 'api-platform-live' ? app.absorptionEngine.getAbsorbedProject('prj_api_platform') : null);
+    let report = app.absorptionEngine.getAbsorbedProject(pId)
+      || app.absorptionEngine.getAbsorbedProject(pId.toLowerCase())
+      || (pId === 'api-platform-live' ? app.absorptionEngine.getAbsorbedProject('prj_api_platform') : null);
+    if (!report && app.store?.read) {
+      const state = await app.store.read();
+      const map = state.projectAbsorptions && typeof state.projectAbsorptions === 'object' ? state.projectAbsorptions : {};
+      report = map[pId] || map[pId.toLowerCase()] || (pId === 'api-platform-live' ? map.prj_api_platform : null) || null;
+      if (report) {
+        app.absorptionEngine.absorbedProjects.set(pId, report);
+      }
+    }
+    if (!report) {
+      const fs = require('node:fs');
+      const { resolveProjectWorkspace } = require('../projects/project-workspace-resolver');
+      const { getProjectById } = require('../projects/project-registry');
+      const localProj = require('../projects/local-project-catalog').getLocalProjectById(pId);
+      if (localProj?.entryFile) return sendJson(res, 409, { error: 'Projeto de arquivo individual não pode absorver a pasta vizinha', projectId: pId });
+      const regProj = getProjectById(pId) || localProj;
+      let storedProj = null;
+      if (app.store?.read) {
+        const st = await app.store.read();
+        storedProj = (st.projects || []).find((p) => (p.id || p.projectId) === pId && p.tenantId === tenantId) || null;
+      }
+      const workspacePath = resolveProjectWorkspace(storedProj, regProj);
+      if (workspacePath && fs.existsSync(workspacePath)) {
+        report = await app.absorptionEngine.absorbProject({
+          projectId: pId,
+          projectName: storedProj?.name || regProj?.name || pId,
+          workspacePath,
+          tenantId,
+          actorId,
+        });
+        if (app.store?.update) {
+          await app.store.update((state) => {
+            state.projectAbsorptions = state.projectAbsorptions && typeof state.projectAbsorptions === 'object' ? state.projectAbsorptions : {};
+            state.projectAbsorptions[report.projectId] = report;
+            state.projectAbsorptions[pId] = report;
+            return state;
+          });
+        }
+      }
+    }
     if (!report) {
       return sendJson(res, 404, { error: `Projeto '${pId}' ainda não foi absorvido`, projectId: pId });
     }

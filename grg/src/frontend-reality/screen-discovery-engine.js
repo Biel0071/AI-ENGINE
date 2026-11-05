@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { deriveStaticNavigationEdges } = require('./static-navigation-evidence');
 
 class ScreenDiscoveryEngine {
   constructor({ workspaceManager = null } = {}) {
@@ -45,6 +46,10 @@ class ScreenDiscoveryEngine {
       // Detect if file contains React components or UI screens
       if (/(?:function|const|class)\s+([A-Z][A-Za-z0-9_]*)/.test(content) || /<[A-Z]/.test(content) || /export\s+default/.test(content) || /id=["']view-[a-z0-9_-]+["']/i.test(content)) {
         const discovered = this._extractScreensFromFile(content, relPath, filePath);
+        const navigationEdges = deriveStaticNavigationEdges(content, relPath, discovered);
+        for (const screen of discovered) {
+          screen.navigationEdges = navigationEdges.get(screen.screenId) || [];
+        }
         screens.push(...discovered);
       }
     }

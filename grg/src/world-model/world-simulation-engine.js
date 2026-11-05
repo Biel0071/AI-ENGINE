@@ -112,42 +112,78 @@ class WorldSimulationEngine {
 
       switch (agent.state) {
         case 'IDLE': {
-          // If idle for a while, give a patrol or routine inspection task
-          if (this.tickCount % 20 === 0 && Math.random() < 0.3) {
-            agent.state = 'RECEIVING_TASK';
-            agent.currentTask = 'Ronda preventiva e verificação de integridade operacional';
+          // Agent activity is driven by persisted runtime jobs or company routineWaypoints.
+          if (Array.isArray(agent.routineWaypoints) && agent.routineWaypoints.length > 1) {
+            agent.waypointIndex = ((agent.waypointIndex || 0) + 1) % agent.routineWaypoints.length;
+            const nextWp = agent.routineWaypoints[agent.waypointIndex];
+            agent.targetCoordinates = { x: nextWp.x, y: nextWp.y };
+            if (nextWp.task) agent.currentTask = nextWp.task;
+            agent.state = 'WALKING';
+            agent.status = 'WORKING';
           }
           break;
         }
 
         case 'RECEIVING_TASK': {
-          // Transition to walking towards designated station or waypoint
-          agent.state = 'WALKING';
-          const targetWs = workstations[agent.workstationId];
-          if (targetWs && targetWs.coordinates) {
-            agent.targetCoordinates = { ...targetWs.coordinates };
+          if (!agent.currentJob && !agent.assignedTask) {
+            agent.targetCoordinates = null;
+            agent.currentTask = null;
+            agent.state = 'IDLE';
+            break;
+          }
+          // Transition to walking towards designated station or waypoint only when valid coordinates exist
+          const targetWs = agent.workstationId ? workstations[agent.workstationId] : null;
+          const wsCoords = targetWs && targetWs.coordinates
+            && typeof targetWs.coordinates.x === 'number'
+            && typeof targetWs.coordinates.y === 'number'
+            ? targetWs.coordinates
+            : null;
+          const homeCoords = agent.homeCoordinates
+            && typeof agent.homeCoordinates.x === 'number'
+            && typeof agent.homeCoordinates.y === 'number'
+            ? agent.homeCoordinates
+            : (agent.coordinates
+              && typeof agent.coordinates.x === 'number'
+              && typeof agent.coordinates.y === 'number'
+              ? agent.coordinates
+              : null);
+          const resolvedTarget = wsCoords || homeCoords;
+          if (resolvedTarget) {
+            agent.state = 'WALKING';
+            agent.targetCoordinates = { x: resolvedTarget.x, y: resolvedTarget.y };
           } else {
-            agent.targetCoordinates = { ...agent.homeCoordinates };
+            agent.targetCoordinates = null;
+            agent.state = 'RECEIVING_TASK';
           }
           break;
         }
 
         case 'WALKING': {
-          if (!agent.targetCoordinates) {
+          if (
+            !agent.targetCoordinates
+            || typeof agent.targetCoordinates.x !== 'number'
+            || typeof agent.targetCoordinates.y !== 'number'
+          ) {
+            agent.targetCoordinates = null;
             agent.state = 'WORKING';
             break;
           }
-          if (!agent.coordinates) {
-            agent.coordinates = {
-              x: typeof agent.x === 'number' ? agent.x : 0,
-              y: typeof agent.y === 'number' ? agent.y : 0
-            };
+          if (
+            !agent.coordinates
+            || typeof agent.coordinates.x !== 'number'
+            || typeof agent.coordinates.y !== 'number'
+          ) {
+            if (typeof agent.x === 'number' && typeof agent.y === 'number') {
+              agent.coordinates = { x: agent.x, y: agent.y };
+            } else {
+              agent.coordinates = { x: agent.targetCoordinates.x, y: agent.targetCoordinates.y };
+            }
           }
 
-          const tx = typeof agent.targetCoordinates.x === 'number' ? agent.targetCoordinates.x : 0;
-          const ty = typeof agent.targetCoordinates.y === 'number' ? agent.targetCoordinates.y : 0;
-          const cx = typeof agent.coordinates.x === 'number' ? agent.coordinates.x : 0;
-          const cy = typeof agent.coordinates.y === 'number' ? agent.coordinates.y : 0;
+          const tx = agent.targetCoordinates.x;
+          const ty = agent.targetCoordinates.y;
+          const cx = agent.coordinates.x;
+          const cy = agent.coordinates.y;
 
           const dx = tx - cx;
           const dy = ty - cy;
@@ -159,8 +195,19 @@ class WorldSimulationEngine {
             agent.coordinates.y = ty;
             agent.x = tx;
             agent.y = ty;
-            agent.targetCoordinates = null;
-            agent.state = 'WORKING';
+            if (Array.isArray(agent.routineWaypoints) && agent.routineWaypoints.length > 1) {
+              agent.waypointIndex = ((agent.waypointIndex || 0) + 1) % agent.routineWaypoints.length;
+              const nextWp = agent.routineWaypoints[agent.waypointIndex];
+              agent.targetCoordinates = { x: nextWp.x, y: nextWp.y };
+              agent.targetX = nextWp.x;
+              agent.targetY = nextWp.y;
+              if (nextWp.task) agent.currentTask = nextWp.task;
+              agent.state = 'WALKING';
+              agent.status = 'WORKING';
+            } else {
+              agent.targetCoordinates = null;
+              agent.state = agent.currentJob || agent.assignedTask ? 'WORKING' : 'IDLE';
+            }
           } else {
             agent.coordinates.x = cx + (dx / dist) * step;
             agent.coordinates.y = cy + (dy / dist) * step;
@@ -178,34 +225,27 @@ class WorldSimulationEngine {
         }
 
         case 'WORKING': {
-          if (agent.currentJob) {
-            agent.currentJob.progress = (agent.currentJob.progress || 0) + 1;
-            if (agent.currentJob.progress >= 100) {
-              agent.state = 'COMPLETED';
-            }
-          } else {
-            // Autonomous routine work
-            if (this.tickCount % 35 === 0) {
-              agent.state = 'COMPLETED';
-            }
+          // JobEngine owns progress and completion; this loop must not synthesize either.
+          if (Array.isArray(agent.routineWaypoints) && agent.routineWaypoints.length > 1 && !agent.targetCoordinates) {
+            agent.waypointIndex = ((agent.waypointIndex || 0) + 1) % agent.routineWaypoints.length;
+            const nextWp = agent.routineWaypoints[agent.waypointIndex];
+            agent.targetCoordinates = { x: nextWp.x, y: nextWp.y };
+            if (nextWp.task) agent.currentTask = nextWp.task;
+            agent.state = 'WALKING';
+            agent.status = 'WORKING';
           }
           break;
         }
 
         case 'COMPLETED': {
-          agent.memory.push({
-            timestamp: new Date().toISOString(),
-            content: `Concluída tarefa com sucesso: ${agent.currentTask || (agent.currentJob ? agent.currentJob.name : 'Operação padrão')}`
-          });
-          if (agent.memory.length > 20) agent.memory.shift();
+          // Completion records and memories are persisted by the real job/task handler.
           agent.state = 'REPORTING';
           break;
         }
 
         case 'REPORTING': {
           agent.state = 'IDLE';
-          agent.currentJob = null;
-          agent.currentTask = 'Standby aguardando nova diretiva ou lote';
+          if (!agent.currentJob && !agent.assignedTask) agent.currentTask = null;
           break;
         }
 

@@ -4,7 +4,7 @@
   if (!area || window.FENIX?.cityWorld) return;
 
   window.FENIX = window.FENIX || {};
-  const world = { snapshot: null, measuredAt: null, error: null, loading: false, refresh };
+  const world = { snapshot: null, measuredAt: null, error: null, loading: false, refreshPromise: null, refresh };
   window.FENIX.cityWorld = world;
   const shell = document.createElement('section');
   shell.className = 'fenix-world-layer';
@@ -85,28 +85,33 @@
   }
 
   async function refresh(force = false) {
-    if (world.loading || (!force && document.visibilityState !== 'visible')) return world.snapshot;
+    if (world.refreshPromise) return world.refreshPromise;
+    if (!force && document.visibilityState !== 'visible') return world.snapshot;
     if (!force && world.measuredAt && Date.now() - new Date(world.measuredAt).getTime() < 15000) return world.snapshot;
     world.loading = true;
-    try {
-      const token = window.fenixGetAuthToken?.() || localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || sessionStorage.getItem('fenix_token') || sessionStorage.getItem('grg_token') || '';
-      const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-      const fetchFn = window.fenixAuthedFetch || window.fenixFetch || fetch;
-      const response = await fetchFn('/api/v2/living-city/state', { credentials: 'same-origin', headers, signal: AbortSignal.timeout(20000) });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      if (!Array.isArray(data.projects) || !Array.isArray(data.agents)) throw new Error('Resposta incompleta');
-      world.snapshot = data;
-      world.measuredAt = data.measuredAt || new Date().toISOString();
-      world.error = null;
-      window.dispatchEvent(new CustomEvent('fenix:city-world', { detail: data }));
-    } catch (error) {
-      world.error = error.message || 'Falha de comunicação';
-    } finally {
-      world.loading = false;
-      render();
-    }
-    return world.snapshot;
+    world.refreshPromise = (async () => {
+      try {
+        const token = window.fenixGetAuthToken?.() || localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || sessionStorage.getItem('fenix_token') || sessionStorage.getItem('grg_token') || '';
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const fetchFn = window.fenixAuthedFetch || window.fenixFetch || fetch;
+        const response = await fetchFn('/api/v2/living-city/state', { credentials: 'same-origin', headers, signal: AbortSignal.timeout(20000) });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data.projects) || !Array.isArray(data.agents)) throw new Error('Resposta incompleta');
+        world.snapshot = data;
+        world.measuredAt = data.measuredAt || new Date().toISOString();
+        world.error = null;
+        window.dispatchEvent(new CustomEvent('fenix:city-world', { detail: data }));
+      } catch (error) {
+        world.error = error.message || 'Falha de comunicação';
+      } finally {
+        world.loading = false;
+        world.refreshPromise = null;
+        render();
+      }
+      return world.snapshot;
+    })();
+    return world.refreshPromise;
   }
 
   render();

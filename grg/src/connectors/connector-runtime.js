@@ -25,7 +25,17 @@ class ConnectorRuntime {
     this.bus = bus;
     this.cp = controlPlane;
     this.connectors = new Map();
+    this.statusCache = new Map();
+    this.statusInFlight = new Map();
+    this.statusCacheTtlMs = Number(process.env.FENIX_CONNECTOR_STATUS_TTL_MS || 5000);
+    this.#pendingMetrics = [];
+    this.#pendingEvents = [];
+    this.#flushTimer = null;
   }
+
+  #pendingMetrics;
+  #pendingEvents;
+  #flushTimer;
 
   // Registra um conector. Rejeita quem não cumpre o contrato dos 12 métodos — um conector
   // incompleto não entra e falha no meio de uma operação; ele nem entra.
@@ -49,10 +59,51 @@ class ConnectorRuntime {
     if (this.cp) await this.cp.authorize(tenantId, actorId, 'runtime:read');
     const connector = this.#get(connectorId);
 
-    const auth = await connector.authenticate();
+    const useCache = Boolean((this.store?.pool || this.store?.filePath) && this.statusCacheTtlMs > 0);
+    if (useCache) {
+      const cached = this.statusCache.get(connectorId);
+      if (cached && (Date.now() - cached.at < this.statusCacheTtlMs)) {
+        return cached.report;
+      }
+      const inFlight = this.statusInFlight.get(connectorId);
+      if (inFlight) return inFlight;
+    }
+
+    const derivePromise = this.#deriveStatus(tenantId, connectorId, connector);
+    if (useCache) {
+      this.statusInFlight.set(connectorId, derivePromise);
+    }
+    try {
+      const report = await derivePromise;
+      if (useCache) {
+        this.statusCache.set(connectorId, { at: Date.now(), report });
+      }
+      return report;
+    } finally {
+      if (useCache && this.statusInFlight.get(connectorId) === derivePromise) {
+        this.statusInFlight.delete(connectorId);
+      }
+    }
+  }
+
+  async #deriveStatus(tenantId, connectorId, connector) {
+    const withTimeout = (p, ms, label = 'selfTest') => {
+      let timer;
+      return Promise.race([
+        p,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+        }),
+      ]).finally(() => clearTimeout(timer));
+    };
+
+    const auth = await withTimeout(connector.authenticate(), 2200, 'authenticate').catch((err) => ({
+      ok: false,
+      detail: String(err.message || err),
+    }));
     if (!auth.ok) {
       // Sem credencial provada: CONFIGURED (registrado, mas não autenticado). Nunca CONNECTED.
-      await this.#recordMetric(tenantId, connectorId, { kind: 'status', ok: false, state: CONNECTOR_STATES.CONFIGURED });
+      await this.#recordOutcome(tenantId, connectorId, { kind: 'status', ok: false, state: CONNECTOR_STATES.CONFIGURED }, null);
       return this.#report(connectorId, CONNECTOR_STATES.CONFIGURED, {
         authenticated: false,
         // Adaptadores diferentes nomeiam a evidência de forma diferente (github: `credential`;
@@ -61,16 +112,16 @@ class ConnectorRuntime {
       });
     }
 
-    const withTimeout = (p, ms) => Promise.race([
-      p,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`selfTest timed out after ${ms}ms`)), ms)),
-    ]);
-    const test = await withTimeout(connector.selfTest(), 3500).catch((err) => ({ ok: false, latencyMs: 3500, error: String(err.message || err) }));
-    await this.#recordMetric(tenantId, connectorId, { kind: 'selfTest', ok: test.ok === true, latencyMs: valueOfLatency(test) });
+    const test = await withTimeout(connector.selfTest(), 2200, 'selfTest').catch((err) => ({ ok: false, latencyMs: 2200, error: String(err.message || err) }));
 
     if (test.ok !== true) {
       // Autenticado mas o selfTest falhou: DEGRADED (token presente, fonte não respondeu).
-      await this.#emit(tenantId, connectorId, CONNECTOR_STATES.DEGRADED);
+      await this.#recordOutcome(
+        tenantId,
+        connectorId,
+        { kind: 'selfTest', ok: false, latencyMs: valueOfLatency(test) },
+        CONNECTOR_STATES.DEGRADED,
+      );
       return this.#report(connectorId, CONNECTOR_STATES.DEGRADED, {
         authenticated: true,
         selfTest: measured(false, 'ConnectorRuntime.selfTest()', { error: test.error || null }),
@@ -78,7 +129,12 @@ class ConnectorRuntime {
     }
 
     // authenticate ok + selfTest ok = a fonte respondeu autenticada AGORA. Só aqui CONNECTED.
-    await this.#emit(tenantId, connectorId, CONNECTOR_STATES.CONNECTED);
+    await this.#recordOutcome(
+      tenantId,
+      connectorId,
+      { kind: 'selfTest', ok: true, latencyMs: valueOfLatency(test) },
+      CONNECTOR_STATES.CONNECTED,
+    );
     return this.#report(connectorId, CONNECTOR_STATES.CONNECTED, {
       authenticated: true,
       selfTest: measured(true, 'ConnectorRuntime.selfTest()'),
@@ -93,14 +149,19 @@ class ConnectorRuntime {
   async statusAll(tenantId, actorId) {
     if (this.cp) await this.cp.authorize(tenantId, actorId, 'runtime:read');
     const ids = Array.from(this.connectors.keys());
-    const withTimeout = (p, ms) => Promise.race([
-      p,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`status timed out after ${ms}ms`)), ms)),
-    ]);
+    const withTimeout = (p, ms) => {
+      let timer;
+      return Promise.race([
+        p,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`status timed out after ${ms}ms`)), ms);
+        }),
+      ]).finally(() => clearTimeout(timer));
+    };
     const results = await Promise.allSettled(
       ids.map(async (id) => {
         try {
-          return await withTimeout(this.status(tenantId, actorId, id), 3500);
+          return await withTimeout(this.status(tenantId, actorId, id), 2500);
         } catch (error) {
           return this.#report(id, CONNECTOR_STATES.DEGRADED, {
             authenticated: false,
@@ -124,15 +185,19 @@ class ConnectorRuntime {
   // selfTest explícito (endpoint POST). Grava a métrica e devolve o resultado medido.
   async selfTest(tenantId, actorId, connectorId) {
     if (this.cp) await this.cp.authorize(tenantId, actorId, 'runtime:read');
+    this.statusCache.delete(connectorId);
     const connector = this.#get(connectorId);
     const test = await connector.selfTest();
-    await this.#recordMetric(tenantId, connectorId, { kind: 'selfTest', ok: test.ok === true, latencyMs: valueOfLatency(test) });
+    await this.#recordOutcome(tenantId, connectorId, { kind: 'selfTest', ok: test.ok === true, latencyMs: valueOfLatency(test) }, null, { sync: true });
     return test;
   }
 
   #report(connectorId, state, evidence) {
+    const conn = this.connectors.get(connectorId);
+    const target = conn?.provider?.baseUrl || conn?.provider?.endpoint || (connectorId === 'github' ? 'https://api.github.com' : (connectorId === 'ai:echo' ? 'internal://echo-adapter' : null));
     return {
       connectorId,
+      target,
       // O estado é derivado nesta chamada. A fonte é a medição, declarada.
       state: measured(state, 'derived:authenticate + selfTest'),
       evidence,
@@ -140,33 +205,66 @@ class ConnectorRuntime {
     };
   }
 
-  async #recordMetric(tenantId, connectorId, detail) {
-    if (!this.store) return;
-    const row = {
+  async #recordOutcome(tenantId, connectorId, detail, emittedState = null, { sync = false } = {}) {
+    const nowIso = new Date().toISOString();
+    const metricRow = detail ? {
       id: uuid(),
       tenantId: tenantId || null,
       connectorId,
       kind: detail.kind,
       ok: detail.ok === true,
       latencyMs: Number.isFinite(detail.latencyMs) ? detail.latencyMs : null,
-      recordedAt: new Date().toISOString(),
-    };
-    await this.store.update((state) => {
-      state.connectorMetrics = state.connectorMetrics || [];
-      state.connectorMetrics.push(row);
-      return state;
-    });
-  }
+      recordedAt: nowIso,
+    } : null;
+    const eventRow = emittedState ? {
+      id: uuid(),
+      tenantId: tenantId || null,
+      connectorId,
+      state: emittedState,
+      at: nowIso,
+    } : null;
 
-  async #emit(tenantId, connectorId, state) {
     if (this.store) {
-      await this.store.update((s) => {
-        s.connectorEvents = s.connectorEvents || [];
-        s.connectorEvents.push({ id: uuid(), tenantId: tenantId || null, connectorId, state, at: new Date().toISOString() });
-        return s;
-      });
+      if (this.store.pool && !sync) {
+        if (metricRow) this.#pendingMetrics.push(metricRow);
+        if (eventRow) this.#pendingEvents.push(eventRow);
+        if (!this.#flushTimer) {
+          this.#flushTimer = setTimeout(() => {
+            this.#flushTimer = null;
+            const metricsBatch = this.#pendingMetrics.splice(0, this.#pendingMetrics.length);
+            const eventsBatch = this.#pendingEvents.splice(0, this.#pendingEvents.length);
+            if (!metricsBatch.length && !eventsBatch.length) return;
+            this.store.update((state) => {
+              if (metricsBatch.length) {
+                state.connectorMetrics = state.connectorMetrics || [];
+                state.connectorMetrics.push(...metricsBatch);
+              }
+              if (eventsBatch.length) {
+                state.connectorEvents = state.connectorEvents || [];
+                state.connectorEvents.push(...eventsBatch);
+              }
+              return state;
+            }).catch(() => {});
+          }, 50);
+          if (typeof this.#flushTimer.unref === 'function') this.#flushTimer.unref();
+        }
+      } else {
+        await this.store.update((state) => {
+          if (metricRow) {
+            state.connectorMetrics = state.connectorMetrics || [];
+            state.connectorMetrics.push(metricRow);
+          }
+          if (eventRow) {
+            state.connectorEvents = state.connectorEvents || [];
+            state.connectorEvents.push(eventRow);
+          }
+          return state;
+        });
+      }
     }
-    if (this.bus?.emit) await this.bus.emit('connector.state.changed', { tenantId, connectorId, state });
+    if (emittedState && this.bus?.emit) {
+      await this.bus.emit('connector.state.changed', { tenantId, connectorId, state: emittedState });
+    }
   }
 }
 

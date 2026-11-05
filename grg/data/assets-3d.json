@@ -1,0 +1,203 @@
+[
+  {
+    "id": "asset-tripo-fenix-vanguard",
+    "name": "Fênix Vanguard AI Mascot (Tripo)",
+    "category": "mesh",
+    "author": "Tripo AI / Fênix Core",
+    "format": "glb",
+    "version": "1.0.0",
+    "description": "Robotic futuristic mascot with glowing emerald eyes, dark obsidian armor, and mechanical wings.",
+    "stats": {
+      "vertices": 14200,
+      "faces": 28400,
+      "bones": 48,
+      "animations": 5
+    },
+    "tags": [
+      "mascot",
+      "robot",
+      "tripo",
+      "rigged",
+      "cyberpunk"
+    ],
+    "materials": [
+      "obsidian_carbon",
+      "neon_emerald_glow",
+      "brushed_titanium"
+    ],
+    "data": {
+      "type": "mesh",
+      "meshType": "biped_robot",
+      "hasRigging": true,
+      "animations": [
+        "idle",
+        "walk",
+        "fly",
+        "salute",
+        "work"
+      ],
+      "colors": {
+        "primary": "#0B0F19",
+        "secondary": "#1E293B",
+        "accent": "#00F5A0",
+        "glow": "#00F5A0"
+      }
+    },
+    "deployedInCity": true,
+    "cityPlacement": {
+      "district": "Central Core",
+      "coordinates": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": 1
+    },
+    "createdAt": "2026-11-04T12:00:00.000Z"
+  },
+  {
+    "id": "asset-voxel-cyber-house",
+    "name": "Cyber Voxel Headquarters",
+    "category": "voxel",
+    "author": "Fênix Voxel Builder",
+    "format": "voxel",
+    "version": "1.2.0",
+    "description": "Modern 3-story modular house built block-by-block with glazed cyan windows and rooftop solar tiles.",
+    "stats": {
+      "voxels": 1248,
+      "dimensions": {
+        "width": 16,
+        "height": 24,
+        "depth": 16
+      }
+    },
+    "tags": [
+      "voxel",
+      "minecraft",
+      "building",
+      "architecture"
+    ],
+    "materials": [
+      "dark_concrete",
+      "cyan_glass",
+      "glow_light",
+      "wood_oak"
+    ],
+    "data": {
+      "type": "voxel",
+      "gridSize": 32,
+      "voxelCount": 1248,
+      "layers": 3
+    },
+    "deployedInCity": true,
+    "cityPlacement": {
+      "district": "Engineering",
+      "coordinates": {
+        "x": 45,
+        "y": 0,
+        "z": -20
+      },
+      "scale": 0.8
+    },
+    "createdAt": "2026-11-04T14:30:00.000Z"
+  },
+  {
+    "id": "asset-cad-spur-gear-m2-z30",
+    "name": "Parametric Spur Gear (M2-Z30)",
+    "category": "cad",
+    "author": "Fênix Mechanical CAD",
+    "format": "step",
+    "version": "2.0.0",
+    "description": "Industrial grade involute spur gear with 30 teeth, module 2, 60mm pitch diameter and 12mm keyway bore.",
+    "stats": {
+      "teeth": 30,
+      "module": 2,
+      "pitchDiameterMm": 60,
+      "faceWidthMm": 15,
+      "boreDiameterMm": 12
+    },
+    "tags": [
+      "cad",
+      "mechanical",
+      "gear",
+      "parametric",
+      "solidworks"
+    ],
+    "materials": [
+      "structural_steel_4140",
+      "nitrided_surface"
+    ],
+    "data": {
+      "type": "cad_gear",
+      "gearType": "spur",
+      "parameters": {
+        "module": 2,
+        "teeth": 30,
+        "pressureAngleDeg": 20,
+        "faceWidth": 15,
+        "bore": 12,
+        "hubDiameter": 25
+      }
+    },
+    "deployedInCity": true,
+    "createdAt": "2026-11-04T16:00:00.000Z",
+    "cityPlacement": {
+      "district": "Dev Loft",
+      "coordinates": {
+        "x": 80,
+        "y": 0,
+        "z": 80
+      },
+      "scale": 1.2,
+      "rotationY": 0,
+      "deployedAt": "2026-11-05T03:34:10.151Z"
+    }
+  },
+  {
+    "id": "asset-pixel-habbo-workstation",
+    "name": "Habbo Developer Workstation (Furni)",
+    "category": "pixel3d",
+    "author": "Fênix Pixel Engine",
+    "format": "pixel3d",
+    "version": "1.0.0",
+    "description": "Isometric 2.5D developer desk with dual curved monitors, streaming telemetry waveforms and 42U server cabinet.",
+    "stats": {
+      "tiles": {
+        "width": 2,
+        "depth": 2,
+        "height": 3
+      },
+      "sprites": 8,
+      "directions": 4
+    },
+    "tags": [
+      "pixel3d",
+      "habbo",
+      "furni",
+      "isometric",
+      "desk"
+    ],
+    "materials": [
+      "matte_graphite",
+      "illuminated_screen",
+      "warm_led"
+    ],
+    "data": {
+      "type": "pixel3d",
+      "facing": "SE",
+      "interactive": true,
+      "seatsCount": 1
+    },
+    "deployedInCity": true,
+    "cityPlacement": {
+      "district": "Dev Loft",
+      "coordinates": {
+        "x": -30,
+        "y": 2,
+        "z": 15
+      },
+      "scale": 1
+    },
+    "createdAt": "2026-11-04T18:15:00.000Z"
+  }
+]

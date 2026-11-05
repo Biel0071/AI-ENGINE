@@ -19,29 +19,58 @@ class ProjectKernel {
   async state(tenantId, actorId, projectId) {
     await this.cp.authorize(tenantId, actorId, 'project:read');
     const data = await this.store.read();
+    const { getProjectById } = require('./project-registry');
+    const regProj = getProjectById(projectId);
+    const localProject = require('./local-project-catalog').getLocalProjectById(projectId);
     let project = data.projects.find((item) => item.tenantId === tenantId && item.id === projectId);
-    if (!project) {
-      const { getProjectById } = require('./project-registry');
-      const regProj = getProjectById(projectId);
-      if (regProj) {
-        project = {
-          id: regProj.id || regProj.projectId,
-          tenantId,
-          name: regProj.name,
-          workspace: resolveProjectWorkspace(null, regProj),
-          branch: regProj.branch || 'main',
-          lifecycle: 'EVOLUTION',
-          maturity: 'FUNCTIONAL',
-          status: regProj.status || 'ONLINE',
-        };
-      }
+    if (project) {
+      const resolvedWorkspace = resolveProjectWorkspace(project, regProj);
+      const workspace = resolvedWorkspace || regProj?.localPath || regProj?.vpsPath || null;
+      const branch = resolveProjectBranch(project, regProj, workspace);
+      const regStack = regProj
+        ? [regProj.backend?.framework || regProj.backend?.runtime, regProj.frontend?.framework].filter(Boolean).join(' · ')
+        : null;
+      project = {
+        ...(regProj || {}),
+        ...project,
+        workspace,
+        workspaceAvailable: Boolean(resolvedWorkspace),
+        branch,
+        stack: project.stack || regStack || null,
+        techStack: project.techStack || regProj?.tags || null,
+        health: project.health || (regProj?.status === 'ONLINE' ? 'HEALTHY' : null),
+        status: (project.status && project.status !== 'DISCOVERED') ? project.status : (regProj?.status || project.status || 'ONLINE'),
+        agents: Array.isArray(project.agents) && project.agents.length ? project.agents : (regProj?.agents || null),
+      };
+    } else if (regProj) {
+      const regStack = [regProj.backend?.framework || regProj.backend?.runtime, regProj.frontend?.framework].filter(Boolean).join(' · ');
+      const resolvedWorkspace = resolveProjectWorkspace(null, regProj);
+      project = {
+        ...regProj,
+        id: regProj.id || regProj.projectId,
+        tenantId,
+        name: regProj.name,
+        workspace: resolvedWorkspace || regProj.localPath || regProj.vpsPath || null,
+        workspaceAvailable: Boolean(resolvedWorkspace),
+        branch: regProj.branch || 'main',
+        stack: regStack || null,
+        techStack: regProj.tags || null,
+        health: regProj.status === 'ONLINE' ? 'HEALTHY' : null,
+        lifecycle: 'EVOLUTION',
+        maturity: 'FUNCTIONAL',
+        status: regProj.status || 'ONLINE',
+      };
+    } else if (localProject) {
+      project = { ...localProject, tenantId, branch: null, stack: null, techStack: null, health: null };
     }
     if (!project) throw new NotFoundError(`project not found: ${projectId}`);
+    const absorbedMap = data.projectAbsorptions && typeof data.projectAbsorptions === 'object' ? data.projectAbsorptions : {};
     const jobs = data.runtimeJobs.filter((item) => item.tenantId === tenantId && item.projectId === projectId);
     const missions = data.missions.filter((item) => item.tenantId === tenantId && item.projectId === projectId);
     const artifacts = data.artifacts.filter((item) => item.tenantId === tenantId && item.projectId === projectId);
     const derived = {
       ...project,
+      absorbed: Boolean(absorbedMap[project.id] || absorbedMap[projectId] || projectId === 'fenix-os'),
       progress: {
         totalJobs: jobs.length,
         completed: jobs.filter((j) => j.status === 'SUCCEEDED').length,
@@ -59,33 +88,64 @@ class ProjectKernel {
   async list(tenantId, actorId) {
     await this.cp.authorize(tenantId, actorId, 'project:read');
     const state = await this.store.read();
+    const absorbedMap = state.projectAbsorptions && typeof state.projectAbsorptions === 'object' ? state.projectAbsorptions : {};
     const stored = state.projects.filter((item) => item.tenantId === tenantId);
     if (stored.length > 0) {
       const { getProjectById } = require('./project-registry');
-      return stored.map((project) => {
+      const listed = stored.map((project) => {
         const registeredProject = getProjectById(project.id);
-        const workspace = resolveProjectWorkspace(project, registeredProject);
+        const resolvedWorkspace = resolveProjectWorkspace(project, registeredProject);
+        const workspace = resolvedWorkspace || registeredProject?.localPath || registeredProject?.vpsPath || null;
         const branch = resolveProjectBranch(project, registeredProject, workspace);
-        return { ...project, workspace, branch };
+        const regStack = registeredProject
+          ? [registeredProject.backend?.framework || registeredProject.backend?.runtime, registeredProject.frontend?.framework].filter(Boolean).join(' · ')
+          : null;
+        return {
+          ...(registeredProject || {}),
+          ...project,
+          name: (project.name && project.name !== 'Projeto') ? project.name : (registeredProject?.name || project.name || project.id),
+          workspace,
+          workspaceAvailable: Boolean(resolvedWorkspace),
+          branch,
+          stack: project.stack || regStack || null,
+          techStack: project.techStack || (registeredProject?.tags ? registeredProject.tags : null),
+          health: project.health || (registeredProject?.status === 'ONLINE' ? 'HEALTHY' : null),
+          status: (project.status && project.status !== 'DISCOVERED') ? project.status : (registeredProject?.status || project.status || 'ONLINE'),
+          agents: Array.isArray(project.agents) && project.agents.length ? project.agents : (registeredProject?.agents || null),
+          absorbed: Boolean(absorbedMap[project.id] || project.id === 'fenix-os'),
+        };
       });
+      return mergeLocalCatalog(listed, require('./local-project-catalog').getLocalProjects(), tenantId);
     }
     try {
       const { getAllProjects } = require('./project-registry');
       const reg = await getAllProjects();
-      return reg.map((p) => ({
-        id: p.id || p.projectId,
-        tenantId,
-        name: p.name,
-        displayName: p.displayName,
-        repository: p.repository,
-        workspace: resolveProjectWorkspace(null, p),
-        branch: p.branch || 'main',
-        lifecycle: 'EVOLUTION',
-        maturity: 'FUNCTIONAL',
-        status: p.status || 'ONLINE',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
+      const listed = reg.map((p) => {
+        const id = p.id || p.projectId;
+        const regStack = [p.backend?.framework || p.backend?.runtime, p.frontend?.framework].filter(Boolean).join(' · ');
+        const resolvedWorkspace = resolveProjectWorkspace(null, p);
+        return {
+          ...p,
+          id,
+          tenantId,
+          name: p.name,
+          displayName: p.displayName,
+          repository: p.repository,
+          workspace: resolvedWorkspace || p.localPath || p.vpsPath || null,
+          workspaceAvailable: Boolean(resolvedWorkspace),
+          branch: p.branch || 'main',
+          stack: regStack || null,
+          techStack: p.tags || null,
+          health: p.status === 'ONLINE' ? 'HEALTHY' : null,
+          lifecycle: 'EVOLUTION',
+          maturity: 'FUNCTIONAL',
+          status: p.status || 'ONLINE',
+          absorbed: Boolean(absorbedMap[id] || id === 'fenix-os'),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      return mergeLocalCatalog(listed, require('./local-project-catalog').getLocalProjects(), tenantId);
     } catch (_) {
       return [];
     }
@@ -178,6 +238,59 @@ class ProjectKernel {
   async missions(tenantId, actorId, projectId) { const state = await this.state(tenantId, actorId, projectId); return state.missions; }
   async jobs(tenantId, actorId, projectId) { const state = await this.state(tenantId, actorId, projectId); const raw = await this.store.read(); return raw.runtimeJobs.filter((item) => item.tenantId === tenantId && item.projectId === projectId); }
 }
+
+function mergeLocalCatalog(projects, catalog, tenantId) {
+  const result = projects.map((project) => ({ ...project }));
+  const localOnly = [];
+  for (const entry of catalog) {
+    const variant = /c[oó]pia|variante/i.test(String(entry.versionRole || ''));
+    const entryWorkspace = normalizeWorkspace(entry.workspace);
+    const entryName = normalizeProjectName(entry.name);
+    const matches = !variant && !entry.entryFile
+      ? result.filter((project) => {
+        if (project.id === entry.id) return true;
+        const registryProject = Array.isArray(project.aliases) || Boolean(project.localPath || project.vpsPath);
+        const projectName = normalizeProjectName(project.name);
+        const relatedName = entryName === projectName || entryName.startsWith(`${projectName} `) || projectName.startsWith(`${entryName} `);
+        return registryProject && entryWorkspace && entryWorkspace === normalizeWorkspace(project.workspace)
+          && entryName && relatedName;
+      })
+      : [];
+    const canonical = matches.length === 1 ? matches[0] : null;
+    if (!canonical) {
+      const id = `local-${entry.id}`;
+      localOnly.push({ ...entry, id, projectId: id, catalogId: entry.id, tenantId });
+      continue;
+    }
+    Object.assign(canonical, {
+      localCatalogId: entry.id,
+      localCatalogSource: entry.source || 'LOCAL_PROJECT_CATALOG',
+      localCatalogPath: entry.listedPath || null,
+      localCatalogGroup: entry.catalogGroup || null,
+      localCatalogVersionRole: entry.versionRole || null,
+      logoId: entry.logoId || canonical.logoId || null,
+      logoUrl: entry.logoUrl || canonical.logoUrl || null,
+      localPort: entry.localPort ?? canonical.localPort ?? null,
+      apiPort: entry.apiPort ?? canonical.apiPort ?? null,
+      localUrl: entry.localUrl || canonical.localUrl || null,
+      healthUrl: entry.healthUrl || canonical.healthUrl || null,
+      remoteUrl: entry.remoteUrl || canonical.remoteUrl || null,
+      remoteHealthUrl: entry.remoteHealthUrl || canonical.remoteHealthUrl || null,
+      projectVersion: entry.projectVersion || canonical.projectVersion || null,
+      workspaceAvailable: Boolean(canonical.workspaceAvailable || entry.workspaceAvailable),
+    });
+  }
+  return [...result, ...localOnly];
+}
+function normalizeWorkspace(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  return require('node:path').resolve(value).replace(/\\/g, '/').toLowerCase();
+}
+function normalizeProjectName(value) {
+  return typeof value === 'string'
+    ? value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+    : '';
+}
 function twinIdPart(value) {
   const raw = String(value || 'default');
   const readable = raw.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48) || 'item';
@@ -188,4 +301,4 @@ function twinIdPart(value) {
 function graphEvidenceId(type, tenantId, projectId, ...parts) {
   return `${type}:${[tenantId, projectId, ...parts].map((part) => encodeURIComponent(String(part ?? ''))).join(':')}`;
 }
-module.exports = { ProjectKernel, MATURITY };
+module.exports = { ProjectKernel, MATURITY, mergeLocalCatalog };

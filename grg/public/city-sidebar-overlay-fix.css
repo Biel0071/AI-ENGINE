@@ -1,0 +1,46 @@
+/* Agent details move to the Fenix sidebar while it is open. */
+body.has-right-sidebar-open #view-city #fenixWorldAgentInspector {
+  display: none !important;
+}
+
+/* Keep the map inspector proportional to the canvas and scroll its content independently. */
+#view-city #fenixWorldAgentInspector {
+  box-sizing: border-box !important;
+  width: min(360px, calc(100% - 24px)) !important;
+  max-height: calc(100% - 88px) !important;
+  display: flex;
+  flex-direction: column;
+}
+
+#view-city #fenixWorldAgentInspector > div:first-child {
+  flex: 0 0 auto;
+}
+
+#view-city #fenixWorldAgentInspector > div:nth-child(2) {
+  min-height: 0;
+  max-height: min(520px, calc(100dvh - var(--topbar-height, 64px) - var(--bottom-dock-height, 48px) - 112px)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+/* On phones, use the chat as a lower drawer instead of hiding most of the city. */
+@media (max-width: 760px) {
+  body.has-right-sidebar-open #fenix-right-sidebar.open:not(.state-expanded):not(.state-compact) {
+    top: auto !important;
+    right: 8px !important;
+    bottom: calc(var(--bottom-dock-height, 32px) + 8px) !important;
+    left: 76px !important;
+    width: auto !important;
+    height: min(58dvh, 560px) !important;
+    min-height: 300px !important;
+    max-height: calc(100dvh - var(--topbar-height, 56px) - var(--bottom-dock-height, 32px) - 24px) !important;
+    max-width: none !important;
+  }
+}
+
+/* The phone navigation becomes a horizontal rail, so the drawer can use the full content width. */
+@media (max-width: 600px) {
+  body.has-right-sidebar-open #fenix-right-sidebar.open:not(.state-expanded):not(.state-compact) {
+    left: 8px !important;
+  }
+}

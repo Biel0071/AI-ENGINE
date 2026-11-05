@@ -93,37 +93,33 @@ class ConversationStore {
     // (validateInput lanca ValidationError sem isso). 'episodic' e o kind correto para um
     // turno de conversa -- um evento datado, nao conhecimento consolidado.
     if (this.memory && message.content && role !== 'system') {
-      try {
-        await this.memory.remember(tenantId, actorId, {
-          kind: 'episodic',
-          classification: 'internal',
-          title: `${role}: ${message.content.slice(0, 60)}`,
-          content: message.content,
-          tags: ['chat', message.source, ...(conversationContext?.agentId ? [`agent:${conversationContext.agentId}`] : []), ...(conversationContext?.projectId ? [`project:${conversationContext.projectId}`] : [])],
-          provenance: { type: 'chat', reference: `${conversationId}/${message.id}`, agentId: conversationContext?.agentId || null, projectId: conversationContext?.projectId || null },
-        });
-      } catch { /* indice degradado, conversa intacta */ }
+      Promise.resolve().then(() => this.memory.remember(tenantId, actorId, {
+        kind: 'episodic',
+        classification: 'internal',
+        title: `${role}: ${message.content.slice(0, 60)}`,
+        content: message.content,
+        tags: ['chat', message.source, ...(conversationContext?.agentId ? [`agent:${conversationContext.agentId}`] : []), ...(conversationContext?.projectId ? [`project:${conversationContext.projectId}`] : [])],
+        provenance: { type: 'chat', reference: `${conversationId}/${message.id}`, agentId: conversationContext?.agentId || null, projectId: conversationContext?.projectId || null },
+      })).catch(() => { /* indice degradado, conversa intacta */ });
     }
     if (this.events && typeof this.events.publish === 'function') {
-      try {
-        await this.events.publish({
-          tenantId,
-          stream: `conversation:${conversationId}`,
-          type: 'conversation.message.appended',
-          source: 'fenix-conversation-store',
-          subject: message.id,
-          data: {
-            actorId,
-            conversationId,
-            messageId: message.id,
-            role: message.role,
-            source: message.source,
-            contentHash: crypto.createHash('sha256').update(message.content).digest('hex'),
-            createdAt: message.createdAt,
-          },
-          idempotencyKey: `conversation.message.appended:${message.id}`,
-        });
-      } catch { /* event delivery may lag; the message and its memory remain durable */ }
+      Promise.resolve().then(() => this.events.publish({
+        tenantId,
+        stream: `conversation:${conversationId}`,
+        type: 'conversation.message.appended',
+        source: 'fenix-conversation-store',
+        subject: message.id,
+        data: {
+          actorId,
+          conversationId,
+          messageId: message.id,
+          role: message.role,
+          source: message.source,
+          contentHash: crypto.createHash('sha256').update(message.content).digest('hex'),
+          createdAt: message.createdAt,
+        },
+        idempotencyKey: `conversation.message.appended:${message.id}`,
+      })).catch(() => { /* event delivery may lag; the message and its memory remain durable */ });
     }
     return message;
   }

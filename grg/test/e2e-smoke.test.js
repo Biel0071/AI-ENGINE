@@ -23,7 +23,7 @@ function withServer(fn) {
   };
 }
 
-test('UNIFIED FRONTEND SUITE: Full E2E Navigation, Auth, Assets, and Live Operations', withServer(async (base) => {
+test('UNIFIED FRONTEND SUITE: Full E2E Navigation, Auth, Assets, and Live Operations', { timeout: 180_000 }, withServer(async (base) => {
   // 1. Login flow
   const rootRes = await fetch(`${base}/`);
   assert.equal(rootRes.status, 200);

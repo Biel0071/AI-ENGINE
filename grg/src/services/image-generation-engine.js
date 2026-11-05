@@ -416,7 +416,7 @@ class ImageGenerationEngine {
       .join('') || cleanBrand.slice(0, 2).toUpperCase();
 
     const escapedBrand = cleanBrand.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const escapedTagline = String(tagline || '').trim().replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const escapedTagline = String(tagline || '').trim().toUpperCase().replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const safePrimary = String(primaryColor || '#C9927B').replace(/[&<>"']/g, '');
     const safeSecondary = String(secondaryColor || '#1E293B').replace(/[&<>"']/g, '');
 
@@ -439,8 +439,8 @@ class ImageGenerationEngine {
     }
     <text x="95" y="122" text-anchor="middle" font-family="Georgia, 'Playfair Display', serif" font-size="52" font-weight="700" fill="#FFFFFF" letter-spacing="2">${initials}</text>
   </g>
-  <text x="190" y="${escapedTagline ? '102' : '118'}" font-family="'Inter', 'Montserrat', sans-serif" font-size="38" font-weight="800" fill="${safeSecondary}" letter-spacing="1.5">${escapedBrand}</text>
-  ${escapedTagline ? `<text x="192" y="138" font-family="'Inter', sans-serif" font-size="15" font-weight="600" fill="${safePrimary}" letter-spacing="4">${escapedTagline.toUpperCase()}</text>` : ''}
+  <text x="190" y="${escapedTagline ? '102' : '118'}" font-family="'Inter', 'Montserrat', sans-serif" font-size="38" font-weight="800" fill="#FFFFFF" letter-spacing="1.5">${escapedBrand}</text>
+  ${escapedTagline ? `<text x="192" y="138" font-family="'Inter', sans-serif" font-size="15" font-weight="600" fill="${safePrimary}" letter-spacing="4">${escapedTagline}</text>` : ''}
 </svg>`;
 
     const svgDataUrl = `data:image/svg+xml;base64,${Buffer.from(svgContent, 'utf8').toString('base64')}`;

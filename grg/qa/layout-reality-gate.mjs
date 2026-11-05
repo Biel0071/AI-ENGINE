@@ -3,15 +3,20 @@ import fs from 'node:fs';
 
 const baseURL = process.env.FENIX_QA_URL || 'http://127.0.0.1:4400';
 const entryPath = process.env.FENIX_QA_PATH || '/app?qa=layout#command';
+const reportPath = process.env.FENIX_QA_REPORT || 'qa-results/layout-reality-gate.json';
+const viewWaitMs = Math.max(250, Number(process.env.FENIX_QA_VIEW_WAIT_MS) || 1500);
 const token = process.env.FENIX_QA_TOKEN || (fs.existsSync('.session_token') ? fs.readFileSync('.session_token', 'utf8').trim() : '');
 const defaultViewports = [[320, 640], [390, 844], [768, 1024], [896, 968], [1024, 768], [1366, 768], [1440, 900], [1920, 1080]];
 const requestedViewports = process.env.FENIX_QA_VIEWPORTS?.split(',').map((entry) => entry.trim()).filter(Boolean);
 const viewports = requestedViewports?.length
   ? requestedViewports.map((entry) => entry.split('x').map(Number)).filter(([width, height]) => Number.isFinite(width) && Number.isFinite(height))
   : defaultViewports;
-const views = ['command', 'operations', 'agents', 'projects', 'ide', 'memory', 'knowledge', 'runtime', 'observability', 'mcp', 'project', 'city', 'browser', 'terminal'];
+const defaultViews = ['command', 'operations', 'agents', 'projects', 'ide', 'memory', 'knowledge', 'runtime', 'observability', 'mcp', 'project', 'city', 'browser', 'terminal'];
+const requestedViews = process.env.FENIX_QA_VIEWS?.split(',').map((entry) => entry.trim()).filter(Boolean);
+const views = requestedViews?.length ? requestedViews : defaultViews;
 const out = { generatedAt: new Date().toISOString(), viewports, views, results: [] };
-const browser = await chromium.launch({ headless: true });
+const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const browser = await chromium.launch({ headless: true, executablePath: fs.existsSync(edgePath) ? edgePath : undefined });
 
 for (const [width, height] of viewports) {
   const context = await browser.newContext({ viewport: { width, height } });
@@ -24,13 +29,17 @@ for (const [width, height] of viewports) {
   });
   const entryURL = new URL(entryPath, `${baseURL.replace(/\/$/, '')}/`);
   await page.goto(entryURL.toString(), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  if (process.env.FENIX_QA_RESPONSIVE_CSS) await page.addStyleTag({ path: process.env.FENIX_QA_RESPONSIVE_CSS });
+  if (process.env.FENIX_QA_ADAPTIVE_CSS) await page.addStyleTag({ path: process.env.FENIX_QA_ADAPTIVE_CSS });
   for (const view of views) {
     const button = page.locator(`[data-nav="${view}"], [data-view="${view}"]`).first();
-    if (await button.count()) await button.click({ timeout: 5000 }).catch(() => {});
-    await page.waitForFunction((viewName) => document.querySelector(`#view-${viewName}.active`), view, { timeout: 5000 }).catch(() => {});
-    if (!await page.evaluate((viewName) => Boolean(document.querySelector(`#view-${viewName}.active`)), view)) {
-      await page.evaluate((viewName) => window.showView?.(viewName), view);
-      await page.waitForFunction((viewName) => document.querySelector(`#view-${viewName}.active`), view, { timeout: 5000 }).catch(() => {});
+    const targetExists = await page.locator(`#view-${view}`).count();
+    if (targetExists) {
+      if (await button.count()) await button.click({ timeout: viewWaitMs }).catch(() => {});
+      if (!await page.evaluate((viewName) => Boolean(document.querySelector(`#view-${viewName}.active`)), view)) {
+        await page.evaluate((viewName) => window.showView?.(viewName), view);
+        await page.waitForFunction((viewName) => document.querySelector(`#view-${viewName}.active`), view, { timeout: viewWaitMs }).catch(() => {});
+      }
     }
     await page.waitForTimeout(120);
     const measurement = await page.evaluate(({ width: viewportWidth, height: viewportHeight, viewName }) => {
@@ -120,7 +129,7 @@ for (const [width, height] of viewports) {
 }
 await browser.close();
 fs.mkdirSync('qa-results', { recursive: true });
-fs.writeFileSync('qa-results/layout-reality-gate.json', JSON.stringify(out, null, 2));
+fs.writeFileSync(reportPath, JSON.stringify(out, null, 2));
 const failures = out.results.filter((item) => item.routeMissing || item.cityMinimapMissing || item.horizontalOverflow || item.invalid.length || item.interactiveOutsideCount > 0 || item.overlapCount > 0 || item.cityOverlaps?.length > 0 || item.cityLabelOverlaps?.length > 0 || item.cityLabelOverlayOverlaps?.length > 0);
-console.log(JSON.stringify({ ok: failures.length === 0, screens: out.results.length, failures: failures.length, routeMissing: out.results.filter((item) => item.routeMissing).length, cityMinimapMissing: out.results.filter((item) => item.cityMinimapMissing).length, interactiveOutside: out.results.filter((item) => item.interactiveOutsideCount > 0).length, cityOverlaps: out.results.filter((item) => item.cityOverlaps?.length).length, cityLabelOverlaps: out.results.filter((item) => item.cityLabelOverlaps?.length).length, cityLabelOverlayOverlaps: out.results.filter((item) => item.cityLabelOverlayOverlaps?.length).length, report: 'qa-results/layout-reality-gate.json' }));
+console.log(JSON.stringify({ ok: failures.length === 0, screens: out.results.length, failures: failures.length, routeMissing: out.results.filter((item) => item.routeMissing).length, cityMinimapMissing: out.results.filter((item) => item.cityMinimapMissing).length, interactiveOutside: out.results.filter((item) => item.interactiveOutsideCount > 0).length, cityOverlaps: out.results.filter((item) => item.cityOverlaps?.length).length, cityLabelOverlaps: out.results.filter((item) => item.cityLabelOverlaps?.length).length, cityLabelOverlayOverlaps: out.results.filter((item) => item.cityLabelOverlayOverlaps?.length).length, report: reportPath }));
 if (failures.length) process.exitCode = 1;

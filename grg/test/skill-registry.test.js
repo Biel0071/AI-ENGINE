@@ -37,12 +37,26 @@ test('skills are discovered, selected by objective, and attached to agent events
   const listed = await app.skillRegistry.listSkills(tenantId, actorId);
   assert.ok(listed.skills.some((skill) => skill.id === 'frontend-click-qa'));
   assert.ok(listed.skills.some((skill) => skill.id === 'fenix-operational-routing'));
+  assert.ok(listed.skills.some((skill) => skill.id === 'grg-space-design-quality-gate'));
 
   const pack = await app.skillRegistry.selectForTask(tenantId, actorId, {
     objective: 'validar frontend clicando botoes e checar deploy na VPS',
     maxTokens: 900,
   });
   assert.ok(pack.selectedSkills.some((skill) => skill.id === 'frontend-click-qa'));
+  const designPack = await app.skillRegistry.selectForTask(tenantId, actorId, {
+    objective: 'use apple hig designer to review this project and improve its responsive interface',
+    agentDomain: 'frontend',
+    maxTokens: 900,
+  });
+  assert.ok(designPack.selectedSkills.some((skill) => skill.id === 'grg-space-design-quality-gate'));
+  assert.match(designPack.prompt, /selected project\/workspace/i);
+  assert.match(designPack.prompt, /smallest high-impact change/i);
+  assert.match(designPack.prompt, /clarity/i);
+  assert.match(designPack.prompt, /deference to content/i);
+  assert.match(designPack.prompt, /depth/i);
+  assert.match(designPack.prompt, /consistency/i);
+  assert.match(designPack.prompt, /adapt these checks to the selected platform and brand/i);
   assert.ok(pack.estimatedTokens <= 900);
   assert.ok(pack.savedBySelectiveLoad >= 0);
   assert.match(pack.prompt, /Frontend Click QA/);

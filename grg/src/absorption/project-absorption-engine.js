@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 const { ProjectDNA } = require('../product/project-dna');
 const { globalPatternLibrary } = require('../memory/pattern-library');
 const { globalGraphBrain } = require('../brain/graph-brain');
+const { deriveStaticNavigationEdges } = require('../frontend-reality/static-navigation-evidence');
 
 const IGNORED_DIRS = new Set([
   '.git', 'node_modules', '.next', 'dist', 'build', 'coverage', 'logs', 'tmp', '.cache'
@@ -205,10 +206,14 @@ class ProjectAbsorptionEngine {
             components: screen.components,
             designTokens: screen.designTokens,
             apiDependencies: screen.apiDependencies,
+            discoveryStatus: screen.discoveryStatus,
+            domInspectionStatus: screen.domInspectionStatus,
+            captureStatus: screen.captureStatus,
+            evidence: screen.evidence,
           }),
-          confidence: 1.0,
+          confidence: screen.confidence,
           projectId: pId,
-          provenance: { type: 'screen_dna', file: screen.sourceFile },
+          provenance: { type: 'screen_dna_source_scan', file: screen.sourceFile },
           tags: ['screen_dna', 'ui_recipe', pId],
         });
         memoryRecords.push(procRecord);
@@ -245,6 +250,13 @@ class ProjectAbsorptionEngine {
           const targetScreen = screens.find(s => s.screenId.includes('login') || s.route.includes('login')) || screens[0];
           if (targetScreen) {
             targetScreen.liveVisualEvidence = liveVisualEvidence;
+            targetScreen.domInspectionStatus = 'INSPECTED';
+            targetScreen.captureStatus = liveVisualEvidence.screenshotPath ? 'CAPTURED' : 'CAPTURE_FAILED';
+            targetScreen.captureSource = liveVisualEvidence.source;
+            targetScreen.screenshotPath = liveVisualEvidence.screenshotPath || null;
+            targetScreen.domSummary = { totalNodes: liveVisualEvidence.pageObservation?.totalElements ?? null };
+            targetScreen.confidence = 1.0;
+            targetScreen.confidenceStatus = 'BROWSER_OBSERVED';
           }
         } catch (_) {}
       }
@@ -394,7 +406,7 @@ class ProjectAbsorptionEngine {
 
     let browser;
     try {
-      browser = await playwright.chromium.launch({ headless: true });
+      browser = await playwright.chromium.launch({ headless: true, executablePath: process.env.FENIX_QA_CHROMIUM_PATH || undefined });
       const context = await browser.newContext({ viewport });
       const page = await context.newPage();
 
@@ -598,7 +610,7 @@ class ProjectAbsorptionEngine {
       if (isHtmlShell) {
         // 1. Extract 14 canonical views or discrete sections
         const viewMatches = content.match(/id="(view-[a-z0-9-]+)"/g) || [];
-        const detectedViews = viewMatches.map(m => m.replace(/id="|"/g, ''));
+        const detectedViews = Array.from(new Set(viewMatches.map(m => m.replace(/id="|"/g, ''))));
 
         // 2. Check for discrete SPA shells and login views (e.g. #login, #shell)
         const discreteShells = [];
@@ -635,7 +647,7 @@ class ProjectAbsorptionEngine {
             }));
           }
           for (const routeName of uniqueNavRoutes) {
-            if (!screens.some(s => s.route === `#/${routeName}`)) {
+            if (!screens.some(s => s.sourceFile === vf.path && s.route === `#/${routeName}`)) {
               screens.push(this.#buildScreenDna({
                 screenId: `screen_${routeName}`,
                 title: routeName.toUpperCase() + ' View',
@@ -671,18 +683,49 @@ class ProjectAbsorptionEngine {
       }
     }
 
-    return screens;
+    const uniqueScreens = Array.from(new Map(screens.map((screen) => [`${screen.sourceFile}::${screen.route}`, screen])).values());
+    const routeCounts = new Map();
+    for (const screen of uniqueScreens) routeCounts.set(screen.route, (routeCounts.get(screen.route) || 0) + 1);
+    const normalizedScreens = uniqueScreens.map((screen) => {
+      if (routeCounts.get(screen.route) > 1) {
+        const sourceSuffix = crypto.createHash('sha256').update(screen.sourceFile).digest('hex').slice(0, 8);
+        screen.screenId = `${screen.screenId}-${sourceSuffix}`;
+        screen.structuralHash = crypto.createHash('sha256')
+          .update(`${screen.screenId}::${screen.layout}::${screen.spacing.join(',')}::${screen.colors.join(',')}`)
+          .digest('hex').slice(0, 16);
+      }
+      return screen;
+    });
+    const screensBySource = new Map();
+    for (const screen of normalizedScreens) {
+      if (!screensBySource.has(screen.sourceFile)) screensBySource.set(screen.sourceFile, []);
+      screensBySource.get(screen.sourceFile).push(screen);
+    }
+    for (const [sourceFile, sourceScreens] of screensBySource) {
+      if (!sourceFile.endsWith('.html')) continue;
+      try {
+        const content = fs.readFileSync(path.join(rootPath, sourceFile), 'utf8');
+        const navigationEdges = deriveStaticNavigationEdges(content, sourceFile, sourceScreens);
+        for (const screen of sourceScreens) screen.navigationEdges = navigationEdges.get(screen.screenId) || [];
+      } catch {
+        // A source that disappears during absorption remains listed without inferred transitions.
+      }
+    }
+    return normalizedScreens;
   }
 
   #buildScreenDna({ screenId, title, route, layout, sourceFile, rawContent, projectId }) {
+    const sourceParts = sourceFile.split('/');
+    const appContainerIndex = sourceParts.findIndex((part) => ['apps', 'applications', 'packages', 'sites'].includes(part.toLowerCase()));
+    const applicationId = appContainerIndex >= 0 && sourceParts[appContainerIndex + 1]
+      ? `${sourceParts[appContainerIndex]}/${sourceParts[appContainerIndex + 1]}`
+      : (sourceParts.length > 1 ? sourceParts[0] : projectId);
     // Extract spacing tokens
-    const spacingTokens = (rawContent.match(/(?:p|m|gap|padding|margin)-[0-9]+/g) || ['gap-4', 'p-4']).slice(0, 5);
+    const spacingTokens = Array.from(new Set(rawContent.match(/(?:p|m|gap|padding|margin)-[0-9]+/g) || [])).slice(0, 5);
     // Extract colors & CSS vars
-    const cssVars = (rawContent.match(/var\(--[a-zA-Z0-9_-]+\)/g) || ['var(--bg)', 'var(--accent)', 'var(--border)']).slice(0, 6);
+    const cssVars = Array.from(new Set((rawContent.match(/var\(--([a-zA-Z0-9_-]+)\)/g) || []).map((token) => token.slice(4, -1))));
     // Extract API references
-    const apiCalls = Array.from(new Set(rawContent.match(/\/api\/[a-zA-Z0-9_\-\/]+/g) || ['/api/v2/state']));
-    // Extract button/interactive triggers
-    const interactiveElements = (rawContent.match(/<button[^>]*>.*?<\/button>/gi) || []).slice(0, 8);
+    const apiCalls = Array.from(new Set(rawContent.match(/\/api\/[a-zA-Z0-9_\-\/]+/g) || []));
     // Structure hash
     const structuralHash = crypto.createHash('sha256')
       .update(`${screenId}::${layout}::${spacingTokens.join(',')}::${cssVars.join(',')}`)
@@ -693,41 +736,40 @@ class ProjectAbsorptionEngine {
       title,
       route,
       layout,
-      hierarchy: {
-        topbar: 'ExecutiveStatusHeader',
-        sidebar: 'CollapsibleOperationsRail',
-        main: screenId,
-        modals: ['#agentInspectorModal', '#buildingInspectorModal', '#orchModalContainer'],
-      },
-      components: [
-        'MetricCard', 'ActionToolbar', 'DataGrid', 'StatusBadge', 'CommandInput', 'InspectorDrawer'
-      ],
+      layoutEvidenceStatus: 'INFERRED_FROM_ROUTE',
+      applicationId,
+      hierarchy: null,
+      components: [],
       spacing: spacingTokens,
-      typography: ['Inter', 'system-ui', 'monospace'],
+      typography: [],
       colors: cssVars,
-      borders: ['1px solid var(--border)', 'rounded-xl', 'rounded-2xl'],
-      shadows: ['0 8px 32px 0 rgba(0,0,0,0.37)', 'backdrop-filter: blur(8px)'],
-      responsiveBehavior: {
-        mobile: '1 column (stacked)',
-        tablet: '2 columns',
-        desktop: '12-column grid with collapsible rails',
-      },
+      borders: [],
+      shadows: [],
+      responsiveBehavior: { status: 'NOT_MEASURED' },
       navigation: {
-        type: 'tab_switch',
-        hashRouting: true,
+        declaredRoute: route,
+        status: 'SOURCE_DECLARED',
       },
-      states: ['LOADING', 'EMPTY', 'DATA_LOADED', 'ERROR'],
-      interactions: ['filter', 'search', 'sort', 'inspect_agent', 'chat_ceo'],
-      dataDependencies: ['telemetry', 'runtime_status'],
+      states: [],
+      interactions: [],
+      dataDependencies: [],
       apiDependencies: apiCalls,
-      reusablePatterns: ['SingleShellIntegrated', 'ZeroMockHonestTelemetry', 'GlassmorphismModal'],
+      reusablePatterns: [],
       structuralHash,
       sourceFile,
-      source: 'ProjectAbsorptionEngine',
-      confidence: 1.0,
+      source: 'STATIC_SOURCE_SCAN',
+      discoveryStatus: 'SOURCE_DISCOVERED',
+      domInspectionStatus: 'NOT_INSPECTED',
+      captureStatus: 'NOT_CAPTURED',
+      confidence: null,
+      confidenceStatus: 'NOT_SCORED',
       timestamp: new Date().toISOString(),
       projectId,
       evidence: {
+        sourceFiles: [sourceFile],
+        routeDeclared: route,
+        captured: false,
+        domInspected: false,
         sampleSnippet: rawContent.slice(0, 200),
         detectedApiCount: apiCalls.length,
       }

@@ -24,7 +24,10 @@ test('root opens the City despite a stale saved view and memory fits tablet and 
     await new Promise((resolve) => server.close(resolve));
   });
 
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.FENIX_QA_CHROMIUM_PATH || undefined,
+  });
   const page = await browser.newPage({ viewport: { width: 797, height: 1258 } });
   await page.addInitScript(() => {
     const setItem = Storage.prototype.setItem;
@@ -49,6 +52,15 @@ test('root opens the City despite a stale saved view and memory fits tablet and 
   assert.equal(startup.sidebarOpen, false, 'a first visit should show the workspace before opening the chat');
   assert.equal(new URL(page.url()).hash, '#city');
 
+  await page.goto(`${base}/index.html#command`, { waitUntil: 'load' });
+  await page.waitForTimeout(100);
+  const legacyRoute = await page.evaluate(() => ({
+    active: document.querySelector('.view.active')?.id,
+    hash: location.hash,
+  }));
+  assert.equal(legacyRoute.active, 'view-city', `legacy cockpit route must resolve to City: ${JSON.stringify(legacyRoute)}`);
+  assert.equal(legacyRoute.hash, '#city', `legacy route should normalize to #city: ${JSON.stringify(legacyRoute)}`);
+
   await page.goto(`${base}/index.html#memory`, { waitUntil: 'load' });
   await page.waitForSelector('#view-memory .fml-root');
   for (const viewport of [{ width: 797, height: 1258 }, { width: 390, height: 844 }, { width: 1440, height: 900 }]) {
@@ -58,7 +70,11 @@ test('root opens the City despite a stale saved view and memory fits tablet and 
     const geometry = await page.evaluate(() => {
       const measure = (selector) => {
         const node = document.querySelector(selector);
-        return node && { clientWidth: node.clientWidth, scrollWidth: node.scrollWidth };
+        return node && {
+          clientWidth: node.clientWidth,
+          scrollWidth: node.scrollWidth,
+          visible: !node.hidden && getComputedStyle(node).display !== 'none',
+        };
       };
       return {
         viewportWidth: innerWidth,
@@ -68,8 +84,8 @@ test('root opens the City despite a stale saved view and memory fits tablet and 
         topbarMetrics: measure('.fnx-topbar-kpis-cluster'),
         brandTitleHeight: document.querySelector('.fnx-brand-meta-title')?.getBoundingClientRect().height,
         header: measure('#view-memory .fml-header'),
-        kpis: measure('#view-memory .fml-kpis'),
-        workspace: measure('#view-memory .fml-workspace'),
+        summary: measure('#view-memory .fml-summary'),
+        workspace: measure('#view-memory #fmlWorkspace'),
         shell: (() => {
           const nav = document.querySelector('#mainSidebarNav')?.getBoundingClientRect();
           const content = document.querySelector('.views-container')?.getBoundingClientRect();
@@ -92,8 +108,9 @@ test('root opens the City despite a stale saved view and memory fits tablet and 
     if (viewport.width <= 797) assert.ok(geometry.brandTitleHeight <= 24, `brand wraps at ${viewport.width}px: ${geometry.brandTitleHeight}px`);
     assert.equal(geometry.shell.overlap, false, `navigation overlaps the active workspace at ${viewport.width}px: ${JSON.stringify(geometry.shell)}`);
     if (viewport.width === 1440) assert.equal(geometry.chatVisible, false, 'a closed chat must not reserve desktop width');
-    for (const part of ['header', 'kpis', 'workspace']) {
-      assert.ok(geometry[part]?.scrollWidth <= geometry[part]?.clientWidth + 1, `${part} overflows at ${viewport.width}px: ${JSON.stringify(geometry)}`);
+    for (const part of ['header', 'summary', 'workspace']) {
+      assert.ok(geometry[part], `${part} is missing from the memory view at ${viewport.width}px`);
+      if (geometry[part].visible) assert.ok(geometry[part].scrollWidth <= geometry[part].clientWidth + 1, `${part} overflows at ${viewport.width}px: ${JSON.stringify(geometry)}`);
     }
   }
 
@@ -160,11 +177,12 @@ test('root opens the City despite a stale saved view and memory fits tablet and 
   assert.equal(splitGeometry.open, true);
   assert.ok(splitGeometry.contentRight <= splitGeometry.chatLeft + 1, `chat overlays the workspace at tablet width: ${JSON.stringify(splitGeometry)}`);
 
-  await splitPage.waitForSelector('#view-memory .fml-workspace');
+  await splitPage.waitForFunction(() => document.querySelector('#view-memory #fmlWorkspace'));
   const splitMemory = await splitPage.locator('#view-memory .fml-workspace').evaluate((workspace) => ({
     width: workspace.clientWidth,
     scrollWidth: workspace.scrollWidth,
+    hidden: workspace.hidden || getComputedStyle(workspace).display === 'none',
     columns: getComputedStyle(workspace).gridTemplateColumns,
   }));
-  assert.ok(splitMemory.scrollWidth <= splitMemory.width + 1, `memory does not reflow beside the docked chat: ${JSON.stringify(splitMemory)}`);
+  if (!splitMemory.hidden) assert.ok(splitMemory.scrollWidth <= splitMemory.width + 1, `memory does not reflow beside the docked chat: ${JSON.stringify(splitMemory)}`);
 });

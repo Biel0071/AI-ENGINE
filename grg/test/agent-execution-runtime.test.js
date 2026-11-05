@@ -14,6 +14,26 @@ test('agent runtime emits tool success only after the real workspace executor su
   assert.equal(events.find((event) => event.type === 'agent.tool.result').data.status, 'SUCCEEDED');
 });
 
+test('agent runtime includes selected skill instructions in the provider prompt', async () => {
+  let receivedPrompt = '';
+  const runtime = new AgentExecutionRuntime({
+    aiGateway: { invoke: async (_tenant, _actor, request) => {
+      receivedPrompt = request.prompt;
+      return { provider: 'test', model: 'test', text: JSON.stringify({ operations: [{ operation: 'create', path: 'proof.js', content: 'module.exports = true;' }], tests: ['node --check proof.js'] }) };
+    } },
+    workspaceExecutor: { execute: async () => ({ status: 'SUCCEEDED' }) },
+    skillRegistry: { contextForAgent: async () => ({
+      selectedSkills: [{ id: 'apple-hig-adapter', name: 'Project Design Review' }],
+      prompt: 'Review the selected project using its existing design system. Return evidence, prioritized findings, and measurable closure criteria.'
+    }) },
+    events: null,
+  });
+
+  await runtime.execute('tenant', 'actor', { jobId: 'job-skill', projectId: 'project-1', prompt: 'Review this UI', agent: { agentId: 'agent-frontend' } });
+  assert.match(receivedPrompt, /Project Design Review/);
+  assert.match(receivedPrompt, /measurable closure criteria/);
+});
+
 test('agent runtime emits a failed tool result and propagates executor errors', async () => {
   const events = [];
   const runtime = new AgentExecutionRuntime({

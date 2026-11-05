@@ -61,7 +61,7 @@ class MemoryGateway {
       kind: input.kind || 'semantic',
       title: input.title || 'Untitled',
       content: input.content || '',
-      confidence: input.confidence || 1.0,
+      confidence: Object.prototype.hasOwnProperty.call(input, 'confidence') ? input.confidence : 1.0,
       provenance: input.provenance || { type: 'system', reference: 'unknown' },
       projectId: input.projectId || null,
       orgId: input.orgId || null,
@@ -121,8 +121,8 @@ class MemoryGateway {
   rank(memories, query, options) {
     // Basic L1 ranking: recency + importance
     return memories.sort((a, b) => {
-      const scoreA = (a.confidence || 1) + (a.importance || 0.5);
-      const scoreB = (b.confidence || 1) + (b.importance || 0.5);
+      const scoreA = (a.confidence ?? 0.5) + (a.importance || 0.5);
+      const scoreB = (b.confidence ?? 0.5) + (b.importance || 0.5);
       return scoreB - scoreA;
     }).slice(0, options.limit || 10);
   }

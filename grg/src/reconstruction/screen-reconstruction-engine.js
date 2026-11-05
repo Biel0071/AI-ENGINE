@@ -16,7 +16,7 @@ const { globalGraphBrain } = require('../brain/graph-brain');
  * - Pattern-guided code generation (HTML + CSS + JS)
  * - Strict Zero-Mock contract adherence
  * - In-sandbox syntax and DOM contract validation
- * - Dual-Run Learning Loop proving real time, token, and API savings
+ * - Dual-Run reports separate observed durations from unmeasured usage and savings
  */
 class ScreenReconstructionEngine {
   constructor(options = {}) {
@@ -58,15 +58,19 @@ class ScreenReconstructionEngine {
       });
     }
 
-    // 2. RETRIEVE SCREEN DNA (From absorption engine or fallback to learned pattern)
+    // 2. RETRIEVE SCREEN DNA (cold runs use only the local template)
     let screenDna = null;
-    if (this.absorptionEngine) {
+    let screenDnaSource = 'LOCAL_TEMPLATE';
+    if (!forceCold && this.absorptionEngine) {
       const proj = this.absorptionEngine.getAbsorbedProject(projectId);
       if (proj && proj.screens) {
-        screenDna = proj.screens.find(s => 
-          s.title.toLowerCase().includes(targetName.toLowerCase()) ||
-          s.screenId.toLowerCase().includes(targetName.toLowerCase().replace(/\s+/g, '-'))
-        ) || proj.screens[0];
+        const targetTitle = String(targetName).toLowerCase();
+        const targetScreenId = targetTitle.replace(/\s+/g, '-');
+        screenDna = proj.screens.find((screen) =>
+          String(screen?.title || '').toLowerCase().includes(targetTitle)
+          || String(screen?.screenId || '').toLowerCase().includes(targetScreenId)
+        ) || null;
+        if (screenDna) screenDnaSource = 'ABSORBED_SCREEN_DNA';
       }
     }
 
@@ -93,23 +97,28 @@ class ScreenReconstructionEngine {
     const validation = this.#validateInSandbox(codeArtifact);
 
     const elapsedMs = Date.now() - startTime;
-    const tokensUsed = forceCold ? 2400 : (cascadeResult?.tokensTotal || 0);
-    const tokensSaved = forceCold ? 0 : (cascadeResult?.tokensSaved || 2400);
-    const apiCalls = forceCold ? 1 : (cascadeResult?.apiCallsAvoided ? 0 : 1);
+    const estimatedTokensUsed = Number.isFinite(cascadeResult?.tokensTotal) ? cascadeResult.tokensTotal : null;
+    const estimatedTokensSaved = Number.isFinite(cascadeResult?.tokensSaved) ? cascadeResult.tokensSaved : null;
+    const apiCalls = Number(Boolean(cascadeResult?.localModelUsed || cascadeResult?.externalModelUsed));
 
     const result = {
       reconstructionId: `rec_${crypto.randomUUID().slice(0, 8)}`,
       targetName,
-      sourceKnowledge: cascadeResult?.source || (forceCold ? 'COLD_SYNTHESIS' : 'SCREEN_DNA'),
-      knowledgeReused: !forceCold && (cascadeResult?.patternHit || cascadeResult?.memoryHit || cascadeResult?.cacheHit),
+      sourceKnowledge: screenDnaSource,
+      screenDnaSource,
+      knowledgeReused: screenDnaSource === 'ABSORBED_SCREEN_DNA',
       screenDna,
       codeArtifact,
       validation,
       metrics: {
         elapsedMs,
-        tokensUsed,
-        tokensSaved,
+        tokensUsed: null,
+        tokensSaved: null,
+        estimatedTokensUsed,
+        estimatedTokensSaved,
         apiCalls,
+        usageStatus: 'UNMEASURED',
+        usageSource: cascadeResult?.model || null,
       },
       createdAt: new Date().toISOString(),
     };
@@ -133,10 +142,9 @@ class ScreenReconstructionEngine {
   }
 
   /**
-   * Dual-Run Learning Loop (Prompt Requirement #7):
-   * 1. Cold Run (First generation)
-   * 2. Warm Run (Reusing learned knowledge)
-   * 3. Calculates factual delta and proves learning
+   * Dual-Run Learning Loop:
+   * Cold and warm runs compare local reconstruction attempts. Token/API savings
+   * remain unverified until provider-reported usage is available.
    */
   async executeDualLearningLoop({
     targetName = 'Agent Inspector Component',
@@ -155,11 +163,6 @@ class ScreenReconstructionEngine {
       forceCold: true,
     });
 
-    // Artificially simulate realistic cold synthesis latency if executed too quickly
-    const run1TimeMs = Math.max(run1.metrics.elapsedMs, 32);
-    const run1Tokens = 2400;
-    const run1ApiCalls = 1;
-
     // RUN 2: WARM EXECUTION (Reusing accumulated knowledge from Pattern Library & Memory)
     const run2 = await this.reconstruct({
       targetName,
@@ -170,72 +173,46 @@ class ScreenReconstructionEngine {
       forceCold: false,
     });
 
-    const run2TimeMs = run2.metrics.elapsedMs;
-    const run2Tokens = 0;
-    const run2ApiCalls = 0;
-
-    // CALCULATE DELTA & EVIDENCE
-    const timeSavedMs = Math.max(0, run1TimeMs - run2TimeMs);
-    const tokensSaved = run1Tokens - run2Tokens;
-    const apiCallsAvoided = run1ApiCalls - run2ApiCalls;
-    const knowledgeReused = true;
-
-    const isProven = tokensSaved > 0 && apiCallsAvoided > 0;
-    const status = isProven ? 'LEARNING_PROVEN' : 'LEARNING_NOT_PROVEN';
+    const observedDurationDeltaMs = run1.metrics.elapsedMs - run2.metrics.elapsedMs;
+    const isProven = false;
+    const status = 'LEARNING_NOT_PROVEN';
 
     const learningReport = {
       targetName,
       status,
       isProven,
       firstRun: {
-        timeMs: run1TimeMs,
-        tokens: run1Tokens,
-        apiCalls: run1ApiCalls,
+        timeMs: run1.metrics.elapsedMs,
+        tokens: run1.metrics.tokensUsed,
+        estimatedTokens: run1.metrics.estimatedTokensUsed,
+        apiCalls: run1.metrics.apiCalls,
         knowledgeReused: false,
       },
       secondRun: {
-        timeMs: run2TimeMs,
-        tokens: run2Tokens,
-        apiCalls: run2ApiCalls,
-        knowledgeReused: true,
+        timeMs: run2.metrics.elapsedMs,
+        tokens: run2.metrics.tokensUsed,
+        estimatedTokens: run2.metrics.estimatedTokensUsed,
+        apiCalls: run2.metrics.apiCalls,
+        knowledgeReused: run2.knowledgeReused,
       },
       delta: {
-        timeSavedMs,
-        tokensSaved,
-        apiCallsAvoided,
-        tokenSavingsPercent: '100%',
-        speedupFactor: run2TimeMs > 0 ? (run1TimeMs / run2TimeMs).toFixed(1) + 'x' : 'instant',
+        timeSavedMs: null,
+        observedDurationDeltaMs,
+        tokensSaved: null,
+        apiCallsAvoided: null,
+        tokenSavingsPercent: null,
+        speedupFactor: null,
       },
       evidence: {
         run1Id: run1.reconstructionId,
         run2Id: run2.reconstructionId,
         reusedPattern: run2.sourceKnowledge,
+        knowledgeReuseObserved: run2.knowledgeReused,
+        usageMeasured: false,
         validationPassed: run1.validation.valid && run2.validation.valid,
       },
       evaluatedAt: new Date().toISOString(),
     };
-
-    // REGISTER HYPOTHESIS & EXPERIMENT IN EVOLUTION LAB IF PRESENT
-    if (this.evolutionLab && typeof this.evolutionLab.registerHypothesis === 'function') {
-      try {
-        const hyp = await this.evolutionLab.registerHypothesis(tenantId, actorId, {
-          title: `Pattern Library Reusability for ${targetName}`,
-          description: 'Reusing absorbed Screen DNA reduces token consumption to zero and avoids external model calls',
-          category: 'PERFORMANCE',
-          metric: 'TOKEN_CONSUMPTION',
-          expectedDelta: -100,
-        });
-
-        await this.evolutionLab.runExperiment(tenantId, actorId, hyp.id, async () => {
-          return {
-            metricBefore: run1Tokens,
-            metricAfter: run2Tokens,
-            delta: -tokensSaved,
-            details: { timeSavedMs, apiCallsAvoided },
-          };
-        });
-      } catch (_) {}
-    }
 
     return learningReport;
   }
@@ -478,7 +455,7 @@ class ScreenReconstructionEngine {
 
     let browser;
     try {
-      browser = await playwright.chromium.launch({ headless: true });
+      browser = await playwright.chromium.launch({ headless: true, executablePath: process.env.FENIX_QA_CHROMIUM_PATH || undefined });
       const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       const page = await context.newPage();
 
@@ -547,10 +524,9 @@ class ScreenReconstructionEngine {
   }
 
   /**
-   * Dual-Run + Knowledge Transfer Learning Loop (Requirement #7 & #8):
-   * Run 1 (Cold): Execution without cached pattern
-   * Run 2 (Warm): Execution reusing Pattern Library & Screen DNA
-   * Run 3 (Transfer): Execution on another component of the same project proving knowledge transfer
+   * Dual-Run + Knowledge Transfer Learning Loop:
+   * Cold, warm, and transfer runs report local observations. Transfer and savings
+   * rates remain unverified without independent evidence.
    */
   async executeExternalProjectLearningLoop({
     targetScreen1 = 'API Platform Login Card',
@@ -560,7 +536,6 @@ class ScreenReconstructionEngine {
     actorId = 'system',
   }) {
     // RUN 1: COLD EXECUTION
-    const run1Start = Date.now();
     const run1 = await this.reconstruct({
       targetName: targetScreen1,
       prompt: `Reconstrua a tela de ${targetScreen1} a partir do zero sem cache`,
@@ -569,12 +544,9 @@ class ScreenReconstructionEngine {
       projectId,
       forceCold: true,
     });
-    const run1TimeMs = Math.max(Date.now() - run1Start, 35);
-    const run1Tokens = 2400;
-    const run1ApiCalls = 1;
+    const run1TimeMs = run1.metrics.elapsedMs;
 
     // RUN 2: WARM EXECUTION (Reusing Pattern Library & Memory)
-    const run2Start = Date.now();
     const run2 = await this.reconstruct({
       targetName: targetScreen1,
       prompt: `Reconstrua a tela de ${targetScreen1} utilizando Pattern Library e Screen DNA`,
@@ -583,12 +555,9 @@ class ScreenReconstructionEngine {
       projectId,
       forceCold: false,
     });
-    const run2TimeMs = Math.max(Date.now() - run2Start, 2);
-    const run2Tokens = 0;
-    const run2ApiCalls = 0;
+    const run2TimeMs = run2.metrics.elapsedMs;
 
     // RUN 3: KNOWLEDGE TRANSFER (Reconstructing Screen 2 using styling & patterns learned from Screen 1)
-    const run3Start = Date.now();
     const run3 = await this.reconstruct({
       targetName: targetScreen2,
       prompt: `Reconstrua o componente ${targetScreen2} transferindo os tokens de design e arquitetura aprendidos`,
@@ -597,45 +566,47 @@ class ScreenReconstructionEngine {
       projectId,
       forceCold: false,
     });
-    const run3TimeMs = Math.max(Date.now() - run3Start, 3);
-    const run3Tokens = 0;
-    const run3ApiCalls = 0;
-
-    const timeSavedMs = Math.max(0, run1TimeMs - run2TimeMs);
-    const tokensSaved = run1Tokens - run2Tokens;
-    const apiCallsAvoided = run1ApiCalls - run2ApiCalls;
+    const run3TimeMs = run3.metrics.elapsedMs;
+    const observedDurationDeltaMs = run1TimeMs - run2TimeMs;
 
     return {
-      status: 'LEARNING_PROVEN',
+      status: 'LEARNING_NOT_PROVEN',
       projectId,
       cold: {
         timeMs: run1TimeMs,
-        tokens: run1Tokens,
-        apiCalls: run1ApiCalls,
+        tokens: run1.metrics.tokensUsed,
+        estimatedTokens: run1.metrics.estimatedTokensUsed,
+        apiCalls: run1.metrics.apiCalls,
       },
       warm: {
         timeMs: run2TimeMs,
-        tokens: run2Tokens,
-        apiCalls: run2ApiCalls,
+        tokens: run2.metrics.tokensUsed,
+        estimatedTokens: run2.metrics.estimatedTokensUsed,
+        apiCalls: run2.metrics.apiCalls,
       },
       transfer: {
         target: targetScreen2,
         timeMs: run3TimeMs,
-        tokens: run3Tokens,
-        apiCalls: run3ApiCalls,
-        knowledgeTransferRate: '100%',
+        tokens: run3.metrics.tokensUsed,
+        estimatedTokens: run3.metrics.estimatedTokensUsed,
+        apiCalls: run3.metrics.apiCalls,
+        knowledgeTransferObserved: null,
+        knowledgeTransferStatus: 'UNMEASURED',
+        knowledgeTransferRate: null,
       },
       savings: {
-        timeSavedMs,
-        tokensSaved,
-        apiCallsAvoided,
-        tokenSavingsRate: '100%',
-        knowledgeReuseRate: '100%',
+        timeSavedMs: null,
+        observedDurationDeltaMs,
+        tokensSaved: null,
+        apiCallsAvoided: null,
+        tokenSavingsRate: null,
+        knowledgeReuseRate: null,
       },
       evidence: {
         run1Id: run1.reconstructionId,
         run2Id: run2.reconstructionId,
         run3Id: run3.reconstructionId,
+        usageMeasured: false,
       }
     };
   }

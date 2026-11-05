@@ -307,6 +307,15 @@
     }
   };
 
+  const BUILDING_INTERIOR_ALIASES = {
+    'bld-fenix-hq': 'fenix-hq',
+    'bld-dev-loft': 'dev-loft'
+  };
+  const resolveBuildingInterior = (buildingId) => {
+    const id = String(buildingId || '');
+    return BUILDING_INTERIORS[BUILDING_INTERIOR_ALIASES[id] || id] || null;
+  };
+
   // ── BuildingInteriorSystem ──
   class BuildingInteriorSystem {
     constructor(cityRenderer) {
@@ -810,9 +819,19 @@
     }
 
     enter(buildingId, floorIndex = 0) {
-      const bldData = BUILDING_INTERIORS[buildingId] || BUILDING_INTERIORS['dev-loft'];
+      const bldData = resolveBuildingInterior(buildingId);
+      if (!bldData) {
+        this.exit();
+        document.dispatchEvent(new CustomEvent('fenix:city:interiorUnavailable', { detail: { buildingId } }));
+        return false;
+      }
+      const requestedFloor = Number(floorIndex);
+      if (!Number.isInteger(requestedFloor) || requestedFloor < 0 || requestedFloor >= bldData.floors.length) {
+        document.dispatchEvent(new CustomEvent('fenix:city:interiorUnavailable', { detail: { buildingId, floorIndex, reason: 'FLOOR_LAYOUT_NOT_MODELED' } }));
+        return false;
+      }
       this.activeBuildingId = buildingId;
-      this.activeFloorIndex = Math.max(0, Math.min(floorIndex, bldData.floors.length - 1));
+      this.activeFloorIndex = requestedFloor;
 
       if (this.city && this.city.worldContainer) {
         this.city.worldContainer.visible = false;
@@ -1624,5 +1643,7 @@
   // Export
   window.BuildingInteriorSystem = BuildingInteriorSystem;
   window.BUILDING_INTERIORS = BUILDING_INTERIORS;
+  window.fenixResolveBuildingInterior = resolveBuildingInterior;
+  window.fenixInteriorFloorCount = (buildingId) => resolveBuildingInterior(buildingId)?.floors?.length || 0;
 
 })();

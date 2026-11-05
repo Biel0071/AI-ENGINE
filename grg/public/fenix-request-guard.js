@@ -21,7 +21,7 @@
 
   // 1. Resource Limits Budget (Requirement 16)
   const BUDGET = {
-    MAX_FETCH_INFLIGHT: 12,
+    MAX_FETCH_INFLIGHT: 32,
     MAX_EVENTSOURCE: 4,
     MAX_WORLD_RENDERER: 1,
     MAX_COPILOT: 1,

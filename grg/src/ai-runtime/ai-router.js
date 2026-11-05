@@ -93,7 +93,7 @@ class AIRouter {
   // Seleciona um provider por evidencia. Percorre os tiers na ordem da politica; dentro do
   // tier, pega o primeiro connector de IA que esta CONNECTED (selfTest real). Devolve a
   // escolha COM a evidencia de por que -- ou unknown se nenhum provider esta saudavel.
-  async select(tenantId, actorId, { preferTier = null, tiers = null } = {}) {
+  async select(tenantId, actorId, { preferTier = null, preferProvider = null, tiers = null } = {}) {
     const aiConnectors = this.connectors.list().filter((id) => id.startsWith('ai:'));
     if (!aiConnectors.length) {
       return { chosen: unknown('no AI connector is registered', 'register providers via AIProviderAdapter') };
@@ -118,12 +118,27 @@ class AIRouter {
       }
     };
 
+    // Conversational routes honor the configured provider when it belongs to an allowed
+    // tier and its connector is healthy. Other callers retain the normal cost-tier policy.
+    const preferredId = preferProvider && aiConnectors.find((id) => this.#providerName(id) === preferProvider);
+    const preferredTier = preferredId ? this.#tierOf(preferProvider) : null;
+    if (preferredId && order.includes(preferredTier)) {
+      const preferred = await inspect(preferredId, preferredTier);
+      evaluated.push(preferred);
+      if (preferred.state === 'CONNECTED') {
+        return {
+          chosen: measured(preferProvider, 'configured provider + connector selfTest', { connectorId: preferredId, tier: preferredTier }),
+          evidence: { policy: order, evaluated },
+        };
+      }
+    }
+
     // A requested lane (such as FAST) is latency-sensitive: inspect only its eligible
     // tiers in parallel, then select by policy order. General routing remains local-first
     // and stops before probing a more expensive tier once a healthy provider is found.
     if (Array.isArray(tiers) && tiers.length) {
       const candidates = order.flatMap((tier) => aiConnectors
-        .filter((id) => this.#tierOf(this.#providerName(id)) === tier)
+        .filter((id) => id !== preferredId && this.#tierOf(this.#providerName(id)) === tier)
         .map((id) => ({ id, tier })));
       evaluated.push(...await Promise.all(candidates.map(({ id, tier }) => inspect(id, tier))));
       const selected = evaluated.find((item) => item.state === 'CONNECTED');
@@ -135,7 +150,7 @@ class AIRouter {
       }
     } else {
       for (const tier of order) {
-        const inTier = aiConnectors.filter((id) => this.#tierOf(this.#providerName(id)) === tier);
+        const inTier = aiConnectors.filter((id) => id !== preferredId && this.#tierOf(this.#providerName(id)) === tier);
         const results = await Promise.all(inTier.map((id) => inspect(id, tier)));
         evaluated.push(...results);
         const selected = results.find((item) => item.state === 'CONNECTED');
@@ -162,7 +177,11 @@ class AIRouter {
   // registra. Se ninguem esta CONNECTED, devolve o unknown da selecao, nunca texto falso.
   async route(tenantId, actorId, request = {}) {
     const laneTiers = LANES[request.lane]?.tiers || null;
-    const selection = await this.select(tenantId, actorId, { preferTier: request.preferTier, tiers: request.tiers || laneTiers });
+    const selection = await this.select(tenantId, actorId, {
+      preferTier: request.preferTier,
+      preferProvider: request.preferProvider,
+      tiers: request.tiers || laneTiers,
+    });
     if (selection.chosen.state !== 'measured') return { ok: false, selection };
 
     const name = selection.chosen.value;
@@ -180,6 +199,7 @@ class AIRouter {
         temperature: request.temperature,
         provider: name,
         model: this.#modelFor(name, request),
+        excludeProviders: request.excludeProviders,
       });
       const record = { provider: result.provider || name, chosen: name, tier: selection.chosen.tier, durationMs: Date.now() - started, cached: result.cached === true, ok: true };
       await this.#record(tenantId, record);

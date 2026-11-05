@@ -55,12 +55,12 @@ body.fenix-mode-3d #view-city #cityCanvas { display: none !important; }
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
-  height: 188px !important;
+  height: 220px !important;
   padding: 0 16px 8px 16px !important;
   box-sizing: border-box !important;
-  z-index: 25 !important;
+  z-index: 45 !important;
   display: grid !important;
-  grid-template-columns: minmax(260px, 320px) minmax(360px, 1fr) minmax(300px, 380px) !important;
+  grid-template-columns: minmax(240px, 280px) repeat(3, minmax(220px, 1fr)) !important;
   gap: 12px !important;
   background: linear-gradient(180deg, transparent 0%, rgba(3, 6, 12, 0.7) 25%, rgba(3, 6, 12, 0.96) 100%) !important;
   pointer-events: none !important;

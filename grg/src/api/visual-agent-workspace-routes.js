@@ -14,7 +14,12 @@ let globalVideoStudio = null;
 
 function getVisualWorkspace(app) {
   if (!globalVisualWorkspace) {
-    globalVisualWorkspace = new VisualWorkspaceEngine();
+    globalVisualWorkspace = new VisualWorkspaceEngine({
+      patternLibrary: app?.patternLibrary,
+      memoryGateway: app?.memory,
+      skillRegistry: app?.skillRegistry,
+      eventBus: app?.bus
+    });
     if (app) app.visualWorkspace = globalVisualWorkspace;
   }
   return globalVisualWorkspace;
@@ -22,7 +27,10 @@ function getVisualWorkspace(app) {
 
 function getVideoStudio(app) {
   if (!globalVideoStudio) {
-    globalVideoStudio = new VideoProductionStudioEngine();
+    globalVideoStudio = new VideoProductionStudioEngine({
+      patternLibrary: app?.patternLibrary,
+      eventBus: app?.bus
+    });
     if (app) app.videoStudio = globalVideoStudio;
   }
   return globalVideoStudio;
@@ -57,6 +65,24 @@ async function handleVisualAgentWorkspaceRoutes(req, res, url, app, sendJson, re
       const limit = Number(url.searchParams.get('limit') || 50);
       const timeline = workspace.getTimeline(limit);
       return sendJson(res, 200, { ok: true, count: timeline.length, timeline });
+    }
+
+    // 3.1 Central Intelligence: Learned Patterns (Filtered by Project with Multi-Tenant Isolation)
+    if (method === 'GET' && pathname === '/api/v2/visual-workspace/learned-patterns') {
+      const projectId = url.searchParams.get('projectId') || workspace.activeProject;
+      const q = url.searchParams.get('q') || '';
+      const patterns = workspace.patternLibrary && typeof workspace.patternLibrary.findPatternsForProject === 'function'
+        ? workspace.patternLibrary.findPatternsForProject(projectId, q)
+        : (workspace.patternLibrary ? workspace.patternLibrary.findPatterns(q) : []);
+      return sendJson(res, 200, { ok: true, projectId, count: patterns.length, patterns });
+    }
+
+    // 3.2 Central Intelligence: Learned QA & Evolution Skills
+    if (method === 'GET' && pathname === '/api/v2/visual-workspace/qa-skills') {
+      const dynamicSkills = workspace.skillRegistry && typeof workspace.skillRegistry.getDynamicSkills === 'function'
+        ? workspace.skillRegistry.getDynamicSkills()
+        : [];
+      return sendJson(res, 200, { ok: true, count: dynamicSkills.length, skills: dynamicSkills });
     }
 
     // 4. Canonical 24 Agent Actions Dispatcher

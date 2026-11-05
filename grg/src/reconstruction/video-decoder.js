@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
@@ -11,11 +12,17 @@ const SUPPORTED_FORMATS = new Set(['.mp4', '.mov', '.webm', '.mkv', '.avi']);
 const MAX_VIDEO_BYTES = 250 * 1024 * 1024;
 const MAX_VIDEO_SECONDS = 6 * 60 * 60;
 const MAX_FRAME_COUNT = 24;
+const MAX_TRANSCRIPT_BYTES = 1024 * 1024;
 
 class VideoSystemDecoder {
   constructor(options = {}) {
     this.ffprobePath = options.ffprobePath || 'ffprobe';
     this.ffmpegPath = options.ffmpegPath || 'ffmpeg';
+    this.whisperCliPath = options.whisperCliPath || process.env.FENIX_WHISPER_CLI || 'whisper-cli';
+    this.whisperModelPath = options.whisperModelPath || process.env.FENIX_WHISPER_MODEL || '';
+    this.minimumWhisperFreeMemoryMb = boundedInteger(options.minimumWhisperFreeMemoryMb ?? process.env.FENIX_WHISPER_MIN_FREE_MEMORY_MB, 1536, 512, 65536);
+    this.getAvailableMemoryBytes = options.getAvailableMemoryBytes || (() => os.freemem());
+    this.transcriptionQueue = Promise.resolve();
     this.runCommand = options.runCommand || runCommand;
     this.artifactsDir = path.resolve(options.artifactsDir || path.join(__dirname, '..', '.data', 'reconstruction', 'videos'));
     const defaultLibrary = path.join(__dirname, '..', '.data', 'references', 'videos');
@@ -92,6 +99,7 @@ class VideoSystemDecoder {
       url: `${artifactUrl}/frames/${file}`,
       status: 'EXTRACTED'
     }));
+    const transcription = await this._enqueueTranscription(sourcePath, artifactPath, probe.audio);
     const report = {
       artifactId,
       artifactUrl,
@@ -100,6 +108,7 @@ class VideoSystemDecoder {
       createdAt: new Date().toISOString(),
       source: { sha256: sourceSha256, byteLength: stat.size },
       media: probe,
+      transcription,
       sampling: { method: 'FFMPEG_FPS_FILTER', intervalSeconds: sampleIntervalSeconds, requestedMaximumFrames: maxFrames },
       keyframes,
       sceneChanges: { status: 'NOT_MEASURED', items: [] },
@@ -107,11 +116,75 @@ class VideoSystemDecoder {
       interactionTimeline: { status: 'NOT_VERIFIED', items: [] },
       limitations: [
         'Quadros foram extraídos em intervalos uniformes; as posições registradas são pontos de amostragem, não timestamps exatos do frame original.',
-        'Nenhum conteúdo visual, ação ou estrutura da aplicação foi inferido sem um analisador de visão conectado.'
+        'Nenhum conteúdo visual, ação ou estrutura da aplicação foi inferido sem um analisador de visão conectado.',
+        ...(transcription.status === 'PENDING' ? [`Transcrição pendente: ${transcription.reason}.`] : [])
       ]
     };
+    if (transcription.status === 'TRANSCRIBED') {
+      transcription.captions = {
+        srt: `${artifactUrl}/captions/transcript.srt`,
+        vtt: `${artifactUrl}/captions/transcript.vtt`
+      };
+    }
     this._persistReport(artifactPath, report);
     return report;
+  }
+
+  _enqueueTranscription(sourcePath, artifactPath, audio) {
+    const task = this.transcriptionQueue.then(() => this._transcribeAudio(sourcePath, artifactPath, audio));
+    this.transcriptionQueue = task.catch(() => {});
+    return task.catch((error) => ({ status: 'PENDING', reason: error.code || 'TRANSCRIPTION_FAILED', text: null, segments: [] }));
+  }
+
+  async _transcribeAudio(sourcePath, artifactPath, audio) {
+    if (!audio) return { status: 'PENDING', reason: 'AUDIO_TRACK_NOT_FOUND', text: null, segments: [] };
+    if (!this.whisperModelPath) return { status: 'PENDING', reason: 'WHISPER_MODEL_NOT_CONFIGURED', text: null, segments: [] };
+    let modelStat;
+    try { modelStat = fs.statSync(this.whisperModelPath); } catch { return { status: 'PENDING', reason: 'WHISPER_MODEL_NOT_FOUND', text: null, segments: [] }; }
+    if (!modelStat.isFile() || modelStat.size <= 0) return { status: 'PENDING', reason: 'WHISPER_MODEL_NOT_FOUND', text: null, segments: [] };
+    const availableMemoryMb = Number(this.getAvailableMemoryBytes()) / (1024 * 1024);
+    if (!Number.isFinite(availableMemoryMb) || availableMemoryMb < this.minimumWhisperFreeMemoryMb) {
+      return { status: 'PENDING', reason: 'INSUFFICIENT_FREE_MEMORY', text: null, segments: [], minimumFreeMemoryMb: this.minimumWhisperFreeMemoryMb };
+    }
+
+    const audioPath = path.join(artifactPath, 'audio-16khz-mono.wav');
+    try {
+      await this.runCommand(this.ffmpegPath, [
+        '-hide_banner', '-loglevel', 'error', '-i', sourcePath, '-map', '0:a:0',
+        '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', '-y', audioPath
+      ], { timeout: 180000, maxBuffer: 2 * 1024 * 1024, windowsHide: true });
+    } catch (error) {
+      return { status: 'PENDING', reason: error?.code === 'ENOENT' ? 'FFMPEG_UNAVAILABLE' : 'AUDIO_EXTRACTION_FAILED', text: null, segments: [] };
+    }
+
+    const outputPrefix = path.join(artifactPath, 'transcript');
+    try {
+      await this.runCommand(this.whisperCliPath, [
+        '-m', path.resolve(this.whisperModelPath), '-f', audioPath,
+        '-osrt', '-ovtt', '-of', outputPrefix
+      ], { timeout: 1800000, maxBuffer: 4 * 1024 * 1024, windowsHide: true });
+    } catch (error) {
+      return { status: 'PENDING', reason: error?.code === 'ENOENT' ? 'WHISPER_CLI_UNAVAILABLE' : 'WHISPER_EXECUTION_FAILED', text: null, segments: [] };
+    }
+
+    const srtPath = `${outputPrefix}.srt`;
+    const vttPath = `${outputPrefix}.vtt`;
+    try {
+      const stat = fs.statSync(srtPath);
+      if (!stat.isFile() || stat.size > MAX_TRANSCRIPT_BYTES) return { status: 'PENDING', reason: 'TRANSCRIPT_SIZE_UNSUPPORTED', text: null, segments: [] };
+      const srt = fs.readFileSync(srtPath, 'utf8');
+      const segments = parseSrt(srt);
+      const text = segments.map((segment) => segment.text).join('\n');
+      if (!text.trim()) return { status: 'PENDING', reason: 'WHISPER_RETURNED_NO_SEGMENTS', text: null, segments: [] };
+      if (!fs.existsSync(vttPath)) fs.writeFileSync(vttPath, srtToVtt(segments), 'utf8');
+      return {
+        status: 'TRANSCRIBED', engine: 'whisper.cpp', model: path.basename(this.whisperModelPath),
+        text, segments, captionFiles: ['transcript.srt', 'transcript.vtt'],
+        measuredAt: new Date().toISOString(), availableMemoryMb: Math.floor(availableMemoryMb)
+      };
+    } catch (error) {
+      return { status: 'PENDING', reason: error?.code === 'ENOENT' ? 'WHISPER_OUTPUT_NOT_FOUND' : 'WHISPER_OUTPUT_INVALID', text: null, segments: [] };
+    }
   }
 
   readArtifact(artifactId) {
@@ -140,6 +213,24 @@ class VideoSystemDecoder {
     }
   }
 
+  readCaption(artifactId, fileName) {
+    const directory = this._artifactDirectory(artifactId);
+    if (!['transcript.srt', 'transcript.vtt'].includes(fileName)) {
+      throw decoderError('VIDEO_CAPTION_NOT_FOUND', 'Legenda não encontrada.', 404);
+    }
+    const captionPath = path.join(directory, fileName);
+    try {
+      const realDirectory = fs.realpathSync(directory);
+      const realCaption = fs.realpathSync(captionPath);
+      if (!isWithinDirectory(realDirectory, realCaption)) throw new Error('outside artifact directory');
+      const stat = fs.statSync(realCaption);
+      if (!stat.isFile() || stat.size > MAX_TRANSCRIPT_BYTES) throw new Error('caption size unsupported');
+      return fs.readFileSync(realCaption);
+    } catch {
+      throw decoderError('VIDEO_CAPTION_NOT_FOUND', 'Legenda não encontrada.', 404);
+    }
+  }
+
   _artifactDirectory(artifactId) {
     if (typeof artifactId !== 'string' || !/^video-[a-f0-9]{12}-\d{13}$/.test(artifactId)) {
       throw decoderError('VIDEO_ARTIFACT_NOT_FOUND', 'Relatório de vídeo não encontrado.', 404);
@@ -160,7 +251,7 @@ class VideoSystemDecoder {
     let stdout;
     try {
       const result = await this.runCommand(this.ffprobePath, [
-        '-v', 'error', '-show_entries', 'format=duration,format_name:stream=codec_type,codec_name,width,height,avg_frame_rate,duration',
+        '-v', 'error', '-show_entries', 'format=duration,format_name:stream=codec_type,codec_name,width,height,avg_frame_rate,duration,channels,sample_rate',
         '-of', 'json', sourcePath
       ], { timeout: 30000, maxBuffer: 1024 * 1024, windowsHide: true });
       stdout = result?.stdout;
@@ -173,7 +264,9 @@ class VideoSystemDecoder {
     try { metadata = JSON.parse(stdout); } catch {
       throw decoderError('VIDEO_PROBE_INVALID', 'FFprobe retornou metadados inválidos.', 422);
     }
-    const stream = Array.isArray(metadata.streams) ? metadata.streams.find((item) => item.codec_type === 'video') : null;
+    const streams = Array.isArray(metadata.streams) ? metadata.streams : [];
+    const stream = streams.find((item) => item.codec_type === 'video');
+    const audioStream = streams.find((item) => item.codec_type === 'audio');
     const durationSeconds = finitePositive(metadata.format?.duration || stream?.duration);
     if (!stream || !durationSeconds || !Number.isFinite(Number(stream.width)) || !Number.isFinite(Number(stream.height))) {
       throw decoderError('VIDEO_METADATA_INCOMPLETE', 'O arquivo não expõe duração e dimensões de uma faixa de vídeo válidas.', 422);
@@ -184,7 +277,12 @@ class VideoSystemDecoder {
       height: Number(stream.height),
       codec: typeof stream.codec_name === 'string' ? stream.codec_name : null,
       format: typeof metadata.format?.format_name === 'string' ? metadata.format.format_name : null,
-      framesPerSecond: parseFrameRate(stream.avg_frame_rate)
+      framesPerSecond: parseFrameRate(stream.avg_frame_rate),
+      audio: audioStream ? {
+        codec: typeof audioStream.codec_name === 'string' ? audioStream.codec_name : null,
+        channels: Number.isFinite(Number(audioStream.channels)) ? Number(audioStream.channels) : null,
+        sampleRate: Number.isFinite(Number(audioStream.sample_rate)) ? Number(audioStream.sample_rate) : null
+      } : null
     };
   }
 
@@ -223,6 +321,35 @@ function parseFrameRate(value) {
   if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) return null;
   const fps = numerator / denominator;
   return Number.isFinite(fps) && fps > 0 ? Number(fps.toFixed(3)) : null;
+}
+
+function parseSrt(value) {
+  return String(value).replace(/^\uFEFF/, '').split(/\r?\n\s*\r?\n/).map((block) => {
+    const lines = block.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const timingIndex = lines.findIndex((line) => line.includes('-->'));
+    if (timingIndex < 0) return null;
+    const [start, end] = lines[timingIndex].split('-->').map((part) => parseCaptionTime(part.trim().split(/\s+/)[0]));
+    const text = lines.slice(timingIndex + 1).join(' ').replace(/<[^>]*>/g, '').trim();
+    if (start == null || end == null || end < start || !text) return null;
+    return { startSeconds: start, endSeconds: end, text };
+  }).filter(Boolean);
+}
+
+function parseCaptionTime(value) {
+  const match = String(value).match(/^(\d{2,}):(\d{2}):(\d{2})[,.](\d{3})$/);
+  if (!match) return null;
+  return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]) + Number(match[4]) / 1000;
+}
+
+function srtToVtt(segments) {
+  const time = (seconds) => {
+    const millis = Math.round(seconds * 1000);
+    const hours = Math.floor(millis / 3600000);
+    const minutes = Math.floor(millis / 60000) % 60;
+    const remainder = millis % 60000;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(Math.floor(remainder / 1000)).padStart(2, '0')}.${String(remainder % 1000).padStart(3, '0')}`;
+  };
+  return `WEBVTT\n\n${segments.map((segment) => `${time(segment.startSeconds)} --> ${time(segment.endSeconds)}\n${segment.text}`).join('\n\n')}\n`;
 }
 
 async function sha256File(filePath) {

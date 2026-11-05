@@ -10,7 +10,7 @@ function loadHelpers({ api, fetch, token = '', safeFetchJson }) {
   const source = fs.readFileSync(sourcePath, 'utf8');
   const exportForTest = source.replace(
     '  window.loadLiveOperations = load;',
-    '  window.__operationsLiveHelpers = { getJson, postJson };\n  window.loadLiveOperations = load;'
+    '  window.__operationsLiveHelpers = { getJson, postJson, escapeHtml };\n  window.loadLiveOperations = load;'
   );
   assert.notEqual(exportForTest, source, 'operations-live helper export point must exist');
 
@@ -28,6 +28,23 @@ function loadHelpers({ api, fetch, token = '', safeFetchJson }) {
   }, { filename: sourcePath });
   return window.__operationsLiveHelpers;
 }
+
+test('operations encode untrusted job and provider text before inserting HTML', () => {
+  const helpers = loadHelpers({ fetch: async () => ({ ok: true, json: async () => ({}) }) });
+  assert.equal(helpers.escapeHtml('<img src=x onerror=alert(1)> & "job"'), '&lt;img src=x onerror=alert(1)&gt; &amp; &quot;job&quot;');
+
+  const source = fs.readFileSync(sourcePath, 'utf8');
+  const start = source.indexOf('    const tokens = Number(job.tokens');
+  const end = source.indexOf('    copyBtn.onclick =', start);
+  assert.ok(start >= 0 && end > start, 'job inspector output block must exist');
+  const inspector = source.slice(start, end);
+  for (const expression of [
+    'escapeHtml(job.type', 'escapeHtml(job.projectId', 'escapeHtml(job.agentName',
+    'escapeHtml(job.createdAt', 'escapeHtml(job.updatedAt', 'escapeHtml(typeof (job.error',
+    'escapeHtml(job.progress', 'escapeHtml(JSON.stringify(job.payload',
+    'escapeHtml(typeof (job.output', 'escapeHtml(typeof l ===',
+  ]) assert.ok(inspector.includes(expression), `job inspector must encode ${expression} before HTML insertion`);
+});
 
 test('operations use the canonical authenticated JSON client when available', async () => {
   const safeFetchCalls = [];
@@ -105,6 +122,25 @@ test('operations retry with the existing bearer only when the cookie is rejected
 
   await helpers.getJson('/api/v2/jobs');
 
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].options.headers.Authorization, undefined);
+  assert.equal(calls[1].options.headers.Authorization, 'Bearer existing-session-token');
+});
+
+test('operations also retry the canonical JSON client with bearer only after cookie rejection', async () => {
+  const calls = [];
+  const helpers = loadHelpers({
+    token: 'existing-session-token',
+    safeFetchJson: async (url, options) => {
+      calls.push({ url, options });
+      return calls.length === 1
+        ? { ok: false, status: 401, error: 'Unauthorized' }
+        : { ok: true, status: 200, data: { jobs: [] } };
+    },
+    fetch: async () => { throw new Error('raw fetch should not be used'); },
+  });
+
+  assert.deepEqual(await helpers.getJson('/api/v2/jobs'), { jobs: [] });
   assert.equal(calls.length, 2);
   assert.equal(calls[0].options.headers.Authorization, undefined);
   assert.equal(calls[1].options.headers.Authorization, 'Bearer existing-session-token');

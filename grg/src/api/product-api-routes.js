@@ -42,19 +42,27 @@ async function handleProductApiRoutes(req, res, url, app, sendJson, readJson, id
     const command = body.command || body.prompt || '';
     if (!command.trim()) return sendJson(res, 400, { error: 'Command required' });
     
-    // Roteia para o MissionPlanner
+    // Roteia para o MissionPlanner com autoStart em background para resposta instantânea
     const result = await app.missionPlanner.plan(tenantId, actorId, { 
       objective: command, 
       context: { workspacePath: '/' },
-      autoStart: true 
+      autoStart: false 
     });
-    const mission = result.mission || result.plan;
+    let mission = result.mission || result.plan;
+    if (mission?.id && app.missions?.start) {
+      try {
+        mission = await app.missions.start(tenantId, actorId, mission.id);
+      } catch (err) {
+        console.error('[CommandStart] Failed to start mission:', mission.id, err.message);
+      }
+    }
     return sendJson(res, 201, {
       ok: true,
       missionId: mission.id,
-      status: mission.status,
-      reply: `Missão #${mission.id} iniciada com sucesso: "${command}". Status: ${mission.status}.`,
-      message: `Missão #${mission.id} (${mission.status})`
+      status: mission.status || 'RUNNING',
+      mission,
+      reply: `Missão #${mission.id} iniciada com sucesso: "${command}". Status: ${mission.status || 'RUNNING'}.`,
+      message: `Missão #${mission.id} (${mission.status || 'RUNNING'})`
     });
   }
 
@@ -67,19 +75,42 @@ async function handleProductApiRoutes(req, res, url, app, sendJson, readJson, id
   // POST /api/missions
   if (method === 'POST' && pathname === '/api/missions') {
     const body = await readJson(req);
-    const goal = body.goal || body.objective;
-    if (!goal) return sendJson(res, 400, { error: 'Goal required' });
-    const result = await app.missionPlanner.plan(tenantId, actorId, {
-      objective: goal,
-      title: body.title,
-      mode: body.mode || 'AUTO',
-      context: body.context || { workspacePath: '/' },
-      autoStart: true
-    });
-    if (result.questions && result.questions.length > 0) {
-      return sendJson(res, 400, { error: 'Missing inputs', questions: result.questions });
+    const goal = body.goal || body.objective || body.title;
+    if (!goal && !Array.isArray(body.steps)) return sendJson(res, 400, { error: 'Goal or steps required' });
+    const shouldAutoStart = body.autoStart !== false;
+
+    let mission = null;
+    if (Array.isArray(body.steps) && body.steps.length > 0) {
+      mission = await app.missions.create(tenantId, actorId, {
+        title: body.title || goal,
+        objective: body.objective || goal,
+        steps: body.steps,
+        priority: body.priority,
+        policy: body.policy,
+        contextRefs: body.contextRefs || []
+      });
+    } else {
+      const result = await app.missionPlanner.plan(tenantId, actorId, {
+        objective: goal,
+        title: body.title,
+        mode: body.mode || 'AUTO',
+        context: body.context || { workspacePath: '/' },
+        autoStart: false
+      });
+      if (result.questions && result.questions.length > 0) {
+        return sendJson(res, 400, { error: 'Missing inputs', questions: result.questions });
+      }
+      mission = result.mission || result.plan;
     }
-    return sendJson(res, 201, result.mission || result.plan);
+
+    if (shouldAutoStart && mission?.id && app.missions?.start) {
+      setImmediate(() => {
+        app.missions.start(tenantId, actorId, mission.id).catch((err) => {
+          console.error('[MissionStart] Failed to start mission:', mission.id, err.message);
+        });
+      });
+    }
+    return sendJson(res, 201, mission);
   }
 
   // Mission Events (Handled first to prevent parameterized ID route collision)

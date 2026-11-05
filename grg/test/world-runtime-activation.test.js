@@ -19,7 +19,7 @@ const { start } = require('../src/server');
 
 const { getWorldStateEngine } = require('../src/world-model/world-state-engine');
 const { getWorldCommandEngine } = require('../src/world-model/world-command-engine');
-const { getWorldIntentPlanner } = require('../src/world-model/world-intent-planner');
+const { getWorldIntentPlanner, WorldIntentPlanner } = require('../src/world-model/world-intent-planner');
 
 const ADMIN = { tenantId: 'grg', userId: 'e2e-admin', password: 'e2e-password-not-secret' };
 
@@ -44,7 +44,7 @@ function withServer(fn) {
 
 // ── 1. WORLD INTENT PLANNER ─────────────────────────────────────────────────
 test('WORLD INTENT PLANNER: Translates natural language to validated declarative commands', () => {
-  const planner = getWorldIntentPlanner();
+  const planner = new WorldIntentPlanner({ agents: {}, buildings: {}, findAgent: () => null });
 
   // Test 1: Building creation
   const bldPlan = planner.plan('Crie um laboratório chamado Media Lab com 3 andares');
@@ -253,6 +253,28 @@ test('HTTP ENDPOINTS: POST /command, GET /commands, GET /agent/:id/lifecycle', w
   assert.ok(logData.total >= 2);
   assert.ok(Array.isArray(logData.commands));
 
+  // Idle agents have no fabricated parent goal.
+  const idleLifeRes = await fetch(`${base}/api/v2/living-city/agent/agent-roberto/lifecycle`, { headers });
+  const idleLifeData = await idleLifeRes.json();
+  assert.equal(idleLifeData.lifecycle.whyAmIDoingThis.parentGoal, null);
+
+  const assignRes = await fetch(`${base}/api/v2/living-city/command`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      type: 'ASSIGN_MISSION',
+      actor: 'test-operator',
+      payload: {
+        agentId: 'agent-roberto',
+        missionId: 'mission-roberto-analysis',
+        taskName: 'Analisar runtime',
+        objective: 'Mapear dependências do runtime'
+      }
+    })
+  });
+  assert.equal(assignRes.status, 200);
+  assert.equal(getWorldStateEngine().findAgent('agent-roberto')?.status, 'WORKING');
+
   // 4. GET /api/v2/living-city/agent/:id/lifecycle (9 Questions Contract)
   const lifeRes = await fetch(`${base}/api/v2/living-city/agent/agent-roberto/lifecycle`, { headers });
   assert.equal(lifeRes.status, 200);
@@ -269,13 +291,15 @@ test('HTTP ENDPOINTS: POST /command, GET /commands, GET /agent/:id/lifecycle', w
   assert.ok(lc.whereAmI && lc.whereAmI.buildingId === 'bld-media-lab');
 
   // Question 3: What am I doing?
-  assert.ok(lc.whatAmIDoing && lc.whatAmIDoing.status === 'AVAILABLE');
+  assert.equal(lc.whatAmIDoing?.status, 'WORKING', JSON.stringify(lc.whatAmIDoing));
+  assert.equal(lc.whatAmIDoing?.currentTask, 'Analisar runtime');
 
   // Question 4: Why am I doing this?
-  assert.ok(lc.whyAmIDoingThis && lc.whyAmIDoingThis.parentGoal);
+  assert.equal(lc.whyAmIDoingThis?.missionId, 'mission-roberto-analysis');
+  assert.equal(lc.whyAmIDoingThis?.parentGoal, 'Mapear dependências do runtime');
 
   // Question 5: What will I do next?
-  assert.ok(lc.whatWillIDoNext && lc.whatWillIDoNext.nextAction);
+  assert.equal(lc.whatWillIDoNext?.nextAction, null);
 
   // Question 6: What is my memory?
   assert.ok(lc.whatIsMyMemory && typeof lc.whatIsMyMemory.episodicCount === 'number');
@@ -284,11 +308,20 @@ test('HTTP ENDPOINTS: POST /command, GET /commands, GET /agent/:id/lifecycle', w
   assert.ok(lc.whatAreMySkillsAndTools && Array.isArray(lc.whatAreMySkillsAndTools.skills));
 
   // Question 8: Energy & attention?
-  assert.ok(lc.whatIsMyEnergyAndAttention && typeof lc.whatIsMyEnergyAndAttention.energyPercent === 'number');
+  assert.equal(lc.whatIsMyEnergyAndAttention?.energyPercent, null);
 
   // Question 9: How to interact?
   assert.ok(lc.howToInteract && Array.isArray(lc.howToInteract.allowedActions));
   assert.ok(lc.howToInteract.allowedActions.includes('chat'));
   assert.ok(lc.howToInteract.allowedActions.includes('assign'));
   assert.ok(lc.howToInteract.allowedActions.includes('follow'));
+
+  const completeRes = await fetch(`${base}/api/v2/living-city/agent/agent-roberto/task/complete`, {
+    method: 'POST', headers, body: JSON.stringify({ result: 'Análise finalizada' })
+  });
+  assert.equal(completeRes.status, 200);
+  const completedLife = await fetch(`${base}/api/v2/living-city/agent/agent-roberto/lifecycle`, { headers });
+  const completedData = await completedLife.json();
+  assert.equal(completedData.lifecycle.whyAmIDoingThis.missionId, null);
+  assert.equal(completedData.lifecycle.whyAmIDoingThis.parentGoal, null);
 }));

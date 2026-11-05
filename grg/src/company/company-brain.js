@@ -520,15 +520,15 @@ class CompanyBrain {
         },
         {
           metric: 'KNOWLEDGE_REUSE',
-          value: this.tokenEconomy ? this.tokenEconomy.getEfficiencyReport().KNOWLEDGE_REUSE_RATE : 0,
-          source: 'TokenEconomyEngine:knowledge_hits_ratio',
+          value: this.tokenEconomy ? this.tokenEconomy.getEfficiencyReport().KNOWLEDGE_REUSE_RATE : null,
+          source: 'TokenEconomyEngine:observed_knowledge_hits_ratio',
           timestamp: now,
           period: 'current'
         },
         {
           metric: 'TOKEN_SAVINGS',
-          value: this.tokenEconomy ? this.tokenEconomy.getEfficiencyReport().TOKEN_SAVINGS_RATE : 0,
-          source: 'TokenEconomyEngine:tokens_saved_ratio',
+          value: null,
+          source: 'UNMEASURED:no_empirical_baseline',
           timestamp: now,
           period: 'current'
         }

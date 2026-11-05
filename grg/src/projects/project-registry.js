@@ -13,6 +13,7 @@ const PROJECTS = [
   {
     id: 'fenix-os',
     projectId: 'fenix-os',
+    aliases: ['ai-engine', 'ai-engine-core', 'AI Engine Core', 'Fênix OS'],
     name: 'FÊNIX OS',
     displayName: 'FÊNIX HQ',
     organization: 'GRG AI Systems',
@@ -24,7 +25,7 @@ const PROJECTS = [
     vpsPath: '/opt/fenix-os',
     productionPath: '/opt/fenix-os/grg',
     frontend: {
-      framework: 'Vanilla ES6 + PixiJS 8 (Isometric 2.5D)',
+      framework: 'Vanilla ES modules + Three.js WebGL / Canvas 2D fallback',
       path: '/opt/fenix-os/public',
       port: 3000,
       entry: 'index.html',
@@ -43,7 +44,8 @@ const PROJECTS = [
       vector: 'Qdrant (port 6333)',
       objectStorage: 'MinIO (port 9000)',
     },
-    services: ['orchestrator', 'fast-lane', 'job-queue', 'memory', 'agents', 'city', 'redis', 'postgres', 'ollama', 'qdrant'],
+    capabilities: ['orchestrator', 'fast-lane', 'job-queue', 'memory', 'agents', 'city', 'digital-twin', 'genome-builder', 'visual-ide', 'mind'],
+    services: ['orchestrator', 'fast-lane', 'job-queue', 'memory', 'agents', 'city', 'digital-twin', 'genome-builder', 'visual-ide', 'mind', 'redis', 'postgres', 'ollama', 'qdrant'],
     apis: ['/api/login', '/api/v2/conversation', '/api/v2/models', '/api/v2/jobs', '/api/v2/projects', '/api/v2/city/state', '/api/v2/events/stream'],
     pages: ['/', '/#city', '/#projects', '/#orchestrator', '/#jobs', '/#ide', '/#cockpit', '/#connections'],
     routes: ['/api/v2/conversation', '/api/v2/models', '/api/v2/jobs', '/api/v2/projects-registry', '/api/v2/events/stream'],
@@ -53,10 +55,13 @@ const PROJECTS = [
       type: 'pm2',
       processId: 16,
       port: 4410,
-      containerPort: 4400,
       sslDomain: 'fenix.209-50-241-22.sslip.io',
+      bindings: [
+        { label: 'Entrada principal HTTPS', address: '443', port: 443, target: 'OpenResty → 127.0.0.1:3000', url: 'https://209.50.241.22/' },
+        { label: 'Frontend gateway direto', address: '0.0.0.0', port: 3000, target: 'frontend-gateway.js', url: 'http://209.50.241.22:3000/app' },
+      ],
     },
-    health: 'http://localhost:4410/api/health',
+    health: 'http://localhost:4410/health',
     status: 'ONLINE',
     agents: ['Gabriel', 'Lucas', 'Sofia', 'Rafael', 'Beatriz', 'Bruno', 'Clara', 'Thiago', 'Elena'],
     jobs: { queue: 'fenix-jobs', concurrency: 2 },
@@ -67,7 +72,7 @@ const PROJECTS = [
     palette: ['#4488ff', '#ffd700', '#001133'],
     buildingType: 'headquarters',
     icon: '🏛️',
-    tags: ['core', 'ai', 'orchestrator', 'fast-lane', 'city'],
+    tags: ['core', 'ai', 'orchestrator', 'fast-lane', 'city', 'dna', 'twin', 'engine'],
   },
   {
     id: 'zapai-crm',
@@ -85,7 +90,8 @@ const PROJECTS = [
     frontend: {
       framework: 'React 18 + Vite + TypeScript + Tailwind CSS',
       path: '/opt/zapai/frontend-official',
-      port: 4025,
+      servedPath: '/www/zapai',
+      port: 1000,
       entry: 'src/main.tsx',
       pagesCount: 23,
     },
@@ -109,9 +115,14 @@ const PROJECTS = [
     deployment: {
       type: 'pm2',
       processId: 0,
-      port: 4025,
+      port: 1000,
+      backendPort: 4025,
+      bindings: [
+        { label: 'Frontend HTTPS', address: '0.0.0.0', port: 1000, target: 'OpenResty TLS → /www/zapai', url: 'https://209.50.241.22:1000/' },
+        { label: 'API health', address: '0.0.0.0', port: 4025, target: '/health', url: 'http://209.50.241.22:4025/health' },
+      ],
     },
-    health: 'http://localhost:4025/api/system/health',
+    health: 'http://localhost:4025/health',
     status: 'ONLINE',
     agents: ['Lucas', 'Sofia', 'Rafael', 'Beatriz'],
     jobs: { queue: 'zapflow-messages' },
@@ -166,6 +177,10 @@ const PROJECTS = [
       containers: ['api-platform-api-1', 'api-platform-dashboard-1', 'api-platform-worker-1', 'api-platform-postgres-1', 'api-platform-redis-1'],
       port: 3001,
       dashboardPort: 8081,
+      bindings: [
+        { label: 'API Platform health', address: '209.50.241.22', port: 3001, target: 'api-platform-api-1:3000', url: 'http://209.50.241.22:3001/health' },
+        { label: 'Dashboard', address: '0.0.0.0', port: 8081, target: 'api-platform-dashboard-1:80', url: 'http://209.50.241.22:8081/' },
+      ],
     },
     health: 'http://localhost:3001/health',
     status: 'ONLINE',
@@ -179,54 +194,6 @@ const PROJECTS = [
     buildingType: 'tower',
     icon: '🤖',
     tags: ['ai', 'api', 'provider', 'fastify', 'docker', 'qwen'],
-  },
-  {
-    id: 'ai-engine',
-    projectId: 'ai-engine',
-    name: 'AI Engine Core',
-    displayName: 'Genomic Lab',
-    organization: 'Biel0071 Core',
-    description: '4-DNA Genomic Architecture, Digital Twin & Living Organism Baseline',
-    repository: 'https://github.com/Biel0071/AI-ENGINE.git',
-    github: 'Biel0071/AI-ENGINE',
-    branch: 'FENIX_GOLDEN_BASELINE',
-    localPath: 'C:\\projetos\\ai-engine-core\\ai-engine',
-    vpsPath: '/opt/AI-ENGINE',
-    productionPath: '/opt/AI-ENGINE',
-    frontend: {
-      framework: 'PixiJS + HTML5 Canvas',
-      path: '/opt/AI-ENGINE/public',
-      port: 3000,
-      pagesCount: 5,
-    },
-    backend: {
-      runtime: 'Node.js 20',
-      framework: 'Fênix Core Engine',
-      path: '/opt/AI-ENGINE',
-      port: null,
-    },
-    database: {
-      primary: 'SQLite / JSON',
-    },
-    services: ['digital-twin', 'genome-builder', 'visual-ide', 'mind'],
-    apis: ['/api/v2/dna', '/api/v2/digital-twin'],
-    pages: ['/ide', '/twin', '/genome'],
-    routes: ['/api/v2/dna'],
-    components: ['GenomeVisualizer', 'TwinInspector'],
-    tests: ['test/genome.test.js'],
-    deployment: { type: 'library' },
-    health: null,
-    status: 'ONLINE',
-    agents: ['Gabriel', 'Elena'],
-    jobs: {},
-    knowledge: { domain: 'genomics' },
-    memory: {},
-    currentVersion: '1.0.0',
-    color: '#1abc9c',
-    palette: ['#1abc9c', '#16a085', '#002b24'],
-    buildingType: 'lab',
-    icon: '🧬',
-    tags: ['dna', 'twin', 'engine'],
   },
   {
     id: 'mf-atacadista',
@@ -280,6 +247,138 @@ const PROJECTS = [
     buildingType: 'fashion-pavilion',
     icon: '👗',
     tags: ['ecommerce', 'atacado', 'fashion', 'try-on-ai', 'creative-studio', 'react', 'tailwind'],
+  },
+  {
+    id: 'dview',
+    projectId: 'dview',
+    name: 'DroidView MDM',
+    displayName: 'DroidView Support Tower',
+    organization: 'Biel0071 Mobility',
+    description: 'Sistema de Suporte Remoto Consentido e Gestão Administrativa de Dispositivos Android (MDM, MediaProjection, QR Pairing, Electron Admin & Kotlin Agent)',
+    repository: 'https://github.com/Biel0071/dview.git',
+    github: 'Biel0071/dview',
+    branch: 'main',
+    localPath: 'C:\\projetos\\dview',
+    vpsPath: '/opt/dview',
+    productionPath: '/opt/dview',
+    frontend: {
+      framework: 'React 18 + TypeScript + Vite + Electron Desktop',
+      path: 'C:\\projetos\\dview\\apps\\web-panel',
+      port: 5174,
+      entry: 'src/main.tsx',
+      pagesCount: 6,
+    },
+    backend: {
+      runtime: 'Node.js 20 + TypeScript',
+      framework: 'Fastify + Socket.IO + JWT + 2FA',
+      path: 'C:\\projetos\\dview\\apps\\backend',
+      port: 3333,
+    },
+    database: {
+      primary: 'SQLite / In-Memory Store',
+    },
+    services: ['remote-support', 'android-mdm', 'media-projection', 'apk-pairing-qr', 'apps-manager', 'audit-logs', 'electron-admin'],
+    apis: ['/api/auth/login', '/api/auth/2fa', '/api/devices', '/api/sessions', '/api/apps', '/api/pairing/qr', '/api/audit'],
+    pages: ['/login', '/dashboard', '/devices', '/remote-session', '/apps-manager', '/apk-generator', '/audit-logs'],
+    routes: ['/api/auth/login', '/api/devices', '/api/sessions', '/api/pairing/qr', '/api/audit'],
+    components: ['DeviceDashboard', 'RemoteScreenViewer', 'AppsManager', 'ApkQrGenerator', 'AuditLogTable', 'ConsentBanner'],
+    tests: ['apps/backend/test', 'apps/web-panel/test'],
+    deployment: { type: 'docker-compose', port: 8080 },
+    health: 'http://localhost:3333/health',
+    status: 'ONLINE',
+    agents: ['Rafael', 'Lucas', 'Thiago'],
+    jobs: { queue: 'dview-sessions' },
+    knowledge: { domain: 'android-mdm-remote-support' },
+    memory: { contextKey: 'dview-devices' },
+    currentVersion: '0.1.0',
+    color: '#10b981',
+    palette: ['#10b981', '#059669', '#022c22'],
+    buildingType: 'tower',
+    icon: '📲',
+    tags: ['android', 'mdm', 'remote-support', 'kotlin', 'electron', 'fastify', 'react'],
+  },
+  {
+    id: 'task-board',
+    projectId: 'task-board',
+    name: 'Task Board Ops',
+    displayName: 'Task Board Hub',
+    organization: 'GRG AI Systems',
+    description: 'Microserviço de Quadros Operacionais Kanban, Sprints e Sincronização de Tarefas com Missões do Fênix OS',
+    repository: 'https://github.com/Biel0071/AI-ENGINE.git',
+    github: 'Biel0071/AI-ENGINE',
+    branch: 'master',
+    localPath: 'C:\\projetos\\ai-engine-core\\projects\\task-board',
+    vpsPath: '/opt/fenix-os/projects/task-board',
+    productionPath: '/opt/fenix-os/projects/task-board',
+    frontend: {
+      framework: 'Vanilla ES6 Kanban UI',
+      path: 'C:\\projetos\\ai-engine-core\\projects\\task-board\\public',
+      port: 4100,
+      entry: 'index.html',
+      pagesCount: 2,
+    },
+    backend: {
+      runtime: 'Node.js 20',
+      framework: 'Express / Native HTTP REST',
+      path: 'C:\\projetos\\ai-engine-core\\projects\\task-board\\src',
+      port: 4100,
+    },
+    database: {
+      primary: 'JSON Persistent Store',
+    },
+    services: ['kanban-board', 'task-sync', 'sprint-tracker'],
+    apis: ['/api/tasks', '/api/boards', '/api/health'],
+    pages: ['/', '/board'],
+    routes: ['/api/tasks', '/api/boards'],
+    components: ['KanbanBoard', 'TaskCard', 'SprintHeader'],
+    tests: ['tests/tasks.test.js'],
+    deployment: { type: 'service', port: 4100 },
+    health: null,
+    status: 'ONLINE',
+    agents: ['Beatriz', 'Clara'],
+    jobs: { queue: 'task-board-sync' },
+    knowledge: { domain: 'project-management' },
+    memory: { contextKey: 'task-board-state' },
+    currentVersion: '1.0.0',
+    color: '#38bdf8',
+    palette: ['#38bdf8', '#0284c7', '#082f49'],
+    buildingType: 'lab',
+    icon: '📋',
+    tags: ['kanban', 'tasks', 'operations', 'microservice'],
+  },
+  {
+    id: 'gerar-ficha',
+    projectId: 'gerar-ficha',
+    name: 'Gerar Ficha',
+    displayName: 'Gerar Ficha',
+    organization: 'GRG AI Systems',
+    description: 'Serviço FastAPI para geração de fichas; documentação OpenAPI disponível no ambiente da VPS.',
+    vpsPath: '/root/gerar-ficha',
+    productionPath: '/root/gerar-ficha/backend',
+    backend: {
+      runtime: 'Python',
+      framework: 'FastAPI + Uvicorn',
+      path: '/root/gerar-ficha/backend',
+      port: 8000,
+      serviceManager: 'gerar-ficha.service',
+    },
+    services: ['gerar-ficha-api'],
+    deployment: {
+      type: 'systemd',
+      service: 'gerar-ficha.service',
+      port: 8000,
+      bindings: [
+        { label: 'Documentação OpenAPI', address: '0.0.0.0', port: 8000, target: 'FastAPI /docs', url: 'http://209.50.241.22:8000/docs' },
+      ],
+    },
+    health: 'http://localhost:8000/health',
+    status: 'DISCOVERED',
+    currentVersion: null,
+    color: '#38bdf8',
+    palette: ['#38bdf8', '#0284c7', '#082f49'],
+    buildingType: 'service',
+    icon: '📄',
+    tags: ['fastapi', 'python', 'documents'],
   },
 ];
 
@@ -348,32 +447,40 @@ function getProjectSnapshot(project) {
     status: project.status || 'ONLINE',
     runtime: project.backend?.runtime || 'Node.js',
     technology: project.frontend?.framework || project.technology || 'Fullstack',
-    createdAt: project.createdAt || '2026-01-01T00:00:00.000Z',
-    updatedAt: project.updatedAt || new Date().toISOString(),
+    createdAt: project.createdAt || null,
+    updatedAt: project.updatedAt || null,
     metrics: snapshot.metrics,
     lastUpdated: new Date().toISOString(),
   });
 }
 
+const PROJECT_HEALTH_CACHE_TTL_MS = 15_000;
+const projectHealthCache = new Map();
+
 async function checkHealth(project) {
   if (!project.health) return 'UNKNOWN';
+  const cacheKey = project.id || project.health;
+  const cached = projectHealthCache.get(cacheKey);
+  if (cached && (Date.now() - cached.at < PROJECT_HEALTH_CACHE_TTL_MS)) {
+    return cached.status;
+  }
   try {
-    const res = await fetch(project.health, { signal: AbortSignal.timeout(3000) });
-    if (res.ok) return 'ONLINE';
-    return 'DEGRADED';
+    const res = await fetch(project.health, { signal: AbortSignal.timeout(1200) });
+    const status = res.ok ? 'ONLINE' : 'DEGRADED';
+    projectHealthCache.set(cacheKey, { at: Date.now(), status });
+    return status;
   } catch (e) {
+    projectHealthCache.set(cacheKey, { at: Date.now(), status: 'OFFLINE' });
     return 'OFFLINE';
   }
 }
 
 async function getAllProjects() {
-  const results = [];
-  for (const p of PROJECTS) {
+  return Promise.all(PROJECTS.map(async (p) => {
     const snapshot = getProjectSnapshot(p);
     const healthStatus = await checkHealth(p).catch(function() { return 'UNKNOWN'; });
-    results.push(Object.assign({}, snapshot, { runtimeStatus: healthStatus }));
-  }
-  return results;
+    return Object.assign({}, snapshot, { runtimeStatus: healthStatus });
+  }));
 }
 
 function getProjectById(id) {
@@ -384,7 +491,8 @@ function getProjectById(id) {
       || p.projectId === id
       || p.id.toLowerCase() === lower
       || p.name.toLowerCase().includes(lower)
-      || (p.displayName && p.displayName.toLowerCase().includes(lower));
+      || (p.displayName && p.displayName.toLowerCase().includes(lower))
+      || (p.aliases || []).some(function(alias) { return String(alias).toLowerCase() === lower; });
   }) || null;
 }
 

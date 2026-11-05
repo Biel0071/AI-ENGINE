@@ -152,15 +152,14 @@ class JobEngine {
     const snapshot = await this.store.read();
     const nowMs = this.clock.now();
     const hasRecoverableJobs = snapshot.runtimeJobs.some((job) => {
-      if (job.status !== 'RUNNING' || !job.heartbeatAt) return false;
-      const ageMs = nowMs - Date.parse(job.heartbeatAt);
+      if (job.status !== 'RUNNING') return false;
+      const hbTime = job.heartbeatAt || job.startedAt || job.updatedAt || job.createdAt;
+      const ageMs = hbTime ? nowMs - Date.parse(hbTime) : Infinity;
       const timeoutMs = Number(job.limits?.timeoutMs || 300_000);
       const owner = snapshot.workerHeartbeats.find((worker) => worker.workerId === job.workerId);
       const ownerAgeMs = owner?.lastSeenAt ? nowMs - Date.parse(owner.lastSeenAt) : Infinity;
-      return Number.isFinite(ageMs) && (
-        ageMs > Math.max(timeoutMs, 30_000)
-        || (job.workerId && job.workerId !== workerId && (!Number.isFinite(ownerAgeMs) || ownerAgeMs > 30_000))
-      );
+      return !Number.isFinite(ageMs) || ageMs > Math.max(timeoutMs, 30_000)
+        || (job.workerId && job.workerId !== workerId && (!Number.isFinite(ownerAgeMs) || ownerAgeMs > 30_000));
     });
     const hasDueJobs = snapshot.runtimeJobs.some((job) => job.status === 'QUEUED' && Date.parse(job.scheduledFor) <= nowMs);
     const lastHeartbeat = snapshot.workerHeartbeats.find((worker) => worker.workerId === workerId)?.lastSeenAt;
@@ -174,14 +173,14 @@ class JobEngine {
       // o próximo passo. O heartbeat é a fonte de verdade: jobs sem heartbeat
       // recente são devolvidos à fila de forma idempotente.
       const transactionNowMs = this.clock.now();
-      for (const stale of state.runtimeJobs.filter((item) => item.status === 'RUNNING' && item.heartbeatAt)) {
-        const ageMs = transactionNowMs - Date.parse(stale.heartbeatAt);
+      for (const stale of state.runtimeJobs.filter((item) => item.status === 'RUNNING')) { const hbTime = stale.heartbeatAt || stale.startedAt || stale.updatedAt || stale.createdAt; const ageMs = hbTime ? transactionNowMs - Date.parse(hbTime) : Infinity;
+        // ageMs calculated above
         const timeoutMs = Number(stale.limits?.timeoutMs || 300_000);
         const owner = state.workerHeartbeats.find((worker) => worker.workerId === stale.workerId);
         const ownerAgeMs = owner?.lastSeenAt ? nowMs - Date.parse(owner.lastSeenAt) : Infinity;
         const orphanedAfterRestart = stale.workerId && stale.workerId !== workerId
           && (!Number.isFinite(ownerAgeMs) || ownerAgeMs > 30_000);
-        if (Number.isFinite(ageMs) && (ageMs > Math.max(timeoutMs, 30_000) || orphanedAfterRestart)) {
+        if (!Number.isFinite(ageMs) || ageMs > Math.max(timeoutMs, 30_000) || orphanedAfterRestart) {
           stale.workerId = null;
           stale.updatedAt = now();
           if (stale.cancelRequestedAt) {

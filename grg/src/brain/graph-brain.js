@@ -38,12 +38,40 @@ class GraphBrain {
         const data = JSON.parse(raw);
         (data.nodes || []).forEach(n => this.nodes.set(n.id, n));
         this.edges = data.edges || [];
+        this.ensureCanonicalServiceNodes();
       } else {
         this.seedInitialGraph();
+        this.ensureCanonicalServiceNodes();
       }
     } catch (e) {
       this.seedInitialGraph();
+      this.ensureCanonicalServiceNodes();
     }
+  }
+
+  ensureCanonicalServiceNodes() {
+    try {
+      const { PROJECTS } = require('../projects/project-registry');
+      if (!Array.isArray(PROJECTS)) return;
+      const existingEdgeKeys = new Set(this.edges.map(e => `${e.from}|${e.type}|${e.to}`));
+      for (const proj of PROJECTS) {
+        const projNodeId = `project:${proj.id}`;
+        if (!this.nodes.has(projNodeId)) {
+          this.addNode(projNodeId, 'PROJECT', { name: proj.name, stack: proj.frontend?.framework || '' });
+        }
+        for (const svc of (proj.services || [])) {
+          const svcNodeId = `service:${svc}`;
+          if (!this.nodes.has(svcNodeId)) {
+            this.addNode(svcNodeId, 'SERVICE', { name: svc, projectId: proj.id });
+          }
+          const edgeKey = `${projNodeId}|USES_SERVICE|${svcNodeId}`;
+          if (!existingEdgeKeys.has(edgeKey)) {
+            this.addEdge(projNodeId, 'USES_SERVICE', svcNodeId);
+            existingEdgeKeys.add(edgeKey);
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   save() {

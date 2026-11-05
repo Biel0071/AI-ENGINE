@@ -29,6 +29,13 @@ test('copilot-layout: Header includes context name indicator and window control 
   assert.ok(sidebarJs.includes('id="fsbCollapseBtn"'), 'Collapse mode button #fsbCollapseBtn must exist');
 });
 
+test('copilot-layout: compact control creates a usable 64px strip with restore and close actions', () => {
+  assert.ok(sidebarJs.includes('id="fsbCompactBtn"'), 'Compact control must be available in the header');
+  assert.match(sidebarJs, /fsbCompactBtn[\s\S]*?setCopilotState\(state\.copilotState === 'compact' \? 'open' : 'compact'\)/);
+  assert.match(mascotCss, /#fenix-right-sidebar\.state-compact > :not\(\.fsb-header\):not\(\.fsb-resize-handle\) \{ display: none !important; \}/);
+  assert.match(mascotCss, /#fenix-right-sidebar\.state-compact #fsbExpandBtn,[\s\S]*?#fenix-right-sidebar\.state-compact #fsbClearBtn \{ display: none !important; \}/);
+});
+
 test('copilot-layout: Chat viewport occupies dominant vertical height with fixed bottom input area', () => {
   assert.ok(sidebarJs.includes('id="fsbChatMessages"'), '#fsbChatMessages must exist');
   assert.ok(sidebarJs.includes('id="fsbInputArea"'), '#fsbInputArea must exist at bottom');

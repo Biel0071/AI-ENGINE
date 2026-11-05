@@ -401,6 +401,7 @@ class WorldCommandEngine {
     ag.currentTask = taskName;
     ag.currentJob = payload.job || { id: `job-${Date.now()}`, name: taskName, progress: 0 };
     ag.missionId = missionId;
+    ag.parentGoal = objective;
     ag.state = 'WORKING';
     ag.status = 'WORKING';
     ag.lastUpdated = timestamp;
@@ -431,6 +432,8 @@ class WorldCommandEngine {
 
     ag.assignedTask = null;
     ag.currentJob = null;
+    ag.missionId = null;
+    ag.parentGoal = null;
     ag.currentTask = 'Standby operacional · Pronto para novas diretivas';
     ag.state = 'IDLE';
     ag.status = 'AVAILABLE';

@@ -8,6 +8,49 @@ var fs = require('node:fs');
 var { getAllProjects, getProjectById, getProjectSnapshot } = require('../projects/project-registry');
 var { execSync } = require('node:child_process');
 
+function knownCount(value) {
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function buildProjectReadSummary(twin) {
+  var stats = twin?.stats || {};
+  return {
+    totalFiles: knownCount(stats.totalFiles),
+    screensCount: null,
+    componentsCount: knownCount(stats.componentsCount),
+    apisCount: knownCount(stats.routesCount),
+    healthScore: null
+  };
+}
+
+function buildScreenInspection(result) {
+  var screen = Array.isArray(result?.screens) ? result.screens.find((item) => item && typeof item === 'object') : null;
+  if (!screen) return { status: 'NOT_AVAILABLE', inspection: null };
+
+  var screenshot = typeof screen.screenshot === 'string' && screen.screenshot.trim()
+    ? `/qa/reality-operator/screens/${encodeURIComponent(path.basename(screen.screenshot.replace(/\\/g, '/')))}`
+    : null;
+  var url = null;
+  if (typeof screen.url === 'string') {
+    try {
+      var parsed = new URL(screen.url);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') url = parsed.toString();
+    } catch { /* Missing or invalid observed URL stays unavailable. */ }
+  }
+
+  return {
+    status: 'DISCOVERED',
+    inspection: {
+      title: typeof screen.name === 'string' ? screen.name : (typeof screen.title === 'string' ? screen.title : null),
+      route: typeof screen.route === 'string' ? screen.route : null,
+      url,
+      source: typeof screen.source === 'string' ? screen.source : null,
+      visualQualityScore: knownCount(screen.visualQualityScore),
+      screenshotPublicUrl: screenshot
+    }
+  };
+}
+
 function scanDirectory(dirPath, maxDepth) {
   var results = { files: [], routes: [], services: [], components: [] };
   if (!dirPath || !fs.existsSync(dirPath)) return results;
@@ -111,17 +154,7 @@ async function handleProjectsRegistryRoutes(req, res, url, app, sendJson, readJs
       const { globalRealityOperatorKernel } = require('../reality-operator/reality-operator-kernel');
       const result = await globalRealityOperatorKernel.readProject(readId);
       const twin = result.projectTwin;
-      return sendJson(res, 200, {
-        ok: true,
-        summary: {
-          totalFiles: twin.stats.totalFiles,
-          screensCount: twin.stats.routesCount || 4,
-          componentsCount: twin.stats.componentsCount || 8,
-          apisCount: twin.stats.routesCount || 4,
-          healthScore: 98
-        },
-        twin: twin
-      });
+      return sendJson(res, 200, { ok: true, summary: buildProjectReadSummary(twin), twin: twin });
     } catch(e) {
       return sendJson(res, 500, { ok: false, error: e.message });
     }
@@ -133,16 +166,7 @@ async function handleProjectsRegistryRoutes(req, res, url, app, sendJson, readJs
     try {
       const { globalRealityOperatorKernel } = require('../reality-operator/reality-operator-kernel');
       const result = await globalRealityOperatorKernel.discoverScreens(bId);
-      const screen = result.screens?.[0] || { name: 'Main View', route: '/' };
-      return sendJson(res, 200, {
-        ok: true,
-        inspection: {
-          title: screen.name,
-          url: screen.url || `http://127.0.0.1:4500`,
-          visualQualityScore: 94,
-          screenshotPublicUrl: screen.screenshot ? `/qa/reality-operator/screens/${path.basename(screen.screenshot)}` : '/qa-screenshot-ide-final.png'
-        }
-      });
+      return sendJson(res, 200, Object.assign({ ok: true }, buildScreenInspection(result)));
     } catch(e) {
       return sendJson(res, 500, { ok: false, error: e.message });
     }
@@ -161,4 +185,4 @@ async function handleProjectsRegistryRoutes(req, res, url, app, sendJson, readJs
   return false;
 }
 
-module.exports = { handleProjectsRegistryRoutes };
+module.exports = { handleProjectsRegistryRoutes, buildProjectReadSummary, buildScreenInspection };
