@@ -537,29 +537,27 @@ async function handleUnrealWorldRoutes(req, res, url, app, sendJson, readJson, a
     return sendJson(res, 200, {
       ok: true,
       hardware: {
-        gpu: 'NVIDIA GeForce RTX 3050 Ti Laptop GPU',
-        vramTotalMb: 4096,
-        vramBudgetBudgetUsedMb: 2450,
-        vramFreeMb: 1646,
-        directX: 'DirectX 12 (SM 6.6)',
-        targetFps: 60,
-        measuredFps: 60,
-        lumenMethod: 'Software Lumen (RayTraced Distance Fields)',
-        naniteEnabled: true
+        status: 'NOT_MEASURED',
+        gpu: null,
+        vramTotalMb: null,
+        vramBudgetBudgetUsedMb: null,
+        vramFreeMb: null,
+        measuredFps: null,
       },
       host: {
         cpuCount: cpus.length,
-        cpuModel: cpus[0]?.model || 'Host CPU',
+        cpuModel: cpus[0]?.model || null,
         freeMemMb,
         totalMemMb,
         processRssMb: Math.round(memUsage.rss / 1024 / 1024),
         processHeapMb: Math.round(memUsage.heapUsed / 1024 / 1024)
       },
       simulation: {
-        activeAgents: 20,
+        activeAgents: null,
+        activeMissions: activeMissionsRegistry.size,
         activeWorkstationsInUse: activeMissionsRegistry.size,
-        activeDistricts: 7,
-        wsLatencyMs: 2,
+        activeDistricts: CANONICAL_DISTRICTS.length,
+        wsLatencyMs: null,
         protocol: 'FENIX_WORLD_PROTOCOL_V1'
       },
       timestamp: new Date().toISOString()

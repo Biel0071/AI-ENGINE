@@ -193,21 +193,33 @@
     updateHealthHUD(health) {
       const el = document.getElementById('unrealHudStatus');
       if (el) {
-        el.textContent = health.status || 'ONLINE';
-        el.className = `unreal-telem-val ${health.status === 'ONLINE' ? 'green' : 'amber'}`;
+        const status = typeof health?.status === 'string' ? health.status : 'NÃO MEDIDO';
+        el.textContent = status;
+        el.className = `unreal-telem-val ${status === 'ONLINE' ? 'green' : 'amber'}`;
       }
     }
 
     updateTelemetryHUD(telem) {
       if (!telem) return;
+      const isMeasured = (candidate) => (typeof candidate === 'number' && Number.isFinite(candidate))
+        || (typeof candidate === 'string' && candidate.trim() !== '' && Number.isFinite(Number(candidate)));
+      const value = (candidate, suffix = '') => isMeasured(candidate)
+        ? `${candidate}${suffix}`
+        : 'Não medido';
       const elFps = document.getElementById('unrealHudFps');
-      if (elFps) elFps.textContent = `${telem.hardware?.measuredFps || 60} FPS`;
+      if (elFps) elFps.textContent = value(telem.hardware?.measuredFps, ' FPS');
 
       const elVram = document.getElementById('unrealHudVram');
-      if (elVram) elVram.textContent = `${telem.hardware?.vramBudgetBudgetUsedMb || 2450} / ${telem.hardware?.vramTotalMb || 4096} MB`;
+      if (elVram) {
+        const used = telem.hardware?.vramBudgetBudgetUsedMb;
+        const total = telem.hardware?.vramTotalMb;
+        elVram.textContent = isMeasured(used) && isMeasured(total)
+          ? `${used} / ${total} MB`
+          : 'Não medido';
+      }
 
       const elAgents = document.getElementById('unrealHudAgents');
-      if (elAgents) elAgents.textContent = `${telem.simulation?.activeAgents || 20} ATIVOS`;
+      if (elAgents) elAgents.textContent = value(telem.simulation?.activeAgents, ' ATIVOS');
     }
 
     renderDistrictBar() {

@@ -97,9 +97,12 @@ test('FASE 17.3 - First Playable World: Mission Lifecycle & Hardware Telemetry',
   await handleUnrealWorldRoutes(mockTelem.req, mockTelem.res, mockTelem.url, mockTelem.app, mockTelem.sendJson, mockTelem.readJson);
   const telemRes = mockTelem.getResult();
   assert.equal(telemRes.status, 200);
-  assert.equal(telemRes.body.hardware.gpu, 'NVIDIA GeForce RTX 3050 Ti Laptop GPU');
-  assert.equal(telemRes.body.hardware.targetFps, 60);
-  assert.equal(telemRes.body.hardware.vramTotalMb, 4096);
+  assert.equal(telemRes.body.hardware.status, 'NOT_MEASURED');
+  assert.equal(telemRes.body.hardware.gpu, null);
+  assert.equal(telemRes.body.hardware.measuredFps, null);
+  assert.equal(telemRes.body.hardware.vramTotalMb, null);
+  assert.equal(telemRes.body.simulation.activeAgents, null);
+  assert.equal(telemRes.body.simulation.activeMissions, 0);
 
   // 5. Stream config
   const mockStream = createMockHttp('GET', '/api/v2/unreal/stream-config');

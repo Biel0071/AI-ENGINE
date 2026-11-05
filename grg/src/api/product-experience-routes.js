@@ -289,6 +289,10 @@ async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendE
           ramUsage: `${(process.memoryUsage().rss / (1024 * 1024)).toFixed(1)} MB`,
         },
         events: [],
+        buildings: {
+          ...(state.buildings || {}),
+          energy: state.buildings?.energy || { status: 'UNMEASURED', loadPercent: null },
+        },
       });
     } catch (err) {
       console.error('[CityState Route Error]:', err);

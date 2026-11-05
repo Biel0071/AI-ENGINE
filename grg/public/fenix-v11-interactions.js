@@ -1075,7 +1075,7 @@ module.exports = authRouter;`
         if (countEl) countEl.textContent = `${counts['L' + i]} nós`;
         const barEl = document.getElementById(`memBarL${i}`);
         if (barEl) {
-          const pct = Math.max(14, Math.round((counts['L' + i] / maxVal) * 100));
+          const pct = counts['L' + i] > 0 ? Math.max(14, Math.round((counts['L' + i] / maxVal) * 100)) : 0;
           barEl.style.width = pct + '%';
         }
       }
@@ -2077,7 +2077,7 @@ window.fenixSelectMemoryLayer = function(layerIdx) {
       node.style.transform = 'scale(1)';
     });
     cards.forEach(card => { card.style.opacity = '1'; });
-    if (pill) pill.textContent = '● 7 NÍVEIS ATIVOS';
+    if (pill) pill.textContent = 'Visão geral';
     return;
   }
 
@@ -2350,11 +2350,30 @@ window.fenixShowClusterMemories = function() {
     set('agentInspName', agent.name || agent.id);
     set('agentInspId', agent.id);
     set('agentInspRole', agent.role || 'Geral');
-    set('agentInspSquad', agent.status === 'WORKING' ? 'Esquadrão Ativo' : 'Esquadrão Disponível');
-    set('agentInspStatusBadge', agent.status === 'WORKING' ? 'EM EXECUÇÃO' : 'DISPONÍVEL');
+    const knownStatus = typeof agent.status === 'string' ? agent.status.toUpperCase() : null;
+    set('agentInspSquad', knownStatus === 'WORKING' ? 'Em execução' : knownStatus === 'AVAILABLE' ? 'Disponível' : 'Não informado');
+    set('agentInspStatusBadge', knownStatus === 'WORKING' ? 'EM EXECUÇÃO' : knownStatus === 'AVAILABLE' ? 'DISPONÍVEL' : 'NÃO INFORMADO');
     set('agentInspMission', agent.currentMission || agent.mission || 'Sem missão vinculada');
     set('agentInspJob', agent.currentJob ? (typeof agent.currentJob === 'object' ? agent.currentJob.name : agent.currentJob) : 'Aguardando fila de despacho');
-    set('agentInspDistrict', agent.district || 'executive_hq');
+    set('agentInspDistrict', agent.district || 'Não informado');
+    set('agentInspContext', agent.contextWindow || 'Não medido');
+    set('agentInspMemoryStatus', Array.isArray(agent.memory) ? `${agent.memory.length} registros observados` : 'Não medido');
+    set('agentInspSandboxStatus', typeof agent.sandboxStatus === 'string' ? agent.sandboxStatus : 'Não informado');
+    const capabilities = document.getElementById('agentInspCapabilities');
+    if (capabilities) {
+      capabilities.replaceChildren();
+      if (Array.isArray(agent.tools) && agent.tools.length) {
+        agent.tools.forEach((tool) => {
+          const badge = document.createElement('span');
+          badge.className = 'badge-status-cyan';
+          badge.style.fontSize = '9.5px';
+          badge.textContent = String(tool);
+          capabilities.appendChild(badge);
+        });
+      } else {
+        capabilities.textContent = 'Não informado';
+      }
+    }
     const profile = agent.avatar || null;
     const appearance = profile?.appearance || {};
     const personality = profile?.personalityProfile || {};
@@ -2365,21 +2384,22 @@ window.fenixShowClusterMemories = function() {
     set('agentInspAvatarSource', agent.avatarProfileSource === 'generated-from-role' || profile?.source === 'generated-from-role' ? 'Gerado pela função' : profile ? 'Perfil do agente' : 'Não informado');
     const badge = document.getElementById('agentInspStatusBadge');
     if (badge) {
-      badge.className = agent.status === 'WORKING' ? 'badge-status-cyan text-green' : 'badge-status-cyan';
+      badge.className = knownStatus === 'WORKING' ? 'badge-status-cyan text-green' : 'badge-status-cyan';
     }
 
     // Update Cyberpunk Workstation Live Telemetry Ticker (Video 1001656597 Pattern)
     const ticker = document.getElementById('agentWorkstationTicker');
     if (ticker) {
-      const now = new Date().toLocaleTimeString('pt-BR');
-      const roleStr = agent.role || 'Operacional';
-      const statusStr = agent.status || 'AVAILABLE';
-      ticker.innerHTML = `
-        <div style="color:#38BDF8;">[${now}] Workstation alocada: ${agent.name || agent.id}</div>
-        <div style="color:#A78BFA;">[PERFIL] Fun&ccedil;&atilde;o: ${roleStr} &bull; Distrito: ${agent.district || 'executive_hq'}</div>
-        <div style="color:${statusStr === 'WORKING' ? '#10B981' : '#F59E0B'};">[STATUS] Estado: ${statusStr} &bull; Mem&oacute;ria: Sincronizada</div>
-        <div style="color:#94A3B8;">[CAP] Sandboxed runtime &bull; ModelRouter conectado</div>
-      `;
+      const lines = [
+        `Agente: ${agent.name || agent.id || 'Não informado'}`,
+        `Função: ${agent.role || 'Não informada'} · Estado: ${knownStatus || 'Não informado'}`,
+        `Workstation: ${agent.workstationId || 'Não informada'} · Distrito: ${agent.district || 'Não informado'}`,
+      ];
+      ticker.replaceChildren(...lines.map((text) => {
+        const line = document.createElement('div');
+        line.textContent = text;
+        return line;
+      }));
     }
   };
 

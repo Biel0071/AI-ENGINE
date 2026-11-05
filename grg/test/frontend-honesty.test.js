@@ -89,6 +89,35 @@ test('frontend: ribbon da API Platform aguarda o status real', () => {
   assert.match(html, /id="apiPlatformModel"[^>]*>Não publicado/);
 });
 
+test('frontend: City 3D não inventa telemetria quando a API não mede o valor', () => {
+  const city = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'unreal-world-live.js'), 'utf8');
+  assert.doesNotMatch(city, /measuredFps\s*\|\|\s*60/);
+  assert.doesNotMatch(city, /vramBudgetBudgetUsedMb\s*\|\|\s*2450/);
+  assert.doesNotMatch(city, /vramTotalMb\s*\|\|\s*4096/);
+  assert.doesNotMatch(city, /activeAgents\s*\|\|\s*20/);
+  assert.doesNotMatch(city, /health\.status\s*\|\|\s*'ONLINE'/);
+});
+
+test('frontend: inspetor de agentes começa sem capacidades ou estado de runtime presumidos', () => {
+  const html = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+  const inspector = html.match(/id="fenixAgentDeepInspector"[\s\S]*?(?=<\/aside>)/)?.[0] || '';
+  assert.match(inspector, /id="agentInspContext">Não medido/);
+  assert.match(inspector, /id="agentInspMemoryStatus">Não medido/);
+  assert.match(inspector, /id="agentInspSandboxStatus">Não informado/);
+  assert.match(inspector, /id="agentInspCapabilities"[^>]*>Não informado<\/div>/);
+  assert.match(inspector, /SEM TELEMETRIA PUBLICADA/);
+  assert.doesNotMatch(inspector, /STREAMING|Workstation conectada|Memória: Sincronizada|Sandboxed runtime|ModelRouter conectado/);
+  assert.doesNotMatch(inspector, /32k \/ 128k|SINCRONIZADA|>ATIVO<|file_system|shell_exec|mission_kernel|zero_ai_fallback/);
+});
+
+test('frontend: camadas da memória não aparecem ativas antes da primeira leitura', () => {
+  const html = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+  const interactions = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'fenix-v11-interactions.js'), 'utf8');
+  assert.match(html, /id="fenixMemLivePill"[^>]*>Aguardando dados/);
+  assert.doesNotMatch(html, /id="memBarL\d"[^>]*style="width:(?!0%)[1-9]\d*%/);
+  assert.doesNotMatch(interactions, /7 NÍVEIS ATIVOS/);
+});
+
 test('frontend: inspector seleciona agente publicado após snapshot tardio', () => {
   const command = require('node:fs').readFileSync(path.join(PUBLIC_DIR, 'command-center.js'), 'utf8');
   assert.match(command, /if \(agents\.length && !agents\.some\(\(agent\)/);

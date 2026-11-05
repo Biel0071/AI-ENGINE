@@ -464,6 +464,7 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
     renderProvenanceLegend();
     const totalNodes = state.stats?.totalNodes ?? state.nodes.length;
     const totalEdges = state.stats?.totalEdges ?? state.edges.length;
+    let memoryLayerCount = null;
     $('fmlNodesCount').textContent = totalNodes ? String(totalNodes) : state.measuredAt ? '0' : '—';
     $('fmlEdgesCount').textContent = state.measuredAt ? String(totalEdges) : '—';
     const types = [...new Set(state.nodes.map((item) => item.type).filter(Boolean))].sort();
@@ -487,12 +488,13 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
         5: ((byT('SERVICE') || 0) + (byT('COMPONENT') || 0)),
         6: ((byT('PATTERN') || 0) + (byT('MODEL') || 0) + (byT('TOOL') || 0))
       };
+      memoryLayerCount = Object.values(countsL).filter((count) => count > 0).length;
       const maxL = Math.max(...Object.values(countsL), 1);
       for (let i = 0; i <= 6; i++) {
         const cEl = document.getElementById('memCountL' + i);
         if (cEl) cEl.textContent = countsL[i] + ' nós';
         const bEl = document.getElementById('memBarL' + i);
-        if (bEl) bEl.style.width = Math.max(14, Math.round((countsL[i] / maxL) * 100)) + '%';
+        if (bEl) bEl.style.width = countsL[i] > 0 ? Math.max(14, Math.round((countsL[i] / maxL) * 100)) + '%' : '0%';
       }
     }
     const errNotice = $('fenixMemoryErrorNotice');
@@ -511,6 +513,16 @@ node grg/test/frontend-honesty.test.js</code></pre>`;
     const select = $('fmlType'); const value = state.type; select.replaceChildren(new Option('Todos os tipos', 'all'));
     for (const type of types) select.add(new Option(`${type} · ${state.nodes.filter((item) => item.type === type).length}`, type)); select.value = value;
     const status = $('fmlStatus'); status.hidden = Boolean(state.error); status.textContent = state.loading ? 'Sincronizando Graph Brain…' : state.error ? '' : state.measuredAt ? `Medido às ${new Date(state.measuredAt).toLocaleTimeString('pt-BR')} · fonte: /api/v2/graph/data (${state.nodes.length}/${totalNodes} nós carregados)` : 'Aguardando dados'; status.dataset.error = String(Boolean(state.error));
+    const pill = $('fenixMemLivePill');
+    if (pill) {
+      pill.textContent = state.error
+        ? (state.measuredAt ? 'Dados desatualizados' : 'Indisponível')
+        : state.loading
+          ? 'Sincronizando'
+          : Number.isInteger(memoryLayerCount)
+            ? `${memoryLayerCount}/7 camadas com registros`
+            : 'Aguardando dados';
+    }
     const graphMeasured = Boolean(state.measuredAt);
     const _layersEl = $('fenixMemoryLayers'); if (_layersEl && !_layersEl.querySelector('[data-layer="0"]')) { _layersEl.hidden = !graphMeasured; }
     $('fmlGraphSummary').hidden = !graphMeasured;
