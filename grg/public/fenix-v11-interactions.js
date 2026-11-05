@@ -917,8 +917,14 @@ module.exports = authRouter;`
       window.fenixLoadAgentScopes?.();
       loadAgentActivity();
     } catch (e) {
-      if (loadStatus) loadStatus.textContent = 'Sincronização pendente';
+      if (loadStatus) loadStatus.textContent = 'Leitura indisponível';
       if (fleetStatus) { fleetStatus.textContent = 'OFFLINE'; fleetStatus.style.color = '#fb7185'; }
+      ['fenixAgentRegisteredCount', 'fenixAgentWorkingCount', 'fenixAgentAvailableCount', 'fenixAgentProjectsCount', 'fenixAgentFailedJobsCount']
+        .forEach((id) => { const element = document.getElementById(id); if (element) element.textContent = '—'; });
+      if (measuredAt) measuredAt.textContent = 'Sem leitura atual';
+      document.querySelectorAll('#view-agents .fenix-pill-tab').forEach((tab) => {
+        if (tab.textContent.startsWith('Visão (')) tab.textContent = 'Visão (—)';
+      });
       const isAbort = e.name === 'AbortError' || String(e.message || '').includes('aborted');
       if (!isAbort) {
         console.error('[FENIX] Falha ao carregar agentes:', e);

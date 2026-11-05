@@ -36,3 +36,13 @@ test('canonical Agents screen loads the filter helper and begins with an unverif
   assert.match(interactions, /helper\.filterAgentRoster\(records, \{ query, status \}\)/);
   assert.match(interactions, /fleetStatus\.textContent = source === 'API' \? \(agents\.length \? 'ONLINE' : 'SEM AGENTES'\) : source/);
 });
+
+test('agent roster failure clears measured counts and labels the snapshot time unavailable', () => {
+  const interactions = fs.readFileSync(path.resolve(__dirname, '../public/fenix-v11-interactions.js'), 'utf8');
+  const failureHandler = interactions.slice(interactions.indexOf("} catch (e) {", interactions.indexOf('window.fenixLoadAgents = async')));
+  assert.match(failureHandler, /loadStatus\.textContent = 'Leitura indisponível'/);
+  assert.match(failureHandler, /fenixAgentRegisteredCount[\s\S]*?fenixAgentFailedJobsCount/);
+  assert.match(failureHandler, /element\.textContent = '—'/);
+  assert.match(failureHandler, /measuredAt\.textContent = 'Sem leitura atual'/);
+  assert.match(failureHandler, /tab\.textContent = 'Visão \(—\)'/);
+});

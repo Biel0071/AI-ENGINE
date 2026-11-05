@@ -60,3 +60,38 @@ test('city does not present a terminal job as the active mission', () => {
   assert.equal(elements.floatingMissionCard.style.display, 'none');
   assert.equal(elements.floatingJobCard.style.display, 'none');
 });
+
+test('legacy City state route adapts its response from the tenant-scoped live World snapshot', async () => {
+  const { handleProductExperienceRoutes } = require('../src/api/product-experience-routes');
+  const { livingCityState } = require('../src/api/living-city-routes');
+  const original = livingCityState;
+  const expected = {
+    buildings: [{ id: 'building-a' }],
+    projects: [{ id: 'project-a' }],
+    agents: [{ id: 'agent-a', status: 'WORKING' }, { id: 'agent-b', status: 'AVAILABLE' }],
+    summary: { runningJobs: 1 },
+  };
+  require.cache[require.resolve('../src/api/living-city-routes')].exports.livingCityState = async (app, tenantId, actorId) => {
+    assert.equal(tenantId, 'tenant-a');
+    assert.equal(actorId, 'actor-a');
+    return expected;
+  };
+  try {
+    let response;
+    const handled = await handleProductExperienceRoutes(
+      { method: 'GET' }, {}, new URL('http://localhost/api/v2/city/state'),
+      { controlPlane: { authorize() {} }, store: { read() {} } },
+      (_res, status, payload) => { response = { status, payload }; },
+      (_res, status, error) => { response = { status, error }; },
+      { tenantId: 'tenant-a', actorId: 'actor-a' },
+    );
+    assert.equal(handled, true);
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.payload.agents, expected.agents);
+    assert.equal(response.payload.summary.onlineAgents, 1);
+    assert.equal(response.payload.summary.totalProjects, 1);
+    assert.equal(response.payload.summary.activeTasks, 1);
+  } finally {
+    require.cache[require.resolve('../src/api/living-city-routes')].exports.livingCityState = original;
+  }
+});

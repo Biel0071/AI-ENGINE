@@ -269,6 +269,34 @@ function initEngines(app) {
 async function handleProductExperienceRoutes(req, res, url, app, sendJson, sendError, context = {}) {
   if (!url.pathname.startsWith('/api/v2/')) return false;
 
+  // The core World snapshot must not bootstrap the unrelated product engines.
+  if (req.method === 'GET' && url.pathname === '/api/v2/city/state'
+    && typeof app.controlPlane?.authorize === 'function' && typeof app.store?.read === 'function') {
+    try {
+      const { livingCityState } = require('./living-city-routes');
+      const state = await livingCityState(app, context.tenantId || 'grg', context.actorId || 'grg-admin');
+      sendJson(res, 200, {
+        ...state,
+        status: 'HEALTHY',
+        summary: {
+          activeBuildings: state.buildings?.length || 0,
+          totalProjects: state.projects?.length || 0,
+          onlineAgents: state.agents?.filter((agent) => agent.status === 'WORKING' || agent.status === 'ONLINE').length || 0,
+          registeredAgents: state.agents?.length || 0,
+          activeTasks: state.summary?.runningJobs || 0,
+          totalEvents: 0,
+          cpuUserSeconds: Number((process.cpuUsage().user / 1000000).toFixed(2)),
+          ramUsage: `${(process.memoryUsage().rss / (1024 * 1024)).toFixed(1)} MB`,
+        },
+        events: [],
+      });
+    } catch (err) {
+      console.error('[CityState Route Error]:', err);
+      sendError(res, 500, err.message);
+    }
+    return true;
+  }
+
   // The SSE handshake must not wait for the full product-engine bootstrap.
   // Fresh processes otherwise miss the client's short connection window.
   const isEventStream = req.method === 'GET' && url.pathname === '/api/v2/events/stream';
