@@ -54,11 +54,11 @@ test('memory view selects the Three.js renderer when it is available', async (t)
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.setContent('<main id="view-memory" class="active" style="width:1280px;height:800px"></main>');
+  await page.setContent('<main id="view-memory" class="active" style="width:1280px;height:800px"><section id="fenixMemoryViewLayout"><canvas id="fenixNeuralBrainCanvas"></canvas></section><div id="fenixMemoryErrorNotice"></div><div id="fenixMemoryOperationalContainer"></div><div id="fenixMemoryLayers"><div data-layer="0"></div></div></main>');
   await page.addStyleTag({ content: 'html,body{width:100%;height:100%;margin:0}#view-memory{width:100%;height:100%}' + fs.readFileSync(path.join(__dirname, '../public/memory-live.css'), 'utf8') });
   await page.evaluate(() => {
     window.fenixGetAuthToken = () => '';
-    window.fetch = async (url) => { window.__graphRequestUrl = String(url); return ({ ok: true, status: 200, json: async () => ({
+    window.fetch = async (url) => { if (String(url).startsWith('/api/v2/graph/data')) window.__graphRequestUrl = String(url); return ({ ok: true, status: 200, json: async () => ({
       nodes: [
         { id: 'project:a', type: 'PROJECT', properties: { name: 'Fênix' } },
         ...Array.from({ length: 2827 }, (_, index) => ({ id: `memory:node:${index}`, type: ['MEMORY', 'TASK', 'PAGE', 'PATTERN'][index % 4], properties: { name: `Entidade ${index + 1}` } })),
@@ -77,6 +77,8 @@ test('memory view selects the Three.js renderer when it is available', async (t)
   await page.evaluate(() => { window.__memoryRenderStartedAt = performance.now(); });
   await page.addScriptTag({ path: path.join(publicRoot, 'memory-live.js') });
   await page.waitForTimeout(500);
+  assert.equal(await page.locator('#fenixMemoryViewLayout').count(), 0, 'the live memory shell should remove the obsolete graph panel');
+  assert.equal(await page.locator('#fenixNeuralBrainCanvas').count(), 1, 'the live shell should keep a single graph canvas');
   const statusText = await page.locator('#fmlCanvasStatus').textContent().catch(() => 'canvas status ausente');
   assert.equal(await page.evaluate(() => window.__graphRequestUrl), '/api/v2/graph/data?full=true', 'the memory view should request the complete graph supported by the API');
   const visibleNodeCount = Number(statusText.match(/^(\d+)\/2828 entidades/)?.[1]);

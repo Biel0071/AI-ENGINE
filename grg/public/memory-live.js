@@ -28,6 +28,8 @@
   function shell() {
     const view = $('view-memory');
     if (!view || view.dataset.liveMemory === 'true') return;
+    view.querySelector('#fenixMemoryViewLayout')?.remove();
+    view.querySelector(':scope > #fenixMemoryErrorNotice')?.remove();
     view.dataset.liveMemory = 'true';
     let main = view.querySelector('#fenixMemoryOperationalContainer');
     if (!main) {
@@ -38,6 +40,10 @@
       main.classList.add('fml-root');
       main.replaceChildren();
     }
+    main.style.flex = '1 1 0';
+    main.style.height = 'auto';
+    main.style.minHeight = '0';
+    main.style.overflow = 'auto';
     main.innerHTML = `
       <header class="fml-header">
         <div>
