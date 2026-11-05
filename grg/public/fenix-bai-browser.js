@@ -8,6 +8,13 @@
   let currentSubTab = 'live';
   let activeSessionUrl = 'http://127.0.0.1:3000/app';
 
+  function calculateBaiReadiness(stats) {
+    const total = Number(stats?.totalInstances);
+    const running = Number(stats?.runningInstances);
+    if (stats?.totalInstances == null || stats?.runningInstances == null || !Number.isFinite(total) || !Number.isFinite(running) || total <= 0) return null;
+    return Math.round(Math.min(total, Math.max(0, running)) / total * 100);
+  }
+
   function getAuthHeader() {
     const token = typeof window.fenixGetAuthToken === 'function'
       ? window.fenixGetAuthToken()
@@ -46,7 +53,8 @@
       if (accountsEl) accountsEl.textContent = data.connectedAccounts ?? '—';
       if (cookiesEl) cookiesEl.textContent = data.sessionsWithCookies ?? '—';
       if (proxiesEl) proxiesEl.textContent = data.dedicatedProxies ?? '—';
-      if (readinessEl) readinessEl.textContent = Number.isFinite(data.healthRate) ? `${data.healthRate}%` : '—';
+      const readiness = calculateBaiReadiness(data);
+      if (readinessEl) readinessEl.textContent = readiness === null ? '—' : `${readiness}%`;
       if (runningEl) runningEl.textContent = data.runningInstances ?? '—';
     } catch (_) { /* ignore */ }
 
