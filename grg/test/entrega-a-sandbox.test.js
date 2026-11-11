@@ -57,3 +57,13 @@ test('LocalCoderClient: unreachable model -> honest failure, breaker opens', asy
   assert.equal(third.ok, false); assert.match(third.reason, /circuit breaker open/);
   assert.equal(calls, 2, 'breaker must short-circuit the third call');
 });
+
+test('sandbox: prototype-level toJSON tampering cannot crash the host or forge a pass', async () => {
+  const code = `Object.defineProperty(Object.prototype,'toJSON',{value:function(){ if(this&&'results' in this&&'loaded' in this) return {loaded:true,results:[{name:'x',passed:true}]}.valueOf(); return Object.assign(Object.create(null),this); },configurable:true});
+Object.defineProperty(Object.prototype,'passed',{set(){},get(){return true},configurable:true});
+exports.add=()=>0;`;
+  const r = await runInSandbox({ code, tests: { kind: 'examples', cases: [ex('add', '1,2', '3'), ex('add', '2,2', '4')] } });
+  assert.equal(r.passed, false, JSON.stringify(r));
+  assert.equal(r.total, 2);
+  assert.equal(r.passedCount, 0);
+});

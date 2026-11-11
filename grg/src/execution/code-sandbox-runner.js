@@ -38,14 +38,19 @@ const __util = require('node:util');
 const __eq = __util.isDeepStrictEqual;
 const __write = process.stdout.write.bind(process.stdout);
 const __json = JSON.stringify;
+const __assign = Object.assign;
+const __create = Object.create;
 const __M = ${JSON.stringify(marker)};
-const __emit = (o) => __write('\\n' + __M + __json(o) + '\\n');
+// Result records are copied onto null-prototype objects and concatenated as strings, so a solution
+// that patches Object/Array.prototype (e.g. a prototype-level toJSON) cannot rewrite the serialized output.
+const __rec = (o) => __json(__assign(__create(null), o));
+const __emit = (o) => __write('\\n' + __M + __rec(o) + '\\n');
 try { __fs.unlinkSync(__filename); __fs.unlinkSync(require('node:path').join(__dirname, 'guard.js')); } catch (_) {}
 const assert = require('node:assert/strict');
-const results = [];
-const __add = (r) => { results[results.length] = r; };
+let __out = '';
+const __add = (r) => { __out = __out === '' ? __rec(r) : __out + ',' + __rec(r); };
 let mod;
-try { mod = require('./solution.js'); } catch (e) { __emit({ loaded: false, error: String(e && e.message || e), results: [] }); process.exit(0); }
+try { mod = require('./solution.js'); } catch (e) { __emit({ loaded: false, error: String(e && e.message || e) }); process.exit(0); }
 `;
   let body = '';
   if (tests.kind === 'examples') {
@@ -70,7 +75,7 @@ const exported = Object.keys(mod || {}).filter((k) => typeof mod[k] === 'functio
 __add({ name: 'smoke: module loads and exports a function', passed: exported.length > 0, exported });`;
   }
   return `${head}${body}
-__emit({ loaded: true, results });
+__write('\\n' + __M + '{"loaded":true,"results":[' + __out + ']}\\n');
 `;
 }
 
@@ -123,12 +128,18 @@ async function runInSandbox({ code, tests, timeoutMs = 10_000, env = process.env
     const line = outcome.stdout.split(/\r?\n/).reverse().find((l) => l.startsWith(marker));
     let parsed = null;
     try { parsed = line ? JSON.parse(line.slice(marker.length)) : null; } catch { parsed = null; }
-    const results = parsed?.results || [];
+    // Child output is untrusted: validate shape strictly instead of trusting it.
+    const rawResults = Array.isArray(parsed?.results) ? parsed.results : [];
+    const results = rawResults.filter((r) => r && typeof r === 'object').map((r) => ({
+      name: String(r.name ?? ''), passed: r.passed === true,
+      ...(r.error != null ? { error: String(r.error).slice(0, 500) } : {}),
+    }));
+    const expectedCount = tests.kind === 'examples' ? tests.cases.length : 1;
     const passedCount = results.filter((r) => r.passed).length;
     return {
-      passed: !!parsed?.loaded && results.length > 0 && passedCount === results.length && !outcome.timedOut,
-      loaded: !!parsed?.loaded,
-      loadError: parsed?.error || null,
+      passed: parsed?.loaded === true && results.length === expectedCount && passedCount === results.length && !outcome.timedOut,
+      loaded: parsed?.loaded === true,
+      loadError: parsed?.error != null ? String(parsed.error).slice(0, 500) : null,
       total: results.length, passedCount, results,
       timedOut: outcome.timedOut, exitCode: outcome.exitCode,
       stderr: outcome.stderr.slice(0, 2000),
