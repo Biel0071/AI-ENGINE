@@ -36,9 +36,12 @@ $Files | ForEach-Object { Write-Host "  $_" }
 if ($DryRun) { Write-Host 'DryRun: nothing uploaded.'; exit 0 }
 
 scp -q $tar "${Vps}:/tmp/fenix-deploy-$stamp.tar"; if ($LASTEXITCODE) { throw 'scp payload failed' }
-scp -q (Join-Path $PSScriptRoot 'remote-deploy.sh') "${Vps}:/tmp/fenix-remote-deploy.sh"; if ($LASTEXITCODE) { throw 'scp script failed' }
+$remoteSh = Join-Path $env:TEMP "fenix-remote-deploy-$stamp.sh"
+# Normalize to LF: git autocrlf may have checked the script out with CRLF, which breaks bash.
+[IO.File]::WriteAllText($remoteSh, ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'remote-deploy.sh')) -replace "`r`n", "`n"))
+scp -q $remoteSh "${Vps}:/tmp/fenix-remote-deploy.sh"; if ($LASTEXITCODE) { throw 'scp script failed' }
 ssh $Vps "bash /tmp/fenix-remote-deploy.sh /tmp/fenix-deploy-$stamp.tar $stamp"
 $code = $LASTEXITCODE
-Remove-Item $tar, $list -ErrorAction SilentlyContinue
+Remove-Item $tar, $list, $remoteSh -ErrorAction SilentlyContinue
 if ($code) { throw "Remote deploy failed (exit $code); remote script attempted rollback." }
 Write-Host "Deploy $stamp OK"
