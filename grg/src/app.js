@@ -96,6 +96,7 @@ const { OperationalActivationService } = require('./operations/operational-activ
 const { createOperationalComponents } = require('./operations/operational-components');
 const { MissionKernel } = require('./missions/mission-kernel');
 const { MissionPlanner } = require('./missions/mission-planner');
+const { CodeDelivery } = require('./execution/code-delivery-pipeline');
 const { MasterAvatar } = require('./cognitive/master-avatar');
 
 // Phase 3 Dependencies
@@ -397,6 +398,10 @@ async function createApp(options = {}) {
   const agentEcosystem = new AutonomousAgentEcosystem({ store, controlPlane, hierarchy, jobs, approvals, federation, events: fabricEvents }).attach();
   jobs.register('agents.cycle', (payload, context) => agentEcosystem.cycle(context.tenantId, context.actorId, payload));
   jobs.register('cognitive.cycle', (payload, context) => cognitiveCore.cycle(context.tenantId, context.actorId, payload));
+  // Entrega A: chat code request -> mission step 'code' -> this job (local Ollama coder + sandbox).
+  // Bound to app.codeDelivery below, once pp exists.
+  let codeDelivery = null;
+  jobs.register('code.deliver', (payload, context) => { if (!codeDelivery) throw new Error('code delivery not initialized'); return codeDelivery.handleJob(payload, context); });
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
   const metrics = new PrometheusExporter({ store });
   health.register('state-store', async () => {
@@ -1002,6 +1007,7 @@ async function createApp(options = {}) {
 
   app.organismIdentity = organismIdentity;
   app.chat = new ChatAgent({ app, llm });
+  app.codeDelivery = codeDelivery = new CodeDelivery({ app, env: options.env || process.env });
   // Memoria da conversa (historico + contexto recuperado + resumo) e preferencias de voz.
   // Compoe o MemoryEngine que ja existe para a busca semantica -- nao abre um segundo
   // caminho de embedding, que divergiria na dimensao do vetor e na pontuacao.

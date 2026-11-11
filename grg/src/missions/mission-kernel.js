@@ -20,6 +20,8 @@ const MISSION_STEP_CATALOG = Object.freeze({
   'browser-qa': { jobType: 'frontend-reality.scan', agent: 'qa', level: 'GREEN', avatar: 'SCANNING', building: 'laboratory' },
   implement: { jobType: 'agent.workspace.execute', agent: 'developer', level: 'YELLOW', avatar: 'BUILDING', building: 'factory' },
   'agent-implement': { jobType: 'agent.execute', agent: 'developer', level: 'YELLOW', avatar: 'BUILDING', building: 'factory' },
+  // GREEN: generated code only runs inside the isolated sandbox; it never touches a workspace.
+  code: { jobType: 'code.deliver', agent: 'developer', level: 'GREEN', avatar: 'PROGRAMMING', building: 'laboratory' },
 });
 
 class MissionKernel {
@@ -260,8 +262,9 @@ class MissionKernel {
 
   async projectJobEvent(event) {
     const jobId = event.data?.jobId; if (!event.tenantId || !jobId) return null; const state = await this.store.read(); const step = state.missionSteps.find((item) => item.tenantId === event.tenantId && item.jobId === jobId); if (!step) return null; const mission = state.missions.find((item) => item.id === step.missionId); if (!mission) return null;
-    const job = await this.jobs.getInternal(event.tenantId, jobId); const status = event.type === 'runtime.job.succeeded' ? 'SUCCEEDED' : event.type === 'runtime.job.cancelled' ? 'CANCELLED' : 'FAILED'; const metrics = { durationMs: job.startedAt && job.completedAt ? Date.parse(job.completedAt) - Date.parse(job.startedAt) : null, attempts: job.attempts, tokens: finiteOrNull(job.result?.metrics?.tokens), costUsd: finiteOrNull(job.result?.metrics?.costUsd) };
-    if (status === 'FAILED' && job.type !== 'mission.repair' && Number(step.repairCount || 0) < 1) {
+    const job = await this.jobs.getInternal(event.tenantId, jobId); // A job can execute fine and still declare its step outcome FAILED (e.g. generated code failed its tests).
+    const declaredFailure = event.type === 'runtime.job.succeeded' && job.result?.stepOutcome === 'FAILED'; const status = declaredFailure ? 'FAILED' : event.type === 'runtime.job.succeeded' ? 'SUCCEEDED' : event.type === 'runtime.job.cancelled' ? 'CANCELLED' : 'FAILED'; const metrics = { durationMs: job.startedAt && job.completedAt ? Date.parse(job.completedAt) - Date.parse(job.startedAt) : null, attempts: job.attempts, tokens: finiteOrNull(job.result?.metrics?.tokens), costUsd: finiteOrNull(job.result?.metrics?.costUsd) };
+    if (status === 'FAILED' && !declaredFailure && job.type !== 'mission.repair' && Number(step.repairCount || 0) < 1) {
       const repair = await this.jobs.submit(event.tenantId, mission.requestedBy, {
         type: 'mission.repair', missionId: mission.id, projectId: mission.projectId,
         payload: { failedJobId: job.id, failedStepId: step.id, failedStepKey: step.key, error: job.error || null },

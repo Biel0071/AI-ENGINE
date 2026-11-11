@@ -6,6 +6,7 @@
 // OpenAI/Anthropic reais sem mudar este arquivo). As AÇÕES são reais — não simuladas.
 
 const GITHUB_URL_RE = /https?:\/\/github\.com\/[^\s]+/i;
+const { isBuildCodeRequest, renderDeliveryReply } = require('../execution/code-delivery-pipeline');
 
 class ChatAgent {
   constructor({ app, llm = null }) {
@@ -101,6 +102,9 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
       return { kind: 'ingest_portfolio', username: hasUser };
     }
 
+    // Entrega A: pedido de codigo pequeno (funcao/script) -> missao CODE com modelo local + sandbox.
+    // Vem antes de 'generate' (sistema/projeto inteiro), que continua indo para o Executive Brain.
+    if (!url && isBuildCodeRequest(text)) return { kind: 'build_code', deterministic: true };
     if (url && /(acopl|conect|analis|ingest|adicion|integr)/.test(t)) return { kind: 'connect_repo', url };
     if (url) return { kind: 'connect_repo', url };
     if (/(gerar|ger[ae]|criar|cri[ae]|novo|construir|constr[ou]i|montar|monta|fazer|fa[çc]a).*(sistema|projeto|app|aplica|site|loja|crm|erp|saas|plataforma|marketplace|landing|bot|api)/.test(t)) return { kind: 'generate', prompt: text };
@@ -242,6 +246,12 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
             projetos: f(state.projects),
             capacidades: this.#capabilityFacts(state, tenantId),
           };
+          break;
+        }
+        case 'build_code': {
+          if (!this.app.codeDelivery) throw new Error('code delivery is not configured in this runtime');
+          facts = await this.app.codeDelivery.requestFromChat(tenantId, actorId, text);
+          action = { type: 'build_code', ok: facts.deliveryStatus === 'TESTS_PASSED', missionId: facts.missionId || null, jobId: facts.jobId || null, deliveryStatus: facts.deliveryStatus };
           break;
         }
         case 'connect_repo': {
@@ -461,6 +471,7 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
   render(kind, facts, action) {
     if (facts.error) return `Tive um problema: ${facts.error}`;
     switch (kind) {
+      case 'build_code': return renderDeliveryReply(facts);
       case 'ingest_portfolio': {
         if (facts.note) return facts.note;
         const lines = facts.results.map((r) => {
