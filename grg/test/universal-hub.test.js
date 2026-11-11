@@ -142,6 +142,16 @@ test('the owner sees every tool and every message', async () => {
   assert.ok(all.body.messages.length >= 3);
 });
 
+test('knowledge about a project that is only in the disk registry is kept and found by project', async () => {
+  const rec = await call(tokens.OPENAI_CODEX, 'POST', '/api/v2/hub/knowledge', { class: 'technical_discovery', projectId: 'local-somente-registro', content: 'Descoberta num projeto descoberto no disco, ainda não cadastrado.' });
+  assert.equal(rec.status, 201, JSON.stringify(rec.body));
+  assert.equal(rec.body.knowledge.projectId, 'local-somente-registro');
+  const found = await call(tokens.ANTIGRAVITY, 'GET', '/api/v2/hub/knowledge?q=descoberta&projectId=local-somente-registro');
+  assert.equal(found.body.items.length, 1);
+  const listed = await call(tokens.ANTIGRAVITY, 'GET', '/api/v2/hub/knowledge?projectId=local-somente-registro');
+  assert.equal(listed.body.items.length, 1);
+});
+
 test('everything survives a server restart; a revoked tool loses access', async () => {
   await new Promise((resolve) => server.close(resolve));
   await boot();

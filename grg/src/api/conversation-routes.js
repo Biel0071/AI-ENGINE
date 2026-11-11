@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const { buildSystemContextWithSources, citedSources, isSystemQuestion } = require('../chat/system-context');
+const { buildSystemContextWithSources, citedSources, isSystemQuestion, answerLocationQuestion } = require('../chat/system-context');
 /**
  * FÊNIX OS V8.2 — Conversation & Intelligent Dual-Lane Routes
  * Dispatches Fast Lane vs Job Lane requests, handles interactive model switching,
@@ -1367,7 +1367,11 @@ async function handleConversationRoutes(req, res, url, sendJson, readJson, ident
         } else {
           var promptMeta = {};
           const prompt = await conversationPrompt(app, tenantId, actorId, conversation.id, rawMessage, targetProjId, promptMeta);
-          if (isMascotFastMode) {
+          const locatedAnswer = answerLocationQuestion(rawMessage, promptMeta.sources || []);
+          if (locatedAnswer) {
+            // Resposta exata das fontes verificadas (mapa do frontend); nao passa pelo modelo.
+            fastResult = { response: locatedAnswer, lane: 'FAST_LANE', model: 'fenix-ui-map', provider: 'ui-element-map', usedAI: false, sourceGrounded: true, tokens: null, latencyMs: Date.now() - reqStart };
+          } else if (isMascotFastMode) {
             fastResult = await Promise.race([
               handleFastLane(rawMessage, classification, {
                 actorId,
@@ -1504,7 +1508,7 @@ async function handleConversationRoutes(req, res, url, sendJson, readJson, ident
         provider: fastResult.provider,
         usedAI: fastResult.usedAI,
         // Fase 3: fontes consultadas (verificadas) e quais a resposta citou. So para resposta do modelo.
-        sources: fastResult.usedAI && typeof promptMeta !== 'undefined' && promptMeta.sources ? citedSources(promptMeta.sources, fastResult.response) : [],
+        sources: (fastResult.usedAI || fastResult.sourceGrounded) && typeof promptMeta !== 'undefined' && promptMeta.sources ? citedSources(promptMeta.sources, fastResult.response) : [],
         memoryIndex: memoryContextPack,
         actions: fastActions,
         timestamp: new Date().toISOString()

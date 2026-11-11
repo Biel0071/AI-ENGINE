@@ -83,3 +83,15 @@ Ver `docs/universal-ai-network/FENIX_UNIVERSAL_AI_ARCHITECTURE.md` e `FENIX_MCP_
 - API Platform só tem modelos locais ≤ 3 B; delegação de código em escala depende de provedor de nuvem e orçamento (dono).
 - `level27-self-healing` teste 8 é instável (arquivos de estado compartilhados em `grg/.data`), anterior a esta sessão.
 - Criar ordem no diretor leva ~10–15 s (listar 45 projetos e resolver workspace).
+## LEVEL 2 — Convergência — PASSED (2026-11-11, segunda etapa)
+
+- **Contabilidade da suíte**: 1.877 + 109 + 11 SKIP = 1.997 (os 11: 10 exigem `sh` ausente no Windows; 1 exige credenciais da API Platform). Nova rodada: 1.889 PASS · 108 FAIL · 11 SKIP = 2.008; nenhuma falha nova (a única nova encontrada era um bug real, corrigido abaixo).
+- **Busca em português**: `src/knowledge/ui-element-map.js` gera do código o mapa de elementos (id, rótulo, tela, arquivos que o controlam); "Onde fica o código do painel de jobs da Cidade?" → `#dockCardJobsList` + `city-reality-engine.js`/`fenix-city-adaptive-dock.js` em ~1,5 s, resposta montada das fontes verificadas (o modelo 3B ignorava as fontes). Elementos do rodapé são globais.
+- **Ordem do diretor**: 8–16 s → ~1,2 s (resposta 202 após criar a missão; início em segundo plano, falha vira evento).
+- **Bug real corrigido**: uma missão cancelada podia ser reaberta como "aguardando aprovação" por um início que terminava depois; o MissionKernel agora nunca tira uma missão de estado terminal (5/5 rodadas estáveis).
+- **Hub**: conhecimento sobre projetos só do registro em disco (ex.: `local-fenix`) agora é aceito (etiqueta `project:`), achado por busca e contexto.
+- **Convergência**: `/api/v2/hub/convergence` + botão "Convergência" — números reais (conhecimento por ferramenta, validados, conversas entre ferramentas, propostas, missões do diretor, workers ativos, tokens de código da VPS, custo por missão), cada um com a origem.
+- **Certificação multi-ferramenta**: 3 processos `bin/fenix-mcp.js` reais e simultâneos (CLAUDE_CODE, OPENAI_CODEX, ANTIGRAVITY): 10/10 — identidade própria, registro e recuperação com autoria, tarefa e resultado no mesmo fio, isolamento de caixa de entrada, trava simultânea (só um obtém), IA não aprova, presença; após reinício do servidor o conhecimento e o fio continuam. *Limite honesto:* os clientes eram o processo MCP do FÊNIX com tokens de cada ferramenta; os aplicativos Codex e Antigravity reais precisam ser configurados pelo dono (guia em `docs/universal-ai-network/FENIX_MCP_INTEGRATION.md`).
+- **Provedores**: API Platform já suporta Groq, OpenRouter, Gemini, OpenAI, Anthropic, xAI, Hugging Face, Cloudflare por chave — nenhum adaptador novo necessário; **BLOCKED pelo dono** (chave). Benchmark local (`grg/scripts/vps-model-benchmark.js`): qwen2.5:3b 89 %, qwen2.5-coder:1.5b 78 %, deepseek-r1:1.5b 67 %.
+- **LEVEL 3**: especificação em `docs/level3-living-universe/FENIX_LEVEL3_SPEC.md`; roteiro consolidado em `FENIX_CONSOLIDATED_ROADMAP.md`.
+- Testes novos: `ui-element-map` (5), `hub-convergence` (4), casos novos em `chat-system-context` e `universal-hub`.

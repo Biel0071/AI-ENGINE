@@ -122,23 +122,39 @@ class UniversalHub {
     if (!content) throw new ValidationError('content is required');
     const validation = cls === 'unvalidated_suggestion' ? 'unvalidated' : (cls === 'execution_evidence' ? 'evidence' : 'reported');
     const files = (Array.isArray(input.files) ? input.files : []).map((f) => clip(f, 300)).slice(0, 30);
-    const memory = await this.memory.remember(cx.tenantId, cx.actorId, {
-      kind: input.projectId ? 'project' : 'semantic',
+    const projectId = input.projectId ? clip(input.projectId, 128) : null;
+    const record = (withProject) => this.memory.remember(cx.tenantId, cx.actorId, {
+      kind: withProject ? 'project' : 'semantic',
       title: clip(input.title || `${cls} · ${who.provider}`, 300),
       content: files.length ? `${content}\n\nArquivos: ${files.join(', ')}` : content,
-      projectId: input.projectId || null,
+      projectId: withProject ? projectId : null,
       confidence: input.confidence ?? (cls === 'unvalidated_suggestion' ? 0.3 : 0.7),
-      tags: ['hub', `class:${cls}`, `provider:${who.provider.toLowerCase()}`, `validation:${validation}`, ...(input.tags || [])],
+      tags: ['hub', `class:${cls}`, `provider:${who.provider.toLowerCase()}`, `validation:${validation}`, ...(projectId ? [`project:${projectId.toLowerCase()}`] : []), ...(input.tags || [])],
       provenance: { type: 'ai-hub', reference: `${who.provider}:${who.clientId}`, evidence: (input.evidence || []).map(String) },
     });
+    // Projetos descobertos no disco (ex.: local-fenix) nao estao cadastrados no estado; o
+    // MemoryEngine recusa projectId desconhecido. Nesse caso o projeto vai so na etiqueta.
+    let memory;
+    try {
+      memory = await record(Boolean(projectId));
+    } catch (error) {
+      if (!projectId || !/existing tenant project/i.test(String(error.message))) throw error;
+      memory = await record(false);
+    }
     await this.bus?.emit?.('hub.knowledge.recorded', { tenantId: cx.tenantId, memoryId: memory.id, class: cls, provider: who.provider, projectId: memory.projectId });
     return UniversalHub.knowledgeView(memory);
+  }
+
+  // Projeto pelo campo (cadastrado) ou pela etiqueta project:<id> (descoberto no disco).
+  static inProject(memory, projectId) {
+    if (!projectId) return true;
+    return memory.projectId === projectId || (memory.tags || []).includes(`project:${String(projectId).toLowerCase()}`);
   }
 
   static knowledgeView(memory) {
     const tag = (prefix) => (memory.tags || []).find((t) => t.startsWith(prefix))?.slice(prefix.length) || null;
     return {
-      id: memory.id, title: memory.title, content: memory.content, projectId: memory.projectId,
+      id: memory.id, title: memory.title, content: memory.content, projectId: memory.projectId || tag('project:'),
       class: tag('class:'), author: memory.provenance?.reference || memory.createdBy, provider: (tag('provider:') || '').toUpperCase() || null,
       validation: tag('validation:'), confidence: memory.confidence, version: memory.version,
       evidence: memory.provenance?.evidence || [], createdAt: memory.createdAt, updatedAt: memory.updatedAt,
@@ -152,16 +168,17 @@ class UniversalHub {
     const tags = ['hub', ...(knowledgeClass ? [`class:${String(knowledgeClass).toLowerCase()}`] : []), ...(provider ? [`provider:${String(provider).toLowerCase()}`] : [])];
     let memories;
     if (String(q).trim()) {
-      const res = await this.memory.query(cx.tenantId, cx.actorId, String(q), { projectId: projectId || undefined, tags, limit: max });
+      const res = await this.memory.query(cx.tenantId, cx.actorId, String(q), { tags, limit: 100 });
       // O ranking do MemoryEngine soma 0,1 x confiança: toda memória teria nota > 0. Só entra
       // o que de fato combina com o texto pedido.
       memories = res.results.map((item) => item.memory || item)
-        .filter((m) => lexicalScore(String(q), `${m.title} ${m.content}`) > 0);
+        .filter((m) => lexicalScore(String(q), `${m.title} ${m.content}`) > 0)
+        .filter((m) => UniversalHub.inProject(m, projectId)).slice(0, max);
     } else {
       await this.cp.authorize(cx.tenantId, cx.actorId, 'memory:read');
       const state = await this.store.read();
       memories = state.memories.filter((m) => m.tenantId === cx.tenantId && m.status === 'ACTIVE'
-        && tags.every((t) => (m.tags || []).includes(t)) && (!projectId || m.projectId === projectId))
+        && tags.every((t) => (m.tags || []).includes(t)) && UniversalHub.inProject(m, projectId))
         .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, max);
     }
     return memories.map(UniversalHub.knowledgeView);
@@ -292,7 +309,7 @@ class UniversalHub {
     const deep = depth === 'deep';
     const n = deep ? 15 : 5;
     const state = await this.store.read();
-    const scoped = (items) => (items || []).filter((item) => item.tenantId === cx.tenantId && (!projectId || !item.projectId || item.projectId === projectId));
+    const scoped = (items) => (items || []).filter((item) => item.tenantId === cx.tenantId && (!projectId || !item.projectId || item.projectId === projectId || (item.tags || []).includes(`project:${String(projectId).toLowerCase()}`)));
     const byNewest = (a, b) => String(b.createdAt || b.timestamp).localeCompare(String(a.createdAt || a.timestamp));
     const hubMemories = scoped(state.memories).filter((m) => m.status === 'ACTIVE' && (m.tags || []).includes('hub')).sort(byNewest);
     const ofClass = (cls) => hubMemories.filter((m) => m.tags.includes(`class:${cls}`)).slice(0, n).map((m) => {

@@ -124,3 +124,16 @@ test('system questions are told apart from general ones', () => {
     assert.equal(isSystemQuestion(q), false, q);
   }
 });
+test('location questions are answered straight from the verified screen sources', () => {
+  const { answerLocationQuestion } = require('../src/chat/system-context');
+  const sources = [
+    { n: 1, type: 'runtime', reference: 'estado do runtime' },
+    { n: 2, type: 'screen', reference: '#dockCardJobsList', label: 'elemento #dockCardJobsList na tela city — controlado por grg/public/fenix-city-adaptive-dock.js', files: ['grg/public/fenix-city-adaptive-dock.js'] },
+  ];
+  const text = answerLocationQuestion('Onde fica o código do painel de jobs da Cidade?', sources);
+  assert.match(text, /#dockCardJobsList/);
+  assert.match(text, /fenix-city-adaptive-dock\.js/);
+  assert.match(text, /\[F2\]/);
+  assert.equal(answerLocationQuestion('Quantos jobs falharam?', sources), null, 'not a location question');
+  assert.equal(answerLocationQuestion('Onde fica o painel?', [sources[0]]), null, 'no screen source, no answer');
+});

@@ -76,10 +76,15 @@ class FenixDirector {
       contextRefs: [{ type: 'MEMORY', ref: `director-order:${cx.actorId}` }],
       steps: PLANS[chosen].map((step) => ({ ...step, payload })),
     });
-    const started = await this.missions.start(cx.tenantId, DIRECTOR_ACTOR, mission.id);
+    // Iniciar a missao faz dezenas de gravacoes em sequencia no store de documento unico (6-12 s
+    // medidos em 2026-11-11). A ordem responde 202 assim que a missao existe; o inicio segue em
+    // segundo plano e, se falhar, vira evento visivel (nunca sucesso silencioso).
+    this.lastStart = this.missions.start(cx.tenantId, DIRECTOR_ACTOR, mission.id).catch(async (error) => {
+      await this.bus?.emit?.('director.start_failed', { tenantId: cx.tenantId, missionId: mission.id, error: String(error.message || error).slice(0, 300) });
+    });
     await this.bus?.emit?.('director.order', { tenantId: cx.tenantId, missionId: mission.id, kind: chosen, orderedBy: cx.actorId });
-    const approvalRequired = (started.steps || []).some((s) => ['generate', 'dev-execute', 'orchestrate'].includes(s.type));
-    return { kind: chosen, orderedBy: cx.actorId, approvalRequired, mission: started };
+    const approvalRequired = (mission.steps || []).some((s) => ['generate', 'dev-execute', 'orchestrate'].includes(s.type));
+    return { kind: chosen, orderedBy: cx.actorId, approvalRequired, starting: true, mission };
   }
 
   // Fila "precisa de você" + histórico de decisões. Tudo vem do store (sem número fixo).

@@ -40,6 +40,12 @@ async function handleUniversalHubRoutes(req, res, url, app, sendJson, readJson, 
     }
     const revoke = p.match(/^\/api\/v2\/hub\/clients\/([^/]+)\/revoke$/);
     if (revoke && m === 'POST') return send(200, { ok: true, client: await hub.revokeClient(cx, decodeURIComponent(revoke[1])) });
+    // LEVEL 2: indicadores de convergência (números reais derivados do estado).
+    if (m === 'GET' && p === '/api/v2/hub/convergence') {
+      await app.controlPlane.authorize(cx.tenantId, cx.actorId, 'runtime:read');
+      const { computeConvergence } = require('../hub/convergence');
+      return send(200, { ok: true, convergence: computeConvergence({ state: await app.store.read(), tenantId: cx.tenantId }) });
+    }
     if (m === 'GET' && p === '/api/v2/hub/context') {
       return send(200, { ok: true, context: await hub.context(cx, { projectId: q.get('projectId'), depth: q.get('depth') || 'compact' }) });
     }

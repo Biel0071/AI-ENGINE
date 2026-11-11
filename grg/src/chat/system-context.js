@@ -13,6 +13,23 @@ const path = require('node:path');
 const DEFAULT_MAX_CHARS = 2400;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOISE = /(^|\/)(test-results|node_modules|\.git|coverage|dist)\//i;
+const { getUiElementMap, searchUiElements } = require('../knowledge/ui-element-map');
+const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
+
+// LEVEL 2: elementos de tela (gerados do código) que combinam com a pergunta em português.
+function uiSources(message) {
+  try {
+    const map = getUiElementMap(PUBLIC_DIR);
+    if (!map) return [];
+    return searchUiElements(map, message, { limit: 3 }).map((el) => ({
+      type: 'screen', reference: `#${el.id}`,
+      label: `elemento #${el.id}${el.label ? ` «${clip(el.label, 60)}»` : ''}${el.view ? ` na tela ${el.view}` : ' na barra global (fora das telas)'}${el.files.length ? ` — controlado por ${el.files.map((x) => 'grg/' + x).join(', ')}` : ''}`,
+      files: el.files.map((x) => 'grg/' + x),
+    }));
+  } catch {
+    return [];
+  }
+}
 
 function clip(value, max) {
   const text = String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -94,6 +111,11 @@ async function buildSystemContextWithSources({ app, tenantId, message, projectId
       blocks.push({ title: `[F${sources.length}] Estado do sistema medido agora (runtime real):`, lines: runtimeLines(state || {}, tenantId, now) });
     } catch { /* Sem store: segue com o que houver. */ }
   }
+  const screens = uiSources(message);
+  if (screens.length) {
+    const lines = screens.map((source) => { sources.push(source); return `- [F${sources.length}] ${source.label}`; });
+    blocks.push({ title: 'Elementos da interface ligados à pergunta (mapa gerado do código do frontend):', lines });
+  }
   if (app?.projectMemoryIndex?.getContextPack) {
     try {
       const pack = app.projectMemoryIndex.getContextPack(String(message || ''), projectId || 'fenix-os');
@@ -143,8 +165,20 @@ function citedSources(sources = [], answer = '') {
   const text = String(answer || '');
   return sources.map((source) => ({
     ...source,
-    cited: text.includes(`[F${source.n}]`) || (source.type !== 'runtime' && source.reference.length > 6 && text.includes(source.reference)),
+    cited: text.includes(`[F${source.n}]`) || (source.type !== 'runtime' && source.reference.length > 6 && text.includes(source.reference))
+      || (Array.isArray(source.files) && source.files.some((file) => text.includes(path.basename(file)))),
   }));
 }
 
-module.exports = { buildSystemContext, buildSystemContextWithSources, citedSources, isSystemQuestion };
+// Pergunta de localizacao ("onde fica...", "qual arquivo..."): resposta montada direto das
+// fontes de tela verificadas. O modelo local (3B) ignorava essas fontes e dizia "nao encontrei".
+const LOCATION_QUESTION = /\b(onde\s+(fica|ficam|esta|est[aã]o|encontro|vejo|mexo|altero)|qual\s+(o\s+)?(arquivo|tela|bot[aã]o|componente|elemento)|em\s+que\s+arquivo)/i;
+function answerLocationQuestion(message, sources = []) {
+  if (!LOCATION_QUESTION.test(String(message || ''))) return null;
+  const screens = sources.filter((s) => s.type === 'screen');
+  if (!screens.length) return null;
+  const lines = screens.map((s) => `- [F${s.n}] ${s.label}`);
+  return `Encontrei no mapa do frontend (gerado do código):\n${lines.join('\n')}\n\nO primeiro item é o mais provável. Os arquivos listados são os que controlam cada elemento.`;
+}
+
+module.exports = { buildSystemContext, buildSystemContextWithSources, citedSources, isSystemQuestion, answerLocationQuestion };

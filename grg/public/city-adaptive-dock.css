@@ -856,3 +856,10 @@
 .agent-live-history { margin: 4px 0 0; padding-left: 18px; font-size: 12px; color: #94a3b8; display: flex; flex-direction: column; gap: 3px; overflow-wrap: anywhere; }
 .agent-hist-error { color: #fca5a5; }
 .agent-live-error { color: #fca5a5; font-size: 12px; margin: 6px 0 0; }
+
+/* LEVEL 2: painel de convergência */
+.fenix-conv-block { border: 1px solid rgba(148,163,184,.25); border-radius: 10px; padding: 10px 12px; }
+.fenix-conv-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; flex-wrap: wrap; }
+.fenix-conv-row strong { color: #f8fafc; font-variant-numeric: tabular-nums; }
+.fenix-conv-by, .fenix-conv-src { margin: 6px 0 0; font-size: 11px; color: #64748b; overflow-wrap: anywhere; }
+.fenix-conv-cost { margin: 6px 0 0; padding-left: 18px; font-size: 12px; color: #94a3b8; }
