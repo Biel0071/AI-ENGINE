@@ -15,7 +15,24 @@ const TOOLS = [
   tool('fenix_get_screen', 'Get details of a specific UI screen (components, APIs)', { name: str(true) }),
   tool('fenix_generate_screen', 'Submit a job to generate a new screen from prompt', { prompt: str(true) }),
   tool('fenix_get_context', 'Get the active system and project context', {}),
+  // FÊNIX Universal Hub: memória, mensagens e travas compartilhadas entre ferramentas de IA.
+  tool('fenix_hub_whoami', 'Who am I for FENIX: tool identity, owner and scopes of this token', {}),
+  tool('fenix_hub_context', 'Compact project context: decisions, discoveries, evidence, inbox, locks, presence, runtime. Call this first when entering a project', { projectId: str(), depth: str() }),
+  tool('fenix_knowledge_search', 'Search shared knowledge recorded by any tool (Claude, Codex, Antigravity...). Empty q lists the newest', { q: str(), projectId: str(), class: str(), provider: str(), limit: str() }),
+  tool('fenix_knowledge_record', 'Record knowledge for all tools. class: permanent | project_context | architecture_decision | technical_discovery | temporary_task | execution_evidence | unvalidated_suggestion. files/evidence: comma-separated', { class: str(true), content: str(true), title: str(), projectId: str(), files: str(), evidence: str(), confidence: str() }),
+  tool('fenix_message_send', 'Send a protocol message to another tool, FENIX or ALL. message_type: IDEA QUESTION DISCOVERY TASK_REQUEST TASK_ACCEPTED CODE_PROPOSAL PATCH_READY REVIEW_REQUEST REVIEW_RESULT TEST_RESULT BUG_REPORT DECISION KNOWLEDGE_UPDATE MISSION_COMPLETED BLOCKED. payload: JSON string', { message_type: str(true), receiver: str(), project_id: str(), requested_action: str(), payload: str(), correlation_id: str(), context_reference: str(), session_id: str() }),
+  tool('fenix_messages', 'Read messages addressed to this tool (or a thread by correlationId)', { projectId: str(), type: str(), correlationId: str(), since: str(), limit: str() }),
+  tool('fenix_lock_file', 'Lock a file before editing so other tools do not overwrite it (409 if another tool holds it)', { projectId: str(true), path: str(true), reason: str(), ttlSeconds: str() }),
+  tool('fenix_unlock_file', 'Release a file lock', { projectId: str(true), path: str(true) }),
+  tool('fenix_hub_clients', 'List connected tools and their presence', {}),
 ];
+
+const csv = (value) => String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
+function jsonArg(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value !== 'string') return value;
+  try { return JSON.parse(value); } catch { throw new Error('payload must be valid JSON'); }
+}
 
 function str(required = false) { return { type: 'string', ...(required ? { required: true } : {}) }; }
 function tool(name, description, properties) {
@@ -37,6 +54,21 @@ async function callTool(client, name, args = {}) {
   if (name === 'fenix_get_screen') return client.getScreen(args.name);
   if (name === 'fenix_generate_screen') return client.generateScreen(args);
   if (name === 'fenix_get_context') return { project: await client.projectMap().catch(()=>({})), status: await client.status().catch(()=>({})) };
+  if (name === 'fenix_hub_whoami') return client.hubWhoami();
+  if (name === 'fenix_hub_context') return client.hubContext({ projectId: args.projectId, depth: args.depth || 'compact' });
+  if (name === 'fenix_knowledge_search') return client.hubKnowledgeSearch({ q: args.q, projectId: args.projectId, knowledgeClass: args.class, provider: args.provider, limit: args.limit });
+  if (name === 'fenix_knowledge_record') {
+    return client.hubKnowledgeRecord({ class: args.class, content: args.content, title: args.title, projectId: args.projectId,
+      files: csv(args.files), evidence: csv(args.evidence), ...(args.confidence !== undefined ? { confidence: Number(args.confidence) } : {}) });
+  }
+  if (name === 'fenix_message_send') {
+    const payload = jsonArg(args.payload);
+    return client.hubSendMessage({ ...args, payload });
+  }
+  if (name === 'fenix_messages') return client.hubMessages(args);
+  if (name === 'fenix_lock_file') return client.hubLock({ projectId: args.projectId, path: args.path, reason: args.reason, ...(args.ttlSeconds ? { ttlSeconds: Number(args.ttlSeconds) } : {}) });
+  if (name === 'fenix_unlock_file') return client.hubUnlock({ projectId: args.projectId, path: args.path });
+  if (name === 'fenix_hub_clients') return client.hubClients();
   throw new Error(`unknown MCP tool: ${name}`);
 }
 

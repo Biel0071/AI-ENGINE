@@ -8064,10 +8064,14 @@ window.__fenixSubmitIdeChat = async function () {
 <script defer src="/memory-brain-webgl.js?v=1-threejs-points"></script>
 <script defer src="/memory-provenance.js?v=20261105-v2.6.0"></script>
 <script defer src="/memory-live.js?v=16-focus-edge-budget"></script>
+<script defer src="/fenix-director-console.js?v=20261111-1"></script>
 
     <footer class="fenix-presentation-footer" id="fenixPresentationFooter" title="Fênix Telemetria em Tempo Real">
       <button class="fnx-alerts-neon-btn fenix-footer-alert-btn" id="footerAlertBtn" type="button" onclick="window.fenixShowAlertsModal?.()" title="Visualizar Eventos do Sistema">
         <i class="ph-bold ph-warning-octagon"></i> <span id="footerAlertCount">Eventos (—)</span> <i class="ph-bold ph-caret-right"></i>
+      </button>
+      <button class="fnx-alerts-neon-btn fenix-footer-alert-btn fenix-director-btn" id="footerDirectorBtn" type="button" onclick="window.fenixOpenDirector?.()" title="Fênix Diretor: enviar ordem e aprovar etapas">
+        <i class="ph-bold ph-seal-check"></i> <span id="footerDirectorCount">Precisa de você (—)</span>
       </button>
 
       <div class="fenix-ticker-badge">

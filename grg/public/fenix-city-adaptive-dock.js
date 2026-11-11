@@ -451,59 +451,79 @@
     window.fenixOpenEntityModal('building', buildingId, { id: buildingId, name: buildingId, ...data });
   };
 
+  // Fase 2 (2026-11-11): detalhe do agente com dados REAIS de /api/v2/agents/live (jobs, etapas
+  // de missão, tokens e modelo das chamadas de IA). Antes inventava modelo "qwen2.5:3b", status
+  // "DISPONÍVEL" e "Ativo no runtime" quando o dado faltava.
+  let agentLiveCache = { at: 0, data: null };
+  async function fetchAgentsLive() {
+    if (agentLiveCache.data && Date.now() - agentLiveCache.at < 10000) return agentLiveCache.data;
+    const t = (() => { try { return localStorage.getItem('fenix_token') || localStorage.getItem('grg_token') || ''; } catch (_) { return ''; } })();
+    const res = await fetch('/api/v2/agents/live', { credentials: 'same-origin', headers: t ? { Authorization: 'Bearer ' + t } : {} });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    agentLiveCache = { at: Date.now(), data: await res.json() };
+    return agentLiveCache.data;
+  }
+  function findLiveAgent(live, id, data) {
+    const name = String(data.name || data.displayName || '').toLowerCase();
+    const role = String(data.role || data.specialty || '').toLowerCase();
+    const agent = (live.agents || []).find((a) => a.id === id || (name && String(a.name).toLowerCase() === name) || (role && String(a.role).toLowerCase() === role));
+    if (agent) return { name: agent.name, role: agent.role, avatar: agent.avatar, executor: agent.executor, ...agent.live };
+    const other = (live.unmatched || []).find((u) => String(u.name).toLowerCase() === name || u.name === id);
+    return other ? { ...other, role: null } : null;
+  }
+  const LIVE_STATUS = { EXECUTANDO: 'Executando', OCIOSO: 'Ocioso', SEM_ATIVIDADE: 'Sem atividade registrada' };
+
   function renderAgentDetail(id, data, container) {
     if (!container) return;
-    const name = data.name || id;
-    const role = data.role || data.specialty || data.domain || 'Especialista Fênix';
-    const status = (data.status || data.state || 'DISPONÍVEL').toUpperCase();
-    const model = data.model || 'qwen2.5:3b (Local Ollama)';
+    const name = data.name || data.displayName || id;
     const avatar = data.avatar || '/assets/agent-developer.png';
-    const task = data.currentTask || data.currentJobId || 'Aguardando próxima atribuição';
-    const tokens = data.tokensUsed || data.tokens || '—';
-    const uptime = data.uptime || 'Ativo no runtime';
-
+    const live = data.live || null;
+    const statusText = live ? (LIVE_STATUS[live.status] || live.status) : (data.liveError ? 'Indisponível' : 'Lendo dados reais…');
+    const busy = live && live.status === 'EXECUTANDO';
+    const model = live ? (live.lastModel ? `${live.lastModel}${live.lastProvider ? ' · ' + live.lastProvider : ''}` : 'Nenhuma chamada de IA registrada') : '—';
+    const jobs = live ? `${live.jobs.total} (${live.jobs.running} executando · ${live.jobs.succeeded} concluídos · ${live.jobs.failed} com falha)` : '—';
+    const history = live && live.history && live.history.length
+      ? live.history.map((h) => `<li><code>${esc(h.type)}</code> · ${esc(h.status)} · ${esc(fmtDate(h.at))}${h.task ? ' · ' + esc(h.task) : ''}${h.error ? ' · <span class="agent-hist-error">' + esc(h.error) + '</span>' : ''}</li>`).join('')
+      : '<li>Nenhum job registrado para este agente.</li>';
+    const safeId = esc(id);
     container.innerHTML = `
       <div class="entity-detail-grid">
         <div class="entity-avatar-section">
           <img src="${esc(avatar)}" alt="${esc(name)}" class="entity-avatar-large" onerror="this.src='/assets/agent-developer.png'" />
-          <div class="entity-status-chip ${status === 'WORKING' || status === 'BUSY' ? 'status-busy' : 'status-ready'}">
-            <span class="pulse-dot"></span> ${esc(status)}
-          </div>
+          <div class="entity-status-chip ${busy ? 'status-busy' : 'status-ready'}"><span class="pulse-dot"></span> ${esc(statusText)}</div>
         </div>
         <div class="entity-info-section">
-          <div class="entity-meta-row"><span>ID do Agente:</span> <code>${esc(id)}</code></div>
-          <div class="entity-meta-row"><span>Especialidade:</span> <strong>${esc(role)}</strong></div>
-          <div class="entity-meta-row"><span>Modelo LLM:</span> <strong>${esc(model)}</strong></div>
-          <div class="entity-meta-row"><span>Tokens Consumidos:</span> <strong>${esc(tokens)}</strong></div>
-          <div class="entity-meta-row"><span>Tempo em Execução:</span> <strong>${esc(uptime)}</strong></div>
-          <div class="entity-task-box">
-            <label>Tarefa / Contexto Atual:</label>
-            <p>${esc(task)}</p>
-          </div>
+          <div class="entity-meta-row"><span>ID do Agente:</span> <code>${safeId}</code></div>
+          <div class="entity-meta-row"><span>Especialidade:</span> <strong>${esc((live && live.role) || data.role || data.specialty || '—')}</strong></div>
+          <div class="entity-meta-row"><span>Modelo / provedor:</span> <strong>${esc(model)}</strong></div>
+          <div class="entity-meta-row"><span>Tokens consumidos:</span> <strong>${live ? esc(String(live.tokens)) : '—'}</strong></div>
+          <div class="entity-meta-row"><span>Jobs:</span> <strong>${esc(jobs)}</strong></div>
+          <div class="entity-meta-row"><span>Missões:</span> <strong>${live ? esc(String(live.missions ?? 0)) : '—'}</strong></div>
+          <div class="entity-meta-row"><span>Última atividade:</span> <strong>${live ? esc(fmtDate(live.lastActivityAt)) : '—'}</strong></div>
+          <div class="entity-task-box"><label>Tarefa atual:</label><p>${esc((live && live.currentTask) || (live ? 'Nenhum job em execução' : '—'))}</p></div>
+          <div class="entity-task-box"><label>Histórico recente:</label><ul class="agent-live-history">${live ? history : '<li>—</li>'}</ul></div>
+          ${data.liveError ? `<p class="agent-live-error">Dados reais indisponíveis: ${esc(data.liveError)}</p>` : ''}
         </div>
       </div>
       <div class="entity-modal-actions">
-        <button type="button" class="fnx-btn-primary" onclick="window.fenixFocusOrOpenAgent ? window.fenixFocusOrOpenAgent('${esc(id)}') : (window.fenixCity?.focusAgent?.('${esc(id)}') || null); window.fenixCloseEntityPopup();">
-          <i class="ph-bold ph-crosshair"></i> Focar na Cidade 3D
-        </button>
-        <button type="button" class="fnx-btn-secondary" onclick="window.showView?.('agents'); window.fenixCloseEntityPopup();">
-          <i class="ph-bold ph-users"></i> Abrir Painel de Agentes
-        </button>
+        <button type="button" class="fnx-btn-primary" data-agent-action="focus"><i class="ph-bold ph-crosshair"></i> Focar na Cidade</button>
+        <button type="button" class="fnx-btn-secondary" data-agent-action="chat"><i class="ph-bold ph-chat-circle-dots"></i> Conversar</button>
+        <button type="button" class="fnx-btn-secondary" data-agent-action="order"><i class="ph-bold ph-seal-check"></i> Enviar ordem</button>
       </div>
     `;
+    container.querySelector('[data-agent-action="focus"]')?.addEventListener('click', () => { if (window.fenixFocusOrOpenAgent) window.fenixFocusOrOpenAgent(id); else window.fenixCity?.focusAgent?.(id); window.fenixCloseEntityPopup?.(); });
+    container.querySelector('[data-agent-action="chat"]')?.addEventListener('click', () => { window.fenixCloseEntityPopup?.(); window.openSpatialAgentChat?.({ id, name, role: data.role || (live && live.role) }); });
+    container.querySelector('[data-agent-action="order"]')?.addEventListener('click', () => {
+      window.fenixCloseEntityPopup?.(); window.fenixOpenDirector?.();
+      setTimeout(() => { const box = document.getElementById('fenixDirectorOrderText'); if (box && !box.value) { box.value = `Para ${name}: `; box.focus(); } }, 120);
+    });
 
-    // Asynchronously enrich if agent details are missing
-    if (!data.enriched) {
-      fetch(`/api/v2/agents/${encodeURIComponent(id)}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(fresh => {
-          if (fresh && state.selectedEntity?.id === id) {
-            renderAgentDetail(id, { ...data, ...fresh, enriched: true }, container);
-          }
-        }).catch(() => {});
+    if (!data.live && !data.liveError) {
+      fetchAgentsLive()
+        .then((all) => { if (state.selectedEntity?.id === id) renderAgentDetail(id, { ...data, live: findLiveAgent(all, id, data) || { status: 'SEM_ATIVIDADE', tokens: 0, jobs: { total: 0, running: 0, succeeded: 0, failed: 0 }, missions: 0, history: [], lastModel: null, lastProvider: null, lastActivityAt: null, currentTask: null } }, container); })
+        .catch((error) => { if (state.selectedEntity?.id === id) renderAgentDetail(id, { ...data, liveError: error.message }, container); });
     }
   }
-
   // ── Detalhes a partir do DADO REAL (2026-11-10) ───────────────────────────
   // Antes evento e job eram montados copiando o texto do cartao: "JSON real" com
   // id "EVENTO", "Invalid Date", worker inventado. Agora vem da API ou mostra "—".

@@ -1,4 +1,4 @@
-const CURRENT_SCHEMA_VERSION = 43;
+const CURRENT_SCHEMA_VERSION = 44;
 
 const COLLECTIONS_BY_VERSION = {
   1: ['tenants', 'orgs', 'customers', 'users', 'memberships', 'projects', 'repositories'],
@@ -101,6 +101,8 @@ const COLLECTIONS_BY_VERSION = {
   41: ['worldAssets'],
   42: ['cityNpcStates'],
   43: ['projectWorkspaceDrafts'],
+  // FÊNIX Universal Hub: conexões por ferramenta de IA, mensagens no protocolo comum, travas.
+  44: ['aiClients', 'hubMessages', 'hubLocks'],
 };
 
 function normalizeVersion(value) {

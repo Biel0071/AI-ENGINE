@@ -1128,6 +1128,17 @@ async function createApp(options = {}) {
   const { globalProjectMemoryIndex } = require('./memory/project-memory-index');
   const { globalReaIntelligenceEngine } = require('./services/rea-intelligence-engine');
   app.projectMemoryIndex = globalProjectMemoryIndex;
+  // FÊNIX Universal Hub: conexões por ferramenta de IA, memória compartilhada, mensagens e travas.
+  const { UniversalHub } = require('./hub/universal-hub');
+  // MemoryEngine direto (nao o MemoryGateway, que devolve sucesso mesmo quando a gravacao falha).
+  app.hub = new UniversalHub({ store, bus, controlPlane, memory: app.memoryEngine });
+  if (app.auth) app.auth.aiClientResolver = (token) => app.hub.resolveToken(token);
+  // Fase 1: Fênix Diretor (ordem -> missao com etapas por agente -> fila de aprovacao).
+  const { FenixDirector } = require('./missions/fenix-director');
+  app.director = new FenixDirector({
+    store, controlPlane, missions: app.missions, approvals: app.approvals, jobs: app.jobs, bus,
+    resolveWorkspace: (tenantId, actorId, projectId) => require('./api/conversation-routes').resolveProjectWorkspace(app, tenantId, actorId, projectId),
+  });
   app.reaIntelligence = globalReaIntelligenceEngine;
 
   return app;

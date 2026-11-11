@@ -16,6 +16,8 @@ const { handleDeveloperRoutes } = require('./api/developer-routes');
 const { handleProductExperienceRoutes } = require('./api/product-experience-routes');
 const { handleProjectMirrorRoutes, discoverProjects } = require('./api/project-mirror-routes');
 const { handleUniversalJobRoutes } = require('./api/universal-job-routes');
+const { handleUniversalHubRoutes, aiClientRouteDecision } = require('./api/universal-hub-routes');
+const { handleDirectorRoutes } = require('./api/director-routes');
 const { handleOrchestrationRoutes } = require('./api/orchestration-routes');
 const { handleUniversalSystemRoutes } = require('./api/universal-system-routes');
 const { handleLivingCityRoutes } = require('./api/living-city-routes');
@@ -676,6 +678,13 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
 
+      // FÊNIX Universal Hub: token de ferramenta de IA (fxc_) só acessa o hub e algumas leituras;
+      // aprovar, rejeitar, desfazer, deploy e administrar conexões continuam exclusivos de humanos.
+      if (cx.aiClient) {
+        const decision = aiClientRouteDecision(req.method, url.pathname, cx.aiClient.scopes);
+        if (!decision.allowed) return sendJson(res, 403, { error: decision.reason, code: 'AI_CLIENT_SCOPE' }, requestId);
+      }
+
       // LEVEL 1: gate central de escrita. Toda requisicao que altera estado exige
       // sessao nao somente-leitura e um vinculo ativo cujo papel permite escrita.
       // Rotas especificas continuam aplicando suas permissoes (ex.: runtime:admin).
@@ -696,6 +705,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           name: cx.name || actorId
         }, requestId);
       }
+
+      if (await handleUniversalHubRoutes(req, res, url, app, sendJson, readJson, cx)) return;
+      if (await handleDirectorRoutes(req, res, url, app, sendJson, readJson, cx)) return;
 
       if (await handleMediaRoutes(req, res, url, app, sendJson, readJson, { tenantId, actorId })) return;
 

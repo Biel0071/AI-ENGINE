@@ -4048,3 +4048,12 @@ body:not(.has-right-sidebar-open) #view-memory .fml-workspace {
   border-color: rgba(16, 185, 129, 0.35);
   color: #34d399;
 }
+
+/* Fase 3: fontes da resposta */
+.fsb-sources { margin: 8px 0 4px; font-size: 12px; color: #94a3b8; }
+.fsb-sources summary { cursor: pointer; color: #67e8f9; }
+.fsb-sources ol { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+.fsb-sources li { overflow-wrap: anywhere; }
+.fsb-sources li.cited { color: #e2e8f0; }
+.fsb-sources li.cited .fsb-src-n { color: #fbbf24; font-weight: 700; }
+.fsb-src-type { color: #64748b; }

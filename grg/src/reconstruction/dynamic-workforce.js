@@ -50,15 +50,17 @@ class DynamicWorkforce {
       { id: 'agent-research', role: 'RESEARCH', name: 'Deep Research Agent', avatar: '🔬', executor: 'API_PLATFORM' }
     ];
 
+    // Catalogo de PAPEIS, nao processos rodando: status REGISTERED e nada de batimento/memoria
+    // inventados. O estado real vem de /api/v2/agents/live (jobs, etapas e chamadas de IA).
     canonicalRoster.forEach(roster => {
       this.registerAgent({
         ...roster,
-        status: 'ONLINE',
+        status: 'REGISTERED',
         scope: 'SHARED', // SHARED or PROJECT_SPECIALIST
         currentJob: null,
         project: 'fenix-os',
-        heartbeat: new Date().toISOString(),
-        memoryCount: 12
+        heartbeat: null,
+        memoryCount: null
       });
     });
   }
@@ -70,23 +72,19 @@ class DynamicWorkforce {
       role: agentData.role,
       name: agentData.name || id,
       avatar: agentData.avatar || '🤖',
-      status: agentData.status || 'ONLINE',
+      status: agentData.status || 'REGISTERED',
       scope: agentData.scope || 'SHARED',
       project: agentData.project || 'fenix-os',
       executor: agentData.executor || 'ANTIGRAVITY',
       currentJob: agentData.currentJob || null,
-      heartbeat: new Date().toISOString(),
+      heartbeat: agentData.heartbeat || null,
       tools: this._resolveToolsForRole(agentData.role),
-      memoryCount: agentData.memoryCount || 0,
+      memoryCount: Number.isFinite(agentData.memoryCount) ? agentData.memoryCount : null,
       personality: agentData.personality || ['meticuloso', 'criativo', 'rápido'],
-      metrics: agentData.metrics || {
-        efficiency: Math.floor(Math.random() * 10) + 90,
-        uptime: (Math.random() * 2 + 97).toFixed(1) + '%',
-        tasksCompleted: Math.floor(Math.random() * 500) + 50,
-        qualityScore: (Math.random() * 0.5 + 9.5).toFixed(1)
-      },
+      // Antes: efficiency/uptime/tarefas/qualidade sorteados (Math.random). Sem medicao, null.
+      metrics: agentData.metrics || null,
       avatarUrl: agentData.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${id}`,
-      missions: agentData.missions || [{ id: 'm1', title: 'System Optimization', status: 'ACTIVE' }],
+      missions: agentData.missions || [],
       tags: agentData.tags || ['core', agentData.role.toLowerCase(), 'v12']
     };
     this.agents.set(id, agent);
@@ -204,11 +202,12 @@ class DynamicWorkforce {
   }
 
   getExecutors() {
+    // Status e latencia nao sao medidos aqui: antes eram fixos (ONLINE, 45/65/120 ms).
     return EXECUTOR_TYPES.map(type => ({
       type,
-      status: 'ONLINE',
+      status: 'UNKNOWN',
       capability: type === 'ANTIGRAVITY' ? 'Master Fullstack & Visual Autonomy' : 'Cognitive Inference',
-      latencyMs: type === 'ANTIGRAVITY' ? 45 : (type === 'OLLAMA' ? 65 : 120)
+      latencyMs: null
     }));
   }
 }

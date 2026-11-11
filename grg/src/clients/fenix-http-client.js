@@ -28,6 +28,21 @@ class FenixHttpClient {
   projectMap() { return this.request('/api/project-mirror'); }
   getScreen(name) { return this.request(`/api/project-mirror/screen/${encodeURIComponent(name)}`); }
   generateScreen(input) { return this.request('/api/v2/jobs', { method: 'POST', body: { ...input, type: 'screen.generate' } }); }
+
+  // FÊNIX Universal Hub (/api/v2/hub/*)
+  hubPath(path, params = {}) {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString();
+    return qs ? `${path}?${qs}` : path;
+  }
+  hubWhoami() { return this.request('/api/v2/hub/me'); }
+  hubContext({ projectId, depth = 'compact' } = {}) { return this.request(this.hubPath('/api/v2/hub/context', { projectId, depth })); }
+  hubKnowledgeSearch({ q, projectId, knowledgeClass, provider, limit } = {}) { return this.request(this.hubPath('/api/v2/hub/knowledge', { q, projectId, class: knowledgeClass, provider, limit })); }
+  hubKnowledgeRecord(input) { return this.request('/api/v2/hub/knowledge', { method: 'POST', body: input }); }
+  hubSendMessage(input) { return this.request('/api/v2/hub/messages', { method: 'POST', body: input }); }
+  hubMessages({ projectId, type, correlationId, since, limit } = {}) { return this.request(this.hubPath('/api/v2/hub/messages', { projectId, type, correlationId, since, limit })); }
+  hubLock(input) { return this.request('/api/v2/hub/locks', { method: 'POST', body: input }); }
+  hubUnlock(input) { return this.request('/api/v2/hub/locks', { method: 'DELETE', body: input }); }
+  hubClients() { return this.request('/api/v2/hub/clients'); }
 }
 
 module.exports = { FenixHttpClient };

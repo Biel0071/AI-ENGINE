@@ -307,4 +307,4 @@ class PostgresStore {
   }
 }
 
-module.exports = { PostgresStore, safeIdentifier };
+module.exports = { PostgresStore, safeIdentifier, normalizePersistedState, cloneReadSnapshot };

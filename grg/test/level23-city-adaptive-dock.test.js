@@ -133,16 +133,16 @@ test('LEVEL 23 SUITE: Holographic City Adaptive Dock, Interactions, Entity Popup
       });
     });
     await page.waitForTimeout(300);
-    const modalVisible = await page.$eval('#fenixEntityDetailModal', el => el.style.display !== 'none');
+    const modalVisible = await page.$eval('#fenixEntityPopupModal', el => el.style.display !== 'none');
     assert.ok(modalVisible, 'Entity modal is visible on select');
-    const modalTitle = await page.$eval('#entityModalTitle', el => el.textContent);
+    const modalTitle = await page.$eval('#entityPopupModalTitle', el => el.textContent);
     assert.equal(modalTitle, 'Alex', 'Modal shows agent name');
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'level23_city_entity_modal_agent.png') });
 
     // Test Close on Escape key
     await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
-    const modalClosed = await page.$eval('#fenixEntityDetailModal', el => el.style.display === 'none');
+    const modalClosed = await page.$eval('#fenixEntityPopupModal', el => el.style.display === 'none');
     assert.ok(modalClosed, 'Entity modal closes on Escape key');
 
     // 7. Test Contextual Entity Popup (Event)
@@ -155,17 +155,19 @@ test('LEVEL 23 SUITE: Holographic City Adaptive Dock, Interactions, Entity Popup
       });
     });
     await page.waitForTimeout(300);
-    const eventModalVisible = await page.$eval('#fenixEntityDetailModal', el => el.style.display !== 'none');
+    const eventModalVisible = await page.$eval('#fenixEntityPopupModal', el => el.style.display !== 'none');
     assert.ok(eventModalVisible, 'Entity modal opens for event');
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
     // 8. Test Quality Profile Switcher
     console.log('Testing Quality Profile Switcher...');
-    await page.selectOption('#fenixQualitySelect', 'low');
+    // O seletor ficava na barra City Control (removida a pedido do dono); a qualidade agora
+    // fica no anel do minimapa, que chama a mesma funcao.
+    await page.evaluate(() => window.fenixSetPerformanceProfile('low'));
     const lowProfile = await page.evaluate(() => localStorage.getItem('fenix_quality_profile'));
     assert.equal(lowProfile, 'low', 'Quality profile stored as low');
-    await page.selectOption('#fenixQualitySelect', 'balanced');
+    await page.evaluate(() => window.fenixSetPerformanceProfile('balanced'));
     const balProfile = await page.evaluate(() => localStorage.getItem('fenix_quality_profile'));
     assert.equal(balProfile, 'balanced', 'Quality profile restored to balanced');
 
@@ -175,13 +177,16 @@ test('LEVEL 23 SUITE: Holographic City Adaptive Dock, Interactions, Entity Popup
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.waitForTimeout(600);
 
-      // Verify Dock visibility and bounds
-      const dockBox = await page.$eval('#fenixModularBottomDock', el => {
+      // Verify Dock visibility and bounds. Ate 820px o dock vira gavetas abertas pela barra
+      // .fenix-mobile-dock-bar (spatial-window-manager.css): ali quem precisa aparecer e a barra.
+      const dockSelector = vp.width <= 820 ? '.fenix-mobile-dock-bar' : '#fenixModularBottomDock';
+      const dockBox = await page.$eval(dockSelector, el => {
         const r = el.getBoundingClientRect();
         return { top: r.top, bottom: r.bottom, width: r.width, height: r.height };
       });
       assert.ok(dockBox.width > 0, `Dock has positive width in ${vp.name}`);
       assert.ok(dockBox.height > 0, `Dock has positive height in ${vp.name}`);
+      assert.ok(dockBox.bottom <= vp.height + 1, `Dock stays inside the screen in ${vp.name}`);
 
       // Verify no horizontal document overflow
       const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

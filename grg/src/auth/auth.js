@@ -237,6 +237,13 @@ class AuthService {
     try { cookieToken = encodedCookieToken ? decodeURIComponent(encodedCookieToken) : ''; } catch { cookieToken = ''; }
     const tokens = [...new Set([bearerToken, cookieToken].filter(Boolean))];
     for (const token of tokens) {
+      // FÊNIX Universal Hub: token de ferramenta de IA. Age em nome do dono, com escopo limitado
+      // (a decisão de rota fica no servidor). Identidade da ferramenta != identidade do usuário.
+      if (token.startsWith('fxc_')) {
+        const client = typeof this.aiClientResolver === 'function' ? await this.aiClientResolver(token).catch(() => null) : null;
+        if (client) return { tenantId: client.tenantId, actorId: client.ownerUserId, authed: true, sessionId: null, role: 'ai_client', readOnly: false, aiClient: client };
+        continue;
+      }
       const session = await this.verifyPersistent(token);
       if (session) return { tenantId: session.tenantId, actorId: session.userId, authed: true, sessionId: session.id, role: session.role || 'viewer', readOnly: session.readOnly === true, isPreview: session.isPreview === true, analysisId: session.analysisId };
       if (this.externalVerifier) { try { const identity = await this.externalVerifier.verify(token); if (identity?.tenantId && identity?.userId) return { tenantId: identity.tenantId, actorId: identity.userId, authed: true, sessionId: null, external: true }; } catch { /* try the next same-origin credential */ } }

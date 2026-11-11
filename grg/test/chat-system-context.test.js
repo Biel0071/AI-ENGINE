@@ -74,3 +74,53 @@ test('missing store or index degrade to what is available, never throw', async (
   assert.match(noStore, /view-city/);
   assert.equal(await buildSystemContext({ app: {}, tenantId: 'grg', message: 'x', now: NOW }), '');
 });
+// Fase 3 (2026-11-11): cada resposta traz as fontes consultadas, numeradas [F1], [F2]...
+// Arquivo citado tem de existir no disco; ruído (test-results, node_modules) não entra.
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { buildSystemContextWithSources, citedSources } = require('../src/chat/system-context');
+
+function rootWithFiles(files) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fenix-src-'));
+  for (const f of files) { fs.mkdirSync(path.dirname(path.join(root, f)), { recursive: true }); fs.writeFileSync(path.join(root, f), 'x'); }
+  return root;
+}
+
+test('sources are numbered, verified on disk and listed in the prompt context', async () => {
+  const root = rootWithFiles(['public/fenix-city-adaptive-dock.js']);
+  const sourcesPack = {
+    activeRoot: root,
+    relevantFiles: [
+      { type: 'file', file: 'public/fenix-city-adaptive-dock.js', id: 'public/fenix-city-adaptive-dock.js' },
+      { type: 'file', file: 'src/nao-existe.js', id: 'src/nao-existe.js' },
+      { type: 'file', file: 'test-results/x/error-context.md', id: 'test-results/x/error-context.md' },
+    ],
+    relevantRoutes: [{ type: 'route', id: 'GET /api/v2/jobs/:id/usage', detail: 'tokens por job' }],
+    relevantMemories: [{ type: 'memory', id: 'Tokens por job', detail: 'Clique num job na Cidade.' }],
+  };
+  const out = await buildSystemContextWithSources({ app: fakeApp({ state, pack: sourcesPack }), tenantId: 'grg', message: 'tokens', now: NOW });
+  const refs = out.sources.map((s) => `${s.type}:${s.reference}`);
+  assert.ok(refs.includes('file:public/fenix-city-adaptive-dock.js'));
+  assert.ok(!refs.some((r) => r.includes('nao-existe')), 'missing files are dropped');
+  assert.ok(!refs.some((r) => r.includes('test-results')), 'noise is dropped');
+  assert.ok(refs.includes('route:GET /api/v2/jobs/:id/usage'));
+  assert.ok(refs.includes('runtime:estado do runtime'));
+  for (const s of out.sources) assert.match(out.text, new RegExp(`\\[F${s.n}\\]`));
+});
+
+test('cited sources are the ones the answer actually references', async () => {
+  const sources = [{ n: 1, type: 'runtime', reference: 'estado do runtime' }, { n: 2, type: 'route', reference: 'GET /api/v2/jobs/:id/usage' }, { n: 3, type: 'memory', reference: 'Tokens por job' }];
+  const marked = citedSources(sources, 'Veja os tokens no detalhe do job [F2]; o runtime mostra 2 falhas [F1].');
+  assert.deepEqual(marked.filter((s) => s.cited).map((s) => s.n), [1, 2]);
+  assert.equal(marked.find((s) => s.n === 3).cited, false);
+});
+test('system questions are told apart from general ones', () => {
+  const { isSystemQuestion } = require('../src/chat/system-context');
+  for (const q of ['Quantos jobs falharam?', 'Onde fica o código do painel da Cidade?', 'O que o agente architect fez?', 'Qual a última missão?', 'tem erro no deploy da VPS?', 'Como está o Fênix?']) {
+    assert.equal(isSystemQuestion(q), true, q);
+  }
+  for (const q of ['Qual é a capital da Austrália?', 'Me conte uma piada', 'Explique o que é recursão']) {
+    assert.equal(isSystemQuestion(q), false, q);
+  }
+});

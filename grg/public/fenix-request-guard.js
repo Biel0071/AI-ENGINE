@@ -264,8 +264,43 @@
     return promise;
   }
 
+  // Fase 0 (2026-11-11): sete scripts consultavam /health cada um no seu relogio (~1 pedido/s
+  // por aba; em producao cada /health consulta Postgres, Redis e a fila). GET /health exato
+  // compartilha a mesma resposta por 4 s e junta pedidos simultaneos. Falha nao fica em cache.
+  function shareHealthFetch(fetchFn, now = () => Date.now(), ttlMs = 4000) {
+    let cached = null;
+    let inflight = null;
+    const isHealth = (input, opts) => {
+      const method = String((opts && opts.method) || (input && input.method) || 'GET').toUpperCase();
+      if (method !== 'GET') return false;
+      const raw = typeof input === 'string' ? input : (input && input.url) || '';
+      if (raw === '/health') return true;
+      try {
+        const loc = typeof location !== 'undefined' ? location : null;
+        return Boolean(loc) && new URL(raw, loc.href).href === loc.origin + '/health';
+      } catch (_) {
+        return false;
+      }
+    };
+    return function sharedFetch(input, opts) {
+      if (!isHealth(input, opts)) return fetchFn(input, opts);
+      if (cached && now() - cached.at <= ttlMs) return Promise.resolve(cached.response.clone());
+      if (!inflight) {
+        inflight = Promise.resolve()
+          .then(() => fetchFn(input, opts))
+          .then((res) => {
+            if (res && res.ok) cached = { at: now(), response: res.clone() };
+            return res;
+          })
+          .finally(() => { inflight = null; });
+      }
+      return inflight.then((res) => res.clone());
+    };
+  }
+
   const api = {
     BUDGET,
+    shareHealthFetch,
     Singletons,
     request,
     cancelViewRequests,
@@ -276,6 +311,11 @@
   };
 
   if (typeof window !== 'undefined') {
+    if (typeof window.fetch === 'function' && !window.fetch.__fenixHealthShared) {
+      const shared = shareHealthFetch(window.fetch.bind(window));
+      shared.__fenixHealthShared = true;
+      window.fetch = shared;
+    }
     window.FenixRequestGuard = api;
     window.fenixFetch = (url, opts, viewId) => api.request(url, opts, viewId);
   }

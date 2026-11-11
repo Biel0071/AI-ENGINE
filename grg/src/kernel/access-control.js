@@ -24,6 +24,11 @@ const ROLE_PERMISSIONS = Object.freeze({
     'project:read', 'project:analyze', 'repo:read', 'capability:read',
     'memory:read', 'memory:write', 'member:read', 'ai:invoke', 'governance:read', 'graph:read', 'fabric:read', 'registry:read', 'event:read', 'discovery:read', 'runtime:read',
   ],
+  // Ator de sistema (ex.: fenix-director): executa missoes e pede aprovacao, mas nao administra.
+  // Nao tem senha nem token; e a politica de aprovador separado impede aprovar o proprio pedido.
+  // project:write / factory:generate / project:deploy so sao usados por etapas RED, que rodam
+  // apenas depois da aprovacao humana.
+  system_agent: ['project:read', 'project:analyze', 'project:write', 'project:deploy', 'repo:read', 'factory:generate', 'runtime:read', 'runtime:execute', 'memory:read', 'memory:write', 'ai:invoke', 'event:read', 'registry:read', 'graph:read', 'graph:write', 'capability:read', 'security:manage'],
   employee: ['project:read', 'repo:read', 'capability:read', 'memory:read', 'graph:read'],
   viewer: ['project:read', 'runtime:read', 'memory:read', 'graph:read', 'capability:read', 'event:read', 'discovery:read'],
 });

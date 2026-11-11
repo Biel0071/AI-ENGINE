@@ -1861,8 +1861,71 @@
     _getRenderFrameIntervalMs() {
       const nav = typeof navigator !== 'undefined' ? navigator : window?.navigator;
       const isHeadless = Boolean(nav?.webdriver) || /headless/i.test(nav?.userAgent || '') || Boolean(window.__FENIX_HEADLESS__);
-      if (isHeadless) return 100;
-      return this._isCompactViewport() ? 1000 / 16 : 1000 / 24;
+      if (this._softwareRendering) return this._adaptiveFrameIntervalMs(1000);
+      if (isHeadless) return this._adaptiveFrameIntervalMs(100);
+      return this._adaptiveFrameIntervalMs(this._isCompactViewport() ? 1000 / 16 : 1000 / 24);
+    }
+
+    // Fase 0 (2026-11-11): sem GPU a Cidade bloqueava o navegador por segundos. Mede o custo
+    // de cada quadro; com media acima de 50 ms cai para qualidade baixa (uma vez) e espaca os
+    // quadros para deixar o navegador livre. A escolha manual "alto" do usuario e respeitada.
+    _recordFrameCost(ms) {
+      const cost = Number(ms);
+      if (!Number.isFinite(cost) || cost < 0) return;
+      this._frameCostEma = Number.isFinite(this._frameCostEma) ? this._frameCostEma * 0.8 + cost * 0.2 : cost;
+      this._frameCostSamples = (this._frameCostSamples || 0) + 1;
+      if (this._frameCostSamples < 10 || this._frameCostEma <= 50 || this._autoDegraded === true) return;
+      let pref = null;
+      try { pref = window.localStorage.getItem('fenix_quality_profile'); } catch (_) {}
+      if (pref === 'high') return;
+      this._autoDegraded = true;
+      this.setQualityProfile('low');
+      this.setVisualDensity('low');
+    }
+
+    // Orcamento de luzes (2026-11-11): a cena tinha 60 luzes dinamicas e cada uma e calculada
+    // em todo pixel de todo material. Mantem acesas so as luzes pontuais mais fortes; as
+    // decorativas apagam (o brilho vem do material emissivo). Nunca acende o que outro codigo
+    // apagou. Devolve true quando mudou algo (o three.js recompila os shaders nessa hora).
+    _applyLightBudget(maxPointLights) {
+      if (!this.scene || typeof this.scene.traverse !== 'function') return false;
+      const budget = Math.max(0, Number(maxPointLights) || 0);
+      const candidates = [];
+      this.scene.traverse((obj) => {
+        if (!obj || !(obj.isPointLight || obj.isSpotLight)) return;
+        if (!obj.visible && !obj.userData?._budgetHidden) return;
+        candidates.push(obj);
+      });
+      candidates.sort((a, b) => (Number(b.intensity) || 0) * (Number(b.distance) || 50) - (Number(a.intensity) || 0) * (Number(a.distance) || 50));
+      let changed = false;
+      candidates.forEach((light, index) => {
+        const on = index < budget;
+        if (light.visible !== on) { light.visible = on; changed = true; }
+        if (light.userData) light.userData._budgetHidden = !on;
+      });
+      return changed;
+    }
+
+    // Renderizador WebGL por software (sem GPU): SwiftShader, llvmpipe, driver basico do Windows.
+    _isSoftwareRendererName(name) {
+      return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(String(name || ''));
+    }
+
+    _detectSoftwareRendering() {
+      try {
+        const gl = this.renderer?.getContext?.();
+        if (!gl) return false;
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        const name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+        return this._isSoftwareRendererName(name);
+      } catch (_) {
+        return false;
+      }
+    }
+
+    _adaptiveFrameIntervalMs(baseMs) {
+      if (!Number.isFinite(this._frameCostEma)) return baseMs;
+      return Math.min(2000, Math.max(baseMs, this._frameCostEma * 4));
     }
 
     _isCompactViewport() {
@@ -1907,8 +1970,8 @@
       const T = typeof THREE !== 'undefined' ? THREE : window.THREE;
       if (!T) return;
       this._qualityProfile = profile;
-      if (profile === 'low') {
-        this.renderer.setPixelRatio(1);
+      if (profile === 'low' || this._softwareRendering) {
+        this.renderer.setPixelRatio(this._softwareRendering ? 0.5 : 1);
         if (this.renderer.shadowMap) this.renderer.shadowMap.enabled = false;
       } else if (profile === 'balanced') {
         const compact = this._isCompactViewport();
@@ -2832,8 +2895,15 @@
         powerPreference: 'low-power'
       });
       this.renderer.setSize(w, h, false);
+      // Sem GPU, desenhar a Cidade ocupava 17 s a cada 15 s do navegador (medido em 2026-11-11):
+      // meia resolucao, sem sombras e ~1 quadro/s deixam a pagina responsiva.
+      this._softwareRendering = this._detectSoftwareRendering();
+      if (this._softwareRendering) {
+        if (this.host) this.host.dataset.softwareRendering = 'true';
+        console.info('[FenixWorld3D] renderizador por software detectado: meia resolucao, sem sombras, ~1 quadro/s');
+      }
       const compactViewport = this._isCompactViewport();
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, compactViewport ? 1 : 1.25);
+      const pixelRatio = this._softwareRendering ? 0.5 : Math.min(window.devicePixelRatio || 1, compactViewport ? 1 : 1.25);
       this.renderer.setPixelRatio(pixelRatio);
       this._lastRendererWidth = w;
       this._lastRendererHeight = h;
@@ -2841,7 +2911,7 @@
       this.renderer.outputColorSpace = T.SRGBColorSpace;
       this.renderer.toneMapping = T.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 0.92;
-      this.renderer.shadowMap.enabled = !compactViewport;
+      this.renderer.shadowMap.enabled = !compactViewport && !this._softwareRendering;
       this.renderer.shadowMap.type = T.PCFSoftShadowMap;
       this.renderer.debug.checkShaderErrors = false;
 
@@ -2861,7 +2931,7 @@
       const h = Math.floor(rect.height || this.host.clientHeight || 0);
       if (w > 0 && h > 0) {
         const compactViewport = this._isCompactViewport();
-        const pixelRatio = Math.min(window.devicePixelRatio || 1, compactViewport ? 1 : 1.25);
+        const pixelRatio = this._softwareRendering ? 0.5 : Math.min(window.devicePixelRatio || 1, compactViewport ? 1 : 1.25);
         const aspect = w / h;
         if (w === this._lastRendererWidth && h === this._lastRendererHeight
           && pixelRatio === this._lastRendererPixelRatio && aspect === this.camera.aspect) return;
@@ -12132,6 +12202,7 @@
 
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
       if (!this._shouldRenderFrame(now)) return;
+      const frameStartedAt = now;
 
       const elapsedDelta = this.clock.getDelta();
       const delta = Number.isFinite(elapsedDelta) ? Math.min(Math.max(elapsedDelta, 0), 0.05) : 0;
@@ -12651,7 +12722,12 @@
         this._renderWorldMinimap(time);
         this._lastWorldMinimapRenderAt = now;
       }
+      if (!Number.isFinite(this._lastLightBudgetAt) || now - this._lastLightBudgetAt >= 2000) {
+        this._applyLightBudget(this._softwareRendering ? 0 : 8);
+        this._lastLightBudgetAt = now;
+      }
       this.renderer.render(this.scene, this.camera);
+      this._recordFrameCost((typeof performance !== 'undefined' ? performance.now() : Date.now()) - frameStartedAt);
     }
 
     setVisualizationMode(mode) {
@@ -12709,10 +12785,10 @@
       if (this.host) this.host.dataset.cityDensity = this.visualDensity;
       if (this.renderer && typeof this.renderer.setPixelRatio === 'function') {
         const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
-        const targetRatio = this.visualDensity === 'low' ? 1 : (this.visualDensity === 'high' ? Math.min(dpr, 2) : Math.min(dpr, 1.5));
+        const targetRatio = this._softwareRendering ? 0.5 : (this.visualDensity === 'low' ? 1 : (this.visualDensity === 'high' ? Math.min(dpr, 2) : Math.min(dpr, 1.5)));
         this.renderer.setPixelRatio(targetRatio);
         if (this.renderer.shadowMap) {
-          this.renderer.shadowMap.enabled = this.visualDensity !== 'low';
+          this.renderer.shadowMap.enabled = this.visualDensity !== 'low' && !this._softwareRendering;
         }
       }
       const bar = document.getElementById('fenixCityModeBar');

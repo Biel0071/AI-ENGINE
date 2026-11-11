@@ -2526,10 +2526,17 @@
         }).join('') + `</div>`;
       }
 
+      // Fase 3 (2026-11-11): fontes consultadas pelo Fênix (verificadas no servidor); as citadas
+      // pela resposta ([F1]...) vêm destacadas. Sem fontes, nada é exibido.
+      const sources = Array.isArray(data.sources) ? data.sources : [];
+      const typeLabel = { runtime: 'runtime', file: 'arquivo', route: 'rota', view: 'tela', memory: 'memória' };
+      const sourcesHtml = sources.length ? `<details class="fsb-sources"${sources.some((s) => s.cited) ? ' open' : ''}><summary><i class="ph-bold ph-books"></i> Fontes (${sources.filter((s) => s.cited).length} citadas de ${sources.length} consultadas)</summary><ol>` + sources.map((s) => `<li class="${s.cited ? 'cited' : ''}"><span class="fsb-src-n">[F${Number(s.n)}]</span> <span class="fsb-src-type">${this.escapeHTML(typeLabel[s.type] || s.type)}</span> <code>${this.escapeHTML(s.reference)}</code></li>`).join('') + `</ol></details>` : '';
+
       msg.innerHTML = `
         <div class="fsb-msg-sender"><i class="ph-bold ph-robot"></i> Mascote Fênix</div>
         <div class="fsb-bubble">
           ${bodyHtml}
+          ${sourcesHtml}
           ${missionHtml}
           ${actionsHtml}
           <div class="fsb-msg-meta">

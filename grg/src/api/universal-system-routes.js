@@ -1573,6 +1573,17 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     return sendJson(res, 200, { ok: true, count: agents.length, agents });
   }
 
+  // Fase 2 (2026-11-11): estado real de cada agente (jobs, etapas de missao, tokens, modelo) +
+  // ferramentas de IA conectadas pelo hub. Sem atividade, o agente diz SEM_ATIVIDADE.
+  if (method === 'GET' && pathname === '/api/v2/agents/live') {
+    await app.controlPlane.authorize(identity.tenantId, identity.actorId, 'runtime:read');
+    const { computeAgentLiveStats } = require('../agents/agent-live-stats');
+    const state = await app.store.read();
+    const { agents, unmatched } = computeAgentLiveStats({ roster: globalDynamicWorkforce.getAllAgents(), state, tenantId: identity.tenantId });
+    const tools = app.hub ? await app.hub.listClients({ tenantId: identity.tenantId, actorId: identity.actorId }).catch(() => []) : [];
+    return sendJson(res, 200, { ok: true, generatedAt: new Date().toISOString(), agents, unmatched, tools: tools.filter((t) => !t.revokedAt).map((t) => ({ id: t.id, provider: t.provider, label: t.label, online: t.online, lastSeenAt: t.lastSeenAt, activeLocks: t.activeLocks })) });
+  }
+
   const matchAgent = pathname.match(/^\/api\/v2\/agents\/([^/]+)$/);
   if (method === 'GET' && matchAgent) {
     const agents = globalDynamicWorkforce.getAllAgents();
