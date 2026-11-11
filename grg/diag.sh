@@ -6,7 +6,7 @@ API="http://localhost:4400"
 echo "=== AUTH ==="
 LOGIN=$(curl -s -X POST "$API/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"grg-admin","password":"grg123"}')
+  -d "{\"username\":\"${FENIX_DIAG_USER:-grg-admin}\",\"password\":\"${FENIX_DIAG_PASSWORD:?defina FENIX_DIAG_PASSWORD no ambiente}\"}")
 echo "$LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Token OK' if d.get('token') else 'Auth FAILED: '+str(d))"
 TOKEN=$(echo "$LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))")
 

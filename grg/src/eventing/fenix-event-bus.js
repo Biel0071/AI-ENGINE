@@ -79,6 +79,12 @@ FenixEventBus.prototype.emit = function(type, data) {
       client.write('data: ' + JSON.stringify(event) + '\n\n');
     } catch (e) {
       self.clients.delete(client);
+      try {
+        var { getSelfHealingEngine } = require('../reliability/self-healing-engine');
+        var eng = self.selfHealingEngine || getSelfHealingEngine();
+        eng.recordSSEEventFailure();
+        eng.recordSSEDisconnection();
+      } catch (_) {}
     }
   });
 
@@ -90,7 +96,20 @@ FenixEventBus.prototype.emit = function(type, data) {
 FenixEventBus.prototype.addSSEClient = function(res) {
   var self = this;
   this.clients.add(res);
-  res.on('close', function() { self.clients.delete(res); });
+  try {
+    var { getSelfHealingEngine } = require('../reliability/self-healing-engine');
+    var eng = this.selfHealingEngine || getSelfHealingEngine();
+    eng.recordSSEConnection();
+  } catch (_) {}
+
+  res.on('close', function() {
+    self.clients.delete(res);
+    try {
+      var { getSelfHealingEngine } = require('../reliability/self-healing-engine');
+      var eng = self.selfHealingEngine || getSelfHealingEngine();
+      eng.recordSSEDisconnection();
+    } catch (_) {}
+  });
   var recent = this.history.slice(-25);
   for (var i = 0; i < recent.length; i++) {
     try { res.write('data: ' + JSON.stringify(recent[i]) + '\n\n'); } catch (e) {}

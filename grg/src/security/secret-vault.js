@@ -14,11 +14,12 @@ class SecretVault {
   constructor({ vaultPath = null } = {}) {
     this.vaultPath = vaultPath || path.join(__dirname, '..', '..', 'memory', '.secrets-vault.json');
     this.inMemorySecrets = new Map();
-    try {
-      this.encryptionKey = crypto.scryptSync(process.env.FENIX_VAULT_KEY || 'fenix-master-secret-key-salt-2026', 'salt', 32, { maxmem: 64 * 1024 * 1024 });
-    } catch {
-      this.encryptionKey = crypto.createHash('sha256').update(process.env.FENIX_VAULT_KEY || 'fenix-master-secret-key-salt-2026').digest();
-    }
+    // LEVEL 1: fail-closed. Sem FENIX_VAULT_KEY o cofre nao cifra nem decifra nada;
+    // antes caia numa chave fixa versionada no git (qualquer copia do repo decifrava).
+    const vaultKey = String(process.env.FENIX_VAULT_KEY || '');
+    this.encryptionKey = vaultKey.length >= 16
+      ? crypto.scryptSync(vaultKey, String(process.env.FENIX_VAULT_SALT || 'fenix-secret-vault-v2'), 32, { maxmem: 64 * 1024 * 1024 })
+      : null;
     this._loadVault();
   }
 
@@ -50,10 +51,17 @@ class SecretVault {
     }
   }
 
+  _requireKey() {
+    if (!this.encryptionKey) {
+      throw new Error('SecretVault locked: FENIX_VAULT_KEY (16+ chars) is not configured');
+    }
+  }
+
   /**
    * Store a secret and return its deterministic, unguessable secretRef
    */
   storeSecret(provider, payload = {}) {
+    this._requireKey();
     const secretRef = `sec_${provider}_${crypto.randomBytes(8).toString('hex')}`;
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv('aes-256-gcm', this.encryptionKey, iv);
@@ -80,6 +88,7 @@ class SecretVault {
    * Resolve secret safely in internal backend execution
    */
   resolveSecret(secretRef) {
+    this._requireKey();
     if (!secretRef || !this.inMemorySecrets.has(secretRef)) return null;
     try {
       const record = this.inMemorySecrets.get(secretRef);

@@ -14,7 +14,14 @@
   const refresh=make('button','fw3-refresh','↻'); refresh.type='button'; refresh.setAttribute('aria-label','Atualizar dados do mundo'); refresh.addEventListener('click',()=>engine.refresh());
   nav.append(back,list,refresh); top.append(identity,nav); chrome.append(top);
   const context=make('aside','fw3-context'); context.hidden=true; context.setAttribute('aria-label','Detalhes da seleção'); chrome.append(context);
-  const close=make('button','fw3-context-close','×'); close.type='button'; close.setAttribute('aria-label','Fechar detalhes'); close.addEventListener('click',()=>engine.back());
+  const close=make('button','fw3-context-close','×'); close.type='button'; close.setAttribute('aria-label','Fechar detalhes'); close.addEventListener('click',()=>{
+    // × fecha o painel. Antes chamava back(), que voltava para a selecao anterior do
+    // historico (outro agente) e o painel nunca fechava. Dentro de um predio, segue voltando.
+    if (engine.state?.level==='interior') return engine.back();
+    engine.state.selected=null; engine.state.history=[]; engine.selectedAgent=null; engine.selectedBuilding=null;
+    window.dispatchEvent(new CustomEvent('fenix:world-selection',{detail:{level:engine.state.level||'world'}}));
+    render();
+  });
   const routeSelect=make('select','fw3-route'); routeSelect.setAttribute('aria-label','Ir para bairro');
   const routes = [['command-center', 'Central de Comando'], ['software-house', 'Fábrica de Software'], ['intelligence', 'Inteligência'], ['operations', 'Operações']];
   for (const [id,name] of routes) { const option=document.createElement('option'); option.value=id; option.textContent=name; routeSelect.append(option); }

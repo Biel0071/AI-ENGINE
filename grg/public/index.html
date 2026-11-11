@@ -299,7 +299,8 @@
     <link rel="stylesheet" href="/operations-live.css?v=5-jobengine-persisted-20261009">
     <link rel="stylesheet" href="/city-brief.css?v=2">
     <link rel="stylesheet" href="/premium-world.css?v=2">
-    <link rel="stylesheet" href="/fenix-world-3d.css?v=20261105-floor-dock-fit-2">
+    <link rel="stylesheet" href="/fenix-world-3d.css?v=8-city-inspector-hig-copy">
+    <link rel="stylesheet" href="/city-adaptive-dock.css?v=20261109-level23">
     <link rel="stylesheet" href="/memory-live.css?v=20261105-v2.6.0">
     <link rel="stylesheet" href="/inspector-measured.css?v=1">
     <link rel="stylesheet" href="/office.css?v=2">
@@ -1681,11 +1682,11 @@
             </button>
 
             <!-- 3. BUILD: Projetos e IDE -->
-            <button class="nav-item fnx-nav-pill-btn" data-view="projects" data-nav="projects" title="Projetos — Catálogo em leitura" onclick="window.showView('projects')">
+            <button class="nav-item fnx-nav-pill-btn" data-view="projects" data-nav="projects" title="Projects — Fábrica de Software e Catálogo" onclick="window.showView('projects')">
               <i class="ph-bold ph-cube"></i>
               <div class="fnx-nav-label-box">
-                <span class="fnx-nav-title">Projetos</span>
-                <span class="fnx-nav-subtitle">Carregando catálogo…</span>
+                <span class="fnx-nav-title">Projects</span>
+                <span class="fnx-nav-subtitle">Fábrica de Software</span>
               </div>
             </button>
 
@@ -1698,7 +1699,16 @@
               </div>
             </button>
 
-            <!-- 5. CONTROL: Sistema e Métricas -->
+            <!-- 5. STUDIO: IDE & UI Builder -->
+            <button class="nav-item fnx-nav-pill-btn" data-view="ide" data-nav="ide" title="Studio — IDE e UI Builder" onclick="window.showView('ide')">
+              <i class="ph-bold ph-code"></i>
+              <div class="fnx-nav-label-box">
+                <span class="fnx-nav-title">Studio</span>
+                <span class="fnx-nav-subtitle">IDE &amp; UI Builder</span>
+              </div>
+            </button>
+
+            <!-- 6. CONTROL: Sistema e Métricas -->
             <button class="nav-item fnx-nav-pill-btn" data-view="runtime" data-nav="runtime" title="Control — Sistema e Métricas" onclick="window.showView('runtime')">
               <i class="ph-bold ph-sliders"></i>
               <div class="fnx-nav-label-box">
@@ -1726,7 +1736,7 @@
             </button>
 
             <!-- 8. DEFESA: Central SOC & Zero-Trust -->
-            <button class="nav-item fnx-nav-pill-btn" data-view="defense" data-nav="defense" title="Defesa — Segurança &amp; Conformidade" onclick="window.showView('defense')">
+            <button class="nav-item fnx-nav-pill-btn" data-nav="defense" title="Defesa — Segurança &amp; Conformidade" onclick="window.showView('defense')">
               <i class="ph-bold ph-shield-check"></i>
               <div class="fnx-nav-label-box">
                 <span class="fnx-nav-title">Defesa</span>
@@ -2882,6 +2892,7 @@
               <!-- Mode Switcher -->
               <div class="fenix-pill-tabs" id="fenixCityModeTabs">
                 <button class="fenix-pill-tab active" id="btnCityModeWorld3D" onclick="window.fenixSetCityMode('world3d')"><i class="ph-bold ph-cube"></i> Cidade 3D & Escritório</button>
+                <button class="fenix-pill-tab" id="btnCityModeHolo" onclick="window.fenixSetCityMode('holo')"><i class="ph-bold ph-projector-screen-chart"></i> Mesa Holográfica</button>
                 <button class="fenix-pill-tab" id="btnCityModeCockpit" onclick="window.fenixToggleCityCockpit?.()"><i class="ph-bold ph-squares-four"></i> Cockpit Operacional</button>
                 <button class="fenix-pill-tab" id="btnCityModeNetwork" onclick="window.fenixCityReality?.setMode('network')"><i class="ph-bold ph-tree-structure"></i> Rede Cognitiva</button>
                 <!-- Compatibility hidden aliases for DOM contracts -->
@@ -2943,6 +2954,7 @@
               <button type="button" class="fenix-miro-hud-btn" id="btnMiroRotateCamera" onclick="window.fenixRotateCamera ? window.fenixRotateCamera() : window.fenixCity?.rotateCamera?.()" title="Girar Câmera (90°)" aria-label="Girar Câmera"><i class="ph-bold ph-arrow-clockwise"></i></button>
               <button type="button" class="fenix-miro-hud-btn" id="btnMiroToggle2D3D" onclick="window.fenixToggle2D3DMap?.()" title="Alternar Perspectiva 2D / 3D" aria-label="Alternar Perspectiva 2D e 3D"><i class="ph-bold ph-cube"></i></button>
               <button type="button" class="fenix-miro-hud-btn" id="btnMiroToggleDayNight" onclick="window.fenixToggleDayNight?.()" title="Alternar Dia / Noite" aria-label="Alternar Dia e Noite"><i class="ph-bold ph-sun-dim"></i></button>
+              <button type="button" class="fenix-miro-hud-btn" id="btnMiroToggleHolo" onclick="window.fenixToggleHoloMode ? window.fenixToggleHoloMode() : (window.FenixSpatialCity?.toggleHologramMode?.() || window.fenixWorld3D?.setHolographicCityMode?.(true))" title="Alternar Mesa Holográfica 3D (Gêmeo Digital Sci-Fi)" aria-label="Mesa Holográfica 3D"><i class="ph-bold ph-projector-screen-chart"></i></button>
               <button type="button" class="fenix-miro-hud-btn" id="btnMiroFullscreen" onclick="window.fenixToggleFullscreen?.()" title="Tela Cheia" aria-label="Tela Cheia"><i class="ph-bold ph-corners-out"></i></button>
               <button type="button" class="fenix-miro-hud-btn" id="btnMiroFitView" onclick="window.fenixMiroFitView?.()" title="Enquadrar Visão (Fit)" aria-label="Enquadrar Visão"><i class="ph-bold ph-arrows-out-cardinal"></i></button>
               <button type="button" class="fenix-miro-hud-btn" id="btnMiroToggleMinimap" onclick="window.fenixMiroToggleMinimap?.()" title="Alternar Minimapa" aria-label="Alternar Minimapa"><i class="ph-bold ph-map-trifold"></i></button>
@@ -2963,6 +2975,7 @@
             <!-- Floating Navigation Pill (5 Emojis Acoplados Acima do Minimap) -->
             <div class="fenix-city-floating-pill docked-above-minimap" id="fenixCityNavPill" role="toolbar" aria-label="Controles de visualização da cidade">
               <button type="button" class="fenix-city-pill-btn active" id="btnPillWorld3D" title="Mundo 3D WebGL" aria-label="Mundo 3D WebGL" onclick="window.fenixSetCityMode('world3d')"><span class="pill-emoji fnx-mono-icon"><i class="ph-bold ph-globe" aria-hidden="true"></i></span></button>
+              <button type="button" class="fenix-city-pill-btn" id="btnPillHoloMode" title="Mesa Holográfica 3D (Gêmeo Digital Sci-Fi)" aria-label="Mesa Holográfica 3D" onclick="window.fenixToggleHoloMode ? window.fenixToggleHoloMode() : (window.FenixSpatialCity?.toggleHologramMode?.() || window.fenixWorld3D?.setHolographicCityMode?.(true))"><span class="pill-emoji fnx-mono-icon"><i class="ph-bold ph-projector-screen-chart" aria-hidden="true"></i></span></button>
               <button type="button" class="fenix-city-pill-btn" id="btnPillDistritos" title="Visão de Distritos" aria-label="Visão de Distritos" onclick="window.fenixCity?.setZoom?.(1.05)"><span class="pill-emoji fnx-mono-icon"><i class="ph-bold ph-buildings" aria-hidden="true"></i></span></button>
               <button type="button" class="fenix-city-pill-btn" id="btnPillPredios" title="Aproximar Prédios" aria-label="Aproximar Prédios" onclick="window.fenixCity?.setZoom?.(1.45)"><span class="pill-emoji fnx-mono-icon"><i class="ph-bold ph-house" aria-hidden="true"></i></span></button>
               <button type="button" class="fenix-city-pill-btn" id="btnPillAndares" title="Alternar Central / Andares" aria-label="Alternar Central e Andares" onclick="document.getElementById('fenixModularBottomDock')?.classList.toggle('minimized')"><span class="pill-emoji fnx-mono-icon"><i class="ph-bold ph-files" aria-hidden="true"></i></span></button>
@@ -3110,7 +3123,7 @@
               <!-- Card 4: Jobs em Execução -->
               <div class="dock-card-v26 dock-jobs-card" id="dockWindowJobs">
                 <div class="dock-card-header">
-                  <div class="dock-card-title"><i class="ph-bold ph-cpu" style="color:#00F5A0;"></i> Jobs em Execução</div>
+                  <div class="dock-card-title"><i class="ph-bold ph-cpu" style="color:#00F5A0;"></i> Jobs Recentes</div>
                   <a href="javascript:void(0)" class="dock-header-link" onclick="window.showView?.('operations')">Ver todos &gt;</a>
                 </div>
                 <div class="dock-card-content dock-jobs-list" id="dockCardJobsList">
@@ -3120,12 +3133,33 @@
 
               <!-- Preserved Hidden Compatibility Elements for Automated Test Suites -->
               <div id="dock4GridContainer" style="display:none !important;" aria-hidden="true">
+                <div id="dockWindowOverview"></div>
                 <div id="dockWindowMap"></div>
                 <div id="dockWindowCutaway"><span id="dockCutawayTitle">API Platform Spire</span><div id="dockCutawayContent"></div></div>
                 <span id="dockCardAgentsCount">—</span>
                 <span id="dockCardMissionsCount">—</span>
                 <span id="dockBadgeAgents">—</span>
                 <span id="dockBadgeMissions">—</span>
+              </div>
+            </div>
+
+            <!-- Universal Contextual Entity Popup Modal (Level 23 - Regra 3) -->
+            <div id="fenixEntityPopupModal" class="fenix-entity-modal-overlay" aria-hidden="true" style="display:none;">
+              <div class="fenix-entity-modal-backdrop" onclick="window.fenixCloseEntityPopup?.()"></div>
+              <div class="fenix-entity-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="entityPopupModalTitle">
+                <header class="fenix-entity-modal-header">
+                  <div class="entity-header-left">
+                    <span class="entity-type-badge" id="entityPopupModalBadge">ENTIDADE</span>
+                    <h3 class="entity-modal-title" id="entityPopupModalTitle">—</h3>
+                  </div>
+                  <div class="entity-header-actions" style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="entity-modal-pin" id="entityPopupModalPin" onclick="window.fenixTogglePinEntityPopup?.()" title="Fixar / Desafixar Popup" aria-label="Fixar popup">📌</button>
+                    <button type="button" class="entity-modal-close" onclick="window.fenixCloseEntityPopup?.()" aria-label="Fechar modal">✕</button>
+                  </div>
+                </header>
+                <div class="fenix-entity-modal-body" id="entityPopupModalBody">
+                  <div class="entity-loading-state">Carregando dados reais da entidade…</div>
+                </div>
               </div>
             </div>
 
@@ -4046,6 +4080,7 @@
               <span class="v10-pulse-dot"></span> Sincronizando telemetria do JobEngine em tempo real...
             </div>
           </div>
+          <div id="fenixAutonomousOperationsTarget" style="display:none; width:100%; padding:16px;"></div>
         </div>
 
 <div id="view-runtime" class="view" style="flex-direction:column; width:100%; height:100%; background-color:#050810 !important;">
@@ -4059,6 +4094,7 @@
         <button class="fenix-pill-tab" onclick="window.fenixSwitchControlTab('terminal')"><i class="ph-bold ph-terminal"></i> Terminal Host</button>
         <button class="fenix-pill-tab" onclick="window.fenixSwitchControlTab('observability')"><i class="ph-bold ph-chart-line-up"></i> Observabilidade</button>
         <button class="fenix-pill-tab" onclick="window.fenixSwitchControlTab('mcp')"><i class="ph-bold ph-cpu"></i> Servidores MCP</button>
+        <button class="fenix-pill-tab" data-tab="reliability" onclick="window.fenixSwitchControlTab('reliability')"><i class="ph-bold ph-shield-check"></i> Confiabilidade SRE</button>
       </div>
     </div>
   </div>
@@ -4591,6 +4627,7 @@
                 <button class="fenix-pill-tab" data-tab="terminal" onclick="window.fenixSwitchControlTab('terminal')"><i class="ph-bold ph-terminal"></i> Terminal Host</button>
                 <button class="fenix-pill-tab" data-tab="observability" onclick="window.fenixSwitchControlTab('observability')"><i class="ph-bold ph-chart-line-up"></i> Observabilidade</button>
                 <button class="fenix-pill-tab active" data-tab="mcp" onclick="window.fenixSwitchControlTab('mcp')"><i class="ph-bold ph-cpu"></i> Servidores MCP</button>
+                <button class="fenix-pill-tab" data-tab="reliability" onclick="window.fenixSwitchControlTab('reliability')"><i class="ph-bold ph-shield-check"></i> Confiabilidade SRE</button>
               </div>
             </div>
           </div>
@@ -4917,10 +4954,12 @@
                 <button class="fenix-pill-tab" data-tab="terminal" onclick="window.fenixSwitchControlTab('terminal')"><i class="ph-bold ph-terminal"></i> Terminal Host</button>
                 <button class="fenix-pill-tab active" data-tab="observability" onclick="window.fenixSwitchControlTab('observability')"><i class="ph-bold ph-chart-line-up"></i> Observabilidade</button>
                 <button class="fenix-pill-tab" data-tab="mcp" onclick="window.fenixSwitchControlTab('mcp')"><i class="ph-bold ph-cpu"></i> Servidores MCP</button>
+                <button class="fenix-pill-tab" data-tab="reliability" onclick="window.fenixSwitchControlTab('reliability')"><i class="ph-bold ph-shield-check"></i> Confiabilidade SRE</button>
               </div>
             </div>
           </div>
           <main class="workspace-view"><header class="workspace-header"><div><small>EVIDENCIA</small><h1>Observabilidade</h1></div><button id="sampleBtn">Coletar amostra</button></header><section class="workspace-grid two-columns"><article class="workspace-card"><h2>Metricas</h2><div id="observabilityMetrics" class="metric-grid"></div></article><article class="workspace-card"><h2>Series</h2><div id="seriesGrid" class="metric-grid"></div></article></section></main>
+          <div id="fenixReliabilitySection" style="display:block; overflow-y:auto; flex:1;"></div>
         </div>
 
         <div id="view-terminal" class="view" style="flex-direction:column; width:100%; height:100%; background-color:#050810 !important;">
@@ -4932,6 +4971,7 @@
                 <button class="fenix-pill-tab active" data-tab="terminal" onclick="window.fenixSwitchControlTab('terminal')"><i class="ph-bold ph-terminal"></i> Terminal Host</button>
                 <button class="fenix-pill-tab" data-tab="observability" onclick="window.fenixSwitchControlTab('observability')"><i class="ph-bold ph-chart-line-up"></i> Observabilidade</button>
                 <button class="fenix-pill-tab" data-tab="mcp" onclick="window.fenixSwitchControlTab('mcp')"><i class="ph-bold ph-cpu"></i> Servidores MCP</button>
+                <button class="fenix-pill-tab" data-tab="reliability" onclick="window.fenixSwitchControlTab('reliability')"><i class="ph-bold ph-shield-check"></i> Confiabilidade SRE</button>
               </div>
             </div>
           </div>
@@ -6139,6 +6179,11 @@ window.__fenixSubmitIdeChat = async function () {
   };
 
   const ROUTE_ALIASES = {
+    'command': 'city',
+    'studio': 'ide',
+    'work': 'operations',
+    'world': 'city',
+    'control': 'runtime',
     'defense': 'defense',
     'soc': 'defense',
     'security': 'defense',
@@ -6154,6 +6199,8 @@ window.__fenixSubmitIdeChat = async function () {
     'skills': 'knowledge',
     'dna': 'knowledge',
     'metrics': 'observability',
+    'reliability': 'observability',
+    'sre': 'observability',
     'providers': 'mcp',
     'monitoring': 'runtime',
     'events': 'observability',
@@ -6249,7 +6296,7 @@ window.__fenixSubmitIdeChat = async function () {
     document.querySelectorAll('.v10-nav-btn, [data-nav], [data-view]').forEach(btn => {
       let target = btn.dataset.view || btn.dataset.nav;
       if (ROUTE_ALIASES[target]) target = ROUTE_ALIASES[target];
-      const isControlGroup = target === 'runtime' && ['runtime', 'terminal', 'observability', 'mcp'].includes(viewId);
+      const isControlGroup = target === 'runtime' && ['runtime', 'terminal', 'observability', 'mcp', 'reliability'].includes(viewId);
       const isMemoryGroup = target === 'memory' && ['memory', 'knowledge', 'flowgraph'].includes(viewId);
       btn.classList.toggle('active', target === viewId || isControlGroup || isMemoryGroup);
     });
@@ -6324,9 +6371,10 @@ window.__fenixSubmitIdeChat = async function () {
       } else if (viewId === 'runtime') {
         if (typeof window.loadRuntimeView === 'function') window.loadRuntimeView();
         if (typeof window.fenixRenderRuntimeServices === 'function') window.fenixRenderRuntimeServices();
-      } else if (viewId === 'observability') {
+      } else if (viewId === 'observability' || viewId === 'reliability') {
         if (typeof window.loadObservabilityView === 'function') window.loadObservabilityView();
         if (window.ObservatoryClient && typeof window.ObservatoryClient.refresh === 'function') window.ObservatoryClient.refresh();
+        if (window.fenixReliability && typeof window.fenixReliability.refresh === 'function') window.fenixReliability.refresh();
       } else if (viewId === 'project') {
         if (typeof window.loadInfrastructureView === 'function') window.loadInfrastructureView();
       } else if (viewId === 'browser') {
@@ -6940,14 +6988,22 @@ window.__fenixSubmitIdeChat = async function () {
         return;
       }
       const fallbackAvatars = ['/assets/agent-data.png', '/assets/agent-developer.png', '/assets/agent-product.png', '/assets/agent-devops.png'];
-      const displayAgents = agents.slice(0, 4);
+      const displayAgents = agents.slice(0, 80);
       const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
       container.innerHTML = displayAgents.map((ag, idx) => {
         const agId = ag.id || ag.agentId || `agent-${idx}`;
-        const agName = ag.name || agId;
-        const roleStr = ag.role || ag.specialty || ag.domain || 'Especialista Fênix';
-        const fallback = fallbackAvatars[idx % fallbackAvatars.length];
+        // Mesmo criterio do mundo 3D: se o runtime so manda o id (UUID), mostra o papel real.
+        const agName = window.FenixWorld3DEngine?._agentDisplayName
+          ? window.FenixWorld3DEngine._agentDisplayName({ ...ag, id: agId })
+          : (ag.name || agId);
+        const roleStr = ag.role || ag.specialty || ag.domain || 'Papel não informado';
+        const roleKey = `${ag.role || ''} ${ag.department || ''}`.toLowerCase();
+        const fallback = /data|mem|database|vault|dados/.test(roleKey) ? '/assets/agent-data.png'
+          : /ops|devops|infra|sre|runtime|security|segur/.test(roleKey) ? '/assets/agent-devops.png'
+          : /product|ceo|master|exec|manager|lead|chief|gestor/.test(roleKey) ? '/assets/agent-product.png'
+          : (/dev|engin|code|front|back|architect/.test(roleKey) ? '/assets/agent-developer.png' : fallbackAvatars[idx % fallbackAvatars.length]);
+        const accent = window.FenixWorld3DEngine?._agentRoleColor ? window.FenixWorld3DEngine._agentRoleColor(ag) : '#38bdf8';
         const rawAv = ag.avatar;
         const avatarSrc = (typeof rawAv === 'string' && (rawAv.startsWith('/') || rawAv.startsWith('http://') || rawAv.startsWith('https://')))
           ? rawAv
@@ -6978,7 +7034,7 @@ window.__fenixSubmitIdeChat = async function () {
         }
 
         return `
-          <div class="dock-featured-agent-card" onclick="window.fenixFocusOrOpenAgent ? window.fenixFocusOrOpenAgent('${escapeHtml(agId)}') : (window.fenixCity?.focusAgent?.('${escapeHtml(agId)}') || window.fenixOpenAgent?.('${escapeHtml(agId)}'))" title="Focar ${escapeHtml(agName)} (${escapeHtml(roleStr)}) — ${statusText}">
+          <div class="dock-featured-agent-card" style="--agent-accent:${escapeHtml(accent)}" onclick="window.fenixFocusOrOpenAgent ? window.fenixFocusOrOpenAgent('${escapeHtml(agId)}') : (window.fenixCity?.focusAgent?.('${escapeHtml(agId)}') || window.fenixOpenAgent?.('${escapeHtml(agId)}'))" title="Focar ${escapeHtml(agName)} (${escapeHtml(roleStr)}) — ${statusText}">
             <div class="dock-featured-agent-avatar"><img src="${escapeHtml(avatarSrc)}" alt="${escapeHtml(agName)}" onerror="this.src='/assets/agent-developer.png'" /></div>
             <div class="dock-featured-agent-name">${escapeHtml(agName)}</div>
             <div class="dock-featured-agent-role">${escapeHtml(roleStr)}</div>
@@ -6996,7 +7052,11 @@ window.__fenixSubmitIdeChat = async function () {
         return;
       }
       const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-      const displayEvents = events.slice(0, 5);
+      const meaningfulEvents = events.filter(ev => {
+        const t = String(ev.type || ev.category || '').toLowerCase();
+        return !t.includes('simulation.tick') && !t.includes('heartbeat');
+      });
+      const displayEvents = (meaningfulEvents.length > 0 ? meaningfulEvents : events).slice(0, 5);
 
       container.innerHTML = displayEvents.map(ev => {
         const eventTime = ev.occurredAt || ev.timestamp || ev.createdAt;
@@ -7029,6 +7089,44 @@ window.__fenixSubmitIdeChat = async function () {
     }
     window.renderDockFeaturedAgents = renderDockFeaturedAgents;
     window.renderDockEvents = renderDockEvents;
+
+    function renderDockJobs(jobs, isOffline = false) {
+      const container = document.getElementById('dockCardJobsList');
+      if (!container) return;
+      if (isOffline) {
+        container.innerHTML = '<div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot dot-orange"></span><span class="dock-event-desc">Fila de jobs indisponível · Runtime desconectado</span></div>';
+        return;
+      }
+      if (!Array.isArray(jobs) || jobs.length === 0) {
+        container.innerHTML = '<div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot dot-green"></span><span class="dock-event-desc">Nenhum job em execução no momento</span></div>';
+        return;
+      }
+      const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const displayJobs = jobs.slice(0, 5);
+      container.innerHTML = displayJobs.map(j => {
+        const jobTime = j.startedAt || j.createdAt || j.timestamp;
+        const parsedTime = jobTime ? new Date(jobTime) : null;
+        const time = parsedTime && !Number.isNaN(parsedTime.getTime())
+          ? parsedTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          : '—';
+        const status = String(j.status || 'ACTIVE').toUpperCase();
+        let dotClass = 'dot-blue';
+        if (/COMPLETED|SUCCEEDED/i.test(status)) dotClass = 'dot-green';
+        else if (/FAIL|ERROR/i.test(status)) dotClass = 'dot-orange';
+        else if (/RUNNING|ACTIVE/i.test(status)) dotClass = 'dot-cyan';
+        const title = escapeHtml(j.title || j.name || j.type || j.id);
+        const worker = escapeHtml(j.assignedWorker || j.worker || j.workerId || j.agentId || '—');
+        return `
+          <div class="dock-event-item" data-job-id="${escapeHtml(j.id || j.jobId)}" role="button" tabindex="0" title="Job ${escapeHtml(j.id)} [${status}] — ${title}">
+            <span class="dock-event-time">${time}</span>
+            <span class="dock-event-dot ${dotClass}"></span>
+            <span class="dock-event-type" style="color:#00f5a0; font-weight:600; font-size:10px; margin-right:4px;">${status}</span>
+            <span class="dock-event-desc" style="color:#94a3b8; font-size:10px;">${title} · ${worker}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    window.renderDockJobs = renderDockJobs;
 
     try {
       setCityConnectionState('CONNECTING');
@@ -7103,6 +7201,16 @@ window.__fenixSubmitIdeChat = async function () {
         renderDockEvents(window.__fenixCityEventsCache || [], false);
       }
 
+      // Populate dock Region D (Card 4) with real live jobs
+      try {
+        const jobsRes = await requestJSON('/api/v2/jobs').catch(() => null);
+        const jobsList = Array.isArray(jobsRes?.jobs) ? jobsRes.jobs : (Array.isArray(livingState.jobs) ? livingState.jobs : []);
+        window.__fenixCityJobsCache = jobsList;
+        renderDockJobs(jobsList, false);
+      } catch (_) {
+        renderDockJobs(window.__fenixCityJobsCache || [], false);
+      }
+
       window.__fenixCityRetryCount = 0;
       if (window.__fenixCityRetryTimer) {
         clearTimeout(window.__fenixCityRetryTimer);
@@ -7135,10 +7243,12 @@ window.__fenixSubmitIdeChat = async function () {
         }
         renderDockFeaturedAgents(cached.agentsRes.agents, true);
         renderDockEvents(window.__fenixCityEventsCache || [], true);
+        renderDockJobs(window.__fenixCityJobsCache || [], true);
       } else {
         setCityConnectionState('DISCONNECTED', { error: err?.message });
         renderDockFeaturedAgents([], true);
         renderDockEvents([], true);
+        renderDockJobs([], true);
       }
 
       const activeWorld3D = window.fenixWorld3D || window.fenixWorldEngine3D;
@@ -8365,5 +8475,8 @@ window.__fenixSubmitIdeChat = async function () {
     <script defer src="/fenix-spatial-city.js?v=20261105-workspace-wiring-2"></script>
     <script defer src="/fenix-universal-3d-studio.js?v=20261105-v2.6.0"></script>
     <script defer src="/fenix-workspace-layout-manager.js?v=20261105-v2.6.0"></script>
+    <script defer src="/fenix-city-adaptive-dock.js?v=20261109-level23"></script>
+    <script defer src="/autonomous-operations-panel.js?v=20261109-v26"></script>
+    <script defer src="/reliability-operations-panel.js?v=20261109-v27"></script>
 </body>
 </html>

@@ -313,7 +313,9 @@ test('FÊNIX OS — World Reality Restoration 14-Step Playwright E2E Acceptance 
   assert.ok(await page.locator('#fenixModularBottomDock').isVisible(), 'Bottom dock must be visible');
   assert.ok(await page.locator('#fenixWorldMinimap').isVisible(), 'Minimap card must be visible');
   assert.ok(await page.locator('#dockWindowAgents').isVisible(), 'Agents card must be visible');
-  assert.ok(await page.locator('#dockWindowMissions').isVisible(), 'Missions card must be visible');
+  // Eventos sairam do dock e ficam no botao Eventos do rodape (com filtros por tipo real).
+  assert.equal(await page.locator('#dockWindowMissions').isVisible(), false, 'Events list moved out of the dock');
+  assert.ok(await page.locator('#footerAlertBtn').isVisible(), 'Events button must be visible in the footer');
   assert.ok(await page.locator('#dockWindowJobs').isVisible(), 'Jobs card must be visible');
 
   // ── Passo 10: Alternar para outro Edifício (Fênix OS HQ) ──

@@ -176,6 +176,8 @@ async function recordLegacyProjectEdit(app, identity, projectId, rootPath, absol
   return result;
 }
 const { execSync, execFileSync } = require('child_process');
+const { parseSafeCommand } = require('../security/safe-command');
+const { httpStatusFor } = require('../kernel/errors');
 
 const gitService = new GitHubService();
 const { RealityEngine } = require('./reality-engine');
@@ -494,6 +496,10 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
   // ═════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith('/api/v2/reality-operator/')) {
     const subPath = pathname.replace('/api/v2/reality-operator/', '');
+    // LEVEL 1: o Reality Operator executa comandos, edita arquivos e controla o
+    // runtime. Leitura exige runtime:read; qualquer outra operacao exige runtime:admin.
+    // A permissao vem do vinculo persistido do usuario, nunca de parametros do cliente.
+    await app.controlPlane.authorize(identity.tenantId, identity.actorId, method === 'GET' ? 'runtime:read' : 'runtime:admin');
 
     // 1. Self-Aware Project State (10 fundamental questions)
     if (method === 'GET' && subPath === 'status') {
@@ -501,7 +507,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const state = await globalRealityOperatorKernel.getSelfAwareState();
         return sendJson(res, 200, state);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -511,7 +517,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const state = globalRealityOperatorKernel.getCityState();
         return sendJson(res, 200, state);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -535,7 +541,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         });
         return sendJson(res, 200, { ok: true, count: list.length, projects: list });
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -546,7 +552,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.readProject(body.projectId, body.path);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -559,7 +565,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
           || globalRealityOperatorKernel.getProject(matchProjTwin[1]);
         return sendJson(res, 200, { ok: true, projectId: matchProjTwin[1], twin });
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -570,7 +576,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.discoverScreens(body.projectId, body.baseUrl);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -581,7 +587,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.extractBehaviorGraph(body.projectId, body.url);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -592,7 +598,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.executeBrowserAction(body);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -603,7 +609,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.executeNaturalCommand(body.prompt, body.context);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -614,7 +620,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.runTests(body.projectId, body.testType);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -625,7 +631,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.startAutonomousEvolution(body.projectId, body.targetLevel);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -635,7 +641,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const stats = graphBrain.getStats();
         return sendJson(res, 200, { ok: true, stats, nodesCount: graphBrain.nodes.size, edgesCount: graphBrain.edges.length });
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -646,7 +652,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.editFile(body.filePath, body.content, body.options);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -657,7 +663,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.revertFile(body.filePath);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -668,7 +674,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.runVisualQa(body.projectId, body.url, body.options);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -679,7 +685,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.inspectElement(body.projectId, body.selector, body.options);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -690,7 +696,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = globalRealityOperatorKernel.executeTerminalCommand(body.command, body.cwd, body.options);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -701,7 +707,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.controlRuntime(body.action, body.service, body.options);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -712,7 +718,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = await globalRealityOperatorKernel.executeCommandPalette(body.commandId, body.params);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
 
@@ -734,7 +740,7 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
         const result = globalRealityOperatorKernel.recordMemory(body);
         return sendJson(res, 200, result);
       } catch(e) {
-        return sendJson(res, 500, { ok: false, error: e.message });
+        return sendJson(res, httpStatusFor(e), { ok: false, error: e.message });
       }
     }
   }
@@ -2191,10 +2197,12 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     if (!projectRoot) return sendJson(res, 503, { ok: false, error: 'Project workspace is unavailable' });
     const targetCwd = resolveProjectWorkingDirectory(projectRoot, cwd);
     if (!targetCwd) return sendJson(res, 403, { ok: false, error: 'cwd must be an existing directory inside the selected project workspace' });
+    // LEVEL 1: allowlist sem shell; comandos fora da lista -> 403 (ForbiddenError).
+    const parsedCommand = parseSafeCommand(command);
     const commandHash = crypto.createHash('sha256').update(command).digest('hex');
     const audit = await app.audit.record({ tenantId: identity.tenantId, actorId: identity.actorId, action: 'runtime.host_command.started', resource: { cwd: targetCwd, commandHash } });
     try {
-      const stdout = execSync(command, { cwd: targetCwd, timeout: 30000, maxBuffer: 512 * 1024, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const stdout = execFileSync(parsedCommand.file, parsedCommand.args, { cwd: targetCwd, timeout: 30000, maxBuffer: 512 * 1024, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], shell: parsedCommand.shell, windowsHide: true });
       await app.audit.record({ tenantId: identity.tenantId, actorId: identity.actorId, action: 'runtime.host_command.completed', resource: { auditId: audit.id, commandHash, code: 0 } });
       return sendJson(res, 200, { ok: true, command, cwd: targetCwd, stdout, stderr: '', code: 0, auditId: audit.id });
     } catch(err) {

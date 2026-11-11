@@ -119,7 +119,7 @@ test('FÊNIX OS — Level 20 Spatial City Visual Acceptance across 3 Viewports',
     assert.ok(kpisCount >= 7, `Expected at least 7 KPI capsules on viewport ${vp.name}, found ${kpisCount}`);
 
     // Verify Defesa Sidebar Item exists
-    const defenseBtn = page.locator('[data-view="defense"]');
+    const defenseBtn = page.locator('[data-nav="defense"], [data-view="defense"]');
     assert.ok(await defenseBtn.count() > 0, `Expected Defesa sidebar button on viewport ${vp.name}`);
 
     // Verify 5 Minimap Layer Filters exist

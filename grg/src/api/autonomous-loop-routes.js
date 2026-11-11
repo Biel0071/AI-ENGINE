@@ -21,6 +21,7 @@
 
 const http = require('http');
 const { FenixAutonomousLoop } = require('../evolution/fenix-autonomous-loop');
+const { AutonomousEvolutionEngine } = require('../evolution/autonomous-evolution-engine');
 const { getWorldStateEngine } = require('../world-model/world-state-engine');
 
 function forwardToDedicatedWorker(endpoint, method = 'GET', body = null, timeoutMs = 4000) {
@@ -67,9 +68,24 @@ function ensureLoopInstance(autonomousLoop, app, identity) {
   return null;
 }
 
-async function handleAutonomousLoopRoutes(req, res, { url, sendJson, readJson, app, autonomousLoop, identity }) {
+function ensureEvolutionEngine(app, identity, autonomousEngine) {
+  if (autonomousEngine) return autonomousEngine;
+  if (app?.autonomousEngine) return app.autonomousEngine;
+  if (!app) return new AutonomousEvolutionEngine();
+  if (!app.autonomousEngine) {
+    app.autonomousEngine = new AutonomousEvolutionEngine({
+      app,
+      eventBus: app.bus,
+      tenantId: identity?.tenantId || 'grg',
+      actorId: identity?.actorId || 'autonomous-supervisor'
+    });
+  }
+  return app.autonomousEngine;
+}
+
+async function handleAutonomousLoopRoutes(req, res, { url, sendJson, readJson, app, autonomousLoop, autonomousEngine, identity }) {
   const path = url.pathname;
-  const knownRoute = /^\/api\/v2\/autonomous\/(heartbeat|dashboard|memories|queue|mission|status|start|pause|resume|stop|cycle|tick|bugs|budget|scan|poc\/run|city-state|company-agents\/spawn|evolution-report|v6\/)/.test(path);
+  const knownRoute = /^\/api\/v2\/autonomous\/(heartbeat|dashboard|memories|queue|mission|status|start|pause|resume|stop|cycle|tick|bugs|budget|scan|poc\/run|city-state|company-agents\/spawn|evolution-report|v6\/|v26\/)/.test(path);
 
   if (knownRoute) {
     if (!identity?.tenantId || !identity?.actorId || !app?.controlPlane?.authorize) {
@@ -515,6 +531,82 @@ async function handleAutonomousLoopRoutes(req, res, { url, sendJson, readJson, a
       return sendJson(res, 404, { ok: false, error: `Missão ${missionId} não encontrada` });
     }
     return sendJson(res, 200, { ok: true, contract });
+  }
+
+  // ─── LEVEL 26: AUTONOMOUS EVOLUTION LOOP & OPERATIONS ROUTES ─────────────
+
+  // GET /api/v2/autonomous/v26/operations
+  if (req.method === 'GET' && path === '/api/v2/autonomous/v26/operations') {
+    const engine = ensureEvolutionEngine(app, identity, autonomousEngine);
+    return sendJson(res, 200, { ok: true, ...engine.getOperationsSnapshot() });
+  }
+
+  // GET /api/v2/autonomous/v26/tasks
+  if (req.method === 'GET' && path === '/api/v2/autonomous/v26/tasks') {
+    const engine = ensureEvolutionEngine(app, identity, autonomousEngine);
+    const projectId = url.searchParams.get('projectId') || undefined;
+    const status = url.searchParams.get('status') || undefined;
+    const priority = url.searchParams.get('priority') || undefined;
+    const source = url.searchParams.get('source') || undefined;
+    const tasks = engine.taskEngine.listTasks({ projectId, status, priority, source });
+    return sendJson(res, 200, { ok: true, total: tasks.length, tasks });
+  }
+
+  // POST /api/v2/autonomous/v26/tasks
+  if (req.method === 'POST' && path === '/api/v2/autonomous/v26/tasks') {
+    const body = await readJson(req).catch(() => ({}));
+    const engine = ensureEvolutionEngine(app, identity, autonomousEngine);
+    const resCreate = engine.taskEngine.createTask(body);
+    return sendJson(res, resCreate.deduplicated ? 200 : 201, { ok: true, ...resCreate });
+  }
+
+  // POST /api/v2/autonomous/v26/tasks/:id/approve
+  const taskApproveMatch = path.match(/^\/api\/v2\/autonomous\/v26\/tasks\/([^/]+)\/approve$/);
+  if (req.method === 'POST' && taskApproveMatch) {
+    const taskId = decodeURIComponent(taskApproveMatch[1]);
+    const body = await readJson(req).catch(() => ({}));
+    const engine = ensureEvolutionEngine(app, identity, autonomousEngine);
+    const approveResult = engine.governance.approveTask(taskId, identity?.actorId || 'operator', body.notes || '');
+    if (approveResult.ok) {
+      engine.taskEngine.updateTaskStatus(taskId, 'PRIORITIZED', { message: 'Aprovado pelo operador humano' });
+    }
+    return sendJson(res, approveResult.ok ? 200 : 400, approveResult);
+  }
+
+  // POST /api/v2/autonomous/v26/tasks/:id/reject
+  const taskRejectMatch = path.match(/^\/api\/v2\/autonomous\/v26\/tasks\/([^/]+)\/reject$/);
+  if (req.method === 'POST' && taskRejectMatch) {
+    const taskId = decodeURIComponent(taskRejectMatch[1]);
+    const body = await readJson(req).catch(() => ({}));
+    const engine = ensureEvolutionEngine(app, identity, autonomousEngine);
+    const rejectResult = engine.governance.rejectTask(taskId, identity?.actorId || 'operator', body.reason || '');
+    if (rejectResult.ok) {
+      engine.taskEngine.updateTaskStatus(taskId, 'FAILED', { message: `Rejeitado pelo operador humano: ${body.reason || 'Sem motivo'}` });
+    }
+    return sendJson(res, rejectResult.ok ? 200 : 400, rejectResult);
+  }
+
+  // POST /api/v2/autonomous/v26/cycle
+  if (req.method === 'POST' && path === '/api/v2/autonomous/v26/cycle') {
+    const engine = ensureEvolutionEngine(app, identity, autonomousEngine);
+    const cycleRes = await engine.runCycle();
+    return sendJson(res, 200, { ok: true, result: cycleRes });
+  }
+
+  // GET /api/v2/autonomous/v26/agents
+  if (req.method === 'GET' && path === '/api/v2/autonomous/v26/agents') {
+    const engine = ensureEvolutionEngine(app, identity, autonomousEngine);
+    return sendJson(res, 200, {
+      ok: true,
+      agents: engine.agentRegistry.getAgentRoster(),
+      distribution: engine.agentRegistry.getWorkloadDistribution()
+    });
+  }
+
+  // GET /api/v2/autonomous/v26/dag
+  if (req.method === 'GET' && path === '/api/v2/autonomous/v26/dag') {
+    const engine = ensureEvolutionEngine(app, identity, autonomousEngine);
+    return sendJson(res, 200, { ok: true, queue: engine.taskEngine.getQueueSnapshot() });
   }
 
   return false;

@@ -25,7 +25,9 @@
     const headers = { accept: 'application/json' };
     if (token) headers.authorization = `Bearer ${token}`;
     const fetchFn = window.fenixAuthedFetch || fetch;
-    const response = await fetchFn('/api/v2/events/history?limit=100', {
+    // Por padrao sem o pulso world.simulation.tick (a cada ~2s), que escondia os eventos reais.
+    const exclude = window.__fenixShowSimulationTicks ? '' : '&excludeTypes=world.simulation.tick';
+    const response = await fetchFn('/api/v2/events/history?limit=150' + exclude, {
       credentials: 'same-origin',
       headers,
       signal: AbortSignal.timeout(10000)
@@ -33,6 +35,7 @@
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!Array.isArray(data.events)) throw new Error('A API não retornou uma lista de eventos.');
+    window.__fenixSystemEventTypeCounts = data.typeCounts || null;
     const ignoredTypes = new Set(['snapshot', 'runtime.snapshot', 'status', 'ping', 'heartbeat', 'connected']);
     const seenCompChecks = new Set();
     data.events = data.events.filter((event) => {
@@ -401,7 +404,7 @@
             const activeRunningJobs = (topKpiJobsNum > 0 && Array.isArray(jobs))
               ? jobs.filter(j => /RUNNING|ACTIVE|EXECUTING|DISPATCHED/i.test(String(j?.status || j?.state || '')))
               : [];
-            const displayAgents = agents.slice(0, 4);
+            const displayAgents = agents.slice(0, 80);
             let html = '';
             displayAgents.forEach((ag, idx) => {
               const rawState = String(ag.status || ag.state || 'AVAILABLE').toUpperCase();
@@ -422,7 +425,13 @@
                 statusText = 'Em Prontidão';
               }
               const roleStr = String(ag.role || ag.specialty || ag.domain || 'Especialista');
-              const fallback = fallbackAvatars[idx % fallbackAvatars.length];
+              const roleKey = `${ag.role || ''} ${ag.department || ''}`.toLowerCase();
+              const roleAvatar = /data|mem|database|vault|dados/.test(roleKey) ? '/assets/agent-data.png'
+                : /ops|devops|infra|sre|runtime|security|segur/.test(roleKey) ? '/assets/agent-devops.png'
+                : /product|ceo|master|exec|manager|lead|chief|gestor/.test(roleKey) ? '/assets/agent-product.png'
+                : '/assets/agent-developer.png';
+              const accent = window.FenixWorld3DEngine?._agentRoleColor ? window.FenixWorld3DEngine._agentRoleColor(ag) : '#38bdf8';
+              const fallback = roleAvatar || fallbackAvatars[idx % fallbackAvatars.length];
               const rawAv = ag.avatar;
               const avatarSrc = (typeof rawAv === 'string' && (rawAv.startsWith('/') || rawAv.startsWith('http://') || rawAv.startsWith('https://')))
                 ? rawAv
@@ -430,12 +439,16 @@
                   ? rawAv.avatarUrl
                   : fallback;
               const agId = ag.id || ag.agentId || `agent-${idx}`;
-              const agName = ag.name || agId;
+              // Nome legivel (papel real quando so ha UUID) e tudo escapado: antes nome,
+              // papel e id iam crus para innerHTML e para dentro de um onclick.
+              const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+              const agName = esc(window.FenixWorld3DEngine?._agentDisplayName ? window.FenixWorld3DEngine._agentDisplayName({ ...ag, id: agId }) : (ag.name || agId));
+              const roleText = esc(roleStr);
               html += `
-                <div class="dock-featured-agent-card" onclick="window.fenixCity?.focusAgent?.('${agId}')" title="${agName} (${roleStr}) — ${statusText}">
-                  <div class="dock-featured-agent-avatar"><img src="${avatarSrc}" alt="${agName}" onerror="this.src='/assets/agent-developer.png'" /></div>
+                <div class="dock-featured-agent-card" style="--agent-accent:${esc(accent)}" data-agent-id="${esc(agId)}" onclick="window.fenixCity?.focusAgent?.(this.dataset.agentId)" title="${agName} (${roleText}) — ${esc(statusText)}">
+                  <div class="dock-featured-agent-avatar"><img src="${esc(avatarSrc)}" alt="${agName}" onerror="this.src='/assets/agent-developer.png'" /></div>
                   <div class="dock-featured-agent-name">${agName}</div>
-                  <div class="dock-featured-agent-role">${roleStr}</div>
+                  <div class="dock-featured-agent-role">${roleText}</div>
                   <div class="dock-featured-agent-status ${statusClass}"><span class="status-dot"></span><span>${statusText}</span></div>
                 </div>
               `;
@@ -467,44 +480,64 @@
           }
         }
 
-        // Window 4: Missões
+        // Window 3: Últimos Eventos
         const missionsCount = document.getElementById('dockCardMissionsCount');
         if (missionsCount) missionsCount.textContent = hasJobSnapshot ? jobs.length : '—';
         const missionsList = document.getElementById('dockCardMissionsList');
         if (missionsList) {
           if (!hasJobSnapshot) {
-            missionsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Jobs indisponíveis nesta leitura.</div>';
-          } else if (jobs.length === 0) {
-            const sysEvents = Array.isArray(window.__fenixSystemEvents) ? window.__fenixSystemEvents.slice(0, 4) : [];
-            if (sysEvents.length > 0) {
-              missionsList.innerHTML = sysEvents.map(ev => {
-                const t = ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
-                const desc = ev.message || ev.title || ev.type || 'Evento operacional';
-                return `<div class="dock-event-item"><span class="dock-event-time">${t}</span><span class="dock-event-dot dot-blue"></span><span class="dock-event-desc">${desc}</span></div>`;
+            missionsList.innerHTML = '<div style="color:#64748B; font-size:10px; padding:4px;">Eventos indisponíveis nesta leitura.</div>';
+          } else {
+            const rawEvents = Array.isArray(window.__fenixCityEventsCache) && window.__fenixCityEventsCache.length > 0
+              ? window.__fenixCityEventsCache
+              : (Array.isArray(window.__fenixSystemEvents) ? window.__fenixSystemEvents : []);
+            const meaningfulEvents = rawEvents.filter(ev => {
+              const t = String(ev.type || ev.category || '').toLowerCase();
+              return !t.includes('simulation.tick') && !t.includes('heartbeat');
+            });
+            const eventsToRender = meaningfulEvents.length > 0 ? meaningfulEvents.slice(0, 5) : rawEvents.slice(0, 5);
+            if (eventsToRender.length > 0) {
+              missionsList.innerHTML = eventsToRender.map(ev => {
+                const t = ev.timestamp || ev.occurredAt || ev.createdAt;
+                const timeStr = t ? new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+                const type = String(ev.type || ev.category || 'EVENT');
+                const desc = ev.description || ev.message || ev.title || 'Evento operacional';
+                let dotClass = 'dot-blue';
+                if (/FAIL|ERROR/i.test(type)) dotClass = 'dot-orange';
+                else if (/MISSION|TASK/i.test(type)) dotClass = 'dot-purple';
+                else if (/AGENT/i.test(type)) dotClass = 'dot-cyan';
+                else if (/SUCCESS|READY|ONLINE/i.test(type)) dotClass = 'dot-green';
+                return `<div class="dock-event-item" title="${type} — ${desc}"><span class="dock-event-time">${timeStr}</span><span class="dock-event-dot ${dotClass}"></span><span class="dock-event-desc">${desc}</span></div>`;
               }).join('');
             } else {
-              missionsList.innerHTML = '<div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot dot-green"></span><span class="dock-event-desc">0 jobs ativos · Todos os agentes em prontidão operacional</span></div>';
+              missionsList.innerHTML = '<div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot dot-green"></span><span class="dock-event-desc">Aguardando eventos operacionais do runtime…</span></div>';
             }
+          }
+        }
+
+        // Window 4: Jobs em Execução (BullMQ)
+        const jobsListEl = document.getElementById('dockCardJobsList');
+        if (jobsListEl) {
+          if (!hasJobSnapshot) {
+            jobsListEl.innerHTML = '<div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot dot-orange"></span><span class="dock-event-desc">Fila de jobs indisponível nesta leitura.</span></div>';
+          } else if (jobs.length === 0) {
+            jobsListEl.innerHTML = '<div class="dock-event-item"><span class="dock-event-time">—</span><span class="dock-event-dot dot-green"></span><span class="dock-event-desc">Nenhum job em execução no momento</span></div>';
           } else {
-            const recentEvents = jobs.slice(0, 5).map(j => ({
-              time: new Date(j.createdAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-              dotClass: /COMPLETED|SUCCEEDED/i.test(String(j.status || '')) ? 'dot-green' : /RUNNING|ACTIVE/i.test(String(j.status || '')) ? 'dot-blue' : 'dot-orange',
-              desc: `${j.title || j.id} — ${j.status || 'Ativo'}`
-            }));
-            let html = '';
-            for (const ev of recentEvents) {
-              const time = ev.time || '15:00';
-              const dotClass = ev.dotClass || 'dot-blue';
-              const desc = ev.desc || 'Evento do sistema operacional Fênix';
-              html += `
-                <div class="dock-event-item">
-                  <span class="dock-event-time">${time}</span>
-                  <span class="dock-event-dot ${dotClass}"></span>
-                  <span class="dock-event-desc">${desc}</span>
-                </div>
-              `;
-            }
-            missionsList.innerHTML = html;
+            const displayJobs = jobs.slice(0, 5);
+            jobsListEl.innerHTML = displayJobs.map(j => {
+              const jobTime = j.startedAt || j.createdAt || j.timestamp;
+              const timeStr = jobTime ? new Date(jobTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+              // Escapa dados do job (titulos vem de usuarios/IA) e nao inventa worker/status.
+              const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+              const status = esc(String(j.status || j.state || 'DESCONHECIDO').toUpperCase());
+              let dotClass = 'dot-blue';
+              if (/COMPLETED|SUCCEEDED/i.test(status)) dotClass = 'dot-green';
+              else if (/FAIL|ERROR|DEAD_LETTER/i.test(status)) dotClass = 'dot-orange';
+              else if (/RUNNING|ACTIVE/i.test(status)) dotClass = 'dot-cyan';
+              const title = esc(j.title || j.name || j.type || j.id);
+              const worker = esc(j.assignedWorker || j.worker || j.agentId || '—');
+              return `<div class="dock-event-item" data-job-id="${esc(j.id || j.jobId)}" role="button" tabindex="0" title="Job ${esc(j.id)} [${status}] — ${title}"><span class="dock-event-time">${timeStr}</span><span class="dock-event-dot ${dotClass}"></span><span class="dock-event-type" style="color:#00f5a0; font-weight:600; font-size:10px; margin-right:4px;">${status}</span><span class="dock-event-desc" style="color:#94a3b8; font-size:10px;">${title} · ${worker}</span></div>`;
+            }).join('');
           }
         }
       } else {
@@ -955,6 +988,9 @@
         }
 
         // Draw nodes
+        // Rotulos: 141 nos com textos longos viravam uma parede de texto. Trunca, pula o
+        // que colide com rotulo ja desenhado; o no sob o mouse sempre mostra o texto inteiro.
+        const placedLabels = [];
         for (const node of nodes) {
           const isFilterMatch = this.activeGraph.activeCategory === 'all' || node.category === this.activeGraph.activeCategory;
           const isHovered = node === hoveredNode;
@@ -976,10 +1012,18 @@
 
           // Label
           if (isFilterMatch || isHovered) {
-            ctx.fillStyle = isHovered ? '#00D9FF' : '#E2E8F0';
+            const fullLabel = String(node.label || '');
+            const text = isHovered || fullLabel.length <= 24 ? fullLabel : `${fullLabel.slice(0, 23)}…`;
             ctx.font = `${isHovered ? 'bold ' : ''}11px Inter, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillText(node.label, node.x, node.y + node.radius + 14);
+            const w = ctx.measureText(text).width;
+            const box = { x: node.x - w / 2 - 2, y: node.y + node.radius + 3, w: w + 4, h: 14 };
+            const collides = placedLabels.some((p) => box.x < p.x + p.w && box.x + box.w > p.x && box.y < p.y + p.h && box.y + box.h > p.y);
+            if (isHovered || !collides) {
+              placedLabels.push(box);
+              ctx.fillStyle = isHovered ? '#00D9FF' : '#E2E8F0';
+              ctx.textAlign = 'center';
+              ctx.fillText(text, node.x, node.y + node.radius + 14);
+            }
           }
         }
 
@@ -1151,6 +1195,35 @@
     }
     if (!list) return;
     list.replaceChildren();
+    // Filtros pelos tipos REAIS presentes na resposta da API (dinamicos) + pulsos da simulacao.
+    let typeBar = document.getElementById('fenixAlertTypeChips');
+    if (!typeBar) {
+      typeBar = document.createElement('div');
+      typeBar.id = 'fenixAlertTypeChips';
+      typeBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:10px 22px;border-bottom:1px solid rgba(255,255,255,0.05);';
+      list.parentElement?.insertBefore(typeBar, list);
+    }
+    typeBar.replaceChildren();
+    const chip = (label, active, onClick) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = label;
+      b.style.cssText = `border-radius:999px;padding:4px 10px;font-size:11px;cursor:pointer;border:1px solid ${active ? '#22d3ee' : 'rgba(148,163,184,.3)'};background:${active ? 'rgba(34,211,238,.15)' : 'transparent'};color:${active ? '#a5f3fc' : '#cbd5e1'};`;
+      b.addEventListener('click', onClick);
+      typeBar.append(b);
+    };
+    const activeType = window.__fenixAlertTypeFilter || 'all';
+    const localTypes = {};
+    for (const ev of (events || [])) localTypes[ev.type || 'desconhecido'] = (localTypes[ev.type || 'desconhecido'] || 0) + 1;
+    chip(`Todos os tipos (${events ? events.length : '—'})`, activeType === 'all', () => { window.__fenixAlertTypeFilter = 'all'; window.fenixRenderAlerts(); });
+    for (const [type, count] of Object.entries(localTypes).sort((a, b) => b[1] - a[1]).slice(0, 12)) {
+      chip(`${type} (${count})`, activeType === type, () => { window.__fenixAlertTypeFilter = type; window.fenixRenderAlerts(); });
+    }
+    const tickCount = window.__fenixSystemEventTypeCounts?.['world.simulation.tick'];
+    chip(window.__fenixShowSimulationTicks ? 'Ocultar pulsos da simulação' : `Mostrar pulsos da simulação${tickCount ? ` (${tickCount})` : ''}`, Boolean(window.__fenixShowSimulationTicks), () => {
+      window.__fenixShowSimulationTicks = !window.__fenixShowSimulationTicks;
+      window.__fenixAlertTypeFilter = 'all';
+      window.fenixShowAlertsModal?.();
+    });
     const empty = (message) => {
       const item = document.createElement('div');
       item.className = 'fenix-alert-empty';
@@ -1160,7 +1233,9 @@
     };
     if (!events) { empty(`API indisponível · ${window.__fenixSystemEventsError || 'falha ao consultar /api/v2/events/history'}`); return; }
     if (!events.length) { empty('Nenhum evento registrado pela API.'); return; }
-    for (const event of events) {
+    const visibleEvents = activeType === 'all' ? events : events.filter((ev) => (ev.type || 'desconhecido') === activeType);
+    if (!visibleEvents.length) { empty('Nenhum evento deste tipo na leitura atual.'); return; }
+    for (const event of visibleEvents) {
       const severity = severityOf(event);
       const color = severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f59e0b' : '#38bdf8';
       const row = document.createElement('div');
@@ -1222,7 +1297,7 @@
           return `Missão ${data.missionId || ''} iniciada no runtime e atribuída a agentes autônomos.`;
         }
         if (type === 'mission.completed') {
-          return `Missão ${data.missionId || ''} finalizada com sucesso e verificada pelos gates de integridade.`;
+          return `Missão ${data.missionId || ''} concluída.`;
         }
         if (type === 'agent.assigned' || type === 'agent.started') {
           return `Agente ${data.agentId || 'Especialista'} ativado para execução de tarefas no projeto ${data.projectId || 'Fênix OS'}.`;
@@ -1242,7 +1317,7 @@
         if (type.startsWith('memory.')) {
           return `Sincronização de nós e relações efetuada na Memória Ativa (Graph Brain).`;
         }
-        return `Operação do subsistema ${comp || type} registrada e confirmada com integridade pelo Fênix OS.`;
+        return `Evento ${type || 'sem tipo'} sem descrição.`;
       };
 
       const title = document.createElement('strong');
@@ -1268,6 +1343,11 @@
         else if (projectId && window.openProjectWorkspace) window.openProjectWorkspace(projectId);
         else window.showView?.('operations');
       });
+      // Clique no corpo da linha: detalhe com o evento REAL da API.
+      details.style.cursor = 'pointer';
+      details.title = 'Ver evento completo';
+      details.addEventListener('click', () => window.fenixInspectEvent?.(event.id, { raw: event, type: event.type }));
+      row.dataset.type = event.type || 'desconhecido';
       row.append(icon, details, time, open);
       list.append(row);
     }

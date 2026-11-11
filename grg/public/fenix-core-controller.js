@@ -629,6 +629,9 @@
   // =========================================================================
   const originalShowView = window.showView;
   window.showView = function(viewName) {
+    const rawTarget = String(viewName || 'city').replace(/^#\/?/, '').split('?')[0].split('/')[0] || 'city';
+    const canonical = (window.ROUTE_ALIASES && window.ROUTE_ALIASES[rawTarget]) || rawTarget;
+    viewName = canonical;
     const prev = STATE.navigation.currentView;
     if (prev && window.FenixRequestGuard?.cancelViewRequests) {
       window.FenixRequestGuard.cancelViewRequests(`view-${prev}`);
@@ -694,6 +697,11 @@
         window.fenixWorld3D.resize?.();
         window.fenixWorld3D._resumeAnimationLoop?.();
       }
+    } else if (viewName === 'ide') {
+      window.loadIdeView?.();
+      window.fenixInitIde?.();
+    } else if (viewName === 'runtime') {
+      window.loadRuntimeOverview?.();
     }
   };
 

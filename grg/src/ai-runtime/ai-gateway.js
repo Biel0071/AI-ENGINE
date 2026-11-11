@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const { uuid } = require('../kernel/ids');
 const { ValidationError, ForbiddenError } = require('../kernel/errors');
+const { jobContext } = require('../runtime/job-context');
 const { estimateTokens } = require('./providers');
 const { withRetry } = require('../infrastructure/resilience/retry');
 const { CircuitBreaker } = require('../infrastructure/resilience/circuit-breaker');
@@ -114,8 +115,14 @@ class AIGateway {
   // `provider`/`model` opcionais: quando o AI Router já decidiu por evidência, ele os passa
   // e o Gateway executa essa escolha (mantendo cache/breaker/rate-limit/aiCalls). Ausentes,
   // o Gateway roteia pela config como sempre — retrocompatível.
-  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, format = null, provider = null, model = null, lane = null, excludeProviders = [] }) {
+  async invoke(tenantId, actorId, { taskType = 'default', prompt, temperature, format = null, provider = null, model = null, lane = null, excludeProviders = [], maxOutputTokens: requestedCap = null }) {
     await this.cp.authorize(tenantId, actorId, 'ai:invoke');
+    // Teto por pedido (ex.: chat curto no Ollama local); nunca sobe o teto da rota.
+    const outputCap = (item) => {
+      const base = Number(item.maxOutputTokens || 2_048);
+      const req = Number(requestedCap);
+      return req > 0 ? Math.min(base, req) : base;
+    };
     if (!prompt) throw new ValidationError('prompt is required');
     if (this.rateLimiter) await this.rateLimiter.consume(tenantId, 'ai.invoke');
 
@@ -131,10 +138,10 @@ class AIGateway {
     const promptEstimate = estimateTokens(prompt);
     const candidates = this.candidates(taskType, override, { excludeProviders });
     if (!candidates.length) throw new ValidationError('No AI provider is allowed for this request');
-    const maxOutputTokens = Math.max(...candidates.map((item) => Number(item.maxOutputTokens || 2_048)));
+    const maxOutputTokens = Math.max(...candidates.map(outputCap));
     const tokenReservation = promptEstimate + maxOutputTokens;
     const costReservation = Math.max(...candidates.map((item) => estimateCost(
-      item.model, promptEstimate, Number(item.maxOutputTokens || 2_048), this.prices,
+      item.model, promptEstimate, outputCap(item), this.prices,
     )));
     await this.reserveResources(tenantId, tokenReservation, costReservation);
     const started = Date.now();
@@ -152,7 +159,7 @@ class AIGateway {
             () => provider.complete({
               model: candidate.model, prompt, temperature,
               format,
-              maxTokens: Number(candidate.maxOutputTokens || 2_048),
+              maxTokens: outputCap(candidate),
             }),
             { attempts: 2, baseDelayMs: 100, retryable: (error) => error?.retryable === true },
           ));
@@ -311,8 +318,12 @@ class AIGateway {
           tenant.aiCostBudget.spentUsd = next;
         }
       }
+      // jobId/missionId vem do contexto do JobEngine (runtime/job-context.js): permite
+      // mostrar tokens e custo por job. Chamadas fora de job ficam com null.
+      const runningJob = jobContext.getStore() || null;
       state.aiCalls.push({
         id: uuid(), tenantId, actorId, ...usage, totalTokens: total, costUsd, createdAt: now(),
+        jobId: runningJob?.jobId || null, missionId: runningJob?.missionId || null,
       });
       return state;
     });

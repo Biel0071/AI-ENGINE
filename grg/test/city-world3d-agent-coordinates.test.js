@@ -23,7 +23,17 @@ test('three-dimensional coordinates preserve their elevation and depth', () => {
 });
 
 test('incomplete coordinates receive a deterministic safe position', () => {
-  assert.deepEqual({ ...normalize.call({}, { x: 'bad', y: null }, 0) }, { x: 17, y: 0.8, z: 0 });
+  assert.deepEqual({ ...normalize.call({}, { x: 'bad', y: null }, 0) }, { x: 9, y: 0.8, z: 0 });
+});
+
+test('estimated positions stay inside the safe area of the city island', () => {
+  for (let index = 0; index < 120; index++) {
+    for (const department of ['LOGISTICS', 'ENGINEERING', 'DATABASE', 'PROJECT', 'MONITOR', 'RESEARCH']) {
+      const position = normalize.call({}, null, index, { id: `agent-${index}`, department });
+      assert.ok(Math.abs(position.x) <= 78, `x out of island: ${position.x}`);
+      assert.ok(position.z >= -72 && position.z <= 74, `z out of island: ${position.z}`);
+    }
+  }
 });
 
 test('agents without a location are placed near their operational district instead of the HQ origin', () => {

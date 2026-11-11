@@ -36,7 +36,13 @@ const TIER = Object.freeze({
   paid: ['anthropic', 'openai', 'gemini'],    // API paga, so quando necessario
 });
 const TIER_ORDER = ['local', 'free', 'paid'];
-const CONNECTOR_STATUS_TIMEOUT_MS = 4_000;
+// O status inclui gravar o resultado no store; no boot isso passa de 4 s e um provedor
+// saudavel era marcado DEGRADED. Cabe folgado no prazo de 30 s do chat.
+const CONNECTOR_STATUS_TIMEOUT_MS = Math.max(1_000, Number(process.env.FENIX_AI_ROUTER_STATUS_TIMEOUT_MS) || 8_000);
+// Um CONNECTED medido ha pouco vale por este periodo: refazer o selfTest (e gravar no
+// store) a cada pedido custava segundos e estourava o limite acima. Cada execucao bem
+// sucedida renova a prova; qualquer falha real de execucao invalida na hora.
+const HEALTH_REUSE_MS = Math.max(0, Number(process.env.FENIX_AI_ROUTER_HEALTH_TTL_MS ?? 300_000));
 
 const LANES = Object.freeze({
   fast: {
@@ -68,6 +74,7 @@ class AIRouter {
     this.gateway = gateway;
     this.store = store;
     this.policy = Array.isArray(policy) && policy.length ? policy : TIER_ORDER;
+    this.recentHealthy = new Map(); // connectorId -> instante do ultimo CONNECTED medido
   }
 
   // O provider de um connector id 'ai:<name>' -> '<name>'.
@@ -94,7 +101,10 @@ class AIRouter {
   // tier, pega o primeiro connector de IA que esta CONNECTED (selfTest real). Devolve a
   // escolha COM a evidencia de por que -- ou unknown se nenhum provider esta saudavel.
   async select(tenantId, actorId, { preferTier = null, preferProvider = null, tiers = null } = {}) {
-    const aiConnectors = this.connectors.list().filter((id) => id.startsWith('ai:'));
+    // 'echo' e um provedor de TESTE (devolve "[modelo] answer(N)"). Antes caia no tier 'paid'
+    // por padrao e, sem outro conector saudavel, era escolhido: o chat do mascote respondia
+    // texto falso com nome de modelo real. O roteador nunca o seleciona.
+    const aiConnectors = this.connectors.list().filter((id) => id.startsWith('ai:') && this.#providerName(id) !== 'echo');
     if (!aiConnectors.length) {
       return { chosen: unknown('no AI connector is registered', 'register providers via AIProviderAdapter') };
     }
@@ -104,14 +114,20 @@ class AIRouter {
     const evaluated = [];
 
     const inspect = async (id, tier) => {
+      const healthyAt = this.recentHealthy.get(id);
+      if (healthyAt && Date.now() - healthyAt < HEALTH_REUSE_MS) return { id, tier, state: 'CONNECTED', reused: true };
       let timer;
       try {
         const status = await Promise.race([
           this.connectors.status(tenantId, actorId, id),
           new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`connector status timed out after ${CONNECTOR_STATUS_TIMEOUT_MS}ms`)), CONNECTOR_STATUS_TIMEOUT_MS); }),
         ]);
-        return { id, tier, state: status.state?.value };
+        const state = status.state?.value;
+        if (state === 'CONNECTED') this.recentHealthy.set(id, Date.now());
+        else this.recentHealthy.delete(id);
+        return { id, tier, state };
       } catch (error) {
+        this.recentHealthy.delete(id);
         return { id, tier, state: 'DEGRADED', error: String(error.message || error).slice(0, 180) };
       } finally {
         clearTimeout(timer);
@@ -200,11 +216,14 @@ class AIRouter {
         provider: name,
         model: this.#modelFor(name, request),
         excludeProviders: request.excludeProviders,
+        maxOutputTokens: request.maxOutputTokens,
       });
+      this.recentHealthy.set(selection.chosen.connectorId || `ai:${name}`, Date.now());
       const record = { provider: result.provider || name, chosen: name, tier: selection.chosen.tier, durationMs: Date.now() - started, cached: result.cached === true, ok: true };
       await this.#record(tenantId, record);
       return { ok: true, provider: record.provider, result, telemetry: measured(record, 'derived:AIRouter decision + Gateway execution') };
     } catch (error) {
+      this.recentHealthy.delete(selection.chosen.connectorId || `ai:${name}`);
       const record = { provider: name, chosen: name, tier: selection.chosen.tier, durationMs: Date.now() - started, ok: false, error: String(error.message || error) };
       await this.#record(tenantId, record);
       return { ok: false, provider: name, telemetry: measured(record, 'derived:AIRouter decision + Gateway execution') };

@@ -139,6 +139,8 @@ async function callQuickModel(text, opts) {
     preferTier: preferTier,
     preferProvider: configuredProvider,
     excludeProviders: ['echo'],
+    // Resposta curta: no Ollama local (CPU) 2.048 tokens estouram o tempo do chat.
+    maxOutputTokens: Number(process.env.FENIX_FAST_LANE_MAX_TOKENS) || 220,
   });
   var responseText = String(routed && routed.result && routed.result.text || '').trim();
   if (!routed || routed.ok !== true || !responseText) {
@@ -427,6 +429,7 @@ async function handle(message, classificationResult, opts) {
       modelUsed = aiResult.model || null;
       providerUsed = aiResult.provider;
     } catch (aiErr) {
+      console.warn(JSON.stringify({ event: 'chat.ai.failed', code: aiErr && aiErr.code || null, error: String(aiErr && aiErr.message || aiErr).slice(0, 300), ms: Date.now() - t0 }));
       if (aiErr && aiErr.code === 'AI_PROVIDER_UNAVAILABLE' && opts?.mascotFastLane === true) {
         var { globalContextualInvestigationEngine } = require('../services/contextual-investigation-engine');
         var invResult = await globalContextualInvestigationEngine.investigate(text, {

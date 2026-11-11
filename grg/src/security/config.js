@@ -20,8 +20,11 @@ function loadSecurityConfig(env = process.env) {
   const allowDevHeaders = flag(env.FENIX_ALLOW_DEV_HEADERS, false);
   const killSwitch = flag(env.FENIX_KILL_SWITCH, false);
 
-  const bootstrapUser = String(env.FENIX_BOOTSTRAP_ADMIN_USER || (production ? '' : 'grg-admin')).trim();
-  const bootstrapPassword = String(env.FENIX_BOOTSTRAP_ADMIN_PASSWORD || (production ? '' : 'admin'));
+  // LEVEL 1: o bootstrap so existe quando usuario E senha sao configurados
+  // explicitamente. Sem valor padrao: uma credencial previsivel virava porta
+  // permanente sempre que a producao subia sem FENIX_ENV=production.
+  const bootstrapUser = String(env.FENIX_BOOTSTRAP_ADMIN_USER || '').trim();
+  const bootstrapPassword = String(env.FENIX_BOOTSTRAP_ADMIN_PASSWORD || '');
   const bootstrapOidcSubject = String(env.FENIX_BOOTSTRAP_OIDC_SUBJECT || '').trim();
   if ((bootstrapUser && !bootstrapPassword) || (!bootstrapUser && bootstrapPassword)) {
     throw new ValidationError('bootstrap admin requires both user and password');
@@ -29,15 +32,21 @@ function loadSecurityConfig(env = process.env) {
   if (production && allowDevHeaders) {
     throw new ValidationError('development identity headers are forbidden in production');
   }
-  if (production && bootstrapUser) {
-    throw new ValidationError('bootstrap admin is forbidden in production');
+  // Em producao o bootstrap continua permitido (o deploy o usa para garantir o
+  // primeiro admin), mas so com senha forte e diferente do proprio usuario.
+  if (production && bootstrapUser && (bootstrapPassword.length < 16 || bootstrapPassword.toLowerCase() === bootstrapUser.toLowerCase() || /^(admin|password|changeme|grg-admin)$/i.test(bootstrapPassword))) {
+    throw new ValidationError('bootstrap admin in production requires a strong password (16+ chars, not the user id)');
   }
+  // Sessao de preview e ferramenta de desenvolvimento: nunca em producao, e fora
+  // dela so quando ligada explicitamente.
+  const allowPreviewSession = !production && flag(env.FENIX_ENABLE_PREVIEW_SESSION, false);
 
   return Object.freeze({
     runtimeEnv,
     production,
     allowDevHeaders,
     killSwitch,
+    allowPreviewSession,
     sessionTtlMs: positiveInt(env.FENIX_SESSION_TTL_MS, 12 * 60 * 60 * 1000, 'FENIX_SESSION_TTL_MS'),
     loginRateLimit: positiveInt(env.FENIX_LOGIN_RATE_LIMIT, production ? 10 : 100, 'FENIX_LOGIN_RATE_LIMIT'),
     apiRateLimit: positiveInt(env.FENIX_API_RATE_LIMIT, production ? 300 : 3000, 'FENIX_API_RATE_LIMIT'),

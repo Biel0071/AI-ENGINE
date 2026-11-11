@@ -8,3 +8,7 @@ node_modules/
 secrets/
 *.log
 .claude/
+
+# LEVEL 1: cofre cifrado local nunca vai para o git
+.secrets-vault.json
+memory/.secrets-vault.json

@@ -1013,6 +1013,17 @@
       provWrap.append(provGrid);
       content.append(provWrap);
     }
+
+    let autoTarget = document.getElementById('fenixAutonomousOperationsTarget');
+    if (!autoTarget) {
+      autoTarget = node('div', '');
+      autoTarget.id = 'fenixAutonomousOperationsTarget';
+      autoTarget.style.marginTop = '16px';
+      content.append(autoTarget);
+    }
+    if (window.FenixAutonomousOperations && typeof window.FenixAutonomousOperations.render === 'function') {
+      window.FenixAutonomousOperations.render();
+    }
   }
 
   function renderEvents(content) {

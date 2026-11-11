@@ -26,6 +26,9 @@ services:
       FENIX_S3_BUCKET: ${FENIX_S3_BUCKET:-fenix}
       FENIX_S3_REGION: ${FENIX_S3_REGION:-us-east-1}
       FENIX_S3_FORCE_PATH_STYLE: "1"
+      # LEVEL 1: cofre fail-closed; sem esta chave (16+ chars) o SecretVault recusa operar.
+      FENIX_VAULT_KEY: ${FENIX_VAULT_KEY:-}
+      FENIX_FATAL_ON_UNHANDLED_REJECTION: ${FENIX_FATAL_ON_UNHANDLED_REJECTION:-0}
       FENIX_DEPLOY_DRIVER: docker
       FENIX_DEPLOY_DOCKER_NETWORK: grg-fenix-enterprise_fenix-runtime
       DOCKER_HOST: unix:///run/docker.sock

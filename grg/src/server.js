@@ -36,9 +36,57 @@ const { handleDynamicPoolRoutes } = require('./api/dynamic-pool-routes');
 const { handleVisualAgentWorkspaceRoutes } = require('./api/visual-agent-workspace-routes');
 const { handleProductBuilderRoutes } = require('./api/product-builder-routes');
 const { handleUniversal3DStudioRoutes } = require('./api/universal-3d-studio-routes');
+const { handleReliabilityRoutes } = require('./api/reliability-routes');
 
-process.on('uncaughtException', (err) => console.error('[Server uncaughtException]', err));
-process.on('unhandledRejection', (reason) => console.error('[Server unhandledRejection]', reason));
+const { canMutate } = require('./kernel/access-control');
+
+// LEVEL 1: falhas globais. Antes, uncaughtException era so logado e o processo
+// seguia em estado indefinido. Agora: log sem segredos -> fechamento controlado
+// (HTTP, workers, loops, conexoes) -> exit(1); o supervisor (Docker restart policy)
+// sobe o processo de novo. Instalado apenas quando este arquivo e o processo principal.
+const ACTIVE_SERVERS = new Set();
+function redactSecrets(text) {
+  return String(text || '')
+    .replace(/(bearer\s+)[A-Za-z0-9._~+/=-]{8,}/gi, '$1[REDACTED]')
+    .replace(/((?:password|passwd|secret|token|api[_-]?key|authorization)\s*[=:]\s*)[^\s,;&]+/gi, '$1[REDACTED]')
+    .replace(/\b(sk|gsk|pk|rk)[-_][A-Za-z0-9_-]{12,}/g, '[REDACTED]')
+    .replace(/\b[a-f0-9]{32,}\b/gi, '[REDACTED]')
+    .slice(0, 8000);
+}
+function createFatalHandler({ log, shutdown, exit, timeoutMs = 10_000 }) {
+  let handling = false;
+  return async function handleFatal(kind, error) {
+    log({ level: 'fatal', event: 'process.fatal', kind, error: redactSecrets(error && error.stack ? error.stack : error) });
+    if (handling) return;
+    handling = true;
+    try {
+      await Promise.race([
+        Promise.resolve().then(shutdown),
+        new Promise((resolve) => { const timer = setTimeout(resolve, timeoutMs); if (timer.unref) timer.unref(); }),
+      ]);
+    } catch (shutdownError) {
+      log({ level: 'error', event: 'process.shutdown.failed', error: redactSecrets(shutdownError && shutdownError.message) });
+    }
+    exit(1);
+  };
+}
+function installProcessGuards() {
+  const fatal = createFatalHandler({
+    log: (entry) => console.error(JSON.stringify({ ...entry, at: new Date().toISOString() })),
+    shutdown: () => Promise.all([...ACTIVE_SERVERS].map((s) => new Promise((resolve) => { try { s.close(() => resolve()); } catch (_) { resolve(); } }))),
+    exit: (code) => process.exit(code),
+  });
+  process.on('uncaughtException', (err) => { fatal('uncaughtException', err); });
+  process.on('unhandledRejection', (reason) => {
+    // Rejeicoes soltas sao registradas como erro; viram fatais com FENIX_FATAL_ON_UNHANDLED_REJECTION=1
+    // (mantido opcional para nao criar loop de reinicio por rejeicoes historicas ainda nao mapeadas).
+    if (process.env.FENIX_FATAL_ON_UNHANDLED_REJECTION === '1') return fatal('unhandledRejection', reason);
+    console.error(JSON.stringify({ level: 'error', event: 'process.unhandled_rejection', error: redactSecrets(reason && reason.stack ? reason.stack : reason), at: new Date().toISOString() }));
+  });
+}
+function summarizeHealthForPublic(health = {}) {
+  return { ok: Boolean(health.ok), status: health.status || (health.ok ? 'ready' : 'unhealthy'), service: health.service || 'grg-services-os', checkedAt: health.checkedAt || new Date().toISOString() };
+}
 
 const crypto = require('node:crypto');
 
@@ -271,6 +319,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         }, requestId);
       }
       if (req.method === 'POST' && url.pathname === '/api/test/event') {
+        if (securityConfig.production) return sendJson(res, 404, { error: 'route not found' }, requestId);
         const body = await readJson(req);
         console.log(`[EVENT] Publishing test event: ${body.type}`);
         if (global.FENIX_KERNEL && global.FENIX_KERNEL.registries.EventRegistry) {
@@ -306,7 +355,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         const isHealthy = health.ok || isKernelActive;
         const status = health.ok ? 'ready' : (isKernelActive ? 'degraded' : 'unhealthy');
 
-        return sendJson(res, isHealthy ? 200 : 503, {
+        const fullHealth = {
           ...health,
           ok: isHealthy,
           status,
@@ -316,7 +365,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           dependencies,
           // Progresso da ativacao operacional (roda em background apos o listen).
           activation: global.FENIX_KERNEL ? 'COMPLETED' : 'LEGACY'
-        }, requestId);
+        };
+        // LEVEL 1: em producao, chamador anonimo ve so o resumo (sem topologia interna).
+        if (securityConfig.production && !(await app.security.authenticate(req.headers).catch(() => null))) {
+          return sendJson(res, isHealthy ? 200 : 503, summarizeHealthForPublic(fullHealth), requestId);
+        }
+        return sendJson(res, isHealthy ? 200 : 503, fullHealth, requestId);
       }
 
       // Distinct Health Probes: Models, Tools, Backend (Unauthenticated for Monitoring & Probes)
@@ -573,12 +627,12 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         return sendJson(res, 200, { ok: true }, requestId);
       }
       if (req.method === 'POST' && url.pathname === '/api/v2/preview/dev-session') {
-        const b = await readJson(req).catch(() => ({}));
-        const safeUserId = String(b.userId || 'preview-user').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'preview-user';
-        const safeTenantId = String(b.tenantId || 'grg').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'grg';
+        // LEVEL 1: desligado em producao e, fora dela, so com FENIX_ENABLE_PREVIEW_SESSION=1.
+        // A identidade NAO vem do cliente: usuario fixo, papel viewer, somente leitura.
+        if (!securityConfig.allowPreviewSession) return sendJson(res, 404, { error: 'route not found' }, requestId);
         const previewSess = await app.auth.createPreviewSession({
-          tenantId: safeTenantId,
-          userId: safeUserId,
+          tenantId: (securityConfig.bootstrapAdmin && securityConfig.bootstrapAdmin.tenantId) || 'grg',
+          userId: 'preview-user',
           ttlMs: 15 * 60 * 1000,
         });
         res.setHeader('set-cookie', `fenix_preview_session=${encodeURIComponent(previewSess.token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=900`);
@@ -595,7 +649,8 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       let cx = await app.security.authenticate(req.headers);
       if (
         url.pathname.startsWith('/api/v2/images') ||
-        url.pathname.startsWith('/api/v2/creative-studio')
+        url.pathname.startsWith('/api/v2/creative-studio') ||
+        url.pathname === '/api/v2/public/projects'
       ) {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -606,7 +661,9 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           return;
         }
         if (!cx) {
-          cx = { tenantId: 'grg', actorId: 'system-service', readOnly: false };
+          // LEVEL 1: identidade anonima e somente leitura (antes readOnly:false liberava
+          // geracao paga e escrita sem login).
+          cx = { tenantId: 'grg', actorId: 'system-service', readOnly: true, anonymous: true };
         }
       }
       // REALITY FIRST + seguranca: acesso a /api SEM sessao autenticada e REJEITADO com 401.
@@ -618,6 +675,17 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       // seguranca exigem (rejects unauthenticated api access / rejects dev headers by default).
       if (!cx) return sendJson(res, 401, { error: 'not authenticated - login at /GRG-login' }, requestId);
       ({ tenantId, actorId } = cx);
+
+      // LEVEL 1: gate central de escrita. Toda requisicao que altera estado exige
+      // sessao nao somente-leitura e um vinculo ativo cujo papel permite escrita.
+      // Rotas especificas continuam aplicando suas permissoes (ex.: runtime:admin).
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+        if (cx.readOnly) return sendJson(res, 403, { error: 'Sessao somente leitura nao pode alterar dados.', code: 'READ_ONLY_SESSION' }, requestId);
+        const writer = await app.controlPlane.getMembership(tenantId, actorId).catch(() => null);
+        if (!writer || writer.status !== 'active' || !canMutate(writer.role)) {
+          return sendJson(res, 403, { error: 'Seu papel nao permite alterar dados.', code: 'ROLE_READ_ONLY' }, requestId);
+        }
+      }
 
       if (req.method === 'GET' && url.pathname === '/api/me') {
         return sendJson(res, 200, {
@@ -662,9 +730,18 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
 
       if (url.pathname.startsWith('/api/v2/autonomous')) {
         const loopHandled = await handleAutonomousLoopRoutes(req, res, {
-          url, sendJson, readJson, app, identity: { tenantId, actorId }, autonomousLoop: server.autonomousLoop || app.autonomousLoop
+          url, sendJson, readJson, app, identity: { tenantId, actorId },
+          autonomousLoop: server.autonomousLoop || app.autonomousLoop,
+          autonomousEngine: server.autonomousEngine || app.autonomousEngine
         });
         if (loopHandled || res.headersSent) return;
+      }
+
+      if (url.pathname.startsWith('/api/v2/reliability')) {
+        const reliabilityHandled = await handleReliabilityRoutes(req, res, {
+          url, sendJson, readJson, app, identity: { tenantId, actorId }
+        });
+        if (reliabilityHandled || res.headersSent) return;
       }
 
       if (url.pathname.startsWith('/api/v2/visual-workspace') || url.pathname.startsWith('/api/v2/video-studio')) {
@@ -1138,12 +1215,16 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
         await app.controlPlane.authorize(tenantId, actorId, 'event:read');
         const limit = Math.min(200, Math.max(10, parseInt(url.searchParams.get('limit') || '100', 10)));
         const typeFilter = url.searchParams.get('type') || undefined;
+        // excludeTypes: o pulso world.simulation.tick (a cada ~2s) enchia os N mais recentes
+        // e escondia os eventos reais. Com exclusao, busca mais itens antes de cortar.
+        const excludeTypes = new Set(String(url.searchParams.get('excludeTypes') || '').split(',').map((s) => s.trim()).filter(Boolean));
+        const scanLimit = excludeTypes.size ? 5000 : limit;
         let events = await app.eventStore.list(tenantId, {
           type: typeFilter,
-          limit: limit,
+          limit: scanLimit,
         });
         const { globalBus } = require('./eventing/fenix-event-bus');
-        const liveEvents = globalBus ? globalBus.getHistory(limit, typeFilter) : [];
+        const liveEvents = globalBus ? globalBus.getHistory(scanLimit, typeFilter) : [];
         const seenIds = new Set(events.map((e) => e.id));
         for (const le of liveEvents) {
           if (!seenIds.has(le.id)) {
@@ -1165,30 +1246,36 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
           let msg = ev.message || ev.description || ev.data?.message || ev.data?.description;
           if (!title || !msg || msg.includes('sem descrição')) {
             const comp = ev.data?.componentId || ev.subject || '';
-            const st = ev.data?.status || 'OK';
+            // Textos so com campos presentes no evento: sem "OK", "0ms" ou projeto padrao
+            // inventados quando o dado falta (antes todo mission.* dizia "despachada").
+            const parts = (...items) => items.filter((item) => item !== undefined && item !== null && item !== '').join(' · ');
+            const d = ev.data || {};
             if (ev.type === 'operational.component.checked') {
-              title = `Auditoria Operacional · ${comp || 'Subsistema'}`;
-              msg = `Verificação de integridade: subsistema "${comp}" operando com status ${st} (${ev.data?.latencyMs || 0}ms).`;
+              title = parts('Verificação operacional', comp);
+              msg = parts(comp && `componente "${comp}"`, d.status && `status ${d.status}`, Number.isFinite(d.latencyMs) && `${d.latencyMs}ms`) || null;
             } else if (ev.type?.startsWith('mission.')) {
-              title = `Missão · ${ev.data?.title || ev.data?.missionId || 'Autônoma'}`;
-              msg = `Missão despachada para o projeto ${ev.data?.projectId || 'Fênix OS'}.`;
+              title = parts('Missão', d.title || d.missionId);
+              msg = parts(ev.type, d.projectId && `projeto ${d.projectId}`, d.status && `status ${d.status}`, d.stepId && `passo ${d.stepId}`) || null;
             } else if (ev.type?.startsWith('agent.')) {
-              title = `Agente · ${ev.data?.agentId || 'Swarm'}`;
-              msg = `Atividade de agente registrada no ecossistema Fênix.`;
-            } else if (ev.type?.startsWith('job.')) {
-              title = `Execução de Job · ${ev.data?.jobId || 'Runtime'}`;
-              msg = `Job ${ev.data?.type || 'operacional'} processado no runtime do Fênix OS.`;
+              title = parts('Agente', d.agentId);
+              msg = parts(ev.type, d.projectId && `projeto ${d.projectId}`) || null;
+            } else if (ev.type?.startsWith('job.') || ev.type?.startsWith('runtime.job.')) {
+              title = parts('Job', d.type, d.jobId);
+              msg = parts(ev.type, d.status && `status ${d.status}`) || null;
             }
           }
           return {
             ...ev,
-            title: title || ev.type || 'Evento Operacional',
-            message: msg || `Evento ${ev.type} registrado com sucesso pela API.`,
-            description: msg || `Evento ${ev.type} registrado com sucesso pela API.`,
+            title: title || ev.type || 'Evento',
+            message: msg || `${ev.type || 'Evento'} (sem descrição no registro).`,
+            description: msg || `${ev.type || 'Evento'} (sem descrição no registro).`,
           };
         });
         events.sort((a, b) => (Date.parse(b.occurredAt || b.recordedAt || b.timestamp || 0) || 0) - (Date.parse(a.occurredAt || a.recordedAt || a.timestamp || 0) || 0));
-        return sendJson(res, 200, { ok: true, events: events.slice(0, limit), total: events.length }, requestId);
+        const typeCounts = {};
+        for (const ev of events) typeCounts[ev.type || 'desconhecido'] = (typeCounts[ev.type || 'desconhecido'] || 0) + 1;
+        if (excludeTypes.size) events = events.filter((ev) => !excludeTypes.has(ev.type));
+        return sendJson(res, 200, { ok: true, events: events.slice(0, limit), total: events.length, typeCounts, excludedTypes: [...excludeTypes] }, requestId);
       }
       if (req.method === 'POST' && url.pathname === '/api/events') {
         await app.controlPlane.authorize(tenantId, actorId, 'event:write');
@@ -1806,6 +1893,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
   });
   server.on('close', () => { app.close().catch(() => {}); });
   server.app = app;
+  ACTIVE_SERVERS.add(server);
   if (!env.FENIX_ANALYSIS_BASE_URL && !options.smokeBaseUrl) app.systemAnalyses.baseURL = `http://127.0.0.1:${server.address().port}`;
   app.systemAnalyses.recover().catch(error => logger.error({ event: 'system-analysis.recovery.failed', error }));
 
@@ -2022,6 +2110,27 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     logger.info?.({ event: 'autonomous.loop.delegated_to_worker', workerUrl: process.env.FENIX_WORKER_URL || 'http://127.0.0.1:4420' });
   }
 
+  // ── LEVEL 26: AUTONOMOUS EVOLUTION ENGINE (CONTINUOUS PERSISTENT BACKGROUND SERVICE) ──
+  try {
+    const { AutonomousEvolutionEngine } = require('./evolution/autonomous-evolution-engine');
+    const autonomousEngine = new AutonomousEvolutionEngine({
+      app,
+      eventBus: app.bus,
+      logger
+    });
+    server.autonomousEngine = autonomousEngine;
+    app.autonomousEngine = autonomousEngine;
+    if (process.env.NODE_ENV !== 'test' && options.autonomousEvolution !== false && process.env.FENIX_AUTONOMOUS_EVOLUTION_AUTOSTART !== 'false') {
+      server.autonomousEngineTimer = setTimeout(() => autonomousEngine.start(), 15_000);
+      if (server.autonomousEngineTimer && typeof server.autonomousEngineTimer.unref === 'function') {
+        server.autonomousEngineTimer.unref();
+      }
+      logger.info?.({ event: 'autonomous.evolution.scheduled' });
+    }
+  } catch (err) {
+    logger.error?.({ event: 'autonomous.evolution.init.failed', error: err.message });
+  }
+
   // ── WORLD SIMULATION ENGINE — 24/7 AUTONOMOUS LIVING WORLD TICK ──
   try {
     const { getWorldSimulationEngine } = require('./world-model/world-simulation-engine');
@@ -2045,6 +2154,14 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
       server.autonomousLoopTimer = null;
     }
     if (server.autonomousLoop) { server.autonomousLoop.stop(); server.autonomousLoop = null; }
+    if (server.autonomousEngineTimer) {
+      clearTimeout(server.autonomousEngineTimer);
+      server.autonomousEngineTimer = null;
+    }
+    if (server.autonomousEngine) {
+      server.autonomousEngine.stop();
+      server.autonomousEngine = null;
+    }
     if (global.FENIX_KERNEL?.storage?.disconnectAll) {
       try { global.FENIX_KERNEL.storage.disconnectAll(); } catch (_) {}
     }
@@ -2058,6 +2175,7 @@ async function start(port = Number(process.env.PORT || 4400), options = {}) {
     if (typeof server.closeAllConnections === 'function') {
       server.closeAllConnections();
     }
+    ACTIVE_SERVERS.delete(server);
     return originalClose(cb);
   };
 
@@ -2098,7 +2216,15 @@ function serveStatic(pathname, res) {
   const ALIASES = { '/': 'login.html', '/GRG-login': 'login.html', '/login': 'login.html', '/app': 'index.html', '/app.html': 'index.html', '/office': 'index.html', '/office.html': 'index.html' };
   const rel = ALIASES[pathname] || pathname.replace(/^\//, '');
   const file = path.resolve(PUBLIC, rel);
-  if (!file.startsWith(PUBLIC) || !fs.existsSync(file)) { res.writeHead(404); return res.end('not found'); }
+  // LEVEL 1: so arquivos regulares DENTRO de public/ (com separador, para nao casar
+  // irmaos como public-files.txt), sem dotfiles, backups ou temporarios.
+  const insidePublic = file.startsWith(PUBLIC + path.sep);
+  const relative = insidePublic ? path.relative(PUBLIC, file) : '';
+  const hidden = relative.split(path.sep).some((segment) => segment.startsWith('.'));
+  const backupLike = /(\.(bak|orig|old|tmp|swp|backup)$|~$|backup)/i.test(path.basename(file));
+  let isFile = false;
+  try { isFile = fs.statSync(file).isFile(); } catch (_) { isFile = false; }
+  if (!insidePublic || hidden || backupLike || !isFile) { res.writeHead(404); return res.end('not found'); }
   const ext = path.extname(file).toLowerCase();
   const mimeMap = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webp': 'image/webp', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
   const type = mimeMap[ext] || 'application/octet-stream';
@@ -2110,7 +2236,7 @@ function serveStatic(pathname, res) {
 
 function safeToken(header, expected) { const supplied = String(header || '').replace(/^Bearer\s+/i, ''); if (!supplied || !expected) return false; const a = crypto.createHash('sha256').update(supplied).digest(); const b = crypto.createHash('sha256').update(String(expected)).digest(); return crypto.timingSafeEqual(a, b); }
 
-if (require.main === module) start();
+if (require.main === module) { installProcessGuards(); start(); }
 async function runAutonomousCycle(app, tenantId, actorId, input = {}) {
   if (!app?.executiveBrain || !app?.missions) throw new Error('canonical executive runtime is not configured');
   const objective = String(input.objective || '').trim();
@@ -2129,5 +2255,5 @@ async function runAutonomousCycle(app, tenantId, actorId, input = {}) {
   return { ok: true, mode: 'CANONICAL_EXECUTIVE_PROGRAM', program: approved, startedMissions, jobs, report };
 }
 
-module.exports = { start, runAutonomousCycle, safeToken, capabilityFromPath, resolveCanonicalPort };
+module.exports = { start, runAutonomousCycle, safeToken, capabilityFromPath, resolveCanonicalPort, createFatalHandler, summarizeHealthForPublic, redactSecrets };
 

@@ -211,6 +211,19 @@ async function createApp(options = {}) {
   const auth = await new AuthService({
     store, bus, controlPlane, audit, ttlMs: securityConfig.sessionTtlMs, externalVerifier: oidcVerifier, localLoginEnabled: runtimeEnv.FENIX_ENABLE_LOCAL_LOGIN !== '0',
   }).initialize();
+  if (securityConfig.bootstrapAdmin && securityConfig.bootstrapAdmin.password) {
+    try {
+      await auth.ensureUser(
+        securityConfig.bootstrapAdmin.tenantId,
+        securityConfig.bootstrapAdmin.userId,
+        securityConfig.bootstrapAdmin.password,
+        securityConfig.bootstrapAdmin.role || 'master_admin',
+        securityConfig.bootstrapAdmin.name
+      );
+    } catch (err) {
+      console.warn('[App] Failed to ensure bootstrap admin:', err.message);
+    }
+  }
   const security = new SecurityPlane({ auth, config: securityConfig });
   const idempotency = new IdempotencyService({ store });
   const outbox = new OutboxService({ store });
@@ -541,21 +554,62 @@ async function createApp(options = {}) {
       const store = knowledgeEngine?.missionStore;
       if (!store) {
         logger.warn('[StartupRecovery] missionStore not initialized, skipping recovery.');
-        return;
+        return [];
       }
       const allMissions = await store.find({});
       if (!Array.isArray(allMissions)) {
         logger.warn('[StartupRecovery] missionStore.find returned non-array, skipping.');
-        return;
+        return [];
       }
       const pendingMissions = allMissions.filter(m => m.state === 'PENDING' || m.state === 'RUNNING');
+      const maxRecoveryAttempts = 3;
+      const recoveredList = [];
+
       for (const m of pendingMissions) {
-        logger.info(`[StartupRecovery] Recovering mission ${m.id} in state ${m.state}`);
-        app.bus.emit('MissionRecovered', { mission: m });
+        m.recoveryAttempts = (Number(m.recoveryAttempts) || 0) + 1;
+        if (m.recoveryAttempts > maxRecoveryAttempts) {
+          m.state = 'FAILED';
+          m.error = `Missão interrompida por reinicialização excedeu limite de ${maxRecoveryAttempts} tentativas. Encaminhada para aprovação humana.`;
+          m.escalated = true;
+          if (typeof store.update === 'function') {
+            await store.update(m.id, { state: 'FAILED', error: m.error, escalated: true, recoveryAttempts: m.recoveryAttempts });
+          }
+          const inc = app.selfHealingEngine?.recordIncident?.({
+            component: 'mission',
+            failureType: 'MISSION_RESTART_LOOP',
+            severity: 'CRITICAL',
+            rootCause: `Missão ${m.id} excedeu limite de ${maxRecoveryAttempts} reinicializações consecutivas.`,
+            metadata: { missionId: m.id, attempts: m.recoveryAttempts }
+          });
+          if (inc) app.selfHealingEngine?.escalateIncident?.(inc.incidentId, m.error);
+          app.bus.emit('mission.failed', { missionId: m.id, reason: m.error, escalated: true });
+        } else {
+          logger.info(`[StartupRecovery] Recovering mission ${m.id} in state ${m.state} (tentativa ${m.recoveryAttempts})`);
+          if (typeof store.update === 'function') {
+            await store.update(m.id, { recoveryAttempts: m.recoveryAttempts });
+          }
+          const inc = app.selfHealingEngine?.recordIncident?.({
+            component: 'mission',
+            failureType: 'MISSION_INTERRUPTED_BY_RESTART',
+            severity: 'MEDIUM',
+            rootCause: `Missão ${m.id} recuperada após reinicialização do backend.`,
+            metadata: { missionId: m.id, attempts: m.recoveryAttempts }
+          });
+          if (inc) {
+            app.selfHealingEngine?.recordRecovery?.(inc.incidentId, {
+              recoveryAction: 'RECOVER_MISSION_AFTER_RESTART',
+              details: `Missão ${m.id} restabelecida e re-notificada ao barramento.`
+            });
+          }
+          app.bus.emit('MissionRecovered', { mission: m });
+          recoveredList.push(m);
+        }
       }
-      logger.info(`[StartupRecovery] Recovered ${pendingMissions.length} pending missions.`);
+      logger.info(`[StartupRecovery] Recovered ${recoveredList.length} pending missions.`);
+      return recoveredList;
     } catch (err) {
       logger.warn('[StartupRecovery] Failed to recover missions:', err.message);
+      return [];
     }
   };
   
@@ -577,6 +631,20 @@ async function createApp(options = {}) {
   const { ContextBuilder } = require('./evolution/context-builder');
   app.contextBuilder = new ContextBuilder({ store, controlPlane, evolution, capabilityRegistry, apiConnection: app.apiConnection, missions });
 
+  // LEVEL 27: Self-Healing Reliability Engine
+  const { getSelfHealingEngine } = require('./reliability/self-healing-engine');
+  const { globalJobQueueManager } = require('./execution/job-queue-manager');
+  app.selfHealingEngine = getSelfHealingEngine({
+    app,
+    bus: app.bus,
+    jobQueueManager: globalJobQueueManager,
+    agentRegistry: app.agentRegistry,
+    healthRegistry: app.health
+  });
+  if (process.env.NODE_ENV !== 'test' && process.env.FENIX_TEST_MODE !== 'true') {
+    app.selfHealingEngine.startWatchdog();
+  }
+
   let closingPromise = null;
   app.close = async () => {
     if (closingPromise) return closingPromise;
@@ -585,6 +653,7 @@ async function createApp(options = {}) {
         clearTimeout(app.recoveryTimer);
         app.recoveryTimer = null;
       }
+      app.selfHealingEngine?.stopWatchdog?.();
       app.memoryConsolidator?.stop();
       if (app.analysisRecoveryTimer) clearInterval(app.analysisRecoveryTimer);
       await app.heart?.stop?.();

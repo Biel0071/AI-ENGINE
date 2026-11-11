@@ -333,6 +333,30 @@ async function handleUniversalJobRoutes(req, res, url, app, sendJson, readJson, 
     return true;
   }
 
+  // Tokens e custo de IA de um job: soma as chamadas registradas com este jobId.
+  // tracked=false quando nenhuma chamada foi registrada com o id (job sem IA, ou anterior
+  // ao rastreio por job) -- nunca estima.
+  const usageMatch = url.pathname.match(/^\/api\/v2\/jobs\/([^/]+)\/usage$/);
+  if (req.method === 'GET' && usageMatch) {
+    await app.controlPlane.authorize(tenantId, actorId, 'runtime:read');
+    const jobId = decodeURIComponent(usageMatch[1]);
+    const state = await app.store.read();
+    const calls = (state.aiCalls || []).filter((call) => call.tenantId === tenantId && call.jobId === jobId);
+    const sum = (key) => calls.reduce((total, call) => total + (Number(call[key]) || 0), 0);
+    const byProvider = {};
+    for (const call of calls) {
+      const key = `${call.provider || 'desconhecido'}/${call.model || '—'}`;
+      byProvider[key] = (byProvider[key] || 0) + (Number(call.totalTokens) || 0);
+    }
+    sendJson(res, 200, {
+      jobId, tracked: calls.length > 0, calls: calls.length,
+      promptTokens: sum('promptTokens'), completionTokens: sum('completionTokens'), totalTokens: sum('totalTokens'),
+      costUsd: Math.round(sum('costUsd') * 1e6) / 1e6, byProvider,
+      items: calls.slice(-50).map((call) => ({ createdAt: call.createdAt, provider: call.provider || null, model: call.model || null, taskType: call.taskType || null, totalTokens: call.totalTokens || 0, costUsd: call.costUsd || 0, latencyMs: call.latencyMs ?? null })),
+    });
+    return true;
+  }
+
   const eventsMatch = url.pathname.match(/^\/api\/v2\/jobs\/([^/]+)\/events$/);
   if (req.method === 'GET' && eventsMatch) {
     sendJson(res, 200, { jobId: eventsMatch[1], events: await app.jobs.eventsFor(tenantId, actorId, eventsMatch[1]) });

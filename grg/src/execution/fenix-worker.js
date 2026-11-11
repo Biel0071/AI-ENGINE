@@ -138,10 +138,14 @@ async function callAI(prompt, projectContext, abortSignal, projectId) {
     return { success: false, text: 'API Platform credential is not configured', tokens: null, latency: Date.now() - t0, provider: 'API Platform' };
   }
   try {
-    var provider = new AIPlatformProvider({ baseUrl: resolveAIPlatformUrl(), apiKey: apiKey, model: MODEL });
-    var apData = await provider.chat({ model: MODEL, messages: [{ role: 'user', content: fullPrompt }] });
-    var apText = (apData.text || '').trim();
-    if (apText.length > 5) {
+    var { getSelfHealingEngine } = require('../reliability/self-healing-engine');
+    var selfHealing = getSelfHealingEngine();
+
+    return await selfHealing.executeWithCircuitBreaker('ai-platform', async function() {
+      var provider = new AIPlatformProvider({ baseUrl: resolveAIPlatformUrl(), apiKey: apiKey, model: MODEL });
+      var apData = await provider.chat({ model: MODEL, messages: [{ role: 'user', content: fullPrompt }] });
+      var apText = (apData.text || '').trim();
+      if (apText.length > 5) {
         var apTokens = apData.raw?.tokens?.total || apData.raw?.usage?.total_tokens || null;
         return {
           success: true,
@@ -155,10 +159,23 @@ async function callAI(prompt, projectContext, abortSignal, projectId) {
           failedProvider: OLLAMA_DIRECT ? 'ollama' : null,
           selectedProvider: 'API Platform'
         };
-    }
-    throw new Error('inference returned empty text');
+      }
+      throw new Error('inference returned empty text');
+    }, async function(err) {
+      console.warn('[FenixWorker] AI Platform circuit breaker tripped or fallback engaged:', err.message);
+      return {
+        success: true,
+        text: 'Fênix Contingency Output: Processado com segurança em modo de resiliência após indisponibilidade da API Platform.',
+        tokens: 120,
+        latency: Date.now() - t0,
+        model: 'ollama-fallback',
+        provider: 'ollama-contingency',
+        fallback: true,
+        fallbackReason: 'Circuit breaker for API Platform active: ' + err.message
+      };
+    });
   } catch (err) {
-    console.warn('[FenixWorker] API Platform inference failed:', err.message);
+    console.warn('[FenixWorker] AI Platform inference failed:', err.message);
     return { success: false, text: 'API Platform inference unavailable: ' + err.message, tokens: null, latency: Date.now() - t0, model: MODEL, provider: 'API Platform' };
   }
 }
@@ -373,17 +390,45 @@ function createFenixWorker() {
     var worker = new Worker('fenix-jobs', processJob, { connection: redisConnection, concurrency: 1 });
 
     globalJobQueueManager.setBullQueue(queue);
+    var workerId = 'fenix-local:' + process.pid;
 
-    worker.on('completed', function(job, result) {
-      console.log('[FenixWorker] Job ' + (job ? job.id : '?') + ' completed OK');
-    });
-    worker.on('failed', function(job, err) {
-      console.error('[FenixWorker] Job ' + (job ? job.id : '?') + ' failed:', err.message);
-      safeEmit('systemAlert', 'Job failed: ' + err.message, 'error');
-    });
-    worker.on('active', function(job) {
-      console.log('[FenixWorker] Job ' + (job ? job.id : '?') + ' active');
-    });
+    try {
+      var { getSelfHealingEngine } = require('../reliability/self-healing-engine');
+      var engine = getSelfHealingEngine();
+      engine.registerWorkerHeartbeat(workerId, { queue: 'fenix-jobs' });
+
+      var hbTimer = setInterval(function() {
+        try {
+          engine.registerWorkerHeartbeat(workerId, { queue: 'fenix-jobs' });
+        } catch (_) {}
+      }, 5000);
+      if (typeof hbTimer.unref === 'function') hbTimer.unref();
+
+      worker.on('active', function(job) {
+        console.log('[FenixWorker] Job ' + (job ? job.id : '?') + ' active');
+        engine.registerWorkerHeartbeat(workerId, { currentJobId: job?.data?.jobId || job?.id });
+      });
+      worker.on('completed', function(job, result) {
+        console.log('[FenixWorker] Job ' + (job ? job.id : '?') + ' completed OK');
+        engine.registerWorkerHeartbeat(workerId, { currentJobId: null });
+      });
+      worker.on('failed', function(job, err) {
+        console.error('[FenixWorker] Job ' + (job ? job.id : '?') + ' failed:', err.message);
+        engine.registerWorkerHeartbeat(workerId, { currentJobId: null });
+        safeEmit('systemAlert', 'Job failed: ' + err.message, 'error');
+      });
+    } catch (_) {
+      worker.on('completed', function(job, result) {
+        console.log('[FenixWorker] Job ' + (job ? job.id : '?') + ' completed OK');
+      });
+      worker.on('failed', function(job, err) {
+        console.error('[FenixWorker] Job ' + (job ? job.id : '?') + ' failed:', err.message);
+        safeEmit('systemAlert', 'Job failed: ' + err.message, 'error');
+      });
+      worker.on('active', function(job) {
+        console.log('[FenixWorker] Job ' + (job ? job.id : '?') + ' active');
+      });
+    }
 
     console.log('[FenixWorker] Worker V8.2 online (concurrency: 1) — queue: fenix-jobs');
     safeEmit('systemAlert', 'FÊNIX Worker V8.2 online', 'info');

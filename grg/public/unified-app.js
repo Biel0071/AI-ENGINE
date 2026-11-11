@@ -2349,9 +2349,19 @@ window.updateSidebarCounters = function(snapshot) {
     const hasPresence = (agent) => typeof agent?.online === 'boolean'
       || typeof agent?.isOnline === 'boolean'
       || knownStatuses.has(String(agent?.status || agent?.state || '').toUpperCase());
-    const presenceMeasured = Array.isArray(agentsList) && agentsList.every(hasPresence);
+    // Conta os agentes com presenca MEDIDA. Antes bastava um agente sem status para o
+    // KPI inteiro virar "—"; agora os sem leitura ficam fora da conta e aparecem na dica.
+    // O registro de agentes traz status de CADASTRO (ex.: ACTIVE), nao presenca. Se ele nao
+    // informa presenca, usa os agentes que o runtime da Cidade publica (AVAILABLE/WORKING).
+    const runtimeAgents = Array.isArray(window.FENIX?.cityWorld?.snapshot?.agents) ? window.FENIX.cityWorld.snapshot.agents : [];
+    const registryMeasured = Array.isArray(agentsList) ? agentsList.filter(hasPresence) : [];
+    const presenceSource = registryMeasured.length ? 'registro' : (runtimeAgents.some(hasPresence) ? 'runtime da Cidade' : null);
+    const measuredAgents = registryMeasured.length ? registryMeasured : runtimeAgents.filter(hasPresence);
+    // Lista vazia vinda da API e um zero MEDIDO (mostra 0); lista sem presenca e sem runtime fica "—".
+    const presenceMeasured = (Array.isArray(agentsList) && agentsList.length === 0) || measuredAgents.length > 0;
+    const unmeasuredAgents = Array.isArray(agentsList) ? agentsList.length - measuredAgents.length : 0;
     const onlineAgents = presenceMeasured
-      ? agentsList.filter((agent) => {
+      ? measuredAgents.filter((agent) => {
         if (typeof agent?.online === 'boolean') return agent.online;
         if (typeof agent?.isOnline === 'boolean') return agent.isOnline;
         return onlineStatuses.has(String(agent?.status || agent?.state || '').toUpperCase());
@@ -2378,16 +2388,17 @@ window.updateSidebarCounters = function(snapshot) {
     if (hudActEl) hudActEl.textContent = Array.isArray(agentsList) ? `${activeWorking}/${onlineCount}` : '—';
     const button = topKpiAgents.closest('button');
     if (button) {
-      button.title = `Agentes: ${activeWorking} ativos em execução, ${onlineCount} online de ${Array.isArray(agentsList) ? agentsList.length : '—'} registrados. Clique para abrir equipe de agentes.`;
+      button.title = `Agentes: ${activeWorking} ativos em execução, ${onlineCount} online de ${Array.isArray(agentsList) ? agentsList.length : '—'} registrados${presenceSource === 'runtime da Cidade' ? ` · presença medida pelo runtime da Cidade (${measuredAgents.length} agentes)` : (unmeasuredAgents ? ` (${unmeasuredAgents} sem presença informada)` : '')}. Clique para abrir equipe de agentes.`;
     }
   }
   if (topKpiMissions) {
     const activeMissions = missionsList?.filter(window.fenixIsMissionOpen);
     const activeCount = countText(activeMissions);
-    updateTopKpi(topKpiMissions, activeCount, 'Missões ativas');
+    const runningMissions = (missionsList || []).filter(m => /RUNNING|IN_PROGRESS|EXECUTING/i.test(String(m?.status || m?.state || ''))).length;
+    updateTopKpi(topKpiMissions, activeCount, 'Missões abertas');
     const button = topKpiMissions.closest('button');
     if (button) {
-      button.title = `Missões: ${activeCount} abertas de ${Array.isArray(missionsList) ? missionsList.length : '—'} registradas. Clique para abrir painel de missões e operações.`;
+      button.title = `Missões: ${activeCount} abertas no backlog (${runningMissions} em execução). Total registradas: ${Array.isArray(missionsList) ? missionsList.length : '—'}. Clique para abrir operações.`;
     }
   }
   if (topKpiJobs) {
@@ -2429,13 +2440,24 @@ window.updateSidebarCounters = function(snapshot) {
       }
     }
   }
+  // Declarado fora do if: tambem e usado por cmdSystemState abaixo (antes: ReferenceError
+  // a cada evento em tempo real, que abortava o resto desta funcao e fenixRenderAlerts).
+  const health = snapshot?.health?.status || snapshot?.systemHealth || window.FENIX?.live?.health?.status;
   if (topKpiSystem) {
-    const health = snapshot?.health?.status || snapshot?.systemHealth || window.FENIX?.live?.health?.status;
     const healthLabel = health ? String(health).toUpperCase() : 'UNAVAILABLE';
     updateTopKpi(topKpiSystem, healthLabel === 'UNAVAILABLE' ? 'Indisponível' : healthLabel, 'Saúde do sistema');
   }
   if (typeof window.renderSidebarCompanies === 'function') {
     if (companiesList) window.renderSidebarCompanies(companiesList);
+  }
+  const cmdStateEl = document.getElementById('cmdSystemState');
+  if (cmdStateEl) {
+    if (typeof cmdStateEl.setAttribute === 'function') {
+      cmdStateEl.setAttribute('data-state', health ? 'READY' : 'CONNECTING');
+    }
+    if ('innerHTML' in cmdStateEl) {
+      cmdStateEl.innerHTML = `<span>${health ? 'PRONTO (SINCRONIZADO)' : 'CONECTANDO...'}</span>`;
+    }
   }
   window.fenixRenderAlerts?.();
 };
@@ -2771,17 +2793,29 @@ window.fenixSwitchBrainHub = function(mode) {
   }
 };
 
-// Hub 6: Control Cockpit Unified Switcher (Runtime + Terminal + Observabilidade + MCP)
+// Hub 6: Control Cockpit Unified Switcher (Runtime + Terminal + Observabilidade + MCP + Reliability)
 window.fenixSwitchControlTab = function(tabName) {
-  if (['runtime', 'terminal', 'observability', 'mcp'].includes(tabName)) {
+  if (['runtime', 'terminal', 'observability', 'mcp', 'reliability'].includes(tabName)) {
     if (typeof window.showView === 'function') {
-      window.showView(tabName);
+      window.showView(tabName === 'reliability' ? 'observability' : tabName);
     }
     const tabs = document.querySelectorAll('#fenixControlCockpitTabs button, .fenix-control-tabs button');
     tabs.forEach(t => {
       const match = t.getAttribute('onclick')?.includes(tabName) || t.dataset.tab === tabName;
       t.classList.toggle('active', match);
     });
+    if (tabName === 'reliability') {
+      const obsMain = document.querySelector('#view-observability .workspace-view');
+      const relSec = document.getElementById('fenixReliabilitySection');
+      if (obsMain) obsMain.style.display = 'none';
+      if (relSec) relSec.style.display = 'block';
+      if (window.fenixReliability?.refresh) window.fenixReliability.refresh();
+    } else if (tabName === 'observability') {
+      const obsMain = document.querySelector('#view-observability .workspace-view');
+      const relSec = document.getElementById('fenixReliabilitySection');
+      if (obsMain) obsMain.style.display = 'block';
+      if (relSec) relSec.style.display = 'block';
+    }
     if (tabName === 'runtime' && typeof window.fenixRenderRuntimeServices === 'function') {
       window.fenixRenderRuntimeServices();
     }

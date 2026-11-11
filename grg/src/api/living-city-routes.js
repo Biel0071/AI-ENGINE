@@ -142,29 +142,35 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
     const activeJob = jobs.find((job) => ['RUNNING', 'QUEUED', 'AWAITING_APPROVAL', 'PAUSED'].includes(job.status) && (job.agent?.agentId === id || job.agent?.id === id || job.agentId === id || job.assignedAgentId === id)) || null;
     const latestJob = activeJob || jobs.filter((job) => job.agent?.agentId === id || job.agent?.id === id || job.agentId === id || job.assignedAgentId === id).sort((a,b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))[0] || null;
 
-    const storedStatus = String(agent.status || 'AVAILABLE').toUpperCase();
+    const storedStatus = String(agent.status || agent.availability || 'AVAILABLE').toUpperCase();
     const agentState = String(agent.state || storedStatus).toUpperCase();
-    const hasAssignedMission = Boolean(agent.missionId)
-      && ['WORKING', 'RECEIVING_TASK', 'IN_PROGRESS'].includes(agentState);
+    const hasAssignedTask = Boolean(agent.currentTaskId || agent.assignedTask);
+    const hasAssignedMission = (Boolean(agent.missionId) || hasAssignedTask)
+      && ['WORKING', 'RECEIVING_TASK', 'IN_PROGRESS', 'REVIEWING', 'BLOCKED'].includes(agentState);
     let status = 'AVAILABLE';
     if (activeJob) {
       if (activeJob.status === 'RUNNING') status = 'WORKING';
       else if (activeJob.status === 'QUEUED') status = (Array.isArray(activeJob.dependencies) && activeJob.dependencies.length > 0) ? 'WAITING_DEPENDENCY' : 'QUEUED';
       else if (activeJob.status === 'PAUSED' || activeJob.status === 'AWAITING_APPROVAL') status = 'BLOCKED';
     } else if (hasAssignedMission) {
-      status = 'WORKING';
+      if (agentState === 'REVIEWING' || storedStatus === 'REVIEWING') status = 'REVIEWING';
+      else if (agentState === 'BLOCKED' || storedStatus === 'BLOCKED') status = 'BLOCKED';
+      else status = 'WORKING';
     } else if (latestJob) {
       if (['FAILED', 'DEAD_LETTER'].includes(latestJob.status)) status = 'ERROR';
       else if (latestJob.status === 'SUCCEEDED' && (Date.now() - Date.parse(latestJob.completedAt || latestJob.updatedAt || 0) < 60_000)) status = 'COMPLETED';
-      else if (['AVAILABLE', 'WORKING', 'QUEUED', 'WAITING_DEPENDENCY', 'BLOCKED', 'ERROR', 'COMPLETED'].includes(storedStatus)) status = storedStatus === 'WORKING' && !hasMovementTarget ? 'AVAILABLE' : storedStatus;
+      else if (['AVAILABLE', 'WORKING', 'QUEUED', 'WAITING_DEPENDENCY', 'BLOCKED', 'ERROR', 'COMPLETED', 'REVIEWING'].includes(storedStatus)) {
+        status = storedStatus === 'WORKING' && !hasMovementTarget && !hasAssignedTask ? 'AVAILABLE' : storedStatus;
+      }
       else status = 'AVAILABLE';
     } else if (['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED'].includes(String(agent.currentJob?.status || '').toUpperCase())) {
       status = 'AVAILABLE';
-    } else if (['AVAILABLE', 'WORKING', 'QUEUED', 'WAITING_DEPENDENCY', 'BLOCKED', 'ERROR', 'COMPLETED'].includes(storedStatus)) {
-      status = storedStatus === 'WORKING' && !hasMovementTarget ? 'AVAILABLE' : storedStatus;
+    } else if (['AVAILABLE', 'WORKING', 'QUEUED', 'WAITING_DEPENDENCY', 'BLOCKED', 'ERROR', 'COMPLETED', 'REVIEWING'].includes(storedStatus)) {
+      status = storedStatus === 'WORKING' && !hasMovementTarget && !hasAssignedTask ? 'AVAILABLE' : storedStatus;
     }
 
     const agentTools = Array.isArray(agent.tools) ? agent.tools : [];
+    const autoTaskObj = agent.currentTaskId ? app?.autonomousEngine?.taskEngine?.tasks?.get(agent.currentTaskId) : null;
 
     return {
       id, agentId: id, name: profile?.displayName || agent.displayName || agent.name || id,
@@ -194,8 +200,8 @@ async function livingCityState(app, tenantId, actorId, { agentsOnly = false } = 
       jobId: activeJob?.id || null,
       missionId: activeJob?.missionId || agent.missionId || null,
       parentGoal: agent.parentGoal || activeJob?.objective || null,
-      currentTask: status === 'AVAILABLE' ? null : (activeJob?.name || activeJob?.prompt || activeJob?.type || agent.currentTask || agent.assignedTask?.taskName || agent.assignedTask || null),
-      projectId: activeJob?.projectId || agent.projectId || null,
+      currentTask: status === 'AVAILABLE' ? null : (activeJob?.name || activeJob?.prompt || activeJob?.type || agent.currentTask || agent.assignedTask?.taskName || autoTaskObj?.title || agent.assignedTask || null),
+      projectId: activeJob?.projectId || agent.projectId || autoTaskObj?.projectId || null,
       avatar: profile?.avatar || agent.avatar || null,
       skills: agent.skills || [],
       tools: agentTools,
@@ -619,7 +625,9 @@ async function handleLivingCityRoutes(req, res, url, app, sendJson, readJsonOrId
   // --- History of Events ---
   if (req.method === 'GET' && url.pathname === '/api/v2/living-city/events') {
     const limit = parseInt(url.searchParams.get('limit') || '30', 10);
-    let events = globalBus.getHistory(limit);
+    const includeTicks = url.searchParams.get('include_ticks') === 'true';
+    const rawEvents = globalBus.getHistory(Math.max(limit * 5, 100));
+    let events = includeTicks ? rawEvents.slice(-limit) : rawEvents.filter(ev => ev.type !== 'world.simulation.tick').slice(-limit);
     if ((!events || events.length === 0) && app.jobs) {
       try {
         const jobs = await app.jobs.list(identity.tenantId, identity.actorId);

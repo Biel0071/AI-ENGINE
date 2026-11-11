@@ -10,7 +10,7 @@ const functionSource = source.match(/window\.updateSidebarCounters\s*=\s*functio
 assert.ok(missionHelperSource, 'shared open mission status helper must exist');
 assert.ok(functionSource, 'updateSidebarCounters must exist');
 
-function renderCounters({ jobs, snapshotJobs, snapshot } = {}) {
+function renderCounters({ jobs, snapshotJobs, snapshot, cityAgents } = {}) {
   const elements = new Map();
   const document = { getElementById: (id) => {
     if (!elements.has(id)) elements.set(id, { textContent: '', closest: () => null });
@@ -18,7 +18,7 @@ function renderCounters({ jobs, snapshotJobs, snapshot } = {}) {
   } };
   const window = {
     state: { jobs, data: snapshotJobs === undefined ? {} : { jobs: snapshotJobs } },
-    FENIX: {},
+    FENIX: cityAgents ? { cityWorld: { snapshot: { agents: cityAgents } } } : {},
     renderSidebarCompanies() {},
   };
   vm.runInNewContext(`${missionHelperSource}\n${functionSource}`, { window, document });
@@ -70,6 +70,14 @@ test('a real empty snapshot remains zero rather than unavailable', () => {
   assert.equal(values.topKpiMissionsVal, '0');
   assert.equal(values.topKpiJobsVal, '0');
   assert.equal(values.topKpiSystemVal, 'DEGRADED');
+});
+
+test('online agent KPI uses City runtime presence when the registry only has enrollment status', () => {
+  const values = renderCounters({
+    snapshot: { agents: [{ id: 'a-1', status: 'ACTIVE' }, { id: 'a-2', status: 'ACTIVE' }] },
+    cityAgents: [{ id: 'c-1', status: 'AVAILABLE' }, { id: 'c-2', status: 'WORKING' }, { id: 'c-3', status: 'OFFLINE' }],
+  });
+  assert.equal(values.topKpiAgentsVal, '2', 'ACTIVE is enrollment, not presence; runtime AVAILABLE/WORKING are online');
 });
 
 test('online agent KPI stays unavailable when roster has no measured presence state', () => {

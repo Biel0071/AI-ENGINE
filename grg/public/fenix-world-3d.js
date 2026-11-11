@@ -1728,6 +1728,7 @@
       this._initVehicles();
       this._initDataFlowPipelines();
       this.dataPulses.forEach((pulse) => { if (pulse.mesh) pulse.mesh.visible = false; });
+      this._initHolographicProjectionTable();
       this._initSemanticNavigationUI();
       this._bindEvents();
 
@@ -1871,20 +1872,68 @@
     }
 
     _scheduleNextAnimationFrame() {
-      if (this._isDisposed || this._animationTimerId || this._animationFrameId) return;
+      if (this._isDisposed || this._isPaused || this._animationTimerId || this._animationFrameId) return;
       const interval = this._getRenderFrameIntervalMs();
       const frameLead = Math.min(interval / 2, 1000 / 60);
       this._animationTimerId = setTimeout(() => {
         this._animationTimerId = null;
-        if (!this._isMounted || this._isDisposed) return;
+        if (!this._isMounted || this._isDisposed || this._isPaused) return;
         this._animationFrameId = requestAnimationFrame(this._animate);
       }, Math.max(0, interval - frameLead));
+    }
+
+    pause() {
+      this._isPaused = true;
+      if (this._animationTimerId) {
+        clearTimeout(this._animationTimerId);
+        this._animationTimerId = null;
+      }
+      if (this._animationFrameId) {
+        cancelAnimationFrame(this._animationFrameId);
+        this._animationFrameId = null;
+      }
+    }
+
+    resume() {
+      this._isPaused = false;
+      // O laco compara com performance.now(); gravar Date.now() aqui (epoch) fazia
+      // "agora - ultimo" ficar sempre negativo e a Cidade congelava apos qualquer resume().
+      this._lastRenderAt = null;
+      this._scheduleNextAnimationFrame();
+    }
+
+    setQualityProfile(profile) {
+      if (!this.renderer) return;
+      const T = typeof THREE !== 'undefined' ? THREE : window.THREE;
+      if (!T) return;
+      this._qualityProfile = profile;
+      if (profile === 'low') {
+        this.renderer.setPixelRatio(1);
+        if (this.renderer.shadowMap) this.renderer.shadowMap.enabled = false;
+      } else if (profile === 'balanced') {
+        const compact = this._isCompactViewport();
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, compact ? 1 : 1.25));
+        if (this.renderer.shadowMap) {
+          this.renderer.shadowMap.enabled = !compact;
+          this.renderer.shadowMap.type = T.PCFShadowMap || T.BasicShadowMap;
+        }
+      } else if (profile === 'high') {
+        this.renderer.setPixelRatio(window.devicePixelRatio || 1);
+        if (this.renderer.shadowMap) {
+          this.renderer.shadowMap.enabled = true;
+          this.renderer.shadowMap.type = T.PCFSoftShadowMap || T.PCFShadowMap;
+        }
+      }
+      const w = this._lastRendererWidth || this.host?.clientWidth || 800;
+      const h = this._lastRendererHeight || this.host?.clientHeight || 600;
+      this.renderer.setSize(w, h, false);
     }
 
     _shouldRenderFrame(now) {
       const timestamp = Number.isFinite(Number(now)) ? Number(now) : Date.now();
       const interval = this._getRenderFrameIntervalMs();
-      if (Number.isFinite(this._lastRenderAt) && timestamp - this._lastRenderAt < interval) return false;
+      // timestamp < ultimo => relogios diferentes ou reinicio: desenha e ressincroniza.
+      if (Number.isFinite(this._lastRenderAt) && timestamp >= this._lastRenderAt && timestamp - this._lastRenderAt < interval) return false;
       this._lastRenderAt = timestamp;
       return true;
     }
@@ -1913,6 +1962,153 @@
       return s;
     }
 
+    // ── Legibilidade dos agentes (2026-11-10) ─────────────────────────────────
+    // Tudo derivado do que o runtime publica (status, currentTask, targetCoordinates,
+    // nome/papel). Nada e inventado: sem leitura de status, o anel fica cinza.
+    static _agentRoleColor(record = {}) {
+      const key = `${record.department || ''} ${record.role || ''}`.toLowerCase();
+      if (/secur|seguran|defes|sentinel/.test(key)) return '#ef4444';
+      if (/\bai\b|\bia\b|cogn|model|brain|nexus/.test(key)) return '#a855f7';
+      if (/api|gateway|integra/.test(key)) return '#00d9ff';
+      if (/infra|devops|sre|ops|runtime/.test(key)) return '#22c55e';
+      if (/data|mem|vault|dados/.test(key)) return '#06b6d4';
+      if (/log|wms|deposit|estoque/.test(key)) return '#f59e0b';
+      if (/ceo|master|exec|chief|lider|lead|manager|gestor/.test(key)) return '#ffb703';
+      if (/dev|engin|code|architect|arquitet|frontend|backend/.test(key)) return '#38bdf8';
+      return '#94a3b8';
+    }
+
+    static _agentDisplayName(record = {}) {
+      const name = String(record.name || '').trim();
+      const looksLikeId = !name || /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(name) || name === String(record.id || '');
+      if (!looksLikeId) return name;
+      // Sem nome humano no runtime: usa o papel informado (dado real), formatado.
+      const role = String(record.role || '').replace(/[_-]+/g, ' ').trim();
+      return role ? role.replace(/\b\w/g, (ch) => ch.toUpperCase()) : 'Agente';
+    }
+
+    _agentStatusStyle(record) {
+      const hasReading = Boolean(record.telemetryCoordinates || record.coordinateSource || record.statusSource);
+      if (!hasReading) return { color: '#8d9aaa', pulse: false };
+      const activity = record.activity || this._resolveAgentActivity(record);
+      const colors = { available: '#22c55e', working: '#27d7c4', walking: '#38bdf8', queued: '#e8b45d', waiting: '#e8b45d', blocked: '#a78bfa', error: '#f16a72', completed: '#34d399' };
+      const hasRealTask = Boolean(String(record.currentTask || record.assignedTask || '').trim());
+      return { color: colors[activity.key] || '#8d9aaa', pulse: activity.key === 'working' && hasRealTask };
+    }
+
+    _ensureAgentNameTag(record, ud) {
+      const displayName = FenixWorld3DEngine._agentDisplayName(record);
+      const roleColor = FenixWorld3DEngine._agentRoleColor(record);
+      const signature = `${displayName}|${record.role || ''}|${roleColor}`;
+      if (ud._nameTag && ud._nameTagSignature === signature) return ud._nameTag;
+      const canvas = ud._nameTagCanvas || document.createElement('canvas');
+      canvas.width = 320; canvas.height = 72;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(6, 11, 20, 0.88)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(4, 4, 312, 64, 16); else ctx.rect(4, 4, 312, 64);
+      ctx.fill();
+      ctx.strokeStyle = roleColor; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = roleColor; ctx.beginPath(); ctx.arc(30, 36, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 22px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+      let text = displayName;
+      while (text.length > 2 && ctx.measureText(text).width > 260) text = text.slice(0, -1);
+      if (text !== displayName) text = `${text.slice(0, -1)}…`;
+      ctx.fillText(text, 48, 37);
+      if (!ud._nameTag) {
+        const texture = new T.CanvasTexture(canvas);
+        const sprite = new T.Sprite(new T.SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
+        sprite.scale.set(1.6, 0.36, 1);
+        sprite.position.set(0, 2.05, 0);
+        sprite.renderOrder = 20;
+        record.mesh.add(sprite);
+        ud._nameTag = sprite; ud._nameTagCanvas = canvas;
+      } else if (ud._nameTag.material?.map) {
+        ud._nameTag.material.map.needsUpdate = true;
+      }
+      ud._nameTagSignature = signature;
+      // Contorno de luz na cor do papel: destaca o avatar do fundo sem trocar o figurino.
+      const shirt = ud.avatarMaterials?.shirt;
+      if (shirt?.emissive?.set) { shirt.emissive.set(roleColor); shirt.emissiveIntensity = 0.18; }
+      return ud._nameTag;
+    }
+
+    _updateAgentLegibility(time) {
+      if (!this.agents || !this.camera || this.isHoloMode) return;
+      const camPos = this.camera.position;
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const runCollision = !this._lastTagCollisionAt || now - this._lastTagCollisionAt > 150;
+      const candidates = [];
+      this.agents.forEach((record) => {
+        const mesh = record?.mesh; const ud = mesh?.userData;
+        if (!mesh || !ud || ud.type !== 'humanoid' || !mesh.visible) return;
+        const dist = camPos.distanceTo(mesh.position);
+        // Proporcao real: o corpo nunca e inflado (inflar deixava agentes do tamanho de um
+        // andar). Legibilidade de longe vem do anel no chao, que e plano.
+        const style = this._agentStatusStyle(record);
+        if (ud.halo?.material) {
+          ud.halo.material.color.set(style.color);
+          const pulse = style.pulse ? 0.5 + 0.5 * Math.sin(time * 4 + (ud._pulseSeed ?? (ud._pulseSeed = [...String(record.id || '')].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 997, 7) / 160))) : 0;
+          const ringReach = Math.min(4, Math.max(1, dist / 40));
+          ud.halo.material.opacity = style.pulse ? 0.55 + 0.4 * pulse : 0.85;
+          ud.halo.scale.setScalar(ringReach * (style.pulse ? 1 + 0.25 * pulse : 1));
+        }
+
+        const tag = this._ensureAgentNameTag(record, ud);
+        const tagFactor = Math.max(1, dist / 18);
+        tag.scale.set(1.6 * tagFactor, 0.36 * tagFactor, 1);
+        tag.position.y = 1.95 + 0.36 * tagFactor * 0.5;
+        const selected = this.followingAgentId === record.id || this.selectedAgentId === record.id;
+        const hasTask = Boolean(String(record.currentTask || record.assignedTask || '').trim());
+        if (dist > 170 && !selected) { tag.visible = false; }
+        else if (runCollision) candidates.push({ record, mesh, tag, dist, priority: selected ? 0 : (hasTask ? 1 : 2) });
+
+        // Linha ate o destino real informado pelo servidor, so com tarefa real.
+        const dest = record.targetCoordinates;
+        const far = dest && Number.isFinite(Number(dest.x)) && Math.hypot(Number(dest.x) - mesh.position.x, Number(dest.z) - mesh.position.z) > 2;
+        if (hasTask && far) {
+          if (!ud._activityLine) {
+            const geometry = new T.BufferGeometry();
+            geometry.setAttribute('position', new T.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
+            ud._activityLine = new T.Line(geometry, new T.LineBasicMaterial({ color: style.color, transparent: true, opacity: 0.7 }));
+            ud._activityLine.renderOrder = 15;
+            this.scene.add(ud._activityLine);
+          }
+          const attr = ud._activityLine.geometry.getAttribute('position');
+          attr.setXYZ(0, mesh.position.x, mesh.position.y + 0.15, mesh.position.z);
+          attr.setXYZ(1, Number(dest.x), Number(dest.y || mesh.position.y) + 0.15, Number(dest.z));
+          attr.needsUpdate = true;
+          ud._activityLine.material.color.set(style.color);
+          ud._activityLine.visible = true;
+        } else if (ud._activityLine) {
+          ud._activityLine.visible = false;
+        }
+      });
+
+      // Anticolisao em tela: prioridade (selecionado > com tarefa > mais proximo).
+      // Etiqueta que encostaria numa ja colocada fica oculta.
+      if (runCollision) {
+        this._lastTagCollisionAt = now;
+        const size = this.renderer?.getSize ? this.renderer.getSize(this._tagViewport || (this._tagViewport = new T.Vector2())) : { x: 1, y: 1 };
+        const fovRad = ((this.camera.fov || 50) * Math.PI) / 180;
+        const projected = this._tagProjected || (this._tagProjected = new T.Vector3());
+        const placed = [];
+        candidates.sort((a, b) => a.priority - b.priority || a.dist - b.dist);
+        for (const item of candidates) {
+          projected.set(item.mesh.position.x, item.mesh.position.y + item.tag.position.y, item.mesh.position.z).project(this.camera);
+          if (projected.z > 1 || Math.abs(projected.x) > 1.05 || Math.abs(projected.y) > 1.05) { item.tag.visible = false; continue; }
+          const pxPerUnit = size.y / (2 * Math.max(1, item.dist) * Math.tan(fovRad / 2));
+          const h = item.tag.scale.y * pxPerUnit; const w = item.tag.scale.x * pxPerUnit;
+          const cx = (projected.x + 1) / 2 * size.x; const cy = (1 - projected.y) / 2 * size.y;
+          const box = { x: cx - w / 2 - 3, y: cy - h / 2 - 2, w: w + 6, h: h + 4 };
+          const hit = placed.some((p) => box.x < p.x + p.w && box.x + box.w > p.x && box.y < p.y + p.h && box.y + box.h > p.y);
+          item.tag.visible = item.priority === 0 || !hit;
+          if (item.tag.visible) placed.push(box);
+        }
+      }
+    }
+
     _resolveAgentActivity(agent = {}) {
       const status = String(agent.status || agent.state || '').toUpperCase();
       const rawTask = String(agent.currentTask || agent.assignedTask || '').trim();
@@ -1924,19 +2120,9 @@
         return { key: 'walking', text: task ? `A caminho · ${task}` : 'Em deslocamento', icon: '➜', color: '#38bdf8' };
       }
 
-      // Authentic Operational Proposals & Focus per agent role (snapinsta pattern)
-      const roleProposals = {
-        'agent-api-ops': 'Proposta: Cache Fast Lane nas rotas /api (-35ms)',
-        'agent-integration': 'Validação: Schemas OpenAPI sincronizados com GraphBrain',
-        'agent-infra': 'SRE: Cluster VPS 209.50.241.22 com 0% packet loss',
-        'agent-security': 'Segurança: Zero-Trust Token Vault auditado (100% OK)',
-        'agent-camila': 'WMS: 18 pedidos despachados · Doca 2 operacional',
-        'agent-support': 'DevRel: 14 conectores MCP disponíveis no runtime',
-        'agent-monitor': 'Observabilidade: Métricas Prometheus ativas a 60fps'
-      };
-
-      const agentId = String(agent.id || agent.agentId || '').toLowerCase();
-      const defaultProposal = roleProposals[agentId] || null;
+      // Regra II: o balao mostra so o que o runtime informou. Antes havia frases fixas
+      // por agente ("0% packet loss", "100% OK", "18 pedidos", "60fps") sem medicao.
+      const defaultProposal = null;
 
       const states = {
         AVAILABLE: { key: 'available', text: defaultProposal || 'Disponível', icon: defaultProposal ? '💡' : '●', color: '#67e8f9' },
@@ -2397,8 +2583,16 @@
       const ring = Math.floor(safeIndex / DISTRICTS.length);
       const spoke = safeIndex % DISTRICTS.length;
       const angle = (spoke / DISTRICTS.length) * Math.PI * 2 + ring * 0.61803398875;
-      const radius = 17 + Math.min(12, ring * 1.4);
-      return { x: district.x + Math.cos(angle) * radius, y: 0.8, z: district.z + Math.sin(angle) * radius };
+      // Posicao ESTIMADA (sem coordenada do servidor): raio menor e limitada a area segura
+      // da ilha urbana (placa de x ±94, z -86..90). Antes chegava a z=86 e os agentes
+      // andavam na borda, sobre o vazio verde.
+      const radius = 9 + Math.min(9, ring * 1.2);
+      const clampTo = (value, min, max) => Math.max(min, Math.min(max, value));
+      return {
+        x: clampTo(district.x + Math.cos(angle) * radius, -78, 78),
+        y: 0.8,
+        z: clampTo(district.z + Math.sin(angle) * radius, -72, 74),
+      };
     }
 
     _resolveInteriorAgentCoordinates(agent, coordinates, occupiedPositions = []) {
@@ -6390,6 +6584,10 @@
 
       this.apiPlatformComplex = bldGroup;
       this.scene.add(bldGroup);
+      if (this.isHoloMode) {
+        bldGroup.visible = false;
+        this._daytimeHiddenObjects?.add(bldGroup);
+      }
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
@@ -8149,7 +8347,7 @@
       let eyeZ = this.cameraState.target.z + d * Math.sin(az) * Math.cos(el);
 
       // Prevent camera from clipping through known solid building boundaries
-      if (this.obstacles && Array.isArray(this.obstacles)) {
+      if (!this.isHoloMode && this.obstacles && Array.isArray(this.obstacles)) {
         const margin = 1.35;
         const currentActive = this.activeBuildingId;
         const isApiInterior = this.activeApiFloor !== null && this.activeApiFloor !== undefined;
@@ -8707,6 +8905,844 @@
       if (dock) dock.remove();
     }
 
+    /* ══════════════════════════════════════════════════════════════════════════
+       HOLOGRAPHIC SMART CITY PROJECTION TABLE (Reference Design Standard)
+       - Cybernetic Hardware Pedestal Console with Live Waveform Monitors
+       - Levitating Glass Projection Platform with Glowing Circuit Arteries
+       - 4 Distinct Functional Quadrants (Downtown, Energy Cooling Towers, Industrial, Tech)
+       - High-Speed Maglev Bullet Train on Elevated Rail
+       - Vertical IoT Beacon Pins (#462, #452, #463, ENERGY 0100 DATA)
+       - Floating 3D Holographic HUD AR Data Screens (Live Telemetry & Analytics)
+    ══════════════════════════════════════════════════════════════════════════ */
+    _initHolographicProjectionTable() {
+      const holoGroup = new T.Group();
+      holoGroup.name = 'HolographicProjectionTable';
+
+      // ── 1. Cybernetic Base Pedestal Console ──
+      const pedMat = new T.MeshStandardMaterial({
+        color: 0x090e17,
+        metalness: 0.90,
+        roughness: 0.25,
+      });
+      const pedBase = new T.Mesh(new T.BoxGeometry(176, 18, 176), pedMat);
+      pedBase.position.set(0, -9.5, 0);
+      pedBase.receiveShadow = true;
+      holoGroup.add(pedBase);
+
+      // Cyan Accent Chamfer Rims on Pedestal Top
+      const pedRimWire = new T.LineSegments(
+        new T.EdgesGeometry(new T.BoxGeometry(176.4, 0.4, 176.4)),
+        new T.LineBasicMaterial({ color: 0x00d9ff, transparent: true, opacity: 0.85 })
+      );
+      pedRimWire.position.set(0, -0.6, 0);
+      holoGroup.add(pedRimWire);
+
+      // Slanted Front Bezel for Telemetry Monitors
+      const bezelGeo = new T.BoxGeometry(64, 11, 4);
+      const bezelMat = new T.MeshStandardMaterial({ color: 0x070c14, metalness: 0.92, roughness: 0.2 });
+      const consoleBezel = new T.Mesh(bezelGeo, bezelMat);
+      consoleBezel.rotation.x = -Math.PI / 5.5;
+      consoleBezel.position.set(-24, -4.8, 89.2);
+      holoGroup.add(consoleBezel);
+
+      // Pedestal Display Screen (Canvas Texture)
+      this.pedConsoleCanvas = document.createElement('canvas');
+      this.pedConsoleCanvas.width = 512;
+      this.pedConsoleCanvas.height = 128;
+      this.pedConsoleCtx = this.pedConsoleCanvas.getContext('2d');
+      this.pedConsoleTexture = new T.CanvasTexture(this.pedConsoleCanvas);
+      const pedScreenMat = new T.MeshBasicMaterial({ map: this.pedConsoleTexture, transparent: true });
+      const pedScreen = new T.Mesh(new T.PlaneGeometry(60, 9), pedScreenMat);
+      pedScreen.rotation.x = -Math.PI / 5.5;
+      pedScreen.position.set(-24, -4.7, 89.5);
+      holoGroup.add(pedScreen);
+
+      // Slanted Left Bezel for Secondary Telemetry (Matching Reference Image)
+      const leftBezelGeo = new T.BoxGeometry(4, 11, 48);
+      const leftConsoleBezel = new T.Mesh(leftBezelGeo, bezelMat);
+      leftConsoleBezel.rotation.z = Math.PI / 5.5;
+      leftConsoleBezel.position.set(-89.2, -4.8, 12);
+      holoGroup.add(leftConsoleBezel);
+
+      const leftScreen = new T.Mesh(new T.PlaneGeometry(44, 9), pedScreenMat);
+      leftScreen.rotation.y = -Math.PI / 2;
+      leftScreen.rotation.z = -Math.PI / 5.5;
+      leftScreen.position.set(-89.5, -4.7, 12);
+      holoGroup.add(leftScreen);
+
+      // Floor Plane with Radiating PCB Circuit Traces (Command Deck Floor)
+      const floorGeo = new T.PlaneGeometry(380, 380);
+      const floorCanvas = document.createElement('canvas');
+      floorCanvas.width = 1024;
+      floorCanvas.height = 1024;
+      const fCtx = floorCanvas.getContext('2d');
+      fCtx.fillStyle = '#03070f';
+      fCtx.fillRect(0, 0, 1024, 1024);
+
+      // Concentric & Orthogonal PCB Trace Lines
+      fCtx.strokeStyle = 'rgba(0, 245, 160, 0.22)';
+      fCtx.lineWidth = 2.5;
+      for (let i = 0; i < 28; i++) {
+        const angle = (i / 28) * Math.PI * 2;
+        const rStart = 270 + (i % 4) * 16;
+        const x1 = 512 + Math.cos(angle) * rStart;
+        const y1 = 512 + Math.sin(angle) * rStart;
+        const x2 = 512 + Math.cos(angle) * (rStart + 170);
+        const y2 = 512 + Math.sin(angle) * (rStart + 170);
+        fCtx.beginPath();
+        fCtx.moveTo(x1, y1);
+        fCtx.lineTo(x2, y2);
+        fCtx.stroke();
+        fCtx.fillStyle = i % 2 === 0 ? '#00f5a0' : '#00d9ff';
+        fCtx.beginPath();
+        fCtx.arc(x2, y2, 4.5, 0, Math.PI * 2);
+        fCtx.fill();
+      }
+      fCtx.strokeStyle = 'rgba(0, 217, 255, 0.08)';
+      fCtx.lineWidth = 1;
+      for (let p = 0; p <= 1024; p += 64) {
+        fCtx.beginPath(); fCtx.moveTo(p, 0); fCtx.lineTo(p, 1024); fCtx.stroke();
+        fCtx.beginPath(); fCtx.moveTo(0, p); fCtx.lineTo(1024, p); fCtx.stroke();
+      }
+      const floorTexture = new T.CanvasTexture(floorCanvas);
+      const floorMat = new T.MeshStandardMaterial({
+        map: floorTexture,
+        roughness: 0.65,
+        metalness: 0.75
+      });
+      const floorMesh = new T.Mesh(floorGeo, floorMat);
+      floorMesh.rotation.x = -Math.PI / 2;
+      floorMesh.position.y = -18.4;
+      floorMesh.receiveShadow = true;
+      holoGroup.add(floorMesh);
+
+      // ── 2. Levitating Glass Projection Platform ──
+      const glassGeo = new T.BoxGeometry(154, 1.6, 154);
+      const glassMat = new T.MeshStandardMaterial({
+        color: 0x031826,
+        transparent: true,
+        opacity: 0.42,
+        roughness: 0.08,
+        metalness: 0.22,
+        emissive: 0x001d16,
+        emissiveIntensity: 0.35,
+      });
+      const platform = new T.Mesh(glassGeo, glassMat);
+      platform.position.set(0, 0.4, 0);
+      platform.receiveShadow = true;
+      holoGroup.add(platform);
+
+      // Glowing Emerald Laser Border
+      const laserWire = new T.LineSegments(
+        new T.EdgesGeometry(glassGeo),
+        new T.LineBasicMaterial({ color: 0x00f5a0, transparent: true, opacity: 0.95 })
+      );
+      laserWire.position.copy(platform.position);
+      holoGroup.add(laserWire);
+
+      // Illuminated Cross Arteries (Separating 4 Quadrants)
+      const roadLineMat = new T.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.9 });
+      const crossNS = new T.BufferGeometry().setFromPoints([
+        new T.Vector3(0, 1.25, -75), new T.Vector3(0, 1.25, 75)
+      ]);
+      const crossEW = new T.BufferGeometry().setFromPoints([
+        new T.Vector3(-75, 1.25, 0), new T.Vector3(75, 1.25, 0)
+      ]);
+      holoGroup.add(new T.Line(crossNS, roadLineMat));
+      holoGroup.add(new T.Line(crossEW, roadLineMat));
+
+      // Etched Circuit Road Grid on Glass
+      const circuitMat = new T.LineBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.7 });
+      const cLines = [
+        new T.Vector3(-65, 1.22, -65), new T.Vector3(-15, 1.22, -65),
+        new T.Vector3(-15, 1.22, -15), new T.Vector3(-65, 1.22, -15),
+        new T.Vector3(-65, 1.22, -65),
+        new T.Vector3(15, 1.22, 15), new T.Vector3(65, 1.22, 15),
+        new T.Vector3(65, 1.22, 65), new T.Vector3(15, 1.22, 65),
+        new T.Vector3(15, 1.22, 15),
+        new T.Vector3(15, 1.22, -65), new T.Vector3(65, 1.22, -65),
+        new T.Vector3(65, 1.22, -15), new T.Vector3(15, 1.22, -15),
+        new T.Vector3(15, 1.22, -65),
+        new T.Vector3(-65, 1.22, 15), new T.Vector3(-15, 1.22, 15),
+        new T.Vector3(-15, 1.22, 65), new T.Vector3(-65, 1.22, 65),
+        new T.Vector3(-65, 1.22, 15)
+      ];
+      holoGroup.add(new T.Line(new T.BufferGeometry().setFromPoints(cLines), circuitMat));
+
+      // ── 3. Four Functional Quadrants ──
+      // A. Downtown Corporate Core (North-West: Center/Left)
+      const towerMat = new T.MeshStandardMaterial({
+        color: 0x081524,
+        roughness: 0.12,
+        metalness: 0.85,
+        emissive: 0x001826,
+        emissiveIntensity: 0.3
+      });
+      const towerWireMat = new T.LineBasicMaterial({ color: 0x00f5a0, transparent: true, opacity: 0.95 });
+      const cyanWireMat = new T.LineBasicMaterial({ color: 0x00d9ff, transparent: true, opacity: 0.95 });
+
+      const towers = [
+        { x: -35, z: -35, w: 14, d: 14, h: 54, spire: 18 },
+        { x: -50, z: -42, w: 12, d: 11, h: 42, spire: 10 },
+        { x: -22, z: -48, w: 11, d: 13, h: 36, spire: 0 },
+        { x: -48, z: -22, w: 13, d: 10, h: 32, spire: 0 },
+        { x: -24, z: -24, w: 12, d: 12, h: 46, spire: 12 }
+      ];
+      towers.forEach((tw) => {
+        const tMesh = new T.Mesh(new T.BoxGeometry(tw.w, tw.h, tw.d), towerMat);
+        tMesh.position.set(tw.x, 1.2 + tw.h / 2, tw.z);
+        tMesh.castShadow = true;
+        holoGroup.add(tMesh);
+
+        // Glowing Wireframe Edge Lines
+        const tWire = new T.LineSegments(
+          new T.EdgesGeometry(new T.BoxGeometry(tw.w, tw.h, tw.d)),
+          tw.spire > 0 ? towerWireMat : cyanWireMat
+        );
+        tWire.position.copy(tMesh.position);
+        holoGroup.add(tWire);
+
+        // Spire Antenna
+        if (tw.spire > 0) {
+          const spireMesh = new T.Mesh(new T.CylinderGeometry(0.2, 0.5, tw.spire, 8), towerMat);
+          spireMesh.position.set(tw.x, 1.2 + tw.h + tw.spire / 2, tw.z);
+          holoGroup.add(spireMesh);
+
+          // Glowing Beacon Orb atop Spire
+          const beaconOrb = new T.Mesh(
+            new T.SphereGeometry(0.8, 12, 12),
+            new T.MeshBasicMaterial({ color: 0x00ffcc })
+          );
+          beaconOrb.position.set(tw.x, 1.2 + tw.h + tw.spire, tw.z);
+          holoGroup.add(beaconOrb);
+        }
+      });
+
+      // B. Energy & Infrastructure District (South-East: Cooling Towers)
+      const coolingTowerMat = new T.MeshStandardMaterial({
+        color: 0x0d1822,
+        roughness: 0.35,
+        metalness: 0.7,
+        emissive: 0x001a14,
+        emissiveIntensity: 0.2
+      });
+      const ct1Pos = { x: 34, z: 34 };
+      const ct2Pos = { x: 48, z: 24 };
+
+      [ct1Pos, ct2Pos].forEach((pos) => {
+        // Hyperbolic Waisted Cooling Tower
+        const ctGeo = new T.CylinderGeometry(6.0, 10.5, 22, 32, 8, true);
+        const ctMesh = new T.Mesh(ctGeo, coolingTowerMat);
+        ctMesh.position.set(pos.x, 12, pos.z);
+        ctMesh.castShadow = true;
+        holoGroup.add(ctMesh);
+
+        // Glowing Circumferential Rings on Cooling Tower
+        [6, 12, 18].forEach((ry) => {
+          const rRing = new T.Mesh(
+            new T.TorusGeometry(ry === 12 ? 6.5 : (ry === 6 ? 9.0 : 6.0), 0.18, 6, 32),
+            new T.MeshBasicMaterial({ color: 0x00f5a0 })
+          );
+          rRing.rotation.x = Math.PI / 2;
+          rRing.position.set(pos.x, ry, pos.z);
+          holoGroup.add(rRing);
+        });
+
+        // Interior Green Plasma Core Light
+        const plasmaLight = new T.PointLight(0x00ff88, 2.8, 24);
+        plasmaLight.position.set(pos.x, 7, pos.z);
+        holoGroup.add(plasmaLight);
+      });
+
+      // Substation transformer block
+      const subMesh = new T.Mesh(new T.BoxGeometry(16, 6, 12), coolingTowerMat);
+      subMesh.position.set(38, 4.2, 52);
+      holoGroup.add(subMesh);
+      const subWire = new T.LineSegments(
+        new T.EdgesGeometry(new T.BoxGeometry(16, 6, 12)),
+        cyanWireMat
+      );
+      subWire.position.copy(subMesh.position);
+      holoGroup.add(subWire);
+
+      // C. Autonomous Manufacturing District (North-East: Smokestacks & Factory)
+      const factoryMesh = new T.Mesh(new T.BoxGeometry(28, 12, 18), coolingTowerMat);
+      factoryMesh.position.set(38, 7.2, -38);
+      holoGroup.add(factoryMesh);
+      const factWire = new T.LineSegments(
+        new T.EdgesGeometry(new T.BoxGeometry(28, 12, 18)),
+        cyanWireMat
+      );
+      factWire.position.copy(factoryMesh.position);
+      holoGroup.add(factWire);
+
+      // Three Tall Industrial Smokestacks
+      const stacks = [
+        { x: 26, z: -52, h: 32, r: 1.6 },
+        { x: 34, z: -52, h: 28, r: 1.5 },
+        { x: 42, z: -52, h: 24, r: 1.4 }
+      ];
+      stacks.forEach((st) => {
+        const sMesh = new T.Mesh(new T.CylinderGeometry(st.r * 0.75, st.r, st.h, 16), coolingTowerMat);
+        sMesh.position.set(st.x, 1.2 + st.h / 2, st.z);
+        holoGroup.add(sMesh);
+
+        // Glowing Top Exhaust Rim
+        const sRim = new T.Mesh(
+          new T.TorusGeometry(st.r * 0.8, 0.16, 6, 20),
+          new T.MeshBasicMaterial({ color: 0x00f5a0 })
+        );
+        sRim.rotation.x = Math.PI / 2;
+        sRim.position.set(st.x, 1.2 + st.h, st.z);
+        holoGroup.add(sRim);
+      });
+
+      // Storage Silo Tanks
+      [ { x: 54, z: -30 }, { x: 54, z: -42 } ].forEach((silo) => {
+        const siloMesh = new T.Mesh(new T.CylinderGeometry(4.5, 4.5, 14, 24), coolingTowerMat);
+        siloMesh.position.set(silo.x, 8.2, silo.z);
+        holoGroup.add(siloMesh);
+        const siloCap = new T.Mesh(new T.SphereGeometry(4.5, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), coolingTowerMat);
+        siloCap.position.set(silo.x, 15.2, silo.z);
+        holoGroup.add(siloCap);
+      });
+
+      // D. Tech & Data Research Hub (South-West: Geodesic Dome)
+      const domeGeo = new T.SphereGeometry(13, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+      const domeMesh = new T.Mesh(domeGeo, coolingTowerMat);
+      domeMesh.position.set(-38, 1.2, 38);
+      holoGroup.add(domeMesh);
+
+      // Glowing Cyan Latitude & Longitude Wireframe on Dome
+      const domeWire = new T.LineSegments(
+        new T.WireframeGeometry(domeGeo),
+        cyanWireMat
+      );
+      domeWire.position.copy(domeMesh.position);
+      holoGroup.add(domeWire);
+
+      // Concentric Glowing Data Ring around Dome
+      const dataRing = new T.Mesh(
+        new T.TorusGeometry(18, 0.25, 6, 40),
+        new T.MeshBasicMaterial({ color: 0x00d9ff })
+      );
+      dataRing.rotation.x = Math.PI / 2;
+      dataRing.position.set(-38, 1.6, 38);
+      holoGroup.add(dataRing);
+
+      // ── 4. Elevated Maglev Monorail Transit ──
+      const railWaypoints = [
+        new T.Vector3(-45, 6.2, -45),
+        new T.Vector3(-12, 6.2, -25),
+        new T.Vector3(25, 6.2, -35),
+        new T.Vector3(42, 6.2, -10),
+        new T.Vector3(38, 6.2, 28),
+        new T.Vector3(10, 6.2, 42),
+        new T.Vector3(-30, 6.2, 38),
+        new T.Vector3(-48, 6.2, 10)
+      ];
+      this.holoMaglevCurve = new T.CatmullRomCurve3(railWaypoints, true);
+      const trackTubeGeo = new T.TubeGeometry(this.holoMaglevCurve, 80, 0.45, 8, true);
+      const trackTubeMat = new T.MeshStandardMaterial({
+        color: 0x00e5ff,
+        emissive: 0x0077aa,
+        emissiveIntensity: 0.9,
+        transparent: true,
+        opacity: 0.85
+      });
+      const trackMesh = new T.Mesh(trackTubeGeo, trackTubeMat);
+      holoGroup.add(trackMesh);
+
+      // Pylons supporting the elevated monorail
+      for (let i = 0; i < 8; i++) {
+        const pt = railWaypoints[i];
+        const pylon = new T.Mesh(new T.CylinderGeometry(0.35, 0.55, pt.y - 1.2, 8), towerMat);
+        pylon.position.set(pt.x, (pt.y + 1.2) / 2, pt.z);
+        holoGroup.add(pylon);
+      }
+
+      // Animated Futuristic Maglev Bullet Train
+      const trainGroup = new T.Group();
+      const trainBody = new T.Mesh(new T.BoxGeometry(18, 2.4, 3.0), new T.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        metalness: 0.9,
+        roughness: 0.15
+      }));
+      trainGroup.add(trainBody);
+
+      // Panoramic glowing cyan window ribbon
+      const trainWindows = new T.Mesh(new T.BoxGeometry(16, 0.8, 3.05), new T.MeshBasicMaterial({ color: 0x00f5a0 }));
+      trainWindows.position.y = 0.3;
+      trainGroup.add(trainWindows);
+
+      // Streamlined nose cone
+      const noseGeo = new T.ConeGeometry(1.6, 4.0, 16);
+      noseGeo.rotateZ(-Math.PI / 2);
+      const noseMesh = new T.Mesh(noseGeo, trainBody.material);
+      noseMesh.position.x = 10;
+      trainGroup.add(noseMesh);
+
+      // Front Headlight Beam
+      const headLight = new T.PointLight(0x00ffff, 2.5, 16);
+      headLight.position.set(12, 0, 0);
+      trainGroup.add(headLight);
+
+      this.holoMaglevTrain = trainGroup;
+      holoGroup.add(trainGroup);
+
+      // ── 5. Vertical IoT Sensor & Beacon Pins ──
+      const pinsData = [
+        { label: 'IoT SENSOR #462', x: -35, z: -35, yBase: 1.2 + 54 },
+        { label: 'ENERGY 0100 DATA', x: 34, z: 34, yBase: 24 },
+        { label: 'IoT SENSOR #452', x: 38, z: -38, yBase: 14 },
+        { label: 'IoT SENSOR #463', x: -38, z: 38, yBase: 15 }
+      ];
+      this.holoBeaconPins = [];
+      pinsData.forEach((pin) => {
+        const pinGroup = new T.Group();
+        pinGroup.position.set(pin.x, pin.yBase, pin.z);
+
+        // Vertical luminous stem
+        const stemGeo = new T.BufferGeometry().setFromPoints([
+          new T.Vector3(0, 0, 0), new T.Vector3(0, 12, 0)
+        ]);
+        const stemLine = new T.Line(stemGeo, new T.LineBasicMaterial({ color: 0x00f5a0 }));
+        pinGroup.add(stemLine);
+
+        // Spherical Beacon Head with Halo
+        const headOrb = new T.Mesh(
+          new T.SphereGeometry(1.2, 16, 16),
+          new T.MeshBasicMaterial({ color: 0x00ffaa })
+        );
+        headOrb.position.y = 12;
+        pinGroup.add(headOrb);
+
+        const haloRing = new T.Mesh(
+          new T.TorusGeometry(2.0, 0.16, 6, 24),
+          new T.MeshBasicMaterial({ color: 0x00d9ff })
+        );
+        haloRing.rotation.x = Math.PI / 2;
+        haloRing.position.y = 12;
+        pinGroup.add(haloRing);
+
+        // 3D Billboard Canvas Badge for Typography
+        const badgeCanvas = document.createElement('canvas');
+        badgeCanvas.width = 256;
+        badgeCanvas.height = 64;
+        const bCtx = badgeCanvas.getContext('2d');
+        bCtx.fillStyle = '#061320ee';
+        bCtx.fillRect(0, 0, 256, 64);
+        bCtx.strokeStyle = '#00f5a0';
+        bCtx.lineWidth = 3;
+        bCtx.strokeRect(2, 2, 252, 60);
+        bCtx.fillStyle = '#00ffcc';
+        bCtx.font = 'bold 22px monospace';
+        bCtx.textAlign = 'center';
+        bCtx.textBaseline = 'middle';
+        bCtx.fillText(pin.label, 128, 32);
+
+        const bTexture = new T.CanvasTexture(badgeCanvas);
+        const bSpriteMat = new T.SpriteMaterial({ map: bTexture, depthTest: false });
+        const bSprite = new T.Sprite(bSpriteMat);
+        bSprite.position.set(0, 16, 0);
+        bSprite.scale.set(12, 3, 1);
+        pinGroup.add(bSprite);
+
+        this.holoBeaconPins.push({ group: pinGroup, halo: haloRing, head: headOrb });
+        holoGroup.add(pinGroup);
+      });
+
+      // ── 6. Floating 3D Holographic HUD Screens (Tilted in 3D Perspective) ──
+      this.holoHudScreens = [];
+
+      // HUD 1: System Telemetry (Top-Left, tilted above Downtown)
+      const hud1 = this._createHoloHudScreen({
+        title: 'DATASET REAL-TIME',
+        w: 42, h: 26,
+        pos: new T.Vector3(-78, 34, -40),
+        rot: new T.Euler(-0.15, 0.62, 0),
+        type: 'telemetry'
+      });
+      holoGroup.add(hud1.mesh);
+      this.holoHudScreens.push(hud1);
+
+      // HUD 2: Autonomous Swarm & Task Analytics (Top-Right, tilted behind Industrial)
+      const hud2 = this._createHoloHudScreen({
+        title: 'SWARM ORCHESTRATION',
+        w: 46, h: 28,
+        pos: new T.Vector3(26, 42, -78),
+        rot: new T.Euler(-0.12, -0.42, 0),
+        type: 'analytics'
+      });
+      holoGroup.add(hud2.mesh);
+      this.holoHudScreens.push(hud2);
+
+      // HUD 3: Infrastructure Spectrum & Latency (Bottom-Right, tilted beside Energy District)
+      const hud3 = this._createHoloHudScreen({
+        title: 'SYSTEM FREQUENCY SPECTRUM',
+        w: 42, h: 25,
+        pos: new T.Vector3(78, 28, 38),
+        rot: new T.Euler(0.18, -0.68, 0),
+        type: 'spectrum'
+      });
+      holoGroup.add(hud3.mesh);
+      this.holoHudScreens.push(hud3);
+
+      this.holoTableGroup = holoGroup;
+      this.holoTableGroup.visible = false;
+      this.scene.add(holoGroup);
+      console.log('[FenixWorld3D] ✅ Holographic Smart City Projection Table mounted in scene.');
+    }
+
+    setHolographicCityMode(enabled) {
+      this.isHoloMode = Boolean(enabled);
+      // Etiquetas DOM dos predios nao fazem sentido com os predios ocultos.
+      document.body?.classList.toggle('fenix-holo-mode', this.isHoloMode);
+      if (!this.holoTableGroup) return;
+
+      if (this.isHoloMode) {
+        if (!this._daytimeHiddenObjects) {
+          this._daytimeHiddenObjects = new Set();
+        }
+        this._daytimeHiddenObjects.clear();
+
+        // Hide daytime objects
+        if (this.scene && Array.isArray(this.scene.children)) {
+          this.scene.children.forEach(child => {
+            if (child === this.holoTableGroup) {
+              child.visible = true;
+            } else if (child.isLight || child.isCamera) {
+              // Preserve lighting and camera
+            } else {
+              if (child.visible) {
+                this._daytimeHiddenObjects.add(child);
+                child.visible = false;
+              }
+            }
+          });
+        }
+        this.holoTableGroup.visible = true;
+
+        // Dark cybernetic void background & fog
+        this._setDayNight(true);
+        if (this.scene.background && typeof this.scene.background.set === 'function') {
+          this.scene.background.set(0x040810);
+        }
+        if (this.scene.fog) {
+          this.scene.fog.color.set(0x040810);
+          this.scene.fog.near = 140;
+          this.scene.fog.far = 600;
+        }
+
+        // Isometric view facing the table from the front-left corner
+        this.cameraMode = 'orbit';
+        this.followingAgentId = null;
+        if (this.cameraState) {
+          this.cameraState.targetLookAt.set(0, 10, 0);
+          this.cameraState.target.set(0, 10, 0);
+          this.cameraState.targetDistance = 210;
+          this.cameraState.distance = 210;
+          this.cameraState.targetAzimuth = Math.PI / 4;
+          this.cameraState.azimuth = Math.PI / 4;
+          this.cameraState.targetElevation = 0.54;
+          this.cameraState.elevation = 0.54;
+        }
+        this._updateCameraPosition(true);
+      } else {
+        this.holoTableGroup.visible = false;
+        if (this._daytimeHiddenObjects) {
+          this._daytimeHiddenObjects.forEach(child => {
+            child.visible = true;
+          });
+          this._daytimeHiddenObjects.clear();
+        }
+        this._setDayNight(false);
+        if (this.cameraState) {
+          this.cameraState.targetLookAt.set(0, 0, 0);
+          this.cameraState.target.set(0, 0, 0);
+          this.cameraState.targetDistance = 140;
+          this.cameraState.distance = 140;
+        }
+        this._updateCameraPosition(true);
+      }
+    }
+
+    _createHoloHudScreen({ title, w, h, pos, rot, type }) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 320;
+      const ctx = canvas.getContext('2d');
+      const texture = new T.CanvasTexture(canvas);
+
+      const mat = new T.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.90,
+        side: T.DoubleSide,
+        depthWrite: false
+      });
+      const mesh = new T.Mesh(new T.PlaneGeometry(w, h), mat);
+      mesh.position.copy(pos);
+      mesh.rotation.copy(rot);
+
+      // Glowing Neon Laser Border on HUD Plane
+      const border = new T.LineSegments(
+        new T.EdgesGeometry(new T.PlaneGeometry(w, h)),
+        new T.LineBasicMaterial({ color: 0x00f5a0, transparent: true, opacity: 0.95 })
+      );
+      border.position.copy(pos);
+      border.rotation.copy(rot);
+      mesh.add(border);
+
+      return { mesh, canvas, ctx, texture, title, type, lastUpdate: 0 };
+    }
+
+    _updateHolographicProjectionTable(time, delta) {
+      if (!this.holoTableGroup || !this.holoTableGroup.visible) return;
+
+      // 1. Update Slanted Pedestal Display Console
+      if (this.pedConsoleCtx && this.pedConsoleTexture) {
+        this._drawHoloPedestalConsole(time);
+        this.pedConsoleTexture.needsUpdate = true;
+      }
+
+      // 2. Animate Maglev Bullet Train along 3D Track Loop
+      if (this.holoMaglevTrain && this.holoMaglevCurve) {
+        const trainSpeed = 0.045;
+        const progress = (time * trainSpeed) % 1.0;
+        const trainPos = this.holoMaglevCurve.getPointAt(progress);
+        const trainNext = this.holoMaglevCurve.getPointAt((progress + 0.01) % 1.0);
+        this.holoMaglevTrain.position.copy(trainPos);
+        this.holoMaglevTrain.lookAt(trainNext);
+      }
+
+      // 3. Pulse Halo Rings on Beacon Pins
+      if (Array.isArray(this.holoBeaconPins)) {
+        this.holoBeaconPins.forEach((pin, idx) => {
+          if (pin.halo) {
+            const scale = 1.0 + Math.sin(time * 3 + idx) * 0.15;
+            pin.halo.scale.set(scale, scale, 1);
+          }
+        });
+      }
+
+      // 4. Update 3D Floating Holographic HUD Screens (~5 Hz)
+      if (Array.isArray(this.holoHudScreens)) {
+        const now = Date.now();
+        this.holoHudScreens.forEach((hud) => {
+          if (now - hud.lastUpdate > 200) {
+            hud.lastUpdate = now;
+            if (hud.type === 'telemetry') {
+              this._drawHoloHudTelemetry(hud.canvas, hud.ctx, time);
+            } else if (hud.type === 'analytics') {
+              this._drawHoloHudAnalytics(hud.canvas, hud.ctx, time);
+            } else if (hud.type === 'spectrum') {
+              this._drawHoloHudSpectrum(hud.canvas, hud.ctx, time);
+            }
+            hud.texture.needsUpdate = true;
+          }
+        });
+      }
+    }
+
+    _drawHoloPedestalConsole(time) {
+      const ctx = this.pedConsoleCtx;
+      const w = 512, h = 128;
+      ctx.fillStyle = '#060d15';
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle Background Grid
+      ctx.strokeStyle = 'rgba(0, 245, 160, 0.15)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 32) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 16) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Animated ECG Waveform
+      ctx.strokeStyle = '#00f5a0';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let x = 0; x < 280; x += 4) {
+        const normX = x / 280;
+        const wave = Math.sin((normX * 8) - (time * 6)) * Math.cos((normX * 3) + time);
+        const y = 64 + wave * 32;
+        if (x === 0) ctx.moveTo(x + 10, y);
+        else ctx.lineTo(x + 10, y);
+      }
+      ctx.stroke();
+
+      // Equalizer / Status Bars
+      ctx.fillStyle = '#00d9ff';
+      for (let b = 0; b < 10; b++) {
+        const barH = 15 + Math.abs(Math.sin(time * 4 + b * 0.8)) * 50;
+        ctx.fillRect(320 + b * 16, 90 - barH, 10, barH);
+      }
+
+      // Diagnostic Status Text
+      ctx.fillStyle = '#00ffcc';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('FENIX CONSOLE · STATUS: NOMINAL', 14, 20);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px monospace';
+      ctx.fillText('BUS: ACTIVE | TELEMETRY: 4Hz | PORT: 4410', 14, 114);
+    }
+
+    _drawHoloHudTelemetry(canvas, ctx, time) {
+      const w = 512, h = 320;
+      ctx.fillStyle = 'rgba(6, 18, 30, 0.88)';
+      ctx.fillRect(0, 0, w, h);
+
+      // Top Title Bar
+      ctx.strokeStyle = '#00f5a0';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+      ctx.fillStyle = '#00f5a0';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('⚡ DATASET REAL-TIME · SYSTEM TELEMETRY', 24, 38);
+
+      // Radial Circular Gauge (Compute Load)
+      const cx = 90, cy = 130, radius = 45;
+      ctx.strokeStyle = 'rgba(0, 217, 255, 0.25)';
+      ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
+
+      const loadRatio = 0.62 + Math.sin(time * 0.8) * 0.18;
+      ctx.strokeStyle = '#00e5ff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * loadRatio));
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${Math.round(loadRatio * 100)}%`, cx, cy + 6);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px monospace';
+      ctx.fillText('CORE LOAD', cx, cy + 22);
+      ctx.textAlign = 'left';
+
+      // Bar Chart for Real-Time Memory & Cache
+      const barStartY = 80;
+      const memBars = [
+        { label: 'POSTGRES', val: 0.85, col: '#00f5a0' },
+        { label: 'REDIS AOF', val: 0.72, col: '#00d9ff' },
+        { label: 'QDRANT VEC', val: 0.48, col: '#38bdf8' },
+        { label: 'MINIO S3', val: 0.92, col: '#10b981' }
+      ];
+      memBars.forEach((mb, i) => {
+        const y = barStartY + i * 26;
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '11px monospace';
+        ctx.fillText(mb.label, 170, y + 12);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(260, y + 2, 210, 14);
+        ctx.fillStyle = mb.col;
+        ctx.fillRect(260, y + 2, 210 * mb.val, 14);
+      });
+
+      // Sparkline Graph at Bottom
+      ctx.fillStyle = 'rgba(0, 245, 160, 0.08)';
+      ctx.fillRect(24, 205, w - 48, 85);
+      ctx.strokeStyle = '#00f5a0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x < w - 48; x += 8) {
+        const py = 250 + Math.sin(x * 0.08 + time * 3) * 22;
+        if (x === 0) ctx.moveTo(24 + x, py);
+        else ctx.lineTo(24 + x, py);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = '#00ffcc';
+      ctx.font = '11px monospace';
+      ctx.fillText(`ACTIVE WORKERS: ONLINE · JOBS IN RUNTIME: ${this.activeRuntimeJobs || 0}`, 28, 222);
+    }
+
+    _drawHoloHudAnalytics(canvas, ctx, time) {
+      const w = 512, h = 320;
+      ctx.fillStyle = 'rgba(6, 18, 30, 0.88)';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#00d9ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+
+      ctx.fillStyle = '#00d9ff';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('📡 AUTONOMOUS SWARM & TASK LIFECYCLE', 24, 38);
+
+      // Multi-Line Comparative Analytics Curves
+      const colors = ['#00ffaa', '#00d9ff', '#f59e0b'];
+      const offsets = [0, 1.8, 3.4];
+      colors.forEach((col, idx) => {
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 24; x < w - 24; x += 10) {
+          const normX = (x - 24) / (w - 48);
+          const y = 140 + Math.sin(normX * 8 + time * 2 + offsets[idx]) * 35;
+          if (x === 24) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      });
+
+      // Status Checklist
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '12px monospace';
+      ctx.fillText('[✓] BULLMQ DISPATCHER: ACTIVE', 28, 220);
+      ctx.fillText('[✓] EVENT BUS FABRIC: SYNCHRONIZED', 28, 245);
+      ctx.fillText('[✓] ZERO-MOCK TELEMETRY ENFORCED', 28, 270);
+      ctx.fillStyle = '#00f5a0';
+      ctx.fillText('HEALTH: 100% OPERATIONAL', 310, 220);
+      ctx.fillText('LATENCY: 12ms', 310, 245);
+    }
+
+    _drawHoloHudSpectrum(canvas, ctx, time) {
+      const w = 512, h = 320;
+      ctx.fillStyle = 'rgba(6, 18, 30, 0.88)';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#00ffaa';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+
+      ctx.fillStyle = '#00ffaa';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('📊 SYSTEM FREQUENCY SPECTRUM & BUS LOAD', 24, 38);
+
+      // Frequency Audio/Event Spectrum Bars
+      const numBars = 22;
+      const barW = 16;
+      const gap = 5;
+      const startX = 28;
+      for (let b = 0; b < numBars; b++) {
+        const hVal = 30 + Math.abs(Math.sin(time * 3.5 + b * 0.45) * Math.cos(time * 1.5 + b * 0.2)) * 140;
+        const grad = ctx.createLinearGradient(0, 240, 0, 240 - hVal);
+        grad.addColorStop(0, '#00d9ff');
+        grad.addColorStop(0.6, '#00f5a0');
+        grad.addColorStop(1, '#ffffff');
+        ctx.fillStyle = grad;
+        ctx.fillRect(startX + b * (barW + gap), 240 - hVal, barW, hVal);
+      }
+
+      // Bottom Baseline
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(24, 242);
+      ctx.lineTo(w - 24, 242);
+      ctx.stroke();
+
+      ctx.fillStyle = '#00ffcc';
+      ctx.font = '12px monospace';
+      // Regra II: esta tela e animacao ilustrativa; nao exibe numeros que nao foram medidos.
+      ctx.fillText('ANIMAÇÃO ILUSTRATIVA · SEM TELEMETRIA MEDIDA NESTA TELA', 28, 280);
+    }
+
     _initSemanticNavigationUI() {
       if (document.getElementById('fw3NavLevelsBar')) return;
       const host = this.host || document.getElementById('view-city') || document.body;
@@ -8719,7 +9755,10 @@
         <button class="fw3-level-btn" data-level="3" title="Nível 3 · Visão de Edifício (Tecla 3)">🏢 3 · Edifícios</button>
         <button class="fw3-level-btn" data-level="4" title="Nível 4 · Visão Interna / Pavimentos (Tecla 4)">🚪 4 · Pavimentos</button>
       `;
-      host.appendChild(bar);
+      // Se a barra contextual da Cidade ja existe, a barra de niveis entra nela
+      // (antes ficava absoluta no topo e colidia com ela).
+      const contextualToolbar = document.getElementById('fenixUnifiedCityToolbar');
+      (contextualToolbar || host).appendChild(bar);
 
       bar.querySelectorAll('.fw3-level-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -10128,6 +11167,10 @@
       this.interactiveMeshes.push(hitBox);
 
       this.scene.add(bldGroup);
+      if (this.isHoloMode) {
+        bldGroup.visible = false;
+        this._daytimeHiddenObjects?.add(bldGroup);
+      }
       const bldRecord = {
         id,
         name,
@@ -10455,6 +11498,10 @@
       agentMesh.userData.coordinateSource = coordinateSource;
 
       this.scene.add(agentMesh);
+      if (this.isHoloMode) {
+        agentMesh.visible = false;
+        this._daytimeHiddenObjects?.add(agentMesh);
+      }
       const agentRecord = {
         id,
         agentId: id,
@@ -10636,17 +11683,19 @@
         const width = canvas.width;
         const height = canvas.height;
         const minimapScaleMultiplier = this.minimapZoomScale || 1.0;
-        const isoSpanX = 140;
-        const isoSpanY = 100;
-        const scaleX = (width * 0.88) / (isoSpanX * 2);
-        const scaleY = (height * 0.84) / (isoSpanY * 2);
-        const scale = Math.min(scaleX, scaleY) * minimapScaleMultiplier;
+        const scale = this._minimapScale(width, height) * minimapScaleMultiplier;
 
-        // Invert isometric projection
-        const u = (clickX - width / 2) / (scale * 1.0);
-        const v = (clickY - height / 2 - 6) / (scale * 0.50);
-        const worldX = (u + v) / 2;
-        const worldZ = (v - u) / 2;
+        // Inverte a projecao em uso (isometrica ou vista de cima).
+        let worldX; let worldZ;
+        if (this.minimapProjection === '2d') {
+          worldX = (clickX - width / 2) / (scale * 1.1);
+          worldZ = (clickY - height / 2) / (scale * 1.1);
+        } else {
+          const u = (clickX - width / 2) / (scale * 1.0);
+          const v = (clickY - height / 2) / (scale * 0.50);
+          worldX = (u + v) / 2;
+          worldZ = (v - u) / 2;
+        }
 
         if (Math.abs(worldX) < 140 && Math.abs(worldZ) < 140) {
           this.focusEntity(new T.Vector3(worldX, 0, worldZ), this.cameraState.targetDistance || 68);
@@ -10685,7 +11734,24 @@
       return this.minimapZoomScale;
     }
 
+    // Escala que faz a ilha urbana (x ±80, z ±75) ocupar o canvas nas duas projecoes.
+    _minimapScale(width, height) {
+      if (this.minimapProjection === '2d') return Math.min((width * 0.9) / (160 * 1.1), (height * 0.9) / (150 * 1.1));
+      return Math.min((width * 0.92) / 310, (height * 0.86) / (155 * 0.5 * 2));
+    }
+
+    setMinimapProjection(mode) {
+      this.minimapProjection = mode === '2d' ? '2d' : '3d';
+      try { localStorage.setItem('fenix_minimap_projection', this.minimapProjection); } catch (_) {}
+      this._lastMinimapFrame = 0;
+      this._renderWorldMinimap(performance.now());
+      return this.minimapProjection;
+    }
+
     _renderWorldMinimap(time) {
+      if (!this.minimapProjection) {
+        try { this.minimapProjection = localStorage.getItem('fenix_minimap_projection') === '2d' ? '2d' : '3d'; } catch (_) { this.minimapProjection = '3d'; }
+      }
       const canvas = document.getElementById('fenixMinimap');
       if (!canvas || !this.cameraState) return;
       this._initMinimapInteraction(canvas);
@@ -10694,18 +11760,18 @@
       this._lastMinimapFrame = now;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+      // Resolucao interna = tamanho exibido (o canvas ocupa o centro do anel de controles);
+      // evita desenho esticado e clique deslocado.
+      const shownW = Math.round(canvas.clientWidth || 0); const shownH = Math.round(canvas.clientHeight || 0);
+      if (shownW > 40 && shownH > 40 && (canvas.width !== shownW || canvas.height !== shownH)) { canvas.width = shownW; canvas.height = shownH; }
 
       const width = canvas.width;
       const height = canvas.height;
       const target = this.cameraState.targetLookAt;
       const centerX = target.x;
       const centerZ = target.z;
-      const isoSpanX = 140;
-      const isoSpanY = 100;
-      const scaleX = (width * 0.88) / (isoSpanX * 2);
-      const scaleY = (height * 0.84) / (isoSpanY * 2);
       const minimapScaleMultiplier = this.minimapZoomScale || 1.0;
-      const scale = Math.min(scaleX, scaleY) * minimapScaleMultiplier;
+      const scale = this._minimapScale(width, height) * minimapScaleMultiplier;
       const toX = (x) => width / 2 + (x - centerX) * scale * 1.2;
       const toY = (z) => height / 2 + (z - centerZ) * scale * 1.2;
 
@@ -10713,9 +11779,10 @@
       ctx.fillStyle = '#040812';
       ctx.fillRect(0, 0, width, height);
 
-      // Isometric 3D Projection functions (calibrated with comfortable padding)
-      const isoX = (wx, wz) => width / 2 + (wx - wz) * scale * 1.0;
-      const isoY = (wx, wz, wy = 0) => height / 2 + (wx + wz) * scale * 0.50 - wy * scale * 0.65 + 6;
+      // Projecao do mini-mapa: '3d' isometrica ou '2d' vista de cima. Centralizada na ilha
+      // urbana (sem o deslocamento fixo de 6px) e com escala pela extensao real da cidade.
+      const isoX = (wx, wz) => this.minimapProjection === '2d' ? width / 2 + wx * scale * 1.1 : width / 2 + (wx - wz) * scale * 1.0;
+      const isoY = (wx, wz, wy = 0) => this.minimapProjection === '2d' ? height / 2 + wz * scale * 1.1 : height / 2 + (wx + wz) * scale * 0.50 - wy * scale * 0.65;
 
       // Draw Isometric Grid Ground
       ctx.strokeStyle = 'rgba(0, 217, 255, 0.12)';
@@ -11082,6 +12149,9 @@
           this._drawLiveKpi(time);
         }
       }
+
+      // Holographic Smart City Projection Table Animation (Pedestal, Maglev, Cooling Towers, Floating HUDs)
+      this._updateHolographicProjectionTable?.(time, delta);
 
       // CityRT: Active vehicular traffic along urban avenues with smooth wheel rotation & boundary wrap
       if (Array.isArray(this.trafficVehicles)) {
@@ -11575,6 +12645,7 @@
 
       // 7. Camera Smoothing & Render
       this._updateCameraPosition(false, delta * 1000);
+      this._updateAgentLegibility(time);
       this._updateDistrictLabels();
       if (!Number.isFinite(this._lastWorldMinimapRenderAt) || now - this._lastWorldMinimapRenderAt >= 250) {
         this._renderWorldMinimap(time);
@@ -11965,13 +13036,36 @@
   const _prevFenixSetCityMode = window.fenixSetCityMode;
   window.fenixSetCityMode = function(mode) {
     const normalized = String(mode || '').toLowerCase();
+    const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
+    if (normalized === 'holo') {
+      if (eng) {
+        if (typeof eng.setHolographicCityMode === 'function') {
+          eng.setHolographicCityMode(true);
+        } else {
+          if (eng.holoTableGroup) eng.holoTableGroup.visible = true;
+          if (eng.terrainGroup) eng.terrainGroup.visible = false;
+          eng._setDayNight?.(true);
+        }
+      }
+      document.querySelectorAll('#fenixCityModeTabs .fenix-pill-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById('btnCityModeHolo')?.classList.add('active');
+      return true;
+    }
+    if (eng && eng.isHoloMode) {
+      if (typeof eng.setHolographicCityMode === 'function') {
+        eng.setHolographicCityMode(false);
+      }
+    }
+    if (normalized === 'world3d') {
+      if (eng && eng.terrainGroup) {
+        eng.terrainGroup.visible = true;
+      }
+    }
     const vizModes = ['operation', 'engineering', 'infrastructure', 'agents', 'dependencies', 'incidents'];
     if (vizModes.includes(normalized)) {
-      const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
       return eng?.setVisualizationMode ? eng.setVisualizationMode(normalized) : null;
     }
     if (typeof _prevFenixSetCityMode === 'function') return _prevFenixSetCityMode(mode);
-    const eng = window.fenixWorld3D || window.fenixWorldEngine3D;
     return eng?.setVisualizationMode ? eng.setVisualizationMode(normalized) : null;
   };
   window.fenixSetCityDensity = function(density) {

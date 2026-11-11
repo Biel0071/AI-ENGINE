@@ -1129,5 +1129,9 @@ header.global-topbar .fnx-vps-topbar-btn {
   white-space: nowrap !important;
   position: relative !important;
   z-index: 2 !important;
+  /* .fnx-win-icon-btn fixa 28px (botao so de icone); este botao tem texto e
+     o texto vazava por cima dos vizinhos. */
+  width: auto !important;
+  min-width: max-content !important;
 }
 

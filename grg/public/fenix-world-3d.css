@@ -636,6 +636,9 @@ body.fenix-mode-3d #view-city #cityCanvas { display: none !important; }
    LIVING WORLD EVOLUTION V3: 4-LEVEL SEMANTIC ZOOM & FLOOR CUTAWAY DOCK
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* Modo holograma: os predios ficam ocultos, entao as etiquetas deles tambem. */
+body.fenix-holo-mode .fw3-label-layer { display: none !important; }
+
 /* 1. Floating 4-Level Semantic Zoom Bar */
 .fw3-nav-levels-bar {
   position: absolute;

@@ -47,4 +47,12 @@ function requirePermission(membership, permission) {
   return membership;
 }
 
-module.exports = { ROLE_PERMISSIONS, permissionsFor, hasPermission, requirePermission };
+// LEVEL 1: um papel so pode alterar estado se tiver ao menos uma permissao de
+// escrita/execucao. viewer e employee sao somente leitura por definicao.
+const MUTATING_PERMISSION = /:(write|create|manage|execute|admin|invoke|deploy|generate|install|approve|enroll|scan|publish|connect|analyze)$/;
+function canMutate(role) {
+  const perms = permissionsFor(role);
+  return perms.includes('*') || perms.some((permission) => MUTATING_PERMISSION.test(permission));
+}
+
+module.exports = { ROLE_PERMISSIONS, permissionsFor, hasPermission, requirePermission, canMutate };

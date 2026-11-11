@@ -39,7 +39,9 @@ test('snapshot and heartbeat transport messages are not shown as system events',
 });
 
 test('footer alerts, telemetry and status come from API measurements', () => {
-  assert.match(reality, /\/api\/v2\/events\/history\?limit=100/);
+  // Historico real de eventos; por padrao sem o pulso world.simulation.tick (que escondia os reais).
+  assert.match(reality, /\/api\/v2\/events\/history\?limit=\d+/);
+  assert.match(reality, /excludeTypes=world\.simulation\.tick/);
   assert.match(reality, /hostTelemetry\?\.cpu\?\.percent|system\?\.cpu/);
   assert.doesNotMatch(reality, /alertBtn\.textContent\s*=\s*'0'/);
   assert.doesNotMatch(reality, /20°C Céu Limpo|24°C Ensolarado/);

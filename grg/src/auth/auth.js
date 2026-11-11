@@ -47,15 +47,43 @@ class AuthService {
   async ensureUser(tenantId, userId, password, role = 'admin', name = null) {
     if (!String(password || '')) throw new ValidationError('password is required');
     await this.store.update((s) => {
-      let u = s.users.find((x) => x.id === userId);
-      if (!u) { u = { id: userId, name: name || userId, status: 'active', createdAt: new Date().toISOString() }; s.users.push(u); }
-      if (!u.passwordHash) u.passwordHash = hashPassword(password);
-      // Bootstrap sempre atualiza a senha para garantir acesso ao sistema.
-      // Sem isso, uma mudança na variável FENIX_BOOTSTRAP_ADMIN_PASSWORD não teria efeito.
-      else u.passwordHash = hashPassword(password);
-      if (!s.memberships.some((m) => m.tenantId === tenantId && m.userId === userId)) {
-        s.memberships.push({ tenantId, userId, role, status: 'active', createdAt: new Date().toISOString() });
+      if (!Array.isArray(s.users)) s.users = [];
+      if (!Array.isArray(s.memberships)) s.memberships = [];
+      if (!Array.isArray(s.tenants)) s.tenants = [];
+
+      const normalizedUser = String(userId).trim();
+      const normalizedTenant = String(tenantId).trim();
+
+      let u = s.users.find((x) => x.id === normalizedUser || x.id?.toLowerCase() === normalizedUser.toLowerCase());
+      if (!u) {
+        u = { id: normalizedUser, name: name || normalizedUser, status: 'active', createdAt: new Date().toISOString() };
+        s.users.push(u);
       }
+      u.status = 'active';
+
+      if (!u.passwordHash || !verifyPassword(password, u.passwordHash)) {
+        u.passwordHash = hashPassword(password);
+        if (Array.isArray(s.sessions)) {
+          s.sessions.forEach((sess) => {
+            if ((sess.userId === normalizedUser || sess.userId?.toLowerCase() === normalizedUser.toLowerCase()) && !sess.revokedAt) {
+              sess.revokedAt = new Date().toISOString();
+            }
+          });
+        }
+      }
+
+      let mem = s.memberships.find((m) => (m.tenantId === normalizedTenant || m.tenantId?.toLowerCase() === normalizedTenant.toLowerCase()) && (m.userId === normalizedUser || m.userId?.toLowerCase() === normalizedUser.toLowerCase()));
+      if (!mem) {
+        s.memberships.push({ tenantId: normalizedTenant, userId: normalizedUser, role, status: 'active', createdAt: new Date().toISOString() });
+      } else {
+        mem.status = 'active';
+        if (role) mem.role = role;
+      }
+
+      if (!s.tenants.some(t => t.id === normalizedTenant || t.id?.toLowerCase() === normalizedTenant.toLowerCase())) {
+        s.tenants.push({ id: normalizedTenant, name: normalizedTenant === 'grg' ? 'GRG FÊNIX' : normalizedTenant, createdAt: new Date().toISOString() });
+      }
+
       return s;
     });
     return { userId, tenantId, role };
@@ -66,13 +94,16 @@ class AuthService {
       throw new ForbiddenError('local password login is disabled');
     }
     const state = await this.store.read();
-    let user = state.users.find((u) => u.id === userId);
-    let membership = state.memberships.find((m) => m.tenantId === tenantId && m.userId === userId);
+    const normalizedUser = String(userId || '').trim();
+    const normalizedTenant = String(tenantId || 'grg').trim();
+    let user = state.users?.find((u) => u.id === normalizedUser || u.id?.toLowerCase() === normalizedUser.toLowerCase());
+    let membership = state.memberships?.find((m) => (m.tenantId === normalizedTenant || m.tenantId?.toLowerCase() === normalizedTenant.toLowerCase()) && (m.userId === normalizedUser || m.userId?.toLowerCase() === normalizedUser.toLowerCase()));
     
     if (!user || !user.passwordHash || !membership || membership.status !== 'active') {
       if (this.audit) await this.audit.record({ tenantId, actorId: userId || 'unknown', action: 'auth.login', outcome: 'denied' });
       throw new ForbiddenError('Credenciais inválidas');
     }
+    // LEVEL 1: nenhuma senha alternativa. So o hash persistido autentica.
     const isValid = verifyPassword(password, user.passwordHash);
     if (!isValid) {
       if (this.audit) await this.audit.record({ tenantId, actorId: userId || 'unknown', action: 'auth.login', outcome: 'denied' });
@@ -97,6 +128,14 @@ class AuthService {
   }
 
   async createPreviewSession({ tenantId = 'grg', userId = 'preview-user', ttlMs = 15 * 60 * 1000 } = {}) {
+    // LEVEL 1: a sessao de preview e somente leitura e nao pode herdar o papel de
+    // um usuario real. Se o id ja pertence a alguem com papel diferente de viewer,
+    // recusa em vez de emitir um token com aquele vinculo.
+    const existing = await this.store.read();
+    const existingMembership = existing.memberships?.find((m) => m.tenantId === tenantId && m.userId === userId);
+    if ((existingMembership && existingMembership.role !== 'viewer') || existing.users?.some((u) => u.id === userId && u.passwordHash)) {
+      throw new ForbiddenError('preview identity collides with a real account');
+    }
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = hashToken(token);
     const session = {

@@ -834,6 +834,10 @@
 
     render() {
       if (!this.ctx) return;
+      // Com o motor 3D ativo, ele e o unico dono do canvas do mini-mapa. Dois desenhos
+      // (esta grade a cada quadro + a vista isometrica do motor a cada 250ms) faziam o
+      // mini-mapa alternar e "piscar".
+      if (window.fenixWorld3D && window.FENIX_WORLD_3D !== false) return;
       const ctx = this.ctx;
       const w = this.width;
       const h = this.height;
@@ -2546,6 +2550,13 @@
     applyMinimapLayer(layer) {
       console.log(`[FenixSpatialCity] Minimap active layer switched to: ${layer}`);
       if (this.minimap) this.minimap.setLayer(layer);
+      // As abas do mini-mapa sao agora o controle de niveis (a barra de niveis saiu junto
+      // com o painel City Control): Cidade=1, Bairros=2, Edificios=3, Pavimentos=4.
+      const semanticLevel = { city: 1, districts: 2, buildings: 3, floors: 4 }[layer];
+      if (semanticLevel && typeof window.fenixWorld3D?.setSemanticZoomLevel === 'function') {
+        window.fenixWorld3D.setSemanticZoomLevel(semanticLevel);
+        return;
+      }
       if (window.fenixCity && typeof window.fenixCity.setLayerFilter === 'function') {
         window.fenixCity.setLayerFilter(layer);
       } else if (window.fenixCity && layer === 'districts') {

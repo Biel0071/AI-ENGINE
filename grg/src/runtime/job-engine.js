@@ -1,6 +1,7 @@
 const { uuid } = require('../kernel/ids');
 const { NotFoundError, ValidationError } = require('../kernel/errors');
 const { assertNoSecrets } = require('../eventing/event-store');
+const { jobContext } = require('./job-context');
 
 const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'DEAD_LETTER', 'ROLLED_BACK']);
 const JOB_SOURCES = new Set(['codex', 'claude', 'antigravity', 'windsurf', 'vscode', 'mcp', 'cli', 'api', 'web', 'system', 'fenix-chat']);
@@ -226,7 +227,7 @@ class JobEngine {
     const handler = this.handlers.get(job.type);
     const controller = new AbortController();
     const execution = { job, workerId, controller, timedOut: false, timeoutPersisted: false, timeoutError: null, outcome: null, settlement: null, heartbeatTimer: null };
-    const operation = Promise.resolve().then(() => handler(job.payload, { jobId: job.id, tenantId: job.tenantId, actorId: job.createdBy, job, signal: controller.signal, heartbeat: () => this.heartbeat(job.tenantId, job.id, workerId), isCancelled: () => this.isCancelled(job.tenantId, job.id), isPauseRequested: () => this.isPauseRequested(job.tenantId, job.id), checkPauseSignal: async () => { if (await this.isPauseRequested(job.tenantId, job.id)) throw new Error('job pause requested at safe boundary'); }, stage: (name, progress, patch) => this.stage(job.tenantId, job.id, workerId, name, progress, patch) }));
+    const operation = Promise.resolve().then(() => jobContext.run({ jobId: job.id, missionId: job.missionId || null, jobType: job.type }, () => handler(job.payload, { jobId: job.id, tenantId: job.tenantId, actorId: job.createdBy, job, signal: controller.signal, heartbeat: () => this.heartbeat(job.tenantId, job.id, workerId), isCancelled: () => this.isCancelled(job.tenantId, job.id), isPauseRequested: () => this.isPauseRequested(job.tenantId, job.id), checkPauseSignal: async () => { if (await this.isPauseRequested(job.tenantId, job.id)) throw new Error('job pause requested at safe boundary'); }, stage: (name, progress, patch) => this.stage(job.tenantId, job.id, workerId, name, progress, patch) })));
     this.inFlightExecutions.set(job.id, execution);
     operation.then(
       (value) => { execution.outcome = { ok: true, value }; return this.#settleExecution(execution); },

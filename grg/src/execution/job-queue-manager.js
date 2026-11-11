@@ -50,18 +50,50 @@ class JobQueueManager {
 
   setBullQueue(q) {
     this.bullQueue = q;
+    this.dispatchPendingJobs().catch(function(_) {});
   }
 
-  load() {
+  async dispatchPendingJobs() {
+    if (this.isPaused) return [];
+    var dispatched = [];
+    var nowMs = Date.now();
+    for (var j of this.jobs.values()) {
+      if (j.status === JOB_STATUSES.QUEUED && !j._bullDispatched) {
+        if (j.scheduledFor && Date.parse(j.scheduledFor) > nowMs) {
+          continue; // Respect exponential backoff delay
+        }
+        await this._dispatchToBull(j);
+        dispatched.push(j.id);
+      }
+    }
+    return dispatched;
+  }
+
+  load(filePath = DATA_FILE) {
     try {
-      if (fs.existsSync(DATA_FILE)) {
-        var raw = fs.readFileSync(DATA_FILE, 'utf-8');
+      if (fs.existsSync(filePath)) {
+        var raw = fs.readFileSync(filePath, 'utf-8');
         var parsed = JSON.parse(raw);
         if (Array.isArray(parsed.jobs)) {
           for (var i = 0; i < parsed.jobs.length; i++) {
             var j = parsed.jobs[i];
-            // If it was running when process restarted, mark as QUEUED
-            if (j.status === JOB_STATUSES.RUNNING) j.status = JOB_STATUSES.QUEUED;
+            // If it was running when process restarted, recover safely with idempotency
+            if (j.status === JOB_STATUSES.RUNNING) {
+              j.attempts = (j.attempts || 1) + 1;
+              if (j.attempts > (j.maxAttempts || 3)) {
+                j.status = JOB_STATUSES.FAILED;
+                j.error = 'Job interrupted by restart and exceeded max recovery attempts. Escalated to operator.';
+                j.escalated = true;
+                j.steps = Array.isArray(j.steps) ? j.steps : [];
+                j.steps.push({ name: 'ESCALATED_HUMAN_APPROVAL', status: 'FAILED', timestamp: new Date().toISOString() });
+              } else {
+                j.status = JOB_STATUSES.QUEUED;
+                j.startedAt = null;
+                j._bullDispatched = false;
+                j.steps = Array.isArray(j.steps) ? j.steps : [];
+                j.steps.push({ name: 'RECOVERED_AFTER_RESTART', status: 'QUEUED', timestamp: new Date().toISOString() });
+              }
+            }
             this.jobs.set(String(j.id), j);
             var num = parseInt(j.id, 10);
             if (!isNaN(num) && num >= this.counter) this.counter = num + 1;
@@ -89,6 +121,14 @@ class JobQueueManager {
   }
 
   createJob(opts) {
+    if (opts.idempotencyKey) {
+      for (var existing of this.jobs.values()) {
+        if (existing.idempotencyKey === opts.idempotencyKey) {
+          return existing; // Zero duplicate job guarantee
+        }
+      }
+    }
+
     var id = String(opts.id || this.counter++);
     var priorityName = opts.priority || 'NORMAL';
     var requiresConf = Boolean(opts.requiresConfirmation);
@@ -107,6 +147,9 @@ class JobQueueManager {
       priority: priorityName,
       priorityLevel: JOB_PRIORITY_LEVELS[priorityName] || 3,
       status: initialStatus,
+      attempts: Number(opts.attempts || 1),
+      maxAttempts: Number(opts.maxAttempts || 3),
+      idempotencyKey: opts.idempotencyKey || null,
       progress: 0,
       tokens: {
         estimated: opts.estimatedTokens || 600,
@@ -187,6 +230,16 @@ class JobQueueManager {
     }
 
     try {
+      var { getSelfHealingEngine } = require('../reliability/self-healing-engine');
+      var engine = this.selfHealingEngine || getSelfHealingEngine();
+
+      if (engine && !engine.canExecuteThroughCircuit('redis')) {
+        console.warn('[JobQueueManager] Circuit breaker for Redis is OPEN — fast-failing to in-memory fallback.');
+        job._bullDispatched = false;
+        this.save();
+        return null;
+      }
+
       var bullmq = require('bullmq');
       var Queue = bullmq.Queue;
       var q = this.bullQueue;
@@ -207,36 +260,53 @@ class JobQueueManager {
         this.bullQueue = q;
       }
 
-      var bullJobId = 'bull-' + job.id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
-      var addPromise = q.add('fenix-job', {
-        jobId: job.id,
-        type: job.type,
-        projectId: job.projectId,
-        agentId: job.agentId,
-        model: job.model,
-        provider: job.provider,
-        enhancedPrompt: job.enhancedPrompt,
-        rawPrompt: job.rawPrompt,
-        payload: { prompt: job.rawPrompt, enhanced: job.enhancedPrompt }
-      }, {
-        jobId: bullJobId,
-        priority: job.priorityLevel,
-        removeOnComplete: 100,
-        removeOnFail: 50
-      });
+      var bullJobId = job.idempotencyKey || ('bull-' + job.id + '-att-' + (job.attempts || 1));
+      var dispatchAction = async function() {
+        var addPromise = q.add('fenix-job', {
+          jobId: job.id,
+          type: job.type,
+          projectId: job.projectId,
+          agentId: job.agentId,
+          model: job.model,
+          provider: job.provider,
+          enhancedPrompt: job.enhancedPrompt,
+          rawPrompt: job.rawPrompt,
+          payload: { prompt: job.rawPrompt, enhanced: job.enhancedPrompt }
+        }, {
+          jobId: bullJobId,
+          priority: job.priorityLevel,
+          removeOnComplete: 100,
+          removeOnFail: 50
+        });
 
-      var timeoutPromise = new Promise(function(_, reject) {
-        setTimeout(function() { reject(new Error('BullMQ dispatch timeout (3000ms)')); }, 3000).unref();
-      });
+        var timeoutPromise = new Promise(function(_, reject) {
+          setTimeout(function() { reject(new Error('BullMQ dispatch timeout (3000ms)')); }, 3000).unref();
+        });
 
-      var bJob = await Promise.race([addPromise, timeoutPromise]);
+        return Promise.race([addPromise, timeoutPromise]);
+      };
 
-      job._bullJobId = bullJobId;
-      job._bullDispatched = true;
-      this.save();
+      var bJob;
+      if (engine && typeof engine.executeWithCircuitBreaker === 'function') {
+        bJob = await engine.executeWithCircuitBreaker('redis', dispatchAction, async function(err) {
+          console.warn('[JobQueueManager] Redis circuit breaker tripped / fallback active:', err.message);
+          return null;
+        });
+      } else {
+        bJob = await dispatchAction();
+      }
 
-      safeEmit('jobQueued', job);
-      return bJob;
+      if (bJob) {
+        job._bullJobId = bullJobId;
+        job._bullDispatched = true;
+        this.save();
+        safeEmit('jobQueued', job);
+        return bJob;
+      } else {
+        job._bullDispatched = false;
+        this.save();
+        return null;
+      }
     } catch (e) {
       console.warn('[JobQueueManager] BullMQ dispatch bypassed (Redis unreachable):', e.message);
       job._bullDispatched = false;

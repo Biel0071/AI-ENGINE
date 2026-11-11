@@ -21,6 +21,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const cp = require('node:child_process');
+const { parseSafeCommand } = require('../security/safe-command');
+const { ForbiddenError } = require('../kernel/errors');
+
+// LEVEL 1: arquivos que nunca podem ser lidos/escritos/restaurados pelo operador.
+const SENSITIVE_PATH = /(^|[\\/])(\.git|\.secrets|node_modules)([\\/]|$)|(^|[\\/])\.env(\.[^\\/]*)?$|secrets-vault\.json$|\.(pem|key|p12|pfx)$|(^|[\\/])id_(rsa|ed25519|ecdsa)[^\\/]*$/i;
 const { BrowserSession, BrowserAgent, globalBrowserAgent } = require('../browser/browser-agent');
 const { globalGraphBrain } = require('../brain/graph-brain');
 const { globalSystemTwinEngine } = require('../reconstruction');
@@ -357,6 +362,29 @@ class RealityOperatorKernel {
       cityBuilding: this.projectCityMap[p.id] || null,
       maturityLevel: this._calculateProjectMaturity(p)
     }));
+  }
+
+  // LEVEL 1: raizes permitidas = raiz do workspace + pastas de projetos registrados.
+  workspaceRoots() {
+    const roots = [this.rootDir];
+    try { for (const p of this.listProjects()) if (p && p.localPath) roots.push(p.localPath); } catch (_) {}
+    return [...new Set(roots.filter(Boolean).map((r) => { try { return fs.realpathSync(path.resolve(r)); } catch (_) { return path.resolve(r); } }))];
+  }
+
+  // Resolve um caminho do cliente e recusa (403) qualquer coisa fora do workspace,
+  // escapes por "..", links simbolicos e arquivos de segredo.
+  resolveWorkspacePath(target, { mustExist = false } = {}) {
+    if (typeof target !== 'string' || !target.trim() || target.includes('\0')) throw new ForbiddenError('Caminho invalido');
+    const abs = path.isAbsolute(target) ? path.resolve(target) : path.resolve(this.rootDir, target);
+    let real = abs;
+    try { real = fs.realpathSync(abs); } catch (_) {
+      try { real = path.join(fs.realpathSync(path.dirname(abs)), path.basename(abs)); } catch (_) { real = abs; }
+    }
+    const inside = this.workspaceRoots().some((root) => real === root || real.startsWith(root.endsWith(path.sep) ? root : root + path.sep));
+    if (!inside) throw new ForbiddenError('Caminho fora do workspace permitido');
+    if (SENSITIVE_PATH.test(real)) throw new ForbiddenError('Arquivo protegido: segredos e metadados nao sao editaveis');
+    if (mustExist && !fs.existsSync(real)) throw new Error(`Arquivo nao encontrado: ${target}`);
+    return real;
   }
 
   getProject(projectId) {
@@ -1095,31 +1123,28 @@ class RealityOperatorKernel {
     }
 
     const startTime = Date.now();
-    let targetCwd = cwd || (this.getProject(this.activeProjectId)?.localPath);
-    if (targetCwd && !path.isAbsolute(targetCwd)) {
-      targetCwd = path.resolve(this.rootDir, targetCwd);
+    // LEVEL 1: allowlist sem shell (lanca ForbiddenError -> 403). O antigo "confirmed"
+    // vindo do cliente nao libera mais nada: comandos destrutivos nao estao na lista.
+    const parsed = parseSafeCommand(command);
+    let targetCwd;
+    if (cwd) {
+      targetCwd = this.resolveWorkspacePath(cwd);
+      if (!fs.existsSync(targetCwd) || !fs.statSync(targetCwd).isDirectory()) throw new ForbiddenError('cwd deve ser um diretorio existente do workspace');
+    } else {
+      const projectPath = this.getProject(this.activeProjectId)?.localPath;
+      targetCwd = projectPath && fs.existsSync(projectPath) ? this.resolveWorkspacePath(projectPath) : this.rootDir;
     }
-    if (!targetCwd || !fs.existsSync(targetCwd)) {
-      targetCwd = this.rootDir;
-    }
-
-    // Safety Gate
-    const isDestructive = /(?:rm\s+-rf|DROP\s+DATABASE|TRUNCATE|mkfs|format\s+[A-Z]:)/i.test(command);
-    if (isDestructive && !options.confirmed) {
-      return {
-        ok: false,
-        safety: SAFETY_LEVELS.DESTRUCTIVE,
-        error: 'Comando destrutivo requer confirmação explícita (confirmed: true)',
-        command: maskSecrets(command)
-      };
-    }
+    const timeout = Math.min(Math.max(Number(options.timeout) || 30000, 1000), 120000);
 
     try {
-      const out = cp.execSync(command, {
+      const out = cp.execFileSync(parsed.file, parsed.args, {
         cwd: targetCwd,
-        timeout: options.timeout || 30000,
+        timeout,
         encoding: 'utf8',
-        stdio: 'pipe'
+        stdio: 'pipe',
+        shell: parsed.shell,
+        windowsHide: true,
+        maxBuffer: 1024 * 1024,
       });
 
       const durationMs = Date.now() - startTime;
@@ -1277,8 +1302,9 @@ class RealityOperatorKernel {
 
       case 'create_checkpoint':
         if (!params.filePath) throw new Error('filePath é obrigatório para criar checkpoint');
-        const bak = params.filePath + '.fenix-bak';
-        fs.copyFileSync(params.filePath, bak);
+        const checkpointSource = this.resolveWorkspacePath(params.filePath, { mustExist: true });
+        const bak = checkpointSource + '.fenix-bak';
+        fs.copyFileSync(checkpointSource, bak);
         return { ok: true, checkpoint: bak };
 
       case 'restore_checkpoint':
@@ -1532,7 +1558,9 @@ class RealityOperatorKernel {
   // ═════════════════════════════════════════════════════════════════════════
   // 10. REAL FILE OPERATION & CHECKPOINTING
   // ═════════════════════════════════════════════════════════════════════════
-  async editFile(filePath, newContent, options = {}) {
+  async editFile(requestedPath, newContent, options = {}) {
+    if (typeof newContent !== 'string') throw new Error('content deve ser texto');
+    const filePath = this.resolveWorkspacePath(requestedPath);
     if (!filePath || !fs.existsSync(filePath)) {
       throw new Error(`Arquivo não encontrado para edição: ${filePath}`);
     }
@@ -1554,7 +1582,7 @@ class RealityOperatorKernel {
     let syntaxError = null;
     if (filePath.endsWith('.js')) {
       try {
-        cp.execSync(`"${process.execPath}" --check "${filePath}"`, { timeout: 5000 });
+        cp.execFileSync(process.execPath, ['--check', filePath], { timeout: 5000, windowsHide: true });
       } catch(e) {
         valid = false;
         syntaxError = e.message;
@@ -1598,7 +1626,8 @@ class RealityOperatorKernel {
     };
   }
 
-  async revertFile(filePath) {
+  async revertFile(requestedPath) {
+    const filePath = this.resolveWorkspacePath(requestedPath);
     const bakPath = filePath + '.fenix-bak';
     if (!fs.existsSync(bakPath)) {
       throw new Error(`Nenhum checkpoint .fenix-bak encontrado para: ${filePath}`);

@@ -550,12 +550,27 @@ module.exports = authRouter;`
   };
 
   window.fenixSelectOpsTab = function (tabKey) {
-    const tabs = document.querySelectorAll('#view-operations .fenix-pill-tab');
-    tabs.forEach(t => t.classList.remove('active'));
-    if (window.event && window.event.target) window.event.target.classList.add('active');
+    const tabs = document.querySelectorAll("#view-operations .fenix-pill-tab");
+    tabs.forEach(t => t.classList.remove("active"));
+    if (window.event && window.event.target) window.event.target.classList.add("active");
+
+    const jobsContainer = document.getElementById("fenixOpsJobsContainer");
+    const autoOpsContainer = document.getElementById("fenixAutonomousOperationsTarget");
+    if (tabKey === "evolution") {
+      if (jobsContainer) jobsContainer.style.display = "none";
+      if (autoOpsContainer) {
+        autoOpsContainer.style.display = "block";
+        if (window.FenixAutonomousOperations && typeof window.FenixAutonomousOperations.loadData === "function") {
+          window.FenixAutonomousOperations.loadData();
+        }
+      }
+    } else {
+      if (autoOpsContainer) autoOpsContainer.style.display = "none";
+      if (jobsContainer) jobsContainer.style.display = "";
+    }
 
     if (window.FenixToast) {
-      window.FenixToast.show(`Operações: Visualizando ${tabKey.toUpperCase()}`, 'info', 1500);
+      window.FenixToast.show('Operações: Visualizando ' + tabKey.toUpperCase(), 'info', 1500);
     }
   };
 
