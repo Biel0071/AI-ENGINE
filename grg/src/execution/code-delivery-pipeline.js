@@ -102,7 +102,7 @@ class CodeDelivery {
       subAgentId,
       model: gen.model, modelUrl: gen.url, modelOk: !!gen.ok,
       testKind: tests.kind,
-      metrics: { tokens: gen.tokens ?? null, costUsd: 0, modelDurationMs: gen.durationMs ?? null, totalDurationMs: Date.now() - started },
+      metrics: { tokens: gen.tokens ?? null, costUsd: 0, modelDurationMs: gen.durationMs ?? null, totalDurationMs: Date.now() - started, ollama: gen.ollama || null },
       completedAt: new Date().toISOString(),
     };
     if (registry && subAgentId) {

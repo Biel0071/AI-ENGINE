@@ -13,6 +13,11 @@
  * 4. Responds to termination signals gracefully
  */
 
+// Standalone entry point only (spawned by autonomous-development-factory.js). Kernel.scanDirectory
+// require()s every file under src/; without this guard that started a ref'd 5 s heartbeat interval
+// (and heartbeat files under the server's PID) inside the HTTP server process, keeping tests alive.
+if (require.main !== module) return;
+
 const fs = require('fs');
 const path = require('path');
 

@@ -44,7 +44,10 @@ class LocalCoderClient {
       if (typeof body.response !== 'string') throw new Error('ollama response missing "response" text');
       this.failures = 0; this.openedAt = null;
       const tokens = Number(body.eval_count || 0) + Number(body.prompt_eval_count || 0);
-      return { ok: true, ...base, text: body.response, tokens: tokens || null, durationMs: this.clock.now() - started, breaker: 'CLOSED' };
+      // Ollama reports durations in ns; expose ms so load vs generation time is measurable.
+      const ns = (v) => (v != null && Number.isFinite(Number(v)) ? Math.round(Number(v) / 1e6) : null);
+      const ollama = { loadMs: ns(body.load_duration), promptEvalMs: ns(body.prompt_eval_duration), evalMs: ns(body.eval_duration), totalMs: ns(body.total_duration), promptTokens: body.prompt_eval_count ?? null, evalTokens: body.eval_count ?? null };
+      return { ok: true, ...base, text: body.response, tokens: tokens || null, ollama, durationMs: this.clock.now() - started, breaker: 'CLOSED' };
     } catch (error) {
       this.failures += 1;
       if (this.failures >= this.threshold || this.openedAt !== null) this.openedAt = this.clock.now();

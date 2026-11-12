@@ -2,6 +2,12 @@
 // Entrega A end-to-end: chat -> mission (MissionPlanner CODE) -> Orchestrator delegates to Developer
 // -> runtime job code.deliver -> Ollama (mocked HTTP server, or real when OLLAMA_URL is set)
 // -> code extraction -> sandbox tests -> persisted on mission -> chat reply.
+// Hermetic test mode: no self-healing watchdog and no BullMQ/Redis dispatch from the process-global
+// JobQueueManager (it loads grg/.data/jobs-v8.json and would otherwise retry leftover jobs forever,
+// which is what kept a previous run of this file alive for ~2 h). Must be set before requiring app.
+process.env.FENIX_TEST_MODE = 'true';
+// Last-resort guard: whatever handle leaks, the file never outlives 5 min (unref'd: does not keep it alive).
+setTimeout(() => { console.error('[entrega-a] HARD TIMEOUT 300s: open handles kept the process alive -> FAIL'); process.exit(124); }, 300_000).unref();
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
@@ -123,13 +129,39 @@ test('E2E: a separate runtime worker claims the code.deliver job (no inline fall
   } finally { stop = true; await worker; await app.close(); ollama.server.close(); }
 });
 
-test('LIVE (optional): real Ollama at OLLAMA_URL', { skip: !process.env.OLLAMA_URL && 'set OLLAMA_URL to run against a real Ollama' }, async () => {
-  const app = await makeApp({ FENIX_CODER_OLLAMA_URL: process.env.OLLAMA_URL, FENIX_CODER_MODEL: process.env.FENIX_CODER_MODEL || 'qwen2.5-coder:1.5b', FENIX_CODER_TIMEOUT_MS: '120000', FENIX_CODE_DELIVERY_WAIT_MS: '150000' });
+// Bounded: 5 s reachability probe (unreachable => BLOCKED = test failure, non-zero exit; not a hang), 120 s model timeout,
+// 180 s hard test timeout. Prints a single machine-readable [live-result] JSON line.
+test('LIVE (optional): real Ollama at OLLAMA_URL', { skip: !process.env.OLLAMA_URL && 'set OLLAMA_URL to run against a real Ollama', timeout: 180_000 }, async (t) => {
+  const url = String(process.env.OLLAMA_URL).replace(/\/+$/, '');
+  const model = process.env.FENIX_CODER_MODEL || 'qwen2.5-coder:1.5b';
+  let tags;
   try {
+    const r = await fetch(`${url}/api/tags`, { signal: AbortSignal.timeout(5000) });
+    tags = await r.json();
+  } catch (e) {
+    console.log('[live-result]', JSON.stringify({ verdict: 'BLOCKED', url, reason: `unreachable: ${e.name}: ${e.message}` }));
+    // BLOCKED must never read as PASS: fail the test so node:test exits 1 (verified).
+    assert.fail(`BLOCKED: ${url} unreachable (${e.message})`);
+  }
+  if (!(tags.models || []).some((m) => m.name === model)) {
+    console.log('[live-result]', JSON.stringify({ verdict: 'BLOCKED', url, reason: `model ${model} not pulled`, models: (tags.models || []).map((m) => m.name) }));
+    assert.fail(`BLOCKED: model ${model} not available at ${url}`);
+  }
+  // LIVE_SEPARATE_WORKER=1: disable the inline fallback and let a separate runBatch loop (same path
+  // as fenix-runtime-worker) claim the code.deliver job.
+  const separate = process.env.LIVE_SEPARATE_WORKER === '1';
+  const app = await makeApp({ FENIX_CODER_OLLAMA_URL: url, FENIX_CODER_MODEL: model, FENIX_CODER_TIMEOUT_MS: '120000', FENIX_CODE_DELIVERY_WAIT_MS: '150000', ...(separate ? { FENIX_CODE_DELIVERY_INLINE: '0' } : {}) });
+  let stop = false;
+  const worker = separate ? (async () => { while (!stop) { await app.jobs.runBatch('fenix-runtime-worker-live', 1); await new Promise((r) => setTimeout(r, 200)); } })() : null;
+  try {
+    const t0 = Date.now();
     const out = await app.chat.handle(TENANT, ACTOR, ADD_REQUEST);
+    const f = out.facts || {};
+    const stored = (await app.store.read()).missions.find((m) => m.id === f.missionId);
+    console.log('[live-result]', JSON.stringify({ verdict: f.deliveryStatus === 'TESTS_PASSED' ? 'PASS' : 'FAIL', wallMs: Date.now() - t0, deliveryStatus: f.deliveryStatus, reason: f.reason || null, model: f.model, metrics: stored?.delivery?.metrics || null, missionStatus: (await app.missions.get(TENANT, ACTOR, f.missionId).catch(() => null))?.status || null, persisted: !!stored?.delivery, tests: f.tests, missionId: f.missionId, jobId: f.jobId, workerId: f.workerId, managerAgentId: f.managerAgentId, subAgentId: f.subAgentId, code: f.code }));
     console.log('[live]', out.reply);
     assert.notEqual(out.facts.deliveryStatus, 'MODEL_UNAVAILABLE', out.facts.reason || '');
     assert.ok(['TESTS_PASSED', 'TESTS_FAILED', 'NO_CODE_EXTRACTED'].includes(out.facts.deliveryStatus));
     assert.equal(out.facts.deliveryStatus, 'TESTS_PASSED', 'real model should solve add(a,b)');
-  } finally { await app.close(); }
+  } finally { stop = true; if (worker) await worker; await app.close(); }
 });

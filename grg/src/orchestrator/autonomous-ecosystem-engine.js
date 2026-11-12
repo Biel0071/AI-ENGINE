@@ -150,6 +150,8 @@ class AutonomousEcosystemEngine {
     this.watchdogInterval = setInterval(() => {
       this.reconcileEcosystem();
     }, 2500);
+    // Background watchdog: must not by itself keep the process alive (the HTTP server does that).
+    this.watchdogInterval.unref?.();
   }
 
   reconcileEcosystem() {
