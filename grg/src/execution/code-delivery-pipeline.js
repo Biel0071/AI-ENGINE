@@ -7,6 +7,7 @@ const { LocalCoderClient, extractCodeBlock } = require('../ai-runtime/local-code
 const { runInSandbox } = require('./code-sandbox-runner');
 
 const TERMINAL_JOB = new Set(['SUCCEEDED', 'FAILED', 'DEAD_LETTER', 'CANCELLED']);
+const TERMINAL_MISSION = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED']);
 const MAX_CODE_BYTES = 20_000;
 const BUILD_CODE_RE = /\b(cri[ae]r?|escrev[ae]r?|ger[ae]r?|implement[ae]r?|programe|codifique|write|create|build|implement|generate)\b[\s\S]*\b(fun[cç][aã]o|function|c[oó]digo|code|script|algoritmo|algorithm|m[eé]todo|method)\b/i;
 
@@ -58,8 +59,12 @@ class CodeDelivery {
     this.env = env;
     this.coder = coder || new LocalCoderClient({ env });
     this.sandbox = sandbox;
-    this.waitMs = Number(env.FENIX_CODE_DELIVERY_WAIT_MS || 50_000); // UI /api/chat timeout is 60 s
+    if ((env.FENIX_ENV === 'production' || env.NODE_ENV === 'production') && sandbox.productionSafe !== true) {
+      throw new Error('production code delivery requires an explicitly production-safe sandbox adapter');
+    }
+    this.waitMs = Number(env.FENIX_CODE_DELIVERY_WAIT_MS || 55_000); // leaves time for the UI timeout and mission projection
     this.claimWaitMs = Number(env.FENIX_CODE_DELIVERY_CLAIM_WAIT_MS || 5_000);
+    this.projectionWaitMs = Number(env.FENIX_MISSION_PROJECTION_WAIT_MS || 5_000);
     this.inline = env.FENIX_CODE_DELIVERY_INLINE !== '0';
     this.sandboxTimeoutMs = Number(env.FENIX_SANDBOX_TIMEOUT_MS || 10_000);
   }
@@ -137,7 +142,7 @@ class CodeDelivery {
     const jobId = step?.jobId || null;
     if (!jobId) return { deliveryStatus: 'NOT_DISPATCHED', missionId: mission.id, missionStatus: mission.status, managerAgentId: manager.id, subAgentId: sub.id };
     const job = await this.#awaitJob(tenantId, jobId);
-    const latest = await app.missions.get(tenantId, actorId, mission.id).catch(() => null);
+    const latest = await this.#awaitMissionProjection(tenantId, actorId, mission.id);
     const state = await app.store.read();
     const delivery = (state.missions || []).find((m) => m.id === mission.id)?.delivery || job?.result || null;
     return {
@@ -145,6 +150,7 @@ class CodeDelivery {
       jobId, jobStatus: job?.status || 'UNKNOWN', workerId: job?.workerId || job?.lastWorkerId || null,
       managerAgentId: manager.id, subAgentId: sub.id,
       model: delivery?.model || this.coder.model, modelOk: delivery ? delivery.modelOk : null,
+      metrics: delivery?.metrics || null,
       deliveryStatus: delivery?.deliveryStatus || (TERMINAL_JOB.has(job?.status) ? 'JOB_FAILED' : 'RUNNING'),
       reason: delivery?.reason || job?.error?.message || null,
       testKind: tests.kind,
@@ -169,6 +175,16 @@ class CodeDelivery {
       job = await jobs.getInternal(tenantId, jobId);
     }
     return job;
+  }
+
+  async #awaitMissionProjection(tenantId, actorId, missionId) {
+    const deadline = Date.now() + this.projectionWaitMs;
+    let mission = await this.app.missions.get(tenantId, actorId, missionId).catch(() => null);
+    while (!TERMINAL_MISSION.has(mission?.status) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      mission = await this.app.missions.get(tenantId, actorId, missionId).catch(() => null);
+    }
+    return mission;
   }
 }
 

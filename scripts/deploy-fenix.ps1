@@ -31,7 +31,9 @@ $list = Join-Path $env:TEMP "fenix-deploy-$stamp.txt"
 [IO.File]::WriteAllLines($list, [string[]]$Files)
 tar -cf $tar -T $list
 if ($LASTEXITCODE) { throw 'tar failed' }
+$archiveSha256 = (Get-FileHash -LiteralPath $tar -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "Payload: $($Files.Count) files -> $tar"
+Write-Host "Source archive SHA-256: $archiveSha256"
 $Files | ForEach-Object { Write-Host "  $_" }
 if ($DryRun) { Write-Host 'DryRun: nothing uploaded.'; exit 0 }
 
@@ -40,7 +42,7 @@ $remoteSh = Join-Path $env:TEMP "fenix-remote-deploy-$stamp.sh"
 # Normalize to LF: git autocrlf may have checked the script out with CRLF, which breaks bash.
 [IO.File]::WriteAllText($remoteSh, ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'remote-deploy.sh')) -replace "`r`n", "`n"))
 scp -q $remoteSh "${Vps}:/tmp/fenix-remote-deploy.sh"; if ($LASTEXITCODE) { throw 'scp script failed' }
-ssh $Vps "bash /tmp/fenix-remote-deploy.sh /tmp/fenix-deploy-$stamp.tar $stamp"
+ssh $Vps "bash /tmp/fenix-remote-deploy.sh /tmp/fenix-deploy-$stamp.tar $stamp $archiveSha256"
 $code = $LASTEXITCODE
 Remove-Item $tar, $list, $remoteSh -ErrorAction SilentlyContinue
 if ($code) { throw "Remote deploy failed (exit $code); remote script attempted rollback." }

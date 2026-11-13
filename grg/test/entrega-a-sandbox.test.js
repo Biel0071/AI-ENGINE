@@ -1,10 +1,37 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { runInSandbox } = require('../src/execution/code-sandbox-runner');
+const http = require('node:http');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { runInSandbox, createDockerRootlessCodeSandbox } = require('../src/execution/code-sandbox-runner');
 const { extractCodeBlock, LocalCoderClient } = require('../src/ai-runtime/local-coder-client');
 
 const ex = (fn, args, expected) => ({ fn, args, expected });
+
+test('CodeDelivery Docker sandbox uses pinned image, no network and bounded resources', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fenix-code-docker-test-'));
+  const calls = [];
+  const adapter = { productionSafe: true, run: async (input) => {
+    calls.push(input);
+    const harness = fs.readFileSync(path.join(input.workspacePath, 'harness.js'), 'utf8');
+    const marker = harness.match(/const __M = "(__RESULT_[a-f0-9]+__)"/)[1];
+    return { exitCode: 0, stdout: `${marker}{"loaded":true,"results":[{"name":"add(2,3)","passed":true}]}`, stderr: '', sandbox: { driver: 'docker-rootless' } };
+  } };
+  try {
+    const sandbox = createDockerRootlessCodeSandbox({ adapter, workspaceRoot: root, image: `node@sha256:${'a'.repeat(64)}` });
+    const result = await sandbox({ code: 'module.exports={add:(a,b)=>a+b}', tests: { kind: 'examples', cases: [ex('add', '2,3', '5')] }, timeoutMs: 5000 });
+    assert.equal(result.passed, true);
+    assert.equal(result.isolation.driver, 'docker-rootless');
+    assert.equal(calls[0].network, 'none');
+    assert.equal(calls[0].limits.memoryMb, 128);
+    assert.equal(calls[0].limits.cpuUnits, 500);
+    assert.equal(calls[0].limits.pids, 64);
+    assert.equal(calls[0].tool.image, `node@sha256:${'a'.repeat(64)}`);
+    assert.equal(fs.readdirSync(root).length, 0, 'temporary code workspace is removed');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
 
 test('sandbox: correct code passes example tests', async () => {
   const r = await runInSandbox({ code: 'function add(a,b){return a+b}\nmodule.exports={add};', tests: { kind: 'examples', cases: [ex('add', '2,3', '5'), ex('add', '-1,1', '0')] } });
@@ -56,6 +83,22 @@ test('LocalCoderClient: unreachable model -> honest failure, breaker opens', asy
   const third = await c.generate('x');
   assert.equal(third.ok, false); assert.match(third.reason, /circuit breaker open/);
   assert.equal(calls, 2, 'breaker must short-circuit the third call');
+});
+
+test('LocalCoderClient: generation timeout is reported as timeout', async () => {
+  const server = http.createServer((req, res) => {
+    req.resume();
+    setTimeout(() => { if (!res.destroyed) res.end(JSON.stringify({ response: 'late' })); }, 100);
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const client = new LocalCoderClient({
+      env: { FENIX_CODER_OLLAMA_URL: `http://127.0.0.1:${server.address().port}`, FENIX_CODER_TIMEOUT_MS: '20' },
+    });
+    const result = await client.generate('return a function');
+    assert.equal(result.ok, false);
+    assert.match(result.reason, /model timed out after 20 ms/);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
 test('sandbox: prototype-level toJSON tampering cannot crash the host or forge a pass', async () => {

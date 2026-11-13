@@ -89,6 +89,7 @@ const { CognitiveHierarchy } = require('./cognitive/cognitive-hierarchy');
 const { ToolRegistry } = require('./execution/tool-registry');
 const { ScriptLibrary } = require('./execution/script-library');
 const { DockerRootlessSandbox } = require('./execution/docker-rootless-sandbox');
+const { createDockerRootlessCodeSandbox } = require('./execution/code-sandbox-runner');
 const { SandboxExecutionEngine } = require('./execution/sandbox-execution-engine');
 const { CognitiveInspectionEngine } = require('./inspection/cognitive-inspection-engine');
 const { AutonomousAgentEcosystem } = require('./agents/autonomous-agent-ecosystem');
@@ -283,7 +284,7 @@ async function createApp(options = {}) {
   const tools = new ToolRegistry({ store, controlPlane, bus });
   const scripts = new ScriptLibrary({ store, controlPlane, tools, bus });
   let sandboxAdapter = options.sandboxAdapter || null;
-  if (!sandboxAdapter && runtimeEnv.FENIX_SANDBOX_DRIVER === 'docker-rootless') sandboxAdapter = new DockerRootlessSandbox({ workspaceRoot: runtimeEnv.FENIX_WORKSPACE_ROOT || path.join(outputDir, 'workspaces'), dockerHost: runtimeEnv.DOCKER_HOST, enforceRootless: true, cpuMode: runtimeEnv.FENIX_SANDBOX_CPU_MODE || 'quota' });
+  if (!sandboxAdapter && runtimeEnv.FENIX_SANDBOX_DRIVER === 'docker-rootless') sandboxAdapter = new DockerRootlessSandbox({ workspaceRoot: runtimeEnv.FENIX_WORKSPACE_ROOT || path.join(outputDir, 'workspaces'), dockerHost: runtimeEnv.DOCKER_HOST, enforceRootless: true, cpuMode: runtimeEnv.FENIX_SANDBOX_CPU_MODE || 'process-time' });
   if (securityConfig.production && sandboxAdapter && sandboxAdapter.productionSafe !== true) throw new Error('production requires an explicitly rootless production-safe sandbox adapter');
   if (!sandboxAdapter && !securityConfig.production) {
     sandboxAdapter = {
@@ -399,7 +400,7 @@ async function createApp(options = {}) {
   jobs.register('agents.cycle', (payload, context) => agentEcosystem.cycle(context.tenantId, context.actorId, payload));
   jobs.register('cognitive.cycle', (payload, context) => cognitiveCore.cycle(context.tenantId, context.actorId, payload));
   // Entrega A: chat code request -> mission step 'code' -> this job (local Ollama coder + sandbox).
-  // Bound to app.codeDelivery below, once pp exists.
+  // Bound to app.codeDelivery below, once app exists.
   let codeDelivery = null;
   jobs.register('code.deliver', (payload, context) => { if (!codeDelivery) throw new Error('code delivery not initialized'); return codeDelivery.handleJob(payload, context); });
   const health = new HealthRegistry({ timeoutMs: options.healthTimeoutMs });
@@ -481,7 +482,7 @@ async function createApp(options = {}) {
   jobs.register('git.workspace.write', (payload) => gitWorkspaceWrite.write(payload));
   jobs.register('git.commit', (payload) => gitCommit.commit(payload));
   const agentTestSandboxFactory = options.agentTestSandboxFactory || (runtimeEnv.FENIX_SANDBOX_DRIVER === 'docker-rootless'
-    ? ({ workspaceRoot: testWorkspaceRoot }) => new DockerRootlessSandbox({ workspaceRoot: testWorkspaceRoot, dockerHost: runtimeEnv.DOCKER_HOST, enforceRootless: true, cpuMode: runtimeEnv.FENIX_SANDBOX_CPU_MODE || 'quota' })
+    ? ({ workspaceRoot: testWorkspaceRoot }) => new DockerRootlessSandbox({ workspaceRoot: testWorkspaceRoot, dockerHost: runtimeEnv.DOCKER_HOST, enforceRootless: true, cpuMode: runtimeEnv.FENIX_SANDBOX_CPU_MODE || 'process-time' })
     : null);
   const agentWorkspaceExecutor = new AgentWorkspaceExecutor({ store, controlPlane, gitWrite: gitWorkspaceWrite, gitRead, gitCommit, testSandboxFactory: agentTestSandboxFactory, testImage: options.agentTestImage || runtimeEnv.FENIX_AGENT_TEST_IMAGE });
   jobs.register('agent.workspace.execute', (payload, context) => agentWorkspaceExecutor.execute(context.tenantId, context.actorId, { ...payload, projectId: context.job?.projectId || payload.projectId, workspaceId: context.job?.workspaceId || payload.workspaceId, jobId: context.jobId, missionId: context.job?.missionId, agentId: context.job?.agent?.agentId || payload.agentId }));
@@ -1007,7 +1008,10 @@ async function createApp(options = {}) {
 
   app.organismIdentity = organismIdentity;
   app.chat = new ChatAgent({ app, llm });
-  app.codeDelivery = codeDelivery = new CodeDelivery({ app, env: options.env || process.env });
+  const codeDeliverySandbox = options.codeDeliverySandbox || (sandboxAdapter?.productionSafe === true
+    ? createDockerRootlessCodeSandbox({ adapter: sandboxAdapter, workspaceRoot: runtimeEnv.FENIX_WORKSPACE_ROOT || path.join(outputDir, 'workspaces'), image: runtimeEnv.FENIX_CODE_SANDBOX_IMAGE || runtimeEnv.FENIX_AGENT_TEST_IMAGE })
+    : undefined);
+  app.codeDelivery = codeDelivery = new CodeDelivery({ app, env: runtimeEnv, ...(codeDeliverySandbox ? { sandbox: codeDeliverySandbox } : {}) });
   // Memoria da conversa (historico + contexto recuperado + resumo) e preferencias de voz.
   // Compoe o MemoryEngine que ja existe para a busca semantica -- nao abre um segundo
   // caminho de embedding, que divergiria na dimensao do vetor e na pontuacao.

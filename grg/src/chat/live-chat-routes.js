@@ -32,9 +32,9 @@ async function validateConversationScope(app, tenantId, agentId, projectId) {
       const { getProjectById } = require('../projects/project-registry');
       project = getProjectById(projectId);
     } catch (_) {}
+    if (tenantId && project?.tenantId && project.tenantId !== tenantId) project = null;
     if (!project && Array.isArray(state.projects)) {
       project = state.projects.find((item) => (item.id === projectId || item.projectId === projectId) && (!tenantId || !item.tenantId || item.tenantId === tenantId))
-        || state.projects.find((item) => item.id === projectId || item.projectId === projectId)
         || null;
     }
     if (!project && !agentId) {
@@ -211,6 +211,7 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
 
     const source = body.source === 'voice' ? 'voice' : 'text';
     const streamId = `stream_${crypto.randomUUID()}`;
+    const codeRequest = app.chat?.detectIntent?.(message)?.kind === 'build_code';
     const { llm, reason } = pickProvider(app);
 
     const conversation = await conversations.open(tenantId, actorId, { conversationId: body.conversationId || null, agentId: body.agentId || null, projectId: body.projectId || null });
@@ -218,7 +219,7 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     await conversations.append(tenantId, actorId, conversation.id, { role: 'user', content: message, source });
 
     const routerAvailable = app.aiRouter && typeof app.aiRouter.route === 'function';
-    if (!routerAvailable && (!llm || typeof llm.stream !== 'function')) {
+    if (!codeRequest && !routerAvailable && (!llm || typeof llm.stream !== 'function')) {
       // Falha explicita ANTES de abrir o SSE: o cliente recebe um erro HTTP legivel em vez de
       // um stream vazio que pareceria travamento.
       sendJson(res, 503, {
@@ -236,8 +237,8 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     sseSend(res, 'ready', {
       streamId,
       conversationId: conversation.id,
-      model: routerAvailable ? null : (llm.model || null),
-      provider: routerAvailable ? 'ai-router' : (llm.name || null),
+      model: codeRequest ? (app.codeDelivery?.coder?.model || null) : (routerAvailable ? null : (llm.model || null)),
+      provider: codeRequest ? 'local-code-delivery' : (routerAvailable ? 'ai-router' : (llm.name || null)),
     });
 
     // Cliente desconectou (fechou a aba, perdeu a rede, celular trocou de rede): abortar a
@@ -245,6 +246,44 @@ async function handleLiveChat({ app, req, res, url, tenantId, actorId, readJson,
     // O request POST pode fechar logo após o corpo ser consumido; isso não
     // significa que o cliente abandonou o SSE. Observe a resposta streaming.
     res.on('close', () => { if (!res.writableEnded && !controller.signal.aborted) controller.abort(); });
+
+    if (codeRequest) {
+      try {
+        sseSend(res, 'routing', { provider: 'local-code-delivery', mode: 'mission' });
+        const idempotencyKey = String(req.headers['idempotency-key'] || body.idempotencyKey || '').trim().slice(0, 256);
+        const handled = await app.chat.handle(tenantId, actorId, message, {
+          idempotencyKey,
+          idempotencyContext: { conversationId: body.conversationId || null, agentId: body.agentId || null, projectId: body.projectId || null },
+        });
+        const facts = handled.facts || {};
+        if (handled.action?.ok === false && !facts.deliveryStatus) {
+          sseSend(res, 'error', { message: facts.error || handled.action.error || 'code delivery request failed' });
+          return true;
+        }
+        const text = String(handled.reply || '');
+        if (!text.trim()) throw new Error('code delivery returned no chat reply');
+        const saved = await conversations.append(tenantId, actorId, conversation.id, {
+          role: 'assistant', content: text, source, model: facts.model || app.codeDelivery?.coder?.model || null,
+        });
+        sseSend(res, 'token', { text });
+        sseSend(res, 'done', {
+          streamId, messageId: saved.id, conversationId: conversation.id, text,
+          chunks: 1, streamed: false, model: facts.model || app.codeDelivery?.coder?.model || null,
+          intent: handled.intent, deliveryStatus: facts.deliveryStatus || null,
+          missionId: facts.missionId || null, missionStatus: facts.missionStatus || null,
+          jobId: facts.jobId || null, jobStatus: facts.jobStatus || null,
+          workerId: facts.workerId || null, managerAgentId: facts.managerAgentId || null,
+          subAgentId: facts.subAgentId || null, tests: facts.tests || null,
+          metrics: facts.metrics || null,
+        });
+      } catch (error) {
+        sseSend(res, 'error', { message: error.message });
+      } finally {
+        liveStreams.delete(streamId);
+        if (!res.writableEnded) res.end();
+      }
+      return true;
+    }
 
     let prompt;
     try {

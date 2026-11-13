@@ -1,7 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { startWorker } = require('../src/runtime/worker');
+const { startWorker, workerInstanceId } = require('../src/runtime/worker');
 const { MemoryStore } = require('../src/kernel/store');
+
+test('configured worker identity gets a unique instance id after each restart', () => {
+  const env = { FENIX_WORKER_ID: 'worker-real-1' };
+  const first = workerInstanceId(env);
+  const second = workerInstanceId(env);
+  assert.notEqual(first, second);
+  assert.match(first, /^worker-real-1:/);
+  assert.match(second, /^worker-real-1:/);
+});
 
 test('runtime worker consumes BullMQ delivery and completes the canonical persisted job', async () => {
   const values = new Map();
@@ -37,7 +46,7 @@ test('runtime worker consumes BullMQ delivery and completes the canonical persis
     assert.equal(completed.result, 42);
     assert.equal((await processor({ data: deliveries[0].data })), null, 'duplicate delivery must not execute twice');
     const stored = await runtime.app.jobs.get('worker-test', 'owner', job.id);
-    assert.equal(stored.lastWorkerId, 'worker-real-1');
+    assert.match(stored.lastWorkerId, /^worker-real-1:/);
   } finally {
     await runtime.stop();
   }

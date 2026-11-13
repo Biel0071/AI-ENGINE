@@ -12,6 +12,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const { createApp } = require('../src/app');
+const { CodeDelivery } = require('../src/execution/code-delivery-pipeline');
 
 const TENANT = 'entrega-a';
 const ACTOR = 'operator';
@@ -38,6 +39,26 @@ async function makeApp(env) {
 }
 
 const ADD_REQUEST = 'crie uma função add que soma dois números: add(2, 3) => 5, add(-1, 1) => 0';
+
+test('production code delivery rejects the non-production-safe default sandbox', () => {
+  assert.throws(
+    () => new CodeDelivery({ app: {}, env: { FENIX_ENV: 'production' } }),
+    /production code delivery requires an explicitly production-safe sandbox adapter/,
+  );
+});
+
+test('app wires CodeDelivery to rootless sandbox with bounded CPU mode and pinned image', async () => {
+  const app = await createApp({ dataFile: null, env: {
+    FENIX_SANDBOX_DRIVER: 'docker-rootless',
+    DOCKER_HOST: 'unix:///run/user/1001/docker.sock',
+    FENIX_AGENT_TEST_IMAGE: `node@sha256:${'a'.repeat(64)}`,
+  } });
+  try {
+    assert.equal(app.sandbox.adapter.cpuMode, 'process-time');
+    assert.equal(app.codeDelivery.sandbox.productionSafe, true);
+  } finally { await app.close(); }
+});
+
 // qwen2.5-coder:1.5b style: correct code, then unrequested prose (measured on the VPS).
 const QWEN_STYLE_OK = 'Here is the function:\n```javascript\nfunction add(a, b) {\n  return a + b;\n}\nmodule.exports = { add };\n```\nThis function takes two numbers and returns their sum. You can also use it like this:\n```js\nconsole.log(add(1,2))\n```';
 
@@ -127,6 +148,27 @@ test('E2E: a separate runtime worker claims the code.deliver job (no inline fall
     assert.equal(out.facts.deliveryStatus, 'TESTS_PASSED', JSON.stringify(out.facts));
     assert.equal(out.facts.workerId, 'fenix-runtime-worker-test');
   } finally { stop = true; await worker; await app.close(); ollama.server.close(); }
+});
+
+test('E2E waits for MissionKernel terminal projection after the job completes', async () => {
+  const ollama = await mockOllama(() => QWEN_STYLE_OK);
+  const app = await makeApp({ FENIX_CODER_OLLAMA_URL: ollama.url });
+  const originalGet = app.missions.get.bind(app.missions);
+  let staleReadInjected = false;
+  app.missions.get = async (...args) => {
+    const mission = await originalGet(...args);
+    if (!staleReadInjected && mission?.status === 'SUCCEEDED') {
+      staleReadInjected = true;
+      return { ...mission, status: 'RUNNING' };
+    }
+    return mission;
+  };
+  try {
+    const out = await app.chat.handle(TENANT, ACTOR, ADD_REQUEST);
+    assert.equal(staleReadInjected, true);
+    assert.equal(out.facts.missionStatus, 'SUCCEEDED', JSON.stringify(out.facts));
+    assert.equal(out.facts.deliveryStatus, 'TESTS_PASSED');
+  } finally { await app.close(); ollama.server.close(); }
 });
 
 // Bounded: 5 s reachability probe (unreachable => BLOCKED = test failure, non-zero exit; not a hang), 120 s model timeout,

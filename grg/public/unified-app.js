@@ -393,14 +393,14 @@ async function streamChat(message, { model = null, onEvent = null } = {}) {
   const controller = new AbortController();
   // Context loading can include persisted history and memory retrieval. Keep
   // the live stream open long enough for the real local model to answer.
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), 70000);
   let response;
   try { response = await fetch('/api/chat/stream', {
     method: 'POST',
     headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json', accept: 'text/event-stream' },
     body: JSON.stringify({ message, conversationId, model: model || undefined }),
     signal: controller.signal,
-  }); } catch (error) { clearTimeout(timeout); throw new Error(error.name === 'AbortError' ? 'stream excedeu 30s' : error.message); }
+  }); } catch (error) { clearTimeout(timeout); throw new Error(error.name === 'AbortError' ? 'stream excedeu 70s' : error.message); }
   if (!response.ok) { clearTimeout(timeout); const body = await response.json().catch(() => ({})); throw new Error(body.error || body.reason || `HTTP ${response.status}`); }
   const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let textOut = ''; let meta = {}; let streamError = null;
   const consume = (chunk) => {
@@ -419,7 +419,7 @@ async function streamChat(message, { model = null, onEvent = null } = {}) {
   try {
     while (true) { const { value, done } = await reader.read(); if (done) break; consume(decoder.decode(value, { stream: true })); }
   } catch (error) {
-    throw new Error(error.name === 'AbortError' ? 'stream excedeu 30s' : error.message);
+    throw new Error(error.name === 'AbortError' ? 'stream excedeu 60s' : error.message);
   } finally { clearTimeout(timeout); }
   if (streamError) throw new Error(streamError);
   if (meta.conversationId) localStorage.setItem('fenix_conversation_id', meta.conversationId);

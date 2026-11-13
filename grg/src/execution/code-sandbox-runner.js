@@ -152,4 +152,56 @@ async function runInSandbox({ code, tests, timeoutMs = 10_000, env = process.env
   }
 }
 
-module.exports = { runInSandbox, buildHarness, BLOCKED };
+function createDockerRootlessCodeSandbox({ adapter, workspaceRoot, image }) {
+  if (!adapter || adapter.productionSafe !== true) throw new Error('code delivery requires a production-safe rootless sandbox adapter');
+  if (!workspaceRoot) throw new Error('code delivery sandbox requires an authorized workspace root');
+  if (!/^\S+@sha256:[a-f0-9]{64}$/i.test(String(image || ''))) throw new Error('code delivery sandbox requires an image pinned by sha256 digest');
+
+  const sandbox = async ({ code, tests, timeoutMs = 10_000 }) => {
+    const root = path.resolve(workspaceRoot);
+    fs.mkdirSync(root, { recursive: true });
+    const dir = fs.mkdtempSync(path.join(root, 'fenix-code-delivery-'));
+    const nonce = crypto.randomBytes(12).toString('hex');
+    try {
+      fs.writeFileSync(path.join(dir, 'solution.js'), String(code));
+      fs.writeFileSync(path.join(dir, 'guard.js'), GUARD_SOURCE);
+      fs.writeFileSync(path.join(dir, 'harness.js'), buildHarness(tests, nonce));
+      const result = await adapter.run({
+        executionId: nonce,
+        tool: { image, allowedNetworks: ['none'] },
+        argv: ['node', '--max-old-space-size=64', '--experimental-permission', '--allow-fs-read=/workspace/*', '--allow-fs-write=/workspace/*', '--require', '/workspace/guard.js', '/workspace/harness.js'],
+        workspacePath: dir,
+        limits: { timeoutMs, memoryMb: 128, cpuUnits: 500, pids: 64 },
+        network: 'none',
+      });
+      const marker = `__RESULT_${nonce}__`;
+      const line = String(result.stdout || '').split(/\r?\n/).reverse().find((entry) => entry.startsWith(marker));
+      let parsed = null;
+      try { parsed = line ? JSON.parse(line.slice(marker.length)) : null; } catch { parsed = null; }
+      const rawResults = Array.isArray(parsed?.results) ? parsed.results : [];
+      const results = rawResults.filter((entry) => entry && typeof entry === 'object').map((entry) => ({
+        name: String(entry.name ?? ''), passed: entry.passed === true,
+        ...(entry.error != null ? { error: String(entry.error).slice(0, 500) } : {}),
+      }));
+      const expectedCount = tests.kind === 'examples' ? tests.cases.length : 1;
+      const passedCount = results.filter((entry) => entry.passed).length;
+      return {
+        passed: parsed?.loaded === true && results.length === expectedCount && passedCount === results.length,
+        loaded: parsed?.loaded === true,
+        loadError: parsed?.error != null ? String(parsed.error).slice(0, 500) : null,
+        total: results.length, passedCount, results,
+        timedOut: false, exitCode: result.exitCode,
+        stderr: String(result.stderr || '').slice(0, 2000),
+        durationMs: Number(result.durationMs) || null,
+        testKind: tests.kind,
+        isolation: { driver: 'docker-rootless', network: 'none', image, memoryMb: 128, cpuUnits: 500, pids: 64 },
+      };
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  sandbox.productionSafe = true;
+  return sandbox;
+}
+
+module.exports = { runInSandbox, createDockerRootlessCodeSandbox, buildHarness, BLOCKED };

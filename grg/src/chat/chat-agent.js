@@ -208,7 +208,7 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
     return null;
   }
 
-  async handle(tenantId, actorId, text) {
+  async handle(tenantId, actorId, text, options = {}) {
     // 1) tenta regras determinísticas (rápidas, confiáveis para URL/comandos claros)
     let intent = this.detectIntent(text);
     // 2) se o LLM está ligado e as regras caíram em 'help' (baixa confiança), pergunta ao LLM
@@ -250,7 +250,16 @@ REGRA CRÍTICA 2: NUNCA negue ter uma capacidade. Contador em zero significa "ai
         }
         case 'build_code': {
           if (!this.app.codeDelivery) throw new Error('code delivery is not configured in this runtime');
-          facts = await this.app.codeDelivery.requestFromChat(tenantId, actorId, text);
+          const deliver = () => this.app.codeDelivery.requestFromChat(tenantId, actorId, text);
+          if (options.idempotencyKey && this.app.idempotency) {
+            const key = `chat-code:${require('node:crypto').createHash('sha256').update(`${actorId}\0${options.idempotencyKey}`).digest('hex')}`;
+            const result = await this.app.idempotency.execute({
+              tenantId, key, operation: 'chat.code-delivery', input: { actorId, text, context: options.idempotencyContext || null },
+            }, deliver);
+            facts = result.result;
+          } else {
+            facts = await deliver();
+          }
           action = { type: 'build_code', ok: facts.deliveryStatus === 'TESTS_PASSED', missionId: facts.missionId || null, jobId: facts.jobId || null, deliveryStatus: facts.deliveryStatus };
           break;
         }

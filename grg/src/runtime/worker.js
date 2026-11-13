@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const { createApp } = require('../app');
 const { loadInfrastructureConfig } = require('../infrastructure/config');
 const { loadSecurityConfig } = require('../security/config');
@@ -13,6 +14,12 @@ function livingTickIntervalMsFromEnv(env = process.env) {
     : MIN_LIVING_TICK_INTERVAL_MS;
 }
 
+function workerInstanceId(env = process.env) {
+  const configuredId = String(env.FENIX_WORKER_ID || '').trim();
+  const instanceId = crypto.randomUUID();
+  return configuredId ? `${configuredId}:${instanceId}` : instanceId;
+}
+
 async function startWorker(options = {}) {
   const env = options.env || process.env; const securityConfig = loadSecurityConfig(env); const infra = loadInfrastructureConfig(env, { requireExternal: securityConfig.production });
   // `options` (menos `env`, que ja foi lido acima) sobrepoe a config de infra: e o unico jeito de
@@ -25,8 +32,9 @@ async function startWorker(options = {}) {
   // quando o valor e undefined. String vazia atravessa e vira o id do worker -- e job-engine
   // recusa com "workerId is required" a cada ciclo, com a fila parada. Isso aconteceu de fato
   // quando o compose passou a repassar FENIX_WORKER_ID: uma variavel ausente no .env chega ao
-  // container como '' em vez de nao existir. `|| undefined` devolve o default ao seu lugar.
-  const lease = new RedisLease({ client: app.redis.client, ttlMs: Number(env.FENIX_LEADER_LEASE_MS || 15_000), ownerId: env.FENIX_WORKER_ID || undefined });
+  // container como '' em vez de nao existir. A parte aleatoria evita que um processo novo
+  // herde o heartbeat do worker anterior e esconda jobs RUNNING abandonados.
+  const lease = new RedisLease({ client: app.redis.client, ttlMs: Number(env.FENIX_LEADER_LEASE_MS || 15_000), ownerId: workerInstanceId(env) });
   // Quando BullMQ esta configurado, ele e o gatilho real. O JobEngine continua sendo a fonte
   // persistente de verdade e faz o claim pelo jobId; assim uma entrega duplicada do Redis nao
   // executa o mesmo trabalho duas vezes. Sem BullMQ, o polling abaixo permanece como fallback.
@@ -160,4 +168,4 @@ async function startWorker(options = {}) {
 }
 
 if (require.main === module) { startWorker().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exitCode = 1; }); }
-module.exports = { startWorker, livingTickIntervalMsFromEnv };
+module.exports = { startWorker, livingTickIntervalMsFromEnv, workerInstanceId };
