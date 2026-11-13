@@ -75,4 +75,13 @@ Reconciliar código por área, começando por `grg/src`, `engine` e `platform`, 
 - A suíte local de sandbox e Entrega A terminou com 19 testes aprovados, zero falhas e 1 teste de Ollama real ignorado por ausência de `OLLAMA_URL` local.
 - Uma tentativa do fluxo real na VPS confirmou modelo `qwen2.5-coder:1.5b`, autenticação de sessão isolada e delegação de job ao worker, mas o job falhou no acesso ao socket Docker: `/run/user/1001` é privado (0700) para o usuário `fenix`; o processo temporário `deploy` não consegue acessar `/run/user/1001/docker.sock`. O resultado é **BLOCKED/FAIL**, sem geração validada ou entrega persistida. Nenhuma permissão de produção foi ampliada.
 - A validação usou SQLite e workspace sob `/tmp`; não criou missão em produção, não alterou arquivos de dados existentes e não publicou versão.
-- Próxima ação necessária: executar a prova com uma instância temporária sob a identidade `fenix` e ambiente isolado, ou prover um runner rootless de teste com acesso controlado ao socket. Só então validar login HTTP → chat → worker → Ollama → Docker sandbox → testes → persistência.
+- Naquela tentativa, o próximo passo era obter um runner rootless isolado; a validação concluída no follow-up abaixo resolveu essa limitação sem acessar o socket privado de produção.
+
+## Follow-up — E2E HTTP real aprovado (2026-11-13)
+
+- Para preservar o socket rootless privado de produção, foi iniciado um daemon Docker rootless efêmero da conta `deploy`, em `/run/user/1002/docker.sock`, com `data-root` e `exec-root` sob `/tmp`. `docker info` confirmou `rootless`; o serviço temporário foi parado ao fim da prova. Nenhuma ACL de produção foi alterada.
+- A instância temporária usou o código implantado em `/opt/fenix-os/grg`, banco SQLite e workspace isolados sob `/tmp`, sem ler nem gravar no banco operacional e sem abrir missão no tenant de produção.
+- A rota HTTP real foi validada: `/api/login` retornou HTTP 200 e `/api/chat/stream` autenticado retornou HTTP 200 com `provider=local-code-delivery` e `deliveryStatus=TESTS_PASSED`.
+- Evidência do fluxo: missão `SUCCEEDED`; job `SUCCEEDED`, executado por `fenix-local:<pid>`; gerente `Orchestrator`; subagente `Developer`; modelo `qwen2.5-coder:1.5b`; artefato persistido na missão temporária.
+- Ollama reportou 155 tokens, 9,9 s de geração e 4,4 s de carregamento do modelo. Os casos `add(2, 3) => 5` e `add(-1, 1) => 0` passaram (2/2) no sandbox Docker rootless, imagem Node fixada por SHA-256, rede `none`, memória 128 MiB e 64 PIDs.
+- Resultado: **PASS para o E2E HTTP isolado sobre o código implantado**. Isso valida geração local e persistência do caminho de aplicação em instância descartável; não é uma missão de produção nem uma gravação no banco operacional.
