@@ -58,3 +58,12 @@ A validação local passou em 3 testes; a mesma lógica foi exercitada diretamen
 ## Próximo passo de sincronização
 
 Reconciliar código por área, começando por `grg/src`, `engine` e `platform`, comparando diffs antes de substituir qualquer arquivo. Não copiar a árvore inteira do checkout sobre a VPS: ela contém divergências e a partição estava em 96% de uso. Nenhum arquivo de dados foi removido nesta publicação.
+
+## Follow-up — runtime worker alinhado (2026-11-13)
+
+- A diferença do worker era a identidade do lease: a VPS usava somente `FENIX_WORKER_ID`; a branch acrescenta um UUID por inicialização para impedir que um processo novo herde a identidade/heartbeat do anterior.
+- A VPS recebeu somente esse arquivo, com backup anterior preservado em `/root/.config/fenix/backups/20261113-worker-sync/worker.js`.
+- A comparação do arquivo implantado com `HEAD:grg/src/runtime/worker.js`, normalizando CRLF, passou sem diferenças.
+- A prova isolada confirmou IDs únicos; o backend não foi alterado nessa etapa. O runtime worker (PM2 ID 9) reiniciou e ficou online; o estado foi salvo no PM2.
+- Registro da publicação: `/opt/fenix-os/deployments/90d56a8b-worker-sync.json`.
+- O restante das divergências do inventário permanece pendente e não foi sobrescrito.
