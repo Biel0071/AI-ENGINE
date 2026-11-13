@@ -67,3 +67,12 @@ Reconciliar código por área, começando por `grg/src`, `engine` e `platform`, 
 - A prova isolada confirmou IDs únicos; o backend não foi alterado nessa etapa. O runtime worker (PM2 ID 9) reiniciou e ficou online; o estado foi salvo no PM2.
 - Registro da publicação: `/opt/fenix-os/deployments/90d56a8b-worker-sync.json`.
 - O restante das divergências do inventário permanece pendente e não foi sobrescrito.
+
+## Follow-up — Entrega A no runtime (2026-11-13)
+
+- Os módulos de chat, MissionPlanner CODE, cliente Ollama e sandbox de código foram aplicados como overlay na VPS; os arquivos existentes têm cópia anterior em `/root/.config/fenix/backups/20261113-entrega-a-code-delivery`.
+- O sandbox da Entrega A foi configurado para Docker rootless com imagem Node fixada por digest, sem rede, limite de memória/PIDs e limite de CPU por tempo de processo. O probe rootless isolado passou.
+- A suíte local de sandbox e Entrega A terminou com 19 testes aprovados, zero falhas e 1 teste de Ollama real ignorado por ausência de `OLLAMA_URL` local.
+- Uma tentativa do fluxo real na VPS confirmou modelo `qwen2.5-coder:1.5b`, autenticação de sessão isolada e delegação de job ao worker, mas o job falhou no acesso ao socket Docker: `/run/user/1001` é privado (0700) para o usuário `fenix`; o processo temporário `deploy` não consegue acessar `/run/user/1001/docker.sock`. O resultado é **BLOCKED/FAIL**, sem geração validada ou entrega persistida. Nenhuma permissão de produção foi ampliada.
+- A validação usou SQLite e workspace sob `/tmp`; não criou missão em produção, não alterou arquivos de dados existentes e não publicou versão.
+- Próxima ação necessária: executar a prova com uma instância temporária sob a identidade `fenix` e ambiente isolado, ou prover um runner rootless de teste com acesso controlado ao socket. Só então validar login HTTP → chat → worker → Ollama → Docker sandbox → testes → persistência.
