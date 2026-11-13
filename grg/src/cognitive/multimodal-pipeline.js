@@ -77,13 +77,22 @@ class MultimodalPipeline {
       if (classes) meta.classes = classes.map((c) => c.split(' ')[1]);
       entities.push('SourceCode');
     } else if (category === 'IMAGE' || category === 'VIDEO' || category === 'AUDIO') {
-      meta.ocrProcessed = true;
-      meta.mediaFrame = 'Extracted frame & audio transcript';
+      meta.analysisStatus = 'BLOCKED';
+      meta.ocrProcessed = false;
+      meta.visionAnalysis = 'NOT_RUN';
+      if (category === 'VIDEO') {
+        meta.frameExtraction = 'NOT_RUN';
+        meta.transcription = 'NOT_RUN';
+      } else if (category === 'AUDIO') {
+        meta.transcription = 'NOT_RUN';
+      }
       entities.push('MediaAsset');
     }
 
     return {
-      text: textContent || `Extracted media/binary data from ${filename} (${category})`,
+      text: ['IMAGE', 'VIDEO', 'AUDIO'].includes(category)
+        ? `Media asset ${filename} (${category}) is awaiting configured processing.`
+        : textContent || `Extracted media/binary data from ${filename} (${category})`,
       entities,
       meta,
     };

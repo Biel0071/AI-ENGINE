@@ -147,8 +147,10 @@ test('ABSORPTION 1: SystemAbsorptionEngine absorbs repository and compiles 4D DN
     specName: 'Cockpit Viewport',
     description: 'Central Operator Dashboard'
   });
-  assert.ok(visReport.designTokens);
-  assert.ok(visReport.fidelityScore > 0.9);
+  assert.equal(visReport.status, 'BLOCKED');
+  assert.equal(visReport.designTokens, null);
+  assert.deepEqual(visReport.detectedElements, []);
+  assert.equal(visReport.fidelityScore, null);
 
   // Verify summary report
   const summary = engine.generateSystemUnderstandingReport();

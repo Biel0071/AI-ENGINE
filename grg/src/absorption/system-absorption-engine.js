@@ -183,42 +183,24 @@ class SystemAbsorptionEngine {
    * Absorbs a visual UI specification or screenshot metadata
    * @param {object} visualSpec
    */
-  async absorbVisualSpec({ specName, imagePath = null, visualTree = null, description = '' }) {
+  async absorbVisualSpec(input = {}) {
+    const { specName, imagePath = null, visualTree = null, description = '' } = input || {};
     const specId = `vis_${(specName || 'spec').toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`;
-
-    // Extract visual tokens & design structure
-    const tokens = {
-      palette: {
-        primary: '#38bdf8',
-        background: '#0a0f1c',
-        surface: '#111a2e',
-        text: '#f8fafc',
-        border: 'rgba(255, 255, 255, 0.08)'
-      },
-      typography: {
-        fontFamily: 'Inter, system-ui, sans-serif',
-        scale: ['12px', '14px', '16px', '20px', '24px', '32px']
-      },
-      spacing: ['4px', '8px', '16px', '24px', '32px'],
-      borderRadius: '8px'
-    };
-
-    const detectedElements = visualTree?.elements || [
-      { type: 'header', label: 'Navigation Bar' },
-      { type: 'container', label: 'Main Content Area' },
-      { type: 'card_grid', label: 'Feature Cards' },
-      { type: 'action_button', label: 'Primary Action' }
-    ];
+    const detectedElements = Array.isArray(visualTree?.elements) ? visualTree.elements : [];
 
     const report = {
       specId,
       specName: specName || 'Unnamed Visual Spec',
       description,
       imagePath,
-      designTokens: tokens,
+      status: 'BLOCKED',
+      code: 'VISION_ANALYSIS_UNAVAILABLE',
+      designTokens: visualTree?.designTokens || null,
       detectedElements,
       totalElements: detectedElements.length,
-      fidelityScore: 0.96,
+      fidelityScore: null,
+      evidence: [],
+      unknowns: ['No vision analyzer is configured to inspect this visual reference.'],
       analyzedAt: new Date().toISOString()
     };
 
