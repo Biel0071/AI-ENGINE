@@ -7,6 +7,8 @@
  */
 
 const { getAllProjects, getProjectById, getProjectsByService, getProjectsByStack } = require('../projects/project-registry');
+const { cachedRuntimeTelemetry } = require('../runtime/runtime-telemetry');
+const liveRuntimeTelemetry = cachedRuntimeTelemetry(5000);
 const { getAllPages, getPageById, getScreensGraph } = require('../projects/page-registry');
 const { getAllApis, getApiByEndpoint } = require('../projects/api-registry');
 const { COMPONENTS, searchComponents, analyzeCompatibility } = require('../projects/component-registry');
@@ -976,10 +978,14 @@ async function handleUniversalSystemRoutes(req, res, url, sendJson, readJson, id
     const disk = readDiskUsage();
     const network = sampleNetworkTelemetry(app);
     const loadAverage = os.loadavg();
+    // Entrega A: swap/disponível, PM2, store, Redis, Ollama, workers, filas, BLOCKED e latência.
+    // Medido agora (cache 5 s); bloco ilegível sai como UNAVAILABLE com o motivo.
+    const runtimeTelemetry = await liveRuntimeTelemetry({ app, env: process.env }).catch((error) => ({ status: 'UNAVAILABLE', reason: error.message }));
 
     return sendJson(res, 200, {
       ok: true,
       timestamp: new Date().toISOString(),
+      ...runtimeTelemetry,
       cpu: {
         cores: cpus.length,
         model: cpus[0]?.model || null,

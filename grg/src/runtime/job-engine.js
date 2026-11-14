@@ -8,6 +8,27 @@ const JOB_SOURCES = new Set(['codex', 'claude', 'antigravity', 'windsurf', 'vsco
 const RISK_LEVELS = new Set(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 const QUEUE_ENQUEUE_TIMEOUT_MS = Number(process.env.FENIX_QUEUE_ENQUEUE_TIMEOUT_MS || 5_000);
 const WORKER_HEARTBEAT_INTERVAL_MS = Number(process.env.FENIX_WORKER_HEARTBEAT_INTERVAL_MS || 15_000);
+// QUEUED e BLOCKED vencidos podem ser reivindicados: um job BLOCKED volta a rodar para que o
+// handler teste de novo a dependência (modelo local, memória) e siga ou bloqueie outra vez.
+const CLAIMABLE = new Set(['QUEUED', 'BLOCKED']);
+
+// Dependência ausente não é falha do trabalho: o job fica BLOCKED, a tentativa é devolvida e o
+// worker tenta de novo depois de FENIX_BLOCKED_RETRY_MS. Bloqueado além de FENIX_BLOCKED_MAX_MS,
+// vira DEAD_LETTER com o motivo — nunca fica esperando para sempre em silêncio.
+function blockOnDependency(state, job, error, nowMs, { retryMs, maxMs }) {
+  const since = job.blockedSince || new Date(nowMs).toISOString();
+  job.attempts = Math.max(0, Number(job.attempts || 0) - 1);
+  job.blockedOn = error.dependency || 'unknown';
+  if (nowMs - Date.parse(since) >= maxMs) {
+    job.error = { name: 'DependencyBlockedTimeout', message: `dependency ${job.blockedOn} blocked longer than ${maxMs} ms: ${error.message}` };
+    job.status = 'DEAD_LETTER'; job.completedAt = now();
+    state.deadLetters.push({ id: uuid(), tenantId: job.tenantId, jobId: job.id, type: job.type, error: job.error, attempts: job.attempts, createdAt: now() });
+  } else {
+    job.status = 'BLOCKED'; job.blockedSince = since; job.blockedCount = Number(job.blockedCount || 0) + 1;
+    job.scheduledFor = new Date(nowMs + retryMs).toISOString();
+  }
+  job.currentStage = job.status;
+}
 const now = () => new Date().toISOString();
 const errorInfo = (error) => ({ name: error?.name || 'Error', message: String(error?.message || error).slice(0, 2000) });
 
@@ -55,7 +76,8 @@ function boundResult(result) {
 }
 
 class JobEngine {
-  constructor({ store, controlPlane, events, queue = null, approvals = null, clock = Date, agentAssignment = null, memory = null }) {
+  constructor({ store, controlPlane, events, queue = null, approvals = null, clock = Date, agentAssignment = null, memory = null, env = process.env }) {
+    this.blocking = { retryMs: Number(env.FENIX_BLOCKED_RETRY_MS || 60_000), maxMs: Number(env.FENIX_BLOCKED_MAX_MS || 86_400_000) };
     this.store = store; this.cp = controlPlane; this.events = events; this.queue = queue; this.approvals = approvals; this.clock = clock; this.agentAssignment = agentAssignment; this.memory = memory;
     this.handlers = new Map();
     this.inFlightExecutions = new Map();
@@ -162,7 +184,7 @@ class JobEngine {
       return !Number.isFinite(ageMs) || ageMs > Math.max(timeoutMs, 30_000)
         || (job.workerId && job.workerId !== workerId && (!Number.isFinite(ownerAgeMs) || ownerAgeMs > 30_000));
     });
-    const hasDueJobs = snapshot.runtimeJobs.some((job) => job.status === 'QUEUED' && Date.parse(job.scheduledFor) <= nowMs);
+    const hasDueJobs = snapshot.runtimeJobs.some((job) => CLAIMABLE.has(job.status) && Date.parse(job.scheduledFor) <= nowMs);
     const lastHeartbeat = snapshot.workerHeartbeats.find((worker) => worker.workerId === workerId)?.lastSeenAt;
     const heartbeatDue = !lastHeartbeat || !Number.isFinite(Date.parse(lastHeartbeat)) || nowMs - Date.parse(lastHeartbeat) >= WORKER_HEARTBEAT_INTERVAL_MS;
     if (!hasRecoverableJobs && !hasDueJobs && !heartbeatDue) return [];
@@ -196,7 +218,7 @@ class JobEngine {
           }
         }
       }
-      const due = state.runtimeJobs.filter((item) => item.status === 'QUEUED' && Date.parse(item.scheduledFor) <= this.clock.now()).sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt)).slice(0, Math.min(50, Number(limit)));
+      const due = state.runtimeJobs.filter((item) => CLAIMABLE.has(item.status) && Date.parse(item.scheduledFor) <= this.clock.now()).sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt)).slice(0, Math.min(50, Number(limit)));
       for (const job of due) { this.#claim(job, workerId); claimed.push(JSON.parse(JSON.stringify(job))); }
       if (hasRecoverableJobs || claimed.length || heartbeatDue) upsertHeartbeat(state, workerId, claimed.length);
       return state;
@@ -212,7 +234,7 @@ class JobEngine {
     let claimed = null;
     await this.store.update((state) => {
       const job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId);
-      if (!job || job.status !== 'QUEUED' || Date.parse(job.scheduledFor) > this.clock.now()) return state;
+      if (!job || !CLAIMABLE.has(job.status) || Date.parse(job.scheduledFor) > this.clock.now()) return state;
       this.#claim(job, workerId); claimed = JSON.parse(JSON.stringify(job)); upsertHeartbeat(state, workerId, 1); return state;
     });
     if (!claimed) return null;
@@ -270,6 +292,7 @@ class JobEngine {
       } else {
         await this.store.update((state) => {
           const current = state.runtimeJobs.find((item) => item.id === job.id); if (!current) return state; current.error = errorInfo(error); current.updatedAt = now(); current.workerId = null;
+          if (error?.code === 'DEPENDENCY_BLOCKED' && !current.cancelRequestedAt && !current.pauseRequestedAt) { blockOnDependency(state, current, error, this.clock.now(), this.blocking); return state; }
           if (current.cancelRequestedAt) current.status = 'CANCELLED';
           else if (current.pauseRequestedAt) { current.status = 'PAUSED'; current.completedAt = null; }
           else if (current.attempts < current.maxAttempts) { current.status = 'QUEUED'; current.scheduledFor = new Date(this.clock.now() + Math.min(60_000, 1000 * (2 ** (current.attempts - 1)))).toISOString(); }
@@ -281,7 +304,7 @@ class JobEngine {
     }
     let current = await this.getInternal(job.tenantId, job.id);
     if (!current) return;
-    if (current.status === 'QUEUED' && this.queue && !this.inFlightExecutions.has(job.id)) await this.#enqueue(current);
+    if (CLAIMABLE.has(current.status) && this.queue && !this.inFlightExecutions.has(job.id)) await this.#enqueue(current);
     const eventType = execution.timedOut && current.status === 'RUNNING' ? 'runtime.job.timed-out-waiting' : `runtime.job.${current.status.toLowerCase()}`;
     await this.#publish(current, eventType, workerId);
     await this.#rememberOutcome(current);
@@ -365,7 +388,7 @@ class JobEngine {
   async cancel(tenantId, actorId, jobId) {
     await this.cp.authorize(tenantId, actorId, 'runtime:execute');
     let job;
-    await this.store.update((state) => { job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId); if (!job) throw new NotFoundError(`job not found: ${jobId}`); if (TERMINAL.has(job.status)) return state; job.cancelRequestedAt = now(); if (job.status === 'QUEUED') { job.status = 'CANCELLED'; job.currentStage = 'CANCELLED'; job.completedAt = now(); } job.updatedAt = now(); return state; });
+    await this.store.update((state) => { job = state.runtimeJobs.find((item) => item.tenantId === tenantId && item.id === jobId); if (!job) throw new NotFoundError(`job not found: ${jobId}`); if (TERMINAL.has(job.status)) return state; job.cancelRequestedAt = now(); if (CLAIMABLE.has(job.status)) { job.status = 'CANCELLED'; job.currentStage = 'CANCELLED'; job.completedAt = now(); } job.updatedAt = now(); return state; });
     await this.#publish(job, 'runtime.job.cancel-requested', actorId); return job;
   }
   async pause(tenantId, actorId, jobId) {
@@ -488,6 +511,12 @@ class JobEngine {
   async recoverStale(staleAfterMs = 60_000) {
     const cutoff = this.clock.now() - Number(staleAfterMs); const requeued = []; const cancelled = [];
     const snapshot = await this.store.read();
+    // Um job BLOCKED cuja mensagem atrasada do BullMQ se perdeu (Redis reiniciado, enqueue que
+    // estourou o tempo) ficaria parado: depois de 2 min de atraso ele volta para a fila.
+    if (this.queue) {
+      const overdue = (snapshot.runtimeJobs || []).filter((job) => job.status === 'BLOCKED' && Date.parse(job.scheduledFor) < this.clock.now() - 120_000);
+      for (const job of overdue) await this.#enqueue(job).catch((error) => console.error('[JobEngine] failed to re-enqueue blocked job:', error.message));
+    }
     const hasStaleJobs = (snapshot.runtimeJobs || []).some((job) =>
       ['RUNNING', 'PAUSING'].includes(job.status) && Date.parse(job.heartbeatAt) < cutoff,
     );
@@ -543,7 +572,7 @@ class JobEngine {
   async #enqueue(job) {
     const delay = Math.max(0, Date.parse(job.scheduledFor) - this.clock.now());
     const enqueue = this.queue.enqueue('fenix-runtime', job.type, { tenantId: job.tenantId, jobId: job.id }, {
-      idempotencyKey: `${job.id}-${job.attempts}`, attempts: 5, backoff: { type: 'exponential', delay: 500 }, delay,
+      idempotencyKey: `${job.id}-${job.attempts}${job.blockedCount ? `-b${job.blockedCount}` : ''}`, attempts: 5, backoff: { type: 'exponential', delay: 500 }, delay,
     });
     const completed = await Promise.race([
       enqueue.then(() => true),

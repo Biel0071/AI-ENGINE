@@ -32,6 +32,7 @@ class MissionKernel {
   attach() {
     if (this.unsubscribe.length || !this.events) return this;
     this.unsubscribe.push(this.events.subscribe('runtime.job.started', (event) => this.projectJobStarted(event)));
+    this.unsubscribe.push(this.events.subscribe('runtime.job.blocked', (event) => this.projectJobBlocked(event)));
     for (const type of ['runtime.job.succeeded', 'runtime.job.dead_letter', 'runtime.job.cancelled']) this.unsubscribe.push(this.events.subscribe(type, (event) => this.projectJobEvent(event)));
     return this;
   }
@@ -241,7 +242,9 @@ class MissionKernel {
     const state = await this.store.read();
     const step = state.missionSteps.find((item) => item.tenantId === event.tenantId && item.jobId === jobId);
     const mission = step && state.missions.find((item) => item.id === step.missionId);
-    if (!step || !mission || step.status !== 'DISPATCHED' || mission.status !== 'RUNNING') return null;
+    // Um passo BLOCKED (dependência ausente) que volta a rodar retoma passo e missão.
+    const startable = (stepStatus, missionStatus) => (stepStatus === 'DISPATCHED' && missionStatus === 'RUNNING') || (stepStatus === 'BLOCKED' && missionStatus === 'BLOCKED');
+    if (!step || !mission || !startable(step.status, mission.status)) return null;
     const job = await this.jobs.getInternal(event.tenantId, jobId);
     if (job.status !== 'RUNNING') return null;
 
@@ -249,9 +252,9 @@ class MissionKernel {
     await this.store.update((next) => {
       const current = next.missionSteps.find((item) => item.tenantId === event.tenantId && item.id === step.id && item.jobId === jobId);
       const currentMission = next.missions.find((item) => item.id === mission.id);
-      if (current?.status === 'DISPATCHED' && currentMission?.status === 'RUNNING') {
+      if (current && currentMission && startable(current.status, currentMission.status)) {
         current.status = 'RUNNING'; current.startedAt ||= job.startedAt || now(); current.updatedAt = now();
-        currentMission.updatedAt = now(); started = true;
+        currentMission.status = 'RUNNING'; currentMission.updatedAt = now(); started = true;
       }
       return next;
     });
@@ -260,11 +263,36 @@ class MissionKernel {
     return this.#step(event.tenantId, mission.id, step.id);
   }
 
+  // Job sem a dependência (modelo local fora, memória insuficiente): passo e missão ficam
+  // BLOCKED — não terminais, nada é descartado — até o worker conseguir rodar o job de novo.
+  async projectJobBlocked(event) {
+    const jobId = event.data?.jobId; if (!event.tenantId || !jobId) return null;
+    const state = await this.store.read();
+    const step = state.missionSteps.find((item) => item.tenantId === event.tenantId && item.jobId === jobId);
+    if (!step || !['DISPATCHED', 'RUNNING'].includes(step.status)) return null;
+    const job = await this.jobs.getInternal(event.tenantId, jobId);
+    if (job.status !== 'BLOCKED') return null;
+    let mission = null;
+    await this.store.update((next) => {
+      const current = next.missionSteps.find((item) => item.id === step.id && item.jobId === jobId);
+      const currentMission = next.missions.find((item) => item.id === step.missionId);
+      if (!current || !currentMission || !['DISPATCHED', 'RUNNING'].includes(current.status) || TERMINAL.has(currentMission.status)) return next;
+      current.status = 'BLOCKED'; current.updatedAt = now();
+      currentMission.status = 'BLOCKED'; currentMission.updatedAt = now(); mission = { ...currentMission };
+      return next;
+    });
+    if (!mission) return null;
+    await this.#event(mission, 'mission.step.blocked', step, { status: 'BLOCKED', jobId, dependency: job.blockedOn || null, reason: job.error?.message || null, retryAt: job.scheduledFor || null }, 'fenix-runtime');
+    return this.#step(event.tenantId, mission.id, step.id);
+  }
+
   async projectJobEvent(event) {
     const jobId = event.data?.jobId; if (!event.tenantId || !jobId) return null; const state = await this.store.read(); const step = state.missionSteps.find((item) => item.tenantId === event.tenantId && item.jobId === jobId); if (!step) return null; const mission = state.missions.find((item) => item.id === step.missionId); if (!mission) return null;
     const job = await this.jobs.getInternal(event.tenantId, jobId); // A job can execute fine and still declare its step outcome FAILED (e.g. generated code failed its tests).
     const declaredFailure = event.type === 'runtime.job.succeeded' && job.result?.stepOutcome === 'FAILED'; const status = declaredFailure ? 'FAILED' : event.type === 'runtime.job.succeeded' ? 'SUCCEEDED' : event.type === 'runtime.job.cancelled' ? 'CANCELLED' : 'FAILED'; const metrics = { durationMs: job.startedAt && job.completedAt ? Date.parse(job.completedAt) - Date.parse(job.startedAt) : null, attempts: job.attempts, tokens: finiteOrNull(job.result?.metrics?.tokens), costUsd: finiteOrNull(job.result?.metrics?.costUsd) };
-    if (status === 'FAILED' && !declaredFailure && job.type !== 'mission.repair' && Number(step.repairCount || 0) < 1) {
+    // Dependência ausente além do limite (DependencyBlockedTimeout) não tem o que reparar: o
+    // "reparo" automático concluiria o passo sem o trabalho feito. O passo falha com o motivo.
+    if (status === 'FAILED' && !declaredFailure && job.type !== 'mission.repair' && job.error?.name !== 'DependencyBlockedTimeout' && Number(step.repairCount || 0) < 1) {
       const repair = await this.jobs.submit(event.tenantId, mission.requestedBy, {
         type: 'mission.repair', missionId: mission.id, projectId: mission.projectId,
         payload: { failedJobId: job.id, failedStepId: step.id, failedStepKey: step.key, error: job.error || null },

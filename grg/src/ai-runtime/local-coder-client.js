@@ -12,6 +12,9 @@ class LocalCoderClient {
     this.model = env.FENIX_CODER_MODEL || 'qwen2.5-coder:1.5b';
     this.timeoutMs = Number(env.FENIX_CODER_TIMEOUT_MS || 90_000);
     this.maxTokens = Number(env.FENIX_CODER_MAX_TOKENS || 400);
+    // Limite de threads do Ollama por geração: na VPS de 4 núcleos, 3 deixam um núcleo livre
+    // para o resto do sistema. Sem a variável, o Ollama decide (comportamento anterior).
+    this.numThread = Number(env.FENIX_CODER_NUM_THREAD) > 0 ? Math.floor(Number(env.FENIX_CODER_NUM_THREAD)) : null;
     this.threshold = Math.max(1, Number(env.FENIX_CODER_BREAKER_THRESHOLD || 3));
     this.cooldownMs = Number(env.FENIX_CODER_BREAKER_COOLDOWN_MS || 60_000);
     this.fetch = fetchImpl;
@@ -25,8 +28,8 @@ class LocalCoderClient {
     return this.clock.now() - this.openedAt >= this.cooldownMs ? 'HALF_OPEN' : 'OPEN';
   }
 
-  async generate(prompt, { signal } = {}) {
-    const base = { model: this.model, url: this.url };
+  async generate(prompt, { signal, model = null } = {}) {
+    const base = { model: model || this.model, url: this.url };
     if (this.breakerState() === 'OPEN') return { ok: false, ...base, reason: 'circuit breaker open after repeated model failures', breaker: 'OPEN' };
     if (typeof this.fetch !== 'function') return { ok: false, ...base, reason: 'fetch is not available in this runtime' };
     const started = this.clock.now();
@@ -36,7 +39,7 @@ class LocalCoderClient {
       const res = await this.fetch(`${this.url}/api/generate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model: this.model, prompt, stream: false, options: { temperature: 0, num_predict: this.maxTokens } }),
+        body: JSON.stringify({ model: base.model, prompt, stream: false, options: { temperature: 0, num_predict: this.maxTokens, ...(this.numThread ? { num_thread: this.numThread } : {}) } }),
         signal: combined,
       });
       if (!res.ok) throw new Error(`ollama HTTP ${res.status}`);

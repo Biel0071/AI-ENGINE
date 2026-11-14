@@ -20,6 +20,11 @@ class ValidationError extends DomainError {
 class RateLimitError extends DomainError {
   constructor(message) { super(message, 'RATE_LIMITED'); }
 }
+// Uma dependência de execução (modelo local, memória) está indisponível agora. O JobEngine
+// guarda o job como BLOCKED sem consumir tentativa e volta a tentar depois; não é falha do job.
+class DependencyBlockedError extends DomainError {
+  constructor(message, dependency) { super(message, 'DEPENDENCY_BLOCKED'); this.dependency = dependency || 'unknown'; }
+}
 
 const STATUS_BY_CODE = {
   NOT_FOUND: 404,
@@ -27,6 +32,7 @@ const STATUS_BY_CODE = {
   FORBIDDEN: 403,
   VALIDATION: 400,
   RATE_LIMITED: 429,
+  DEPENDENCY_BLOCKED: 503,
   DOMAIN_ERROR: 400,
 };
 
@@ -36,5 +42,5 @@ function httpStatusFor(error) {
 }
 
 module.exports = {
-  DomainError, NotFoundError, ConflictError, ForbiddenError, ValidationError, RateLimitError, httpStatusFor,
+  DomainError, NotFoundError, ConflictError, ForbiddenError, ValidationError, RateLimitError, DependencyBlockedError, httpStatusFor,
 };

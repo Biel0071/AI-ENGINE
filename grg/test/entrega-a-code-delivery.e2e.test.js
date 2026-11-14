@@ -124,16 +124,19 @@ test('E2E (mocked Ollama): wrong code -> TESTS_FAILED, mission FAILED, no repair
   } finally { await app.close(); ollama.server.close(); }
 });
 
-test('E2E: model unreachable -> MODEL_UNAVAILABLE reported, no code fabricated', async () => {
+// Entrega A (2026-11-13): modelo inacessível deixou de encerrar a missão como FAILED. Agora o job
+// fica BLOCKED (a missão é preservada e retomada quando o modelo volta) — ver entrega-a-autonomy.
+test('E2E: model unreachable -> BLOCKED reported, mission preserved, no code fabricated', async () => {
   const app = await makeApp({ FENIX_CODER_OLLAMA_URL: 'http://127.0.0.1:9', FENIX_CODER_TIMEOUT_MS: '2000' });
   try {
     const out = await app.chat.handle(TENANT, ACTOR, ADD_REQUEST);
-    assert.equal(out.facts.deliveryStatus, 'MODEL_UNAVAILABLE');
+    assert.equal(out.facts.deliveryStatus, 'BLOCKED');
+    assert.equal(out.facts.blockedOn, 'ollama');
     assert.equal(out.facts.code, null);
     assert.equal(out.facts.tests, null);
-    assert.match(out.reply, /Modelo local indisponível/);
+    assert.match(out.reply, /Nenhum código foi gerado/);
     const mission = await app.missions.get(TENANT, ACTOR, out.facts.missionId);
-    assert.equal(mission.status, 'FAILED');
+    assert.equal(mission.status, 'BLOCKED');
   } finally { await app.close(); }
 });
 
