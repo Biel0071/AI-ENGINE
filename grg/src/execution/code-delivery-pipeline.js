@@ -191,8 +191,10 @@ class CodeDelivery {
     });
     if (!mission) return { deliveryStatus: 'PLAN_NEEDS_INPUT', planId: plan?.id || null, questions: plan?.questions || [] };
     const step = (mission.steps || []).find((s) => s.key === 'code');
-    const jobId = step?.jobId || null;
-    if (!jobId) return { deliveryStatus: 'NOT_DISPATCHED', missionId: mission.id, missionStatus: mission.status, managerAgentId: manager.id, subAgentId: sub.id };
+    // Em producao o despacho pode terminar segundos depois do planner devolver a missao (cada
+    // gravacao do estado e lenta): espera o passo ganhar job em vez de responder NOT_DISPATCHED.
+    const jobId = step?.jobId || await this.#awaitStepJob(mission.id, step?.id || null);
+    if (!jobId) return { deliveryStatus: 'NOT_DISPATCHED', missionId: mission.id, missionStatus: mission.status, managerAgentId: manager.id, subAgentId: sub.id, model: this.cascade[0] };
     const job = await this.#awaitJob(tenantId, jobId);
     const blocked = job?.status === 'BLOCKED';
     const latest = await this.#awaitMissionProjection(tenantId, actorId, mission.id, blocked);
@@ -212,6 +214,18 @@ class CodeDelivery {
       tests: delivery?.sandbox ? { passed: delivery.sandbox.passed, total: delivery.sandbox.total, passedCount: delivery.sandbox.passedCount, results: delivery.sandbox.results, isolation: delivery.sandbox.isolation } : null,
       code: delivery?.code || null,
     };
+  }
+
+  async #awaitStepJob(missionId, stepId) {
+    const deadline = Date.now() + this.waitMs;
+    while (Date.now() < deadline) {
+      const state = await this.app.store.read();
+      const step = (state.missionSteps || []).find((s) => s.missionId === missionId && (stepId ? s.id === stepId : s.key === 'code'));
+      if (step?.jobId) return step.jobId;
+      if (!step || ['FAILED', 'CANCELLED', 'SUCCEEDED', 'AWAITING_APPROVAL'].includes(step.status)) return null;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return null;
   }
 
   async #awaitJob(tenantId, jobId) {

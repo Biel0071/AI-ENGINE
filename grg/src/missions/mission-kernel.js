@@ -25,8 +25,11 @@ const MISSION_STEP_CATALOG = Object.freeze({
 });
 
 class MissionKernel {
-  constructor({ store, controlPlane, hierarchy, jobs, approvals, events }) {
+  constructor({ store, controlPlane, hierarchy, jobs, approvals, events, dispatchOrphanMs = Number(process.env.FENIX_DISPATCH_ORPHAN_MS || 120_000) }) {
     this.store = store; this.cp = controlPlane; this.hierarchy = hierarchy; this.jobs = jobs; this.approvals = approvals; this.events = events; this.unsubscribe = [];
+    // Reserva DISPATCHING sem job so vira orfa depois desta janela. Era 5 s: em producao cada
+    // gravacao do estado leva varios segundos e o worker re-despachava o passo (2 jobs, medido).
+    this.dispatchOrphanMs = dispatchOrphanMs;
   }
 
   attach() {
@@ -130,7 +133,20 @@ class MissionKernel {
       // reserva órfã. Só recuperamos reservas sem job e antigas o suficiente
       // para não competir com um submit ainda em andamento.
       for (const step of steps.filter((item) => item.status === 'DISPATCHING' && !item.jobId)) {
-        if (Date.now() - Date.parse(step.updatedAt || step.createdAt || now()) < 5000) continue;
+        // O submit pode ter criado o job e ainda nao ter gravado o jobId no passo: adota esse job
+        // em vez de liberar a reserva (liberar = segundo job para o mesmo trabalho).
+        const created = state.runtimeJobs.find((job) => job.payload?.missionStepId === step.id && job.status !== 'CANCELLED');
+        if (created) {
+          await this.store.update((next) => {
+            const current = next.missionSteps.find((item) => item.id === step.id && item.status === 'DISPATCHING' && !item.jobId);
+            if (current) { current.status = 'DISPATCHED'; current.jobId = created.id; current.dispatchedAt ||= now(); current.updatedAt = now(); }
+            return next;
+          });
+          await this.#event(mission, 'mission.step.reconciled', step, { status: 'DISPATCHED', reason: `reserva com job ja criado (${created.id}) adotada` }, actorId);
+          relatorio.orfaosResolvidos += 1;
+          continue;
+        }
+        if (Date.now() - Date.parse(step.updatedAt || step.createdAt || now()) < this.dispatchOrphanMs) continue;
         await this.store.update((next) => {
           const current = next.missionSteps.find((item) => item.id === step.id && item.status === 'DISPATCHING' && !item.jobId);
           if (current) { current.status = 'PLANNED'; current.updatedAt = now(); }
@@ -339,7 +355,7 @@ class MissionKernel {
     if (!reserved) return null;
     let job;
     try {
-      job = await this.jobs.submit(mission.tenantId, mission.requestedBy, { type: step.jobType, payload: { ...step.payload, missionId: mission.id, projectId: mission.projectId }, missionId: mission.id, projectId: mission.projectId, priority: mission.priority });
+      job = await this.jobs.submit(mission.tenantId, mission.requestedBy, { type: step.jobType, payload: { ...step.payload, missionId: mission.id, missionStepId: step.id, projectId: mission.projectId }, missionId: mission.id, projectId: mission.projectId, priority: mission.priority });
     } catch (error) {
       await this.store.update((state) => { const current = state.missionSteps.find((item) => item.id === step.id && item.status === 'DISPATCHING'); if (current) { current.status = 'PLANNED'; current.updatedAt = now(); } return state; });
       throw error;

@@ -165,6 +165,23 @@ test('a BLOCKED job is cancelled immediately and a block longer than the limit b
   } finally { await stopWorker2(); await app2.close(); ollama.server.close(); }
 });
 
+test('chat waits for the dispatch when the planner returns the step before it has a job (slow store in production)', async () => {
+  const ollama = await mockOllama(() => GOOD);
+  const app = await makeApp({ FENIX_CODER_OLLAMA_URL: ollama.url });
+  // Producao 2026-11-16: o planner devolveu a missao com o passo ainda sem jobId e o chat
+  // respondeu NOT_DISPATCHED, embora o job tenha sido criado segundos depois.
+  const realPlan = app.missionPlanner.plan.bind(app.missionPlanner);
+  app.missionPlanner.plan = async (...args) => {
+    const out = await realPlan(...args);
+    return { ...out, mission: { ...out.mission, steps: out.mission.steps.map((step) => ({ ...step, jobId: null, status: 'DISPATCHING' })) } };
+  };
+  try {
+    const out = await app.chat.handle(TENANT, ACTOR, ADD_REQUEST);
+    assert.equal(out.facts.deliveryStatus, 'TESTS_PASSED', JSON.stringify(out.facts));
+    assert.ok(out.facts.jobId);
+  } finally { await app.close(); ollama.server.close(); }
+});
+
 test('resource guard: blocks when available RAM is below model size + margin, allows a loaded model, unknown never blocks', () => {
   const meminfo = parseMeminfo('MemTotal:       6062080 kB\nMemAvailable:    1048576 kB\nSwapTotal:      4194300 kB\nSwapFree:       2097150 kB\n');
   assert.equal(meminfo.availableMb, 1024);
